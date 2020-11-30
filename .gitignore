@@ -1,0 +1,13 @@
+# Build objects
+**.o
+**.d
+**.a
+**.so
+
+# Editor created objects
+**.swp
+
+# Misc
+cscope*
+.ctags*
+tags
