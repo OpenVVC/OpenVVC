@@ -1,3 +1,7 @@
+# Configuration object
+config.mak
+config.h
+
 # Build objects
 **.o
 **.d
