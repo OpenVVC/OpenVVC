@@ -1,27 +1,48 @@
 #include <stdlib.h>
 
 #include "ovvcdmx.h"
+#include "../libovvcutils/ovvcutils.h"
+
+static const char *const demux_name = "Open VVC Annex B demuxer";
 
 struct OVVCDmx {
+    const char *name;
     int val;
+
     struct {
         int val;
-    }my_struct;
+    }options;
 };
 
 int
 ovdmx_init(OVVCDmx **vvcdmx)
 {
     *vvcdmx = malloc(sizeof(**vvcdmx));
+    
+    (*vvcdmx)->name = demux_name;
+
+    if (*vvcdmx == NULL) return -1;
 
     return 0;
 }
 
-void
-ovdmx_close(OVVCDmx **vvcdmx)
+int
+ovdmx_close(OVVCDmx *vvcdmx)
 {
-    if (*vvcdmx) free(*vvcdmx);
+    int not_dmx;
+    if (vvcdmx != NULL) {
 
-    *vvcdmx = NULL;
+        not_dmx = vvcdmx->name != demux_name;
+
+        if (not_dmx) goto fail;
+
+        free(vvcdmx);
+
+        return 0;
+    }
+
+fail:
+    ov_log(vvcdmx, 3, "Trying to close a something not a demuxer.\n");
+    return -1;
 }
 

@@ -7,6 +7,6 @@ typedef struct OVVCDmx OVVCDmx;
 
 int ovdmx_init(OVVCDmx **vvcdmx);
 
-void ovdmx_close(OVVCDmx **vvcdmx);
+int ovdmx_close(OVVCDmx *vvcdmx);
 #endif
 

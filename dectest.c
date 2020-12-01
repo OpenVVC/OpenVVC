@@ -17,31 +17,39 @@ main(int argc, char** argv)
 
     if (ret < 0) goto faildec;
 
-    ov_log(vvcdec, log_level, "Success at decoder init.\n");
+    ov_log(vvcdec, log_level, "Decoder init.\n");
 
     ret = ovdmx_init(&vvcdmx);
 
     if (ret < 0) goto faildmx;
 
-    ov_log(vvcdmx, log_level, "Success at demuxer init.\n");
+    ov_log(vvcdmx, log_level, "Demuxer init.\n");
 
     /* Do stuff here */
 
-    ovdec_close(&vvcdec);
-    ovdmx_close(&vvcdmx);
+    ret = ovdec_close(vvcdec);
+
+    if (ret < 0) goto faildecclose;
+
+    ret = ovdmx_close(vvcdmx);
+
+    if (ret < 0) goto faildmxclose;
 
     return 0;
 
 faildec:
-#if 1
-    ov_log(NULL, log_level, "Error at decoder init.\n");
-#endif
+    ov_log(NULL, log_level, "Decoder failed at init.\n");
     return ret;
 
 faildmx:
-#if 1
-    ov_log(NULL, log_level, "Error at demuxer init.\n");
-#endif
-    ovdec_close(&vvcdec);
+    ov_log(NULL, log_level, "Demuxer failed at init.\n");
+    ovdec_close(vvcdec);
+    return ret;
+
+faildecclose:
+    ov_log(NULL, log_level, "Demuxer failed at cloture.\n");
+    ovdmx_close(vvcdmx);
+
+faildmxclose:
     return ret;
 }
