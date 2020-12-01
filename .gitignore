@@ -3,6 +3,7 @@ config.mak
 config.h
 
 # Build objects
+dectest
 **.o
 **.d
 **.a
