@@ -1,0 +1,42 @@
+#!/bin/sh
+
+show_help(){
+  cat <<EOF 
+Usage: configure [options]
+Options: [defaults in brackets after descriptions]
+
+Help options:
+  --help                   print this message
+
+Note at the current time this configure only generates a basic
+config.mak file to be used by OpenVVc Makefile
+EOF
+  exit 0
+}
+
+for opt do
+    optval="${opt#*=}"
+    case "$opt" in
+        --help|-h) show_help
+        ;;
+        *)
+            optname="${opt%%=*}"
+            optname="${optname#--}"
+            optname=$(echo "$optname" | sed 's/-/_/g')
+            if is_in $optname $CMDLINE_SET; then
+                eval $optname='$optval'
+            elif is_in $optname $CMDLINE_APPEND; then
+                append $optname "$optval"
+            else
+                die_unknown $opt
+            fi
+        ;;
+    esac
+done
+
+for e in $env; do
+    eval "export $e"
+done
+
+
+exit 0
