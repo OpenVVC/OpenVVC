@@ -7,4 +7,5 @@ HEADERS = ovvcutils.h                                                 \
 
 # List of objects to be included into the library
 OBJS = ovvcutils.o                                                    \
+       ovmem.o                                                        \
 
