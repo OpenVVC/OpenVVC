@@ -73,7 +73,9 @@ dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const file_name)
 
     vvc_hdl->fp = file;
 
-    /*TOOO Call ret = ovvc_dmx_attach */
+    ovdmx_attach_stream(vvc_hdl->dmx, vvc_hdl->fp);
+
+    ovdmx_detach_stream(vvc_hdl->dmx);
 
     return 0;
 }
