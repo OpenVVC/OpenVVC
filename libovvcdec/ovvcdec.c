@@ -1,6 +1,7 @@
 #include <stdlib.h>
 
 #include "ovvcdec.h"
+#include "libovvcutils/ovvcutils.h"
 
 static const char *const decname = "Open VVC Decoder";
 

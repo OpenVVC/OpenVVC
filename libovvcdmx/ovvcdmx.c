@@ -1,7 +1,9 @@
 #include <stdlib.h>
 
+#include "libovvcutils/ovmem.h"
+#include "libovvcutils/ovvcutils.h"
+
 #include "ovvcdmx.h"
-#include "../libovvcutils/ovvcutils.h"
 
 static const char *const demux_name = "Open VVC Annex B demuxer";
 
