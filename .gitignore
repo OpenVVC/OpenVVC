@@ -3,17 +3,28 @@ config.mak
 config.h
 
 # Build objects
-dectest
-**.o
-**.d
-**.a
-**.so
+*.o
+*.d
+*.a
+*.so
 
 # Editor created objects
-**.swp
-**.swo
+*.sw?
+*.session
 
-# Misc
+# TAGS
 cscope*
 .ctags*
 tags
+
+# Directories
+bin/
+lib/
+
+# Programs
+dectest
+
+# Video objects
+*.266
+*.yuv
+
