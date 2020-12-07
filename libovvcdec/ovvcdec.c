@@ -1,7 +1,9 @@
 #include <stdlib.h>
 
-#include "ovvcdec.h"
 #include "libovvcutils/ovvcutils.h"
+#include "libovvcutils/ovmem.h"
+
+#include "ovvcdec.h"
 
 static const char *const decname = "Open VVC Decoder";
 
@@ -17,7 +19,7 @@ struct OVVCDec{
 int
 ovdec_init(OVVCDec **vvcdec)
 {
-    *vvcdec = malloc(sizeof(OVVCDec));
+    *vvcdec = ov_mallocz(sizeof(OVVCDec));
 
     if (*vvcdec == NULL) goto fail;
 
@@ -40,7 +42,7 @@ ovdec_close(OVVCDec *vvcdec)
 
         if (not_dec) goto fail;
 
-        free(vvcdec);
+        ov_free(vvcdec);
 
         return 0;
     }

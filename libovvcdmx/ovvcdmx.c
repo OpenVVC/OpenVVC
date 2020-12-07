@@ -19,8 +19,8 @@ struct OVVCDmx {
 int
 ovdmx_init(OVVCDmx **vvcdmx)
 {
-    *vvcdmx = malloc(sizeof(**vvcdmx));
-    
+    *vvcdmx = ov_mallocz(sizeof(**vvcdmx));
+
     (*vvcdmx)->name = demux_name;
 
     if (*vvcdmx == NULL) return -1;
@@ -31,14 +31,14 @@ ovdmx_init(OVVCDmx **vvcdmx)
 int
 ovdmx_close(OVVCDmx *vvcdmx)
 {
-    int not_dmx;
+    int not_dmx = 0;
     if (vvcdmx != NULL) {
 
         not_dmx = vvcdmx->name != demux_name;
 
         if (not_dmx) goto fail;
 
-        free(vvcdmx);
+        ov_free(vvcdmx);
 
         return 0;
     }
