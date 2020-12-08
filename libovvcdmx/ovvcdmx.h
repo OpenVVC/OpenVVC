@@ -13,5 +13,7 @@ int ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream);
 
 void ovdmx_detach_stream(OVVCDmx *const dmx);
 
+int ovdmx_read_stream(OVVCDmx *const dmx);
+
 #endif
 

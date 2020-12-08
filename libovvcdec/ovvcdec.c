@@ -7,7 +7,8 @@
 
 static const char *const decname = "Open VVC Decoder";
 
-struct OVVCDec{
+struct OVVCDec
+{
     const char *name;
     int val;
     struct {

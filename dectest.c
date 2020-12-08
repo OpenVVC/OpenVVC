@@ -24,6 +24,8 @@ static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
 static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
+static int read_stream(OVVCDmx *const dmx, FILE *fp);
+
 int
 main(int argc, char** argv)
 {
@@ -74,6 +76,8 @@ dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const file_name)
     vvc_hdl->fp = file;
 
     ovdmx_attach_stream(vvc_hdl->dmx, vvc_hdl->fp);
+
+    read_stream(vvc_hdl->dmx, vvc_hdl->fp);
 
     ovdmx_detach_stream(vvc_hdl->dmx);
 
@@ -141,5 +145,12 @@ faildecclose:
 
 faildmxclose:
     return ret;
+}
+
+static int
+read_stream(OVVCDmx *const dmx, FILE *fp)
+{
+    ovdmx_read_stream(dmx);
+    return 1;
 }
 
