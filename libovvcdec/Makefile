@@ -7,4 +7,5 @@ HEADERS = ovvcdec.h                                                   \
 
 # List of objects to be included into the library
 OBJS = ovvcdec.o                                                      \
+       ovunits.o                                                      \
 
