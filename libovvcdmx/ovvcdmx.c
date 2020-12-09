@@ -6,6 +6,8 @@
 #include "libovvcutils/ovvcutils.h"
 #include "libovvcutils/ovmem.h"
 
+#include "ovio.h"
+
 #include "ovvcdmx.h"
 
 /* Use Fixed size of demux read cache buffer to 64K */
@@ -16,54 +18,40 @@
 
 static const char *const demux_name = "Open VVC Annex B demuxer";
 
-typedef struct OVReadBuff{
-    uint8_t *bytestream;
-    void *opaque;
-}OVReadBuff;
 
-struct OVVCDmx{
+struct OVVCDmx
+{
     const char *name;
 
     FILE *fstream;
-    OVReadBuff cache_buffer;
+    /*OVReadBuff cache_buffer;*/
 
+    /* Points to a read only IO context */
+    OVIOStream *io_str;
+
+    /* Demuxer options to be passed at init */
     struct{
         int val;
     }options;
 };
 
 
-static int ovread_buff_init(struct OVReadBuff *const cache_buff,
-                             size_t buff_size);
-
-static void ovread_buff_close(struct OVReadBuff *const cache_buff);
-
-static inline int check_stc_or_epb(const uint8_t *byte);
+static int check_stc_or_epb(const uint8_t *byte);
 
 static int dmx_process_elem(OVVCDmx *const dmx,
                             const uint8_t *const bytestream,
                             uint64_t byte_pos,
                             int stc_or_epb);
 
-/* TODO create a wrapper for  IO functions names  should
-   mimic stdio functions since they are basically offering
-   the same interface */
-static size_t io_read_stream(OVVCDmx *const dmx);
-
-static int io_eof_stream(OVVCDmx *const dmx);
-
-static int io_error_stream(OVVCDmx *const dmx);
-
-static long int io_tell_stream(OVVCDmx *const dmx);
-
 int
 ovdmx_init(OVVCDmx **vvcdmx)
 {
     *vvcdmx = ov_mallocz(sizeof(**vvcdmx));
 
-    (*vvcdmx)->name = demux_name;
-
     if (*vvcdmx == NULL) return -1;
+
+    (*vvcdmx)->name = demux_name;
+    (*vvcdmx)->io_str = NULL;
 
     return 0;
 }
@@ -77,6 +65,8 @@ ovdmx_close(OVVCDmx *vvcdmx)
         not_dmx = vvcdmx->name != demux_name;
 
         if (not_dmx) goto fail;
+
+        ovdmx_detach_stream(vvcdmx);
 
         ov_free(vvcdmx);
 
@@ -97,70 +87,38 @@ ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
        be called if stream is not allocated.
        Maybe we should open file ourselves / and use a wrapper around
        I/Os */
-    int ret;
+    int ret = 0;
     if (fstream == NULL) {
         return -1;
     }
 
     dmx->fstream = fstream;
 
-    ret = ovread_buff_init(&dmx->cache_buffer, OVVCDMX_IO_BUFF_SIZE);
+    /* TODO distinguish init and open / attach */
+    dmx->io_str = ovio_stream_open(fstream);
+    if (dmx->io_str == NULL) {
+        /* no mem*/
+        return -1;
+    }
 
     return ret;
 }
 
+/*FIXME share bytestream mem with OVIOStream so we avoid copying from one to
+  another*/
 void
 ovdmx_detach_stream(OVVCDmx *const dmx)
 {
     dmx->fstream = NULL;
-    ovread_buff_close(&dmx->cache_buffer);
-}
 
-static int
-ovread_buff_init(struct OVReadBuff *const cache_buff, size_t buff_size)
-{
-    uint8_t *byte_stream;
-
-    /* Note we keep a 8 bytes left and 8 bytes padding at the right of
-     * our buffer in order to check,to store the last bytes of the
-     * previous chunk of the bytestream 8 bytes is because we might
-     * want to use 64bit types in order to quickly probe for successive
-     * zero bytes
-     */
-    byte_stream = ov_mallocz(8 + buff_size + 8);
-
-    if (byte_stream == NULL) {
-        return -1;
+    /* FIXME decide if it should free OVIOStream cache buff */
+    if (dmx->io_str != NULL) {
+        ovio_stream_close(dmx->io_str);
     }
 
-    cache_buff->opaque = (void *)byte_stream;
-
-    /* Bytestream will be cached from this position in allocated memory
-     * the padding byte will be used to keep a copy of the last 8 bytes
-     * in order to check for start codes overlapping between two chunks
-     */
-    cache_buff->bytestream = byte_stream + 8;
-
-    /* last 16 bytes are set to 0xFF so we do not detect any zero byte
-     * past the actual available data when checking for a start or emulation
-     * prevention code.
-     * Using. 0xFF shoul prevent patterns such as 0x000003 or 0x000001
-     * we used 16 bytes so first copy from read function will copy 0XFF
-     * bytes at the averlapping area reader will then ignore them since
-     * it cannot be taken as start code.
-     */
-    memset(byte_stream + 8 + buff_size, 0XFF, sizeof(*byte_stream) * 8);
-
-    return 1;
+    dmx->io_str = NULL;
 }
 
-void
-ovread_buff_close(struct OVReadBuff *const cache_buff)
-{
-    cache_buff->bytestream = NULL;
-
-    ov_freep(&cache_buff->opaque);
-}
 
 /*
    FIXME there might be a need to find a fast way to remove obvious
@@ -174,9 +132,10 @@ ovdmx_read_stream(OVVCDmx *const dmx)
     uint64_t byte_pos = 0;
     long int nb_bytes_last = 0;
     int nb_nalus = 0;
-    uint8_t *const cache_buffer = dmx->cache_buffer.bytestream;
+    OVIOStream *const io_str = dmx->io_str;
+    const uint8_t *io_cache;
 
-    if (cache_buffer == NULL) {
+    if (io_str == NULL) {
        return -1;
     }
 
@@ -185,15 +144,17 @@ ovdmx_read_stream(OVVCDmx *const dmx)
        reseting this value since we might need the last few bytes
        of the cache used in previous call in cases */
 
-    while (!io_eof_stream(dmx)){
-       const unsigned char *byte = cache_buffer - 8;
+    while (!ovio_stream_eof(io_str)){
+       const uint8_t *byte;
        const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
        int nb_stc = 0;
        int nb_epb = 0;
        int read_in_buf = 0;
 
        /* request new read from io layer */
-       read_in_buf += io_read_stream(dmx);
+       read_in_buf += ovio_stream_read(&io_cache, OVVCDMX_IO_BUFF_SIZE, io_str);
+       byte = io_cache - 8;
+       /*read_in_buf += io_read_stream(dmx);*/
 
        if (!read_in_buf) {
        /*FIXME check the case of eof is aligned with buffer*/
@@ -237,18 +198,18 @@ ovdmx_read_stream(OVVCDmx *const dmx)
     }
 
 last_chunk:
-    if (io_error_stream(dmx)) {
+    if (ovio_stream_error(io_str)) {
         return -1;
     } else {
 
         const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
         /* we do not check return si error was already reported ?*/
-        nb_bytes_last = io_tell_stream(dmx) & mask;
+        nb_bytes_last = ovio_stream_tell(io_str) & mask;
 
-        if (io_eof_stream(dmx) && (nb_bytes_last > 0)) {
+        if (ovio_stream_eof(io_str) && (nb_bytes_last > 0)) {
             int nb_stc = 0;
             int nb_epb = 0;
-            uint8_t *byte = cache_buffer - 8;
+            const uint8_t *byte = io_cache - 8;
             /*FIXME write 0xFF to prevent returning stc or emu
             at the end of the buffer*/
 
@@ -284,50 +245,6 @@ last_chunk:
     return 1;
 }
 
-/* We use size_t trying to mimic fread return type */
-static size_t
-io_read_stream(OVVCDmx *const dmx)
-{
-    const size_t i_buff_size = OVVCDMX_IO_BUFF_SIZE;
-    FILE *fstream = dmx->fstream;
-    uint8_t *cache_start = dmx->cache_buffer.bytestream;
-    uint8_t *cache_end = cache_start + i_buff_size;
-    size_t read_in_buf;
-
-    /* FIXME this might depend on the demux maybe this should
-       be done somewhere else this force cache buffer */
-    memcpy(cache_start - 8, cache_end - 8, sizeof(*cache_start) * 8);
-
-    read_in_buf = fread(cache_start, i_buff_size, 1, fstream);
-
-    return read_in_buf;
-}
-
-/* FIXME decide of an EOF value check what is usual*/
-static int
-io_eof_stream(OVVCDmx *const dmx)
-{
-    FILE *fstream = dmx->fstream;
-
-    return feof(fstream);
-}
-
-static int
-io_error_stream(OVVCDmx *const dmx)
-{
-    FILE *fstream = dmx->fstream;
-
-    return ferror(fstream);
-}
-
-static long int
-io_tell_stream(OVVCDmx *const dmx)
-{
-    FILE *fstream = dmx->fstream;
-
-    return ftell(fstream);
-}
-
 /* Check for start_code or emulation prevention byte
  * returns:
  *    0 if no start code was found
@@ -339,7 +256,7 @@ io_tell_stream(OVVCDmx *const dmx)
       negative value if something invalid emulation prevention
       or start code with an invalid NAL header
  */
-static inline int
+static int
 check_stc_or_epb(const uint8_t *byte)
 {
     /* we consider first byte has already been detected ?*/
