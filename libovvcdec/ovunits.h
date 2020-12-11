@@ -39,7 +39,7 @@ enum OVNALUType
     OVNALU_UNSPEC_28 = 28,
     OVNALU_UNSPEC_29 = 29,
     OVNALU_UNSPEC_30 = 30,
-    OVNALU_UNSPEC_31 = 31,
+    OVNALU_UNSPEC_31 = 31
 };
 
 typedef struct OVVRBSPData OVRBSPData;
