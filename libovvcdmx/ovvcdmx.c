@@ -26,6 +26,8 @@ struct OVVCDmx
 
     FILE *fstream;
     /*OVReadBuff cache_buffer;*/
+    int nb_stc;
+    int nb_epb;
 
     /* Points to a read only IO context */
     OVIOStream *io_str;
@@ -36,6 +38,10 @@ struct OVVCDmx
     }options;
 };
 
+static int process_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos);
+
+static int process_last_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos,
+                              int nb_bytes_last);
 
 int
 ovdmx_init(OVVCDmx **vvcdmx)
@@ -140,95 +146,55 @@ ovdmx_read_stream(OVVCDmx *const dmx)
 
     while (!ovio_stream_eof(io_str)){
        const uint8_t *byte;
-       const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
-       int nb_stc = 0;
-       int nb_epb = 0;
        int read_in_buf = 0;
+       int ret;
 
        /* request new read from io layer */
        read_in_buf += ovio_stream_read(&io_cache, OVVCDMX_IO_BUFF_SIZE, io_str);
        byte = io_cache - 8;
-       /*read_in_buf += io_read_stream(dmx);*/
 
        if (!read_in_buf) {
-       /*FIXME check the case of eof is aligned with buffer*/
            goto last_chunk;
        }
 
        nb_chunks += read_in_buf;
 
-       /* WARNING We need to be careful on endianness here if we plan
-          to use bigger read sizes */
-       do {
-           /* Mask is cosmetic here only to signal the
-              use of a circular buffer in case we want to
-              change default cachesize into something more dynamic*/
+       ret = process_chunk(dmx, byte, byte_pos);
+       if (ret < 0) {
+           goto readfail;
+       }
 
-           /*TODO bintricks for start code detection */
-
-           /*FIXME we will actually loop over this more than once even if a start
-             code has been detected. This is a bit inefficient */
-           if (byte[(byte_pos) & mask] == 0) {
-               int stc_or_epb;
-               stc_or_epb = check_stc_or_epb(&byte[(byte_pos) & mask]);
-               if (stc_or_epb < 0) {
-                   return -1;
-               }
-
-               if (stc_or_epb) {
-                   /* TODO handle what is to be done with it here */
-                   dmx_process_elem(dmx, &byte[(byte_pos) & mask], byte_pos, stc_or_epb);
-                   nb_stc += stc_or_epb == 1;
-                   nb_epb += stc_or_epb == 2;
-               }
-           }
-       } while ((++byte_pos) & mask);
-
-       /* FIXME copy more bytes */
-       /* copy last_two byte to padding area */
-       printf("num_stc %d\n", nb_stc);
-       printf("num_prev %d\n", nb_epb);
-       nb_nalus += nb_stc;
+       printf("num_stc %d\n", dmx->nb_stc);
+       printf("num_prev %d\n", dmx->nb_epb);
+       nb_nalus += dmx->nb_stc;
     }
+
+    return 1;
 
 last_chunk:
     if (ovio_stream_error(io_str)) {
         return -1;
     } else {
+       const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
+       int ret;
 
-        const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
         /* we do not check return si error was already reported ?*/
+
         nb_bytes_last = ovio_stream_tell(io_str) & mask;
 
         if (ovio_stream_eof(io_str) && (nb_bytes_last > 0)) {
-            int nb_stc = 0;
-            int nb_epb = 0;
+
             const uint8_t *byte = io_cache - 8;
-            /*FIXME write 0xFF to prevent returning stc or emu
-            at the end of the buffer*/
 
-            do {
-                /*TODO bintricks for start code detection */
-                if (byte[(byte_pos) & mask] == 0) {
-                    int stc_or_epb;
-                    stc_or_epb = check_stc_or_epb(&byte[(byte_pos) & mask]);
+            ret = process_last_chunk(dmx, byte, byte_pos, nb_bytes_last);
+            if (ret < 0) {
+                goto readfail;
+            }
 
-                    if (stc_or_epb < 0) {
-                        return -1;
-                    }
-
-                    if (stc_or_epb) {
-                        /* TODO handle what is to be done with it here */
-                        dmx_process_elem(dmx, &byte[(byte_pos) & mask], byte_pos, stc_or_epb);
-                        nb_stc += stc_or_epb == 1;
-                        nb_epb += stc_or_epb == 2;
-                    }
-                }
-            } while (((++byte_pos) & mask) <= nb_bytes_last);
-            printf("num_stc last %d\n", nb_stc);
-            printf("num_prev last %d\n", nb_epb);
+            printf("num_stc last %d\n", dmx->nb_stc);
+            printf("num_prev last %d\n", dmx->nb_epb);
             printf("EOF reached\n");
-            nb_nalus += nb_stc;
+            nb_nalus += dmx->nb_stc;
         }
     }
 
@@ -237,5 +203,78 @@ last_chunk:
     printf("Num NALU read %d\n", nb_nalus);
 
     return 1;
+
+readfail:
+    /* free current NALU memory + return error
+    */
+    printf("FAILED NAL read!\n");
+    return -1;
 }
 
+/**
+ * returns: -1 Invalid data
+ *          byte_pos in chunk if stc
+ *          0 if nothing found and needs a new read
+ */
+static int
+process_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos)
+{
+    const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
+    do {
+        /*TODO bintricks for start code detection */
+
+        /*FIXME we will actually loop over this more than once even if a start
+          code has been detected. This is a bit inefficient */
+
+       /* WARNING We need to be careful on endianness here if we plan
+          to use bigger read sizes */
+
+        if (byte[(byte_pos) & mask] == 0) {
+            int stc_or_epb;
+            stc_or_epb = check_stc_or_epb(&byte[(byte_pos) & mask]);
+            if (stc_or_epb < 0) {
+                printf("Invalid\n");
+                return -1;
+            }
+
+            if (stc_or_epb) {
+                /* TODO handle what is to be done with it here */
+                dmx_process_elem(dmx, &byte[(byte_pos) & mask], byte_pos, stc_or_epb);
+                dmx->nb_stc += stc_or_epb == 1;
+                dmx->nb_epb += stc_or_epb == 2;
+                #if 0
+                return (byte_pos & mask);
+                #endif
+            }
+        }
+    } while ((++byte_pos) & mask);
+
+    return (byte_pos & mask);
+}
+
+static int
+process_last_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos,
+                   int nb_bytes_last)
+{
+    const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
+    do {
+        /*TODO bintricks for start code detection */
+        if (byte[(byte_pos) & mask] == 0) {
+            int stc_or_epb;
+            stc_or_epb = check_stc_or_epb(&byte[(byte_pos) & mask]);
+
+            if (stc_or_epb < 0) {
+                return -1;
+            }
+
+            if (stc_or_epb) {
+                /* TODO handle what is to be done with it here */
+                dmx_process_elem(dmx, &byte[(byte_pos) & mask], byte_pos, stc_or_epb);
+                dmx->nb_stc += stc_or_epb == 1;
+                dmx->nb_epb += stc_or_epb == 2;
+            }
+        }
+    } while (((++byte_pos) & mask) <= nb_bytes_last);
+    /* FIXME handle EOF EOB stuff */
+    return (byte_pos & mask);
+}
