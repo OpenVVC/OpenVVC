@@ -22,3 +22,5 @@ OBJS = ovvcdec.o                                                      \
 			 rcn_intra_angular.o																						\
 			 rcn_lfnst.o																										\
 			 rcn_mc.o																												\
+       mempool.o                                                      \
+
