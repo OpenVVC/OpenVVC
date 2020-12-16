@@ -54,7 +54,7 @@ $(ltarget_shared): $(OBJS) $(DEPLIBS)
 
 $(warning $(ltarget_shared): $(OBJS)  $(DEPLIBS))
 $(warning	$(CC)  $(LD_FLAGS) --shared $^ -o $@ $(IFLAGS) )
-	
+
 # FIXME do we need dependencies besides OBJS in static lib
 $(ltarget_static): $(OBJS)
 	$(AR) rcD $@ $^
@@ -100,6 +100,7 @@ $(foreach lib,$(ALL_LIBS),$(eval $(call lib_objs_rules_template,$(lib))))
 
 # Suffix rule on .c objects to build corresponding .o and .d objects
 $(BUILD_DIR)%.o: %.c
+	@mkdir -p $(@D)
 	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) -I.
 
 $(BUILD_DIR)${PROG}: ${PROG_DEPLIBOBJS} $(PROG_OBJS)
@@ -116,5 +117,6 @@ include $(wildcard $(ALL_OBJS:.o=.d))
 #TODO Create a clean rule based on every objects and suffixes expansion
 # to be sure not to forget anything
 clean:
-	$(RM) $(ALL_OBJS) $(ALL_OBJS:.o=.d) $(ALL_LIBOBJS) $(PROG)
-	$(RM) -rf $(BUILD_DIR)**.o $(BUILD_DIR)**.d $(BUILD_DIR)**.a $(BUILD_DIR)**.so
+	$(RM) -r $(BUILD_DIR)
+# $(RM) $(ALL_OBJS) $(ALL_OBJS:.o=.d) $(ALL_LIBOBJS) $(PROG)
+# $(RM) -rf $(BUILD_DIR)**.o $(BUILD_DIR)**.d $(BUILD_DIR)**.a $(BUILD_DIR)**.so
