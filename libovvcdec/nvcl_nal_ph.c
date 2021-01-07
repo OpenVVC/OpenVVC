@@ -1,0 +1,322 @@
+#include "nvcl.h"
+#include "nvcl_utils.h"
+
+typedef struct OVPH
+{
+    uint8_t ph_gdr_or_irap_pic_flag;
+    uint8_t ph_non_ref_pic_flag;
+    uint8_t ph_gdr_pic_flag;
+    uint8_t ph_inter_slice_allowed_flag;
+    uint8_t ph_intra_slice_allowed_flag;
+    uint8_t ph_pic_parameter_set_id;
+    uint8_t ph_pic_order_cnt_lsb;
+    uint8_t ph_recovery_poc_cnt;
+    uint8_t ph_extra_bit[i];
+    uint8_t ph_poc_msb_cycle_present_flag;
+    uint8_t ph_poc_msb_cycle_val;
+    uint8_t ph_alf_enabled_flag;
+    uint8_t ph_num_alf_aps_ids_luma;
+    uint8_t ph_alf_aps_id_luma[i];
+    uint8_t ph_alf_cb_enabled_flag;
+    uint8_t ph_alf_cr_enabled_flag;
+    uint8_t ph_alf_aps_id_chroma;
+    uint8_t ph_alf_cc_cb_enabled_flag;
+    uint8_t ph_alf_cc_cb_aps_id;
+    uint8_t ph_alf_cc_cr_enabled_flag;
+    uint8_t ph_alf_cc_cr_aps_id;
+    uint8_t ph_lmcs_enabled_flag;
+    uint8_t ph_lmcs_aps_id;
+    uint8_t ph_chroma_residual_scale_flag;
+    uint8_t ph_explicit_scaling_list_enabled_flag;
+    uint8_t ph_scaling_list_aps_id;
+    uint8_t ph_virtual_boundaries_present_flag;
+    uint8_t ph_num_ver_virtual_boundaries;
+    uint8_t ph_virtual_boundary_pos_x_minus1[i];
+    uint8_t ph_num_hor_virtual_boundaries;
+    uint8_t ph_virtual_boundary_pos_y_minus1[i];
+    uint8_t ph_pic_output_flag;
+    uint8_t ph_partition_constraints_override_flag;
+    uint8_t ph_log2_diff_min_qt_min_cb_intra_slice_luma;
+    uint8_t ph_max_mtt_hierarchy_depth_intra_slice_luma;
+    uint8_t ph_log2_diff_max_bt_min_qt_intra_slice_luma;
+    uint8_t ph_log2_diff_max_tt_min_qt_intra_slice_luma;
+    uint8_t ph_log2_diff_min_qt_min_cb_intra_slice_chroma;
+    uint8_t ph_max_mtt_hierarchy_depth_intra_slice_chroma;
+    uint8_t ph_log2_diff_max_bt_min_qt_intra_slice_chroma;
+    uint8_t ph_log2_diff_max_tt_min_qt_intra_slice_chroma;
+    uint8_t ph_cu_qp_delta_subdiv_intra_slice;
+    uint8_t ph_cu_chroma_qp_offset_subdiv_intra_slice;
+    uint8_t ph_log2_diff_min_qt_min_cb_inter_slice;
+    uint8_t ph_max_mtt_hierarchy_depth_inter_slice;
+    uint8_t ph_log2_diff_max_bt_min_qt_inter_slice;
+    uint8_t ph_log2_diff_max_tt_min_qt_inter_slice;
+    uint8_t ph_cu_qp_delta_subdiv_inter_slice;
+    uint8_t ph_cu_chroma_qp_offset_subdiv_inter_slice;
+    uint8_t ph_temporal_mvp_enabled_flag;
+    uint8_t ph_collocated_ref_idx;
+    uint8_t ph_mmvd_fullpel_only_flag;
+    uint8_t ph_mvd_l1_zero_flag;
+    uint8_t ph_bdof_disabled_flag;
+    uint8_t ph_dmvr_disabled_flag;
+    uint8_t ph_prof_disabled_flag;
+    uint8_t ph_qp_delta;
+    uint8_t ph_joint_cbcr_sign_flag;
+    uint8_t ph_sao_luma_enabled_flag;
+    uint8_t ph_sao_chroma_enabled_flag;
+    uint8_t ph_deblocking_params_present_flag;
+    uint8_t ph_deblocking_filter_disabled_flag;
+    uint8_t ph_luma_beta_offset_div2;
+    uint8_t ph_luma_tc_offset_div2;
+    uint8_t ph_cb_beta_offset_div2;
+    uint8_t ph_cb_tc_offset_div2;
+    uint8_t ph_cr_beta_offset_div2;
+    uint8_t ph_collocated_from_l0_flag;
+    uint8_t ph_cr_tc_offset_div2;
+    uint8_t ph_extension_length;
+    uint8_t ph_extension_data_byte[i];
+} OVPH;
+
+int
+nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
+             OVNVCLCtx *const nvcl_ctx)
+{
+    const OVPPS *const pps = NULL;
+    const OVSPS *const sps = NULL;
+
+    ph->ph_gdr_or_irap_pic_flag = nvcl_read_flag(rdr);
+    ph->ph_non_ref_pic_flag     = nvcl_read_flag(rdr);
+    if (ph->ph_gdr_or_irap_pic_flag) {
+        ph->ph_gdr_pic_flag = nvcl_read_flag(rdr);
+    }
+
+    ph->ph_inter_slice_allowed_flag = nvcl_read_flag(rdr);
+    if (ph->ph_inter_slice_allowed_flag) {
+        ph->ph_intra_slice_allowed_flag = nvcl_read_flag(rdr);
+    }
+
+    ph->ph_pic_parameter_set_id = nvcl_read_u_expgolomb(rdr);
+    ph->ph_pic_order_cnt_lsb    = nvcl_read_bits(rdr,);
+
+    if (ph->ph_gdr_pic_flag) {
+        ph->ph_recovery_poc_cnt = nvcl_read_u_expgolomb(rdr);
+    }
+
+    for (i = 0; i < NumExtraPhBits; i++) {
+        ph->ph_extra_bit[i] = nvcl_read_bits(rdr, 1);
+    }
+
+    if (sps->sps_poc_msb_cycle_flag) { 
+        ph->ph_poc_msb_cycle_present_flag = nvcl_read_flag(rdr);
+        if (ph->ph_poc_msb_cycle_present_flag) {
+            ph->ph_poc_msb_cycle_val = nvcl_read_bits(rdr,);
+        }
+    }
+
+    if (sps->sps_alf_enabled_flag && pps->pps_alf_info_in_ph_flag) {
+        ph->ph_alf_enabled_flag = nvcl_read_flag(rdr);
+        if (ph->ph_alf_enabled_flag) {
+            ph->ph_num_alf_aps_ids_luma = nvcl_read_bits(rdr, 3);
+            for (i = 0; i < ph->ph_num_alf_aps_ids_luma; i++) {
+                ph->ph_alf_aps_id_luma[i] = nvcl_read_bits(rdr, 3);
+            }
+
+            if (sps->sps_chroma_format_idc != 0) {
+                ph->ph_alf_cb_enabled_flag = nvcl_read_flag(rdr);
+                ph->ph_alf_cr_enabled_flag = nvcl_read_flag(rdr);
+            }
+
+            if (ph->ph_alf_cb_enabled_flag || ph->ph_alf_cr_enabled_flag) {
+                ph->ph_alf_aps_id_chroma = nvcl_read_bits(rdr, 3);
+            }
+
+            if (sps->sps_ccalf_enabled_flag) {
+                ph->ph_alf_cc_cb_enabled_flag = nvcl_read_flag(rdr);
+                if (ph->ph_alf_cc_cb_enabled_flag) {
+                    ph->ph_alf_cc_cb_aps_id = nvcl_read_bits(rdr, 3);
+                }
+
+                ph->ph_alf_cc_cr_enabled_flag = nvcl_read_flag(rdr);
+                if (ph->ph_alf_cc_cr_enabled_flag) {
+                    ph->ph_alf_cc_cr_aps_id = nvcl_read_bits(rdr, 3);
+                }
+            }
+        }
+    }
+
+    if (sps->sps_lmcs_enabled_flag) {
+        ph->ph_lmcs_enabled_flag = nvcl_read_flag(rdr);
+        if (ph->ph_lmcs_enabled_flag) {
+            ph->ph_lmcs_aps_id = nvcl_read_bits(rdr, 2);
+            if (sps->sps_chroma_format_idc != 0) {
+                ph->ph_chroma_residual_scale_flag = nvcl_read_flag(rdr);
+            }
+        }
+    }
+
+    if (sps->sps_explicit_scaling_list_enabled_flag) {
+        ph->ph_explicit_scaling_list_enabled_flag = nvcl_read_flag(rdr);
+        if (ph->ph_explicit_scaling_list_enabled_flag) {
+            ph->ph_scaling_list_aps_id = nvcl_read_bits(rdr, 3);
+        }
+    }
+
+    if (sps->sps_virtual_boundaries_enabled_flag && !sps->sps_virtual_boundaries_present_flag) {
+        ph->ph_virtual_boundaries_present_flag = nvcl_read_flag(rdr);
+        if (ph->ph_virtual_boundaries_present_flag) {
+            ph->ph_num_ver_virtual_boundaries = nvcl_read_u_expgolomb(rdr);
+            for (i = 0; i < ph->ph_num_ver_virtual_boundaries; i++) {
+                ph->ph_virtual_boundary_pos_x_minus1[i] = nvcl_read_u_expgolomb(rdr);
+            }
+
+            ph->ph_num_hor_virtual_boundaries = nvcl_read_u_expgolomb(rdr);
+            for (i = 0; i < ph->ph_num_hor_virtual_boundaries; i++) {
+                ph->ph_virtual_boundary_pos_y_minus1[i] = nvcl_read_u_expgolomb(rdr);
+            }
+        }
+    }
+
+    if (pps->pps_output_flag_present_flag && !ph->ph_non_ref_pic_flag) {
+        ph->ph_pic_output_flag = nvcl_read_flag(rdr);
+    }
+
+    if (pps->pps_rpl_info_in_ph_flag) {
+        ref_pic_lists();
+    }
+
+    if (sps->sps_partition_constraints_override_enabled_flag) {
+        ph->ph_partition_constraints_override_flag = nvcl_read_flag(rdr);
+    }
+
+    if (ph->ph_intra_slice_allowed_flag) {
+        if (ph->ph_partition_constraints_override_flag) {
+            ph->ph_log2_diff_min_qt_min_cb_intra_slice_luma = nvcl_read_u_expgolomb(rdr);
+            ph->ph_max_mtt_hierarchy_depth_intra_slice_luma = nvcl_read_u_expgolomb(rdr);
+            if (ph->ph_max_mtt_hierarchy_depth_intra_slice_luma != 0) {
+                ph->ph_log2_diff_max_bt_min_qt_intra_slice_luma = nvcl_read_u_expgolomb(rdr);
+                ph->ph_log2_diff_max_tt_min_qt_intra_slice_luma = nvcl_read_u_expgolomb(rdr);
+            }
+
+            if (sps->sps_qtbtt_dual_tree_intra_flag) {
+                ph->ph_log2_diff_min_qt_min_cb_intra_slice_chroma = nvcl_read_u_expgolomb(rdr);
+                ph->ph_max_mtt_hierarchy_depth_intra_slice_chroma = nvcl_read_u_expgolomb(rdr);
+                if (ph->ph_max_mtt_hierarchy_depth_intra_slice_chroma != 0) {
+                    ph->ph_log2_diff_max_bt_min_qt_intra_slice_chroma = nvcl_read_u_expgolomb(rdr);
+                    ph->ph_log2_diff_max_tt_min_qt_intra_slice_chroma = nvcl_read_u_expgolomb(rdr);
+                }
+            }
+        }
+
+        if (pps->pps_cu_qp_delta_enabled_flag) {
+            ph->ph_cu_qp_delta_subdiv_intra_slice = nvcl_read_u_expgolomb(rdr);
+        }
+
+        if (pps->pps_cu_chroma_qp_offset_list_enabled_flag) {
+            ph->ph_cu_chroma_qp_offset_subdiv_intra_slice = nvcl_read_u_expgolomb(rdr);
+        }
+    }
+
+    if (ph->ph_inter_slice_allowed_flag) {
+        if (ph->ph_partition_constraints_override_flag) {
+            ph->ph_log2_diff_min_qt_min_cb_inter_slice = nvcl_read_u_expgolomb(rdr);
+            ph->ph_max_mtt_hierarchy_depth_inter_slice = nvcl_read_u_expgolomb(rdr);
+            if (ph->ph_max_mtt_hierarchy_depth_inter_slice != 0) {
+                ph->ph_log2_diff_max_bt_min_qt_inter_slice = nvcl_read_u_expgolomb(rdr);
+                ph->ph_log2_diff_max_tt_min_qt_inter_slice = nvcl_read_u_expgolomb(rdr);
+            }
+        }
+
+        if (pps->pps_cu_qp_delta_enabled_flag) {
+            ph->ph_cu_qp_delta_subdiv_inter_slice = nvcl_read_u_expgolomb(rdr);
+        }
+
+        if (pps->pps_cu_chroma_qp_offset_list_enabled_flag) {
+            ph->ph_cu_chroma_qp_offset_subdiv_inter_slice = nvcl_read_u_expgolomb(rdr);
+        }
+
+        if (sps->sps_temporal_mvp_enabled_flag) {
+            ph->ph_temporal_mvp_enabled_flag = nvcl_read_flag(rdr);
+            if (ph->ph_temporal_mvp_enabled_flag && pps->pps_rpl_info_in_ph_flag) {
+                if (num_ref_entries[1][RplsIdx[1]] > 0) {
+                    ph->ph_collocated_from_l0_flag = nvcl_read_flag(rdr);
+                    if ((ph->ph_collocated_from_l0_flag && num_ref_entries[0][RplsIdx[0]] > 1) || (!ph->ph_collocated_from_l0_flag && num_ref_entries[1][RplsIdx[1]] > 1)) {
+                        ph->ph_collocated_ref_idx = nvcl_read_u_expgolomb(rdr);
+                    }
+                }
+            }
+        }
+
+        if (sps->sps_mmvd_fullpel_only_enabled_flag) {
+            ph->ph_mmvd_fullpel_only_flag = nvcl_read_flag(rdr);
+        }
+
+        int presenceFlag = 0;
+        if (!pps->pps_rpl_info_in_ph_flag) { /* This condition is intentionally not merged into the next,
+                                          to avoid possible interpretation of RplsIdx[i] not having a specified value. */
+            presenceFlag = 1;
+        } else if (num_ref_entries[1][RplsIdx[1]] > 0) {
+            presenceFlag = 1;
+            if (presenceFlag) {
+                ph->ph_mvd_l1_zero_flag = nvcl_read_flag(rdr);
+                if (sps->sps_bdof_control_present_in_ph_flag) {
+                    ph->ph_bdof_disabled_flag = nvcl_read_flag(rdr);
+                }
+
+                if (sps->sps_dmvr_control_present_in_ph_flag) {
+                    ph->ph_dmvr_disabled_flag = nvcl_read_flag(rdr);
+                }
+            }
+        }
+
+        if (sps->sps_prof_control_present_in_ph_flag) {
+            ph->ph_prof_disabled_flag = nvcl_read_flag(rdr);
+        }
+
+        if ((pps->pps_weighted_pred_flag || pps->pps_weighted_bipred_flag) && pps->pps_wp_info_in_ph_flag) {
+            pred_weight_table()
+        }
+    }
+
+    if (pps->pps_qp_delta_info_in_ph_flag) {
+        ph->ph_qp_delta = nvcl_read_s_expgolomb(rdr);
+    }
+
+    if (sps->sps_joint_cbcr_enabled_flag) {
+        ph->ph_joint_cbcr_sign_flag = nvcl_read_flag(rdr);
+    }
+
+    if (sps->sps_sao_enabled_flag && pps->pps_sao_info_in_ph_flag) {
+        ph->ph_sao_luma_enabled_flag = nvcl_read_flag(rdr);
+        if (sps->sps_chroma_format_idc != 0) {
+            ph->ph_sao_chroma_enabled_flag = nvcl_read_flag(rdr);
+        }
+
+    }
+
+    if (pps->pps_dbf_info_in_ph_flag) {
+        ph->ph_deblocking_params_present_flag = nvcl_read_flag(rdr);
+        if (ph->ph_deblocking_params_present_flag) {
+            if (!pps->pps_deblocking_filter_disabled_flag) {
+                ph->ph_deblocking_filter_disabled_flag = nvcl_read_flag(rdr);
+            }
+            if (!ph->ph_deblocking_filter_disabled_flag) {
+                ph->ph_luma_beta_offset_div2 = nvcl_read_s_expgolomb(rdr);
+                ph->ph_luma_tc_offset_div2 = nvcl_read_s_expgolomb(rdr);
+                if (pps->pps_chroma_tool_offsets_present_flag) {
+                    ph->ph_cb_beta_offset_div2 = nvcl_read_s_expgolomb(rdr);
+                    ph->ph_cb_tc_offset_div2 = nvcl_read_s_expgolomb(rdr);
+                    ph->ph_cr_beta_offset_div2 = nvcl_read_s_expgolomb(rdr);
+                    ph->ph_cr_tc_offset_div2 = nvcl_read_s_expgolomb(rdr);
+                }
+            }
+        }
+    }
+
+    if (pps->pps_picture_header_extension_present_flag) {
+        ph->ph_extension_length = nvcl_read_u_expgolomb(rdr);
+        for (i = 0; i < ph->ph_extension_length; i++) {
+            ph->ph_extension_data_byte[i] = nvcl_read_bits(rdr, 8);
+        }
+    }
+    /*TODO decide on return checks and values */
+    return 0;
+}

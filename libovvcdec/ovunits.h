@@ -13,14 +13,15 @@ enum OVNALUType
     OVNALU_RSVD_VCL_4 = 4,
     OVNALU_RSVD_VCL_5 = 5,
     OVNALU_RSVD_VCL_6 = 6,
+
     OVNALU_IDR_W_RADL = 7,
     OVNALU_IDR_N_LP   = 8,
     OVNALU_CRA  =  9,
     OVNALU_GDR  = 10,
     OVNALU_RSVD_IRAP_VCL_11 = 11,
-    OVNALU_RSVD_IRAP_VCL_12 = 12,
 
     /* Non VCL NALU Types*/
+    OVNALU_OPI  = 12,
     OVNALU_DCI  = 13,
     OVNALU_VPS  = 14,
     OVNALU_SPS  = 15,
