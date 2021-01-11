@@ -14,7 +14,7 @@
       or start code with an invalid NAL header
  */
 int
-check_stc_or_epb(const uint8_t *byte)
+ovannexb_check_stc_or_epb(const uint8_t *byte)
 {
     /* we consider first byte has already been detected ?*/
     uint8_t byte1 = byte[1];

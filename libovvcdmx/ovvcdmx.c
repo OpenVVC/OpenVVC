@@ -232,7 +232,7 @@ process_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos)
 
         if (byte[(byte_pos) & mask] == 0) {
             int stc_or_epb;
-            stc_or_epb = check_stc_or_epb(&byte[(byte_pos) & mask]);
+            stc_or_epb = ovannexb_check_stc_or_epb(&byte[(byte_pos) & mask]);
             if (stc_or_epb < 0) {
                 printf("Invalid\n");
                 return -1;
@@ -262,7 +262,7 @@ process_last_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos,
         /*TODO bintricks for start code detection */
         if (byte[(byte_pos) & mask] == 0) {
             int stc_or_epb;
-            stc_or_epb = check_stc_or_epb(&byte[(byte_pos) & mask]);
+            stc_or_epb = ovannexb_check_stc_or_epb(&byte[(byte_pos) & mask]);
 
             if (stc_or_epb < 0) {
                 return -1;
