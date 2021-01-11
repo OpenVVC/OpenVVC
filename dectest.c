@@ -52,6 +52,11 @@ main(int argc, char** argv)
 
     if (ret < 0) goto failattach;
 
+    read_stream(ovvc_hdl.dmx, ovvc_hdl.fp);
+
+    ovdmx_detach_stream(ovvc_hdl.dmx);
+
+
     /* Do stuff here */
 
 failattach:
@@ -65,6 +70,7 @@ failinit:
 static int
 dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const file_name)
 {
+    int ret;
     FILE *file = fopen(file_name,"rb");
 
     if (file == NULL) {
@@ -75,13 +81,9 @@ dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const file_name)
 
     vvc_hdl->fp = file;
 
-    ovdmx_attach_stream(vvc_hdl->dmx, vvc_hdl->fp);
+    ret = ovdmx_attach_stream(vvc_hdl->dmx, vvc_hdl->fp);
 
-    read_stream(vvc_hdl->dmx, vvc_hdl->fp);
-
-    ovdmx_detach_stream(vvc_hdl->dmx);
-
-    return 0;
+    return ret;
 }
 
 static int
