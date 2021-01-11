@@ -10,3 +10,5 @@ HEADERS = ovvcutils.h                                                 \
 OBJS = ovvcutils.o                                                    \
        ovmem.o                                                        \
 			 ovvcerror.o																										\
+       mempool.o                                                      \
+

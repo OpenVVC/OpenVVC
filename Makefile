@@ -11,8 +11,8 @@ BUILD_DIR := build/
 # Defintion of program dependencies
 PROG=dectest
 PROG_LIBS=ovvcdec ovvcdmx ovvcutils
-ovvcdec_LIBS = ovvcutils
-ovvcdmx_LIBS = ovvcdec ovvcutils
+ovvcdec_LIBS = ovvcdmx ovvcutils
+ovvcdmx_LIBS = ovvcutils
 
 # Various glabal defintions to be moved in a config file
 CFLAGS=-ansi --pedantic -Wall -fPIC -O0 -g
