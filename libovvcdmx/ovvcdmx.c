@@ -20,6 +20,54 @@
 
 static const char *const demux_name = "Open VVC Annex B demuxer";
 
+struct RBSPCacheData {
+    /* Cache buffer used to catenate RBSP chunks while
+       extracting RBSP_data.
+       Its size is initialised at 64kB and will grow
+       to the max RBSP size encountered in the stream */
+    uint8_t *rbsp_cache;
+
+    /* Size of rbsp cache buffer used to check
+       if we need to grow the cahce buffer when
+       appending a chunk of RBSP buffer to the cache */
+    size_t cache_size;
+
+    /* Size of current catenate rbsp data
+       this correspond to the last position where
+       a chunk of RBSP data can be appended to the cache*/
+    size_t rbsp_size;
+};
+
+struct EPBCacheInfo{
+    /* A table containing the locations of Emulation Prevention
+       Bytes encountered in current NAL Unit RBSP
+       this table is allocated to 16 * 32 bytes and will
+       grow by the same amount of memory each time it is needed */
+    uint32_t *epb_pos_cache;
+
+    /* Size in bytes of EPB encountered.
+       Since encountering EBP is unlikely in compressed data
+       the table will only grow of 16 * 32 bytes */
+    size_t epb_tab_size;
+
+    /* The number of Emulation Prevention Bytes encountered
+       int the current SODB while extracting the current
+       NAL Unit RBSP Data*/
+    int nb_epb;
+};
+
+struct NALUnitListElem{
+    struct NALUnitListElem *prev_nalu;
+    struct NALUnitListElem *next_nalu;
+    OVNALUnit current_nalu;
+};
+
+struct NALUnitsList {
+    struct NALUnitListElem *first_nalu;
+    struct NALUnitListElem *last_nalu;
+
+    int nb_nalus;
+};
 
 struct OVVCDmx
 {
@@ -32,6 +80,17 @@ struct OVVCDmx
 
     /* Points to a read only IO context */
     OVIOStream *io_str;
+
+    /* Cache used for RBSP extraction */
+    struct RBSPCacheData rbsp_ctx;
+
+    /* Cache uses to store Emulation Prevention Bytes (EPB)
+       when extracting RBSP Data from current NAL Unit */
+    struct EPBCacheInfo epb_info;
+
+    /* A chained list containing current Acces Unit (AU)
+       or Picture Unit (PU) NAL Units */
+    struct NALUnitsList nalu_list;
 
     /* Demuxer options to be passed at init */
     struct{
