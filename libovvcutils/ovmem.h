@@ -2,6 +2,8 @@
 #define OVMEM_H
 #include <stddef.h>
 
+void *ov_malloc(size_t alloc_size);
+
 void *ov_mallocz(size_t alloc_size);
 
 void ov_free(void *ptr);

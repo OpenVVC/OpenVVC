@@ -5,6 +5,7 @@
 
 #include "libovvcutils/ovvcutils.h"
 #include "libovvcutils/ovmem.h"
+#include "libovvcutils/mempool.h"
 
 #include "ovvcdmx.h"
 #include "ovio.h"
@@ -18,9 +19,14 @@
 
 #define OVVCDMX_IO_BUFF_MASK ((1 << 16) - 1)
 
+#define OVRBSP_CACHE_SIZE (1 << 16)
+
+#define OVEPB_CACHE_SIZE (16 * sizeof(uint32_t))
+
 static const char *const demux_name = "Open VVC Annex B demuxer";
 
-struct RBSPCacheData {
+struct RBSPCacheData
+{
     /* Cache buffer used to catenate RBSP chunks while
        extracting RBSP_data.
        Its size is initialised at 64kB and will grow
@@ -38,7 +44,8 @@ struct RBSPCacheData {
     size_t rbsp_size;
 };
 
-struct EPBCacheInfo{
+struct EPBCacheInfo
+{
     /* A table containing the locations of Emulation Prevention
        Bytes encountered in current NAL Unit RBSP
        this table is allocated to 16 * 32 bytes and will
@@ -48,7 +55,7 @@ struct EPBCacheInfo{
     /* Size in bytes of EPB encountered.
        Since encountering EBP is unlikely in compressed data
        the table will only grow of 16 * 32 bytes */
-    size_t epb_tab_size;
+    size_t cache_size;
 
     /* The number of Emulation Prevention Bytes encountered
        int the current SODB while extracting the current
@@ -56,13 +63,15 @@ struct EPBCacheInfo{
     int nb_epb;
 };
 
-struct NALUnitListElem{
+struct NALUnitListElem
+{
     struct NALUnitListElem *prev_nalu;
     struct NALUnitListElem *next_nalu;
     OVNALUnit current_nalu;
 };
 
-struct NALUnitsList {
+struct NALUnitsList
+{
     struct NALUnitListElem *first_nalu;
     struct NALUnitListElem *last_nalu;
 
@@ -92,6 +101,9 @@ struct OVVCDmx
        or Picture Unit (PU) NAL Units */
     struct NALUnitsList nalu_list;
 
+    /* Memory pool for NALUListElem */
+    MemPool *nalu_elem_pool;
+
     /* Demuxer options to be passed at init */
     struct{
         int val;
@@ -103,9 +115,27 @@ static int process_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_
 static int process_last_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos,
                               int nb_bytes_last);
 
+static int init_rbsp_cache(struct RBSPCacheData *const rbsp_ctx);
+
+/* Realloc rbsp_cache adding an extra 64KB to previously allocated size
+   and copy previous content */
+static int extend_rbsp_cache(struct RBSPCacheData *const rbsp_ctx);
+
+static void free_rbsp_cache(struct RBSPCacheData *const rbsp_ctx);
+
+static int init_epb_cache(struct EPBCacheInfo *const epb_info);
+
+/* Realloc EPB locations caching adding an extra 16 elements to previously
+ * allocated size and copy previous content
+ */
+static int extend_epb_cache(struct EPBCacheInfo *const epb_info);
+
+static void free_epb_cache(struct EPBCacheInfo *const epb_info);
+
 int
 ovdmx_init(OVVCDmx **vvcdmx)
 {
+    int ret;
     *vvcdmx = ov_mallocz(sizeof(**vvcdmx));
 
     if (*vvcdmx == NULL) return -1;
@@ -113,7 +143,34 @@ ovdmx_init(OVVCDmx **vvcdmx)
     (*vvcdmx)->name = demux_name;
     (*vvcdmx)->io_str = NULL;
 
+    (*vvcdmx)->nalu_elem_pool = ovmempool_init(sizeof(struct NALUnitListElem));
+
+    if ((*vvcdmx)->nalu_elem_pool == NULL) {
+        goto fail_pool_init;
+    }
+
+    ret = init_rbsp_cache(&(*vvcdmx)->rbsp_ctx);
+    if (ret < 0) {
+        goto fail_rbsp_cache;
+    }
+
+    ret = init_epb_cache(&(*vvcdmx)->epb_info);
+    if (ret < 0) {
+        goto fail_epb_cache;
+    }
+
     return 0;
+
+fail_epb_cache:
+    free_rbsp_cache(&(*vvcdmx)->rbsp_ctx);
+
+fail_rbsp_cache:
+    ovmempool_uninit(&(*vvcdmx)->nalu_elem_pool);
+
+fail_pool_init:
+    ov_freep(vvcdmx);
+
+    return -1;
 }
 
 int
@@ -127,6 +184,12 @@ ovdmx_close(OVVCDmx *vvcdmx)
         if (not_dmx) goto fail;
 
         ovdmx_detach_stream(vvcdmx);
+
+        ovmempool_uninit(&vvcdmx->nalu_elem_pool);
+
+        free_rbsp_cache(&vvcdmx->rbsp_ctx);
+
+        free_epb_cache(&vvcdmx->epb_info);
 
         ov_free(vvcdmx);
 
@@ -337,4 +400,83 @@ process_last_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos,
     } while (((++byte_pos) & mask) <= nb_bytes_last);
     /* FIXME handle EOF EOB stuff */
     return (byte_pos & mask);
+}
+
+static int
+init_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
+{
+    rbsp_ctx->rbsp_cache = ov_mallocz(OVRBSP_CACHE_SIZE);
+    if (rbsp_ctx->rbsp_cache == NULL) {
+        return -1;
+    }
+
+    rbsp_ctx->cache_size = OVRBSP_CACHE_SIZE;
+
+    return 0;
+}
+
+static void
+free_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
+{
+    ov_freep(&rbsp_ctx->rbsp_cache);
+}
+
+static int
+extend_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
+{
+    uint8_t *old_cache = rbsp_ctx->rbsp_cache;
+    uint8_t *new_cache;
+    size_t new_size = rbsp_ctx->cache_size + OVRBSP_CACHE_SIZE;
+    new_cache = ov_malloc(new_size);
+    if (!new_cache) {
+        return -1;
+    }
+
+    memcpy(new_cache, old_cache, rbsp_ctx->rbsp_size);
+
+    ov_free(old_cache);
+
+    rbsp_ctx->rbsp_cache = new_cache;
+    rbsp_ctx->cache_size = new_size;
+}
+
+static int
+init_epb_cache(struct EPBCacheInfo *const epb_info)
+{
+    epb_info->epb_pos_cache = ov_mallocz(OVEPB_CACHE_SIZE);
+    if (epb_info->epb_pos_cache == NULL) {
+        return -1;
+    }
+
+    epb_info->cache_size = OVEPB_CACHE_SIZE;
+
+    return 0;
+}
+
+/* Realloc EPB locations caching adding an extra 16 elements to previously
+ * allocated size and copy previous content
+ */
+static int
+extend_epb_cache(struct EPBCacheInfo *const epb_info)
+{
+    uint32_t *old_cache = epb_info->epb_pos_cache;
+    uint32_t *new_cache;
+    size_t new_size = epb_info->cache_size + OVEPB_CACHE_SIZE;
+    new_cache = ov_malloc(new_size);
+    if (!new_cache) {
+        return -1;
+    }
+
+    memcpy(new_cache, old_cache, epb_info->nb_epb * sizeof(*epb_info->epb_pos_cache));
+
+    ov_free(old_cache);
+
+    epb_info->epb_pos_cache = new_cache;
+    epb_info->cache_size = new_size;
+}
+
+static void
+free_epb_cache(struct EPBCacheInfo *const epb_info)
+{
+    ov_freep(&epb_info->epb_pos_cache);
 }
