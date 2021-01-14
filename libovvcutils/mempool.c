@@ -3,9 +3,9 @@
 #include "mempool_internal.h"
 #include "mempool.h"
 
-static MemPoolElem *ovmempool_popelem(struct MemPool *mpool);
+MemPoolElem *ovmempool_popelem(struct MemPool *mpool);
 
-static void ovmempool_pushelem(struct MemPoolElem *released_elem);
+void ovmempool_pushelem(struct MemPoolElem *released_elem);
 
 static void ovmempool_free(MemPool *mpool);
 
@@ -30,7 +30,7 @@ failalloc:
     return mpool;
 }
 
-static MemPoolElem *
+MemPoolElem *
 ovmempool_popelem(MemPool *mpool)
 {
     MemPoolElem *elem = mpool->stack_elem;
@@ -79,7 +79,7 @@ ovmempool_free(MemPool *mpool)
     ov_freep(&mpool);
 }
 
-static void
+void
 ovmempool_pushelem(MemPoolElem *released_elem)
 {
    if (released_elem) {
