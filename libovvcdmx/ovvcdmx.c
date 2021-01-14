@@ -143,7 +143,7 @@ struct OVVCDmx
     }options;
 };
 
-static int process_chunk(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx);
+static int extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx);
 
 static int process_last_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos,
                               int nb_bytes_last);
@@ -276,7 +276,7 @@ ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
         cache_ctx->first_pos = 0;
 
         /* FIXME Process first chunk of data ? */
-        ret = process_chunk(dmx, cache_ctx);
+        ret = extract_cache_segments(dmx, cache_ctx);
 
         if (!read_in_buf) {
             /* TODO error handling if end of file is encountered on first read */
@@ -389,7 +389,7 @@ extract_access_unit(OVVCDmx *const dmx)
                 goto last_chunk;
             }
 
-            ret = process_chunk(dmx, cache_ctx);
+            ret = extract_cache_segments(dmx, cache_ctx);
 
             if (!current_nalu) {
                 current_nalu = nalu_list->first_nalu;
@@ -696,7 +696,7 @@ process_emulation_prevention_byte(OVVCDmx *const dmx, const uint8_t *byte, uint6
    to use bigger read sizes */
 
 static int
-process_chunk(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
+extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
 {
     const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
     const uint8_t *byte = &cache_ctx->data_start[cache_ctx->first_pos];
