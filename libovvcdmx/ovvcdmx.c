@@ -143,7 +143,7 @@ struct OVVCDmx
     }options;
 };
 
-static int process_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos);
+static int process_chunk(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx);
 
 static int process_last_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos,
                               int nb_bytes_last);
@@ -273,10 +273,10 @@ ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
                                         dmx->io_str);
         cache_ctx->data_start -= 8;
         /* pos is init at 8 so we do not overread first data chunk */
-        cache_ctx->first_pos = 8;
+        cache_ctx->first_pos = 0;
 
         /* FIXME Process first chunk of data ? */
-        ret = process_chunk(dmx, cache_ctx->data_start, cache_ctx->first_pos);
+        ret = process_chunk(dmx, cache_ctx);
 
         if (!read_in_buf) {
             /* TODO error handling if end of file is encountered on first read */
@@ -311,8 +311,9 @@ refill_reader_cache(struct ReaderCache *const cache_ctx, OVIOStream *const io_st
     read_in_buf = ovio_stream_read(&cache_ctx->data_start, OVVCDMX_IO_BUFF_SIZE,
                                    io_str);
 
-    cache_ctx->first_pos   = 0;
     cache_ctx->data_start -= 8;
+
+    cache_ctx->first_pos   = 0;
 
     cache_ctx->nb_chunk_read += read_in_buf;
 
@@ -388,7 +389,7 @@ extract_access_unit(OVVCDmx *const dmx)
                 goto last_chunk;
             }
 
-            ret = process_chunk(dmx, cache_ctx->data_start, cache_ctx->first_pos);
+            ret = process_chunk(dmx, cache_ctx);
 
             if (!current_nalu) {
                 current_nalu = nalu_list->first_nalu;
@@ -695,9 +696,11 @@ process_emulation_prevention_byte(OVVCDmx *const dmx, const uint8_t *byte, uint6
    to use bigger read sizes */
 
 static int
-process_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos)
+process_chunk(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
 {
     const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
+    const uint8_t *byte = &cache_ctx->data_start[cache_ctx->first_pos];
+    uint16_t byte_pos = cache_ctx->first_pos & mask;
     uint8_t end_of_cache;
 
     do {
