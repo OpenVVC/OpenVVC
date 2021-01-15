@@ -52,8 +52,10 @@ typedef struct OVVRBSPData{
 typedef struct OVNALUnit {
   /* Associated Raw byte sequence stream payload
    */
-  uint8_t *rbsp_data;
+  const uint8_t  *rbsp_data;
+  const uint32_t *epb_pos;
   size_t rbsp_size;
+  int nb_epb;
   enum OVNALUType type;
 } OVNALUnit;
 

@@ -65,13 +65,13 @@ struct EPBCacheInfo
 {
     /* A table containing the locations of Emulation Prevention
        Bytes encountered in current NAL Unit RBSP
-       this table is allocated to 16 * 32 bytes and will
+       this table is allocated to 16 * sizeof(*epb_pos) and will
        grow by the same amount of memory each time it is needed */
-    uint32_t *epb_pos_cache;
+    uint32_t *epb_pos;
 
     /* Size in bytes of EPB encountered.
        Since encountering EBP is unlikely in compressed data
-       the table will only grow of 16 * 32 bytes */
+       the table will only grow of 16 * sizeof(*epb_pos) */
     size_t cache_size;
 
     /* The number of Emulation Prevention Bytes encountered
@@ -343,7 +343,10 @@ extract_nal_unit(OVVCDmx *dmx)
 static uint8_t
 is_access_unit_delimiter(struct NALUnitListElem *elem)
 {
-    /* FIXME add other rules based on NAL Unit types ordering */
+    /* FIXME add other rules based on NAL Unit types ordering
+     * Since some AU delimitations rules involve POC computation
+     * this require reading until slice header
+     */
     return elem->nalu.type == OVNALU_AUD;
 }
 
@@ -632,13 +635,28 @@ create_nalu_elem(OVVCDmx *const dmx)
     nalu_elem = elem->data;
     nalu_elem->private.pool_ref = elem;
 
+    nalu_elem->nalu.rbsp_data = NULL;
+    nalu_elem->nalu.rbsp_size = 0;
+
+    nalu_elem->nalu.epb_pos = NULL;
+    nalu_elem->nalu.nb_epb = 0;
+
     return nalu_elem;
 }
 
 static void
 free_nalu_elem(struct NALUnitListElem *nalu_elem)
 {
+    /* TODO unref NALU instead of free */
     ov_freep(&nalu_elem->nalu.rbsp_data);
+
+    if (nalu_elem->nalu.epb_pos){
+        ov_freep(&nalu_elem->nalu.epb_pos);
+    }
+
+    /* clean up before returning to pool */
+    nalu_elem->nalu.nb_epb    = 0;
+    nalu_elem->nalu.rbsp_size = 0;
     ovmempool_pushelem(nalu_elem->private.pool_ref);
 }
 
@@ -706,6 +724,7 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
 
     sgmt_ctx->end = byte_pos;
     append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
+    sgmt_ctx->start = byte_pos + 3;
 
     if (nalu_list->last_nalu) {
         /*TODO attach rbsp_data to nalu*/
@@ -715,7 +734,24 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
             return -1;
         }
 
+        if (dmx->epb_info.nb_epb) {
+            uint32_t *epb_pos = NULL;
+            epb_pos = ov_malloc(dmx->epb_info.nb_epb * sizeof(*epb_pos));
+            if (!epb_pos) {
+                free_nalu_elem(nalu_elem);
+                ov_free(rbsp_data);
+                return -1;
+            }
+            memcpy(epb_pos, dmx->epb_info.epb_pos, dmx->epb_info.nb_epb * sizeof(*epb_pos));
+            nalu_list->last_nalu->nalu.epb_pos = epb_pos;
+            nalu_list->last_nalu->nalu.nb_epb = dmx->epb_info.nb_epb;
+        }
+        dmx->epb_info.nb_epb = 0;
+
         nalu_list->last_nalu->nalu.rbsp_data = rbsp_data;
+        nalu_list->last_nalu->nalu.rbsp_size = dmx->rbsp_ctx.rbsp_size;
+
+        memcpy(rbsp_data, dmx->rbsp_ctx.start, dmx->rbsp_ctx.rbsp_size);
 
         empty_rbsp_cache(&dmx->rbsp_ctx);
     }
@@ -731,10 +767,26 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
 }
 
 static int
-process_emulation_prevention_byte(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos)
+process_emulation_prevention_byte(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
+                                  uint64_t byte_pos, struct RBSPSegment *sgmt_ctx)
 {
-    /* append_rbsp_chunk() */
+    struct EPBCacheInfo *const epb_info = &dmx->epb_info;
+    sgmt_ctx->end = byte_pos + 2;
+    append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
+    sgmt_ctx->start = sgmt_ctx->end + 1;
+
+    if (epb_info->nb_epb + 1 > (epb_info->cache_size)/sizeof(*epb_info->epb_pos)) {
+        int ret = extend_epb_cache(epb_info);
+        if (ret < 0) {
+            printf("ERROR extending cache\n");
+            return -1;
+        }
+    }
+
+    epb_info->epb_pos[epb_info->nb_epb++];
+
     dmx->nb_epb++;
+
     printf("EPB at pos : %ld\n", byte_pos - 8);
     return 0;
 }
@@ -777,7 +829,7 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
                     ret = process_start_code(dmx, cache_ctx, byte_pos, &sgmt_ctx);
                     break;
                 case ANNEXB_EPB:
-                    ret = process_emulation_prevention_byte(dmx, byte, byte_pos);
+                    ret = process_emulation_prevention_byte(dmx, cache_ctx, byte_pos, &sgmt_ctx);
                     break;
                 }
 
@@ -789,6 +841,7 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
         end_of_cache = ((++byte_pos) & mask) == 0;
     } while (!end_of_cache);
 
+    /* End of cache */
     sgmt_ctx.end = byte_pos;
     append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, &sgmt_ctx);
 
@@ -839,7 +892,7 @@ init_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
 static void
 free_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
 {
-    ov_freep(&rbsp_ctx->rbsp_cache);
+    ov_freep(&rbsp_ctx->start);
 }
 
 static int
@@ -866,8 +919,8 @@ extend_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
 static int
 init_epb_cache(struct EPBCacheInfo *const epb_info)
 {
-    epb_info->epb_pos_cache = ov_mallocz(OVEPB_CACHE_SIZE);
-    if (epb_info->epb_pos_cache == NULL) {
+    epb_info->epb_pos = ov_mallocz(OVEPB_CACHE_SIZE);
+    if (epb_info->epb_pos == NULL) {
         return -1;
     }
 
@@ -882,7 +935,7 @@ init_epb_cache(struct EPBCacheInfo *const epb_info)
 static int
 extend_epb_cache(struct EPBCacheInfo *const epb_info)
 {
-    uint32_t *old_cache = epb_info->epb_pos_cache;
+    uint32_t *old_cache = epb_info->epb_pos;
     uint32_t *new_cache;
     size_t new_size = epb_info->cache_size + OVEPB_CACHE_SIZE;
     new_cache = ov_malloc(new_size);
@@ -890,11 +943,11 @@ extend_epb_cache(struct EPBCacheInfo *const epb_info)
         return -1;
     }
 
-    memcpy(new_cache, old_cache, epb_info->nb_epb * sizeof(*epb_info->epb_pos_cache));
+    memcpy(new_cache, old_cache, epb_info->nb_epb * sizeof(*epb_info->epb_pos));
 
     ov_free(old_cache);
 
-    epb_info->epb_pos_cache = new_cache;
+    epb_info->epb_pos    = new_cache;
     epb_info->cache_size = new_size;
     return 0;
 }
@@ -902,5 +955,5 @@ extend_epb_cache(struct EPBCacheInfo *const epb_info)
 static void
 free_epb_cache(struct EPBCacheInfo *const epb_info)
 {
-    ov_freep(&epb_info->epb_pos_cache);
+    ov_freep(&epb_info->epb_pos);
 }
