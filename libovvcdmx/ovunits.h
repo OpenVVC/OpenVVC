@@ -43,13 +43,17 @@ enum OVNALUType
     OVNALU_UNSPEC_31 = 31
 };
 
-typedef struct OVVRBSPData OVRBSPData;
+typedef struct OVVRBSPData{
+    uint8_t *data;
+    size_t size;
+}OVRBSPData;
 
 /* NAL Units */
 typedef struct OVNALUnit {
   /* Associated Raw byte sequence stream payload
    */
-  OVRBSPData *rbsp;
+  uint8_t *rbsp_data;
+  size_t rbsp_size;
   enum OVNALUType type;
 } OVNALUnit;
 

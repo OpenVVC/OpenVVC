@@ -29,7 +29,15 @@ static const char *const demux_name = "Open VVC Annex B demuxer";
 enum RBSPSegmentDelimiter {
     ANNEXB_STC = 1,
     ANNEXB_EPB = 2,
-    END_OF_CACHE = 3,
+    END_OF_CACHE = 3
+};
+
+struct RBSPSegment {
+    /* position of segment first byte in reader cache */
+    uint32_t start;
+
+    /* position of segment last byte in cache */
+    uint32_t end;
 };
 
 struct RBSPCacheData
@@ -38,7 +46,9 @@ struct RBSPCacheData
        extracting RBSP_data.
        Its size is initialised at 64kB and will grow
        to the max RBSP size encountered in the stream */
-    uint8_t *rbsp_cache;
+    uint8_t *start;
+
+    uint8_t *end;
 
     /* Size of rbsp cache buffer used to check
        if we need to grow the cahce buffer when
@@ -74,7 +84,7 @@ struct NALUnitListElem
 {
     struct NALUnitListElem *prev_nalu;
     struct NALUnitListElem *next_nalu;
-    OVNALUnit current_nalu;
+    OVNALUnit nalu;
     struct {
         MemPoolElem *pool_ref;
     } private;
@@ -334,7 +344,7 @@ static uint8_t
 is_access_unit_delimiter(struct NALUnitListElem *elem)
 {
     /* FIXME add other rules based on NAL Unit types ordering */
-    return elem->current_nalu.type == OVNALU_AUD;
+    return elem->nalu.type == OVNALU_AUD;
 }
 
 static struct NALUnitListElem *pop_nalu_elem(struct NALUnitsList *list)
@@ -380,7 +390,6 @@ extract_access_unit(OVVCDmx *const dmx)
         if (!current_nalu) {
             int ret;
             struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
-            const uint8_t **io_cache = &cache_ctx->data_start;
             current_nalu = nalu_list->last_nalu;
             /* No pending NALU in dmx try to extract NALU units from next
                chunk */
@@ -531,7 +540,6 @@ ovdmx_read_stream(OVVCDmx *const dmx)
        of the cache used in previous call in cases */
 
     if (!ovio_stream_eof(io_str)) {
-        int ret;
 
         while (!ovio_stream_eof(io_str)) {
             extract_access_unit(dmx);
@@ -630,10 +638,11 @@ create_nalu_elem(OVVCDmx *const dmx)
 static void
 free_nalu_elem(struct NALUnitListElem *nalu_elem)
 {
+    ov_freep(&nalu_elem->nalu.rbsp_data);
     ovmempool_pushelem(nalu_elem->private.pool_ref);
 }
 
-static int
+static void
 append_nalu_elem(struct NALUnitsList *const list, struct NALUnitListElem *elem)
 {
     if (!list->last_nalu) {
@@ -649,10 +658,42 @@ append_nalu_elem(struct NALUnitsList *const list, struct NALUnitListElem *elem)
 }
 
 static int
-process_start_code(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos)
+append_rbsp_segment_to_cache(struct ReaderCache *const cache_ctx,
+                             struct RBSPCacheData *rbsp_cache,
+                             struct RBSPSegment *sgmt_ctx)
+{
+    int sgmt_size = sgmt_ctx->end - sgmt_ctx->start;
+    if (rbsp_cache->cache_size < rbsp_cache->rbsp_size + sgmt_size) {
+        int ret;
+         ret = extend_rbsp_cache(rbsp_cache);
+         if (ret < 0) {
+             return -1;
+         }
+    }
+
+    memcpy(rbsp_cache->end, &cache_ctx->data_start[sgmt_ctx->start], sgmt_size);
+
+    rbsp_cache->end       += sgmt_size;
+    rbsp_cache->rbsp_size += sgmt_size;
+
+    sgmt_ctx->start = sgmt_ctx->end + 3;
+
+    return 0;
+}
+
+static void
+empty_rbsp_cache(struct RBSPCacheData *rbsp_cache)
+{
+    rbsp_cache->end        = rbsp_cache->start;
+    rbsp_cache->rbsp_size = 0;
+}
+
+static int
+process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
+                   uint64_t byte_pos, struct RBSPSegment *sgmt_ctx)
 {
     const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
-    const uint8_t *bytestream = &byte[byte_pos & mask];
+    const uint8_t *bytestream = &cache_ctx->data_start[byte_pos & mask];
     struct NALUnitsList *nalu_list = &dmx->nalu_list;
     struct NALUnitListElem *nalu_elem = create_nalu_elem(dmx);
 
@@ -663,11 +704,23 @@ process_start_code(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos)
         return -1;
     }
 
+    sgmt_ctx->end = byte_pos;
+    append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
+
     if (nalu_list->last_nalu) {
-        /*attach rbsp_data to nalu*/
+        /*TODO attach rbsp_data to nalu*/
+        uint8_t *rbsp_data = ov_malloc(dmx->rbsp_ctx.rbsp_size);
+        if (!rbsp_data) {
+            free_nalu_elem(nalu_elem);
+            return -1;
+        }
+
+        nalu_list->last_nalu->nalu.rbsp_data = rbsp_data;
+
+        empty_rbsp_cache(&dmx->rbsp_ctx);
     }
 
-    nalu_elem->current_nalu.type = nalu_type;
+    nalu_elem->nalu.type = nalu_type;
 
     append_nalu_elem(nalu_list, nalu_elem);
 
@@ -691,41 +744,43 @@ process_emulation_prevention_byte(OVVCDmx *const dmx, const uint8_t *byte, uint6
  *          byte_pos in chunk if stc
  *          0 if nothing found and needs a new read
  */
-/*TODO bintricks for start code detection */
 /* WARNING We need to be careful on endianness here if we plan
    to use bigger read sizes */
-
 static int
 extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
 {
     const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
     const uint8_t *byte = &cache_ctx->data_start[cache_ctx->first_pos];
-    uint16_t byte_pos = cache_ctx->first_pos & mask;
+    uint32_t byte_pos = cache_ctx->first_pos & mask;
     uint8_t end_of_cache;
+    struct RBSPSegment sgmt_ctx = {0};
 
     do {
         const uint8_t *bytestream = &byte[byte_pos & mask];
 
         /*FIXME we will actually loop over this more than once even if a start
           code has been detected. This is a bit inefficient */
+        /*TODO bintricks for two fast zero bytes detection*/
         if (*bytestream == 0) {
-            enum RBSPSegmentDelimiter stc_or_epb;
-            stc_or_epb = ovannexb_check_stc_or_epb(bytestream);
+            int ret;
+            ret = ovannexb_check_stc_or_epb(bytestream);
+            if (ret < 0) {
+                printf("Invalid\n");
+                ret = -1;
+            }
 
-            if (stc_or_epb) {
-                int ret;
+            if (ret) {
+                enum RBSPSegmentDelimiter dlm = ret;
 
-                /* TODO use a switsh instead */
-                if (stc_or_epb < 0) {
-                    printf("Invalid\n");
-                    ret = -1;
-                }
-                /* TODO handle what is to be done with it here */
-                if (stc_or_epb == ANNEXB_STC) {
-                    ret = process_start_code(dmx, byte, byte_pos);
-                } else if (stc_or_epb == ANNEXB_EPB) {
+                switch (dlm) {
+                case ANNEXB_STC:
+                    ret = process_start_code(dmx, cache_ctx, byte_pos, &sgmt_ctx);
+                    break;
+                case ANNEXB_EPB:
                     ret = process_emulation_prevention_byte(dmx, byte, byte_pos);
+                    break;
                 }
+
                 if (ret < 0) {
                     return ret;
                 }
@@ -733,7 +788,9 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
         }
         end_of_cache = ((++byte_pos) & mask) == 0;
     } while (!end_of_cache);
-    /*TODO copy end of chunk to rbsp_cache */
+
+    sgmt_ctx.end = byte_pos;
+    append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, &sgmt_ctx);
 
     return (byte_pos & mask);
 }
@@ -768,11 +825,12 @@ process_last_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos,
 static int
 init_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
 {
-    rbsp_ctx->rbsp_cache = ov_mallocz(OVRBSP_CACHE_SIZE);
-    if (rbsp_ctx->rbsp_cache == NULL) {
+    rbsp_ctx->start = ov_mallocz(OVRBSP_CACHE_SIZE);
+    if (rbsp_ctx->start == NULL) {
         return -1;
     }
 
+    rbsp_ctx->end = rbsp_ctx->start;
     rbsp_ctx->cache_size = OVRBSP_CACHE_SIZE;
 
     return 0;
@@ -787,7 +845,7 @@ free_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
 static int
 extend_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
 {
-    uint8_t *old_cache = rbsp_ctx->rbsp_cache;
+    uint8_t *old_cache = rbsp_ctx->start;
     uint8_t *new_cache;
     size_t new_size = rbsp_ctx->cache_size + OVRBSP_CACHE_SIZE;
     new_cache = ov_malloc(new_size);
@@ -799,8 +857,10 @@ extend_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
 
     ov_free(old_cache);
 
-    rbsp_ctx->rbsp_cache = new_cache;
+    rbsp_ctx->start = new_cache;
+    rbsp_ctx->end = rbsp_ctx->start + rbsp_ctx->rbsp_size;
     rbsp_ctx->cache_size = new_size;
+    return 0;
 }
 
 static int
@@ -836,6 +896,7 @@ extend_epb_cache(struct EPBCacheInfo *const epb_info)
 
     epb_info->epb_pos_cache = new_cache;
     epb_info->cache_size = new_size;
+    return 0;
 }
 
 static void
