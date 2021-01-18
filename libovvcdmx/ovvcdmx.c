@@ -545,33 +545,6 @@ ovdmx_read_stream(OVVCDmx *const dmx)
         goto last_chunk;
     }
 
-    #if 0
-    while (!ovio_stream_eof(io_str)) {
-       const uint8_t *byte;
-       int read_in_buf = 0;
-       int ret;
-
-       /* request new read from io layer */
-       read_in_buf += ovio_stream_read(io_cache, OVVCDMX_IO_BUFF_SIZE, io_str);
-       byte = *io_cache - 8;
-
-       if (!read_in_buf) {
-           goto last_chunk;
-       }
-
-       nb_chunks += read_in_buf;
-
-       ret = process_chunk(dmx, byte, byte_pos);
-       if (ret < 0) {
-           goto readfail;
-       }
-
-       printf("num_stc %d\n", dmx->nb_stc);
-       printf("num_prev %d\n", dmx->nb_epb);
-       nb_nalus += dmx->nb_stc;
-    }
-    #endif
-
     return 1;
 
 last_chunk:
