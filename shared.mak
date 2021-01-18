@@ -1,7 +1,4 @@
 
-$(warning TEST include $(OBJS) $(DEPLIPS))
-$(warning $(ltarget_shared): $(OBJS)  $(DEPLIBS))
-$(warning	$(CC)  $(LD_FLAGS) --shared $^ -o $@ $(IFLAGS) )
 	
 DEPLIBS := $(foreach l,$($(NAME)_LIBS),$(BUILD_DIR)lib$(l)/lib$(l).so)
 IFLAGS  := $(foreach l,$($(NAME)_LIBS),-I./lib$(l))
