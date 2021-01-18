@@ -10,7 +10,7 @@ typedef struct OVDBPParams
 
 /* sps_max_sublayers_minus1, sps_sublayer_dpb_params_flag */
 /* vps_dpb_max_tid, vps_sublayer_dpb_params_present_flag */
-dpb_parameters(OVNVCLReader *const rdr, int MaxSubLayersMinus1, int subLayerInfoFlag )
+dpb_parameters(OVNVCLReader *const rdr, int MaxSubLayersMinus1, int subLayerInfoFlag)
 {
     /*FIXME loop outside of function */
     for( i = (subLayerInfoFlag ? 0 : MaxSubLayersMinus1) i <= MaxSubLayersMinus1; i++ ) {
