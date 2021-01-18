@@ -487,7 +487,7 @@ free_nalu_list(struct NALUnitsList *list)
     list->last_nalu = NULL;
 }
 
-static int
+int
 ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
 {
     int ret;
