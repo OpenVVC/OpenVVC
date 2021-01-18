@@ -456,17 +456,11 @@ last_chunk:
             printf("num_stc last %d\n", dmx->nb_stc);
             printf("num_prev last %d\n", dmx->nb_epb);
             printf("EOF reached\n");
-            #if 0
-            nb_nalus += dmx->nb_stc;
-            #endif
         }
     }
 
     printf("Num bytes read %ld\n", (nb_chunks << 16) + nb_bytes_last);
     printf("byte_pos %ld\n", (nb_chunks << 16) + nb_bytes_last);
-    #if 0
-    printf("Num NALU read %d\n", nb_nalus);
-    #endif
 
     return 0;
     }
@@ -476,11 +470,6 @@ readfail:
     */
     printf("FAILED NAL read!\n");
     return -1;
-
-#if 0
-fail:
-    return -1;
-#endif
 }
 
 static void free_nalu_elem(struct NALUnitListElem *nalu_elem);
