@@ -26,13 +26,15 @@
 
 static const char *const demux_name = "Open VVC Annex B demuxer";
 
-enum RBSPSegmentDelimiter {
+enum RBSPSegmentDelimiter
+{
     ANNEXB_STC = 1,
     ANNEXB_EPB = 2,
     END_OF_CACHE = 3
 };
 
-struct RBSPSegment {
+struct RBSPSegment
+{
     /* position of segment first byte in reader cache */
     uint32_t start;
 
