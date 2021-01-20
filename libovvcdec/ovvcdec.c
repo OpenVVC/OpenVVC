@@ -39,178 +39,129 @@ struct OVVCDec
     }options;
 };
 
-static int nvcl_unsupported();
+/* Actions on unsupported NAL Unit types */
+static int nalu_type_unsupported(enum OVNALUType nalu_type);
 
-int (*nvcl_read_table[32])() =
-{
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported,
-    nvcl_unsupported
-};
+/* Init / update vcl sub decoders based on slice header info */
+static int init_vcl_decoder(const OVVCDec *dec, OVSubDec *sub_dec);
 
 static int
-nvcl_unsupported()
+nalu_type_unsupported(enum OVNALUType nalu_type)
 {
-    enum OVNALUType nal_type = 31;
+    ov_log(NULL, 2, "Ignored unsupported NAL type : %d \n", nalu_type);
 
-    ov_log(NULL, 2, "Ignored unsupported NAL type : %d \n", nal_type);
     return 0;
 }
 
-    #if 0
 static int
-decode_nal_unit(VVCContext *const s, const VVCNAL *const nal)
+init_vcl_decoder(const OVVCDec *dec, OVSubDec *sub_dec)
 {
-    VVCLocalContext *const lc = s->lc_ctx;
-    GetBitContext   *const gb = &s->gb;
-    int ctb_addr_ts, ret;
-    VVCSliceHeaderData *const sh = &s->sh;
-    int nalu_type = nal->type;
+    /* TODO check Slice / Tiles / Sub Picture context */
+    return 0;
+}
 
-    /*FIXME do we really need to set a lc->gb */
-    *gb            = nal->gb;
+static int
+decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
+{
+    OVNVCLReader rdr;
+    OVNVCLCtx *const nvcl_ctx = vvcdec->nvcl_ctx;
+    enum OVNALUType nalu_type = nalu->type;
+    int ret;
+
+    /* TODO init NVCLReader */
 
     switch (nalu_type) {
-    case VVC_NAL_VPS:
-        ret = ff_vvc_decode_nal_vps(gb, s->avctx, &s->ps);
-        if (ret < 0) {
-            goto fail;
-        }
-        break;
-    case VVC_NAL_SPS:
-        ret = ff_vvc_decode_nal_sps(gb, s->avctx, &s->ps);
-        if (ret < 0) {
-            goto fail;
-        }
-        break;
-    case VVC_NAL_PPS:
-        ret = ff_vvc_decode_nal_pps(gb, s->avctx, &s->ps);
-        if (ret < 0) {
-            goto fail;
-        }
-        break;
-    case VVC_NAL_PH:
-        ret = ff_vvc_decode_nal_ph(gb, s->avctx, &s->ps);
-        if (ret < 0) {
-            goto fail;
-        }
-        break;
-    case VVC_NAL_SUFFIX_APS:
-    case VVC_NAL_PREFIX_APS:
-        ret = ff_vvc_decode_nal_aps(gb, s->avctx, &s->ps);
-        if (ret < 0) {
-            goto fail;
-        }
-        break;
-    case VVC_NAL_PREFIX_SEI:
-    case VVC_NAL_SUFFIX_SEI:
-        ret = ff_vvc_decode_nal_sei(gb, s, &s->sei, &s->ps, nalu_type);
-            /*FIXME would be safer to handle SEI process inside SEI
-             instead of guessing the suffix is a hash*/
-            if ((s->chk_sei_md5 || s->display_md5) && nalu_type == 24 && s->is_decoded)
-                ret = vvc_check_picture_hash(s, s->active_pic->frame);
-        if (ret < 0)
-            goto fail;
-        break;
-    case VVC_NAL_TRAIL:
-    case VVC_NAL_STSA:
-    case VVC_NAL_IDR_W_RADL:
-    case VVC_NAL_IDR_N_LP:
-    case VVC_NAL_CRA:
-    case VVC_NAL_RASL:
-    case VVC_NAL_RADL:
+    case OVNALU_TRAIL:
+    case OVNALU_STSA:
+    case OVNALU_RADL:
+    case OVNALU_RASL:
+    case OVNALU_IDR_W_RADL:
+    case OVNALU_IDR_N_LP:
+    case OVNALU_CRA:
+    case OVNALU_GDR:
 
-        memset(sh, 0, sizeof(VVCSliceHeaderData));
+        #if 0
+        ret = nvcl_sh_read(rdr, &sh, nvcl_ctx);
+        #endif
 
-        ret = parse_slice_header(s, gb, sh, &s->ps, nalu_type);
-        if (ret < 0)
+        if (ret < 0) {
             return ret;
+        } else {
+            int nb_sh_bytes = ret;
 
-        /*FIXME At the current time we consider first slice in picture is the
-         * slice with address 0 this is OK since we fail before if we find
-         * multiple slice in same acces unit
-         * we might want to start decoding if the first slice is missing*/
-        if (sh->slice_address == 0) {
-            ret = vvc_dpb_start_frame(s, nalu_type);
-            if (ret < 0) {
-                goto fail;
-            }
+        /* TODO activate slice Parameters Sets */
 
-            av_log(s->avctx, AV_LOG_DEBUG, "Successfull start of frame decoder with POC: %d\n",
-                    s->active_pic->poc);
+        /*TODO update DPB status */
 
-        } else if (!s->active_pic) {
-            /* FIXME we could still init a frame decode it and just warn*/
-            av_log(s->avctx, AV_LOG_ERROR, "First slice in a frame missing.\n");
-            goto fail;
-        }
+        /* TODO init VCL decoder */
 
-        /*FIXME can be moved to dpb_frame_start ?*/
-        ff_thread_finish_setup(s->avctx);
+           #if 0
+           ret = init_vcl_decoder(ovdec, &sh);
+           fi (ret < 0) {
+               goto fail;
+           }
+           #endif
 
-        ctb_addr_ts = hls_slice_data(s, sh, nal);
-
-        if (ctb_addr_ts < 0) {
-            ret = ctb_addr_ts;
-            goto fail;
+        /* TODO start VCL decoder */
         }
 
         break;
-    case VVC_NAL_EOS:
-    case VVC_NAL_EOB:
-        s->active_seq_id = (s->active_seq_id + 1) & 0xff;
-        s->max_ra     = INT_MAX;
+    case OVNALU_VPS:
+        ret = 0;
+        if (ret < 0) {
+            goto fail;
+        }
         break;
-    case VVC_NAL_AUD:
+    case OVNALU_SPS:
+        ret = 0;
+        if (ret < 0) {
+            goto fail;
+        }
+        break;
+    case OVNALU_PPS:
+        ret = 0;
+        if (ret < 0) {
+            goto fail;
+        }
+        break;
+    case OVNALU_PH:
+        ret = 0;
+        if (ret < 0) {
+            goto fail;
+        }
+        break;
+    case OVNALU_SUFFIX_APS:
+    case OVNALU_PREFIX_APS:
+        ret = 0;
+        if (ret < 0) {
+            goto fail;
+        }
+        break;
+    case OVNALU_PREFIX_SEI:
+    case OVNALU_SUFFIX_SEI:
+        ret = 0;
+        if (ret < 0)
+            goto fail;
+        break;
+    case OVNALU_EOS:
+    case OVNALU_EOB:
+        /* TODO update DPB status (new cvs); */
+        break;
+    case OVNALU_AUD:
+        /* AUD is ignored it should be the first NALU if
+         * present
+         */
         break;
     default:
-        av_log(s->avctx, AV_LOG_TRACE,
-               "Skipping unknown NAL unit type %d\n", nalu_type);
+        nalu_type_unsupported(nalu_type);
     }
 
     return 0;
 
 fail:
-    if (s->active_pic) {
-        if (s->threads_type & FF_THREAD_FRAME) {
-            ff_thread_report_progress(&s->active_pic->tf, INT_MAX, 0);
-        }
-        ff_vvc_unref_frame(s, s->active_pic, 0);
-        s->active_pic = NULL;
-    }
+    /* TODO error hanling */
     return ret;
-    return 0;
 }
-#endif
 
 
 #if 0
@@ -236,7 +187,7 @@ vvc_validate_access_unit(VVCContext *const s, const VVCPacket *const pkt)
          * last_eos should trigger an increase in sequence_id
          * whereas eos is passed to next thread context
          */
-        if (nal_type == VVC_NAL_EOB || nal_type == VVC_NAL_EOS) {
+        if (nal_type == OVNALU_EOB || nal_type == OVNALU_EOS) {
             if (eos_at_start) {
                 s->last_eos = 1;
             } else {
@@ -314,7 +265,7 @@ fail:
 int
 ovdec_submit_picture_unit(OVVCDec *vvcdec, uint8_t *buff, size_t buff_size)
 {
-    int ret;
+    int ret = 0;
 
     #if 0
     if (!vvcdec->dmx) {
