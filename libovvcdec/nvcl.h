@@ -14,6 +14,23 @@ typedef struct OVSEI OVSEI;
 typedef struct OVPH OVPH;
 typedef struct OVSH OVSH;
 
+struct OVNVCLReader
+{
+    const uint8_t *bytestream;
+    const uint8_t *bytestream_end;
+    uint64_t cache;
+    int nb_cached_bits;
+    int nb_bytes_read;
+    int size_in_bits;
+};
+
+/* Attach a bytestream to the NVCL Reader
+ * return a negative number on error
+ */
+int nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
+                     int bit_size);
+
+
 /* Reading functions */
 int nvcl_opi_read(OVNVCLReader *const rdr, OVOPI *const opi,
                   OVNVCLCtx *const nvcl_ctx);

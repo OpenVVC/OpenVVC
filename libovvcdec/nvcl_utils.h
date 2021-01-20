@@ -3,19 +3,12 @@
 
 #include <stdint.h>
 
+#include "nvcl.h"
+
 /*FIXME move this to somewhere more usefull */
 #define ov_clz(x) __builtin_clz(x) 
 
 #define ov_ceil_log2(x) 32 - __builtin_clz(x) 
-
-struct OVNVCLReader {
-    const uint8_t *bytestream;
-    const uint8_t *bytestream_end;
-    uint64_t cache;
-    int nb_cached_bits;
-    int nb_bytes_read;
-    int size_in_bits;
-} OVNVCLReader;
 
 static inline uint64_t read_bigendian_64(const uint8_t *bytestream);
 
@@ -26,8 +19,6 @@ static inline void fill_cache64(OVNVCLReader *rdr);
 static inline void fill_cache32(OVNVCLReader *rdr);
 
 static inline uint32_t fetch_bits(OVNVCLReader *rdr, int n);
-
-static inline int nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start, int bit_size);
 
 static inline uint8_t nvcl_read_flag(OVNVCLReader *rdr);
 
