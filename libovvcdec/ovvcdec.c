@@ -4,24 +4,39 @@
 #include "libovvcutils/ovvcutils.h"
 #include "libovvcutils/ovmem.h"
 
+#include "libovvcdmx/ovunits.h"
+
 #include "nvcl.h"
 #include "ovvcdec.h"
-#include "libovvcdmx/ovunits.h"
 
 static const char *const decname = "Open VVC Decoder";
 
 struct OVVCSubDec;
 
+/* Main decoder structure */
 struct OVVCDec
 {
     const char *name;
+
+    /* NAL Units to be decoded
+     * Corresponding to a Picture Unit
+     */
+    OVPictureUnit *nalu_list;
+
+    /* Paramters sets context */
     OVNVCLCtx *nvcl_ctx;
 
+    /* List of Sub Decoders
+     * Contains context for Tile / Slice / Picture / SubPicture
+     * decoding
+     */
+    struct OVSubDec *subdec_list;
+
+    /* Informations on decoder behaviour transmitted by user
+     */
     struct {
         int opt1;
     }options;
-
-    struct OVSubDec *subdec_list;
 };
 
 static int nvcl_unsupported();
