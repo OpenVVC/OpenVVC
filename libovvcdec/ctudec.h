@@ -3,6 +3,77 @@
 
 #include "ovvcdec.h"
 
+    /* FIXME COMPAT old
+     * Old structures to be removed
+     * Those structures were imported as is from previous version
+     * because they were mandatory for a quickly operational decoder
+     * and are still used by the decoder however they will be removed
+     * in the future
+     */
+
+typedef struct VVCCU{
+
+/*  intra_flags
+ *  _ _ _ _ _ _ _ _
+ * |_|_|_|_|_|_|_|_|
+ *  | | | | | | | |
+ *  | | | | | | | cu_skip_flag
+ *  | | | | | | pred_mode_flag
+ *  | | | | | mip_flag
+ *  | | | | isp_flag
+ *  | | | mrl_flag
+ *  | | mpm_flag
+ *  | cclm_flag
+ *  mpm_flag_c
+ */
+
+/*  inter_flag
+ *  _ _ _ _ _ _ _ _
+ * |_|_|_|_|_|_|_|_|
+ *  | | | | | | | |
+ *  | | | | | | | cu_skip_flag
+ *  | | | | | | pred_mode_flag
+ *  | | | | | merge_flag
+ *  | | | | inter_dir
+ *  | | |
+ *  | |
+ *  |
+ */
+
+    uint8_t cu_flags;
+    uint8_t cu_mode_idx;
+    uint8_t cu_opaque;
+    uint8_t cu_mode_info;
+
+}VVCCU;
+
+typedef struct VVCPartSize{
+
+    /**
+     * Global limit on ctb and cb sizes
+     */
+    uint8_t log2_ctu_s;
+    uint8_t log2_min_cb_s;
+
+    /**
+     *  Quad tree limits in depth an log2_min size
+     */
+    uint8_t log2_min_qt_s;
+
+    /**
+     *  Multi type tree limits in depth and max size
+     */
+    uint8_t max_mtt_depth;
+    uint8_t log2_max_bt_s;
+    uint8_t log2_max_tt_s;
+
+    /**
+     * Transform tree limits
+     */
+    uint8_t log2_max_tb_s;
+
+}VVCPartSize;
+
 /* Definitions of CTUDecoder structures */
 struct InterDRVCtx
 {
@@ -39,15 +110,16 @@ typedef struct OVCTUDec {
      * Contains context tables, cabac status and position in the
      * current entry
      */
-    struct OVCABACCtx *cabac_context;
+    struct OVCABACCtx *cabac_ctx;
 
     /* List of flag/modes to match activated tools */
     struct {
-      uint8_t flag;
+        uint8_t flag;
+        uint8_t status;
     } tools_status;
 
     /* Derivations context according to activated tools
-     */
+    */
     struct OVDrvCtx {
         /* Pointers to Information used by specific tools */
         struct InterDRVCtx *inter_ctx;
@@ -90,8 +162,8 @@ typedef struct OVCTUDec {
          * in order to derive references samples for intra prediction
          */
         struct CTUBitField{
-           uint64_t hfield[33];
-           uint64_t vfield[33];
+            uint64_t hfield[33];
+            uint64_t vfield[33];
         } progress_field;
     } rcn_ctx;
 
@@ -101,6 +173,117 @@ typedef struct OVCTUDec {
      * the current CTU decoder.
      */
     uint8_t ctu_ngh_flags;
+
+    /* FIXME COMPAT old passed this line
+     * Old structures to be removed
+     * Those structures were imported as is from previous version
+     * because they were mandatory for a quickly operational decoder
+     * and are still used by the decoder however they will be removed
+     * in the future
+     */
+    /* FIXME
+     * Check usage of those sort between flags and status
+     * and move them to tools_status structure
+     * (as an example transform_skip_flag can be replaced
+     * by a max_log2_trskip_s to zere, mts_implicit and
+     * mts_enabled could be replace by a mts status etc.)
+     */
+    uint8_t transform_skip_enabled;
+    uint8_t max_log2_transform_skip_size;
+
+    uint8_t enable_sdh;
+    uint8_t jcbcr_enabled;
+    uint8_t isp_enabled;
+    uint8_t mts_implicit;
+    uint8_t mts_enabled;
+    uint8_t delta_qp_enabled;
+    uint8_t enable_lfnst;
+    uint8_t enabled_mip;
+    uint8_t lm_chroma_enabled;
+    uint8_t tmp_disable_cclm;
+    uint8_t enable_cclm;
+    uint8_t enable_mrl;
+    uint8_t share;
+    uint8_t max_num_merge_candidates;
+
+    /**
+     * Depths of left and up neighbours during in the decision tree
+     * needed to derive cabac contexts for split decision
+     */
+
+    struct PartMap{
+        uint8_t *qt_depth_map_x;
+        uint8_t *log2_cu_w_map_x;
+        uint8_t qt_depth_map_y[32];
+        uint8_t log2_cu_h_map_y[32];
+    } part_map;
+
+    struct PartMap part_map_c;
+
+    /* Pointer to active part map to be used in current
+     * tree to derive cabac context
+     */
+    struct PartMap *active_part_map;
+
+    const struct VVCPartSize *part_ctx;
+
+    /**
+     * Chroma partition context for dual tree
+     */
+    const struct VVCPartSize *part_ctx_chroma;
+
+    /**
+     * Pointer to recursive coding tree structure based on the slice type and
+     * qtbt qtbt_dual_intra_flag
+     */
+    int (*coding_tree)(struct OVCTUDec *const lc_ctx,
+                       const VVCPartSize *const part_ctx,
+                       unsigned int x0, unsigned int y0,
+                       unsigned int log2_cb_size, unsigned int qt_depth);
+
+    int (*coding_tree_implicit)(struct OVCTUDec *const lc_ctx,
+                                const VVCPartSize *const part_ctx,
+                                unsigned int x0, unsigned int y0,
+                                unsigned int log2_cb_size, unsigned int qt_depth,
+                                unsigned int remaining_width,
+                                unsigned int remaining_height);
+
+    VVCCU (*coding_unit)(struct OVCTUDec *const lc_ctx,
+                         const VVCPartSize *const part_ctx,
+                         unsigned int x0, unsigned int y0,
+                         unsigned int log2_cb_w, unsigned int log2_cb_h);
+
+    int (*transform_unit)(struct OVCTUDec *const lc_ctx,
+                          unsigned int x0, unsigned int y0,
+                          unsigned int log2_tb_w,
+                          unsigned int log2_tb_h,
+                          uint8_t cbf_ctx, uint8_t cu_flags);
+
+    int (*prediction_unit)(struct OVCTUDec *const lc_ctx,
+                           const VVCPartSize *const part_ctx,
+                           unsigned int x0, unsigned int y0,
+                           unsigned int log2_pb_w, unsigned int log2_pb_h,
+                           uint8_t cu_skip_flag);
+
+    int (*residual_coding_isp_h)(struct OVCTUDec *const lc_ctx, uint16_t *const dst,
+                                 unsigned int log2_tb_w, unsigned int log2_tb_h,
+                                 uint16_t last_pos);
+
+    int (*residual_coding_isp_v)(struct OVCTUDec *const lc_ctx, uint16_t *const dst,
+                                 unsigned int log2_tb_w, unsigned int log2_tb_h,
+                                 uint16_t last_pos);
+
+    int (*residual_coding_ts)(struct OVCTUDec *const lc_ctx,
+                              unsigned int log2_tb_w,
+                              unsigned int log2_tb_h);
+
+    uint64_t (*residual_coding)(struct OVCTUDec *const lc_ctx, uint16_t *const dst,
+                                unsigned int log2_tb_w, unsigned int log2_tb_h,
+                                uint16_t last_pos);
+
+    int (*residual_coding_chroma)(struct OVCTUDec *const lc_ctx, uint16_t *const dst,
+                                  unsigned int log2_tb_w, unsigned int log2_tb_h,
+                                  uint16_t last_pos);
 
 } OVCTUDec;
 
