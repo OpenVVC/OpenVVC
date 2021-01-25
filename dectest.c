@@ -152,7 +152,20 @@ faildmxclose:
 static int
 read_stream(OVVCDmx *const dmx, FILE *fp)
 {
+    #if 0
     ovdmx_read_stream(dmx);
+    #else
+    int ret;
+    OVPictureUnit *pu;
+
+    do {
+        ret = ovdmx_extract_picture_unit(dmx, &pu);
+        if (ret >= 0){
+            ov_freep(&pu);
+        }
+    } while (ret >= 0);
+
+    #endif
     return 1;
 }
 

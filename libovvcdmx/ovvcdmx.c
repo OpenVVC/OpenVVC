@@ -193,6 +193,10 @@ static void free_nalu_list(struct NALUnitsList *list);
 static int refill_reader_cache(struct ReaderCache *const cache_ctx,
                                OVIOStream *const io_str);
 
+static void append_nalu_elem(struct NALUnitsList *const list, struct NALUnitListElem *elem);
+
+static void free_nalu_elem(struct NALUnitListElem *nalu_elem);
+
 int
 ovdmx_init(OVVCDmx **vvcdmx)
 {
@@ -251,6 +255,10 @@ ovdmx_close(OVVCDmx *vvcdmx)
         free_rbsp_cache(&vvcdmx->rbsp_ctx);
 
         free_epb_cache(&vvcdmx->epb_info);
+
+        free_nalu_list(&vvcdmx->nalu_list);
+
+        free_nalu_elem(vvcdmx->nalu_pending);
 
         ov_free(vvcdmx);
 
@@ -372,12 +380,12 @@ static struct NALUnitListElem *pop_nalu_elem(struct NALUnitsList *list)
         if (elem->next_nalu) {
             elem->next_nalu->prev_nalu = NULL;
         }
+        elem->prev_nalu = NULL;
+        elem->next_nalu = NULL;
     } else {
         /*FIXME ensure list is emptied */
         list->last_nalu = NULL;
     }
-    elem->prev_nalu = NULL;
-    elem->next_nalu = NULL;
 
     return elem;
 }
@@ -396,38 +404,35 @@ push_nalu_elem(struct NALUnitsList *list, struct NALUnitListElem *elem)
 }
 
 static int
-extract_access_unit(OVVCDmx *const dmx)
+extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
 {
     struct NALUnitsList *nalu_list = &dmx->nalu_list;
-    struct NALUnitListElem *current_nalu = nalu_list->first_nalu;
-    struct NALUnitsList pending_nalu_list = {0};
+    struct NALUnitListElem *current_nalu = pop_nalu_elem(nalu_list);
     uint8_t au_end_found = 0;
     do {
         if (!current_nalu) {
-            int ret;
-            struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
-            current_nalu = nalu_list->last_nalu;
-            /* No pending NALU in dmx try to extract NALU units from next
+            /* No NALU in dmx try to extract NALU units from next
                chunk */
+            struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
+            int ret;
+
             ret = refill_reader_cache(cache_ctx, dmx->io_str);
+
             if (ret < 0) {
                 goto last_chunk;
             }
 
             ret = extract_cache_segments(dmx, cache_ctx);
 
-            if (!current_nalu) {
-                current_nalu = nalu_list->first_nalu;
-            }
+            current_nalu = pop_nalu_elem(nalu_list);
         }
 
         if (current_nalu) {
-
             do {
-               /* Move NALU from NALU list to pending list */
-               push_nalu_elem(&pending_nalu_list, current_nalu);
+                /* Move NALU from NALU list to pending list */
+                append_nalu_elem(dst_list, current_nalu);
 
-               current_nalu = pop_nalu_elem(nalu_list);
+                current_nalu = pop_nalu_elem(nalu_list);
 
             } while (current_nalu && !is_access_unit_delimiter(current_nalu));
 
@@ -435,7 +440,10 @@ extract_access_unit(OVVCDmx *const dmx)
         }
     } while (!au_end_found);
 
+    append_nalu_elem(dst_list, current_nalu);
+    #if 0
     free_nalu_list(&pending_nalu_list);
+    #endif
 
     /* TODO NALUList to packet */
 
@@ -473,7 +481,7 @@ last_chunk:
     printf("Num bytes read %ld\n", (nb_chunks << 16) + nb_bytes_last);
     printf("byte_pos %ld\n", (nb_chunks << 16) + nb_bytes_last);
 
-    return 0;
+    return -1;
     }
 
 readfail:
@@ -483,7 +491,6 @@ readfail:
     return -1;
 }
 
-static void free_nalu_elem(struct NALUnitListElem *nalu_elem);
 
 static void
 free_nalu_list(struct NALUnitsList *list)
@@ -502,13 +509,17 @@ int
 ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
 {
     int ret;
+    struct NALUnitsList pending_nalu_list = {0};
     OVPictureUnit *pu = ov_mallocz(sizeof(*pu));
     if (!pu) {
         *dst_pu = NULL;
         return OV_ENOMEM;
     }
 
-    ret = extract_access_unit(dmx);
+    ret = extract_access_unit(dmx, &pending_nalu_list);
+
+    free_nalu_list(&pending_nalu_list);
+
     if (ret < 0) {
         ov_free(pu);
         return ret;
@@ -547,8 +558,10 @@ ovdmx_read_stream(OVVCDmx *const dmx)
     if (!ovio_stream_eof(io_str)) {
 
         while (!ovio_stream_eof(io_str)) {
-            extract_access_unit(dmx);
+            struct NALUnitsList pending_nalu_list = {0};
+            extract_access_unit(dmx, &pending_nalu_list);
 
+            free_nalu_list(&pending_nalu_list);
             free_nalu_list(&dmx->nalu_list);
         }
 
@@ -689,6 +702,7 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
     const uint8_t *bytestream = &cache_ctx->data_start[byte_pos & mask];
     struct NALUnitsList *nalu_list = &dmx->nalu_list;
     struct NALUnitListElem *nalu_elem = create_nalu_elem(dmx);
+    struct NALUnitListElem *nalu_pending = dmx->nalu_pending;
 
     enum OVNALUType nalu_type = (bytestream[4] >> 3) & 0x1F;
 
@@ -704,7 +718,7 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
     append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
     sgmt_ctx->start = byte_pos + 3;
 
-    if (nalu_list->last_nalu) {
+    if (nalu_pending) {
         /*TODO attach rbsp_data to nalu*/
         uint8_t *rbsp_data = ov_malloc(dmx->rbsp_ctx.rbsp_size);
         if (!rbsp_data) {
@@ -721,26 +735,30 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
                 return OV_ENOMEM;
             }
             memcpy(epb_pos, dmx->epb_info.epb_pos, dmx->epb_info.nb_epb * sizeof(*epb_pos));
-            nalu_list->last_nalu->nalu.epb_pos = epb_pos;
-            nalu_list->last_nalu->nalu.nb_epb = dmx->epb_info.nb_epb;
+            nalu_pending->nalu.epb_pos = epb_pos;
+            nalu_pending->nalu.nb_epb = dmx->epb_info.nb_epb;
         }
         dmx->epb_info.nb_epb = 0;
 
-        nalu_list->last_nalu->nalu.rbsp_data = rbsp_data;
-        nalu_list->last_nalu->nalu.rbsp_size = dmx->rbsp_ctx.rbsp_size;
+        nalu_pending->nalu.rbsp_data = rbsp_data;
+        nalu_pending->nalu.rbsp_size = dmx->rbsp_ctx.rbsp_size;
 
         memcpy(rbsp_data, dmx->rbsp_ctx.start, dmx->rbsp_ctx.rbsp_size);
 
         empty_rbsp_cache(&dmx->rbsp_ctx);
+
+        append_nalu_elem(nalu_list, nalu_pending);
     }
+
 
     nalu_elem->nalu.type = nalu_type;
 
-    append_nalu_elem(nalu_list, nalu_elem);
+    dmx->nalu_pending = nalu_elem;
 
     dmx->nb_stc++;
 
     printf("STC at pos : %ld, NAL :%d\n", byte_pos - 8, nalu_type);
+
     return 0;
 }
 
@@ -749,15 +767,24 @@ process_emulation_prevention_byte(OVVCDmx *const dmx, struct ReaderCache *const 
                                   uint64_t byte_pos, struct RBSPSegment *sgmt_ctx)
 {
     struct EPBCacheInfo *const epb_info = &dmx->epb_info;
-    sgmt_ctx->end = byte_pos + 2;
+
+    /* We keep the two zero bytes of emulation prevention three bytes
+     * so the end of segment to append is at byte_pos + 2
+     */
+    sgmt_ctx->end = byte_pos + 1;
+
     append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
-    sgmt_ctx->start = sgmt_ctx->end + 1;
+
+    /* We remove the emulation prevention 0x03 so the next segment start
+     * position in cache is at byte_pos + 3
+     */
+    sgmt_ctx->start = sgmt_ctx->end + 3;
 
     if (epb_info->nb_epb + 1 > (epb_info->cache_size)/sizeof(*epb_info->epb_pos)) {
         int ret = extend_epb_cache(epb_info);
         if (ret < 0) {
             printf("ERROR extending cache\n");
-            return -1;
+            return ret;
         }
     }
 
@@ -809,6 +836,9 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
                 case ANNEXB_EPB:
                     ret = process_emulation_prevention_byte(dmx, cache_ctx, byte_pos, &sgmt_ctx);
                     break;
+                case END_OF_CACHE:
+                    ret = END_OF_CACHE;
+                    break;
                 }
 
                 if (ret < 0) {
@@ -821,6 +851,7 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
 
     /* End of cache */
     sgmt_ctx.end = byte_pos;
+
     append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, &sgmt_ctx);
 
     return (byte_pos & mask);
