@@ -24,12 +24,20 @@
 
 #define OVEPB_CACHE_SIZE (16 * sizeof(uint32_t))
 
+enum DMXReturn {
+    OV_INVALID_DATA = -1,
+    OV_ENOMEM = -2,
+};
+
 static const char *const demux_name = "Open VVC Annex B demuxer";
 
 enum RBSPSegmentDelimiter
 {
+    /* NAL Unit Start Code 0x000001 */
     ANNEXB_STC = 1,
+    /* NAL Unit Start Code 0x000003 */
     ANNEXB_EPB = 2,
+    /* Reached end of cache or EOF */
     END_OF_CACHE = 3
 };
 
@@ -146,6 +154,9 @@ struct OVVCDmx
        or Picture Unit (PU) NAL Units */
     struct NALUnitsList nalu_list;
 
+    /* Current NAL Unit to be added to list when end is found */
+    struct NALUnitListElem *nalu_pending;
+
     /* Memory pool for NALUListElem */
     MemPool *nalu_elem_pool;
 
@@ -188,7 +199,7 @@ ovdmx_init(OVVCDmx **vvcdmx)
     int ret;
     *vvcdmx = ov_mallocz(sizeof(**vvcdmx));
 
-    if (*vvcdmx == NULL) return -1;
+    if (*vvcdmx == NULL) return OV_ENOMEM;
 
     (*vvcdmx)->name = demux_name;
     (*vvcdmx)->io_str = NULL;
@@ -220,7 +231,7 @@ fail_rbsp_cache:
 fail_pool_init:
     ov_freep(vvcdmx);
 
-    return -1;
+    return ret;
 }
 
 int
@@ -494,13 +505,13 @@ ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
     OVPictureUnit *pu = ov_mallocz(sizeof(*pu));
     if (!pu) {
         *dst_pu = NULL;
-        return -1;
+        return OV_ENOMEM;
     }
 
     ret = extract_access_unit(dmx);
     if (ret < 0) {
         ov_free(pu);
-        return -1;
+        return ret;
     }
 
     *dst_pu = pu;
@@ -683,9 +694,12 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
 
     if (!nalu_elem) {
         printf("NALU alloc fail\n");
-        return -1;
+        return OV_ENOMEM;
     }
 
+    /* New NAL Unit start code found we end so we can process previous
+     * NAL Unit data
+     */
     sgmt_ctx->end = byte_pos;
     append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
     sgmt_ctx->start = byte_pos + 3;
@@ -695,7 +709,7 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
         uint8_t *rbsp_data = ov_malloc(dmx->rbsp_ctx.rbsp_size);
         if (!rbsp_data) {
             free_nalu_elem(nalu_elem);
-            return -1;
+            return OV_ENOMEM;
         }
 
         if (dmx->epb_info.nb_epb) {
@@ -704,7 +718,7 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
             if (!epb_pos) {
                 free_nalu_elem(nalu_elem);
                 ov_free(rbsp_data);
-                return -1;
+                return OV_ENOMEM;
             }
             memcpy(epb_pos, dmx->epb_info.epb_pos, dmx->epb_info.nb_epb * sizeof(*epb_pos));
             nalu_list->last_nalu->nalu.epb_pos = epb_pos;
@@ -824,7 +838,7 @@ process_last_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos,
             stc_or_epb = ovannexb_check_stc_or_epb(&byte[(byte_pos) & mask]);
 
             if (stc_or_epb < 0) {
-                return -1;
+                return OV_INVALID_DATA;
             }
 
             if (stc_or_epb) {
@@ -844,7 +858,7 @@ init_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
 {
     rbsp_ctx->start = ov_mallocz(OVRBSP_CACHE_SIZE);
     if (rbsp_ctx->start == NULL) {
-        return -1;
+        return OV_ENOMEM;
     }
 
     rbsp_ctx->end = rbsp_ctx->start;
@@ -867,7 +881,7 @@ extend_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
     size_t new_size = rbsp_ctx->cache_size + OVRBSP_CACHE_SIZE;
     new_cache = ov_malloc(new_size);
     if (!new_cache) {
-        return -1;
+        return OV_ENOMEM;
     }
 
     memcpy(new_cache, old_cache, rbsp_ctx->rbsp_size);
@@ -885,7 +899,7 @@ init_epb_cache(struct EPBCacheInfo *const epb_info)
 {
     epb_info->epb_pos = ov_mallocz(OVEPB_CACHE_SIZE);
     if (epb_info->epb_pos == NULL) {
-        return -1;
+        return OV_ENOMEM;
     }
 
     epb_info->cache_size = OVEPB_CACHE_SIZE;
@@ -904,7 +918,7 @@ extend_epb_cache(struct EPBCacheInfo *const epb_info)
     size_t new_size = epb_info->cache_size + OVEPB_CACHE_SIZE;
     new_cache = ov_malloc(new_size);
     if (!new_cache) {
-        return -1;
+        return OV_ENOMEM;
     }
 
     memcpy(new_cache, old_cache, epb_info->nb_epb * sizeof(*epb_info->epb_pos));
