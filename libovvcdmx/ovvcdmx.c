@@ -173,9 +173,6 @@ struct OVVCDmx
 
 static int extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx);
 
-static int process_last_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos,
-                              int nb_bytes_last);
-
 static int init_rbsp_cache(struct RBSPCacheData *const rbsp_ctx);
 
 /* Realloc rbsp_cache adding an extra 64KB to previously allocated size
@@ -419,6 +416,8 @@ push_nalu_elem(struct NALUnitsList *list, struct NALUnitListElem *elem)
     }
 }
 
+static uint8_t eof = 0;
+
 static int
 extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
 {
@@ -435,7 +434,10 @@ extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
             ret = refill_reader_cache(cache_ctx, dmx->io_str);
 
             if (ret < 0) {
+                eof = 1;
+                #if 0
                 goto last_chunk;
+                #endif
             }
 
             ret = extract_cache_segments(dmx, cache_ctx);
@@ -452,50 +454,16 @@ extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
 
             } while (current_nalu && !is_access_unit_delimiter(current_nalu));
 
-            au_end_found = current_nalu != NULL;
+            au_end_found = current_nalu != NULL || (current_nalu == NULL && eof);
         }
     } while (!au_end_found);
 
-    append_nalu_elem(dst_list, current_nalu);
+    if (current_nalu)
+        append_nalu_elem(dst_list, current_nalu);
 
     /* TODO NALUList to packet */
 
-    return 0;
-
-last_chunk:
-    {
-    int nb_chunks = dmx->cache_ctx.nb_chunk_read;
-    int nb_bytes_last = 0;
-    if (ovio_stream_error(dmx->io_str)) {
-        return -1;
-    } else {
-       const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
-       int ret;
-
-        /* we do not check return si error was already reported ?*/
-
-        nb_bytes_last = ovio_stream_tell(dmx->io_str) & mask;
-
-        if (ovio_stream_eof(dmx->io_str) && (nb_bytes_last > 0)) {
-
-            const uint8_t *byte = dmx->cache_ctx.data_start;
-
-            ret = process_last_chunk(dmx, byte, 0, nb_bytes_last);
-            if (ret < 0) {
-                goto readfail;
-            }
-
-            printf("num_stc last %d\n", dmx->nb_stc);
-            printf("num_prev last %d\n", dmx->nb_epb);
-            printf("EOF reached\n");
-        }
-    }
-
-    printf("Num bytes read %d\n", (nb_chunks << 16) + nb_bytes_last);
-    printf("byte_pos %d\n", (nb_chunks << 16) + nb_bytes_last);
-
-    return -1;
-    }
+    return -(eof && current_nalu == NULL);
 
 readfail:
     /* free current NALU memory + return error
@@ -849,33 +817,6 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
 
     append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, &sgmt_ctx);
 
-    return (byte_pos & mask);
-}
-
-static int
-process_last_chunk(OVVCDmx *const dmx, const uint8_t *byte, uint64_t byte_pos,
-                   int nb_bytes_last)
-{
-    const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
-    do {
-        /*TODO bintricks for start code detection */
-        if (byte[(byte_pos) & mask] == 0) {
-            int stc_or_epb;
-            stc_or_epb = ovannexb_check_stc_or_epb(&byte[(byte_pos) & mask]);
-
-            if (stc_or_epb < 0) {
-                return OV_INVALID_DATA;
-            }
-
-            if (stc_or_epb) {
-                /* TODO handle what is to be done with it here */
-                dmx_process_elem(dmx, &byte[(byte_pos) & mask], byte_pos, stc_or_epb);
-                dmx->nb_stc += stc_or_epb == 1;
-                dmx->nb_epb += stc_or_epb == 2;
-            }
-        }
-    } while (((++byte_pos) & mask) <= nb_bytes_last);
-    /* FIXME handle EOF EOB stuff */
     return (byte_pos & mask);
 }
 
