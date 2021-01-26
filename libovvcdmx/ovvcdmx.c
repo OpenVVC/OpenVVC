@@ -355,12 +355,6 @@ refill_reader_cache(struct ReaderCache *const cache_ctx, OVIOStream *const io_st
     return 0;
 }
 
-static int
-extract_nal_unit(OVVCDmx *dmx)
-{
-    return 0;
-}
-
 static uint8_t
 is_access_unit_delimiter(struct NALUnitListElem *elem)
 {
@@ -441,9 +435,6 @@ extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
     } while (!au_end_found);
 
     append_nalu_elem(dst_list, current_nalu);
-    #if 0
-    free_nalu_list(&pending_nalu_list);
-    #endif
 
     /* TODO NALUList to packet */
 
@@ -478,8 +469,8 @@ last_chunk:
         }
     }
 
-    printf("Num bytes read %ld\n", (nb_chunks << 16) + nb_bytes_last);
-    printf("byte_pos %ld\n", (nb_chunks << 16) + nb_bytes_last);
+    printf("Num bytes read %d\n", (nb_chunks << 16) + nb_bytes_last);
+    printf("byte_pos %d\n", (nb_chunks << 16) + nb_bytes_last);
 
     return -1;
     }
@@ -835,9 +826,6 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
                     break;
                 case ANNEXB_EPB:
                     ret = process_emulation_prevention_byte(dmx, cache_ctx, byte_pos, &sgmt_ctx);
-                    break;
-                case END_OF_CACHE:
-                    ret = END_OF_CACHE;
                     break;
                 }
 

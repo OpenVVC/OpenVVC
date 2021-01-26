@@ -161,6 +161,7 @@ read_stream(OVVCDmx *const dmx, FILE *fp)
     do {
         ret = ovdmx_extract_picture_unit(dmx, &pu);
         if (ret >= 0){
+            ov_freep(&pu->nalus);
             ov_freep(&pu);
         }
     } while (ret >= 0);
