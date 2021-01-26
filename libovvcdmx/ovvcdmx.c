@@ -496,6 +496,34 @@ free_nalu_list(struct NALUnitsList *list)
     list->last_nalu = NULL;
 }
 
+static int
+convert_nalu_list_to_pu(OVPictureUnit *dst, struct NALUnitsList *const src)
+{
+    /* FIXME retrieve number of NAL Units for alloc */
+    int nb_nalus = 0;
+    int i = 0;
+    struct NALUnitListElem *lelem = src->first_nalu;
+    while (lelem) {
+        lelem = lelem->next_nalu;
+        nb_nalus++;
+    }
+
+    dst->nalus = ov_mallocz(sizeof(*dst->nalus) * nb_nalus);
+    if (!dst->nalus) {
+        return OV_ENOMEM;
+    }
+
+    lelem = src->first_nalu;
+
+    while (lelem) {
+        memcpy(&dst->nalus[i++], &lelem->nalu, sizeof(*dst->nalus)) ;
+        lelem = lelem->next_nalu;
+    }
+    dst->nb_nalus = nb_nalus;
+
+    return 0;
+}
+
 int
 ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
 {
@@ -509,97 +537,22 @@ ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
 
     ret = extract_access_unit(dmx, &pending_nalu_list);
 
-    free_nalu_list(&pending_nalu_list);
+    /* FIXME return */
+
 
     if (ret < 0) {
+        free_nalu_list(&pending_nalu_list);
         ov_free(pu);
         return ret;
     }
 
+    ret = convert_nalu_list_to_pu(pu, &pending_nalu_list);
+
+    free_nalu_list(&pending_nalu_list);
+
     *dst_pu = pu;
 
     return 0;
-}
-
-/*
-   FIXME there might be a need to find a fast way to remove obvious
-   zero filling data between RBPS and next NALU
-   FIXME we should move thi part to other file for annexb demux
-   if we plan to support more demuxers format*/
-int
-ovdmx_read_stream(OVVCDmx *const dmx)
-{
-    uint64_t nb_chunks = 1;
-    uint64_t byte_pos = 0;
-    long int nb_bytes_last = 0;
-    int nb_nalus = 0;
-    OVIOStream *const io_str = dmx->io_str;
-    struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
-    const uint8_t **io_cache = &cache_ctx->data_start;
-
-    if (io_str == NULL) {
-       return -1;
-    }
-
-    /* Note if we need to read more than one chunk or
-       if we uee a reentrant function we need to plan on not
-       reseting this value since we might need the last few bytes
-       of the cache used in previous call in cases */
-
-    if (!ovio_stream_eof(io_str)) {
-
-        while (!ovio_stream_eof(io_str)) {
-            struct NALUnitsList pending_nalu_list = {0};
-            extract_access_unit(dmx, &pending_nalu_list);
-
-            free_nalu_list(&pending_nalu_list);
-            free_nalu_list(&dmx->nalu_list);
-        }
-
-    } else {
-        goto last_chunk;
-    }
-
-    return 1;
-
-last_chunk:
-    if (ovio_stream_error(io_str)) {
-        return -1;
-    } else {
-       const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
-       int ret;
-
-        /* we do not check return si error was already reported ?*/
-
-        nb_bytes_last = ovio_stream_tell(io_str) & mask;
-
-        if (ovio_stream_eof(io_str) && (nb_bytes_last > 0)) {
-
-            const uint8_t *byte = *io_cache - 8;
-
-            ret = process_last_chunk(dmx, byte, byte_pos, nb_bytes_last);
-            if (ret < 0) {
-                goto readfail;
-            }
-
-            printf("num_stc last %d\n", dmx->nb_stc);
-            printf("num_prev last %d\n", dmx->nb_epb);
-            printf("EOF reached\n");
-            nb_nalus += dmx->nb_stc;
-        }
-    }
-
-    printf("Num bytes read %ld\n", (nb_chunks << 16) + nb_bytes_last);
-    printf("byte_pos %ld\n", (nb_chunks << 16) + nb_bytes_last);
-    printf("Num NALU read %d\n", nb_nalus);
-
-    return 1;
-
-readfail:
-    /* free current NALU memory + return error
-    */
-    printf("FAILED NAL read!\n");
-    return -1;
 }
 
 static struct NALUnitListElem *

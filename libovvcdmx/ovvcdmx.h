@@ -14,8 +14,6 @@ int ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream);
 
 void ovdmx_detach_stream(OVVCDmx *const dmx);
 
-int ovdmx_read_stream(OVVCDmx *const dmx);
-
 int ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu);
 
 #endif
