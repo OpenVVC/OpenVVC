@@ -46,10 +46,10 @@ enum RBSPSegmentDelimiter
 struct RBSPSegment
 {
     /* position of segment first byte in reader cache */
-    uint32_t start;
+    const uint8_t *start_p;
 
     /* position of segment last byte in cache */
-    uint32_t end;
+    const uint8_t *end_p;
 };
 
 struct RBSPCacheData
@@ -114,6 +114,9 @@ struct ReaderCache
 {
     /* Pointer to io_cached buffer */
     const uint8_t *data_start;
+
+    const uint8_t *cache_start;
+    const uint8_t *cache_end;
 
     /* Cursor position in cache */
     uint32_t first_pos;
@@ -296,23 +299,32 @@ ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
         return -1;
     }
 
-    /* TODO init SODB ctx by first read */
+    /* Initialise reader cache by first read */
 
     if (!ovio_stream_eof(dmx->io_str)) {
         int read_in_buf;
         struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
 
-        read_in_buf += ovio_stream_read(&cache_ctx->data_start, OVVCDMX_IO_BUFF_SIZE,
-                                        dmx->io_str);
+        read_in_buf = ovio_stream_read(&cache_ctx->data_start, OVVCDMX_IO_BUFF_SIZE,
+                                       dmx->io_str);
+        #if 1
         cache_ctx->data_start -= 8;
+        #endif
         /* pos is init at 8 so we do not overread first data chunk */
-        cache_ctx->first_pos = 0;
+        cache_ctx->first_pos = 8;
+
+        /*TODO + 8 - 8 */
+        cache_ctx->cache_start = cache_ctx->data_start;
+        cache_ctx->cache_end   = cache_ctx->data_start + OVVCDMX_IO_BUFF_SIZE;
 
         /* FIXME Process first chunk of data ? */
         ret = extract_cache_segments(dmx, cache_ctx);
 
         if (!read_in_buf) {
             /* TODO error handling if end of file is encountered on first read */
+            int32_t nb_bytes;
+            nb_bytes = ovio_stream_tell(dmx->io_str) & OVVCDMX_IO_BUFF_MASK;
+            cache_ctx->cache_end = cache_ctx->data_start + nb_bytes;
         }
         cache_ctx->nb_chunk_read = 1;
     }
@@ -346,11 +358,19 @@ refill_reader_cache(struct ReaderCache *const cache_ctx, OVIOStream *const io_st
 
     cache_ctx->data_start -= 8;
 
+    cache_ctx->cache_start = cache_ctx->data_start;
+    cache_ctx->cache_end   = cache_ctx->data_start + OVVCDMX_IO_BUFF_SIZE;
+
+    #if 0
     cache_ctx->first_pos   = 0;
+    #endif
 
     cache_ctx->nb_chunk_read += read_in_buf;
 
     if (!read_in_buf) {
+        int32_t nb_bytes;
+        nb_bytes = ovio_stream_tell(io_str) & OVVCDMX_IO_BUFF_MASK;
+        cache_ctx->cache_end = cache_ctx->data_start + nb_bytes;
         return -1;
     }
 
@@ -612,23 +632,27 @@ append_nalu_elem(struct NALUnitsList *const list, struct NALUnitListElem *elem)
 static int
 append_rbsp_segment_to_cache(struct ReaderCache *const cache_ctx,
                              struct RBSPCacheData *rbsp_cache,
-                             struct RBSPSegment *sgmt_ctx)
+                             const struct RBSPSegment *sgmt_ctx)
 {
-    int sgmt_size = sgmt_ctx->end - sgmt_ctx->start;
+    ptrdiff_t sgmt_size = sgmt_ctx->end_p - sgmt_ctx->start_p;
+    /* FIXME use an assert instead this is not supposed to happen */
+    if (sgmt_size <= 0) {
+        ov_log(NULL, 3, "Invalid segment\n");
+        return -1;
+    }
+
     if (rbsp_cache->cache_size < rbsp_cache->rbsp_size + sgmt_size) {
         int ret;
          ret = extend_rbsp_cache(rbsp_cache);
          if (ret < 0) {
-             return -1;
+             return ret;
          }
     }
 
-    memcpy(rbsp_cache->end, &cache_ctx->data_start[sgmt_ctx->start], sgmt_size);
+    memcpy(rbsp_cache->end, sgmt_ctx->start_p, (size_t)sgmt_size);
 
     rbsp_cache->end       += sgmt_size;
     rbsp_cache->rbsp_size += sgmt_size;
-
-    sgmt_ctx->start = sgmt_ctx->end + 3;
 
     return 0;
 }
@@ -660,9 +684,12 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
     /* New NAL Unit start code found we end so we can process previous
      * NAL Unit data
      */
-    sgmt_ctx->end = byte_pos;
-    append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
-    sgmt_ctx->start = byte_pos + 3;
+    if (nalu_pending) {
+        append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
+    }
+
+    /* Next segment start is located after start code three bytes */
+    sgmt_ctx->end_p = sgmt_ctx->start_p = sgmt_ctx->end_p + 3;
 
     if (nalu_pending) {
         uint8_t *rbsp_data = ov_malloc(dmx->rbsp_ctx.rbsp_size + OV_RBSP_PADDING);
@@ -679,7 +706,9 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
                 ov_free(rbsp_data);
                 return OV_ENOMEM;
             }
+
             memcpy(epb_pos, dmx->epb_info.epb_pos, dmx->epb_info.nb_epb * sizeof(*epb_pos));
+
             nalu_pending->nalu.epb_pos = epb_pos;
             nalu_pending->nalu.nb_epb = dmx->epb_info.nb_epb;
         }
@@ -694,7 +723,6 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
 
         append_nalu_elem(nalu_list, nalu_pending);
     }
-
 
     nalu_elem->nalu.type = nalu_type;
 
@@ -716,14 +744,15 @@ process_emulation_prevention_byte(OVVCDmx *const dmx, struct ReaderCache *const 
     /* We keep the two zero bytes of emulation prevention three bytes
      * so the end of segment to append is at byte_pos + 2
      */
-    sgmt_ctx->end = byte_pos + 1;
+    sgmt_ctx->end_p += 2;
 
     append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
+
+    sgmt_ctx->end_p = sgmt_ctx->start_p = sgmt_ctx->end_p + 1;
 
     /* We remove the emulation prevention 0x03 so the next segment start
      * position in cache is at byte_pos + 3
      */
-    sgmt_ctx->start = sgmt_ctx->end + 3;
 
     if (epb_info->nb_epb + 1 > (epb_info->cache_size)/sizeof(*epb_info->epb_pos)) {
         int ret = extend_epb_cache(epb_info);
@@ -733,8 +762,11 @@ process_emulation_prevention_byte(OVVCDmx *const dmx, struct ReaderCache *const 
         }
     }
 
-    epb_info->epb_pos[epb_info->nb_epb++];
+    /* FIXME new computation of epb position */
+    epb_info->epb_pos[epb_info->nb_epb] = dmx->rbsp_ctx.rbsp_size - 1 + epb_info->nb_epb;
+    epb_info->nb_epb++;
 
+    /* FIXME optional general dmx info */
     dmx->nb_epb++;
 
     printf("EPB at pos : %ld\n", byte_pos - 8);
@@ -752,27 +784,38 @@ static int
 extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
 {
     const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
-    const uint8_t *byte = &cache_ctx->data_start[cache_ctx->first_pos];
+    const uint8_t *byte = cache_ctx->cache_start;
+    const uint8_t *cache_end = cache_ctx->cache_end;
     uint32_t byte_pos = cache_ctx->first_pos & mask;
     uint8_t end_of_cache;
     struct RBSPSegment sgmt_ctx = {0};
 
+    sgmt_ctx.start_p = byte + byte_pos;
+    sgmt_ctx.end_p   = byte + byte_pos;
+
     do {
         const uint8_t *bytestream = &byte[byte_pos & mask];
 
-        /*FIXME we will actually loop over this more than once even if a start
-          code has been detected. This is a bit inefficient */
-        /*TODO bintricks for two fast zero bytes detection*/
+        /* FIXME we will actually loop over this more than once even if a start
+         * code has been detected. This is a bit inefficient
+         * TODO bin tricks for two fast zero bytes detection
+         */
         if (*bytestream == 0) {
             int ret;
             ret = ovannexb_check_stc_or_epb(bytestream);
             if (ret < 0) {
                 printf("Invalid\n");
-                ret = -1;
+                ov_log(dmx, 3, "Invalid raw VVC data\n");
+                ret = OV_INVALID_DATA;
             }
 
             if (ret) {
                 enum RBSPSegmentDelimiter dlm = ret;
+
+                /* Segment end corresponds to previous byte */
+                #if 1
+                sgmt_ctx.end_p = bytestream;
+                #endif
 
                 switch (dlm) {
                 case ANNEXB_STC:
@@ -782,17 +825,27 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
                     ret = process_emulation_prevention_byte(dmx, cache_ctx, byte_pos, &sgmt_ctx);
                     break;
                 }
+                byte_pos += 3;
 
                 if (ret < 0) {
                     return ret;
                 }
             }
         }
-        end_of_cache = ((++byte_pos) & mask) == 0;
+        /* Note we actually mean >= here since the last bytes reside
+         * into padded area sometimes we might read up to 6 bytes ahead
+         * of cache end and the next segment start might be located
+         * at cache end + 2 in case an Emulation prevention three bytes
+         * overlap cache end
+         */
+        end_of_cache = &byte[++byte_pos] >= cache_end;
     } while (!end_of_cache);
 
+    /* Keep track of overlapping removed start code or EBP*/
+    cache_ctx->first_pos = cache_end - &byte[byte_pos];
+
     /* End of cache */
-    sgmt_ctx.end = byte_pos;
+    sgmt_ctx.end_p = byte + byte_pos;
 
     append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, &sgmt_ctx);
 
