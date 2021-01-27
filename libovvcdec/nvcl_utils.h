@@ -112,22 +112,6 @@ fill_cache32(OVNVCLReader *rdr)
 }
 
 static inline int
-nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
-              int bit_size)
-{
-    int buffer_size = (bit_size + 7) >> 3;
-
-    rdr->bytestream       = bytestream_start;
-    rdr->bytestream_end   = bytestream_start + buffer_size;
-    rdr->size_in_bits     = bit_size;
-    rdr->nb_bytes_read    = 0;
-
-    fill_cache64(rdr);
-
-    return ret;
-}
-
-static inline int
 nvclctx_num_bits_read(const OVNVCLReader *rdr)
 {
     return (rdr->nb_bytes_read << 3) - rdr->nb_cached_bits;
