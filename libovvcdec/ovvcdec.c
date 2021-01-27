@@ -114,13 +114,13 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
         }
         break;
     case OVNALU_SPS:
-        ret = 0;
+        ret = nvcl_sps_read(&rdr, NULL, &vvcdec->nvcl_ctx);
         if (ret < 0) {
             goto fail;
         }
         break;
     case OVNALU_PPS:
-        ret = 0;
+        ret = nvcl_pps_read(&rdr, NULL, &vvcdec->nvcl_ctx);
         if (ret < 0) {
             goto fail;
         }

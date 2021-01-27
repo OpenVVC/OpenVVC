@@ -23,4 +23,10 @@ OBJS = ovvcdec.o                                                      \
 			 rcn_mc.o																												\
        mempool.o                                                      \
        ctudec.o
+       nvcl.o                                                         \
+       nvcl_nal_sps.o                                                 \
+       nvcl_nal_pps.o                                                 \
+       nvcl_ptl.o                                                     \
+       nvcl_dpb.o                                                     \
+       vcl_cabac.o\
 

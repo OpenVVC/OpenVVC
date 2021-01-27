@@ -45,6 +45,17 @@ static inline int nvclctx_num_bits_read(const OVNVCLReader *rdr);
 
 static inline int nvclctx_num_bits_left(OVNVCLReader *rdr);
 
+static inline void nvcl_skip_bits(OVNVCLReader *rdr, int n)
+{
+    if (n > rdr->nb_cached_bits) {
+        fill_cache32(rdr);
+        if (rdr->nb_cached_bits < 32)
+            rdr->nb_cached_bits = n;
+    }
+
+    rdr->cache <<= n;
+    rdr->nb_cached_bits -= n;
+}
 
 static inline uint64_t
 read_bigendian_64(const uint8_t *bytestream)

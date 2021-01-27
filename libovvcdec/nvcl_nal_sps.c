@@ -1,5 +1,7 @@
 #include "nvcl.h"
 #include "nvcl_utils.h"
+#include "nvcl_private.h"
+
 
 typedef struct OVSPS
 {
@@ -18,8 +20,8 @@ typedef struct OVSPS
     uint8_t sps_ref_pic_resampling_enabled_flag;
     uint8_t sps_res_change_in_clvs_allowed_flag;
 
-    uint8_t sps_pic_width_max_in_luma_samples;
-    uint8_t sps_pic_height_max_in_luma_samples;
+    uint16_t sps_pic_width_max_in_luma_samples;
+    uint16_t sps_pic_height_max_in_luma_samples;
 
     uint8_t sps_conformance_window_flag;
     uint8_t sps_conf_win_left_offset;
@@ -31,16 +33,16 @@ typedef struct OVSPS
     uint8_t sps_num_subpics_minus1;
     uint8_t sps_independent_subpics_flag;
     uint8_t sps_subpic_same_size_flag;
-    uint8_t sps_subpic_ctu_top_left_x[i]; /* max num_sub_pic_h ?*/
-    uint8_t sps_subpic_ctu_top_left_y[i]; /* max num_sub_pic_v? */
-    uint8_t sps_subpic_width_minus1[i]; /* max num_sub_pic */
-    uint8_t sps_subpic_height_minus1[i]; /* max num_sub_pic */
-    uint8_t sps_subpic_treated_as_pic_flag[i]; /* max num_sub_pic */
-    uint8_t sps_loop_filter_across_subpic_enabled_flag[i]; /* max num_sub_pic */
+    uint8_t sps_subpic_ctu_top_left_x[16]; /* max num_sub_pic_h ?*/
+    uint8_t sps_subpic_ctu_top_left_y[16]; /* max num_sub_pic_v? */
+    uint8_t sps_subpic_width_minus1[16]; /* max num_sub_pic */
+    uint8_t sps_subpic_height_minus1[16]; /* max num_sub_pic */
+    uint8_t sps_subpic_treated_as_pic_flag[16]; /* max num_sub_pic */
+    uint8_t sps_loop_filter_across_subpic_enabled_flag[16]; /* max num_sub_pic */
     uint8_t sps_subpic_id_len_minus1;
     uint8_t sps_subpic_id_mapping_explicitly_signalled_flag;
     uint8_t sps_subpic_id_mapping_present_flag;
-    uint8_t sps_subpic_id[i]; /* max num_sub_pic */
+    uint8_t sps_subpic_id[16]; /* max num_sub_pic */
 
     uint8_t sps_bitdepth_minus8;
     uint8_t sps_entropy_coding_sync_enabled_flag;
@@ -94,10 +96,10 @@ typedef struct OVSPS
 
     uint8_t sps_joint_cbcr_enabled_flag;
     uint8_t sps_same_qp_table_for_chroma_flag;
-    uint8_t sps_qp_table_start_minus26[i]; /* i == 1 for same_qp_table_for_chroma, 2 + joint_cbrcr_flag otherwise*/
-    uint8_t sps_num_points_in_qp_table_minus1[i];
-    uint8_t sps_delta_qp_in_val_minus1[i][j]; /*j = max num_points_in_qp_table 64?*/
-    uint8_t sps_delta_qp_diff_val[i][j]; /*j = max num_points_in_qp_table 64?*/
+    uint8_t sps_qp_table_start_minus26[64]; /* i == 1 for same_qp_table_for_chroma, 2 + joint_cbrcr_flag otherwise*/
+    uint8_t sps_num_points_in_qp_table_minus1[64];
+    uint8_t sps_delta_qp_in_val_minus1[3][64]; /*j = max num_points_in_qp_table 64?*/
+    uint8_t sps_delta_qp_diff_val[3][64]; /*j = max num_points_in_qp_table 64?*/
 
     uint8_t sps_sao_enabled_flag;
 
@@ -178,8 +180,8 @@ typedef struct OVSPS
     uint8_t sps_ladf_enabled_flag;
     uint8_t sps_num_ladf_intervals_minus2;
     uint8_t sps_ladf_lowest_interval_qp_offset;
-    uint8_t sps_ladf_qp_offset[i]; /* max_num_ladf_intervals */
-    uint8_t sps_ladf_delta_threshold_minus1[i];
+    uint8_t sps_ladf_qp_offset[64]; /* max_num_ladf_intervals */
+    uint8_t sps_ladf_delta_threshold_minus1[64];
 
     uint8_t sps_explicit_scaling_list_enabled_flag;
     uint8_t sps_scaling_matrix_for_lfnst_disabled_flag;
@@ -192,9 +194,9 @@ typedef struct OVSPS
     uint8_t sps_virtual_boundaries_enabled_flag;
     uint8_t sps_virtual_boundaries_present_flag;
     uint8_t sps_num_ver_virtual_boundaries;
-    uint8_t sps_virtual_boundary_pos_x_minus1[i]; /* max_num_virtual_boundaries_ver */
+    uint8_t sps_virtual_boundary_pos_x_minus1[16]; /* max_num_virtual_boundaries_ver */
     uint8_t sps_num_hor_virtual_boundaries;
-    uint8_t sps_virtual_boundary_pos_y_minus1[i]; /* max_num_virtual_boundaries_hor */
+    uint8_t sps_virtual_boundary_pos_y_minus1[16]; /* max_num_virtual_boundaries_hor */
 
     uint8_t sps_timing_hrd_params_present_flag;
     OVGHRDTiming * general_timing_hrd_parameters;
@@ -213,27 +215,29 @@ typedef struct OVSPS
     uint8_t sps_extension_data_flag;
 } OVSPS;
 
-void subpic_info(OVSPS *const sps)
+void subpic_info(OVNVCLReader *const rdr, OVSPS *const sps)
 {
     sps->sps_num_subpics_minus1 = nvcl_read_u_expgolomb(rdr);
     if (sps->sps_num_subpics_minus1 > 0) {
+        int i;
         int pic_w = sps->sps_pic_width_max_in_luma_samples;
         int pic_h = sps->sps_pic_height_max_in_luma_samples;
         int log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
         int nb_ctu_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
         int nb_ctu_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+        int ctb_s = 1 << log2_ctb_s;
         sps->sps_independent_subpics_flag = nvcl_read_flag(rdr);
         sps->sps_subpic_same_size_flag = nvcl_read_flag(rdr);
         for (i = 0; i < 1; i++) {
 
             /*TODO check ctb_w and ctb_h conditions once outside of loop*/
             /*FIXME ceil_log2 */
-            if (sps->sps_pic_width_max_in_luma_samples > CtbSizeY) {
+            if (sps->sps_pic_width_max_in_luma_samples > ctb_s) {
                 int v = ov_ceil_log2(nb_ctu_w);
                 sps->sps_subpic_width_minus1[i] = nvcl_read_bits(rdr,v);
             }
 
-            if (sps->sps_pic_height_max_in_luma_samples > CtbSizeY) {
+            if (sps->sps_pic_height_max_in_luma_samples > ctb_s) {
                 int v = ov_ceil_log2(nb_ctu_h);
                 sps->sps_subpic_height_minus1[i] = nvcl_read_bits(rdr,v);
             }
@@ -247,24 +251,24 @@ void subpic_info(OVSPS *const sps)
         if (!sps->sps_subpic_same_size_flag) {
             /*TODO check ctb_w and ctb_h conditions once outside of loop*/
             /*FIXME ensure sps_subpic_ctu_top_left_*[0] are init at 0*/
-            for (i = 1; i <= sps_num_subpics_minus1; i++) {
+            for (i = 1; i <= sps->sps_num_subpics_minus1; i++) {
 
-                if (sps->sps_pic_width_max_in_luma_samples > CtbSizeY) {
+                if (sps->sps_pic_width_max_in_luma_samples > ctb_s) {
                     int v = ov_ceil_log2(nb_ctu_w);
                     sps->sps_subpic_ctu_top_left_x[i] = nvcl_read_bits(rdr, v);
                 }
 
-                if (sps->sps_pic_height_max_in_luma_samples > CtbSizeY) {
+                if (sps->sps_pic_height_max_in_luma_samples > ctb_s) {
                     int v = ov_ceil_log2(nb_ctu_h);
                     sps->sps_subpic_ctu_top_left_y[i] = nvcl_read_bits(rdr, v);
                 }
 
-                if (i < sps_num_subpics_minus1 && sps->sps_pic_width_max_in_luma_samples > CtbSizeY) {
+                if (i < sps->sps_num_subpics_minus1 && sps->sps_pic_width_max_in_luma_samples > ctb_s) {
                     int v = ov_ceil_log2(nb_ctu_w);
                     sps->sps_subpic_width_minus1[i] = nvcl_read_bits(rdr, v);
                 }
 
-                if (i < sps_num_subpics_minus1 && sps->sps_pic_height_max_in_luma_samples > CtbSizeY) {
+                if (i < sps->sps_num_subpics_minus1 && sps->sps_pic_height_max_in_luma_samples > ctb_s) {
                     int v = ov_ceil_log2(nb_ctu_h);
                     sps->sps_subpic_height_minus1[i] = nvcl_read_bits(rdr, v);
                 }
@@ -284,7 +288,8 @@ void subpic_info(OVSPS *const sps)
 
         sps->sps_subpic_id_mapping_present_flag = nvcl_read_flag(rdr);
         if (sps->sps_subpic_id_mapping_present_flag) {
-            for (i = 0; i <= sps_num_subpics_minus1; i++) {
+            int i;
+            for (i = 0; i <= sps->sps_num_subpics_minus1; i++) {
                 sps->sps_subpic_id[i] = nvcl_read_bits(rdr, sps->sps_subpic_id_len_minus1 + 1);
             }
         }
@@ -292,9 +297,13 @@ void subpic_info(OVSPS *const sps)
 }
 
 int
-nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
-              OVNVCLCtx *const nvcl_ctx);
+nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps2,
+              OVNVCLCtx *const nvcl_ctx)
 {
+    int i, j;
+    OVSPS stck_sps = {0};
+    OVSPS *const sps = &stck_sps;
+    nvcl_skip_bits(rdr, 16);
     sps->sps_seq_parameter_set_id   = nvcl_read_bits(rdr, 4);
     sps->sps_video_parameter_set_id = nvcl_read_bits(rdr, 4);
     sps->sps_max_sublayers_minus1   = nvcl_read_bits(rdr, 3);
@@ -303,8 +312,8 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
 
     sps->sps_ptl_dpb_hrd_params_present_flag = nvcl_read_flag(rdr);
     if (sps->sps_ptl_dpb_hrd_params_present_flag) {
-        #if 0
-        profile_tier_level(1, sps_max_sublayers_minus1);
+        #if 1
+        profile_tier_level_sps(rdr, sps->sps_max_sublayers_minus1);
         #endif
     }
 
@@ -329,7 +338,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
     sps->sps_subpic_info_present_flag = nvcl_read_flag(rdr);
     if (sps->sps_subpic_info_present_flag) {
     /* FIXME move to specialized function */
-       subpic_info(sps);
+       subpic_info(rdr, sps);
     }
 
     sps->sps_bitdepth_minus8 = nvcl_read_u_expgolomb(rdr);
@@ -344,12 +353,12 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
 
     sps->sps_num_extra_ph_bytes = nvcl_read_bits(rdr, 2);
     for (i = 0; i < (sps->sps_num_extra_ph_bytes * 8); i++) {
-        sps->sps_extra_ph_bit_present_flag[i];
+        sps->sps_extra_ph_bit_present_flag[i] = nvcl_read_flag(rdr);
     }
 
     sps->sps_num_extra_sh_bytes = nvcl_read_bits(rdr, 2);
     for (i = 0; i < (sps->sps_num_extra_sh_bytes * 8); i++) {
-        sps->sps_extra_sh_bit_present_flag[i];
+        sps->sps_extra_sh_bit_present_flag[i] = nvcl_read_flag(rdr);
     }
 
     if (sps->sps_ptl_dpb_hrd_params_present_flag) {
@@ -358,8 +367,8 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
             sps->sps_sublayer_dpb_params_flag = nvcl_read_flag(rdr);
         }
 
-        #if 0
-        dpb_parameters(sps->sps_max_sublayers_minus1, sps_sublayer_dpb_params_flag)
+        #if 1
+        dpb_parameters(rdr, sps->sps_max_sublayers_minus1, sps->sps_sublayer_dpb_params_flag);
         #endif
     }
 
@@ -419,7 +428,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
 
         sps->sps_qp_table_start_minus26[0] = nvcl_read_s_expgolomb(rdr);
         sps->sps_num_points_in_qp_table_minus1[0] = nvcl_read_u_expgolomb(rdr);
-        for (j = 0; j <= sps_num_points_in_qp_table_minus1[0]; j++) {
+        for (j = 0; j <= sps->sps_num_points_in_qp_table_minus1[0]; j++) {
             sps->sps_delta_qp_in_val_minus1[0][j] = nvcl_read_u_expgolomb(rdr);
             sps->sps_delta_qp_diff_val[0][j] = nvcl_read_u_expgolomb(rdr);
         }
@@ -428,7 +437,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
             for (i = 1; i < 2 + sps->sps_joint_cbcr_enabled_flag; i++) {
                 sps->sps_qp_table_start_minus26[i] = nvcl_read_s_expgolomb(rdr);
                 sps->sps_num_points_in_qp_table_minus1[i] = nvcl_read_u_expgolomb(rdr);
-                for (j = 0; j <= sps_num_points_in_qp_table_minus1[i]; j++) {
+                for (j = 0; j <= sps->sps_num_points_in_qp_table_minus1[i]; j++) {
                     sps->sps_delta_qp_in_val_minus1[i][j] = nvcl_read_u_expgolomb(rdr);
                     sps->sps_delta_qp_diff_val[i][j] = nvcl_read_u_expgolomb(rdr);
                 }
@@ -457,15 +466,15 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
     sps->sps_rpl1_same_as_rpl0_flag = nvcl_read_flag(rdr);
 
     sps->sps_num_ref_pic_lists0 = nvcl_read_u_expgolomb(rdr);
-    for (j = 0; j < sps_num_ref_pic_lists0; j++) {
+    for (j = 0; j < sps->sps_num_ref_pic_lists0; j++) {
         #if 0
         ref_pic_list_struct(O, j);
         #endif
     }
 
-    if (!sps_rpl1_same_as_rpl0_flag) {
+    if (!sps->sps_rpl1_same_as_rpl0_flag) {
         sps->sps_num_ref_pic_lists1 = nvcl_read_u_expgolomb(rdr);
-        for (j = 0; j < sps_num_ref_pic_lists1; j++) {
+        for (j = 0; j < sps->sps_num_ref_pic_lists1; j++) {
             #if 0
             ref_pic_list_struct(1, j);
             #endif
@@ -521,9 +530,11 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
     sps->sps_bcw_enabled_flag = nvcl_read_flag(rdr);
     sps->sps_ciip_enabled_flag = nvcl_read_flag(rdr);
 
-    if (MaxNumMergeCand >= 2) {
+    /*FIXME max_num_merge_cand assumption */
+    int max_nb_mrg_cand = 6 - sps->sps_six_minus_max_num_merge_cand;
+    if (max_nb_mrg_cand >= 2) {
         sps->sps_gpm_enabled_flag = nvcl_read_flag(rdr);
-        if (sps->sps_gpm_enabled_flag && MaxNumMergeCand >= 3) {
+        if (sps->sps_gpm_enabled_flag && max_nb_mrg_cand >= 3) {
             sps->sps_max_num_merge_cand_minus_max_num_gpm_cand = nvcl_read_u_expgolomb(rdr);
         }
     }
@@ -555,14 +566,15 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
 
     sps->sps_ibc_enabled_flag = nvcl_read_flag(rdr);
     if (sps->sps_ibc_enabled_flag) {
-        sps->sps_six_minus_max_num_ibc_merge_cand;
+        /* FIXME check code type */
+        sps->sps_six_minus_max_num_ibc_merge_cand = nvcl_read_u_expgolomb(rdr);
     }
 
     sps->sps_ladf_enabled_flag = nvcl_read_flag(rdr);
     if (sps->sps_ladf_enabled_flag) {
         sps->sps_num_ladf_intervals_minus2 = nvcl_read_bits(rdr, 2);
         sps->sps_ladf_lowest_interval_qp_offset = nvcl_read_s_expgolomb(rdr);
-        for (i = 0; i < sps_num_ladf_intervals_minus2 + 1; i++) {
+        for (i = 0; i < sps->sps_num_ladf_intervals_minus2 + 1; i++) {
             sps->sps_ladf_qp_offset[i] = nvcl_read_s_expgolomb(rdr);
             sps->sps_ladf_delta_threshold_minus1[i] = nvcl_read_u_expgolomb(rdr);
         }
@@ -591,12 +603,12 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
         sps->sps_virtual_boundaries_present_flag = nvcl_read_flag(rdr);
         if (sps->sps_virtual_boundaries_present_flag) {
             sps->sps_num_ver_virtual_boundaries = nvcl_read_u_expgolomb(rdr);
-            for (i = 0; i < sps_num_ver_virtual_boundaries; i++) {
+            for (i = 0; i < sps->sps_num_ver_virtual_boundaries; i++) {
                 sps->sps_virtual_boundary_pos_x_minus1[i] = nvcl_read_u_expgolomb(rdr);
             }
 
             sps->sps_num_hor_virtual_boundaries = nvcl_read_u_expgolomb(rdr);
-            for (i = 0; i < sps_num_hor_virtual_boundaries; i++) {
+            for (i = 0; i < sps->sps_num_hor_virtual_boundaries; i++) {
                 sps->sps_virtual_boundary_pos_y_minus1[i] = nvcl_read_u_expgolomb(rdr);
             }
         }
@@ -612,8 +624,8 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
                 sps->sps_sublayer_cpb_params_present_flag = nvcl_read_flag(rdr);
             }
 
-            int firstSubLayer = sps_sublayer_cpb_params_present_flag ? 0 : sps_max_sublayers_minus1;
             #if 0
+            int firstSubLayer = sps->sps_sublayer_cpb_params_present_flag ? 0 : sps->sps_max_sublayers_minus1;
             ols_timing_hrd_parameters(firstSubLayer, sps_max_sublayers_minus1)
             #endif
         }
@@ -631,23 +643,25 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
         #else
         /*FIXME byte alignment function could return negative walue if
           bits read before alignment are not zeroed */
-            nvcl_align(rdr):
+            nvcl_align(rdr);
         #endif
 
         #if 0
         vui_payload(sps->sps_vui_payload_size_minus1 + 1)
-        #else
         fprintf(stderr, "VUI support not available yet");
-        nvcl_skip(rdr, sps->sps_vui_payload_size_minus1 + 1);
+        #else
+        nvcl_skip_bits(rdr, sps->sps_vui_payload_size_minus1 + 1);
         #endif
     }
 
     sps->sps_extension_flag = nvcl_read_flag(rdr);
     if (sps->sps_extension_flag) {
+        #if 0
         fprintf(stderr, "Ignored sps extensions");
         while (more_rbsp_data()) {
             sps->sps_extension_data_flag = nvcl_read_flag(rdr);
         }
+        #endif
     }
 
     /*FIXME decide whether or not we should keep the rbsp trailing

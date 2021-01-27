@@ -1,5 +1,6 @@
 #include "nvcl.h"
 #include "nvcl_utils.h"
+#include "nvcl_private.h"
 
 typedef struct OVGCI
 {
@@ -81,7 +82,7 @@ typedef struct OVGCI
     uint8_t gci_no_virtual_boundaries_constraint_flag;
     /* unused */
     uint8_t gci_num_reserved_bits;
-    uint8_t gci_reserved_zero_bit[i];
+    uint8_t gci_reserved_zero_bit[256];
     uint8_t gci_alignment_zero_bit;
 } OVGCI;
 
@@ -92,11 +93,11 @@ typedef struct OVPTL
     uint8_t general_level_idc;
     uint8_t ptl_frame_only_constraint_flag;
     uint8_t ptl_multilayer_enabled_flag;
-    uint8_t ptl_sublayer_level_present_flag[i];
+    uint8_t ptl_sublayer_level_present_flag[64];
     uint8_t ptl_reserved_zero_bit;
-    uint8_t sublayer_level_idc[i];
+    uint8_t sublayer_level_idc[64];
     uint8_t ptl_num_sub_profiles;
-    uint8_t general_sub_profile_idc[i];
+    uint8_t general_sub_profile_idc[64];
 } OVPTL;
 
 #if 0
@@ -138,8 +139,13 @@ profile_tier_level(profileTierPresentFlag, MaxNumSubLayersMinus1)
 }
 #endif
 
-profile_tier_level_vps(OVNVCLReader *const rdr, vps_pt_present_flag, vps_ptl_max_tid)
+int
+profile_tier_level_vps(OVNVCLReader *const rdr, uint8_t vps_pt_present_flag, uint8_t vps_ptl_max_tid)
 {
+    int i;
+    struct OVPTL *ptl;
+    struct OVPTL ptl_stck;
+    ptl = &ptl_stck;
     if(vps_pt_present_flag) {
         ptl->general_profile_idc = nvcl_read_bits(rdr, 7);
         ptl->general_tier_flag = nvcl_read_flag(rdr);
@@ -150,53 +156,70 @@ profile_tier_level_vps(OVNVCLReader *const rdr, vps_pt_present_flag, vps_ptl_max
     ptl->ptl_multilayer_enabled_flag = nvcl_read_flag(rdr);
 
     if(vps_pt_present_flag) {
-        general_constraints_info();
+        general_constraints_info(rdr);
     }
 
     for (i = vps_ptl_max_tid - 1; i >= 0; i--) {
         ptl->ptl_sublayer_level_present_flag[i] = nvcl_read_flag(rdr);
     }
 
+    #if 0
     while(!byte_aligned()) {
         ptl->ptl_reserved_zero_bit= nvcl_read_bits(rdr, 1);
     }
+    #else
+    nvcl_align(rdr);
+    #endif
 
     for (i = vps_ptl_max_tid - 1; i >= 0; i--) {
-        if(ptl_sublayer_level_present_flag[i]) {
+        if(ptl->ptl_sublayer_level_present_flag[i]) {
             ptl->sublayer_level_idc[i]= nvcl_read_bits(rdr, 8);
         }
     }
 
     if(vps_pt_present_flag) {
         ptl->ptl_num_sub_profiles = nvcl_read_bits(rdr, 8);
-        for (i = 0; i < ptl_num_sub_profiles; i++) {
+        for (i = 0; i < ptl->ptl_num_sub_profiles; i++) {
             ptl->general_sub_profile_idc[i] = nvcl_read_bits(rdr, 32);
         }
     }
+    return 0;
 }
 
-profile_tier_level_sps(OVNVCLReader *const rdr, sps_max_sublayers_minus1)
+int
+profile_tier_level_sps(OVNVCLReader *const rdr,  uint8_t sps_max_sublayers_minus1)
 {
+    int i;
+    struct OVPTL *ptl;
+    struct OVPTL ptl_stck;
+    ptl = &ptl_stck;
     ptl->general_profile_idc = nvcl_read_bits(rdr, 7);
     ptl->general_tier_flag = nvcl_read_flag(rdr);
 
+    #if 0
     ptl->general_level_idc = nvcl_read_bits(rdr, 8);
     ptl->ptl_frame_only_constraint_flag = nvcl_read_flag(rdr);
     ptl->ptl_multilayer_enabled_flag = nvcl_read_flag(rdr);
+    #endif
 
-    general_constraints_info();
+    general_constraints_info(rdr);
 
     for (i = sps_max_sublayers_minus1 - 1; i >= 0; i--) {
         ptl->ptl_sublayer_level_present_flag[i] = nvcl_read_flag(rdr);
     }
 
+    ptl->general_level_idc = nvcl_read_bits(rdr, 8);
     /* FIXME check align function */
+    #if 0
     while(!byte_aligned()) {
         ptl->ptl_reserved_zero_bit= nvcl_read_bits(rdr, 1);
     }
+    #else
+    nvcl_align(rdr);
+    #endif
 
     for (i = sps_max_sublayers_minus1 - 1; i >= 0; i--) {
-        if(ptl_sublayer_level_present_flag[i]) {
+        if(ptl->ptl_sublayer_level_present_flag[i]) {
             ptl->sublayer_level_idc[i]= nvcl_read_bits(rdr, 8);
         }
     }
@@ -205,10 +228,19 @@ profile_tier_level_sps(OVNVCLReader *const rdr, sps_max_sublayers_minus1)
     for (i = 0; i < ptl->ptl_num_sub_profiles; i++) {
         ptl->general_sub_profile_idc[i] = nvcl_read_bits(rdr, 32);
     }
+    nvcl_align(rdr);
+
+    return 0;
 }
 
+int
 profile_tier_level_dci(OVNVCLReader *const rdr)
 {
+    int i;
+    struct OVPTL *ptl;
+    struct OVPTL ptl_stck;
+    ptl = &ptl_stck;
+
     ptl->general_profile_idc = nvcl_read_bits(rdr, 7);
     ptl->general_tier_flag = nvcl_read_flag(rdr);
 
@@ -216,24 +248,34 @@ profile_tier_level_dci(OVNVCLReader *const rdr)
     ptl->ptl_frame_only_constraint_flag = nvcl_read_flag(rdr);
     ptl->ptl_multilayer_enabled_flag = nvcl_read_flag(rdr);
 
-    general_constraints_info();
+    general_constraints_info(rdr);
 
     /* FIXME check align function */
+    #if 0
     while(!byte_aligned()) {
         ptl->ptl_reserved_zero_bit= nvcl_read_bits(rdr, 1);
     }
+    #else
+    nvcl_align(rdr);
+    #endif
 
     ptl->ptl_num_sub_profiles = nvcl_read_bits(rdr, 8);
     for (i = 0; i < ptl->ptl_num_sub_profiles; i++) {
         ptl->general_sub_profile_idc[i] = nvcl_read_bits(rdr, 32);
     }
+    return 0;
 }
 
+int
 general_constraints_info(OVNVCLReader *const rdr)
 {
     /*FIXME read before function call */
+    struct OVGCI *gci;
+    struct OVGCI gci_stck;
+    gci = &gci_stck;
     gci->gci_present_flag = nvcl_read_flag(rdr);
     if (gci->gci_present_flag) {
+        int i;
         /* general */
         gci->gci_intra_only_constraint_flag = nvcl_read_flag(rdr);
         gci->gci_all_layers_independent_constraint_flag = nvcl_read_flag(rdr);
@@ -310,12 +352,17 @@ general_constraints_info(OVNVCLReader *const rdr)
         gci->gci_no_ladf_constraint_flag = nvcl_read_flag(rdr);
         gci->gci_no_virtual_boundaries_constraint_flag = nvcl_read_flag(rdr);
         gci->gci_num_reserved_bits = nvcl_read_bits(rdr, 8);
-        for (i = 0; i < gci_num_reserved_bits; i++) {
+        for (i = 0; i < gci->gci_num_reserved_bits; i++) {
             gci->gci_reserved_zero_bit[i] = nvcl_read_bits(rdr, 1);
         }
     }
 
+    #if 0
     while( !byte_aligned()) {
         gci->gci_alignment_zero_bit = nvcl_read_bits(rdr, 1);
     }
+    #else
+    nvcl_align(rdr);
+    #endif
+    return 0;
 }

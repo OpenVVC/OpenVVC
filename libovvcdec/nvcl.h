@@ -1,5 +1,6 @@
 #ifndef OV_NVCL_H
 #define OV_NVCL_H
+#include <stdint.h>
 
 typedef struct OVNVCLReader OVNVCLReader;
 typedef struct OVNVCLCtx OVNVCLCtx;
