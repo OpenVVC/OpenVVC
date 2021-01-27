@@ -163,6 +163,23 @@ fail:
     return ret;
 }
 
+static int
+vvc_decode_picture_unit(OVVCDec *dec, const OVPictureUnit *pu)
+{
+    int i;
+    int ret;
+    for (i = 0; i < pu->nb_nalus; ++i) {
+        ret = decode_nal_unit(dec, &pu->nalus[i]);
+        if (ret < 0) {
+            goto fail;
+        }
+    }
+    return 0;
+
+fail:
+    /* Error processing if needed */
+    return ret;
+}
 
 #if 0
 static int
@@ -263,7 +280,7 @@ fail:
 #endif
 
 int
-ovdec_submit_picture_unit(OVVCDec *vvcdec, uint8_t *buff, size_t buff_size)
+ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *const pu)
 {
     int ret = 0;
 
@@ -281,9 +298,9 @@ ovdec_submit_picture_unit(OVVCDec *vvcdec, uint8_t *buff, size_t buff_size)
     if (ret < 0) {
         return ret;
     }
-
-    ret = vvc_decode_picture_unit(vvcdec, pkt);
     #endif
+
+    ret = vvc_decode_picture_unit(vvcdec, pu);
 
     return ret;
 }

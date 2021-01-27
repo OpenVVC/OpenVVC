@@ -507,8 +507,10 @@ convert_nalu_list_to_pu(OVPictureUnit *dst, struct NALUnitsList *const src)
 
     while (lelem) {
         memcpy(&dst->nalus[i++], &lelem->nalu, sizeof(*dst->nalus)) ;
+        memset(&lelem->nalu, 0, sizeof(lelem->nalu));
         lelem = lelem->next_nalu;
     }
+
     dst->nb_nalus = nb_nalus;
 
     return 0;
@@ -570,7 +572,9 @@ static void
 free_nalu_elem(struct NALUnitListElem *nalu_elem)
 {
     /* TODO unref NALU instead of free */
-    ov_freep(&nalu_elem->nalu.rbsp_data);
+    if (nalu_elem->nalu.rbsp_data) {
+        ov_freep(&nalu_elem->nalu.rbsp_data);
+    }
 
     if (nalu_elem->nalu.epb_pos){
         ov_freep(&nalu_elem->nalu.epb_pos);

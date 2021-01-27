@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "libovvcdmx/ovunits.h"
+
 typedef struct OVVCDec OVVCDec;
 
 typedef struct SubDec OVSubDec;
@@ -16,7 +18,7 @@ typedef struct SubDec OVSubDec;
  * thread before returning
  * returns a negative number of failure, 0 otherwise
  */
-int ovdec_submit_picture_unit(OVVCDec *vvcdec, uint8_t *buff, size_t buff_size);
+int ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *pu);
 
 int ovdec_init(OVVCDec **ovvcdec);
 

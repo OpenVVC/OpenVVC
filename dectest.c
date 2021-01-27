@@ -24,7 +24,7 @@ static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
 static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
-static int read_stream(OVVCDmx *const dmx, FILE *fp);
+static int read_stream(OVVCHdl *const hdl, FILE *fp);
 
 int
 main(int argc, char** argv)
@@ -52,7 +52,7 @@ main(int argc, char** argv)
 
     if (ret < 0) goto failattach;
 
-    read_stream(ovvc_hdl.dmx, ovvc_hdl.fp);
+    read_stream(&ovvc_hdl, ovvc_hdl.fp);
 
     ovdmx_detach_stream(ovvc_hdl.dmx);
 
@@ -150,20 +150,28 @@ faildmxclose:
 }
 
 static int
-read_stream(OVVCDmx *const dmx, FILE *fp)
+read_stream(OVVCHdl *const hdl, FILE *fp)
 {
     #if 0
     ovdmx_read_stream(dmx);
     #else
     int ret;
-    OVPictureUnit *pu;
+    OVVCDmx *const dmx = hdl->dmx;
+    OVVCDec *const dec = hdl->dec;
+    OVPictureUnit *pu = NULL;
 
     do {
         ret = ovdmx_extract_picture_unit(dmx, &pu);
-        if (ret >= 0){
-            ov_freep(&pu->nalus);
-            ov_freep(&pu);
+        if (ret < 0) {
+            break;
         }
+
+        if (pu){
+            ret = ovdec_submit_picture_unit(dec, pu);
+
+            ov_free_pu(&pu);
+        }
+
     } while (ret >= 0);
 
     #endif

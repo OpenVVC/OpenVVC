@@ -2,6 +2,7 @@
 #define OVUNITS_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 enum OVNALUType
 {
@@ -89,6 +90,8 @@ typedef struct OVAccessUnit
 } OVAccessUnit;
 
 int ov_init_nalu();
+
+void ov_free_pu(OVPictureUnit **pu);
 
 #endif
 
