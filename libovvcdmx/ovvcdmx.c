@@ -24,7 +24,7 @@
 
 #define OVEPB_CACHE_SIZE (16 * sizeof(uint32_t))
 
-#define OV_RBSP_PADDING 2
+#define OV_RBSP_PADDING 8
 
 enum DMXReturn {
     OV_INVALID_DATA = -1,
@@ -664,7 +664,8 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
     sgmt_ctx->end_p = sgmt_ctx->start_p = sgmt_ctx->end_p + 3;
 
     if (nalu_pending) {
-        uint8_t *rbsp_data = ov_malloc(dmx->rbsp_ctx.rbsp_size + OV_RBSP_PADDING);
+        /* FIXME Using of mallocz is to prevent padding to be not zero */
+        uint8_t *rbsp_data = ov_mallocz(dmx->rbsp_ctx.rbsp_size + OV_RBSP_PADDING);
         if (!rbsp_data) {
             free_nalu_elem(nalu_elem);
             return OV_ENOMEM;
