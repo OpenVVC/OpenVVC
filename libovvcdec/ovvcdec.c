@@ -82,9 +82,7 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
     case OVNALU_CRA:
     case OVNALU_GDR:
 
-        #if 0
-        ret = nvcl_sh_read(rdr, &sh, nvcl_ctx);
-        #endif
+        ret = nvcl_sh_read(&rdr, NULL, nvcl_ctx, nalu_type);
 
         if (ret < 0) {
             return ret;

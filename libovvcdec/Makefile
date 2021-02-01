@@ -26,7 +26,10 @@ OBJS = ovvcdec.o                                                      \
        nvcl.o                                                         \
        nvcl_nal_sps.o                                                 \
        nvcl_nal_pps.o                                                 \
+       nvcl_nal_ph.o                                                  \
        nvcl_ptl.o                                                     \
        nvcl_dpb.o                                                     \
+       nvcl_rpl.o                                                     \
+       vcl_sh.o                                                       \
        vcl_cabac.o\
 
