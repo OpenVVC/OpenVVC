@@ -169,7 +169,7 @@ vvc_intra_planar_pdpc(const uint16_t* const src_above,
         const uint8_t pdpc_scale = (log2_pb_w + log2_pb_h - 2) >> 2;
 
         int32_t t_row[128], b_row[128];
-        const int8_t* pdpc_w = vvc_pdpc_w[pdpc_scale];
+        const int8_t* pdpc_w = (int8_t *)vvc_pdpc_w[pdpc_scale];
         const int16_t bl_val = src_left[height + 1];
         const int16_t tr_val = src_above[width + 1];
         // #if CUT_PDPC

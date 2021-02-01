@@ -1,6 +1,8 @@
-#include <libovvcutils/ovvcutils.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
+
+#include <libovvcutils/ovvcutils.h>
 
 #include "rcn_mc.h"
 

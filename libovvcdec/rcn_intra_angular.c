@@ -1,6 +1,8 @@
-#include <libovvcutils/ovvcutils.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
+
+#include <libovvcutils/ovvcutils.h>
 
 #include "rcn_intra_angular.h"
 
@@ -77,7 +79,7 @@ vvc_intra_angular_hdia(const uint16_t* const ref_above,
                        int log2_pb_height)
 {
 
-        uint16_t tmp_dst[128 * 128];
+        int16_t tmp_dst[128 * 128];
         const int tmp_stride = 128;
         int16_t* _tmp = tmp_dst;
         uint16_t* _dst = dst;
@@ -88,7 +90,9 @@ vvc_intra_angular_hdia(const uint16_t* const ref_above,
         int delta_pos = 32; // angle val is 32 for diag
         for (int y = 0; y < width; y++) {
                 const int delta_int = delta_pos >> 5;
+                #if 0
                 int wT = 16 >> OVMIN(31, ((y << 1) >> scale));
+                #endif
                 for (int x = 0; x < height; x++) {
                         _tmp[x] = ref_left[x + delta_int + 1];
                 }
@@ -132,7 +136,9 @@ vvc_intra_angular_vdia(const uint16_t* const ref_above,
 
         for (int y = 0; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
+                #if 0
                 int wT = 16 >> OVMIN(31, ((y << 1) >> scale));
+                #endif
 
                 for (int x = 0; x < width; x++) {
                         _dst[x] = ref_above[x + delta_int + 1];
@@ -156,7 +162,7 @@ vvc_intra_angular_h_c(const uint16_t* ref_left, uint16_t* dst,
                       ptrdiff_t dst_stride, int log2_pb_width,
                       int log2_pb_height, int angle_val)
 {
-        uint16_t tmp_dst[128 * 128];
+        int16_t tmp_dst[128 * 128];
         int16_t* _tmp = tmp_dst;
         uint16_t* _dst = dst;
         int width = 1 << log2_pb_width;
@@ -320,7 +326,7 @@ vvc_intra_angular_hpos_wide(const uint16_t* const ref_above,
                             ptrdiff_t dst_stride, int log2_pb_width,
                             int log2_pb_height, int mode_idx)
 {
-        uint16_t tmp_dst[128 * 128];
+        int16_t tmp_dst[128 * 128];
         const int tmp_stride = 128;
         int16_t* _tmp = tmp_dst;
         uint16_t* _dst = dst;
@@ -333,7 +339,9 @@ vvc_intra_angular_hpos_wide(const uint16_t* const ref_above,
                           log2_pb_width -
                             (floor_log2(3 * inv_angle - 2) -
                              8)); //(log2_pb_width + log2_pb_height - 2) >> 2;
+        #if 0
         int top_ref_length = 1 << (log2_pb_width + 1);
+        #endif
 
         // swapped width/height for horizontal mode:
         for (int y = 0; y < width; y++) {
@@ -475,7 +483,7 @@ intra_angular_h_nofrac_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
                             uint16_t* dst, ptrdiff_t dst_stride,
                             int log2_pb_width, int log2_pb_height, int mode_idx)
 {
-        uint16_t tmp_dst[128 * 128];
+        int16_t tmp_dst[128 * 128];
         const int tmp_stride = 128;
         int16_t* _tmp = tmp_dst;
         uint16_t* _dst = dst;
@@ -486,7 +494,7 @@ intra_angular_h_nofrac_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
         int delta_pos = angle_val >> 5;
         int scale =
           OVMIN(2, log2_pb_width - (floor_log2(3 * inv_angle - 2) - 8));
-        int y, x;
+        int y/*, x*/;
 
         for (y = 0; y < width; ++y) {
                 int inv_angle_sum = 256 + inv_angle;
@@ -543,7 +551,7 @@ intra_angular_h_gauss_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & 0x1F;
                 int inv_angle_sum = 256 + inv_angle;
-                const int16_t* ref = ref_left + delta_int;
+                const int16_t* ref = (int16_t *)ref_left + delta_int;
                 for (int x = 0; x < height; x++) {
                         _tmp[x] =
                           ((int32_t)(ref[0] * (16 - (delta_frac >> 1))) +
@@ -593,9 +601,9 @@ intra_angular_v_nofrac(const uint16_t* ref_above, uint16_t* dst,
         int delta_pos = angle_val;
 
         int y, x;
-        for (int y = 0; y < height; y++) {
+        for (y = 0; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
-                for (int x = 0; x < width; x++) {
+                for (x = 0; x < width; x++) {
                         _dst[x] = ref_above[x + delta_int + 1];
                 }
                 delta_pos += angle_val;
@@ -660,7 +668,7 @@ intra_angular_v_gauss_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
                 int inv_angle_sum = 256 + inv_angle;
-                const int16_t* ref = ref_above + delta_int;
+                const int16_t* ref = (int16_t*)ref_above + delta_int;
                 for (int x = 0; x < width; x++) {
                         _dst[x] =
                           ((int32_t)(ref[0] * (16 - (delta_frac >> 1))) +
@@ -703,7 +711,7 @@ intra_angular_h_cubic(const uint16_t* ref_left, uint16_t* dst,
         for (int y = 0; y < width; y++) {
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
-                const int16_t* ref = ref_left + delta_int;
+                const int16_t* ref = (int16_t*)ref_left + delta_int;
                 const int8_t* filter = &chroma_filter[delta_frac << 2];
                 for (int x = 0; x < height; x++) {
                         int32_t val;
@@ -747,7 +755,7 @@ intra_angular_h_gauss(const uint16_t* ref_left, uint16_t* dst,
         for (int y = 0; y < width; y++) {
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
-                const int16_t* ref = ref_left + delta_int;
+                const int16_t* ref = (int16_t*)ref_left + delta_int;
                 for (int x = 0; x < height; x++) {
                         _tmp[x] =
                           ((int32_t)(ref[0] * (16 - (delta_frac >> 1))) +
@@ -787,7 +795,7 @@ intra_angular_v_cubic(const uint16_t* ref_above, uint16_t* dst,
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
 
-                const int16_t* ref = ref_above + delta_int;
+                const int16_t* ref = (int16_t*)ref_above + delta_int;
                 const int8_t* filter = &chroma_filter[delta_frac << 2];
 
                 for (int x = 0; x < width; x++) {
@@ -819,7 +827,7 @@ intra_angular_v_gauss(const uint16_t* ref_above, uint16_t* dst,
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
 
-                const int16_t* ref = ref_above + delta_int;
+                const int16_t* ref = (int16_t*)ref_above + delta_int;
 
                 for (int x = 0; x < width; x++) {
                         _dst[x] =
@@ -851,13 +859,15 @@ intra_angular_h_cubic_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
         int delta_pos = angle_val;
         int scale =
           OVMIN(2, log2_pb_width - (floor_log2(3 * inv_angle - 2) - 8));
+        #if 0
         int top_ref_length = 1 << (log2_pb_width + 1);
+        #endif
 
         for (int y = 0; y < width; y++) {
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
                 int inv_angle_sum = 256 + inv_angle;
-                const int16_t* ref = ref_left + delta_int;
+                const int16_t* ref = (int16_t*)ref_left + delta_int;
                 const int8_t* filter = &chroma_filter[delta_frac << 2];
 
                 for (int x = 0; x < height; x++) {
@@ -915,7 +925,7 @@ intra_angular_v_cubic_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
                 int inv_angle_sum = 256 + inv_angle;
-                const int16_t* ref = ref_above + delta_int;
+                const int16_t* ref = (int16_t *)ref_above + delta_int;
                 const int8_t* filter = &chroma_filter[delta_frac << 2];
                 for (int x = 0; x < width; x++) {
                         int val = ((int32_t)(ref[0] * filter[0]) +
@@ -957,7 +967,9 @@ intra_angular_hdia_mref(const uint16_t* const ref_above,
         uint16_t* _dst = dst;
         int width = 1 << log2_pb_width;
         int height = 1 << log2_pb_height;
+        #if 0
         int scale = (log2_pb_width + log2_pb_height - 2) >> 2;
+        #endif
 
         int delta_pos = 32 * (multi_ref_idx + 1); // angle val is 32 for diag
 
@@ -1043,7 +1055,7 @@ intra_hneg_cubic_mref(uint16_t* const ref_above, uint16_t* const ref_left,
                 for (int y = 0; y < width; y++) {
                         const int delta_int = delta_pos >> 5;
                         const int delta_frac = delta_pos & (32 - 1);
-                        const int16_t* ref = refMain + delta_int;
+                        const int16_t* ref = (int16_t *)refMain + delta_int;
                         const int8_t* filter = &chroma_filter[delta_frac << 2];
                         for (int x = 0; x < height;
                              x++) { // FIXME check boundary
@@ -1113,7 +1125,7 @@ intra_vneg_cubic_mref(uint16_t* const ref_above, uint16_t* const ref_left,
                      y++) {
                         const int delta_int = delta_pos >> 5;
                         const int delta_frac = delta_pos & (32 - 1);
-                        const int16_t* ref = refMain + delta_int;
+                        const int16_t* ref = (int16_t *)refMain + delta_int;
                         const int8_t* filter = &chroma_filter[delta_frac << 2];
                         for (int x = 0; x < width; x++) {
                                 int val =
@@ -1161,7 +1173,7 @@ intra_angular_h_cubic_mref(const uint16_t* const ref_left, uint16_t* const dst,
                 for (int y = 0; y < width; y++) {
                         const int delta_int = delta_pos >> 5;
                         const int delta_frac = delta_pos & (32 - 1);
-                        const int16_t* ref = ref_left + delta_int;
+                        const int16_t* ref = (int16_t *)ref_left + delta_int;
                         const int8_t* filter = &chroma_filter[delta_frac << 2];
                         for (int x = 0; x < height;
                              x++) { // FIXME check boundary
@@ -1216,7 +1228,7 @@ intra_angular_v_cubic_mref(const uint16_t* const ref_above, uint16_t* const dst,
                 for (int y = 0; y < height; y++) {
                         const int delta_int = delta_pos >> 5;
                         const int delta_frac = delta_pos & (32 - 1);
-                        const int16_t* ref = ref_above + delta_int;
+                        const int16_t* ref = (int16_t *)ref_above + delta_int;
                         const int8_t* filter = &chroma_filter[delta_frac << 2];
                         for (int x = 0; x < width; x++) { // FIXME check
                                                           // boundary

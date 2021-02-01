@@ -66,7 +66,7 @@ vvc_inverse_dst_vii_32(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                        int num_lines, int num_columns, int shift);
 
 void
-vvc_inverse_dct_ii_dc(uint16_t* const dst, int log2_tb_w, int log2_tb_h,
+vvc_inverse_dct_ii_dc(int16_t* const dst, int log2_tb_w, int log2_tb_h,
                       int dc_val);
 
 #endif // RCN_TRANSFORM_DATA_H

@@ -10,7 +10,9 @@ matrix_multiplication(const int16_t* src, const int16_t* const tr_matrix,
                       int num_lines, int num_columns, int shift)
 {
         const int round_factor = 1 << (shift - 1);
+        #if 0
         const int cut_off = tr_size - num_columns;
+        #endif
         int clip_min = -(1 << 15);
         int clip_max = (1 << 15) - 1;
 
@@ -588,7 +590,7 @@ vvc_inverse_dst_vii_32(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
 }
 
 void
-vvc_inverse_dct_ii_dc(uint16_t* const dst, int log2_tb_w, int log2_tb_h,
+vvc_inverse_dct_ii_dc(int16_t* const dst, int log2_tb_w, int log2_tb_h,
                       int dc_val)
 {
         int i, j;

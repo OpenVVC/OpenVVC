@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include <libovvcutils/ovvcutils.h>
 
 #include "data_rcn_transform.h"
