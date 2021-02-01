@@ -31,8 +31,6 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh2,
     const OVPPS *pps = NULL;
     const OVSPS *sps = NULL;
 
-    nvcl_skip_bits(rdr, 16);
-
     sh->sh_picture_header_in_slice_header_flag = nvcl_read_flag(rdr);
     if (sh->sh_picture_header_in_slice_header_flag) {
         /* FIXME do not skip 16 first bits in this case */

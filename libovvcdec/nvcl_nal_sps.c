@@ -176,7 +176,6 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
               const OVNVCLCtx *const nvcl_ctx)
 {
     int i, j;
-    nvcl_skip_bits(rdr, 16);
     sps->sps_seq_parameter_set_id   = nvcl_read_bits(rdr, 4);
     sps->sps_video_parameter_set_id = nvcl_read_bits(rdr, 4);
     sps->sps_max_sublayers_minus1   = nvcl_read_bits(rdr, 3);

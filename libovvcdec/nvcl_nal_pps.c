@@ -214,7 +214,6 @@ nvcl_pps_read(OVNVCLReader *const rdr, OVPPS *const pps,
     OVPPS stck_pps = {0};
     OVPPS *const pps = &stck_pps;
     #endif
-    nvcl_skip_bits(rdr, 16);
 
     pps->pps_pic_parameter_set_id = nvcl_read_bits(rdr, 6);
     pps->pps_seq_parameter_set_id = nvcl_read_bits(rdr, 4);

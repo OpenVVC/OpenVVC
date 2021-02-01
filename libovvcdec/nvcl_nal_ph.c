@@ -76,7 +76,6 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
     const OVPPS *pps = NULL;
     const OVSPS *sps = NULL;
     int i;
-    nvcl_skip_bits(rdr, 16);
 
     ph->ph_gdr_or_irap_pic_flag = nvcl_read_flag(rdr);
     ph->ph_non_ref_pic_flag     = nvcl_read_flag(rdr);

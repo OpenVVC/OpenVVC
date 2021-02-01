@@ -4,9 +4,14 @@
 #include "nvcl_utils.h"
 
 #define NB_ARRAY_ELEMS(x) sizeof(x)/sizeof(*(x))
+
+
+/* FIXME give size in bytes instead and find SODB end
+ * (RBSP stop bit) here instead
+ */
 int
 nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
-              int bit_size)
+                 int bit_size)
 {
     /* FIXME decide if stream check here */
     int buffer_size = (bit_size + 7) >> 3;
@@ -17,6 +22,10 @@ nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
     rdr->nb_bytes_read    = 0;
 
     fill_cache64(rdr);
+
+    /* FIXME properly read NAL Unit header */
+    nvcl_skip_bits(rdr, 16);
+
 
     return 0;
 }
