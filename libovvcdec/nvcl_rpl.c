@@ -1,289 +1,366 @@
 #include "nvcl.h"
 #include "nvcl_utils.h"
-
-typedef struct OVRefPicInfo
-{
-    uint8_t inter_layer_ref_pic_flag;
-    uint8_t st_ref_pic_flag;
-    uint8_t abs_delta_poc_st;
-    uint8_t strp_entry_sign_flag;
-    uint8_t rpls_poc_lsb_lt;
-    uint8_t ilrp_idx;
-} OVRefPicInfo;
-
-typedef struct OVRPLSet 
-{
-    uint8_t rpl_sps_flag[i];
-    uint8_t rpl_idx[i];
-    uint8_t poc_lsb_lt[i][j];
-    uint8_t delta_poc_msb_cycle_present_flag[i][j];
-    uint8_t delta_poc_msb_cycle_lt[i][j];
-} OVRPLSet;
-
-typedef struct OVRPL
-{
-    uint8_t num_ref_entries;
-    uint8_t ltrp_in_header_flag;
-    uint8_t inter_layer_ref_pic_flag[i];
-    uint8_t st_ref_pic_flag[i];
-    uint8_t abs_delta_poc_st[i];
-    uint8_t strp_entry_sign_flag[i];
-    uint8_t rpls_poc_lsb_lt[j++];/*fixme*/
-    uint8_t ilrp_idx[i];
-} OVRPL;
-
-typedef struct OVRefPic
-{
-  uint8_t rp_type;
-  union {
-    uint8_t poc_lsb_lt;
-    uint8_t ilrp_idx;
-    uint8_t 
-  } desc;
-} OVRefPic;
-
-/*FIXME separate reading to make parsing more readable */
-/* This one is called by ph/sh */
-ref_pic_lists(OVNVCLReader *const rdr)
-{
-    int i;
-    for (i = 0; i < 2; i++) {
-        if (sps->sps_num_ref_pic_lists[i] > 0 && (i == 0 || (i == 1 && pps->pps_rpl1_idx_present_flag))) {
-            rpls->rpl_sps_flag[i] = nvcl_read_flag(rdr);
-        }
-
-        if (rpls->rpl_sps_flag[i]) {
-            if (sps->sps_num_ref_pic_lists[i] > 1 && (i == 0 || (i == 1 && pps->pps_rpl1_idx_present_flag))) {
-                /*TODO v = ceil log2 sps_num-ref_pic_lists*/
-                int v = 0;
-                rpls->rpl_idx[i] = nvcl_read_bits(rdr, v);
-            }
-        } else {
-            ref_pic_list_struct(i, sps->sps_num_ref_pic_lists[i]);
-        }
-
-        for (j = 0; j < NumLtrpEntries[i][RplsIdx[i]]; j++) {
-            if (ltrp_in_header_flag[i][RplsIdx[i]]) {
-                rpls->poc_lsb_lt[i][j];
-            }
-
-            rpls->delta_poc_msb_cycle_present_flag[i][j] = nvcl_read_flag(rdr);
-            if (delta_poc_msb_cycle_present_flag[i][j]) {
-                rpls->delta_poc_msb_cycle_lt[i][j] = nvcl_read_u_expgolomb(rdr);
-            }
-        }
-    }
-}
+#include "nvcl_structures.h"
+#include "nvcl_private.h"
 
 #if 0
-/*TODO separate ilrp  lt and st cases */
-ref_pic_list_struct(listIdx, rplsIdx)
-{
-    int i, j;
-    rpl->num_ref_entries[listIdx][rplsIdx] = nvcl_read_u_expgolomb(rdr);
-    if (sps->sps_long_term_ref_pics_flag && rplsIdx < sps->sps_num_ref_pic_lists[listIdx] && num_ref_entries[listIdx][rplsIdx] > 0) {
-        rpl->ltrp_in_header_flag[listIdx][rplsIdx] = nvcl_read_flag(rdr);
-    }
+struct RPL{
+    /* Storage for convenience variables non signaled as syntax
+     * elements but mandatory to derive other syntax elements
+     * without recomputing it from scratch
+     */
+    struct {
+        /* Number of long term ref */
+        uint8_t nb_ltrp;
 
-    for (i = 0, j = 0; i < num_ref_entries[listIdx][rplsIdx]; i++) {
+        /* Number of short term ref */
+        uint8_t nb_strp;
 
-        if (sps->sps_inter_layer_prediction_enabled_flag) {
-            rpl->inter_layer_ref_pic_flag[listIdx][rplsIdx][i] = nvcl_read_flag(rdr);
-        }
-
-        if (!inter_layer_ref_pic_flag[listIdx][rplsIdx][i]) {
-
-            if (sps->sps_long_term_ref_pics_flag) {
-                rpl->st_ref_pic_flag[listIdx][rplsIdx][i] = nvcl_read_flag(rdr);
-            }
-
-            if (st_ref_pic_flag[listIdx][rplsIdx][i]) {
-
-                rpl->abs_delta_poc_st[listIdx][rplsIdx][i] = nvcl_read_u_expgolomb(rdr);
-                if (AbsDeltaPocSt[listIdx][rplsIdx][i] > 0) {
-                    rpl->strp_entry_sign_flag[listIdx][rplsIdx][i];
-                }
-
-            } else if (!ltrp_in_header_flag[listIdx][rplsIdx]) {
-                rpl->rpls_poc_lsb_lt[listIdx][rplsIdx][j++];
-            }
-        } else {
-            rpl->ilrp_idx[listIdx][rplsIdx][i] = nvcl_read_u_expgolomb(rdr);
-        }
-    }
-}
+        /* Number of inter layer ref pictures*/
+        uint8_t nb_ilrp;
+    } helper;
+};
 #endif
 
-static int ref_pic_list_ilrp_ltrp(OVNVCLReader *const rdr)
+static int
+ref_pic_list_ilrp_ltrp(OVNVCLReader *const rdr, struct OVRPL *const rpl,
+                       const OVSPS *const sps)
 {
-    if (rplsIdx < sps->sps_num_ref_pic_lists[listIdx] && rpl->num_ref_entries > 0) {
-        rpl->ltrp_in_header_flag = nvcl_read_flag(rdr);
-    }
-
-    for (i = 0, j = 0; i < rpl->num_ref_entries; i++) {
-
-        rpl->inter_layer_ref_pic_flag[i] = nvcl_read_flag(rdr);
-        if (rpl->inter_layer_ref_pic_flag[i]) {
-            rpl->ilrp_idx[i] = nvcl_read_u_expgolomb(rdr);
-        } else {
-            if (sps->sps_long_term_ref_pics_flag) {
-                rpl->st_ref_pic_flag[i] = nvcl_read_flag(rdr);
-            }
-
-            if (st_ref_pic_flag[i]) {
-
-                rpl->abs_delta_poc_st[i] = nvcl_read_u_expgolomb(rdr);
-                if (AbsDeltaPocSt[i] > 0) {
-                    rpl->strp_entry_sign_flag[i];
-                }
-
-            } else if (!rpl->ltrp_in_header_flag) {
-                rpl->rpls_poc_lsb_lt[j++];
-            }
-        }
-    }
-}
-
-static int ref_pic_list_ilrp(OVNVCLReader *const rdr)
-{
-    for (i = 0, j = 0; i < rpl->num_ref_entries; i++) {
-
-        rpl->inter_layer_ref_pic_flag[i] = nvcl_read_flag(rdr);
-        if (rpl->inter_layer_ref_pic_flag[i]) {
-            rpl->ilrp_idx[i] = nvcl_read_u_expgolomb(rdr);
-        } else {
-            rpl->abs_delta_poc_st[i] = nvcl_read_u_expgolomb(rdr);
-            if (AbsDeltaPocSt[i] > 0) {
-                rpl->strp_entry_sign_flag[i];
-            }
-        }
-    }
-}
-
-static int ref_pic_list_ltrp(OVNVCLReader *const rdr)
-{
-    if (rplsIdx < sps->sps_num_ref_pic_lists[listIdx] && rpl->num_ref_entries > 0) {
-        rpl->ltrp_in_header_flag = nvcl_read_flag(rdr);
-        if (rpl->ltrp_in_header_flag) {
-            for (i = 0, j = 0; i < num_ref_entries; i++) {
-                VVCRefPic *ref_pic = rpl->ref_pic[i];
-                rpl->st_ref_pic_flag[i] = nvcl_read_flag(rdr);
-                if (st_ref_pic_flag[i]) {
-                    rpl->abs_delta_poc_st[i] = nvcl_read_u_expgolomb(rdr);
-                    if (AbsDeltaPocSt[i] > 0) {
-                        rpl->strp_entry_sign_flag[i];
-                    }
-                }
-            }
-        } else {
-            for (i = 0, j = 0; i < num_ref_entries; i++) {
-                rpl->st_ref_pic_flag[i] = nvcl_read_flag(rdr);
-                if (st_ref_pic_flag[i]) {
-                    rpl->abs_delta_poc_st[i] = nvcl_read_u_expgolomb(rdr);
-                    if (AbsDeltaPocSt[i] > 0) {
-                        rpl->strp_entry_sign_flag[i];
+    if (!rpl->ltrp_in_header_flag) {
+        int i;
+        for (i = 0; i < rpl->num_ref_entries; i++) {
+            struct RefPic *rp = &rpl->rp_list[i];
+            rp->inter_layer_ref_pic_flag = nvcl_read_flag(rdr);
+            if (rp->inter_layer_ref_pic_flag) {
+                rp->ilrp_idx = nvcl_read_u_expgolomb(rdr);
+            } else {
+                rp->st_ref_pic_flag = nvcl_read_flag(rdr);
+                if (rp->st_ref_pic_flag) {
+                    rp->abs_delta_poc_st = nvcl_read_u_expgolomb(rdr);
+                    if (rp->abs_delta_poc_st > 0) {
+                        rp->strp_entry_sign_flag = nvcl_read_flag(rdr);
                     }
                 } else {
-                    rpl->rpls_poc_lsb_lt[j++];
+                    const uint8_t nb_bits = sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4;
+                    rp->rpls_poc_lsb_lt = nvcl_read_bits(rdr, nb_bits);
                 }
             }
         }
     } else {
-        for (i = 0, j = 0; i < rpl->num_ref_entries; i++) {
-            rpl->st_ref_pic_flag[i] = nvcl_read_flag(rdr);
-            if (st_ref_pic_flag[i]) {
-                rpl->abs_delta_poc_st[i] = nvcl_read_u_expgolomb(rdr);
-                if (AbsDeltaPocSt[i] > 0) {
-                    rpl->strp_ent[i];
-                }
+        int i;
+        for (i = 0; i < rpl->num_ref_entries; i++) {
+            struct RefPic *rp = &rpl->rp_list[i];
+            rp->inter_layer_ref_pic_flag = nvcl_read_flag(rdr);
+            if (rp->inter_layer_ref_pic_flag) {
+                rp->ilrp_idx = nvcl_read_u_expgolomb(rdr);
             } else {
-                rpl->rpls_poc_lsb_lt[j++];
+                rp->st_ref_pic_flag = nvcl_read_flag(rdr);
+                if (rp->st_ref_pic_flag) {
+                    rp->abs_delta_poc_st = nvcl_read_u_expgolomb(rdr);
+                    if (rp->abs_delta_poc_st > 0) {
+                        rp->strp_entry_sign_flag = nvcl_read_flag(rdr);
+                    }
+                }
             }
         }
     }
+    return 0;
 }
 
-static int ref_pic_list_strp(OVNVCLReader *const rdr)
+static int
+ref_pic_list_ilrp(OVNVCLReader *const rdr, struct OVRPL *const rpl)
 {
-    for (i = 0, j = 0; i < rpl->num_ref_entries; i++) {
-        rpl->abs_delta_poc_st[i] = nvcl_read_u_expgolomb(rdr);
-        if (AbsDeltaPocSt[i] > 0) {
-            rpl->strp_entry_sign_flag[i];
+    int i;
+    for (i = 0; i < rpl->num_ref_entries; i++) {
+        struct RefPic *rp = &rpl->rp_list[i];
+        rp->inter_layer_ref_pic_flag = nvcl_read_flag(rdr);
+        if (rp->inter_layer_ref_pic_flag) {
+            rp->ilrp_idx = nvcl_read_u_expgolomb(rdr);
+        } else {
+            rp->abs_delta_poc_st = nvcl_read_u_expgolomb(rdr);
+            if (rp->abs_delta_poc_st > 0) {
+                rp->strp_entry_sign_flag = nvcl_read_flag(rdr);
+            }
         }
     }
+    return 0;
 }
 
-static int ref_pic_list_struct2(OVNVCLReader *const rdr,listIdx, rplsIdx)
+static int
+ref_pic_list_ltrp(OVNVCLReader *const rdr, struct OVRPL *const rpl,
+                  const OVSPS *const sps)
 {
-    int i, j;
+    if (rpl->ltrp_in_header_flag) {
+        /* Read only short term pic info
+         * Long term POC LSB will be read outside of
+         * the ref pic list
+         */
+         int i;
+        for (i = 0; i < rpl->num_ref_entries; i++) {
+            struct RefPic *rp = &rpl->rp_list[i];
+            rp->st_ref_pic_flag = nvcl_read_flag(rdr);
+            if (rp->st_ref_pic_flag) {
+                rp->abs_delta_poc_st = nvcl_read_u_expgolomb(rdr);
+                if (rp->abs_delta_poc_st > 0) {
+                    rp->strp_entry_sign_flag = nvcl_read_flag(rdr);
+                }
+            }
+        }
+    } else {
+        /* Long term POC LSB info is present in structure
+         * Read it if ref pic is long term.
+         * Note we can pass here only if ref pic list is
+         * read from sps
+         */
+         int i;
+        for (i = 0; i < rpl->num_ref_entries; i++) {
+            struct RefPic *rp = &rpl->rp_list[i];
+            rp->st_ref_pic_flag = nvcl_read_flag(rdr);
+            if (rp->st_ref_pic_flag) {
+                rp->abs_delta_poc_st = nvcl_read_u_expgolomb(rdr);
+                if (rp->abs_delta_poc_st > 0) {
+                    rp->strp_entry_sign_flag = nvcl_read_flag(rdr);
+                }
+            } else {
+                const uint8_t nb_bits = sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4;
+                rp->rpls_poc_lsb_lt = nvcl_read_bits(rdr, nb_bits);
+            }
+        }
+    }
+    return 0;
+}
+
+static int
+ref_pic_list_strp(OVNVCLReader *const rdr, struct OVRPL *const rpl)
+{
+    int i;
+    for (i = 0; i < rpl->num_ref_entries; i++) {
+        struct RefPic *rp = &rpl->rp_list[i];
+        /* Default value to 1 to avoid confusion between
+         * short and long reference pictures when reading
+         * long term data from a header (SH or PH)
+         */
+        rp->st_ref_pic_flag = 1;
+        rp->abs_delta_poc_st = nvcl_read_u_expgolomb(rdr);
+        if (rp->abs_delta_poc_st > 0) {
+            rp->strp_entry_sign_flag = nvcl_read_flag(rdr);
+        }
+    }
+    return 0;
+}
+
+#if 0
+static int
+ref_pic_list_struct2(OVNVCLReader *const rdr,listIdx, rplsIdx)
+{
+    int i;
 
     OVRPL *rpl = ref_pic_list_set[listIdx][rplsIdx];
 
     rpl->num_ref_entries = nvcl_read_u_expgolomb(rdr);
 
+    /* FIXME use swithc and status based on sps flags? */
     if (sps->sps_inter_layer_prediction_enabled_flag && sps->sps_long_term_ref_pics_flag) {
+        /* default to 1 */
+        rpl->ltrp_in_header_flag = 1;
+
+        /* FIXME my guess is this means we are reading list from SPS
+         * since rplsIdx is < to the number of ref pic lists in sps
+         * and this function has been called (meaning we either come
+         * directly from SPS reader or if called from the PH header
+         * rpl_sps_flag was OFF so we did not read an rpls_idx
+         */
+        if (rplsIdx < sps->sps_num_ref_pic_lists[listIdx] && rpl->num_ref_entries > 0) {
+            rpl->ltrp_in_header_flag = nvcl_read_flag(rdr);
+        }
+
         ref_pic_list_ilrp_ltrp();
     } else if (sps->sps_inter_layer_prediction_enabled_flag) {
         ref_pic_list_ilrp();
     } else if (sps->sps_long_term_ref_pics_flag) {
+        /* default to 1 */
+        rpl->ltrp_in_header_flag = 1;
+
+        if (rplsIdx < sps->sps_num_ref_pic_lists[listIdx] && rpl->num_ref_entries > 0) {
+            rpl->ltrp_in_header_flag = nvcl_read_flag(rdr);
+        }
+
         ref_pic_list_ltrp();
     } else {
         ref_pic_list_strp();
     }
 }
+#endif
 
-static int ref_pic_lists2(OVNVCLReader *const rdr)
+static int
+ref_pic_list_header(OVNVCLReader *const rdr, const OVSPS *const sps,
+                    struct OVRPL *const rpl)
 {
-    int i;
-    /* l0 list */
-    if (sps->sps_num_ref_pic_lists[0] > 0) {
-        rpls->rpl_sps_flag[0] = nvcl_read_flag(rdr);
-    }
+    rpl->num_ref_entries = nvcl_read_u_expgolomb(rdr);
 
-    if (rpls->rpl_sps_flag[0]) {
-        if (sps->sps_num_ref_pic_lists[0] > 1) {
-            /*TODO v = ceil log2 sps_num-ref_pic_lists*/
-            int v = 0;
-            rpls->rpl_idx[0] = nvcl_read_bits(rdr, v);
+    if (rpl->num_ref_entries > 0) {
+        /* FIXME use swithc and status based on sps flags? */
+        if (sps->sps_long_term_ref_pics_flag) {
+            rpl->ltrp_in_header_flag = 1;
+            if (sps->sps_inter_layer_prediction_enabled_flag) {
+                ref_pic_list_ilrp_ltrp(rdr, rpl, sps);
+            } else {
+                ref_pic_list_ltrp(rdr, rpl, sps);
+            }
+        } else {
+            /* No need of ltrp_in_header_flag */
+            if (sps->sps_inter_layer_prediction_enabled_flag) {
+                ref_pic_list_ilrp(rdr, rpl);
+            } else {
+                ref_pic_list_strp(rdr, rpl);
+            }
+        }
+    }
+    return 0;
+}
+
+/* Read Additional info for long term ref pictures */
+/* FIXME :
+ *   -Only read when some LTRP exist in the selected RPL
+ *   -Retrieve correct RPL when used from SPS
+ *   -Decide if we should separate LT ST and ILRP Ref Pic Lists
+ */
+static int
+header_read_long_term_info(OVNVCLReader *const rdr, const struct OVRPL *const rpl,
+                           struct RPLHeader *rpl_h, const OVSPS *const sps)
+{
+    if (rpl->ltrp_in_header_flag) {
+        int j;
+        const uint8_t nb_bits = sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4;
+        for (j = 0; j < rpl->num_ref_entries; j++) {
+            const struct RefPic *rp = &rpl->rp_list[j];
+            if (!rp->st_ref_pic_flag && !rp->inter_layer_ref_pic_flag) {
+                struct LTInfo *lti = &rpl_h->lt_info[j];
+
+                lti->poc_lsb_lt = nvcl_read_bits(rdr, nb_bits);
+
+                lti->delta_poc_msb_cycle_present_flag = nvcl_read_flag(rdr);
+
+                if (lti->delta_poc_msb_cycle_present_flag) {
+                    lti->delta_poc_msb_cycle_lt = nvcl_read_u_expgolomb(rdr);
+                }
+            }
         }
     } else {
-        ref_pic_list_struct(0, sps->sps_num_ref_pic_lists[0]);
+        /* This can only be called when rpl comes from sps */
+        int j;
+        for (j = 0; j < rpl->num_ref_entries; j++) {
+            const struct RefPic *rp = &rpl->rp_list[j];
+            /* FIXME avoid recount of lt_ref */
+            if (!rp->st_ref_pic_flag && !rp->inter_layer_ref_pic_flag) {
+                struct LTInfo *lti = &rpl_h->lt_info[j];
+
+                lti->delta_poc_msb_cycle_present_flag = nvcl_read_flag(rdr);
+
+                if (lti->delta_poc_msb_cycle_present_flag) {
+                    lti->delta_poc_msb_cycle_lt = nvcl_read_u_expgolomb(rdr);
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+/* This one is called by PH/SH reader */
+int
+nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
+                               const OVSPS *const sps, const OVPPS *pps)
+{
+    /* TODO move outside */
+    struct RPLHeader *const rpl_h0 = &rpl_h->rpl_h0;
+    struct RPLHeader *const rpl_h1 = &rpl_h->rpl_h1;
+
+    if (sps->sps_num_ref_pic_lists0 > 0) {
+        rpl_h0->rpl_sps_flag = nvcl_read_flag(rdr);
     }
 
-    for (j = 0; j < NumLtrpEntries[0][RplsIdx[0]]; j++) {
-        if (ltrp_in_header_flag[0][RplsIdx[0]]) {
-            rpls->poc_lsb_lt[0][j];
+    if (rpl_h0->rpl_sps_flag) {
+        const struct OVRPL *rpl0;
+        if (sps->sps_num_ref_pic_lists0 > 1) {
+            /* FIXME check v is correct */
+            int nb_bits = ov_ceil_log2(sps->sps_num_ref_pic_lists0);
+            rpl_h0->rpl_idx = nvcl_read_bits(rdr, nb_bits);
         }
 
-        rpls->delta_poc_msb_cycle_present_flag[0][j] = nvcl_read_flag(rdr);
-        if (delta_poc_msb_cycle_present_flag[0][j]) {
-            rpls->delta_poc_msb_cycle_lt[0][j] = nvcl_read_u_expgolomb(rdr);
+        rpl0 = &sps->rpl_s0[rpl_h0->rpl_idx];
+
+        if (sps->sps_long_term_ref_pics_flag) {
+            /* Call long term post function */
+            header_read_long_term_info(rdr, rpl0, rpl_h0, sps);
+        }
+    } else {
+        struct OVRPL *rpl0 = &rpl_h0->rpl_data;
+
+        ref_pic_list_header(rdr, sps, rpl0);
+        if (sps->sps_long_term_ref_pics_flag) {
+            /* Call long term post function with lt_header*/
+            header_read_long_term_info(rdr, rpl0, rpl_h0, sps);
         }
     }
 
     /* l1 list */
-    if (sps->sps_num_ref_pic_lists[1] > 0 && ((pps->pps_rpl1_idx_present_flag))) {
-        rpls->rpl_sps_flag[1] = nvcl_read_flag(rdr);
+    if (sps->sps_num_ref_pic_lists1 > 0 && pps->pps_rpl1_idx_present_flag) {
+        rpl_h1->rpl_sps_flag = nvcl_read_flag(rdr);
     }
 
-    if (rpls->rpl_sps_flag[1]) {
-        if (sps->sps_num_ref_pic_lists[1] > 1 && ((pps->pps_rpl1_idx_present_flag))) {
-            /*TODO v = ceil log2 sps_num-ref_pic_lists*/
-            int v = 0;
-            rpls->rpl_idx[1] = nvcl_read_bits(rdr, v);
+    if (rpl_h1->rpl_sps_flag) {
+        /* FIXME pps_rpl_idx_presetn already tested by rpl_sps_flag */
+        const struct OVRPL *rpl1;
+        if (sps->sps_num_ref_pic_lists1 > 1) {
+            int v = ov_ceil_log2(sps->sps_num_ref_pic_lists1);
+            rpl_h1->rpl_idx = nvcl_read_bits(rdr, v);
         }
+
+        rpl1 = &sps->rpl_s1[rpl_h1->rpl_idx];
+
+        if (sps->sps_long_term_ref_pics_flag) {
+            /* Call long term post function */
+            header_read_long_term_info(rdr, rpl1, rpl_h1, sps);
+        }
+
     } else {
-        ref_pic_list_struct(1, sps->sps_num_ref_pic_lists[1]);
-    }
+        struct OVRPL *rpl1 = &rpl_h1->rpl_data;
 
-    for (j = 0; j < NumLtrpEntries[1][RplsIdx[1]]; j++) {
-        if (ltrp_in_header_flag[1][RplsIdx[1]]) {
-            rpls->poc_lsb_lt[1][j];
-        }
+        ref_pic_list_header(rdr, sps, rpl1);
 
-        rpls->delta_poc_msb_cycle_present_flag[1][j] = nvcl_read_flag(rdr);
-        if (delta_poc_msb_cycle_present_flag[1][j]) {
-            rpls->delta_poc_msb_cycle_lt[1][j] = nvcl_read_u_expgolomb(rdr);
+        if (sps->sps_long_term_ref_pics_flag) {
+            /* Call long term post function with lt_header*/
+            header_read_long_term_info(rdr, rpl1, rpl_h1, sps);
         }
     }
+
+    return 0;
 }
+
+int
+nvcl_read_sps_ref_pic_list(OVNVCLReader *const rdr, const OVSPS *const sps,
+                           OVRPL *const rpl)
+{
+    rpl->num_ref_entries = nvcl_read_u_expgolomb(rdr);
+
+    if (rpl->num_ref_entries > 0) {
+        /* FIXME use swithc and status based on sps flags? */
+        if (sps->sps_long_term_ref_pics_flag) {
+            rpl->ltrp_in_header_flag = nvcl_read_flag(rdr);
+            if (sps->sps_inter_layer_prediction_enabled_flag) {
+                ref_pic_list_ilrp_ltrp(rdr, rpl, sps);
+            } else {
+                ref_pic_list_ltrp(rdr, rpl, sps);
+            }
+        } else {
+            /* No need of ltrp_in_header_flag */
+            if (sps->sps_inter_layer_prediction_enabled_flag) {
+                ref_pic_list_ilrp(rdr, rpl);
+            } else {
+                ref_pic_list_strp(rdr, rpl);
+            }
+        }
+    }
+    return 0;
+}
+
