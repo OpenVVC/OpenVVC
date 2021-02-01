@@ -182,7 +182,7 @@ pps_read_pic_partition(OVNVCLReader *const rdr, OVPPS *const pps)
      * is required / correct
      */
     if (pps->pps_num_exp_tile_columns_minus1 || pps->pps_num_exp_tile_rows_minus1
-                  || col_sum != nb_ctu_w || row_sum != nb_ctu_h) {
+                  /*|| col_sum != nb_ctu_w || row_sum != nb_ctu_h*/) {
         pps->pps_loop_filter_across_tiles_enabled_flag = nvcl_read_flag(rdr);
         pps->pps_rect_slice_flag                       = nvcl_read_flag(rdr);
     }
