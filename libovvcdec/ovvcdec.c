@@ -24,7 +24,7 @@ struct OVVCDec
     OVPictureUnit *nalu_list;
 
     /* Paramters sets context */
-    OVNVCLCtx *nvcl_ctx;
+    OVNVCLCtx nvcl_ctx;
 
     /* List of Sub Decoders
      * Contains context for Tile / Slice / Picture / SubPicture
@@ -64,8 +64,9 @@ static int
 decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
 {
     OVNVCLReader rdr;
-    OVNVCLCtx *const nvcl_ctx = vvcdec->nvcl_ctx;
+    OVNVCLCtx *const nvcl_ctx = &vvcdec->nvcl_ctx;
     enum OVNALUType nalu_type = nalu->type;
+    /* FIXME add proper SH allocation */
     int ret;
 
     /* TODO init NVCLReader */
@@ -331,6 +332,8 @@ ovdec_close(OVVCDec *vvcdec)
         not_dec = vvcdec->name != decname;
 
         if (not_dec) goto fail;
+
+        nvcl_free_ctx(&vvcdec->nvcl_ctx);
 
         ov_free(vvcdec);
 

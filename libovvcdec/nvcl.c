@@ -1,6 +1,9 @@
+#include "libovvcutils/ovmem.h"
+
 #include "nvcl.h"
 #include "nvcl_utils.h"
 
+#define NB_ARRAY_ELEMS(x) sizeof(x)/sizeof(*(x))
 int
 nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
               int bit_size)
@@ -18,4 +21,29 @@ nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
     return 0;
 }
 
+void
+nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
+{
+    int i;
+    int nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->sps_list);
+    for (i = 0; i < nb_elems; ++i) {
+        if (nvcl_ctx->sps_list[i]) {
+            ov_freep(&nvcl_ctx->sps_list[i]);
+        }
+    }
 
+    nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->pps_list);
+    for (i = 0; i < nb_elems; ++i) {
+        if (nvcl_ctx->pps_list[i]) {
+            ov_freep(&nvcl_ctx->pps_list[i]);
+        }
+    }
+
+    if (nvcl_ctx->ph) {
+        ov_freep(&nvcl_ctx->ph);
+    }
+
+    if (nvcl_ctx->sh) {
+        ov_freep(&nvcl_ctx->sh);
+    }
+}

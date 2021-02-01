@@ -2,8 +2,14 @@
 #define OV_NVCL_H
 #include <stdint.h>
 
+#define OV_MAX_NUM_VPS 16
+#define OV_MAX_NUM_SPS 16
+#define OV_MAX_NUM_PPS 16
+
 typedef struct OVNVCLReader OVNVCLReader;
+
 typedef struct OVNVCLCtx OVNVCLCtx;
+typedef struct OVNVCLUnit OVNVCLUnit;
 
 typedef struct OVOPI OVOPI;
 typedef struct OVDCI OVDCI;
@@ -15,6 +21,17 @@ typedef struct OVSEI OVSEI;
 typedef struct OVPH OVPH;
 typedef struct OVSH OVSH;
 
+struct OVNVCLCtx
+{
+    /* TODO use an other typedef to store more info in
+     * lists
+     */
+    OVSPS *sps_list[OV_MAX_NUM_SPS];
+    OVPPS *pps_list[OV_MAX_NUM_PPS];
+    OVPH *ph;
+    OVSH *sh;
+};
+
 struct OVNVCLReader
 {
     const uint8_t *bytestream;
@@ -25,11 +42,12 @@ struct OVNVCLReader
     int size_in_bits;
 };
 
-/* Attach a bytestream to the NVCL Reader
- * return a negative number on error
+/* Attach a RBSP to the NVCL Reader
  */
 int nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
                      int bit_size);
+
+void nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx);
 
 
 /* Reading functions */
