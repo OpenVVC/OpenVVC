@@ -403,19 +403,8 @@ static struct NALUnitListElem *pop_nalu_elem(struct NALUnitsList *list)
     return elem;
 }
 
-static void
-push_nalu_elem(struct NALUnitsList *list, struct NALUnitListElem *elem)
-{
-    if (list->last_nalu) {
-        elem->prev_nalu = list->last_nalu;
-        list->last_nalu = elem;
-    } else {
-       /*FIXME check no first elem */
-       list->first_nalu = elem;
-       list->last_nalu = elem;
-    }
-}
 
+/* FIXME remove dirty global variable on eof */
 static uint8_t eof = 0;
 
 static int
@@ -465,11 +454,13 @@ extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
 
     return -(eof && current_nalu == NULL);
 
+#if 0
 readfail:
     /* free current NALU memory + return error
     */
     printf("FAILED NAL read!\n");
     return -1;
+#endif
 }
 
 
@@ -796,6 +787,13 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
                     break;
                 case ANNEXB_EPB:
                     ret = process_emulation_prevention_byte(dmx, cache_ctx, byte_pos, &sgmt_ctx);
+                    break;
+                default:
+                    /* FIXME we should not have something different from STC or
+                     * EPB here
+                     */
+                    ov_log(dmx, 3, "Invalid raw VVC data\n");
+                    ret = OV_INVALID_DATA;
                     break;
                 }
                 byte_pos += 3;

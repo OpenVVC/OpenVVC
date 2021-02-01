@@ -42,8 +42,10 @@ struct OVVCDec
 /* Actions on unsupported NAL Unit types */
 static int nalu_type_unsupported(enum OVNALUType nalu_type);
 
+#if 0
 /* Init / update vcl sub decoders based on slice header info */
 static int init_vcl_decoder(const OVVCDec *dec, OVSubDec *sub_dec);
+#endif
 
 static int
 nalu_type_unsupported(enum OVNALUType nalu_type)
@@ -53,12 +55,14 @@ nalu_type_unsupported(enum OVNALUType nalu_type)
     return 0;
 }
 
+#if 0
 static int
 init_vcl_decoder(const OVVCDec *dec, OVSubDec *sub_dec)
 {
     /* TODO check Slice / Tiles / Sub Picture context */
     return 0;
 }
+#endif
 
 static int
 decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
@@ -87,7 +91,9 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
         if (ret < 0) {
             return ret;
         } else {
+            #if 0
             int nb_sh_bytes = ret;
+            #endif
 
         /* TODO activate slice Parameters Sets */
 

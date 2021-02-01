@@ -150,12 +150,14 @@ pps_read_pic_partition(OVNVCLReader *const rdr, OVPPS *const pps)
     int i;
     int row_sum = 0;
     int col_sum = 0;
+    #if 0
     const int log2_ctu_s = pps->pps_log2_ctu_size_minus5 + 5;
     const int pic_w = pps->pps_pic_width_in_luma_samples;
     const int pic_h = pps->pps_pic_height_in_luma_samples;
 
     const int nb_ctu_w = (pic_w >> log2_ctu_s) + !!(pic_w & ((1 << log2_ctu_s) - 1));
     const int nb_ctu_h = (pic_h >> log2_ctu_s) + !!(pic_h & ((1 << log2_ctu_s) - 1));
+    #endif
 
 
     pps->pps_num_exp_tile_columns_minus1 = nvcl_read_u_expgolomb(rdr);
