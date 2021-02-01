@@ -21,8 +21,7 @@ OBJS = ovvcdec.o                                                      \
 			 rcn_intra_angular.o																						\
 			 rcn_lfnst.o																										\
 			 rcn_mc.o																												\
-       mempool.o                                                      \
-       ctudec.o
+       ctudec.o                                                       \
        nvcl.o                                                         \
        nvcl_nal_sps.o                                                 \
        nvcl_nal_pps.o                                                 \
