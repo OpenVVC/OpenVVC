@@ -15,7 +15,7 @@ ovvcdec_LIBS = ovvcdmx ovvcutils
 ovvcdmx_LIBS = ovvcutils
 
 # Various glabal defintions to be moved in a config file
-CFLAGS=-ansi --pedantic -Wall -fPIC -O0 -g
+CFLAGS=--pedantic -Wall -fPIC -O0 -g
 SHARED_LIBSUFF:=.so
 STATIC_LIBSUFF:=.a
 
