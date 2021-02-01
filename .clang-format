@@ -1,0 +1,21 @@
+﻿---
+BasedOnStyle: Mozilla
+AccessModifierOffset: '0'
+AlignAfterOpenBracket: Align
+BreakBeforeTernaryOperators: 'true'
+BinPackParameters: 'true'
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex:           '^"(llvm|llvm-c|clang|clang-c)/'
+    Priority:        4
+  - Regex:           '^(<|"(gtest|gmock|isl|json)/)'
+    Priority:        1
+  - Regex:           '<[[:alnum:].]+>'
+    Priority:        2
+  - Regex:           '.*'
+    Priority:        3
+IndentWidth: '8'
+Language: Cpp
+SortIncludes: 'true'
+
+...
