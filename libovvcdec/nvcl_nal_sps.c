@@ -185,9 +185,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
 
     sps->sps_ptl_dpb_hrd_params_present_flag = nvcl_read_flag(rdr);
     if (sps->sps_ptl_dpb_hrd_params_present_flag) {
-        #if 1
         profile_tier_level_sps(rdr, sps->sps_max_sublayers_minus1);
-        #endif
     }
 
     sps->sps_gdr_enabled_flag = nvcl_read_flag(rdr);
@@ -240,9 +238,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
             sps->sps_sublayer_dpb_params_flag = nvcl_read_flag(rdr);
         }
 
-        #if 1
         dpb_parameters(rdr, sps->sps_max_sublayers_minus1, sps->sps_sublayer_dpb_params_flag);
-        #endif
     }
 
     sps->sps_log2_min_luma_coding_block_size_minus2 = nvcl_read_u_expgolomb(rdr);
@@ -343,6 +339,8 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
         #if 0
         ref_pic_list_struct(O, j);
         #endif
+        OVRPL *rpl = &sps->rpl_s0[j];
+        nvcl_read_sps_ref_pic_list(rdr, sps, rpl);
     }
 
     if (!sps->sps_rpl1_same_as_rpl0_flag) {
@@ -351,6 +349,8 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
             #if 0
             ref_pic_list_struct(1, j);
             #endif
+            OVRPL *rpl = &sps->rpl_s1[j];
+            nvcl_read_sps_ref_pic_list(rdr, sps, rpl);
         }
     } else {
        /* TODO copy or ref to rpl0 ?*/
@@ -539,9 +539,11 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
 
     /*FIXME decide whether or not we should keep the rbsp trailing
       bits as a test here */
+
     #if 0
     rbsp_trailing_bits()
     #endif
+
     return 0;
 }
 
