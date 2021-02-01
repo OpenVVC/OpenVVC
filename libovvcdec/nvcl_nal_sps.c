@@ -1,221 +1,96 @@
+#include "libovvcutils/ovmem.h"
+
 #include "nvcl.h"
 #include "nvcl_utils.h"
+#include "nvcl_structures.h"
 #include "nvcl_private.h"
 
+enum DecReturn {
+    OV_INVALID_DATA = -1,
+    OV_ENOMEM = -2,
+};
 
-typedef struct OVSPS
+
+static uint8_t
+probe_sps_id(OVNVCLReader *const rdr)
 {
-    uint8_t sps_seq_parameter_set_id;
-    uint8_t sps_video_parameter_set_id;
-    uint8_t sps_max_sublayers_minus1;
-    uint8_t sps_chroma_format_idc;
-    uint8_t sps_log2_ctu_size_minus5;
+    uint8_t sps_id = fetch_bits(rdr, 4);
+    return sps_id;
+}
 
-    uint8_t sps_ptl_dpb_hrd_params_present_flag;
 
-    OVPTL *profile_tier_level;
+static int
+validate_sps(OVNVCLReader *rdr, OVSPS *const sps)
+{
+    /* TODO various check on limitation and max sizes */
+    return 1;
+}
 
-    uint8_t sps_gdr_enabled_flag;
+static void
+free_sps(OVSPS *const sps)
+{
+    /* TODO unref and/or free dynamic structure */
+    ov_free(sps);
+}
 
-    uint8_t sps_ref_pic_resampling_enabled_flag;
-    uint8_t sps_res_change_in_clvs_allowed_flag;
+static void
+replace_sps(OVSPS *sps_list[], OVSPS *const sps, uint8_t sps_id)
+{
+    /* TODO unref and/or free dynamic structure */
+    OVSPS *to_free = sps_list[sps_id];
 
-    uint16_t sps_pic_width_max_in_luma_samples;
-    uint16_t sps_pic_height_max_in_luma_samples;
+    free_sps(to_free);
 
-    uint8_t sps_conformance_window_flag;
-    uint8_t sps_conf_win_left_offset;
-    uint8_t sps_conf_win_right_offset;
-    uint8_t sps_conf_win_top_offset;
-    uint8_t sps_conf_win_bottom_offset;
+    sps_list[sps_id] = sps;
+}
 
-    uint8_t sps_subpic_info_present_flag;
-    uint8_t sps_num_subpics_minus1;
-    uint8_t sps_independent_subpics_flag;
-    uint8_t sps_subpic_same_size_flag;
-    uint8_t sps_subpic_ctu_top_left_x[16]; /* max num_sub_pic_h ?*/
-    uint8_t sps_subpic_ctu_top_left_y[16]; /* max num_sub_pic_v? */
-    uint8_t sps_subpic_width_minus1[16]; /* max num_sub_pic */
-    uint8_t sps_subpic_height_minus1[16]; /* max num_sub_pic */
-    uint8_t sps_subpic_treated_as_pic_flag[16]; /* max num_sub_pic */
-    uint8_t sps_loop_filter_across_subpic_enabled_flag[16]; /* max num_sub_pic */
-    uint8_t sps_subpic_id_len_minus1;
-    uint8_t sps_subpic_id_mapping_explicitly_signalled_flag;
-    uint8_t sps_subpic_id_mapping_present_flag;
-    uint8_t sps_subpic_id[16]; /* max num_sub_pic */
+int
+nvcl_decode_nalu_sps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
+{
+    int ret;
+    uint8_t sps_id = probe_sps_id(rdr);
+    OVSPS **sps_list = nvcl_ctx->sps_list;
+    if (sps_list[sps_id]) {
+        /* TODO compare RBSP data to avoid new read */
+        uint8_t identical_rbsp = 0;
+        if (identical_rbsp) {
+            goto duplicated;
+        }
+    }
 
-    uint8_t sps_bitdepth_minus8;
-    uint8_t sps_entropy_coding_sync_enabled_flag;
-    uint8_t sps_entry_point_offsets_present_flag;
-    uint8_t sps_log2_max_pic_order_cnt_lsb_minus4;
+    OVSPS *sps = ov_mallocz(sizeof(*sps));
+    if (!sps) {
+        return OV_ENOMEM;
+    }
 
-    uint8_t sps_poc_msb_cycle_flag;
-    uint8_t sps_poc_msb_cycle_len_minus1;
+    ret = nvcl_sps_read(rdr, sps, nvcl_ctx);
+    if (ret < 0) {
+        goto cleanup;
+    }
 
-    uint8_t sps_num_extra_ph_bytes;
-    uint8_t sps_extra_ph_bit_present_flag[24];
-    uint8_t sps_num_extra_sh_bytes;
-    uint8_t sps_extra_sh_bit_present_flag[24]; /*max num_extra_ph_bytes?*/
+    ret = validate_sps(rdr, sps);
+    if (ret < 0) {
+        goto cleanup;
+    }
 
-    uint8_t sps_sublayer_dpb_params_flag;
-    OVDPBParams *dpb_parameters;
+    /*FIXME unref instead of free */
+    replace_sps(sps_list, sps, sps_id);
 
-    uint8_t sps_log2_min_luma_coding_block_size_minus2;
-    uint8_t sps_partition_constraints_override_enabled_flag;
-    uint8_t sps_log2_diff_min_qt_min_cb_intra_slice_luma;
+    return 0;
 
-    uint8_t sps_max_mtt_hierarchy_depth_intra_slice_luma;
-    uint8_t sps_log2_diff_max_bt_min_qt_intra_slice_luma;
-    uint8_t sps_log2_diff_max_tt_min_qt_intra_slice_luma;
+cleanup:
+    ov_free(sps);
+    return ret;
 
-    uint8_t sps_qtbtt_dual_tree_intra_flag;
+duplicated:
+    #if 0
+    ov_log(NULL, 3, "Ignored Duplicated SPS");
+    #endif
+    return 0;
+}
 
-    uint8_t sps_log2_diff_min_qt_min_cb_intra_slice_chroma;
-
-    uint8_t sps_max_mtt_hierarchy_depth_intra_slice_chroma;
-    uint8_t sps_log2_diff_max_bt_min_qt_intra_slice_chroma;
-    uint8_t sps_log2_diff_max_tt_min_qt_intra_slice_chroma;
-
-    uint8_t sps_log2_diff_min_qt_min_cb_inter_slice;
-
-    uint8_t sps_max_mtt_hierarchy_depth_inter_slice;
-    uint8_t sps_log2_diff_max_bt_min_qt_inter_slice;
-    uint8_t sps_log2_diff_max_tt_min_qt_inter_slice;
-
-    uint8_t sps_max_luma_transform_size_64_flag;
-
-    uint8_t sps_transform_skip_enabled_flag;
-    uint8_t sps_log2_transform_skip_max_size_minus2;
-    uint8_t sps_bdpcm_enabled_flag;
-
-    uint8_t sps_mts_enabled_flag;
-    uint8_t sps_explicit_mts_intra_enabled_flag;
-    uint8_t sps_explicit_mts_inter_enabled_flag;
-
-    uint8_t sps_lfnst_enabled_flag;
-
-    uint8_t sps_joint_cbcr_enabled_flag;
-    uint8_t sps_same_qp_table_for_chroma_flag;
-    uint8_t sps_qp_table_start_minus26[64]; /* i == 1 for same_qp_table_for_chroma, 2 + joint_cbrcr_flag otherwise*/
-    uint8_t sps_num_points_in_qp_table_minus1[64];
-    uint8_t sps_delta_qp_in_val_minus1[3][64]; /*j = max num_points_in_qp_table 64?*/
-    uint8_t sps_delta_qp_diff_val[3][64]; /*j = max num_points_in_qp_table 64?*/
-
-    uint8_t sps_sao_enabled_flag;
-
-    uint8_t sps_alf_enabled_flag;
-    uint8_t sps_ccalf_enabled_flag;
-
-    uint8_t sps_lmcs_enabled_flag;
-    uint8_t sps_weighted_pred_flag;
-    uint8_t sps_weighted_bipred_flag;
-    uint8_t sps_long_term_ref_pics_flag;
-
-    uint8_t sps_inter_layer_prediction_enabled_flag;
-
-    uint8_t sps_idr_rpl_present_flag;
-
-    uint8_t sps_rpl1_same_as_rpl0_flag;
-    uint8_t sps_num_ref_pic_lists0;
-    uint8_t sps_num_ref_pic_lists1;
-
-    OVRPL * ref_pic_list0; /* max num_ref_pic_list 64*/
-    OVRPL * ref_pic_list1; /* max num_ref_pic_list 64*/
-
-    uint8_t sps_ref_wraparound_enabled_flag;
-
-    uint8_t sps_temporal_mvp_enabled_flag;
-    uint8_t sps_sbtmvp_enabled_flag;
-
-    uint8_t sps_amvr_enabled_flag;
-
-    uint8_t sps_bdof_enabled_flag;
-    uint8_t sps_bdof_control_present_in_ph_flag;
-
-    uint8_t sps_smvd_enabled_flag;
-
-    uint8_t sps_dmvr_enabled_flag;
-    uint8_t sps_dmvr_control_present_in_ph_flag;
-
-    uint8_t sps_mmvd_enabled_flag;
-    uint8_t sps_mmvd_fullpel_only_enabled_flag;
-
-    uint8_t sps_six_minus_max_num_merge_cand;
-    uint8_t sps_sbt_enabled_flag;
-
-    uint8_t sps_affine_enabled_flag;
-    uint8_t sps_five_minus_max_num_subblock_merge_cand;
-
-    uint8_t sps_6param_affine_enabled_flag;
-    uint8_t sps_affine_amvr_enabled_flag;
-
-    uint8_t sps_affine_prof_enabled_flag;
-    uint8_t sps_prof_control_present_in_ph_flag;
-
-    uint8_t sps_bcw_enabled_flag;
-    uint8_t sps_ciip_enabled_flag;
-
-    uint8_t sps_gpm_enabled_flag;
-    uint8_t sps_max_num_merge_cand_minus_max_num_gpm_cand;
-
-    uint8_t sps_log2_parallel_merge_level_minus2;
-    uint8_t sps_isp_enabled_flag;
-    uint8_t sps_mrl_enabled_flag;
-    uint8_t sps_mip_enabled_flag;
-
-    uint8_t sps_cclm_enabled_flag;
-
-    uint8_t sps_chroma_horizontal_collocated_flag;
-    uint8_t sps_chroma_vertical_collocated_flag;
-
-    uint8_t sps_palette_enabled_flag;
-
-    uint8_t sps_act_enabled_flag;
-
-    uint8_t sps_min_qp_prime_ts;
-
-    uint8_t sps_ibc_enabled_flag;
-    uint8_t sps_six_minus_max_num_ibc_merge_cand;
-
-    uint8_t sps_ladf_enabled_flag;
-    uint8_t sps_num_ladf_intervals_minus2;
-    uint8_t sps_ladf_lowest_interval_qp_offset;
-    uint8_t sps_ladf_qp_offset[64]; /* max_num_ladf_intervals */
-    uint8_t sps_ladf_delta_threshold_minus1[64];
-
-    uint8_t sps_explicit_scaling_list_enabled_flag;
-    uint8_t sps_scaling_matrix_for_lfnst_disabled_flag;
-    uint8_t sps_scaling_matrix_for_alternative_colour_space_disabled_flag;
-    uint8_t sps_scaling_matrix_designated_colour_space_flag;
-
-    uint8_t sps_dep_quant_enabled_flag;
-    uint8_t sps_sign_data_hiding_enabled_flag;
-
-    uint8_t sps_virtual_boundaries_enabled_flag;
-    uint8_t sps_virtual_boundaries_present_flag;
-    uint8_t sps_num_ver_virtual_boundaries;
-    uint8_t sps_virtual_boundary_pos_x_minus1[16]; /* max_num_virtual_boundaries_ver */
-    uint8_t sps_num_hor_virtual_boundaries;
-    uint8_t sps_virtual_boundary_pos_y_minus1[16]; /* max_num_virtual_boundaries_hor */
-
-    uint8_t sps_timing_hrd_params_present_flag;
-    OVGHRDTiming * general_timing_hrd_parameters;
-    uint8_t sps_sublayer_cpb_params_present_flag;
-    OVOLSHRDTiming * ols_timing_hrd_parameters;
-
-    uint8_t sps_field_seq_flag;
-
-    uint8_t sps_vui_parameters_present_flag;
-    uint8_t sps_vui_payload_size_minus1;
-    uint8_t sps_vui_alignment_zero_bit;
-
-    OVVUI *vui_payload;
-
-    uint8_t sps_extension_flag;
-    uint8_t sps_extension_data_flag;
-} OVSPS;
-
-void subpic_info(OVNVCLReader *const rdr, OVSPS *const sps)
+void
+subpic_info(OVNVCLReader *const rdr, OVSPS *const sps)
 {
     sps->sps_num_subpics_minus1 = nvcl_read_u_expgolomb(rdr);
     if (sps->sps_num_subpics_minus1 > 0) {
@@ -297,12 +172,10 @@ void subpic_info(OVNVCLReader *const rdr, OVSPS *const sps)
 }
 
 int
-nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps2,
-              OVNVCLCtx *const nvcl_ctx)
+nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
+              const OVNVCLCtx *const nvcl_ctx)
 {
     int i, j;
-    OVSPS stck_sps = {0};
-    OVSPS *const sps = &stck_sps;
     nvcl_skip_bits(rdr, 16);
     sps->sps_seq_parameter_set_id   = nvcl_read_bits(rdr, 4);
     sps->sps_video_parameter_set_id = nvcl_read_bits(rdr, 4);

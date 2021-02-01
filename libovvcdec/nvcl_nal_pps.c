@@ -1,109 +1,92 @@
+#include "libovvcutils/ovmem.h"
+
 #include "nvcl.h"
 #include "nvcl_utils.h"
+#include "nvcl_structures.h"
 
-typedef struct OVPPS
+enum DecReturn {
+    OV_INVALID_DATA = -1,
+    OV_ENOMEM = -2,
+};
+
+
+static uint8_t
+probe_pps_id(OVNVCLReader *const rdr)
 {
-    uint8_t pps_pic_parameter_set_id;
-    uint8_t pps_seq_parameter_set_id;
-    uint8_t pps_mixed_nalu_types_in_pic_flag;
-    uint8_t pps_pic_width_in_luma_samples;
-    uint8_t pps_pic_height_in_luma_samples;
-    uint8_t pps_conformance_window_flag;
-    uint8_t pps_conf_win_left_offset;
-    uint8_t pps_conf_win_right_offset;
-    uint8_t pps_conf_win_top_offset;
-    uint8_t pps_conf_win_bottom_offset;
+    uint8_t pps_id = fetch_bits(rdr, 6);
+    return pps_id;
+}
 
-    uint8_t pps_scaling_window_explicit_signalling_flag;
-    uint8_t pps_scaling_win_left_offset;
-    uint8_t pps_scaling_win_right_offset;
-    uint8_t pps_scaling_win_top_offset;
-    uint8_t pps_scaling_win_bottom_offset;
 
-    uint8_t pps_output_flag_present_flag;
-    uint8_t pps_no_pic_partition_flag;
-    uint8_t pps_subpic_id_mapping_present_flag;
-    uint8_t pps_num_subpics_minus1;
+static int
+validate_pps(OVNVCLReader *rdr, OVPPS *const pps)
+{
+    /* TODO various check on limitation and max sizes */
+    return 1;
+}
 
-    uint8_t pps_subpic_id_len_minus1;
-    uint8_t pps_subpic_id[16];
-    uint8_t pps_log2_ctu_size_minus5;
-    uint8_t pps_num_exp_tile_columns_minus1;
-    uint8_t pps_num_exp_tile_rows_minus1;
-    uint8_t pps_tile_column_width_minus1[16];
+static void
+free_pps(OVPPS *const pps)
+{
+    /* TODO unref and/or free dynamic structure */
+    ov_free(pps);
+}
 
-    uint8_t pps_tile_row_height_minus1[16];
+static void
+replace_pps(OVPPS *pps_list[], OVPPS *const pps, uint8_t pps_id)
+{
+    /* TODO unref and/or free dynamic structure */
+    OVPPS *to_free = pps_list[pps_id];
 
-    uint8_t pps_loop_filter_across_tiles_enabled_flag;
-    uint8_t pps_rect_slice_flag;
+    free_pps(to_free);
 
-    uint8_t pps_single_slice_per_subpic_flag;
+    pps_list[pps_id] = pps;
+}
 
-    uint8_t pps_num_slices_in_pic_minus1;
-    uint8_t pps_tile_idx_delta_present_flag;
+int
+nvcl_decode_nalu_pps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
+{
+    int ret;
+    uint8_t pps_id = probe_pps_id(rdr);
+    OVPPS **pps_list = nvcl_ctx->pps_list;
+    if (pps_list[pps_id]) {
+        /* TODO compare RBSP data to avoid new read */
+        uint8_t identical_rbsp = 0;
+        if (identical_rbsp) {
+            goto duplicated;
+        }
+    }
 
-    uint8_t pps_slice_width_in_tiles_minus1[16];
+    OVPPS *pps = ov_mallocz(sizeof(*pps));
+    if (!pps) {
+        return OV_ENOMEM;
+    }
 
-    uint8_t pps_slice_height_in_tiles_minus1[16];
+    ret = nvcl_pps_read(rdr, pps, nvcl_ctx);
+    if (ret < 0) {
+        goto cleanup;
+    }
 
-    uint8_t pps_num_exp_slices_in_tile[16];
-    uint8_t pps_exp_slice_height_in_ctus_minus1[16*16];
+    ret = validate_pps(rdr, pps);
+    if (ret < 0) {
+        goto cleanup;
+    }
 
-    uint8_t pps_tile_idx_delta_val[16];
+    /*FIXME unref instead of free */
+    replace_pps(pps_list, pps, pps_id);
 
-    uint8_t pps_loop_filter_across_slices_enabled_flag;
+    return 0;
 
-    uint8_t pps_cabac_init_present_flag;
-    uint8_t pps_num_ref_idx_default_active_minus1[16];
+cleanup:
+    ov_free(pps);
+    return ret;
 
-    uint8_t pps_rpl1_idx_present_flag;
-    uint8_t pps_weighted_pred_flag;
-    uint8_t pps_weighted_bipred_flag;
-    uint8_t pps_ref_wraparound_enabled_flag;
-    uint8_t pps_pic_width_minus_wraparound_offset;
-
-    uint8_t pps_init_qp_minus26;
-    uint8_t pps_cu_qp_delta_enabled_flag;
-    uint8_t pps_chroma_tool_offsets_present_flag;
-    uint8_t pps_cb_qp_offset;
-    uint8_t pps_cr_qp_offset;
-    uint8_t pps_joint_cbcr_qp_offset_present_flag;
-    uint8_t pps_joint_cbcr_qp_offset_value;
-
-    uint8_t pps_slice_chroma_qp_offsets_present_flag;
-    uint8_t pps_cu_chroma_qp_offset_list_enabled_flag;
-    uint8_t pps_chroma_qp_offset_list_len_minus1;
-    uint8_t pps_cb_qp_offset_list[16];
-    uint8_t pps_cr_qp_offset_list[16];
-    uint8_t pps_joint_cbcr_qp_offset_list[16];
-
-    uint8_t pps_deblocking_filter_control_present_flag;
-    uint8_t pps_deblocking_filter_override_enabled_flag;
-    uint8_t pps_deblocking_filter_disabled_flag;
-    uint8_t pps_dbf_info_in_ph_flag;
-
-    uint8_t pps_luma_beta_offset_div2;
-    uint8_t pps_luma_tc_offset_div2;
-    uint8_t pps_cb_beta_offset_div2;
-    uint8_t pps_cb_tc_offset_div2;
-    uint8_t pps_cr_beta_offset_div2;
-    uint8_t pps_cr_tc_offset_div2;
-
-    uint8_t pps_rpl_info_in_ph_flag;
-    uint8_t pps_sao_info_in_ph_flag;
-    uint8_t pps_alf_info_in_ph_flag;
-    uint8_t pps_wp_info_in_ph_flag;
-
-    uint8_t pps_qp_delta_info_in_ph_flag;
-
-    uint8_t pps_picture_header_extension_present_flag;
-    uint8_t pps_slice_header_extension_present_flag;
-    uint8_t pps_extension_flag;
-
-    uint8_t pps_extension_data_flag;
-
-} OVPPS;
-
+duplicated:
+    #if 0
+    ov_log(NULL, 3, "Ignored Duplicated PPS");
+    #endif
+    return 0;
+}
 static void
 pps_read_slices_in_subpic(OVNVCLReader *const rdr, OVPPS *const pps)
 {
@@ -220,12 +203,15 @@ pps_read_pic_partition(OVNVCLReader *const rdr, OVPPS *const pps)
 
 
 int
-nvcl_pps_read(OVNVCLReader *const rdr, OVPPS *const pps2,
+nvcl_pps_read(OVNVCLReader *const rdr, OVPPS *const pps,
               OVNVCLCtx *const nvcl_ctx)
 {
     int i;
+
+    #if 0
     OVPPS stck_pps = {0};
     OVPPS *const pps = &stck_pps;
+    #endif
     nvcl_skip_bits(rdr, 16);
 
     pps->pps_pic_parameter_set_id = nvcl_read_bits(rdr, 6);

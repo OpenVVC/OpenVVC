@@ -1,87 +1,82 @@
+#include <stddef.h>
+
+#include "libovvcutils/ovvcutils.h"
+#include "libovvcutils/ovmem.h"
+
 #include "nvcl.h"
 #include "nvcl_utils.h"
+#include "nvcl_structures.h"
+#include "nvcl_private.h"
 
-typedef struct OVPH
+enum DecReturn {
+    OV_INVALID_DATA = -1,
+    OV_ENOMEM = -2,
+};
+
+static int
+validate_ph(OVNVCLReader *rdr, OVPH *const ph)
 {
-    uint8_t ph_gdr_or_irap_pic_flag;
-    uint8_t ph_non_ref_pic_flag;
-    uint8_t ph_gdr_pic_flag;
-    uint8_t ph_inter_slice_allowed_flag;
-    uint8_t ph_intra_slice_allowed_flag;
-    uint8_t ph_pic_parameter_set_id;
-    uint8_t ph_pic_order_cnt_lsb;
-    uint8_t ph_recovery_poc_cnt;
-    uint8_t ph_extra_bit[i];
-    uint8_t ph_poc_msb_cycle_present_flag;
-    uint8_t ph_poc_msb_cycle_val;
-    uint8_t ph_alf_enabled_flag;
-    uint8_t ph_num_alf_aps_ids_luma;
-    uint8_t ph_alf_aps_id_luma[i];
-    uint8_t ph_alf_cb_enabled_flag;
-    uint8_t ph_alf_cr_enabled_flag;
-    uint8_t ph_alf_aps_id_chroma;
-    uint8_t ph_alf_cc_cb_enabled_flag;
-    uint8_t ph_alf_cc_cb_aps_id;
-    uint8_t ph_alf_cc_cr_enabled_flag;
-    uint8_t ph_alf_cc_cr_aps_id;
-    uint8_t ph_lmcs_enabled_flag;
-    uint8_t ph_lmcs_aps_id;
-    uint8_t ph_chroma_residual_scale_flag;
-    uint8_t ph_explicit_scaling_list_enabled_flag;
-    uint8_t ph_scaling_list_aps_id;
-    uint8_t ph_virtual_boundaries_present_flag;
-    uint8_t ph_num_ver_virtual_boundaries;
-    uint8_t ph_virtual_boundary_pos_x_minus1[i];
-    uint8_t ph_num_hor_virtual_boundaries;
-    uint8_t ph_virtual_boundary_pos_y_minus1[i];
-    uint8_t ph_pic_output_flag;
-    uint8_t ph_partition_constraints_override_flag;
-    uint8_t ph_log2_diff_min_qt_min_cb_intra_slice_luma;
-    uint8_t ph_max_mtt_hierarchy_depth_intra_slice_luma;
-    uint8_t ph_log2_diff_max_bt_min_qt_intra_slice_luma;
-    uint8_t ph_log2_diff_max_tt_min_qt_intra_slice_luma;
-    uint8_t ph_log2_diff_min_qt_min_cb_intra_slice_chroma;
-    uint8_t ph_max_mtt_hierarchy_depth_intra_slice_chroma;
-    uint8_t ph_log2_diff_max_bt_min_qt_intra_slice_chroma;
-    uint8_t ph_log2_diff_max_tt_min_qt_intra_slice_chroma;
-    uint8_t ph_cu_qp_delta_subdiv_intra_slice;
-    uint8_t ph_cu_chroma_qp_offset_subdiv_intra_slice;
-    uint8_t ph_log2_diff_min_qt_min_cb_inter_slice;
-    uint8_t ph_max_mtt_hierarchy_depth_inter_slice;
-    uint8_t ph_log2_diff_max_bt_min_qt_inter_slice;
-    uint8_t ph_log2_diff_max_tt_min_qt_inter_slice;
-    uint8_t ph_cu_qp_delta_subdiv_inter_slice;
-    uint8_t ph_cu_chroma_qp_offset_subdiv_inter_slice;
-    uint8_t ph_temporal_mvp_enabled_flag;
-    uint8_t ph_collocated_ref_idx;
-    uint8_t ph_mmvd_fullpel_only_flag;
-    uint8_t ph_mvd_l1_zero_flag;
-    uint8_t ph_bdof_disabled_flag;
-    uint8_t ph_dmvr_disabled_flag;
-    uint8_t ph_prof_disabled_flag;
-    uint8_t ph_qp_delta;
-    uint8_t ph_joint_cbcr_sign_flag;
-    uint8_t ph_sao_luma_enabled_flag;
-    uint8_t ph_sao_chroma_enabled_flag;
-    uint8_t ph_deblocking_params_present_flag;
-    uint8_t ph_deblocking_filter_disabled_flag;
-    uint8_t ph_luma_beta_offset_div2;
-    uint8_t ph_luma_tc_offset_div2;
-    uint8_t ph_cb_beta_offset_div2;
-    uint8_t ph_cb_tc_offset_div2;
-    uint8_t ph_cr_beta_offset_div2;
-    uint8_t ph_collocated_from_l0_flag;
-    uint8_t ph_cr_tc_offset_div2;
-    uint8_t ph_extension_length;
-    uint8_t ph_extension_data_byte[i];
-} OVPH;
+    /* TODO various check on limitation and max sizes */
+    return 1;
+}
+
+static void
+free_ph(OVPH *const ph)
+{
+    /* TODO unref and/or free dynamic structure */
+    ov_free(ph);
+}
+
+static void
+replace_ph(OVNVCLCtx *const nvcl_ctx, OVPH *const ph)
+{
+    /* TODO unref and/or free dynamic structure */
+    OVPH *to_free = nvcl_ctx->ph;
+
+    free_ph(to_free);
+
+    nvcl_ctx->ph = ph;
+}
+
+int
+nvcl_decode_nalu_ph(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
+{
+    int ret;
+    /* TODO compare RBSP data to avoid new read */
+
+    OVPH *ph = ov_mallocz(sizeof(*ph));
+    if (!ph) {
+        return OV_ENOMEM;
+    }
+
+    ret = nvcl_ph_read(rdr, ph, nvcl_ctx);
+    if (ret < 0) {
+        goto cleanup;
+    }
+
+    ret = validate_ph(rdr, ph);
+    if (ret < 0) {
+        goto cleanup;
+    }
+
+    /*FIXME unref instead of free */
+    replace_ph(nvcl_ctx, ph);
+
+    return 0;
+
+cleanup:
+    ov_free(ph);
+    return ret;
+}
 
 int
 nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
              OVNVCLCtx *const nvcl_ctx)
 {
-    const OVPPS *const pps = NULL;
-    const OVSPS *const sps = NULL;
+    const OVPPS *pps = NULL;
+    const OVSPS *sps = NULL;
+    int i;
+    nvcl_skip_bits(rdr, 16);
 
     ph->ph_gdr_or_irap_pic_flag = nvcl_read_flag(rdr);
     ph->ph_non_ref_pic_flag     = nvcl_read_flag(rdr);
