@@ -2,13 +2,6 @@
 #include "nvcl_utils.h"
 #include "nvcl_private.h"
 
-struct OVDPBParams
-{
-    uint8_t dpb_max_dec_pic_buffering_minus1;
-    uint8_t dpb_max_num_reorder_pics;
-    uint8_t dpb_max_latency_increase_plus1;
-};
-
 /* sps_max_sublayers_minus1, sps_sublayer_dpb_params_flag */
 /* vps_dpb_max_tid, vps_sublayer_dpb_params_present_flag */
 int
