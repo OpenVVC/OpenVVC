@@ -1,3 +1,7 @@
+#include "libovvcutils/ovvcutils.h"
+#include "cabac_internal.h"
+#include "vcl.h"
+#include "ctudec.h"
 
 uint8_t
 ovcabac_read_ae_tu_cbf_luma_isp(OVCABACCtx *const cabac_ctx,
@@ -36,6 +40,29 @@ ovcabac_read_ae_joint_cb_cr_flag(OVCABACCtx *const cabac_ctx,
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
     return ovcabac_ae_read(cabac_ctx, &cabac_state[JOINT_CB_CR_FLAG_CTX_OFFSET + cbf_mask_minus1] );
+}
+ 
+static int
+vvc_exp_golomb(OVCABACCtx *const cabac_ctx)
+{
+    int symbol = 0;
+    int bit = 1;
+    int add_val = 0;
+    int count = 0;
+    /*FIXME determine max_num_bits to be read in bypass */
+     while (bit && count <= 32){
+        bit = ovcabac_bypass_read(cabac_ctx);
+        symbol += bit << count++;
+     }
+     if (--count){
+         add_val = 0;
+         while (count){
+             add_val <<= 1;
+             add_val |= ovcabac_bypass_read(cabac_ctx);
+             count--;
+         }
+     }
+     return symbol + add_val;
 }
 
 int
@@ -102,7 +129,7 @@ decode_last_sig_prefix(OVCABACCtx *const cabac_ctx,
     static const int prefix_ctx[8]  = { 0, 0, 0, 3, 6, 10, 15, 21 };
     int pos = 0;
     int ctx_offset, ctx_shift;
-    int max_symbol = FFMIN(log2_tb_d, 5) << 1;
+    int max_symbol = OVMIN(log2_tb_d, 5) << 1;
 
     ctx_offset = prefix_ctx[log2_tb_d];
     ctx_shift  = (log2_tb_d + 1) >> 2 ;
@@ -123,7 +150,7 @@ decode_last_sig_prefix_c(OVCABACCtx *const cabac_ctx,
     int max_symbol = log2_tb_h << 1;
 
     ctx_shift = (1 << log2_tb_h) >> 3 ;
-    ctx_shift = av_clip(ctx_shift,0,2);
+    ctx_shift = ov_clip(ctx_shift,0,2);
 
     while(--max_symbol > 0 && ovcabac_ae_read(cabac_ctx, &cabac_state[offset_ctx + (pos >> ctx_shift)])){
         ++pos;
@@ -209,7 +236,7 @@ ovcabac_read_ae_significant_cg_flag(OVCABACCtx *const cabac_ctx,
                                     uint8_t got_significant_neighbour)
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    return ovcabac_ae_read(cabac_ctx, &ctx_table[SIG_COEFF_GROUP_CTX_OFFSET + got_significant_neighbour]);
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[SIG_COEFF_GROUP_CTX_OFFSET + got_significant_neighbour]);
 }
 
 
@@ -218,7 +245,7 @@ ovcabac_read_ae_significant_cg_flag_chroma(OVCABACCtx *const cabac_ctx,
                                            uint8_t got_significant_neighbour)
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    return ovcabac_ae_read(cabac_ctx, &ctx_table[SIG_COEFF_GROUP_C_CTX_OFFSET + got_significant_neighbour]);
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[SIG_COEFF_GROUP_C_CTX_OFFSET + got_significant_neighbour]);
 }
 
 uint8_t
@@ -226,13 +253,13 @@ ovcabac_read_ae_significant_ts_cg_flag(OVCABACCtx *const cabac_ctx,
                                        uint8_t got_significant_neighbour)
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    return ovcabac_ae_read(cabac_ctx, &ctx_table[TS_SIG_COEFF_GROUP_CTX_OFFSET + got_significant_neighbour]);
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[TS_SIG_COEFF_GROUP_CTX_OFFSET + got_significant_neighbour]);
 }
 
 static uint8_t
 decode_cbf_st(const OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf)
 {
-    VVCCABACContext *const cabac_ctx = ctu_dec->cabac_ctx;
+    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t tu_cbf_cb = ovcabac_read_ae_tu_cbf_cb(cabac_ctx);
     uint8_t tu_cbf_cr = ovcabac_read_ae_tu_cbf_cr(cabac_ctx, tu_cbf_cb);
     uint8_t cbf_mask = (tu_cbf_cb << 1) | tu_cbf_cr;
@@ -253,7 +280,7 @@ decode_cbf_st(const OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf)
 static uint8_t
 decode_cbf_c(const OVCTUDec *const ctu_dec)
 {
-    VVCCABACContext *const cabac_ctx = ctu_dec->cabac_ctx;
+    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t tu_cbf_cb = ovcabac_read_ae_tu_cbf_cb(cabac_ctx);
     uint8_t tu_cbf_cr = ovcabac_read_ae_tu_cbf_cr(cabac_ctx, tu_cbf_cb);
     uint8_t cbf_mask = (tu_cbf_cb << 1) | tu_cbf_cr;
@@ -268,7 +295,7 @@ decode_cbf_c(const OVCTUDec *const ctu_dec)
 
 static int
 transform_tree(OVCTUDec *const ctu_dec,
-               const VVCPartSize *const part_ctx,
+               const OVPartInfo *const part_ctx,
                unsigned int x0, unsigned int y0,
                unsigned int log2_tb_w, unsigned int log2_tb_h,
                unsigned int log2_max_tb_s, uint8_t rqt_root_cbf,
@@ -317,8 +344,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
               unsigned int log2_cb_w, unsigned int log2_cb_h,
               uint8_t intra_mode)
 {
-    VVCCTUPredContext *const pred_ctx = &ctu_dec->pred_ctx;
-    VVCCABACContext *const cabac_ctx = ctu_dec->cabac_ctx;
+    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
     uint8_t cbf_flags = 0;
     int cbf = 0;
@@ -414,7 +440,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
               unsigned int log2_cb_w, unsigned int log2_cb_h,
               uint8_t intra_mode)
 {
-    VVCCABACContext *const cabac_ctx = ctu_dec->cabac_ctx;
+    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     int i;
 
     uint8_t cbf = 0;
@@ -512,7 +538,7 @@ transform_unit(OVCTUDec *const ctu_dec,
 {
 
     if (tu_cbf_luma) {
-        VVCCABACContext *const cabac_ctx = ctu_dec->cabac_ctx;
+        OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         uint8_t cu_mts_flag = 0;
         uint8_t cu_mts_idx = 0;
         uint8_t transform_skip_flag = 0;
@@ -618,12 +644,12 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
            reading */
 
         if (cbf_mask & 0x2) {
-            VVCCABACContext *const cabac_ctx = ctu_dec->cabac_ctx;
+            OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
             /* TODO use max_tr_skip_s = 0 to avoid using enabled test */
             if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
                                                && log2_tb_h <= ctu_dec->max_log2_transform_skip_size) {
-                VVCCABACContext *const cabac_ctx = ctu_dec->cabac_ctx;
+                OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
                 uint8_t transform_skip_flag = ovcabac_read_ae_transform_skip_flag_c(cabac_ctx);
             }
 
@@ -642,12 +668,12 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
         }
 
         if (cbf_mask & 0x1) {
-            VVCCABACContext *const cabac_ctx = ctu_dec->cabac_ctx;
+            OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
             /* TODO use max_tr_skip_s = 0 to avoid using enabled test */
             if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
                                                && log2_tb_h <= ctu_dec->max_log2_transform_skip_size) {
-                VVCCABACContext *const cabac_ctx = ctu_dec->cabac_ctx;
+                OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
                 uint8_t transform_skip_flag = ovcabac_read_ae_transform_skip_flag_c(cabac_ctx);
             }
 
@@ -686,7 +712,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
             }
 
             if (can_lfnst) {
-                VVCCABACContext *const cabac_ctx = ctu_dec->cabac_ctx;
+                OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
                 uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;
                 lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
                 if (lfnst_flag) {
@@ -725,7 +751,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
         #endif
 
     } else { //Joint cb cr (ICT)
-        VVCCABACContext *const cabac_ctx = ctu_dec->cabac_ctx;
+        OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         uint16_t last_pos_cbcr;
         #if 0
         int shift_v = 6 + 1;
@@ -755,7 +781,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
 
         if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
             && log2_tb_h <= ctu_dec->max_log2_transform_skip_size) {
-            VVCCABACContext *const cabac_ctx = ctu_dec->cabac_ctx;
+            OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
             uint8_t transform_skip_flag = ovcabac_read_ae_transform_skip_flag_c(cabac_ctx);
         }
 
@@ -804,7 +830,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
     return 0;
 }
 
-static int
+int
 transform_unit_st(OVCTUDec *const ctu_dec,
                   unsigned int x0, unsigned int y0,
                   unsigned int log2_tb_w, unsigned int log2_tb_h,
@@ -815,7 +841,7 @@ transform_unit_st(OVCTUDec *const ctu_dec,
     /* FIXME check if delta_qp is read per cu or per tu */
     if (cbf_mask) {
         if (ctu_dec->delta_qp_enabled && cbf_mask) {
-            VVCCABACContext *const cabac_ctx = ctu_dec->cabac_ctx;
+            OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
             int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
             #if 0
             derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
@@ -836,13 +862,13 @@ transform_unit_st(OVCTUDec *const ctu_dec,
     return 0;
 }
 
-static int
+int
 transform_unit_l(OVCTUDec *const ctu_dec,
                   unsigned int x0, unsigned int y0,
                   unsigned int log2_tb_w, unsigned int log2_tb_h,
                   uint8_t rqt_root_cbf, uint8_t cu_flags)
 {
-    VVCCABACContext *const cabac_ctx = ctu_dec->cabac_ctx;
+    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t cbf_mask = ovcabac_read_ae_tu_cbf_luma(cabac_ctx);
 
     if (cbf_mask) {
@@ -859,13 +885,13 @@ transform_unit_l(OVCTUDec *const ctu_dec,
     return 0;
 }
 
-static int
+int
 transform_unit_c(OVCTUDec *const ctu_dec,
                   unsigned int x0, unsigned int y0,
                   unsigned int log2_tb_w, unsigned int log2_tb_h,
                   uint8_t rqt_root_cbf, uint8_t cu_flags)
 {
-    VVCCABACContext *const cabac_ctx = ctu_dec->cabac_ctx;
+    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t cbf_mask = decode_cbf_c(ctu_dec);
 
     if (cbf_mask) {

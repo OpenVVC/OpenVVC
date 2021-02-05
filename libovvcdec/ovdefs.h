@@ -50,9 +50,11 @@ typedef struct OVPicture OVPicture;
 typedef struct DPB OVDPB;
 
 
-typedef struct VVCPartSize VVCPartSize;
+typedef struct OVPartInfo OVPartInfo;
 typedef struct VVCCU VVCCU;
 
 /* Decoders related types */
 typedef struct OVCTUDec OVCTUDec;
+
+typedef struct OVMV OVMV;
 #endif

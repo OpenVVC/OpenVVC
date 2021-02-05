@@ -1,7 +1,76 @@
 #include <string.h>
 
+#include "vcl.h"
 #include "cabac_internal.h"
 #include "ctudec.h"
+
+#if 0
+static int coding_quadtree(OVCTUDec *const ctu_dec,
+                           const OVPartInfo *const part_ctx,
+                           unsigned int x0, unsigned int y0,
+                           unsigned int log2_cb_s, unsigned int qt_depth);
+
+static int coding_quadtree_implicit(OVCTUDec *const ctu_dec,
+                                    const OVPartInfo *const part_ctx,
+                                    unsigned int x0, unsigned int y0,
+                                    unsigned int log2_cb_s, unsigned int qt_depth,
+                                    unsigned int rem_w, unsigned int rem_h);
+
+static int dual_tree(OVCTUDec *const ctu_dec,
+                     const OVPartInfo *const part_ctx,
+                     unsigned int x0, unsigned int y0,
+                     unsigned int log2_cb_s, unsigned int qt_depth);
+
+static int dual_tree_implicit(OVCTUDec *const ctu_dec,
+                              const OVPartInfo *const part_ctx,
+                              unsigned int x0, unsigned int y0,
+                              unsigned int log2_cb_s, unsigned int qt_depth,
+                              unsigned int rem_w,
+                              unsigned int rem_h);
+
+static void separate_tree_mtt(OVCTUDec *const ctu_dec,
+                              unsigned int x0, unsigned int y0,
+                              unsigned int log2_cb_w, unsigned int log2_cb_h,
+                              unsigned int mtt_depth,
+                              uint8_t implicit_mt_depth);
+#endif
+
+/* FIXME cast to uint8_t and check result */
+static int bt_split(OVCTUDec *const ctu_dec,
+                    const OVPartInfo *const part_ctx,
+                    unsigned int x0, unsigned int y0,
+                    unsigned int log2_cb_w, unsigned int log2_cb_h,
+                    unsigned int mtt_depth,
+                    uint8_t implicit_mt_depth,
+                    uint8_t split_cu_v);
+
+/* FIXME cast to uint8_t and check result */
+static int tt_split(OVCTUDec *const ctu_dec,
+                    const OVPartInfo *const part_ctx,
+                    unsigned int x0, unsigned int y0,
+                    unsigned int log2_cb_w, unsigned int log2_cb_h,
+                    unsigned int mtt_depth,
+                    uint8_t implicit_mt_depth,
+                    uint8_t split_cu_v);
+
+static int multi_type_tree(OVCTUDec *const ctu_dec,
+                           const OVPartInfo *const part_ctx,
+                           uint8_t x0, uint8_t y0,
+                           uint8_t log2_cb_w, uint8_t log2_cb_h,
+                           uint8_t mtt_depth,
+                           uint8_t middle_tt_flag, uint8_t implicit_mt_depth);
+
+static int binary_tree_implicit_h(OVCTUDec *const ctu_dec,
+                                  const OVPartInfo *const part_ctx,
+                                  unsigned int x0, unsigned int y0,
+                                  unsigned int log2_cb_w, unsigned int log2_cb_h,
+                                  unsigned int mtt_depth, unsigned int rem_h);
+
+static int binary_tree_implicit_v(OVCTUDec *const ctu_dec,
+                                  const OVPartInfo *const part_ctx,
+                                  unsigned int x0, unsigned int y0,
+                                  unsigned int log2_cb_w, unsigned int log2_cb_h,
+                                  unsigned int mtt_depth, unsigned int rem_w);
 
 /* FIXME to be replaced or removed */
 enum {
@@ -81,7 +150,7 @@ ovcabac_read_ae_mtt_split_cu_binary_flag(OVCABACCtx *const cabac_ctx,
 
 static void
 store_qt_depth(OVCTUDec *const ctu_dec,
-               const VVCPartSize *const part_ctx, uint8_t log2_cb_s,
+               const OVPartInfo *const part_ctx, uint8_t log2_cb_s,
                uint8_t x0, uint8_t y0, uint8_t qt_depth)
 {
     struct PartMap *const part_map = ctu_dec->active_part_map;
@@ -104,9 +173,9 @@ store_qt_depth(OVCTUDec *const ctu_dec,
 }
 
 
-static int
+int
 coding_quadtree(OVCTUDec *const ctu_dec,
-               const VVCPartSize *const part_ctx,
+               const OVPartInfo *const part_ctx,
                unsigned int x0, unsigned int y0,
                unsigned int log2_cb_s, unsigned int qt_depth)
 {
@@ -169,7 +238,7 @@ coding_quadtree(OVCTUDec *const ctu_dec,
 
                 if (sep_tree) {
                     /*FIXME use specific function to launch chroma tree */
-                    const VVCPartSize * part_ctx = ctu_dec->part_ctx;
+                    const OVPartInfo * part_ctx = ctu_dec->part_ctx;
                     void (*coding_unit_bkup)    = ctu_dec->coding_unit;
                     void (*transform_unit_bkup) = ctu_dec->transform_unit;
 
@@ -183,7 +252,7 @@ coding_quadtree(OVCTUDec *const ctu_dec,
                     coding_quadtree(ctu_dec, part_ctx, x0, y1, log2_cb_s - 1, qt_depth + 1);
                     coding_quadtree(ctu_dec, part_ctx, x1, y1, log2_cb_s - 1, qt_depth + 1);
 
-                    part_ctx = ctu_dec->part_ctx_chroma;
+                    part_ctx = ctu_dec->part_ctx_c;
 
                     ctu_dec->coding_unit   = &coding_unit_intra_c;
                     ctu_dec->transform_unit= &transform_unit_c;
@@ -244,9 +313,9 @@ coding_quadtree(OVCTUDec *const ctu_dec,
     return 1;
 }
 
-static int
+int
 coding_quadtree_implicit(OVCTUDec *const ctu_dec,
-                        const VVCPartSize *const part_ctx,
+                        const OVPartInfo *const part_ctx,
                         unsigned int x0, unsigned int y0,
                         unsigned int log2_cb_s, unsigned int qt_depth,
                         unsigned int rem_w, unsigned int rem_h)
@@ -357,9 +426,9 @@ coding_quadtree_implicit(OVCTUDec *const ctu_dec,
 
 
 
-static int
+int
 dual_tree(OVCTUDec *const ctu_dec,
-          const VVCPartSize *const part_ctx,
+          const OVPartInfo *const part_ctx,
           unsigned int x0, unsigned int y0,
           unsigned int log2_cb_s, unsigned int qt_depth)
 {
@@ -374,7 +443,7 @@ dual_tree(OVCTUDec *const ctu_dec,
 
         return 1;
     } else {
-        const VVCPartSize * part_ctx = ctu_dec->part_ctx;
+        const OVPartInfo * part_ctx = ctu_dec->part_ctx;
 
         ctu_dec->coding_unit    = &coding_unit_intra;
         ctu_dec->transform_unit = &transform_unit_l;
@@ -382,7 +451,7 @@ dual_tree(OVCTUDec *const ctu_dec,
         ctu_dec->tmp_disable_cclm     = 0;
         coding_quadtree(ctu_dec, part_ctx, x0, y0, log2_cb_s, qt_depth);
 
-        part_ctx = ctu_dec->part_ctx_chroma;
+        part_ctx = ctu_dec->part_ctx_c;
 
         #if 0
         /* FIXME  Update LMCS for chroma */
@@ -400,9 +469,9 @@ dual_tree(OVCTUDec *const ctu_dec,
     return 1;
 }
 
-static int
+int
 dual_tree_implicit(OVCTUDec *const ctu_dec,
-                   const VVCPartSize *const part_ctx,
+                   const OVPartInfo *const part_ctx,
                    unsigned int x0, unsigned int y0,
                    unsigned int log2_cb_s, unsigned int qt_depth,
                    unsigned int rem_w,
@@ -441,7 +510,7 @@ dual_tree_implicit(OVCTUDec *const ctu_dec,
         return 1;
 
     } else {
-        const VVCPartSize * part_ctx = ctu_dec->part_ctx;
+        const OVPartInfo * part_ctx = ctu_dec->part_ctx;
 
         ctu_dec->coding_unit     = &coding_unit_intra;
         ctu_dec->transform_unit  = &transform_unit_l;
@@ -455,7 +524,7 @@ dual_tree_implicit(OVCTUDec *const ctu_dec,
         ctu_dec->compute_lmcs(ctu_dec, x0, y0);
         #endif
 
-        part_ctx = ctu_dec->part_ctx_chroma;
+        part_ctx = ctu_dec->part_ctx_c;
 
         ctu_dec->coding_unit     = &coding_unit_intra_c;
         ctu_dec->transform_unit  = &transform_unit_c;
@@ -483,7 +552,7 @@ separate_tree_mtt(OVCTUDec *const ctu_dec,
     ctu_dec->transform_unit  = &transform_unit_c;
     ctu_dec->active_part_map = &ctu_dec->part_map_c;
 
-    multi_type_tree(ctu_dec, ctu_dec->part_ctx_chroma, x0 >> 1, y0 >> 1,
+    multi_type_tree(ctu_dec, ctu_dec->part_ctx_c, x0 >> 1, y0 >> 1,
                     log2_cb_w - 1, log2_cb_h - 1,
                     mtt_depth, 0, implicit_mt_depth);
 
@@ -496,7 +565,7 @@ separate_tree_mtt(OVCTUDec *const ctu_dec,
 /* FIXME cast to uint8_t and check result */
 static int
 bt_split(OVCTUDec *const ctu_dec,
-         const VVCPartSize *const part_ctx,
+         const OVPartInfo *const part_ctx,
          unsigned int x0, unsigned int y0,
          unsigned int log2_cb_w, unsigned int log2_cb_h,
          unsigned int mtt_depth,
@@ -531,7 +600,7 @@ bt_split(OVCTUDec *const ctu_dec,
 /* FIXME cast to uint8_t and check result */
 static int
 tt_split(OVCTUDec *const ctu_dec,
-         const VVCPartSize *const part_ctx,
+         const OVPartInfo *const part_ctx,
          unsigned int x0, unsigned int y0,
          unsigned int log2_cb_w, unsigned int log2_cb_h,
          unsigned int mtt_depth,
@@ -565,7 +634,7 @@ tt_split(OVCTUDec *const ctu_dec,
 
 static int
 multi_type_tree(OVCTUDec *const ctu_dec,
-               const VVCPartSize *const part_ctx,
+               const OVPartInfo *const part_ctx,
                uint8_t x0, uint8_t y0,
                uint8_t log2_cb_w, uint8_t log2_cb_h,
                uint8_t mtt_depth,
@@ -749,7 +818,7 @@ multi_type_tree(OVCTUDec *const ctu_dec,
 
 static int
 binary_tree_implicit_h(OVCTUDec *const ctu_dec,
-                       const VVCPartSize *const part_ctx,
+                       const OVPartInfo *const part_ctx,
                        unsigned int x0, unsigned int y0,
                        unsigned int log2_cb_w, unsigned int log2_cb_h,
                        unsigned int mtt_depth, unsigned int rem_h)
@@ -797,7 +866,7 @@ binary_tree_implicit_h(OVCTUDec *const ctu_dec,
 
 static int
 binary_tree_implicit_v(OVCTUDec *const ctu_dec,
-                       const VVCPartSize *const part_ctx,
+                       const OVPartInfo *const part_ctx,
                        unsigned int x0, unsigned int y0,
                        unsigned int log2_cb_w, unsigned int log2_cb_h,
                        unsigned int mtt_depth, unsigned int rem_w)

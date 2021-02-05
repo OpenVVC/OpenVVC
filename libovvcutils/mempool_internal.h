@@ -1,6 +1,6 @@
 #ifndef OV_MEMPOOL_INTERNAL_H
 #define OV_MEMPOOL_INTERNAL_H
-
+#include <stddef.h>
 
 struct MemPoolElem
 {

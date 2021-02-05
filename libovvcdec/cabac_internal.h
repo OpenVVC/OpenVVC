@@ -9,7 +9,7 @@
 extern const uint8_t lps_renorm_table[64];
 extern const uint8_t range_lps_lut[512];
 
-inline uint8_t
+static inline uint8_t
 ovcabac_ae_read(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state)
 {
     uint16_t state_0 = (*cabac_state) >> 48;
@@ -70,7 +70,7 @@ ovcabac_ae_read(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state)
     return symbol_mask & 0x1;
 }
 
-inline uint8_t
+static inline uint8_t
 ovcabac_bypass_read(OVCABACCtx *const cabac_ctx)
 {
   int32_t range, lps_mask;

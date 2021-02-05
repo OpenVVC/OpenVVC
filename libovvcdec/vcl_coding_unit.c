@@ -1,5 +1,22 @@
+#include <stdlib.h>
+#include <string.h>
+#include "vcl.h"
 #include "cabac_internal.h"
 #include "ctudec.h"
+
+/*FIXME find a more global location for these defintions */
+enum CUMode {
+    OV_INTER_SKIP = 0,
+    OV_INTER = 1,
+    OV_INTRA = 2,
+    OV_NA = 3,
+    OV_MIP = 4,
+};
+
+struct OVMV {
+    int32_t x;
+    int32_t y;
+};
 
 /* FIXME shorten this LUT to min req size 
  * only used in truncated cabac reading
@@ -60,7 +77,7 @@ ovcabac_read_ae_cu_skip_flag(OVCABACCtx *const cabac_ctx, uint8_t above_pu,
 {
     uint8_t cu_skip_flag;
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    int ctx_offset = (above_pu == VVC_INTER_SKIP) + (left_pu == VVC_INTER_SKIP);
+    int ctx_offset = (above_pu == OV_INTER_SKIP) + (left_pu == OV_INTER_SKIP);
     cu_skip_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[SKIP_FLAG_CTX_OFFSET + ctx_offset]);
     return cu_skip_flag;
 }
@@ -72,7 +89,7 @@ ovcabac_read_ae_pred_mode_flag(OVCABACCtx *const cabac_ctx,
 {
     uint8_t pred_mode_flag;
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    int ctx_offset = (above_pu == VVC_INTRA) | (left_pu == VVC_INTRA);
+    int ctx_offset = (above_pu == OV_INTRA) | (left_pu == OV_INTRA);
     pred_mode_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[PRED_MODE_CTX_OFFSET + ctx_offset]);
     return pred_mode_flag;
 }
@@ -156,12 +173,12 @@ vvc_exp_golomb_mv(OVCABACCtx *const cabac_ctx)
     return offset + add_val;
 }
 
-static VVCMV
+static OVMV
 ovcabac_read_ae_mvd(OVCABACCtx *const cabac_ctx)
 {
     int abs_x, abs_y;
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    VVCMV mvd;
+    OVMV mvd;
 
     abs_x = ovcabac_ae_read(cabac_ctx, &cabac_state[MVD_CTX_OFFSET]);
     abs_y = ovcabac_ae_read(cabac_ctx, &cabac_state[MVD_CTX_OFFSET]);
@@ -225,14 +242,14 @@ ovcabac_read_ae_intra_mip(OVCABACCtx *const cabac_ctx,
     uint8_t ctx_offset;
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
 
-    if (FFABS(log2_cb_h - log2_cb_w) > 1){
+    if (abs(log2_cb_h - log2_cb_w) > 1){
         ctx_offset = 3;
     } else {
         ctx_offset  = mip_abv == 75;
         ctx_offset += mip_lft == 75;
     }
 
-    return ovcabac_ae_read(cabac_ctx, &ctx_table[MIP_FLAG_CTX_OFFSET + ctx_offset]);
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[MIP_FLAG_CTX_OFFSET + ctx_offset]);
 }
 
 static uint8_t
@@ -341,7 +358,7 @@ ovcabac_read_ae_intra_luma_mpm_remainder(OVCABACCtx *const cabac_ctx)
     uint8_t mpm_idx = ovcabac_bypass_read(cabac_ctx);
     int nb_bits = 5;//FIXME check behaviour
 
-    while (--nb_bits).{
+    while (--nb_bits) {
         mpm_idx = mpm_idx << 1;
         mpm_idx |= ovcabac_bypass_read(cabac_ctx);
     }
@@ -419,7 +436,7 @@ transform_unit()
     } else {
         /* INTER (should probably be default in a swicth*/
         /*FIXME move root_cbf_read into transform_tree */
-        OVCABACCtx *const cabac_ctx = &ctu_dec->cc;
+        OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         uint8_t merge_flag   = !!(cu.cu_flags & flg_merge_flag);
         uint8_t rqt_root_cbf = merge_flag || ovcabac_read_ae_root_cbf(cabac_ctx);
 
@@ -433,7 +450,7 @@ transform_unit()
 
 int
 coding_unit(OVCTUDec *const ctu_dec,
-            const VVCPartSize *const part_ctx,
+            const OVPartInfo *const part_ctx,
             uint8_t x0, uint8_t y0,
             uint8_t log2_cb_w, uint8_t log2_cb_h)
 {
@@ -518,20 +535,24 @@ coding_unit(OVCTUDec *const ctu_dec,
         memset(&ctu_dec->part_map_c.log2_cu_w_map_x[x_cb], log2_cb_w, sizeof(uint8_t) * nb_cb_w);
         memset(&ctu_dec->part_map_c.log2_cu_h_map_y[y_cb], log2_cb_h, sizeof(uint8_t) * nb_cb_h);
     }
+    return 0;
 }
 
 VVCCU
 coding_unit_inter_st(OVCTUDec *const ctu_dec,
-                     const VVCPartSize *const part_ctx,
+                     const OVPartInfo *const part_ctx,
                      uint8_t x0, uint8_t y0,
                      uint8_t log2_cu_w, uint8_t log2_cu_h)
 {
-    OVCABACCtx *const cabac_ctx = &ctu_dec->cc;
+    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
     uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
+    #if 0
     VVCCTUPredContext *const pred_ctx = &ctu_dec->pred_ctx;
-    uint8_t cu_type_abv = pred_ctx->inter_modes_x[x_pu];
-    uint8_t cu_type_lft = pred_ctx->inter_modes_y[y_pu];
+    #endif
+    /*TODO fill */
+    uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_pu];
+    uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_pu];
     uint8_t cu_skip_flag;
     uint8_t cu_type;
     VVCCU cu = {0};
@@ -544,7 +565,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
            merge_idx */
         ctu_dec->prediction_unit(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, 1);
 
-        cu_type = VVC_INTER_SKIP;
+        cu_type = OV_INTER_SKIP;
 
         FLG_STORE(cu_skip_flag, cu.cu_flags);
 
@@ -559,7 +580,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
         if (pred_mode_flag) {
             coding_unit_intra_st(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h);
 
-            cu_type = VVC_INTRA;
+            cu_type = OV_INTRA;
 
 
         } else {
@@ -567,7 +588,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
 
             ctu_dec->prediction_unit(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, merge_flag);
 
-            cu_type = VVC_INTER;
+            cu_type = OV_INTER;
 
             FLG_STORE(merge_flag, cu.cu_flags);
 
@@ -583,7 +604,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
 
 VVCCU
 coding_unit_intra_st(OVCTUDec *const ctu_dec,
-                     const VVCPartSize *const part_ctx,
+                     const OVPartInfo *const part_ctx,
                      uint8_t x0, uint8_t y0,
                      uint8_t log2_cu_w, uint8_t log2_cu_h)
 {
@@ -593,7 +614,7 @@ coding_unit_intra_st(OVCTUDec *const ctu_dec,
 
    /* if not in separable tree */
    if (!ctu_dec->share) {
-       coding_unit_intra_c(ctu_dec, ctu_dec->part_ctx_chroma, x0 >> 1, y0 >> 1,
+       coding_unit_intra_c(ctu_dec, ctu_dec->part_ctx_c, x0 >> 1, y0 >> 1,
                log2_cu_w - 1, log2_cu_h - 1);
    }
 
@@ -602,12 +623,11 @@ coding_unit_intra_st(OVCTUDec *const ctu_dec,
 
 VVCCU
 coding_unit_intra(OVCTUDec *const ctu_dec,
-                  const VVCPartSize *const part_ctx,
+                  const OVPartInfo *const part_ctx,
                   uint8_t x0, uint8_t y0,
                   uint8_t log2_cb_w, uint8_t log2_cb_h)
 {
-    OVCABACCtx *const cabac_ctx = &ctu_dec->cc;
-    VVCCTUPredContext *const pred_ctx = &ctu_dec->pred_ctx;
+    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t intra_mode;
     uint8_t mip_flag = 0;
     uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
@@ -620,9 +640,12 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
     cu.cu_flags |= flg_pred_mode_flag;
 
     if (ctu_dec->enabled_mip) {
+        #if 0
+        VVCCTUPredContext *const pred_ctx = &ctu_dec->pred_ctx;
+        #endif
         /* FIXME use other maps */
-        uint8_t mip_abv = pred_ctx->intra_modes_x_luma[x_pu] == VVC_MIP_MODE;
-        uint8_t mip_lft = pred_ctx->intra_modes_y_luma[y_pu] == VVC_MIP_MODE;
+        uint8_t mip_abv = ctu_dec->part_map.cu_mode_x[x_pu] == OV_MIP;
+        uint8_t mip_lft = ctu_dec->part_map.cu_mode_y[y_pu] == OV_MIP;
 
         mip_flag = ovcabac_read_ae_intra_mip(cabac_ctx, log2_cb_w, log2_cb_h,
                                              mip_abv, mip_lft);
@@ -630,6 +653,7 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
         cu.cu_flags |= flg_mip_flag & (-(!!mip_flag));
 
         if (mip_flag) {
+            struct PartMap *part_map = &ctu_dec->part_map;
             uint8_t transpose_flag = ovcabac_read_ae_intra_mip_transpose_flag(cabac_ctx);
             uint8_t mip_mode;
 
@@ -641,12 +665,12 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
             cu.cu_opaque |= mip_mode;
 
             /*FIXME this is actually required by mip_flag CABAC context derivation */
-            memset(&pred_ctx->intra_modes_x_luma[x_pu], VVC_MIP_MODE, sizeof(uint8_t) * nb_pb_w);
-            memset(&pred_ctx->intra_modes_y_luma[y_pu], VVC_MIP_MODE, sizeof(uint8_t) * nb_pb_h);
+            memset(&part_map->cu_mode_x[x_pu], OV_MIP, sizeof(uint8_t) * nb_pb_w);
+            memset(&part_map->cu_mode_y[y_pu], OV_MIP, sizeof(uint8_t) * nb_pb_h);
 
             #if 0
             for (int i = 0; i < nb_pb_h; i++) {
-                memset(&pred_ctx->cclm_intra_mode[x_pu + (i << 5) + (y_pu << 5)], VVC_MIP_MODE,
+                memset(&pred_ctx->cclm_intra_mode[x_pu + (i << 5) + (y_pu << 5)], OV_MIP,
                         sizeof(uint8_t) * nb_pb_w);
             }
             #endif
@@ -703,13 +727,15 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
 
 VVCCU
 coding_unit_intra_c(OVCTUDec *const ctu_dec,
-                    const VVCPartSize *const part_ctx,
+                    const OVPartInfo *const part_ctx,
                     uint8_t x0, uint8_t y0,
                     uint8_t log2_cb_w, uint8_t log2_cb_h)
 {
 
-    OVCABACCtx *const cabac_ctx = &ctu_dec->cc;
+    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+    #if 0
     VVCCTUPredContext *const pred_ctx = &ctu_dec->pred_ctx;
+    #endif
     uint8_t intra_mode;
     uint8_t mpm_idx = 0, lm_idx = 1;
 #if 0
@@ -736,7 +762,7 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
     }
 
     if (!cclm_flag) {
-        mpm_flag = ovcabac_read_ae_intra_chroma_mpm_flag(cabac_ctx);
+        uint8_t mpm_flag = ovcabac_read_ae_intra_chroma_mpm_flag(cabac_ctx);
         if (mpm_flag) {
             mpm_idx = ovcabac_read_ae_intra_chroma_mpm_idx(cabac_ctx);
         }
@@ -782,12 +808,12 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
 
 int
 prediction_unit_inter_p(OVCTUDec *const ctu_dec,
-                        const VVCPartSize *const part_ctx,
+                        const OVPartInfo *const part_ctx,
                         uint8_t x0, uint8_t y0,
                         uint8_t log2_pb_w, uint8_t log2_pb_h,
                         uint8_t merge_flag)
 {
-    OVCABACCtx *const cabac_ctx = &ctu_dec->cc;
+    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 #if 0
     struct VVCInterCtx *const inter_ctx = &ctu_dec->inter_ctx;
     struct VVCMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
@@ -798,7 +824,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     uint8_t nb_pb_h = (1 << log2_pb_h) >> part_ctx->log2_min_cb_s;
 #endif
 
-    VVCMV mv0;
+    OVMV mv0;
     if (merge_flag) {
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
@@ -811,7 +837,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 #endif
     } else {
         /*FIXME add ref_idx*/
-        VVCMV mvd = ovcabac_read_ae_mvd(cabac_ctx);
+        OVMV mvd = ovcabac_read_ae_mvd(cabac_ctx);
 
         uint8_t mvp_idx = ovcabac_read_ae_mvp_flag(cabac_ctx);
 
@@ -819,10 +845,11 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
         mv0 = derive_mvp_candidates(ctu_dec, inter_ctx, mv_ctx0,
                                     x_pu, y_pu, nb_pb_w, nb_pb_h,
                                     mvp_idx, 1);
-#endif
         mvd = scale_mvd(mvd);
+
         mv0.x += mvd.x;
         mv0.y += mvd.y;
+#endif
     }
 
 #if 0
@@ -840,14 +867,16 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
 int
 prediction_unit_inter_b(OVCTUDec *const ctu_dec,
-                        const VVCPartSize *const part_ctx,
+                        const OVPartInfo *const part_ctx,
                         uint8_t x0, uint8_t y0,
                         uint8_t log2_pb_w, uint8_t log2_pb_h,
                         uint8_t merge_flag)
 {
-    OVCABACCtx *const cabac_ctx = &ctu_dec->cc;
+    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+    #if 0
     struct VVCInterCtx *const inter_ctx = &ctu_dec->inter_ctx;
     VVCMergeInfo mv_info;
+    #endif
 
 #if 0
     uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
@@ -868,7 +897,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 #endif
     } else {
         uint8_t inter_dir;
-        VVCMV mvd0, mvd1;
+        OVMV mvd0, mvd1;
         uint8_t mvp_idx0, mvp_idx1;
 
         inter_dir = ovcabac_read_ae_inter_dir(cabac_ctx, log2_pb_w, log2_pb_h);

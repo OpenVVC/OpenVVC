@@ -132,6 +132,13 @@ pps_init_qp(struct OVPS *prms)
 
 }
 
+static int
+pps_init_dpb(const OVPPS *const pps)
+{
+    pps_pic_width_in_luma_samples;
+    pps_pic_height_in_luma_samples;
+}
+
 static void
 slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
 {

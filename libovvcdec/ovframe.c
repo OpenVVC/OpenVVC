@@ -1,6 +1,9 @@
-#include "ovframe.h"
 #include "libovvcutils/mempool_internal.h"
 #include "libovvcutils/ovvcerror.h"
+#include "libovvcutils/ovvcutils.h"
+#include "libovvcutils/ovmem.h"
+
+#include "ovframe.h"
 
 static void
 framepool_release_planes(OVFrame *const frame)

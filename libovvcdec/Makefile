@@ -33,5 +33,10 @@ OBJS = ovvcdec.o                                                      \
        nvcl_dpb.o                                                     \
        nvcl_rpl.o                                                     \
        vcl_sh.o                                                       \
+       vcl_coding_unit.o                                              \
+       vcl_coding_tree.o                                              \
+       vcl_transform_unit.o                                           \
+       data_scan_lut.o                                                \
+       vcl_residual_coding.o                                          \
        vcl_cabac.o\
 

@@ -13,6 +13,29 @@
      * in the future
      */
 
+#define FLG_STORE(name, dst) \
+   dst |= -(!!name) & flg_##name; 
+
+#define DECL_FLG(name, pos)\
+    flg_##name = (1llu << (pos))
+
+enum VVCCUFlag{
+     DECL_FLG(cu_skip_flag,0),
+     DECL_FLG(pred_mode_flag,1),
+     DECL_FLG(mip_flag,2),
+     DECL_FLG(isp_flag,3),
+     DECL_FLG(mrl_flag,4),
+     DECL_FLG(mpm_flag,5),
+     DECL_FLG(cclm_flag,6),
+     DECL_FLG(mpm_flag_c,7),
+     DECL_FLG(merge_flag,2),
+     DECL_FLG(inter_dir,3),
+};
+
+typedef struct VVCDeQuantCtx{
+    uint8_t qp;
+}VVCDeQuantCtx;
+
 struct VVCCU{
 
 /*  intra_flags
@@ -49,7 +72,7 @@ struct VVCCU{
 
 };
 
-struct VVCPartSize{
+struct OVPartInfo{
 
     /**
      * Global limit on ctb and cb sizes
@@ -102,7 +125,10 @@ struct FiltersDRVCtx
     struct OVLMCSInfo *lmcs_ctx;
 };
 
-/* Storage for transform coefficient */
+/* Storage for transform coefficient
+ * TODO this is intended to replace 
+ * it in ctu dec
+ */
 struct TrCoeffData{
     int16_t residual_y[64*64];
     int16_t residual_cb[64*64];
@@ -225,12 +251,16 @@ struct OVCTUDec {
     /**
      * Depths of left and up neighbours during in the decision tree
      * needed to derive cabac contexts for split decision
+     * and mode context derivation
+     * TODO rename as CABAC Maps
      */
     struct PartMap{
         uint8_t *qt_depth_map_x;
         uint8_t *log2_cu_w_map_x;
+        uint8_t *cu_mode_x;
         uint8_t qt_depth_map_y[32];
         uint8_t log2_cu_h_map_y[32];
+        uint8_t cu_mode_y[32];
     } part_map;
 
     struct PartMap part_map_c;
@@ -252,21 +282,21 @@ struct OVCTUDec {
      * qtbt qtbt_dual_intra_flag
      */
     int (*coding_tree)(struct OVCTUDec *const lc_ctx,
-                       const VVCPartSize *const part_ctx,
+                       const OVPartInfo *const part_ctx,
                        unsigned int x0, unsigned int y0,
                        unsigned int log2_cb_size, unsigned int qt_depth);
 
     int (*coding_tree_implicit)(struct OVCTUDec *const lc_ctx,
-                                const VVCPartSize *const part_ctx,
+                                const OVPartInfo *const part_ctx,
                                 unsigned int x0, unsigned int y0,
                                 unsigned int log2_cb_size, unsigned int qt_depth,
                                 unsigned int remaining_width,
                                 unsigned int remaining_height);
 
     VVCCU (*coding_unit)(struct OVCTUDec *const lc_ctx,
-                         const VVCPartSize *const part_ctx,
-                         unsigned int x0, unsigned int y0,
-                         unsigned int log2_cb_w, unsigned int log2_cb_h);
+                         const OVPartInfo *const part_ctx,
+                         uint8_t x0, uint8_t y0,
+                         uint8_t log2_cb_w, uint8_t log2_cb_h);
 
     int (*transform_unit)(struct OVCTUDec *const lc_ctx,
                           unsigned int x0, unsigned int y0,
@@ -275,7 +305,7 @@ struct OVCTUDec {
                           uint8_t cbf_ctx, uint8_t cu_flags);
 
     int (*prediction_unit)(struct OVCTUDec *const lc_ctx,
-                           const VVCPartSize *const part_ctx,
+                           const OVPartInfo *const part_ctx,
                            unsigned int x0, unsigned int y0,
                            unsigned int log2_pb_w, unsigned int log2_pb_h,
                            uint8_t cu_skip_flag);
@@ -300,6 +330,20 @@ struct OVCTUDec {
                                   unsigned int log2_tb_w, unsigned int log2_tb_h,
                                   uint16_t last_pos);
 
+    int16_t residual_y[64*64];
+    int16_t residual_cb[64*64];
+    int16_t residual_cr[64*64];
+    int16_t lfnst_subblock[16*2];
+    int16_t transform_buff[64*64];
+
+
+    VVCDeQuantCtx dequant_luma;
+    VVCDeQuantCtx dequant_luma_skip;
+    VVCDeQuantCtx dequant_cb;
+    VVCDeQuantCtx dequant_cr;
+    VVCDeQuantCtx dequant_joint_cb_cr;
+
+    const VVCDeQuantCtx *dequant_chroma;
 };
 
 int ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec);
