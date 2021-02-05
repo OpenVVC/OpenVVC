@@ -1,11 +1,12 @@
-#include "nvcl_structures.h"
-#include "dec_structures.h"
-
 /* This file is intended to translate Parameter Sets information to 
  * structures more usable by the decoder contexts
  * It contains translations from nvcl structures to decoder structures
  * and Parameters sets activation functions.
  */
+
+#include "nvcl_structures.h"
+#include "dec_structures.h"
+
 
 static int
 sps_init_partition_constraint_info(OVPartInfo *const pinfo, const OVSPS *const sps)

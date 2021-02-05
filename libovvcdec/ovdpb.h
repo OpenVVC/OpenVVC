@@ -3,9 +3,7 @@
 
 #include <stdint.h>
 #include "libovvcdmx/ovunits.h"
-
-typedef struct OVPicture OVPicture;
-typedef struct DPB OVDPB;
+#include "ovdefs.h"
 
 /* OVDPB is intended to be in charge of Frame pool management
    Coded Video sequence switch and RPL list management */

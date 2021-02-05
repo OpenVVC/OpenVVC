@@ -6,9 +6,7 @@
 
 #include "libovvcdmx/ovunits.h"
 
-typedef struct OVVCDec OVVCDec;
-
-typedef struct SubDec OVSubDec;
+#include "ovdefs.h"
 
 /**
  * Submit raw Annex B data corresponding to a Picture Unit

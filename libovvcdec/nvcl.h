@@ -2,24 +2,11 @@
 #define OV_NVCL_H
 #include <stdint.h>
 
+#include "ovdefs.h"
+
 #define OV_MAX_NUM_VPS 16
 #define OV_MAX_NUM_SPS 16
 #define OV_MAX_NUM_PPS 16
-
-typedef struct OVNVCLReader OVNVCLReader;
-
-typedef struct OVNVCLCtx OVNVCLCtx;
-typedef struct OVNVCLUnit OVNVCLUnit;
-
-typedef struct OVOPI OVOPI;
-typedef struct OVDCI OVDCI;
-typedef struct OVVPS OVVPS;
-typedef struct OVSPS OVSPS;
-typedef struct OVPPS OVPPS;
-typedef struct OVAPS OVAPS;
-typedef struct OVSEI OVSEI;
-typedef struct OVPH OVPH;
-typedef struct OVSH OVSH;
 
 struct OVNVCLCtx
 {

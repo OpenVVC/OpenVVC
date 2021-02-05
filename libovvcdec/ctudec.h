@@ -1,6 +1,8 @@
 #ifndef CTU_DEC_H
 #define CTU_DEC_H
 
+#include "ovdefs.h"
+
 #include "ovvcdec.h"
 
     /* FIXME COMPAT old
@@ -11,7 +13,7 @@
      * in the future
      */
 
-typedef struct VVCCU{
+struct VVCCU{
 
 /*  intra_flags
  *  _ _ _ _ _ _ _ _
@@ -45,9 +47,9 @@ typedef struct VVCCU{
     uint8_t cu_opaque;
     uint8_t cu_mode_info;
 
-}VVCCU;
+};
 
-typedef struct VVCPartSize{
+struct VVCPartSize{
 
     /**
      * Global limit on ctb and cb sizes
@@ -72,7 +74,7 @@ typedef struct VVCPartSize{
      */
     uint8_t log2_max_tb_s;
 
-}VVCPartSize;
+};
 
 /* Definitions of CTUDecoder structures */
 struct InterDRVCtx
@@ -109,7 +111,7 @@ struct TrCoeffData{
 
 };
 
-typedef struct OVCTUDec {
+struct OVCTUDec {
     /**
      * Pointer to the parent frame decoder
      * Note this should be only be used only to retrieve
@@ -298,7 +300,7 @@ typedef struct OVCTUDec {
                                   unsigned int log2_tb_w, unsigned int log2_tb_h,
                                   uint16_t last_pos);
 
-} OVCTUDec;
+};
 
 int ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec);
 

@@ -1,15 +1,9 @@
 #ifndef NVCL_PRIVATE_H
 #define NVCL_PRIVATE_H
+#include "ovdefs.h"
+
 #include "nvcl.h"
 
-typedef struct OVPTL OVPTL;
-
-typedef struct OVGHRDTiming OVGHRDTiming;
-typedef struct OOVOLSHRDTiming OVOLSHRDTiming;
-typedef struct OVVUI OVVUI;
-typedef struct OVDPBParams OVDPBParams;
-typedef struct OVRPL OVRPL;
-typedef struct OVHRPL OVHRPL;
 
 int dpb_parameters(OVNVCLReader *const rdr, int max_sub_layer_minus1, int sub_layer_info);
 

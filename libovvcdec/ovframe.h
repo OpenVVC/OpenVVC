@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "ovdefs.h"
+
 #include "libovvcutils/mempool.h"
 
 /* TODO Decide on values */
@@ -67,7 +69,6 @@ struct Frame
      */
 };
 
-typedef struct Frame OVFrame;
 
 int ovframe_new_ref(OVFrame **dst, OVFrame *src);
 
