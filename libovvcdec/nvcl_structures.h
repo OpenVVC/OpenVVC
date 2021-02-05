@@ -162,7 +162,7 @@ struct OVSPS
 
     uint8_t sps_joint_cbcr_enabled_flag;
     uint8_t sps_same_qp_table_for_chroma_flag;
-    uint8_t sps_qp_table_start_minus26[64]; /* i == 1 for same_qp_table_for_chroma, 2 + joint_cbrcr_flag otherwise*/
+    int8_t sps_qp_table_start_minus26[64]; /* i == 1 for same_qp_table_for_chroma, 2 + joint_cbrcr_flag otherwise*/
     uint8_t sps_num_points_in_qp_table_minus1[64];
     uint8_t sps_delta_qp_in_val_minus1[3][64]; /*j = max num_points_in_qp_table 64?*/
     uint8_t sps_delta_qp_diff_val[3][64]; /*j = max num_points_in_qp_table 64?*/
@@ -245,8 +245,8 @@ struct OVSPS
 
     uint8_t sps_ladf_enabled_flag;
     uint8_t sps_num_ladf_intervals_minus2;
-    uint8_t sps_ladf_lowest_interval_qp_offset;
-    uint8_t sps_ladf_qp_offset[64]; /* max_num_ladf_intervals */
+    int8_t sps_ladf_lowest_interval_qp_offset;
+    int8_t sps_ladf_qp_offset[64]; /* max_num_ladf_intervals */
     uint8_t sps_ladf_delta_threshold_minus1[64];
 
     uint8_t sps_explicit_scaling_list_enabled_flag;
@@ -295,10 +295,10 @@ struct OVPPS
     uint8_t pps_conf_win_bottom_offset;
 
     uint8_t pps_scaling_window_explicit_signalling_flag;
-    uint8_t pps_scaling_win_left_offset;
-    uint8_t pps_scaling_win_right_offset;
-    uint8_t pps_scaling_win_top_offset;
-    uint8_t pps_scaling_win_bottom_offset;
+    int8_t pps_scaling_win_left_offset;
+    int8_t pps_scaling_win_right_offset;
+    int8_t pps_scaling_win_top_offset;
+    int8_t pps_scaling_win_bottom_offset;
 
     uint8_t pps_output_flag_present_flag;
     uint8_t pps_no_pic_partition_flag;
@@ -329,7 +329,7 @@ struct OVPPS
     uint8_t pps_num_exp_slices_in_tile[16];
     uint8_t pps_exp_slice_height_in_ctus_minus1[16*16];
 
-    uint8_t pps_tile_idx_delta_val[16];
+    int8_t pps_tile_idx_delta_val[16];
 
     uint8_t pps_loop_filter_across_slices_enabled_flag;
 
@@ -342,32 +342,32 @@ struct OVPPS
     uint8_t pps_ref_wraparound_enabled_flag;
     uint8_t pps_pic_width_minus_wraparound_offset;
 
-    uint8_t pps_init_qp_minus26;
+    int8_t pps_init_qp_minus26;
     uint8_t pps_cu_qp_delta_enabled_flag;
     uint8_t pps_chroma_tool_offsets_present_flag;
-    uint8_t pps_cb_qp_offset;
-    uint8_t pps_cr_qp_offset;
+    int8_t pps_cb_qp_offset;
+    int8_t pps_cr_qp_offset;
     uint8_t pps_joint_cbcr_qp_offset_present_flag;
-    uint8_t pps_joint_cbcr_qp_offset_value;
+    int8_t pps_joint_cbcr_qp_offset_value;
 
     uint8_t pps_slice_chroma_qp_offsets_present_flag;
     uint8_t pps_cu_chroma_qp_offset_list_enabled_flag;
     uint8_t pps_chroma_qp_offset_list_len_minus1;
-    uint8_t pps_cb_qp_offset_list[16];
-    uint8_t pps_cr_qp_offset_list[16];
-    uint8_t pps_joint_cbcr_qp_offset_list[16];
+    int8_t pps_cb_qp_offset_list[16];
+    int8_t pps_cr_qp_offset_list[16];
+    int8_t pps_joint_cbcr_qp_offset_list[16];
 
     uint8_t pps_deblocking_filter_control_present_flag;
     uint8_t pps_deblocking_filter_override_enabled_flag;
     uint8_t pps_deblocking_filter_disabled_flag;
     uint8_t pps_dbf_info_in_ph_flag;
 
-    uint8_t pps_luma_beta_offset_div2;
-    uint8_t pps_luma_tc_offset_div2;
-    uint8_t pps_cb_beta_offset_div2;
-    uint8_t pps_cb_tc_offset_div2;
-    uint8_t pps_cr_beta_offset_div2;
-    uint8_t pps_cr_tc_offset_div2;
+    int8_t pps_luma_beta_offset_div2;
+    int8_t pps_luma_tc_offset_div2;
+    int8_t pps_cb_beta_offset_div2;
+    int8_t pps_cb_tc_offset_div2;
+    int8_t pps_cr_beta_offset_div2;
+    int8_t pps_cr_tc_offset_div2;
 
     uint8_t pps_rpl_info_in_ph_flag;
     uint8_t pps_sao_info_in_ph_flag;
@@ -400,7 +400,7 @@ struct OVPH
     uint8_t ph_poc_msb_cycle_val;
     uint8_t ph_alf_enabled_flag;
     uint8_t ph_num_alf_aps_ids_luma;
-    uint8_t ph_alf_aps_id_luma[16];
+    uint8_t ph_alf_aps_id_luma[8];
     uint8_t ph_alf_cb_enabled_flag;
     uint8_t ph_alf_cr_enabled_flag;
     uint8_t ph_alf_aps_id_chroma;
@@ -443,19 +443,19 @@ struct OVPH
     uint8_t ph_bdof_disabled_flag;
     uint8_t ph_dmvr_disabled_flag;
     uint8_t ph_prof_disabled_flag;
-    uint8_t ph_qp_delta;
+    int8_t ph_qp_delta;
     uint8_t ph_joint_cbcr_sign_flag;
     uint8_t ph_sao_luma_enabled_flag;
     uint8_t ph_sao_chroma_enabled_flag;
     uint8_t ph_deblocking_params_present_flag;
     uint8_t ph_deblocking_filter_disabled_flag;
-    uint8_t ph_luma_beta_offset_div2;
-    uint8_t ph_luma_tc_offset_div2;
-    uint8_t ph_cb_beta_offset_div2;
-    uint8_t ph_cb_tc_offset_div2;
-    uint8_t ph_cr_beta_offset_div2;
+    int8_t ph_luma_beta_offset_div2;
+    int8_t ph_luma_tc_offset_div2;
+    int8_t ph_cb_beta_offset_div2;
+    int8_t ph_cb_tc_offset_div2;
+    int8_t ph_cr_beta_offset_div2;
+    int8_t ph_cr_tc_offset_div2;
     uint8_t ph_collocated_from_l0_flag;
-    uint8_t ph_cr_tc_offset_div2;
     uint8_t ph_extension_length;
     /* FIXME IGNORED */
     uint8_t ph_extension_data_byte[8];
@@ -475,8 +475,7 @@ struct OVSH
     uint8_t sh_no_output_of_prior_pics_flag;
     uint8_t sh_alf_enabled_flag;
     uint8_t sh_num_alf_aps_ids_luma;
-    /* FIXME bound on aps_id */
-    uint8_t sh_alf_aps_id_luma[16];
+    uint8_t sh_alf_aps_id_luma[8];
     uint8_t sh_alf_cb_enabled_flag;
     uint8_t sh_alf_cr_enabled_flag;
     uint8_t sh_alf_aps_id_chroma;
