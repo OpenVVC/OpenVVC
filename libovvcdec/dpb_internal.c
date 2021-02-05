@@ -64,7 +64,7 @@ dpbpriv_init_framepool(struct DPBInternal *dpb_priv, const OVSPS *const sps)
     return 0;
 
 fail_poolinit :
-    dpb_uninit_framepool(dpb_priv);
+    dpbpriv_uninit_framepool(dpb_priv);
     return OVVC_ENOMEM;
 }
 
