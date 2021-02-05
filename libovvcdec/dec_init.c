@@ -144,59 +144,18 @@ slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
     int8_t jcbcr_qp_offset = sh->sh_slice_joint_cbcr_qp_offset + pps->pps_joint_cbcr_qp_offset_value;
 
     ctudec->slice_qp = pic_qp + sh->sh->qp_delta;
-    ctudec->dequant_luma.qp = slice_qp + qp_bd_offset;
 
     qp_ctx->chroma_qp_map_cb    = sps_info->chroma_qp_mapping_tables;
-    qp_ctx->chroma_qp_map_cr    = vvc_ctx->chroma_qp_mapping_tables;
-    qp_ctx->chroma_qp_map_jcbcr = vvc_ctx->chroma_qp_mapping_tables;
+    qp_ctx->chroma_qp_map_cr    = sps_info->chroma_qp_mapping_tables;
+    qp_ctx->chroma_qp_map_jcbcr = sps_info->chroma_qp_mapping_tables;
 
     qp_ctx->current_qp = slice_qp;
     qp_ctx->cb_offset = cb_qp_offset;
     qp_ctx->cr_offset = cr_qp_offset;
     qp_ctx->jcbcr_offset = jcbcr_qp_offset;
 
-    lc_ctx->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[slice_qp + cb_qp_offset] + qp_bd_offset;
-    lc_ctx->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[slice_qp + cr_qp_offset] + qp_bd_offset;
-    lc_ctx->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[base_qp + jcbcr_qp_offset] + qp_bd_offset;
+    ctudec->dequant_luma.qp = slice_qp + qp_bd_offset;
+    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[slice_qp + cb_qp_offset] + qp_bd_offset;
+    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[slice_qp + cr_qp_offset] + qp_bd_offset;
+    ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[base_qp + jcbcr_qp_offset] + qp_bd_offset;
 }
-
-
-
-#if 0
-static void
-init_qp_ctx(VVCLocalContext *const lc_ctx, const VVCContext *const vvc_ctx)
-{
-    const VVCPPSData *const pps = vvc_ctx->ps.pps_data;
-    const VVCSPSData *const sps = vvc_ctx->ps.sps_data;
-    const VVCPictureHeaderData *const ph = vvc_ctx->ps.ph_data;
-    const VVCSliceHeaderData *const sh = &vvc_ctx->sh;
-		VVCQPCTX *const qp_ctx = &lc_ctx->qp_ctx;
-    int base_qp = pps->init_qp_minus26 + 26;
-    int cb_qp_offset = sh->slice_cb_qp_offset + pps->pps_cb_qp_offset;
-    int cr_qp_offset = sh->slice_cr_qp_offset + pps->pps_cr_qp_offset;
-    int jcbcr_qp_offset = sh->slice_joint_cbcr_qp_offset + pps->pps_joint_cbcr_qp_offset_value;
-
-    base_qp += sh->slice_qp_delta;
-    base_qp += ph->ph_qp_delta;
-
-
-    lc_ctx->slice_qp = base_qp;
-
-    lc_ctx->dequant_luma.qp = base_qp + 12;
-
-    /*FIXME handle per components chroma_tables */
-    qp_ctx->chroma_qp_map_cb =    vvc_ctx->chroma_qp_mapping_tables;
-    qp_ctx->chroma_qp_map_cr =    vvc_ctx->chroma_qp_mapping_tables;
-    qp_ctx->chroma_qp_map_jcbcr = vvc_ctx->chroma_qp_mapping_tables;
-
-    qp_ctx->current_qp = base_qp;
-    qp_ctx->cb_offset = cb_qp_offset;
-    qp_ctx->cr_offset = cr_qp_offset;
-    qp_ctx->jcbcr_offset = jcbcr_qp_offset;
-
-    lc_ctx->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[base_qp + cb_qp_offset] + 12;
-    lc_ctx->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[base_qp + cr_qp_offset] + 12;
-    lc_ctx->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[base_qp + jcbcr_qp_offset] + 12;
-
-}
-#endif
