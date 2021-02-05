@@ -107,7 +107,12 @@ dpbpriv_release_pic(OVPicture *pic)
     if (pic->frame) {
         /* FIXME unref frame */
         ovframe_unref(&pic->frame);
+        /* Do not delete frame the frame will delete itself 
+         * when all its references are released
+         */
+        #if 0
         ov_freep(&pic->frame);
+        #endif
     }
 }
 
