@@ -83,6 +83,11 @@ struct InterDRVCtx
     * Contains Motion Vector and TMVP if needed
     */
    struct MVPCtx *mvp_context;
+
+   /* HMVP lut info */
+   #if 0
+   struct HMVP hmvp_lut;
+   #endif
 };
 
 struct IntraDRVCtx;
@@ -93,6 +98,15 @@ struct FiltersDRVCtx
     struct OVALFInfo *alf_ctx;
     struct OVSAOInfo *sao_ctx;
     struct OVLMCSInfo *lmcs_ctx;
+};
+
+/* Storage for transform coefficient */
+struct TrCoeffData{
+    int16_t residual_y[64*64];
+    int16_t residual_cb[64*64];
+    int16_t residual_cr[64*64];
+    int16_t lfnst_subblock[16*2];
+
 };
 
 typedef struct OVCTUDec {
@@ -210,7 +224,6 @@ typedef struct OVCTUDec {
      * Depths of left and up neighbours during in the decision tree
      * needed to derive cabac contexts for split decision
      */
-
     struct PartMap{
         uint8_t *qt_depth_map_x;
         uint8_t *log2_cu_w_map_x;
@@ -225,12 +238,12 @@ typedef struct OVCTUDec {
      */
     struct PartMap *active_part_map;
 
-    const struct VVCPartSize *part_ctx;
+    const struct OVPartInfo *part_ctx;
 
     /**
      * Chroma partition context for dual tree
      */
-    const struct VVCPartSize *part_ctx_chroma;
+    const struct OVPartInfo *part_ctx_c;
 
     /**
      * Pointer to recursive coding tree structure based on the slice type and

@@ -77,6 +77,9 @@ ovframe_unref(OVFrame **frame)
 
     if (!(*frame)->internal.ref_count) {
         framepool_release_planes(*frame);
+        ov_freep(frame);
     }
+
+    *frame = NULL;
 }
 

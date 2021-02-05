@@ -1,5 +1,8 @@
 #ifndef OV_MEMPOOL_H
 #define OV_MEMPOOL_H
+
+#include <stddef.h>
+
 typedef struct MemPoolElem MemPoolElem;
 typedef struct MemPool MemPool;
 

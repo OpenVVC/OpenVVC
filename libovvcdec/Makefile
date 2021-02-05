@@ -22,6 +22,9 @@ OBJS = ovvcdec.o                                                      \
 			 rcn_lfnst.o																										\
 			 rcn_mc.o																												\
        ctudec.o                                                       \
+			 ovframe.o                                                      \
+			 dpb.o                                                          \
+			 dpb_internal.o                                                 \
        nvcl.o                                                         \
        nvcl_nal_sps.o                                                 \
        nvcl_nal_pps.o                                                 \

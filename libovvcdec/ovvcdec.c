@@ -13,6 +13,66 @@ static const char *const decname = "Open VVC Decoder";
 
 struct OVVCSubDec;
 
+struct OVSPSInfo{
+    struct {
+      uint8_t lfnst;
+      uint8_t mts;
+      uint8_t mrl;
+      uint8_t mip;
+      uint8_t isp;
+      uint8_t cclm;
+    } tool_flags;
+
+    struct {
+        uint8_t chroma_format;
+        uint16_t pic_w;
+        uint16_t pic_h;
+        /*TODO conformance window */
+        
+    } pic_info;
+
+    struct {
+      uint8_t log2_ctb_s;
+      uint8_t log2_min_cb_s;
+      
+    } part_info[2];
+
+    #if 0
+    struct {
+    } DPBInfo;
+
+    /* Chroma QP tables */
+    struct {
+    } qp_tables[3];
+    #endif
+
+    uint8_t bitdepth;
+};
+
+struct OVPPSInfo{
+
+    /* Sub Picture / Tiles overrides */
+    struct {
+        uint16_t pic_w;
+        uint16_t pic_h;
+        uint8_t log2_ctb_s;
+        /*TODO conformance and scaling window */
+        
+    } pic_info;
+
+    struct {
+      uint8_t pic_init_qp;
+      /* TODO use offset tables */
+      uint8_t qp_offset_c[3];
+      struct {
+        int8_t qp_offset[16];
+      } offset_list[3];
+    } pic_qp_info;
+
+};
+
+
+
 /* Main decoder structure */
 struct OVVCDec
 {
@@ -25,6 +85,22 @@ struct OVVCDec
 
     /* Paramters sets context */
     OVNVCLCtx nvcl_ctx;
+
+    struct OVPS{
+        /* Pointers to active parameter sets */
+        const OVSPS *sps;
+        const OVPPS *pps;
+        const OVPH *ph;
+        const OVSH *sh;
+
+        /* Human readable information from active parameter sets */
+        struct OVSPSInfo sps_info;
+        struct OVPPSInfo pps_info;
+        #if 0
+        struct OVPHInfo ph_info;
+        #endif
+    } active_params;
+
 
     /* List of Sub Decoders
      * Contains context for Tile / Slice / Picture / SubPicture
@@ -55,14 +131,64 @@ nalu_type_unsupported(enum OVNALUType nalu_type)
     return 0;
 }
 
-#if 0
+/* TODO check Slice / Tiles / Sub Picture context */
 static int
-init_vcl_decoder(const OVVCDec *dec, OVSubDec *sub_dec)
+init_slice_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
 {
-    /* TODO check Slice / Tiles / Sub Picture context */
+    const OVSH *const sh = nvcl_ctx->sh;
+
+    #if 0
+    init_slice_tools();
+    #endif
+
+    #if 0
+    if (sh->nb_entry_points > 1){
+        /* TILES or WPP */
+        /* TODO loop other entry_points offsets and map entries to
+         * tile / slice / sub picture decoder */
+    } else {
+        /* Only one slice in NAL Unit */
+    }
+    #endif
     return 0;
 }
-#endif
+
+static int
+init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
+{
+    
+    int ret;
+
+        /* TODO activate slice Parameters Sets */
+    #if 0
+    ret = activate_sps(dec, nvcl_ctx);
+
+    ret = activate_pps(dec, nvcl_ctx);
+    #endif
+
+    /* FIXME 
+     * Check if more than one APS for ALF andScaling List etc.
+     */
+    #if 0
+    ret = activate_aps(dec, nvcl_ctx);
+
+    ret = activate_pps(dec, nvcl_ctx);
+    #endif
+        /*TODO update DPB status */
+
+        /* TODO init VCL decoder */
+
+    #if 0
+    ret = init_slice_decoder(dec, nvcl_ctx);
+    #endif
+
+    if (ret < 0) {
+        ov_log(dec, 3, "Failed to initialize Sub Decoder");
+        return ret;
+    }
+
+    return 0;
+}
 
 static int
 decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
@@ -95,18 +221,10 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
             int nb_sh_bytes = ret;
             #endif
 
-        /* TODO activate slice Parameters Sets */
-
-        /*TODO update DPB status */
-
-        /* TODO init VCL decoder */
-
-           #if 0
-           ret = init_vcl_decoder(ovdec, &sh);
-           fi (ret < 0) {
+           ret = init_vcl_decoder(vvcdec, nvcl_ctx);
+           if (ret < 0) {
                goto fail;
            }
-           #endif
 
         /* TODO start VCL decoder */
         }
