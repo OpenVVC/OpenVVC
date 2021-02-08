@@ -14,6 +14,7 @@
 #include "data_scan_lut.h"
 #include "cabac_internal.h"
 #include "ctudec.h"
+#include "vcl_residual_coding.h"
 
 #define IQUANT_SHIFT 6
 #define ADJ_QUANT_SHIFT 7

@@ -36,6 +36,17 @@ typedef struct VVCDeQuantCtx{
     uint8_t qp;
 }VVCDeQuantCtx;
 
+typedef struct VVCQPCTX{
+    int8_t current_qp;
+    int8_t min_qp_prime_ts;
+    int8_t cb_offset;
+    int8_t cr_offset;
+    int8_t jcbcr_offset;
+    const int8_t *chroma_qp_map_cb;
+    const int8_t *chroma_qp_map_cr;
+    const int8_t *chroma_qp_map_jcbcr;
+}VVCQPCTX;
+
 struct VVCCU{
 
 /*  intra_flags
@@ -311,6 +322,8 @@ struct OVCTUDec {
     int16_t transform_buff[64*64];
 
 
+    uint8_t slice_qp;
+    VVCQPCTX qp_ctx;
     VVCDeQuantCtx dequant_luma;
     VVCDeQuantCtx dequant_luma_skip;
     VVCDeQuantCtx dequant_cb;

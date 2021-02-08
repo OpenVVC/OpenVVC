@@ -39,7 +39,7 @@ struct QPInfo
      * Note this is used when delta qp is on.
      */
     struct OVChromaQPTable{
-        uint8_t qp[64];
+        int8_t qp[64];
     } chroma_qp_tables[3];
 
     /* TODO add chroma qp offsets lists */

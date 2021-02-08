@@ -1,10 +1,23 @@
+#include <string.h>
 #include "ovdefs.h"
 #include "libovvcutils/ovvcerror.h"
+#include "libovvcutils/ovmem.h"
+#include "libovvcutils/ovvcutils.h"
 #include "slicedec.h"
 #include "ctudec.h"
 #include "nvcl_structures.h"
 #include "dec_structures.h"
+#include "vcl_residual_coding.h"
 
+/* TODO define in a header */
+enum SliceType {
+     SLICE_B = 0,
+     SLICE_P = 1,
+     SLICE_I = 2
+};
+
+static void derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
+                               int cu_qp_delta);
 #if 0
 static int
 init_slice_tree_ctx()
@@ -117,10 +130,15 @@ static int
 dequant_tools()
 {
 }
+#endif
 
-static int
-init_coding_coeff_coding_ctx()
+static void
+init_coding_coeff_coding_ctx(OVCTUDec *ctudec, const OVPS *prms)
 {
+    const OVSPS *const sps = prms->sps;
+    const OVSH *const sh = prms->sh;
+
+    #if 0
     uint8_t ph_joint_cbcr_sign_flag;
 
     uint8_t sh_ts_residual_coding_disabled_flag;
@@ -128,25 +146,27 @@ init_coding_coeff_coding_ctx()
     uint8_t ph_chroma_residual_scale_flag;
     uint8_t ph_explicit_scaling_list_enabled_flag;
     uint8_t ph_scaling_list_aps_id;
+    #endif
 
     /* FIXME replace this with a status on MTS */
     ctudec->mts_enabled  = sps->sps_mts_enabled_flag && sps->sps_explicit_mts_intra_enabled_flag;
     ctudec->mts_implicit = sps->sps_mts_enabled_flag && !sps->sps_explicit_mts_intra_enabled_flag;
 
     if (sh->sh_dep_quant_used_flag) {
-        ctudec->residual_coding = &residual_coding_dpq;
-        ctudec->residual_coding_chroma = &residual_coding_chroma_dpq;
-        ctudec->residual_coding_isp_h = &residual_coding_isp_h_dpq;
-        ctudec->residual_coding_isp_v = &residual_coding_isp_v_dpq;
+        ctudec->residual_coding = residual_coding_dpq;
+        ctudec->residual_coding_chroma = residual_coding_chroma_dpq;
+        ctudec->residual_coding_isp_h = residual_coding_isp_h_dpq;
+        ctudec->residual_coding_isp_v = residual_coding_isp_v_dpq;
     } else {
-        ctudec->residual_coding_isp_h = &residual_coding_isp_h_sdh;
-        ctudec->residual_coding_isp_v = &residual_coding_isp_v_sdh;
-        ctudec->residual_coding_chroma = &residual_coding_chroma_sdh;
-        ctudec->residual_coding = &residual_coding_sdh;
+        ctudec->residual_coding_isp_h = residual_coding_isp_h_sdh;
+        ctudec->residual_coding_isp_v = residual_coding_isp_v_sdh;
+        ctudec->residual_coding_chroma = residual_coding_chroma_sdh;
+        ctudec->residual_coding = residual_coding_sdh;
         ctudec->enable_sdh = sh->sh_sign_data_hiding_used_flag;
     }
 }
 
+#if 0
 static int
 init_inter_ctx()
 {
@@ -204,10 +224,160 @@ slicedec_alloc_cabac_lines(OVSliceDec *const sldec, const struct OVPS *const prm
 
 }
 
+static void
+slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
+{
+    #if 0
+    const OVSPS *const sps = prms->sps;
+    #endif
+    const OVPPS *const pps = prms->pps;
+    const OVSH *const sh = prms->sh;
+    const OVPH *const ph = prms->ph;
+    VVCQPCTX *const qp_ctx = &ctudec->qp_ctx;
+
+    /*FIXME check if not done in dec init */
+    const uint8_t qp_bd_offset = 12;
+    uint8_t pic_base_qp = pps->pps_init_qp_minus26 + 26;
+    uint8_t pic_qp = pic_base_qp + ph->ph_qp_delta;
+    int8_t slice_qp = pic_qp + sh->sh_qp_delta;
+    int8_t cb_qp_offset = sh->sh_cb_qp_offset + pps->pps_cb_qp_offset;
+    int8_t cr_qp_offset = sh->sh_cr_qp_offset + pps->pps_cr_qp_offset;
+    int8_t jcbcr_qp_offset = sh->sh_joint_cbcr_qp_offset + pps->pps_joint_cbcr_qp_offset_value;
+
+    ctudec->slice_qp = pic_qp + sh->sh_qp_delta;
+
+    /* FIXME
+     * check tables are valid when same qp table for all
+     */
+    qp_ctx->chroma_qp_map_cb    = prms->sps_info.qp_tables_c[0].qp;
+    qp_ctx->chroma_qp_map_cr    = prms->sps_info.qp_tables_c[1].qp;
+    qp_ctx->chroma_qp_map_jcbcr = prms->sps_info.qp_tables_c[2].qp;
+
+    qp_ctx->current_qp = slice_qp;
+    qp_ctx->cb_offset = cb_qp_offset;
+    qp_ctx->cr_offset = cr_qp_offset;
+    qp_ctx->jcbcr_offset = jcbcr_qp_offset;
+
+    ctudec->dequant_luma.qp = slice_qp + qp_bd_offset;
+    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[slice_qp + cb_qp_offset] + qp_bd_offset;
+    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[slice_qp + cr_qp_offset] + qp_bd_offset;
+    ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[slice_qp + jcbcr_qp_offset] + qp_bd_offset;
+}
+
+static void
+init_part_info(OVCTUDec *const ctudec, const struct OVPS *const prms)
+{
+    const OVSH *const sh = prms->sh;
+    uint8_t slice_type = sh->sh_slice_type;
+    if (slice_type == SLICE_I) {
+        ctudec->part_ctx = &prms->sps_info.part_info[0];
+        ctudec->part_ctx_c = &prms->sps_info.part_info[2];
+    } else {
+        ctudec->part_ctx = &prms->sps_info.part_info[1];
+        ctudec->part_ctx_c = &prms->sps_info.part_info[2];
+    }
+}
+
+static void
+cabac_lines_uninit(OVSliceDec *sldec)
+{
+     struct CCLines *const lns = &sldec->cabac_lines[0];
+     struct CCLines *const lns_c = &sldec->cabac_lines[1];
+
+     ov_freep(&lns->qt_depth_map_x);
+     ov_freep(&lns->log2_cu_w_map_x);
+     ov_freep(&lns->cu_mode_x);
+ 
+     ov_freep(&lns_c->qt_depth_map_x);
+     ov_freep(&lns_c->log2_cu_w_map_x);
+     ov_freep(&lns_c->cu_mode_x);
+}
+
+int
+init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
+{
+     const OVPartInfo *const pinfo = sldec->ctudec_list->part_ctx;
+     const OVSPS *const sps = prms->sps;
+
+     struct CCLines *const lns   = &sldec->cabac_lines[0];
+     struct CCLines *const lns_c = &sldec->cabac_lines[1];
+
+     uint8_t log2_ctb_s = pinfo->log2_ctu_s;
+     uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
+     /* TODO use active parameters such as generic pic info 
+      * or something instead of this since this could be
+      * overridden by PPS in case of sub_pic etc.
+      * we could compute those values once for all earlier
+      * in the decoding process
+      */
+     uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
+
+     uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+     uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
+     #if 0
+     uint16_t pic_h = sps->sps_pic_height_max_in_luma_samples;
+     uint16_t nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+     uint16_t nb_pb_pic_h = nb_ctb_pic_h << log2_min_cb_s;
+     #endif
+
+
+     lns->qt_depth_map_x  = ov_mallocz(sizeof(*lns->qt_depth_map_x) * nb_pb_pic_w);
+     lns->log2_cu_w_map_x = ov_mallocz(sizeof(*lns->log2_cu_w_map_x) * nb_pb_pic_w);
+
+     /*FIXME check if zero init value */
+     lns->cu_mode_x       = ov_mallocz(sizeof(*lns->cu_mode_x) * nb_pb_pic_w);
+
+     lns_c->qt_depth_map_x  = ov_mallocz(sizeof(*lns_c->qt_depth_map_x) * nb_pb_pic_w);
+     lns_c->log2_cu_w_map_x = ov_mallocz(sizeof(*lns_c->log2_cu_w_map_x) * nb_pb_pic_w);
+
+     /*FIXME check if zero init value */
+     lns_c->cu_mode_x       = ov_mallocz(sizeof(*lns_c->cu_mode_x) * nb_pb_pic_w);
+
+     if (!lns->qt_depth_map_x || !lns->log2_cu_w_map_x || !lns->cu_mode_x ||
+         !lns_c->qt_depth_map_x || !lns_c->log2_cu_w_map_x || !lns_c->cu_mode_x) {
+         cabac_lines_uninit(sldec);
+         return OVVC_ENOMEM;
+     }
+
+     return 0;
+
+}
+
+void
+reset_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
+{
+     const OVPartInfo *pinfo = sldec->ctudec_list->part_ctx;
+     const OVSPS *const sps = prms->sps;
+     struct CCLines *const lns = &sldec->cabac_lines[0];
+     struct CCLines *const lns_c = &sldec->cabac_lines[1];
+     uint8_t log2_ctb_s = pinfo->log2_ctu_s;
+     uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
+     /* TODO use active parameters such as generic pic info 
+      * see init_cabac_lines
+      */
+     uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
+     uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+     uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
+     #if 0
+     uint16_t nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+     uint16_t nb_pb_pic_h = nb_ctb_pic_h << log2_min_cb_s;
+     #endif
+
+     memset(lns->qt_depth_map_x,  0,  sizeof(*lns->qt_depth_map_x)  * nb_pb_pic_w);
+     memset(lns->log2_cu_w_map_x, 0,  sizeof(*lns->log2_cu_w_map_x) * nb_pb_pic_w);
+     memset(lns->cu_mode_x,       0,  sizeof(*lns->cu_mode_x)       * nb_pb_pic_w);
+
+     memset(lns_c->qt_depth_map_x,  0,  sizeof(*lns_c->qt_depth_map_x)  * nb_pb_pic_w);
+     memset(lns_c->log2_cu_w_map_x, 0,  sizeof(*lns_c->log2_cu_w_map_x) * nb_pb_pic_w);
+     memset(lns_c->cu_mode_x,       0,  sizeof(*lns_c->cu_mode_x)       * nb_pb_pic_w);
+}
+
+
 int
 slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
 {
 
+    /* FIXME separate allocation outside of the scope of this function */
     OVCTUDec *const ctudec = sldec->ctudec_list;
     const OVSPS *const sps = prms->sps;
     const OVPPS *const pps = prms->pps;
@@ -219,6 +389,7 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
     #if 0
     ctudec->alf_num_chroma_alt = vvc_ctx->alf_num_alt_chroma;
     #endif
+    /* FIXME dissociate SPS and SH/PH specific overrides to avoid  always resetting*/
     ctudec->lm_chroma_enabled = sps->sps_cclm_enabled_flag;
     ctudec->enabled_mip = sps->sps_mip_enabled_flag;
 
@@ -232,13 +403,34 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
 
     ctudec->delta_qp_enabled = pps->pps_cu_qp_delta_enabled_flag;
 
-    ctudec->dbf_disable = sh->sh_deblocking_filter_disabled_flag | ph->ph_deblocking_filter_disabled_flag | pps->pps_deblocking_filter_disabled_flag;
+    ctudec->dbf_disable = sh->sh_deblocking_filter_disabled_flag |
+                          ph->ph_deblocking_filter_disabled_flag |
+                          pps->pps_deblocking_filter_disabled_flag;
 
-    #if 0
-    init_qp_ctx(ctudec, vvc_ctx);
+    slice_init_qp_ctx(ctudec, prms);
 
     derive_dequant_ctx(ctudec, &ctudec->qp_ctx, 0);
-    #endif
+
+    init_coding_coeff_coding_ctx(ctudec, prms);
+
+    init_part_info(ctudec, prms);
+
+    /* Note it is important here that part info has already been set before calling
+     * this function since it will be used to set line sizes*/
+
+    /* FIXME
+     * move this somewhere else so we can handle lines at a higher level
+     */
+    if (!sldec->cabac_lines[0].qt_depth_map_x) {
+        int ret;
+        ret = init_cabac_lines(sldec, prms);
+        if (ret < 0) {
+            ov_log(NULL, 3, "FAILED init cabac lines\n");
+            return ret;
+        }
+    } else {
+        reset_cabac_lines(sldec, prms);
+    }
 
     return 0;
 }
@@ -284,9 +476,13 @@ slicedec_uninit(OVSliceDec **sldec_p)
         uninit_ctudec_list(sldec);
     }
 
+    /*FIXME is init test */
+    if (sldec->cabac_lines[0].log2_cu_w_map_x) {
+        cabac_lines_uninit(sldec);
+    }
+
     ov_freep(sldec_p);
 
-    return 0;
 }
 
 #if 0
@@ -381,8 +577,9 @@ ovdec_decode_slice()
         }
     }
 }
+#endif
 
-static int
+static void
 derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
                   int cu_qp_delta)
 {
@@ -391,14 +588,15 @@ derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
     ctudec->dequant_luma.qp = ((base_qp + 12) & 63);
 
     /*FIXME update transform skip ctx to VTM-10.0 */
-    ctudec->dequant_luma_skip.qp = FFMAX(ctudec->dequant_luma.qp, qp_ctx->min_qp_prime_ts);
+    ctudec->dequant_luma_skip.qp = OVMAX(ctudec->dequant_luma.qp, qp_ctx->min_qp_prime_ts);
     ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[(base_qp + qp_ctx->cb_offset + 64) & 63] + 12;
     ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[(base_qp + qp_ctx->cr_offset + 64) & 63] + 12;
     ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[(base_qp + qp_ctx->jcbcr_offset + 64) & 63] + 12;
     ctudec->qp_ctx.current_qp = base_qp;
 }
 
-static void av_always_inline
+#if 0
+static void
 load_depth_maps(const struct LineCtxs *const l, OVCTUDec *const ctudec, int ctb_x)
 {
 
