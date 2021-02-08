@@ -14,6 +14,7 @@ HEADERS = ovvcdec.h                                                   \
 
 # List of objects to be included into the library
 OBJS = ovvcdec.o                                                      \
+       dec_init.o                                                     \
        rcn_fill_ref.o                                                 \
        rcn_intra_dc_planar.o                                          \
        data_rcn_transform.o                                           \

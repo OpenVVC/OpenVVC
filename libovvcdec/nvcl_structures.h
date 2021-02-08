@@ -162,8 +162,8 @@ struct OVSPS
 
     uint8_t sps_joint_cbcr_enabled_flag;
     uint8_t sps_same_qp_table_for_chroma_flag;
-    int8_t sps_qp_table_start_minus26[64]; /* i == 1 for same_qp_table_for_chroma, 2 + joint_cbrcr_flag otherwise*/
-    uint8_t sps_num_points_in_qp_table_minus1[64];
+    int8_t sps_qp_table_start_minus26[3]; /* i == 1 for same_qp_table_for_chroma, 2 + joint_cbrcr_flag otherwise*/
+    uint8_t sps_num_points_in_qp_table_minus1[3];
     uint8_t sps_delta_qp_in_val_minus1[3][64]; /*j = max num_points_in_qp_table 64?*/
     uint8_t sps_delta_qp_diff_val[3][64]; /*j = max num_points_in_qp_table 64?*/
 
@@ -381,7 +381,6 @@ struct OVPPS
     uint8_t pps_extension_flag;
 
     uint8_t pps_extension_data_flag;
-
 };
 
 struct OVPH

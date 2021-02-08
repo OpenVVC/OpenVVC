@@ -15,9 +15,6 @@ static const char *const decname = "Open VVC Decoder";
 struct OVVCSubDec;
 
 
-
-
-
 /* Actions on unsupported NAL Unit types */
 static int nalu_type_unsupported(enum OVNALUType nalu_type);
 
@@ -62,21 +59,34 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
     
     int ret;
 
-        /* TODO activate slice Parameters Sets */
-    #if 0
-    ret = activate_sps(dec, nvcl_ctx);
+    ret = decinit_update_params(dec, nvcl_ctx);
+    if (ret < 0) {
+        ov_log(dec, 3, "Failed to activate parameters\n");
+        return ret;
+    }
 
-    ret = activate_pps(dec, nvcl_ctx);
+    #if 0
+    if (dec->active_params.sh->sh_slice_address) {
+    /* FIXME  dpb_request_picture */
+    }
     #endif
 
-    /* FIXME 
-     * Check if more than one APS for ALF andScaling List etc.
-     */
-    #if 0
-    ret = activate_aps(dec, nvcl_ctx);
+    if (!dec->subdec_list) {
+        /* FIXME if parameters changed we might want to change
+         * sub dec behaviour.
+         */
+        ret = init_subdec_list(dec);
+    }
 
-    ret = activate_pps(dec, nvcl_ctx);
+
+    #if 0
+    ret = decinti_update_subdec();
+    if (ret < 0) {
+        ov_log(dec, 3, "Failed to update sub decoder\n");
+        return ret;
+    }
     #endif
+
         /*TODO update DPB status */
 
         /* TODO init VCL decoder */
@@ -84,11 +94,6 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
     #if 0
     ret = init_slice_decoder(dec, nvcl_ctx);
     #endif
-
-    if (ret < 0) {
-        ov_log(dec, 3, "Failed to initialize Sub Decoder");
-        return ret;
-    }
 
     return 0;
 }
@@ -115,7 +120,7 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
     case OVNALU_CRA:
     case OVNALU_GDR:
 
-        ret = nvcl_sh_read(&rdr, NULL, nvcl_ctx, nalu_type);
+        ret = nvcl_decode_nalu_sh(&rdr, nvcl_ctx, nalu_type);
 
         if (ret < 0) {
             return ret;
@@ -128,6 +133,9 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
            if (ret < 0) {
                goto fail;
            }
+
+           ret = vcl_dec_decode_slice(vvcdec);
+
 
         /* TODO start VCL decoder */
         }

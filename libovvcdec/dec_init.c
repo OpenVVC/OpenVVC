@@ -1,15 +1,19 @@
-/* This file is intended to translate Parameter Sets information to 
- * structures more usable by the decoder contexts
+/* This file is intended to translate Parameter Sets information into
+ * more convenient structures to be used by the decoder contexts
  * It contains translations from nvcl structures to decoder structures
  * and Parameters sets activation functions.
  */
+#include "stddef.h"
+#include "libovvcutils/ovvcutils.h"
+#include "libovvcutils/ovvcerror.h"
 
+#include "decinit.h"
 #include "nvcl_structures.h"
 #include "dec_structures.h"
 
 
 static int
-sps_init_partition_constraint_info(OVPartInfo *const pinfo, const OVSPS *const sps)
+sps_init_partition_constraint_info_intra(OVPartInfo *const pinfo, const OVSPS *const sps)
 {
     uint8_t log2_ctu_s = sps->sps_log2_ctu_size_minus5 + 5;
     uint8_t log2_min_cb_s = sps->sps_log2_min_luma_coding_block_size_minus2 + 2;
@@ -30,56 +34,67 @@ sps_init_partition_constraint_info(OVPartInfo *const pinfo, const OVSPS *const s
     return 0;
 }
 
-#if 0
-static int update_partition_context_inter(VVCPartSize *const part_ctx,
-                                    const VVCSPSData *const sps){
+static int
+sps_init_partition_constraint_info_inter(OVPartInfo *const pinfo, const OVSPS *const sps)
+{
+    uint8_t log2_ctu_s = sps->sps_log2_ctu_size_minus5 + 5;
+    uint8_t log2_min_cb_s = sps->sps_log2_min_luma_coding_block_size_minus2 + 2;
+    uint8_t log2_min_qt_s = sps->sps_log2_diff_min_qt_min_cb_inter_slice + log2_min_cb_s;
 
+    pinfo->log2_ctu_s    = log2_ctu_s;
+    pinfo->log2_min_cb_s = log2_min_cb_s;
 
-    part_ctx->log2_ctu_s    = sps->sps_log2_ctu_size_minus5 + 5;
-    part_ctx->log2_min_cb_s = sps->log2_min_luma_coding_block_size_minus2 + 2;
+    pinfo->log2_min_qt_s = log2_min_qt_s;
 
-    part_ctx->log2_min_qt_s = sps->sps_log2_diff_min_qt_min_cb_inter_slice+
-            part_ctx->log2_min_cb_s;
+    pinfo->log2_max_bt_s =  log2_min_qt_s + sps->sps_log2_diff_max_bt_min_qt_inter_slice;
+    pinfo->log2_max_tt_s =  log2_min_qt_s + sps->sps_log2_diff_max_tt_min_qt_inter_slice;
 
-    part_ctx->log2_max_bt_s = part_ctx->log2_min_qt_s +
-            sps->sps_log2_diff_max_bt_min_qt_inter_slice;
-    part_ctx->log2_max_tt_s = part_ctx->log2_min_qt_s +
-            sps->sps_log2_diff_max_tt_min_qt_inter_slice;
+    pinfo->max_mtt_depth = sps->sps_max_mtt_hierarchy_depth_inter_slice;
 
-    part_ctx->max_mtt_depth = sps->sps_max_mtt_hierarchy_depth_inter_slice;
-
-    part_ctx->log2_max_tb_s = 5 + sps->sps_max_luma_transform_size_64_flag;
+    pinfo->log2_max_tb_s = 5 + sps->sps_max_luma_transform_size_64_flag;
 
     return 0;
 }
 
-static int update_partition_context_intra_chroma(VVCPartSize *const part_ctx,
-                                                 const VVCSPSData *const sps)
+static int
+sps_init_partition_constraint_info_chroma(OVPartInfo *const pinfo, const OVSPS *const sps)
 {
-    part_ctx->log2_ctu_s    = sps->sps_log2_ctu_size_minus5 + 5;
-    part_ctx->log2_min_cb_s = sps->log2_min_luma_coding_block_size_minus2 + 2 - 1;
+    /* FIXME we could handle chroma format from here */
+    #if 0
+    uint8_t log2_ctu_s = sps->sps_log2_ctu_size_minus5 + 5;
+    uint8_t log2_min_cb_s = sps->sps_log2_min_luma_coding_block_size_minus2 + 2 - 1;
+    /* FIXME check this  factorize if correct*/
+    uint8_t log2_min_qt_s = sps->sps_log2_diff_min_qt_min_cb_intra_slice_chroma + log2_min_cb_s;
+    #endif
 
-    part_ctx->log2_max_tb_s = 5 + sps->sps_max_luma_transform_size_64_flag - 1;
+    pinfo->log2_ctu_s    = sps->sps_log2_ctu_size_minus5 + 5;
+    pinfo->log2_min_cb_s = sps->sps_log2_min_luma_coding_block_size_minus2 + 2 - 1;
 
-    part_ctx->log2_min_qt_s = sps->sps_log2_diff_min_qt_min_cb_intra_slice_chroma +
-            part_ctx->log2_min_cb_s;
 
-    part_ctx->log2_max_bt_s = part_ctx->log2_min_qt_s +
+    pinfo->log2_min_qt_s = sps->sps_log2_diff_min_qt_min_cb_intra_slice_chroma +
+            pinfo->log2_min_cb_s;
+
+    pinfo->log2_max_bt_s = pinfo->log2_min_qt_s +
             sps->sps_log2_diff_max_bt_min_qt_intra_slice_chroma;
-    part_ctx->log2_max_tt_s = part_ctx->log2_min_qt_s +
+    pinfo->log2_max_tt_s = pinfo->log2_min_qt_s +
             sps->sps_log2_diff_max_tt_min_qt_intra_slice_chroma;
 
-    part_ctx->max_mtt_depth = sps->sps_max_mtt_hierarchy_depth_intra_slice_chroma;
+    pinfo->max_mtt_depth = sps->sps_max_mtt_hierarchy_depth_intra_slice_chroma;
+
+    pinfo->log2_max_tb_s = 5 + sps->sps_max_luma_transform_size_64_flag - 1;
 
     return 0;
 }
-#endif
+
 
 static void
-sps_init_chroma_qp_tables(uint8_t *const qp_map_table, const OVSPS *const sps)
+sps_fill_qp_table(uint8_t dst_qp_tab[],
+                  const uint8_t dqp_input_val_min1[],
+                  const uint8_t dqp_diff_val[],
+                  int8_t start_qp, uint8_t nb_qp_min1)
 {
-    uint8_t nb_qp_points = sps->sps_num_points_in_qp_table_minus1;
-    int idx = sps->sps_qp_table_starts_minus26 + 26;
+    uint8_t nb_qp_points = nb_qp_min1;
+    int idx = start_qp;
     int next_idx;
     int j;
 
@@ -88,15 +103,15 @@ sps_init_chroma_qp_tables(uint8_t *const qp_map_table, const OVSPS *const sps)
      *    -fill first part of qp_map + check corner cases
      */
 
-    qp_map_table[idx] = idx;
+    dst_qp_tab[idx] = idx;
     for (j = idx - 1; j >= 0; --j){
-        qp_map_table[j] = qp_map_table[j + 1] - 1;
+        dst_qp_tab[j] = dst_qp_tab[j + 1] - 1;
     }
 
     for (j = 0; j <= nb_qp_points; ++j) {
-        const int nb_step = sps->delta_qp_in_val_minus1[j] + 1;
-        const int nb_qp_w = sps->delta_qp_in_val_minus1[j] ^ sps->delta_qp_diff_val[j];
-        const int first_qp = qp_map_table[idx];
+        const int nb_step = dqp_input_val_min1[j] + 1;
+        const int nb_qp_w = dqp_input_val_min1[j] ^ dqp_diff_val[j];
+        const int first_qp = dst_qp_tab[idx];
         const int round = nb_step >> 1;
         int qp_sum = nb_qp_w;
         int k;
@@ -104,14 +119,36 @@ sps_init_chroma_qp_tables(uint8_t *const qp_map_table, const OVSPS *const sps)
         next_idx = idx + nb_step;
 
         for (k = idx + 1;  k <= next_idx; ++k) {
-            qp_map_table[k]  = first_qp + (qp_sum + round) / nb_step;
+            dst_qp_tab[k]  = first_qp + (qp_sum + round) / nb_step;
             qp_sum += nb_qp_w;
         }
         idx = next_idx;
     }
 
     for (j = next_idx;  j < 64; ++j) {
-        qp_map_table[j] = qp_map_table[j - 1] + 1;
+        dst_qp_tab[j] = dst_qp_tab[j - 1] + 1;
+    }
+}
+
+static void
+sps_init_chroma_qp_tables(struct SPSInfo *sps_info, const OVSPS *const sps)
+{
+    int i = 0;
+    const int nb_qp_tab = sps->sps_same_qp_table_for_chroma_flag ? 1 : 2 + sps->sps_joint_cbcr_enabled_flag;
+    for (i = 0; i < nb_qp_tab; ++i) {
+        const uint8_t nb_qp_min1 = sps->sps_num_points_in_qp_table_minus1[i];
+        const uint8_t *dqp_input_val_min1 = sps->sps_delta_qp_in_val_minus1[i];
+        const uint8_t *dqp_diff_val = sps->sps_delta_qp_diff_val[i];
+        int8_t start_qp = sps->sps_qp_table_start_minus26[i] + 26;
+        uint8_t *dst_qp_tab = sps_info->qp_tables_c[i].qp;
+
+        sps_fill_qp_table(dst_qp_tab, dqp_input_val_min1, dqp_diff_val, start_qp,
+                          nb_qp_min1);
+    }
+
+    /* Copy first table into others in case of same qp for all chroma tables */
+    for (; i < 3 - sps->sps_joint_cbcr_enabled_flag; ++i) {
+        sps_info->qp_tables_c[i] = sps_info->qp_tables_c[i-1];
     }
 }
 
@@ -121,6 +158,7 @@ sps_init_dpb_parameters(struct OVPS *prms)
     
 }
 
+#if 0
 static void
 pps_init_qp(struct OVPS *prms)
 {
@@ -165,4 +203,132 @@ slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
     ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[slice_qp + cb_qp_offset] + qp_bd_offset;
     ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[slice_qp + cr_qp_offset] + qp_bd_offset;
     ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[base_qp + jcbcr_qp_offset] + qp_bd_offset;
+}
+#endif
+
+static int
+update_sps_info(struct SPSInfo *const sps_info, const OVSPS *const sps)
+{
+    sps_init_partition_constraint_info_intra(&sps_info->part_info[0], sps);
+    sps_init_partition_constraint_info_inter(&sps_info->part_info[1], sps);
+    sps_init_partition_constraint_info_chroma(&sps_info->part_info[2], sps);
+
+    sps_init_chroma_qp_tables(sps_info, sps);
+
+    return 0;
+}
+
+static int
+update_pps_info(struct PPSInfo *const pps_info, const OVPPS *const pps)
+{
+    return 0;
+}
+
+static int
+update_ph_info(struct PHInfo *const ph_info, const OVPH *const ph)
+{
+    return 0;
+}
+
+static int
+update_sh_info(struct SHInfo *const sh_info, const OVSH *const sh)
+{
+    return 0;
+}
+
+static const OVSPS *
+retreive_sps(const OVNVCLCtx *const nvcl_ctx, const OVPPS *const pps)
+{
+    uint8_t sps_id = pps->pps_seq_parameter_set_id;
+    const OVSPS *sps = NULL;
+    if (sps_id < 16) {
+        sps = nvcl_ctx->sps_list[sps_id];
+    } else {
+        ov_log(NULL, 3, "Invalid SPS ID  %d\n", sps_id);
+    }
+
+    return sps;
+}
+
+static const OVPPS *
+retreive_pps(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
+{
+    uint8_t pps_id = ph->ph_pic_parameter_set_id;
+    const OVPPS *pps = NULL;
+    if (pps_id < 16) {
+        pps = nvcl_ctx->pps_list[pps_id];
+    } else {
+        ov_log(NULL, 3, "Invalid PPS ID  %d\n", pps_id);
+    }
+
+    return pps;
+}
+
+int
+decinit_update_params(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
+{
+    /* FIXME assert nvcl_ctx params sets are not NULL*/
+    struct OVPS *const ps = &dec->active_params;
+    int ret;
+    const OVSH *const sh = nvcl_ctx->sh;
+    const OVPH *const ph = nvcl_ctx->ph;
+    const OVPPS *const pps = retreive_pps(nvcl_ctx, ph);
+    const OVSPS *const sps = retreive_sps(nvcl_ctx, pps);
+
+    if (!sh || !ph || !pps || !sps) {
+        ov_log(NULL, 3, "Missing Parameter sets for dec initialisation\n");
+        return OVVC_EINDATA;
+    }
+
+    if (ps->sps != sps) {
+        ret = update_sps_info(&ps->sps_info, sps);
+        if (ret < 0) {
+            goto failsps;
+        }
+
+        ps->sps = sps;
+    }
+
+    if (ps->pps != pps) {
+        ret = update_pps_info(&ps->pps_info, pps);
+        if (ret < 0) {
+            goto failpps;
+        }
+        ps->pps = pps;
+    }
+
+    if (ps->ph != ph) {
+        ret = update_ph_info(&ps->ph_info, ph);
+        if (ret < 0) {
+            goto failph;
+        }
+        ps->ph = ph;
+    }
+
+    /* We only check sh is present in ctx since we should be called
+     * directely after the Slice Header is read so we are
+     * reading a new slice
+     */
+    if (nvcl_ctx->sh) {
+        ret = update_sh_info(&ps->sh_info, nvcl_ctx->sh);
+        if (ret < 0) {
+            goto failsh;
+        }
+    }
+
+
+    return 0;
+
+/* TODO if some alloc are done from update function free it here*/
+failsps:
+failpps:
+failph:
+failsh:
+    /* On failure  we reset all active ps so next activation will try again */
+    ps->sps = NULL;
+    ps->pps = NULL;
+    ps->ph = NULL;
+    ps->sh = NULL;
+
+    return ret;
 }

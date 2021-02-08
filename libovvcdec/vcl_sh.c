@@ -1,6 +1,7 @@
 #include <stddef.h>
 
 #include "libovvcutils/ovvcutils.h"
+#include "libovvcutils/ovmem.h"
 #include "libovvcdmx/ovunits.h"
 
 #include "nvcl.h"
@@ -19,6 +20,47 @@ enum SliceType {
      P = 1,
      I = 2
 };
+
+/* Slice header is only presnt in VCL NAL Units but we use NVCL
+ * denomination since it can be read by same reader
+ */
+int
+nvcl_decode_nalu_sh(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type)
+{
+    int ret;
+
+    OVSH *sh = ov_mallocz(sizeof(*sh));
+    if (!sh) {
+        return OV_ENOMEM;
+    }
+
+    ret = nvcl_sh_read(rdr, sh, nvcl_ctx, nalu_type);
+    if (ret < 0) {
+        goto cleanup;
+    }
+
+    #if 0
+    ret = validate_sps(rdr, sh);
+    if (ret < 0) {
+        goto cleanup;
+    }
+    #endif
+
+    /* FIXME this is temporary to ensure the
+     * sh is freed between each slice
+     */
+    if (nvcl_ctx->sh) {
+        ov_freep(&nvcl_ctx->sh);
+    }
+
+    nvcl_ctx->sh = sh;
+
+    return 0;
+
+cleanup:
+    ov_free(sh);
+    return ret;
+}
 
 int
 nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh2,
