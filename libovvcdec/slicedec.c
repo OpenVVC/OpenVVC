@@ -194,23 +194,27 @@ init_partition_info()
 int
 slicedec_alloc_cabac_lines(OVSliceDec *const sldec, const struct OVPS *const prms)
 {
+   #if 0
    int nb_pu_w; 
    
    
-   #if 0
    ov_mallocz(sizeof(
    #endif
+   return 0;
 
 }
 
 int
-slicedec_init_slice_tools(OVVCDec *const dec)
+slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
 {
 
-    #if 0
-    OVSubDec *const sldec = dec->subdec_list[0];
+    OVCTUDec *const ctudec = sldec->ctudec_list;
+    const OVSPS *const sps = prms->sps;
+    const OVPPS *const pps = prms->pps;
+    const OVSH *const sh = prms->sh;
+    const OVPH *const ph = prms->ph;
 
-    ctudec->max_log2_transform_skip_size = sps->log2_transform_skip_max_size_minus2 + 2;
+    ctudec->max_log2_transform_skip_size = sps->sps_log2_transform_skip_max_size_minus2 + 2;
 
     #if 0
     ctudec->alf_num_chroma_alt = vvc_ctx->alf_num_alt_chroma;
@@ -224,18 +228,19 @@ slicedec_init_slice_tools(OVVCDec *const dec)
     ctudec->enable_mrl    = sps->sps_mrl_enabled_flag;
 
     ctudec->transform_skip_enabled = sps->sps_transform_skip_enabled_flag;
-    ctudec->max_num_merge_candidates = 6 - sps->six_minus_max_num_merge_cand;
+    ctudec->max_num_merge_candidates = 6 - sps->sps_six_minus_max_num_merge_cand;
 
-    ctudec->delta_qp_enabled = pps->cu_qp_delta_enabled_flag;
+    ctudec->delta_qp_enabled = pps->pps_cu_qp_delta_enabled_flag;
 
-    ctudec->dbf_disable = sh->slice_deblocking_filter_disabled_flag | ph->ph_deblocking_filter_disabled_flag | pps->pps_deblocking_filter_disabled_flag;
+    ctudec->dbf_disable = sh->sh_deblocking_filter_disabled_flag | ph->ph_deblocking_filter_disabled_flag | pps->pps_deblocking_filter_disabled_flag;
 
+    #if 0
     init_qp_ctx(ctudec, vvc_ctx);
 
     derive_dequant_ctx(ctudec, &ctudec->qp_ctx, 0);
+    #endif
 
     return 0;
-#endif
 }
 
 int
@@ -257,7 +262,8 @@ slicedec_init(OVSliceDec **dec_p)
     return 0;
 }
 
-void uninit_ctudec_list(OVSliceDec *const sldec) {
+static void
+uninit_ctudec_list(OVSliceDec *const sldec) {
      #if 0
      int nb_ctudec = sldec->nb_ctudec;
      int i;

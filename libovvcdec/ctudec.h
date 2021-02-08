@@ -220,6 +220,7 @@ struct OVCTUDec {
     uint8_t enable_mrl;
     uint8_t share;
     uint8_t max_num_merge_candidates;
+    uint8_t dbf_disable;
 
     /**
      * Depths of left and up neighbours during in the decision tree

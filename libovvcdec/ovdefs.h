@@ -42,6 +42,8 @@ typedef struct OVNVCLUnit OVNVCLUnit;
 typedef struct OVVCDec OVVCDec;
 typedef struct SubDec OVSubDec;
 
+typedef struct OVPS OVPS;
+
 /* Generic Frame Picture */
 typedef struct Frame OVFrame;
 typedef struct OVPicture OVPicture;

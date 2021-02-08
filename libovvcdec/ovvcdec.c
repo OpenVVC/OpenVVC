@@ -64,12 +64,14 @@ static int
 init_subdec_list(OVVCDec *dec)
 {
     int ret;
-    /* TODO select sub dec types according to active params sets */
+
+    /* TODO */
     if (!dec->subdec_list) {
-        #if 0
-        int nb_subdec = 1;
-        #endif
-        /* FIXME at the current time we suppose only one slice decoder */
+        /* FIXME
+         *    -at the current time we suppose only one slice decoder
+         *    -select sub dec types according to active params sets
+         *    -if parameters changed we might want to change sb_dec
+         */
         ret = slicedec_init(&dec->subdec_list);
         if (ret < 0)
         {
@@ -77,13 +79,7 @@ init_subdec_list(OVVCDec *dec)
         }
     }
 
-    ret = slicedec_init_slice_tools(dec);
-
-    #if 0
-    slicedec_init_slice_tools();
-    #endif
-
-    return 1;
+    return 0;
 }
 
 
@@ -113,15 +109,14 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
     }
     #endif
 
-    /* FIXME if parameters changed we might want to change
-     * sub dec behaviour.
-     */
     ret = init_subdec_list(dec);
     if (ret < 0) {
         return ret;
     }
 
-    sldec = select_subdec(dec);
+    sldec = select_subdec(dec); 
+
+    ret = slicedec_init_slice_tools(sldec, &dec->active_params);
 
     #if 0
     ret = decinti_update_subdec();
@@ -226,7 +221,7 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
         break;
     case OVNALU_EOS:
     case OVNALU_EOB:
-        /* TODO update DPB status (new cvs);
+        /* TODO update DPB status (new cvs); 
          * call dpb_uninit
          */
         break;
@@ -416,11 +411,7 @@ ovdec_close(OVVCDec *vvcdec)
 
         nvcl_free_ctx(&vvcdec->nvcl_ctx);
 
-        #if 0
-        ov_freep(&vvcdec->subdec_list);
-        #else
         slicedec_uninit(&vvcdec->subdec_list);
-        #endif
 
         ov_free(vvcdec);
 
