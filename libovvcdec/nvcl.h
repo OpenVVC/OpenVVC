@@ -71,4 +71,6 @@ int nvcl_decode_nalu_sps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx);
 int nvcl_decode_nalu_pps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx);
 
 int nvcl_decode_nalu_ph(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx);
+
+int nvcl_decode_nalu_sh(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
 #endif

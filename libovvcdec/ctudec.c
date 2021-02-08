@@ -1,4 +1,6 @@
 #include "ctudec.h"
+#include "libovvcutils/ovmem.h"
+#include "libovvcutils/ovvcerror.h"
 
 int
 ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec)
@@ -129,3 +131,26 @@ ovdec_decode_ctu_border(const VVCContext *const vvc_ctx,
     return 0;
 }
 #endif
+
+int
+ctudec_init(OVCTUDec **ctudec_p)
+{
+     OVCTUDec *ctudec;
+
+     ctudec = ov_mallocz(sizeof(*ctudec));
+
+     if (!ctudec) {
+         return OVVC_ENOMEM;
+     }
+
+     *ctudec_p = ctudec;
+
+     return 0;
+}
+
+int
+ctudec_uninit(OVCTUDec *ctudec)
+{
+     ov_free(ctudec);
+     return 0;
+}

@@ -237,7 +237,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
             sps->sps_sublayer_dpb_params_flag = nvcl_read_flag(rdr);
         }
 
-        dpb_parameters(rdr, sps->sps_max_sublayers_minus1, sps->sps_sublayer_dpb_params_flag);
+        dpb_parameters(rdr, sps->dpb_parameters, sps->sps_max_sublayers_minus1, sps->sps_sublayer_dpb_params_flag);
     }
 
     sps->sps_log2_min_luma_coding_block_size_minus2 = nvcl_read_u_expgolomb(rdr);

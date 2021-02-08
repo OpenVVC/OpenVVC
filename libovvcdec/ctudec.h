@@ -72,33 +72,6 @@ struct VVCCU{
 
 };
 
-struct OVPartInfo{
-
-    /**
-     * Global limit on ctb and cb sizes
-     */
-    uint8_t log2_ctu_s;
-    uint8_t log2_min_cb_s;
-
-    /**
-     *  Quad tree limits in depth an log2_min size
-     */
-    uint8_t log2_min_qt_s;
-
-    /**
-     *  Multi type tree limits in depth and max size
-     */
-    uint8_t max_mtt_depth;
-    uint8_t log2_max_bt_s;
-    uint8_t log2_max_tt_s;
-
-    /**
-     * Transform tree limits
-     */
-    uint8_t log2_max_tb_s;
-
-};
-
 /* Definitions of CTUDecoder structures */
 struct InterDRVCtx
 {
@@ -347,6 +320,9 @@ struct OVCTUDec {
 };
 
 int ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec);
+
+int ctudec_init(OVCTUDec **ctudec_p);
+int ctudec_uninit(OVCTUDec *ctudec_p);
 
 /* TODO add hook functors for PU / TU init and update */
 

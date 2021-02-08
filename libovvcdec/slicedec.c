@@ -1,8 +1,11 @@
 #include "ovdefs.h"
+#include "libovvcutils/ovvcerror.h"
+#include "slicedec.h"
 #include "ctudec.h"
 #include "nvcl_structures.h"
 #include "dec_structures.h"
 
+#if 0
 static int
 init_slice_tree_ctx()
 {
@@ -27,7 +30,7 @@ init_slice_tree_ctx()
         ctudec->prediction_unit      = sh->slice_type == VVC_SLICE_B ? &prediction_unit_inter_b : &prediction_unit_inter_p;
         ctudec->transform_unit = &transform_unit_st;
         ctudec->part_ctx        = &ovdec->inter_part_ctx;
-        /* FIXME
+        /* FIXME */
         ctudec->part_ctx_chroma = &ovdec->intra_part_ctx_chroma;
         ctudec->active_part_map = &ctudec->part_map;
     }
@@ -186,21 +189,43 @@ init_partition_info()
     uint8_t ph_cu_chroma_qp_offset_subdiv_inter_slice;
 }
 
+#endif
+
 int
-init_slice_tools(CTUDec *ctu_dec, const OVSH *const sh)
+slicedec_alloc_cabac_lines(OVSliceDec *const sldec, const struct OVPS *const prms)
 {
+   int nb_pu_w; 
+   
+   
+   #if 0
+   ov_mallocz(sizeof(
+   #endif
+
+}
+
+int
+slicedec_init_slice_tools(OVVCDec *const dec)
+{
+
+    #if 0
+    OVSubDec *const sldec = dec->subdec_list[0];
+
     ctudec->max_log2_transform_skip_size = sps->log2_transform_skip_max_size_minus2 + 2;
 
+    #if 0
     ctudec->alf_num_chroma_alt = vvc_ctx->alf_num_alt_chroma;
+    #endif
     ctudec->lm_chroma_enabled = sps->sps_cclm_enabled_flag;
     ctudec->enabled_mip = sps->sps_mip_enabled_flag;
 
     ctudec->jcbcr_enabled = sps->sps_joint_cbcr_enabled_flag;
     ctudec->enable_lfnst  = sps->sps_lfnst_enabled_flag;
-    ctudec->isp_enabled  = sps->sps_isp_enabled_flag;
-    ctudec->enable_mrl = sps->sps_mrl_enabled_flag;
+    ctudec->isp_enabled   = sps->sps_isp_enabled_flag;
+    ctudec->enable_mrl    = sps->sps_mrl_enabled_flag;
+
     ctudec->transform_skip_enabled = sps->sps_transform_skip_enabled_flag;
     ctudec->max_num_merge_candidates = 6 - sps->six_minus_max_num_merge_cand;
+
     ctudec->delta_qp_enabled = pps->cu_qp_delta_enabled_flag;
 
     ctudec->dbf_disable = sh->slice_deblocking_filter_disabled_flag | ph->ph_deblocking_filter_disabled_flag | pps->pps_deblocking_filter_disabled_flag;
@@ -210,8 +235,55 @@ init_slice_tools(CTUDec *ctu_dec, const OVSH *const sh)
     derive_dequant_ctx(ctudec, &ctudec->qp_ctx, 0);
 
     return 0;
+#endif
 }
 
+int
+slicedec_init(OVSliceDec **dec_p)
+{
+    OVSliceDec *sldec;
+    sldec = ov_mallocz(sizeof(OVSliceDec));
+    if (!sldec) {
+        return OVVC_ENOMEM;
+    }
+
+    *dec_p = sldec;
+
+
+    #if 1
+    ctudec_init(&sldec->ctudec_list);
+    #endif
+
+    return 0;
+}
+
+void uninit_ctudec_list(OVSliceDec *const sldec) {
+     #if 0
+     int nb_ctudec = sldec->nb_ctudec;
+     int i;
+     for (i = 0; i < nb_ctudec; ++i) {
+         OVCTUDec *ctudec = &sldec->ctudec_list[i];
+         ctudec_uninit(ctudec);
+     }
+     #endif
+     ctudec_uninit(sldec->ctudec_list);
+}
+
+void
+slicedec_uninit(OVSliceDec **sldec_p)
+{
+    OVSliceDec *sldec = *sldec_p;
+
+    if (sldec->ctudec_list) {
+        uninit_ctudec_list(sldec);
+    }
+
+    ov_freep(sldec_p);
+
+    return 0;
+}
+
+#if 0
 static int
 init_slice_decoder(OVVCDec *const vvcdec, const OVNVCLCtx *const nvcl_ctx,
                    const OVSH *const sh)
@@ -450,3 +522,4 @@ vvc_free_ctx_lines(VVCContext *const s)
     ov_freep(&l->log2_cu_w_map_x_c);
 }
 
+#endif

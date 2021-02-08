@@ -193,12 +193,13 @@ struct OVVCDec
         struct SHInfo sh_info;
     } active_params;
 
+    struct OVDPB *dpb;
 
     /* List of Sub Decoders
      * Contains context for Tile / Slice / Picture / SubPicture
      * decoding
      */
-    struct OVSubDec *subdec_list;
+    OVSliceDec *subdec_list;
 
     /* Informations on decoder behaviour transmitted by user
      */

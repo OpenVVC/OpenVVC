@@ -23,6 +23,7 @@ OBJS = ovvcdec.o                                                      \
        rcn_lfnst.o                                                    \
        rcn_mc.o                                                       \
        ctudec.o                                                       \
+       slicedec.o                                                     \
        ovframe.o                                                      \
        dpb.o                                                          \
        dpb_internal.o                                                 \

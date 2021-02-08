@@ -3,11 +3,15 @@
 
 #include "libovvcutils/ovvcutils.h"
 #include "libovvcutils/ovmem.h"
+#include "libovvcutils/ovvcerror.h"
 
 #include "libovvcdmx/ovunits.h"
 
 #include "nvcl.h"
 #include "ovvcdec.h"
+#include "ctudec.h"
+#include "decinit.h"
+#include "slicedec.h"
 #include "dec_structures.h"
 
 static const char *const decname = "Open VVC Decoder";
@@ -31,11 +35,13 @@ nalu_type_unsupported(enum OVNALUType nalu_type)
     return 0;
 }
 
+#if 0
 /* TODO check Slice / Tiles / Sub Picture context */
 static int
 init_slice_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
 {
     const OVSH *const sh = nvcl_ctx->sh;
+    int ret;
 
     #if 0
     init_slice_tools();
@@ -52,12 +58,48 @@ init_slice_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
     #endif
     return 0;
 }
+#endif
+
+static int
+init_subdec_list(OVVCDec *dec)
+{
+    int ret;
+    /* TODO select sub dec types according to active params sets */
+    if (!dec->subdec_list) {
+        #if 0
+        int nb_subdec = 1;
+        #endif
+        /* FIXME at the current time we suppose only one slice decoder */
+        ret = slicedec_init(&dec->subdec_list);
+        if (ret < 0)
+        {
+            return OVVC_ENOMEM;
+        }
+    }
+
+    ret = slicedec_init_slice_tools(dec);
+
+    #if 0
+    slicedec_init_slice_tools();
+    #endif
+
+    return 1;
+}
+
+
+static OVSliceDec *
+select_subdec(const OVVCDec *const dec)
+{
+    /* FIXME only one SLice dec at the current time */
+    return dec->subdec_list;
+}
 
 static int
 init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
 {
     
     int ret;
+    OVSliceDec *sldec;
 
     ret = decinit_update_params(dec, nvcl_ctx);
     if (ret < 0) {
@@ -71,13 +113,15 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
     }
     #endif
 
-    if (!dec->subdec_list) {
-        /* FIXME if parameters changed we might want to change
-         * sub dec behaviour.
-         */
-        ret = init_subdec_list(dec);
+    /* FIXME if parameters changed we might want to change
+     * sub dec behaviour.
+     */
+    ret = init_subdec_list(dec);
+    if (ret < 0) {
+        return ret;
     }
 
+    sldec = select_subdec(dec);
 
     #if 0
     ret = decinti_update_subdec();
@@ -134,7 +178,9 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
                goto fail;
            }
 
+           #if 0
            ret = vcl_dec_decode_slice(vvcdec);
+           #endif
 
 
         /* TODO start VCL decoder */
@@ -180,7 +226,9 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
         break;
     case OVNALU_EOS:
     case OVNALU_EOB:
-        /* TODO update DPB status (new cvs); */
+        /* TODO update DPB status (new cvs);
+         * call dpb_uninit
+         */
         break;
     case OVNALU_AUD:
         /* AUD is ignored it should be the first NALU if
@@ -367,6 +415,12 @@ ovdec_close(OVVCDec *vvcdec)
         if (not_dec) goto fail;
 
         nvcl_free_ctx(&vvcdec->nvcl_ctx);
+
+        #if 0
+        ov_freep(&vvcdec->subdec_list);
+        #else
+        slicedec_uninit(&vvcdec->subdec_list);
+        #endif
 
         ov_free(vvcdec);
 

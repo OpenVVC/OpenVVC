@@ -153,8 +153,14 @@ sps_init_chroma_qp_tables(struct SPSInfo *sps_info, const OVSPS *const sps)
 }
 
 static void
-sps_init_dpb_parameters(struct OVPS *prms)
+sps_init_dpb_parameters(OVVCDec *const dec, struct OVPS *const prms)
 {
+    const OVSPS *const sps = prms->sps;
+    const OVDPBParams *dpb_list = sps->dpb_parameters;
+
+    #if 0
+    dpb_init_params(dpb, &dpb_params[0]);
+    #endif
     
 }
 

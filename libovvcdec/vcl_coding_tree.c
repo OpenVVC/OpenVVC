@@ -2,6 +2,7 @@
 
 #include "vcl.h"
 #include "cabac_internal.h"
+#include "dec_structures.h"
 #include "ctudec.h"
 
 #if 0

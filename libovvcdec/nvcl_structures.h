@@ -68,6 +68,13 @@ struct OVHRPL
     struct OVRPL *rpl1;
 };
 
+/* FIXME find a better place for this structure */
+struct OVDPBParams
+{
+    uint8_t dpb_max_dec_pic_buffering_minus1;
+    uint8_t dpb_max_num_reorder_pics;
+    uint8_t dpb_max_latency_increase_plus1;
+};
 
 struct OVSPS
 {
@@ -124,7 +131,7 @@ struct OVSPS
     uint8_t sps_extra_sh_bit_present_flag[24]; /*max num_extra_ph_bytes?*/
 
     uint8_t sps_sublayer_dpb_params_flag;
-    struct OVDPBParams *dpb_parameters;
+    struct OVDPBParams dpb_parameters[64];
 
     uint8_t sps_log2_min_luma_coding_block_size_minus2;
     uint8_t sps_partition_constraints_override_enabled_flag;

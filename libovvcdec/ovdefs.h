@@ -56,5 +56,7 @@ typedef struct VVCCU VVCCU;
 /* Decoders related types */
 typedef struct OVCTUDec OVCTUDec;
 
+typedef struct OVSliceDec OVSliceDec;
+
 typedef struct OVMV OVMV;
 #endif
