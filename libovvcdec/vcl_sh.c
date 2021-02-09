@@ -63,12 +63,10 @@ cleanup:
 }
 
 int
-nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh2,
+nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
              OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type)
 {
     int i;
-    OVSH sh_stck = {0};
-    OVSH *sh = &sh_stck;
     OVPH *ph = NULL;
     const OVPPS *pps = NULL;
     const OVSPS *sps = NULL;
@@ -318,6 +316,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh2,
         }
     }
 
+    /* FIXME check if stop bit */
     nvcl_align(rdr);
 
     return 0;

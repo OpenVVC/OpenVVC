@@ -291,8 +291,8 @@ struct OVCTUDec {
 
     int (*prediction_unit)(struct OVCTUDec *const lc_ctx,
                            const OVPartInfo *const part_ctx,
-                           unsigned int x0, unsigned int y0,
-                           unsigned int log2_pb_w, unsigned int log2_pb_h,
+                           uint8_t x0, uint8_t y0,
+                           uint8_t log2_pb_w, uint8_t log2_pb_h,
                            uint8_t cu_skip_flag);
 
     int (*residual_coding_isp_h)(struct OVCTUDec *const lc_ctx, uint16_t *const dst,

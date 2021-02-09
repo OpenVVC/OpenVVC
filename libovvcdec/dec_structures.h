@@ -160,8 +160,8 @@ struct SHInfo
       } offset_list[3];
     } pic_qp_info;
 
-    /* Offset to entries from RBSP start */
-    uint32_t entries_offsets[256];
+    /* Entries points in  RBSP */
+    const uint8_t *rbsp_entry[256];
     uint16_t nb_entries;
 };
 

@@ -7,7 +7,8 @@
 #include "ctudec.h"
 #include "nvcl_structures.h"
 #include "dec_structures.h"
-#include "vcl_residual_coding.h"
+#include "vcl_cabac.h"
+#include "vcl.h"
 
 /* TODO define in a header */
 enum SliceType {
@@ -16,40 +17,63 @@ enum SliceType {
      SLICE_I = 2
 };
 
+enum CTUNGHFlags
+{
+     CTU_UP_FLG    = 1 << 0,
+     CTU_LFT_FLG   = 1 << 1,
+     CTU_UPLFT_FLG = 1 << 2,
+     CTU_UPRGT_FLG = 1 << 3,
+};
+
+struct RectEntryInfo {
+    int nb_ctu_w;
+    int nb_ctu_h;
+    int nb_ctu_rect;
+    const uint8_t *entry_start;
+    const uint8_t *entry_end;
+};
+
+static int
+slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
+                           const struct RectEntryInfo *const einfo);
+
 static void derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
                                int cu_qp_delta);
-#if 0
-static int
-init_slice_tree_ctx()
+
+static void derive_ctu_neighborhood(const OVSliceDec *const sldec,
+                                    OVCTUDec *const ctudec,
+                                    int ctb_address, int nb_ctu_w, int nb_ctu_h);
+static void
+init_slice_tree_ctx(OVCTUDec *const ctudec, const struct OVPS *prms)
 {
     /* TODO use a specific structure for handling trees */
-    if (sh->slice_type == VVC_SLICE_I) {
-        ctudec->part_ctx        = &ovdec->intra_part_ctx;
-        ctudec->part_ctx_chroma = &ovdec->intra_part_ctx_chroma;
-        ctudec->active_part_map = &ctudec->part_map;
-        if (sps->qtbtt_dual_tree_intra_flag) {
+    const struct SPSInfo *sps_info = &prms->sps_info;
+    const OVSPS *sps = prms->sps;
+    const OVSH *sh = prms->sh;
+    
+    if (sh->sh_slice_type == SLICE_I) {
+        if (sps->sps_qtbtt_dual_tree_intra_flag) {
             ctudec->coding_tree          = &dual_tree;
             ctudec->coding_tree_implicit = &dual_tree_implicit;
         } else {
-            ctudec->coding_tree          = &coding_quadtree;
-            ctudec->coding_tree_implicit = &coding_quadtree_implicit;
-            ctudec->coding_unit          = &coding_unit_intra_st;
-            ctudec->transform_unit       = &transform_unit_st;
+            ctudec->coding_tree          = coding_quadtree;
+            ctudec->coding_tree_implicit = coding_quadtree_implicit;
+            ctudec->coding_unit          = coding_unit_intra_st;
+            ctudec->transform_unit       = transform_unit_st;
         }
     } else {
-        ctudec->coding_tree          = &coding_quadtree;
-        ctudec->coding_tree_implicit = &coding_quadtree_implicit;
-        ctudec->coding_unit          = &coding_unit_inter_st;
-        ctudec->prediction_unit      = sh->slice_type == VVC_SLICE_B ? &prediction_unit_inter_b : &prediction_unit_inter_p;
-        ctudec->transform_unit = &transform_unit_st;
-        ctudec->part_ctx        = &ovdec->inter_part_ctx;
-        /* FIXME */
-        ctudec->part_ctx_chroma = &ovdec->intra_part_ctx_chroma;
-        ctudec->active_part_map = &ctudec->part_map;
+        ctudec->coding_tree          = coding_quadtree;
+        ctudec->coding_tree_implicit = coding_quadtree_implicit;
+        ctudec->coding_unit          = coding_unit_inter_st;
+        ctudec->prediction_unit      = sh->sh_slice_type == SLICE_B ? prediction_unit_inter_b : &prediction_unit_inter_p;
+        ctudec->transform_unit = transform_unit_st;
     }
+    /* FIXME  move default active part map selection to somewhere else*/
+    ctudec->active_part_map = &ctudec->part_map;
 }
 
 
+#if 0
 static int
 init_filter_info()
 {
@@ -364,14 +388,295 @@ reset_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
      #endif
 
      memset(lns->qt_depth_map_x,  0,  sizeof(*lns->qt_depth_map_x)  * nb_pb_pic_w);
-     memset(lns->log2_cu_w_map_x, 0,  sizeof(*lns->log2_cu_w_map_x) * nb_pb_pic_w);
-     memset(lns->cu_mode_x,       0,  sizeof(*lns->cu_mode_x)       * nb_pb_pic_w);
+     memset(lns->log2_cu_w_map_x, 0xFF,  sizeof(*lns->log2_cu_w_map_x) * nb_pb_pic_w);
+     memset(lns->cu_mode_x,       0xFF,  sizeof(*lns->cu_mode_x)       * nb_pb_pic_w);
 
      memset(lns_c->qt_depth_map_x,  0,  sizeof(*lns_c->qt_depth_map_x)  * nb_pb_pic_w);
-     memset(lns_c->log2_cu_w_map_x, 0,  sizeof(*lns_c->log2_cu_w_map_x) * nb_pb_pic_w);
-     memset(lns_c->cu_mode_x,       0,  sizeof(*lns_c->cu_mode_x)       * nb_pb_pic_w);
+     memset(lns_c->log2_cu_w_map_x, 0xFF,  sizeof(*lns_c->log2_cu_w_map_x) * nb_pb_pic_w);
+     memset(lns_c->cu_mode_x,       0xFF,  sizeof(*lns_c->cu_mode_x)       * nb_pb_pic_w);
 }
 
+int
+slicedec_init_rect_entry(struct RectEntryInfo *entry, const OVPS *const prms, int entry_idx)
+{
+    
+    /* FIXME retrieve values from parameter sets */
+    const struct SHInfo *const sh_info= &prms->sh_info;
+    entry->nb_ctu_w = 30;
+    entry->nb_ctu_h = 17;
+    entry->nb_ctu_rect = entry->nb_ctu_w * entry->nb_ctu_h;
+    entry->entry_start = sh_info->rbsp_entry[entry_idx];
+    entry->entry_end   = sh_info->rbsp_entry[entry_idx + 1];
+    /* FIXME better way for last entry */
+
+    #if 0
+    struct LineCtxs line_ctx = sldec->line_ctx;
+    #endif
+
+    #if 0
+    int i = 1;
+    int tile_offset = 0;
+    while (i <= tile_idx) {
+        tile_offset += tile_ctx->nb_ctu_w[(i - 1) % num_tiles_cols] + 1;
+        i++;
+    }
+
+    offset_line_map(&line_map, &line_ctx, tile_offset, log2_ctb_s);
+    #endif
+
+#if 0
+    ctudec->last_ctb_alf_flag = 0;
+
+    /*FIXME find a better way to handle tmvp reset */
+    if (vvc_ctx->ps.sps_data->sps_temporal_mvp_enabled_flag) {
+        ctudec->inter_ctx.tmvp_ctx.data_cur = vvc_ctx->active_pic->pic_mv_info->data;
+        if (vvc_ctx->active_pic->collocated_ref)
+            ctudec->inter_ctx.tmvp_ctx.data_ref = vvc_ctx->active_pic->collocated_ref->pic_mv_info->data;
+
+        memset(&ctudec->inter_ctx.tmvp_ctx.tmvp_mv.mv_ctx0.map, 0, sizeof(ctudec->inter_ctx.tmvp_ctx.tmvp_mv.mv_ctx0.map));
+        memset(&ctudec->inter_ctx.tmvp_ctx.tmvp_mv.mv_ctx1.map, 0, sizeof(ctudec->inter_ctx.tmvp_ctx.tmvp_mv.mv_ctx1.map));
+    }
+    memset(&ctudec->inter_ctx.mv_ctx0.map, 0, sizeof(ctudec->inter_ctx.mv_ctx0.map));
+    memset(&ctudec->inter_ctx.mv_ctx1.map, 0, sizeof(ctudec->inter_ctx.mv_ctx1.map));
+
+    memset(line_map.dbf_edge_ver, 0, sizeof(*line_map.dbf_edge_ver) * nb_ctu_w);
+    memset(line_map.dbf_edge_hor, 0, sizeof(*line_map.dbf_edge_hor) * nb_ctu_w);
+
+    init_frame_data(vvc_ctx->active_pic->frame, &ctudec->frame_data,
+                    tile_ctx->ctu_x[tile_x], tile_ctx->ctu_y[tile_y], log2_ctb_s);
+#endif
+}
+
+int
+slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
+{
+    int nb_entries = 16;
+    int i;
+    for (i = 0; i < nb_entries; ++i) {
+        struct RectEntryInfo entry;
+        slicedec_init_rect_entry(&entry, prms, i);
+        slicedec_decode_rect_entry(sldec, prms, &entry);
+    }
+}
+
+static void
+attach_cabac_lines(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
+{
+    struct PartMap *const pmap_l = &ctudec->part_map;
+    struct PartMap *const pmap_c = &ctudec->part_map_c;
+    const struct CCLines *const lns_l = &sldec->cabac_lines[0];
+    const struct CCLines *const lns_c = &sldec->cabac_lines[1];
+    
+    pmap_l->log2_cu_w_map_x = lns_l->log2_cu_w_map_x;
+    pmap_l->qt_depth_map_x  = lns_l->qt_depth_map_x;
+    pmap_l->cu_mode_x       = lns_l->cu_mode_x;
+
+    pmap_c->log2_cu_w_map_x = lns_c->log2_cu_w_map_x;
+    pmap_c->qt_depth_map_x  = lns_c->qt_depth_map_x;
+    pmap_c->cu_mode_x       = lns_c->cu_mode_x;
+}
+
+static int
+update_cabac_lines(OVCTUDec *const ctudec, const OVPS *const prms)
+{
+    const OVPartInfo *const pinfo = ctudec->part_ctx;
+
+    uint8_t log2_ctb_s    = pinfo->log2_ctu_s;
+    uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
+
+    uint16_t nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
+
+    struct PartMap *const pmap_l = &ctudec->part_map;
+    struct PartMap *const pmap_c = &ctudec->part_map_c;
+
+    pmap_l->log2_cu_w_map_x += nb_pb_ctb_w;
+    pmap_l->qt_depth_map_x  += nb_pb_ctb_w;
+    pmap_l->cu_mode_x       += nb_pb_ctb_w;
+
+    /*FIXME no diff between chroma / luma nb_pb */
+    pmap_c->log2_cu_w_map_x += nb_pb_ctb_w;
+    pmap_c->qt_depth_map_x  += nb_pb_ctb_w;
+    pmap_c->cu_mode_x       += nb_pb_ctb_w;
+}
+
+
+static int
+slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
+                           const struct RectEntryInfo *const einfo)
+{
+    const struct SHInfo *const sh_info = &prms->sh_info;
+    int ctb_addr_rs = 0;
+    int ctb_y = 0;
+    int ret;
+
+    #if 0
+    const struct VVCTileCTx *const tile_ctx = &vvc_ctx->tile_ctx;
+    int num_tiles_cols = tile_ctx->nb_tile_cols;
+    const int tile_x = tile_idx % num_tiles_cols;
+    const int tile_y = tile_idx / num_tiles_cols;
+    const int nb_ctu_w = tile_ctx->nb_ctu_w[tile_x];
+    const int nb_ctu_h = tile_ctx->nb_ctu_h[tile_y];
+    #endif
+
+    /* FIXME handle more than one ctu dec */
+    OVCTUDec *const ctudec = sldec->ctudec_list;
+    /*FIXME handle cabac alloc or keep it on the stack ? */
+    OVCABACCtx cabac_ctx;
+    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+
+    const int nb_ctu_w = einfo->nb_ctu_w;
+    const int nb_ctu_h = einfo->nb_ctu_h;
+    const int nb_ctu_rect = einfo->nb_ctu_rect;
+
+    struct CCLines *line_map = sldec->cabac_lines;
+    ctudec->cabac_ctx = &cabac_ctx;
+
+    ctudec->qp_ctx.current_qp = ctudec->slice_qp;
+
+    ret = ovcabac_attach_entry(ctudec->cabac_ctx, einfo->entry_start, einfo->entry_end);
+    if (ret < 0) {
+        return OVVC_EINDATA;
+    }
+
+    ovcabac_init_slice_context_table(cabac_ctx.ctx_table, prms->sh->sh_slice_type, ctudec->slice_qp);
+    reset_cabac_lines(sldec, prms);
+    #if 0
+    attach_cabac_lines(ctudec, sldec);
+    #if 1
+    memset(ctudec->part_map.log2_cu_h_map_y, 0xFF, sizeof(ctudec->part_map.log2_cu_h_map_y));
+    memset(ctudec->part_map_c.log2_cu_h_map_y, 0xFF, sizeof(ctudec->part_map_c.log2_cu_h_map_y));
+    #endif
+    #endif
+
+    /* FIXME add a check for cabac end ?*/
+    #if 0
+    while (ctb_addr_rs < nb_ctu_rect) {
+        #if 0
+        int ctb_x = ctb_addr_rs % nb_ctu_w;
+        int ctb_y = ctb_addr_rs / nb_ctu_w;
+        #endif
+
+        #if 0
+        ctudec->ctb_x = tile_ctx->ctu_x[tile_x] + ctb_x;
+        ctudec->ctb_y = tile_ctx->ctu_y[tile_y] + ctb_y;
+        #endif
+
+#if 0
+        if (!ctb_x && ctb_y)
+            ctudec->qp_ctx.current_qp = line_ctx.qp_x_map[0];
+#endif
+
+        /* FIXME pic border detection in neighbour flags ?*/
+        derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w, nb_ctu_h);
+
+        #if 0
+        load_ctu_ctx(ctudec, &line_map, &line_ctx, ctb_x, sldec->sh.slice_type);
+        #endif
+
+        if (1) {
+            /*FIXME call ctudec */
+            ret = ctudec->coding_tree(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s, 0);
+        } else {
+            #if 0
+            ret = ctudec->coding_tree_implicit(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s,
+                                               0, remaining_w, remaining_h);
+                                               #endif
+        }
+
+
+#if 0
+        if (!ctudec->dbf_disable)
+            apply_dbf_ctu(ctudec, ctb_x, ctb_y, nb_ctu_w, nb_ctu_h);
+#endif
+
+        #if 0
+        store_ctu_ctx(ctudec, &line_map, &line_ctx, ctb_x, sldec->sh.slice_type);
+        #endif
+
+        #if 0
+        if (sldec->ps.sps_data->sps_temporal_mvp_enabled_flag) {
+            store_tmvp(sldec, ctudec, &ctudec->inter_ctx.tmvp_ctx);
+        }
+        #endif
+
+        ctb_addr_rs++;
+
+        /*
+        update_fd(&ctudec->frame_data, log2_ctb_s);
+        if (!(ctb_addr_rs % nb_ctu_w)) {
+            if (tile_y == num_tiles_cols - 1)
+                if (vvc_ctx->threads_type & FF_THREAD_FRAME) {
+                    ff_thread_report_progress(&vvc_ctx->active_pic->tf, ctb_y, 0);
+                }
+            update_fd_line(&ctudec->frame_data, nb_ctu_w, log2_ctb_s);
+        }
+        */
+    }
+    ret = ovcabac_end_of_slice(ctudec->cabac_ctx);
+    #endif
+
+    while (ctb_y < nb_ctu_h) {
+        /* Start entry line */
+        int ctb_x = 0;
+        attach_cabac_lines(ctudec, sldec);
+        #if 0
+        reset_cabac_lines(sldec, prms);
+        #endif
+#if 1
+        memset(ctudec->part_map.log2_cu_h_map_y, 0xFF, sizeof(ctudec->part_map.log2_cu_h_map_y));
+        memset(ctudec->part_map_c.log2_cu_h_map_y, 0xFF, sizeof(ctudec->part_map_c.log2_cu_h_map_y));
+#endif
+        while (ctb_x < nb_ctu_w) {
+
+
+#if 0
+            if (!ctb_x && ctb_y)
+                ctudec->qp_ctx.current_qp = line_ctx.qp_x_map[0];
+#endif
+
+            /* FIXME pic border detection in neighbour flags ?*/
+            derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w, nb_ctu_h);
+
+#if 0
+            load_ctu_ctx(ctudec, &line_map, &line_ctx, ctb_x, sldec->sh.slice_type);
+#endif
+
+            if (1) {
+                /*FIXME call ctudec */
+                ret = ctudec->coding_tree(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s, 0);
+            } else {
+#if 0
+                ret = ctudec->coding_tree_implicit(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s,
+                                                   0, remaining_w, remaining_h);
+#endif
+            }
+
+
+#if 0
+            if (!ctudec->dbf_disable)
+                apply_dbf_ctu(ctudec, ctb_x, ctb_y, nb_ctu_w, nb_ctu_h);
+#endif
+
+#if 0
+            store_ctu_ctx(ctudec, &line_map, &line_ctx, ctb_x, sldec->sh.slice_type);
+#endif
+
+#if 0
+            if (sldec->ps.sps_data->sps_temporal_mvp_enabled_flag) {
+                store_tmvp(sldec, ctudec, &ctudec->inter_ctx.tmvp_ctx);
+            }
+#endif
+
+            ctb_addr_rs++;
+            ctb_x++;
+            update_cabac_lines(ctudec, prms);
+        }
+    }
+    ctb_y++;
+
+    /*FIXME decide return value */
+    return ctb_addr_rs;
+}
 
 int
 slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
@@ -414,6 +719,8 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
     init_coding_coeff_coding_ctx(ctudec, prms);
 
     init_part_info(ctudec, prms);
+
+    init_slice_tree_ctx(ctudec, prms);
 
     /* Note it is important here that part info has already been set before calling
      * this function since it will be used to set line sizes*/
@@ -510,9 +817,10 @@ init_slice_decoder(OVVCDec *const vvcdec, const OVNVCLCtx *const nvcl_ctx,
 
     return 0;
 }
+#endif
 
 static void
-derive_ctu_neighborhood(const VVCContext *const vvc_ctx,
+derive_ctu_neighborhood(const OVSliceDec *const sldec,
                        OVCTUDec *const ctudec,
                        int ctb_address, int nb_ctu_w, int nb_ctu_h)
 {
@@ -524,21 +832,22 @@ derive_ctu_neighborhood(const VVCContext *const vvc_ctx,
 
     /* FIXME clean */
     if (!is_left_border) {
-        flags |= VVC_CTU_LEFT_FLAG;
+        ctb_flags |= CTU_LFT_FLG;
     }
     if (!is_up_border) {
-        flags |= VVC_CTU_UP_FLAG;
+        ctb_flags |= CTU_UP_FLG;
     }
     if (!is_left_border && !is_up_border) {
-        flags |= VVC_CTU_UPLEFT_FLAG;
+        ctb_flags |= CTU_UPLFT_FLG;
     }
     if (!is_up_border && is_right_border) {
-        flags |= VVC_CTU_UPRIGHT_FLAG;
+        ctb_flags |= CTU_UPRGT_FLG;
     }
 
-    ctudec->ctu_neighbour_flags = flags;
+    ctudec->ctu_ngh_flags = ctb_flags;
 }
 
+#if 0
 static int
 ovdec_decode_slice()
 {
@@ -672,28 +981,34 @@ update_fd(struct VVCFrameData *const fd, int log2_ctb_s)
     fd->data_cb += 1 << log2_ctb_s;
     fd->data_cr += 1 << log2_ctb_s;
 }
+#endif
 
+#if 0
 static void
 load_ctu_ctx(OVCTUDec *const ctudec,
              struct LineMaps *const line_map,
              struct LineCtxs *const line_ctx,
              int ctb_x, int slice_type)
 {
-    if (slice_type != VVC_SLICE_I) {
+    if (slice_type != SLICE_I) {
        /* specific Inter slice updates */
     }
 
-    if (slice_type == VVC_SLICE_B) {
+    if (slice_type == SLICE_B) {
        /* specific B slice updates */
     }
 
-    if (slice_type != VVC_SLICE_I) {
+    if (slice_type != SLICE_I) {
+        #if 0
         load_inter_ngh_ctx(ctudec, line_ctx, ctb_x);
+        #endif
     }
 
     load_depth_maps(line_ctx, ctudec, ctb_x);
 
+    #if 0
     load_intra_ngh_ctx(ctudec, line_ctx, ctb_x);
+    #endif
 }
 
 static void

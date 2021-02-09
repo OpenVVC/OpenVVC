@@ -122,20 +122,21 @@ fill_cache32(OVNVCLReader *rdr)
     rdr->nb_cached_bits += 32;
 }
 
-static inline int
-nvclctx_num_bits_read(const OVNVCLReader *rdr)
-{
-    return (rdr->nb_bytes_read << 3) - rdr->nb_cached_bits;
-}
-
+#if 0
 static inline int
 nvclctx_num_bits_left(OVNVCLReader *rdr)
 {
     int nb_bits_read = (rdr->nb_bytes_read << 3) - rdr->nb_cached_bits;
     return rdr->size_in_bits - nb_bits_read;
 }
+#endif
+
+
+/* FIXME inline ?*/
+uint32_t nvcl_num_bytes_read(const OVNVCLReader *const rdr);
 
 /* WARNING does not support n > 64 */
+
 static inline void
 skip_bits(OVNVCLReader *rdr, int n)
 {

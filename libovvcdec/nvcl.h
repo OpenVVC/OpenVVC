@@ -34,6 +34,12 @@ struct OVNVCLReader
 int nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
                      int bit_size);
 
+static inline int
+nvclctx_num_bits_read(const OVNVCLReader *rdr)
+{
+    return (rdr->nb_bytes_read << 3) - rdr->nb_cached_bits;
+}
+
 void nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx);
 
 

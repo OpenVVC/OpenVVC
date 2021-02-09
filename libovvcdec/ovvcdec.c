@@ -91,11 +91,14 @@ select_subdec(const OVVCDec *const dec)
 }
 
 static int
-init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
+init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
+                 const OVNALUnit *const nalu, const OVNVCLReader *const rdr)
 {
     
     int ret;
     OVSliceDec *sldec;
+
+    int nb_sh_bytes = nvcl_num_bytes_read(rdr);
 
     ret = decinit_update_params(dec, nvcl_ctx);
     if (ret < 0) {
@@ -117,6 +120,9 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
     sldec = select_subdec(dec); 
 
     ret = slicedec_init_slice_tools(sldec, &dec->active_params);
+    /* TODO on failure */
+
+    ret = decinit_set_entry_points(&dec->active_params, nalu, nb_sh_bytes);
 
     #if 0
     ret = decinti_update_subdec();
@@ -164,21 +170,18 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
         if (ret < 0) {
             return ret;
         } else {
-            #if 0
             int nb_sh_bytes = ret;
-            #endif
 
-           ret = init_vcl_decoder(vvcdec, nvcl_ctx);
-           if (ret < 0) {
-               goto fail;
-           }
+            ret = init_vcl_decoder(vvcdec, nvcl_ctx, nalu, &rdr);
+            if (ret < 0) {
+                goto fail;
+            }
 
-           #if 0
-           ret = vcl_dec_decode_slice(vvcdec);
-           #endif
+            /* FIXME handle non rect entries later */
+            ret = slicedec_decode_rect_entries(vvcdec->subdec_list, &vvcdec->active_params);
 
 
-        /* TODO start VCL decoder */
+            /* TODO start VCL decoder */
         }
 
         break;

@@ -109,8 +109,7 @@ struct OVCABACCtx{
 
 
 int ovcabac_attach_entry(OVCABACCtx *const cabac_ctx, const uint8_t *const entry_point,
-                     int buf_size);
-
+                         const uint8_t *const entry_end);
 
 void ovcabac_init_slice_context_table(uint64_t ctx_table[], uint8_t slice_type, 
                                       int slice_qp);

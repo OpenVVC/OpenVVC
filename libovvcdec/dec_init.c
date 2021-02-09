@@ -6,6 +6,7 @@
 #include "stddef.h"
 #include "libovvcutils/ovvcutils.h"
 #include "libovvcutils/ovvcerror.h"
+#include "libovvcdmx/ovunits.h"
 
 #include "decinit.h"
 #include "nvcl_structures.h"
@@ -221,6 +222,52 @@ update_sps_info(struct SPSInfo *const sps_info, const OVSPS *const sps)
 
     sps_init_chroma_qp_tables(sps_info, sps);
 
+    return 0;
+}
+
+int
+decinit_set_entry_points(OVPS *const prms, const OVNALUnit *nal, uint32_t nb_sh_bytes)
+{
+    int i, j;
+    struct SHInfo *const sh_info = &prms->sh_info;
+    const OVSH *const sh = prms->sh;
+    /* FIXME we consider nb_entries is nb_tiles */
+    /* TODO compute and keep track of nb_tiles from pps */
+    int nb_entries = 16;
+    uint32_t rbsp_offset[256];
+    const int nb_rbsp_epb = nal->nb_epb;
+    const uint32_t *rbsp_epb_pos = nal->epb_pos;
+    int nb_sh_epb = 0;
+
+    rbsp_offset[0] = 0;
+
+    for (j = 0; j < nb_rbsp_epb; ++j) {
+        nb_sh_epb += rbsp_epb_pos[j] <= nb_sh_bytes;
+    }
+
+    for (i = 0; i < nb_entries; ++i) {
+        uint32_t entry_offset = sh->sh_entry_point_offset_minus1[i] + 1;
+        rbsp_offset[i + 1] = rbsp_offset[i] + entry_offset;
+    }
+
+    for (i = 0; i < nb_entries; ++i) {
+        for (j = nb_sh_epb; j < nb_rbsp_epb; ++j) {
+            uint32_t entry_offset = rbsp_offset[i + 1];
+            entry_offset -= (entry_offset > (rbsp_epb_pos[j] - nb_sh_bytes));
+            rbsp_offset[i + 1] = entry_offset;
+        }
+    }
+
+    /* FIXME avoid using an offset tab and compute directly on entries */
+    sh_info->rbsp_entry[0] = nal->rbsp_data + nb_sh_bytes;
+    for (i = 1; i < nb_entries; ++i) {
+        sh_info->rbsp_entry[i] = sh_info->rbsp_entry[i - 1] + rbsp_offset[i]; 
+    }
+
+    /* Note this is so we can retrieve entry end by using rbsp_entry [i + 1] */
+    sh_info->rbsp_entry[i] = nal->rbsp_data + nal->rbsp_size;
+
+    /*FIXME check entries do not exceed rpbs size */
     return 0;
 }
 

@@ -14,7 +14,7 @@
 #include "data_scan_lut.h"
 #include "cabac_internal.h"
 #include "ctudec.h"
-#include "vcl_residual_coding.h"
+#include "vcl.h"
 
 #define IQUANT_SHIFT 6
 #define ADJ_QUANT_SHIFT 7
@@ -2964,8 +2964,7 @@ residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, uint16_t *const dst,
         num_cg--;
 
         for(;num_cg > 0; --num_cg){
-            sig_sb_flg = ovcabac_read_ae_significant_cg_flag(cabac_ctx, ctx_table,
-                                                           sig_sb_flg);
+            sig_sb_flg = ovcabac_read_ae_significant_cg_flag(cabac_ctx, sig_sb_flg);
             if(sig_sb_flg){
 
                 memset(cg_coeffs, 0, sizeof(int16_t) * 16);
@@ -3164,8 +3163,7 @@ residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, uint16_t *const dst,
         num_cg--;
 
         for( ;num_cg > 0; --num_cg){
-            sig_sb_flg = ovcabac_read_ae_significant_cg_flag(cabac_ctx, ctx_table,
-                                                        sig_sb_flg);
+            sig_sb_flg = ovcabac_read_ae_significant_cg_flag(cabac_ctx, sig_sb_flg);
             if(sig_sb_flg){
                 sb_pos    =  num_cg << 4;
                 cg_offset = (num_cg << 3) * VVC_TR_CTX_STRIDE ;
@@ -3390,7 +3388,7 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, uint16_t *const dst,
         uint8_t sig_sb_blw = (((sig_sb_map >> ((y_cg + 1) << 3)) & 0xFF) >> x_cg) & 0x1;
         uint8_t sig_sb_rgt = (((sig_sb_map >> ( y_cg      << 3)) & 0xFF) >> (x_cg + 1)) & 0x1;
 
-        sig_sb_flg = ovcabac_read_ae_significant_cg_flag(cabac_ctx, ctx_table, !!(sig_sb_rgt | sig_sb_blw));
+        sig_sb_flg = ovcabac_read_ae_significant_cg_flag(cabac_ctx, !!(sig_sb_rgt | sig_sb_blw));
 
         if(sig_sb_flg){
 
@@ -3567,7 +3565,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, uint16_t *const dst,
             uint8_t sig_sb_blw = (((sig_sb_map >> ((y_cg + 1) << 3)) & 0xFF) >> x_cg) & 0x1;
             uint8_t sig_sb_rgt = (((sig_sb_map >> ( y_cg      << 3)) & 0xFF) >> (x_cg + 1)) & 0x1;
 
-            uint8_t sig_sb_flg = ovcabac_read_ae_significant_cg_flag_chroma(cabac_ctx, ctx_table, !!(sig_sb_rgt | sig_sb_blw));
+            uint8_t sig_sb_flg = ovcabac_read_ae_significant_cg_flag_chroma(cabac_ctx, !!(sig_sb_rgt | sig_sb_blw));
 
             if(sig_sb_flg){
 
@@ -3663,7 +3661,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, uint16_t *const dst,
 
         for(;num_cg > 0; --num_cg){
 
-            sig_sb_flg = ovcabac_read_ae_significant_cg_flag_chroma(cabac_ctx, ctx_table, sig_sb_flg);
+            sig_sb_flg = ovcabac_read_ae_significant_cg_flag_chroma(cabac_ctx, sig_sb_flg);
 
             if(sig_sb_flg){
 
@@ -3752,8 +3750,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, uint16_t *const dst,
 
         for( ;num_cg > 0; --num_cg){
 
-            sig_sb_flg = ovcabac_read_ae_significant_cg_flag_chroma(cabac_ctx, ctx_table,
-                                                               sig_sb_flg);
+            sig_sb_flg = ovcabac_read_ae_significant_cg_flag_chroma(cabac_ctx, sig_sb_flg);
 
             if(sig_sb_flg){
                 sb_pos    = (num_cg << 4);
@@ -3897,7 +3894,7 @@ residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, uint16_t *const dst,
         num_cg--;
 
         for(;num_cg > 0; --num_cg){
-            sig_sb_flg = ovcabac_read_ae_significant_cg_flag(cabac_ctx, ctx_table, sig_sb_flg);
+            sig_sb_flg = ovcabac_read_ae_significant_cg_flag(cabac_ctx, sig_sb_flg);
             if(sig_sb_flg){
 
                 memset(cg_coeffs, 0, sizeof(int16_t) * 16);
@@ -4094,7 +4091,7 @@ residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, uint16_t *const dst,
         num_cg--;
 
         for( ;num_cg > 0; --num_cg){
-            sig_sb_flg = ovcabac_read_ae_significant_cg_flag(cabac_ctx, ctx_table, sig_sb_flg);
+            sig_sb_flg = ovcabac_read_ae_significant_cg_flag(cabac_ctx, sig_sb_flg);
             if(sig_sb_flg){
                 sb_pos    =  num_cg << 4;
                 cg_offset = (num_cg << 3) * VVC_TR_CTX_STRIDE ;
@@ -4449,7 +4446,7 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, uint16_t *const dst,
         uint8_t sig_sb_blw = !!(((sig_sb_map >> ((y_cg + 1) << 3)) & 0xFF) & (1 << x_cg));
         uint8_t sig_sb_rgt = !!(((sig_sb_map >> ( y_cg      << 3)) & 0xFF) & (1 << (x_cg + 1)));
 
-        sig_sb_flg = ovcabac_read_ae_significant_cg_flag(cabac_ctx, ctx_table, (sig_sb_rgt | sig_sb_blw));
+        sig_sb_flg = ovcabac_read_ae_significant_cg_flag(cabac_ctx, (sig_sb_rgt | sig_sb_blw));
 
         if(sig_sb_flg){
 
@@ -4628,7 +4625,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, uint16_t *const dst,
             uint8_t sig_sb_blw = !!(((sig_sb_map >> ((y_cg + 1) << 3)) & 0xFF) & (1 << x_cg));
             uint8_t sig_sb_rgt = !!(((sig_sb_map >> ( y_cg      << 3)) & 0xFF) & (1 << (x_cg + 1)));
 
-            uint8_t sig_sb_flg = ovcabac_read_ae_significant_cg_flag_chroma(cabac_ctx, ctx_table, !!(sig_sb_rgt | sig_sb_blw));
+            uint8_t sig_sb_flg = ovcabac_read_ae_significant_cg_flag_chroma(cabac_ctx, !!(sig_sb_rgt | sig_sb_blw));
 
             if(sig_sb_flg){
 
@@ -4724,7 +4721,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, uint16_t *const dst,
 
         for(;num_cg > 0; --num_cg){
 
-            sig_sb_flg = ovcabac_read_ae_significant_cg_flag_chroma(cabac_ctx, ctx_table, sig_sb_flg);
+            sig_sb_flg = ovcabac_read_ae_significant_cg_flag_chroma(cabac_ctx, sig_sb_flg);
 
             if(sig_sb_flg){
 
@@ -4813,8 +4810,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, uint16_t *const dst,
 
         for( ;num_cg > 0; --num_cg){
 
-            sig_sb_flg = ovcabac_read_ae_significant_cg_flag_chroma(cabac_ctx, ctx_table,
-                                                               sig_sb_flg);
+            sig_sb_flg = ovcabac_read_ae_significant_cg_flag_chroma(cabac_ctx, sig_sb_flg);
 
             if(sig_sb_flg){
                 sb_pos    = (num_cg << 4);

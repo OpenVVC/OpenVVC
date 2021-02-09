@@ -1,7 +1,15 @@
 #include "libovvcutils/ovvcutils.h"
 #include "cabac_internal.h"
 #include "vcl.h"
+#include "dec_structures.h"
 #include "ctudec.h"
+
+static uint8_t
+ovcabac_read_ae_root_cbf(OVCABACCtx *const cabac_ctx)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[QT_ROOT_CBF_CTX_OFFSET]);
+}
 
 uint8_t
 ovcabac_read_ae_tu_cbf_luma_isp(OVCABACCtx *const cabac_ctx,
@@ -653,7 +661,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
                 uint8_t transform_skip_flag = ovcabac_read_ae_transform_skip_flag_c(cabac_ctx);
             }
 
-            #if 0
+            #if 1
             ctu_dec->dequant_chroma = &ctu_dec->dequant_cb;
             #endif
 
@@ -677,7 +685,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
                 uint8_t transform_skip_flag = ovcabac_read_ae_transform_skip_flag_c(cabac_ctx);
             }
 
-            #if 0
+            #if 1
             ctu_dec->dequant_chroma = &ctu_dec->dequant_cr;
             #endif
 
@@ -769,7 +777,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
         /* FIXME this is hackish joint cb cr involves a different delta qp from
           previous ones */
 
-        #if 0
+        #if 1
         if (cbf_mask == 3) {
             ctu_dec->dequant_chroma = &ctu_dec->dequant_joint_cb_cr;
         } else if (cbf_mask == 1) {
@@ -906,4 +914,54 @@ transform_unit_c(OVCTUDec *const ctu_dec,
     }
 
     return 0;
+}
+
+int
+transform_unit_wrap(OVCTUDec *const ctu_dec,
+                    const OVPartInfo *const part_ctx,
+                    uint8_t x0, uint8_t y0,
+                    uint8_t log2_cb_w, uint8_t log2_cb_h,
+                    VVCCU cu)
+{
+    if (cu.cu_flags & flg_pred_mode_flag) {
+        /* INTRA */
+        if (!(cu.cu_flags & flg_isp_flag)) {
+            /*FIXME check if part_ctx mandatory for transform_tree */
+            transform_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
+                           part_ctx->log2_max_tb_s, 0, cu.cu_flags);
+        } else {
+            uint8_t isp_mode = cu.cu_opaque;
+            uint8_t intra_mode = cu.cu_mode_idx;
+            if (isp_mode) {
+                /* Disable CCLM in 64x64 ISP CU*/
+                ctu_dec->tmp_disable_cclm = log2_cb_h == log2_cb_w && log2_cb_h == 6;
+
+                if (isp_mode == 2) {
+                    uint8_t cbf_flags;
+
+                    cbf_flags = isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode);
+
+                    //return cu;
+
+                } else if (isp_mode == 1) {
+                    uint8_t cbf_flags;
+
+                    cbf_flags = isp_subtree_h(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode);
+
+                    ////return cu;
+                }
+            }
+        }
+    } else {
+        /* INTER (should probably be default in a swicth*/
+        /*FIXME move root_cbf_read into transform_tree */
+        OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+        uint8_t merge_flag   = !!(cu.cu_flags & flg_merge_flag);
+        uint8_t rqt_root_cbf = merge_flag || ovcabac_read_ae_root_cbf(cabac_ctx);
+
+        if (rqt_root_cbf) {
+            transform_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
+                           part_ctx->log2_max_tb_s, 1, cu.cu_flags);
+        }
+    }
 }

@@ -904,10 +904,10 @@ const uint8_t range_lps_lut[512] =
 
 int
 ovcabac_attach_entry(OVCABACCtx *const cabac_ctx, const uint8_t *const entry_point,
-                     int buf_size)
+                     const uint8_t *const entry_end)
 {
     cabac_ctx->bytestream_start = cabac_ctx->bytestream = entry_point;
-    cabac_ctx->bytestream_end   = entry_point + buf_size;
+    cabac_ctx->bytestream_end   = entry_end;
 
     cabac_ctx->low_b  =  (int)cabac_ctx->bytestream[0] << 18;
     cabac_ctx->low_b +=  (int)cabac_ctx->bytestream[1] << 10;
