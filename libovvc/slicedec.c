@@ -509,30 +509,22 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     int ctb_y = 0;
     int ret;
 
-    #if 0
-    const struct VVCTileCTx *const tile_ctx = &vvc_ctx->tile_ctx;
-    int num_tiles_cols = tile_ctx->nb_tile_cols;
-    const int tile_x = tile_idx % num_tiles_cols;
-    const int tile_y = tile_idx / num_tiles_cols;
-    const int nb_ctu_w = tile_ctx->nb_ctu_w[tile_x];
-    const int nb_ctu_h = tile_ctx->nb_ctu_h[tile_y];
-    #endif
-
     /* FIXME handle more than one ctu dec */
     OVCTUDec *const ctudec = sldec->ctudec_list;
     /*FIXME handle cabac alloc or keep it on the stack ? */
     OVCABACCtx cabac_ctx;
-    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
 
     const int nb_ctu_w = einfo->nb_ctu_w;
     const int nb_ctu_h = einfo->nb_ctu_h;
-    const int nb_ctu_rect = einfo->nb_ctu_rect;
 
     struct CCLines *line_map = sldec->cabac_lines;
     ctudec->cabac_ctx = &cabac_ctx;
 
     ctudec->qp_ctx.current_qp = ctudec->slice_qp;
 
+    /* FIXME entry might be check before attaching entry to CABAC so there
+     * is no need for this check
+     */
     ret = ovcabac_attach_entry(ctudec->cabac_ctx, einfo->entry_start, einfo->entry_end);
     if (ret < 0) {
         return OVVC_EINDATA;
@@ -540,106 +532,20 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
 
     ovcabac_init_slice_context_table(cabac_ctx.ctx_table, prms->sh->sh_slice_type, ctudec->slice_qp);
     reset_cabac_lines(sldec, prms);
-    #if 0
-    attach_cabac_lines(ctudec, sldec);
-    #if 1
-    memset(ctudec->part_map.log2_cu_h_map_y, 0xFF, sizeof(ctudec->part_map.log2_cu_h_map_y));
-    memset(ctudec->part_map_c.log2_cu_h_map_y, 0xFF, sizeof(ctudec->part_map_c.log2_cu_h_map_y));
-    #endif
-    #endif
 
     /* FIXME add a check for cabac end ?*/
-    #if 0
-    while (ctb_addr_rs < nb_ctu_rect) {
-        #if 0
-        int ctb_x = ctb_addr_rs % nb_ctu_w;
-        int ctb_y = ctb_addr_rs / nb_ctu_w;
-        #endif
 
-        #if 0
-        ctudec->ctb_x = tile_ctx->ctu_x[tile_x] + ctb_x;
-        ctudec->ctb_y = tile_ctx->ctu_y[tile_y] + ctb_y;
-        #endif
-
-#if 0
-        if (!ctb_x && ctb_y)
-            ctudec->qp_ctx.current_qp = line_ctx.qp_x_map[0];
-#endif
-
-        /* FIXME pic border detection in neighbour flags ?*/
-        derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w, nb_ctu_h);
-
-        #if 0
-        load_ctu_ctx(ctudec, &line_map, &line_ctx, ctb_x, sldec->sh.slice_type);
-        #endif
-
-        if (1) {
-            /*FIXME call ctudec */
-            ret = ctudec->coding_tree(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s, 0);
-        } else {
-            #if 0
-            ret = ctudec->coding_tree_implicit(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s,
-                                               0, remaining_w, remaining_h);
-                                               #endif
-        }
-
-
-#if 0
-        if (!ctudec->dbf_disable)
-            apply_dbf_ctu(ctudec, ctb_x, ctb_y, nb_ctu_w, nb_ctu_h);
-#endif
-
-        #if 0
-        store_ctu_ctx(ctudec, &line_map, &line_ctx, ctb_x, sldec->sh.slice_type);
-        #endif
-
-        #if 0
-        if (sldec->ps.sps_data->sps_temporal_mvp_enabled_flag) {
-            store_tmvp(sldec, ctudec, &ctudec->inter_ctx.tmvp_ctx);
-        }
-        #endif
-
-        ctb_addr_rs++;
-
-        /*
-        update_fd(&ctudec->frame_data, log2_ctb_s);
-        if (!(ctb_addr_rs % nb_ctu_w)) {
-            if (tile_y == num_tiles_cols - 1)
-                if (vvc_ctx->threads_type & FF_THREAD_FRAME) {
-                    ff_thread_report_progress(&vvc_ctx->active_pic->tf, ctb_y, 0);
-                }
-            update_fd_line(&ctudec->frame_data, nb_ctu_w, log2_ctb_s);
-        }
-        */
-    }
-    ret = ovcabac_end_of_slice(ctudec->cabac_ctx);
-    #endif
-
-    while (ctb_y < nb_ctu_h) {
-        /* Start entry line */
+    while (ctb_y < nb_ctu_h - 1) {
         int ctb_x = 0;
+        /* New ctu line */
         attach_cabac_lines(ctudec, sldec);
-        #if 0
-        reset_cabac_lines(sldec, prms);
-        #endif
-#if 1
-        memset(ctudec->part_map.log2_cu_h_map_y, 0xFF, sizeof(ctudec->part_map.log2_cu_h_map_y));
+        memset(ctudec->part_map.log2_cu_h_map_y,   0xFF, sizeof(ctudec->part_map.log2_cu_h_map_y));
         memset(ctudec->part_map_c.log2_cu_h_map_y, 0xFF, sizeof(ctudec->part_map_c.log2_cu_h_map_y));
-#endif
         while (ctb_x < nb_ctu_w) {
 
-
-#if 0
-            if (!ctb_x && ctb_y)
-                ctudec->qp_ctx.current_qp = line_ctx.qp_x_map[0];
-#endif
-
+            uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
             /* FIXME pic border detection in neighbour flags ?*/
             derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w, nb_ctu_h);
-
-#if 0
-            load_ctu_ctx(ctudec, &line_map, &line_ctx, ctb_x, sldec->sh.slice_type);
-#endif
 
             if (1) {
                 /*FIXME call ctudec */
@@ -651,28 +557,13 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
 #endif
             }
 
-
-#if 0
-            if (!ctudec->dbf_disable)
-                apply_dbf_ctu(ctudec, ctb_x, ctb_y, nb_ctu_w, nb_ctu_h);
-#endif
-
-#if 0
-            store_ctu_ctx(ctudec, &line_map, &line_ctx, ctb_x, sldec->sh.slice_type);
-#endif
-
-#if 0
-            if (sldec->ps.sps_data->sps_temporal_mvp_enabled_flag) {
-                store_tmvp(sldec, ctudec, &ctudec->inter_ctx.tmvp_ctx);
-            }
-#endif
+            update_cabac_lines(ctudec, prms);
 
             ctb_addr_rs++;
             ctb_x++;
-            update_cabac_lines(ctudec, prms);
         }
+        ctb_y++;
     }
-    ctb_y++;
 
     /*FIXME decide return value */
     return ctb_addr_rs;
