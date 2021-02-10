@@ -261,7 +261,7 @@ decinit_set_entry_points(OVPS *const prms, const OVNALUnit *nal, uint32_t nb_sh_
     /* FIXME avoid using an offset tab and compute directly on entries */
     sh_info->rbsp_entry[0] = nal->rbsp_data + nb_sh_bytes;
     for (i = 1; i < nb_entries; ++i) {
-        sh_info->rbsp_entry[i] = sh_info->rbsp_entry[i - 1] + rbsp_offset[i];
+        sh_info->rbsp_entry[i] = nal->rbsp_data + rbsp_offset[i];
     }
 
     /* Note this is so we can retrieve entry end by using rbsp_entry [i + 1] */
