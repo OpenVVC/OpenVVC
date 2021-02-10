@@ -183,6 +183,7 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
 
             /* TODO start VCL decoder */
         }
+        ov_freep(nvcl_ctx->sh);
 
         break;
     case OVNALU_VPS:
