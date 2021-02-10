@@ -26,11 +26,18 @@ enum CTUNGHFlags
 };
 
 struct RectEntryInfo {
+    int ctb_x;
+    int ctb_y;
     int nb_ctu_w;
     int nb_ctu_h;
     int nb_ctu_rect;
     const uint8_t *entry_start;
     const uint8_t *entry_end;
+    uint8_t ngh_flag;
+    uint8_t implicit_h;
+    uint8_t implicit_w;
+    int last_ctu_w;
+    int last_ctu_h;
 };
 
 static int
@@ -47,7 +54,6 @@ static void
 init_slice_tree_ctx(OVCTUDec *const ctudec, const struct OVPS *prms)
 {
     /* TODO use a specific structure for handling trees */
-    const struct SPSInfo *sps_info = &prms->sps_info;
     const OVSPS *sps = prms->sps;
     const OVSH *sh = prms->sh;
 
@@ -387,26 +393,90 @@ reset_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
      uint16_t nb_pb_pic_h = nb_ctb_pic_h << log2_min_cb_s;
      #endif
 
-     memset(lns->qt_depth_map_x,  0,  sizeof(*lns->qt_depth_map_x)  * nb_pb_pic_w);
+     memset(lns->qt_depth_map_x,     0,  sizeof(*lns->qt_depth_map_x)  * nb_pb_pic_w);
      memset(lns->log2_cu_w_map_x, 0xFF,  sizeof(*lns->log2_cu_w_map_x) * nb_pb_pic_w);
      memset(lns->cu_mode_x,       0xFF,  sizeof(*lns->cu_mode_x)       * nb_pb_pic_w);
 
-     memset(lns_c->qt_depth_map_x,  0,  sizeof(*lns_c->qt_depth_map_x)  * nb_pb_pic_w);
+     memset(lns_c->qt_depth_map_x,     0,  sizeof(*lns_c->qt_depth_map_x)  * nb_pb_pic_w);
      memset(lns_c->log2_cu_w_map_x, 0xFF,  sizeof(*lns_c->log2_cu_w_map_x) * nb_pb_pic_w);
      memset(lns_c->cu_mode_x,       0xFF,  sizeof(*lns_c->cu_mode_x)       * nb_pb_pic_w);
 }
 
+#if 1
+static int
+init_pic_border_info(struct RectEntryInfo *einfo, const OVPS *const prms, int entry_idx)
+{
+    /* Various info on pic_border */
+    /* TODO check entry is border pic */
+    const OVSPS *const sps = prms->sps;
+    /*TODO use derived value instead */
+    uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
+    uint16_t pic_h = sps->sps_pic_height_max_in_luma_samples;
+    uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
+
+    const int last_ctu_w = pic_w & ((1 << log2_ctb_s) - 1);
+    const int last_ctu_h = pic_h & ((1 << log2_ctb_s) - 1);
+
+    int nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+    int nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+
+    /* FIXME report an error when > nb_ctb_pic earlier */
+    int pic_last_ctb_x = (einfo->ctb_x + einfo->nb_ctu_w) == nb_ctb_pic_w;
+    int pic_last_ctb_y = (einfo->ctb_y + einfo->nb_ctu_h) == nb_ctb_pic_h;
+
+    uint8_t full_ctb_w = (!pic_last_ctb_x || !last_ctu_w);
+    uint8_t full_ctb_h = (!pic_last_ctb_y || !last_ctu_h);
+
+    einfo->implicit_w = !full_ctb_w;
+    einfo->implicit_h = !full_ctb_h;
+    einfo->last_ctu_w = full_ctb_w ? (1 << log2_ctb_s) : last_ctu_w;
+    einfo->last_ctu_h = full_ctb_h ? (1 << log2_ctb_s) : last_ctu_h;
+
+    return 0;
+}
+#endif
+
 int
-slicedec_init_rect_entry(struct RectEntryInfo *entry, const OVPS *const prms, int entry_idx)
+slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, int entry_idx)
 {
 
     /* FIXME retrieve values from parameter sets */
-    const struct SHInfo *const sh_info= &prms->sh_info;
-    entry->nb_ctu_w = 30;
-    entry->nb_ctu_h = 17;
-    entry->nb_ctu_rect = entry->nb_ctu_w * entry->nb_ctu_h;
-    entry->entry_start = sh_info->rbsp_entry[entry_idx];
-    entry->entry_end   = sh_info->rbsp_entry[entry_idx + 1];
+    const struct SHInfo *const sh_info     = &prms->sh_info;
+    const struct PPSInfo *const pps_info   = &prms->pps_info;
+    const struct TileInfo *const tile_info = &pps_info->tile_info;
+
+    int tile_x = entry_idx % tile_info->nb_tile_cols;
+    int tile_y = entry_idx / tile_info->nb_tile_cols;
+
+    #if 0
+    int tile_offset = 0;
+    int i = 1;
+
+    while (i <= entry_idx) {
+        tile_offset += pps_info->tile_info->nb_ctu_w[(i - 1) % num_tiles_cols] + 1;
+        i++;
+    }
+    #endif
+
+    einfo->nb_ctu_w = tile_info->nb_ctu_w[tile_x];
+    einfo->nb_ctu_h = tile_info->nb_ctu_h[tile_y];
+
+    einfo->nb_ctu_rect = einfo->nb_ctu_w * einfo->nb_ctu_h;
+    einfo->entry_start = sh_info->rbsp_entry[entry_idx];
+    einfo->entry_end   = sh_info->rbsp_entry[entry_idx + 1];
+
+    einfo->ctb_x = tile_info->ctu_x[tile_x];
+    einfo->ctb_y = tile_info->ctu_y[tile_y];
+
+    /* FIXME test if need for init */
+    einfo->ngh_flag = 0;
+    einfo->implicit_h = 0;
+    einfo->implicit_w = 0;
+
+    init_pic_border_info(einfo, prms, entry_idx);
+
+
+
     /* FIXME better way for last entry */
 
     #if 0
@@ -476,7 +546,7 @@ attach_cabac_lines(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
     pmap_c->cu_mode_x       = lns_c->cu_mode_x;
 }
 
-static int
+static void
 update_cabac_lines(OVCTUDec *const ctudec, const OVPS *const prms)
 {
     const OVPartInfo *const pinfo = ctudec->part_ctx;
@@ -499,6 +569,117 @@ update_cabac_lines(OVCTUDec *const ctudec, const OVPS *const prms)
     pmap_c->cu_mode_x       += nb_pb_ctb_w;
 }
 
+static int
+decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
+           const OVPS *const prms, struct RectEntryInfo *const einfo,
+           uint16_t ctb_addr_rs)
+{
+    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+    int nb_ctu_w = einfo->nb_ctu_w;
+    int nb_ctu_h = einfo->nb_ctu_h;
+    int ret;
+
+    /* FIXME pic border detection in neighbour flags ?*/
+    derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w, nb_ctu_h);
+
+    ret = ctudec->coding_tree(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s, 0);
+
+    return ret;
+}
+
+static int
+decode_ctu_implicit(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
+                    const OVPS *const prms, struct RectEntryInfo *const einfo,
+                    uint16_t ctb_addr_rs, int remaining_w, int remaining_h)
+{
+    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+    int nb_ctu_w = einfo->nb_ctu_w;
+    int nb_ctu_h = einfo->nb_ctu_h;
+    int ret;
+
+    /* FIXME pic border detection in neighbour flags ?*/
+    derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w, nb_ctu_h);
+
+    ret = ctudec->coding_tree_implicit(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s,
+                                       0, remaining_w, remaining_h);
+    return ret;
+}
+
+static int
+decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
+                const OVPS *const prms, struct RectEntryInfo *const einfo,
+                uint16_t ctb_addr_rs)
+{
+    int nb_ctu_w = einfo->nb_ctu_w;
+    int ctb_x = 0;
+    int ret;
+
+    while (ctb_x < nb_ctu_w - 1) {
+
+        ret = decode_ctu(ctudec, sldec, prms, einfo, ctb_addr_rs);
+
+        update_cabac_lines(ctudec, prms);
+
+        ctb_addr_rs++;
+        ctb_x++;
+    }
+
+    /* last CTU require check on picture border for implicit splits*/
+    if (!einfo->implicit_w) {
+
+        ret = decode_ctu(ctudec, sldec, prms, einfo, ctb_addr_rs);
+
+    } else {
+        uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+        int remaining_w = einfo->last_ctu_w;
+
+        /* No horizontal implicit split since we would be
+         * in decode_ctu_last_line otherwise
+         */
+        int remaining_h = 1 << log2_ctb_s;
+
+        ret = decode_ctu_implicit(ctudec, sldec, prms, einfo, ctb_addr_rs,
+                                  remaining_w, remaining_h);
+    }
+
+    return 0;
+}
+
+static int
+decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
+                     const OVPS *const prms, struct RectEntryInfo *const einfo,
+                     uint16_t ctb_addr_rs)
+{
+    int ret;
+
+    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+    int nb_ctu_w = einfo->nb_ctu_w;
+    const int remaining_h = einfo->last_ctu_h;
+    /* Not const since last ctu might need implicit split */
+    int remaining_w = 1 << log2_ctb_s;
+    int ctb_x = 0;
+
+    while (ctb_x < nb_ctu_w - 1) {
+
+        ret = decode_ctu_implicit(ctudec, sldec, prms, einfo, ctb_addr_rs,
+                                  remaining_w, remaining_h);
+
+        update_cabac_lines(ctudec, prms);
+
+        ctb_addr_rs++;
+        ctb_x++;
+    }
+
+    /* Change to last_ctu_w only if pic_border_right is not
+     * aligned with CTU dimension */
+    if (einfo->implicit_w) {
+        remaining_w = einfo->last_ctu_w;
+    }
+
+    ret = decode_ctu_implicit(ctudec, sldec, prms, einfo, ctb_addr_rs,
+                              remaining_w, remaining_h);
+    return 0;
+}
 
 static int
 slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
@@ -530,39 +711,44 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
         return OVVC_EINDATA;
     }
 
+    /* FIXME Note cabac context tables could be initialised earlier
+     * so we could only init once and recopy context tables to others
+     * entries CABAC readers
+     */
     ovcabac_init_slice_context_table(cabac_ctx.ctx_table, prms->sh->sh_slice_type, ctudec->slice_qp);
+
     reset_cabac_lines(sldec, prms);
+
+    attach_cabac_lines(ctudec, sldec);
+    memset(ctudec->part_map.cu_mode_y,   0xFF, sizeof(ctudec->part_map.cu_mode_y));
+    memset(ctudec->part_map.qt_depth_map_y,   0, sizeof(ctudec->part_map.qt_depth_map_y));
+    memset(ctudec->part_map.log2_cu_h_map_y,   0xFF, sizeof(ctudec->part_map.log2_cu_h_map_y));
+    memset(ctudec->part_map_c.qt_depth_map_y,   0, sizeof(ctudec->part_map_c.qt_depth_map_y));
+    memset(ctudec->part_map_c.log2_cu_h_map_y, 0xFF, sizeof(ctudec->part_map_c.log2_cu_h_map_y));
 
     /* FIXME add a check for cabac end ?*/
 
     while (ctb_y < nb_ctu_h - 1) {
+        uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
         int ctb_x = 0;
         /* New ctu line */
+        ret = decode_ctu_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
+
         attach_cabac_lines(ctudec, sldec);
+        memset(ctudec->part_map.cu_mode_y,   0xFF, sizeof(ctudec->part_map.cu_mode_y));
+        memset(ctudec->part_map.qt_depth_map_y,   0, sizeof(ctudec->part_map.qt_depth_map_y));
         memset(ctudec->part_map.log2_cu_h_map_y,   0xFF, sizeof(ctudec->part_map.log2_cu_h_map_y));
+        memset(ctudec->part_map_c.qt_depth_map_y,   0, sizeof(ctudec->part_map_c.qt_depth_map_y));
         memset(ctudec->part_map_c.log2_cu_h_map_y, 0xFF, sizeof(ctudec->part_map_c.log2_cu_h_map_y));
-        while (ctb_x < nb_ctu_w) {
-
-            uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-            /* FIXME pic border detection in neighbour flags ?*/
-            derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w, nb_ctu_h);
-
-            if (1) {
-                /*FIXME call ctudec */
-                ret = ctudec->coding_tree(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s, 0);
-            } else {
-#if 0
-                ret = ctudec->coding_tree_implicit(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s,
-                                                   0, remaining_w, remaining_h);
-#endif
-            }
-
-            update_cabac_lines(ctudec, prms);
-
-            ctb_addr_rs++;
-            ctb_x++;
-        }
+        ctb_addr_rs += nb_ctu_w;
         ctb_y++;
+    }
+
+    /* Last line */
+    if (!einfo->implicit_h) {
+        ret = decode_ctu_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
+    } else {
+        ret = decode_ctu_last_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
     }
 
     /*FIXME decide return value */

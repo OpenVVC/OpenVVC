@@ -288,13 +288,14 @@ struct OVSPS
     uint8_t sps_extension_data_flag;
 };
 
+/*FIXME check values over flow */
 struct OVPPS
 {
     uint8_t pps_pic_parameter_set_id;
     uint8_t pps_seq_parameter_set_id;
     uint8_t pps_mixed_nalu_types_in_pic_flag;
-    uint8_t pps_pic_width_in_luma_samples;
-    uint8_t pps_pic_height_in_luma_samples;
+    uint16_t pps_pic_width_in_luma_samples;
+    uint16_t pps_pic_height_in_luma_samples;
     uint8_t pps_conformance_window_flag;
     uint8_t pps_conf_win_left_offset;
     uint8_t pps_conf_win_right_offset;

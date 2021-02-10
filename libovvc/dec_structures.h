@@ -91,13 +91,23 @@ struct PPSInfo
     } pic_info;
 
     struct {
-      uint8_t pic_init_qp;
-      /* TODO use offset tables */
-      uint8_t qp_offset_c[3];
-      struct {
-        int8_t qp_offset[16];
-      } offset_list[3];
+        uint8_t pic_init_qp;
+        /* TODO use offset tables */
+        uint8_t qp_offset_c[3];
+        struct {
+            int8_t qp_offset[16];
+        } offset_list[3];
     } pic_qp_info;
+
+    struct TileInfo {
+        int16_t nb_ctu_w[16];
+        int16_t nb_ctu_h[16];
+        int16_t ctu_x[16];
+        int16_t ctu_y[16];
+        /*FIXME determine properly max_num_tiles */
+        uint8_t nb_tile_rows;
+        uint8_t nb_tile_cols;
+    } tile_info;
 
 };
 

@@ -227,13 +227,6 @@ ovcabac_read_ae_mvp_flag(OVCABACCtx *const cabac_ctx)
     return ovcabac_ae_read(cabac_ctx, &cabac_state[MVP_IDX_CTX_OFFSET]);
 }
 
-static uint8_t
-ovcabac_read_ae_root_cbf(OVCABACCtx *const cabac_ctx)
-{
-    uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    return ovcabac_ae_read(cabac_ctx, &cabac_state[QT_ROOT_CBF_CTX_OFFSET]);
-}
-
 /* mip_abv + mip_lft */
 static uint8_t
 ovcabac_read_ae_intra_mip(OVCABACCtx *const cabac_ctx,
@@ -489,6 +482,26 @@ coding_unit(OVCTUDec *const ctu_dec,
     return 0;
 }
 
+static void
+updt_cu_maps(OVCTUDec *const ctudec,
+             const OVPartInfo *const part_ctx,
+             unsigned int x0, unsigned int y0,
+             unsigned int log2_cu_w, unsigned int log2_cu_h,
+             uint8_t cu_mode)
+{
+    /*FIXME Separate non CABAC ctx and reconstruction buffers */
+
+    struct PartMap *const part_map = &ctudec->part_map;
+
+    uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
+    uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
+    uint8_t nb_pb_w = (1 << log2_cu_w) >> part_ctx->log2_min_cb_s;
+    uint8_t nb_pb_h = (1 << log2_cu_h) >> part_ctx->log2_min_cb_s;
+
+    memset(&part_map->cu_mode_x[x_pu], (uint8_t)cu_mode, sizeof(uint8_t) * nb_pb_w);
+    memset(&part_map->cu_mode_y[y_pu], (uint8_t)cu_mode, sizeof(uint8_t) * nb_pb_h);
+}
+
 VVCCU
 coding_unit_inter_st(OVCTUDec *const ctu_dec,
                      const OVPartInfo *const part_ctx,
@@ -546,7 +559,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
         }
     }
 
-    #if 0
+    #if 1
     updt_cu_maps(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, cu_type);
     #endif
 

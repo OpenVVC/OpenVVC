@@ -239,6 +239,7 @@ struct OVCTUDec {
      * and mode context derivation
      * TODO rename as CABAC Maps
      */
+    /* FIXME no need for cu_mode in chroma part */
     struct PartMap{
         uint8_t *qt_depth_map_x;
         uint8_t *log2_cu_w_map_x;

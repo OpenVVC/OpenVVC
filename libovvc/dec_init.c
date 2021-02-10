@@ -271,9 +271,57 @@ decinit_set_entry_points(OVPS *const prms, const OVNALUnit *nal, uint32_t nb_sh_
     return 0;
 }
 
+static void
+init_tile_ctx(struct TileInfo *const tinfo, const OVPPS *const pps)
+{
+    int nb_cols = pps->pps_num_exp_tile_columns_minus1 + 1;
+    int nb_rows = pps->pps_num_exp_tile_rows_minus1 + 1;
+
+    const int log2_ctu_s = pps->pps_log2_ctu_size_minus5 + 5;
+
+    const int pic_w = pps->pps_pic_width_in_luma_samples;
+    const int pic_h = pps->pps_pic_height_in_luma_samples;
+
+    /* FIXME harmonize this with sps
+     */
+    const int nb_ctu_w = (pic_w >> log2_ctu_s) + !!(pic_w & ((1 << log2_ctu_s) - 1));
+    const int nb_ctu_h = (pic_h >> log2_ctu_s) + !!(pic_h & ((1 << log2_ctu_s) - 1));
+
+    int rem_ctu_w = nb_ctu_w;
+    int rem_ctu_h = nb_ctu_h;
+
+    int i;
+
+    /* FIXME review implicit last tile x and y
+     */
+    for (i = 1; i <=  nb_rows; ++i) {
+        const int tile_nb_ctu_h = pps->pps_tile_row_height_minus1[i - 1] + 1;
+        tinfo->ctu_y[i - 1] = nb_ctu_h - rem_ctu_h;
+        tinfo->nb_ctu_h[i - 1] = tile_nb_ctu_h;
+        rem_ctu_h -= tile_nb_ctu_h;
+    }
+    tinfo->ctu_y[i - 1] = nb_ctu_h - rem_ctu_h;
+    tinfo->nb_ctu_h[i - 1] = rem_ctu_h;
+
+    for (i = 1; i <= nb_cols; ++i) {
+        const int tile_nb_ctu_w = pps->pps_tile_column_width_minus1[i - 1] + 1;
+        tinfo->ctu_x[i - 1] = nb_ctu_w - rem_ctu_w;
+        tinfo->nb_ctu_w[i - 1] = tile_nb_ctu_w;
+        rem_ctu_w -= tile_nb_ctu_w;
+    }
+
+    tinfo->ctu_x[i - 1] = nb_ctu_w - rem_ctu_w;
+    tinfo->nb_ctu_w[i - 1] = rem_ctu_w;
+
+    tinfo->nb_tile_cols = nb_cols + !!rem_ctu_w;
+    tinfo->nb_tile_rows = nb_rows + !!rem_ctu_h;
+}
+
 static int
 update_pps_info(struct PPSInfo *const pps_info, const OVPPS *const pps)
 {
+    struct TileInfo *const tinfo = &pps_info->tile_info;
+    init_tile_ctx(tinfo, pps);
     return 0;
 }
 
