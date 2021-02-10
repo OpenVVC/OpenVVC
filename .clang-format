@@ -7,11 +7,13 @@ BinPackParameters: 'true'
 IncludeBlocks: Regroup
 IncludeCategories:
   - Regex:           '^"(llvm|llvm-c|clang|clang-c)/'
-    Priority:        4
+    Priority:        5
   - Regex:           '^(<|"(gtest|gmock|isl|json)/)'
     Priority:        1
   - Regex:           '<[[:alnum:].]+>'
     Priority:        2
+  - Regex:           '.*'
+    Priority:        4
   - Regex:           '.*'
     Priority:        3
 IndentWidth: '8'
