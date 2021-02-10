@@ -37,7 +37,7 @@ ref_pic_list_ilrp_ltrp(OVNVCLReader *const rdr, struct OVRPL *const rpl,
                 rp->st_ref_pic_flag = nvcl_read_flag(rdr);
                 if (rp->st_ref_pic_flag) {
                     rp->abs_delta_poc_st = nvcl_read_u_expgolomb(rdr);
-                    if (rp->abs_delta_poc_st > 0) {
+                    if (rp->abs_delta_poc_st > 0 || (i == 0)) {
                         rp->strp_entry_sign_flag = nvcl_read_flag(rdr);
                     }
                 } else {
@@ -57,7 +57,7 @@ ref_pic_list_ilrp_ltrp(OVNVCLReader *const rdr, struct OVRPL *const rpl,
                 rp->st_ref_pic_flag = nvcl_read_flag(rdr);
                 if (rp->st_ref_pic_flag) {
                     rp->abs_delta_poc_st = nvcl_read_u_expgolomb(rdr);
-                    if (rp->abs_delta_poc_st > 0) {
+                    if (rp->abs_delta_poc_st > 0 || (i == 0)) {
                         rp->strp_entry_sign_flag = nvcl_read_flag(rdr);
                     }
                 }
@@ -78,7 +78,7 @@ ref_pic_list_ilrp(OVNVCLReader *const rdr, struct OVRPL *const rpl)
             rp->ilrp_idx = nvcl_read_u_expgolomb(rdr);
         } else {
             rp->abs_delta_poc_st = nvcl_read_u_expgolomb(rdr);
-            if (rp->abs_delta_poc_st > 0) {
+            if (rp->abs_delta_poc_st > 0 || (i == 0)) {
                 rp->strp_entry_sign_flag = nvcl_read_flag(rdr);
             }
         }
@@ -101,7 +101,7 @@ ref_pic_list_ltrp(OVNVCLReader *const rdr, struct OVRPL *const rpl,
             rp->st_ref_pic_flag = nvcl_read_flag(rdr);
             if (rp->st_ref_pic_flag) {
                 rp->abs_delta_poc_st = nvcl_read_u_expgolomb(rdr);
-                if (rp->abs_delta_poc_st > 0) {
+                if (rp->abs_delta_poc_st > 0 || (i == 0)) {
                     rp->strp_entry_sign_flag = nvcl_read_flag(rdr);
                 }
             }
@@ -118,7 +118,7 @@ ref_pic_list_ltrp(OVNVCLReader *const rdr, struct OVRPL *const rpl,
             rp->st_ref_pic_flag = nvcl_read_flag(rdr);
             if (rp->st_ref_pic_flag) {
                 rp->abs_delta_poc_st = nvcl_read_u_expgolomb(rdr);
-                if (rp->abs_delta_poc_st > 0) {
+                if (rp->abs_delta_poc_st > 0 || (i == 0)) {
                     rp->strp_entry_sign_flag = nvcl_read_flag(rdr);
                 }
             } else {
@@ -142,7 +142,7 @@ ref_pic_list_strp(OVNVCLReader *const rdr, struct OVRPL *const rpl)
          */
         rp->st_ref_pic_flag = 1;
         rp->abs_delta_poc_st = nvcl_read_u_expgolomb(rdr);
-        if (rp->abs_delta_poc_st > 0) {
+        if (rp->abs_delta_poc_st > 0 || (i == 0)) {
             rp->strp_entry_sign_flag = nvcl_read_flag(rdr);
         }
     }
