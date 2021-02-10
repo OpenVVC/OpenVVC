@@ -5,6 +5,7 @@
 
 #define OVMAX(a, b) (((a) > (b)) ? (a) : (b))
 #define OVMIN(a, b) (((a) < (b)) ? (a) : (b))
+#define OVABS(a) (((a) < (0)) ? (-a) : (a))
 
 void
 ov_log(void* ctx, int log_level, const char* log_content, ...);

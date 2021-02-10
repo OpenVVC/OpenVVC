@@ -17,7 +17,9 @@ OBJS = ovvcdec.o                                                      \
        dec_init.o                                                     \
        rcn_fill_ref.o                                                 \
        rcn_intra_dc_planar.o                                          \
-       data_rcn_transform.o                                           \
+			 data_rcn_transform.o                                           \
+			 data_rcn_angular.o                                           \
+			 data_rcn_mip.o                                           \
        rcn_transform.o                                                \
        rcn_intra_angular.o                                            \
        rcn_lfnst.o                                                    \
@@ -40,5 +42,6 @@ OBJS = ovvcdec.o                                                      \
        vcl_transform_unit.o                                           \
        data_scan_lut.o                                                \
        vcl_residual_coding.o                                          \
-       vcl_cabac.o\
-
+			 vcl_cabac.o\
+			 rcn.o\
+			 rcn_intra_mip.o\
