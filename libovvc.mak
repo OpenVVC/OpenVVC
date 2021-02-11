@@ -1,4 +1,4 @@
-SRC_FOLDER:=src/
+SRC_FOLDER:=libovvc/
 LIB_SRC:=																																 \
 					ctudec.c                                                       \
 					data_rcn_angular.c                                           	 \

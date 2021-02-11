@@ -1,9 +1,12 @@
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <getopt.h>
 
 #include "ovdec.h"
 #include "ovdmx.h"
 #include "ovutils.h"
+#include "ovversion.h"
 
 typedef struct OVVCHdl{
     OVVCDmx *dmx;
@@ -14,10 +17,6 @@ typedef struct OVVCHdl{
     FILE *fp;
 }OVVCHdl;
 
-/* Use global static value so we can easily change log level on
-   the whole object this is useful when debugging */
-static int log_level = 2;
-
 static int dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const file_name);
 
 static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl);
@@ -26,22 +25,78 @@ static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
 static int read_stream(OVVCHdl *const hdl, FILE *fp);
 
+static void print_version();
+
+static void print_usage();
+
 int
 main(int argc, char** argv)
 {
-    OVVCHdl ovvc_hdl;
-    const char *file_name = "test.266";
-    int ret;
+  /* basic options parser and assign
+     filenames into a functions*/
+  int c;
+  char *file_name;
+  int ov_log_level;
 
-    /* TODO add basic opitons parser and assign
-       filenames intoa functions*/
+  uint8_t options_flag=0;
 
-    if (argc > 2) {
-        fprintf(stderr, "Too many arguments.\n");
-        /* TODO show_usage();*/
-        return -1;
-    } else if (argc == 2) {
-        file_name = argv[1];
+  OVVCHdl ovvc_hdl;
+  int ret = 0;
+  while (1)
+    {
+      static struct option long_options[] =
+        {
+          {"version", no_argument,      0, 'v'},
+          {"help",    no_argument,       0, 'h'},
+          {"log-level", required_argument, 0, 'l'},
+          {"file",      required_argument, 0, 'f'},
+        };
+      int option_index = 0;
+
+      c = getopt_long (argc, argv, "vhl:f:",
+                       long_options, &option_index);
+      if (c == -1){
+        break;
+      }
+      switch (c)
+        {
+        case 'v':
+          options_flag+=0x01;
+          break;
+
+        case 'h':
+          options_flag+=0x10;
+          break;
+
+        case 'l':
+          ov_log_level = optarg[0]-'0';
+          break;
+
+        case 'f':
+          /*TODO: Sanitize filename*/
+          file_name = optarg;
+          break;
+
+        case '?':
+          options_flag+=0x10;
+          break;
+        default:
+          abort ();
+        }
+    }
+
+    if (OVLOG_ERROR <= ov_log_level && ov_log_level <= OVLOG_TRACE){
+      set_ov_log_level(ov_log_level);
+    }
+
+    if (file_name == NULL){
+      file_name="test.266";
+    }
+
+    if (options_flag){
+      if (options_flag & 0x01) {print_version();}
+      if (options_flag & 0x10) {print_usage();}
+      return 0;
     }
 
     ret = init_openvvc_hdl(&ovvc_hdl);
@@ -63,7 +118,6 @@ failattach:
     ret = close_openvvc_hdl(&ovvc_hdl);
 
 failinit:
-
     return ret;
 }
 
@@ -176,4 +230,17 @@ read_stream(OVVCHdl *const hdl, FILE *fp)
 
     #endif
     return 1;
+}
+
+static void print_version(){
+  printf("libovvc version %u.%u.%u-%s\n", VER_MAJOR,VER_MINOR,VER_REVISION, VER_BUILD);
+}
+
+static void print_usage(){
+  printf("usage: dectest [options]\n");
+  printf("options:\n");
+  printf("\t-h, --help\t\t\t\tShow this message.\n");
+  printf("\t-v, --version\t\t\t\tShow version information.\n");
+  printf("\t-l <level>, --log-level=<level>\t\tDefine the level of verbosity. Value between 0 and 6. (Default: 2)\n");
+  printf("\t-f <file>, --file=<file>\t\tPath to the file to be decoded (Default: test.266).\n");
 }

@@ -1,6 +1,7 @@
 # Configuration object
 config.mak
 config.h
+libovvc/ovversion.h
 
 # Build objects
 *.o
