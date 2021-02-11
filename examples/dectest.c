@@ -214,7 +214,9 @@ read_stream(OVVCHdl *const hdl, FILE *fp)
     OVVCDec *const dec = hdl->dec;
     OVPictureUnit *pu = NULL;
 
+    int nb_pic =0;
     do {
+        printf("NEW PIC %d\n", nb_pic);
         ret = ovdmx_extract_picture_unit(dmx, &pu);
         if (ret < 0) {
             break;
@@ -226,7 +228,10 @@ read_stream(OVVCHdl *const hdl, FILE *fp)
             ov_free_pu(&pu);
         }
 
+        ++nb_pic;
+
     } while (ret >= 0);
+    printf("nb_pic : %d\n", nb_pic);
 
     #endif
     return 1;

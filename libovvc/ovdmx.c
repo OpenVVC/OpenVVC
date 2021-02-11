@@ -694,7 +694,9 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
 
     dmx->nb_stc++;
 
+    #if 0
     printf("STC at pos : %ld, NAL :%d\n", byte_pos - 8, nalu_type);
+    #endif
 
     return 0;
 }
@@ -727,13 +729,15 @@ process_emulation_prevention_byte(OVVCDmx *const dmx, struct ReaderCache *const 
     }
 
     /* FIXME new computation of epb position */
-    epb_info->epb_pos[epb_info->nb_epb] = dmx->rbsp_ctx.rbsp_size - 1 + epb_info->nb_epb;
+    epb_info->epb_pos[epb_info->nb_epb] = dmx->rbsp_ctx.rbsp_size - 1 /*+ epb_info->nb_epb*/;
     epb_info->nb_epb++;
 
     /* FIXME optional general dmx info */
     dmx->nb_epb++;
 
+    #if 0
     printf("EPB at pos : %ld\n", byte_pos - 8);
+    #endif
     return 0;
 }
 

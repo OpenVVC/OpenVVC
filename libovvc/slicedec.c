@@ -521,12 +521,19 @@ int
 slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
 {
     int nb_entries = 16;
+    int ret2 = 0;
+    int ret = 0;
     int i;
     for (i = 0; i < nb_entries; ++i) {
         struct RectEntryInfo entry;
         slicedec_init_rect_entry(&entry, prms, i);
-        slicedec_decode_rect_entry(sldec, prms, &entry);
+        ret = slicedec_decode_rect_entry(sldec, prms, &entry);
+        if (!ret) {
+           printf("in entry : %d\n", i);
+           ret2 = 1; 
+        }
     }
+    return ret2;
 }
 
 static void
@@ -734,6 +741,11 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
         /* New ctu line */
         ret = decode_ctu_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
 
+    if (ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream == -2) {
+        printf("CABAC error diff end line %d \n", ctb_y);
+        return 0;
+    }
+
         attach_cabac_lines(ctudec, sldec);
         memset(ctudec->part_map.cu_mode_y,   0xFF, sizeof(ctudec->part_map.cu_mode_y));
         memset(ctudec->part_map.qt_depth_map_y,   0, sizeof(ctudec->part_map.qt_depth_map_y));
@@ -749,6 +761,11 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
         ret = decode_ctu_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
     } else {
         ret = decode_ctu_last_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
+    }
+
+    if ( ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream == -2) {
+        printf("CABAC error diff end %d \n", ctb_y);
+        return 0;
     }
 
     /*FIXME decide return value */

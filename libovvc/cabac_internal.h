@@ -65,6 +65,14 @@ ovcabac_ae_read(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state)
 
         if (cabac_ctx->bytestream < cabac_ctx->bytestream_end){
             cabac_ctx->bytestream += NB_CABAC_BITS >> 3;
+        } else {
+            /* FIXME this permits to check if we needed to refill
+             *  after end of entry
+             */
+#if 1
+            cabac_ctx->bytestream = cabac_ctx->bytestream_end + 2;
+            //printf("CABAC_EMPTY\n");
+#endif
         }
     }
     return symbol_mask & 0x1;
@@ -77,14 +85,22 @@ ovcabac_bypass_read(OVCABACCtx *const cabac_ctx)
 
   cabac_ctx->low_b <<= 1;
 
-    if (!(cabac_ctx->low_b & CABAC_MASK)){
-        int num_bits = 0;
-        int tmp_fill = -CABAC_MASK;
-        tmp_fill += cabac_ctx->bytestream[0] << 9;
-        tmp_fill += cabac_ctx->bytestream[1] << 1;
-        cabac_ctx->low_b += tmp_fill << num_bits;
+  if (!(cabac_ctx->low_b & CABAC_MASK)){
+      int num_bits = 0;
+      int tmp_fill = -CABAC_MASK;
+      tmp_fill += cabac_ctx->bytestream[0] << 9;
+      tmp_fill += cabac_ctx->bytestream[1] << 1;
+      cabac_ctx->low_b += tmp_fill << num_bits;
       if (cabac_ctx->bytestream < cabac_ctx->bytestream_end){
           cabac_ctx->bytestream += NB_CABAC_BITS >> 3;
+      } else {
+          /* FIXME this permits to check if we needed to refill
+           *  after end of entry
+           */
+#if 1
+          cabac_ctx->bytestream = cabac_ctx->bytestream_end + 2;
+          //printf("CABAC_EMPTY\n");
+#endif
       }
   }
 
