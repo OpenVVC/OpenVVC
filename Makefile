@@ -36,7 +36,7 @@ STATIC_LIBSUFF:=.a
 PROG=examples/dectest
 
 all: libs examples
-	# all: $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF) $(BUILDDIR_TYPE)${PROG}
+
 libs: $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF)
 
 examples: $(BUILDDIR_TYPE)$(PROG)

@@ -4,8 +4,13 @@
 
 #include "ovutils.h"
 
-static int ov_log_level = 1;
+OVLOG_TYPE ov_log_level = OVLOG_INFO;
 static const char* vvctype = "VVCDec";
+
+void
+set_ov_log_level(OVLOG_TYPE log_level){
+        ov_log_level = log_level;
+}
 
 void
 ov_log(void* ctx, int log_level, const char* log_content, ...)
@@ -14,13 +19,15 @@ ov_log(void* ctx, int log_level, const char* log_content, ...)
 
         va_start(args, log_content);
 
-        if (log_level > ov_log_level) {
+        if (log_level <= ov_log_level) {
                 const char* type = "NULL";
                 if (ctx != NULL) {
                         type = vvctype;
                 }
-                printf("[%s @ Ox%.16lx] : ", type, (long unsigned)ctx);
-                vprintf(log_content, args);
+                fprintf(stderr, "%s", OVLOG_COLORIFY[log_level]);
+                fprintf(stderr, "[%s @ Ox%.16lx] : ", type, (long unsigned)ctx);
+                vfprintf(stderr, log_content, args);
+                fprintf(stderr, "%s", RST);
         }
 
         va_end(args);

@@ -97,22 +97,22 @@ init_openvvc_hdl(OVVCHdl *const ovvc_hdl)
 
     if (ret < 0) goto faildec;
 
-    ov_log(vvcdec, log_level, "Decoder init.\n");
+    ov_log(vvcdec, OVLOG_INFO, "Decoder init.%d\n");
 
     ret = ovdmx_init(vvcdmx);
 
     if (ret < 0) goto faildmx;
 
-    ov_log(vvcdmx, log_level, "Demuxer init.\n");
+    ov_log(vvcdmx, OVLOG_INFO, "Demuxer init.\n");
 
     return 0;
 
 faildec:
-    ov_log(NULL, log_level, "Decoder failed at init.\n");
+    ov_log(NULL, OVLOG_ERROR, "Decoder failed at init.\n");
     return ret;
 
 faildmx:
-    ov_log(NULL, log_level, "Demuxer failed at init.\n");
+    ov_log(NULL, OVLOG_ERROR, "Demuxer failed at init.\n");
     ovdec_close(*vvcdec);
     return ret;
 }
@@ -142,7 +142,7 @@ faildecclose:
     /* Do not check for dmx failure  since it might override
        return value to a correct one in either success or
        failure we already raised an error*/
-    ov_log(NULL, log_level, "Decoder failed at cloture.\n");
+    ov_log(NULL, OVLOG_ERROR, "Decoder failed at cloture.\n");
     ovdmx_close(vvcdmx);
 
 faildmxclose:
