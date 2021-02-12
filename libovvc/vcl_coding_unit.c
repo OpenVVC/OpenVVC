@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "vcl.h"
+#include "ovutils.h"
 #include "dec_structures.h"
 #include "cabac_internal.h"
 #include "ctudec.h"

@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <string.h>
 #include "rcn.h"
 #include "nvcl_utils.h"
 #include "ovutils.h"
@@ -8,6 +9,8 @@
 #include "data_rcn_angular.h"
 #include "ctudec.h"
 #include "rcn_intra_mip.h"
+#include "rcn_struct.h"
+#include "rcn.h"
 
 
 //WARNING do not call if DC or PLANAR, or LM
@@ -1340,4 +1343,123 @@ vvc_intra_pred_mip_tr(const OVCTUDec *const ctudec,
             }
         }
     }
+}
+
+void
+rcn_residual(OVCTUDec *const ctudec,
+             int16_t *const dst, int16_t *src,
+             uint8_t x0, uint8_t y0,
+             unsigned int log2_tb_w, unsigned int log2_tb_h,
+             unsigned int lim_cg_w,
+             uint8_t cu_mts_flag, uint8_t cu_mts_idx,
+             uint8_t is_dc, uint8_t lfnst_flag, uint8_t is_mip, uint8_t lfnst_idx)
+{
+    int shift_v = 6 + 1;
+    int shift_h = (6 + 15 - 1) - 10;
+    int16_t tmp[64*64];
+    int tb_w = 1 << log2_tb_w;
+    int tb_h = 1 << log2_tb_h;
+    struct OVRCNCtx *const rcn = &ctudec->rcn_ctx;
+    /* TODO switch */
+
+    memset(tmp, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
+
+    if (lfnst_flag) {
+        lim_cg_w = 8;
+        /* FIXME separate lfnst mode derivation from lfnst reconstruction */
+#if 0
+        process_lfnst_luma(ctudec, src, ctudec->lfnst_subblock, log2_tb_w, log2_tb_h, x0, y0,
+                           lfnst_idx);
+#endif
+    }
+
+    if (!is_mip && ctudec->mts_implicit && (log2_tb_w <= 4 || log2_tb_h <= 4) && !lfnst_flag) {
+        /*FIXME condition on size in the if could be removed ?*/
+        enum DCTType tr_h_idx = log2_tb_w <= 4 ? DST_VII : DCT_II;
+        enum DCTType tr_v_idx = log2_tb_h <= 4 ? DST_VII : DCT_II;
+
+#if 0
+        call(vvc_inverse_mts_func,
+             (tr_v_idx, log2_tb_h),
+             (src, tmp, tb_w, tb_w, tb_h, shift_v));
+        call(vvc_inverse_mts_func,
+             (tr_h_idx, log2_tb_w),
+             (tmp, dst, tb_h, tb_h, tb_w, shift_h));
+#endif
+        tr_templates[tr_v_idx][log2_tb_w].transform(src, tmp, tb_w, tb_w, tb_h, shift_v);
+        tr_templates[tr_h_idx][log2_tb_w].transform(tmp, dst, tb_h, tb_h, tb_w, shift_h);
+
+    } else if (!cu_mts_flag) {
+
+#if 0
+        if (is_dc) {
+
+            vvc_dsp_context.vvc_inverse_dc(dst, log2_tb_w, log2_tb_h,
+                                           src[0]);
+
+        } else {
+#endif
+            int nb_row = tb_w;//OVMIN(lim_cg_w, 1 << log2_tb_w);
+            int nb_col = tb_h;//OVMIN(lim_cg_w, 1 << log2_tb_h);
+
+            tr_templates[DCT_II][log2_tb_h].transform(src, tmp, tb_w, nb_row, nb_col, shift_v);
+            tr_templates[DCT_II][log2_tb_w].transform(tmp, dst, tb_h, tb_h, nb_row, shift_h);
+#if 0
+        }
+#endif
+    } else {
+        enum DCTType tr_h_idx = cu_mts_idx  & 1;
+        enum DCTType tr_v_idx = cu_mts_idx >> 1;
+
+        tr_templates[tr_v_idx][log2_tb_h].transform(src, tmp, tb_w, tb_w, tb_h, shift_v);
+        tr_templates[tr_h_idx][log2_tb_w].transform(tmp, src, tb_h, tb_h, tb_w, shift_h);
+
+    }
+}
+
+void
+rcn_residual_c(OVCTUDec *const ctudec,
+               int16_t *const dst, int16_t *src,
+               int16_t *const lfnst_sb,
+               uint8_t x0, uint8_t y0,
+               unsigned int log2_tb_w, unsigned int log2_tb_h,
+               unsigned int lim_cg_w,
+               uint8_t cu_mts_flag, uint8_t cu_mts_idx,
+               uint8_t is_dc, uint8_t lfnst_flag, uint8_t is_mip, uint8_t lfnst_idx)
+{
+    const int shift_v = 6 + 1;
+    const int shift_h = (6 + 15 - 1) - 10;
+    int16_t tmp[32*32];
+    int tb_w = 1 << log2_tb_w;
+    int tb_h = 1 << log2_tb_h;
+
+    memset(tmp, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
+
+    if (lfnst_flag) {
+        /* Update lim_cg_w since lfnst part of coeff are now non zero */
+        lim_cg_w = 8;
+        /* FIXME separate lfnst mode derivation from lfnst reconstruction */
+#if 0
+        process_lfnst(ctudec, src, lfnst_sb, log2_tb_w, log2_tb_h,
+                      x0, y0, lfnst_idx);
+#endif
+    }
+
+#if 0
+    if (is_dc && !lfnst_flag) {
+
+        vvc_dsp_context.vvc_inverse_dc(dst, log2_tb_w, log2_tb_h,
+                                       src[0]);
+
+    } else {
+#endif
+        int nb_row = OVMIN(lim_cg_w, 1 << log2_tb_w);
+        int nb_col = OVMIN(lim_cg_w, 1 << log2_tb_h);
+        /*FIXME might be transform SKIP */
+
+        tr_templates[DCT_II][log2_tb_h].transform(src, tmp, tb_w, tb_w, tb_h, shift_v);
+        tr_templates[DCT_II][log2_tb_w].transform(tmp, src, tb_h, tb_h, tb_w, shift_v);
+#if 0
+    }
+#endif
 }
