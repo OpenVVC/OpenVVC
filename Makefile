@@ -75,8 +75,9 @@ $(BUILDDIR_TYPE)%.o: %.c
 	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) -I$(SRC_FOLDER)
 
 .PHONY: style check-style tidy version
+FILE_TO_STYLE:=$(shell find . -type f -name "*.[ch]")
 style:
-	$(AT)for src in $(LIB_FILE) ; do \
+	$(AT)for src in $(FILE_TO_STYLE) ; do \
 		echo "Formatting $$src..." ; \
 		clang-format -i "$$src" ; \
 	done
@@ -84,17 +85,17 @@ style:
 
 
 check-style:
-	$(AT)for src in $(LIB_FILE) ; do \
+	$(AT)for src in $(FILE_TO_STYLE) ; do \
 		var=`clang-format "$$src" | diff "$$src" - | wc -l` ; \
-		clang-tidy -checks='-*,readability-identifier-naming' \
-		    -config="{CheckOptions: [ \
-		    { key: readability-identifier-naming.NamespaceCase, value: lower_case },\
-		    { key: readability-identifier-naming.ClassCase, value: CamelCase  },\
-		    { key: readability-identifier-naming.StructCase, value: CamelCase  },\
-		    { key: readability-identifier-naming.FunctionCase, value: lower_case },\
-		    { key: readability-identifier-naming.VariableCase, value: lower_case },\
-		    { key: readability-identifier-naming.GlobalConstantCase, value: UPPER_CASE }\
-		    ]}" "$$src" ; \
+		# clang-tidy -checks='-*,readability-identifier-naming'\
+		#     -config="{CheckOptions: [ \
+		#     { key: readability-identifier-naming.NamespaceCase, value: lower_case },\
+		#     { key: readability-identifier-naming.ClassCase, value: CamelCase  },\
+		#     { key: readability-identifier-naming.StructCase, value: CamelCase  },\
+		#     { key: readability-identifier-naming.FunctionCase, value: lower_case },\
+		#     { key: readability-identifier-naming.VariableCase, value: lower_case },\
+		#     { key: readability-identifier-naming.GlobalConstantCase, value: UPPER_CASE }\
+		#     ]}" "$$src" ; \
 		if [ $$var -ne 0 ] ; then \
 			echo "$$src does not respect the coding style (diff: $$var lines)" ; \
 			exit 1 ; \
