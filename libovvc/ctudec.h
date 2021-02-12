@@ -319,6 +319,12 @@ struct OVCTUDec
                                   unsigned int log2_tb_w, unsigned int log2_tb_h,
                                   uint16_t last_pos);
 
+    /* FIXME
+     *    -Reduce residual buff to 32x32
+     *    -Might need to store 4 TUs in
+     *   case of transform tree or ISP tree
+     *    -Move to Transform Unit structure
+     */
     int16_t residual_y[64*64];
     int16_t residual_cb[64*64];
     int16_t residual_cr[64*64];
@@ -327,6 +333,9 @@ struct OVCTUDec
 
 
     uint8_t slice_qp;
+    /* FIXME
+     * harmonize qp info and dequant structures
+     */
     VVCQPCTX qp_ctx;
     VVCDeQuantCtx dequant_luma;
     VVCDeQuantCtx dequant_luma_skip;
