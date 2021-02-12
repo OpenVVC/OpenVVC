@@ -2,6 +2,21 @@
 #include "ovmem.h"
 #include "overror.h"
 
+static void
+attach_rcn_ctu_buff(OVCTUDec *const ctudec)
+{
+     struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
+     struct CTURCNData *rcn_data = &ctu_dec->rcn_ctx.data;
+     struct OVBuffInfo *ctu_binfo = &rcn_ctx->ctu_buff;
+
+     ctu_info->data_y  = &rcn_data->y_buff [RCN_CTB_PADDING];
+     ctu_info->data_cb = &rcn_data->cb_buff[RCN_CTB_PADDING];
+     ctu_info->data_cr = &rcn_data->cr_buff[RCN_CTB_PADDING];
+
+     ctu_info->stride   = RCN_CTB_STRIDE.
+     ctu_info->stride_c = RCN_CTB_STRIDE.
+}
+
 int
 ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec)
 {
@@ -144,6 +159,8 @@ ctudec_init(OVCTUDec **ctudec_p)
      }
 
      *ctudec_p = ctudec;
+
+     attach_rcn_ctu_buff(ctudec);
 
      return 0;
 }
