@@ -4,11 +4,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static void
-matrix_multiplication(const int16_t* src, const int16_t* const tr_matrix,
-                      int16_t* dst, ptrdiff_t src_stride, int tr_size,
-                      int num_lines, int num_columns, int shift);
-
 void
 vvc_inverse_dct_ii_2(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                      int num_lines, int num_columns, int shift);
