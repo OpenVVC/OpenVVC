@@ -33,8 +33,8 @@ ov_log(void* ctx, int log_level, const char* log_content, ...)
         va_end(args);
 }
 
-uint32_t
-ov_clip(uint32_t val, uint32_t a, uint32_t b)
+int32_t
+ov_clip(int32_t val, int32_t a, int32_t b)
 {
         return OVMIN(OVMAX(val, a), b);
 }

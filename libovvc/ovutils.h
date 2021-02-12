@@ -28,8 +28,10 @@ set_ov_log_level(OVLOG_TYPE log_level);
 void
 ov_log(void* ctx, int log_level, const char* log_content, ...);
 
-uint32_t
-ov_clip(uint32_t val, uint32_t a, uint32_t b);
+/* FIXME
+ * Add specific clip for unsigned */
+int32_t
+ov_clip(int32_t val, int32_t a, int32_t b);
 
 uint32_t
 ov_clip_uintp2(uint32_t val, uint32_t a);
