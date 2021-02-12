@@ -551,6 +551,13 @@ attach_cabac_lines(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
     pmap_c->log2_cu_w_map_x = lns_c->log2_cu_w_map_x;
     pmap_c->qt_depth_map_x  = lns_c->qt_depth_map_x;
     pmap_c->cu_mode_x       = lns_c->cu_mode_x;
+
+    /* FIXME done twice on new entry see (reset lines function) */
+    memset(ctudec->part_map.cu_mode_y,   0xFF, sizeof(ctudec->part_map.cu_mode_y));
+    memset(ctudec->part_map.qt_depth_map_y,   0, sizeof(ctudec->part_map.qt_depth_map_y));
+    memset(ctudec->part_map.log2_cu_h_map_y,   0xFF, sizeof(ctudec->part_map.log2_cu_h_map_y));
+    memset(ctudec->part_map_c.qt_depth_map_y,   0, sizeof(ctudec->part_map_c.qt_depth_map_y));
+    memset(ctudec->part_map_c.log2_cu_h_map_y, 0xFF, sizeof(ctudec->part_map_c.log2_cu_h_map_y));
 }
 
 static void
@@ -762,31 +769,23 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     reset_cabac_lines(sldec, prms);
 
     attach_cabac_lines(ctudec, sldec);
-    memset(ctudec->part_map.cu_mode_y,   0xFF, sizeof(ctudec->part_map.cu_mode_y));
-    memset(ctudec->part_map.qt_depth_map_y,   0, sizeof(ctudec->part_map.qt_depth_map_y));
-    memset(ctudec->part_map.log2_cu_h_map_y,   0xFF, sizeof(ctudec->part_map.log2_cu_h_map_y));
-    memset(ctudec->part_map_c.qt_depth_map_y,   0, sizeof(ctudec->part_map_c.qt_depth_map_y));
-    memset(ctudec->part_map_c.log2_cu_h_map_y, 0xFF, sizeof(ctudec->part_map_c.log2_cu_h_map_y));
 
     /* FIXME add a check for cabac end ?*/
 
     while (ctb_y < nb_ctu_h - 1) {
         uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
         int ctb_x = 0;
+
         /* New ctu line */
         ret = decode_ctu_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
 
-    if (ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream == -2) {
-        printf("CABAC error diff end line %d \n", ctb_y);
-        return 0;
-    }
+        if (ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream == -2) {
+            printf("CABAC error diff end line %d \n", ctb_y);
+            return 0;
+        }
 
         attach_cabac_lines(ctudec, sldec);
-        memset(ctudec->part_map.cu_mode_y,   0xFF, sizeof(ctudec->part_map.cu_mode_y));
-        memset(ctudec->part_map.qt_depth_map_y,   0, sizeof(ctudec->part_map.qt_depth_map_y));
-        memset(ctudec->part_map.log2_cu_h_map_y,   0xFF, sizeof(ctudec->part_map.log2_cu_h_map_y));
-        memset(ctudec->part_map_c.qt_depth_map_y,   0, sizeof(ctudec->part_map_c.qt_depth_map_y));
-        memset(ctudec->part_map_c.log2_cu_h_map_y, 0xFF, sizeof(ctudec->part_map_c.log2_cu_h_map_y));
+
         ctb_addr_rs += nb_ctu_w;
         ctb_y++;
     }
