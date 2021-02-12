@@ -99,7 +99,33 @@ struct InterDRVCtx
    #endif
 };
 
-struct IntraDRVCtx;
+/* Structure reserved for Intra Modes dervivation
+ */
+struct IntraDRVInfo
+{
+    /*
+     * FIXME Reset value should be 0 as PLANAR is used
+     * when not available
+     */
+
+    /* Pointer to above mode line at CTU start */
+    uint8_t *luma_mode_x;
+
+    /* Storage for CTU left intra modes
+     * reset to PLANAR at each CTU line start
+     * FIXME Reduce size for according to partition
+     * limits
+     */
+    uint8_t luma_mode_y[32];
+
+    /* Luma Intra Modes
+     * Used in Dual / Separable Tree to derive Chroma Intra Modes
+     * FIXME Reduce size according to partition limits
+     *       Move to Trees Specific info ?
+     */
+    uint8_t luma_modes[32*32];
+
+};
 
 struct FiltersDRVCtx
 {
@@ -119,6 +145,43 @@ struct TrCoeffData{
     int16_t residual_cr[64*64];
     int16_t lfnst_subblock[16*2];
 
+};
+
+/* FIXME
+ * We use enum here since its easier when
+ * debugging however a const value
+ * would probably be a better option
+ */
+
+enum RCNSizes
+{
+   /* Stride Used in CTU buffers MAX_CTU_S
+    *     + 64 samples right used for intra
+    *     +  4 samples for intra Multi Ref Lines
+    *     + 12 samples for memory alignement purposes
+    */
+   RCN_CTB_STRIDE  = (128 + 16 + 64),
+
+   /* A padding of 4 upper lines and 16 left
+    * columns from buffer start to be used for
+    * border copy for intra prediction
+    */
+   RCN_CTB_PADDING = (RCN_CTB_STRIDE * 4 + 16),
+
+   /* Size of CTB Buffer in samples */
+   RCN_CTB_SIZE    = (RCN_CTB_STRIDE * RCN_CTB_STRIDE),
+};
+
+struct CTURCNData
+{
+    uint16_t y_buff[RCN_CTB_SIZE];
+    uint16_t cb_buff[RCN_CTB_SIZE];
+    uint16_t cr_buff[RCN_CTB_SIZE];
+
+    /* To be used for temporary storage
+     * when we needed
+     */
+    uint16_t tmp_buff[RCN_CTB_SIZE];
 };
 
 struct OVCTUDec
@@ -148,9 +211,8 @@ struct OVCTUDec
     /* Derivations context according to activated tools
     */
     struct OVDrvCtx {
-        /* Pointers to Information used by specific tools */
+        struct IntraDRVInfo intra_info;
         struct InterDRVCtx *inter_ctx;
-        struct IntraDRVCtx *intra_ctx;
         struct DeltaQPDRVCtx *delta_qp_ctx;
         struct FiltersDRVCtx *loop_filters_ctx;
         int8_t qp_map_x[32];
@@ -159,6 +221,13 @@ struct OVCTUDec
 
     /* Reconstruction context */
     struct OVRCNCtx {
+
+        /* FIXME
+         * decide where we should store / alloc init this
+         * since this should be used by ctudec
+         */
+        struct CTURCNData data;
+
         /* Pointers to the first sample data of CTU in the current
          * picture
          */
@@ -166,6 +235,8 @@ struct OVCTUDec
             uint16_t *data_y;
             uint16_t *data_cb;
             uint16_t *data_cr;
+            uint32_t stride;
+            uint32_t stride_c;
         } ctu_pos;
 
         /* Pointers to CTU reconstruction buffers to be used
