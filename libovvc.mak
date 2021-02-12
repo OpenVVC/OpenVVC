@@ -1,4 +1,5 @@
 SRC_FOLDER:=libovvc/
+LIB_VERSION_HEADER:=ovversion.h
 LIB_SRC:=																																 \
 					ctudec.c                                                       \
 					data_rcn_angular.c                                           	 \

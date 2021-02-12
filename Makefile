@@ -1,22 +1,34 @@
 include config.mak
 
+# Set defaults
+CC?=gcc
+VERBOSITY?=0
+CFLAGS_COMMON?= --pedantic -fPIC
+CFLAGS_DEBUG?=  -O0 -g
+CFLAGS_RELEASE?= -O3 -Werror
+SHARED_LIBSUFF:=.so
+STATIC_LIBSUFF:=.a
+BUILDDIR?=.
+BUILD_TYPE?=RELEASE
+ARCH?=x86
+
+
 # Compiler Verbosity Control
 USER_CC := $(CC)
-CC_0 = @echo "Compiling $<..."; $(USER_CC)
+CC_0 = @echo "$(USER_CC) $@"; $(USER_CC)
 CC_1 = $(USER_CC)
 CC = $(CC_$(VERBOSITY))
 
-# Set default BUILD_TYPE
-ifndef BUILD_TYPE
-	BUILD_TYPE=release
-endif
+USER_AR := $(AR)
+AR_0 = @echo "$(USER_AR) $@"; $(USER_AR)
+AR_1 = $(USER_AR)
+AR = $(AR_$(VERBOSITY))
 
-BUILDDIR_TYPE:=$(addprefix $(BUILDDIR)/, $(BUILD_TYPE)/)
+AT_0 = @
+AT_1 =
+AT = $(AT_$(VERBOSITY))
 
-# Set default ARCH
-ifndef ARCH
-ARCH=x86
-endif
+BUILDDIR_TYPE:=$(addprefix $(BUILDDIR)/, $(shell echo $(BUILD_TYPE) | tr A-Z a-z)/)
 
 # Handle flags depending of BUILD_TYPE
 CFLAGS=$(CFLAGS_COMMON)
@@ -35,12 +47,19 @@ STATIC_LIBSUFF:=.a
 
 PROG=examples/dectest
 
-all: libs examples
+ALL_OBJS=$(LIB_OBJ) $(addprefix $(BUILDDIR_TYPE),$(addsuffix .o, $(PROG)))
 
-libs: $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF)
 
-examples: $(BUILDDIR_TYPE)$(PROG)
+all: version libs examples
 
+version: $(SRC_FOLDER)$(LIB_VERSION_HEADER) RELEASE
+
+libs: version $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF)
+
+examples: version $(BUILDDIR_TYPE)$(PROG)
+
+$(SRC_FOLDER)$(LIB_VERSION_HEADER): RELEASE
+	$(AT)./version.sh $^ $@
 
 $(BUILDDIR_TYPE)$(PROG):  $(BUILDDIR_TYPE)$(PROG).o $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF)
 	$(CC) $^ -o $@
@@ -52,20 +71,20 @@ $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF): $(LIB_OBJ)
 
 
 $(BUILDDIR_TYPE)%.o: %.c
-	@mkdir -p $(@D)
+	$(AT)mkdir -p $(@D)
 	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) -I$(SRC_FOLDER)
 
-.PHONY: style check-style tidy
+.PHONY: style check-style tidy version
 style:
-	@for src in $(LIB_FILE) ; do \
+	$(AT)for src in $(LIB_FILE) ; do \
 		echo "Formatting $$src..." ; \
 		clang-format -i "$$src" ; \
 	done
-	@echo "Done"
+	$(AT)echo "Done"
 
 
 check-style:
-	@for src in $(LIB_FILE) ; do \
+	$(AT)for src in $(LIB_FILE) ; do \
 		var=`clang-format "$$src" | diff "$$src" - | wc -l` ; \
 		clang-tidy -checks='-*,readability-identifier-naming' \
 		    -config="{CheckOptions: [ \
@@ -81,9 +100,20 @@ check-style:
 			exit 1 ; \
 		fi ; \
 	done
-	@echo "Style check passed"
+	$(AT)echo "Style check passed"
 
-.PHONY: clean
+.PHONY: clean mrproper
+
+# Force .o files to depend on the content of their associated .d file
+# if it already exists which will ensure the .o is rebuild when one of
+# its previous dependencies are modified
+$(ALL_OBJS):
+include $(wildcard $(ALL_OBJS:.o=.d))
 
 clean:
-	rm -r $(BUILDDIR)
+	$(AT)rm -f $(SRC_FOLDER)$(LIB_VERSION_HEADER)
+	$(AT)rm -f $(ALL_OBJS) $(ALL_OBJS:.o=.d) $(addprefix $(BUILDDIR_TYPE),$(PROG)) $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF)
+
+mrproper:
+	$(AT)rm -f $(SRC_FOLDER)$(LIB_VERSION_HEADER)
+	$(AT)rm -rf $(BUILDDIR)
