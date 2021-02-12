@@ -33,6 +33,23 @@ static uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 
                                 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
                                 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8 };
 
+/* FIXME refactor dequant*/
+static void
+derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
+                  int cu_qp_delta)
+{
+    /*FIXME avoid negative values especiallly in chroma_map derivation*/
+    int base_qp = (qp_ctx->current_qp + cu_qp_delta + 64) & 63;
+    ctudec->dequant_luma.qp = ((base_qp + 12) & 63);
+
+    /*FIXME update transform skip ctx to VTM-10.0 */
+    ctudec->dequant_luma_skip.qp = OVMAX(ctudec->dequant_luma.qp, qp_ctx->min_qp_prime_ts);
+    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[(base_qp + qp_ctx->cb_offset + 64) & 63] + 12;
+    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[(base_qp + qp_ctx->cr_offset + 64) & 63] + 12;
+    ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[(base_qp + qp_ctx->jcbcr_offset + 64) & 63] + 12;
+    ctudec->qp_ctx.current_qp = base_qp;
+}
+
 /* FIXME only used by mip_idx */
 static inline uint8_t
 vvc_get_cabac_truncated(OVCABACCtx *const cabac_ctx, unsigned int max_symbol){
@@ -427,7 +444,7 @@ coding_unit(OVCTUDec *const ctu_dec,
          transform_unit_wrap(ctu_dec, part_ctx,  x0, y0, log2_cb_w, log2_cb_h, cu);
     }
 
-#if 0
+#if 1
     derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
 #endif
 
@@ -441,16 +458,14 @@ coding_unit(OVCTUDec *const ctu_dec,
 #endif
 
     // Update depth_maps to selected depths
-#if 0
+#if 1
     /* update delta qp context */
     for (int i = 0; i < nb_cb_w; i++) {
-        ctu_dec->qp_map_up[x_cb + i] = ctu_dec->qp_ctx.current_qp;
-        ctu_dec->qp_map_up_cb[x_cb + i] = ctu_dec->dequant_cb.qp - 12;
-        ctu_dec->qp_map_up_cr[x_cb + i] = ctu_dec->dequant_cr.qp - 12;
+        ctu_dec->drv_ctx.qp_map_x[x_cb + i] = ctu_dec->qp_ctx.current_qp;
     }
 
     for (int i = 0; i < nb_cb_h; i++) {
-        ctu_dec->qp_map_left[y_cb + i] = ctu_dec->qp_ctx.current_qp;
+        ctu_dec->drv_ctx.qp_map_y[y_cb + i] = ctu_dec->qp_ctx.current_qp;
     }
 #endif
 

@@ -576,6 +576,23 @@ update_cabac_lines(OVCTUDec *const ctudec, const OVPS *const prms)
     pmap_c->cu_mode_x       += nb_pb_ctb_w;
 }
 
+static void
+update_drv_lines(OVCTUDec *const ctudec, const OVPS *const prms)
+{
+    const OVPartInfo *const pinfo = ctudec->part_ctx;
+
+    uint8_t log2_ctb_s    = pinfo->log2_ctu_s;
+    uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
+
+    uint16_t nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
+
+    struct OVDrvCtx *const drv_ctx = &ctudec->drv_ctx;
+    int8_t qp_val = ctudec->qp_ctx.current_qp;
+
+    memset(drv_ctx->qp_map_x, qp_val, sizeof(*drv_ctx->qp_map_x) * nb_pb_ctb_w);
+    memset(drv_ctx->qp_map_y, qp_val, sizeof(*drv_ctx->qp_map_y) * nb_pb_ctb_w);
+}
+
 static int
 decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
            const OVPS *const prms, struct RectEntryInfo *const einfo,
@@ -620,12 +637,21 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     int nb_ctu_w = einfo->nb_ctu_w;
     int ctb_x = 0;
     int ret;
+    int backup_qp;
+
+    update_drv_lines(ctudec, prms);
 
     while (ctb_x < nb_ctu_w - 1) {
 
         ret = decode_ctu(ctudec, sldec, prms, einfo, ctb_addr_rs);
 
         update_cabac_lines(ctudec, prms);
+
+        if (ctb_x == 0) {
+            backup_qp = ctudec->drv_ctx.qp_map_x[0];
+        }
+
+        update_drv_lines(ctudec, prms);
 
         ctb_addr_rs++;
         ctb_x++;
@@ -649,6 +675,11 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
                                   remaining_w, remaining_h);
     }
 
+    /* Next line will use the qp of the first pu as a start value
+     * for qp_prediction
+     */
+    ctudec->qp_ctx.current_qp = backup_qp;
+
     return 0;
 }
 
@@ -666,12 +697,16 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     int remaining_w = 1 << log2_ctb_s;
     int ctb_x = 0;
 
+    update_drv_lines(ctudec, prms);
+
     while (ctb_x < nb_ctu_w - 1) {
 
         ret = decode_ctu_implicit(ctudec, sldec, prms, einfo, ctb_addr_rs,
                                   remaining_w, remaining_h);
 
         update_cabac_lines(ctudec, prms);
+
+        update_drv_lines(ctudec, prms);
 
         ctb_addr_rs++;
         ctb_x++;
@@ -982,6 +1017,7 @@ ovdec_decode_slice()
 }
 #endif
 
+/* FIXME refactor dequant*/
 static void
 derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
                   int cu_qp_delta)

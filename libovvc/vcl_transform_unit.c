@@ -4,6 +4,23 @@
 #include "dec_structures.h"
 #include "ctudec.h"
 
+/* FIXME refactor dequant*/
+static void
+derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
+                  int cu_qp_delta)
+{
+    /*FIXME avoid negative values especiallly in chroma_map derivation*/
+    int base_qp = (qp_ctx->current_qp + cu_qp_delta + 64) & 63;
+    ctudec->dequant_luma.qp = ((base_qp + 12) & 63);
+
+    /*FIXME update transform skip ctx to VTM-10.0 */
+    ctudec->dequant_luma_skip.qp = OVMAX(ctudec->dequant_luma.qp, qp_ctx->min_qp_prime_ts);
+    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[(base_qp + qp_ctx->cb_offset + 64) & 63] + 12;
+    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[(base_qp + qp_ctx->cr_offset + 64) & 63] + 12;
+    ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[(base_qp + qp_ctx->jcbcr_offset + 64) & 63] + 12;
+    ctudec->qp_ctx.current_qp = base_qp;
+}
+
 static uint8_t
 ovcabac_read_ae_root_cbf(OVCABACCtx *const cabac_ctx)
 {
@@ -851,7 +868,7 @@ transform_unit_st(OVCTUDec *const ctu_dec,
         if (ctu_dec->delta_qp_enabled && cbf_mask) {
             OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
             int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
-            #if 0
+            #if 1
             derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
             #endif
         }
@@ -882,7 +899,7 @@ transform_unit_l(OVCTUDec *const ctu_dec,
     if (cbf_mask) {
         if (ctu_dec->delta_qp_enabled && cbf_mask) {
             int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
-            #if 0
+            #if 1
             derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
             #endif
         }
@@ -905,7 +922,7 @@ transform_unit_c(OVCTUDec *const ctu_dec,
     if (cbf_mask) {
         if (ctu_dec->delta_qp_enabled && cbf_mask) {
             int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
-            #if 0
+            #if 1
             derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
             #endif
         }

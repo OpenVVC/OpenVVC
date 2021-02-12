@@ -121,7 +121,8 @@ struct TrCoeffData{
 
 };
 
-struct OVCTUDec {
+struct OVCTUDec
+{
     /**
      * Pointer to the parent frame decoder
      * Note this should be only be used only to retrieve
@@ -152,6 +153,8 @@ struct OVCTUDec {
         struct IntraDRVCtx *intra_ctx;
         struct DeltaQPDRVCtx *delta_qp_ctx;
         struct FiltersDRVCtx *loop_filters_ctx;
+        int8_t qp_map_x[32];
+        int8_t qp_map_y[32];
     } drv_ctx;
 
     /* Reconstruction context */
