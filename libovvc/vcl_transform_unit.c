@@ -750,9 +750,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
 
         #if 1
         if (cbf_mask & 0x2) {
-            #if 0
-            uint16_t *dst_cb = &ctu_dec->ctu_data_cb[VVC_CTB_OFFSET_CHROMA + x0 + VVC_CTB_STRIDE_CHROMA * y0];
-            #endif
+            uint16_t *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[(x0) + (y0 * RCN_CTB_STRIDE)];
             #if 0
             int16_t scale  = ctu_dec->lmcs_chroma_scale;
             #endif
@@ -769,9 +767,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
         }
 
         if (cbf_mask & 0x1) {
-            #if 0
-            uint16_t *dst_cr  = &ctu_dec->ctu_data_cr[VVC_CTB_OFFSET_CHROMA + x0 + VVC_CTB_STRIDE_CHROMA * y0];
-            #endif
+            uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[(x0) + (y0 * RCN_CTB_STRIDE)];
             #if 0
             int16_t scale  = ctu_dec->lmcs_chroma_scale;
             #endif
@@ -790,11 +786,11 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
     } else { //Joint cb cr (ICT)
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         uint16_t last_pos_cbcr;
+        uint16_t *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[(x0) + (y0 * RCN_CTB_STRIDE)];
+        uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[(x0) + (y0 * RCN_CTB_STRIDE)];
         #if 0
         int shift_v = 6 + 1;
         int shift_h = (6 + 15 - 1) - 10;
-        int16_t *dst_cb  = &ctu_dec->ctu_data_cb[VVC_CTB_OFFSET_CHROMA + x0 + VVC_CTB_STRIDE_CHROMA * y0];
-        int16_t *dst_cr  = &ctu_dec->ctu_data_cr[VVC_CTB_OFFSET_CHROMA + x0 + VVC_CTB_STRIDE_CHROMA * y0];
         int16_t *src  = ctu_dec->transform_buff;
         int16_t scale = ctu_dec->lmcs_chroma_scale;
         #endif

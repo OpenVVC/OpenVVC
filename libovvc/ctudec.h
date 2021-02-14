@@ -236,27 +236,24 @@ struct OVCTUDec
          */
         struct CTURCNData data;
 
+        
         /* Pointers to the first sample data of CTU in the current
          * picture
          */
-        struct {
-            uint16_t *data_y;
-            uint16_t *data_cb;
-            uint16_t *data_cr;
+        struct OVBuffInfo{
+            uint16_t *y;
+            uint16_t *cb;
+            uint16_t *cr;
             uint32_t stride;
             uint32_t stride_c;
-        } ctu_pos;
+        } frame_buff;
 
         /* Pointers to CTU reconstruction buffers to be used
          * to reconstruct current CTU.
          * These buffers will be written to the destination picture
          * before filtering operation
          */
-        struct {
-            uint16_t *data_y;
-            uint16_t *data_cb;
-            uint16_t *data_cr;
-        } rcn_ctu_buff;
+        struct OVBuffInfo ctu_buff;
 
         /* Side Buffer to be used by reconstruction functions
          * when needed
