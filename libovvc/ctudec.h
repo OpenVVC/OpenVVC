@@ -105,6 +105,11 @@ struct InterDRVCtx
    #if 0
    struct HMVP hmvp_lut;
    #endif
+
+   /* TODO
+    * Convenience variables for manipulation
+    * such as log2 dimension etc.
+    */
 };
 
 /* Structure reserved for Intra Modes dervivation
@@ -117,6 +122,10 @@ struct IntraDRVInfo
      */
 
     /* Pointer to above mode line at CTU start */
+    /* FIXME
+     * This line is not required since mode
+     * is considered zero
+     */
     uint8_t *luma_mode_x;
 
     /* Storage for CTU left intra modes
@@ -129,6 +138,7 @@ struct IntraDRVInfo
     /* Luma Intra Modes
      * Used in Dual / Separable Tree to derive Chroma Intra Modes
      * FIXME Reduce size according to partition limits
+     *       Or keep size constant
      *       Move to Trees Specific info ?
      */
     uint8_t luma_modes[32*32];
