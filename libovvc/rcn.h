@@ -11,17 +11,6 @@
  * find meaningful place for definition
  */
 
-// FIXED? :
-#define VVC_CTB_STRIDE (128 + 16 + 64)
-#define VVC_CTB_OFFSET (VVC_CTB_STRIDE * 4 + 16)
-
-#define VVC_CTB_STRIDE_CHROMA (128 + 64 + 16)
-#define VVC_CTB_CTX_SIZE   (VVC_CTB_STRIDE * (128 + 4))
-
-#define VVC_CTU_UP_FLAG             (1 << 0)
-#define VVC_CTU_LEFT_FLAG           (1 << 1)
-#define VVC_CTU_UPLEFT_FLAG         (1 << 2)
-#define VVC_CTU_UPRIGHT_FLAG        (1 << 3)
 
 extern const struct TrFunc tr_templates[NB_TR_TYPES][NB_TR_SIZES];
 /* FIXME remove some args and give RCNCTX instead of ctudec
