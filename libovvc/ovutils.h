@@ -14,7 +14,7 @@
 
 #define OVMAX(a, b) (((a) > (b)) ? (a) : (b))
 #define OVMIN(a, b) (((a) < (b)) ? (a) : (b))
-#define OVABS(a) (((a) < (0)) ? (-a) : (a))
+#define OVABS(a) (((a) < (0)) ? -(a) : (a))
 
 typedef enum {OVLOG_ERROR, OVLOG_WARNING, OVLOG_INFO, OVLOG_VERBOSE, OVLOG_DEBUG, OVLOG_TRACE }OVLOG_TYPE;
 static const char *OVLOG_COLORIFY[6] = { RED, YEL, BLU, CYN, GRN, MAG};
