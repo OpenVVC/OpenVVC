@@ -591,13 +591,16 @@ coding_unit_intra_st(OVCTUDec *const ctu_dec,
                      uint8_t log2_cu_w, uint8_t log2_cu_h)
 {
    VVCCU cu = {0};
+
+   /* Force pred_mode_flag to 2 so we know cu was intra */
    cu.cu_flags = 2;
+
    coding_unit_intra(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h);
 
    /* if not in separable tree */
    if (!ctu_dec->share) {
        coding_unit_intra_c(ctu_dec, ctu_dec->part_ctx_c, x0 >> 1, y0 >> 1,
-               log2_cu_w - 1, log2_cu_h - 1);
+                           log2_cu_w - 1, log2_cu_h - 1);
    }
 
    return cu;
@@ -650,6 +653,7 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
             memset(&part_map->cu_mode_x[x_pu], OV_MIP, sizeof(uint8_t) * nb_pb_w);
             memset(&part_map->cu_mode_y[y_pu], OV_MIP, sizeof(uint8_t) * nb_pb_h);
 
+            /* TODO set luma_mode to PLANAR for modes derivation */
             #if 0
             for (int i = 0; i < nb_pb_h; i++) {
                 memset(&pred_ctx->cclm_intra_mode[x_pu + (i << 5) + (y_pu << 5)], OV_MIP,
@@ -680,7 +684,9 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
             }
 
             isp_mode = ovcabac_read_ae_intra_subpartition_flag(cabac_ctx, isp_split_status);
+
             cu.cu_flags |= flg_isp_flag & (-(!!isp_mode));
+
             cu.cu_opaque = isp_mode;
         }
 

@@ -967,6 +967,7 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
 
     /* FIXME
      * move this somewhere else so we can handle lines at a higher level
+     *     safer is allocated check
      */
     if (!sldec->cabac_lines[0].qt_depth_map_x) {
         int ret;
