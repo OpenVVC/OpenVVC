@@ -424,8 +424,8 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
         uint8_t mpm_flag = !!(cu.cu_flags & flg_mpm_flag);
         uint8_t isp_flag = !!(cu.cu_flags & flg_isp_flag);
 
-        uint8_t intra_mode = derive_intra_angular_mode(i_info, cu.cu_flags, cu.cu_mode_info,
-                                                       x_pu, y_pu, nb_pb_w, nb_pb_h);
+        intra_mode = derive_intra_angular_mode(i_info, cu.cu_flags, cu.cu_mode_info,
+                                               x_pu, y_pu, nb_pb_w, nb_pb_h);
 
         cu.cu_mode_idx = intra_mode;
 
@@ -452,13 +452,13 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
             }
         #endif
         }
-        memset(&i_info->luma_mode_x[x_pu], intra_mode, sizeof(uint8_t) * nb_pb_w);
-        memset(&i_info->luma_mode_y[y_pu], intra_mode, sizeof(uint8_t) * nb_pb_h);
+    }
+    memset(&i_info->luma_mode_x[x_pu], intra_mode, sizeof(uint8_t) * nb_pb_w);
+    memset(&i_info->luma_mode_y[y_pu], intra_mode, sizeof(uint8_t) * nb_pb_h);
 
-        for (int i = 0; i < nb_pb_h; i++) {
-            memset(&i_info->luma_modes[x_pu + (i << 5) + (y_pu << 5)], intra_mode,
-                   sizeof(uint8_t) * nb_pb_w);
-        }
+    for (int i = 0; i < nb_pb_h; i++) {
+        memset(&i_info->luma_modes[x_pu + (i << 5) + (y_pu << 5)], intra_mode,
+               sizeof(uint8_t) * nb_pb_w);
     }
 
     /* Store derived actual intra mode */
