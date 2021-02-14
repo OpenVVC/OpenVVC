@@ -19,6 +19,14 @@
 #define DECL_FLG(name, pos)\
     flg_##name = (1llu << (pos))
 
+enum CTUNGHFlags
+{
+     CTU_UP_FLG    = 1 << 0,
+     CTU_LFT_FLG   = 1 << 1,
+     CTU_UPLFT_FLG = 1 << 2,
+     CTU_UPRGT_FLG = 1 << 3,
+};
+
 enum VVCCUFlag{
      DECL_FLG(cu_skip_flag,0),
      DECL_FLG(pred_mode_flag,1),
@@ -261,10 +269,13 @@ struct OVCTUDec
          * current CTU, and its borders those are used for example
          * in order to derive references samples for intra prediction
          */
+         /* FIXME move to drv */
         struct CTUBitField{
             uint64_t hfield[33];
             uint64_t vfield[33];
         } progress_field;
+
+        struct CTUBitField progress_field_c;
     } rcn_ctx;
 
     /* CTU neighbours availability flags
