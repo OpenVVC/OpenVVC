@@ -9,6 +9,7 @@
 #include "dec_structures.h"
 #include "vcl_cabac.h"
 #include "vcl.h"
+#include "drv_utils.h"
 
 /* TODO define in a header */
 enum SliceType {
@@ -17,13 +18,6 @@ enum SliceType {
      SLICE_I = 2
 };
 
-enum CTUNGHFlags
-{
-     CTU_UP_FLG    = 1 << 0,
-     CTU_LFT_FLG   = 1 << 1,
-     CTU_UPLFT_FLG = 1 << 2,
-     CTU_UPRGT_FLG = 1 << 3,
-};
 
 struct RectEntryInfo {
     int ctb_x;
@@ -707,7 +701,12 @@ decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     /* FIXME pic border detection in neighbour flags ?*/
     derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w, nb_ctu_h);
 
+    init_ctu_bitfield(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s);
+
     ret = ctudec->coding_tree(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s, 0);
+
+    /* FIXME write_ctu
+     */
 
     return ret;
 }
@@ -724,6 +723,10 @@ decode_ctu_implicit(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     /* FIXME pic border detection in neighbour flags ?*/
     derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w, nb_ctu_h);
+
+    /* FIXME pic border detection in neighbour flags ?*/
+    init_ctu_bitfield_border(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s,
+                             remaining_w,remaining_h);
 
     ret = ctudec->coding_tree_implicit(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s,
                                        0, remaining_w, remaining_h);

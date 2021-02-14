@@ -5,6 +5,8 @@
 #include "dec_structures.h"
 #include "cabac_internal.h"
 #include "ctudec.h"
+#include "drv.h"
+#include "drv_utils.h"
 
 /*FIXME find a more global location for these defintions */
 enum CUMode {
@@ -698,12 +700,28 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
         }
     }
 
-#if 0
-    cu = recon_intra_cu(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, cu);
+#if 1
+    /* FIXME move after TU is read so we can reconstruct with or without
+     * transform trees
+     */
+    cu = drv_intra_cu(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, cu);
 #endif
 
     return cu;
 }
+
+enum CIntra_Info
+{
+    CCLM_DEFAULT,
+    MDLM_TOP,
+    CCLM_LEFT,
+    LUMA_MODE,
+    MPM,
+    MPM_0 = MPM,
+    MPM_1,
+    MPM_2,
+    MPM_3
+};
 
 VVCCU
 coding_unit_intra_c(OVCTUDec *const ctu_dec,
@@ -713,72 +731,81 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
 {
 
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    #if 0
-    VVCCTUPredContext *const pred_ctx = &ctu_dec->pred_ctx;
-    #endif
+    struct IntraDRVInfo *const i_info = &ctu_dec->drv_ctx.intra_info;
+    /* TODO set mode to default */
     uint8_t intra_mode;
-    uint8_t mpm_idx = 0, lm_idx = 1;
-#if 0
+    enum CIntra_Info mode_info = LUMA_MODE;
+    uint8_t mpm_idx = 0, cclm_idx = 1;
+#if 1
     uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
     uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_w = (1 << log2_cb_w) >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_h = (1 << log2_cb_h) >> part_ctx->log2_min_cb_s;
-    uint8_t mpm_flag = 0;
-    uint8_t luma_mode = pred_ctx->cclm_intra_mode[(x_pu + ((y_pu + (nb_pb_h >> 1)) << 5) + (nb_pb_w >> 1))];
+    uint8_t luma_mode = i_info->luma_modes[(x_pu + ((y_pu + (nb_pb_h >> 1)) << 5) + (nb_pb_w >> 1))];
     uint8_t pu_shift = ctu_dec->part_ctx->log2_min_cb_s - 2;
 #endif
     uint8_t cclm_flag = 0;
+    uint8_t mpm_flag  = 0;
 
     VVCCU cu = {0};
 
     cu.cu_flags = 2;
 
     if (ctu_dec->lm_chroma_enabled && !ctu_dec->tmp_disable_cclm &&
-            ctu_dec->enable_cclm == 1) {
+        ctu_dec->enable_cclm == 1) {
+
         cclm_flag = ovcabac_read_ae_cclm_flag(cabac_ctx);
+
         if (cclm_flag) {
-            lm_idx = ovcabac_read_ae_intra_lm_chroma(cabac_ctx);
+            /* VALUES : 0 1 2 */
+            cclm_idx = ovcabac_read_ae_intra_lm_chroma(cabac_ctx);
+            mode_info = cclm_idx;
         }
+
+        /* TODO set MODE TO LM */
     }
 
     if (!cclm_flag) {
-        uint8_t mpm_flag = ovcabac_read_ae_intra_chroma_mpm_flag(cabac_ctx);
+        mpm_flag = ovcabac_read_ae_intra_chroma_mpm_flag(cabac_ctx);
         if (mpm_flag) {
             mpm_idx = ovcabac_read_ae_intra_chroma_mpm_idx(cabac_ctx);
+        /* TODO set MODE to result */
+            mode_info = MPM + mpm_idx;
         }
     }
 
-#if 0
+#if 1
     //Note this is not required by cabac decoding.
+    #if 0
     luma_mode = luma_mode != VVC_MIP_MODE ? luma_mode : VVC_PLANAR;
-    intra_mode = ff_vvc_derive_intra_pred_mode_chroma(cclm_flag, mpm_flag, mpm_idx,
-                                                      luma_mode, lm_idx);
+    #endif
+    intra_mode = derive_intra_mode_c(cclm_flag, mpm_flag, mpm_idx,
+                                     luma_mode, cclm_idx);
 
+    /* TODO update progress fields
+     */
+
+#if 0
     update_availability_maps(&ctu_dec->progress_map_c, x_pu << pu_shift, y_pu << pu_shift,
                              nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+#else
+    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_pu << pu_shift,
+                                y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
 
-    for (int i = 0; i < nb_pb_h; i++) {
-        memset(&pred_ctx->intra_modes_chroma[x_pu + (y_pu << 5) + i*32], intra_mode,
-                sizeof(uint8_t) * nb_pb_w);
-    }
+#endif
 
-    if (intra_mode == VVC_DM_CHROMA) {//derive intra mode for use;
-        uint16_t *const dst_cb = &ctu_dec->ctu_data_cb[VVC_CTB_OFFSET+(x0)+((y0)*VVC_CTB_STRIDE)];
-        uint16_t *const dst_cr = &ctu_dec->ctu_data_cr[VVC_CTB_OFFSET+(x0)+((y0)*VVC_CTB_STRIDE)];
-        vvc_intra_pred_chroma(ctu_dec, dst_cb, dst_cr,
-                              VVC_CTB_STRIDE_CHROMA, luma_mode, x0, y0,
+    if (intra_mode == OVINTRA_DM_CHROMA) {//derive intra mode for use;
+        vvc_intra_pred_chroma(ctu_dec, NULL, NULL,
+                              0, luma_mode, x0, y0,
                               log2_cb_w, log2_cb_h);
-    } else if (intra_mode == VVC_LM_CHROMA) {
-        uint16_t *const dst_cb = &ctu_dec->ctu_data_cb[VVC_CTB_OFFSET+(x0)+((y0)*VVC_CTB_STRIDE)];
-        uint16_t *const dst_cr = &ctu_dec->ctu_data_cr[VVC_CTB_OFFSET+(x0)+((y0)*VVC_CTB_STRIDE)];
-        vvc_intra_pred_chroma(ctu_dec, dst_cb, dst_cr,
-                              VVC_CTB_STRIDE_CHROMA, intra_mode, x0, y0,
+    } else if (intra_mode == OVINTRA_LM_CHROMA) {
+        /* FIXME separate LM_CHROMA from global */
+        vvc_intra_pred_chroma(ctu_dec, NULL, NULL,
+                              0, intra_mode, x0, y0,
                               log2_cb_w, log2_cb_h);
     } else {
-        uint16_t *const dst_cb = &ctu_dec->ctu_data_cb[VVC_CTB_OFFSET+(x0)+((y0)*VVC_CTB_STRIDE)];
-        uint16_t *const dst_cr = &ctu_dec->ctu_data_cr[VVC_CTB_OFFSET+(x0)+((y0)*VVC_CTB_STRIDE)];
-        vvc_intra_pred_chroma(ctu_dec, dst_cb, dst_cr,
-                              VVC_CTB_STRIDE_CHROMA, intra_mode, x0, y0,
+        vvc_intra_pred_chroma(ctu_dec, NULL, NULL,
+                              0, intra_mode, x0, y0,
                               log2_cb_w, log2_cb_h);
     }
 #endif
@@ -794,15 +821,16 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                         uint8_t merge_flag)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+    struct IntraDRVInfo *const i_info = &ctu_dec->drv_ctx.intra_info;
 #if 0
     struct VVCInterCtx *const inter_ctx = &ctu_dec->inter_ctx;
     struct VVCMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
 
+#endif
     uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
     uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_w = (1 << log2_pb_w) >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_h = (1 << log2_pb_h) >> part_ctx->log2_min_cb_s;
-#endif
 
     OVMV mv0;
     if (merge_flag) {
@@ -842,6 +870,13 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     update_hmvp_lut(&inter_ctx->hmvp_lut, mv0);
 #endif
 
+    memset(&i_info->luma_mode_x[x_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_w);
+    memset(&i_info->luma_mode_y[y_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_h);
+
+    for (int i = 0; i < nb_pb_h; i++) {
+        memset(&i_info->luma_modes[x_pu + (i << 5) + (y_pu << 5)], OVINTRA_PLANAR,
+               sizeof(uint8_t) * nb_pb_w);
+    }
     return merge_flag;
 }
 

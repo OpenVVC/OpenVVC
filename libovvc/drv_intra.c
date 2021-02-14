@@ -1,0 +1,911 @@
+/* Derivations functions for intra Most Probable Modes (MPM) and conversion
+ * to "usable" mode for reconstruction 
+ */
+
+#include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
+#include "ovutils.h"
+#include "ctudec.h"
+#include "dec_structures.h"
+#include "drv.h"
+#include "vcl.h"
+#include "drv_utils.h"
+
+
+/* FIXME
+ * try to remove + 2  and use mask instead of %
+ */
+static uint8_t
+vvc_derive_mpm_list(uint8_t mpm_idx, uint8_t lft_mode, uint8_t abv_mode)
+{
+    const int offset = 67 - 6;
+    const int mod    = offset + 3;
+    int8_t mpm_list[6];
+
+    #if 0
+    lft_mode  = lft_mode != OVINTRA_NOT_AVAILABLE && lft_mode != OVINTRA_MIP_MODE ? lft_mode  : OVINTRA_PLANAR;
+    abv_mode  = abv_mode != OVINTRA_NOT_AVAILABLE && abv_mode != OVINTRA_MIP_MODE? abv_mode : OVINTRA_PLANAR;
+    #endif
+
+    /* FIXME Is there a diff with unsorted version ?*/
+    mpm_list[0] = OVINTRA_PLANAR;
+    mpm_list[1] = OVINTRA_DC;
+    mpm_list[2] = OVINTRA_VER;
+    mpm_list[3] = OVINTRA_HOR;
+    mpm_list[4] = OVINTRA_VER - 4;
+    mpm_list[5] = OVINTRA_VER + 4;
+
+    if (lft_mode == abv_mode){
+        if (lft_mode > OVINTRA_DC){
+            mpm_list[0] = OVINTRA_PLANAR;
+            mpm_list[1] = lft_mode;
+            mpm_list[2] = ((lft_mode + offset    ) % mod) + 2;
+            mpm_list[3] = ((lft_mode          - 1) % mod) + 2;
+            mpm_list[4] = ((lft_mode + offset - 1) % mod) + 2;
+            mpm_list[5] = ((lft_mode             ) % mod) + 2;
+        }
+    } else { //L!=A
+        if ((lft_mode > OVINTRA_DC) && (abv_mode > OVINTRA_DC)){
+            mpm_list[0] = OVINTRA_PLANAR;
+            mpm_list[1] = lft_mode;
+            mpm_list[2] = abv_mode;
+            if (lft_mode > abv_mode){
+                if (lft_mode - abv_mode == 1){
+                    mpm_list[3] = ((abv_mode + offset    ) % mod) + 2;
+                    mpm_list[4] = ((lft_mode           - 1) % mod) + 2;
+                    mpm_list[5] = ((abv_mode + offset - 1) % mod) + 2;
+                } else if (lft_mode - abv_mode >= 62){
+                    mpm_list[3] = ((abv_mode          - 1) % mod) + 2;
+                    mpm_list[4] = ((lft_mode + offset     ) % mod) + 2;
+                    mpm_list[5] = ( abv_mode               % mod) + 2;
+                } else if (lft_mode - abv_mode == 2) {
+                    mpm_list[3] = ((abv_mode          - 1) % mod) + 2;
+                    mpm_list[4] = ((abv_mode + offset    ) % mod) + 2;
+                    mpm_list[5] = ((lft_mode           - 1) % mod) + 2;
+                } else {
+                    mpm_list[3] = ((abv_mode + offset    ) % mod) + 2;
+                    mpm_list[4] = ((abv_mode          - 1) % mod) + 2;
+                    mpm_list[5] = ((lft_mode + offset     ) % mod) + 2;
+                }
+            } else {
+                if (abv_mode - lft_mode == 1){
+                    mpm_list[3] = ((lft_mode + offset    ) % mod) + 2;
+                    mpm_list[4] = ((abv_mode         - 1) % mod) + 2;
+                    mpm_list[5] = ((lft_mode + offset - 1) % mod) + 2;
+                } else if (abv_mode - lft_mode >= 62){
+                    mpm_list[3] = ((lft_mode          - 1) % mod) + 2;
+                    mpm_list[4] = ((abv_mode + offset   ) % mod) + 2;
+                    mpm_list[5] = ( lft_mode               % mod) + 2;
+                } else if (abv_mode - lft_mode == 2) {
+                    mpm_list[3] = ((lft_mode          - 1) % mod) + 2;
+                    mpm_list[4] = ((lft_mode + offset    ) % mod) + 2;
+                    mpm_list[5] = ((abv_mode         - 1) % mod) + 2;
+                } else {
+                    mpm_list[3] = ((lft_mode + offset     ) % mod) + 2;
+                    mpm_list[4] = ((lft_mode           - 1) % mod) + 2;
+                    mpm_list[5] = ((abv_mode + offset    ) % mod) + 2;
+                }
+            }
+        } else if (lft_mode + abv_mode >= 2){
+            if (lft_mode > abv_mode){
+                mpm_list[0] = OVINTRA_PLANAR;
+                mpm_list[1] = lft_mode;
+                mpm_list[2] = ((lft_mode + offset    ) % mod) + 2;
+                mpm_list[3] = ((lft_mode          - 1) % mod) + 2;
+                mpm_list[4] = ((lft_mode + offset - 1) % mod) + 2;
+                mpm_list[5] = ( lft_mode               % mod) + 2;
+            } else {
+                mpm_list[0] = OVINTRA_PLANAR;
+                mpm_list[1] = abv_mode;
+                mpm_list[2] = ((abv_mode + offset    ) % mod) + 2;
+                mpm_list[3] = ((abv_mode          - 1) % mod) + 2;
+                mpm_list[4] = ((abv_mode + offset - 1) % mod) + 2;
+                mpm_list[5] = ( abv_mode               % mod) + 2;
+            }
+        }
+    }
+
+    return mpm_list[mpm_idx];
+}
+
+/* FIXME
+ * write our own sorting function for faster sorting
+ */
+static int
+cmpfunc (const void * a, const void * b)
+{
+   return ( *(uint8_t*)a - *(uint8_t*)b );
+}
+
+static uint8_t
+vvc_derive_mpm_list_sorted(uint8_t lft_mode, uint8_t abv_mode, uint8_t intra_luma_comp)
+{
+    const int offset = 67 - 6;
+    const int mod    = offset + 3;
+    int8_t mpm_list[6];
+
+    #if 0
+    lft_mode  = lft_mode  != OVINTRA_NOT_AVAILABLE && lft_mode  != OVINTRA_MIP_MODE ? lft_mode  : OVINTRA_PLANAR;
+    abv_mode = abv_mode != OVINTRA_NOT_AVAILABLE && abv_mode  != OVINTRA_MIP_MODE? abv_mode : OVINTRA_PLANAR;
+    #endif
+
+    mpm_list[0] = OVINTRA_PLANAR;
+    mpm_list[1] = OVINTRA_DC;
+    mpm_list[2] = OVINTRA_VER;
+    mpm_list[3] = OVINTRA_HOR;
+    mpm_list[4] = OVINTRA_VER - 4;
+    mpm_list[5] = OVINTRA_VER + 4;
+
+    if (lft_mode == abv_mode){
+        if (lft_mode > OVINTRA_DC){
+            mpm_list[0] = OVINTRA_PLANAR;
+            mpm_list[1] = lft_mode;
+            mpm_list[2] = ((lft_mode + offset    ) % mod) + 2;
+            mpm_list[3] = ((lft_mode          - 1) % mod) + 2;
+            mpm_list[4] = ((lft_mode + offset - 1) % mod) + 2;
+            mpm_list[5] = ((lft_mode             ) % mod) + 2;
+        }
+    } else { //L!=A
+        if ((lft_mode > OVINTRA_DC) && (abv_mode > OVINTRA_DC)){
+            mpm_list[0] = OVINTRA_PLANAR;
+            mpm_list[1] = lft_mode;
+            mpm_list[2] = abv_mode;
+            if (lft_mode > abv_mode){
+                if (lft_mode - abv_mode == 1){
+                    mpm_list[3] = ((abv_mode + offset    ) % mod) + 2;
+                    mpm_list[4] = ((lft_mode          - 1) % mod) + 2;
+                    mpm_list[5] = ((abv_mode + offset - 1) % mod) + 2;
+                } else if (lft_mode - abv_mode >= 62){
+                    mpm_list[3] = ((abv_mode          - 1) % mod) + 2;
+                    mpm_list[4] = ((lft_mode + offset    ) % mod) + 2;
+                    mpm_list[5] = ( abv_mode               % mod) + 2;
+                } else if (lft_mode - abv_mode == 2) {
+                    mpm_list[3] = ((abv_mode          - 1) % mod) + 2;
+                    mpm_list[4] = ((abv_mode + offset    ) % mod) + 2;
+                    mpm_list[5] = ((lft_mode          - 1) % mod) + 2;
+                } else {
+                    mpm_list[3] = ((abv_mode + offset    ) % mod) + 2;
+                    mpm_list[4] = ((abv_mode          - 1) % mod) + 2;
+                    mpm_list[5] = ((lft_mode + offset    ) % mod) + 2;
+                }
+            } else {
+                if (abv_mode - lft_mode == 1){
+                    mpm_list[3] = ((lft_mode + offset    ) % mod) + 2;
+                    mpm_list[4] = ((abv_mode          - 1) % mod) + 2;
+                    mpm_list[5] = ((lft_mode + offset - 1) % mod) + 2;
+                } else if (abv_mode - lft_mode >= 62){
+                    mpm_list[3] = ((lft_mode         - 1) % mod) + 2;
+                    mpm_list[4] = ((abv_mode + offset   ) % mod) + 2;
+                    mpm_list[5] = ( lft_mode              % mod) + 2;
+                } else if (abv_mode - lft_mode == 2) {
+                    mpm_list[3] = ((lft_mode          - 1) % mod) + 2;
+                    mpm_list[4] = ((lft_mode + offset    ) % mod) + 2;
+                    mpm_list[5] = ((abv_mode          - 1) % mod) + 2;
+                } else {
+                    mpm_list[3] = ((lft_mode + offset    ) % mod) + 2;
+                    mpm_list[4] = ((lft_mode          - 1) % mod) + 2;
+                    mpm_list[5] = ((abv_mode + offset    ) % mod) + 2;
+                }
+            }
+        } else if (lft_mode + abv_mode >= 2){
+            if (lft_mode > abv_mode){
+                mpm_list[0] = OVINTRA_PLANAR;
+                mpm_list[1] = lft_mode;
+                mpm_list[2] = ((lft_mode + offset    ) % mod) + 2;
+                mpm_list[3] = ((lft_mode          - 1) % mod) + 2;
+                mpm_list[4] = ((lft_mode + offset - 1) % mod) + 2;
+                mpm_list[5] = ( lft_mode               % mod) + 2;
+            } else {
+                mpm_list[0] = OVINTRA_PLANAR;
+                mpm_list[1] = abv_mode;
+                mpm_list[2] = ((abv_mode + offset    ) % mod) + 2;
+                mpm_list[3] = ((abv_mode          - 1) % mod) + 2;
+                mpm_list[4] = ((abv_mode + offset - 1) % mod) + 2;
+                mpm_list[5] = ( abv_mode               % mod) + 2;
+            }
+        }
+    }
+
+    qsort(mpm_list, 6, sizeof(uint8_t), cmpfunc);
+
+    intra_luma_comp += intra_luma_comp >= mpm_list[0];
+    intra_luma_comp += intra_luma_comp >= mpm_list[1];
+    intra_luma_comp += intra_luma_comp >= mpm_list[2];
+
+    intra_luma_comp += intra_luma_comp >= mpm_list[3];
+    intra_luma_comp += intra_luma_comp >= mpm_list[4];
+    intra_luma_comp += intra_luma_comp >= mpm_list[5];
+
+    return intra_luma_comp;
+}
+
+uint8_t
+derive_intra_mode_c(uint8_t cclm_flag, uint8_t mpm_flag, uint8_t mpm_idx,
+                    uint8_t luma_mode, uint8_t cclm_idx)
+{
+    /* FIXME
+     *     Modify lm_mode_idx so we fit in mode_list1
+     *     Use a switch to clarify ?
+     */
+    if (cclm_flag) {
+        static const uint8_t mode_list[3] = {
+            OVINTRA_LM_CHROMA,
+            OVINTRA_MDLM_LEFT,
+            OVINTRA_MDLM_TOP
+        };
+
+        return mode_list[cclm_idx];
+
+    } else if (mpm_flag) {
+        int i;
+
+        /* FIXME mpm_idx max = 4*/
+        uint8_t mode_list1[8] = {
+            OVINTRA_PLANAR,
+            OVINTRA_VER,
+            OVINTRA_HOR,
+            OVINTRA_DC,
+            OVINTRA_LM_CHROMA,
+            OVINTRA_MDLM_LEFT,
+            OVINTRA_MDLM_TOP,
+            OVINTRA_DM_CHROMA
+        };
+
+        /* FIXME MIP should not be stored or stored as PLANAR for mode derivation
+         */
+        #if 0
+        luma_mode = luma_mode != OVINTRA_MIP_MODE ? luma_mode : OVINTRA_PLANAR;
+        #endif
+
+
+        /* FIXME We could probably remove this by only checking mpm_idx */
+        #if 0
+        for (i = 0; i < 4; ++i) {
+            if (mode_list1[i] == luma_mode) {
+                mode_list1[i] = OVINTRA_VDIA;
+            }
+        }
+        #else
+        if (mode_list1[mpm_idx] == luma_mode) {
+            return OVINTRA_VDIA;
+        }
+        #endif
+
+        return mode_list1[mpm_idx];
+    }
+
+    /* Note defult mode force use of luma */
+    return luma_mode;
+}
+
+
+static uint8_t
+derive_intra_angular_mode(struct IntraDRVInfo *i_info,
+                          uint8_t cu_flags, uint8_t cu_mode_info,
+                          int x_pu, int y_pu, int nb_pb_w, int nb_pb_h)
+{
+    uint8_t mpm_flag = cu_flags & flg_mpm_flag;
+
+    int16_t tr_pos = (x_pu + nb_pb_w - 1) + ((y_pu - 1) << 5);
+    int16_t bl_pos = (x_pu - 1) + ((y_pu + nb_pb_h - 1) << 5);
+
+    uint8_t intra_mode;
+
+#if 0
+    /*FIXME do not use cclm table here */
+    uint8_t mode_trght = y_pu ? pred_ctx->cclm_intra_mode[tr_pos]
+                              : OVINTRA_NOT_AVAILABLE;
+
+    uint8_t mode_blft  = x_pu ? pred_ctx->cclm_intra_mode[bl_pos]
+                              : pred_ctx->intra_modes_y_luma[y_pu + nb_pb_h - 1];
+#else
+    /* Zero if not in ctu so there is no actual need of storage 
+     * but a reset between CTUs? */
+    uint8_t mode_trght = y_pu ? i_info->luma_modes[tr_pos]
+                              : OVINTRA_PLANAR;
+
+    /*  Use value from left if not inside
+     *  FIXME
+     *  Check if we could always use mode line instead of table
+     */
+    uint8_t mode_blft  = x_pu ? i_info->luma_modes[bl_pos]
+                              : i_info->luma_mode_y[y_pu + nb_pb_h - 1];
+ 
+#endif
+
+    if (mpm_flag) {
+        uint8_t mpm_idx = cu_mode_info;
+
+        intra_mode = vvc_derive_mpm_list(mpm_idx, mode_blft, mode_trght);
+
+    } else {
+        uint8_t mpm_rem = cu_mode_info;
+
+        intra_mode = vvc_derive_mpm_list_sorted(mode_blft, mode_trght, mpm_rem);
+    }
+
+    /* TODO store intra mode decision (do not forget to use planar when inter)
+     */
+
+    return intra_mode;
+}
+
+VVCCU
+drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
+             uint8_t x0, uint8_t y0, uint8_t log2_cb_w, uint8_t log2_cb_h,
+             VVCCU cu)
+{
+    struct IntraDRVInfo *const i_info = &ctudec->drv_ctx.intra_info;
+    uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
+    uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
+    uint8_t nb_pb_w = (1 << log2_cb_w) >> part_ctx->log2_min_cb_s;
+    uint8_t nb_pb_h = (1 << log2_cb_h) >> part_ctx->log2_min_cb_s;
+
+    uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
+
+    uint8_t mip_flag = cu.cu_flags & flg_mip_flag;
+    /* Note PLANAR is the default for other modes derivaion */
+    uint8_t intra_mode = OVINTRA_PLANAR;
+    
+
+    if (mip_flag){
+        #if 0
+        if (!(cu.cu_opaque & (1 << 7))) {
+            uint8_t mip_mode_idx = cu.cu_opaque & 0x3F;
+            uint16_t *dst = &ctudec->ctu_data_y[x0 + y0 * VVC_CTB_STRIDE];
+            vvc_intra_pred_mip(ctudec, dst, x0, y0, log2_cb_w, log2_cb_h, mip_mode_idx);
+        } else {
+            uint8_t mip_mode_idx = cu.cu_opaque & 0x3F;
+            uint16_t *dst = &ctudec->ctu_data_y[x0 + y0 * VVC_CTB_STRIDE];
+            vvc_intra_pred_mip_tr(ctudec, dst, x0, y0, log2_cb_w, log2_cb_h, mip_mode_idx);
+        }
+        #endif
+
+    } else {
+        uint8_t mpm_flag = !!(cu.cu_flags & flg_mpm_flag);
+        uint8_t isp_flag = !!(cu.cu_flags & flg_isp_flag);
+
+        uint8_t intra_mode = derive_intra_angular_mode(i_info, cu.cu_flags, cu.cu_mode_info,
+                                                       x_pu, y_pu, nb_pb_w, nb_pb_h);
+
+        cu.cu_mode_idx = intra_mode;
+
+        /* FIXME
+         * we do not reconstruct ISP here this will be removed when we 
+         * will cal CU reconstruction after TUs of current CU are read
+         */
+
+        if (!isp_flag) {
+            uint8_t mrl_flag = !!(cu.cu_flags & flg_mrl_flag);
+            if (!mrl_flag){
+                vvc_intra_pred(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
+                               RCN_CTB_STRIDE, intra_mode, x0, y0,
+                               log2_cb_w, log2_cb_h);
+            }
+
+        #if 0
+            if (mrl_flag){
+                uint8_t mrl_idx = cu.cu_opaque;
+                vvc_intra_pred_multi_ref(ctudec, &ctudec->ctu_data_y[0],
+                                         VVC_CTB_STRIDE, intra_mode, x0, y0,
+                                         log2_cb_w, log2_cb_h,
+                                         mrl_idx);
+            }
+        #endif
+        }
+        memset(&i_info->luma_mode_x[x_pu], intra_mode, sizeof(uint8_t) * nb_pb_w);
+        memset(&i_info->luma_mode_y[y_pu], intra_mode, sizeof(uint8_t) * nb_pb_h);
+
+        for (int i = 0; i < nb_pb_h; i++) {
+            memset(&i_info->luma_modes[x_pu + (i << 5) + (y_pu << 5)], intra_mode,
+                   sizeof(uint8_t) * nb_pb_w);
+        }
+    }
+
+    /* Store derived actual intra mode */
+
+    /* FIXME  can we update it befor ref is filled ? */
+    #if 0
+    update_availability_maps(&ctudec->progress_map,
+                             x_pu << pu_shift, y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+    if (!ctudec->share && ctudec->coding_tree != &dual_tree
+                       && ctudec->coding_tree_implicit != &dual_tree_implicit) {
+        update_availability_maps(&ctudec->progress_map_c, x_pu << pu_shift, y_pu << pu_shift,
+                                 nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+    }
+    #else
+
+    ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field_c, x_pu,
+                                y_pu, nb_pb_w, nb_pb_h);
+
+    if (!ctudec->share && ctudec->coding_tree != &dual_tree
+        && ctudec->coding_tree_implicit != &dual_tree_implicit) {
+        ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field_c, x_pu << pu_shift,
+                                    y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+    }
+    #endif
+
+    #if 0
+    fill_bs_map(&ctudec->dbf_info.bs2_map, x0, y0, log2_cb_w, log2_cb_h);
+    #endif
+
+    return cu;
+}
+
+#if 0
+void vvc_intra_pred_chroma(const OVCTUDec *const ctudec,
+                           uint16_t *const dst_cb, uint16_t *const dst_cr,
+                           ptrdiff_t dst_stride,
+                           uint8_t intra_mode, int x0, int y0,
+                           int log2_pb_w, int log2_pb_h){
+
+    /*TODO load ref_sample for cb and cr in same function*/
+    uint16_t ref_above[(128<<1) + 128]/*={0}*/;
+    uint16_t ref_left [(128<<1) + 128]/*={0}*/;
+    uint16_t *ref1 = ref_above;
+    uint16_t *ref2 = ref_left;
+    uint8_t neighbour= ctudec->ctu_ngh_flags;
+    uint8_t got_left_ctu = neighbour & VVC_CTU_LEFT_FLAG;
+    uint8_t got_top_ctu  = neighbour & VVC_CTU_UP_FLAG;
+    const uint16_t *const src_cb = &ctudec->rcn_ctx.ctu_buff.data_cb[0];
+    const uint16_t *const src_cr = &ctudec->rcn_ctx.ctu_buff.data_cr[0];
+
+    uint64_t left_col_map = ctudec->rcn_ctx.progress_field.vfield[x0 >> 1];
+    uint64_t top_row_map  = ctudec->rcn_ctx.progress_field.hfield[y0 >> 1];
+
+
+    switch (intra_mode) {
+    case OVINTRA_PLANAR://PLANAR
+    {
+        fill_ref_left_0_chroma(src_cb, dst_stride, ref_left,
+                               left_col_map, top_row_map,
+                               x0, y0, log2_pb_w, log2_pb_h);
+
+        fill_ref_above_0_chroma(src_cb, dst_stride, ref_above,
+                               top_row_map, left_col_map,
+                               x0, y0, log2_pb_w, log2_pb_h);
+
+        if (log2_pb_h > 1 && log2_pb_w > 1)
+        // FIXME! vvc_intra_dsp_ctx.planar_pdpc[0](ref1, ref2, dst_cb, dst_stride,
+                         // log2_pb_w, log2_pb_h);
+                         vvc_intra_planar_pdpc(ref1, ref2, dst_cb, dst_stride, log2_pb_w,
+                                          log2_pb_h);
+        else
+
+        fill_ref_left_0_chroma(src_cr, dst_stride, ref_left,
+                               left_col_map, top_row_map,
+                               x0, y0, log2_pb_w, log2_pb_h);
+
+        fill_ref_above_0_chroma(src_cr, dst_stride, ref_above,
+                               top_row_map, left_col_map,
+                               x0, y0, log2_pb_w, log2_pb_h);
+
+        if (log2_pb_h > 1 && log2_pb_w > 1)
+        // FIXED? :vvc_intra_dsp_ctx.planar_pdpc[0](ref1, ref2, dst_cr, dst_stride,
+                         // log2_pb_w, log2_pb_h);
+                         vvc_intra_planar_pdpc(ref1, ref2, dst_cr, dst_stride,
+                                          log2_pb_w, log2_pb_h);
+        else
+            vvc_intra_planar(ref1, ref2, dst_cr, dst_stride, log2_pb_w,
+                             log2_pb_h);
+        break;
+    }
+    case OVINTRA_DC://DC
+    {
+        fill_ref_left_0_chroma(src_cb, dst_stride, ref_left,
+                               left_col_map, top_row_map,
+                               x0, y0, log2_pb_w, log2_pb_h);
+
+        fill_ref_above_0_chroma(src_cb, dst_stride, ref_above,
+                                top_row_map, left_col_map,
+                                x0, y0, log2_pb_w, log2_pb_h);
+
+        /* PDPC disable for 4xX and Xx4 blocks */
+        if (log2_pb_h > 1 && log2_pb_w > 1) {
+            vvc_intra_dc_pdpc(ref1, ref2, dst_cb, dst_stride, log2_pb_w,
+                              log2_pb_h);
+        } else {
+            vvc_intra_dc(ref1, ref2, dst_cb, dst_stride, log2_pb_w,
+                         log2_pb_h);
+        }
+
+        fill_ref_left_0_chroma(src_cr, dst_stride, ref_left,
+                               left_col_map, top_row_map,
+                               x0, y0, log2_pb_w, log2_pb_h);
+
+        fill_ref_above_0_chroma(src_cr, dst_stride, ref_above,
+                                top_row_map, left_col_map,
+                                x0, y0, log2_pb_w, log2_pb_h);
+
+        /* PDPC disable for 4xX and Xx4 blocks */
+        if (log2_pb_h > 1 && log2_pb_w > 1) {
+            vvc_intra_dc_pdpc(ref1, ref2, dst_cr, dst_stride, log2_pb_w,
+                              log2_pb_h);
+        } else {
+            vvc_intra_dc(ref1, ref2, dst_cr, dst_stride, log2_pb_w, log2_pb_h);
+        }
+
+        break;
+    }
+    case OVINTRA_LM_CHROMA:
+    {
+        const uint16_t  *const src_luma = &ctudec->rcn_ctx.rcn_ctu_buff.data_y[(x0<<1)+((y0<<1)*VVC_CTB_STRIDE)];
+
+        // ctudec->cclm_func(src_luma, dst_cb, dst_cr, log2_pb_w, log2_pb_h,
+        //                   y0, got_top_ctu || y0, got_left_ctu || x0);
+
+        break;
+    }
+    case OVINTRA_MDLM_LEFT:
+    {
+      const uint16_t  *const src_luma = &ctudec->rcn_ctx.rcn_ctu_buff.data_y[(x0<<1)+((y0<<1)*VVC_CTB_STRIDE)];
+
+        // FIXED? : ctudec->left_mdlm(src_luma, dst_cb, dst_cr,
+        //                   left_col_map, log2_pb_w, log2_pb_h,
+        //                   x0, y0, x0 || got_left_ctu, y0 || got_top_ctu);
+
+        break;
+    }
+    case OVINTRA_MDLM_TOP:
+    {
+        const uint16_t  *const src_luma = &ctudec->rcn_ctx.rcn_ctu_buff.data_y[(x0<<1)+((y0<<1)*VVC_CTB_STRIDE)];
+
+        // FIXED? : ctudec->top_mdlm(src_luma, dst_cb, dst_cr,
+        //                  top_row_map, log2_pb_w, log2_pb_h,
+        //                  x0, y0, x0 || got_left_ctu, y0 || got_top_ctu);
+
+        break;
+    }
+    default://angular
+    {
+        vvc_intra_chroma_angular(src_cb, dst_cb, ref_left, ref_above, left_col_map,
+                                 top_row_map, log2_pb_w, log2_pb_h,
+                                 x0, y0, intra_mode);
+
+        vvc_intra_chroma_angular(src_cr, dst_cr, ref_left, ref_above, left_col_map,
+                                 top_row_map, log2_pb_w, log2_pb_h,
+                                 x0, y0, intra_mode);
+        break;
+
+    }
+    }
+}
+#endif
+
+#if 0
+static void
+intra_angular_v(uint16_t *ref1, uint16_t *ref2, uint8_t log2_pb_w, uint8_t log2_pb_h,
+                int pred_mode)
+{
+
+    //FIXME recheck filter derivation
+    int use_gauss_filter = log2_pb_w + log2_pb_h > 5 &&
+        (OVABS(mode_idx) > intra_filter[((log2_pb_w +
+                                          log2_pb_h) >> 1)]);
+
+    switch (mode_idx) {
+    case 0: //Pure vertical
+        vvc_intra_ver_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w,
+                           log2_pb_h);
+        break;
+    case (16)://Pure diagonal
+        if(use_gauss_filter){
+            int top_ref_length  = 1 << (log2_pb_w + 1);
+            int left_ref_length = 1 << (log2_pb_h + 1);
+            filter_ref_samples(ref1, ref_above_filtered, ref2,
+                               top_ref_length);
+            filter_ref_samples(ref2, ref_left_filtered, ref1,
+                               left_ref_length);
+            ref1 = ref_above_filtered;
+            ref2 = ref_left_filtered;
+        }
+        vvc_intra_angular_vdia(ref1, ref2, dst, dst_stride,
+                               log2_pb_w, log2_pb_h);
+        break;
+    default:
+        {
+            if(mode_idx < 0){
+                int top_ref_length  = 1 << (log2_pb_w + 1);
+                int left_ref_length = 1 << (log2_pb_h + 1);
+                int pu_width = 1 << log2_pb_w;
+                int pu_height = 1 << log2_pb_h;
+                int abs_angle_val = angle_table[-mode_idx];
+                uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                if (!req_frac){
+                    if (use_gauss_filter){
+                        filter_ref_samples(ref1, ref_above_filtered + pu_height,
+                                           ref2, top_ref_length);
+                        filter_ref_samples(ref2, ref_left_filtered + pu_width,
+                                           ref1, left_ref_length);
+                        ref1 = ref_above_filtered + pu_height;
+                        ref2 = ref_left_filtered + pu_width;
+                    }
+
+                    int inv_angle = inverse_angle_table[-mode_idx];
+                    int inv_angle_sum    = 256;
+                    for ( int k = -1; k >= -pu_height; k-- ){
+                        inv_angle_sum += inv_angle;
+                        ref1[k] = ref2[OVMIN(inv_angle_sum >> 9,pu_height)];
+                    }
+
+                    intra_angular_v_nofrac(ref1, dst, dst_stride,
+                                           log2_pb_w, log2_pb_h,
+                                           -abs_angle_val);
+                } else {
+                    int inv_angle = inverse_angle_table[-mode_idx];
+                    int inv_angle_sum    = 256;
+                    for ( int k = -1; k >= -pu_height; k-- ){
+                        inv_angle_sum += inv_angle;
+                        ref1[k] = ref2[OVMIN(inv_angle_sum >> 9,pu_height)];
+                    }
+
+                    if (use_gauss_filter){
+                        intra_angular_v_gauss(ref1, dst, dst_stride,
+                                              log2_pb_w, log2_pb_h,
+                                              -abs_angle_val);
+                    } else {
+                        intra_angular_v_cubic(ref1, dst, dst_stride,
+                                              log2_pb_w, log2_pb_h,
+                                              -abs_angle_val);
+                    }
+                }
+            } else if (OVMIN(2, log2_pb_h - (floor_log2(3*inverse_angle_table[mode_idx] - 2) - 8)) < 0 ){
+                //FIXME check this
+                int abs_angle_val = angle_table[mode_idx];
+                uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                if (!req_frac){
+                    if (use_gauss_filter){
+                        int top_ref_length  = 1 << (log2_pb_w  + 1);
+                        filter_ref_samples(ref1, ref_above_filtered, ref2,
+                                           top_ref_length);
+                        ref1 = ref_above_filtered;
+                    }
+                    intra_angular_v_nofrac(ref1, dst, dst_stride,
+                                           log2_pb_w, log2_pb_h,
+                                           abs_angle_val);
+                } else {
+                    if (use_gauss_filter){
+                        intra_angular_v_gauss(ref1, dst, dst_stride,
+                                              log2_pb_w, log2_pb_h,
+                                              abs_angle_val);
+                    } else {
+                        intra_angular_v_cubic(ref1, dst, dst_stride,
+                                              log2_pb_w, log2_pb_h,
+                                              abs_angle_val);
+                    }
+                }
+            } else {
+                uint8_t req_frac = !!(angle_table[mode_idx] & 0x1F);
+                if (!req_frac){
+                    if (use_gauss_filter){
+                        int top_ref_length  = 1 << (log2_pb_w  + 1);
+                        int left_ref_length = 1 << (log2_pb_h + 1);
+                        filter_ref_samples(ref1, ref_above_filtered, ref2,
+                                           top_ref_length);
+                        filter_ref_samples(ref2, ref_left_filtered, ref1,
+                                           left_ref_length);
+                        ref1 = ref_above_filtered;
+                        ref2 = ref_left_filtered;
+                    }
+                    intra_angular_v_nofrac_pdpc(ref1, ref2, dst, dst_stride,
+                                                log2_pb_w, log2_pb_h,
+                                                mode_idx);
+                } else {
+                    if (use_gauss_filter){
+                        intra_angular_v_gauss_pdpc(ref1, ref2, dst, dst_stride,
+                                                   log2_pb_w, log2_pb_h,
+                                                   mode_idx);
+                    } else {
+                        intra_angular_v_cubic_pdpc(ref1, ref2, dst, dst_stride,
+                                                   log2_pb_w, log2_pb_h,
+                                                   mode_idx);
+                    }
+                }
+            }
+            break;
+        }
+    }
+}
+
+static void
+intra_angular_h()
+{
+
+    //FIXME recheck filter derivation
+    int use_gauss_filter = log2_pb_w + log2_pb_h > 5 &&
+        (OVABS(mode_idx) > intra_filter[((log2_pb_w +
+                                          log2_pb_h) >> 1)]) ? 1: 0;
+
+    switch (mode_idx) {
+        case 0: //Pure horizontal
+            vvc_intra_hor_pdpc(ref1, ref2, dst, dst_stride,
+                               log2_pb_w, log2_pb_h);
+            break;
+
+        case (16)://Pure diagonal
+            if (use_gauss_filter){
+                int top_ref_length  = 1 << (log2_pb_w  + 1);
+                int left_ref_length = 1 << (log2_pb_h + 1);
+                filter_ref_samples(ref1, ref_above_filtered, ref2,
+                                   top_ref_length);
+                filter_ref_samples(ref2, ref_left_filtered, ref1,
+                                   left_ref_length);
+                ref1 = ref_above_filtered;
+                ref2 = ref_left_filtered;
+            }
+            vvc_intra_angular_hdia(ref1, ref2, dst, dst_stride,
+                                   log2_pb_w, log2_pb_h);
+            break;
+        default:
+        {
+            if (mode_idx < 0){
+                int top_ref_length  = 1 << (log2_pb_w  + 1);
+                int left_ref_length = 1 << (log2_pb_h + 1);
+                int pu_width  = 1 << log2_pb_w;
+                int pu_height = 1 << log2_pb_h;
+                int abs_angle_val = angle_table[-mode_idx];
+
+                uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                if (!req_frac){
+                    if (use_gauss_filter){
+                        filter_ref_samples(ref1, ref_above_filtered + pu_height,
+                                           ref2, top_ref_length);
+                        filter_ref_samples(ref2, ref_left_filtered + pu_width,
+                                           ref1, left_ref_length);
+                        ref1 = ref_above_filtered + pu_height;
+                        ref2 = ref_left_filtered + pu_width;
+                    }
+
+                    int inv_angle = inverse_angle_table[-mode_idx];
+                    int inv_angle_sum    = 256;
+                    for ( int k = -1; k >= -pu_width; k-- ){
+                        inv_angle_sum += inv_angle;
+                        ref2[k] = ref1[OVMIN(inv_angle_sum >> 9,pu_width)];
+                    }
+                    intra_angular_h_nofrac(ref2, dst, dst_stride,
+                                           log2_pb_w, log2_pb_h,
+                                           -abs_angle_val);
+                } else {
+                    int inv_angle = inverse_angle_table[-mode_idx];
+                    int inv_angle_sum    = 256;
+                    for( int k = -1; k >= -pu_width; k-- ){
+                        inv_angle_sum += inv_angle;
+                        ref2[k] = ref1[OVMIN(inv_angle_sum >> 9,pu_width)];
+                    }
+                    if (use_gauss_filter){
+                        intra_angular_h_gauss(ref2, dst, dst_stride,
+                                              log2_pb_w, log2_pb_h,
+                                              -abs_angle_val);
+                    } else {
+                        intra_angular_h_cubic(ref2, dst, dst_stride,
+                                              log2_pb_w, log2_pb_h,
+                                              -abs_angle_val);
+                    }
+                }
+
+            } else if (OVMIN(2, log2_pb_w - (floor_log2(3*inverse_angle_table[mode_idx] - 2) - 8)) < 0 ){//FIXME check this
+                //from 0 to ref_lengths +1, 0 being top_left sample
+                int abs_angle_val = angle_table[mode_idx];
+                uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                if (!req_frac){
+                    if (use_gauss_filter){
+                        int left_ref_length = 1 << (log2_pb_h + 1);
+                        filter_ref_samples(ref2, ref_left_filtered,
+                                           ref1, left_ref_length);
+                        ref2 = ref_left_filtered;
+                    }
+                    intra_angular_h_nofrac(ref2, dst, dst_stride,
+                                           log2_pb_w, log2_pb_h,
+                                           abs_angle_val);
+                } else {
+                    if (use_gauss_filter){
+                        intra_angular_h_gauss(ref2, dst, dst_stride,
+                                              log2_pb_w, log2_pb_h,
+                                              abs_angle_val);
+                    } else {
+                        intra_angular_h_cubic(ref2, dst, dst_stride,
+                                              log2_pb_w, log2_pb_h,
+                                              abs_angle_val);
+                    }
+                }
+            } else {
+                uint8_t req_frac = !!(angle_table[mode_idx] & 0x1F);
+                if (!req_frac){
+                    if (use_gauss_filter){
+                        int top_ref_length  = 1 << (log2_pb_w  + 1);
+                        int left_ref_length = 1 << (log2_pb_h + 1);
+                        filter_ref_samples(ref1, ref_above_filtered,
+                                           ref2, top_ref_length);
+                        filter_ref_samples(ref2, ref_left_filtered,
+                                           ref1, left_ref_length);
+                        ref1 = ref_above_filtered;
+                        ref2 = ref_left_filtered;
+                    }
+                    intra_angular_h_nofrac_pdpc(ref1, ref2, dst, dst_stride,
+                                                log2_pb_w, log2_pb_h,
+                                                mode_idx);
+                } else {
+                    if (use_gauss_filter){
+                        intra_angular_h_gauss_pdpc(ref1, ref2, dst, dst_stride,
+                                                   log2_pb_w, log2_pb_h,
+                                                   mode_idx);
+                    } else {
+                        intra_angular_h_cubic_pdpc(ref1, ref2, dst, dst_stride,
+                                                   log2_pb_w, log2_pb_h,
+                                                   mode_idx);
+                    }
+                }
+            }
+        }
+        break;
+    }
+}
+
+void
+vvc_intra_pred(const OVCTUDec *const ctudec,
+               uint16_t *const src,
+               ptrdiff_t dst_stride,
+               uint8_t intra_mode, int x0, int y0,
+               int log2_pb_w, int log2_pb_h)
+{
+
+    uint16_t ref_above[(128<<1) + 128];
+    uint16_t ref_left [(128<<1) + 128];
+
+    uint16_t ref_above_filtered[(128<<1) + 128];
+    uint16_t ref_left_filtered [(128<<1) + 128];
+
+    uint16_t *dst = &src[x0 + (y0 * dst_stride)];
+    uint16_t *ref1 = ref_above + (1 << log2_pb_h);
+    uint16_t *ref2 = ref_left + (1 << log2_pb_w);
+
+    fill_ref_left_0(src, dst_stride, ref2,
+                    ctudec->rcn_ctx.progress_field.vfield[x0 >> 2],
+                    ctudec->rcn_ctx.progress_field.hfield[y0 >> 2],
+                    x0, y0, log2_pb_w, log2_pb_h, 0);
+
+    fill_ref_above_0(src, dst_stride, ref1,
+                     ctudec->rcn_ctx.progress_field.hfield[y0 >> 2],
+                     ctudec->rcn_ctx.progress_field.vfield[x0 >> 2],
+                     x0, y0, log2_pb_w, log2_pb_h, 0);
+
+    switch (intra_mode) {
+    case OVINTRA_PLANAR:
+    {
+        if((log2_pb_h + log2_pb_w) > 5){
+            filter_ref_samples(ref1, ref_above_filtered, ref2,
+                               (1 << log2_pb_w) + 4);
+            filter_ref_samples(ref2, ref_left_filtered, ref1,
+                               (1 << log2_pb_h) + 4);
+            ref1 = ref_above_filtered;
+            ref2 = ref_left_filtered;
+        }
+        vvc_intra_planar_pdpc(ref1, ref2, dst, dst_stride,
+                              log2_pb_w, log2_pb_h);
+        break;
+    }
+    case OVINTRA_DC://DC
+    {
+        vvc_intra_dc_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
+        break;
+    }
+    default:
+    {
+        int pred_mode = derive_wide_angular_mode(log2_pb_w, log2_pb_h,
+                                                 intra_mode);
+
+        int is_vertical = pred_mode >= OVINTRA_DIA ? 1 : 0;
+
+        if (is_vertical) {
+            int mode_idx = pred_mode - OVINTRA_VER;
+            intra_angular_v();
+        } else {
+            int mode_idx = -(pred_mode - OVINTRA_HOR);
+            intra_angular_h();
+        }
+        break;
+    }
+    }
+}
+#endif

@@ -4,27 +4,19 @@
 #include "ctudec.h"
 #include "rcn_struct.h"
 
-enum VVCIntraPredMode{
-    VVC_PLANAR = 0,
-    VVC_DC = 1,
-    VVC_HOR = 18,
-    VVC_DIA = 34,
-    VVC_VER = 50,
-    VVC_VDIA = 66,
-    VVC_LM_CHROMA = 67,
-    VVC_NUM_INTRA_MODES = 67,
-    VVC_MDLM_LEFT = 68,
-    VVC_MDLM_TOP  = 69,
-    VVC_DM_CHROMA = 70,
-    VVC_MIP_MODE = 75,
-    VVC_NOT_AVAILABLE=128,
-};
+/* FIXME
+ * rename OVINTRA
+ * MERGE with INTER modes ?
+ * STORE on uint8_t 
+ * find meaningful place for definition
+ */
 
 // FIXED? :
 #define VVC_CTB_STRIDE (128 + 16 + 64)
 #define VVC_CTB_OFFSET (VVC_CTB_STRIDE * 4 + 16)
 
 #define VVC_CTB_STRIDE_CHROMA (128 + 64 + 16)
+#define VVC_CTB_CTX_SIZE   (VVC_CTB_STRIDE * (128 + 4))
 
 #define VVC_CTU_UP_FLAG             (1 << 0)
 #define VVC_CTU_LEFT_FLAG           (1 << 1)
@@ -34,6 +26,7 @@ enum VVCIntraPredMode{
 extern const struct TrFunc tr_templates[NB_TR_TYPES][NB_TR_SIZES];
 /* FIXME remove some args and give RCNCTX instead of ctudec
  */
+
 void rcn_residual(OVCTUDec *const ctudec,
              int16_t *const dst, int16_t *src,
              uint8_t x0, uint8_t y0,
