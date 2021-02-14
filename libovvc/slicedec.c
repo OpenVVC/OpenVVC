@@ -10,6 +10,7 @@
 #include "vcl_cabac.h"
 #include "vcl.h"
 #include "drv_utils.h"
+#include "rcn.h"
 
 /* TODO define in a header */
 enum SliceType {
@@ -308,6 +309,7 @@ cabac_lines_uninit(OVSliceDec *sldec)
      struct CCLines *const lns = &sldec->cabac_lines[0];
      struct CCLines *const lns_c = &sldec->cabac_lines[1];
 
+     /* FIXME avoid double free ensure*/
      ov_freep(&lns->qt_depth_map_x);
      ov_freep(&lns->log2_cu_w_map_x);
      ov_freep(&lns->cu_mode_x);
@@ -588,10 +590,12 @@ slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
         struct RectEntryInfo entry;
         slicedec_init_rect_entry(&entry, prms, i);
         ret = slicedec_decode_rect_entry(sldec, prms, &entry);
+        #if 0
         if (!ret) {
            printf("in entry : %d\n", i);
            ret2 = 1; 
         }
+        #endif
     }
     return ret2;
 }
@@ -751,11 +755,16 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         update_cabac_lines(ctudec, prms);
 
+        /* Hackish way of keeping track of CTU last line
+         * first QP to initialise delta qp for next ctu line
+         */
         if (ctb_x == 0) {
             backup_qp = ctudec->drv_ctx.qp_map_x[0];
         }
 
         update_drv_lines(ctudec, prms);
+
+        rcn_update_ctu_border(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
 
         ctb_addr_rs++;
         ctb_x++;

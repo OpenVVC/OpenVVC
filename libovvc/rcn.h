@@ -44,4 +44,8 @@ void rcn_residual_c(OVCTUDec *const ctudec,
                uint8_t cu_mts_flag, uint8_t cu_mts_idx,
                uint8_t is_dc, uint8_t lfnst_flag, uint8_t is_mip, uint8_t lfnst_idx);
 
+void ctu_copy_left_border(struct OVRCNCtx *rcn_ctx, uint8_t log2_ctb_s);
+
+void rcn_update_ctu_border(struct OVRCNCtx *rcn_ctx, uint8_t log2_ctb_s);
+
 #endif //RCN_H
