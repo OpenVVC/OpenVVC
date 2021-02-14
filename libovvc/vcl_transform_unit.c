@@ -4,6 +4,8 @@
 #include "dec_structures.h"
 #include "ctudec.h"
 
+static void
+rcn_add_residuals(uint16_t *dst, const int16_t *src, uint8_t log2_tb_w, uint8_t log2_tb_h);
 /* FIXME refactor dequant*/
 static void
 derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
@@ -638,8 +640,28 @@ transform_unit(OVCTUDec *const ctu_dec,
 
         vvc_dsp_context.vvc_transform_add(src, dst, log2_tb_w, log2_tb_h, 0);
 #endif
+        rcn_add_residuals(&ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], ctu_dec->transform_buff, log2_tb_w, log2_tb_h);
     }
     return 0;
+}
+
+/* FIXME Tmp */
+static void
+rcn_add_residuals(uint16_t *dst, const int16_t *src, uint8_t log2_tb_w, uint8_t log2_tb_h)
+{
+    int tb_h = 1 << log2_tb_h;
+    int tb_w = 1 << log2_tb_w;
+    int i, j;
+
+    for (i = 0; i < tb_h; ++i) {
+        for (j = 0; j < tb_w; ++j) {
+            /*FIXME Power of 2 clip */
+            dst[j] = (uint16_t)ov_clip(((int16_t)dst[j] + src[j]), 0, 1023);
+        }
+        dst += RCN_CTB_STRIDE;
+        src += 1 << log2_tb_w;
+    }
+
 }
 
 static int
@@ -759,6 +781,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
             rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cb, tmp_lfnst_cb, x0, y0, log2_tb_w, log2_tb_h,
                            lim_cg_w_cb, 0, 0, !last_pos_cb, lfnst_flag, 1, lfnst_idx);
 
+            rcn_add_residuals(dst_cb, ctu_dec->transform_buff, log2_tb_w, log2_tb_h);
 #if 0
             (*ctu_dec->scale_addsub_residuals)[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
 
@@ -775,6 +798,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
             rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cr, tmp_lfnst_cr, x0, y0, log2_tb_w, log2_tb_h,
                              lim_cg_w_cr, 0, 0, !last_pos_cr, lfnst_flag, 1, lfnst_idx);
 
+            rcn_add_residuals(dst_cr, ctu_dec->transform_buff, log2_tb_w, log2_tb_h);
 #if 0
             (*ctu_dec->scale_addsub_residuals)[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
 
@@ -841,7 +865,8 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
             }
         }
 
-        rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_jcbcr, ctu_dec->lfnst_subblock, x0, y0, log2_tb_w, log2_tb_h,
+        rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_jcbcr,
+                       ctu_dec->lfnst_subblock, x0, y0, log2_tb_w, log2_tb_h,
                          lim_cg_w_cbcr, 0, 0, !last_pos_cbcr, lfnst_flag, 1, lfnst_idx);
 
 #if 0
@@ -858,6 +883,9 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
 
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
+#else
+      rcn_add_residuals(dst_cb, ctu_dec->transform_buff, log2_tb_w, log2_tb_h);
+      rcn_add_residuals(dst_cr, ctu_dec->transform_buff, log2_tb_w, log2_tb_h);
 #endif
     }
     return 0;

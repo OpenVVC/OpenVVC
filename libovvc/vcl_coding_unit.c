@@ -427,17 +427,16 @@ coding_unit(OVCTUDec *const ctu_dec,
     VVCCU cu;
 
 #if 0
-    /*TODO reset qp_map_up:left to current_qp at ctu start so there is no
-     * testing required
-     */
     int pred_qp = ((y0 ? ctu_dec->qp_map_up[x_cb]   : ctu_dec->qp_ctx.current_qp) +
                    (x0 ? ctu_dec->qp_map_left[y_cb] : ctu_dec->qp_ctx.current_qp) + 1) >> 1;
+#else
+    /* TODO check qp reset
+    */
+    int pred_qp = (ctu_dec->drv_ctx.qp_map_x[x_cb] + ctu_dec->drv_ctx.qp_map_y[y_cb] + 1) >> 1;
 
-    ctu_dec->qp_ctx.current_qp = pred_qp;
 #endif
+    ctu_dec->qp_ctx.current_qp = pred_qp;
 
-
-    /* TODO set coding unit functor */
     cu = ctu_dec->coding_unit(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h);
 
     if (!(cu.cu_flags & flg_cu_skip_flag)) {
@@ -445,9 +444,19 @@ coding_unit(OVCTUDec *const ctu_dec,
          transform_unit_wrap(ctu_dec, part_ctx,  x0, y0, log2_cb_w, log2_cb_h, cu);
     }
 
-#if 1
+    /* FIXME delta qp clean */
     derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
-#endif
+
+    /* FIXME memset instead
+     */
+    /* update delta qp context */
+    for (int i = 0; i < nb_cb_w; i++) {
+        ctu_dec->drv_ctx.qp_map_x[x_cb + i] = ctu_dec->qp_ctx.current_qp;
+    }
+
+    for (int i = 0; i < nb_cb_h; i++) {
+        ctu_dec->drv_ctx.qp_map_y[y_cb + i] = ctu_dec->qp_ctx.current_qp;
+    }
 
 #if 0
     /* update dqp for deblocking filter usage */
@@ -458,17 +467,6 @@ coding_unit(OVCTUDec *const ctu_dec,
     }
 #endif
 
-    // Update depth_maps to selected depths
-#if 1
-    /* update delta qp context */
-    for (int i = 0; i < nb_cb_w; i++) {
-        ctu_dec->drv_ctx.qp_map_x[x_cb + i] = ctu_dec->qp_ctx.current_qp;
-    }
-
-    for (int i = 0; i < nb_cb_h; i++) {
-        ctu_dec->drv_ctx.qp_map_y[y_cb + i] = ctu_dec->qp_ctx.current_qp;
-    }
-#endif
 
 #if 0
     if (!ctu_dec->dbf_disable) {
@@ -476,6 +474,8 @@ coding_unit(OVCTUDec *const ctu_dec,
         fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
     }
 #endif
+
+    // Update depth_maps to selected depths
     struct PartMap *const part_map = ctu_dec->active_part_map;
 
     memset(&part_map->log2_cu_w_map_x[x_cb], log2_cb_w, sizeof(uint8_t) * nb_cb_w);
