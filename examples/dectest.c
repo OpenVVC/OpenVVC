@@ -4,7 +4,9 @@
 #include <getopt.h>
 
 #include "ovdec.h"
+#include "ovdefs.h"
 #include "ovdmx.h"
+#include "ovframe.h"
 #include "ovutils.h"
 #include "ovversion.h"
 
@@ -17,13 +19,15 @@ typedef struct OVVCHdl{
     FILE *fp;
 }OVVCHdl;
 
-static int dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const file_name);
+static int dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name);
 
 static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
 static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
 static int read_stream(OVVCHdl *const hdl, FILE *fp);
+
+static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
 
 static void print_version();
 
@@ -35,8 +39,8 @@ main(int argc, char** argv)
   /* basic options parser and assign
      filenames into a functions*/
   int c;
-  char *file_name;
-  int ov_log_level;
+  char *input_file_name = NULL, *output_file_name = NULL;
+  int ov_log_level=OVLOG_INFO;
 
   uint8_t options_flag=0;
 
@@ -49,11 +53,12 @@ main(int argc, char** argv)
           {"version", no_argument,      0, 'v'},
           {"help",    no_argument,       0, 'h'},
           {"log-level", required_argument, 0, 'l'},
-          {"file",      required_argument, 0, 'f'},
+          {"infile",      required_argument, 0, 'i'},
+          {"outfile",      required_argument, 0, 'o'},
         };
       int option_index = 0;
 
-      c = getopt_long (argc, argv, "vhl:f:",
+      c = getopt_long (argc, argv, "vhl:i:o:",
                        long_options, &option_index);
       if (c == -1){
         break;
@@ -72,9 +77,14 @@ main(int argc, char** argv)
           ov_log_level = optarg[0]-'0';
           break;
 
-        case 'f':
+        case 'i':
           /*TODO: Sanitize filename*/
-          file_name = optarg;
+          input_file_name = optarg;
+          break;
+
+        case 'o':
+          /*TODO: Sanitize filename*/
+          output_file_name = optarg;
           break;
 
         case '?':
@@ -89,8 +99,12 @@ main(int argc, char** argv)
       set_ov_log_level(ov_log_level);
     }
 
-    if (file_name == NULL){
-      file_name="test.266";
+    if (input_file_name == NULL){
+      input_file_name ="test.266";
+    }
+
+    if (output_file_name == NULL){
+      output_file_name ="test.yuv";
     }
 
     if (options_flag){
@@ -99,11 +113,18 @@ main(int argc, char** argv)
       return 0;
     }
 
+    FILE *fout = fopen(output_file_name, "wb");
+    if (fout == NULL) {
+      ov_log(NULL, OVLOG_ERROR, "Failed to open output file '%s'.\n", output_file_name);
+      goto failinit;
+    } else {
+      ov_log(NULL, OVLOG_INFO, "Decoded stream will be written to '%s'.\n", output_file_name);
+    }
     ret = init_openvvc_hdl(&ovvc_hdl);
 
     if (ret < 0) goto failinit;
 
-    ret = dmx_attach_file(&ovvc_hdl, file_name);
+    ret = dmx_attach_file(&ovvc_hdl, input_file_name);
 
     if (ret < 0) goto failattach;
 
@@ -116,19 +137,20 @@ main(int argc, char** argv)
 
 failattach:
     ret = close_openvvc_hdl(&ovvc_hdl);
+    fclose(fout);
 
 failinit:
     return ret;
 }
 
 static int
-dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const file_name)
+dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name)
 {
     int ret;
-    FILE *file = fopen(file_name,"rb");
+    FILE *file = fopen(input_file_name,"rb");
 
     if (file == NULL) {
-        perror(file_name);
+        perror(input_file_name);
        vvc_hdl->fp = NULL;
        return -1;
     }
@@ -237,6 +259,18 @@ read_stream(OVVCHdl *const hdl, FILE *fp)
     return 1;
 }
 
+static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp){
+  uint8_t component = 0;
+  uint32_t ret = 0;
+  for(component=0; component<3; component++){
+    uint32_t frame_size = frame->height[component] * frame->height[component];
+    ret +=fwrite(frame->data[component], sizeof(uint8_t), frame_size, fp);
+  }
+  return ret;
+}
+
+
+
 static void print_version(){
   printf("libovvc version %u.%u.%u-%s\n", VER_MAJOR,VER_MINOR,VER_REVISION, VER_BUILD);
 }
@@ -247,5 +281,6 @@ static void print_usage(){
   printf("\t-h, --help\t\t\t\tShow this message.\n");
   printf("\t-v, --version\t\t\t\tShow version information.\n");
   printf("\t-l <level>, --log-level=<level>\t\tDefine the level of verbosity. Value between 0 and 6. (Default: 2)\n");
-  printf("\t-f <file>, --file=<file>\t\tPath to the file to be decoded (Default: test.266).\n");
+  printf("\t-i <file>, --infile=<file>\t\tPath to the file to be decoded (Default: test.266).\n");
+  printf("\t-o <file>, --outfile=<file>\t\tPath to the output file (Default: test.yuv).\n");
 }
