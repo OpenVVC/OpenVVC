@@ -37,4 +37,8 @@ void ctu_copy_left_border(struct OVRCNCtx *rcn_ctx, uint8_t log2_ctb_s);
 
 void rcn_update_ctu_border(struct OVRCNCtx *rcn_ctx, uint8_t log2_ctb_s);
 
+void rcn_write_ctu_to_frame(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s);
+
+void rcn_write_ctu_to_frame_border(const struct OVRCNCtx *const rcn_ctx,
+                                   int last_ctu_w, int last_ctu_h);
 #endif //RCN_H

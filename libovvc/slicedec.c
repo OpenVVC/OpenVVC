@@ -11,6 +11,7 @@
 #include "vcl.h"
 #include "drv_utils.h"
 #include "rcn.h"
+#include "ovdpb.h"
 
 /* TODO define in a header */
 enum SliceType {
@@ -712,6 +713,8 @@ decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     /* FIXME write_ctu
      */
 
+    rcn_write_ctu_to_frame(&ctudec->rcn_ctx, log2_ctb_s);
+
     return ret;
 }
 
@@ -734,6 +737,9 @@ decode_ctu_implicit(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     ret = ctudec->coding_tree_implicit(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s,
                                        0, remaining_w, remaining_h);
+
+    rcn_write_ctu_to_frame_border(&ctudec->rcn_ctx,
+                                  remaining_w, remaining_h);
     return ret;
 }
 
@@ -836,6 +842,27 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     return 0;
 }
 
+static void
+slicedec_attach_frame_buff(OVCTUDec *const ctudec, OVSliceDec *sldec,
+                           const struct RectEntryInfo *const einfo)
+{
+    OVFrame *f = sldec->pic->frame;
+    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+    struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
+    uint32_t entry_start_offset = (einfo->ctb_x << log2_ctb_s);
+
+    entry_start_offset = (einfo->ctb_y << log2_ctb_s) * (f->linesize[0]);
+
+    /*FIXME clean offset */
+    fbuff->y  = &f->data[0][entry_start_offset];
+    fbuff->cb = &f->data[1][entry_start_offset >> 2];
+    fbuff->cr = &f->data[2][entry_start_offset >> 2];
+    fbuff->stride   = f->linesize[0] >> 1;
+    fbuff->stride_c = f->linesize[1] >> 1;
+
+
+}
+
 static int
 slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
                            const struct RectEntryInfo *const einfo)
@@ -865,6 +892,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     if (ret < 0) {
         return OVVC_EINDATA;
     }
+
+    slicedec_attach_frame_buff(ctudec, sldec, einfo);
 
     /* FIXME Note cabac context tables could be initialised earlier
      * so we could only init once and recopy context tables to others
