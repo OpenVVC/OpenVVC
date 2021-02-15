@@ -3,6 +3,7 @@
 #include "mempool.h"
 #include "mempool_internal.h"
 #include "overror.h"
+#include "ovutils.h"
 #include "ovmem.h"
 
 #include "nvcl.h"
@@ -10,10 +11,6 @@
 #include "ovframe.h"
 #include "ovdpb.h"
 
-struct DPBInternal
-{
-    struct FramePool frame_pool;
-};
 
 void
 dpbpriv_uninit_framepool(struct DPBInternal *dpb_priv)

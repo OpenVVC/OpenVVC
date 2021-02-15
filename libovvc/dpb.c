@@ -8,10 +8,10 @@
 #include "nvcl_structures.h"
 #include "ovframe.h"
 #include "ovunits.h"
-#if 0
 #include "ovdpb.h"
-#endif
+#include "dec_structures.h"
 #include "ovdpb_internal.h"
+#include "overror.h"
 
 
 #if 1
@@ -49,55 +49,48 @@ struct RPLInfo {
    uint8_t nb_refs;
 };
 
-struct OVPicture{
 
-   /* Associated frame */
-   OVFrame *frame;
+static int dpb_init_params(OVDPB *dpb, OVDPBParams const *prm);
 
-   /* Flags used to mark Picture referenced by the
-    * active picture (current picture being decoded)
-    * FIXME enum ?
-    */
-   uint8_t flags;
-
-   /* Pointers to ref_pic_list */
-   struct OVPicture *rpl1[16];
-
-   struct TMVPInfo {
-       OVPicture *collocated_ref;
-       /* TODO tmvp scaling */
-   }tmvp;
-
-   uint32_t poc;
-
-   /* Coded Video Sequence Id to which this Picture is
-    * Associated : this avoid confusing ref with same POC
-    * when the refresh period is shorter than DPB
-    */
-   uint16_t cvs_id;
-};
-
-struct DPB
+int
+ovdpb_init(OVDPB **dpb_p, const OVPS *ps)
 {
-   OVPicture pictures[64];
-   uint8_t max_nb_dpb_pic;
-   uint8_t max_nb_reorder_pic;
-   uint8_t max_latency_increase;
+    OVDPB *dpb = *dpb_p;
+    int ret;
 
-   /* Coded Video Sequence Id
-    * It enables to reset the POC of pictures
-    * when encountering IDR Picture Units
-    */
-   uint16_t cvs_id;
+    *dpb_p = ov_mallocz(sizeof(**dpb_p));
+    if (!*dpb_p) {
+         ov_log(NULL, OVLOG_ERROR, "Failed DBP allocation attempt\n");
+         return OVVC_ENOMEM;
+    }
 
-   /* DPB status info
-    * to be used to determine whether the decoder is waiting
-    * for an IRAP picture or not
-    */
-   uint8_t state;
+    ret = dpbpriv_init_framepool(&(*dpb_p)->internal, ps->sps);
+    if (ret < 0) {
+        goto failframepool;
+    }
 
-   struct DPBInternal internal;
-};
+    /* FIXME handle temporal and sub layers*/
+    dpb_init_params(*dpb_p, &ps->sps->dpb_parameters[0]);
+
+    return 0;
+
+failframepool:
+    ov_freep(dpb_p);
+    return ret;
+}
+
+void
+ovdpb_uninit(OVDPB **dpb_p)
+{
+    if (*dpb_p) {
+        /* TODO
+         * release all pics
+         */
+        dpbpriv_uninit_framepool(&(*dpb_p)->internal);
+
+        ov_freep(dpb_p);
+    }
+}
 
 
 /* Clean OVPicture from DPB and unref associated Frame */
@@ -237,9 +230,9 @@ int ovdpb_init_current_pic(OVDPB *dpb, OVFrame **frame, int poc)
     for (i = 0; i < nb_dpb_pic; i++) {
         OVPicture *pic = &dpb->pictures[i];
 
-        if (pic->frame->data[0] && pic->cvs_id == dpb->cvs_id &&
+        if (pic->frame && pic->frame->data[0] && pic->cvs_id == dpb->cvs_id &&
             pic->poc == poc) {
-            ov_log(NULL, 3, "Duplicate POC in a sequence: %d.\n",
+            ov_log(NULL, OVLOG_ERROR, "Duplicate POC in a sequence: %d.\n",
                    poc);
             return OVVC_EINDATA;
         }
@@ -250,7 +243,7 @@ int ovdpb_init_current_pic(OVDPB *dpb, OVFrame **frame, int poc)
         return OVVC_ENOMEM;
     }
 
-    *frame = ref_pic->frame;
+    ovframe_new_ref(frame, ref_pic->frame);
 
     #if 0
     dpb->active_pic = ref_pic;
@@ -588,7 +581,8 @@ fail:
 
 /* TODO rename to ovdpb_init_pic();*/
 int
-ovdpb_init_picture(OVDPB *dpb, const OVPH *const ph, const OVSPS *const sps, uint8_t nalu_type){
+ovdpb_init_picture(OVDPB *dpb, const OVPH *const ph, const OVSPS *const sps, uint8_t nalu_type)
+{
 
     int ret = 0;
     OVFrame *frame = NULL;

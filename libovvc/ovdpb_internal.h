@@ -3,6 +3,7 @@
 
 #include "ovdpb.h"
 #include "nvcl.h"
+#include "ovframe.h"
 
 struct DPBInternal
 {
@@ -14,5 +15,9 @@ void dpb_uninit_framepool(struct DPBInternal *dpb_priv);
 int dpb_init_framepool(struct DPBInternal *dpb_priv, const OVSPS *const sps);
 
 int dpbpriv_request_frame(struct DPBInternal *dpb_priv, OVFrame **frame);
+
+void dpbpriv_uninit_framepool(struct DPBInternal *dpb_priv);
+
+int dpbpriv_init_framepool(struct DPBInternal *dpb_priv, const OVSPS *const sps);
 
 #endif

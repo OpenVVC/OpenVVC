@@ -38,7 +38,8 @@ struct FramePool
     struct PlaneProp plane_prop[4];
 };
 
-struct FrameInternal {
+struct FrameInternal
+{
     /* reference counter */
     int ref_count;
 

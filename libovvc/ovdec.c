@@ -100,10 +100,19 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
 
     int nb_sh_bytes = nvcl_num_bytes_read(rdr);
 
+    OVFrame *frame;
+
     ret = decinit_update_params(dec, nvcl_ctx);
     if (ret < 0) {
         ov_log(dec, 3, "Failed to activate parameters\n");
         return ret;
+    }
+
+    if (!dec->dpb) {
+         ret = ovdpb_init(&dec->dpb, nvcl_ctx);
+         if (ret < 0) {
+             return ret;
+         }
     }
 
     #if 0
@@ -111,6 +120,19 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
     /* FIXME  dpb_request_picture */
     }
     #endif
+
+    ret = ovdpb_init_current_pic(dec->dpb, &frame, 0);
+    if (ret < 0) {
+        ovdpb_flush_dpb(dec->dpb);
+        return ret;
+    }
+
+
+    #if 0
+    OVFrame *f = frame;
+    #endif
+
+    ovframe_unref(&frame);
 
     ret = init_subdec_list(dec);
     if (ret < 0) {
@@ -176,6 +198,7 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
             if (ret < 0) {
                 goto fail;
             }
+            /* Beyond this point unref current frame;
 
             /* FIXME handle non rect entries later */
             ret = slicedec_decode_rect_entries(vvcdec->subdec_list, &vvcdec->active_params);
@@ -416,6 +439,8 @@ ovdec_close(OVVCDec *vvcdec)
         nvcl_free_ctx(&vvcdec->nvcl_ctx);
 
         slicedec_uninit(&vvcdec->subdec_list);
+
+        ovdpb_uninit(&vvcdec->dpb);
 
         ov_free(vvcdec);
 
