@@ -13,6 +13,10 @@
 #include "decinit.h"
 #include "slicedec.h"
 #include "dec_structures.h"
+/* FIXME
+ * To be removed includes
+ */
+#include "ovdpb.h"
 
 static const char *const decname = "Open VVC Decoder";
 
@@ -115,24 +119,8 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
          }
     }
 
-    #if 0
-    if (dec->active_params.sh->sh_slice_address) {
-    /* FIXME  dpb_request_picture */
-    }
-    #endif
-
-    ret = ovdpb_init_current_pic(dec->dpb, &frame, 0);
-    if (ret < 0) {
-        ovdpb_flush_dpb(dec->dpb);
-        return ret;
-    }
 
 
-    #if 0
-    OVFrame *f = frame;
-    #endif
-
-    ovframe_unref(&frame);
 
     ret = init_subdec_list(dec);
     if (ret < 0) {
@@ -140,6 +128,23 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
     }
 
     sldec = select_subdec(dec);
+
+    /* FIXME clean way on new slice with address 0 */
+#if 0
+    if (dec->active_params.sh->sh_slice_address) {
+#else
+    if (1) {
+#endif
+        ret = ovdpb_init_current_pic(dec->dpb, &sldec->pic, 0);
+        if (ret < 0) {
+            ovdpb_flush_dpb(dec->dpb);
+            return ret;
+        }
+    }
+
+    #if 0
+    ovframe_unref(sldec->pic);
+    #endif
 
     ret = slicedec_init_slice_tools(sldec, &dec->active_params);
     /* TODO on failure */
@@ -196,7 +201,7 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
 
             ret = init_vcl_decoder(vvcdec, nvcl_ctx, nalu, &rdr);
             if (ret < 0) {
-                goto fail;
+                goto failvcl;
             }
             /* Beyond this point unref current frame;
 
@@ -265,6 +270,12 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
 
 fail:
     /* TODO error hanling */
+    return ret;
+
+failvcl:
+    if (vvcdec->subdec_list->pic) {
+        ovdpb_unref_pic(vvcdec->dpb, vvcdec->subdec_list->pic, ~0);
+    }
     return ret;
 }
 
@@ -408,6 +419,29 @@ ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *const pu)
     ret = vvc_decode_picture_unit(vvcdec, pu);
 
     return ret;
+}
+
+int
+ovdec_receive_picture(OVVCDec *dec, const OVFrame **frame_p)
+{
+    /* FIXME this is temporary request output from DPB
+     * instead
+     */
+    if (dec->subdec_list) {
+        /* FIXME handle sbdec list */
+        OVSliceDec *sldec = dec->subdec_list;
+        if (!sldec->pic) {
+            ov_log(dec, OVLOG_INFO, "No output picture\n");
+            return 0;
+        }
+        ovframe_new_ref(frame_p, sldec->pic->frame);
+        /*FIXME tmp */
+        ovdpb_unref_pic(dec->dpb, sldec->pic, ~0);
+        sldec->pic = NULL;
+        return 0;
+    }
+
+    return;
 }
 
 int

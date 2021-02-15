@@ -136,7 +136,7 @@ derive_poc(int poc_lsb, int log2_max_poc_lsb, int prev_poc)
 }
 
 
-void ovdpb_unref_frame(OVDPB *dpb, OVPicture *pic, int flags)
+void ovdpb_unref_pic(OVDPB *dpb, OVPicture *pic, int flags)
 {
     /* pic->frame can be NULL if context init failed */
     if (!pic->frame || !pic->frame->data[0])
@@ -178,7 +178,7 @@ vvc_clear_refs(OVDPB *dpb)
     const uint8_t flags = OV_ST_REF_PIC_FLAG | OV_LT_REF_PIC_FLAG;
 
     for (i = 0; i < nb_dpb_pic; i++) {
-        ovdpb_unref_frame(dpb, &dpb->pictures[i], flags);
+        ovdpb_unref_pic(dpb, &dpb->pictures[i], flags);
     }
 }
 
@@ -189,7 +189,7 @@ void ovdpb_flush_dpb(OVDPB *dpb)
     const uint8_t flags = ~0;
 
     for (i = 0; i < nb_dpb_pic; i++) {
-        ovdpb_unref_frame(dpb, &dpb->pictures[i], flags);
+        ovdpb_unref_pic(dpb, &dpb->pictures[i], flags);
     }
 }
 
@@ -220,11 +220,17 @@ static OVPicture *alloc_frame(OVDPB *dpb)
 }
 
 /* Allocate the current picture buffer */
-int ovdpb_init_current_pic(OVDPB *dpb, OVFrame **frame, int poc)
+int ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc)
 {
     OVPicture *ref_pic;
     int i;
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
+
+    if (*pic_p) {
+        /* FIXME tmp this shall not happen*/
+        ov_log(NULL, OVLOG_ERROR, "Picture not unreferenced by previous dec run.\n");
+        *pic_p = NULL;
+    }
 
     /* check that this POC doesn't already exist */
     for (i = 0; i < nb_dpb_pic; i++) {
@@ -243,7 +249,11 @@ int ovdpb_init_current_pic(OVDPB *dpb, OVFrame **frame, int poc)
         return OVVC_ENOMEM;
     }
 
+    #if 0
     ovframe_new_ref(frame, ref_pic->frame);
+    #endif
+
+    *pic_p = ref_pic;
 
     #if 0
     dpb->active_pic = ref_pic;
@@ -378,7 +388,7 @@ int ovdpb_output_frame(OVDPB *dpb, OVFrame *out, int flush)
                 uint8_t not_current = pic->poc != dpb->poc;
                 uint8_t is_output_cvs = pic->sequence == output_cvs_id;
                 if (not_bumped && not_current && is_output_cvs) {
-                    ovdpb_unref_frame(dpb, pic, OV_OUTPUT_PIC_FLAG);
+                    ovdpb_unref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG);
                 }
             }
         }
@@ -413,9 +423,9 @@ int ovdpb_output_frame(OVDPB *dpb, OVFrame *out, int flush)
 
             /* we unref the pic even if ref failed */
             if (pic->flags & VVC_FRAME_FLAG_BUMPING) {
-                ovdpb_unref_frame(dpb, pic, OV_OUTPUT_PIC_FLAG | VVC_FRAME_FLAG_BUMPING);
+                ovdpb_unref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG | VVC_FRAME_FLAG_BUMPING);
             } else {
-                ovdpb_unref_frame(dpb, pic, OV_OUTPUT_PIC_FLAG);
+                ovdpb_unref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG);
             }
 
             if (ret < 0) {
@@ -567,7 +577,7 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, struct OVRPL *const rpl
     /* Unreference all non marked Picture */
     for (i = 0; i < nb_dpb_pic; i++) {
         OVPicture *pic = &dpb->pictures[i];
-        ovdpb_unref_frame(dpb, pic, 0);
+        ovdpb_unref_pic(dpb, pic, 0);
     }
 
     return 0;
@@ -585,7 +595,7 @@ ovdpb_init_picture(OVDPB *dpb, const OVPH *const ph, const OVSPS *const sps, uin
 {
 
     int ret = 0;
-    OVFrame *frame = NULL;
+    OVPicture *pic = NULL;
     uint32_t poc = 0;
     uint8_t cra_flag = 0;
     uint8_t idr_flag = 0;
@@ -642,7 +652,7 @@ ovdpb_init_picture(OVDPB *dpb, const OVPH *const ph, const OVSPS *const sps, uin
     /* Find an available place in DPB and allocate/retrieve available memory
      * for the current picture data from the Frame Pool
      */
-    ret = ovdpb_init_current_pic(dpb, &frame, poc);
+    ret = ovdpb_init_current_pic(dpb, &pic, poc);
     if (ret < 0) {
         goto fail;
     }
@@ -681,7 +691,7 @@ ovdpb_init_picture(OVDPB *dpb, const OVPH *const ph, const OVSPS *const sps, uin
 fail:
     #if 0
     if (dpb->active_pic){
-        ovdpb_unref_frame(dpb, dpb->active_pic, ~0);
+        ovdpb_unref_pic(dpb, dpb->active_pic, ~0);
         dpb->active_pic = NULL;
     }
     #endif

@@ -41,6 +41,9 @@ typedef struct OVSliceDec
 
    struct DRVLines drv_lines;
 
+   /* Reference to current pic being decoded */
+   OVPicture *pic;
+
    OVCTUDec *ctudec_list; 
    int nb_ctudec;
 } OVSliceDec;

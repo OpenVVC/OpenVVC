@@ -76,7 +76,7 @@ void
 ovframe_unref(OVFrame **frame)
 {
     if (!*frame){
-        ov_log(NULL, 3, "Trying to unref NULL frame\n");
+        ov_log(NULL, OVLOG_ERROR, "Trying to unref NULL frame\n");
         return;
     }
 

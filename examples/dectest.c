@@ -245,14 +245,23 @@ read_stream(OVVCHdl *const hdl, FILE *fp)
         }
 
         if (pu){
+            OVFrame *frame;
             ret = ovdec_submit_picture_unit(dec, pu);
+            if (ret < 0) {
+                ov_free_pu(&pu);
+                break;
+            }
+
+            ret = ovdec_receive_picture(dec, &frame);
+
+            ovframe_unref(&frame);
 
             ov_free_pu(&pu);
         }
 
         ++nb_pic;
 
-    } while (ret >= 0);
+    } while (ret >= 0 && nb_pic <= 1);
     printf("nb_pic : %d\n", nb_pic);
 
     #endif

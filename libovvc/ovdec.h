@@ -18,6 +18,19 @@
  */
 int ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *pu);
 
+/*
+ * Request a reference to a picture from the decoder
+ * and sets a new reference to the output frame
+ * FIXME determine a more precise behaviour
+ * returns the number of pictures available in the decoder
+ * output;
+ *         a negative number on failure
+ * Once the user has finished working with current frame
+ * the frame must be unreferenced by a calling
+ * ovframe_unref()
+ */
+int ovdec_receive_picture(OVVCDec *vvcdec, const OVFrame **frame);
+
 int ovdec_init(OVVCDec **ovvcdec);
 
 int ovdec_close(OVVCDec *ovvcdec);
