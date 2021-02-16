@@ -867,29 +867,33 @@ void vvc_intra_pred_chroma(const OVCTUDec *const ctudec,
                                top_row_map, left_col_map,
                                x0, y0, log2_pb_w, log2_pb_h);
 
-        if (log2_pb_h > 1 && log2_pb_w > 1)
+        if (log2_pb_h > 1 && log2_pb_w > 1) {
         // FIXME! vvc_intra_dsp_ctx.planar_pdpc[0](ref1, ref2, dst_cb, dst_stride,
                          // log2_pb_w, log2_pb_h);
                          vvc_intra_planar_pdpc(ref1, ref2, dst_cb, dst_stride, log2_pb_w,
                                           log2_pb_h);
-        else
+        } else {
+                vvc_intra_planar(ref1, ref2, dst_cb, dst_stride, log2_pb_w,
+                                 log2_pb_h);
 
-        fill_ref_left_0_chroma(src_cr, dst_stride, ref_left,
-                               left_col_map, top_row_map,
-                               x0, y0, log2_pb_w, log2_pb_h);
+        }
+            fill_ref_left_0_chroma(src_cr, dst_stride, ref_left,
+                                   left_col_map, top_row_map,
+                                   x0, y0, log2_pb_w, log2_pb_h);
 
-        fill_ref_above_0_chroma(src_cr, dst_stride, ref_above,
-                               top_row_map, left_col_map,
-                               x0, y0, log2_pb_w, log2_pb_h);
+            fill_ref_above_0_chroma(src_cr, dst_stride, ref_above,
+                                    top_row_map, left_col_map,
+                                    x0, y0, log2_pb_w, log2_pb_h);
 
-        if (log2_pb_h > 1 && log2_pb_w > 1)
-        // FIXED? :vvc_intra_dsp_ctx.planar_pdpc[0](ref1, ref2, dst_cr, dst_stride,
-                         // log2_pb_w, log2_pb_h);
-                         vvc_intra_planar_pdpc(ref1, ref2, dst_cr, dst_stride,
-                                          log2_pb_w, log2_pb_h);
-        else
-            vvc_intra_planar(ref1, ref2, dst_cr, dst_stride, log2_pb_w,
-                             log2_pb_h);
+            if (log2_pb_h > 1 && log2_pb_w > 1) {
+                // FIXED? :vvc_intra_dsp_ctx.planar_pdpc[0](ref1, ref2, dst_cr, dst_stride,
+                // log2_pb_w, log2_pb_h);
+                vvc_intra_planar_pdpc(ref1, ref2, dst_cr, dst_stride,
+                                      log2_pb_w, log2_pb_h);
+            } else {
+                vvc_intra_planar(ref1, ref2, dst_cr, dst_stride, log2_pb_w,
+                                 log2_pb_h);
+            }
         break;
     }
     case OVINTRA_DC://DC
