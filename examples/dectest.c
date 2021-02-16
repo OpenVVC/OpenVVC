@@ -25,7 +25,7 @@ static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
 static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
-static int read_stream(OVVCHdl *const hdl, FILE *fp);
+static int read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout);
 
 static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
 
@@ -128,7 +128,7 @@ main(int argc, char** argv)
 
     if (ret < 0) goto failattach;
 
-    read_stream(&ovvc_hdl, ovvc_hdl.fp);
+    read_stream(&ovvc_hdl, ovvc_hdl.fp, fout);
 
     ovdmx_detach_stream(ovvc_hdl.dmx);
 
@@ -226,7 +226,7 @@ faildmxclose:
 }
 
 static int
-read_stream(OVVCHdl *const hdl, FILE *fp)
+read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
 {
     #if 0
     ovdmx_read_stream(dmx);
@@ -254,6 +254,8 @@ read_stream(OVVCHdl *const hdl, FILE *fp)
 
             ret = ovdec_receive_picture(dec, &frame);
 
+            write_decoded_frame_to_file(frame, fout);
+
             ovframe_unref(&frame);
 
             ov_free_pu(&pu);
@@ -261,7 +263,7 @@ read_stream(OVVCHdl *const hdl, FILE *fp)
 
         ++nb_pic;
 
-    } while (ret >= 0 && nb_pic <= 1);
+    } while (ret >= 0 && nb_pic < 1);
     printf("nb_pic : %d\n", nb_pic);
 
     #endif
