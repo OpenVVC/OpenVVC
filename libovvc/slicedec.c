@@ -864,7 +864,12 @@ slicedec_attach_frame_buff(OVCTUDec *const ctudec, OVSliceDec *sldec,
     fbuff->stride_c = f->linesize[1] >> 1;
 }
 
-
+static void
+fbuff_new_line(struct OVBuffInfo *fbuff, uint8_t log2_ctb_s)
+{
+    fbuff->y  += fbuff->stride << log2_ctb_s;
+    fbuff->cb += fbuff->stride_c << (log2_ctb_s - 1);
+    fbuff->cr += fbuff->stride_c << (log2_ctb_s - 1);
 }
 
 static int
@@ -885,6 +890,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     const int nb_ctu_h = einfo->nb_ctu_h;
 
     struct CCLines *line_map = sldec->cabac_lines;
+    struct OVBuffInfo tmp_fbuff;
     ctudec->cabac_ctx = &cabac_ctx;
 
     ctudec->qp_ctx.current_qp = ctudec->slice_qp;
@@ -898,6 +904,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     }
 
     slicedec_attach_frame_buff(ctudec, sldec, einfo);
+
+    tmp_fbuff = ctudec->rcn_ctx.frame_buff;
 
     /* FIXME Note cabac context tables could be initialised earlier
      * so we could only init once and recopy context tables to others
@@ -930,6 +938,13 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
         attach_cabac_lines(ctudec, sldec);
 
         attach_drv_lines(ctudec, sldec);
+        /*TODO 
+         * CLeaner Next CTU Line
+         */
+        fbuff_new_line(&tmp_fbuff, ctudec->part_ctx->log2_ctu_s);
+        ctudec->rcn_ctx.frame_buff = tmp_fbuff;
+        ctudec->ctu_ngh_flags = CTU_UP_FLG|CTU_UPRGT_FLG;
+        rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
 
         ctb_addr_rs += nb_ctu_w;
         ctb_y++;
