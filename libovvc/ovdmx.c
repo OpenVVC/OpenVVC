@@ -26,6 +26,8 @@
 
 #define OV_RBSP_PADDING 8
 
+/* FIXME remove dirty global variable on eof */
+static uint8_t eof = 0;
 enum DMXReturn {
     OV_INVALID_DATA = -1,
     OV_ENOMEM = -2,
@@ -314,15 +316,16 @@ ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
         cache_ctx->cache_start = cache_ctx->data_start;
         cache_ctx->cache_end   = cache_ctx->data_start + OVVCDMX_IO_BUFF_SIZE;
 
-        /* FIXME Process first chunk of data ? */
-        ret = extract_cache_segments(dmx, cache_ctx);
-
         if (!read_in_buf) {
             /* TODO error handling if end of file is encountered on first read */
             int32_t nb_bytes;
             nb_bytes = ovio_stream_tell(dmx->io_str) & OVVCDMX_IO_BUFF_MASK;
             cache_ctx->cache_end = cache_ctx->data_start + nb_bytes;
+                eof = 1;
         }
+        /* FIXME Process first chunk of data ? */
+        ret = extract_cache_segments(dmx, cache_ctx);
+
         cache_ctx->nb_chunk_read = 1;
     }
 
@@ -404,8 +407,6 @@ static struct NALUnitListElem *pop_nalu_elem(struct NALUnitsList *list)
 }
 
 
-/* FIXME remove dirty global variable on eof */
-static uint8_t eof = 0;
 
 static int
 extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
@@ -420,6 +421,7 @@ extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
             struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
             int ret;
 
+            if (!eof)
             ret = refill_reader_cache(cache_ctx, dmx->io_str);
 
             if (ret < 0) {
