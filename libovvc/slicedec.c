@@ -738,8 +738,10 @@ decode_ctu_implicit(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     ret = ctudec->coding_tree_implicit(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s,
                                        0, remaining_w, remaining_h);
 
+    #if 0
     rcn_write_ctu_to_frame_border(&ctudec->rcn_ctx,
                                   remaining_w, remaining_h);
+                                  #endif
     return ret;
 }
 
@@ -771,6 +773,10 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         update_drv_lines(ctudec, prms);
 
         rcn_update_ctu_border(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
+
+        if (ctb_addr_rs >= einfo->nb_ctu_w) {
+            rcn_frame_line_to_ctu(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
+        }
 
         ctb_addr_rs++;
         ctb_x++;
