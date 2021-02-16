@@ -185,6 +185,7 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
         }
     }
 
+    ph->ph_pic_output_flag = 1;
     if (pps->pps_output_flag_present_flag && !ph->ph_non_ref_pic_flag) {
         ph->ph_pic_output_flag = nvcl_read_flag(rdr);
     }
