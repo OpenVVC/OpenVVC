@@ -274,7 +274,7 @@ static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp){
   uint8_t component = 0;
   uint32_t ret = 0;
   for(component=0; component<3; component++){
-    uint32_t frame_size = frame->height[component] * frame->height[component];
+    uint32_t frame_size = frame->height[component] * frame->linesize[component];
     ret +=fwrite(frame->data[component], sizeof(uint8_t), frame_size, fp);
   }
   return ret;
