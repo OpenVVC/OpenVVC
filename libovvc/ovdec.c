@@ -180,7 +180,7 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
     int ret;
 
     /* TODO init NVCLReader */
-    nvcl_reader_init(&rdr, nalu->rbsp_data, (nalu->rbsp_size - 2) << 3);
+    nvcl_reader_init(&rdr, nalu->rbsp_data, (nalu->rbsp_size) << 3);
 
     switch (nalu_type) {
     case OVNALU_TRAIL:
