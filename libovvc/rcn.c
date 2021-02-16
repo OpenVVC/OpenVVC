@@ -766,12 +766,16 @@ rcn_residual_c(OVCTUDec *const ctudec,
 
     } else {
 #endif
-        int nb_row = OVMIN(lim_cg_w, 1 << log2_tb_w);
-        int nb_col = OVMIN(lim_cg_w, 1 << log2_tb_h);
+        int nb_row =  1 << log2_tb_w; //OVMIN(lim_cg_w, 1 << log2_tb_w);
+        int nb_col =  1 << log2_tb_h; //OVMIN(lim_cg_w, 1 << log2_tb_h);
         /*FIXME might be transform SKIP */
 
+        #if 0
         tr_templates[DCT_II][log2_tb_h].transform(src, tmp, tb_w, tb_w, tb_h, shift_v);
-        tr_templates[DCT_II][log2_tb_w].transform(tmp, src, tb_h, tb_h, tb_w, shift_v);
+        tr_templates[DCT_II][log2_tb_w].transform(tmp, src, tb_h, tb_h, tb_w, shift_h);
+        #endif
+        tr_templates[DCT_II][log2_tb_h].transform(src, tmp, tb_w, nb_row, nb_col, shift_v);
+        tr_templates[DCT_II][log2_tb_w].transform(tmp, dst, tb_h, tb_h, nb_row, shift_h);
 #if 0
     }
 #endif
