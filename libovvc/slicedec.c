@@ -583,7 +583,7 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
 int
 slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
 {
-    int nb_entries = 16;
+    int nb_entries = prms->pps_info.tile_info.nb_tile_cols * prms->pps_info.tile_info.nb_tile_rows;
     int ret2 = 0;
     int ret = 0;
     int i;
