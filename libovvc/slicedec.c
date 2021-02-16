@@ -849,16 +849,20 @@ slicedec_attach_frame_buff(OVCTUDec *const ctudec, OVSliceDec *sldec,
     OVFrame *f = sldec->pic->frame;
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
-    uint32_t entry_start_offset = (einfo->ctb_x << log2_ctb_s);
+    uint32_t entry_start_offset = ((uint32_t)einfo->ctb_x << (log2_ctb_s + 1));
+    uint32_t entry_start_offset_c = ((uint32_t)einfo->ctb_x << (log2_ctb_s));
 
-    entry_start_offset = (einfo->ctb_y << log2_ctb_s) * (f->linesize[0]);
+    entry_start_offset   += ((uint32_t)einfo->ctb_y << log2_ctb_s) * (f->linesize[0]);
+    entry_start_offset_c += ((uint32_t)einfo->ctb_y << (log2_ctb_s - 1)) * (f->linesize[1]);
 
     /*FIXME clean offset */
     fbuff->y  = &f->data[0][entry_start_offset];
-    fbuff->cb = &f->data[1][entry_start_offset >> 2];
-    fbuff->cr = &f->data[2][entry_start_offset >> 2];
+    fbuff->cb = &f->data[1][entry_start_offset_c];
+    fbuff->cr = &f->data[2][entry_start_offset_c];
+
     fbuff->stride   = f->linesize[0] >> 1;
     fbuff->stride_c = f->linesize[1] >> 1;
+}
 
 
 }
