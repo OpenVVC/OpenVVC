@@ -619,9 +619,9 @@ attach_cabac_lines(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
 
     /* FIXME done twice on new entry see (reset lines function) */
     memset(ctudec->part_map.cu_mode_y,   0xFF, sizeof(ctudec->part_map.cu_mode_y));
-    memset(ctudec->part_map.qt_depth_map_y,   0, sizeof(ctudec->part_map.qt_depth_map_y));
+    memset(ctudec->part_map.qt_depth_map_y,   0xFF, sizeof(ctudec->part_map.qt_depth_map_y));
     memset(ctudec->part_map.log2_cu_h_map_y,   0xFF, sizeof(ctudec->part_map.log2_cu_h_map_y));
-    memset(ctudec->part_map_c.qt_depth_map_y,   0, sizeof(ctudec->part_map_c.qt_depth_map_y));
+    memset(ctudec->part_map_c.qt_depth_map_y,   0xFF, sizeof(ctudec->part_map_c.qt_depth_map_y));
     memset(ctudec->part_map_c.log2_cu_h_map_y, 0xFF, sizeof(ctudec->part_map_c.log2_cu_h_map_y));
 }
 
