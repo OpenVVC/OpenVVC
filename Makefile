@@ -52,14 +52,12 @@ ALL_OBJS=$(LIB_OBJ) $(addprefix $(BUILDDIR_TYPE),$(addsuffix .o, $(PROG)))
 
 all: version libs examples
 
-version: $(SRC_FOLDER)$(LIB_VERSION_HEADER) RELEASE
+version:
+	$(AT)./version.sh RELEASE $(SRC_FOLDER)$(LIB_VERSION_HEADER) 
 
 libs: version $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF)
 
 examples: version $(BUILDDIR_TYPE)$(PROG)
-
-$(SRC_FOLDER)$(LIB_VERSION_HEADER): RELEASE
-	$(AT)./version.sh $^ $@
 
 $(BUILDDIR_TYPE)$(PROG):  $(BUILDDIR_TYPE)$(PROG).o $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF)
 	$(CC) $^ -o $@
