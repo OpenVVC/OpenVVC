@@ -284,7 +284,7 @@ init_tile_ctx(struct TileInfo *const tinfo, const OVPPS *const pps)
     const int pic_h = pps->pps_pic_height_in_luma_samples;
 
     /* FIXME harmonize this with sps
-     */
+    */
     const int nb_ctu_w = (pic_w >> log2_ctu_s) + !!(pic_w & ((1 << log2_ctu_s) - 1));
     const int nb_ctu_h = (pic_h >> log2_ctu_s) + !!(pic_h & ((1 << log2_ctu_s) - 1));
 
@@ -295,45 +295,64 @@ init_tile_ctx(struct TileInfo *const tinfo, const OVPPS *const pps)
     int i;
 
     /* FIXME review implicit last tile x and y
-     */
-    if (nb_cols * nb_rows > 1) {
-        for (i = 1; i <=  nb_rows; ++i) {
-            const int tile_nb_ctu_h = pps->pps_tile_row_height_minus1[i - 1] + 1;
-            tinfo->ctu_y[i - 1] = nb_ctu_h - rem_ctu_h;
-            tinfo->nb_ctu_h[i - 1] = tile_nb_ctu_h;
-            rem_ctu_h -= tile_nb_ctu_h;
-        }
+    */
+    for (i = 1; i <=  nb_rows; ++i) {
+        const int tile_nb_ctu_h = pps->pps_tile_row_height_minus1[i - 1] + 1;
         tinfo->ctu_y[i - 1] = nb_ctu_h - rem_ctu_h;
-        tinfo->nb_ctu_h[i - 1] = rem_ctu_h;
+        tinfo->nb_ctu_h[i - 1] = tile_nb_ctu_h;
+        rem_ctu_h -= tile_nb_ctu_h;
+    }
+    tinfo->ctu_y[i - 1] = nb_ctu_h - rem_ctu_h;
+    tinfo->nb_ctu_h[i - 1] = rem_ctu_h;
 
-        for (i = 1; i <= nb_cols; ++i) {
-            const int tile_nb_ctu_w = pps->pps_tile_column_width_minus1[i - 1] + 1;
-            tinfo->ctu_x[i - 1] = nb_ctu_w - rem_ctu_w;
-            tinfo->nb_ctu_w[i - 1] = tile_nb_ctu_w;
-            rem_ctu_w -= tile_nb_ctu_w;
-        }
-
+    for (i = 1; i <= nb_cols; ++i) {
+        const int tile_nb_ctu_w = pps->pps_tile_column_width_minus1[i - 1] + 1;
         tinfo->ctu_x[i - 1] = nb_ctu_w - rem_ctu_w;
-        tinfo->nb_ctu_w[i - 1] = rem_ctu_w;
+        tinfo->nb_ctu_w[i - 1] = tile_nb_ctu_w;
+        rem_ctu_w -= tile_nb_ctu_w;
+    }
 
-        tinfo->nb_tile_cols = nb_cols + !!rem_ctu_w;
-        tinfo->nb_tile_rows = nb_rows + !!rem_ctu_h;
+    tinfo->ctu_x[i - 1] = nb_ctu_w - rem_ctu_w;
+    tinfo->nb_ctu_w[i - 1] = rem_ctu_w;
+
+    tinfo->nb_tile_cols = nb_cols + !!rem_ctu_w;
+    tinfo->nb_tile_rows = nb_rows + !!rem_ctu_h;
+}
+
+static int
+update_pps_info(struct PPSInfo *const pps_info, const OVPPS *const pps,
+                const OVSPS *const sps)
+{
+    struct TileInfo *const tinfo = &pps_info->tile_info;
+    uint8_t have_tile = pps->pps_num_exp_tile_columns_minus1 + pps->pps_num_exp_tile_rows_minus1;
+
+    if (have_tile) {
+        init_tile_ctx(tinfo, pps);
     } else {
+        /* Initialize tile context to 1 tile on whole picture based on
+         * SPS informations
+         */
+        const int log2_ctu_s = sps->sps_log2_ctu_size_minus5 + 5;
+
+        /* FIXME use SPS max pic size or pps ?  */
+        const int pic_w = pps->pps_pic_width_in_luma_samples;
+        const int pic_h = pps->pps_pic_height_in_luma_samples;
+
+        const int nb_ctu_w = (pic_w + ((1 << log2_ctu_s) - 1)) >> log2_ctu_s;
+        const int nb_ctu_h = (pic_h + ((1 << log2_ctu_s) - 1)) >> log2_ctu_s;
+
         tinfo->ctu_x[0] = 0;
         tinfo->ctu_y[0] = 0;
+        /* FIXME log2_ctu_s from pps is invalid not present
+         * Use SPS instead
+         */
         tinfo->nb_ctu_w[0] = nb_ctu_w;
         tinfo->nb_ctu_h[0] = nb_ctu_h;
 
         tinfo->nb_tile_cols = 1;
         tinfo->nb_tile_rows = 1;
     }
-}
 
-static int
-update_pps_info(struct PPSInfo *const pps_info, const OVPPS *const pps)
-{
-    struct TileInfo *const tinfo = &pps_info->tile_info;
-    init_tile_ctx(tinfo, pps);
     return 0;
 }
 
@@ -403,7 +422,8 @@ decinit_update_params(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
     }
 
     if (ps->pps != pps) {
-        ret = update_pps_info(&ps->pps_info, pps);
+        /* FIXME pps could trigger use a new sps */
+        ret = update_pps_info(&ps->pps_info, pps, ps->sps);
         if (ret < 0) {
             goto failpps;
         }
