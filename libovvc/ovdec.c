@@ -119,9 +119,6 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
          }
     }
 
-
-
-
     ret = init_subdec_list(dec);
     if (ret < 0) {
         return ret;
