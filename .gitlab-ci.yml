@@ -1,0 +1,45 @@
+stages:
+  - build
+  - test
+# GCC builds
+build_linux_gcc_release:
+  stage: build
+  image: gcc
+  script:
+    - gcc --version
+    - ./configure gcc
+    - make BUILD_TYPE=RELEASE
+# Files to keep after compilation
+  artifacts:
+    paths:
+      - release/libovvc.a
+      - release/examples/dectest
+  allow_failure: true
+
+build_linux_gcc_debug:
+  stage: build
+  image: gcc
+  script:
+    - gcc --version
+    - ./configure gcc
+    - make BUILD_TYPE=DEBUG
+# Files to keep after compilation
+  artifacts:
+    paths:
+      - release/libovvc.a
+      - release/examples/dectest
+
+build_linux_clang_debug:
+  stage: build
+  image: ubuntu
+  before_script:
+    - apt update && apt install -y build-essential clang
+  script:
+    - clang --version
+    - ./configure clang
+    - make BUILD_TYPE=DEBUG
+# Files to keep after compilation
+  artifacts:
+    paths:
+      - release/libovvc.a
+      - release/examples/dectest
