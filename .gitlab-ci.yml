@@ -1,21 +1,7 @@
 stages:
   - build
   - test
-# GCC builds
-build_linux_gcc_release:
-  stage: build
-  image: gcc
-  script:
-    - gcc --version
-    - ./configure gcc
-    - make BUILD_TYPE=RELEASE
-# Files to keep after compilation
-  artifacts:
-    paths:
-      - release/libovvc.a
-      - release/examples/dectest
-  allow_failure: true
-
+# Linux builds
 build_linux_gcc_debug:
   stage: build
   image: gcc
@@ -23,6 +9,19 @@ build_linux_gcc_debug:
     - gcc --version
     - ./configure gcc
     - make BUILD_TYPE=DEBUG
+# Files to keep after compilation
+  artifacts:
+    paths:
+      - debug/libovvc.a
+      - debug/examples/dectest
+
+build_linux_gcc_release:
+  stage: build
+  image: gcc
+  script:
+    - gcc --version
+    - ./configure gcc
+    - make BUILD_TYPE=RELEASE
 # Files to keep after compilation
   artifacts:
     paths:
@@ -41,5 +40,5 @@ build_linux_clang_debug:
 # Files to keep after compilation
   artifacts:
     paths:
-      - release/libovvc.a
-      - release/examples/dectest
+      - debug/libovvc.a
+      - debug/examples/dectest
