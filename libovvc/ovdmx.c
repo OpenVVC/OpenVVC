@@ -371,6 +371,7 @@ refill_reader_cache(struct ReaderCache *const cache_ctx, OVIOStream *const io_st
         int32_t nb_bytes;
         nb_bytes = ovio_stream_tell(io_str) & OVVCDMX_IO_BUFF_MASK;
         cache_ctx->cache_end = cache_ctx->data_start + nb_bytes;
+        eof = 1;
         return -1;
     }
 
@@ -447,14 +448,14 @@ extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
 
             au_end_found = current_nalu != NULL || (current_nalu == NULL && eof);
         }
-    } while (!au_end_found);
+    } while (!au_end_found && !eof);
 
     if (current_nalu)
         append_nalu_elem(dst_list, current_nalu);
 
     /* TODO NALUList to packet */
 
-    return -(eof && current_nalu == NULL);
+    return 0;//-(eof && current_nalu == NULL);
 
 #if 0
 readfail:
@@ -817,6 +818,11 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
          */
         end_of_cache = &byte[++byte_pos] >= cache_end;
     } while (!end_of_cache);
+
+    if (eof) {
+        sgmt_ctx.end_p = cache_end;
+        return process_start_code(dmx, cache_ctx, byte_pos, &sgmt_ctx);
+    }
 
     /* Keep track of overlapping removed start code or EBP*/
     cache_ctx->first_pos = cache_end - &byte[byte_pos];
