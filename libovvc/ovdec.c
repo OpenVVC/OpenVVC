@@ -441,7 +441,7 @@ ovdec_receive_picture(OVVCDec *dec, const OVFrame **frame_p)
         return 0;
     }
 
-    return;
+    return 0;
 }
 
 int
