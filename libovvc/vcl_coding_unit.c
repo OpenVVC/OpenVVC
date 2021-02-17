@@ -259,8 +259,8 @@ ovcabac_read_ae_intra_mip(OVCABACCtx *const cabac_ctx,
     if (abs(log2_cb_h - log2_cb_w) > 1){
         ctx_offset = 3;
     } else {
-        ctx_offset  = mip_abv == 75;
-        ctx_offset += mip_lft == 75;
+        ctx_offset  = mip_abv == OV_MIP;
+        ctx_offset += mip_lft == OV_MIP;
     }
 
     return ovcabac_ae_read(cabac_ctx, &cabac_state[MIP_FLAG_CTX_OFFSET + ctx_offset]);
@@ -629,8 +629,8 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
         VVCCTUPredContext *const pred_ctx = &ctu_dec->pred_ctx;
         #endif
         /* FIXME use other maps */
-        uint8_t mip_abv = ctu_dec->part_map.cu_mode_x[x_pu] == OV_MIP;
-        uint8_t mip_lft = ctu_dec->part_map.cu_mode_y[y_pu] == OV_MIP;
+        uint8_t mip_abv = ctu_dec->part_map.cu_mode_x[x_pu];
+        uint8_t mip_lft = ctu_dec->part_map.cu_mode_y[y_pu];
 
         mip_flag = ovcabac_read_ae_intra_mip(cabac_ctx, log2_cb_w, log2_cb_h,
                                              mip_abv, mip_lft);
