@@ -428,10 +428,6 @@ reset_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
      uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
      uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
      uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
-     #if 0
-     uint16_t nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
-     uint16_t nb_pb_pic_h = nb_ctb_pic_h << log2_min_cb_s;
-     #endif
 
      memset(lns->qt_depth_map_x,     0,  sizeof(*lns->qt_depth_map_x)  * nb_pb_pic_w);
      memset(lns->log2_cu_w_map_x, 0xFF,  sizeof(*lns->log2_cu_w_map_x) * nb_pb_pic_w);
@@ -602,12 +598,16 @@ attach_cabac_lines(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
     pmap_c->qt_depth_map_x  = lns_c->qt_depth_map_x;
     pmap_c->cu_mode_x       = lns_c->cu_mode_x;
 
+    /* CTU Decoder part maps points to cabac_lines start */
+
     /* FIXME done twice on new entry see (reset lines function) */
-    memset(ctudec->part_map.cu_mode_y,   0xFF, sizeof(ctudec->part_map.cu_mode_y));
-    memset(ctudec->part_map.qt_depth_map_y,   0xFF, sizeof(ctudec->part_map.qt_depth_map_y));
-    memset(ctudec->part_map.log2_cu_h_map_y,   0xFF, sizeof(ctudec->part_map.log2_cu_h_map_y));
-    memset(ctudec->part_map_c.qt_depth_map_y,   0xFF, sizeof(ctudec->part_map_c.qt_depth_map_y));
-    memset(ctudec->part_map_c.log2_cu_h_map_y, 0xFF, sizeof(ctudec->part_map_c.log2_cu_h_map_y));
+    /* FIXME use nb_pb_ctb instead of size */
+    memset(pmap_l->cu_mode_y,         0xFF, sizeof(pmap_l->cu_mode_y));
+    memset(pmap_l->qt_depth_map_y,    0xFF, sizeof(pmap_l->qt_depth_map_y));
+    memset(pmap_l->log2_cu_h_map_y,   0xFF, sizeof(pmap_l->log2_cu_h_map_y));
+
+    memset(pmap_c->qt_depth_map_y,  0xFF, sizeof(pmap_c->qt_depth_map_y));
+    memset(pmap_c->log2_cu_h_map_y, 0xFF, sizeof(pmap_c->log2_cu_h_map_y));
 }
 
 static void
