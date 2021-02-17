@@ -310,7 +310,9 @@ cabac_lines_uninit(OVSliceDec *sldec)
      struct CCLines *const lns = &sldec->cabac_lines[0];
      struct CCLines *const lns_c = &sldec->cabac_lines[1];
 
-     /* FIXME avoid double free ensure*/
+     /* FIXME avoid double free ensure it is allocated before
+      * freeing it (in case of allocation failure.
+      */
      ov_freep(&lns->qt_depth_map_x);
      ov_freep(&lns->log2_cu_w_map_x);
      ov_freep(&lns->cu_mode_x);
@@ -540,22 +542,7 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
 
 
 
-    /* FIXME better way for last entry */
-
-    #if 0
-    struct LineCtxs line_ctx = sldec->line_ctx;
-    #endif
-
-    #if 0
-    int i = 1;
-    int tile_offset = 0;
-    while (i <= tile_idx) {
-        tile_offset += tile_ctx->nb_ctu_w[(i - 1) % num_tiles_cols] + 1;
-        i++;
-    }
-
-    offset_line_map(&line_map, &line_ctx, tile_offset, log2_ctb_s);
-    #endif
+    /* FIXME Move somewhere else*/
 
 #if 0
     ctudec->last_ctb_alf_flag = 0;
@@ -569,6 +556,7 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
         memset(&ctudec->inter_ctx.tmvp_ctx.tmvp_mv.mv_ctx0.map, 0, sizeof(ctudec->inter_ctx.tmvp_ctx.tmvp_mv.mv_ctx0.map));
         memset(&ctudec->inter_ctx.tmvp_ctx.tmvp_mv.mv_ctx1.map, 0, sizeof(ctudec->inter_ctx.tmvp_ctx.tmvp_mv.mv_ctx1.map));
     }
+
     memset(&ctudec->inter_ctx.mv_ctx0.map, 0, sizeof(ctudec->inter_ctx.mv_ctx0.map));
     memset(&ctudec->inter_ctx.mv_ctx1.map, 0, sizeof(ctudec->inter_ctx.mv_ctx1.map));
 
@@ -583,7 +571,9 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
 int
 slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
 {
-    int nb_entries = prms->pps_info.tile_info.nb_tile_cols * prms->pps_info.tile_info.nb_tile_rows;
+    /* FIXME do not recompute everywhere */
+    int nb_entries = prms->pps_info.tile_info.nb_tile_cols *
+                     prms->pps_info.tile_info.nb_tile_rows;
     int ret2 = 0;
     int ret = 0;
     int i;
@@ -591,12 +581,6 @@ slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
         struct RectEntryInfo entry;
         slicedec_init_rect_entry(&entry, prms, i);
         ret = slicedec_decode_rect_entry(sldec, prms, &entry);
-        #if 0
-        if (!ret) {
-           printf("in entry : %d\n", i);
-           ret2 = 1; 
-        }
-        #endif
     }
     return ret2;
 }
@@ -609,6 +593,7 @@ attach_cabac_lines(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
     const struct CCLines *const lns_l = &sldec->cabac_lines[0];
     const struct CCLines *const lns_c = &sldec->cabac_lines[1];
 
+    /* CTU Decoder part maps points to cabac_lines start */
     pmap_l->log2_cu_w_map_x = lns_l->log2_cu_w_map_x;
     pmap_l->qt_depth_map_x  = lns_l->qt_depth_map_x;
     pmap_l->cu_mode_x       = lns_l->cu_mode_x;
@@ -662,6 +647,9 @@ update_cabac_lines(OVCTUDec *const ctudec, const OVPS *const prms)
     struct PartMap *const pmap_l = &ctudec->part_map;
     struct PartMap *const pmap_c = &ctudec->part_map_c;
 
+    /* After each CTU move pointers to data corresponding
+     * to next CTU
+     */
     pmap_l->log2_cu_w_map_x += nb_pb_ctb_w;
     pmap_l->qt_depth_map_x  += nb_pb_ctb_w;
     pmap_l->cu_mode_x       += nb_pb_ctb_w;
@@ -686,13 +674,20 @@ update_drv_lines(OVCTUDec *const ctudec, const OVPS *const prms)
 
     int8_t qp_val = ctudec->qp_ctx.current_qp;
 
-    /* FIXME Unecessary */
-    intra_info->luma_mode_x += nb_pb_ctb_w;
+    /* FIXME Unecessary ? */
+    memset(intra_info->luma_mode_x, 0, sizeof(*intra_info->luma_mode_x) * nb_pb_ctb_w);
 
+    /* Reset QP prediction map to previous current QP prediction
+     * value
+     */
     memset(drv_ctx->qp_map_x, qp_val, sizeof(*drv_ctx->qp_map_x) * nb_pb_ctb_w);
     memset(drv_ctx->qp_map_y, qp_val, sizeof(*drv_ctx->qp_map_y) * nb_pb_ctb_w);
 }
 
+/* Wrapper function around decode CTU calls so we can easily modify
+ * what is to be done before and after each CTU
+ * without adding many thing in each lin decoder
+ */
 static int
 decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
            const OVPS *const prms, struct RectEntryInfo *const einfo,
@@ -703,15 +698,14 @@ decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     int nb_ctu_h = einfo->nb_ctu_h;
     int ret;
 
-    /* FIXME pic border detection in neighbour flags ?*/
+    /* FIXME pic border detection in neighbour flags ? CTU Neighbours
+     * could be set according to upper level context
+     */
     derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w, nb_ctu_h);
 
     init_ctu_bitfield(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s);
 
     ret = ctudec->coding_tree(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s, 0);
-
-    /* FIXME write_ctu
-     */
 
     rcn_write_ctu_to_frame(&ctudec->rcn_ctx, log2_ctb_s);
 
@@ -937,6 +931,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
         ret = decode_ctu_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
 
         if (ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream == -2) {
+            /* FIXME Temporary error report on CABAC end of stream */
             printf("CABAC error diff end line %d \n", ctb_y);
             return 0;
         }
@@ -944,6 +939,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
         attach_cabac_lines(ctudec, sldec);
 
         attach_drv_lines(ctudec, sldec);
+
         /*TODO 
          * CLeaner Next CTU Line
          */
@@ -963,7 +959,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
         ret = decode_ctu_last_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
     }
 
-    if ( ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream == -2) {
+    /* FIXME Temporary error report on CABAC end of stream */
+    if (ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream == -2) {
         printf("CABAC error diff end %d \n", ctb_y);
         return 0;
     }
@@ -972,6 +969,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     return ctb_addr_rs;
 }
 
+/* FIXME clean this init */
 int
 slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
 {
