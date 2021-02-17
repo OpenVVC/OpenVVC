@@ -254,7 +254,9 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
 
             ret = ovdec_receive_picture(dec, &frame);
 
-            write_decoded_frame_to_file(frame, fout);
+            if (fout) {
+                write_decoded_frame_to_file(frame, fout);
+            }
 
             ovframe_unref(&frame);
 
