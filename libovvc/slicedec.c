@@ -757,6 +757,8 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         update_cabac_lines(ctudec, prms);
 
+        update_drv_lines(ctudec, prms);
+
         /* Hackish way of keeping track of CTU last line
          * first QP to initialise delta qp for next ctu line
          */
@@ -764,11 +766,12 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
             backup_qp = ctudec->drv_ctx.qp_map_x[0];
         }
 
-        update_drv_lines(ctudec, prms);
-
         rcn_update_ctu_border(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
 
-        if (ctb_addr_rs >= einfo->nb_ctu_w) {
+        /* FIXME
+         * Move this somewher else to avoid first line check
+         */
+        if (ctb_addr_rs >= nb_ctu_w) {
             rcn_frame_line_to_ctu(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
         }
 
