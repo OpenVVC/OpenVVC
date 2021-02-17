@@ -73,10 +73,6 @@ static int binary_tree_implicit_v(OVCTUDec *const ctu_dec,
                                   unsigned int log2_cb_w, unsigned int log2_cb_h,
                                   unsigned int mtt_depth, unsigned int rem_w);
 
-/* FIXME to be replaced or removed */
-enum {
-    VVC_NA_DEPTH = 128,
-};
 
 static uint8_t
 ovcabac_read_ae_split_cu_flag(OVCABACCtx *const cabac_ctx,
@@ -121,8 +117,8 @@ ovcabac_read_ae_mtt_split_cu_vertical_flag(OVCABACCtx *const cabac_ctx,
         int w_ratio = (1 << log2_cu_w) >> log2_cu_w_abv;
         int h_ratio = (1 << log2_cu_h) >> log2_cu_h_lft;
 
-        if ((w_ratio == h_ratio) || (log2_cu_w_abv == VVC_NA_DEPTH)
-                                 || (log2_cu_h_lft == VVC_NA_DEPTH)) {
+        if ((w_ratio == h_ratio) || (log2_cu_w_abv == 0xFF)
+                                 || (log2_cu_h_lft == 0xFF)) {
             ctx = 0;
         } else if (w_ratio < h_ratio) {
             ctx = 1;
