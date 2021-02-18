@@ -690,7 +690,7 @@ update_drv_lines(OVCTUDec *const ctudec, const OVPS *const prms)
  */
 static int
 decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
-           const OVPS *const prms, struct RectEntryInfo *const einfo,
+           const OVPS *const prms, const struct RectEntryInfo *const einfo,
            uint16_t ctb_addr_rs)
 {
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
@@ -714,7 +714,7 @@ decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
 static int
 decode_ctu_implicit(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
-                    const OVPS *const prms, struct RectEntryInfo *const einfo,
+                    const OVPS *const prms, const struct RectEntryInfo *const einfo,
                     uint16_t ctb_addr_rs, int remaining_w, int remaining_h)
 {
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
@@ -727,21 +727,19 @@ decode_ctu_implicit(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     /* FIXME pic border detection in neighbour flags ?*/
     init_ctu_bitfield_border(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s,
-                             remaining_w,remaining_h);
+                             remaining_w, remaining_h);
 
     ret = ctudec->coding_tree_implicit(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s,
                                        0, remaining_w, remaining_h);
 
-    #if 0
     rcn_write_ctu_to_frame_border(&ctudec->rcn_ctx,
                                   remaining_w, remaining_h);
-                                  #endif
     return ret;
 }
 
 static int
 decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
-                const OVPS *const prms, struct RectEntryInfo *const einfo,
+                const OVPS *const prms, const struct RectEntryInfo *const einfo,
                 uint16_t ctb_addr_rs)
 {
     int nb_ctu_w = einfo->nb_ctu_w;
@@ -807,7 +805,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
 static int
 decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
-                     const OVPS *const prms, struct RectEntryInfo *const einfo,
+                     const OVPS *const prms, const struct RectEntryInfo *const einfo,
                      uint16_t ctb_addr_rs)
 {
     int ret;
