@@ -1,8 +1,11 @@
+#include <string.h>
+
 #include "ovutils.h"
 #include "cabac_internal.h"
 #include "vcl.h"
 #include "dec_structures.h"
 #include "ctudec.h"
+#include "rcn.h"
 
 static void
 rcn_add_residuals(uint16_t *dst, const int16_t *src, uint8_t log2_tb_w, uint8_t log2_tb_h);
@@ -793,7 +796,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
         int16_t *src  = ctu_dec->transform_buff;
         int16_t scale = ctu_dec->lmcs_chroma_scale;
         #endif
-        uint16_t *const coeffs_jcbcr = ctu_dec->residual_cb;
+        int16_t *const coeffs_jcbcr = ctu_dec->residual_cb;
         uint8_t lfnst_flag = 0;
         uint8_t lfnst_idx;
 
