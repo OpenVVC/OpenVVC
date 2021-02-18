@@ -141,7 +141,7 @@ sps_init_chroma_qp_tables(struct SPSInfo *sps_info, const OVSPS *const sps)
         const uint8_t *dqp_input_val_min1 = sps->sps_delta_qp_in_val_minus1[i];
         const uint8_t *dqp_diff_val = sps->sps_delta_qp_diff_val[i];
         int8_t start_qp = sps->sps_qp_table_start_minus26[i] + 26;
-        uint8_t *dst_qp_tab = sps_info->qp_tables_c[i].qp;
+        uint8_t *dst_qp_tab = (uint8_t *)sps_info->qp_tables_c[i].qp;
 
         sps_fill_qp_table(dst_qp_tab, dqp_input_val_min1, dqp_diff_val, start_qp,
                           nb_qp_min1);
