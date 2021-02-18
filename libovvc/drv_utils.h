@@ -117,12 +117,14 @@ init_ctu_bitfield(struct OVRCNCtx *const rcn_ctx,
 
     /* Mask with inner ctb line / column set to zero */
     uint64_t internal_mask = ~(((1llu << nb_ctb_pb) - 1llu) << 1);
+    uint64_t tr_mask = ~((1llu << (nb_ctb_pb)) - 1llu);
 
     uint64_t internal_mask_h = internal_mask;
     uint64_t internal_mask_v = internal_mask;
 
     uint64_t lft_mask = !!(ctb_ngh_flags & CTU_LFT_FLG);
     uint64_t abv_mask = !!(ctb_ngh_flags & CTU_UP_FLG);
+    uint64_t tr = !!(ctb_ngh_flags & CTU_UPRGT_FLG);
     /* Remove first bit if ctb_left/above from mask is not available
      * This way we reset the field whenever left CTU is unavailable
      */
@@ -167,8 +169,8 @@ init_ctu_bitfield(struct OVRCNCtx *const rcn_ctx,
 
     /* Set Top Right Part if up right CTU is available */
 
-    map_l->hfield[0] |= ((~internal_mask) << nb_ctb_pb) & (-(int64_t)abv_mask);
-    map_c->hfield[0] |= ((~internal_mask) << nb_ctb_pb) & (-(int64_t)abv_mask);
+    map_l->hfield[0] |= ((~tr_mask) << (nb_ctb_pb + 1)) & (-(int64_t)tr);
+    map_c->hfield[0] |= ((~tr_mask) << (nb_ctb_pb + 1)) & (-(int64_t)tr);
 }
 
 static inline void
@@ -190,15 +192,20 @@ init_ctu_bitfield_border(struct OVRCNCtx *const rcn_ctx,
 
     uint64_t internal_mask_h = ~(((1llu << nb_ctb_pb_h) - 1llu) << 1);
     uint64_t internal_mask_v = ~(((1llu << nb_ctb_pb_v) - 1llu) << 1);
+    uint64_t tr_mask = ~((1llu << (nb_ctb_pb)) - 1llu);
 
     uint64_t lft_mask = !!(ctb_ngh_flags & CTU_LFT_FLG);
     uint64_t abv_mask = !!(ctb_ngh_flags & CTU_UP_FLG);
 
+    uint64_t tr = !!(ctb_ngh_flags & CTU_UPRGT_FLG);
+
     /* Remove first bit if ctb_left/above from mask is not available
      * This way we reset the field whenever left CTU is unavailable
      */
-    internal_mask_h &= lft_mask;
-    internal_mask_v &= abv_mask;
+    #if 1
+    internal_mask_h &= ~lft_mask;
+    internal_mask_v &= ~abv_mask;
+    #endif
 
     for (i = 1; i < nb_ctb_pb + 1; ++i) {
         /* Set internal bits to zero */
@@ -208,13 +215,13 @@ init_ctu_bitfield_border(struct OVRCNCtx *const rcn_ctx,
         map_c->vfield[i] = 0;
     }
 
-    for (i = 1; i < nb_ctb_pb_h + 1; ++i) {
+    for (i = 1; i < nb_ctb_pb_v + 1; ++i) {
         /* Set internal bits according to CTU availability */
         map_l->hfield[i] |= lft_mask;
         map_c->hfield[i] |= lft_mask;
     }
 
-    for (i = 1; i < nb_ctb_pb_v + 1; ++i) {
+    for (i = 1; i < nb_ctb_pb_h + 1; ++i) {
         /* Set internal bits according to CTU availability */
         map_l->vfield[i] |= abv_mask;
         map_c->vfield[i] |= abv_mask;
@@ -234,8 +241,8 @@ init_ctu_bitfield_border(struct OVRCNCtx *const rcn_ctx,
 
     /* Set Top Right Part if up right CTU is available */
 
-    map_l->hfield[0] |= ((~internal_mask) << nb_ctb_pb) & (-(int64_t)abv_mask);
-    map_c->hfield[0] |= ((~internal_mask) << nb_ctb_pb) & (-(int64_t)abv_mask);
+    map_l->hfield[0] |= ((~tr_mask) << (nb_ctb_pb + 1)) & (-(int64_t)tr);
+    map_c->hfield[0] |= ((~tr_mask) << (nb_ctb_pb + 1)) & (-(int64_t)tr);
 }
 
 #endif
