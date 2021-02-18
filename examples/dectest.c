@@ -260,6 +260,9 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
 
             ovframe_unref(&frame);
 
+            /* FIXME Picture unit freeing be inside the decoder
+             * use ref_counted buffer and call unref here instead
+             */
             ov_free_pu(&pu);
         }
 
