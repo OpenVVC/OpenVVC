@@ -320,7 +320,7 @@ ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
             /* TODO error handling if end of file is encountered on first read */
             int32_t nb_bytes;
             nb_bytes = ovio_stream_tell(dmx->io_str) & OVVCDMX_IO_BUFF_MASK;
-            cache_ctx->cache_end = cache_ctx->data_start + nb_bytes;
+            cache_ctx->cache_end = cache_ctx->data_start + nb_bytes + 8;
                 eof = 1;
         }
         /* FIXME Process first chunk of data ? */
@@ -370,7 +370,7 @@ refill_reader_cache(struct ReaderCache *const cache_ctx, OVIOStream *const io_st
     if (!read_in_buf) {
         int32_t nb_bytes;
         nb_bytes = ovio_stream_tell(io_str) & OVVCDMX_IO_BUFF_MASK;
-        cache_ctx->cache_end = cache_ctx->data_start + nb_bytes;
+        cache_ctx->cache_end = cache_ctx->data_start + nb_bytes + 8;
         eof = 1;
         return -1;
     }
