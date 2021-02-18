@@ -418,7 +418,7 @@ ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *const pu)
 }
 
 int
-ovdec_receive_picture(OVVCDec *dec, const OVFrame **frame_p)
+ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
 {
     /* FIXME this is temporary request output from DPB
      * instead
