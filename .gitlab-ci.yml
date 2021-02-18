@@ -15,18 +15,13 @@ build_linux_gcc_debug:
       - debug/libovvc.a
       - debug/examples/dectest
 
-build_linux_gcc_release:
-  stage: build
-  image: gcc
+non_reg_gcc_debug:
+  stage: test
+  image: ubuntu
+  dependencies:
+    - build_linux_gcc_debug
   script:
-    - gcc --version
-    - ./configure gcc
-    - make BUILD_TYPE=RELEASE
-# Files to keep after compilation
-  artifacts:
-    paths:
-      - release/libovvc.a
-      - release/examples/dectest
+    - ./CI/checkMD5.sh CI ./debug/examples/dectest
 
 build_linux_clang_debug:
   stage: build
@@ -42,3 +37,25 @@ build_linux_clang_debug:
     paths:
       - debug/libovvc.a
       - debug/examples/dectest
+
+non_reg_clang_debug:
+  stage: test
+  image: ubuntu
+  dependencies:
+    - build_linux_clang_debug
+  script:
+    - ./CI/checkMD5.sh CI ./debug/examples/dectest
+
+build_linux_gcc_release:
+  stage: build
+  image: gcc
+  allow_failure: true
+  script:
+    - gcc --version
+    - ./configure gcc
+    - make BUILD_TYPE=RELEASE
+# Files to keep after compilation
+  artifacts:
+    paths:
+      - release/libovvc.a
+      - release/examples/dectest
