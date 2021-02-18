@@ -428,12 +428,13 @@ coding_unit(OVCTUDec *const ctu_dec,
 
     VVCCU cu;
 
-#if 0
-    int pred_qp = ((y0 ? ctu_dec->qp_map_up[x_cb]   : ctu_dec->qp_ctx.current_qp) +
-                   (x0 ? ctu_dec->qp_map_left[y_cb] : ctu_dec->qp_ctx.current_qp) + 1) >> 1;
+#if 1
+    int pred_qp = ((y0 ? ctu_dec->drv_ctx.qp_map_x[x_cb] : ctu_dec->qp_ctx.current_qp) +
+                   (x0 ? ctu_dec->drv_ctx.qp_map_y[y_cb] : ctu_dec->qp_ctx.current_qp) + 1) >> 1;
 #else
-    /* TODO check qp reset
-    */
+    /* FIXME this cannot work since qp_y needs to be reset to current_qp in CTU instead
+     * of qp_pred at CTU start ther might be an other way.
+     */
     int pred_qp = (ctu_dec->drv_ctx.qp_map_x[x_cb] + ctu_dec->drv_ctx.qp_map_y[y_cb] + 1) >> 1;
 
 #endif
