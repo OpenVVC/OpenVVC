@@ -45,6 +45,7 @@ LIB_SRC:=																																 \
 					rcn_mc.c                                                       \
 					rcn_df.c                                                       \
 					slicedec.c                                                     \
+					vcl_sao.c                                                       \
 					vcl_sh.c                                                       \
 					vcl_coding_unit.c                                              \
 					vcl_coding_tree.c                                              \

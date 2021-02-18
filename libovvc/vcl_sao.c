@@ -1,4 +1,15 @@
+#include "dec_structures.h"
 #include "cabac_internal.h"
+
+//TODO: change name and location of definition
+#define VVC_CTU_UP_FLAG             (1 << 0)
+#define VVC_CTU_LEFT_FLAG           (1 << 1)
+#define VVC_CTU_UPLEFT_FLAG         (1 << 2)
+#define VVC_CTU_UPRIGHT_FLAG        (1 << 3)
+
+#define VVC_SAO_LUMA_SLICE_FLAG     (1 << 0)
+#define VVC_SAO_CHROMA_SLICE_FLAG   (1 << 1)
+#define VVC_ALF_LUMA_SLICE_FLAG     (1 << 2)
 
 static uint8_t
 ovcabac_read_ae_sao_merge_type(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state,
@@ -6,7 +17,6 @@ ovcabac_read_ae_sao_merge_type(OVCABACCtx *const cabac_ctx, uint64_t *const caba
 {
     uint8_t sao_merge_type = 0;
 
-    #if 0
     if(neighbour_flags & VVC_CTU_LEFT_FLAG){
         sao_merge_type = ovcabac_ae_read(cabac_ctx,&cabac_state[SAO_MERGE_FLAG_CTX_OFFSET]);
     }
@@ -15,25 +25,23 @@ ovcabac_read_ae_sao_merge_type(OVCABACCtx *const cabac_ctx, uint64_t *const caba
         sao_merge_type = ovcabac_ae_read(cabac_ctx,&cabac_state[SAO_MERGE_FLAG_CTX_OFFSET]);
         sao_merge_type = sao_merge_type << 1;
     }
-    #endif
 
     return sao_merge_type;
 }
 
-static uint8_t
+void
 ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state,
                         uint8_t sao_flags, uint8_t num_bits_sao, uint8_t num_bits_sao_c)
 {
-    int sao_type_idx = 0;
-
-    int offset[4]={1};
+    //TODO: creer le tableau de SAOParams qui va etre utilise
+    SAOParams *sao = malloc(sizeof(SAOParams));
     int k;
     int i;
 
-    #if 0
     if(sao_flags & VVC_SAO_LUMA_SLICE_FLAG){
         if(ovcabac_ae_read(cabac_ctx,&cabac_state[SAO_TYPE_IDX_CTX_OFFSET])){
-            sao_type_idx = ovcabac_bypass_read(cabac_ctx) ? 2 : 1; //EO : BO
+            sao->type_idx[0] = ovcabac_bypass_read(cabac_ctx) ? SAO_EDGE : SAO_BAND;
+            sao->old_type_idx[0] = sao->type_idx[0];
             //offsets
             for (i = 0; i < 4; i++){
                  //not 5
@@ -42,29 +50,41 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
                         break;
                     }
                 }
-                offset[i] = k;
+                sao->offset_abs[0][i] = k;
             }
 
-            if(sao_type_idx & 1){
+            if(sao->type_idx[0] & SAO_BAND) {
                 for( k = 0; k < 4; k++ ) {
-                  if(offset[k] && ovcabac_bypass_read(cabac_ctx)){
-                    offset[k] = -offset[k];
+                  if(sao->offset_abs[0][k] && ovcabac_bypass_read(cabac_ctx)){
+                      sao->offset_sign[0][k]    = 1;
+                      sao->offset_val[0][k]     = -sao->offset_abs[0][k];
+                  } else {
+                      sao->offset_sign[0][k]    = 0;
+                      sao->offset_val[0][k]     = sao->offset_abs[0][k];
                   }
-                }//band position
-                for(i=0; i < 5; i++)
-                    ovcabac_bypass_read(cabac_ctx);
-            } else {//edge
-                ovcabac_bypass_read(cabac_ctx);
-                ovcabac_bypass_read(cabac_ctx);
+
+                } // band position
+                sao->band_position[0] = 0;
+                for(i=1; i < 6; i++)
+                    sao->band_position[0] |= ovcabac_bypass_read(cabac_ctx)<<(5-i);
+            } else {    //edge class 0; 1, 2, 3
+                sao->eo_class[0] = ovcabac_bypass_read(cabac_ctx)<<1;
+                sao->eo_class[0] |= ovcabac_bypass_read(cabac_ctx);
+
+                sao->offset_val[0][ 0 ] =  sao->offset_abs[0][0];
+                sao->offset_val[0][ 1 ] =  sao->offset_abs[0][1];
+                sao->offset_val[0][ 2 ] =  0;
+                sao->offset_val[0][ 3 ] = -sao->offset_abs[0][2];
+                sao->offset_val[0][ 4 ] = -sao->offset_abs[0][3];
             }
         }
     }
 
-    sao_type_idx = sao_type_idx << 2;
-
     if(sao_flags & VVC_SAO_CHROMA_SLICE_FLAG){
         if(ovcabac_ae_read(cabac_ctx,&cabac_state[SAO_TYPE_IDX_CTX_OFFSET])){
-            sao_type_idx |= ovcabac_bypass_read(cabac_ctx) ? 2 : 1; //EO : BO
+            sao->type_idx[2] = sao->type_idx[1] = ovcabac_bypass_read(cabac_ctx) ? SAO_EDGE : SAO_BAND;
+            sao->old_type_idx[1] = sao->type_idx[1];
+            sao->old_type_idx[2] = sao->type_idx[2];
             //offsets
             for (i = 0; i < 4; i++){
                 //not 5
@@ -73,20 +93,31 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
                         break;
                     }
                 }
-                offset[i] = k;
+                sao->offset_abs[1][i] = k;
             }//cb
-            if(sao_type_idx & 1){
+            if(sao->type_idx[1] & SAO_BAND) {
                 for( k = 0; k < 4; k++ ) {
-                  if(offset[k] && ovcabac_bypass_read(cabac_ctx)){
-                    offset[k] = -offset[k];
-                  }
+                    if(sao->offset_abs[1][k] && ovcabac_bypass_read(cabac_ctx)){
+                        sao->offset_sign[1][k]    = 1;
+                        sao->offset_val[1][k]     = -sao->offset_abs[1][k];
+                    } else {
+                        sao->offset_sign[1][k]    = 0;
+                        sao->offset_val[1][k]     = sao->offset_abs[1][k];
+                    }
                 }//band position
-                for(i=0; i < 5; i++)
-                    ovcabac_bypass_read(cabac_ctx);
+                sao->band_position[1] = 0;
+                for(i=1; i < 6; i++)
+                    sao->band_position[1] |= ovcabac_bypass_read(cabac_ctx)<<(5-i);
             } else {//edge
-                ovcabac_bypass_read(cabac_ctx);
-                ovcabac_bypass_read(cabac_ctx);
+                sao->eo_class[1] = ovcabac_bypass_read(cabac_ctx)<<1;
+                sao->eo_class[1] |= ovcabac_bypass_read(cabac_ctx);
+                sao->offset_val[1][ 0 ] =  sao->offset_abs[1][0];
+                sao->offset_val[1][ 1 ] =  sao->offset_abs[1][1];
+                sao->offset_val[1][ 2 ] =  0;
+                sao->offset_val[1][ 3 ] = -sao->offset_abs[1][2];
+                sao->offset_val[1][ 4 ] = -sao->offset_abs[1][3];
             }
+
             //cr
             for (i = 0; i < 4; i++){
                 //not 5
@@ -95,21 +126,31 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
                         break;
                     }
                 }
-                offset[i] = k;
+                sao->offset_abs[2][i] = k;
             }
-            if(sao_type_idx & 1){
+            if(sao->type_idx[2] & SAO_BAND){
                 for( k = 0; k < 4; k++ ) {
-                  if(offset[k] && ovcabac_bypass_read(cabac_ctx)){
-                    offset[k] = -offset[k];
+                  if(sao->offset_abs[2][k] && ovcabac_bypass_read(cabac_ctx)){
+                      sao->offset_sign[2][k]    = 1;
+                      sao->offset_val[2][k]     = -sao->offset_abs[2][k];
+                  } else {
+                      sao->offset_sign[2][k]    = 0;
+                      sao->offset_val[2][k]     = sao->offset_abs[2][k];
                   }
-                }//band position
-                for(i=0; i < 5; i++)
-                    ovcabac_bypass_read(cabac_ctx);
+                }   //band position
+                sao->band_position[2] = 0;
+                for(i=1; i < 6; i++)
+                    sao->band_position[2] |= ovcabac_bypass_read(cabac_ctx)<<(5-i);
+            }
+            else{
+                sao->eo_class[2] = sao->eo_class[1];
+
+                sao->offset_val[2][ 0 ] =  sao->offset_abs[2][0];
+                sao->offset_val[2][ 1 ] =  sao->offset_abs[2][1];
+                sao->offset_val[2][ 2 ] =  0;
+                sao->offset_val[2][ 3 ] = -sao->offset_abs[2][2];
+                sao->offset_val[2][ 4 ] = -sao->offset_abs[2][3];
             }
         }
     }
-    #endif
-
-    return sao_type_idx;
 }
-
