@@ -113,7 +113,7 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
     }
 
     if (!dec->dpb) {
-         ret = ovdpb_init(&dec->dpb, nvcl_ctx);
+         ret = ovdpb_init(&dec->dpb, &dec->active_params);
          if (ret < 0) {
              return ret;
          }
