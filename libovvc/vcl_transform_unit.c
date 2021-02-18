@@ -258,31 +258,6 @@ ovcabac_read_ae_lfnst_idx(OVCABACCtx *const cabac_ctx)
     return ovcabac_ae_read(cabac_ctx, &cabac_state[LFNST_IDX_CTX_OFFSET + 2]);
 }
 
-uint8_t
-ovcabac_read_ae_significant_cg_flag(OVCABACCtx *const cabac_ctx,
-                                    uint8_t got_significant_neighbour)
-{
-    uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    return ovcabac_ae_read(cabac_ctx, &cabac_state[SIG_COEFF_GROUP_CTX_OFFSET + got_significant_neighbour]);
-}
-
-
-uint8_t
-ovcabac_read_ae_significant_cg_flag_chroma(OVCABACCtx *const cabac_ctx,
-                                           uint8_t got_significant_neighbour)
-{
-    uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    return ovcabac_ae_read(cabac_ctx, &cabac_state[SIG_COEFF_GROUP_C_CTX_OFFSET + got_significant_neighbour]);
-}
-
-uint8_t
-ovcabac_read_ae_significant_ts_cg_flag(OVCABACCtx *const cabac_ctx,
-                                       uint8_t got_significant_neighbour)
-{
-    uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    return ovcabac_ae_read(cabac_ctx, &cabac_state[TS_SIG_COEFF_GROUP_CTX_OFFSET + got_significant_neighbour]);
-}
-
 static uint8_t
 decode_cbf_st(const OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf)
 {

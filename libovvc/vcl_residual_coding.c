@@ -121,6 +121,30 @@ static const VVCSBStates chroma_ctx_offsets = {
     GT1_FLAG_C_CTX_OFFSET,
 };
 
+uint8_t
+ovcabac_read_ae_significant_cg_flag(OVCABACCtx *const cabac_ctx,
+                                    uint8_t got_significant_neighbour)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[SIG_COEFF_GROUP_CTX_OFFSET + got_significant_neighbour]);
+}
+
+uint8_t
+ovcabac_read_ae_significant_cg_flag_chroma(OVCABACCtx *const cabac_ctx,
+                                           uint8_t got_significant_neighbour)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[SIG_COEFF_GROUP_C_CTX_OFFSET + got_significant_neighbour]);
+}
+
+uint8_t
+ovcabac_read_ae_significant_ts_cg_flag(OVCABACCtx *const cabac_ctx,
+                                       uint8_t got_significant_neighbour)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[TS_SIG_COEFF_GROUP_CTX_OFFSET + got_significant_neighbour]);
+}
+
 static void inline
 set_implicit_coeff_ngbh(const VVCCoeffCodingCtx *const coef_nbh_ctx,
                         int tr_ctx_pos, int value)
@@ -4247,9 +4271,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
 
         uint8_t sig_sb_flg = 0;
         int significant_cg_offset   = significant_cg_map_2 [x_cg + y_cg * (17)];
-        sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx,
-                                                                   ctx_table,
-                                                                   significant_cg_offset);
+        sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, significant_cg_offset);
         if(sig_sb_flg){
             offset_in_buff = (x_cg << 2) + ((y_cg * tb_width_in_cg) << 4);
             memset(cg_coeffs, 0, sizeof(int16_t) * 16);
@@ -4282,9 +4304,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
         int x_cg = scan_cg_x[i];
         int y_cg = scan_cg_y[i];
         int significant_cg_offset   = significant_cg_map_2 [x_cg + y_cg * (17)];
-        sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx,
-                                                                ctx_table,
-                                                                significant_cg_offset);
+        sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, significant_cg_offset);
     }
 
     if(sig_sb_flg){
