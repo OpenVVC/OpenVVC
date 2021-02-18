@@ -349,7 +349,7 @@ coding_quadtree_implicit(OVCTUDec *const ctu_dec,
     }
 
     if (implicit_qt_split) {
-        uint8_t split_qt_flag = 1;
+        uint8_t split_qt_flag = allow_qt;
 
         if (allow_bt && !force_implicit_qt && allow_qt) {
 
