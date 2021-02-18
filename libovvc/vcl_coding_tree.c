@@ -80,8 +80,8 @@ ovcabac_read_ae_split_cu_flag(OVCABACCtx *const cabac_ctx,
                               uint8_t log2_cu_w, uint8_t log2_cu_h,
                               uint8_t nb_split_cand)
 {
-    /* Note if not available log2_cu_h_lft/abv are set to something bigger than
-     * max_log2_cb_s
+    /* Note when not available log2_cu_h/w_lft/abv are set to 0xFF
+     * so that they cannot be < to log2_cu_w/h
      */
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
     int ctx_offset = (log2_cu_h_lft < log2_cu_h) + (log2_cu_w_abv < log2_cu_w) +
@@ -95,6 +95,9 @@ ovcabac_read_ae_split_qt_flag(OVCABACCtx *const cabac_ctx,
                          int8_t qt_depth_abv, int8_t qt_depth_lft,
                          int8_t qt_depth)
 {
+    /* Note when not available qt_depth_lft are set to 0 so that
+     * qt_depth_lft cannot be > to current qt_depth
+     */
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
     uint8_t ctx_offset = (qt_depth_lft > qt_depth) + (qt_depth_abv > qt_depth) +
                          ((qt_depth < 2) ? 0 : 3);
