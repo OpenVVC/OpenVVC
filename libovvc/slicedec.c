@@ -872,9 +872,9 @@ slicedec_attach_frame_buff(OVCTUDec *const ctudec, OVSliceDec *sldec,
     entry_start_offset_c += ((uint32_t)einfo->ctb_y << (log2_ctb_s - 1)) * (f->linesize[1]);
 
     /*FIXME clean offset */
-    fbuff->y  = &f->data[0][entry_start_offset];
-    fbuff->cb = &f->data[1][entry_start_offset_c];
-    fbuff->cr = &f->data[2][entry_start_offset_c];
+    fbuff->y  = (uint16_t *)&f->data[0][entry_start_offset];
+    fbuff->cb = (uint16_t *)&f->data[1][entry_start_offset_c];
+    fbuff->cr = (uint16_t *)&f->data[2][entry_start_offset_c];
 
     fbuff->stride   = f->linesize[0] >> 1;
     fbuff->stride_c = f->linesize[1] >> 1;
@@ -948,7 +948,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
 
         if (ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream == -2) {
             /* FIXME Temporary error report on CABAC end of stream */
-            printf("CABAC error diff end line %d \n", ctb_y);
+            ov_log(NULL, OVLOG_ERROR, "CABAC error diff end %d \n", ctb_y);
             return 0;
         }
 
@@ -977,7 +977,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
 
     /* FIXME Temporary error report on CABAC end of stream */
     if (ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream == -2) {
-        printf("CABAC error diff end %d \n", ctb_y);
+        ov_log(NULL, OVLOG_ERROR, "CABAC error diff end %d \n", ctb_y);
         return 0;
     }
 
