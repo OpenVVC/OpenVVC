@@ -962,7 +962,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
         fbuff_new_line(&tmp_fbuff, ctudec->part_ctx->log2_ctu_s);
         ctudec->rcn_ctx.frame_buff = tmp_fbuff;
         ctudec->ctu_ngh_flags = CTU_UP_FLG|CTU_UPRGT_FLG;
-        rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
 
         ctb_addr_rs += nb_ctu_w;
         ctb_y++;
