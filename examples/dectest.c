@@ -268,7 +268,7 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
 
         ++nb_pic;
 
-    } while (ret >= 0 && nb_pic < 1);
+    } while (ret >= 0 && nb_pic < 4);
     printf("nb_pic : %d\n", nb_pic);
 
     #endif
