@@ -823,6 +823,8 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     update_drv_lines(ctudec, prms);
 
+    rcn_frame_line_to_ctu(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
+
     while (ctb_x < nb_ctu_w - 1) {
 
         ret = decode_ctu_implicit(ctudec, sldec, prms, einfo, ctb_addr_rs,
@@ -831,6 +833,15 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         update_cabac_lines(ctudec, prms);
 
         update_drv_lines(ctudec, prms);
+
+        rcn_update_ctu_border(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
+
+        /* FIXME
+         * Move this somewhere else to avoid first line check
+         */
+        if (ctb_addr_rs >= nb_ctu_w) {
+            rcn_frame_line_to_ctu(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
+        }
 
         ctb_addr_rs++;
         ctb_x++;
