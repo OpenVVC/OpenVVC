@@ -749,6 +749,10 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     update_drv_lines(ctudec, prms);
 
+    if (ctb_addr_rs >= nb_ctu_w) {
+        rcn_frame_line_to_ctu(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
+    }
+
     while (ctb_x < nb_ctu_w - 1) {
 
         ret = decode_ctu(ctudec, sldec, prms, einfo, ctb_addr_rs);
