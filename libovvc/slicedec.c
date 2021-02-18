@@ -771,7 +771,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         rcn_update_ctu_border(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
 
         /* FIXME
-         * Move this somewher else to avoid first line check
+         * Move this somewhere else to avoid first line check
          */
         if (ctb_addr_rs >= nb_ctu_w) {
             rcn_frame_line_to_ctu(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
