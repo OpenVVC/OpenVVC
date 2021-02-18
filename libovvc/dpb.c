@@ -136,7 +136,8 @@ derive_poc(int poc_lsb, int log2_max_poc_lsb, int prev_poc)
 }
 
 
-void ovdpb_unref_pic(OVDPB *dpb, OVPicture *pic, int flags)
+void
+ovdpb_unref_pic(OVDPB *dpb, OVPicture *pic, int flags)
 {
     /* pic->frame can be NULL if context init failed */
     if (!pic->frame || !pic->frame->data[0])
@@ -182,7 +183,8 @@ vvc_clear_refs(OVDPB *dpb)
     }
 }
 
-void ovdpb_flush_dpb(OVDPB *dpb)
+void
+ovdpb_flush_dpb(OVDPB *dpb)
 {
     int i;
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
@@ -220,7 +222,8 @@ static OVPicture *alloc_frame(OVDPB *dpb)
 }
 
 /* Allocate the current picture buffer */
-int ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc)
+int
+ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc)
 {
     OVPicture *ref_pic;
     int i;
