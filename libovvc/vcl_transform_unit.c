@@ -222,7 +222,7 @@ ovcabac_read_ae_last_sig_pos(OVCABACCtx *const cabac_ctx,
         last_y = decode_last_sig_suffix(cabac_ctx, last_y);
     }
 
-    return ((uint16_t) last_y << 8) | last_x & 0xFF;
+    return ((uint16_t) last_y << 8) | (last_x & 0xFF);
 }
 
 uint16_t
@@ -243,7 +243,7 @@ ovcabac_read_ae_last_sig_pos_c(OVCABACCtx *const cabac_ctx,
         last_y = decode_last_sig_suffix(cabac_ctx, last_y);
     }
 
-    return ((uint16_t) last_y << 8) | last_x & 0xFF;
+    return ((uint16_t) last_y << 8) | (last_x & 0xFF);
 }
 
 uint8_t
@@ -549,7 +549,9 @@ transform_unit(OVCTUDec *const ctu_dec,
         uint8_t transform_skip_flag = 0;
         int16_t *const coeffs_y = ctu_dec->residual_y;
         int is_lfnst;
+        #if 0
         int cu_qp_delta = 0;
+        #endif
 
 
 #if 0
@@ -607,8 +609,10 @@ transform_unit(OVCTUDec *const ctu_dec,
 #endif
 
         } else { //Renorm transform skipped residuals
+            #if 0
             int x_pu = x0 >> 2;
             int y_pu = y0 >> 2;
+            #endif
             is_lfnst = residual_coding_ts(ctu_dec, log2_tb_w, log2_tb_h);
             //FIXME transform residual is currently performed in the dequant function
         }
@@ -649,7 +653,6 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
                       uint8_t cbf_mask, uint8_t cu_flags)
 {
     uint8_t joint_cb_cr = cbf_mask & (1 << 3);
-    uint8_t force_lfnst = 0;
 
     cbf_mask &= 0x3;
 
@@ -694,12 +697,13 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
 
         if (cbf_mask & 0x1) {
             OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+            uint8_t transform_skip_flag = 0;
 
             /* TODO use max_tr_skip_s = 0 to avoid using enabled test */
             if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
                                                && log2_tb_h <= ctu_dec->max_log2_transform_skip_size) {
                 OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-                uint8_t transform_skip_flag = ovcabac_read_ae_transform_skip_flag_c(cabac_ctx);
+                transform_skip_flag = ovcabac_read_ae_transform_skip_flag_c(cabac_ctx);
             }
 
             #if 1
@@ -710,7 +714,11 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
 
             lim_cg_w_cr = 1 << log2_tb_w;// ((((last_pos_cr >> 8)) >> 2) + (((last_pos_cr & 0xFF))>> 2) + 1) << 2;
 
+            if (!transform_skip_flag) {
             last_pos_cr = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_cr, log2_tb_w, log2_tb_h, last_pos_cr);
+            } else {
+                /* FIXME Chroma TS */
+            }
 
             /*FIXME avoid copy of lfnst_sb */
             memcpy(tmp_lfnst_cr, ctu_dec->lfnst_subblock, sizeof(int16_t) * 16);
@@ -799,6 +807,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
         int16_t *const coeffs_jcbcr = ctu_dec->residual_cb;
         uint8_t lfnst_flag = 0;
         uint8_t lfnst_idx;
+        uint8_t transform_skip_flag = 0;
 
 
         /* FIXME this is hackish joint cb cr involves a different delta qp from
@@ -817,15 +826,19 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
         if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
             && log2_tb_h <= ctu_dec->max_log2_transform_skip_size) {
             OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-            uint8_t transform_skip_flag = ovcabac_read_ae_transform_skip_flag_c(cabac_ctx);
+            transform_skip_flag = ovcabac_read_ae_transform_skip_flag_c(cabac_ctx);
         }
 
         last_pos_cbcr = ovcabac_read_ae_last_sig_pos_c(cabac_ctx, log2_tb_w, log2_tb_h);
 
         int lim_cg_w_cbcr = ((((last_pos_cbcr >> 8)) >> 2) + (((last_pos_cbcr & 0xFF))>> 2) + 1) << 2;
 
-        last_pos_cbcr = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_jcbcr, log2_tb_w, log2_tb_h,
-                                                       last_pos_cbcr);
+        if (!transform_skip_flag) {
+            last_pos_cbcr = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_jcbcr, log2_tb_w, log2_tb_h,
+                                                            last_pos_cbcr);
+        } else {
+            /* FIXME Chroma TS */
+        }
 
         if (ctu_dec->enable_lfnst) {
             int max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
@@ -995,4 +1008,5 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
                            part_ctx->log2_max_tb_s, 1, cu.cu_flags);
         }
     }
+    return 0;
 }

@@ -296,7 +296,6 @@ derive_intra_mode_c(uint8_t cclm_flag, uint8_t mpm_flag, uint8_t mpm_idx,
         return mode_list[cclm_idx];
 
     } else if (mpm_flag) {
-        int i;
 
         /* FIXME mpm_idx max = 4*/
         uint8_t mode_list1[8] = {
@@ -421,7 +420,9 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
         #endif
 
     } else {
+        #if 0
         uint8_t mpm_flag = !!(cu.cu_flags & flg_mpm_flag);
+        #endif
         uint8_t isp_flag = !!(cu.cu_flags & flg_isp_flag);
 
         intra_mode = derive_intra_angular_mode(i_info, cu.cu_flags, cu.cu_mode_info,
@@ -846,9 +847,13 @@ void vvc_intra_pred_chroma(const OVCTUDec *const ctudec,
     uint16_t ref_left [(128<<1) + 128]/*={0}*/;
     uint16_t *ref1 = ref_above;
     uint16_t *ref2 = ref_left;
+    #if 0
     uint8_t neighbour= ctudec->ctu_ngh_flags;
+    #endif
+    #if 0
     uint8_t got_left_ctu = neighbour & VVC_CTU_LEFT_FLAG;
     uint8_t got_top_ctu  = neighbour & VVC_CTU_UP_FLAG;
+    #endif
     const uint16_t *const src_cb = &ctudec->rcn_ctx.ctu_buff.cb[0];
     const uint16_t *const src_cr = &ctudec->rcn_ctx.ctu_buff.cr[0];
 
@@ -935,29 +940,35 @@ void vvc_intra_pred_chroma(const OVCTUDec *const ctudec,
     }
     case OVINTRA_LM_CHROMA:
     {
+        #if 0
         const uint16_t  *const src_luma = &ctudec->rcn_ctx.ctu_buff.y[(x0<<1)+((y0<<1)*RCN_CTB_STRIDE)];
         // ctudec->cclm_func(src_luma, dst_cb, dst_cr, log2_pb_w, log2_pb_h,
         //                   y0, got_top_ctu || y0, got_left_ctu || x0);
+        #endif
 
         break;
     }
     case OVINTRA_MDLM_LEFT:
     {
+        #if 0
         const uint16_t  *const src_luma = &ctudec->rcn_ctx.ctu_buff.y[(x0<<1)+((y0<<1)*RCN_CTB_STRIDE)];
 
         // FIXED? : ctudec->left_mdlm(src_luma, dst_cb, dst_cr,
         //                   left_col_map, log2_pb_w, log2_pb_h,
         //                   x0, y0, x0 || got_left_ctu, y0 || got_top_ctu);
+        #endif
 
         break;
     }
     case OVINTRA_MDLM_TOP:
     {
+        #if 0
         const uint16_t  *const src_luma = &ctudec->rcn_ctx.ctu_buff.y[(x0<<1)+((y0<<1)*RCN_CTB_STRIDE)];
 
         // FIXED? : ctudec->top_mdlm(src_luma, dst_cb, dst_cr,
         //                  top_row_map, log2_pb_w, log2_pb_h,
         //                  x0, y0, x0 || got_left_ctu, y0 || got_top_ctu);
+        #endif
 
         break;
     }

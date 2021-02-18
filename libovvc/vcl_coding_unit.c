@@ -614,13 +614,17 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
                   uint8_t log2_cb_w, uint8_t log2_cb_h)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+    #if 0
     uint8_t intra_mode;
+    #endif
     uint8_t mip_flag = 0;
     uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
     uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_w = (1 << log2_cb_w) >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_h = (1 << log2_cb_h) >> part_ctx->log2_min_cb_s;
+    #if 0
     uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
+    #endif
     VVCCU cu = {0};
 
     cu.cu_flags |= flg_pred_mode_flag;
@@ -671,7 +675,9 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
                                               : 0;
         uint8_t isp_mode = 0;
         uint8_t mpm_flag;
+        #if 0
         uint8_t mrl_idx = mrl_flag;
+        #endif
 
         cu.cu_flags |= flg_mrl_flag & (-(!!mrl_flag));
         cu.cu_opaque = mrl_flag;
@@ -741,7 +747,9 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
     struct IntraDRVInfo *const i_info = &ctu_dec->drv_ctx.intra_info;
     /* TODO set mode to default */
     uint8_t intra_mode;
+    #if 0
     enum CIntra_Info mode_info = LUMA_MODE;
+    #endif
     uint8_t mpm_idx = 0, cclm_idx = 1;
 #if 1
     uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
@@ -766,7 +774,9 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
         if (cclm_flag) {
             /* VALUES : 0 1 2 */
             cclm_idx = ovcabac_read_ae_intra_lm_chroma(cabac_ctx);
+            #if 0
             mode_info = cclm_idx;
+            #endif
         }
 
         /* TODO set MODE TO LM */
@@ -777,7 +787,9 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
         if (mpm_flag) {
             mpm_idx = ovcabac_read_ae_intra_chroma_mpm_idx(cabac_ctx);
         /* TODO set MODE to result */
+            #if 0
             mode_info = MPM + mpm_idx;
+            #endif
         }
     }
 
@@ -839,7 +851,9 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     uint8_t nb_pb_w = (1 << log2_pb_w) >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_h = (1 << log2_pb_h) >> part_ctx->log2_min_cb_s;
 
+    #if 0
     OVMV mv0;
+    #endif
     if (merge_flag) {
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 

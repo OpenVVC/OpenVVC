@@ -104,8 +104,6 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
 
     int nb_sh_bytes = nvcl_num_bytes_read(rdr);
 
-    OVFrame *frame;
-
     ret = decinit_update_params(dec, nvcl_ctx);
     if (ret < 0) {
         ov_log(dec, 3, "Failed to activate parameters\n");
@@ -194,13 +192,16 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
         if (ret < 0) {
             return ret;
         } else {
+            #if 0
             int nb_sh_bytes = ret;
+            #endif
 
             ret = init_vcl_decoder(vvcdec, nvcl_ctx, nalu, &rdr);
             if (ret < 0) {
                 goto failvcl;
             }
             /* Beyond this point unref current frame;
+             */
 
             /* FIXME handle non rect entries later */
             ret = slicedec_decode_rect_entries(vvcdec->subdec_list, &vvcdec->active_params);

@@ -617,24 +617,26 @@ void (*ovtr_dct_ii_template[NB_TR_SIZES])(const int16_t *src, int16_t *dst,
                                           ptrdiff_t src_stride,
                                           int num_lines, int num_columns, int shift) =
 #endif
-static struct TrFunc ovtr_dct_ii_template[NB_TR_SIZES] =
-{
-    vvc_inverse_dct_ii_2,
-    vvc_inverse_dct_ii_4,
-    vvc_inverse_dct_ii_8,
-    vvc_inverse_dct_ii_16,
-    vvc_inverse_dct_ii_32,
-    vvc_inverse_dct_ii_64
+#if 0
+static struct TrFunc ovtr_dct_ii_template[NB_TR_SIZES] = {
+    {NULL},
+    {vvc_inverse_dct_ii_2},
+    {vvc_inverse_dct_ii_4},
+    {vvc_inverse_dct_ii_8},
+    {vvc_inverse_dct_ii_16},
+    {vvc_inverse_dct_ii_32},
+    {vvc_inverse_dct_ii_64}
 };
 
 static struct TrFunc ovtr_dct_viii_template[NB_TR_SIZES] =
 {
-    NULL,
-    vvc_inverse_dct_viii_4,
-    vvc_inverse_dct_viii_8,
-    vvc_inverse_dct_viii_16,
-    vvc_inverse_dct_viii_32,
-    NULL
+    {NULL},
+    {NULL},
+    {vvc_inverse_dct_viii_4},
+    {vvc_inverse_dct_viii_8},
+    {vvc_inverse_dct_viii_16},
+    {vvc_inverse_dct_viii_32},
+    {NULL}
 };
 
 #if 0
@@ -645,13 +647,15 @@ void (*ovtr_dst_vii_template[NB_TR_SIZES])(const int16_t *src, int16_t *dst,
 
 static struct TrFunc ovtr_dst_vii_template[NB_TR_SIZES] =
 {
-    NULL,
-    vvc_inverse_dst_vii_4,
-    vvc_inverse_dst_vii_8,
-    vvc_inverse_dst_vii_16,
-    vvc_inverse_dst_vii_32,
-    NULL
+    {NULL},
+    {NULL},
+    {vvc_inverse_dst_vii_4},
+    {vvc_inverse_dst_vii_8},
+    {vvc_inverse_dst_vii_16},
+    {vvc_inverse_dst_vii_32},
+    {NULL}
 };
+#endif
 
 #if 0
 void (*ovtr_template[NB_TR_TYPES][NB_TR_SIZES])(const int16_t *src, int16_t *dst,
@@ -672,32 +676,32 @@ const struct TrFunc tr_templates[NB_TR_TYPES][NB_TR_SIZES] =
 {
 
     {
-        NULL,
-        NULL,
-        vvc_inverse_dst_vii_4,
-        vvc_inverse_dst_vii_8,
-        vvc_inverse_dst_vii_16,
-        vvc_inverse_dst_vii_32,
-        NULL
+    {NULL},
+    {NULL},
+    {vvc_inverse_dst_vii_4},
+    {vvc_inverse_dst_vii_8},
+    {vvc_inverse_dst_vii_16},
+    {vvc_inverse_dst_vii_32},
+    {NULL}
     },
 
     {
-        NULL,
-        NULL,
-        vvc_inverse_dct_viii_4,
-        vvc_inverse_dct_viii_8,
-        vvc_inverse_dct_viii_16,
-        vvc_inverse_dct_viii_32,
-        NULL
+    {NULL},
+    {NULL},
+    {vvc_inverse_dct_viii_4},
+    {vvc_inverse_dct_viii_8},
+    {vvc_inverse_dct_viii_16},
+    {vvc_inverse_dct_viii_32},
+    {NULL}
     },
 
     {
-        NULL,
-        vvc_inverse_dct_ii_2,
-        vvc_inverse_dct_ii_4,
-        vvc_inverse_dct_ii_8,
-        vvc_inverse_dct_ii_16,
-        vvc_inverse_dct_ii_32,
-        vvc_inverse_dct_ii_64
+    {NULL},
+    {vvc_inverse_dct_ii_2},
+    {vvc_inverse_dct_ii_4},
+    {vvc_inverse_dct_ii_8},
+    {vvc_inverse_dct_ii_16},
+    {vvc_inverse_dct_ii_32},
+    {vvc_inverse_dct_ii_64}
     }
 };

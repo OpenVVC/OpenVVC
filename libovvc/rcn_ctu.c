@@ -135,7 +135,6 @@ rcn_write_ctu_to_frame(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s)
 void
 rcn_frame_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s)
 {
-    int i;
     const struct OVBuffInfo *const fd = &rcn_ctx->frame_buff;
     const uint16_t *src_y  =fd->y  - fd->stride;
     const uint16_t *src_cb =fd->cb - fd->stride_c;

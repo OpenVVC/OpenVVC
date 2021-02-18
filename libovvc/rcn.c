@@ -672,7 +672,9 @@ rcn_residual(OVCTUDec *const ctudec,
     int16_t tmp[64*64];
     int tb_w = 1 << log2_tb_w;
     int tb_h = 1 << log2_tb_h;
+    #if 0
     struct OVRCNCtx *const rcn = &ctudec->rcn_ctx;
+    #endif
     /* TODO switch */
 
     memset(tmp, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));

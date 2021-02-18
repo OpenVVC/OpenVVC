@@ -320,9 +320,13 @@ coding_quadtree_implicit(OVCTUDec *const ctu_dec,
                         unsigned int log2_cb_s, unsigned int qt_depth,
                         unsigned int rem_w, unsigned int rem_h)
 {
+    #if 0
     uint8_t qt_split_cu_flag = 0;
+    #endif
     uint8_t implicit_qt_split = 0;
+    #if 0
     uint8_t implicit_bt_split = 0;
+    #endif
     uint8_t force_implicit_qt = 0;
 
     unsigned int x1 = x0 + (1 << log2_cb_s);
@@ -337,6 +341,7 @@ coding_quadtree_implicit(OVCTUDec *const ctu_dec,
          * implicit split is quad tree split.
          */
         implicit_qt_split = 1;
+            #if 0
         if (log2_cb_s <= part_ctx->log2_max_bt_s) {
             /* if bt size permits it implicit split is binary
              * according to required split direction
@@ -345,6 +350,7 @@ coding_quadtree_implicit(OVCTUDec *const ctu_dec,
              */
             implicit_bt_split = (x1 > rem_w) ? 1 : 2;
         }
+            #endif
         force_implicit_qt = x1 > rem_w && y1 > rem_h;
     }
 
@@ -723,12 +729,12 @@ multi_type_tree(OVCTUDec *const ctu_dec,
             }
 
             if (split_cu_v & (allow_tt_v & allow_bt_v) ||
-               !split_cu_v & (allow_tt_h & allow_bt_h)) {
+               (!split_cu_v) & (allow_tt_h & allow_bt_h)) {
                 OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
                 split_cu_bt = ovcabac_read_ae_mtt_split_cu_binary_flag(cabac_ctx,
                                                                   mtt_depth, split_cu_v);
             } else {
-                split_cu_bt = (!split_cu_v & allow_bt_h) | (split_cu_v & allow_bt_v);
+                split_cu_bt = ((!split_cu_v) & allow_bt_h) | (split_cu_v & allow_bt_v);
             }
 
             if (split_cu_bt) {

@@ -153,6 +153,7 @@ sps_init_chroma_qp_tables(struct SPSInfo *sps_info, const OVSPS *const sps)
     }
 }
 
+#if 0
 static void
 sps_init_dpb_parameters(OVVCDec *const dec, struct OVPS *const prms)
 {
@@ -164,6 +165,7 @@ sps_init_dpb_parameters(OVVCDec *const dec, struct OVPS *const prms)
     #endif
 
 }
+#endif
 
 #if 0
 static void

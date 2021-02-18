@@ -43,7 +43,9 @@ static inline void nvcl_skip_bits(OVNVCLReader *rdr, int n);
 
 static inline int nvclctx_num_bits_read(const OVNVCLReader *rdr);
 
+#if 0
 static inline int nvclctx_num_bits_left(OVNVCLReader *rdr);
+#endif
 
 static inline void nvcl_skip_bits(OVNVCLReader *rdr, int n)
 {

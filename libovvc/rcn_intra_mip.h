@@ -11,7 +11,7 @@ struct MIPCtx{
 const struct MIPCtx
 derive_mip_ctx(int log2_pb_w, int log2_pb_h, uint8_t mip_mode);
 
-int
+void
 up_sample(uint16_t *const dst, const int16_t *const src,
           const uint16_t *ref,
           int log2_upsampled_size_src, int log2_opposite_size,

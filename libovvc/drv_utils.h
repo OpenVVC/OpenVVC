@@ -39,7 +39,7 @@ ctu_field_set_rect_bitfield(struct CTUBitField *const ctu_map,
         ctu_map->vfield[x_pb + i] |= mask_map;
     }
 }
-
+ 
 #if 0
 static void
 init_ctu_bitfield(struct OVRCNCtx *const rcn_ctx,
@@ -152,7 +152,7 @@ init_ctu_bitfield(struct OVRCNCtx *const rcn_ctx,
         map_c->vfield[i] |= abv_mask;
     }
 
-    /* FIXME we consider Top Left available if
+    /* FIXME we consider Top Left available if 
      * both above and left CTU are available
      * this can be false in the case of non rectangular
      * slices.
@@ -187,8 +187,6 @@ init_ctu_bitfield_border(struct OVRCNCtx *const rcn_ctx,
     struct CTUBitField *const map_l = &rcn_ctx->progress_field;
     struct CTUBitField *const map_c = &rcn_ctx->progress_field_c;
     int i;
-
-    uint64_t internal_mask = ~(((1llu << nb_ctb_pb) - 1llu) << 1);
 
     uint64_t internal_mask_h = ~(((1llu << nb_ctb_pb_h) - 1llu) << 1);
     uint64_t internal_mask_v = ~(((1llu << nb_ctb_pb_v) - 1llu) << 1);

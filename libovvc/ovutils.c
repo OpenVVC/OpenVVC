@@ -7,6 +7,8 @@
 OVLOG_TYPE ov_log_level = OVLOG_INFO;
 static const char* vvctype = "VVCDec";
 
+static const char *OVLOG_COLORIFY[6] = { RED, YEL, BLU, CYN, GRN, MAG};
+
 void
 set_ov_log_level(OVLOG_TYPE log_level){
         ov_log_level = log_level;
