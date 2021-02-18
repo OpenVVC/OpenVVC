@@ -144,10 +144,10 @@ rcn_frame_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s)
     uint16_t *dst_cb =  rcn_ctx->ctu_buff.cb - RCN_CTB_STRIDE;
     uint16_t *dst_cr =  rcn_ctx->ctu_buff.cr - RCN_CTB_STRIDE;
 
-    memcpy(dst_y,  src_y , (2 << log2_ctb_s) + (1 << log2_ctb_s));
+    memcpy(dst_y,  src_y , sizeof(uint16_t) * ((1 << log2_ctb_s) + (1 << log2_ctb_s)));
     #if 1
-    memcpy(dst_cb, src_cb, (2 << (log2_ctb_s - 1)) + (1 << (log2_ctb_s - 1)));
-    memcpy(dst_cr, src_cr, (2 << (log2_ctb_s - 1)) + (1 << (log2_ctb_s - 1)));
+    memcpy(dst_cb, src_cb, sizeof(uint16_t) * ((1 << (log2_ctb_s - 1)) + (1 << (log2_ctb_s - 1))));
+    memcpy(dst_cr, src_cr, sizeof(uint16_t) * ((1 << (log2_ctb_s - 1)) + (1 << (log2_ctb_s - 1))));
     #endif
 }
 
