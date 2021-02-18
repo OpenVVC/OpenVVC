@@ -388,11 +388,11 @@ struct OVCTUDec
                            uint8_t log2_pb_w, uint8_t log2_pb_h,
                            uint8_t cu_skip_flag);
 
-    int (*residual_coding_isp_h)(struct OVCTUDec *const lc_ctx, uint16_t *const dst,
+    int (*residual_coding_isp_h)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
                                  unsigned int log2_tb_w, unsigned int log2_tb_h,
                                  uint16_t last_pos);
 
-    int (*residual_coding_isp_v)(struct OVCTUDec *const lc_ctx, uint16_t *const dst,
+    int (*residual_coding_isp_v)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
                                  unsigned int log2_tb_w, unsigned int log2_tb_h,
                                  uint16_t last_pos);
 
@@ -400,11 +400,11 @@ struct OVCTUDec
                               unsigned int log2_tb_w,
                               unsigned int log2_tb_h);
 
-    uint64_t (*residual_coding)(struct OVCTUDec *const lc_ctx, uint16_t *const dst,
+    uint64_t (*residual_coding)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
                                 unsigned int log2_tb_w, unsigned int log2_tb_h,
                                 uint16_t last_pos);
 
-    int (*residual_coding_chroma)(struct OVCTUDec *const lc_ctx, uint16_t *const dst,
+    int (*residual_coding_chroma)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
                                   unsigned int log2_tb_w, unsigned int log2_tb_h,
                                   uint16_t last_pos);
 
