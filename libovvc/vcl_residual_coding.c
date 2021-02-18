@@ -1410,10 +1410,10 @@ ovcabac_read_ae_sb_2x8_far_dpq(OVCABACCtx *const cabac_ctx,
 }
 
 static void
-update_ts_neighbourhood_first_pass(int8_t  *const num_significant,
-                                       int8_t  *const sign_map,
-                                       int16_t  *const sum_abs_level,
-                                       int16_t  *const abs_coeffs,
+update_ts_neighbourhood_first_pass(uint8_t  *const num_significant,
+                                       uint8_t  *const sign_map,
+                                       uint16_t  *const sum_abs_level,
+                                       uint16_t  *const abs_coeffs,
                                        int x, int y,
                                        int value, int sign){
 
@@ -1430,10 +1430,10 @@ update_ts_neighbourhood_first_pass(int8_t  *const num_significant,
 }
 
 static void
-update_ts_neighbourhood_other_passes(int16_t  *const sum_abs_level,
-                                         int16_t  *const abs_coeffs,
-                                         int x, int y,
-                                         int value, int16_t coeff){
+update_ts_neighbourhood_other_passes(uint16_t  *const sum_abs_level,
+                                     uint16_t  *const abs_coeffs,
+                                     int x, int y,
+                                     int value, int16_t coeff){
 
     sum_abs_level[x + 1 +  y      * VVC_TR_CTX_STRIDE] += value ;
     sum_abs_level[x     + (y + 1) * VVC_TR_CTX_STRIDE] += value ;
@@ -1490,8 +1490,8 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
                          int16_t  *const coeffs,
                          uint8_t  *const nb_sig_ngh_map,
                          uint8_t  *const sign_map,
-                         int16_t *const sum_abs_level,
-                         int16_t *const abs_coeffs,
+                         uint16_t *const sum_abs_level,
+                         uint16_t *const abs_coeffs,
                          int16_t *const num_remaining_bins)
 {
     uint8_t ts_sig_c_flag;
@@ -1643,7 +1643,7 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
             } else {
                 coeffs[idx] -= (old_val<=max_neighbor_local);
                 update_ts_neighbourhood_other_passes(sum_abs_level, abs_coeffs,
-                                                     x, y, -(old_val <= max_neighbor_local),abs(coeffs[idx]));
+                                                     x, y, -(old_val <= max_neighbor_local),OVABS(coeffs[idx]));
             }
         }
     }
@@ -4253,7 +4253,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
                                                        &sign_map        [0],
                                                        &sum_abs_level   [0],
                                                        &abs_coeffs    [36+0],
-                                                       &max_num_bins);
+                                                       (int16_t*)&max_num_bins);
          deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
          memcpy(&ctu_dec->transform_buff[0] , &cg_coeffs[0], sizeof(int16_t)*4);
          memcpy(&ctu_dec->transform_buff[tb_width] , &cg_coeffs[4], sizeof(int16_t)*4);
@@ -4289,7 +4289,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
                                                                     &sign_map       [cg_offset],
                                                                     &sum_abs_level  [cg_offset],
                                                                     &abs_coeffs   [36+cg_offset],
-                                                                    &max_num_bins);
+                                                                    (int16_t *)&max_num_bins);
             //store coeffs in coeff;
             deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
             memcpy(&ctu_dec->transform_buff[offset_in_buff               ], &cg_coeffs[ 0], sizeof(int16_t) * 4);
@@ -4321,7 +4321,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
                                                                 &sign_map       [cg_offset],
                                                                 &sum_abs_level  [cg_offset],
                                                                 &abs_coeffs   [36+cg_offset],
-                                                                &max_num_bins);
+                                                                (int16_t*)&max_num_bins);
 
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
         memcpy(&ctu_dec->transform_buff[offset_in_buff               ], &cg_coeffs[ 0], sizeof(int16_t) * 4);
