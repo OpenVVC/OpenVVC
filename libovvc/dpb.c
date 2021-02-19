@@ -162,7 +162,8 @@ ovdpb_unref_pic(OVDPB *dpb, OVPicture *pic, int flags)
     }
 }
 
-int ovdpb_ref_pic(OVDPB *dpb, OVPicture *dst, OVPicture *src)
+int
+ovdpb_ref_pic(OVDPB *dpb, OVPicture *dst, OVPicture *src)
 {
     int ret;
 
@@ -180,6 +181,7 @@ int ovdpb_ref_pic(OVDPB *dpb, OVPicture *dst, OVPicture *src)
     return 0;
 }
 
+/* Remove reference flags on all picture */
 static void
 vvc_clear_refs(OVDPB *dpb)
 {
@@ -192,6 +194,7 @@ vvc_clear_refs(OVDPB *dpb)
     }
 }
 
+/* All pictures are removed from the DPB */
 void
 ovdpb_flush_dpb(OVDPB *dpb)
 {
@@ -204,7 +207,9 @@ ovdpb_flush_dpb(OVDPB *dpb)
     }
 }
 
-static OVPicture *alloc_frame(OVDPB *dpb)
+/*FIXME rename to request new picture */
+static OVPicture *
+alloc_frame(OVDPB *dpb)
 {
     int i, ret;
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
@@ -226,7 +231,8 @@ static OVPicture *alloc_frame(OVDPB *dpb)
         return pic;
     }
 
-    ov_log(NULL, 3, "DPB full\n");
+    ov_log(NULL, OVLOG_ERROR, "DPB full\n");
+
     return NULL;
 }
 
@@ -234,7 +240,7 @@ static OVPicture *alloc_frame(OVDPB *dpb)
 int
 ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc)
 {
-    OVPicture *ref_pic;
+    OVPicture *pic;
     int i;
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
 
@@ -256,33 +262,30 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc)
         }
     }
 
-    ref_pic = alloc_frame(dpb);
-    if (!ref_pic) {
+    pic = alloc_frame(dpb);
+
+    if (!pic) {
         return OVVC_ENOMEM;
     }
 
-    #if 0
-    ovframe_new_ref(frame, ref_pic->frame);
-    #endif
-
-    *pic_p = ref_pic;
+    *pic_p = pic;
 
     #if 0
-    dpb->active_pic = ref_pic;
+    dpb->active_pic = pic;
     #endif
 
     #if 0
     if (dpb->ps.ph_data->ph_pic_output_flag) {
     #endif
-        ref_pic->flags = OV_OUTPUT_PIC_FLAG | OV_ST_REF_PIC_FLAG;
+        pic->flags = OV_OUTPUT_PIC_FLAG | OV_ST_REF_PIC_FLAG;
     #if 0
     } else {
-        ref_pic->flags = OV_ST_REF_PIC_FLAG;
+        pic->flags = OV_ST_REF_PIC_FLAG;
     }
     #endif
 
-    ref_pic->poc    = poc;
-    ref_pic->cvs_id = dpb->cvs_id;
+    pic->poc    = poc;
+    pic->cvs_id = dpb->cvs_id;
 
     /* Copy display or conformance window properties */
 
@@ -290,7 +293,7 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc)
 }
 
 static int
-derive_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, uint32_t poc)
+compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, uint32_t poc)
 {
     const int nb_refs = rpl->num_ref_entries;
     int i;
@@ -338,7 +341,7 @@ vvc_mark_refs(OVDPB *dpb, OVRPL *rpl, uint8_t poc)
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     struct RPLInfo rpl_info;
 
-    derive_ref_poc(rpl, &rpl_info, poc);
+    compute_ref_poc(rpl, &rpl_info, poc);
 
     for (i = 0;  i < rpl->num_ref_entries; ++i){
         int16_t ref_poc  = rpl_info.ref_info[i].poc;
@@ -467,7 +470,8 @@ int ovdpb_output_frame(OVDPB *dpb, OVFrame *out, int flush)
  *   There might be better ways instead of always looping over
  *   the whole DPB and check for POC and CVS.
  */
-void ovdpb_bump_frame(OVDPB *dpb, uint32_t poc, uint16_t output_cvs_id)
+void
+ovdpb_bump_frame(OVDPB *dpb, uint32_t poc, uint16_t output_cvs_id)
 {
     int nb_dpb_pic = 0;
     int min_poc = INT_MAX;
