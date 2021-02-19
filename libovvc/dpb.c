@@ -22,13 +22,17 @@
 #define OV_ST_REF_PIC_FLAG (1 << 2)
 #define OV_BUMPED_PIC_FLAG (1 << 3)
 
-enum SliceType {
+/* FIXME More global scope for this enum
+ */
+enum SliceType
+{
    SLICE_B = 0,
    SLICE_P = 1,
    SLICE_I = 2,
 };
 
-enum RefType {
+enum RefType
+{
     /* Short term reference Picture */
     ST_REF = 1,
 
@@ -39,12 +43,14 @@ enum RefType {
     ILRP_REF = 3
 };
 
-struct RefInfo {
+struct RefInfo
+{
     enum RefType type;
     uint32_t poc;
 };
 
-struct RPLInfo {
+struct RPLInfo
+{
    struct RefInfo ref_info[16];
    uint8_t nb_refs;
 };
