@@ -42,7 +42,6 @@ PROG=examples/dectest
 
 ALL_OBJS=$(LIB_OBJ) $(addprefix $(BUILDDIR),$(addsuffix .o, $(PROG))) $($(ARCH)_LIB_OBJ)
 
-
 .PHONY: all test version libs examples profiling
 
 all: libs examples

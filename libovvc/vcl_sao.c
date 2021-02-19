@@ -7,6 +7,7 @@
 
 
 static uint8_t
+
 ovcabac_read_ae_sao_merge_type(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state,
                           uint8_t neighbour_flags)
 {
@@ -23,7 +24,6 @@ ovcabac_read_ae_sao_merge_type(OVCABACCtx *const cabac_ctx, uint64_t *const caba
 
     return sao_merge_type;
 }
-
 
 static void
 ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state, SAOParamsCtu *sao_ctu,
