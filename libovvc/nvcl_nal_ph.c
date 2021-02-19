@@ -13,6 +13,15 @@ enum DecReturn {
     OV_ENOMEM = -2,
 };
 
+//TODO: declare in another header file
+enum OVChromaFormat{
+    OV_CHROMA_400        = 0,
+    OV_CHROMA_420        = 1,
+    OV_CHROMA_422        = 2,
+    OV_CHROMA_444        = 3,
+    OV_NUM_CHROMA_FORMAT = 4,
+};
+
 static int
 validate_ph(OVNVCLReader *rdr, OVPH *const ph)
 {
@@ -315,7 +324,7 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
 
     if (sps->sps_sao_enabled_flag && pps->pps_sao_info_in_ph_flag) {
         ph->ph_sao_luma_enabled_flag = nvcl_read_flag(rdr);
-        if (sps->sps_chroma_format_idc != 0) {
+        if (sps->sps_chroma_format_idc != OV_CHROMA_400) {
             ph->ph_sao_chroma_enabled_flag = nvcl_read_flag(rdr);
         }
     }

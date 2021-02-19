@@ -57,7 +57,6 @@ PROG=examples/dectest
 
 ALL_OBJS=$(LIB_OBJ) $(addprefix $(BUILDDIR_TYPE),$(addsuffix .o, $(PROG))) $($(ARCH)_LIB_OBJ)
 
-
 all: version libs examples
 
 version:
