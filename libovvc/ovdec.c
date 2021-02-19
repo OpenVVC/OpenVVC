@@ -130,7 +130,11 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
 #else
     if (1) {
 #endif
+        #if 0
         ret = ovdpb_init_current_pic(dec->dpb, &sldec->pic, 0);
+        #else
+        ret = ovdpb_init_picture(dec->dpb, &sldec->pic, &dec->active_params, nalu->type);
+        #endif
         if (ret < 0) {
             ovdpb_flush_dpb(dec->dpb);
             return ret;
@@ -425,17 +429,34 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
      * instead
      */
     if (dec->subdec_list) {
+        OVDPB *dpb = dec->dpb;
+        uint16_t out_cvs_id;
+
+        if (!dpb) {
+            ov_log(dec, OVLOG_ERROR, "No DPB on output request.\n");
+            /* FIXME new return value */
+            return OVVC_EINDATA;
+        }
         /* FIXME handle sbdec list */
         OVSliceDec *sldec = dec->subdec_list;
         if (!sldec->pic) {
             ov_log(dec, OVLOG_INFO, "No output picture\n");
             return 0;
         }
+
+        #if 0
+        /* FIXME here or inside function */
         ovframe_new_ref(frame_p, sldec->pic->frame);
+        #endif
+
+        out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
+        int ret = ovdpb_output_frame(dpb, frame_p, 0, out_cvs_id);
         /*FIXME tmp */
+        #if 0
         ovdpb_unref_pic(dec->dpb, sldec->pic, ~0);
+        #endif
         sldec->pic = NULL;
-        return 0;
+        return ret;
     }
 
     return 0;
