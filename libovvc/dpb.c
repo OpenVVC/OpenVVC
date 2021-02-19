@@ -286,6 +286,7 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc)
 
     pic->poc    = poc;
     pic->cvs_id = dpb->cvs_id;
+    pic->frame->poc = poc;
 
     /* Copy display or conformance window properties */
 
