@@ -613,11 +613,13 @@ fail:
 
 /* TODO rename to ovdpb_init_pic();*/
 int
-ovdpb_init_picture(OVDPB *dpb, const OVPH *const ph, const OVSPS *const sps, uint8_t nalu_type)
+ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t nalu_type)
 {
 
+    const OVSPS *const sps = ps->sps;
+    const OVSH  *const sh  = ps->sh;
+    const OVPH  *const ph  = ps->ph;
     int ret = 0;
-    OVPicture *pic = NULL;
     uint32_t poc = 0;
     uint8_t cra_flag = 0;
     uint8_t idr_flag = 0;
@@ -659,8 +661,8 @@ ovdpb_init_picture(OVDPB *dpb, const OVPH *const ph, const OVSPS *const sps, uin
         poc = 0;
     } else {
         /* FIXME arg should be last_poc */
-        poc = derive_poc(ph->ph_pic_order_cnt_lsb,
-                         sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4,
+        poc = derive_poc(ps->ph->ph_pic_order_cnt_lsb,
+                         ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4,
                          poc);
     }
 
@@ -674,10 +676,12 @@ ovdpb_init_picture(OVDPB *dpb, const OVPH *const ph, const OVSPS *const sps, uin
     /* Find an available place in DPB and allocate/retrieve available memory
      * for the current picture data from the Frame Pool
      */
-    ret = ovdpb_init_current_pic(dpb, &pic, poc);
+    ret = ovdpb_init_current_pic(dpb, pic, poc);
     if (ret < 0) {
         goto fail;
     }
+
+    ov_log(NULL, OVLOG_INFO, "DPB start new picture POC: %d\n", (*pic)->poc);
 
     /* If the picture is not an IDR Picture we set all flags to
      * Note in VVC we might still get some ref pic list in IDR
@@ -685,10 +689,12 @@ ovdpb_init_picture(OVDPB *dpb, const OVPH *const ph, const OVSPS *const sps, uin
      * or not
      */
     if (!idr_flag) {
-        OVRPL rpl0;
-        OVRPL rpl1;
-        uint8_t slice_type = SLICE_B;
-        mark_ref_pic_lists(dpb, slice_type, &rpl0, &rpl1);
+        OVRPL *rpl0 = sh->hrpl.rpl0;
+        OVRPL *rpl1 = sh->hrpl.rpl1;
+        uint8_t slice_type = sh->sh_slice_type;
+        #if 1
+        mark_ref_pic_lists(dpb, slice_type, rpl0, rpl1);
+        #endif
     }
 
     /* Mark previous pic for output */
