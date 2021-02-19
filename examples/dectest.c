@@ -236,8 +236,9 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
     OVVCDec *const dec = hdl->dec;
     OVPictureUnit *pu = NULL;
 
-    int nb_pic =0;
+    int nb_pic = 0;
     do {
+        OVFrame *frame = NULL;
         printf("NEW PIC %d\n", nb_pic);
         ret = ovdmx_extract_picture_unit(dmx, &pu);
         if (ret < 0) {
@@ -245,20 +246,25 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
         }
 
         if (pu){
-            OVFrame *frame;
             ret = ovdec_submit_picture_unit(dec, pu);
             if (ret < 0) {
                 ov_free_pu(&pu);
                 break;
             }
 
-            ret = ovdec_receive_picture(dec, &frame);
+            do {
+                ret = ovdec_receive_picture(dec, &frame);
 
-            if (fout) {
-                write_decoded_frame_to_file(frame, fout);
-            }
+                /* FIXME use ret instead of frame */
+                if (frame) {
+                    if (fout) {
+                        write_decoded_frame_to_file(frame, fout);
+                    }
 
-            ovframe_unref(&frame);
+                    ov_log(NULL, OVLOG_INFO, "Received pic with POC: %d\n", frame->poc);
+                    ovframe_unref(&frame);
+                }
+            } while (frame);
 
             /* FIXME Picture unit freeing be inside the decoder
              * use ref_counted buffer and call unref here instead
@@ -268,7 +274,7 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
 
         ++nb_pic;
 
-    } while (ret >= 0 && nb_pic < 4);
+    } while (ret >= 0 && nb_pic < 10);
     printf("nb_pic : %d\n", nb_pic);
 
     #endif
