@@ -665,6 +665,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t na
                          ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4,
                          poc);
     }
+    dpb->poc = poc;
 
     /* If the NALU is an Refresh Picture all previous pictures in DPB
      * can be unreferenced

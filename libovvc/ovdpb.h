@@ -72,6 +72,7 @@ struct DPB
     * when encountering IDR Picture Units
     */
    uint16_t cvs_id;
+   uint8_t poc;
 
    /* DPB status info
     * to be used to determine whether the decoder is waiting
@@ -80,7 +81,6 @@ struct DPB
    uint8_t state;
 
    struct DPBInternal internal;
-
 };
 
 int ovdpb_init(OVDPB **dpb_p, const OVPS *ps);
