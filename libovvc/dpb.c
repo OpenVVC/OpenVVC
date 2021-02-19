@@ -351,7 +351,7 @@ vvc_mark_refs(OVDPB *dpb, OVRPL *rpl, uint8_t poc)
         for (j = 0; j < nb_dpb_pic; j++) {
             OVPicture *ref_pic = &dpb->pictures[j];
             if (ref_pic->poc == ref_poc){
-                if(ref_pic->frame->data[0]){
+                if(ref_pic->frame && ref_pic->frame->data[0]){
                     found = 1;
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
                     ref_pic->flags |= flag;
