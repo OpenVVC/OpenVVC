@@ -293,6 +293,7 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
             /* Call long term post function */
             header_read_long_term_info(rdr, rpl0, rpl_h0, sps);
         }
+        rpl_h->rpl0 = rpl0;
     } else {
         struct OVRPL *rpl0 = &rpl_h0->rpl_data;
 
@@ -301,6 +302,7 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
             /* Call long term post function with lt_header*/
             header_read_long_term_info(rdr, rpl0, rpl_h0, sps);
         }
+        rpl_h->rpl0 = rpl0;
     }
 
     /* l1 list */
@@ -322,6 +324,7 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
             /* Call long term post function */
             header_read_long_term_info(rdr, rpl1, rpl_h1, sps);
         }
+        rpl_h->rpl1 = rpl1;
 
     } else {
         struct OVRPL *rpl1 = &rpl_h1->rpl_data;
@@ -332,6 +335,7 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
             /* Call long term post function with lt_header*/
             header_read_long_term_info(rdr, rpl1, rpl_h1, sps);
         }
+        rpl_h->rpl1 = rpl1;
     }
 
     return 0;
