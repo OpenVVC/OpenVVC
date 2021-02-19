@@ -94,6 +94,7 @@ ovdpb_uninit(OVDPB **dpb_p)
         /* TODO
          * release all pics
          */
+        ovdpb_flush_dpb(*dpb_p);
         dpbpriv_uninit_framepool(&(*dpb_p)->internal);
 
         ov_freep(dpb_p);
