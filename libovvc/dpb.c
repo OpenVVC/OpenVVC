@@ -384,24 +384,30 @@ vvc_mark_refs(OVDPB *dpb, OVRPL *rpl, uint8_t poc)
     return 0;
 }
 
-int ovdpb_output_frame(OVDPB *dpb, OVFrame *out, int flush)
+#if 1
+
+int
+ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
 {
-    #if 0
-    const VVCSPSData *const sps =  dpb->ps.sps_data;
     do {
+        const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
         int nb_output = 0;
         int min_poc   = INT_MAX;
         int i, min_idx, ret;
 
+        #if 0
         if (dpb->sh.no_output_of_prior_pics_flag == 1 && dpb->no_rasl_output_flag == 1) {
+        #else
+        if (0) {
+        #endif
             /* Do not output previously decoded picture which are not already bumped
              * Note that they can still be used by current pic
              */
             for (i = 0; i < nb_dpb_pic; i++) {
-                OVPicture *pic = &dpb->DPB[i];
+                OVPicture *pic = &dpb->pictures[i];
                 uint8_t not_bumped = !(pic->flags & OV_BUMPED_PIC_FLAG);
                 uint8_t not_current = pic->poc != dpb->poc;
-                uint8_t is_output_cvs = pic->sequence == output_cvs_id;
+                uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
                 if (not_bumped && not_current && is_output_cvs) {
                     ovdpb_unref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG);
                 }
@@ -410,9 +416,10 @@ int ovdpb_output_frame(OVDPB *dpb, OVFrame *out, int flush)
 
         /* Count pic marked for output in output cvs and find the min poc_id */
         for (i = 0; i < nb_dpb_pic; i++) {
-            OVPicture *pic = &dpb->DPB[i];
-            if ((pic->flags & OV_OUTPUT_PIC_FLAG) &&
-                pic->sequence == output_cvs_id) {
+            OVPicture *pic = &dpb->pictures[i];
+            uint8_t output_flag = (pic->flags & OV_OUTPUT_PIC_FLAG);
+            uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
+            if (output_flag && is_output_cvs) {
                 nb_output++;
                 if (pic->poc < min_poc || nb_output == 1) {
                     min_poc = pic->poc;
@@ -422,49 +429,43 @@ int ovdpb_output_frame(OVDPB *dpb, OVFrame *out, int flush)
         }
 
         /* If the number of pic to output is less than max_num_reorder_pics
-         * in current cvs we wait for more pic before outputing any
-         * FIXME remove flush and provide a specialized function for flushing
+         * in current cvs we wait for more pic before outputting any
          */
-        if (!flush && output_cvs_id == dpb->cvs_id && dpb->ps.sps_data &&
-            nb_output <= dpb->max_num_reorder_pics) {
+        if (output_cvs_id == dpb->cvs_id && nb_output <= dpb->max_nb_reorder_pic) {
             return 0;
         }
 
         if (nb_output) {
             OVPicture *pic = &dpb->pictures[min_idx];
 
-            /* FIXME Add a reference on ouput_pic */
-            ret = av_frame_ref(out, pic->frame);
+            ret = ovframe_new_ref(out, pic->frame);
 
             /* we unref the pic even if ref failed */
-            if (pic->flags & VVC_FRAME_FLAG_BUMPING) {
-                ovdpb_unref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG | VVC_FRAME_FLAG_BUMPING);
-            } else {
-                ovdpb_unref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG);
-            }
+            ovdpb_unref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
 
             if (ret < 0) {
                 return ret;
             }
 
-            ov_log(NULL, 4, "Got ouput picture with POC %d.\n", pic->poc);
+            ov_log(NULL, OVLOG_TRACE, "Got ouput picture with POC %d.\n", pic->poc);
 
-            return 1;
+            return nb_output;
         }
 
         /* If no output pic found increase cvs_id and retry */
-        if (output_cvs_id != dpb->active_seq_id) {
-            output_cvs_id = (dpb->output_seq_id + 1) & 0xff;
+        if (output_cvs_id != dpb->cvs_id) {
+            output_cvs_id = (output_cvs_id + 1) & 0xff;
         } else {
             break;
         }
 
     } while (1);
-    ov_log(NULL, 4, "No picture to output\n");
 
-    #endif
+    ov_log(NULL, OVLOG_TRACE, "No picture to output\n");
+
     return 0;
 }
+#endif
 
 /*FIXME
  *   There might be better ways instead of always looping over
@@ -482,8 +483,10 @@ ovdpb_bump_frame(OVDPB *dpb, uint32_t poc, uint16_t output_cvs_id)
      */
     for (i = 0; i < nb_dpb_pic; i++) {
         OVPicture *pic = &dpb->pictures[i];
-        if ((pic->flags) && pic->cvs_id == output_cvs_id &&
-            pic->poc != poc) {
+        uint8_t flags = (pic->flags);
+        uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
+        uint8_t not_current = pic->poc != poc;
+        if (flags && is_output_cvs && not_current) {
             nb_dpb_pic++;
         }
     }
@@ -493,22 +496,25 @@ ovdpb_bump_frame(OVDPB *dpb, uint32_t poc, uint16_t output_cvs_id)
          */
         for (i = 0; i < nb_dpb_pic; i++) {
             OVPicture *pic = &dpb->pictures[i];
-            if ((pic->flags) &&
-                pic->cvs_id == output_cvs_id &&
-                pic->poc != poc) {
-                if (pic->flags == OV_OUTPUT_PIC_FLAG && pic->poc < min_poc) {
+            uint8_t flags = (pic->flags);
+            uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
+            uint8_t output_flag = (pic->flags & OV_OUTPUT_PIC_FLAG);
+            uint8_t not_current = pic->poc != poc;
+            if (flags && output_flag && is_output_cvs && not_current) {
+                if (pic->poc < min_poc) {
                     min_poc = pic->poc;
                 }
             }
         }
 
-        /* Mark with bumping Flag picture with POC < to current
+        /* Mark with bumping Flag picture with POC <= to min_poc
          */
         for (i = 0; i < nb_dpb_pic; i++) {
             OVPicture *pic = &dpb->pictures[i];
-            if (pic->flags & OV_OUTPUT_PIC_FLAG &&
-                pic->cvs_id == output_cvs_id &&
-                pic->poc <= min_poc) {
+            uint8_t output_flag = (pic->flags & OV_OUTPUT_PIC_FLAG);
+            uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
+            /* Note if the current pic can be also bumped */
+            if (output_flag && is_output_cvs && pic->poc <= min_poc) {
                 pic->flags |= OV_BUMPED_PIC_FLAG;
             }
         }
