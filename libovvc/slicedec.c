@@ -644,6 +644,8 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
     }
 
+    uint8_t sao_luma_flag   =  prms->sh->sh_sao_luma_used_flag;
+    uint8_t sao_chroma_flag =  prms->sh->sh_sao_chroma_used_flag;
     while (ctb_x < nb_ctu_w - 1) {
         /*FIXME try to remove ctb_x computation */
         ctudec->ctb_x = einfo->ctb_x + ctb_x;

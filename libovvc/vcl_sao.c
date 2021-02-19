@@ -1,27 +1,23 @@
-#include "dec_structures.h"
+#include "vcl.h"
 #include "cabac_internal.h"
+#include "ctudec.h"
 
 //TODO: change name and location of definition
-#define VVC_CTU_UP_FLAG             (1 << 0)
-#define VVC_CTU_LEFT_FLAG           (1 << 1)
-#define VVC_CTU_UPLEFT_FLAG         (1 << 2)
-#define VVC_CTU_UPRIGHT_FLAG        (1 << 3)
+// #define VVC_SAO_LUMA_SLICE_FLAG     (1 << 0)
+// #define VVC_SAO_CHROMA_SLICE_FLAG   (1 << 1)
+// #define VVC_ALF_LUMA_SLICE_FLAG     (1 << 2)
 
-#define VVC_SAO_LUMA_SLICE_FLAG     (1 << 0)
-#define VVC_SAO_CHROMA_SLICE_FLAG   (1 << 1)
-#define VVC_ALF_LUMA_SLICE_FLAG     (1 << 2)
-
-static uint8_t
+uint8_t
 ovcabac_read_ae_sao_merge_type(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state,
                           uint8_t neighbour_flags)
 {
     uint8_t sao_merge_type = 0;
 
-    if(neighbour_flags & VVC_CTU_LEFT_FLAG){
+    if(neighbour_flags & CTU_LFT_FLG){
         sao_merge_type = ovcabac_ae_read(cabac_ctx,&cabac_state[SAO_MERGE_FLAG_CTX_OFFSET]);
     }
 
-    if(!sao_merge_type && neighbour_flags & VVC_CTU_UP_FLAG ){
+    if(!sao_merge_type && neighbour_flags & CTU_UP_FLG ){
         sao_merge_type = ovcabac_ae_read(cabac_ctx,&cabac_state[SAO_MERGE_FLAG_CTX_OFFSET]);
         sao_merge_type = sao_merge_type << 1;
     }
@@ -30,15 +26,16 @@ ovcabac_read_ae_sao_merge_type(OVCABACCtx *const cabac_ctx, uint64_t *const caba
 }
 
 void
-ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state,
-                        uint8_t sao_flags, uint8_t num_bits_sao, uint8_t num_bits_sao_c)
+ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state, SAOParams *sao_ctu,
+                        uint8_t sao_luma_flag, uint8_t sao_chroma_flag, uint8_t num_bits_sao, uint8_t num_bits_sao_c)
 {
     //TODO: creer le tableau de SAOParams qui va etre utilise
     SAOParams *sao = malloc(sizeof(SAOParams));
     int k;
     int i;
 
-    if(sao_flags & VVC_SAO_LUMA_SLICE_FLAG){
+    // if(sao_flags & VVC_SAO_LUMA_SLICE_FLAG){
+    if(sao_luma_flag){
         if(ovcabac_ae_read(cabac_ctx,&cabac_state[SAO_TYPE_IDX_CTX_OFFSET])){
             sao->type_idx[0] = ovcabac_bypass_read(cabac_ctx) ? SAO_EDGE : SAO_BAND;
             sao->old_type_idx[0] = sao->type_idx[0];
@@ -80,7 +77,8 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
         }
     }
 
-    if(sao_flags & VVC_SAO_CHROMA_SLICE_FLAG){
+    // if(sao_flags & VVC_SAO_CHROMA_SLICE_FLAG){
+    if(sao_chroma_flag){
         if(ovcabac_ae_read(cabac_ctx,&cabac_state[SAO_TYPE_IDX_CTX_OFFSET])){
             sao->type_idx[2] = sao->type_idx[1] = ovcabac_bypass_read(cabac_ctx) ? SAO_EDGE : SAO_BAND;
             sao->old_type_idx[1] = sao->type_idx[1];

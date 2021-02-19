@@ -2,7 +2,9 @@
 #define VCL_H
 #include <stdint.h>
 
+#include "dec_structures.h"
 #include "ovdefs.h"
+#include "vcl_cabac.h"
 
 int
 transform_unit_wrap(OVCTUDec *const ctu_dec,
@@ -121,4 +123,10 @@ int coding_unit(OVCTUDec *const ctu_dec,
                 const OVPartInfo *const part_ctx,
                 uint8_t x0, uint8_t y0,
                 uint8_t log2_cb_w, uint8_t log2_cb_h);
+
+
+uint8_t ovcabac_read_ae_sao_merge_type(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state, uint8_t neighbour_flags);
+
+void ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state, SAOParams *sao_ctu,
+                        uint8_t sao_luma_flag, uint8_t sao_chroma_flag, uint8_t num_bits_sao, uint8_t num_bits_sao_c);
 #endif

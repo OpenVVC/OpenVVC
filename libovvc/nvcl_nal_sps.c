@@ -315,6 +315,12 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
         }
     }
 
+    //TODO: 
+    // if(sps->sps_sao_enabled_flag){
+    //     vvc_ctx->sao_truncated_bitdepth = (1 << (FFMIN(vvc_ctx->bitdepth_luma,10)
+    //                                              - 5)) - 1;
+    //     vvc_ctx->sao_truncated_bitdepth_chroma = (1 << (FFMIN(vvc_ctx->bitdepth_chroma,10)
+    // }
     sps->sps_sao_enabled_flag = nvcl_read_flag(rdr);
 
     sps->sps_alf_enabled_flag = nvcl_read_flag(rdr);
