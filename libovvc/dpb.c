@@ -702,7 +702,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t na
     /* Mark previous pic for output */
     if (idr_flag | cra_flag) {
         /* FIXME */
-        uint16_t out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
+        uint16_t out_cvs_id = (dpb->cvs_id - idr_flag) & 0xFF;
         ovdpb_bump_frame(dpb, poc, out_cvs_id);
     }
 
