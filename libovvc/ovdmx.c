@@ -453,7 +453,7 @@ extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
 
     /* TODO NALUList to packet */
 
-    return 0;//-(eof && current_nalu == NULL);
+    return -(eof && current_nalu == NULL);
 
 #if 0
 readfail:
@@ -463,7 +463,6 @@ readfail:
     return -1;
 #endif
 }
-
 
 static void
 free_nalu_list(struct NALUnitsList *list)
