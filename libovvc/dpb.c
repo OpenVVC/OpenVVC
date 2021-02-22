@@ -386,7 +386,83 @@ vvc_mark_refs(OVDPB *dpb, OVRPL *rpl, uint8_t poc)
     return 0;
 }
 
-#if 1
+int
+ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
+{
+    do {
+        const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
+        int nb_output = 0;
+        int min_poc   = INT_MAX;
+        int i, min_idx, ret;
+
+        #if 0
+        if (dpb->sh.no_output_of_prior_pics_flag == 1 && dpb->no_rasl_output_flag == 1) {
+        #else
+        if (0) {
+        #endif
+            /* Do not output previously decoded picture which are not already bumped
+             * Note that they can still be used by current pic
+             */
+            for (i = 0; i < nb_dpb_pic; i++) {
+                OVPicture *pic = &dpb->pictures[i];
+                uint8_t not_bumped = !(pic->flags & OV_BUMPED_PIC_FLAG);
+                uint8_t not_current = pic->poc != dpb->poc;
+                uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
+                if (not_bumped && not_current && is_output_cvs) {
+                    ovdpb_unref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG);
+                }
+            }
+        }
+
+        /* Count pic marked for output in output cvs and find the min poc_id */
+        for (i = 0; i < nb_dpb_pic; i++) {
+            OVPicture *pic = &dpb->pictures[i];
+            uint8_t output_flag = (pic->flags & OV_OUTPUT_PIC_FLAG);
+            uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
+            /* Unref pic not marked for output */
+            ovdpb_unref_pic(dpb, pic, ~OV_OUTPUT_PIC_FLAG);
+            if (output_flag && is_output_cvs) {
+                nb_output++;
+                if (pic->poc < min_poc || nb_output == 1) {
+                    min_poc = pic->poc;
+                    min_idx = i;
+                }
+            }
+        }
+
+        /* If the number of pic to output is less than max_num_reorder_pics
+         * in current cvs we wait for more pic before outputting any
+         */
+        if (nb_output) {
+            OVPicture *pic = &dpb->pictures[min_idx];
+
+            ret = ovframe_new_ref(out, pic->frame);
+
+            /* we unref the pic even if ref failed */
+            ovdpb_unref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
+
+            if (ret < 0) {
+                return ret;
+            }
+
+            ov_log(NULL, OVLOG_TRACE, "Got ouput picture with POC %d.\n", pic->poc);
+
+            return nb_output;
+        }
+
+        /* If no output pic found increase cvs_id and retry */
+        if (output_cvs_id != dpb->cvs_id) {
+            output_cvs_id = (output_cvs_id + 1) & 0xff;
+        } else {
+            break;
+        }
+
+    } while (1);
+
+    ov_log(NULL, OVLOG_TRACE, "No picture to output\n");
+
+    return 0;
+}
 
 int
 ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
@@ -467,7 +543,6 @@ ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
 
     return 0;
 }
-#endif
 
 /*FIXME
  *   There might be better ways instead of always looping over

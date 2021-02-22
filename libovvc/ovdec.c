@@ -463,6 +463,29 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
 }
 
 int
+ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
+{
+    /* FIXME this is temporary request output from DPB
+     * instead
+     */
+    OVDPB *dpb = dec->dpb;
+    uint16_t out_cvs_id;
+    int ret;
+
+    if (!dpb) {
+        ov_log(dec, OVLOG_ERROR, "No DPB on output request.\n");
+        /* FIXME new return value */
+        return OVVC_EINDATA;
+    }
+
+    out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
+
+    ret = ovdpb_drain_frame(dpb, frame_p, out_cvs_id);
+
+    return ret;
+}
+
+int
 ovdec_init(OVVCDec **vvcdec)
 {
     *vvcdec = ov_mallocz(sizeof(OVVCDec));

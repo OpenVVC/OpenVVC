@@ -31,6 +31,8 @@ int ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *pu);
  */
 int ovdec_receive_picture(OVVCDec *vvcdec, OVFrame **frame);
 
+int ovdec_drain_picture(OVVCDec *vvcdec, OVFrame **frame);
+
 int ovdec_init(OVVCDec **ovvcdec);
 
 int ovdec_close(OVVCDec *ovvcdec);

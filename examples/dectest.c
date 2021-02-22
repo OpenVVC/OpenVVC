@@ -253,7 +253,7 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
             }
 
             do {
-                ret = ovdec_receive_picture(dec, &frame);
+                 ovdec_receive_picture(dec, &frame);
 
                 /* FIXME use ret instead of frame */
                 if (frame) {
@@ -274,7 +274,22 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
 
         ++nb_pic;
 
-    } while (ret >= 0 && nb_pic < 10);
+    } while (ret >= 0);
+
+    while (ret > 0) {
+        OVFrame *frame = NULL;
+        ret = ovdec_drain_picture(dec, &frame);
+        if (frame) {
+            ov_log(NULL, OVLOG_INFO, "Draining decoder\n");
+            if (fout) {
+                write_decoded_frame_to_file(frame, fout);
+            }
+
+            ov_log(NULL, OVLOG_INFO, "Draining last pictures with POC: %d\n", frame->poc);
+            ovframe_unref(&frame);
+        }
+    }
+
     printf("nb_pic : %d\n", nb_pic);
 
     #endif
