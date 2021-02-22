@@ -788,11 +788,11 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
                     ret = OV_INVALID_DATA;
                     break;
                 }
-                byte_pos += 3;
 
                 if (ret < 0) {
                     return ret;
                 }
+                byte_pos += 2;
             }
         }
         /* Note we actually mean >= here since the last bytes reside
@@ -818,7 +818,7 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
 
     append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, &sgmt_ctx);
 
-    return (byte_pos & mask);
+    return 0;
 }
 
 static int
