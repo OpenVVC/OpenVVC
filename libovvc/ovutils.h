@@ -16,7 +16,15 @@
 #define OVMIN(a, b) (((a) < (b)) ? (a) : (b))
 #define OVABS(a) (((a) < (0)) ? -(a) : (a))
 
-typedef enum {OVLOG_ERROR, OVLOG_WARNING, OVLOG_INFO, OVLOG_VERBOSE, OVLOG_DEBUG, OVLOG_TRACE }OVLOG_TYPE;
+typedef enum
+{
+    OVLOG_ERROR,
+    OVLOG_WARNING,
+    OVLOG_INFO,
+    OVLOG_VERBOSE,
+    OVLOG_DEBUG,
+    OVLOG_TRACE
+} OVLOG_TYPE;
 
 extern OVLOG_TYPE ov_log_level;
 
