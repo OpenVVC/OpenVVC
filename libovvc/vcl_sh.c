@@ -316,7 +316,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
         }
     }
 
-    /* FIXME check if stop bit */
+    nvcl_read_flag(rdr);
     nvcl_align(rdr);
 
     return 0;
