@@ -63,7 +63,16 @@ ovcabac_ae_read(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state)
 
         cabac_ctx->low_b += tmp_fill << num_bits;
 
-        if (cabac_ctx->bytestream < cabac_ctx->bytestream_end){
+        /* Last read will try to refill CABAC if last read occurs on
+         * the bit just before alignment we will refill the CABAC
+         * even if it was the last bit to be read in the entry
+         * This is why we use <= instead of <.
+         * Doing so permits to check for an error at the end
+         * of each CTU line based on the position in the entry
+         * Note that we can also check at the end of the entry
+         * everything has been consumed.
+         */
+        if (cabac_ctx->bytestream <= cabac_ctx->bytestream_end){
             cabac_ctx->bytestream += NB_CABAC_BITS >> 3;
         } else {
             /* FIXME this permits to check if we needed to refill
@@ -91,7 +100,7 @@ ovcabac_bypass_read(OVCABACCtx *const cabac_ctx)
       tmp_fill += cabac_ctx->bytestream[0] << 9;
       tmp_fill += cabac_ctx->bytestream[1] << 1;
       cabac_ctx->low_b += tmp_fill << num_bits;
-      if (cabac_ctx->bytestream < cabac_ctx->bytestream_end){
+      if (cabac_ctx->bytestream <= cabac_ctx->bytestream_end){
           cabac_ctx->bytestream += NB_CABAC_BITS >> 3;
       } else {
           /* FIXME this permits to check if we needed to refill

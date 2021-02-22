@@ -953,7 +953,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
         /* New ctu line */
         ret = decode_ctu_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
 
-        if (ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream == -2) {
+        if (ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream < -2) {
             /* FIXME Temporary error report on CABAC end of stream */
             ov_log(NULL, OVLOG_ERROR, "CABAC error diff end %d \n", ctb_y);
             return 0;
@@ -982,7 +982,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     }
 
     /* FIXME Temporary error report on CABAC end of stream */
-    if (ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream == -2) {
+    if (ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream < -2) {
         ov_log(NULL, OVLOG_ERROR, "CABAC error diff end %d \n", ctb_y);
         return 0;
     }
