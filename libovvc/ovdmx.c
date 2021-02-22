@@ -453,7 +453,7 @@ extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
 
     /* TODO NALUList to packet */
 
-    return -(eof && current_nalu == NULL);
+    return 0;
 
 #if 0
 readfail:
@@ -518,18 +518,30 @@ ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
         return OV_ENOMEM;
     }
 
-    ret = extract_access_unit(dmx, &pending_nalu_list);
+    if (!eof && dmx->nalu_list.first_nalu) {
+        ret = extract_access_unit(dmx, &pending_nalu_list);
 
-    /* FIXME return */
+        /* FIXME return */
 
 
-    if (ret < 0) {
-        free_nalu_list(&pending_nalu_list);
+        if (ret < 0) {
+            free_nalu_list(&pending_nalu_list);
+            ov_free(pu);
+            return ret;
+        }
+    } else {
         ov_free(pu);
-        return ret;
+        *dst_pu = NULL;
+        return -1;
     }
 
     ret = convert_nalu_list_to_pu(pu, &pending_nalu_list);
+    if (ret < 0) {
+        free_nalu_list(&pending_nalu_list);
+        *dst_pu = NULL;
+        ov_free(pu);
+        return ret;
+    }
 
     free_nalu_list(&pending_nalu_list);
 
