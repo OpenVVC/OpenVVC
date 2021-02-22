@@ -592,6 +592,7 @@ append_nalu_elem(struct NALUnitsList *const list, struct NALUnitListElem *elem)
     list->last_nalu = elem;
 }
 
+/* FIXME remove unused cache_ctx */
 static int
 append_rbsp_segment_to_cache(struct ReaderCache *const cache_ctx,
                              struct RBSPCacheData *rbsp_cache,
@@ -600,7 +601,7 @@ append_rbsp_segment_to_cache(struct ReaderCache *const cache_ctx,
     ptrdiff_t sgmt_size = sgmt_ctx->end_p - sgmt_ctx->start_p;
     /* FIXME use an assert instead this is not supposed to happen */
     if (sgmt_size <= 0) {
-        ov_log(NULL, 3, "Invalid segment\n");
+        ov_log(NULL, 2, "Invalid segment\n");
         return -1;
     }
 
@@ -676,6 +677,7 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
             nalu_pending->nalu.epb_pos = epb_pos;
             nalu_pending->nalu.nb_epb = dmx->epb_info.nb_epb;
         }
+
         dmx->epb_info.nb_epb = 0;
 
         nalu_pending->nalu.rbsp_data = rbsp_data;
@@ -760,7 +762,6 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
             int ret;
             ret = ovannexb_check_stc_or_epb(bytestream);
             if (ret < 0) {
-                printf("Invalid\n");
                 ov_log(dmx, 3, "Invalid raw VVC data\n");
                 ret = OV_INVALID_DATA;
             }
@@ -784,7 +785,7 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
                     /* FIXME we should not have something different from STC or
                      * EPB here
                      */
-                    ov_log(dmx, 3, "Invalid raw VVC data\n");
+                    ov_log(dmx, 2, "Invalid raw VVC data\n");
                     ret = OV_INVALID_DATA;
                     break;
                 }
@@ -802,6 +803,7 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
          * overlap cache end
          */
         end_of_cache = &byte[++byte_pos] >= cache_end;
+
     } while (!end_of_cache);
 
     if (eof) {
@@ -846,6 +848,7 @@ extend_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
     uint8_t *old_cache = rbsp_ctx->start;
     uint8_t *new_cache;
     size_t new_size = rbsp_ctx->cache_size + OVRBSP_CACHE_SIZE;
+
     new_cache = ov_malloc(new_size);
     if (!new_cache) {
         return OV_ENOMEM;
@@ -883,6 +886,7 @@ extend_epb_cache(struct EPBCacheInfo *const epb_info)
     uint32_t *old_cache = epb_info->epb_pos;
     uint32_t *new_cache;
     size_t new_size = epb_info->cache_size + OVEPB_CACHE_SIZE;
+
     new_cache = ov_malloc(new_size);
     if (!new_cache) {
         return OV_ENOMEM;
