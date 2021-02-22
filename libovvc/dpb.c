@@ -566,17 +566,17 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, struct OVRPL *const rpl
                    struct OVRPL *const rpl1)
 {
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
-    uint32_t poc = 0;
+    uint32_t poc = dpb->poc;
     int i, ret;
-    /* Reset all picture ref_flags except for current */
-    /* FIXME difference with clear refs */
+
+    /* This is the same as clear_refs except we do not remove
+     * flags on current picture
+     */
     for (i = 0; i < nb_dpb_pic; i++) {
         OVPicture *pic = &dpb->pictures[i];
 
-#if 0
-        if (pic == dpb->active_pic)
+        if (pic->cvs_id == dpb->cvs_id && pic->poc == dpb->poc)
             continue;
-#endif
 
         pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
     }
@@ -622,7 +622,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t na
     const OVSH  *const sh  = ps->sh;
     const OVPH  *const ph  = ps->ph;
     int ret = 0;
-    uint32_t poc = 0;
+    uint32_t poc = dpb->poc;
     uint8_t cra_flag = 0;
     uint8_t idr_flag = 0;
 
@@ -667,6 +667,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t na
                          ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4,
                          poc);
     }
+
     dpb->poc = poc;
 
     /* If the NALU is an Refresh Picture all previous pictures in DPB
@@ -695,9 +696,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t na
         OVRPL *rpl0 = sh->hrpl.rpl0;
         OVRPL *rpl1 = sh->hrpl.rpl1;
         uint8_t slice_type = sh->sh_slice_type;
-        #if 1
         mark_ref_pic_lists(dpb, slice_type, rpl0, rpl1);
-        #endif
     }
 
     /* Mark previous pic for output */
