@@ -634,6 +634,10 @@ attach_drv_lines(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
      */
     /* Reset to 0 == PLANAR */
     memset(intra_info->luma_mode_y, 0, sizeof(*intra_info->luma_mode_y) * nb_pb_ctb_w);
+    struct OVDrvCtx *const drv_ctx = &ctudec->drv_ctx;
+    int8_t qp_val = ctudec->qp_ctx.current_qp;
+    memset(drv_ctx->qp_map_x, qp_val, sizeof(*drv_ctx->qp_map_x) * nb_pb_ctb_w);
+    memset(drv_ctx->qp_map_y, qp_val, sizeof(*drv_ctx->qp_map_y) * nb_pb_ctb_w);
 }
 
 static void
@@ -761,14 +765,14 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         update_cabac_lines(ctudec, prms);
 
-        update_drv_lines(ctudec, prms);
-
         /* Hackish way of keeping track of CTU last line
          * first QP to initialise delta qp for next ctu line
          */
         if (ctb_x == 0) {
             backup_qp = ctudec->drv_ctx.qp_map_x[0];
         }
+
+        update_drv_lines(ctudec, prms);
 
         rcn_update_ctu_border(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
 
@@ -918,6 +922,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     ctudec->cabac_ctx = &cabac_ctx;
 
     ctudec->qp_ctx.current_qp = ctudec->slice_qp;
+    derive_dequant_ctx(ctudec, &ctudec->qp_ctx, 0);
 
     /* FIXME entry might be check before attaching entry to CABAC so there
      * is no need for this check
