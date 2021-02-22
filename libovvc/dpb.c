@@ -377,7 +377,8 @@ vvc_mark_refs(OVDPB *dpb, OVRPL *rpl, uint8_t poc)
 
             ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
             ref_pic->flags |= flag;
-            ov_log(NULL, 3, "Could not find ref %d for picture\n", ref_poc);
+            /*FIXME  Set output flag ? */
+            ov_log(NULL, OVLOG_ERROR, "Could not find ref %d for picture\n", ref_poc);
             return 0;
         }
     }
@@ -475,7 +476,7 @@ ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
 void
 ovdpb_bump_frame(OVDPB *dpb, uint32_t poc, uint16_t output_cvs_id)
 {
-    int nb_dpb_pic = 0;
+    int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     int min_poc = INT_MAX;
     int i;
 
