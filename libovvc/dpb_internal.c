@@ -33,8 +33,10 @@ dpbpriv_init_framepool(struct DPBInternal *dpb_priv, const OVSPS *const sps)
     static const uint8_t comp_shift[3] = {0, 2, 2};
     static const uint8_t comp_shift_h[3] = {0, 1, 1};
     static const uint8_t comp_shift_v[3] = {0, 1, 1};
+
     size_t pic_w = (size_t) sps->sps_pic_width_max_in_luma_samples;
     size_t pic_h = (size_t) sps->sps_pic_height_max_in_luma_samples;
+
     uint8_t bd_shift = !!sps->sps_bitdepth_minus8;
     /* TODO non 420 chromat_formats */
     uint8_t nb_comp = 3;
