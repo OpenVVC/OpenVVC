@@ -694,9 +694,7 @@ int
 ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t nalu_type)
 {
 
-    const OVSPS *const sps = ps->sps;
     const OVSH  *const sh  = ps->sh;
-    const OVPH  *const ph  = ps->ph;
     int ret = 0;
     uint32_t poc = dpb->poc;
     uint8_t cra_flag = 0;
@@ -780,16 +778,6 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t na
         /* FIXME */
         uint16_t out_cvs_id = (dpb->cvs_id - idr_flag) & 0xFF;
         ovdpb_bump_frame(dpb, poc, out_cvs_id);
-    }
-
-    #if 0
-    /* Place a frame on decoder output if we can */
-    av_frame_unref(dpb->output_frame);
-    ret = ovdpb_output_frame(dpb, dpb->output_frame, 0);
-    #endif
-
-    if (ret < 0) {
-        goto fail;
     }
 
     return ret;
