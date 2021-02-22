@@ -25,15 +25,11 @@ uint8_t derive_intra_mode_c(uint8_t cclm_flag, uint8_t mpm_flag,
                             uint8_t mpm_idx, uint8_t luma_mode,
                             uint8_t cclm_idx);
 
-void vvc_intra_pred(const OVCTUDec *const ctudec,
-                    uint16_t *const src,
-                    ptrdiff_t dst_stride,
+void vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx,
                     uint8_t intra_mode, int x0, int y0,
                     int log2_pb_width, int log2_pb_height);
 
-void vvc_intra_pred_chroma(const OVCTUDec *const ctudec,
-                           uint16_t *const dst_NUU, uint16_t *const dst_NUk,
-                           ptrdiff_t dst_stride,
+void vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
                            uint8_t intra_mode, int x0, int y0,
                            int log2_pb_w, int log2_pb_h);
 VVCCU

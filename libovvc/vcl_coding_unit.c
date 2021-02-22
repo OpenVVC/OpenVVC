@@ -278,6 +278,8 @@ ovcabac_read_ae_intra_mip_mode(OVCABACCtx *const cabac_ctx, uint8_t log2_cb_w,
 {
     int nb_mip_modes = 6;
 
+    /* FIXME use LUT based on log2_sizes would be a better option */
+
     if ((log2_cb_h | log2_cb_w) == 2) {
         /* 4x4 */
         nb_mip_modes = 16;
@@ -428,16 +430,9 @@ coding_unit(OVCTUDec *const ctu_dec,
 
     VVCCU cu;
 
-#if 1
     int pred_qp = ((y0 ? ctu_dec->drv_ctx.qp_map_x[x_cb] : ctu_dec->qp_ctx.current_qp) +
                    (x0 ? ctu_dec->drv_ctx.qp_map_y[y_cb] : ctu_dec->qp_ctx.current_qp) + 1) >> 1;
-#else
-    /* FIXME this cannot work since qp_y needs to be reset to current_qp in CTU instead
-     * of qp_pred at CTU start ther might be an other way.
-     */
-    int pred_qp = (ctu_dec->drv_ctx.qp_map_x[x_cb] + ctu_dec->drv_ctx.qp_map_y[y_cb] + 1) >> 1;
 
-#endif
     ctu_dec->qp_ctx.current_qp = pred_qp;
 
     cu = ctu_dec->coding_unit(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h);
@@ -467,12 +462,6 @@ coding_unit(OVCTUDec *const ctu_dec,
         fill_dbf_qp(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h, ctu_dec->qp_ctx.current_qp);
         fill_dbf_qp_cb(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h, ctu_dec->dequant_cb.qp - 12);
         fill_dbf_qp_cr(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h, ctu_dec->dequant_cr.qp - 12);
-    }
-#endif
-
-
-#if 0
-    if (!ctu_dec->dbf_disable) {
         fill_edge_map(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
         fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
     }
@@ -578,9 +567,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
         }
     }
 
-    #if 1
     updt_cu_maps(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, cu_type);
-    #endif
 
     return cu;
 }
@@ -630,12 +617,9 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
     cu.cu_flags |= flg_pred_mode_flag;
 
     if (ctu_dec->enabled_mip) {
-        #if 0
-        VVCCTUPredContext *const pred_ctx = &ctu_dec->pred_ctx;
-        #endif
-        /* FIXME use other maps */
-        uint8_t mip_abv = ctu_dec->part_map.cu_mode_x[x_pu];
-        uint8_t mip_lft = ctu_dec->part_map.cu_mode_y[y_pu];
+        struct PartMap *part_map = &ctu_dec->part_map;
+        uint8_t mip_abv = part_map->cu_mode_x[x_pu];
+        uint8_t mip_lft = part_map->cu_mode_y[y_pu];
 
         mip_flag = ovcabac_read_ae_intra_mip(cabac_ctx, log2_cb_w, log2_cb_h,
                                              mip_abv, mip_lft);
@@ -643,46 +627,35 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
         cu.cu_flags |= flg_mip_flag & (-(!!mip_flag));
 
         if (mip_flag) {
-            struct PartMap *part_map = &ctu_dec->part_map;
             uint8_t transpose_flag = ovcabac_read_ae_intra_mip_transpose_flag(cabac_ctx);
             uint8_t mip_mode;
-
-            /*FIXME use LUT based on log2_sizes would be a better option*/
 
             mip_mode = ovcabac_read_ae_intra_mip_mode(cabac_ctx, log2_cb_w, log2_cb_h);
 
             cu.cu_opaque  = transpose_flag << 7;
             cu.cu_opaque |= mip_mode;
 
-            /*FIXME this is actually required by mip_flag CABAC context derivation */
             memset(&part_map->cu_mode_x[x_pu], OV_MIP, sizeof(uint8_t) * nb_pb_w);
             memset(&part_map->cu_mode_y[y_pu], OV_MIP, sizeof(uint8_t) * nb_pb_h);
 
-            /* TODO set luma_mode to PLANAR for modes derivation */
-            #if 0
-            for (int i = 0; i < nb_pb_h; i++) {
-                memset(&pred_ctx->cclm_intra_mode[x_pu + (i << 5) + (y_pu << 5)], OV_MIP,
-                        sizeof(uint8_t) * nb_pb_w);
-            }
-            #endif
+            /* FIXME Check default to PLANAR for modes derivation */
         }
     }
 
-    /* FIXME missing IBC mode reading */
+    /* FIXME missing IBC + PLT mode reading */
     if (!mip_flag) {
 
         uint8_t mrl_flag = ctu_dec->enable_mrl && y0 ? ovcabac_read_ae_intra_multiref_flag(cabac_ctx)
                                               : 0;
         uint8_t isp_mode = 0;
         uint8_t mpm_flag;
-        #if 0
         uint8_t mrl_idx = mrl_flag;
-        #endif
 
         cu.cu_flags |= flg_mrl_flag & (-(!!mrl_flag));
-        cu.cu_opaque = mrl_flag;
+        cu.cu_opaque = mrl_idx;
 
         if (!mrl_flag && ctu_dec->isp_enabled) {
+            /* FIXME use LUTs based on sizes for split status */
             uint8_t isp_split_status = (log2_cb_w + log2_cb_h) > (2 << 1);
 
             if (isp_split_status) {
@@ -713,28 +686,13 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
         }
     }
 
-#if 1
     /* FIXME move after TU is read so we can reconstruct with or without
      * transform trees
      */
     cu = drv_intra_cu(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, cu);
-#endif
 
     return cu;
 }
-
-enum CIntra_Info
-{
-    CCLM_DEFAULT,
-    MDLM_TOP,
-    CCLM_LEFT,
-    LUMA_MODE,
-    MPM,
-    MPM_0 = MPM,
-    MPM_1,
-    MPM_2,
-    MPM_3
-};
 
 VVCCU
 coding_unit_intra_c(OVCTUDec *const ctu_dec,
@@ -747,11 +705,9 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
     struct IntraDRVInfo *const i_info = &ctu_dec->drv_ctx.intra_info;
     /* TODO set mode to default */
     uint8_t intra_mode;
-    #if 0
-    enum CIntra_Info mode_info = LUMA_MODE;
-    #endif
     uint8_t mpm_idx = 0, cclm_idx = 1;
 #if 1
+    /* FIXME move to drv */
     uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
     uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_w = (1 << log2_cb_w) >> part_ctx->log2_min_cb_s;
@@ -766,68 +722,35 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
 
     cu.cu_flags = 2;
 
+    /* FIXME CCLM luma partition constraints */
     if (ctu_dec->lm_chroma_enabled && !ctu_dec->tmp_disable_cclm &&
         ctu_dec->enable_cclm == 1) {
 
         cclm_flag = ovcabac_read_ae_cclm_flag(cabac_ctx);
 
         if (cclm_flag) {
-            /* VALUES : 0 1 2 */
             cclm_idx = ovcabac_read_ae_intra_lm_chroma(cabac_ctx);
-            #if 0
-            mode_info = cclm_idx;
-            #endif
         }
-
-        /* TODO set MODE TO LM */
     }
 
     if (!cclm_flag) {
         mpm_flag = ovcabac_read_ae_intra_chroma_mpm_flag(cabac_ctx);
         if (mpm_flag) {
             mpm_idx = ovcabac_read_ae_intra_chroma_mpm_idx(cabac_ctx);
-        /* TODO set MODE to result */
-            #if 0
-            mode_info = MPM + mpm_idx;
-            #endif
         }
     }
 
-#if 1
     //Note this is not required by cabac decoding.
-    #if 0
-    luma_mode = luma_mode != VVC_MIP_MODE ? luma_mode : VVC_PLANAR;
-    #endif
     intra_mode = derive_intra_mode_c(cclm_flag, mpm_flag, mpm_idx,
                                      luma_mode, cclm_idx);
 
-    /* TODO update progress fields
-     */
 
-#if 0
-    update_availability_maps(&ctu_dec->progress_map_c, x_pu << pu_shift, y_pu << pu_shift,
-                             nb_pb_w << pu_shift, nb_pb_h << pu_shift);
-#else
+    /* FIXME move to RCN */
     ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_pu << pu_shift,
                                 y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
 
-#endif
 
-    if (intra_mode == OVINTRA_DM_CHROMA) {//derive intra mode for use;
-        vvc_intra_pred_chroma(ctu_dec, NULL, NULL,
-                              0, luma_mode, x0, y0,
-                              log2_cb_w, log2_cb_h);
-    } else if (intra_mode == OVINTRA_LM_CHROMA) {
-        /* FIXME separate LM_CHROMA from global */
-        vvc_intra_pred_chroma(ctu_dec, NULL, NULL,
-                              0, intra_mode, x0, y0,
-                              log2_cb_w, log2_cb_h);
-    } else {
-        vvc_intra_pred_chroma(ctu_dec, NULL, NULL,
-                              0, intra_mode, x0, y0,
-                              log2_cb_w, log2_cb_h);
-    }
-#endif
+    vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, intra_mode, x0, y0, log2_cb_w, log2_cb_h);
 
     return cu;
 }
