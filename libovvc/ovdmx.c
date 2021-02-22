@@ -742,7 +742,7 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
 {
     const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
     const uint8_t *byte = cache_ctx->cache_start;
-    const uint8_t *cache_end = cache_ctx->cache_end;
+    const uint8_t *const cache_end = cache_ctx->cache_end;
     uint32_t byte_pos = cache_ctx->first_pos & mask;
     uint8_t end_of_cache;
     struct RBSPSegment sgmt_ctx = {0};
