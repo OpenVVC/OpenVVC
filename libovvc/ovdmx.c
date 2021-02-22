@@ -632,8 +632,7 @@ static int
 process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
                    uint64_t byte_pos, struct RBSPSegment *sgmt_ctx)
 {
-    const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
-    const uint8_t *bytestream = &cache_ctx->data_start[byte_pos & mask];
+    const uint8_t *bytestream = sgmt_ctx->end_p;
     struct NALUnitsList *nalu_list = &dmx->nalu_list;
     struct NALUnitListElem *nalu_elem = create_nalu_elem(dmx);
     struct NALUnitListElem *nalu_pending = dmx->nalu_pending;
