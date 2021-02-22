@@ -303,23 +303,24 @@ ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
 
         read_in_buf = ovio_stream_read(&cache_ctx->data_start, OVVCDMX_IO_BUFF_SIZE,
                                        dmx->io_str);
-        #if 1
+        #if 0
         cache_ctx->data_start -= 8;
         #endif
         /* pos is init at 8 so we do not overread first data chunk */
-        cache_ctx->first_pos = 8;
+        cache_ctx->first_pos = 0;
 
         /*TODO + 8 - 8 */
         cache_ctx->cache_start = cache_ctx->data_start;
-        cache_ctx->cache_end   = cache_ctx->data_start + OVVCDMX_IO_BUFF_SIZE;
+        cache_ctx->cache_end   = cache_ctx->data_start + OVVCDMX_IO_BUFF_SIZE - 8;
 
         if (!read_in_buf) {
             /* TODO error handling if end of file is encountered on first read */
             int32_t nb_bytes;
             nb_bytes = ovio_stream_tell(dmx->io_str) & OVVCDMX_IO_BUFF_MASK;
-            cache_ctx->cache_end = cache_ctx->data_start + nb_bytes + 8;
+            cache_ctx->cache_end = cache_ctx->cache_start + nb_bytes;
                 eof = 1;
         }
+
         /* FIXME Process first chunk of data ? */
         ret = extract_cache_segments(dmx, cache_ctx);
 
@@ -358,6 +359,8 @@ refill_reader_cache(struct ReaderCache *const cache_ctx, OVIOStream *const io_st
     cache_ctx->cache_start = cache_ctx->data_start;
     cache_ctx->cache_end   = cache_ctx->data_start + OVVCDMX_IO_BUFF_SIZE;
 
+    /* Do not update first pos it is computed at the end of extraction
+     */
     #if 0
     cache_ctx->first_pos   = 0;
     #endif
@@ -403,8 +406,6 @@ static struct NALUnitListElem *pop_nalu_elem(struct NALUnitsList *list)
 
     return elem;
 }
-
-
 
 static int
 extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
