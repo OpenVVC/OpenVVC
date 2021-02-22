@@ -10,10 +10,10 @@
 
 /*FIXME find a more global location for these defintions */
 enum CUMode {
-    OV_INTER_SKIP = 0,
+    OV_NA = 0xFF,
     OV_INTER = 1,
     OV_INTRA = 2,
-    OV_NA = 3,
+    OV_INTER_SKIP = 3,
     OV_MIP = 4,
 };
 
