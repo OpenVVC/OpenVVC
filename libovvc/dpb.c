@@ -518,14 +518,16 @@ ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
 
             ret = ovframe_new_ref(out, pic->frame);
 
-            /* we unref the pic even if ref failed */
+            /* we unref the picture even if ref failed the picture
+             * will still be usable by the decoder if not bumped
+             * */
             ovdpb_unref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
 
             if (ret < 0) {
                 return ret;
             }
 
-            ov_log(NULL, OVLOG_TRACE, "Got ouput picture with POC %d.\n", pic->poc);
+            ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", pic->poc);
 
             return nb_output;
         }
@@ -663,7 +665,6 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, struct OVRPL *const rpl
     }
 
     if (slice_type == SLICE_B){
-
         ret = vvc_mark_refs(dpb, rpl1, poc);
         if (ret < 0) {
             goto fail;
@@ -763,7 +764,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t na
     ov_log(NULL, OVLOG_INFO, "DPB start new picture POC: %d\n", (*pic)->poc);
 
     /* If the picture is not an IDR Picture we set all flags to
-     * Note in VVC we might still get some ref pic list in IDR
+     * FIXME in VVC we might still get some ref pic list in IDR
      * Slices it is not clear whether we should still mark them
      * or not
      */
