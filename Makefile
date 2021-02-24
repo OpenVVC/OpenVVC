@@ -42,8 +42,10 @@ LIB_OBJ:=$(addprefix $(BUILDDIR_TYPE),$(LIB_SRC:%.c=%.o))
 LIB_FILE:=$(LIB_HEADER) $(LIB_SRC)
 LIB_NAME:= libovvc
 
-SHARED_LIBSUFF:=.so
-STATIC_LIBSUFF:=.a
+SHARED_LIBSUFF?=.so
+STATIC_LIBSUFF?=.a
+DEFAULT_LIBSUFF?=$(SHARED_LIBSUFF)
+
 
 PROG=examples/dectest
 
@@ -53,19 +55,22 @@ ALL_OBJS=$(LIB_OBJ) $(addprefix $(BUILDDIR_TYPE),$(addsuffix .o, $(PROG)))
 all: version libs examples
 
 version:
-	$(AT)./version.sh RELEASE $(SRC_FOLDER)$(LIB_VERSION_HEADER) 
+	$(AT)./version.sh RELEASE $(SRC_FOLDER)$(LIB_VERSION_HEADER)
 
-libs: version $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF)
+libs: version $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF) $(BUILDDIR_TYPE)$(LIB_NAME)$(SHARED_LIBSUFF)
 
 examples: version $(BUILDDIR_TYPE)$(PROG)
 
-$(BUILDDIR_TYPE)$(PROG):  $(BUILDDIR_TYPE)$(PROG).o $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF)
+$(BUILDDIR_TYPE)$(PROG):  $(BUILDDIR_TYPE)$(PROG).o $(BUILDDIR_TYPE)$(LIB_NAME)$(DEFAULT_LIBSUFF)
 	$(CC) $^ -o $@
 
 
 $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF): $(LIB_OBJ)
 	$(AR) rcD $@ $^
 	ranlib $@
+
+$(BUILDDIR_TYPE)$(LIB_NAME)$(SHARED_LIBSUFF): $(LIB_OBJ)
+	$(CC) -shared $^ -o $@
 
 
 $(BUILDDIR_TYPE)%.o: %.c
