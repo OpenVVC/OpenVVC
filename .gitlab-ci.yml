@@ -13,6 +13,7 @@ build_linux_gcc_debug:
   artifacts:
     paths:
       - debug/libovvc.a
+      - debug/libovvc.so
       - debug/examples/dectest
 
 non_reg_gcc_debug:
@@ -36,6 +37,7 @@ build_linux_clang_debug:
   artifacts:
     paths:
       - debug/libovvc.a
+      - debug/libovvc.so
       - debug/examples/dectest
 
 non_reg_clang_debug:
@@ -58,4 +60,5 @@ build_linux_gcc_release:
   artifacts:
     paths:
       - release/libovvc.a
+      - release/libovvc.so
       - release/examples/dectest
