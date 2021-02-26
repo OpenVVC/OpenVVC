@@ -255,40 +255,7 @@ reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
      memset(lns->intra_luma_x,     0,  sizeof(*lns->intra_luma_x) * nb_pb_pic_w);
 }
 
-void
-drv_line_next_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
-{
-    #if 0
-    struct OVDrvCtx *const drv_ctx        = &ctudec->drv_ctx;
-    #endif
-    struct IntraDRVInfo *const intra_info = &ctudec->drv_ctx.intra_info;
-    const struct DRVLines *const lns      = &sldec->drv_lines;
-    const OVPartInfo *const pinfo = ctudec->part_ctx;
-
-    uint8_t log2_ctb_s    = pinfo->log2_ctu_s;
-    uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
-
-    uint16_t nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
-
-    /* FIXME
-     *     done twice on new entry see (reset lines function)
-     *     use partition limitations for reset
-     */
-    /* Reset to 0 == PLANAR */
-    struct OVDrvCtx *const drv_ctx = &ctudec->drv_ctx;
-    int8_t qp_val = ctudec->qp_ctx.current_qp;
-    intra_info->luma_mode_x = lns->intra_luma_x;
-
-    /* Reset HMVP Look Up table */
-    ctudec->drv_ctx.inter_ctx.hmvp_lut.nb_mv = 0;
-    load_first_ctu_inter(lns, ctudec, 0);
-
-    memset(intra_info->luma_mode_y, 0, sizeof(*intra_info->luma_mode_y) * nb_pb_ctb_w);
-    memset(drv_ctx->qp_map_x, qp_val, sizeof(*drv_ctx->qp_map_x) * nb_pb_ctb_w);
-    memset(drv_ctx->qp_map_y, qp_val, sizeof(*drv_ctx->qp_map_y) * nb_pb_ctb_w);
-}
-
-void
+static void
 load_first_ctu_inter(struct DRVLines *const l,
                  const OVCTUDec *const ctudec,
                  unsigned int ctb_x)
@@ -338,6 +305,40 @@ load_first_ctu_inter(struct DRVLines *const l,
     }
     rows_map0[0] |= above_map0 << 1;
     rows_map1[0] |= above_map1 << 1;
+}
+
+
+void
+drv_line_next_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
+{
+    #if 0
+    struct OVDrvCtx *const drv_ctx        = &ctudec->drv_ctx;
+    #endif
+    struct IntraDRVInfo *const intra_info = &ctudec->drv_ctx.intra_info;
+    const struct DRVLines *const lns      = &sldec->drv_lines;
+    const OVPartInfo *const pinfo = ctudec->part_ctx;
+
+    uint8_t log2_ctb_s    = pinfo->log2_ctu_s;
+    uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
+
+    uint16_t nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
+
+    /* FIXME
+     *     done twice on new entry see (reset lines function)
+     *     use partition limitations for reset
+     */
+    /* Reset to 0 == PLANAR */
+    struct OVDrvCtx *const drv_ctx = &ctudec->drv_ctx;
+    int8_t qp_val = ctudec->qp_ctx.current_qp;
+    intra_info->luma_mode_x = lns->intra_luma_x;
+
+    /* Reset HMVP Look Up table */
+    ctudec->drv_ctx.inter_ctx.hmvp_lut.nb_mv = 0;
+    load_first_ctu_inter(lns, ctudec, 0);
+
+    memset(intra_info->luma_mode_y, 0, sizeof(*intra_info->luma_mode_y) * nb_pb_ctb_w);
+    memset(drv_ctx->qp_map_x, qp_val, sizeof(*drv_ctx->qp_map_x) * nb_pb_ctb_w);
+    memset(drv_ctx->qp_map_y, qp_val, sizeof(*drv_ctx->qp_map_y) * nb_pb_ctb_w);
 }
 
 void
