@@ -4,6 +4,7 @@
 #include "ovdefs.h"
 
 #include "ovdec.h"
+#include "rcn_structures.h"
 
     /* FIXME COMPAT old
      * Old structures to be removed
@@ -91,26 +92,107 @@ struct VVCCU{
 
 };
 
-/* Definitions of CTUDecoder structures */
+/* FIXME move inter struct definitions somewhere else */
+struct CTUBitField{
+    uint64_t hfield[33];
+    uint64_t vfield[33];
+};
+
+struct OVMV
+{
+    int32_t x;
+    int32_t y;
+};
+
+typedef struct VVCMergeInfo
+{
+    OVMV mv0;
+    OVMV mv1;
+    uint8_t inter_dir;
+} VVCMergeInfo;
+
+struct VVCTMVPStorage
+{
+    uint64_t *col0;
+    uint64_t *col1;
+    OVMV *mv0;
+    OVMV *mv1;
+};
+
+struct OVMVCtx
+{
+    struct CTUBitField map;
+    OVMV mvs[34*34];
+};
+
+struct HMVPLUT
+{
+    OVMV hmv0[5];
+    OVMV hmv1[5];
+    uint8_t dir[5];
+    uint8_t nb_mv;
+};
+
 struct InterDRVCtx
 {
-   struct RPLInfo *rpl_0;
-   struct RPLInfo *rpl_1;
-   /* Information to be used by motion vector predicition (MVP)
-    * Contains Motion Vector and TMVP if needed
-    */
-   struct MVPCtx *mvp_context;
+    /* References Pictures Lists */
+    OVPicture *rpl0[16];
+    OVPicture *rpl1[16];
 
-   /* HMVP lut info */
-   #if 0
-   struct HMVP hmvp_lut;
-   #endif
+    /* CTU Local Map Motion Vectors */
+    struct OVMVCtx mv_ctx0;
+    struct OVMVCtx mv_ctx1;
 
-   /* TODO
-    * Convenience variables for manipulation
-    * such as log2 dimension etc.
-    */
+    /* History based Motion Vector Predicition
+     * Look-Up table containing the five last
+     * Motion Vectors used.
+     */
+    struct HMVPLUT hmvp_lut;
+
+    /* Temporal Motion Vector Prediction Related
+     * information
+     */
+    uint8_t tmvp_avail;
+    uint8_t tmvp_enabled;
+    struct VVCTMVP
+    {
+        /* FIXME we used Ref Pictures
+         * but we only need motion vectors
+         * information or ref idx
+         */
+        OVPicture *col_ref0;
+        OVPicture *col_ref1;
+
+        /* Pointer to collocated CTU MV Map*/
+        const void *data_ref;
+        void *data_cur;
+
+        /* Scale info computed at slice start
+         * based on the distance between collocated
+         * and current picture in POC
+         */
+        int16_t scale00;
+        int16_t scale10;
+        int16_t scale01;
+        int16_t scale11;
+
+        struct VVCCTBTMVP
+        {
+            struct OVMVCtx mv_ctx0;
+            struct OVMVCtx mv_ctx1;
+        }tmvp_mv;
+
+        /* Dimension info for per MV CTB storage */
+        struct VVCTMVPStorageinfo
+        {
+            int log2_nb_ctb_pb;
+            size_t tmvp_map_s;
+            size_t tmvp_mvs_s;
+            size_t tmvp_s;
+        } tmvp_size;
+    } tmvp_ctx;
 };
+
 
 /* Structure reserved for Intra Modes dervivation
  */
@@ -230,7 +312,7 @@ struct OVCTUDec
     */
     struct OVDrvCtx {
         struct IntraDRVInfo intra_info;
-        struct InterDRVCtx *inter_ctx;
+        struct InterDRVCtx  inter_ctx;
         struct DeltaQPDRVCtx *delta_qp_ctx;
         struct FiltersDRVCtx *loop_filters_ctx;
         int8_t qp_map_x[32];
@@ -277,12 +359,14 @@ struct OVCTUDec
          * in order to derive references samples for intra prediction
          */
          /* FIXME move to drv */
-        struct CTUBitField{
-            uint64_t hfield[33];
-            uint64_t vfield[33];
-        } progress_field;
+        struct CTUBitField progress_field;
 
         struct CTUBitField progress_field_c;
+
+        /* A structure containing various functions pointers
+         * to block reconstruction function
+         */
+        struct RCNFunctions rcn_funcs;
     } rcn_ctx;
 
     /* CTU neighbours availability flags
