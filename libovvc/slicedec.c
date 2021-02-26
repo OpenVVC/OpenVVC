@@ -12,6 +12,7 @@
 #include "drv_utils.h"
 #include "rcn.h"
 #include "ovdpb.h"
+#include "drv_lines.h"
 
 /* TODO define in a header */
 enum SliceType {
@@ -322,14 +323,6 @@ cabac_lines_uninit(OVSliceDec *sldec)
      ov_freep(&lns_c->cu_mode_x);
 }
 
-static void
-drv_lines_uninit(OVSliceDec *sldec)
-{
-     struct DRVLines *const lns = &sldec->drv_lines;
-
-     ov_freep(&lns->intra_luma_x);
-}
-
 int
 init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
 {
@@ -379,36 +372,6 @@ init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
      return 0;
 }
 
-static int
-init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
-{
-     const OVPartInfo *const pinfo = sldec->ctudec_list->part_ctx;
-     const OVSPS *const sps = prms->sps;
-
-     struct DRVLines *const lns = &sldec->drv_lines;
-
-     uint8_t log2_ctb_s    = pinfo->log2_ctu_s;
-     uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
-     /* TODO use active parameters such as generic pic info
-      * or something instead of this since this could be
-      * overridden by PPS in case of sub_pic etc.
-      * we could compute those values once for all earlier
-      * in the decoding process
-      */
-     uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
-
-     uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
-     uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
-
-     lns->intra_luma_x  = ov_mallocz(sizeof(*lns->intra_luma_x) * nb_pb_pic_w);
-
-     if (!lns->intra_luma_x) {
-         drv_lines_uninit(sldec);
-         return OVVC_ENOMEM;
-     }
-
-     return 0;
-}
 
 /* FIXME
  * reset according to entry info instead of whole line
@@ -441,29 +404,6 @@ reset_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
 /* FIXME
  * reset according to entry info instead of whole line
  */
-void
-reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
-{
-     const OVPartInfo *pinfo = sldec->ctudec_list->part_ctx;
-     const OVSPS *const sps = prms->sps;
-
-     struct DRVLines *const lns = &sldec->drv_lines;
-
-     uint8_t log2_ctb_s = pinfo->log2_ctu_s;
-     uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
-     /* TODO use active parameters such as generic pic info
-      * see init_cabac_lines
-      */
-     uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
-     uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
-     uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
-
-     /* PLANAR  = 0 value is used if absent so we use it as reset value
-      */
-     memset(lns->intra_luma_x,     0,  sizeof(*lns->intra_luma_x) * nb_pb_pic_w);
-}
-
-#if 1
 static int
 init_pic_border_info(struct RectEntryInfo *einfo, const OVPS *const prms, int entry_idx)
 {
@@ -582,7 +522,7 @@ slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
 }
 
 static void
-attach_cabac_lines(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
+cabac_line_next_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
 {
     struct PartMap *const pmap_l = &ctudec->part_map;
     struct PartMap *const pmap_c = &ctudec->part_map_c;
@@ -602,46 +542,16 @@ attach_cabac_lines(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
 
     /* FIXME done twice on new entry see (reset lines function) */
     /* FIXME use nb_pb_ctb instead of size */
-    memset(pmap_l->cu_mode_y,         0xFF, sizeof(pmap_l->cu_mode_y));
-    memset(pmap_l->qt_depth_map_y,    0xFF, sizeof(pmap_l->qt_depth_map_y));
-    memset(pmap_l->log2_cu_h_map_y,   0xFF, sizeof(pmap_l->log2_cu_h_map_y));
+    memset(pmap_l->cu_mode_y,       0xFF, sizeof(pmap_l->cu_mode_y));
+    memset(pmap_l->qt_depth_map_y,  0xFF, sizeof(pmap_l->qt_depth_map_y));
+    memset(pmap_l->log2_cu_h_map_y, 0xFF, sizeof(pmap_l->log2_cu_h_map_y));
 
     memset(pmap_c->qt_depth_map_y,  0xFF, sizeof(pmap_c->qt_depth_map_y));
     memset(pmap_c->log2_cu_h_map_y, 0xFF, sizeof(pmap_c->log2_cu_h_map_y));
 }
 
 static void
-attach_drv_lines(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
-{
-    #if 0
-    struct OVDrvCtx *const drv_ctx        = &ctudec->drv_ctx;
-    #endif
-    struct IntraDRVInfo *const intra_info = &ctudec->drv_ctx.intra_info;
-    const struct DRVLines *const lns      = &sldec->drv_lines;
-    const OVPartInfo *const pinfo = ctudec->part_ctx;
-
-    uint8_t log2_ctb_s    = pinfo->log2_ctu_s;
-    uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
-
-    uint16_t nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
-
-
-    intra_info->luma_mode_x = lns->intra_luma_x;
-
-    /* FIXME
-     *     done twice on new entry see (reset lines function)
-     *     use partition limitations for reset
-     */
-    /* Reset to 0 == PLANAR */
-    memset(intra_info->luma_mode_y, 0, sizeof(*intra_info->luma_mode_y) * nb_pb_ctb_w);
-    struct OVDrvCtx *const drv_ctx = &ctudec->drv_ctx;
-    int8_t qp_val = ctudec->qp_ctx.current_qp;
-    memset(drv_ctx->qp_map_x, qp_val, sizeof(*drv_ctx->qp_map_x) * nb_pb_ctb_w);
-    memset(drv_ctx->qp_map_y, qp_val, sizeof(*drv_ctx->qp_map_y) * nb_pb_ctb_w);
-}
-
-static void
-update_cabac_lines(OVCTUDec *const ctudec, const OVPS *const prms)
+cabac_line_next_ctu(OVCTUDec *const ctudec, const OVPS *const prms)
 {
     const OVPartInfo *const pinfo = ctudec->part_ctx;
 
@@ -664,30 +574,6 @@ update_cabac_lines(OVCTUDec *const ctudec, const OVPS *const prms)
     pmap_c->log2_cu_w_map_x += nb_pb_ctb_w;
     pmap_c->qt_depth_map_x  += nb_pb_ctb_w;
     pmap_c->cu_mode_x       += nb_pb_ctb_w;
-}
-
-static void
-update_drv_lines(OVCTUDec *const ctudec, const OVPS *const prms)
-{
-    const OVPartInfo *const pinfo = ctudec->part_ctx;
-    struct IntraDRVInfo *const intra_info = &ctudec->drv_ctx.intra_info;
-    struct OVDrvCtx *const drv_ctx = &ctudec->drv_ctx;
-
-    uint8_t log2_ctb_s    = pinfo->log2_ctu_s;
-    uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
-
-    uint16_t nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
-
-    int8_t qp_val = ctudec->qp_ctx.current_qp;
-
-    /* FIXME Unecessary ? */
-    memset(intra_info->luma_mode_x, 0, sizeof(*intra_info->luma_mode_x) * nb_pb_ctb_w);
-
-    /* Reset QP prediction map to previous current QP prediction
-     * value
-     */
-    memset(drv_ctx->qp_map_x, qp_val, sizeof(*drv_ctx->qp_map_x) * nb_pb_ctb_w);
-    memset(drv_ctx->qp_map_y, qp_val, sizeof(*drv_ctx->qp_map_y) * nb_pb_ctb_w);
 }
 
 /* Wrapper function around decode CTU calls so we can easily modify
@@ -749,31 +635,36 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     int nb_ctu_w = einfo->nb_ctu_w;
     int ctb_x = 0;
     int ret;
-    int backup_qp;
+    uint8_t backup_qp;
 
-    update_drv_lines(ctudec, prms);
+    drv_line_next_ctu(ctudec, &sldec->drv_lines, prms, 0);
 
+    /* Do not copy on first line */
     if (ctb_addr_rs >= nb_ctu_w) {
         rcn_frame_line_to_ctu(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
     }
 
     while (ctb_x < nb_ctu_w - 1) {
+        /*FIXME try to remove ctb_x computation */
+        ctudec->ctb_x = einfo->ctb_x + ctb_x;
 
         ret = decode_ctu(ctudec, sldec, prms, einfo, ctb_addr_rs);
 
-        update_cabac_lines(ctudec, prms);
+        cabac_line_next_ctu(ctudec, prms);
 
         /* Hackish way of keeping track of CTU last line
          * first QP to initialise delta qp for next ctu line
+         * needs to be called before updating drv lines
          */
         if (ctb_x == 0) {
             backup_qp = ctudec->drv_ctx.qp_map_x[0];
         }
 
-        update_drv_lines(ctudec, prms);
+        drv_line_next_ctu(ctudec, &sldec->drv_lines, prms, ctb_x);
 
         rcn_update_ctu_border(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
 
+        store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
         /* FIXME
          * Move this somewhere else to avoid first line check
          */
@@ -785,6 +676,8 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         ctb_x++;
     }
 
+    ctudec->ctb_x = einfo->ctb_x + ctb_x;
+
     /* last CTU require check on picture border for implicit splits*/
     if (!einfo->implicit_w) {
 
@@ -792,15 +685,15 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     } else {
         uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-        int remaining_w = einfo->last_ctu_w;
+        int ctu_w = einfo->last_ctu_w;
 
         /* No horizontal implicit split since we would be
          * in decode_ctu_last_line otherwise
          */
-        int remaining_h = 1 << log2_ctb_s;
+        int ctu_h = 1 << log2_ctb_s;
 
         ret = decode_ctu_implicit(ctudec, sldec, prms, einfo, ctb_addr_rs,
-                                  remaining_w, remaining_h);
+                                  ctu_w, ctu_h);
     }
 
     /* Next line will use the qp of the first pu as a start value
@@ -820,34 +713,33 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 {
     int ret;
 
+    const int ctu_h = einfo->last_ctu_h;
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int nb_ctu_w = einfo->nb_ctu_w;
-    const int remaining_h = einfo->last_ctu_h;
-    /* Not const since last ctu might need implicit split */
-    int remaining_w = 1 << log2_ctb_s;
     int ctb_x = 0;
 
-    update_drv_lines(ctudec, prms);
+    drv_line_next_ctu(ctudec, &sldec->drv_lines, prms, 0);
 
-    rcn_frame_line_to_ctu(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
+    rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
 
     while (ctb_x < nb_ctu_w - 1) {
+        uint8_t ctu_w = 1 << log2_ctb_s;
+
+        ctudec->ctb_x = einfo->ctb_x + ctb_x;
 
         ret = decode_ctu_implicit(ctudec, sldec, prms, einfo, ctb_addr_rs,
-                                  remaining_w, remaining_h);
+                                  ctu_w, ctu_h);
 
-        update_cabac_lines(ctudec, prms);
+        cabac_line_next_ctu(ctudec, prms);
 
-        update_drv_lines(ctudec, prms);
+        drv_line_next_ctu(ctudec, &sldec->drv_lines, prms, ctb_x);
 
-        rcn_update_ctu_border(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
+        store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
 
-        /* FIXME
-         * Move this somewhere else to avoid first line check
-         */
-        if (ctb_addr_rs >= nb_ctu_w) {
-            rcn_frame_line_to_ctu(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
-        }
+        rcn_update_ctu_border(&ctudec->rcn_ctx, log2_ctb_s);
+
+        /* FIXME is first line check if only one line? */
+        rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
 
         ctb_addr_rs++;
         ctb_x++;
@@ -860,7 +752,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     }
 
     ret = decode_ctu_implicit(ctudec, sldec, prms, einfo, ctb_addr_rs,
-                              remaining_w, remaining_h);
+                              einfo->last_ctu_w, ctu_h);
 
     ret = 0;
 
@@ -942,29 +834,30 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
 
     reset_cabac_lines(sldec, prms);
 
-    attach_cabac_lines(ctudec, sldec);
-
     reset_drv_lines(sldec, prms);
 
-    attach_drv_lines(ctudec, sldec);
+    cabac_line_next_line(ctudec, sldec);
+
+    drv_line_next_line(ctudec, sldec);
+
+    slicedec_attach_frame_buff(ctudec, sldec, einfo);
+
+    tmp_fbuff = ctudec->rcn_ctx.frame_buff;
+
 
     /* FIXME add a check for cabac end ?*/
 
     while (ctb_y < nb_ctu_h - 1) {
         uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
 
+        ctudec->ctb_y = einfo->ctb_y + ctb_y;
+
         /* New ctu line */
         ret = decode_ctu_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
 
-        if (ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream < -2) {
-            /* FIXME Temporary error report on CABAC end of stream */
-            ov_log(NULL, OVLOG_ERROR, "CABAC error diff end %d \n", ctb_y);
-            return 0;
-        }
+        cabac_line_next_line(ctudec, sldec);
 
-        attach_cabac_lines(ctudec, sldec);
-
-        attach_drv_lines(ctudec, sldec);
+        drv_line_next_line(ctudec, sldec);
 
         /*TODO 
          * CLeaner Next CTU Line
@@ -1122,37 +1015,11 @@ slicedec_uninit(OVSliceDec **sldec_p)
 
 }
 
-#if 0
-static int
-init_slice_decoder(OVVCDec *const vvcdec, const OVNVCLCtx *const nvcl_ctx,
-                   const OVSH *const sh)
-{
-    uint8_t first_slice_in_pic = sh->sh_slice_address == 0;
-    if (first_slice_in_pic) {
-        /* Activate ph parameters */
-        activate_ph();
-
-        if (drv) {
-            #if 0
-            init_pic_drv_ctx();
-
-            init_pic_rcn_ctx();
-            #endif
-        }
-    }
-
-    init_slice_qp();
-
-    override_slice_parameters();
-
-    return 0;
-}
-#endif
-
+/* FIXME cleanup */
 static void
 derive_ctu_neighborhood(const OVSliceDec *const sldec,
                        OVCTUDec *const ctudec,
-                       int ctb_address, int nb_ctu_w, int nb_ctu_h)
+                       int ctb_address, int nb_ctu_w)
 {
     int is_left_border = ((ctb_address) % nb_ctu_w)  ? 0 : 1;
     int is_up_border   = (ctb_address < nb_ctu_w) ? 1 : 0;

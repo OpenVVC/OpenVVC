@@ -26,6 +26,7 @@ LIB_SRC:=																																 \
 					ovannexb.c                                                     \
 					ovunits.c                                                      \
 					ovframe.c                                                      \
+					drv_lines.c                                                    \
 					drv_intra.c                                                    \
 					rcn.c																													 \
 					rcn_ctu.c                                                      \

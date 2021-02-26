@@ -32,6 +32,20 @@ struct DRVLines
      * LSB correspond to first above PU
      */
     uint32_t *progress_map;
+
+    /* Inter lines for Motion Vector Prediction */
+    struct InterLines
+    {
+        /* Motion vectors of above line */
+        OVMV *mv0;
+        OVMV *mv1;
+
+        /* Bit fields of above line */
+        uint32_t *dir0;
+        uint32_t *dir1;
+
+    } inter_lines;
+    void *inter_data;
 };
 
 typedef struct OVSliceDec
