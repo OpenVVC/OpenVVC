@@ -5,6 +5,7 @@
 #include "ovutils.h"
 
 #include "rcn_mc.h"
+#include "rcn_structures.h"
 
 #define ov_clip_pixel(a) ov_clip_uintp2(a, BIT_DEPTH)
 #define MAX_PB_SIZE 128
@@ -694,4 +695,49 @@ put_vvc_epel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
                 src1 += MAX_PB_SIZE;
                 dst += dststride;
         }
+}
+
+
+void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
+{
+    struct MCFunctions *const mc_l = &rcn_funcs->mc_l;
+    struct MCFunctions *const mc_c = &rcn_funcs->mc_c;
+
+    int i;
+
+    for (i = 0; i < 8; ++i) {
+
+        /* Luma functions */
+        mc_l->unidir[0][i] = &put_vvc_pel_uni_pixels;
+        mc_l->unidir[1][i] = &put_vvc_qpel_uni_h;
+        mc_l->unidir[2][i] = &put_vvc_qpel_uni_v;
+        mc_l->unidir[3][i] = &put_vvc_qpel_uni_hv;
+
+        mc_l->bidir0[0][i] = &put_vvc_pel_pixels;
+        mc_l->bidir0[1][i] = &put_vvc_qpel_h;
+        mc_l->bidir0[2][i] = &put_vvc_qpel_v;
+        mc_l->bidir0[3][i] = &put_vvc_qpel_hv;
+
+        mc_l->bidir1[0][i] = &put_vvc_pel_bi_pixels;
+        mc_l->bidir1[1][i] = &put_vvc_qpel_bi_h;
+        mc_l->bidir1[2][i] = &put_vvc_qpel_bi_v;
+        mc_l->bidir1[3][i] = &put_vvc_qpel_bi_hv;
+
+        /* Chroma functions */
+        mc_c->unidir[0][i] = &put_vvc_pel_uni_pixels;
+        mc_c->unidir[1][i] = &put_vvc_epel_uni_h;
+        mc_c->unidir[2][i] = &put_vvc_epel_uni_v;
+        mc_c->unidir[3][i] = &put_vvc_epel_uni_hv;
+
+        mc_c->bidir0[0][i] = &put_vvc_pel_pixels;
+        mc_c->bidir0[1][i] = &put_vvc_epel_h;
+        mc_c->bidir0[2][i] = &put_vvc_epel_v;
+        mc_c->bidir0[3][i] = &put_vvc_epel_hv;
+
+        mc_c->bidir1[0][i] = &put_vvc_pel_bi_pixels;
+        mc_c->bidir1[1][i] = &put_vvc_epel_bi_h;
+        mc_c->bidir1[2][i] = &put_vvc_epel_bi_v;
+        mc_c->bidir1[3][i] = &put_vvc_epel_bi_hv;
+    }
+
 }
