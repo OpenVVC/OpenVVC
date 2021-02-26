@@ -31,6 +31,29 @@ struct RefBuffC{
     uint16_t stride;
 };
 
+void
+rcn_mcp_b(OVCTUDec*const lc_ctx, struct InterDRVCtx *const inter_ctx,
+              const OVPartInfo *const part_ctx,
+              const OVMV mv0, const OVMV mv1,
+              unsigned int x0, unsigned int y0,
+              unsigned int log2_pb_w, unsigned int log2_pb_h,
+              uint8_t inter_dir)
+{
+    if (inter_dir == 3) {
+
+        rcn_motion_compensation_b(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1);
+
+    } else if (inter_dir & 0x2) {
+
+        vvc_motion_compensation(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv1, inter_dir - 1);
+
+    } else if (inter_dir & 0x1) {
+
+        vvc_motion_compensation(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv0, inter_dir - 1);
+
+    }
+}
+
 static OVMV
 clip_mv(uint8_t log2_min_cb_s, int pos_x, int pos_y,
         int pic_w, int pic_h, int cu_w, int cu_h, OVMV mv){
@@ -134,12 +157,12 @@ test_for_edge_emulation_c(int ref_pos_x, int ref_pos_y, int pic_w, int pic_h,
     return emulate_edge;
 }
 
-static struct RefBuffC
+static struct OVBuffInfo
 derive_ref_buf_c(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
                  uint16_t *edge_buff0, uint16_t *edge_buff1,
                  int log2_pu_w, int log2_pu_h, int log2_ctu_s)
 {
-    struct RefBuffC ref_buff;
+    struct OVBuffInfo ref_buff;
     const uint16_t *const ref_cb  = (uint16_t *) ref_pic->frame->data[1];
     const uint16_t *const ref_cr  = (uint16_t *) ref_pic->frame->data[2];
 
@@ -178,11 +201,11 @@ derive_ref_buf_c(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
                             pic_w, pic_h);
         ref_buff.cb = edge_buff0 + buff_off;
         ref_buff.cr = edge_buff1 + buff_off;
-        ref_buff.stride = RCN_CTB_STRIDE;
+        ref_buff.stride_c = RCN_CTB_STRIDE;
     } else {
         ref_buff.cb = &ref_cb[ref_pos_x + ref_pos_y * src_stride];
         ref_buff.cr = &ref_cr[ref_pos_x + ref_pos_y * src_stride];
-        ref_buff.stride = src_stride;
+        ref_buff.stride_c = src_stride;
     }
     return ref_buff;
 }
@@ -202,11 +225,11 @@ test_for_edge_emulation(int ref_pos_x, int ref_pos_y, int pic_w, int pic_h,
     return emulate_edge;
 }
 
-static struct RefBuffY
+static struct OVBuffInfo
 derive_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
                 uint16_t *edge_buff, int log2_pu_w, int log2_pu_h, int log2_ctu_s)
 {
-    struct RefBuffY ref_buff;
+    struct OVBuffInfo ref_buff;
     const uint16_t *const ref_y  = (uint16_t *) ref_pic->frame->data[0];
 
     int src_stride = ref_pic->frame->linesize[0] >> 1;
@@ -452,7 +475,10 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec,
                           uint8_t x0, uint8_t y0, uint8_t log2_pu_w, uint8_t log2_pu_h,
                           OVMV mv0, OVMV mv1)
 {
+    struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
+    struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
     /* FIXME derive ref_idx */
     uint8_t ref_idx_0 = 0;
     uint8_t ref_idx_1 = 0;
@@ -494,11 +520,11 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec,
                   ref1->frame->height, 1 << log2_pu_w, 1 << log2_pu_h, mv1);
 
 
-    #if 0
-    const struct RefBuffY ref0 = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
+    #if 1
+    const struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
                                                   log2_pu_w, log2_pu_h, log2_ctb_s);
 
-    const struct RefBuffY ref1 = derive_ref_buf_y(ref1, mv1, pos_x, pos_y, edge_buff1,
+    const struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1, pos_x, pos_y, edge_buff1,
                                                   log2_pu_w, log2_pu_h, log2_ctb_s);
     #endif
 
@@ -526,17 +552,18 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec,
          (dst_y, RCN_CTB_STRIDE, ref1.ref_y, ref1.stride, ref_data, pu_h, prec_x1, prec_y1, pu_w)
     );
     #endif
-
-#if 0
-     const struct RefBuffC ref0_c = derive_ref_buf_c(ref0, mv0,
+    mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data, ref0_b.y, ref0_b.stride, pu_h, prec_x0, prec_y0, pu_w);
+    mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride, ref_data, pu_h, prec_x1, prec_y1, pu_w);
+#if 1
+     const struct OVBuffInfo ref0_c = derive_ref_buf_c(ref0, mv0,
                                                      pos_x >> 1, pos_y >> 1,
                                                      edge_buff0, edge_buff0_1,
-                                                     log2_pu_w, log2_pu_h, log2_ctu_s);
+                                                     log2_pu_w, log2_pu_h, log2_ctb_s);
 
-     const struct RefBuffC ref1_c = derive_ref_buf_c(ref1, mv1,
+     const struct OVBuffInfo ref1_c = derive_ref_buf_c(ref1, mv1,
                                                      pos_x >> 1, pos_y >> 1,
                                                      edge_buff1, edge_buff1_1,
-                                                     log2_pu_w, log2_pu_h, log2_ctu_s);
+                                                     log2_pu_w, log2_pu_h, log2_ctb_s);
 #endif
     prec_x0 = (mv0.x) & 0x1F;
     prec_y0 = (mv0.y) & 0x1F;
@@ -548,6 +575,12 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec,
 
     uint16_t* ref_data0 = ref_data;
     uint16_t* ref_data1 = ref_data+MAX_PB_SIZE/2;
+
+    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data0, ref0_c.cb, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
+    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data1, ref0_c.cr, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
+
+    mc_c->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.cb, RCN_CTB_STRIDE, ref1_c.cb, ref1_c.stride_c, ref_data0, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
+    mc_c->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride_c, ref_data1, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
 
     #if 0
     call(vvc_mc_bi0,

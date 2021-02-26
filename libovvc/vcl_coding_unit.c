@@ -853,6 +853,9 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         mv_info = vvc_derive_merge_mvp_b(inter_ctx, x_pu, y_pu,
                                          nb_pb_w, nb_pb_h, merge_idx,
                                          max_nb_cand);
+
+        update_mv_ctx_b(ctu_dec, inter_ctx, part_ctx, mv_info.mv0, mv_info.mv1, x0, y0,
+                        log2_pb_w, log2_pb_h, mv_info.inter_dir);
 #endif
     } else {
         uint8_t inter_dir;
@@ -885,9 +888,9 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     update_mv_ctx_b(ctu_dec, inter_ctx, part_ctx, mv_info.mv0, mv_info.mv1, x0, y0,
                     log2_pb_w, log2_pb_h, mv_info.inter_dir);
 
-    recon_mcp_b(ctu_dec, inter_ctx, part_ctx, mv_info.mv0, mv_info.mv1, x0, y0,
-                log2_pb_w, log2_pb_h, mv_info.inter_dir);
 #endif
+    rcn_mcp_b(ctu_dec, inter_ctx, part_ctx, mv_info.mv0, mv_info.mv1, x0, y0,
+              log2_pb_w, log2_pb_h, mv_info.inter_dir);
 
     return merge_flag;
 }

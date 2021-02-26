@@ -1031,7 +1031,7 @@ fill_dbf_mv_map(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, OV
 }
 #endif
 
-static void
+void
 update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
                 const OVMV mv0, const OVMV mv1,
                 uint8_t x_pu, uint8_t  y_pu,
