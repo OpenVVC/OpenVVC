@@ -12,6 +12,7 @@
 #include "dec_structures.h"
 #include "ovdpb_internal.h"
 #include "overror.h"
+#include "slicedec.h"
 
 
 #if 1
@@ -336,7 +337,7 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, uint32_t
 
 
 static int
-vvc_mark_refs(OVDPB *dpb, OVRPL *rpl, uint8_t poc)
+vvc_mark_refs(OVDPB *dpb, OVRPL *rpl, uint8_t poc, OVPicture **dst_rpl)
 {
     int i, j;
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
@@ -348,14 +349,16 @@ vvc_mark_refs(OVDPB *dpb, OVRPL *rpl, uint8_t poc)
         int16_t ref_poc  = rpl_info.ref_info[i].poc;
         int16_t ref_type = rpl_info.ref_info[i].type;
         uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
+        OVPicture *ref_pic;
         uint8_t found = 0;
         for (j = 0; j < nb_dpb_pic; j++) {
-            OVPicture *ref_pic = &dpb->pictures[j];
+            ref_pic = &dpb->pictures[j];
             if (ref_pic->poc == ref_poc){
                 if(ref_pic->frame && ref_pic->frame->data[0]){
                     found = 1;
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
                     ref_pic->flags |= flag;
+                    dst_rpl[i] = ref_pic; 
                 }
             }
         }
@@ -364,7 +367,7 @@ vvc_mark_refs(OVDPB *dpb, OVRPL *rpl, uint8_t poc)
             /* If reference picture is not in the DPB we try create a new
              * Picture with requested POC ID in the DPB
              */
-            OVPicture *ref_pic = alloc_frame(dpb);
+            ref_pic = alloc_frame(dpb);
 
             if (ref_pic == NULL){
                 return OVVC_ENOMEM;
@@ -379,7 +382,10 @@ vvc_mark_refs(OVDPB *dpb, OVRPL *rpl, uint8_t poc)
             ref_pic->flags |= flag;
             /*FIXME  Set output flag ? */
             ov_log(NULL, OVLOG_ERROR, "Could not find ref %d for picture\n", ref_poc);
+            dst_rpl[i] = ref_pic; 
+            #if 0
             return 0;
+            #endif
         }
     }
 
@@ -640,9 +646,10 @@ compute_tmvp_scale_info()
 
 static int
 mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, struct OVRPL *const rpl0,
-                   struct OVRPL *const rpl1)
+                   struct OVRPL *const rpl1, OVSliceDec *const sldec)
 {
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
+    OVCTUDec *ctudec = sldec->ctudec_list;
     uint32_t poc = dpb->poc;
     int i, ret;
 
@@ -658,14 +665,14 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, struct OVRPL *const rpl
         pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
     }
 
-    ret = vvc_mark_refs(dpb, rpl0, poc);
+    ret = vvc_mark_refs(dpb, rpl0, poc, ctudec->drv_ctx.inter_ctx.rpl0);
 
     if (ret < 0) {
         goto fail;
     }
 
     if (slice_type == SLICE_B){
-        ret = vvc_mark_refs(dpb, rpl1, poc);
+        ret = vvc_mark_refs(dpb, rpl1, poc, ctudec->drv_ctx.inter_ctx.rpl0);
         if (ret < 0) {
             goto fail;
         }
@@ -691,7 +698,8 @@ fail:
 
 /* TODO rename to ovdpb_init_pic();*/
 int
-ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t nalu_type)
+ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t nalu_type, 
+                   OVSliceDec *const sldec)
 {
 
     const OVSH  *const sh  = ps->sh;
@@ -751,6 +759,14 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t na
         vvc_clear_refs(dpb);
     }
 
+    /* FIXME test bumping here */
+    /* Mark previous pic for output */
+    if (idr_flag | cra_flag) {
+        /* FIXME */
+        uint16_t out_cvs_id = (dpb->cvs_id - idr_flag) & 0xFF;
+        ovdpb_bump_frame(dpb, poc, out_cvs_id);
+    }
+
     /* Find an available place in DPB and allocate/retrieve available memory
      * for the current picture data from the Frame Pool
      */
@@ -770,14 +786,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t na
         OVRPL *rpl0 = sh->hrpl.rpl0;
         OVRPL *rpl1 = sh->hrpl.rpl1;
         uint8_t slice_type = sh->sh_slice_type;
-        mark_ref_pic_lists(dpb, slice_type, rpl0, rpl1);
-    }
-
-    /* Mark previous pic for output */
-    if (idr_flag | cra_flag) {
-        /* FIXME */
-        uint16_t out_cvs_id = (dpb->cvs_id - idr_flag) & 0xFF;
-        ovdpb_bump_frame(dpb, poc, out_cvs_id);
+        mark_ref_pic_lists(dpb, slice_type, rpl0, rpl1, sldec);
     }
 
     return ret;

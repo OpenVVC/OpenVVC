@@ -133,7 +133,7 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
         #if 0
         ret = ovdpb_init_current_pic(dec->dpb, &sldec->pic, 0);
         #else
-        ret = ovdpb_init_picture(dec->dpb, &sldec->pic, &dec->active_params, nalu->type);
+        ret = ovdpb_init_picture(dec->dpb, &sldec->pic, &dec->active_params, nalu->type, sldec);
         #endif
         if (ret < 0) {
             ovdpb_flush_dpb(dec->dpb);
