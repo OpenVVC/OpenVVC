@@ -45,7 +45,7 @@ static void derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_
 
 static void derive_ctu_neighborhood(const OVSliceDec *const sldec,
                                     OVCTUDec *const ctudec,
-                                    int ctb_address, int nb_ctu_w, int nb_ctu_h);
+                                    int ctb_address, int nb_ctu_w);
 static void
 init_slice_tree_ctx(OVCTUDec *const ctudec, const struct OVPS *prms)
 {
@@ -701,13 +701,12 @@ decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 {
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int nb_ctu_w = einfo->nb_ctu_w;
-    int nb_ctu_h = einfo->nb_ctu_h;
     int ret;
 
     /* FIXME pic border detection in neighbour flags ? CTU Neighbours
      * could be set according to upper level context
      */
-    derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w, nb_ctu_h);
+    derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w);
 
     init_ctu_bitfield(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s);
 
@@ -721,25 +720,24 @@ decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 static int
 decode_ctu_implicit(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
                     const OVPS *const prms, const struct RectEntryInfo *const einfo,
-                    uint16_t ctb_addr_rs, int remaining_w, int remaining_h)
+                    uint16_t ctb_addr_rs, int ctu_w, int ctu_h)
 {
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int nb_ctu_w = einfo->nb_ctu_w;
-    int nb_ctu_h = einfo->nb_ctu_h;
     int ret;
 
     /* FIXME pic border detection in neighbour flags ?*/
-    derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w, nb_ctu_h);
+    derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w);
 
     /* FIXME pic border detection in neighbour flags ?*/
     init_ctu_bitfield_border(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s,
-                             remaining_w, remaining_h);
+                             ctu_w, ctu_h);
 
     ret = ctudec->coding_tree_implicit(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s,
-                                       0, remaining_w, remaining_h);
+                                       0, ctu_w, ctu_h);
 
     rcn_write_ctu_to_frame_border(&ctudec->rcn_ctx,
-                                  remaining_w, remaining_h);
+                                  ctu_w, ctu_h);
     return ret;
 }
 
