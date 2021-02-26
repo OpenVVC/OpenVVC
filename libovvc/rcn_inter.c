@@ -31,29 +31,6 @@ struct RefBuffC{
     uint16_t stride;
 };
 
-void
-rcn_mcp_b(OVCTUDec*const lc_ctx, struct InterDRVCtx *const inter_ctx,
-              const OVPartInfo *const part_ctx,
-              const OVMV mv0, const OVMV mv1,
-              unsigned int x0, unsigned int y0,
-              unsigned int log2_pb_w, unsigned int log2_pb_h,
-              uint8_t inter_dir)
-{
-    if (inter_dir == 3) {
-
-        rcn_motion_compensation_b(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1);
-
-    } else if (inter_dir & 0x2) {
-
-        vvc_motion_compensation(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv1, inter_dir - 1);
-
-    } else if (inter_dir & 0x1) {
-
-        vvc_motion_compensation(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv0, inter_dir - 1);
-
-    }
-}
-
 static OVMV
 clip_mv(uint8_t log2_min_cb_s, int pos_x, int pos_y,
         int pic_w, int pic_h, int cu_w, int cu_h, OVMV mv){
@@ -141,7 +118,6 @@ emulate_block_border(uint16_t *buf, const uint16_t *src,
         buf += buf_linesize;
     }
 }
-
 
 static uint8_t
 test_for_edge_emulation_c(int ref_pos_x, int ref_pos_y, int pic_w, int pic_h,
@@ -275,8 +251,6 @@ derive_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
     }
     return ref_buff;
 }
-
-
 void
 vvc_motion_compensation(OVCTUDec *const ctudec,
                         int x0, int y0, int log2_pu_w, int log2_pu_h,
@@ -601,4 +575,26 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec,
          (dst_cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride, ref_data1, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1)
     );
     #endif
+}
+void
+rcn_mcp_b(OVCTUDec*const lc_ctx, struct InterDRVCtx *const inter_ctx,
+              const OVPartInfo *const part_ctx,
+              const OVMV mv0, const OVMV mv1,
+              unsigned int x0, unsigned int y0,
+              unsigned int log2_pb_w, unsigned int log2_pb_h,
+              uint8_t inter_dir)
+{
+    if (inter_dir == 3) {
+
+        rcn_motion_compensation_b(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1);
+
+    } else if (inter_dir & 0x2) {
+
+        vvc_motion_compensation(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv1, inter_dir - 1);
+
+    } else if (inter_dir & 0x1) {
+
+        vvc_motion_compensation(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv0, inter_dir - 1);
+
+    }
 }
