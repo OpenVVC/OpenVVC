@@ -517,6 +517,8 @@ struct OVCTUDec
     VVCDeQuantCtx dequant_joint_cb_cr;
 
     const VVCDeQuantCtx *dequant_chroma;
+    uint16_t ctb_x;
+    uint16_t ctb_y;
 };
 
 int ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec);
