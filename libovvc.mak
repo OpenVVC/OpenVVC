@@ -28,8 +28,10 @@ LIB_SRC:=																																 \
 					ovframe.c                                                      \
 					drv_lines.c                                                    \
 					drv_intra.c                                                    \
+					drv_mvp.c                                                      \
 					rcn.c																													 \
 					rcn_ctu.c                                                      \
+					rcn_inter.c                                                    \
 					rcn_fill_ref.c                                                 \
 					rcn_intra_dc_planar.c                                          \
 					rcn_intra_mip.c																								 \
