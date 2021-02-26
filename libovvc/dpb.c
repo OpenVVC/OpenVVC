@@ -672,7 +672,7 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, struct OVRPL *const rpl
     }
 
     if (slice_type == SLICE_B){
-        ret = vvc_mark_refs(dpb, rpl1, poc, ctudec->drv_ctx.inter_ctx.rpl0);
+        ret = vvc_mark_refs(dpb, rpl1, poc, ctudec->drv_ctx.inter_ctx.rpl1);
         if (ret < 0) {
             goto fail;
         }
