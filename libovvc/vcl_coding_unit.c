@@ -769,31 +769,26 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     uint8_t nb_pb_w = (1 << log2_pb_w) >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_h = (1 << log2_pb_h) >> part_ctx->log2_min_cb_s;
 
-    #if 1
     OVMV mv0;
-    #endif
+
     if (merge_flag) {
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
         uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
 
-#if 1
-        mv0 = vvc_derive_merge_mvp(inter_ctx, mv_ctx0,
-                                   x_pu, y_pu, nb_pb_w, nb_pb_h,
-                                   merge_idx, max_nb_cand);
+        mv0 = drv_merge_mvp(inter_ctx, mv_ctx0,
+                            x_pu, y_pu, nb_pb_w, nb_pb_h,
+                            merge_idx, max_nb_cand);
 
-        update_mv_ctx(inter_ctx, mv0, x_pu, y_pu, nb_pb_w,
-                      nb_pb_h, 1);
-#endif
     } else {
         /*FIXME add ref_idx*/
         OVMV mvd = ovcabac_read_ae_mvd(cabac_ctx);
 
         uint8_t mvp_idx = ovcabac_read_ae_mvp_flag(cabac_ctx);
 
-        mv0 = derive_mvp_mvd(inter_ctx, mv_ctx0, mvd,
-                             x_pu, y_pu, nb_pb_w, nb_pb_h,
-                             mvp_idx, 1);
+        mv0 = drv_mvp_mvd(inter_ctx, mv_ctx0, mvd,
+                          x_pu, y_pu, nb_pb_w, nb_pb_h,
+                          mvp_idx, 1);
     }
 
     #if 1
@@ -801,16 +796,13 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     #endif
 
     uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
+
     ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_pu << pu_shift,
                                 y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
     ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x_pu << pu_shift,
                                 y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
 #if 0
-    fill_mvp_map(mv_ctx0, mv0, x_pu, y_pu, nb_pb_w, nb_pb_h);
-
     fill_dbf_mv_map(&ctu_dec->dbf_info, mv_ctx0, mv0, x_pu, y_pu, nb_pb_w, nb_pb_h);
-
-    hmvp_update_lut(&inter_ctx->hmvp_lut, mv0);
 #endif
 
     /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
@@ -821,6 +813,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
         memset(&i_info->luma_modes[x_pu + (i << 5) + (y_pu << 5)], OVINTRA_PLANAR,
                sizeof(uint8_t) * nb_pb_w);
     }
+
     return merge_flag;
 }
 
@@ -834,6 +827,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     #if 1
     struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
+    struct IntraDRVInfo *const i_info = &ctu_dec->drv_ctx.intra_info;
     VVCMergeInfo mv_info;
     #endif
 
@@ -849,14 +843,10 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
         uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
 
-#if 1
-        mv_info = vvc_derive_merge_mvp_b(inter_ctx, x_pu, y_pu,
-                                         nb_pb_w, nb_pb_h, merge_idx,
-                                         max_nb_cand);
+        mv_info = drv_merge_mvp_b(inter_ctx, x_pu, y_pu,
+                                  nb_pb_w, nb_pb_h, merge_idx,
+                                  max_nb_cand);
 
-        update_mv_ctx_b(ctu_dec, inter_ctx, part_ctx, mv_info.mv0, mv_info.mv1, x0, y0,
-                        log2_pb_w, log2_pb_h, mv_info.inter_dir);
-#endif
     } else {
         uint8_t inter_dir;
         OVMV mvd0, mvd1;
@@ -878,19 +868,31 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             mvp_idx1 = ovcabac_read_ae_mvp_flag(cabac_ctx);
         }
 
-#if 1
-        mv_info = derive_mvp_b(inter_ctx, part_ctx, x0, y0, log2_pb_w, log2_pb_h,
-                               mvd0, mvd1, mvp_idx0, mvp_idx1, inter_dir);
-#endif
+        mv_info = drv_mvp_b(inter_ctx, x_pu, y_pu, nb_pb_w, nb_pb_h,
+                            mvd0, mvd1, mvp_idx0, mvp_idx1, inter_dir);
     }
 
-#if 0
-    update_mv_ctx_b(ctu_dec, inter_ctx, part_ctx, mv_info.mv0, mv_info.mv1, x0, y0,
-                    log2_pb_w, log2_pb_h, mv_info.inter_dir);
-
-#endif
     rcn_mcp_b(ctu_dec, inter_ctx, part_ctx, mv_info.mv0, mv_info.mv1, x0, y0,
               log2_pb_w, log2_pb_h, mv_info.inter_dir);
+
+    uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
+
+    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_pu << pu_shift,
+                                y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x_pu << pu_shift,
+                                y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+#if 0
+    fill_dbf_mv_map(&ctu_dec->dbf_info, mv_ctx0, mv0, x_pu, y_pu, nb_pb_w, nb_pb_h);
+#endif
+
+    /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
+    memset(&i_info->luma_mode_x[x_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_w);
+    memset(&i_info->luma_mode_y[y_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_h);
+
+    for (int i = 0; i < nb_pb_h; i++) {
+        memset(&i_info->luma_modes[x_pu + (i << 5) + (y_pu << 5)], OVINTRA_PLANAR,
+               sizeof(uint8_t) * nb_pb_w);
+    }
 
     return merge_flag;
 }

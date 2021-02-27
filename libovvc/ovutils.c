@@ -5,6 +5,7 @@
 #include "ovutils.h"
 
 OVLOG_TYPE ov_log_level = OVLOG_INFO;
+
 #define ov_clz(x) __builtin_clz(x)
 
 static const char* vvctype = "VVCDec";
@@ -12,7 +13,8 @@ static const char* vvctype = "VVCDec";
 static const char *OVLOG_COLORIFY[6] = { RED, YEL, BLU, CYN, GRN, MAG};
 
 void
-set_ov_log_level(OVLOG_TYPE log_level){
+set_ov_log_level(OVLOG_TYPE log_level)
+{
         ov_log_level = log_level;
 }
 
@@ -40,15 +42,14 @@ ov_log(void* ctx, int log_level, const char* log_content, ...)
 int32_t
 ov_clip(int32_t val, int32_t a, int32_t b)
 {
-        return OVMIN(OVMAX(val, a), b);
+    return OVMIN(OVMAX(val, a), b);
 }
 
 /* FIXME check if used on negative numbers */
 uint32_t
 ov_clip_uintp2(int32_t val, uint32_t a)
 {
-        return OVMIN(OVMAX(0, val), 1 << a);
-
+    return OVMIN(OVMAX(0, val), 1 << a);
 }
 
 int

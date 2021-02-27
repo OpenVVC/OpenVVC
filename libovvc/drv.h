@@ -35,40 +35,32 @@ void vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx,
 void vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
                            uint8_t intra_mode, int x0, int y0,
                            int log2_pb_w, int log2_pb_h);
-VVCCU
-drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
-             uint8_t x0, uint8_t y0, uint8_t log2_cb_w, uint8_t log2_cb_h,
-             VVCCU cu);
+VVCCU drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
+                   uint8_t x0, uint8_t y0, uint8_t log2_cb_w, uint8_t log2_cb_h,
+                   VVCCU cu);
 
-VVCMergeInfo derive_mvp_b(struct InterDRVCtx *const inter_ctx,
-                          const OVPartInfo *const part_ctx,
-                          unsigned int x0, unsigned int y0,
-                          unsigned int log2_pb_w, unsigned int log2_pb_h,
-                          OVMV mvd0, OVMV mvd1,
-                          uint8_t mvp_idx0, uint8_t mvp_idx1,
-                          uint8_t inter_dir);
+OVMV drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
+                 const struct OVMVCtx *const mv_ctx,
+                 OVMV mvd,
+                 uint8_t pb_x, uint8_t pb_y,
+                 uint8_t nb_pb_w, uint8_t nb_pb_h,
+                 uint8_t mvp_idx, uint8_t inter_dir);
 
-OVMV
-derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
-                      const struct OVMVCtx *const mv_ctx,
-                      uint8_t pb_x, uint8_t pb_y,
-                      uint8_t n_pb_w, uint8_t n_pb_h,
-                      uint8_t mvp_idx, uint8_t inter_dir);
-OVMV derive_mvp_mvd(struct InterDRVCtx *const inter_ctx,
-                    const struct OVMVCtx *const mv_ctx,
-                    OVMV mvd,
-                    uint8_t pb_x, uint8_t pb_y,
-                    uint8_t n_pb_w, uint8_t n_pb_h,
-                    uint8_t mvp_idx, uint8_t inter_dir);
+OVMV drv_merge_mvp(struct InterDRVCtx *const inter_ctx,
+                   const struct OVMVCtx *const mv_ctx,
+                   uint8_t pb_x, uint8_t pb_y,
+                   uint8_t nb_pb_w, uint8_t nb_pb_h,
+                   uint8_t merge_idx, uint8_t max_nb_merge_cand);
 
-OVMV vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
-                          const struct OVMVCtx *const mv_ctx,
-                          uint8_t pb_x, uint8_t pb_y,
-                          uint8_t n_pb_w, uint8_t n_pb_h,
-                          uint8_t merge_idx, uint8_t max_nb_merge_cand);
+VVCMergeInfo drv_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
+                             uint8_t pb_x, uint8_t pb_y,
+                             uint8_t nb_pb_w, uint8_t nb_pb_h,
+                             uint8_t merge_idx, uint8_t max_nb_merge_cand);
 
-VVCMergeInfo vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
-                                    uint8_t pb_x, uint8_t pb_y,
-                                    uint8_t n_pb_w, uint8_t n_pb_h,
-                                    uint8_t merge_idx, uint8_t max_nb_merge_cand);
+VVCMergeInfo drv_mvp_b(struct InterDRVCtx *const inter_ctx,
+                       uint8_t pb_x, uint8_t pb_y,
+                       uint8_t nb_pb_w, uint8_t nb_pb_h,
+                       OVMV mvd0, OVMV mvd1,
+                       uint8_t mvp_idx0, uint8_t mvp_idx1,
+                       uint8_t inter_dir);
 #endif

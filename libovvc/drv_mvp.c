@@ -148,7 +148,7 @@ hmvp_add_merge_cand_b(const struct HMVPLUT *const hmvp_lut,
 }
 
 
-void
+static void
 hmvp_update_lut(struct HMVPLUT *const hmvp_lut, OVMV mv)
 {
     int max_nb_cand = OVMIN(5, hmvp_lut->nb_mv);
@@ -191,7 +191,7 @@ hmvp_update_lut(struct HMVPLUT *const hmvp_lut, OVMV mv)
     hmvp_lut->dir[4]= 0x1;
 }
 
-void
+static void
 hmvp_update_lut_b(struct HMVPLUT *const hmvp_lut, OVMV mv0, OVMV mv1, uint8_t inter_dir)
 {
     int max_nb_cand = OVMIN(5, hmvp_lut->nb_mv);
@@ -276,9 +276,7 @@ load_ctb_tmvp(const VVCLocalContext *const lc_ctx, int ctb_x, int ctb_y)
     struct OVMVCtx *const mv_ctx0 = &tmvp->tmvp_mv.mv_ctx0;
     struct OVMVCtx *const mv_ctx1 = &tmvp->tmvp_mv.mv_ctx1;
 
-    if ((vvc_ctx->threads_type & FF_THREAD_FRAME)) {
-        ff_thread_await_progress(&tmvp->col_ref->tf, lc_ctx->ctb_y, 0);
-    }
+    /*FIXME threading */
 
     OVMV *dst0 = mv_ctx0->mvs + 35;
     OVMV *dst1 = mv_ctx1->mvs + 35;
@@ -330,11 +328,11 @@ tmvp_scale_mv(int scale, OVMV mv)
     return mv;
 }
 
-OVMV
+static OVMV
 derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
                       const struct OVMVCtx *const mv_ctx,
                       uint8_t pb_x, uint8_t pb_y,
-                      uint8_t n_pb_w, uint8_t n_pb_h,
+                      uint8_t nb_pb_w, uint8_t nb_pb_h,
                       uint8_t mvp_idx, uint8_t inter_dir)
 {
     const OVMV *const mv_buff = mv_ctx->mvs;
@@ -345,25 +343,25 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
     int nb_cand = 0;
 
     /* Derive candidates availability based on CTU inter fields */
-    uint8_t cand_bl = !!(lft_col & POS_MASK(pb_y, n_pb_h));     /*AO*/
-    uint8_t cand_l  = !!(lft_col & POS_MASK(pb_y, n_pb_h - 1)); /*A1*/
-    uint8_t cand_tr = !!(abv_row & POS_MASK(pb_x, n_pb_w));     /*B0*/
-    uint8_t cand_t  = !!(abv_row & POS_MASK(pb_x, n_pb_w - 1)); /*B1*/
+    uint8_t cand_bl = !!(lft_col & POS_MASK(pb_y, nb_pb_h));     /*AO*/
+    uint8_t cand_l  = !!(lft_col & POS_MASK(pb_y, nb_pb_h - 1)); /*A1*/
+    uint8_t cand_tr = !!(abv_row & POS_MASK(pb_x, nb_pb_w));     /*B0*/
+    uint8_t cand_t  = !!(abv_row & POS_MASK(pb_x, nb_pb_w - 1)); /*B1*/
     uint8_t cand_tl = !!(abv_row & POS_MASK(pb_x - 1, 0));      /*B2*/
 
     if (cand_bl) {
-        int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y + n_pb_h);
+        int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y + nb_pb_h);
         cand[nb_cand++] = mv_buff[pos_in_buff];
     } else if (cand_l) {
-        int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y + n_pb_h - 1);
+        int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y + nb_pb_h - 1);
         cand[nb_cand++] = mv_buff[pos_in_buff];
     }
 
     if (cand_tr) {
-        int pos_in_buff = OFFSET_BUFF(pb_x + n_pb_w, pb_y - 1);
+        int pos_in_buff = OFFSET_BUFF(pb_x + nb_pb_w, pb_y - 1);
         cand[nb_cand++] = mv_buff[pos_in_buff];
     } else if (cand_t) {
-        int pos_in_buff = OFFSET_BUFF(pb_x + n_pb_w - 1, pb_y - 1);
+        int pos_in_buff = OFFSET_BUFF(pb_x + nb_pb_w - 1, pb_y - 1);
         cand[nb_cand++] = mv_buff[pos_in_buff];
     } else if (cand_tl) {
         int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y - 1);
@@ -407,10 +405,10 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
         uint8_t cand_c1;
         uint8_t cand_c01;
         uint8_t cand_c11;
-        int c1_x = pb_x + (n_pb_w >> 1);
-        int c1_y = pb_y + (n_pb_h >> 1);
-        int c0_x = pb_x + n_pb_w;
-        int c0_y = pb_y + n_pb_h;
+        int c1_x = pb_x + (nb_pb_w >> 1);
+        int c1_y = pb_y + (nb_pb_h >> 1);
+        int c0_x = pb_x + nb_pb_w;
+        int c0_y = pb_y + nb_pb_h;
         int scale0, scale1;
         #if 0
         if (!inter_ctx->tmvp_avail) {
@@ -425,10 +423,10 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
         c1_col  = tmvp->tmvp_mv.mv_ctx0.map.vfield[c1_x + 1];
         c1_col1 = tmvp->tmvp_mv.mv_ctx1.map.vfield[c1_x + 1];
 
-        cand_c0  = !!(c0_col  & POS_MASK(pb_y, n_pb_h));
-        cand_c01 = !!(c0_col1 & POS_MASK(pb_y, n_pb_h));
-        cand_c1  = !!(c1_col  & POS_MASK(pb_y, n_pb_h >> 1));
-        cand_c11 = !!(c1_col1 & POS_MASK(pb_y, n_pb_h >> 1));
+        cand_c0  = !!(c0_col  & POS_MASK(pb_y, nb_pb_h));
+        cand_c01 = !!(c0_col1 & POS_MASK(pb_y, nb_pb_h));
+        cand_c1  = !!(c1_col  & POS_MASK(pb_y, nb_pb_h >> 1));
+        cand_c11 = !!(c1_col1 & POS_MASK(pb_y, nb_pb_h >> 1));
 
         /*FIXME there might be an issue considering the order of RPL check 
          * for TMVP candidates
@@ -511,11 +509,11 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
     return cand[mvp_idx];
 }
 
-OVMV
+static OVMV
 vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
                      const struct OVMVCtx *const mv_ctx,
                      uint8_t pb_x, uint8_t pb_y,
-                     uint8_t n_pb_w, uint8_t n_pb_h,
+                     uint8_t nb_pb_w, uint8_t nb_pb_h,
                      uint8_t merge_idx, uint8_t max_nb_merge_cand)
 {
     const OVMV *const mv_buff = mv_ctx->mvs;
@@ -523,10 +521,10 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
     uint64_t lft_col = mv_ctx->map.vfield[pb_x];
     uint64_t abv_row = mv_ctx->map.hfield[pb_y];
 
-    uint8_t cand_bl = !!(lft_col & POS_MASK(pb_y, n_pb_h));     /*AO*/
-    uint8_t cand_l  = !!(lft_col & POS_MASK(pb_y, n_pb_h - 1)); /*A1*/
-    uint8_t cand_tr = !!(abv_row & POS_MASK(pb_x, n_pb_w));     /*B0*/
-    uint8_t cand_t  = !!(abv_row & POS_MASK(pb_x, n_pb_w - 1)); /*B1*/
+    uint8_t cand_bl = !!(lft_col & POS_MASK(pb_y, nb_pb_h));     /*AO*/
+    uint8_t cand_l  = !!(lft_col & POS_MASK(pb_y, nb_pb_h - 1)); /*A1*/
+    uint8_t cand_tr = !!(abv_row & POS_MASK(pb_x, nb_pb_w));     /*B0*/
+    uint8_t cand_t  = !!(abv_row & POS_MASK(pb_x, nb_pb_w - 1)); /*B1*/
     uint8_t cand_tl = !!(abv_row & POS_MASK(pb_x - 1, 0));      /*B2*/
     OVMV cand[6];
     OVMV cand_amvp[5];
@@ -536,7 +534,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
 
     cand_amvp[0] = mv_z;
     if (cand_t) { /* B1 */
-        int pos_in_buff = OFFSET_BUFF(pb_x + n_pb_w - 1, pb_y - 1);
+        int pos_in_buff = OFFSET_BUFF(pb_x + nb_pb_w - 1, pb_y - 1);
         OVMV mv_B1 = mv_buff[pos_in_buff];
         cand_amvp[0] = mv_buff[pos_in_buff];
         cand[nb_cand] = mv_B1;
@@ -546,7 +544,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
 
     cand_amvp[1] = mv_z;
     if (cand_l) {
-        int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y + n_pb_h - 1);
+        int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y + nb_pb_h - 1);
         OVMV mv_A1 = mv_buff[pos_in_buff];
         cand_amvp[1] = mv_buff[pos_in_buff];
         if (!cand_t || !MV_CMP(mv_A1, cand_amvp[0])) {
@@ -558,7 +556,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
 
     cand_amvp[2] = mv_z;
     if (cand_tr) {
-        int pos_in_buff = OFFSET_BUFF(pb_x + n_pb_w, pb_y - 1);
+        int pos_in_buff = OFFSET_BUFF(pb_x + nb_pb_w, pb_y - 1);
         OVMV mv_B0 = mv_buff[pos_in_buff];
         cand_amvp[2] = mv_buff[pos_in_buff];
         if (!cand_t || !MV_CMP(mv_B0, cand_amvp[0])) {
@@ -570,7 +568,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
 
     cand_amvp[3] = mv_z;
     if (cand_bl) {
-        int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y + n_pb_h);
+        int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y + nb_pb_h);
         OVMV mv_A0 = mv_buff[pos_in_buff];
         cand_amvp[3] = mv_buff[pos_in_buff];
         if (!cand_l || !MV_CMP(mv_A0, cand_amvp[1])) {
@@ -603,10 +601,10 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
         uint64_t c0_col;
         uint8_t cand_c0;
         uint8_t cand_c1;
-        int c1_x = pb_x + (n_pb_w >> 1);
-        int c1_y = pb_y + (n_pb_h >> 1);
-        int c0_x = pb_x + n_pb_w;
-        int c0_y = pb_y + n_pb_h;
+        int c1_x = pb_x + (nb_pb_w >> 1);
+        int c1_y = pb_y + (nb_pb_h >> 1);
+        int c0_x = pb_x + nb_pb_w;
+        int c0_y = pb_y + nb_pb_h;
         /*FIXME determine whether or not RPL1 might be use when 
           collocated picture from P picture is a B picture */
         #if 0
@@ -619,8 +617,8 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
         c0_col  = tmvp->tmvp_mv.mv_ctx0.map.vfield[c0_x + 1];
         c1_col  = tmvp->tmvp_mv.mv_ctx0.map.vfield[c1_x + 1];
 
-        cand_c0  = !!(c0_col  & POS_MASK(pb_y, n_pb_h));
-        cand_c1  = !!(c1_col  & POS_MASK(pb_y, n_pb_h >> 1));
+        cand_c0  = !!(c0_col  & POS_MASK(pb_y, nb_pb_h));
+        cand_c1  = !!(c1_col  & POS_MASK(pb_y, nb_pb_h >> 1));
 
         if (cand_c0) {
             int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
@@ -679,29 +677,34 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
 }
 
 
-VVCMergeInfo
+static VVCMergeInfo
 vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                        uint8_t pb_x, uint8_t pb_y,
-                       uint8_t n_pb_w, uint8_t n_pb_h,
+                       uint8_t nb_pb_w, uint8_t nb_pb_h,
                        uint8_t merge_idx, uint8_t max_nb_merge_cand)
 {
-    const OVMV *mv_buff0 = inter_ctx->mv_ctx0.mvs;
-    const OVMV *mv_buff1 = inter_ctx->mv_ctx1.mvs;
-    uint64_t lft_col0  = inter_ctx->mv_ctx0.map.vfield[pb_x];
-    uint64_t abv_row0 = inter_ctx->mv_ctx0.map.hfield[pb_y];
-    uint64_t lft_col1  = inter_ctx->mv_ctx1.map.vfield[pb_x];
-    uint64_t abv_row1 = inter_ctx->mv_ctx1.map.hfield[pb_y];
+    const struct OVMVCtx *mv_ctx0 = &inter_ctx->mv_ctx0;
+    const struct OVMVCtx *mv_ctx1 = &inter_ctx->mv_ctx1;
+
+    const OVMV *mv_buff0 = mv_ctx0->mvs;
+    const OVMV *mv_buff1 = mv_ctx1->mvs;
+
+    uint64_t lft_col0 = mv_ctx0->map.vfield[pb_x];
+    uint64_t abv_row0 = mv_ctx0->map.hfield[pb_y];
+
+    uint64_t lft_col1 = mv_ctx1->map.vfield[pb_x];
+    uint64_t abv_row1 = mv_ctx1->map.hfield[pb_y];
 
     /*FIXME use flags for inter_dir and availability*/
-    uint8_t cand_bl0 = !!(lft_col0 & POS_MASK(pb_y, n_pb_h));     /*AO*/
-    uint8_t cand_bl1 = !!(lft_col1 & POS_MASK(pb_y, n_pb_h));     /*AO*/
-    uint8_t cand_l0  = !!(lft_col0 & POS_MASK(pb_y, n_pb_h - 1)); /*A1*/
-    uint8_t cand_l1  = !!(lft_col1 & POS_MASK(pb_y, n_pb_h - 1)); /*A1*/
+    uint8_t cand_bl0 = !!(lft_col0 & POS_MASK(pb_y, nb_pb_h));     /*AO*/
+    uint8_t cand_bl1 = !!(lft_col1 & POS_MASK(pb_y, nb_pb_h));     /*AO*/
+    uint8_t cand_l0  = !!(lft_col0 & POS_MASK(pb_y, nb_pb_h - 1)); /*A1*/
+    uint8_t cand_l1  = !!(lft_col1 & POS_MASK(pb_y, nb_pb_h - 1)); /*A1*/
 
-    uint8_t cand_tr0 = !!(abv_row0 & POS_MASK(pb_x, n_pb_w));     /*B0*/
-    uint8_t cand_tr1 = !!(abv_row1 & POS_MASK(pb_x, n_pb_w));     /*B0*/
-    uint8_t cand_t0  = !!(abv_row0 & POS_MASK(pb_x, n_pb_w - 1)); /*B1*/
-    uint8_t cand_t1  = !!(abv_row1 & POS_MASK(pb_x, n_pb_w - 1)); /*B1*/
+    uint8_t cand_tr0 = !!(abv_row0 & POS_MASK(pb_x, nb_pb_w));     /*B0*/
+    uint8_t cand_tr1 = !!(abv_row1 & POS_MASK(pb_x, nb_pb_w));     /*B0*/
+    uint8_t cand_t0  = !!(abv_row0 & POS_MASK(pb_x, nb_pb_w - 1)); /*B1*/
+    uint8_t cand_t1  = !!(abv_row1 & POS_MASK(pb_x, nb_pb_w - 1)); /*B1*/
     uint8_t cand_tl0 = !!(abv_row0 & POS_MASK(pb_x - 1, 0));      /*B2*/
     uint8_t cand_tl1 = !!(abv_row1 & POS_MASK(pb_x - 1, 0));      /*B2*/
 
@@ -714,7 +717,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
 
     cand_amvp[0] = mv_z;
     if (cand_t0 | cand_t1) { /* B1 */
-        int pos_in_buff = OFFSET_BUFF(pb_x + n_pb_w - 1, pb_y - 1);
+        int pos_in_buff = OFFSET_BUFF(pb_x + nb_pb_w - 1, pb_y - 1);
         VVCMergeInfo mi_B1;
         mi_B1.mv0 = mv_buff0[pos_in_buff];
         mi_B1.mv1 = mv_buff1[pos_in_buff];
@@ -729,7 +732,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
 
     cand_amvp[1] = mv_z;
     if (cand_l0 | cand_l1) {
-        int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y + n_pb_h - 1);
+        int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y + nb_pb_h - 1);
         VVCMergeInfo mv_A1;
         mv_A1.mv0 = mv_buff0[pos_in_buff];
         mv_A1.mv1 = mv_buff1[pos_in_buff];
@@ -744,7 +747,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
     }
 
     if (cand_tr0 | cand_tr1) {
-        int pos_in_buff = OFFSET_BUFF(pb_x + n_pb_w, pb_y - 1);
+        int pos_in_buff = OFFSET_BUFF(pb_x + nb_pb_w, pb_y - 1);
         VVCMergeInfo mv_B0;
         mv_B0.mv0 = mv_buff0[pos_in_buff];
         mv_B0.mv1 = mv_buff1[pos_in_buff];
@@ -759,7 +762,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
     }
 
     if (cand_bl0 | cand_bl1) {
-        int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y + n_pb_h);
+        int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y + nb_pb_h);
         VVCMergeInfo mv_A0;
         mv_A0.mv0 = mv_buff0[pos_in_buff];
         mv_A0.mv1 = mv_buff1[pos_in_buff];
@@ -806,10 +809,10 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         uint8_t cand_c01;
         uint8_t cand_c11;
 
-        int c1_x = pb_x + (n_pb_w >> 1);
-        int c1_y = pb_y + (n_pb_h >> 1);
-        int c0_x = pb_x + n_pb_w;
-        int c0_y = pb_y + n_pb_h;
+        int c1_x = pb_x + (nb_pb_w >> 1);
+        int c1_y = pb_y + (nb_pb_h >> 1);
+        int c0_x = pb_x + nb_pb_w;
+        int c0_y = pb_y + nb_pb_h;
 
         #if 0
         if (tmvp->col_ref == &lc_ctx->ref0) {
@@ -818,20 +821,20 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
             uint64_t c0_col1 = tmvp->tmvp_mv.mv_ctx1.map.vfield[c0_x + 1];
             uint64_t c1_col  = tmvp->tmvp_mv.mv_ctx0.map.vfield[c1_x + 1];
             uint64_t c1_col1 = tmvp->tmvp_mv.mv_ctx1.map.vfield[c1_x + 1];
-            cand_c0  = !!(c0_col  & POS_MASK(pb_y, n_pb_h));
-            cand_c01 = !!(c0_col1 & POS_MASK(pb_y, n_pb_h));
-            cand_c1  = !!(c1_col  & POS_MASK(pb_y, n_pb_h >> 1));
-            cand_c11 = !!(c1_col1 & POS_MASK(pb_y, n_pb_h >> 1));
+            cand_c0  = !!(c0_col  & POS_MASK(pb_y, nb_pb_h));
+            cand_c01 = !!(c0_col1 & POS_MASK(pb_y, nb_pb_h));
+            cand_c1  = !!(c1_col  & POS_MASK(pb_y, nb_pb_h >> 1));
+            cand_c11 = !!(c1_col1 & POS_MASK(pb_y, nb_pb_h >> 1));
         #if 0
         } else {
             uint64_t c0_col  = tmvp->tmvp_mv.mv_ctx0.map.vfield[c0_x + 1];
             uint64_t c0_col1 = tmvp->tmvp_mv.mv_ctx1.map.vfield[c0_x + 1];
             uint64_t c1_col  = tmvp->tmvp_mv.mv_ctx0.map.vfield[c1_x + 1];
             uint64_t c1_col1 = tmvp->tmvp_mv.mv_ctx1.map.vfield[c1_x + 1];
-            cand_c0  = !!(c0_col  & POS_MASK(pb_y, n_pb_h));
-            cand_c01 = !!(c0_col1 & POS_MASK(pb_y, n_pb_h));
-            cand_c1  = !!(c1_col  & POS_MASK(pb_y, n_pb_h >> 1));
-            cand_c11 = !!(c1_col1 & POS_MASK(pb_y, n_pb_h >> 1));
+            cand_c0  = !!(c0_col  & POS_MASK(pb_y, nb_pb_h));
+            cand_c01 = !!(c0_col1 & POS_MASK(pb_y, nb_pb_h));
+            cand_c1  = !!(c1_col  & POS_MASK(pb_y, nb_pb_h >> 1));
+            cand_c11 = !!(c1_col1 & POS_MASK(pb_y, nb_pb_h >> 1));
         }
         #endif
 
@@ -932,16 +935,16 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
     return mv_z;
 }
 
-void
+static void
 fill_mvp_map(struct OVMVCtx *const mv_ctx, OVMV mv,
-             int pb_x, int pb_y, int n_pb_w, int n_pb_h)
+             int pb_x, int pb_y, int nb_pb_w, int nb_pb_h)
 {
     int i, j;
 
-    ctu_field_set_rect_bitfield(&mv_ctx->map, pb_x, pb_y, n_pb_w, n_pb_h);
+    ctu_field_set_rect_bitfield(&mv_ctx->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
-    for (j = 0; j < n_pb_h; ++j) {
-        for (i = 0; i < n_pb_w; ++i) {
+    for (j = 0; j < nb_pb_h; ++j) {
+        for (i = 0; i < nb_pb_w; ++i) {
             memcpy(&mv_ctx->mvs[PB_POS_IN_BUF(pb_x + i, pb_y + j)], &mv, sizeof(OVMV));
         }
     }
@@ -955,7 +958,7 @@ fill_mvp_map(struct OVMVCtx *const mv_ctx, OVMV mv,
 #define LF_MV_THRESHOLD 8
 static void
 fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, struct OVMVCtx *const mv_ctx1, OVMV mv,
-                  int pb_x, int pb_y, int n_pb_w, int n_pb_h)
+                  int pb_x, int pb_y, int nb_pb_w, int nb_pb_h)
 {
     int i, j;
     int log2_diff_min_cu = 1;
@@ -968,7 +971,7 @@ fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, 
     uint64_t tmp_mask_h = (uint64_t)mask << shift_h;
     uint64_t tmp_mask_v = (uint64_t)mask << shift_v;
 
-    for (j = 0; j < n_pb_w; ++j) {
+    for (j = 0; j < nb_pb_w; ++j) {
         OVMV mv_above = mv_ctx->mvs[PB_POS_IN_BUF(pb_x + j, pb_y - 1)];
         int64_t above_avail = -((!!(mv_ctx->map.hfield[pb_y]  & POS_MASK(pb_x + j, 0))
                                 & !(mv_ctx1->map.hfield[pb_y] & POS_MASK(pb_x + j, 0))));
@@ -981,7 +984,7 @@ fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, 
 
     val = dbf_info->bs1_map.ver[(pb_x << log2_diff_min_cu)];
 
-    for (i = 0; i < n_pb_h; ++i) {
+    for (i = 0; i < nb_pb_h; ++i) {
         OVMV mv_left = mv_ctx->mvs[PB_POS_IN_BUF(pb_x - 1, pb_y + i)];
         int64_t left_avail = -(!!(mv_ctx->map.vfield[pb_x]  & POS_MASK(pb_y + i, 0))
                               & !(mv_ctx1->map.vfield[pb_x] & POS_MASK(pb_y + i, 0)));
@@ -995,7 +998,7 @@ fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, 
 
 static void
 fill_dbf_mv_map(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, OVMV mv,
-                int pb_x, int pb_y, int n_pb_w, int n_pb_h)
+                int pb_x, int pb_y, int nb_pb_w, int nb_pb_h)
 {
     int i, j;
     int log2_diff_min_cu = 1;
@@ -1007,7 +1010,7 @@ fill_dbf_mv_map(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, OV
 
     uint64_t tmp_mask_h = (uint64_t)mask << shift_h;
     uint64_t tmp_mask_v = (uint64_t)mask << shift_v;
-    for (j = 0; j < n_pb_w; ++j) {
+    for (j = 0; j < nb_pb_w; ++j) {
         OVMV mv_above = mv_ctx->mvs[PB_POS_IN_BUF(pb_x + j, pb_y - 1)];
         int64_t above_avail = -(!!(mv_ctx->map.hfield[pb_y] & POS_MASK(pb_x + j, 0)));
         int64_t abv_th = -((FFABS(mv_above.x - mv.x) >= LF_MV_THRESHOLD) |
@@ -1019,7 +1022,7 @@ fill_dbf_mv_map(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, OV
 
     val = dbf_info->bs1_map.ver[(pb_x << log2_diff_min_cu)];
 
-    for (i = 0; i < n_pb_h; ++i) {
+    for (i = 0; i < nb_pb_h; ++i) {
         OVMV mv_left = mv_ctx->mvs[PB_POS_IN_BUF(pb_x - 1, pb_y + i)];
         int64_t left_avail = -(!!(mv_ctx->map.vfield[pb_x] & POS_MASK(pb_y + i, 0)));
         int64_t abv_th = -((FFABS(mv_left.x - mv.x) >= LF_MV_THRESHOLD) |
@@ -1031,10 +1034,10 @@ fill_dbf_mv_map(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, OV
 }
 #endif
 
-void
+static void
 update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
                 const OVMV mv0, const OVMV mv1,
-                uint8_t x_pu, uint8_t  y_pu,
+                uint8_t pb_x, uint8_t  pb_y,
                 uint8_t nb_pb_w, uint8_t nb_pb_h,
                 uint8_t inter_dir)
 {
@@ -1046,14 +1049,14 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
-        fill_mvp_map(mv_ctx0, mv0, x_pu, y_pu, nb_pb_w, nb_pb_h);
+        fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
-        fill_mvp_map(mv_ctx1, mv1, x_pu, y_pu, nb_pb_w, nb_pb_h);
+        fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         #if 0
-        fill_dbf_mv_map(dbf_info, mv_ctx0, mv0, x_pu, y_pu, nb_pb_w, nb_pb_h);
+        fill_dbf_mv_map(dbf_info, mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
-        fill_dbf_mv_map(dbf_info, mv_ctx1, mv1, x_pu, y_pu, nb_pb_w, nb_pb_h);
+        fill_dbf_mv_map(dbf_info, mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
         #endif
 
     } else if (inter_dir & 0x2) {
@@ -1062,10 +1065,10 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
         #endif
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
-        fill_mvp_map(mv_ctx1, mv1, x_pu, y_pu, nb_pb_w, nb_pb_h);
+        fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         #if 0
-        fill_dbf_mv_map_b(dbf_info, mv_ctx1, mv_ctx0, mv1, x_pu, y_pu, nb_pb_w, nb_pb_h);
+        fill_dbf_mv_map_b(dbf_info, mv_ctx1, mv_ctx0, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
         #endif
 
     } else if (inter_dir & 0x1) {
@@ -1074,10 +1077,10 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
         #endif
 
-        fill_mvp_map(mv_ctx0, mv0, x_pu, y_pu, nb_pb_w, nb_pb_h);
+        fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         #if 0
-        fill_dbf_mv_map_b(dbf_info, mv_ctx0, mv_ctx1, mv0, x_pu, y_pu, nb_pb_w, nb_pb_h);
+        fill_dbf_mv_map_b(dbf_info, mv_ctx0, mv_ctx1, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
         #endif
 
     }
@@ -1085,10 +1088,10 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     hmvp_update_lut_b(&inter_ctx->hmvp_lut, mv0, mv1, inter_dir);
 }
 
-void
+static void
 update_mv_ctx(struct InterDRVCtx *const inter_ctx,
               const OVMV mv,
-              uint8_t x_pu, uint8_t  y_pu,
+              uint8_t pb_x, uint8_t  pb_y,
               uint8_t nb_pb_w, uint8_t nb_pb_h,
               uint8_t inter_dir)
 {
@@ -1102,10 +1105,10 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
         #endif
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
-        fill_mvp_map(mv_ctx1, mv, x_pu, y_pu, nb_pb_w, nb_pb_h);
+        fill_mvp_map(mv_ctx1, mv, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         #if 0
-        fill_dbf_mv_map_b(dbf_info, mv_ctx1, mv_ctx0, mv1, x_pu, y_pu, nb_pb_w, nb_pb_h);
+        fill_dbf_mv_map_b(dbf_info, mv_ctx1, mv_ctx0, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
         #endif
 
     } else if (inter_dir & 0x1) {
@@ -1114,10 +1117,10 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
         #endif
 
-        fill_mvp_map(mv_ctx0, mv, x_pu, y_pu, nb_pb_w, nb_pb_h);
+        fill_mvp_map(mv_ctx0, mv, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         #if 0
-        fill_dbf_mv_map_b(dbf_info, mv_ctx0, mv_ctx1, mv0, x_pu, y_pu, nb_pb_w, nb_pb_h);
+        fill_dbf_mv_map_b(dbf_info, mv_ctx0, mv_ctx1, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
         #endif
 
     }
@@ -1127,19 +1130,20 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
 
 /* Derive motion vectors and update motion maps */
 VVCMergeInfo
-derive_mvp_b(struct InterDRVCtx *const inter_ctx,
-             const OVPartInfo *const part_ctx,
-             unsigned int x0, unsigned int y0,
-             unsigned int log2_pb_w, unsigned int log2_pb_h,
-             OVMV mvd0, OVMV mvd1,
-             uint8_t mvp_idx0, uint8_t mvp_idx1,
-             uint8_t inter_dir)
+drv_mvp_b(struct InterDRVCtx *const inter_ctx,
+          uint8_t pb_x, uint8_t pb_y,
+          uint8_t nb_pb_w, uint8_t nb_pb_h,
+          OVMV mvd0, OVMV mvd1,
+          uint8_t mvp_idx0, uint8_t mvp_idx1,
+          uint8_t inter_dir)
 {
     /* FIXME replace part_ctx with something in inter CTX */
-    uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
-    uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
+    #if 0
+    uint8_t pb_y = y0 >> part_ctx->log2_min_cb_s;
+    uint8_t pb_x = x0 >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_w = (1 << log2_pb_w) >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_h = (1 << log2_pb_h) >> part_ctx->log2_min_cb_s;
+    #endif
     OVMV mv0 = {0}, mv1 = {0};
     VVCMergeInfo mv_info;
 
@@ -1148,7 +1152,7 @@ derive_mvp_b(struct InterDRVCtx *const inter_ctx,
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
 
         mv0 = derive_mvp_candidates(inter_ctx, mv_ctx0,
-                                    x_pu, y_pu, nb_pb_w, nb_pb_h,
+                                    pb_x, pb_y, nb_pb_w, nb_pb_h,
                                     mvp_idx0, inter_dir & 0x1);
 
         mvd0 = scale_mvd(mvd0);
@@ -1161,7 +1165,7 @@ derive_mvp_b(struct InterDRVCtx *const inter_ctx,
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
         mv1 = derive_mvp_candidates(inter_ctx, mv_ctx1,
-                                    x_pu, y_pu,
+                                    pb_x, pb_y,
                                     nb_pb_w, nb_pb_h,
                                     mvp_idx1, inter_dir & 0x2);
 
@@ -1176,18 +1180,34 @@ derive_mvp_b(struct InterDRVCtx *const inter_ctx,
     mv_info.mv1 = mv1;
 
     /* Update for next pass */
-    update_mv_ctx_b(inter_ctx, mv0, mv1, x_pu, y_pu, nb_pb_w,
+    update_mv_ctx_b(inter_ctx, mv0, mv1, pb_x, pb_y, nb_pb_w,
                     nb_pb_h, inter_dir);
     return mv_info;
 }
 
 OVMV
-derive_mvp_mvd(struct InterDRVCtx *const inter_ctx,
-               const struct OVMVCtx *const mv_ctx,
-               OVMV mvd,
-               uint8_t pb_x, uint8_t pb_y,
-               uint8_t nb_pb_w, uint8_t nb_pb_h,
-               uint8_t mvp_idx, uint8_t inter_dir)
+drv_merge_mvp(struct InterDRVCtx *const inter_ctx,
+              const struct OVMVCtx *const mv_ctx,
+              uint8_t pb_x, uint8_t pb_y,
+              uint8_t nb_pb_w, uint8_t nb_pb_h,
+              uint8_t merge_idx, uint8_t max_nb_merge_cand)
+{
+    OVMV mv0 = vvc_derive_merge_mvp(inter_ctx, mv_ctx, pb_x, pb_y,
+                                    nb_pb_w, nb_pb_h, merge_idx,
+                                    max_nb_merge_cand);
+
+    update_mv_ctx(inter_ctx, mv0, pb_x, pb_y, nb_pb_w,
+                  nb_pb_h, 1);
+    return mv0;
+}
+
+OVMV
+drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
+            const struct OVMVCtx *const mv_ctx,
+            OVMV mvd,
+            uint8_t pb_x, uint8_t pb_y,
+            uint8_t nb_pb_w, uint8_t nb_pb_h,
+            uint8_t mvp_idx, uint8_t inter_dir)
 {
     OVMV mv;
     mv = derive_mvp_candidates(inter_ctx, mv_ctx,
@@ -1203,4 +1223,22 @@ derive_mvp_mvd(struct InterDRVCtx *const inter_ctx,
                   nb_pb_h, inter_dir);
 #endif
    return mv;
+}
+
+VVCMergeInfo
+drv_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
+                uint8_t pb_x, uint8_t pb_y,
+                uint8_t nb_pb_w, uint8_t nb_pb_h,
+                uint8_t merge_idx, uint8_t max_nb_cand)
+{
+    VVCMergeInfo mv_info;
+
+    mv_info = vvc_derive_merge_mvp_b(inter_ctx, pb_x, pb_y,
+                                     nb_pb_w, nb_pb_h, merge_idx,
+                                     max_nb_cand);
+
+    update_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, pb_x, pb_y,
+                    nb_pb_w, nb_pb_h, mv_info.inter_dir);
+
+    return mv_info;
 }
