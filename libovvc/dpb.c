@@ -159,6 +159,7 @@ ovdpb_unref_pic(OVDPB *dpb, OVPicture *pic, int flags)
      * returned to the DPB;
      */
     if (!pic->flags) {
+        /* Release TMVP  MV maps */
         dpbpriv_release_pic(pic);
     }
 }
