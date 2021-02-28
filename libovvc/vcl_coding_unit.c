@@ -804,6 +804,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     fill_dbf_mv_map(&ctu_dec->dbf_info, mv_ctx0, mv0, x_pu, y_pu, nb_pb_w, nb_pb_h);
 #endif
 
+    /*FIXME this have to be moved to DRV */
     /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
     memset(&i_info->luma_mode_x[x_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_w);
     memset(&i_info->luma_mode_y[y_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_h);
@@ -884,6 +885,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     fill_dbf_mv_map(&ctu_dec->dbf_info, mv_ctx0, mv0, x_pu, y_pu, nb_pb_w, nb_pb_h);
 #endif
 
+    /*FIXME this have to be moved to DRV */
     /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
     memset(&i_info->luma_mode_x[x_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_w);
     memset(&i_info->luma_mode_y[y_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_h);
