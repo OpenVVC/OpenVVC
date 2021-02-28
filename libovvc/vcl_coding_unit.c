@@ -18,20 +18,6 @@ enum CUMode {
     OV_MIP = 4,
 };
 
-/* FIXME shorten this LUT to min req size 
- * only used in truncated cabac reading
- */
-static uint8_t g_tbMax[257] = { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-                                4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-                                5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-                                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-                                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7,
-                                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-                                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-                                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-                                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-                                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8 };
-
 /* FIXME refactor dequant*/
 static void
 derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
@@ -52,9 +38,14 @@ derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
 /* FIXME only used by mip_idx */
 static inline uint8_t
 vvc_get_cabac_truncated(OVCABACCtx *const cabac_ctx, unsigned int max_symbol){
+    static const uint8_t threshold_lut[17] =
+    {
+        0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4
+    };
     int threshold;
     uint32_t ruiSymbol = 0;
     /* MAX SYMBOL will not be > 16 */
+    #if 0
     if( max_symbol > 256 ){
         int thres_val = 1 << 8;
         threshold = 8;
@@ -64,8 +55,11 @@ vvc_get_cabac_truncated(OVCABACCtx *const cabac_ctx, unsigned int max_symbol){
         }
         threshold--;
     }else{
-        threshold = g_tbMax[max_symbol];
+    #endif
+        threshold = threshold_lut[max_symbol];
+    #if 0
     }
+    #endif
 
     int val = 1 << threshold;
     int b = max_symbol - val;
@@ -84,7 +78,6 @@ vvc_get_cabac_truncated(OVCABACCtx *const cabac_ctx, unsigned int max_symbol){
     }
 
     return ruiSymbol;
-
 }
 
 /* skip_abv + skip_lft */
