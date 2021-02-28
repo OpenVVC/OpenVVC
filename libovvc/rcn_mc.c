@@ -25,60 +25,63 @@
          filter[4] * src[x + stride] + filter[5] * src[x + 2 * stride] +       \
          filter[6] * src[x + 3 * stride] + filter[7] * src[x + 4 * stride])
 
-static const int8_t ov_mcp_filters_c[31][4] = {
-  //{  0, 64,  0,  0 },
-  { -1, 63,  2,  0 },
-  { -2, 62,  4,  0 },
-  { -2, 60,  7, -1 },
-  { -2, 58, 10, -2 },
-  { -3, 57, 12, -2 },
-  { -4, 56, 14, -2 },
-  { -4, 55, 15, -2 },
-  { -4, 54, 16, -2 },
-  { -5, 53, 18, -2 },
-  { -6, 52, 20, -2 },
-  { -6, 49, 24, -3 },
-  { -6, 46, 28, -4 },
-  { -5, 44, 29, -4 },
-  { -4, 42, 30, -4 },
-  { -4, 39, 33, -4 },
-  { -4, 36, 36, -4 },
-  { -4, 33, 39, -4 },
-  { -4, 30, 42, -4 },
-  { -4, 29, 44, -5 },
-  { -4, 28, 46, -6 },
-  { -3, 24, 49, -6 },
-  { -2, 20, 52, -6 },
-  { -2, 18, 53, -5 },
-  { -2, 16, 54, -4 },
-  { -2, 15, 55, -4 },
-  { -2, 14, 56, -4 },
-  { -2, 12, 57, -3 },
-  { -2, 10, 58, -2 },
-  { -1,  7, 60, -2 },
-  {  0,  4, 62, -2 },
-  {  0,  2, 63, -1 },
+static const int8_t ov_mcp_filters_c[31][4] =
+{
+    //{  0, 64,  0,  0 },
+    { -1, 63,  2,  0 },
+    { -2, 62,  4,  0 },
+    { -2, 60,  7, -1 },
+    { -2, 58, 10, -2 },
+    { -3, 57, 12, -2 },
+    { -4, 56, 14, -2 },
+    { -4, 55, 15, -2 },
+    { -4, 54, 16, -2 },
+    { -5, 53, 18, -2 },
+    { -6, 52, 20, -2 },
+    { -6, 49, 24, -3 },
+    { -6, 46, 28, -4 },
+    { -5, 44, 29, -4 },
+    { -4, 42, 30, -4 },
+    { -4, 39, 33, -4 },
+    { -4, 36, 36, -4 },
+    { -4, 33, 39, -4 },
+    { -4, 30, 42, -4 },
+    { -4, 29, 44, -5 },
+    { -4, 28, 46, -6 },
+    { -3, 24, 49, -6 },
+    { -2, 20, 52, -6 },
+    { -2, 18, 53, -5 },
+    { -2, 16, 54, -4 },
+    { -2, 15, 55, -4 },
+    { -2, 14, 56, -4 },
+    { -2, 12, 57, -3 },
+    { -2, 10, 58, -2 },
+    { -1,  7, 60, -2 },
+    {  0,  4, 62, -2 },
+    {  0,  2, 63, -1 },
 };
 
-static const int8_t ov_mc_filters[15][16] = {
-  {   0, 1,  -3, 63,  4,  -2,  1,  0,  0, 1,  -3, 63,  4,  -2,  1,  0 },
-  {  -1, 2,  -5, 62,  8,  -3,  1,  0, -1, 2,  -5, 62,  8,  -3,  1,  0 },
-  {  -1, 3,  -8, 60, 13,  -4,  1,  0, -1, 3,  -8, 60, 13,  -4,  1,  0 },
-  {  -1, 4, -10, 58, 17,  -5,  1,  0, -1, 4, -10, 58, 17,  -5,  1,  0 },
-  {  -1, 4, -11, 52, 26,  -8,  3, -1, -1, 4, -11, 52, 26,  -8,  3, -1 },
-  {  -1, 3,  -9, 47, 31, -10,  4, -1, -1, 3,  -9, 47, 31, -10,  4, -1 },
-  {  -1, 4, -11, 45, 34, -10,  4, -1, -1, 4, -11, 45, 34, -10,  4, -1 },
-  {  -1, 4, -11, 40, 40, -11,  4, -1, -1, 4, -11, 40, 40, -11,  4, -1 },
-  {  -1, 4, -10, 34, 45, -11,  4, -1, -1, 4, -10, 34, 45, -11,  4, -1 },
-  {  -1, 4, -10, 31, 47,  -9,  3, -1, -1, 4, -10, 31, 47,  -9,  3, -1 },
-  {  -1, 3,  -8, 26, 52, -11,  4, -1, -1, 3,  -8, 26, 52, -11,  4, -1 },
-  {   0, 1,  -5, 17, 58, -10,  4, -1,  0, 1,  -5, 17, 58, -10,  4, -1 },
-  {   0, 1,  -4, 13, 60,  -8,  3, -1,  0, 1,  -4, 13, 60,  -8,  3, -1 },
-  {   0, 1,  -3,  8, 62,  -5,  2, -1,  0, 1,  -3,  8, 62,  -5,  2, -1 },
-  {   0, 1,  -2,  4, 63,  -3,  1,  0,  0, 1,  -2,  4, 63,  -3,  1,  0 }
+/* FIXME reduce duplicated table */
+static const int8_t ov_mc_filters[15][16] =
+{
+    {   0, 1,  -3, 63,  4,  -2,  1,  0,  0, 1,  -3, 63,  4,  -2,  1,  0 },
+    {  -1, 2,  -5, 62,  8,  -3,  1,  0, -1, 2,  -5, 62,  8,  -3,  1,  0 },
+    {  -1, 3,  -8, 60, 13,  -4,  1,  0, -1, 3,  -8, 60, 13,  -4,  1,  0 },
+    {  -1, 4, -10, 58, 17,  -5,  1,  0, -1, 4, -10, 58, 17,  -5,  1,  0 },
+    {  -1, 4, -11, 52, 26,  -8,  3, -1, -1, 4, -11, 52, 26,  -8,  3, -1 },
+    {  -1, 3,  -9, 47, 31, -10,  4, -1, -1, 3,  -9, 47, 31, -10,  4, -1 },
+    {  -1, 4, -11, 45, 34, -10,  4, -1, -1, 4, -11, 45, 34, -10,  4, -1 },
+    {  -1, 4, -11, 40, 40, -11,  4, -1, -1, 4, -11, 40, 40, -11,  4, -1 },
+    {  -1, 4, -10, 34, 45, -11,  4, -1, -1, 4, -10, 34, 45, -11,  4, -1 },
+    {  -1, 4, -10, 31, 47,  -9,  3, -1, -1, 4, -10, 31, 47,  -9,  3, -1 },
+    {  -1, 3,  -8, 26, 52, -11,  4, -1, -1, 3,  -8, 26, 52, -11,  4, -1 },
+    {   0, 1,  -5, 17, 58, -10,  4, -1,  0, 1,  -5, 17, 58, -10,  4, -1 },
+    {   0, 1,  -4, 13, 60,  -8,  3, -1,  0, 1,  -4, 13, 60,  -8,  3, -1 },
+    {   0, 1,  -3,  8, 62,  -5,  2, -1,  0, 1,  -3,  8, 62,  -5,  2, -1 },
+    {   0, 1,  -2,  4, 63,  -3,  1,  0,  0, 1,  -2,  4, 63,  -3,  1,  0 }
 };
 
-void
+static void
 put_vvc_pel_uni_pixels(uint16_t* _dst, ptrdiff_t _dststride,
                        const uint16_t* _src, ptrdiff_t _srcstride, int height,
                        intptr_t mx, intptr_t my, int width)
@@ -98,7 +101,7 @@ put_vvc_pel_uni_pixels(uint16_t* _dst, ptrdiff_t _dststride,
 
 /*FIXME It might actually be better to use one function for bi pred instead of
  * 2*/
-void
+static void
 put_vvc_pel_pixels(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                    int height, intptr_t mx, intptr_t my, int width)
 {
@@ -118,7 +121,7 @@ put_vvc_pel_pixels(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
         }
 }
 
-void
+static void
 put_vvc_pel_bi_pixels(uint16_t* _dst, ptrdiff_t _dststride,
                       const uint16_t* _src0, ptrdiff_t _srcstride,
                       const int16_t* _src1, int height, intptr_t mx,
@@ -145,7 +148,7 @@ put_vvc_pel_bi_pixels(uint16_t* _dst, ptrdiff_t _dststride,
         }
 }
 
-void
+static void
 put_vvc_qpel_uni_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width)
@@ -171,7 +174,7 @@ put_vvc_qpel_uni_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
         }
 }
 
-void
+static void
 put_vvc_qpel_uni_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width)
@@ -198,7 +201,7 @@ put_vvc_qpel_uni_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
         }
 }
 
-void
+static void
 put_vvc_qpel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                     ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                     int width)
@@ -239,7 +242,7 @@ put_vvc_qpel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
         }
 }
 
-void
+static void
 put_vvc_qpel_h(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                int height, intptr_t mx, intptr_t my, int width)
 {
@@ -261,7 +264,7 @@ put_vvc_qpel_h(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
         }
 }
 
-void
+static void
 put_vvc_qpel_v(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                int height, intptr_t mx, intptr_t my, int width)
 {
@@ -284,7 +287,7 @@ put_vvc_qpel_v(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
         }
 }
 
-void
+static void
 put_vvc_qpel_hv(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                 int height, intptr_t mx, intptr_t my, int width)
 {
@@ -323,7 +326,7 @@ put_vvc_qpel_hv(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
         }
 }
 
-void
+static void
 put_vvc_qpel_bi_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
                   intptr_t mx, intptr_t my, int width)
@@ -355,7 +358,7 @@ put_vvc_qpel_bi_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
         }
 }
 
-void
+static void
 put_vvc_qpel_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
                   intptr_t mx, intptr_t my, int width)
@@ -388,7 +391,7 @@ put_vvc_qpel_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
         }
 }
 
-void
+static void
 put_vvc_qpel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
                    ptrdiff_t _srcstride, const int16_t* _src1, int height,
                    intptr_t mx, intptr_t my, int width)
@@ -441,7 +444,7 @@ put_vvc_qpel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
         (filter[0] * src[x - stride] + filter[1] * src[x] +                    \
          filter[2] * src[x + stride] + filter[3] * src[x + 2 * stride])
 
-void
+static void
 put_vvc_epel_uni_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width)
@@ -467,7 +470,7 @@ put_vvc_epel_uni_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
         }
 }
 
-void
+static void
 put_vvc_epel_uni_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width)
@@ -494,7 +497,7 @@ put_vvc_epel_uni_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
         }
 }
 
-void
+static void
 put_vvc_epel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                     ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                     int width)
@@ -535,7 +538,7 @@ put_vvc_epel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
         }
 }
 
-void
+static void
 put_vvc_epel_h(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                int height, intptr_t mx, intptr_t my, int width)
 {
@@ -558,7 +561,7 @@ put_vvc_epel_h(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
         }
 }
 
-void
+static void
 put_vvc_epel_v(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                int height, intptr_t mx, intptr_t my, int width)
 {
@@ -582,7 +585,7 @@ put_vvc_epel_v(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
         }
 }
 
-void
+static void
 put_vvc_epel_hv(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                 int height, intptr_t mx, intptr_t my, int width)
 {
@@ -620,7 +623,7 @@ put_vvc_epel_hv(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
         }
 }
 
-void
+static void
 put_vvc_epel_bi_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
                   intptr_t mx, intptr_t my, int width)
@@ -652,7 +655,7 @@ put_vvc_epel_bi_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
         }
 }
 
-void
+static void
 put_vvc_epel_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
                   intptr_t mx, intptr_t my, int width)
@@ -685,7 +688,7 @@ put_vvc_epel_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
         }
 }
 
-void
+static void
 put_vvc_epel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
                    ptrdiff_t _srcstride, const int16_t* _src1, int height,
                    intptr_t mx, intptr_t my, int width)
@@ -776,5 +779,4 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_c->bidir1[2][i] = &put_vvc_epel_bi_v;
         mc_c->bidir1[3][i] = &put_vvc_epel_bi_hv;
     }
-
 }
