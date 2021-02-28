@@ -7,6 +7,7 @@
 #include "ctudec.h"
 #include "drv.h"
 #include "drv_utils.h"
+#include "rcn.h"
 
 /*FIXME find a more global location for these defintions */
 enum CUMode {
@@ -791,9 +792,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                           mvp_idx, 1);
     }
 
-    #if 1
-    vvc_motion_compensation(ctu_dec, x0, y0, log2_pb_w, log2_pb_h, mv0, 0);
-    #endif
+    rcn_mcp(ctu_dec, x0, y0, log2_pb_w, log2_pb_h, mv0, 0);
 
     uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
 

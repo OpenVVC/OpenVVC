@@ -43,4 +43,15 @@ void rcn_write_ctu_to_frame(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_c
 
 void rcn_write_ctu_to_frame_border(const struct OVRCNCtx *const rcn_ctx,
                                    int last_ctu_w, int last_ctu_h);
+
+void rcn_mcp_b(OVCTUDec*const lc_ctx, struct InterDRVCtx *const inter_ctx,
+               const OVPartInfo *const part_ctx,
+               const OVMV mv0, const OVMV mv1,
+               unsigned int x0, unsigned int y0,
+               unsigned int log2_pb_w, unsigned int log2_pb_h,
+               uint8_t inter_dir);
+
+void rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_h,
+             OVMV mv, uint8_t inter_dir);
+
 #endif //RCN_H

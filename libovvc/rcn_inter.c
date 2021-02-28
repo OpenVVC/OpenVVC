@@ -249,9 +249,8 @@ derive_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
 }
 
 void
-vvc_motion_compensation(OVCTUDec *const ctudec,
-                        int x0, int y0, int log2_pu_w, int log2_pu_h,
-                        OVMV mv, uint8_t type )
+rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_h,
+        OVMV mv, uint8_t type )
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -484,11 +483,11 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct InterDRVCtx *const inter_ctx,
 
     } else if (inter_dir & 0x2) {
 
-        vvc_motion_compensation(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv1, 1);
+        rcn_mcp(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv1, 1);
 
     } else if (inter_dir & 0x1) {
 
-        vvc_motion_compensation(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv0, 0);
+        rcn_mcp(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv0, 0);
 
     }
 }
