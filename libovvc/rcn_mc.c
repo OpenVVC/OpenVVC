@@ -19,13 +19,13 @@
 #define QPEL_EXTRA_AFTER 4
 #define QPEL_EXTRA QPEL_EXTRA_BEFORE + QPEL_EXTRA_AFTER
 
-#define QPEL_FILTER(src, stride, filter)                                       \
+#define MCP_FILTER_L(src, stride, filter)                                      \
         (filter[0] * src[x - 3 * stride] + filter[1] * src[x - 2 * stride] +   \
          filter[2] * src[x - stride] + filter[3] * src[x] +                    \
          filter[4] * src[x + stride] + filter[5] * src[x + 2 * stride] +       \
          filter[6] * src[x + 3 * stride] + filter[7] * src[x + 4 * stride])
 
-#define EPEL_FILTER(src, stride, filter)                                       \
+#define MCP_FILTER_C(src, stride, filter)                                      \
         (filter[0] * src[x - stride] + filter[1] * src[x] +                    \
          filter[2] * src[x + stride] + filter[3] * src[x + 2 * stride])
 
@@ -169,9 +169,8 @@ put_vvc_qpel_uni_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = ov_clip_pixel(
-                                   ((QPEL_FILTER(src, 1, filter) >> (BIT_DEPTH - 8)) +
-                                    offset) >>
-                                   shift);
+                                   ((MCP_FILTER_L(src, 1, filter) >> (BIT_DEPTH - 8)) +
+                                    offset) >> shift);
         }
         src += srcstride;
         dst += dststride;
@@ -195,7 +194,7 @@ put_vvc_qpel_uni_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] =
-                ov_clip_pixel(((QPEL_FILTER(src, srcstride, filter) >>
+                ov_clip_pixel(((MCP_FILTER_L(src, srcstride, filter) >>
                                 (BIT_DEPTH - 8)) + offset) >> shift);
         }
         src += srcstride;
@@ -223,7 +222,7 @@ put_vvc_qpel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     filter = ov_mc_filters[mx - 1];
     for (y = 0; y < height + QPEL_EXTRA; y++) {
         for (x = 0; x < width; x++) {
-            tmp[x] = QPEL_FILTER(src, 1, filter) >> (BIT_DEPTH - 8);
+            tmp[x] = MCP_FILTER_L(src, 1, filter) >> (BIT_DEPTH - 8);
         }
         src += srcstride;
         tmp += MAX_PB_SIZE;
@@ -235,9 +234,8 @@ put_vvc_qpel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = ov_clip_pixel(
-                                   ((QPEL_FILTER(tmp, MAX_PB_SIZE, filter) >> 6) +
-                                    offset) >>
-                                   shift);
+                                   ((MCP_FILTER_L(tmp, MAX_PB_SIZE, filter) >> 6) +
+                                    offset) >> shift);
         }
         tmp += MAX_PB_SIZE;
         dst += dststride;
@@ -259,7 +257,7 @@ put_vvc_qpel_h(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            dst[x] = QPEL_FILTER(src, 1, filter) >> (BIT_DEPTH - 8);
+            dst[x] = MCP_FILTER_L(src, 1, filter) >> (BIT_DEPTH - 8);
         }
         src += srcstride;
         dst += MAX_PB_SIZE;
@@ -281,7 +279,7 @@ put_vvc_qpel_v(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            dst[x] = QPEL_FILTER(src, srcstride, filter) >>
+            dst[x] = MCP_FILTER_L(src, srcstride, filter) >>
                 (BIT_DEPTH - 8);
         }
         src += srcstride;
@@ -310,7 +308,7 @@ put_vvc_qpel_hv(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 
     for (y = 0; y < height + QPEL_EXTRA; y++) {
         for (x = 0; x < width; x++) {
-            tmp[x] = QPEL_FILTER(src, 1, filter) >> (BIT_DEPTH - 8);
+            tmp[x] = MCP_FILTER_L(src, 1, filter) >> (BIT_DEPTH - 8);
         }
         src += srcstride;
         tmp += MAX_PB_SIZE;
@@ -321,7 +319,7 @@ put_vvc_qpel_hv(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            dst[x] = QPEL_FILTER(tmp, MAX_PB_SIZE, filter) >> 6;
+            dst[x] = MCP_FILTER_L(tmp, MAX_PB_SIZE, filter) >> 6;
         }
         tmp += MAX_PB_SIZE;
         dst += MAX_PB_SIZE;
@@ -350,9 +348,8 @@ put_vvc_qpel_bi_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = ov_clip_pixel(
-                                   ((QPEL_FILTER(src0, 1, filter) >> (BIT_DEPTH - 8)) +
-                                    src1[x] + offset) >>
-                                   shift);
+                                   ((MCP_FILTER_L(src0, 1, filter) >> (BIT_DEPTH - 8)) +
+                                    src1[x] + offset) >> shift);
         }
         src0 += srcstride;
         src1 += MAX_PB_SIZE;
@@ -382,10 +379,9 @@ put_vvc_qpel_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = ov_clip_pixel(
-                                   ((QPEL_FILTER(src0, srcstride, filter) >>
+                                   ((MCP_FILTER_L(src0, srcstride, filter) >>
                                      (BIT_DEPTH - 8)) +
-                                    src1[x] + offset) >>
-                                   shift);
+                                    src1[x] + offset) >> shift);
         }
         src0 += srcstride;
         src1 += MAX_PB_SIZE;
@@ -420,7 +416,7 @@ put_vvc_qpel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
     for (y = 0; y < height + QPEL_EXTRA; y++) {
         for (x = 0; x < width; x++) {
             tmp[x] =
-                QPEL_FILTER(src0, 1, filter) >> (BIT_DEPTH - 8);
+                MCP_FILTER_L(src0, 1, filter) >> (BIT_DEPTH - 8);
         }
         src0 += srcstride;
         tmp += MAX_PB_SIZE;
@@ -432,9 +428,8 @@ put_vvc_qpel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = ov_clip_pixel(
-                                   ((QPEL_FILTER(tmp, MAX_PB_SIZE, filter) >> 6) +
-                                    src1[x] + offset) >>
-                                   shift);
+                                   ((MCP_FILTER_L(tmp, MAX_PB_SIZE, filter) >> 6) +
+                                    src1[x] + offset) >> shift);
         }
         tmp += MAX_PB_SIZE;
         src1 += MAX_PB_SIZE;
@@ -459,9 +454,8 @@ put_vvc_epel_uni_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = ov_clip_pixel(
-                                   ((EPEL_FILTER(src, 1, filter) >> (BIT_DEPTH - 8)) +
-                                    offset) >>
-                                   shift);
+                                   ((MCP_FILTER_C(src, 1, filter) >> (BIT_DEPTH - 8)) +
+                                    offset) >> shift);
         }
         src += srcstride;
         dst += dststride;
@@ -485,10 +479,8 @@ put_vvc_epel_uni_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] =
-                ov_clip_pixel(((EPEL_FILTER(src, srcstride, filter) >>
-                                (BIT_DEPTH - 8)) +
-                               offset) >>
-                              shift);
+                ov_clip_pixel(((MCP_FILTER_C(src, srcstride, filter) >>
+                                (BIT_DEPTH - 8)) + offset) >> shift);
         }
         src += srcstride;
         dst += dststride;
@@ -515,7 +507,7 @@ put_vvc_epel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 
     for (y = 0; y < height + EPEL_EXTRA; y++) {
         for (x = 0; x < width; x++) {
-            tmp[x] = EPEL_FILTER(src, 1, filter) >> (BIT_DEPTH - 8);
+            tmp[x] = MCP_FILTER_C(src, 1, filter) >> (BIT_DEPTH - 8);
         }
         src += srcstride;
         tmp += MAX_PB_SIZE;
@@ -527,9 +519,8 @@ put_vvc_epel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = ov_clip_pixel(
-                                   ((EPEL_FILTER(tmp, MAX_PB_SIZE, filter) >> 6) +
-                                    offset) >>
-                                   shift);
+                                   ((MCP_FILTER_C(tmp, MAX_PB_SIZE, filter) >> 6) +
+                                    offset) >> shift);
         }
         tmp += MAX_PB_SIZE;
         dst += dststride;
@@ -552,7 +543,7 @@ put_vvc_epel_h(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            dst[x] = EPEL_FILTER(src, 1, filter) >> (BIT_DEPTH - 8);
+            dst[x] = MCP_FILTER_C(src, 1, filter) >> (BIT_DEPTH - 8);
         }
         src += srcstride;
         dst += MAX_PB_SIZE;
@@ -575,7 +566,7 @@ put_vvc_epel_v(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            dst[x] = EPEL_FILTER(src, srcstride, filter) >>
+            dst[x] = MCP_FILTER_C(src, srcstride, filter) >>
                 (BIT_DEPTH - 8);
         }
         src += srcstride;
@@ -603,7 +594,7 @@ put_vvc_epel_hv(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 
     for (y = 0; y < height + EPEL_EXTRA; y++) {
         for (x = 0; x < width; x++) {
-            tmp[x] = EPEL_FILTER(src, 1, filter) >> (BIT_DEPTH - 8);
+            tmp[x] = MCP_FILTER_C(src, 1, filter) >> (BIT_DEPTH - 8);
         }
         src += srcstride;
         tmp += MAX_PB_SIZE;
@@ -614,7 +605,7 @@ put_vvc_epel_hv(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE, filter) >> 6;
+            dst[x] = MCP_FILTER_C(tmp, MAX_PB_SIZE, filter) >> 6;
         }
         tmp += MAX_PB_SIZE;
         dst += MAX_PB_SIZE;
@@ -643,9 +634,8 @@ put_vvc_epel_bi_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = ov_clip_pixel(
-                                   ((EPEL_FILTER(src0, 1, filter) >> (BIT_DEPTH - 8)) +
-                                    src1[x] + offset) >>
-                                   shift);
+                                   ((MCP_FILTER_C(src0, 1, filter) >> (BIT_DEPTH - 8)) +
+                                    src1[x] + offset) >> shift);
         }
         src0 += srcstride;
         src1 += MAX_PB_SIZE;
@@ -675,10 +665,9 @@ put_vvc_epel_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = ov_clip_pixel(
-                                   ((EPEL_FILTER(src0, srcstride, filter) >>
+                                   ((MCP_FILTER_C(src0, srcstride, filter) >>
                                      (BIT_DEPTH - 8)) +
-                                    src1[x] + offset) >>
-                                   shift);
+                                    src1[x] + offset) >> shift);
         }
         src0 += srcstride;
         src1 += MAX_PB_SIZE;
@@ -713,7 +702,7 @@ put_vvc_epel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
     for (y = 0; y < height + EPEL_EXTRA; y++) {
         for (x = 0; x < width; x++) {
             tmp[x] =
-                EPEL_FILTER(src0, 1, filter) >> (BIT_DEPTH - 8);
+                MCP_FILTER_C(src0, 1, filter) >> (BIT_DEPTH - 8);
         }
         src0 += srcstride;
         tmp += MAX_PB_SIZE;
@@ -725,9 +714,8 @@ put_vvc_epel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = ov_clip_pixel(
-                                   ((EPEL_FILTER(tmp, MAX_PB_SIZE, filter) >> 6) +
-                                    src1[x] + offset) >>
-                                   shift);
+                                   ((MCP_FILTER_C(tmp, MAX_PB_SIZE, filter) >> 6) +
+                                    src1[x] + offset) >> shift);
         }
         tmp += MAX_PB_SIZE;
         src1 += MAX_PB_SIZE;
