@@ -248,6 +248,105 @@ derive_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
     return ref_buff;
 }
 
+static void
+rcn_motion_compensation_b(OVCTUDec *const ctudec,
+                          uint8_t x0, uint8_t y0,
+                          uint8_t log2_pu_w, uint8_t log2_pu_h,
+                          OVMV mv0, OVMV mv1)
+{
+    struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
+    const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
+    struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
+    /* FIXME derive ref_idx */
+    uint8_t ref_idx_0 = 0;
+    uint8_t ref_idx_1 = 0;
+
+    OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
+    OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
+
+    struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
+
+    dst.y  += x0 + y0 * dst.stride;
+    dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
+    dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
+
+    /* TMP buffers for edge emulation
+     * FIXME use tmp buffers in local contexts
+     */
+    uint16_t edge_buff0[RCN_CTB_SIZE];
+    uint16_t edge_buff1[RCN_CTB_SIZE];
+    uint16_t edge_buff0_1[RCN_CTB_SIZE];
+    uint16_t edge_buff1_1[RCN_CTB_SIZE];
+    int16_t tmp_buff[RCN_CTB_SIZE];
+
+    /*FIXME we suppose here both refs possess the same size*/
+
+    const int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+
+    /* FIXME we should not need ctb_x/y
+     * it could be retrieved from position in frame buff
+     */
+    int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
+    int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
+
+    mv0 = clip_mv(pos_x, pos_y, ref0->frame->width[0],
+                  ref0->frame->height[0], 1 << log2_pu_w, 1 << log2_pu_h, mv0);
+
+    mv1 = clip_mv(pos_x, pos_y, ref1->frame->width[0],
+                  ref1->frame->height[0], 1 << log2_pu_w, 1 << log2_pu_h, mv1);
+
+
+    const struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
+
+    const struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1, pos_x, pos_y, edge_buff1,
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
+
+    const int pu_w = 1 << log2_pu_w;
+    const int pu_h = 1 << log2_pu_h;
+
+    uint8_t prec_x0 = (mv0.x) & 0xF;
+    uint8_t prec_y0 = (mv0.y) & 0xF;
+
+    uint8_t prec_x1 = (mv1.x) & 0xF;
+    uint8_t prec_y1 = (mv1.y) & 0xF;
+
+    uint8_t prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
+    uint8_t prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
+
+    mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride, pu_h, prec_x0, prec_y0, pu_w);
+    mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride, tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
+
+    const struct OVBuffInfo ref0_c = derive_ref_buf_c(ref0, mv0,
+                                                      pos_x >> 1, pos_y >> 1,
+                                                      edge_buff0, edge_buff0_1,
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
+
+    const struct OVBuffInfo ref1_c = derive_ref_buf_c(ref1, mv1,
+                                                      pos_x >> 1, pos_y >> 1,
+                                                      edge_buff1, edge_buff1_1,
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
+    prec_x0 = (mv0.x) & 0x1F;
+    prec_y0 = (mv0.y) & 0x1F;
+
+    prec_x1 = (mv1.x) & 0x1F;
+    prec_y1 = (mv1.y) & 0x1F;
+
+    prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
+    prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
+
+    int16_t* ref_data0 = tmp_buff;
+    int16_t* ref_data1 = tmp_buff + MAX_PB_SIZE / 2;
+
+    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data0, ref0_c.cb, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
+    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data1, ref0_c.cr, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
+
+    mc_c->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.cb, RCN_CTB_STRIDE, ref1_c.cb, ref1_c.stride_c, ref_data0, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
+    mc_c->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride_c, ref_data1, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
+
+}
+
 void
 rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_h,
         OVMV mv, uint8_t type )
@@ -368,105 +467,6 @@ rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_h,
     mc_c->unidir[prec_c_mc_type][log2_pu_w - 1](dst.cr, RCN_CTB_STRIDE,
                                                 src_cr, src_stride_c,
                                                 pu_h >> 1, prec_x_c, prec_y_c, pu_w >> 1);
-}
-
-void
-rcn_motion_compensation_b(OVCTUDec *const ctudec,
-                          uint8_t x0, uint8_t y0,
-                          uint8_t log2_pu_w, uint8_t log2_pu_h,
-                          OVMV mv0, OVMV mv1)
-{
-    struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
-    const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-    struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
-    struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
-    /* FIXME derive ref_idx */
-    uint8_t ref_idx_0 = 0;
-    uint8_t ref_idx_1 = 0;
-
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
-
-    struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
-
-    dst.y  += x0 + y0 * dst.stride;
-    dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-    dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-
-    /* TMP buffers for edge emulation
-     * FIXME use tmp buffers in local contexts
-     */
-    uint16_t edge_buff0[RCN_CTB_SIZE];
-    uint16_t edge_buff1[RCN_CTB_SIZE];
-    uint16_t edge_buff0_1[RCN_CTB_SIZE];
-    uint16_t edge_buff1_1[RCN_CTB_SIZE];
-    int16_t tmp_buff[RCN_CTB_SIZE];
-
-    /*FIXME we suppose here both refs possess the same size*/
-
-    const int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-
-    /* FIXME we should not need ctb_x/y
-     * it could be retrieved from position in frame buff
-     */
-    int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
-    int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
-
-    mv0 = clip_mv(pos_x, pos_y, ref0->frame->width[0],
-                  ref0->frame->height[0], 1 << log2_pu_w, 1 << log2_pu_h, mv0);
-
-    mv1 = clip_mv(pos_x, pos_y, ref1->frame->width[0],
-                  ref1->frame->height[0], 1 << log2_pu_w, 1 << log2_pu_h, mv1);
-
-
-    const struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
-
-    const struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1, pos_x, pos_y, edge_buff1,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
-
-    const int pu_w = 1 << log2_pu_w;
-    const int pu_h = 1 << log2_pu_h;
-
-    uint8_t prec_x0 = (mv0.x) & 0xF;
-    uint8_t prec_y0 = (mv0.y) & 0xF;
-
-    uint8_t prec_x1 = (mv1.x) & 0xF;
-    uint8_t prec_y1 = (mv1.y) & 0xF;
-
-    uint8_t prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
-    uint8_t prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
-
-    mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride, pu_h, prec_x0, prec_y0, pu_w);
-    mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride, tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
-
-    const struct OVBuffInfo ref0_c = derive_ref_buf_c(ref0, mv0,
-                                                      pos_x >> 1, pos_y >> 1,
-                                                      edge_buff0, edge_buff0_1,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
-
-    const struct OVBuffInfo ref1_c = derive_ref_buf_c(ref1, mv1,
-                                                      pos_x >> 1, pos_y >> 1,
-                                                      edge_buff1, edge_buff1_1,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
-    prec_x0 = (mv0.x) & 0x1F;
-    prec_y0 = (mv0.y) & 0x1F;
-
-    prec_x1 = (mv1.x) & 0x1F;
-    prec_y1 = (mv1.y) & 0x1F;
-
-    prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
-    prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
-
-    int16_t* ref_data0 = tmp_buff;
-    int16_t* ref_data1 = tmp_buff + MAX_PB_SIZE / 2;
-
-    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data0, ref0_c.cb, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
-    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data1, ref0_c.cr, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
-
-    mc_c->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.cb, RCN_CTB_STRIDE, ref1_c.cb, ref1_c.stride_c, ref_data0, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
-    mc_c->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride_c, ref_data1, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
-
 }
 
 void
