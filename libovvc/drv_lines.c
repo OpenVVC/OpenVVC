@@ -175,13 +175,9 @@ store_inter_maps(struct DRVLines *const l,
         cols_map0[i] = (uint64_t)top_available0;
         cols_map1[i] = (uint64_t)top_available1;
     }
-    #if 0
-    rows_map0[0] |= cols_map0[0] & 0x1;
-    rows_map1[0] |= cols_map1[0] & 0x1;
-    #else
+
     rows_map0[0] |= above_map0 << 1;
     rows_map1[0] |= above_map1 << 1;
-    #endif
 
     /* Save last CTU MV line to line at ctb_x */
     memcpy(&lns->mv0[ctb_x << 5], &mv_ctx0->mvs[1 + nb_ctb_pb * 34], sizeof(OVMV) * nb_ctb_pb);
@@ -305,6 +301,9 @@ load_first_ctu_inter(struct DRVLines *const l,
     }
     rows_map0[0] |= above_map0 << 1;
     rows_map1[0] |= above_map1 << 1;
+
+    /* Reset HMVP Look Up table */
+    inter_ctx->hmvp_lut.nb_mv = 0;
 }
 
 
@@ -330,16 +329,17 @@ drv_line_next_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
     /* Reset to 0 == PLANAR */
     struct OVDrvCtx *const drv_ctx = &ctudec->drv_ctx;
     int8_t qp_val = ctudec->qp_ctx.current_qp;
+
+    /* FIXME remove if unused */
     intra_info->luma_mode_x = lns->intra_luma_x;
 
-    /* Reset HMVP Look Up table */
-    ctudec->drv_ctx.inter_ctx.hmvp_lut.nb_mv = 0;
     load_first_ctu_inter(lns, ctudec, 0);
 
     memset(intra_info->luma_mode_y, 0, sizeof(*intra_info->luma_mode_y) * nb_pb_ctb_w);
     memset(drv_ctx->qp_map_x, qp_val, sizeof(*drv_ctx->qp_map_x) * nb_pb_ctb_w);
     memset(drv_ctx->qp_map_y, qp_val, sizeof(*drv_ctx->qp_map_y) * nb_pb_ctb_w);
 }
+
 
 void
 drv_line_next_ctu(OVCTUDec *const ctudec, struct DRVLines *drv_lns,
@@ -356,16 +356,10 @@ drv_line_next_ctu(OVCTUDec *const ctudec, struct DRVLines *drv_lns,
 
     int8_t qp_val = ctudec->qp_ctx.current_qp;
 
-        #if 0
-        store_inter_maps(drv_lns, ctudec, ctb_x);
-        #endif
-
-#if 0
-    update_inter_ctu_dec(ctudec, &drv_lns->inter_lines, 0, ctb_x);
-#endif
-
     /* FIXME Unecessary ? */
+    #if 0
     memset(intra_info->luma_mode_x, 0, sizeof(*intra_info->luma_mode_x) * nb_pb_ctb_w);
+    #endif
 
     /* Reset QP prediction map to previous current QP prediction
      * value
