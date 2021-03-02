@@ -1,170 +1,191 @@
+#include "ovmem.h"
+
 #include "nvcl.h"
 #include "nvcl_utils.h"
+#include "nvcl_structures.h"
 
-typedef struct OVScalingList
+// typedef struct OVScalingList
+// {
+//     uint8_t scaling_list_copy_mode_flag[id];
+//     uint8_t scaling_list_pred_mode_flag[id];
+//     uint8_t scaling_list_pred_id_delta[id];
+//     uint8_t scaling_list_dc_coef[id − 14];
+//     uint8_t scaling_list_delta_coef[id][i];
+// } OVScalingList;
+
+// typedef struct OVLMCS
+// {
+//     uint8_t lmcs_min_bin_idx;
+//     uint8_t lmcs_delta_max_bin_idx;
+//     uint8_t lmcs_delta_cw_prec_minus1;
+//     uint8_t lmcs_delta_abs_cw[i];
+//     uint8_t lmcs_delta_sign_cw_flag[i];
+//     uint8_t lmcs_delta_abs_crs;
+//     uint8_t lmcs_delta_sign_crs_flag;
+// } OVLMCS;
+
+
+static int
+validate_aps(OVNVCLReader *rdr, OVAPS *const aps)
 {
-    uint8_t scaling_list_copy_mode_flag[id];
-    uint8_t scaling_list_pred_mode_flag[id];
-    uint8_t scaling_list_pred_id_delta[id];
-    uint8_t scaling_list_dc_coef[id − 14];
-    uint8_t scaling_list_delta_coef[id][i];
-} OVScalingList;
+    /* TODO various check on limitation and max sizes */
+    return 1;
+}
 
-typedef struct OVALFData
+
+void 
+nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data, uint8_t aps_chroma_present_flag)
 {
-    uint8_t alf_luma_filter_signal_flag;
-    uint8_t alf_chroma_filter_signal_flag;
-    uint8_t alf_cc_cb_filter_signal_flag;
-    uint8_t alf_cc_cr_filter_signal_flag;
-    uint8_t alf_luma_clip_flag;
-    uint8_t alf_luma_num_filters_signalled_minus1;
-    uint8_t alf_luma_coeff_delta_idx[filtIdx];
-    uint8_t alf_luma_coeff_abs[sfIdx][j];
-    uint8_t alf_luma_coeff_sign[sfIdx][j];
-    uint8_t alf_luma_clip_idx[sfIdx][j];
-    uint8_t alf_chroma_clip_flag;
-    uint8_t alf_chroma_num_alt_filters_minus1;
-    uint8_t alf_chroma_coeff_abs[altIdx][j];
-    uint8_t alf_chroma_coeff_sign[altIdx][j];
-    uint8_t alf_chroma_clip_idx[altIdx][j];
-    uint8_t alf_cc_cb_filters_signalled_minus1;
-    uint8_t alf_cc_cb_mapped_coeff_abs[k][j];
-    uint8_t alf_cc_cb_coeff_sign[k][j];
-    uint8_t alf_cc_cr_filters_signalled_minus1;
-    uint8_t alf_cc_cr_mapped_coeff_abs[k][j];
-    uint8_t alf_cc_cr_coeff_sign[k][j];
-} OVALFData;
+    alf_data->alf_luma_filter_signal_flag = nvcl_read_flag(rdr);
 
-typedef struct OVLMCS
-{
-    uint8_t lmcs_min_bin_idx;
-    uint8_t lmcs_delta_max_bin_idx;
-    uint8_t lmcs_delta_cw_prec_minus1;
-    uint8_t lmcs_delta_abs_cw[i];
-    uint8_t lmcs_delta_sign_cw_flag[i];
-    uint8_t lmcs_delta_abs_crs;
-    uint8_t lmcs_delta_sign_crs_flag;
-} OVLMCS;
+    if (aps_chroma_present_flag) {
+        alf_data->alf_chroma_filter_signal_flag = nvcl_read_flag(rdr);
+        alf_data->alf_cc_cb_filter_signal_flag = nvcl_read_flag(rdr);
+        alf_data->alf_cc_cr_filter_signal_flag = nvcl_read_flag(rdr);
+    }
 
-typedef struct OVAPS
-{
-    uint8_t aps_params_type;
-    uint8_t aps_adaptation_parameter_set_id;
-    uint8_t aps_chroma_present_flag;
-    /* Note unused */
-    uint8_t aps_extension_flag;
-    uint8_t aps_extension_data_flag;
-} OVAPS;
+    if (alf_data->alf_luma_filter_signal_flag) {
+        alf_data->alf_luma_clip_flag = nvcl_read_flag(rdr);
+        alf_data->alf_luma_num_filters_signalled_minus1 = nvcl_read_u_expgolomb(rdr);
+        if (alf_data->alf_luma_num_filters_signalled_minus1 > 0) {
+            for (int filtIdx = 0; filtIdx < MAX_NUM_ALF_CLASSES; filtIdx++) {
+                // alf_data->alf_luma_coeff_delta_idx[filtIdx];
+                alf_data->alf_luma_coeff_delta_idx[filtIdx] = 
+                nvcl_read_bits(rdr, 31 - __builtin_clz(alf_data->alf_luma_num_filters_signalled_minus1) + 1);
+            }
+        }
 
-int
+        for (int sfIdx = 0; sfIdx <= alf_data->alf_luma_num_filters_signalled_minus1; sfIdx++) {
+            for (int j = 0; j < 12; j++) {
+                alf_data->alf_luma_coeff_abs[sfIdx][j] = nvcl_read_u_expgolomb(rdr);
+                if (alf_data->alf_luma_coeff_abs[sfIdx][j]) {
+                    alf_data->alf_luma_coeff_sign[sfIdx][j] = nvcl_read_bits(rdr, 1);
+                }
+            }
+        }
+
+        if (alf_data->alf_luma_clip_flag) {
+            for (int sfIdx = 0; sfIdx <= alf_data->alf_luma_num_filters_signalled_minus1; sfIdx++) {
+                for (int j = 0; j < 12; j++) {
+                    alf_data->alf_luma_clip_idx[sfIdx][j] = nvcl_read_bits(rdr, 2);
+                }
+            }
+        }
+    }
+
+    if (alf_data->alf_chroma_filter_signal_flag) {
+        alf_data->alf_chroma_clip_flag = nvcl_read_flag(rdr);
+        alf_data->alf_chroma_num_alt_filters_minus1 = nvcl_read_u_expgolomb(rdr);
+        for (int altIdx = 0; altIdx <= alf_data->alf_chroma_num_alt_filters_minus1; altIdx++) {
+            for (int j = 0; j < 6; j++) {
+                alf_data->alf_chroma_coeff_abs[altIdx][j] = nvcl_read_u_expgolomb(rdr);
+                if (alf_data->alf_chroma_coeff_abs[altIdx][j] > 0) {
+                    alf_data->alf_chroma_coeff_sign[altIdx][j] = nvcl_read_bits(rdr, 1);
+                }
+            }
+
+            if (alf_data->alf_chroma_clip_flag) {
+                for (int j = 0; j < 6; j++) {
+                    alf_data->alf_chroma_clip_idx[altIdx][j] = nvcl_read_bits(rdr, 2);
+                }
+            }
+        }
+    }
+
+    // if (alf_cc_cb_filter_signal_flag) {
+    //     alf_data->alf_cc_cb_filters_signalled_minus1 = nvcl_read_u_expgolomb(rdr);
+    //     for (k = 0; k < alf_cc_cb_filters_signalled_minus1 + 1; k++) {
+    //         for (j = 0; j < 7; j++) {
+    //             alf_data->alf_cc_cb_mapped_coeff_abs[k][j] = nvcl_read_bits(rdr, 3);
+    //             if (alf_cc_cb_mapped_coeff_abs[k][j]) {
+    //                 alf_data->alf_cc_cb_coeff_sign[k][j] = nvcl_read_bits(rdr, 1);
+    //             }
+    //         }
+    //     }
+    // }
+
+    // if (alf_cc_cr_filter_signal_flag) {
+    //     alf_data->alf_cc_cr_filters_signalled_minus1 = nvcl_read_u_expgolomb(rdr);
+    //     for (k = 0; k < alf_cc_cr_filters_signalled_minus1 + 1; k++) {
+    //         for (j = 0; j < 7; j++) {
+    //             alf_data->alf_cc_cr_mapped_coeff_abs[k][j] = nvcl_read_bits(rdr, 3);
+    //             if (alf_cc_cr_mapped_coeff_abs[k][j]) {
+    //                 alf_data->alf_cc_cr_coeff_sign[k][j] = nvcl_read_bits(rdr, 1);
+    //             }
+    //         }
+    //     }
+    // }
+}
+
+
+void
 nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
               OVNVCLCtx *const nvcl_ctx)
-
-#if 0
-adaptation_parameter_set_rbsp()
 {
-    aps->aps_params_type = nvcl_read_bits(rdr, 3);
-    aps->aps_adaptation_parameter_set_id = nvcl_read_bits(rdr, 5);
-    aps->aps_chroma_present_flag = nvcl_read_flag(rdr);
+    aps->aps_params_type                    = nvcl_read_bits(rdr, 3);
+    aps->aps_adaptation_parameter_set_id    = nvcl_read_bits(rdr, 5);
+    aps->aps_chroma_present_flag            = nvcl_read_flag(rdr);
 
-    if(aps->aps_params_type == ALF_APS) {
-        alf_data();
-    } else if(aps->aps_params_type == LMCS_APS) {
-        lmcs_data();
-    } else if(aps->aps_params_type == SCALING_APS) {
-        scaling_list_data();
+    //TODO: definir les ALF_APS etc
+    // if(aps->aps_params_type == ALF_APS) {
+    if(aps->aps_params_type == 0) {
+        nvcl_read_alf_data(rdr, &aps->aps_alf_data, aps->aps_chroma_present_flag);
+    // } else if(aps->aps_params_type == LMCS_APS) {
+    } else if(aps->aps_params_type == 1) {
+        // lmcs_data();
+    // } else if(aps->aps_params_type == SCALING_APS) {
+    } else if(aps->aps_params_type == 2) {
+        // scaling_list_data();
     }
 
     aps->aps_extension_flag = nvcl_read_flag(rdr);
+    //TODO: prendre en compte les extensions aps.
+    #if 0
     if(aps->aps_extension_flag) {
         while(more_rbsp_data()) {
             aps->aps_extension_data_flag = nvcl_read_flag(rdr);
         }
     }
-    rbsp_trailing_bits()
+    // rbsp_trailing_bits()
+    #endif
 }
 
-alf_data()
+int
+nvcl_decode_nalu_aps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
 {
-    alf->alf_luma_filter_signal_flag = nvcl_read_flag(rdr);
+    int ret;
+    /* TODO compare RBSP data to avoid new read */
 
-    if (aps_chroma_present_flag) {
-        alf->alf_chroma_filter_signal_flag = nvcl_read_flag(rdr);
-        alf->alf_cc_cb_filter_signal_flag = nvcl_read_flag(rdr);
-        alf->alf_cc_cr_filter_signal_flag = nvcl_read_flag(rdr);
+    OVAPS *aps = ov_mallocz(sizeof(*aps));
+    if (!aps) {
+        return OV_ENOMEM;
     }
 
-    if (alf_luma_filter_signal_flag) {
-        alf->alf_luma_clip_flag = nvcl_read_flag(rdr);
-        alf->alf_luma_num_filters_signalled_minus1 = nvcl_read_u_expgolomb(rdr);
-        if (alf_luma_num_filters_signalled_minus1 > 0) {
-            for (filtIdx = 0; filtIdx < NumAlfFilters; filtIdx++) {
-                alf->alf_luma_coeff_delta_idx[filtIdx];
-            }
-        }
+    //TODO: mettre un retour d'erreur.
+    // ret = 
+    nvcl_aps_read(rdr, aps, nvcl_ctx);
+    // if (ret < 0) {
+    //     goto cleanup;
+    // }
 
-        for (sfIdx = 0; sfIdx <= alf_luma_num_filters_signalled_minus1; sfIdx++) {
-            for (j = 0; j < 12; j++) {
-                alf->alf_luma_coeff_abs[sfIdx][j] = nvcl_read_u_expgolomb(rdr);
-                if (alf_luma_coeff_abs[sfIdx][j]) {
-                    alf->alf_luma_coeff_sign[sfIdx][j] = nvcl_read_bits(rdr, 1);
-                }
-            }
-        }
-
-        if (alf_luma_clip_flag) {
-            for (sfIdx = 0; sfIdx <= alf_luma_num_filters_signalled_minus1; sfIdx++) {
-                for (j = 0; j < 12; j++) {
-                    alf->alf_luma_clip_idx[sfIdx][j] = nvcl_read_bits(rdr, 2);
-                }
-            }
-        }
+    ret = validate_aps(rdr, aps);
+    if (ret < 0) {
+        goto cleanup;
     }
 
-    if (alf_chroma_filter_signal_flag) {
-        alf->alf_chroma_clip_flag = nvcl_read_flag(rdr);
-        alf->alf_chroma_num_alt_filters_minus1 = nvcl_read_u_expgolomb(rdr);
-        for (altIdx = 0; altIdx <= alf_chroma_num_alt_filters_minus1; altIdx++) {
-            for (j = 0; j < 6; j++) {
-                alf->alf_chroma_coeff_abs[altIdx][j] = nvcl_read_u_expgolomb(rdr);
-                if (alf_chroma_coeff_abs[altIdx][j] > 0) {
-                    alf->alf_chroma_coeff_sign[altIdx][j] = nvcl_read_bits(rdr, 1);
-                }
-            }
+    uint8_t aps_id = aps->aps_adaptation_parameter_set_id;
+    ov_free(nvcl_ctx->aps_list[aps_id]);
+    nvcl_ctx->aps_list[aps_id] = aps;
+    // av_log(avctx, AV_LOG_DEBUG, "Success decoding APS:%d \n",aps_id);
+    return aps_id;
 
-            if (alf_chroma_clip_flag) {
-                for (j = 0; j < 6; j++) {
-                    alf->alf_chroma_clip_idx[altIdx][j] = nvcl_read_bits(rdr, 2);
-                }
-            }
-        }
-    }
-
-    if (alf_cc_cb_filter_signal_flag) {
-        alf->alf_cc_cb_filters_signalled_minus1 = nvcl_read_u_expgolomb(rdr);
-        for (k = 0; k < alf_cc_cb_filters_signalled_minus1 + 1; k++) {
-            for (j = 0; j < 7; j++) {
-                alf->alf_cc_cb_mapped_coeff_abs[k][j] = nvcl_read_bits(rdr, 3);
-                if (alf_cc_cb_mapped_coeff_abs[k][j]) {
-                    alf->alf_cc_cb_coeff_sign[k][j] = nvcl_read_bits(rdr, 1);
-                }
-            }
-        }
-    }
-
-    if (alf_cc_cr_filter_signal_flag) {
-        alf->alf_cc_cr_filters_signalled_minus1 = nvcl_read_u_expgolomb(rdr);
-        for (k = 0; k < alf_cc_cr_filters_signalled_minus1 + 1; k++) {
-            for (j = 0; j < 7; j++) {
-                alf->alf_cc_cr_mapped_coeff_abs[k][j] = nvcl_read_bits(rdr, 3);
-                if (alf_cc_cr_mapped_coeff_abs[k][j]) {
-                    alf->alf_cc_cr_coeff_sign[k][j] = nvcl_read_bits(rdr, 1);
-                }
-            }
-        }
-    }
+cleanup:
+    ov_free(aps);
+    return ret;
 }
 
+
+#if 0
 lmcs_data()
 {
     lmcs->lmcs_min_bin_idx = nvcl_read_u_expgolomb(rdr);

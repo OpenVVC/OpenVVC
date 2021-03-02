@@ -557,6 +557,10 @@ struct OVCTUDec
     int16_t lfnst_subblock[16*2];
     DECLARE_ALIGNED(32, int16_t, transform_buff)[64*64];
 
+    uint8_t left_ctb_alf_flag;
+    //TODO: mettre la taille de l'image (ou tile)
+    uint8_t ctb_alf_flag_line[32];
+
     uint8_t slice_qp;
     /* FIXME
      * harmonize qp info and dequant structures

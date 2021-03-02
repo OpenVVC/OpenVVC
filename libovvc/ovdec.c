@@ -220,7 +220,7 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
         break;
     case OVNALU_SUFFIX_APS:
     case OVNALU_PREFIX_APS:
-        ret = 0;
+        ret = nvcl_decode_nalu_aps(&rdr, nvcl_ctx);
         if (ret < 0) {
             goto fail;
         }

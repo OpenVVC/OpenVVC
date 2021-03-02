@@ -14,6 +14,7 @@ LIB_SRC:=																																 \
 					nvcl.c                                                         \
 					nvcl_dpb.c                                                     \
 					nvcl_nal_ph.c                                                  \
+					nvcl_nal_aps.c                                                 \
 					nvcl_nal_pps.c                                                 \
 					nvcl_nal_sps.c                                                 \
 					nvcl_ptl.c                                                     \
@@ -45,6 +46,7 @@ LIB_SRC:=																																 \
 					rcn_mc.c                                                       \
 					rcn_df.c                                                       \
 					slicedec.c                                                     \
+					vcl_alf.c                                                       \
 					vcl_sao.c                                                       \
 					vcl_sh.c                                                       \
 					vcl_coding_unit.c                                              \

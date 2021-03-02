@@ -9,12 +9,6 @@
 #include "nvcl_structures.h"
 #include "nvcl_private.h"
 
-
-enum DecReturn {
-    OV_INVALID_DATA = -1,
-    OV_ENOMEM = -2,
-};
-
 enum SliceType {
      B = 0,
      P = 1,
@@ -147,6 +141,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
                 sh->sh_alf_aps_id_luma[i] = nvcl_read_bits(rdr, 3);
             }
 
+            //TODO: VVC_CHROMA_400 à la place de 0 
             if (sps->sps_chroma_format_idc != 0) {
                 sh->sh_alf_cb_enabled_flag = nvcl_read_flag(rdr);
                 sh->sh_alf_cr_enabled_flag = nvcl_read_flag(rdr);

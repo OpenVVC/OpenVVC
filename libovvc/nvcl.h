@@ -7,6 +7,7 @@
 #define OV_MAX_NUM_VPS 16
 #define OV_MAX_NUM_SPS 16
 #define OV_MAX_NUM_PPS 16
+#define OV_MAX_NUM_APS 16
 
 struct OVNVCLCtx
 {
@@ -15,6 +16,7 @@ struct OVNVCLCtx
      */
     OVSPS *sps_list[OV_MAX_NUM_SPS];
     OVPPS *pps_list[OV_MAX_NUM_PPS];
+    OVAPS *aps_list[OV_MAX_NUM_APS];
     OVPH *ph;
     OVSH *sh;
 };
@@ -61,7 +63,7 @@ int nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
 int nvcl_pps_read(OVNVCLReader *const rdr, OVPPS *const pps,
                   OVNVCLCtx *const nvcl_ctx);
 
-int nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
+void nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
                   OVNVCLCtx *const nvcl_ctx);
 
 int nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
@@ -81,4 +83,7 @@ int nvcl_decode_nalu_pps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx);
 int nvcl_decode_nalu_ph(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx);
 
 int nvcl_decode_nalu_sh(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
+
+int nvcl_decode_nalu_aps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx);
+
 #endif

@@ -4,11 +4,6 @@
 #include "nvcl_utils.h"
 #include "nvcl_structures.h"
 
-enum DecReturn {
-    OV_INVALID_DATA = -1,
-    OV_ENOMEM = -2,
-};
-
 
 static uint8_t
 probe_pps_id(OVNVCLReader *const rdr)
