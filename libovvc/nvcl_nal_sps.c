@@ -5,11 +5,6 @@
 #include "nvcl_structures.h"
 #include "nvcl_private.h"
 
-enum DecReturn {
-    OV_INVALID_DATA = -1,
-    OV_ENOMEM = -2,
-};
-
 
 static uint8_t
 probe_sps_id(OVNVCLReader *const rdr)

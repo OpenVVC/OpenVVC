@@ -370,6 +370,22 @@ update_sh_info(struct SHInfo *const sh_info, const OVSH *const sh)
     return 0;
 }
 
+
+static const OVAPS *
+retreive_aps(const OVNVCLCtx *const nvcl_ctx, const OVSH *const sh)
+{
+    //TODO: comment savoir a quel indice aller dans sh_alf_aps_id_luma?
+    uint8_t aps_id = sh->sh_alf_aps_id_luma[0];
+    const OVAPS *aps = NULL;
+    if (aps_id < 16) {
+        aps = nvcl_ctx->aps_list[aps_id];
+    } else {
+        ov_log(NULL, 3, "Invalid APS ID  %d\n", aps_id);
+    }
+    return aps;
+}
+
+
 static const OVSPS *
 retreive_sps(const OVNVCLCtx *const nvcl_ctx, const OVPPS *const pps)
 {
@@ -439,6 +455,7 @@ decinit_update_params(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
     const OVPH *const ph = nvcl_ctx->ph;
     const OVPPS *const pps = retreive_pps(nvcl_ctx, ph);
     const OVSPS *const sps = retreive_sps(nvcl_ctx, pps);
+    const OVAPS *const aps = retreive_aps(nvcl_ctx, sh);
 
     if (!sh || !ph || !pps || !sps) {
         ov_log(NULL, 3, "Missing Parameter sets for dec initialisation\n");
@@ -484,6 +501,10 @@ decinit_update_params(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
     }
 
     /*FIXME SPS level */
+    if (ps->aps != aps) {
+        ps->aps = aps;
+    }
+
     set_pic_part_info(&ps->pic_info, ps->sps);
 
     return 0;

@@ -8,11 +8,6 @@
 #include "nvcl_structures.h"
 #include "nvcl_private.h"
 
-enum DecReturn {
-    OV_INVALID_DATA = -1,
-    OV_ENOMEM = -2,
-};
-
 //TODO: declare in another header file
 enum OVChromaFormat{
     OV_CHROMA_400        = 0,

@@ -2,6 +2,7 @@
 #define NVCL_STRUCTURES_H
 
 #include <stdint.h>
+#include "nvcl_utils.h"
 
 #define OV_MAX_NB_RP 16
 
@@ -525,4 +526,47 @@ struct OVSH
     /* Ref pic list info */
     struct OVHRPL hrpl;
 };
+
+
+typedef struct OVALFData
+{
+    uint8_t alf_luma_filter_signal_flag;
+    uint8_t alf_chroma_filter_signal_flag;
+    uint8_t alf_luma_clip_flag;
+    uint8_t alf_luma_num_filters_signalled_minus1;
+    uint8_t alf_cc_cb_filter_signal_flag;
+    uint8_t alf_cc_cr_filter_signal_flag;
+
+    //TODO: garder signe et abs ? ou tout dans short ?
+    uint8_t alf_luma_coeff_delta_idx[MAX_NUM_ALF_CLASSES];
+    uint8_t alf_luma_coeff_abs[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF];
+    uint8_t alf_luma_coeff_sign[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF];
+    uint8_t alf_luma_clip_idx[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF];
+    uint8_t alf_chroma_clip_flag;
+    uint8_t alf_chroma_num_alt_filters_minus1;
+    uint8_t alf_chroma_coeff_abs[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF];
+    uint8_t alf_chroma_coeff_sign[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF];
+    uint8_t alf_chroma_clip_idx[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF];
+
+    // uint8_t alf_cc_cb_filters_signalled_minus1;
+    // uint8_t alf_cc_cb_mapped_coeff_abs[k][j];
+    // uint8_t alf_cc_cb_coeff_sign[k][j];
+    // uint8_t alf_cc_cr_filters_signalled_minus1;
+    // uint8_t alf_cc_cr_mapped_coeff_abs[k][j];
+    // uint8_t alf_cc_cr_coeff_sign[k][j];
+} OVALFData;
+
+typedef struct OVAPS
+{
+    uint8_t aps_params_type;
+    uint8_t aps_adaptation_parameter_set_id;
+    uint8_t aps_chroma_present_flag;
+    /* Note unused */
+    uint8_t aps_extension_flag;
+    uint8_t aps_extension_data_flag;
+
+    struct OVALFData aps_alf_data;
+} OVAPS;
+
+
 #endif

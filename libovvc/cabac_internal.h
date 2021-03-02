@@ -123,3 +123,50 @@ ovcabac_bypass_read(OVCABACCtx *const cabac_ctx)
   return lps_mask & 0x1;
 }
 #endif
+
+
+
+/* FIXME only used by mip_idx */
+static inline uint8_t
+vvc_get_cabac_truncated(OVCABACCtx *const cabac_ctx, unsigned int max_symbol){
+    static const uint8_t threshold_lut[17] =
+    {
+        0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4
+    };
+    int threshold;
+    uint32_t ruiSymbol = 0;
+    /* MAX SYMBOL will not be > 16 */
+    #if 0
+    if( max_symbol > 256 ){
+        int thres_val = 1 << 8;
+        threshold = 8;
+        while( thres_val <= max_symbol ){
+            threshold++;
+            thres_val <<= 1;
+        }
+        threshold--;
+    }else{
+    #endif
+        threshold = threshold_lut[max_symbol];
+    #if 0
+    }
+    #endif
+
+    int val = 1 << threshold;
+    int b = max_symbol - val;
+
+    while(threshold--){
+        ruiSymbol <<= 1;
+        ruiSymbol |= ovcabac_bypass_read(cabac_ctx);
+    }
+
+    if( ruiSymbol >= val - b ){
+        uint32_t uiSymbol;
+        uiSymbol = ovcabac_bypass_read(cabac_ctx);
+        ruiSymbol <<= 1;
+        ruiSymbol += uiSymbol;
+        ruiSymbol -= ( val - b );
+    }
+
+    return ruiSymbol;
+}

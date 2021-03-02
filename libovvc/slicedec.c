@@ -577,6 +577,7 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
     derive_ctu_neighborhood(ctudec, ctb_addr_rs, nb_ctu_w);
 
     ovcabac_read_ae_sao_ctu(ctudec, prms);
+    ovcabac_read_ae_alf_ctu(ctudec, prms, ctb_addr_rs, einfo->nb_ctu_w);
 
     init_ctu_bitfield(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s);
 
@@ -607,6 +608,7 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
     derive_ctu_neighborhood(ctudec, ctb_addr_rs, nb_ctu_w);
 
     ovcabac_read_ae_sao_ctu(ctudec, prms);
+    ovcabac_read_ae_alf_ctu(ctudec, prms, ctb_addr_rs, einfo->nb_ctu_w);
 
     /* FIXME pic border detection in neighbour flags ?*/
     init_ctu_bitfield_border(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s,
