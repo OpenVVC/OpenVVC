@@ -576,6 +576,8 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
      */
     derive_ctu_neighborhood(ctudec, ctb_addr_rs, nb_ctu_w);
 
+    ovcabac_read_ae_sao_ctu(ctudec, prms);
+
     init_ctu_bitfield(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s);
 
     ret = ctudec->coding_tree(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s, 0);
@@ -603,6 +605,8 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
     ctudec->drv_ctx.inter_ctx.tmvp_avail = 0;
     /* FIXME pic border detection in neighbour flags ?*/
     derive_ctu_neighborhood(ctudec, ctb_addr_rs, nb_ctu_w);
+
+    ovcabac_read_ae_sao_ctu(ctudec, prms);
 
     /* FIXME pic border detection in neighbour flags ?*/
     init_ctu_bitfield_border(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s,
@@ -644,8 +648,6 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
     }
 
-    uint8_t sao_luma_flag   =  prms->sh->sh_sao_luma_used_flag;
-    uint8_t sao_chroma_flag =  prms->sh->sh_sao_chroma_used_flag;
     while (ctb_x < nb_ctu_w - 1) {
         /*FIXME try to remove ctb_x computation */
         ctudec->ctb_x = einfo->ctb_x + ctb_x;

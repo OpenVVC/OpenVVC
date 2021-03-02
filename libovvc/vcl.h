@@ -125,6 +125,8 @@ int coding_unit(OVCTUDec *const ctu_dec,
                 uint8_t log2_cb_w, uint8_t log2_cb_h);
 
 
+void ovcabac_read_ae_sao_ctu( OVCTUDec *const ctudec, const OVPS *const prms);
+
 uint8_t ovcabac_read_ae_sao_merge_type(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state, uint8_t neighbour_flags);
 
 void ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state, SAOParams *sao_ctu,
