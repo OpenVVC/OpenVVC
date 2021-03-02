@@ -1,11 +1,64 @@
+#include <stdlib.h>
+
 #include "vcl.h"
 #include "cabac_internal.h"
 #include "ctudec.h"
+#include "nvcl_structures.h"
 
 //TODO: change name and location of definition
 // #define VVC_SAO_LUMA_SLICE_FLAG     (1 << 0)
 // #define VVC_SAO_CHROMA_SLICE_FLAG   (1 << 1)
 // #define VVC_ALF_LUMA_SLICE_FLAG     (1 << 2)
+
+void
+ovcabac_read_ae_sao_ctu( OVCTUDec *const ctudec, const OVPS *const prms)
+{   
+    uint8_t sao_luma_flag   =  prms->sh->sh_sao_luma_used_flag;
+    uint8_t sao_chroma_flag =  prms->sh->sh_sao_chroma_used_flag;
+    if(sao_luma_flag || sao_chroma_flag)
+        // loop_filter_state_flags & (VVC_SAO_LUMA_SLICE_FLAG|VVC_SAO_CHROMA_SLICE_FLAG))
+    {
+        //TODO: creer le tableau de SAOParams qui va etre utilise
+        SAOParams *sao_ctu = malloc(sizeof(SAOParams));
+        // SAOParams* sao_ctu = &vvc_ctx->sao[ctb_rs];
+        OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
+        uint64_t *const cabac_state = cabac_ctx->ctx_table;
+        const uint8_t ctu_neighbour_flags = ctudec->ctu_ngh_flags;
+        uint8_t val = ovcabac_read_ae_sao_merge_type(cabac_ctx, cabac_state, ctu_neighbour_flags);
+        // val = vvc_decode_sao_merge_type(cabac_ctx, cabac_state, ctu_neighbour_flags);
+
+        if (!val) {
+            //TODO: calculer les vraies valeurs dans sps
+            uint8_t num_bits_sao   = 31;
+            uint8_t num_bits_sao_c = 31;
+            // uint8_t sao_trunc_bitdepth   = vvc_ctx->sao_truncated_bitdepth;
+            // uint8_t sao_trunc_bitdepth_c = vvc_ctx->sao_truncated_bitdepth_chroma;
+            // ff_vvc_decode_sao_type_idx(cabac_ctx,cabac_state,
+            //                                  loop_filter_state_flags,
+            //                                  sao_trunc_bitdepth,
+            //                                  sao_trunc_bitdepth_c,sao_ctu);
+            ovcabac_read_ae_sao_type_idx(cabac_ctx, cabac_state, sao_ctu, sao_luma_flag, sao_chroma_flag, num_bits_sao, num_bits_sao_c);
+        }
+        else{
+            //TODO: gerer cas MERGE
+            // if (val == SAO_MERGE_LEFT)
+            // {
+            //     int ctb_left = ctb_rs-1; 
+            //     *sao_ctu = vvc_ctx->sao[ctb_left];
+            // }
+            // if (val == SAO_MERGE_ABOVE)
+            // {
+            //     int ctb_above = ctb_rs-vvc_ctx->nb_ctu_w; 
+            //     *sao_ctu = vvc_ctx->sao[ctb_above];
+            // }
+            // sao_ctu->type_idx[0]=sao_ctu->old_type_idx[0];
+            // sao_ctu->type_idx[1]=sao_ctu->old_type_idx[1];
+            // sao_ctu->type_idx[2]=sao_ctu->old_type_idx[2];
+        }
+    }
+}
+
+
 
 uint8_t
 ovcabac_read_ae_sao_merge_type(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state,
