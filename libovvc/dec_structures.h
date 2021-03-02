@@ -4,6 +4,8 @@
 #include "ovdefs.h"
 #include "nvcl.h"
 
+struct MVPool;
+
 struct OVPartInfo
 {
     /**
@@ -201,9 +203,28 @@ struct OVVCDec
         struct PPSInfo pps_info;
         struct PHInfo ph_info;
         struct SHInfo sh_info;
+        /* FIXME define this somewhere meaningful */
+
+        struct PicPartInfo
+        {
+            uint16_t pic_w;
+            uint16_t pic_h;
+
+            uint16_t nb_ctb_w;
+            uint16_t nb_ctb_h;
+
+            uint16_t nb_pb_w;
+            uint16_t nb_pb_h;
+
+            uint8_t log2_min_cb_s;
+            uint8_t log2_ctu_s;
+        } pic_info;
+
     } active_params;
 
     OVDPB *dpb;
+
+    struct MVPool *mv_pool;
 
     /* List of Sub Decoders
      * Contains context for Tile / Slice / Picture / SubPicture
@@ -216,6 +237,7 @@ struct OVVCDec
     struct {
         int opt1;
     }options;
+
 };
 
 #endif

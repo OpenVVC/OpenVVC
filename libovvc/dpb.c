@@ -56,6 +56,7 @@ struct RPLInfo
    uint8_t nb_refs;
 };
 
+static int tmvp_release_mv_planes(OVPicture *const pic);
 
 static int dpb_init_params(OVDPB *dpb, OVDPBParams const *prm);
 
@@ -110,6 +111,11 @@ dpbpriv_release_pic(OVPicture *pic)
     if (pic->frame) {
         /* FIXME unref frame */
         ovframe_unref(&pic->frame);
+
+        /* FIXME better existence check */
+        if (pic->mv_plane0.mvs){
+            tmvp_release_mv_planes(pic);
+        }
         /* Do not delete frame the frame will delete itself
          * when all its references are released
          */
@@ -697,10 +703,138 @@ fail:
     return 1;
 }
 
+#if 0
+static int16_t
+compute_tmvp_scale(int32_t dist_current, int32_t dist_colocated)
+{
+    int scale;
+    if (dist_current == dist_colocated || !dist_colocated)
+        return 256;
+
+    dist_current   = av_clip_int8(dist_current);
+    dist_colocated = av_clip_int8(dist_colocated);
+
+    scale = dist_current * ((0x4000 + abs(dist_colocated >> 1)) / dist_colocated);
+    scale += 32;
+    scale >>= 6;
+    /* FIXME pow2_clip */
+    scale = ov_clip(scale, -4096, 4095);
+    return (int16_t)scale;
+}
+#endif
+
+static void
+store_ref_poc(OVPicture *const pic, const struct RPLInfo *const rpl_info)
+{
+    int i;
+    uint8_t nb_refs = rpl_info->nb_refs;
+
+    #if 0
+    for (i = 0; i < nb_refs; ++i) {
+        pic->ref_poc[i] = rpl_info[i]->poc;
+        pic->ref_poc[i] = rpl_info[i]->poc;
+    }
+    #endif
+}
+
+static int
+tmvp_release_mv_planes(OVPicture *const pic)
+{
+    int ret;
+
+    /* FIXME check mv planes exists */
+    ret = mvpool_release_mv_plane(&pic->mv_plane0);
+
+    ret = mvpool_release_mv_plane(&pic->mv_plane1);
+}
+
+static int
+tmvp_request_mv_plane(OVPicture *const pic, const OVVCDec *ovdec)
+{
+    struct MVPool *pool = ovdec->mv_pool;
+    int ret;
+
+    ret = mvpool_request_mv_plane(pool, &pic->mv_plane0);
+    if (ret < 0) {
+        return ret;
+    }
+
+    ret = mvpool_request_mv_plane(pool, &pic->mv_plane1);
+    if (ret < 0) {
+        mvpool_release_mv_plane(&pic->mv_plane0);
+        return ret;
+    }
+
+    return 0;
+}
+
+static int
+init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS *const ps, const OVVCDec *ovdec)
+{
+    const OVPH *ph = ps->ph;
+    const OVSH *sh = ps->sh;
+
+    /* Init / update MV Pool */
+
+    /* FIXME use sps_log2_parallel_merge_level_minus2 ?*/
+
+    /* Do not asssocite MV map if the picture will not use
+     * inter slices
+     */
+
+    /* The picture can contain inter slice thus Motions Vector */
+    if (ph->ph_inter_slice_allowed_flag) {
+        const struct RPLInfo  *rpl_info;
+        store_ref_poc(pic, rpl_info);
+
+        /* Request MV buffer to MV Pool */
+        tmvp_request_mv_plane(pic, ovdec);
+
+    }
+
+    /* The current picture might use TMVP */
+    if(ph->ph_temporal_mvp_enabled_flag) {
+
+        /* Compute TMVP scales */
+
+        /* Find collocated ref and associate MV fields info */
+        if (ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag) {
+            const OVPicture *collocated;
+            /* FIXME idx can be ph */
+            int ref_idx = sh->sh_collocated_ref_idx;
+            int32_t dist_colocated;
+            int16_t scale;
+            collocated = pic->rpl0[ref_idx];
+            dist_colocated = pic->poc - collocated->poc;
+
+#if 0
+            if (collocated->mv_field[0]) {
+
+            }
+#endif
+            tmvp_ctx->collocated_ref0 = collocated;
+
+        } else {
+            const OVPicture *collocated;
+            int ref_idx = sh->sh_collocated_ref_idx;
+            /* FIXME idx can be ph */
+            collocated = pic->rpl1[ref_idx];
+#if 0
+            if (collocated->mv_field[0]) {
+
+            }
+#endif
+            tmvp_ctx->collocated_ref1 = collocated;
+        }
+    }
+
+    return 0;
+}
+
 /* TODO rename to ovdpb_init_pic();*/
 int
 ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t nalu_type, 
-                   OVSliceDec *const sldec)
+                   OVSliceDec *const sldec, const OVVCDec *ovdec)
 {
 
     const OVSH  *const sh  = ps->sh;
@@ -788,6 +922,11 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t na
         OVRPL *rpl1 = sh->hrpl.rpl1;
         uint8_t slice_type = sh->sh_slice_type;
         mark_ref_pic_lists(dpb, slice_type, rpl0, rpl1, sldec);
+    }
+
+    /* Init picture TMVP info */
+    if (ps->sps->sps_temporal_mvp_enabled_flag) {
+        ret = init_tmvp_info(&(*pic)->tmvp, *pic, ps, ovdec);
     }
 
     return ret;

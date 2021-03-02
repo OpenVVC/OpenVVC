@@ -5,6 +5,7 @@
 #include "ovunits.h"
 #include "ovdefs.h"
 #include "ovdpb_internal.h"
+#include "ovdec_internal.h"
 
 /* OVDPB is intended to be in charge of Frame pool management
    Coded Video sequence switch and RPL list management */
@@ -37,12 +38,29 @@ struct OVPicture
    uint8_t flags;
 
    /* Pointers to ref_pic_list */
-   struct OVPicture *rpl1[16];
+   const struct OVPicture *rpl0[16];
+   const struct OVPicture *rpl1[16];
+
+   /* FIXME Used only by TMPV? */
+   uint32_t ref_poc0[16];
+   uint32_t ref_poc1[16];
+
+   struct MVPlane mv_plane0;
+   struct MVPlane mv_plane1;
 
    struct TMVPInfo {
-       OVPicture *collocated_ref;
+       const struct OVPicture *collocated_ref0;
+       const struct OVPicture *collocated_ref1;
+       /* Per ref_idx Motion Scaling information */
+       struct TMVPScale {
+           int32_t scale;
+       } scale_0[16];
+
+       /* Per CTU Bit fields for available Motion Vectors */
+       void *mv_field0;
+       void *mv_field1;
        /* TODO tmvp scaling */
-   }tmvp;
+   } tmvp;
 
    uint32_t poc;
 
@@ -90,7 +108,7 @@ void ovdpb_uninit(OVDPB **dpb_p);
 int ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc);
 
 int ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t nalu_type, 
-                   OVSliceDec *const sldec);
+                   OVSliceDec *const sldec, const OVVCDec *ovdec);
 
 void ovdpb_flush_dpb(OVDPB *dpb);
 

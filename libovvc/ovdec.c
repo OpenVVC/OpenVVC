@@ -13,6 +13,7 @@
 #include "decinit.h"
 #include "slicedec.h"
 #include "dec_structures.h"
+#include "ovdec_internal.h"
 /* FIXME
  * To be removed includes
  */
@@ -117,6 +118,11 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
          }
     }
 
+    /* FIXME only if TMVP */
+    if (!dec->mv_pool) {
+        ret = mvpool_init(&dec->mv_pool, &dec->active_params.pic_info);
+    }
+
     ret = init_subdec_list(dec);
     if (ret < 0) {
         return ret;
@@ -133,7 +139,7 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
         #if 0
         ret = ovdpb_init_current_pic(dec->dpb, &sldec->pic, 0);
         #else
-        ret = ovdpb_init_picture(dec->dpb, &sldec->pic, &dec->active_params, nalu->type, sldec);
+        ret = ovdpb_init_picture(dec->dpb, &sldec->pic, &dec->active_params, nalu->type, sldec, dec);
         #endif
         if (ret < 0) {
             ovdpb_flush_dpb(dec->dpb);
@@ -516,6 +522,10 @@ ovdec_close(OVVCDec *vvcdec)
         slicedec_uninit(&vvcdec->subdec_list);
 
         ovdpb_uninit(&vvcdec->dpb);
+
+        if (vvcdec->mv_pool) {
+            mvpool_uninit(&vvcdec->mv_pool);
+        }
 
         ov_free(vvcdec);
 

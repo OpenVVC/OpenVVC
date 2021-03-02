@@ -10,6 +10,7 @@ LIB_SRC:=																																 \
 					dpb.c                                                          \
 					dpb_internal.c                                                 \
        		mempool.c                                                      \
+       		mvpool.c                                                       \
 					nvcl.c                                                         \
 					nvcl_dpb.c                                                     \
 					nvcl_nal_ph.c                                                  \
