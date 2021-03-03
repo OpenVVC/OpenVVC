@@ -131,6 +131,4 @@ mvpool_release_mv_plane(struct MVPlane *mv_plane)
     mv_plane->mvs  = NULL;
 
     mv_plane->dirs = NULL;
-
-    return 0;
 }

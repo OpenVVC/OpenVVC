@@ -32,4 +32,8 @@ int mvpool_init(struct MVPool **mv_pool_p, const struct PicPartInfo *const pinfo
 
 void mvpool_uninit(struct MVPool **mv_pool_p);
 
+int mvpool_request_mv_plane(struct MVPool *mv_pool, struct MVPlane *mv_plane);
+
+void mvpool_release_mv_plane(struct MVPlane *mv_plane);
+
 #endif

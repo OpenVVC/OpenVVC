@@ -13,6 +13,7 @@
 #include "ovdpb_internal.h"
 #include "overror.h"
 #include "slicedec.h"
+#include "ovdec_internal.h"
 
 
 #if 1
@@ -33,7 +34,7 @@ enum SliceType
    SLICE_I = 2,
 };
 
-static int tmvp_release_mv_planes(OVPicture *const pic);
+static void tmvp_release_mv_planes(OVPicture *const pic);
 
 static int dpb_init_params(OVDPB *dpb, OVDPBParams const *prm);
 
@@ -673,18 +674,16 @@ tmvp_compute_scale(int32_t dist_current, int32_t dist_colocated)
     return (int16_t)scale;
 }
 
-static int
+static void
 tmvp_release_mv_planes(OVPicture *const pic)
 {
-    int ret;
-
     /* FIXME check mv planes exists */
     if (pic->mv_plane0.dirs) {
-        ret = mvpool_release_mv_plane(&pic->mv_plane0);
+        mvpool_release_mv_plane(&pic->mv_plane0);
     }
 
     if (pic->mv_plane1.dirs) {
-        ret = mvpool_release_mv_plane(&pic->mv_plane1);
+        mvpool_release_mv_plane(&pic->mv_plane1);
     }
 }
 
