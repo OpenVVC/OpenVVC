@@ -336,7 +336,11 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
     struct MVPlane *plane1 = &inter_ctx->tmvp_ctx.col_ref->mv_plane1;
     uint16_t nb_ctb_w = ctudec->nb_ctb_pic_w;
     uint16_t ctb_addr_rs = ctb_x + ctb_y * nb_ctb_w;
-    uint8_t is_border_pic = nb_ctb_w == ctb_y;
+    uint8_t is_border_pic = nb_ctb_w - 1 == ctb_x;
+    if (is_border_pic) {
+        memset(inter_ctx->tmvp_ctx.tmvp_mv.mv_ctx0.map.vfield, 0, sizeof(uint64_t) * 33);
+        memset(inter_ctx->tmvp_ctx.tmvp_mv.mv_ctx1.map.vfield, 0, sizeof(uint64_t) * 33);
+    }
 
     if (plane0->dirs) {
         uint64_t *src_dirs = plane0->dirs + ctb_addr_rs * nb_pb_ctb_w;
