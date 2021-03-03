@@ -23,6 +23,7 @@
 #define OV_ST_REF_PIC_FLAG (1 << 2)
 #define OV_BUMPED_PIC_FLAG (1 << 3)
 
+
 /* FIXME More global scope for this enum
  */
 enum SliceType
@@ -30,30 +31,6 @@ enum SliceType
    SLICE_B = 0,
    SLICE_P = 1,
    SLICE_I = 2,
-};
-
-enum RefType
-{
-    /* Short term reference Picture */
-    ST_REF = 1,
-
-    /* Long term reference Picture */
-    LT_REF = 2,
-
-    /* Inter Layer reference Picture */
-    ILRP_REF = 3
-};
-
-struct RefInfo
-{
-    enum RefType type;
-    uint32_t poc;
-};
-
-struct RPLInfo
-{
-   struct RefInfo ref_info[16];
-   uint8_t nb_refs;
 };
 
 static int tmvp_release_mv_planes(OVPicture *const pic);
@@ -116,6 +93,11 @@ dpbpriv_release_pic(OVPicture *pic)
         if (pic->mv_plane0.mvs){
             tmvp_release_mv_planes(pic);
         }
+
+        pic->rpl_info0.nb_refs = 0;
+        pic->rpl_info1.nb_refs = 0;
+
+        pic->tmvp.collocated_ref = NULL;
         /* Do not delete frame the frame will delete itself
          * when all its references are released
          */
@@ -305,6 +287,7 @@ static int
 compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, uint32_t poc)
 {
     const int nb_refs = rpl->num_ref_entries;
+    rpl_info->nb_refs = nb_refs;
     int i;
     for (i = 0; i < nb_refs; ++i) {
         const struct RefPic *const rp = &rpl->rp_list[i];
@@ -344,17 +327,16 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, uint32_t
 
 
 static int
-vvc_mark_refs(OVDPB *dpb, OVRPL *rpl, uint8_t poc, OVPicture **dst_rpl)
+vvc_mark_refs(OVDPB *dpb, OVRPL *rpl, uint8_t poc, struct RPLInfo *rpl_info, const OVPicture **dst_rpl)
 {
     int i, j;
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
-    struct RPLInfo rpl_info;
 
-    compute_ref_poc(rpl, &rpl_info, poc);
+    compute_ref_poc(rpl, rpl_info, poc);
 
     for (i = 0;  i < rpl->num_ref_entries; ++i){
-        int16_t ref_poc  = rpl_info.ref_info[i].poc;
-        int16_t ref_type = rpl_info.ref_info[i].type;
+        int16_t ref_poc  = rpl_info->ref_info[i].poc;
+        int16_t ref_type = rpl_info->ref_info[i].type;
         uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
         OVPicture *ref_pic;
         uint8_t found = 0;
@@ -614,43 +596,6 @@ ovdpb_bump_frame(OVDPB *dpb, uint32_t poc, uint16_t output_cvs_id)
     }
 }
 
-
-#if 0
-static int
-compute_tmvp_scale(int dist_current, int dist_colocated)
-{
-    int scale;
-    if (dist_current == dist_colocated || !dist_colocated)
-        return 256;
-
-    dist_current = av_clip_int8(dist_current);
-    dist_colocated = av_clip_int8(dist_colocated);
-
-    scale = dist_current * ((0x4000 + abs(dist_colocated >> 1)) / dist_colocated);
-    scale += 32;
-    scale >>= 6;
-    scale = av_clip(scale, -4096, 4095);
-    return scale;
-}
-
-static void
-compute_tmvp_scale_info()
-{
-    /*FIXME move those parts to function + test tmvp is enabled */
-    tmvp_ctx.scale00 = compute_tmvp_scale(dpb->active_pic->dist_ref0,
-                                          dpb->active_pic->collocated_ref->dist_ref0);
-
-    tmvp_ctx.scale10 = compute_tmvp_scale(dpb->active_pic->dist_ref1,
-                                          dpb->active_pic->collocated_ref->dist_ref0);
-
-    tmvp_ctx.scale01 = compute_tmvp_scale(dpb->active_pic->dist_ref0,
-                                          dpb->active_pic->collocated_ref->dist_ref1);
-
-    tmvp_ctx.scale11 = compute_tmvp_scale(dpb->active_pic->dist_ref1,
-                                          dpb->active_pic->collocated_ref->dist_ref1);
-}
-#endif
-
 static int
 mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, struct OVRPL *const rpl0,
                    struct OVRPL *const rpl1, OVSliceDec *const sldec)
@@ -659,6 +604,7 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, struct OVRPL *const rpl
     OVCTUDec *ctudec = sldec->ctudec_list;
     uint32_t poc = dpb->poc;
     int i, ret;
+    OVPicture *current_pic;
 
     /* This is the same as clear_refs except we do not remove
      * flags on current picture
@@ -666,20 +612,25 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, struct OVRPL *const rpl
     for (i = 0; i < nb_dpb_pic; i++) {
         OVPicture *pic = &dpb->pictures[i];
 
-        if (pic->cvs_id == dpb->cvs_id && pic->poc == dpb->poc)
+        if (pic->cvs_id == dpb->cvs_id && pic->poc == dpb->poc) {
+            current_pic = pic;
             continue;
+        }
 
         pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
     }
 
-    ret = vvc_mark_refs(dpb, rpl0, poc, ctudec->drv_ctx.inter_ctx.rpl0);
+    ret = vvc_mark_refs(dpb, rpl0, poc, &current_pic->rpl_info0, current_pic->rpl0);
+    memcpy(ctudec->drv_ctx.inter_ctx.rpl0, current_pic->rpl0, sizeof(*current_pic->rpl0));
+
 
     if (ret < 0) {
         goto fail;
     }
 
     if (slice_type == SLICE_B){
-        ret = vvc_mark_refs(dpb, rpl1, poc, ctudec->drv_ctx.inter_ctx.rpl1);
+        ret = vvc_mark_refs(dpb, rpl1, poc, &current_pic->rpl_info1, current_pic->rpl1);
+    memcpy(ctudec->drv_ctx.inter_ctx.rpl1, current_pic->rpl1, sizeof(*current_pic->rpl1));
         if (ret < 0) {
             goto fail;
         }
@@ -703,38 +654,23 @@ fail:
     return 1;
 }
 
-#if 0
 static int16_t
-compute_tmvp_scale(int32_t dist_current, int32_t dist_colocated)
+tmvp_compute_scale(int32_t dist_current, int32_t dist_colocated)
 {
     int scale;
     if (dist_current == dist_colocated || !dist_colocated)
         return 256;
 
-    dist_current   = av_clip_int8(dist_current);
-    dist_colocated = av_clip_int8(dist_colocated);
+    /*FIXME POW2 clip */
+    dist_current   = ov_clip(dist_current, -128, 127);
+    dist_colocated = ov_clip(dist_colocated, -128, 127);
 
-    scale = dist_current * ((0x4000 + abs(dist_colocated >> 1)) / dist_colocated);
+    scale = dist_current * ((0x4000 + OVABS(dist_colocated >> 1)) / dist_colocated);
     scale += 32;
     scale >>= 6;
     /* FIXME pow2_clip */
     scale = ov_clip(scale, -4096, 4095);
     return (int16_t)scale;
-}
-#endif
-
-static void
-store_ref_poc(OVPicture *const pic, const struct RPLInfo *const rpl_info)
-{
-    int i;
-    uint8_t nb_refs = rpl_info->nb_refs;
-
-    #if 0
-    for (i = 0; i < nb_refs; ++i) {
-        pic->ref_poc[i] = rpl_info[i]->poc;
-        pic->ref_poc[i] = rpl_info[i]->poc;
-    }
-    #endif
 }
 
 static int
@@ -743,13 +679,17 @@ tmvp_release_mv_planes(OVPicture *const pic)
     int ret;
 
     /* FIXME check mv planes exists */
-    ret = mvpool_release_mv_plane(&pic->mv_plane0);
+    if (pic->mv_plane0.dirs) {
+        ret = mvpool_release_mv_plane(&pic->mv_plane0);
+    }
 
-    ret = mvpool_release_mv_plane(&pic->mv_plane1);
+    if (pic->mv_plane1.dirs) {
+        ret = mvpool_release_mv_plane(&pic->mv_plane1);
+    }
 }
 
 static int
-tmvp_request_mv_plane(OVPicture *const pic, const OVVCDec *ovdec)
+tmvp_request_mv_plane(OVPicture *const pic, const OVVCDec *ovdec, uint8_t slice_type)
 {
     struct MVPool *pool = ovdec->mv_pool;
     int ret;
@@ -759,13 +699,35 @@ tmvp_request_mv_plane(OVPicture *const pic, const OVVCDec *ovdec)
         return ret;
     }
 
-    ret = mvpool_request_mv_plane(pool, &pic->mv_plane1);
-    if (ret < 0) {
-        mvpool_release_mv_plane(&pic->mv_plane0);
-        return ret;
+    if (slice_type == SLICE_B) {
+        ret = mvpool_request_mv_plane(pool, &pic->mv_plane1);
+        if (ret < 0) {
+            mvpool_release_mv_plane(&pic->mv_plane0);
+            return ret;
+        }
     }
 
     return 0;
+}
+
+static void
+tmvp_set_mv_scales(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic,
+                   OVPicture *const col_pic)
+{
+    int16_t scale;
+
+    /*TODO scale for every ref in RPL + don't use col pic but ref pic*/
+    int32_t dist_ref0 = pic->poc - pic->rpl_info0.ref_info[0].poc;
+    int32_t dist_ref1 = pic->poc - pic->rpl_info1.ref_info[0].poc;
+
+    int32_t dist_col0 = col_pic->rpl_info0.nb_refs ? col_pic->poc - col_pic->rpl_info0.ref_info[0].poc : 0;
+    int32_t dist_col1 = col_pic->rpl_info1.nb_refs ? col_pic->poc - col_pic->rpl_info1.ref_info[0].poc : 0;
+
+    tmvp_ctx->scale00 = tmvp_compute_scale(dist_ref0, dist_col0);
+    tmvp_ctx->scale01 = tmvp_compute_scale(dist_ref0, dist_col1);
+
+    tmvp_ctx->scale10 = tmvp_compute_scale(dist_ref1, dist_col0);
+    tmvp_ctx->scale11 = tmvp_compute_scale(dist_ref1, dist_col1);
 }
 
 static int
@@ -773,6 +735,8 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
 {
     const OVPH *ph = ps->ph;
     const OVSH *sh = ps->sh;
+
+    uint8_t slice_type = sh->sh_slice_type;
 
     /* Init / update MV Pool */
 
@@ -784,12 +748,9 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
 
     /* The picture can contain inter slice thus Motions Vector */
     if (ph->ph_inter_slice_allowed_flag) {
-        const struct RPLInfo  *rpl_info;
-        store_ref_poc(pic, rpl_info);
 
         /* Request MV buffer to MV Pool */
-        tmvp_request_mv_plane(pic, ovdec);
-
+        tmvp_request_mv_plane(pic, ovdec, slice_type);
     }
 
     /* The current picture might use TMVP */
@@ -798,33 +759,24 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
         /* Compute TMVP scales */
 
         /* Find collocated ref and associate MV fields info */
-        if (ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag) {
-            const OVPicture *collocated;
+        if (ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag || sh->sh_slice_type == SLICE_P) {
             /* FIXME idx can be ph */
             int ref_idx = sh->sh_collocated_ref_idx;
-            int32_t dist_colocated;
-            int16_t scale;
-            collocated = pic->rpl0[ref_idx];
-            dist_colocated = pic->poc - collocated->poc;
+            const OVPicture *col_pic = pic->rpl0[ref_idx];
+            tmvp_ctx->collocated_ref = col_pic;
 
-#if 0
-            if (collocated->mv_field[0]) {
+            tmvp_set_mv_scales(tmvp_ctx, pic, col_pic);
 
-            }
-#endif
-            tmvp_ctx->collocated_ref0 = collocated;
+
 
         } else {
-            const OVPicture *collocated;
-            int ref_idx = sh->sh_collocated_ref_idx;
             /* FIXME idx can be ph */
-            collocated = pic->rpl1[ref_idx];
-#if 0
-            if (collocated->mv_field[0]) {
+            int ref_idx = sh->sh_collocated_ref_idx;
+            const OVPicture *col_pic = pic->rpl1[ref_idx];
+            tmvp_ctx->collocated_ref = col_pic;
 
-            }
-#endif
-            tmvp_ctx->collocated_ref1 = collocated;
+            tmvp_set_mv_scales(tmvp_ctx, pic, col_pic);
+
         }
     }
 
@@ -833,7 +785,7 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
 
 /* TODO rename to ovdpb_init_pic();*/
 int
-ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t nalu_type, 
+ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t nalu_type,
                    OVSliceDec *const sldec, const OVVCDec *ovdec)
 {
 
@@ -905,12 +857,13 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t na
     /* Find an available place in DPB and allocate/retrieve available memory
      * for the current picture data from the Frame Pool
      */
-    ret = ovdpb_init_current_pic(dpb, pic, poc);
+    ret = ovdpb_init_current_pic(dpb, pic_p, poc);
     if (ret < 0) {
         goto fail;
     }
 
-    ov_log(NULL, OVLOG_INFO, "DPB start new picture POC: %d\n", (*pic)->poc);
+
+    ov_log(NULL, OVLOG_INFO, "DPB start new picture POC: %d\n", (*pic_p)->poc);
 
     /* If the picture is not an IDR Picture we set all flags to
      * FIXME in VVC we might still get some ref pic list in IDR
@@ -926,7 +879,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t na
 
     /* Init picture TMVP info */
     if (ps->sps->sps_temporal_mvp_enabled_flag) {
-        ret = init_tmvp_info(&(*pic)->tmvp, *pic, ps, ovdec);
+        ret = init_tmvp_info(&(*pic_p)->tmvp, *pic_p, ps, ovdec);
     }
 
     return ret;

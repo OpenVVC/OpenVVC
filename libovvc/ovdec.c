@@ -206,6 +206,7 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
             int nb_sh_bytes = ret;
             #endif
 
+            #if 1
             ret = init_vcl_decoder(vvcdec, nvcl_ctx, nalu, &rdr);
             if (ret < 0) {
                 goto failvcl;
@@ -215,6 +216,7 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
 
             /* FIXME handle non rect entries later */
             ret = slicedec_decode_rect_entries(vvcdec->subdec_list, &vvcdec->active_params);
+            #endif
 
 
             /* TODO start VCL decoder */

@@ -25,6 +25,30 @@ typedef struct OVDPB
 } OVDPB;
 #endif
 
+enum RefType
+{
+    /* Short term reference Picture */
+    ST_REF = 1,
+
+    /* Long term reference Picture */
+    LT_REF = 2,
+
+    /* Inter Layer reference Picture */
+    ILRP_REF = 3
+};
+
+struct RefInfo
+{
+    enum RefType type;
+    int32_t poc;
+};
+
+struct RPLInfo
+{
+   struct RefInfo ref_info[16];
+   uint8_t nb_refs;
+};
+
 
 struct OVPicture
 {
@@ -38,31 +62,40 @@ struct OVPicture
    uint8_t flags;
 
    /* Pointers to ref_pic_list */
+   /* FIXME use frame directly ? */
    const struct OVPicture *rpl0[16];
    const struct OVPicture *rpl1[16];
 
    /* FIXME Used only by TMPV? */
+   #if 0
    uint32_t ref_poc0[16];
    uint32_t ref_poc1[16];
+   #endif
+   struct RPLInfo rpl_info0;
+   struct RPLInfo rpl_info1;
 
    struct MVPlane mv_plane0;
    struct MVPlane mv_plane1;
 
    struct TMVPInfo {
-       const struct OVPicture *collocated_ref0;
-       const struct OVPicture *collocated_ref1;
+       const struct OVPicture *collocated_ref;
        /* Per ref_idx Motion Scaling information */
        struct TMVPScale {
            int32_t scale;
        } scale_0[16];
 
+       /* FIXME old compat  use sclae instead */
+       int16_t scale00;
+       int16_t scale01;
+       int16_t scale10;
+       int16_t scale11;
        /* Per CTU Bit fields for available Motion Vectors */
        void *mv_field0;
        void *mv_field1;
        /* TODO tmvp scaling */
    } tmvp;
 
-   uint32_t poc;
+   int32_t poc;
 
    /* Coded Video Sequence Id to which this Picture is
     * Associated : this avoid confusing ref with same POC

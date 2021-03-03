@@ -132,6 +132,7 @@ struct HMVPLUT
     uint8_t dir[5];
     uint8_t nb_mv;
 };
+struct MVPlane;
 
 struct InterDRVCtx
 {
@@ -156,12 +157,16 @@ struct InterDRVCtx
     uint8_t tmvp_enabled;
     struct VVCTMVP
     {
+        /* FIXME tmp */
+        struct OVCTUDec *ctudec;
         /* FIXME we used Ref Pictures
          * but we only need motion vectors
          * information or ref idx
          */
-        OVPicture *col_ref0;
-        OVPicture *col_ref1;
+        struct MVPlane *plane0;
+        struct MVPlane *plane1;
+
+        OVPicture *col_ref;
 
         /* Pointer to collocated CTU MV Map*/
         const void *data_ref;
@@ -519,6 +524,7 @@ struct OVCTUDec
     const VVCDeQuantCtx *dequant_chroma;
     uint16_t ctb_x;
     uint16_t ctb_y;
+    uint16_t nb_ctb_pic_w;
 };
 
 int ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec);

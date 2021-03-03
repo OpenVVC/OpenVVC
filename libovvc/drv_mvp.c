@@ -8,6 +8,7 @@
 #include "ctudec.h"
 #include "drv_utils.h"
 #include "dec_structures.h"
+#include "ovdpb.h"
 
 #define POS_MASK(x, w) ((uint64_t) 1 << ((((x + 1)) + ((w)))))
 
@@ -260,10 +261,10 @@ derive_tmvp_ctx_storage(const struct VVCTMVPStorageinfo *const info, const uint8
 }
 
 static void
-load_ctb_tmvp(const VVCLocalContext *const lc_ctx, int ctb_x, int ctb_y)
+load_ctb_tmvp(const OVCTUDec *const ctudec, int ctb_x, int ctb_y)
 {
-    VVCContext *const vvc_ctx = (VVCContext *) lc_ctx->parent;
-    struct InterDRVCtx *const inter_ctx = &lc_ctx->inter_ctx;
+    VVCContext *const vvc_ctx = (VVCContext *) ctudec->parent;
+    struct InterDRVCtx *const inter_ctx = &ctudec->inter_ctx;
     struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
     const struct VVCTMVPStorageinfo const *size_info = &tmvp->tmvp_size;
     int nb_pb = 1 << size_info->log2_nb_ctb_pb;
@@ -281,6 +282,8 @@ load_ctb_tmvp(const VVCLocalContext *const lc_ctx, int ctb_x, int ctb_y)
     OVMV *dst0 = mv_ctx0->mvs + 35;
     OVMV *dst1 = mv_ctx1->mvs + 35;
 
+
+    /* Copy  CTB MV info */
     memcpy(mv_ctx0->map.vfields + 1, storage.col0, size_info->tmvp_map_s);
     memcpy(mv_ctx1->map.vfields + 1, storage.col1, size_info->tmvp_map_s);
 
@@ -293,7 +296,8 @@ load_ctb_tmvp(const VVCLocalContext *const lc_ctx, int ctb_x, int ctb_y)
         dst1 += 34;
     }
 
-    if (lc_ctx->ctb_x != vvc_ctx->nb_ctu_w - 1) {
+    /* Copy right CTB MV info */
+    if (ctudec->ctb_x != vvc_ctx->nb_ctu_w - 1) {
         int i;
         uint8_t *const ctb_tmvp_r = ctb_tmvp + size_info->tmvp_s;
         storage = derive_tmvp_ctx_storage(size_info, ctb_tmvp_r);
@@ -304,7 +308,7 @@ load_ctb_tmvp(const VVCLocalContext *const lc_ctx, int ctb_x, int ctb_y)
         OVMV *mv_right0 = storage.mv0;
         OVMV *mv_right1 = storage.mv1;
 
-        for (i = 0; i < nb_pb + (lc_ctx->ctb_y != vvc_ctx->nb_ctu_h - 1); ++i) {
+        for (i = 0; i < nb_pb + (ctudec->ctb_y != vvc_ctx->nb_ctu_h - 1); ++i) {
             int pos_offset_l = PB_POS_IN_BUF(nb_pb, i);
             mv_ctx0->mvs[pos_offset_l] = *mv_right0;
             mv_ctx1->mvs[pos_offset_l] = *mv_right1;
@@ -313,9 +317,56 @@ load_ctb_tmvp(const VVCLocalContext *const lc_ctx, int ctb_x, int ctb_y)
         }
 
     } else {
+        /* Not available right*/
         mv_ctx0->map.vfield[nb_pb + 1] = 0;
         mv_ctx1->map.vfield[nb_pb + 1] = 0;
     }
+    inter_ctx->tmvp_avail |= 1;
+}
+#else
+static void
+load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
+{
+
+    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+    uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
+    uint8_t nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
+    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    struct MVPlane *plane0 = &inter_ctx->tmvp_ctx.col_ref->mv_plane0;
+    struct MVPlane *plane1 = &inter_ctx->tmvp_ctx.col_ref->mv_plane1;
+    uint16_t nb_ctb_w = ctudec->nb_ctb_pic_w;
+    uint16_t ctb_addr_rs = ctb_x + ctb_y * nb_ctb_w;
+    uint8_t is_border_pic = nb_ctb_w == ctb_y;
+
+    if (plane0->dirs) {
+        uint64_t *src_dirs = plane0->dirs + ctb_addr_rs * nb_pb_ctb_w;
+
+        OVMV *src_mv = plane0->mvs + ctb_x * nb_pb_ctb_w + (ctb_y * nb_pb_ctb_w *nb_pb_ctb_w) * nb_ctb_w;
+        struct OVMVCtx *mv_ctx = &inter_ctx->tmvp_ctx.tmvp_mv.mv_ctx0;
+        int i;
+
+        memcpy(&mv_ctx->map.vfield[1], src_dirs, sizeof(uint64_t) * (nb_pb_ctb_w + !is_border_pic));
+        for (i = 0; i < nb_pb_ctb_w; ++i) {
+            memcpy(&mv_ctx->mvs[1 + 34 * (i + 1)], src_mv, sizeof(*src_mv) * (nb_pb_ctb_w + !is_border_pic));
+            src_mv += nb_pb_ctb_w * nb_ctb_w;
+        }
+    }
+
+    if (plane1->dirs) {
+        struct OVMVCtx *mv_ctx = &inter_ctx->tmvp_ctx.tmvp_mv.mv_ctx1;
+        uint64_t *src_dirs = plane1->dirs + ctb_addr_rs * nb_pb_ctb_w;
+        int i;
+
+        OVMV *src_mv = plane1->mvs + ctb_x * nb_pb_ctb_w + (ctb_y * nb_pb_ctb_w *nb_pb_ctb_w) * nb_ctb_w;
+
+        /*FIXME memory could be spared with smaller map size when possible */
+        memcpy(&mv_ctx->map.vfield[1], src_dirs, sizeof(uint64_t) * (nb_pb_ctb_w + !is_border_pic));
+        for (i = 0; i < nb_pb_ctb_w; ++i) {
+            memcpy(&mv_ctx->mvs[1 + 34 * (i + 1)], src_mv, sizeof(*src_mv) * (nb_pb_ctb_w + !is_border_pic));
+            src_mv += nb_pb_ctb_w * nb_ctb_w;
+        }
+    }
+
     inter_ctx->tmvp_avail |= 1;
 }
 #endif
@@ -396,6 +447,9 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
 
     #if 0
     if (inter_ctx->tmvp_enabled && nb_cand < 2) {
+    }
+    #else
+    if (inter_ctx->tmvp_enabled && nb_cand < 2) {
         const struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
         uint64_t c1_col;
         uint64_t c0_col;
@@ -410,11 +464,14 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
         int c0_x = pb_x + nb_pb_w;
         int c0_y = pb_y + nb_pb_h;
         int scale0, scale1;
-        #if 0
+        #if 1
         if (!inter_ctx->tmvp_avail) {
             /* FIXME thread synchro */
-            load_ctb_tmvp(lc_ctx, lc_ctx->ctb_x, lc_ctx->ctb_y);
+            /*FIXME dirty ref to ctudec */
+            OVCTUDec *ctudec = inter_ctx->tmvp_ctx.ctudec;
+            load_ctb_tmvp(ctudec, ctudec->ctb_x, ctudec->ctb_y);
         }
+
         #endif
 
         /* Derive availability based on CTB inter fields */
@@ -594,7 +651,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
     }
 
 
-    #if 0
+    #if 1
     if (inter_ctx->tmvp_enabled) {
         const struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
         uint64_t c1_col;
@@ -607,10 +664,12 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
         int c0_y = pb_y + nb_pb_h;
         /*FIXME determine whether or not RPL1 might be use when 
           collocated picture from P picture is a B picture */
-        #if 0
+        #if 1
         if (!inter_ctx->tmvp_avail) {
             /* FIXME thread synchro */
-            load_ctb_tmvp(lc_ctx, lc_ctx->ctb_x, lc_ctx->ctb_y);
+            /*FIXME dirty ref to ctudec */
+            OVCTUDec *ctudec = inter_ctx->tmvp_ctx.ctudec;
+            load_ctb_tmvp(ctudec, ctudec->ctb_x, ctudec->ctb_y);
         }
         #endif
 
@@ -794,13 +853,15 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         }
     }
 
-    #if 0
+    #if 1
     if (inter_ctx->tmvp_enabled) {
         const struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
-        #if 0
+        #if 1
         if (!inter_ctx->tmvp_avail) {
             /* FIXME thread synchro */
-            load_ctb_tmvp(lc_ctx, lc_ctx->ctb_x, lc_ctx->ctb_y);
+            /*FIXME dirty ref to ctudec */
+            OVCTUDec *ctudec = inter_ctx->tmvp_ctx.ctudec;
+            load_ctb_tmvp(ctudec, ctudec->ctb_x, ctudec->ctb_y);
         }
         #endif
 
@@ -815,7 +876,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         int c0_y = pb_y + nb_pb_h;
 
         #if 0
-        if (tmvp->col_ref == &lc_ctx->ref0) {
+        if (tmvp->col_ref == &ctudec->ref0) {
         #endif
             uint64_t c0_col  = tmvp->tmvp_mv.mv_ctx0.map.vfield[c0_x + 1];
             uint64_t c0_col1 = tmvp->tmvp_mv.mv_ctx1.map.vfield[c0_x + 1];
@@ -1043,7 +1104,7 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
 {
     /*FIXME Use specific DBF update function if DBF is disabled */
     #if 0
-    struct DBFInfo *const dbf_info = &lc_ctx->dbf_info;
+    struct DBFInfo *const dbf_info = &ctudec->dbf_info;
     #endif
     if (inter_dir == 3) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
@@ -1054,7 +1115,7 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
         fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         #if 0
-        fill_dbf_mv_map(dbf_info, mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+        fcll_dbf_mv_map(dbf_info, mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_dbf_mv_map(dbf_info, mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
         #endif
@@ -1097,7 +1158,7 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
 {
     /*FIXME Use specific DBF update function if DBF is disabled */
     #if 0
-    struct DBFInfo *const dbf_info = &lc_ctx->dbf_info;
+    struct DBFInfo *const dbf_info = &ctudec->dbf_info;
     #endif
     if (inter_dir & 0x2) {
         #if 0
@@ -1137,13 +1198,6 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
           uint8_t mvp_idx0, uint8_t mvp_idx1,
           uint8_t inter_dir)
 {
-    /* FIXME replace part_ctx with something in inter CTX */
-    #if 0
-    uint8_t pb_y = y0 >> part_ctx->log2_min_cb_s;
-    uint8_t pb_x = x0 >> part_ctx->log2_min_cb_s;
-    uint8_t nb_pb_w = (1 << log2_pb_w) >> part_ctx->log2_min_cb_s;
-    uint8_t nb_pb_h = (1 << log2_pb_h) >> part_ctx->log2_min_cb_s;
-    #endif
     OVMV mv0 = {0}, mv1 = {0};
     VVCMergeInfo mv_info;
 

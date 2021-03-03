@@ -35,6 +35,7 @@ struct RectEntryInfo {
     uint8_t implicit_w;
     int last_ctu_w;
     int last_ctu_h;
+    int nb_ctb_pic_w;
 };
 
 static int
@@ -432,6 +433,7 @@ init_pic_border_info(struct RectEntryInfo *einfo, const OVPS *const prms, int en
     einfo->implicit_h = !full_ctb_h;
     einfo->last_ctu_w = full_ctb_w ? (1 << log2_ctb_s) : last_ctu_w;
     einfo->last_ctu_h = full_ctb_h ? (1 << log2_ctb_s) : last_ctu_h;
+    einfo->nb_ctb_pic_w = nb_ctb_pic_w;
 
     return 0;
 }
@@ -549,6 +551,54 @@ cabac_line_next_ctu(OVCTUDec *const ctudec, const OVPS *const prms)
     pmap_c->cu_mode_x       += nb_pb_ctb_w;
 }
 
+static void
+tmvp_store_mv(OVCTUDec *ctudec)
+{
+    uint16_t ctb_x = ctudec->ctb_x;
+    uint16_t ctb_y = ctudec->ctb_y;
+    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+    uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
+    int nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
+    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+
+    struct MVPlane *plane0 = inter_ctx->tmvp_ctx.plane0;
+    struct MVPlane *plane1 = inter_ctx->tmvp_ctx.plane1;
+
+    int nb_ctb_w = ctudec->nb_ctb_pic_w;
+    uint16_t ctb_addr_rs = ctb_x + ctb_y * nb_ctb_w;
+
+    if (plane0->dirs) {
+        uint64_t *dst_dirs = plane0->dirs + ctb_addr_rs * nb_pb_ctb_w;
+
+        OVMV *dst_mv = plane0->mvs + ctb_x * nb_pb_ctb_w + (ctb_y * nb_pb_ctb_w* nb_pb_ctb_w) * nb_ctb_w;
+        struct OVMVCtx *mv_ctx = &inter_ctx->mv_ctx0;
+        int i;
+
+        memcpy(dst_dirs, &mv_ctx->map.vfield[1], sizeof(uint64_t) * nb_pb_ctb_w);
+        for (i = 0; i < nb_pb_ctb_w; ++i) {
+            memcpy(dst_mv, &mv_ctx->mvs[1 + 34 * (i + 1)], sizeof(*dst_mv) * nb_pb_ctb_w);
+            dst_mv += nb_pb_ctb_w * nb_ctb_w;
+        }
+    }
+
+    if (plane1->dirs) {
+        struct OVMVCtx *mv_ctx = &inter_ctx->mv_ctx1;
+        uint64_t *dst_dirs = plane1->dirs + ctb_addr_rs * nb_pb_ctb_w;
+        int i;
+
+        OVMV *dst_mv = plane1->mvs + ctb_x * nb_pb_ctb_w + (ctb_y * nb_pb_ctb_w* nb_pb_ctb_w) * nb_ctb_w;
+
+        /*FIXME memory could be spared with smaller map size when possible */
+        memcpy(dst_dirs, &mv_ctx->map.vfield[1], sizeof(uint64_t) * nb_pb_ctb_w);
+        for (i = 0; i < nb_pb_ctb_w; ++i) {
+            memcpy(dst_mv, &mv_ctx->mvs[1 + 34 * (i + 1)], sizeof(*dst_mv) * nb_pb_ctb_w);
+            dst_mv += nb_pb_ctb_w * nb_ctb_w;
+        }
+
+    }
+
+}
+
 /* Wrapper function around decode CTU calls so we can easily modify
  * what is to be done before and after each CTU
  * without adding many thing in each lin decoder
@@ -562,6 +612,7 @@ decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     int nb_ctu_w = einfo->nb_ctu_w;
     int ret;
 
+    ctudec->drv_ctx.inter_ctx.tmvp_avail = 0;
     /* FIXME pic border detection in neighbour flags ? CTU Neighbours
      * could be set according to upper level context
      */
@@ -572,6 +623,7 @@ decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     ret = ctudec->coding_tree(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s, 0);
 
     rcn_write_ctu_to_frame(&ctudec->rcn_ctx, log2_ctb_s);
+    tmvp_store_mv(ctudec);
 
     return ret;
 }
@@ -585,6 +637,7 @@ decode_ctu_implicit(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     int nb_ctu_w = einfo->nb_ctu_w;
     int ret;
 
+    ctudec->drv_ctx.inter_ctx.tmvp_avail = 0;
     /* FIXME pic border detection in neighbour flags ?*/
     derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w);
 
@@ -597,6 +650,8 @@ decode_ctu_implicit(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     rcn_write_ctu_to_frame_border(&ctudec->rcn_ctx,
                                   ctu_w, ctu_h);
+    tmvp_store_mv(ctudec);
+
     return ret;
 }
 
@@ -672,6 +727,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     /* Next line will use the qp of the first pu as a start value
      * for qp_prediction
      */
+    /* FIXME if inter only */
     store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
 
     ctudec->qp_ctx.current_qp = backup_qp;
@@ -791,6 +847,19 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     ctudec->qp_ctx.current_qp = ctudec->slice_qp;
     derive_dequant_ctx(ctudec, &ctudec->qp_ctx, 0);
 
+    /*FIXME quick tmvp import */
+    ctudec->nb_ctb_pic_w = einfo->nb_ctb_pic_w;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.plane0 = &sldec->pic->mv_plane0;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.plane1 = &sldec->pic->mv_plane1;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref = sldec->pic->tmvp.collocated_ref;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctudec = ctudec;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.scale00 = sldec->pic->tmvp.scale00;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.scale10 = sldec->pic->tmvp.scale10;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.scale01 = sldec->pic->tmvp.scale01;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.scale11 = sldec->pic->tmvp.scale11;
+    memset(ctudec->drv_ctx.inter_ctx.tmvp_ctx.tmvp_mv.mv_ctx0.map.vfield, 0, 33 * sizeof(uint64_t));
+    memset(ctudec->drv_ctx.inter_ctx.tmvp_ctx.tmvp_mv.mv_ctx1.map.vfield, 0, 33 * sizeof(uint64_t));
+
     /* FIXME entry might be check before attaching entry to CABAC so there
      * is no need for this check
      */
@@ -816,9 +885,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     slicedec_attach_frame_buff(ctudec, sldec, einfo);
 
     tmp_fbuff = ctudec->rcn_ctx.frame_buff;
-
-
-    /* FIXME add a check for cabac end ?*/
 
     while (ctb_y < nb_ctu_h - 1) {
         uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
@@ -900,7 +966,11 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
 
     init_slice_tree_ctx(ctudec, prms);
 
+    ctudec->drv_ctx.inter_ctx.tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
+
+    /*FIXME move rcn functions pointers init */
     rcn_init_mc_functions(&ctudec->rcn_ctx.rcn_funcs);
+
     /* Note it is important here that part info has already been set before calling
      * this function since it will be used to set line sizes*/
 
