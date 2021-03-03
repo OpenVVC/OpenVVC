@@ -130,11 +130,11 @@ store_inter_maps(struct DRVLines *const l,
     struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
     struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
-    uint64_t *const rows_map0 = inter_ctx->mv_ctx0.map.hfield;
-    uint64_t *const cols_map0 = inter_ctx->mv_ctx0.map.vfield;
+    uint64_t *const rows_map0 = mv_ctx0->map.hfield;
+    uint64_t *const cols_map0 = mv_ctx0->map.vfield;
 
-    uint64_t *const rows_map1 = inter_ctx->mv_ctx1.map.hfield;
-    uint64_t *const cols_map1 = inter_ctx->mv_ctx1.map.vfield;
+    uint64_t *const rows_map1 = mv_ctx1->map.hfield;
+    uint64_t *const cols_map1 = mv_ctx1->map.vfield;
 
     int i;
 
@@ -165,7 +165,6 @@ store_inter_maps(struct DRVLines *const l,
     /* Replace CTU above MV line by line MV at ctb_x + 1*/
     memcpy(&mv_ctx0->mvs[1], &lns->mv0[(ctb_x + 1) << 5], sizeof(OVMV) * nb_ctb_pb);
     memcpy(&mv_ctx1->mvs[1], &lns->mv1[(ctb_x + 1) << 5], sizeof(OVMV) * nb_ctb_pb);
-
     mv_ctx0->mvs[1 + nb_ctb_pb] = lns->mv0[(ctb_x + 2) << 5];
     mv_ctx1->mvs[1 + nb_ctb_pb] = lns->mv1[(ctb_x + 2) << 5];
 
