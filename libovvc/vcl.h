@@ -129,5 +129,7 @@ void ovcabac_read_ae_sao_ctu( OVCTUDec *const ctudec, const OVPS *const prms);
 
 void ovcabac_read_ae_alf_ctu( OVCTUDec *const ctudec, const OVPS *const prms, uint16_t ctb_rs, uint16_t nb_ctu_w);
 
+void ovcabac_read_ae_cc_alf_ctu(OVCTUDec *const ctudec, const OVPS *const prms, uint16_t ctb_rs, uint16_t nb_ctu_w);
+
 
 #endif

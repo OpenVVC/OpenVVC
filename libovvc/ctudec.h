@@ -558,8 +558,10 @@ struct OVCTUDec
     DECLARE_ALIGNED(32, int16_t, transform_buff)[64*64];
 
     uint8_t left_ctb_alf_flag;
+    uint8_t left_ctb_cc_alf_flag[2];
     //TODO: mettre la taille de l'image (ou tile)
     uint8_t ctb_alf_flag_line[32];
+    uint8_t ctb_cc_alf_flag_line[2][32];
 
     uint8_t slice_qp;
     /* FIXME
