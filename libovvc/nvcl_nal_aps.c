@@ -92,29 +92,29 @@ nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data, uint8_t 
         }
     }
 
-    // if (alf_cc_cb_filter_signal_flag) {
-    //     alf_data->alf_cc_cb_filters_signalled_minus1 = nvcl_read_u_expgolomb(rdr);
-    //     for (k = 0; k < alf_cc_cb_filters_signalled_minus1 + 1; k++) {
-    //         for (j = 0; j < 7; j++) {
-    //             alf_data->alf_cc_cb_mapped_coeff_abs[k][j] = nvcl_read_bits(rdr, 3);
-    //             if (alf_cc_cb_mapped_coeff_abs[k][j]) {
-    //                 alf_data->alf_cc_cb_coeff_sign[k][j] = nvcl_read_bits(rdr, 1);
-    //             }
-    //         }
-    //     }
-    // }
+    if (alf_data->alf_cc_cb_filter_signal_flag) {
+        alf_data->alf_cc_cb_filters_signalled_minus1 = nvcl_read_u_expgolomb(rdr);
+        for (int k = 0; k < alf_data->alf_cc_cb_filters_signalled_minus1 + 1; k++) {
+            for (int j = 0; j < 7; j++) {
+                alf_data->alf_cc_cb_mapped_coeff_abs[k][j] = nvcl_read_bits(rdr, 3);
+                if (alf_data->alf_cc_cb_mapped_coeff_abs[k][j]) {
+                    alf_data->alf_cc_cb_coeff_sign[k][j] = nvcl_read_bits(rdr, 1);
+                }
+            }
+        }
+    }
 
-    // if (alf_cc_cr_filter_signal_flag) {
-    //     alf_data->alf_cc_cr_filters_signalled_minus1 = nvcl_read_u_expgolomb(rdr);
-    //     for (k = 0; k < alf_cc_cr_filters_signalled_minus1 + 1; k++) {
-    //         for (j = 0; j < 7; j++) {
-    //             alf_data->alf_cc_cr_mapped_coeff_abs[k][j] = nvcl_read_bits(rdr, 3);
-    //             if (alf_cc_cr_mapped_coeff_abs[k][j]) {
-    //                 alf_data->alf_cc_cr_coeff_sign[k][j] = nvcl_read_bits(rdr, 1);
-    //             }
-    //         }
-    //     }
-    // }
+    if (alf_data->alf_cc_cr_filter_signal_flag) {
+        alf_data->alf_cc_cr_filters_signalled_minus1 = nvcl_read_u_expgolomb(rdr);
+        for (int k = 0; k < alf_data->alf_cc_cr_filters_signalled_minus1 + 1; k++) {
+            for (int j = 0; j < 7; j++) {
+                alf_data->alf_cc_cr_mapped_coeff_abs[k][j] = nvcl_read_bits(rdr, 3);
+                if (alf_data->alf_cc_cr_mapped_coeff_abs[k][j]) {
+                    alf_data->alf_cc_cr_coeff_sign[k][j] = nvcl_read_bits(rdr, 1);
+                }
+            }
+        }
+    }
 }
 
 
