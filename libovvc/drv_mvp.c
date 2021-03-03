@@ -248,86 +248,9 @@ hmvp_update_lut_b(struct HMVPLUT *const hmvp_lut, OVMV mv0, OVMV mv1, uint8_t in
 }
 
 
-#if 0
-static struct VVCTMVPStorage
-derive_tmvp_ctx_storage(const struct VVCTMVPStorageinfo *const info, const uint8_t *const data)
-{
-    struct VVCTMVPStorage storage;
-    storage.col0 = data;
-    storage.col1 = data + info->tmvp_map_s;
-    storage.mv0  = data + (info->tmvp_map_s << 1);
-    storage.mv1  = data + (info->tmvp_map_s << 1) + info->tmvp_mvs_s;
-    return storage;
-}
-
-static void
-load_ctb_tmvp(const OVCTUDec *const ctudec, int ctb_x, int ctb_y)
-{
-    VVCContext *const vvc_ctx = (VVCContext *) ctudec->parent;
-    struct InterDRVCtx *const inter_ctx = &ctudec->inter_ctx;
-    struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
-    const struct VVCTMVPStorageinfo const *size_info = &tmvp->tmvp_size;
-    int nb_pb = 1 << size_info->log2_nb_ctb_pb;
-    const int ctb_offset = ctb_y * vvc_ctx->nb_ctu_w + ctb_x;
-
-    const uint8_t *const ctb_tmvp = (uint8_t *)tmvp->data_ref + (ctb_offset * size_info->tmvp_s);
-
-    struct VVCTMVPStorage storage = derive_tmvp_ctx_storage(size_info, ctb_tmvp);
-
-    struct OVMVCtx *const mv_ctx0 = &tmvp->tmvp_mv.mv_ctx0;
-    struct OVMVCtx *const mv_ctx1 = &tmvp->tmvp_mv.mv_ctx1;
-
-    /*FIXME threading */
-
-    OVMV *dst0 = mv_ctx0->mvs + 35;
-    OVMV *dst1 = mv_ctx1->mvs + 35;
-
-
-    /* Copy  CTB MV info */
-    memcpy(mv_ctx0->map.vfields + 1, storage.col0, size_info->tmvp_map_s);
-    memcpy(mv_ctx1->map.vfields + 1, storage.col1, size_info->tmvp_map_s);
-
-    for (int i = 0; i < (1 << size_info->log2_nb_ctb_pb); ++i) {
-        memcpy(dst0, storage.mv0, (sizeof(OVMV) << size_info->log2_nb_ctb_pb));
-        memcpy(dst1, storage.mv1, (sizeof(OVMV) << size_info->log2_nb_ctb_pb));
-        storage.mv0 += 1 << size_info->log2_nb_ctb_pb;
-        storage.mv1 += 1 << size_info->log2_nb_ctb_pb;
-        dst0 += 34;
-        dst1 += 34;
-    }
-
-    /* Copy right CTB MV info */
-    if (ctudec->ctb_x != vvc_ctx->nb_ctu_w - 1) {
-        int i;
-        uint8_t *const ctb_tmvp_r = ctb_tmvp + size_info->tmvp_s;
-        storage = derive_tmvp_ctx_storage(size_info, ctb_tmvp_r);
-
-        mv_ctx0->map.vfield[nb_pb + 1] = storage.col0[0];
-        mv_ctx1->map.vfield[nb_pb + 1] = storage.col1[0];
-
-        OVMV *mv_right0 = storage.mv0;
-        OVMV *mv_right1 = storage.mv1;
-
-        for (i = 0; i < nb_pb + (ctudec->ctb_y != vvc_ctx->nb_ctu_h - 1); ++i) {
-            int pos_offset_l = PB_POS_IN_BUF(nb_pb, i);
-            mv_ctx0->mvs[pos_offset_l] = *mv_right0;
-            mv_ctx1->mvs[pos_offset_l] = *mv_right1;
-            mv_right0 += 1 << size_info->log2_nb_ctb_pb;
-            mv_right1 += 1 << size_info->log2_nb_ctb_pb;
-        }
-
-    } else {
-        /* Not available right*/
-        mv_ctx0->map.vfield[nb_pb + 1] = 0;
-        mv_ctx1->map.vfield[nb_pb + 1] = 0;
-    }
-    inter_ctx->tmvp_avail |= 1;
-}
-#else
 static void
 load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
 {
-
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
     uint8_t nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
@@ -373,7 +296,6 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
 
     inter_ctx->tmvp_avail |= 1;
 }
-#endif
 
 static inline OVMV
 tmvp_scale_mv(int scale, OVMV mv)
