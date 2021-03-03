@@ -713,8 +713,6 @@ static void
 tmvp_set_mv_scales(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic,
                    OVPicture *const col_pic)
 {
-    int16_t scale;
-
     /*TODO scale for every ref in RPL + don't use col pic but ref pic*/
     int32_t dist_ref0 = pic->poc - pic->rpl_info0.ref_info[0].poc;
     int32_t dist_ref1 = pic->poc - pic->rpl_info1.ref_info[0].poc;
