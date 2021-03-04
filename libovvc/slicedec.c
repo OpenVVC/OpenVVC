@@ -851,14 +851,29 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     ctudec->nb_ctb_pic_w = einfo->nb_ctb_pic_w;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.plane0 = &sldec->pic->mv_plane0;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.plane1 = &sldec->pic->mv_plane1;
+
+    #if 0
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref = sldec->pic->tmvp.collocated_ref;
+    #endif
+    #if 0
+    if (sldec->pic->tmvp.collocated_ref) {
+    #endif
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_plane0 = &sldec->pic->tmvp.collocated_ref->mv_plane0;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_plane1 = &sldec->pic->tmvp.collocated_ref->mv_plane1;
+    #if 0
+    } else {
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_plane0 = NULL;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_plane1 = NULL;
+    }
+    #endif
+
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctudec = ctudec;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.scale00 = sldec->pic->tmvp.scale00;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.scale10 = sldec->pic->tmvp.scale10;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.scale01 = sldec->pic->tmvp.scale01;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.scale11 = sldec->pic->tmvp.scale11;
-    memset(ctudec->drv_ctx.inter_ctx.tmvp_ctx.tmvp_mv.mv_ctx0.map.vfield, 0, 33 * sizeof(uint64_t));
-    memset(ctudec->drv_ctx.inter_ctx.tmvp_ctx.tmvp_mv.mv_ctx1.map.vfield, 0, 33 * sizeof(uint64_t));
+    memset(ctudec->drv_ctx.inter_ctx.tmvp_ctx.dir_map_v0, 0, 33 * sizeof(uint64_t));
+    memset(ctudec->drv_ctx.inter_ctx.tmvp_ctx.dir_map_v1, 0, 33 * sizeof(uint64_t));
 
     /* FIXME entry might be check before attaching entry to CABAC so there
      * is no need for this check

@@ -155,46 +155,51 @@ struct InterDRVCtx
      */
     uint8_t tmvp_avail;
     uint8_t tmvp_enabled;
+
     struct VVCTMVP
     {
-        /* FIXME tmp */
+        /* FIXME tmp info */
         struct OVCTUDec *ctudec;
         /* FIXME we used Ref Pictures
          * but we only need motion vectors
          * information or ref idx
          */
+        /* MV plane storage for current picture */
         struct MVPlane *plane0;
         struct MVPlane *plane1;
 
+        #if 0
         OVPicture *col_ref;
+        #endif
 
-        /* Pointer to collocated CTU MV Map*/
-        const void *data_ref;
-        void *data_cur;
+        /* MV plane storage for collocated reference picture */
+        struct MVPlane *col_plane0;
+        struct MVPlane *col_plane1;
 
         /* Scale info computed at slice start
          * based on the distance between collocated
          * and current picture in POC
          */
         int16_t scale00;
-        int16_t scale10;
         int16_t scale01;
+        int16_t scale10;
         int16_t scale11;
 
+        /* FIXME do not start from 1 */
+        /* Vertical bit map of motions available in collocated MV CTU */
+        uint64_t dir_map_v0[33];
+        uint64_t dir_map_v1[33];
+
+        OVMV mvs0[34*34];
+        OVMV mvs1[34*34];
+
+        #if 0
         struct VVCCTBTMVP
         {
             struct OVMVCtx mv_ctx0;
             struct OVMVCtx mv_ctx1;
         }tmvp_mv;
-
-        /* Dimension info for per MV CTB storage */
-        struct VVCTMVPStorageinfo
-        {
-            int log2_nb_ctb_pb;
-            size_t tmvp_map_s;
-            size_t tmvp_mvs_s;
-            size_t tmvp_s;
-        } tmvp_size;
+        #endif
     } tmvp_ctx;
 };
 
