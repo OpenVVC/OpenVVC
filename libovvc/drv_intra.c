@@ -347,15 +347,17 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
     
 
     if (mip_flag){
-        #if 0
+        #if 1
         if (!(cu.cu_opaque & (1 << 7))) {
             uint8_t mip_mode_idx = cu.cu_opaque & 0x3F;
-            uint16_t *dst = &ctudec->ctu_data_y[x0 + y0 * RCN_CTB_STRIDE];
-            vvc_intra_pred_mip(ctudec, dst, x0, y0, log2_cb_w, log2_cb_h, mip_mode_idx);
+            const struct OVRCNCtx *rcn = &ctudec->rcn_ctx;
+            uint16_t *dst = &rcn->ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
+            vvc_intra_pred_mip(rcn, dst, x0, y0, log2_cb_w, log2_cb_h, mip_mode_idx);
         } else {
             uint8_t mip_mode_idx = cu.cu_opaque & 0x3F;
-            uint16_t *dst = &ctudec->ctu_data_y[x0 + y0 * RCN_CTB_STRIDE];
-            vvc_intra_pred_mip_tr(ctudec, dst, x0, y0, log2_cb_w, log2_cb_h, mip_mode_idx);
+            const struct OVRCNCtx *rcn = &ctudec->rcn_ctx;
+            uint16_t *dst = &rcn->ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
+            vvc_intra_pred_mip_tr(rcn, dst, x0, y0, log2_cb_w, log2_cb_h, mip_mode_idx);
         }
         #endif
 
@@ -763,6 +765,7 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
                       int log2_pb_w, int log2_pb_h){
 
     const struct OVBuffInfo *ctu_buff = &rcn_ctx->ctu_buff;
+    const struct RCNFunctions *rcn_func = &rcn_ctx->rcn_funcs;
 
     uint16_t *const dst_cb = &ctu_buff->cb[(x0) + (y0 * RCN_CTB_STRIDE)];
     uint16_t *const dst_cr = &ctu_buff->cr[(x0) + (y0 * RCN_CTB_STRIDE)];
@@ -777,16 +780,9 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
     uint16_t ref_left [(128<<1) + 128];
     uint16_t *ref1 = ref_above;
     uint16_t *ref2 = ref_left;
-    #if 0
-    /* FIXME to be replaced by progress fields */
-    uint8_t neighbour= ctudec->ctu_ngh_flags;
-    uint8_t got_left_ctu = neighbour & VVC_CTU_LEFT_FLAG;
-    uint8_t got_top_ctu  = neighbour & VVC_CTU_UP_FLAG;
-    #endif
 
     uint64_t left_col_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
     uint64_t top_row_map  = rcn_ctx->progress_field_c.hfield[y0 >> 1];
-
 
     switch (intra_mode) {
     case OVINTRA_PLANAR://PLANAR
@@ -867,36 +863,52 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
     }
     case OVINTRA_LM_CHROMA:
     {
+        const uint16_t  *const src_luma = &rcn_ctx->ctu_buff.y[(x0<<1)+((y0<<1)*RCN_CTB_STRIDE)];
+        /* FIXME to be replaced by progress fields */
         #if 0
-        const uint16_t  *const src_luma = &ctudec->rcn_ctx.ctu_buff.y[(x0<<1)+((y0<<1)*RCN_CTB_STRIDE)];
-        // ctudec->cclm_func(src_luma, dst_cb, dst_cr, log2_pb_w, log2_pb_h,
-        //                   y0, got_top_ctu || y0, got_left_ctu || x0);
+        uint8_t got_left_ctu = left_col_map;// & ((uint64_t)1 << (y0 >> 1));//neighbour & CTU_LFT_FLG;
+        uint8_t got_top_ctu  = top_row_map;// & ((uint64_t)1 << (x0 >> 1));//neighbour & CTU_UP_FLG;
         #endif
+        uint8_t neighbour = rcn_ctx->ctudec->ctu_ngh_flags;
+        uint8_t got_left_ctu = neighbour & CTU_LFT_FLG;
+        uint8_t got_top_ctu  = neighbour & CTU_UP_FLG;
 
+        rcn_func->cclm.cclm(src_luma, dst_cb, dst_cr, log2_pb_w, log2_pb_h,
+                            y0, got_top_ctu || y0, got_left_ctu || x0);
         break;
     }
     case OVINTRA_MDLM_LEFT:
     {
+        uint8_t neighbour = rcn_ctx->ctudec->ctu_ngh_flags;
+        uint8_t got_left_ctu = neighbour & CTU_LFT_FLG;
+        uint8_t got_top_ctu  = neighbour & CTU_UP_FLG;
+        const uint16_t  *const src_luma = &rcn_ctx->ctu_buff.y[(x0<<1)+((y0<<1)*RCN_CTB_STRIDE)];
         #if 0
-        const uint16_t  *const src_luma = &ctudec->rcn_ctx.ctu_buff.y[(x0<<1)+((y0<<1)*RCN_CTB_STRIDE)];
-
-        // FIXED? : ctudec->left_mdlm(src_luma, dst_cb, dst_cr,
-        //                   left_col_map, log2_pb_w, log2_pb_h,
-        //                   x0, y0, x0 || got_left_ctu, y0 || got_top_ctu);
+        /* FIXME to be replaced by progress fields */
+        uint8_t got_left_ctu = left_col_map;// & ((uint64_t)1 << (y0 >> 1));//neighbour & CTU_LFT_FLG;
+        uint8_t got_top_ctu  = top_row_map;// & ((uint64_t)1 << (x0 >> 1));//neighbour & CTU_UP_FLG;
         #endif
 
+        rcn_func->cclm.mdlm_left(src_luma, dst_cb, dst_cr,
+                                 left_col_map, log2_pb_w, log2_pb_h,
+                                 x0, y0, x0 || got_left_ctu, y0 || got_top_ctu);
         break;
     }
     case OVINTRA_MDLM_TOP:
     {
+        uint8_t neighbour = rcn_ctx->ctudec->ctu_ngh_flags;
+        uint8_t got_left_ctu = neighbour & CTU_LFT_FLG;
+        uint8_t got_top_ctu  = neighbour & CTU_UP_FLG;
+        const uint16_t  *const src_luma = &rcn_ctx->ctu_buff.y[(x0<<1)+((y0<<1)*RCN_CTB_STRIDE)];
         #if 0
-        const uint16_t  *const src_luma = &ctudec->rcn_ctx.ctu_buff.y[(x0<<1)+((y0<<1)*RCN_CTB_STRIDE)];
-
-        // FIXED? : ctudec->top_mdlm(src_luma, dst_cb, dst_cr,
-        //                  top_row_map, log2_pb_w, log2_pb_h,
-        //                  x0, y0, x0 || got_left_ctu, y0 || got_top_ctu);
+        /* FIXME to be replaced by progress fields */
+        uint8_t got_left_ctu = left_col_map;// & ((uint64_t)1 << (y0 >> 1));//neighbour & CTU_LFT_FLG;
+        uint8_t got_top_ctu  = top_row_map;// & ((uint64_t)1 << (x0 >> 1));//neighbour & CTU_UP_FLG;
         #endif
 
+        rcn_func->cclm.mdlm_top(src_luma, dst_cb, dst_cr,
+                                top_row_map, log2_pb_w, log2_pb_h,
+                                x0, y0, x0 || got_left_ctu, y0 || got_top_ctu);
         break;
     }
     default://angular

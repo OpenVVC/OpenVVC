@@ -193,13 +193,6 @@ struct InterDRVCtx
         OVMV mvs0[34*34];
         OVMV mvs1[34*34];
 
-        #if 0
-        struct VVCCTBTMVP
-        {
-            struct OVMVCtx mv_ctx0;
-            struct OVMVCtx mv_ctx1;
-        }tmvp_mv;
-        #endif
     } tmvp_ctx;
 };
 
@@ -330,7 +323,10 @@ struct OVCTUDec
     } drv_ctx;
 
     /* Reconstruction context */
-    struct OVRCNCtx {
+    struct OVRCNCtx
+    {
+        /*FIXME tmp*/
+        struct OVCTUDec *ctudec;
 
         /* FIXME
          * decide where we should store / alloc init this

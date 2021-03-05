@@ -653,6 +653,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
                       uint8_t cbf_mask, uint8_t cu_flags)
 {
     uint8_t joint_cb_cr = cbf_mask & (1 << 3);
+    const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
 
     cbf_mask &= 0x3;
 
@@ -767,7 +768,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
             rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cb, tmp_lfnst_cb, x0, y0, log2_tb_w, log2_tb_h,
                            lim_cg_w_cb, 0, 0, !last_pos_cb, lfnst_flag, 1, lfnst_idx);
 
-            rcn_add_residuals(dst_cb, ctu_dec->transform_buff, log2_tb_w, log2_tb_h);
+            rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, 0);
 #if 0
             (*ctu_dec->scale_addsub_residuals)[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
 
@@ -784,7 +785,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
             rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cr, tmp_lfnst_cr, x0, y0, log2_tb_w, log2_tb_h,
                              lim_cg_w_cr, 0, 0, !last_pos_cr, lfnst_flag, 1, lfnst_idx);
 
-            rcn_add_residuals(dst_cr, ctu_dec->transform_buff, log2_tb_w, log2_tb_h);
+            rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, 0);
 #if 0
             (*ctu_dec->scale_addsub_residuals)[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
 
@@ -875,8 +876,17 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
 #else
-      rcn_add_residuals(dst_cb, ctu_dec->transform_buff, log2_tb_w, log2_tb_h);
-      rcn_add_residuals(dst_cr, ctu_dec->transform_buff, log2_tb_w, log2_tb_h);
+        /* FIXME better organisation based on cbf_mask */
+        if (cbf_mask == 3) {
+            rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, 0);
+            rcn_func->ict[1](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, 0);
+        } else if (cbf_mask == 2) {
+            rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, 0);
+            rcn_func->ict[2](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, 0);
+        } else {
+            rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, 0);
+            rcn_func->ict[2](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, 0);
+        }
 #endif
     }
     return 0;

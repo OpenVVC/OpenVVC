@@ -37,7 +37,9 @@ LIB_SRC:=																																 \
 					rcn_intra_dc_planar.c                                          \
 					rcn_intra_mip.c																								 \
 					rcn_transform.c                                                \
+					rcn_residuals.c                                                \
 					rcn_intra_angular.c                                            \
+					rcn_intra_cclm.c                                               \
 					rcn_lfnst.c                                                    \
 					rcn_mc.c                                                       \
 					slicedec.c                                                     \

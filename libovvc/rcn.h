@@ -54,4 +54,11 @@ void rcn_mcp_b(OVCTUDec*const lc_ctx, struct InterDRVCtx *const inter_ctx,
 void rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_h,
              OVMV mv, uint8_t inter_dir);
 
+void rcn_init_cclm_functions_collocated(struct RCNFunctions *rcn_func);
+
+/* FIXME check vertical / horizontal */
+void rcn_init_cclm_functions(struct RCNFunctions *rcn_func);
+
+void rcn_init_ict_functions(struct RCNFunctions *rcn_func, uint8_t type);
+
 #endif //RCN_H

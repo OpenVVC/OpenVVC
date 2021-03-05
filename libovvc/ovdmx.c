@@ -518,7 +518,7 @@ ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
         return OV_ENOMEM;
     }
 
-    if (!eof && dmx->nalu_list.first_nalu) {
+    if (/*!eof &&*/ dmx->nalu_list.first_nalu) {
         ret = extract_access_unit(dmx, &pending_nalu_list);
 
         /* FIXME return */

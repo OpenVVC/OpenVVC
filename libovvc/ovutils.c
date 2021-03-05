@@ -49,19 +49,29 @@ ov_clip(int32_t val, int32_t a, int32_t b)
 uint32_t
 ov_clip_uintp2(int32_t val, uint32_t a)
 {
+    if (val > 0) {
+        int32_t mask  = (1 << a) - 1;
+        int32_t overflow = !!(val & (~mask));
+        return ((-overflow) & mask) | (val & mask); 
+    } else {
+        return 0;
+    }
+    #if 0
     return OVMIN(OVMAX(0, val), (1 << a) - 1);
+    #endif
 }
 
 int
 floor_log2(unsigned x)
 {
-        #if 0
+        #if 1
         int bits = -1;
         while (x > 0) {
                 bits++;
                 x >>= 1;
         }
         return bits;
+        #else
+        return 32 - ov_clz(x) - 1;
         #endif
-        return 31 - ov_clz(x);
 }

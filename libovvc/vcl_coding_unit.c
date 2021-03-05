@@ -265,6 +265,7 @@ static uint8_t
 ovcabac_read_ae_intra_mip_mode(OVCABACCtx *const cabac_ctx, uint8_t log2_cb_w,
                                uint8_t log2_cb_h)
 {
+    #if 0
     int nb_mip_modes = 6;
 
     /* FIXME use LUT based on log2_sizes would be a better option */
@@ -276,6 +277,14 @@ ovcabac_read_ae_intra_mip_mode(OVCABACCtx *const cabac_ctx, uint8_t log2_cb_w,
         /* 8x8 || 4xX || Xx4 */
         nb_mip_modes = 8;
     }
+    #else
+    int nb_mip_modes = 6;
+    if (log2_cb_h == log2_cb_w && log2_cb_h == 2) { //4x4
+        nb_mip_modes = 16;
+    } else if (log2_cb_h == 2 || log2_cb_w == 2 || (log2_cb_h == 3 && log2_cb_w == 3)) { //8x8
+        nb_mip_modes = 8;
+    }
+    #endif
 
     return vvc_get_cabac_truncated(cabac_ctx, nb_mip_modes);
 }
@@ -628,6 +637,9 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
             memset(&part_map->cu_mode_y[y_pu], OV_MIP, sizeof(uint8_t) * nb_pb_h);
 
             /* FIXME Check default to PLANAR for modes derivation */
+        } else {
+            memset(&part_map->cu_mode_x[x_pu], OV_INTRA, sizeof(uint8_t) * nb_pb_w);
+            memset(&part_map->cu_mode_y[y_pu], OV_INTRA, sizeof(uint8_t) * nb_pb_h);
         }
     }
 

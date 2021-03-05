@@ -59,6 +59,8 @@ init_slice_tree_ctx(OVCTUDec *const ctudec, const struct OVPS *prms)
         if (sps->sps_qtbtt_dual_tree_intra_flag) {
             ctudec->coding_tree          = &dual_tree;
             ctudec->coding_tree_implicit = &dual_tree_implicit;
+            ctudec->coding_unit          = coding_unit_intra;
+            ctudec->transform_unit       = transform_unit_l;
         } else {
             ctudec->coding_tree          = coding_quadtree;
             ctudec->coding_tree_implicit = coding_quadtree_implicit;
@@ -868,6 +870,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     #endif
 
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctudec = ctudec;
+    ctudec->rcn_ctx.ctudec = ctudec;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.scale00 = sldec->pic->tmvp.scale00;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.scale10 = sldec->pic->tmvp.scale10;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.scale01 = sldec->pic->tmvp.scale01;
@@ -936,6 +939,13 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     return ctb_addr_rs;
 }
 
+static uint8_t ict_type(const OVPH *const ph)
+{
+    uint8_t type = (ph->ph_joint_cbcr_sign_flag << 1);
+    type |= ph->ph_chroma_residual_scale_flag;
+    return type;
+}
+
 /* FIXME clean this init */
 int
 slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
@@ -954,7 +964,6 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
     ctudec->alf_num_chroma_alt = vvc_ctx->alf_num_alt_chroma;
     #endif
     /* FIXME dissociate SPS and SH/PH specific overrides to avoid  always resetting*/
-    ctudec->lm_chroma_enabled = sps->sps_cclm_enabled_flag;
     ctudec->enabled_mip = sps->sps_mip_enabled_flag;
 
     ctudec->jcbcr_enabled = sps->sps_joint_cbcr_enabled_flag;
@@ -970,6 +979,18 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
     ctudec->dbf_disable = sh->sh_deblocking_filter_disabled_flag |
                           ph->ph_deblocking_filter_disabled_flag |
                           pps->pps_deblocking_filter_disabled_flag;
+
+    ctudec->lm_chroma_enabled = sps->sps_cclm_enabled_flag;
+    if (ctudec->lm_chroma_enabled) {
+        /* FIXME add support vertical */
+        if (sps->sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {
+            rcn_init_cclm_functions_collocated(&ctudec->rcn_ctx.rcn_funcs);
+        } else {
+            rcn_init_cclm_functions(&ctudec->rcn_ctx.rcn_funcs);
+        }
+    }
+
+    rcn_init_ict_functions(&ctudec->rcn_ctx.rcn_funcs, ict_type(ph));
 
     slice_init_qp_ctx(ctudec, prms);
 

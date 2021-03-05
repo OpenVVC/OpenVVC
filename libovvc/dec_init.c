@@ -148,7 +148,7 @@ sps_init_chroma_qp_tables(struct SPSInfo *sps_info, const OVSPS *const sps)
     }
 
     /* Copy first table into others in case of same qp for all chroma tables */
-    for (; i < 3 - sps->sps_joint_cbcr_enabled_flag; ++i) {
+    for (; i < 3 - !sps->sps_joint_cbcr_enabled_flag; ++i) {
         sps_info->qp_tables_c[i] = sps_info->qp_tables_c[i-1];
     }
 }
