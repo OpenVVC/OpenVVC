@@ -5,6 +5,7 @@
 
 #include "ovdec.h"
 #include "rcn_structures.h"
+#include "ovmem.h"
 
     /* FIXME COMPAT old
      * Old structures to be removed
@@ -333,7 +334,7 @@ struct OVCTUDec
          */
         struct CTURCNData data;
 
-        
+
         /* Pointers to the first sample data of CTU in the current
          * picture
          */
@@ -503,12 +504,11 @@ struct OVCTUDec
      *   case of transform tree or ISP tree
      *    -Move to Transform Unit structure
      */
-    int16_t residual_y[64*64];
-    int16_t residual_cb[64*64];
-    int16_t residual_cr[64*64];
+    DECLARE_ALIGNED(32, int16_t, residual_y)[64*64];
+    DECLARE_ALIGNED(32, int16_t, residual_cb)[64*64];
+    DECLARE_ALIGNED(32, int16_t, residual_cr)[64*64];
     int16_t lfnst_subblock[16*2];
-    int16_t transform_buff[64*64];
-
+    DECLARE_ALIGNED(32, int16_t, transform_buff)[64*64];
 
     uint8_t slice_qp;
     /* FIXME

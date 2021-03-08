@@ -614,25 +614,25 @@ vvc_inverse_dct_ii_dc(int16_t* const dst, int log2_tb_w, int log2_tb_h,
 void rcn_init_tr_functions(struct RCNFunctions *const rcn_funcs){
   rcn_funcs->tr.func[DST_VII][0] = NULL;
   rcn_funcs->tr.func[DST_VII][1] = NULL;
-  rcn_funcs->tr.func[DST_VII][2] = vvc_inverse_dst_vii_4;
-  rcn_funcs->tr.func[DST_VII][3] = vvc_inverse_dst_vii_8;
-  rcn_funcs->tr.func[DST_VII][4] = vvc_inverse_dst_vii_16;
-  rcn_funcs->tr.func[DST_VII][5] = vvc_inverse_dst_vii_32;
+  rcn_funcs->tr.func[DST_VII][2] = &vvc_inverse_dst_vii_4;
+  rcn_funcs->tr.func[DST_VII][3] = &vvc_inverse_dst_vii_8;
+  rcn_funcs->tr.func[DST_VII][4] = &vvc_inverse_dst_vii_16;
+  rcn_funcs->tr.func[DST_VII][5] = &vvc_inverse_dst_vii_32;
   rcn_funcs->tr.func[DST_VII][6] = NULL;
 
   rcn_funcs->tr.func[DCT_VIII][0] = NULL;
   rcn_funcs->tr.func[DCT_VIII][1] = NULL;
-  rcn_funcs->tr.func[DCT_VIII][2] = vvc_inverse_dct_viii_4;
-  rcn_funcs->tr.func[DCT_VIII][3] = vvc_inverse_dct_viii_8;
-  rcn_funcs->tr.func[DCT_VIII][4] = vvc_inverse_dct_viii_16;
-  rcn_funcs->tr.func[DCT_VIII][5] = vvc_inverse_dct_viii_32;
+  rcn_funcs->tr.func[DCT_VIII][2] = &vvc_inverse_dct_viii_4;
+  rcn_funcs->tr.func[DCT_VIII][3] = &vvc_inverse_dct_viii_8;
+  rcn_funcs->tr.func[DCT_VIII][4] = &vvc_inverse_dct_viii_16;
+  rcn_funcs->tr.func[DCT_VIII][5] = &vvc_inverse_dct_viii_32;
   rcn_funcs->tr.func[DCT_VIII][6] = NULL;
 
   rcn_funcs->tr.func[DCT_II][0] = NULL;
-  rcn_funcs->tr.func[DCT_II][1] = vvc_inverse_dct_ii_2;
-  rcn_funcs->tr.func[DCT_II][2] = vvc_inverse_dct_ii_4;
-  rcn_funcs->tr.func[DCT_II][3] = vvc_inverse_dct_ii_8;
-  rcn_funcs->tr.func[DCT_II][4] = vvc_inverse_dct_ii_16;
-  rcn_funcs->tr.func[DCT_II][5] = vvc_inverse_dct_ii_32;
-  rcn_funcs->tr.func[DCT_II][6] = vvc_inverse_dct_ii_64;
+  rcn_funcs->tr.func[DCT_II][1] = &vvc_inverse_dct_ii_2;
+  rcn_funcs->tr.func[DCT_II][2] = &vvc_inverse_dct_ii_4;
+  rcn_funcs->tr.func[DCT_II][3] = &vvc_inverse_dct_ii_8;
+  rcn_funcs->tr.func[DCT_II][4] = &vvc_inverse_dct_ii_16;
+  rcn_funcs->tr.func[DCT_II][5] = &vvc_inverse_dct_ii_32;
+  rcn_funcs->tr.func[DCT_II][6] = &vvc_inverse_dct_ii_64;
 }

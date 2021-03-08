@@ -4,45 +4,9 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "rcn_transform.h"
+#include "rcn_structures.h"
 
-void vvc_inverse_dct_ii_2_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                              int num_lines, int num_columns, int shift);
-
-void vvc_inverse_dct_ii_4_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                              int num_lines, int num_columns, int shift);
-
-void vvc_inverse_dct_ii_8_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                              int num_lines, int num_columns, int shift);
-
-void vvc_inverse_dct_ii_16_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                               int num_lines, int num_columns, int shift);
-
-void vvc_inverse_dct_ii_32_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                               int num_lines, int num_columns, int shift);
-
-void vvc_inverse_dst_vii_4_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                              int num_lines, int num_columns, int shift);
-
-void vvc_inverse_dst_vii_8_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                              int num_lines, int num_columns, int shift);
-
-void vvc_inverse_dst_vii_16_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                               int num_lines, int num_columns, int shift);
-
-void vvc_inverse_dst_vii_32_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                               int num_lines, int num_columns, int shift);
-
-void vvc_inverse_dct_viii_4_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                              int num_lines, int num_columns, int shift);
-
-void vvc_inverse_dct_viii_8_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                              int num_lines, int num_columns, int shift);
-
-void vvc_inverse_dct_viii_16_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                               int num_lines, int num_columns, int shift);
-
-void vvc_inverse_dct_viii_32_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                               int num_lines, int num_columns, int shift);
+void rcn_init_tr_functions_sse(struct RCNFunctions *const rcn_funcs);
 
 void vvc_add_residual_sse(const int16_t *const src, uint16_t *const dst,
                           int log2_tb_w, int log2_tb_h, int scale);
@@ -82,7 +46,4 @@ void vvc_add_residual_sse(const int16_t *const src, uint16_t *const dst,
 //     &vvc_lmcs_sub_residual,
 //     &vvc_lmcs_sub_half_residual
 // };
-
-void vvc_inverse_dct_ii_dc_sse(uint16_t *const dst, int log2_tb_w, int log2_tb_h,
-                               int dc_val);
 #endif//VVC_TRANSFORM_SSE_H

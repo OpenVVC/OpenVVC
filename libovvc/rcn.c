@@ -11,6 +11,7 @@
 #include "rcn_intra_mip.h"
 #include "rcn_structures.h"
 #include "rcn.h"
+#include "ovmem.h"
 
 
 
@@ -670,7 +671,8 @@ rcn_residual(OVCTUDec *const ctudec,
     struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
     int shift_v = 6 + 1;
     int shift_h = (6 + 15 - 1) - 10;
-    int16_t tmp[64*64];
+    DECLARE_ALIGNED(32, int16_t, tmp)[64*64];
+    // int16_t tmp[64*64];
     int tb_w = 1 << log2_tb_w;
     int tb_h = 1 << log2_tb_h;
     #if 0
@@ -746,7 +748,8 @@ rcn_residual_c(OVCTUDec *const ctudec,
     struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
     const int shift_v = 6 + 1;
     const int shift_h = (6 + 15 - 1) - 10;
-    int16_t tmp[32*32];
+    DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
+    // int16_t tmp[32*32];
     int tb_w = 1 << log2_tb_w;
     int tb_h = 1 << log2_tb_h;
 

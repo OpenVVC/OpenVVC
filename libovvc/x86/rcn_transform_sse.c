@@ -3197,3 +3197,22 @@ vvc_inverse_dct_ii_dc_sse(uint16_t *const dst, int log2_tb_w, int log2_tb_h,
             vvc_inverse_dct_ii_dc(dst, log2_tb_w, log2_tb_h, dc_val);
     }
 }
+
+
+void rcn_init_tr_functions_sse(struct RCNFunctions *const rcn_funcs){
+  rcn_funcs->tr.func[DST_VII][2] = &vvc_inverse_dst_vii_4_sse;
+  rcn_funcs->tr.func[DST_VII][3] = &vvc_inverse_dst_vii_8_sse;
+  rcn_funcs->tr.func[DST_VII][4] = &vvc_inverse_dst_vii_16_sse;
+  rcn_funcs->tr.func[DST_VII][5] = &vvc_inverse_dst_vii_32_sse;
+  //
+  rcn_funcs->tr.func[DCT_VIII][2] = &vvc_inverse_dct_viii_4_sse;
+  rcn_funcs->tr.func[DCT_VIII][3] = &vvc_inverse_dct_viii_8_sse;
+  rcn_funcs->tr.func[DCT_VIII][4] = &vvc_inverse_dct_viii_16_sse;
+  rcn_funcs->tr.func[DCT_VIII][5] = &vvc_inverse_dct_viii_32_sse;
+  //
+  rcn_funcs->tr.func[DCT_II][1] = &vvc_inverse_dct_ii_2_sse;
+  rcn_funcs->tr.func[DCT_II][2] = &vvc_inverse_dct_ii_4_sse;
+  rcn_funcs->tr.func[DCT_II][3] = &vvc_inverse_dct_ii_8_sse;
+  rcn_funcs->tr.func[DCT_II][4] = &vvc_inverse_dct_ii_16_sse;
+  rcn_funcs->tr.func[DCT_II][5] = &vvc_inverse_dct_ii_32_sse;
+}
