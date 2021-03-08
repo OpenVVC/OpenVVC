@@ -18,7 +18,7 @@ ov_malloc(size_t alloc_size)
 void *
 ov_mallocz(size_t alloc_size)
 {
-    void *ptr = malloc(alloc_size);
+    void *ptr = ov_malloc(alloc_size);
 
     if (ptr != NULL) {
         memset(ptr, 0, alloc_size);
@@ -49,5 +49,3 @@ ov_freep(void *ptr_ref)
 
     ov_free(ptr_cpy);
 }
-
-

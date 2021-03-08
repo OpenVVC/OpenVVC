@@ -898,7 +898,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
 
         drv_line_next_line(ctudec, sldec);
 
-        /*TODO 
+        /*TODO
          * CLeaner Next CTU Line
          */
         fbuff_new_line(&tmp_fbuff, log2_ctb_s);
@@ -970,6 +970,7 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
 
     /*FIXME move rcn functions pointers init */
     rcn_init_mc_functions(&ctudec->rcn_ctx.rcn_funcs);
+    rcn_init_tr_functions(&ctudec->rcn_ctx.rcn_funcs);
 
     /* Note it is important here that part info has already been set before calling
      * this function since it will be used to set line sizes*/

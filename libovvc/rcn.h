@@ -2,17 +2,15 @@
 #define RCN_H
 
 #include "ctudec.h"
-#include "rcn_struct.h"
 
 /* FIXME
  * rename OVINTRA
  * MERGE with INTER modes ?
- * STORE on uint8_t 
+ * STORE on uint8_t
  * find meaningful place for definition
  */
 
 
-extern const struct TrFunc tr_templates[NB_TR_TYPES][NB_TR_SIZES];
 /* FIXME remove some args and give RCNCTX instead of ctudec
  */
 

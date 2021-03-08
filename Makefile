@@ -40,6 +40,11 @@ LIB_SRC:=$(addprefix $(SRC_FOLDER),$(LIB_SRC))
 LIB_HEADER:=$(addprefix $(SRC_FOLDER),$(LIB_HEADER))
 LIB_OBJ:=$(addprefix $(BUILDDIR_TYPE),$(LIB_SRC:%.c=%.o))
 LIB_FILE:=$(LIB_HEADER) $(LIB_SRC)
+
+include $(ARCH)libovvc.mak
+$(ARCH)_LIB_SRC:=$(addprefix $($(ARCH)_SRC_FOLDER),$($(ARCH)_LIB_SRC))
+$(ARCH)_LIB_OBJ:=$(addprefix $(BUILDDIR_TYPE),$($(ARCH)_LIB_SRC:%.c=%.o))
+
 LIB_NAME:= libovvc
 
 SHARED_LIBSUFF?=.so
@@ -65,17 +70,21 @@ $(BUILDDIR_TYPE)$(PROG):  $(BUILDDIR_TYPE)$(PROG).o $(BUILDDIR_TYPE)$(LIB_NAME)$
 	$(CC) $^ -o $@
 
 
-$(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF): $(LIB_OBJ)
+$(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF): $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
 	$(AR) rcD $@ $^
 	ranlib $@
 
-$(BUILDDIR_TYPE)$(LIB_NAME)$(SHARED_LIBSUFF): $(LIB_OBJ)
+$(BUILDDIR_TYPE)$(LIB_NAME)$(SHARED_LIBSUFF): $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
 	$(CC) -shared $^ -o $@
 
 
 $(BUILDDIR_TYPE)%.o: %.c
 	$(AT)mkdir -p $(@D)
 	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) -I$(SRC_FOLDER)
+
+$(BUILDDIR_TYPE)/$(ARCH)/%_sse.o: %_sse.c
+	$(AT)mkdir -p $(@D)
+	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) -I$(SRC_FOLDER) $(SSE_CFLAGS)
 
 .PHONY: style check-style tidy version
 FILE_TO_STYLE:=$(shell find . -type f -name "*.[ch]")
