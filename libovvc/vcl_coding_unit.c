@@ -8,6 +8,7 @@
 #include "drv.h"
 #include "drv_utils.h"
 #include "rcn.h"
+#include "dbf_utils.h"
 
 /*FIXME find a more global location for these defintions */
 enum CUMode {
@@ -454,12 +455,13 @@ coding_unit(OVCTUDec *const ctu_dec,
         ctu_dec->drv_ctx.qp_map_y[y_cb + i] = ctu_dec->qp_ctx.current_qp;
     }
 
-#if 0
+#if 1
     /* update dqp for deblocking filter usage */
     if (!ctu_dec->dbf_disable) {
-        fill_dbf_qp(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h, ctu_dec->qp_ctx.current_qp);
-        fill_dbf_qp_cb(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h, ctu_dec->dequant_cb.qp - 12);
-        fill_dbf_qp_cr(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h, ctu_dec->dequant_cr.qp - 12);
+        struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
+        dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_cb_w, log2_cb_h, ctu_dec->qp_ctx.current_qp);
+        dbf_fill_qp_map(&dbf_info->qp_map_cb, x0, y0, log2_cb_w, log2_cb_h, ctu_dec->dequant_cb.qp - 12);
+        dbf_fill_qp_map(&dbf_info->qp_map_cr, x0, y0, log2_cb_w, log2_cb_h, ctu_dec->dequant_cr.qp - 12);
         fill_edge_map(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
         fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
     }
@@ -552,6 +554,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
 
             cu_type = OV_INTRA;
 
+            fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_cu_w, log2_cu_h);
 
         } else {
             uint8_t merge_flag = ovcabac_read_ae_cu_merge_flag(cabac_ctx);
@@ -588,6 +591,9 @@ coding_unit_intra_st(OVCTUDec *const ctu_dec,
        coding_unit_intra_c(ctu_dec, ctu_dec->part_ctx_c, x0 >> 1, y0 >> 1,
                            log2_cu_w - 1, log2_cu_h - 1);
    }
+
+   /*FIXME move to derivation */
+   fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_cu_w, log2_cu_h);
 
    return cu;
 }

@@ -6,6 +6,7 @@
 #include "dec_structures.h"
 #include "ctudec.h"
 #include "rcn.h"
+#include "dbf_utils.h"
 
 static void
 rcn_add_residuals(uint16_t *dst, const int16_t *src, uint8_t log2_tb_w, uint8_t log2_tb_h);
@@ -554,7 +555,7 @@ transform_unit(OVCTUDec *const ctu_dec,
         #endif
 
 
-#if 0
+#if 1
         /*FIXME move bs map filling to to cbf_flag reading */
         fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
 #endif
@@ -772,8 +773,8 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
 #if 0
             (*ctu_dec->scale_addsub_residuals)[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
 
-            fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
 #endif
+            fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
         }
 
         if (cbf_mask & 0x1) {
@@ -789,8 +790,8 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
 #if 0
             (*ctu_dec->scale_addsub_residuals)[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
 
-            fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
 #endif
+            fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
         }
         #endif
 
@@ -873,9 +874,9 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
             (*ctu_dec->scale_addsub_residuals)[2](src, dst_cb, log2_tb_w, log2_tb_h, scale);
         }
 
+#else
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
-#else
         /* FIXME better organisation based on cbf_mask */
         if (cbf_mask == 3) {
             rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, 0);

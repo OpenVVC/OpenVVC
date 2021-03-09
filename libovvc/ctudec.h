@@ -41,6 +41,57 @@ enum VVCCUFlag{
      DECL_FLG(inter_dir,3),
 };
 
+struct DBFMap
+{
+    uint64_t ver[33]; /* Column map of vertical edges */
+    uint64_t hor[33]; /* Row map of horizontal edges */
+};
+
+struct DBFQPMap
+{
+    uint8_t hor[34*33];
+    uint8_t ver[34*33];
+};
+
+struct DBFInfo
+{
+    /* FIXME in case of dual/separate tree we need another map for
+     * chroma component
+     */
+    /*FIXME replace with DBFMap structure */
+    uint64_t edge_map_ver[33]; /* Column map of vertical edges */
+    uint64_t edge_map_hor[33]; /* Row map of horizontal edges */
+
+    uint64_t ctb_bound_ver[16 + 33]; /* Column map of vertical edges */
+    uint64_t ctb_bound_hor[16 + 33]; /* Row map of horizontal edges */
+
+    struct DBFMap bs2_map;
+
+    struct DBFMap bs1_map;
+    struct DBFMap bs1_map_cb;
+    struct DBFMap bs1_map_cr;
+
+    uint64_t large_map_c;
+
+    int16_t beta_offset;
+    int16_t tc_offset;
+
+    /*FIXME reduce those maps deriving qp in dbf_function
+     * Those tables are not mandatory if delta qp is disabled
+     */
+    struct DBFQPMap qp_map_y;
+    struct DBFQPMap qp_map_cb;
+    struct DBFQPMap qp_map_cr;
+    #if 0
+    uint8_t qp_map_hor[34*33];
+    uint8_t qp_map_ver[34*33];
+    uint8_t qp_map_hor_cb[34*33];
+    uint8_t qp_map_ver_cb[34*33];
+    uint8_t qp_map_hor_cr[34*33];
+    uint8_t qp_map_ver_cr[34*33];
+    #endif
+}dbf_info;
+
 typedef struct VVCDeQuantCtx{
     uint8_t qp;
 }VVCDeQuantCtx;
@@ -374,6 +425,8 @@ struct OVCTUDec
          */
         struct RCNFunctions rcn_funcs;
     } rcn_ctx;
+
+    struct DBFInfo dbf_info;
 
     /* CTU neighbours availability flags
      * An aggregation of flag used to tell the decoder if

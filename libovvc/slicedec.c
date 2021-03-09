@@ -625,6 +625,16 @@ decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     ret = ctudec->coding_tree(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s, 0);
 
     rcn_write_ctu_to_frame(&ctudec->rcn_ctx, log2_ctb_s);
+
+    if (!ctudec->dbf_disable) {
+        uint8_t is_last_x = 0;//!(ctudec->ctu_ngh_flags & CTU_UPRGT_FLG);
+        /*FIXMR last_y*/
+        uint8_t is_last_y = einfo->nb_ctu_h == (ctb_addr_rs / nb_ctu_w) + 1;
+        if (!is_last_y)
+        rcn_dbf_ctu(&ctudec->rcn_ctx, &ctudec->dbf_info, log2_ctb_s,
+                    is_last_x, is_last_y);
+    }
+
     tmvp_store_mv(ctudec);
 
     return ret;
@@ -652,6 +662,16 @@ decode_ctu_implicit(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     rcn_write_ctu_to_frame_border(&ctudec->rcn_ctx,
                                   ctu_w, ctu_h);
+
+    if (!ctudec->dbf_disable) {
+        uint8_t is_last_x = 0;//!(ctudec->ctu_ngh_flags & CTU_UPRGT_FLG);
+        /*FIXMR last_y*/
+        uint8_t is_last_y = einfo->nb_ctu_h == (ctb_addr_rs / nb_ctu_w) + 1;
+        if (!is_last_y)
+        rcn_dbf_ctu(&ctudec->rcn_ctx, &ctudec->dbf_info, log2_ctb_s,
+                    is_last_x, is_last_y);
+    }
+
     tmvp_store_mv(ctudec);
 
     return ret;
@@ -667,7 +687,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     int ret;
     uint8_t backup_qp;
 
-    drv_line_next_ctu(ctudec, &sldec->drv_lines, prms, 0);
+    drv_line_next_ctu(ctudec, sldec, &sldec->drv_lines, prms, 0);
 
     /* Do not copy on first line */
     if (ctb_addr_rs >= nb_ctu_w) {
@@ -690,7 +710,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
             backup_qp = ctudec->drv_ctx.qp_map_x[0];
         }
 
-        drv_line_next_ctu(ctudec, &sldec->drv_lines, prms, ctb_x);
+        drv_line_next_ctu(ctudec, sldec, &sldec->drv_lines, prms, ctb_x);
 
         rcn_update_ctu_border(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
 
@@ -756,7 +776,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     int nb_ctu_w = einfo->nb_ctu_w;
     int ctb_x = 0;
 
-    drv_line_next_ctu(ctudec, &sldec->drv_lines, prms, 0);
+    drv_line_next_ctu(ctudec, sldec, &sldec->drv_lines, prms, 0);
 
     rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
 
@@ -770,7 +790,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         cabac_line_next_ctu(ctudec, prms);
 
-        drv_line_next_ctu(ctudec, &sldec->drv_lines, prms, ctb_x);
+        drv_line_next_ctu(ctudec, sldec, &sldec->drv_lines, prms, ctb_x);
 
         store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
 
@@ -877,6 +897,9 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.scale11 = sldec->pic->tmvp.scale11;
     memset(ctudec->drv_ctx.inter_ctx.tmvp_ctx.dir_map_v0, 0, 33 * sizeof(uint64_t));
     memset(ctudec->drv_ctx.inter_ctx.tmvp_ctx.dir_map_v1, 0, 33 * sizeof(uint64_t));
+
+    /* FIXME tmp Reset DBF */
+    memset(&ctudec->dbf_info, 0, sizeof(ctudec->dbf_info));
 
     /* FIXME entry might be check before attaching entry to CABAC so there
      * is no need for this check

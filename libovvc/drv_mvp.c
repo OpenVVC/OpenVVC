@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "ovdefs.h"
@@ -991,14 +992,13 @@ fill_mvp_map(struct OVMVCtx *const mv_ctx, OVMV mv,
     }
 }
 
-/* FIXME
- * DBF MV related
- */
+/* FIXME DBF MV related */
 
-#if 0
+#if 1
 #define LF_MV_THRESHOLD 8
 static void
-fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, struct OVMVCtx *const mv_ctx1, OVMV mv,
+fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx,
+                  struct OVMVCtx *const mv_ctx1, OVMV mv,
                   int pb_x, int pb_y, int nb_pb_w, int nb_pb_h)
 {
     int i, j;
@@ -1016,8 +1016,8 @@ fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, 
         OVMV mv_above = mv_ctx->mvs[PB_POS_IN_BUF(pb_x + j, pb_y - 1)];
         int64_t above_avail = -((!!(mv_ctx->map.hfield[pb_y]  & POS_MASK(pb_x + j, 0))
                                 & !(mv_ctx1->map.hfield[pb_y] & POS_MASK(pb_x + j, 0))));
-        int64_t abv_th = -((FFABS(mv_above.x - mv.x) >= LF_MV_THRESHOLD) |
-                           (FFABS(mv_above.y - mv.y) >= LF_MV_THRESHOLD));
+        int64_t abv_th = -((abs(mv_above.x - mv.x) >= LF_MV_THRESHOLD) |
+                           (abs(mv_above.y - mv.y) >= LF_MV_THRESHOLD));
         val |= (tmp_mask_h & abv_th & above_avail) | (tmp_mask_h & (-(!above_avail)));
         tmp_mask_h  <<= (1 << log2_diff_min_cu);
     }
@@ -1029,8 +1029,8 @@ fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, 
         OVMV mv_left = mv_ctx->mvs[PB_POS_IN_BUF(pb_x - 1, pb_y + i)];
         int64_t left_avail = -(!!(mv_ctx->map.vfield[pb_x]  & POS_MASK(pb_y + i, 0))
                               & !(mv_ctx1->map.vfield[pb_x] & POS_MASK(pb_y + i, 0)));
-        int64_t abv_th = -((FFABS(mv_left.x - mv.x) >= LF_MV_THRESHOLD) |
-                           (FFABS(mv_left.y - mv.y) >= LF_MV_THRESHOLD));
+        int64_t abv_th = -((abs(mv_left.x - mv.x) >= LF_MV_THRESHOLD) |
+                           (abs(mv_left.y - mv.y) >= LF_MV_THRESHOLD));
         val |= (tmp_mask_v & abv_th & left_avail) | (tmp_mask_v & (-(!left_avail)));
         tmp_mask_v <<= (1 << log2_diff_min_cu);
     }
@@ -1054,8 +1054,8 @@ fill_dbf_mv_map(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, OV
     for (j = 0; j < nb_pb_w; ++j) {
         OVMV mv_above = mv_ctx->mvs[PB_POS_IN_BUF(pb_x + j, pb_y - 1)];
         int64_t above_avail = -(!!(mv_ctx->map.hfield[pb_y] & POS_MASK(pb_x + j, 0)));
-        int64_t abv_th = -((FFABS(mv_above.x - mv.x) >= LF_MV_THRESHOLD) |
-                           (FFABS(mv_above.y - mv.y) >= LF_MV_THRESHOLD));
+        int64_t abv_th = -((abs(mv_above.x - mv.x) >= LF_MV_THRESHOLD) |
+                           (abs(mv_above.y - mv.y) >= LF_MV_THRESHOLD));
         val |= (tmp_mask_h & abv_th & above_avail) | (tmp_mask_h & (-(!above_avail)));
         tmp_mask_h  <<= (1 << log2_diff_min_cu);
     }
@@ -1066,8 +1066,8 @@ fill_dbf_mv_map(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, OV
     for (i = 0; i < nb_pb_h; ++i) {
         OVMV mv_left = mv_ctx->mvs[PB_POS_IN_BUF(pb_x - 1, pb_y + i)];
         int64_t left_avail = -(!!(mv_ctx->map.vfield[pb_x] & POS_MASK(pb_y + i, 0)));
-        int64_t abv_th = -((FFABS(mv_left.x - mv.x) >= LF_MV_THRESHOLD) |
-                           (FFABS(mv_left.y - mv.y) >= LF_MV_THRESHOLD));
+        int64_t abv_th = -((abs(mv_left.x - mv.x) >= LF_MV_THRESHOLD) |
+                           (abs(mv_left.y - mv.y) >= LF_MV_THRESHOLD));
         val |= (tmp_mask_v & abv_th & left_avail) | (tmp_mask_v & (-(!left_avail)));
         tmp_mask_v <<= (1 << log2_diff_min_cu);
     }
@@ -1082,9 +1082,10 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
                 uint8_t nb_pb_w, uint8_t nb_pb_h,
                 uint8_t inter_dir)
 {
+    #if 1
     /*FIXME Use specific DBF update function if DBF is disabled */
-    #if 0
-    struct DBFInfo *const dbf_info = &ctudec->dbf_info;
+    /*FIXME Find a better way to retrieve dbf_info */
+    struct DBFInfo *const dbf_info = &inter_ctx->tmvp_ctx.ctudec->dbf_info;
     #endif
     if (inter_dir == 3) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
@@ -1094,33 +1095,33 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
 
         fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
-        #if 0
-        fcll_dbf_mv_map(dbf_info, mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+        #if 1
+        fill_dbf_mv_map(dbf_info, mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_dbf_mv_map(dbf_info, mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
         #endif
 
     } else if (inter_dir & 0x2) {
-        #if 0
+        #if 1
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         #endif
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
         fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
-        #if 0
+        #if 1
         fill_dbf_mv_map_b(dbf_info, mv_ctx1, mv_ctx0, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
         #endif
 
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-        #if 0
+        #if 1
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
         #endif
 
         fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
-        #if 0
+        #if 1
         fill_dbf_mv_map_b(dbf_info, mv_ctx0, mv_ctx1, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
         #endif
 
@@ -1137,31 +1138,33 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
               uint8_t inter_dir)
 {
     /*FIXME Use specific DBF update function if DBF is disabled */
-    #if 0
-    struct DBFInfo *const dbf_info = &ctudec->dbf_info;
+    #if 1
+    /*FIXME Use specific DBF update function if DBF is disabled */
+    /*FIXME Find a better way to retrieve dbf_info */
+    struct DBFInfo *const dbf_info = &inter_ctx->tmvp_ctx.ctudec->dbf_info;
     #endif
     if (inter_dir & 0x2) {
-        #if 0
+        #if 1
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         #endif
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
         fill_mvp_map(mv_ctx1, mv, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
-        #if 0
-        fill_dbf_mv_map_b(dbf_info, mv_ctx1, mv_ctx0, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
+        #if 1
+        fill_dbf_mv_map_b(dbf_info, mv_ctx1, mv_ctx0, mv, pb_x, pb_y, nb_pb_w, nb_pb_h);
         #endif
 
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-        #if 0
+        #if 1
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
         #endif
 
         fill_mvp_map(mv_ctx0, mv, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
-        #if 0
-        fill_dbf_mv_map_b(dbf_info, mv_ctx0, mv_ctx1, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+        #if 1
+        fill_dbf_mv_map_b(dbf_info, mv_ctx0, mv_ctx1, mv, pb_x, pb_y, nb_pb_w, nb_pb_h);
         #endif
 
     }

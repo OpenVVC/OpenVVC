@@ -139,10 +139,14 @@ store_inter_maps(struct DRVLines *const l,
     int i;
 
     const uint64_t lst_row0 = rows_map0[nb_ctb_pb];
+    #if 0
     const uint64_t lst_col0 = cols_map0[nb_ctb_pb];
+    #endif
 
     const uint64_t lst_row1 = rows_map1[nb_ctb_pb];
+    #if 0
     const uint64_t lst_col1 = cols_map1[nb_ctb_pb];
+    #endif
 
     uint64_t above_map0 = (uint64_t)lns->dir0[ctb_x + 1] | ((uint64_t)lns->dir0 [ctb_x + 2] << nb_ctb_pb);
     uint64_t above_map1 = (uint64_t)lns->dir1[ctb_x + 1] | ((uint64_t)lns->dir1 [ctb_x + 2] << nb_ctb_pb);
@@ -187,6 +191,371 @@ store_inter_maps(struct DRVLines *const l,
     lns->dir1[ctb_x] = (uint32_t)(lst_row1 >> 1);
 }
 
+static void
+free_dbf_lines(struct DBFLines *const l)
+{
+    /* FIXME check before free */
+    ov_freep(&l->qp_x_map);
+    ov_freep(&l->qp_x_map_cb);
+    ov_freep(&l->qp_x_map_cr);
+    ov_freep(&l->dbf_qp_ver);
+    ov_freep(&l->dbf_qp_ver_cb);
+    ov_freep(&l->dbf_qp_ver_cr);
+
+    ov_freep(&l->dbf_edge_ver);
+    ov_freep(&l->dbf_edge_hor);
+
+    ov_freep(&l->dbf_bs2_ver);
+    ov_freep(&l->dbf_bs2_hor);
+
+    ov_freep(&l->dbf_bs1_ver);
+    ov_freep(&l->dbf_bs1_hor);
+    ov_freep(&l->dbf_bs1_ver_cb);
+    ov_freep(&l->dbf_bs1_hor_cb);
+    ov_freep(&l->dbf_bs1_ver_cr);
+    ov_freep(&l->dbf_bs1_hor_cr);
+
+    ov_freep(&l->large_map_c);
+}
+
+
+static int
+init_dbf_lines(struct DBFLines *const l, int nb_ctu_line, int nb_pu_line)
+{
+    uint8_t malloc_chk = 0;
+
+    l->qp_x_map       = ov_mallocz((nb_pu_line + 1) * sizeof(int8_t));
+    l->qp_x_map_cb    = ov_mallocz((nb_pu_line + 1) * sizeof(int8_t));
+    l->qp_x_map_cr    = ov_mallocz((nb_pu_line + 1) * sizeof(int8_t));
+    l->dbf_qp_ver     = ov_mallocz((nb_pu_line + 1) * sizeof(int8_t));
+    l->dbf_qp_ver_cb  = ov_mallocz((nb_pu_line + 1) * sizeof(int8_t));
+    l->dbf_qp_ver_cr  = ov_mallocz((nb_pu_line + 1) * sizeof(int8_t));
+
+    l->dbf_edge_ver   = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+    l->dbf_edge_hor   = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+
+    l->dbf_bs1_ver    = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+    l->dbf_bs1_hor    = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+
+    l->large_map_c    = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+
+    l->dbf_bs1_ver_cb = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+    l->dbf_bs1_hor_cb = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+
+    l->dbf_bs1_ver_cr = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+    l->dbf_bs1_hor_cr = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+
+    l->dbf_bs2_ver    = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+    l->dbf_bs2_hor    = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+
+    malloc_chk |= l->qp_x_map       == NULL;
+    malloc_chk |= l->qp_x_map_cb    == NULL;
+    malloc_chk |= l->qp_x_map_cr    == NULL;
+    malloc_chk |= l->dbf_qp_ver     == NULL;
+    malloc_chk |= l->dbf_qp_ver_cb  == NULL;
+    malloc_chk |= l->dbf_qp_ver_cr  == NULL;
+
+    malloc_chk |= l->dbf_edge_ver   == NULL;
+    malloc_chk |= l->dbf_edge_hor   == NULL;
+
+    malloc_chk |= l->dbf_bs1_ver    == NULL;
+    malloc_chk |= l->dbf_bs1_hor    == NULL;
+
+    malloc_chk |= l->large_map_c    == NULL;
+
+    malloc_chk |= l->dbf_bs1_ver_cb == NULL;
+    malloc_chk |= l->dbf_bs1_hor_cb == NULL;
+
+    malloc_chk |= l->dbf_bs1_ver_cr == NULL;
+    malloc_chk |= l->dbf_bs1_hor_cr == NULL;
+
+    malloc_chk |= l->dbf_bs2_ver    == NULL;
+    malloc_chk |= l->dbf_bs2_hor    == NULL;
+
+    if (malloc_chk) {
+        free_dbf_lines(l);
+        return OVVC_ENOMEM;
+    }
+}
+
+static void
+dbf_clear_lines(const struct DBFLines *const l, int nb_ctu_line, int nb_pu_line)
+{
+    memset(l->qp_x_map, 0, (nb_pu_line + 1) * sizeof(int8_t));
+    memset(l->qp_x_map_cb, 0, (nb_pu_line + 1) * sizeof(int8_t));
+    memset(l->qp_x_map_cr, 0, (nb_pu_line + 1) * sizeof(int8_t));
+    memset(l->dbf_qp_ver, 0, (nb_pu_line + 1) * sizeof(int8_t));
+    memset(l->dbf_qp_ver_cb, 0, (nb_pu_line + 1) * sizeof(int8_t));
+    memset(l->dbf_qp_ver_cr, 0, (nb_pu_line + 1) * sizeof(int8_t));
+
+    memset(l->dbf_edge_ver, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
+    memset(l->dbf_edge_hor, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
+
+    memset(l->dbf_bs1_ver, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
+    memset(l->dbf_bs1_hor, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
+
+    memset(l->large_map_c, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
+
+    memset(l->dbf_bs1_ver_cb, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
+    memset(l->dbf_bs1_hor_cb, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
+
+    memset(l->dbf_bs1_ver_cr, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
+    memset(l->dbf_bs1_hor_cr, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
+
+    memset(l->dbf_bs2_ver, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
+    memset(l->dbf_bs2_hor, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
+}
+
+static void
+dbf_load_qp_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
+                 uint8_t log2_ctu_s, int ctb_x)
+{
+    uint8_t nb_units_ctb =  1 << (log2_ctu_s & 7) >> 2;
+    int i;
+
+    for (i = 0; i < nb_units_ctb + 1; ++i) {
+        dbf_info->qp_map_y.hor [i * 34] = dbf_info->qp_map_y.hor[i * 34 + nb_units_ctb];
+        dbf_info->qp_map_cb.hor[i * 34] = dbf_info->qp_map_cb.hor[i * 34 + nb_units_ctb];
+        dbf_info->qp_map_cr.hor[i * 34] = dbf_info->qp_map_cr.hor[i * 34 + nb_units_ctb];
+
+        dbf_info->qp_map_y.hor[1 + i * 34]  = dbf_info->qp_map_y.hor[i * 34 + nb_units_ctb + 1];
+        dbf_info->qp_map_cb.hor[1 + i * 34] = dbf_info->qp_map_cb.hor[i * 34 + nb_units_ctb + 1];
+        dbf_info->qp_map_cr.hor[1 + i * 34] = dbf_info->qp_map_cr.hor[i * 34 + nb_units_ctb + 1];
+
+        dbf_info->qp_map_y.ver[i]  = dbf_info->qp_map_y.ver[i + 34 * nb_units_ctb];
+        dbf_info->qp_map_cb.ver[i] = dbf_info->qp_map_cb.ver[i + 34 * nb_units_ctb];
+        dbf_info->qp_map_cr.ver[i] = dbf_info->qp_map_cr.ver[i + 34 * nb_units_ctb];
+    }
+
+    for (i = 0; i < nb_units_ctb; ++i) {
+        /* FIXME copied from qp ctx*/
+        #if 0
+        dbf_info->qp_map.hor[2 + i]    = lc_ctx->qp_map_up[i >> 1];
+        dbf_info->qp_map_cb.hor[2 + i] = lc_ctx->qp_map_cb_up[i >> 1];
+        dbf_info->qp_map_cr.hor[2 + i] = lc_ctx->qp_map_cr_up[i >> 1];
+        #else
+        dbf_info->qp_map_y.hor [2 + i] = l->qp_x_map   [i >> 1];
+        dbf_info->qp_map_cb.hor[2 + i] = l->qp_x_map_cb[i >> 1];
+        dbf_info->qp_map_cr.hor[2 + i] = l->qp_x_map_cr[i >> 1];
+        #endif
+    }
+
+    for (i = 0; i < nb_units_ctb; ++i) {
+        dbf_info->qp_map_y.ver [34 * i] = l->dbf_qp_ver   [(ctb_x << 5) + i];
+        dbf_info->qp_map_cb.ver[34 * i] = l->dbf_qp_ver_cb[(ctb_x << 5) + i];
+        dbf_info->qp_map_cr.ver[34 * i] = l->dbf_qp_ver_cr[(ctb_x << 5) + i];
+    }
+}
+
+static void
+dbf_store_qp_map(const struct DBFInfo *const dbf_info,
+                 const struct DBFLines *const l,
+                 uint8_t log2_ctu_s,
+                 unsigned int ctb_x)
+{
+    uint8_t nb_units_ctb =  1 << (log2_ctu_s & 7) >> 2;
+
+    /* Lst line copied from qp ctx */
+    #if 0
+    memcpy(&l->qp_x_map   [ctb_x << 5], dbf_info->qp_map_up,    sizeof(uint8_t) * nb_units_ctb);
+    memcpy(&l->qp_x_map_cb[ctb_x << 5], dbf_info->qp_map_up_cb, sizeof(uint8_t) * nb_units_ctb);
+    memcpy(&l->qp_x_map_cr[ctb_x << 5], dbf_info->qp_map_up_cr, sizeof(uint8_t) * nb_units_ctb);
+    #else
+    memcpy(&l->qp_x_map   [ctb_x << 5], &dbf_info->qp_map_y.hor[34*nb_units_ctb],  sizeof(uint8_t) * nb_units_ctb);
+    memcpy(&l->qp_x_map_cb[ctb_x << 5], &dbf_info->qp_map_cb.hor[34*nb_units_ctb], sizeof(uint8_t) * nb_units_ctb);
+    memcpy(&l->qp_x_map_cr[ctb_x << 5], &dbf_info->qp_map_cr.hor[34*nb_units_ctb], sizeof(uint8_t) * nb_units_ctb);
+    #endif
+
+    #if 0
+    if (!dbf_info->dbf_disable) {
+    #endif
+        for (int i = 0; i < nb_units_ctb + 1; i++) {
+            l->dbf_qp_ver[(ctb_x << 5) + i]    = dbf_info->qp_map_y.ver [nb_units_ctb + 34 * i];
+            l->dbf_qp_ver_cb[(ctb_x << 5) + i] = dbf_info->qp_map_cb.ver[nb_units_ctb + 34 * i];
+            l->dbf_qp_ver_cr[(ctb_x << 5) + i] = dbf_info->qp_map_cr.ver[nb_units_ctb + 34 * i];
+        }
+    #if 0
+    }
+    #endif
+}
+
+static inline void
+dbf_load_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
+              uint8_t log2_ctu_s, int ctb_x)
+{
+    int nb_pb_s = (1 << log2_ctu_s) >> 2;
+    uint64_t tmp;
+
+    if (ctb_x) {
+        /* copy previous 8 vertical edges used for filter length derivation */
+        uint64_t *ctb_bnd = dbf_info->ctb_bound_ver;
+        memcpy(ctb_bnd, &ctb_bnd[nb_pb_s], 8 * sizeof(uint64_t));
+    }
+
+    /*FIXME move to other function */
+    tmp = l->dbf_edge_ver[ctb_x];
+    dbf_info->ctb_bound_ver[8] |= tmp & 0x1;
+    tmp >>= 1;
+
+    for (int i = 1; i < nb_pb_s; ++i) {
+        dbf_info->ctb_bound_hor[i + 8] = (-(!!ctb_x)) & (dbf_info->ctb_bound_hor[i + 8] >> (nb_pb_s)) & 0x3;
+        dbf_info->ctb_bound_ver[i + 8] = tmp & 0x1;
+        tmp >>= 1;
+    }
+
+    dbf_info->ctb_bound_ver[8 + nb_pb_s] = (uint64_t) - 1ll;
+    dbf_info->ctb_bound_hor[8 + nb_pb_s] = (uint64_t) - 1ll;
+    dbf_info->ctb_bound_ver[8] = (uint64_t) - 1ll;
+    dbf_info->ctb_bound_hor[8] = (uint64_t) - 1ll;
+    dbf_info->ctb_bound_hor[6] = (uint64_t) - 1ll;
+
+    dbf_info->edge_map_ver[0] = (-(!!ctb_x)) & dbf_info->edge_map_ver[nb_pb_s];
+    dbf_info->edge_map_hor[0] = (-(!!ctb_x)) & (dbf_info->edge_map_hor[0] >> (nb_pb_s)) & 0x3;
+    dbf_info->edge_map_hor[0] |= l->dbf_edge_hor[ctb_x];
+
+    tmp = l->dbf_edge_ver[ctb_x];
+    dbf_info->edge_map_ver[0] |= tmp & 0x1;
+    tmp >>= 1;
+
+    for (int i = 1; i < nb_pb_s; ++i) {
+        dbf_info->edge_map_hor[i] = (-(!!ctb_x)) & (dbf_info->edge_map_hor[i] >> (nb_pb_s)) & 0x3;
+        dbf_info->edge_map_ver[i] = tmp & 0x1;
+        tmp >>= 1;
+    }
+}
+
+static void
+dbf_store_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
+                   uint8_t log2_ctu_s, int ctb_x)
+{
+    int nb_pb_s = (1 << log2_ctu_s) >> 2;
+    uint64_t mask = (uint64_t)1 << nb_pb_s;
+    int i;
+
+    l->dbf_edge_hor[ctb_x] = dbf_info->edge_map_hor[nb_pb_s];
+    l->dbf_edge_ver[ctb_x] = 0;
+
+    for (i = 0; i < nb_pb_s + 1; ++i) {
+        l->dbf_edge_ver[ctb_x] |= (!!(dbf_info->edge_map_ver[i] & mask)) << i;
+    }
+
+    /* Use last horizontal edges to determine if last CUs were large
+     * if there were no edges large in the last three lines will be 0
+     */
+    l->large_map_c[ctb_x]  = dbf_info->edge_map_hor[nb_pb_s - 1];
+    l->large_map_c[ctb_x] |= dbf_info->edge_map_hor[nb_pb_s - 2];
+    l->large_map_c[ctb_x] |= dbf_info->edge_map_hor[nb_pb_s - 3];
+}
+
+static inline void
+dbf_load_bs_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
+            uint8_t log2_ctu_s, int ctb_x)
+{
+    int nb_pb_s = (1 << log2_ctu_s) >> 2;
+    uint64_t tmp;
+    struct DBFMap *const bs2_map    = &dbf_info->bs2_map;
+    struct DBFMap *const bs1_map    = &dbf_info->bs1_map;
+    struct DBFMap *const bs1_map_cb = &dbf_info->bs1_map_cb;
+    struct DBFMap *const bs1_map_cr = &dbf_info->bs1_map_cr;
+    int i;
+
+    /* FIXME check cast */
+    uint64_t ctb_lft_msk = -(!!ctb_x);
+
+    dbf_info->large_map_c = l->large_map_c[ctb_x];
+
+    bs2_map->ver[0] = ctb_lft_msk & bs2_map->ver[nb_pb_s];
+    bs1_map->ver[0] = ctb_lft_msk & bs1_map->ver[nb_pb_s];
+    bs1_map_cb->ver[0] = ctb_lft_msk & bs1_map_cb->ver[nb_pb_s];
+    bs1_map_cr->ver[0] = ctb_lft_msk & bs1_map_cr->ver[nb_pb_s];
+
+    bs2_map->hor[0] = ctb_lft_msk & (bs2_map->hor[0] >> nb_pb_s) & 0x3;
+    bs1_map->hor[0] = ctb_lft_msk & (bs1_map->hor[0] >> nb_pb_s) & 0x3;
+    bs1_map_cb->hor[0] = ctb_lft_msk & (bs1_map_cb->hor[0] >> nb_pb_s) & 0x3;
+    bs1_map_cr->hor[0] = ctb_lft_msk & (bs1_map_cr->hor[0] >> nb_pb_s) & 0x3;
+
+    bs2_map->hor[0] |= l->dbf_bs2_hor[ctb_x];
+    bs1_map->hor[0] |= l->dbf_bs1_hor[ctb_x];
+    bs1_map_cb->hor[0] |= l->dbf_bs1_hor_cb[ctb_x];
+    bs1_map_cr->hor[0] |= l->dbf_bs1_hor_cr[ctb_x];
+
+    /*FIXME separate hor and ver loop  and merge all loops*/
+    tmp = l->dbf_bs1_ver[ctb_x];
+    bs1_map->ver[0] |= tmp & 0x1;
+    tmp >>= 1;
+
+    for (i = 1; i < nb_pb_s + 1; ++i) {
+        bs1_map->hor[i] = ctb_lft_msk & (bs1_map->hor[i] >> nb_pb_s) & 0x3;
+        bs1_map->ver[i] = tmp & 0x1;
+        tmp >>= 1;
+    }
+
+
+    tmp = l->dbf_bs2_ver[ctb_x];
+    bs2_map->ver[0] |= tmp & 0x1;
+    tmp >>= 1;
+
+    for (i = 1; i < nb_pb_s + 1; ++i) {
+        bs2_map->hor[i] = ctb_lft_msk & (bs2_map->hor[i] >> nb_pb_s) & 0x3;
+        bs2_map->ver[i] = tmp & 0x1;
+        tmp >>= 1;
+    }
+
+    tmp = l->dbf_bs1_ver_cb[ctb_x];
+    bs1_map_cb->ver[0] |= tmp & 0x1;
+    tmp >>= 1;
+
+    for (i = 1; i < nb_pb_s + 1; ++i) {
+        bs1_map_cb->hor[i] = ctb_lft_msk & (bs1_map_cb->hor[i] >> nb_pb_s) & 0x3;
+        bs1_map_cb->ver[i] = tmp & 0x1;
+        tmp >>= 1;
+    }
+
+
+    tmp = l->dbf_bs1_ver_cr[ctb_x];
+    bs1_map_cr->ver[0] |= tmp & 0x1;
+    tmp >>= 1;
+
+    for (i = 1; i < nb_pb_s + 1; ++i) {
+        bs1_map_cr->hor[i] = ctb_lft_msk & (bs1_map_cr->hor[i] >> nb_pb_s) & 0x3;
+        bs1_map_cr->ver[i] = tmp & 0x1;
+        tmp >>= 1;
+    }
+}
+
+static void
+dbf_store_bs_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
+              uint8_t log2_ctu_s, int ctb_x)
+{
+    int nb_pb_s = (1 << log2_ctu_s) >> 2;
+    uint64_t mask = (uint64_t)1 << nb_pb_s;
+    int i;
+
+    struct DBFMap *const bs2_map = &dbf_info->bs2_map;
+    struct DBFMap *const bs1_map = &dbf_info->bs1_map;
+    struct DBFMap *const bs1_map_cb = &dbf_info->bs1_map_cb;
+    struct DBFMap *const bs1_map_cr = &dbf_info->bs1_map_cr;
+
+    l->dbf_bs2_hor[ctb_x] =  bs2_map->hor[nb_pb_s];
+    l->dbf_bs1_hor[ctb_x] =  bs1_map->hor[nb_pb_s];
+    l->dbf_bs1_hor_cb[ctb_x] =  bs1_map_cb->hor[nb_pb_s];
+    l->dbf_bs1_hor_cr[ctb_x] =  bs1_map_cr->hor[nb_pb_s];
+
+    /* Reset vertical edge maps on line storage*/
+    l->dbf_bs2_ver[ctb_x] = 0;
+    l->dbf_bs1_ver[ctb_x] = 0;
+    l->dbf_bs1_ver_cb[ctb_x] = 0;
+    l->dbf_bs1_ver_cr[ctb_x] = 0;
+
+    /* if the i got an vertical edge on the last pb store it */
+    for (i = 0; i < nb_pb_s; ++i) {
+        l->dbf_bs2_ver[ctb_x] |= (!!(bs2_map->ver[i] & mask)) << i;
+        l->dbf_bs1_ver[ctb_x] |= (!!(bs1_map->ver[i] & mask)) << i;
+        l->dbf_bs1_ver_cb[ctb_x] |= (!!(bs1_map_cb->ver[i] & mask)) << i;
+        l->dbf_bs1_ver_cr[ctb_x] |= (!!(bs1_map_cr->ver[i] & mask)) << i;
+    }
+}
+
 int
 init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
 {
@@ -212,6 +581,9 @@ init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
      uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
 
      ret = init_inter_drv_lines(lns, nb_ctb_pic_w, nb_ctb_pic_w);
+
+     /* FIXME return */
+     ret = init_dbf_lines(&lns->dbf_lines, nb_ctb_pic_w, nb_pb_pic_w);
 
      lns->intra_luma_x  = ov_mallocz(sizeof(*lns->intra_luma_x) * nb_pb_pic_w);
 
@@ -248,6 +620,7 @@ reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
      /* PLANAR  = 0 value is used if absent so we use it as reset value
       */
      memset(lns->intra_luma_x,     0,  sizeof(*lns->intra_luma_x) * nb_pb_pic_w);
+     dbf_clear_lines(&lns->dbf_lines, nb_ctb_pic_w, nb_pb_pic_w);
 }
 
 static void
@@ -341,7 +714,7 @@ drv_line_next_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
 
 
 void
-drv_line_next_ctu(OVCTUDec *const ctudec, struct DRVLines *drv_lns,
+drv_line_next_ctu(OVCTUDec *const ctudec, OVSliceDec *sldec, struct DRVLines *drv_lns,
                   const OVPS *const prms, uint16_t ctb_x)
 {
     const OVPartInfo *const pinfo = ctudec->part_ctx;
@@ -365,6 +738,16 @@ drv_line_next_ctu(OVCTUDec *const ctudec, struct DRVLines *drv_lns,
      */
     memset(drv_ctx->qp_map_x, qp_val, sizeof(*drv_ctx->qp_map_x) * nb_pb_ctb_w);
     memset(drv_ctx->qp_map_y, qp_val, sizeof(*drv_ctx->qp_map_y) * nb_pb_ctb_w);
+
+    #if 1
+    dbf_store_edge_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
+    dbf_store_bs_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
+    dbf_store_qp_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
+
+    dbf_load_edge_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x + 1);
+    dbf_load_bs_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x + 1);
+    dbf_load_qp_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x + 1);
+    #endif
 }
 
 void
@@ -374,4 +757,5 @@ drv_lines_uninit(OVSliceDec *sldec)
 
      ov_freep(&lns->intra_luma_x);
      free_inter_drv_lines(lns);
+     free_dbf_lines(&lns->dbf_lines);
 }

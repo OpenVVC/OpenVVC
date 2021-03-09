@@ -45,6 +45,36 @@ struct DRVLines
         uint32_t *dir1;
 
     } inter_lines;
+
+    struct DBFLines
+    {
+        /* QP Information for thresholds */
+        int8_t *qp_x_map;
+        int8_t *qp_x_map_cb;
+        int8_t *qp_x_map_cr;
+        int8_t *dbf_qp_ver;
+        int8_t *dbf_qp_ver_cb;
+        int8_t *dbf_qp_ver_cr;
+
+        /* Maps information */
+        uint64_t *dbf_edge_ver;
+        uint64_t *dbf_edge_hor;
+
+        uint64_t *dbf_bs2_ver;
+        uint64_t *dbf_bs2_hor;
+
+        uint64_t *dbf_bs1_ver;
+        uint64_t *dbf_bs1_hor;
+        uint64_t *dbf_bs1_ver_cb;
+        uint64_t *dbf_bs1_hor_cb;
+        uint64_t *dbf_bs1_ver_cr;
+        uint64_t *dbf_bs1_hor_cr;
+
+        /* CU is large */
+        uint64_t *large_map_c;
+    } dbf_lines;
+
+    /*FIXME used */
     void *inter_data;
 };
 
