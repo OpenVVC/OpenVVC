@@ -280,9 +280,9 @@ enum RCNSizes
 
 struct CTURCNData
 {
-    uint16_t y_buff[RCN_CTB_SIZE];
-    uint16_t cb_buff[RCN_CTB_SIZE];
-    uint16_t cr_buff[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, y_buff)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, cb_buff)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, cr_buff)[RCN_CTB_SIZE];
 
     /* To be used for temporary storage
      * when we needed

@@ -2,25 +2,8 @@
 #define RCN_INTRA_DC_PLANAR_H
 
 #include <stdint.h>
+#include "rcn_structures.h"
 
-void
-vvc_intra_dc(const uint16_t* const src_above, const uint16_t* const src_left,
-             uint16_t* const dst, ptrdiff_t dst_stride, int log2_pb_width,
-             int log2_pb_height);
-
-void
-vvc_intra_planar(const uint16_t* const src_above,
-                 const uint16_t* const src_left, uint16_t* const dst,
-                 ptrdiff_t dst_stride, int log2_pb_width, int log2_pb_height);
-
-void
-vvc_intra_dc_pdpc(const uint16_t* const src_above,
-                  const uint16_t* const src_left, uint16_t* const dst,
-                  ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h);
-
-void
-vvc_intra_planar_pdpc(const uint16_t* const src_above,
-                      const uint16_t* const src_left, uint16_t* const dst,
-                      ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h);
+void rcn_init_dc_planar_functions(struct RCNFunctions *const rcn_funcs);
 
 #endif // RCN_INTRA_DC_PLANAR_H

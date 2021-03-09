@@ -971,10 +971,11 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
     /*FIXME move rcn functions pointers init */
     rcn_init_mc_functions(&ctudec->rcn_ctx.rcn_funcs);
     rcn_init_tr_functions(&ctudec->rcn_ctx.rcn_funcs);
+    rcn_init_dc_planar_functions(&ctudec->rcn_ctx.rcn_funcs);
 
     /*Enables SSE Functions*/
     rcn_init_tr_functions_sse(&ctudec->rcn_ctx.rcn_funcs);
-
+    rcn_init_dc_planar_functions_sse(&ctudec->rcn_ctx.rcn_funcs);
 
     /* Note it is important here that part info has already been set before calling
      * this function since it will be used to set line sizes*/

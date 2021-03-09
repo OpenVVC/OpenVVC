@@ -704,8 +704,8 @@ rcn_residual(OVCTUDec *const ctudec,
              (tr_h_idx, log2_tb_w),
              (tmp, dst, tb_h, tb_h, tb_w, shift_h));
 #endif
-        (TRFunc->func)[tr_v_idx][log2_tb_w](src, tmp, tb_w, tb_w, tb_h, shift_v);
-        (TRFunc->func)[tr_h_idx][log2_tb_w](tmp, dst, tb_h, tb_h, tb_w, shift_h);
+        TRFunc->func[tr_v_idx][log2_tb_w](src, tmp, tb_w, tb_w, tb_h, shift_v);
+        TRFunc->func[tr_h_idx][log2_tb_w](tmp, dst, tb_h, tb_h, tb_w, shift_h);
 
     } else if (!cu_mts_flag) {
 
@@ -720,8 +720,8 @@ rcn_residual(OVCTUDec *const ctudec,
             int nb_row = tb_w;//OVMIN(lim_cg_w, 1 << log2_tb_w);
             int nb_col = tb_h;//OVMIN(lim_cg_w, 1 << log2_tb_h);
 
-            (TRFunc->func)[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, shift_v);
-            (TRFunc->func)[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, shift_h);
+            TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, shift_v);
+            TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, shift_h);
 #if 0
         }
 #endif
@@ -729,8 +729,8 @@ rcn_residual(OVCTUDec *const ctudec,
         enum DCTType tr_h_idx = cu_mts_idx  & 1;
         enum DCTType tr_v_idx = cu_mts_idx >> 1;
 
-        (TRFunc->func)[tr_v_idx][log2_tb_h](src, tmp, tb_w, tb_w, tb_h, shift_v);
-        (TRFunc->func)[tr_h_idx][log2_tb_w](tmp, src, tb_h, tb_h, tb_w, shift_h);
+        TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, tb_w, tb_w, tb_h, shift_v);
+        TRFunc->func[tr_h_idx][log2_tb_w](tmp, src, tb_h, tb_h, tb_w, shift_h);
 
     }
 }
@@ -778,11 +778,11 @@ rcn_residual_c(OVCTUDec *const ctudec,
         /*FIXME might be transform SKIP */
 
         #if 0
-        (TRFunc->func)[DCT_II][log2_tb_h](src, tmp, tb_w, tb_w, tb_h, shift_v);
-        (TRFunc->func)[DCT_II][log2_tb_w](tmp, src, tb_h, tb_h, tb_w, shift_h);
+        TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, tb_w, tb_h, shift_v);
+        TRFunc->func[DCT_II][log2_tb_w](tmp, src, tb_h, tb_h, tb_w, shift_h);
         #endif
-        (TRFunc->func)[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, shift_v);
-        (TRFunc->func)[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, shift_h);
+        TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, shift_v);
+        TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, shift_h);
 #if 0
     }
 #endif

@@ -471,3 +471,10 @@ vvc_intra_planar_pdpc_2_sse(const uint16_t *const src_above,
         _dst += dst_stride;
     }
 }
+
+void rcn_init_dc_planar_functions_sse(struct RCNFunctions *const rcn_funcs){
+  rcn_funcs->dc.pdpc = &vvc_intra_dc_pdpc_sse;
+
+  rcn_funcs->planar.pdpc[0] = &vvc_intra_planar_pdpc_sse;
+  rcn_funcs->planar.pdpc[1] = &vvc_intra_planar_pdpc_2_sse;
+}

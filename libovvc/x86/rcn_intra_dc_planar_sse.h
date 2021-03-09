@@ -3,20 +3,8 @@
 
 #include "stdint.h"
 #include "stddef.h"
+#include "rcn_structures.h"
 
-void vvc_intra_dc_pdpc_sse(const uint16_t *const src_above,
-                           const uint16_t *const src_left,
-                           uint16_t *const dst, ptrdiff_t dst_stride,
-                           int log2_width, int log2_height);
-
-void vvc_intra_planar_pdpc_sse(const uint16_t *const src_above,
-                               const uint16_t *const src_left,
-                               uint16_t *const dst, ptrdiff_t dst_stride,
-                               int log2_width, int log2_height);
-
-void vvc_intra_planar_pdpc_2_sse(const uint16_t *const src_above,
-                                 const uint16_t *const src_left,
-                                 uint16_t *const dst, ptrdiff_t dst_stride,
-                                 int log2_width, int log2_height);
+void rcn_init_dc_planar_functions_sse(struct RCNFunctions *const rcn_funcs);
 
 #endif

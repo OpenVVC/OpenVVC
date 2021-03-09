@@ -28,6 +28,14 @@ typedef void (*TrFunc)(const int16_t *src, int16_t *dst,
                  ptrdiff_t src_stride,
                  int num_lines, int num_columns, int shift);
 
+typedef void (*DCFunc)(const uint16_t* const src_above,
+                 const uint16_t* const src_left, uint16_t* const dst,
+                 ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h);
+
+typedef void (*PlanarFunc)(const uint16_t* const src_above,
+                     const uint16_t* const src_left, uint16_t* const dst,
+                     ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h);
+
 /**
  * The Context put together all functions used by strategies.
  */
@@ -45,6 +53,18 @@ struct TRFunctions
    TrFunc func[NB_TR_TYPES][NB_TR_SIZES];
 };
 
+struct DCFunctions
+{
+  DCFunc func;
+  DCFunc pdpc;
+};
+
+struct PlanarFunctions
+{
+  PlanarFunc func;
+  PlanarFunc pdpc[2];
+};
+
 
 struct RCNFunctions
 {
@@ -56,6 +76,12 @@ struct RCNFunctions
 
     /* Transform Functions */
     struct TRFunctions tr;
+
+    /* DC Functions */
+    struct DCFunctions dc;
+
+    /* DC Functions */
+    struct PlanarFunctions planar;
 };
 
 #endif

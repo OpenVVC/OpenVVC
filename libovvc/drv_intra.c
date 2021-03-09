@@ -426,6 +426,8 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx,
                int log2_pb_width, int log2_pb_height)
 {
     const struct OVBuffInfo *ctu_buff = &rcn_ctx->ctu_buff;
+    const struct DCFunctions *dc = &rcn_ctx->rcn_funcs.dc;
+    const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
 
     uint16_t ref_above[(128<<1) + 128]/*={0}*/;
     uint16_t ref_left [(128<<1) + 128]/*={0}*/;
@@ -464,14 +466,14 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx,
         }
         // FIXED? :vvc_intra_dsp_ctx.planar_pdpc[log2_pb_width > 5 || log2_pb_height > 5](ref1, ref2, dst, dst_stride,
                               // log2_pb_width, log2_pb_height);
-        vvc_intra_planar_pdpc(ref1, ref2, dst, dst_stride,
+        planar->pdpc[log2_pb_width > 5 || log2_pb_height > 5](ref1, ref2, dst, dst_stride,
                               log2_pb_width, log2_pb_height);
         break;
     }
     case OVINTRA_DC://DC
     {
       // FIXED? :vvc_intra_dsp_ctx.dc_pdpc(ref1, ref2, dst, dst_stride, log2_pb_width, log2_pb_height);
-      vvc_intra_dc_pdpc(ref1, ref2, dst, dst_stride, log2_pb_width, log2_pb_height);
+      dc->pdpc(ref1, ref2, dst, dst_stride, log2_pb_width, log2_pb_height);
 
         break;
     }
@@ -763,6 +765,8 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
                       int log2_pb_w, int log2_pb_h){
 
     const struct OVBuffInfo *ctu_buff = &rcn_ctx->ctu_buff;
+    const struct DCFunctions *dc = &rcn_ctx->rcn_funcs.dc;
+    const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
 
     uint16_t *const dst_cb = &ctu_buff->cb[(x0) + (y0 * RCN_CTB_STRIDE)];
     uint16_t *const dst_cr = &ctu_buff->cr[(x0) + (y0 * RCN_CTB_STRIDE)];
@@ -802,10 +806,10 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
         if (log2_pb_h > 1 && log2_pb_w > 1) {
         // FIXME! vvc_intra_dsp_ctx.planar_pdpc[0](ref1, ref2, dst_cb, dst_stride,
                          // log2_pb_w, log2_pb_h);
-                         vvc_intra_planar_pdpc(ref1, ref2, dst_cb, dst_stride, log2_pb_w,
+               planar->pdpc[0](ref1, ref2, dst_cb, dst_stride, log2_pb_w,
                                           log2_pb_h);
         } else {
-                vvc_intra_planar(ref1, ref2, dst_cb, dst_stride, log2_pb_w,
+                planar->func(ref1, ref2, dst_cb, dst_stride, log2_pb_w,
                                  log2_pb_h);
 
         }
@@ -820,10 +824,10 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
             if (log2_pb_h > 1 && log2_pb_w > 1) {
                 // FIXED? :vvc_intra_dsp_ctx.planar_pdpc[0](ref1, ref2, dst_cr, dst_stride,
                 // log2_pb_w, log2_pb_h);
-                vvc_intra_planar_pdpc(ref1, ref2, dst_cr, dst_stride,
+                planar->pdpc[0](ref1, ref2, dst_cr, dst_stride,
                                       log2_pb_w, log2_pb_h);
             } else {
-                vvc_intra_planar(ref1, ref2, dst_cr, dst_stride, log2_pb_w,
+                planar->func(ref1, ref2, dst_cr, dst_stride, log2_pb_w,
                                  log2_pb_h);
             }
         break;
@@ -840,10 +844,10 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
 
         /* PDPC disable for 4xX and Xx4 blocks */
         if (log2_pb_h > 1 && log2_pb_w > 1) {
-            vvc_intra_dc_pdpc(ref1, ref2, dst_cb, dst_stride, log2_pb_w,
+            dc->pdpc(ref1, ref2, dst_cb, dst_stride, log2_pb_w,
                               log2_pb_h);
         } else {
-            vvc_intra_dc(ref1, ref2, dst_cb, dst_stride, log2_pb_w,
+            dc->func(ref1, ref2, dst_cb, dst_stride, log2_pb_w,
                          log2_pb_h);
         }
 
@@ -857,10 +861,10 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
 
         /* PDPC disable for 4xX and Xx4 blocks */
         if (log2_pb_h > 1 && log2_pb_w > 1) {
-            vvc_intra_dc_pdpc(ref1, ref2, dst_cr, dst_stride, log2_pb_w,
+            dc->pdpc(ref1, ref2, dst_cr, dst_stride, log2_pb_w,
                               log2_pb_h);
         } else {
-            vvc_intra_dc(ref1, ref2, dst_cr, dst_stride, log2_pb_w, log2_pb_h);
+            dc->func(ref1, ref2, dst_cr, dst_stride, log2_pb_w, log2_pb_h);
         }
 
         break;
