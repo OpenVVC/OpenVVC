@@ -501,7 +501,7 @@ slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
 }
 
 static void
-cabac_line_next_line(OVCTUDec *const ctudec, const struct CCLines cclines[])
+cabac_line_next_line(OVCTUDec *const ctudec, const struct CCLines *cclines)
 {
     struct PartMap *const pmap_l = &ctudec->part_map;
     struct PartMap *const pmap_c = &ctudec->part_map_c;
@@ -617,7 +617,7 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
 
 static int
 decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
-                const OVPS *const prms, const struct RectEntryInfo *const einfo,
+                const struct RectEntryInfo *const einfo,
                 uint16_t ctb_addr_rs)
 {
     int nb_ctu_w = einfo->nb_ctu_w;
@@ -727,7 +727,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
 static int
 decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
-                     const OVPS *const prms, const struct RectEntryInfo *const einfo,
+                     const struct RectEntryInfo *const einfo,
                      uint16_t ctb_addr_rs)
 {
     int ret;
@@ -901,7 +901,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
 
     reset_drv_lines(sldec, prms);
 
-    cabac_line_next_line(ctudec, &sldec->cabac_lines);
+    cabac_line_next_line(ctudec, sldec->cabac_lines);
 
     drv_line_next_line(ctudec, sldec);
 
@@ -915,9 +915,9 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
         ctudec->ctb_y = einfo->ctb_y + ctb_y;
 
         /* New ctu line */
-        ret = decode_ctu_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
+        ret = decode_ctu_line(ctudec, sldec, einfo, ctb_addr_rs);
 
-        cabac_line_next_line(ctudec, &sldec->cabac_lines);
+        cabac_line_next_line(ctudec, sldec->cabac_lines);
 
         drv_line_next_line(ctudec, sldec);
 
@@ -937,9 +937,9 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     ctudec->ctb_y = einfo->ctb_y + ctb_y;
     /* Last line */
     if (!einfo->implicit_h) {
-        ret = decode_ctu_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
+        ret = decode_ctu_line(ctudec, sldec, einfo, ctb_addr_rs);
     } else {
-        ret = decode_ctu_last_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
+        ret = decode_ctu_last_line(ctudec, sldec, einfo, ctb_addr_rs);
     }
 
     /*FIXME decide return value */
