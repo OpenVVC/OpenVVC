@@ -727,7 +727,7 @@ rcn_residual(OVCTUDec *const ctudec,
         enum DCTType tr_v_idx = cu_mts_idx >> 1;
 
         tr_templates[tr_v_idx][log2_tb_h].transform(src, tmp, tb_w, tb_w, tb_h, shift_v);
-        tr_templates[tr_h_idx][log2_tb_w].transform(tmp, src, tb_h, tb_h, tb_w, shift_h);
+        tr_templates[tr_h_idx][log2_tb_w].transform(tmp, dst, tb_h, tb_h, tb_w, shift_h);
 
     }
 }
