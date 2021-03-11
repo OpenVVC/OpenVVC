@@ -715,9 +715,13 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
 
-        dbf_store_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
+        if (!ctudec->dbf_disable) {
+            struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
+            struct DBFInfo *const dbf_info = &ctudec->dbf_info;
+            dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
+            dbf_load_info(dbf_info, dbf_lns, log2_ctb_s, (ctb_x + 1) % nb_ctu_w);
+        }
 
-        dbf_load_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, (ctb_x + 1) % nb_ctu_w);
         /* FIXME
          * Move this somewhere else to avoid first line check
          */
@@ -736,7 +740,11 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         ret = decode_ctu(ctudec, prms, einfo, ctb_addr_rs);
 
-        dbf_store_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
+        if (!ctudec->dbf_disable) {
+            struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
+            struct DBFInfo *const dbf_info = &ctudec->dbf_info;
+            dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
+        }
 
     } else {
         int ctu_w = einfo->last_ctu_w;
@@ -749,7 +757,11 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         ret = decode_truncated_ctu(ctudec, prms, einfo, ctb_addr_rs,
                                    ctu_w, ctu_h);
 
-        dbf_store_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
+        if (!ctudec->dbf_disable) {
+            struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
+            struct DBFInfo *const dbf_info = &ctudec->dbf_info;
+            dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
+        }
     }
 
     /* Next line will use the qp of the first pu as a start value
@@ -805,9 +817,12 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         /* FIXME is first line check if only one line? */
         rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
 
-        dbf_store_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
-
-        dbf_load_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, (ctb_x + 1) % nb_ctu_w);
+        if (!ctudec->dbf_disable) {
+            struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
+            struct DBFInfo *const dbf_info = &ctudec->dbf_info;
+            dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
+            dbf_load_info(dbf_info, dbf_lns, log2_ctb_s, (ctb_x + 1) % nb_ctu_w);
+        }
 
         ctb_addr_rs++;
         ctb_x++;
