@@ -45,8 +45,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
 static void derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
                                int cu_qp_delta);
 
-static void derive_ctu_neighborhood(const OVSliceDec *const sldec,
-                                    OVCTUDec *const ctudec,
+static void derive_ctu_neighborhood(OVCTUDec *const ctudec,
                                     int ctb_address, int nb_ctu_w);
 static void
 init_slice_tree_ctx(OVCTUDec *const ctudec, const struct OVPS *prms)
@@ -609,7 +608,7 @@ tmvp_store_mv(OVCTUDec *ctudec)
  * without adding many thing in each lin decoder
  */
 static int
-decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
+decode_ctu(OVCTUDec *const ctudec,
            const OVPS *const prms, const struct RectEntryInfo *const einfo,
            uint16_t ctb_addr_rs)
 {
@@ -621,7 +620,7 @@ decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     /* FIXME pic border detection in neighbour flags ? CTU Neighbours
      * could be set according to upper level context
      */
-    derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w);
+    derive_ctu_neighborhood(ctudec, ctb_addr_rs, nb_ctu_w);
 
     init_ctu_bitfield(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s);
 
@@ -642,7 +641,7 @@ decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 }
 
 static int
-decode_truncated_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
+decode_truncated_ctu(OVCTUDec *const ctudec,
                      const OVPS *const prms, const struct RectEntryInfo *const einfo,
                      uint16_t ctb_addr_rs, int ctu_w, int ctu_h)
 {
@@ -652,7 +651,7 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     ctudec->drv_ctx.inter_ctx.tmvp_avail = 0;
     /* FIXME pic border detection in neighbour flags ?*/
-    derive_ctu_neighborhood(sldec, ctudec, ctb_addr_rs, nb_ctu_w);
+    derive_ctu_neighborhood(ctudec, ctb_addr_rs, nb_ctu_w);
 
     /* FIXME pic border detection in neighbour flags ?*/
     init_ctu_bitfield_border(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s,
@@ -682,6 +681,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
                 uint16_t ctb_addr_rs)
 {
     int nb_ctu_w = einfo->nb_ctu_w;
+    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int ctb_x = 0;
     int ret;
     uint8_t backup_qp;
@@ -690,14 +690,14 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     /* Do not copy on first line */
     if (ctb_addr_rs >= nb_ctu_w) {
-        rcn_frame_line_to_ctu(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
+        rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
     }
 
     while (ctb_x < nb_ctu_w - 1) {
         /*FIXME try to remove ctb_x computation */
         ctudec->ctb_x = einfo->ctb_x + ctb_x;
 
-        ret = decode_ctu(ctudec, sldec, prms, einfo, ctb_addr_rs);
+        ret = decode_ctu(ctudec, prms, einfo, ctb_addr_rs);
 
         cabac_line_next_ctu(ctudec, prms);
 
@@ -711,10 +711,10 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         drv_line_next_ctu(ctudec, sldec, &sldec->drv_lines, prms, ctb_x);
 
-        rcn_update_ctu_border(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
+        rcn_update_ctu_border(&ctudec->rcn_ctx, log2_ctb_s);
 
         store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
-        uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+
         dbf_store_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
 
         dbf_load_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, (ctb_x + 1) % nb_ctu_w);
@@ -722,7 +722,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
          * Move this somewhere else to avoid first line check
          */
         if (ctb_addr_rs >= nb_ctu_w) {
-            rcn_frame_line_to_ctu(&ctudec->rcn_ctx, ctudec->part_ctx->log2_ctu_s);
+            rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
         }
 
         ctb_addr_rs++;
@@ -734,13 +734,11 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     /* last CTU require check on picture border for implicit splits*/
     if (!einfo->implicit_w) {
 
-        uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-        ret = decode_ctu(ctudec, sldec, prms, einfo, ctb_addr_rs);
+        ret = decode_ctu(ctudec, prms, einfo, ctb_addr_rs);
 
         dbf_store_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
 
     } else {
-        uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
         int ctu_w = einfo->last_ctu_w;
 
         /* No horizontal implicit split since we would be
@@ -748,7 +746,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
          */
         int ctu_h = 1 << log2_ctb_s;
 
-        ret = decode_truncated_ctu(ctudec, sldec, prms, einfo, ctb_addr_rs,
+        ret = decode_truncated_ctu(ctudec, prms, einfo, ctb_addr_rs,
                                    ctu_w, ctu_h);
 
         dbf_store_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
@@ -793,7 +791,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         ctudec->ctb_x = einfo->ctb_x + ctb_x;
 
-        ret = decode_truncated_ctu(ctudec, sldec, prms, einfo, ctb_addr_rs,
+        ret = decode_truncated_ctu(ctudec, prms, einfo, ctb_addr_rs,
                                    ctu_w, ctu_h);
 
         cabac_line_next_ctu(ctudec, prms);
@@ -817,7 +815,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     ctudec->ctb_x = einfo->ctb_x + ctb_x;
 
-    ret = decode_truncated_ctu(ctudec, sldec, prms, einfo, ctb_addr_rs,
+    ret = decode_truncated_ctu(ctudec, prms, einfo, ctb_addr_rs,
                                einfo->last_ctu_w, ctu_h);
 
     ret = 0;
@@ -836,6 +834,7 @@ slicedec_attach_frame_buff(OVCTUDec *const ctudec, OVSliceDec *sldec,
     OVFrame *f = sldec->pic->frame;
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
+
     uint32_t entry_start_offset = ((uint32_t)einfo->ctb_x << (log2_ctb_s + 1));
     uint32_t entry_start_offset_c = ((uint32_t)einfo->ctb_x << (log2_ctb_s));
 
@@ -964,7 +963,9 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
          */
         fbuff_new_line(&tmp_fbuff, log2_ctb_s);
         ctudec->rcn_ctx.frame_buff = tmp_fbuff;
+        #if 0
         ctudec->ctu_ngh_flags = CTU_UP_FLG|CTU_UPRGT_FLG;
+        #endif
 
         ctb_addr_rs += nb_ctu_w;
         ctb_y++;
@@ -1140,8 +1141,7 @@ slicedec_uninit(OVSliceDec **sldec_p)
 
 /* FIXME cleanup */
 static void
-derive_ctu_neighborhood(const OVSliceDec *const sldec,
-                       OVCTUDec *const ctudec,
+derive_ctu_neighborhood(OVCTUDec *const ctudec,
                        int ctb_address, int nb_ctu_w)
 {
     int is_left_border = ((ctb_address) % nb_ctu_w)  ? 0 : 1;
