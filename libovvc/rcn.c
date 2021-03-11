@@ -12,8 +12,6 @@
 #include "rcn_struct.h"
 #include "rcn.h"
 
-
-
 #if 0
 void vvc_intra_pred_isp(const OVCTUDec *const ctudec,
                         uint16_t *const src,
