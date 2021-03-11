@@ -7,6 +7,7 @@
 #include "ovutils.h"
 #include "ovmem.h"
 #include "overror.h"
+#include "ovdec_internal.h"
 
 /* TODO define in a header */
 enum SliceType {
@@ -111,6 +112,54 @@ fill_inter_map(OVCTUDec *const ctudec, uint64_t above_map, uint64_t tr_map)
 }
 #endif
 
+static void
+tmvp_store_mv(OVCTUDec *ctudec)
+{
+    uint16_t ctb_x = ctudec->ctb_x;
+    uint16_t ctb_y = ctudec->ctb_y;
+
+    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+    uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
+
+    int nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
+    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+
+    struct MVPlane *plane0 = inter_ctx->tmvp_ctx.plane0;
+    struct MVPlane *plane1 = inter_ctx->tmvp_ctx.plane1;
+
+    int nb_ctb_w = ctudec->nb_ctb_pic_w;
+    uint16_t ctb_addr_rs = ctb_x + ctb_y * nb_ctb_w;
+
+    if (plane0->dirs) {
+        uint64_t *dst_dirs = plane0->dirs + ctb_addr_rs * nb_pb_ctb_w;
+
+        OVMV *dst_mv = plane0->mvs + ctb_x * nb_pb_ctb_w + (ctb_y * nb_pb_ctb_w* nb_pb_ctb_w) * nb_ctb_w;
+        struct OVMVCtx *mv_ctx = &inter_ctx->mv_ctx0;
+        int i;
+
+        memcpy(dst_dirs, &mv_ctx->map.vfield[1], sizeof(uint64_t) * nb_pb_ctb_w);
+        for (i = 0; i < nb_pb_ctb_w; ++i) {
+            memcpy(dst_mv, &mv_ctx->mvs[1 + 34 * (i + 1)], sizeof(*dst_mv) * nb_pb_ctb_w);
+            dst_mv += nb_pb_ctb_w * nb_ctb_w;
+        }
+    }
+
+    if (plane1->dirs) {
+        struct OVMVCtx *mv_ctx = &inter_ctx->mv_ctx1;
+        uint64_t *dst_dirs = plane1->dirs + ctb_addr_rs * nb_pb_ctb_w;
+        int i;
+
+        OVMV *dst_mv = plane1->mvs + ctb_x * nb_pb_ctb_w + (ctb_y * nb_pb_ctb_w* nb_pb_ctb_w) * nb_ctb_w;
+
+        /*FIXME memory could be spared with smaller map size when possible */
+        memcpy(dst_dirs, &mv_ctx->map.vfield[1], sizeof(uint64_t) * nb_pb_ctb_w);
+        for (i = 0; i < nb_pb_ctb_w; ++i) {
+            memcpy(dst_mv, &mv_ctx->mvs[1 + 34 * (i + 1)], sizeof(*dst_mv) * nb_pb_ctb_w);
+            dst_mv += nb_pb_ctb_w * nb_ctb_w;
+        }
+    }
+}
+
 /* Copy last Motion Vector from CTU to corresponding line in 
  * DRVLine
  */
@@ -140,6 +189,7 @@ store_inter_maps(struct DRVLines *const l,
     uint64_t above_map0 = (uint64_t)lns->dir0[ctb_x + 1] | ((uint64_t)lns->dir0 [ctb_x + 2] << nb_ctb_pb);
     uint64_t above_map1 = (uint64_t)lns->dir1[ctb_x + 1] | ((uint64_t)lns->dir1 [ctb_x + 2] << nb_ctb_pb);
 
+    tmvp_store_mv(ctudec);
 
     /* Copy last MV column to next CTU left MV column
      */

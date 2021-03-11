@@ -555,53 +555,6 @@ cabac_line_next_ctu(OVCTUDec *const ctudec, const OVPS *const prms)
     pmap_c->cu_mode_x       += nb_pb_ctb_w;
 }
 
-static void
-tmvp_store_mv(OVCTUDec *ctudec)
-{
-    uint16_t ctb_x = ctudec->ctb_x;
-    uint16_t ctb_y = ctudec->ctb_y;
-
-    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-    uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
-
-    int nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
-    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-
-    struct MVPlane *plane0 = inter_ctx->tmvp_ctx.plane0;
-    struct MVPlane *plane1 = inter_ctx->tmvp_ctx.plane1;
-
-    int nb_ctb_w = ctudec->nb_ctb_pic_w;
-    uint16_t ctb_addr_rs = ctb_x + ctb_y * nb_ctb_w;
-
-    if (plane0->dirs) {
-        uint64_t *dst_dirs = plane0->dirs + ctb_addr_rs * nb_pb_ctb_w;
-
-        OVMV *dst_mv = plane0->mvs + ctb_x * nb_pb_ctb_w + (ctb_y * nb_pb_ctb_w* nb_pb_ctb_w) * nb_ctb_w;
-        struct OVMVCtx *mv_ctx = &inter_ctx->mv_ctx0;
-        int i;
-
-        memcpy(dst_dirs, &mv_ctx->map.vfield[1], sizeof(uint64_t) * nb_pb_ctb_w);
-        for (i = 0; i < nb_pb_ctb_w; ++i) {
-            memcpy(dst_mv, &mv_ctx->mvs[1 + 34 * (i + 1)], sizeof(*dst_mv) * nb_pb_ctb_w);
-            dst_mv += nb_pb_ctb_w * nb_ctb_w;
-        }
-    }
-
-    if (plane1->dirs) {
-        struct OVMVCtx *mv_ctx = &inter_ctx->mv_ctx1;
-        uint64_t *dst_dirs = plane1->dirs + ctb_addr_rs * nb_pb_ctb_w;
-        int i;
-
-        OVMV *dst_mv = plane1->mvs + ctb_x * nb_pb_ctb_w + (ctb_y * nb_pb_ctb_w* nb_pb_ctb_w) * nb_ctb_w;
-
-        /*FIXME memory could be spared with smaller map size when possible */
-        memcpy(dst_dirs, &mv_ctx->map.vfield[1], sizeof(uint64_t) * nb_pb_ctb_w);
-        for (i = 0; i < nb_pb_ctb_w; ++i) {
-            memcpy(dst_mv, &mv_ctx->mvs[1 + 34 * (i + 1)], sizeof(*dst_mv) * nb_pb_ctb_w);
-            dst_mv += nb_pb_ctb_w * nb_ctb_w;
-        }
-    }
-}
 
 /* Wrapper function around decode CTU calls so we can easily modify
  * what is to be done before and after each CTU
@@ -634,8 +587,6 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
                     is_last_x, is_last_y);
     }
 
-    tmvp_store_mv(ctudec);
-
     return ret;
 }
 
@@ -667,8 +618,6 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
         rcn_dbf_truncated_ctu(&ctudec->rcn_ctx, &ctudec->dbf_info, log2_ctb_s,
                               is_last_x, is_last_y, ctu_w, ctu_h);
     }
-
-    tmvp_store_mv(ctudec);
 
     return ret;
 }
@@ -831,6 +780,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     ret = decode_truncated_ctu(ctudec, einfo, ctb_addr_rs,
                                einfo->last_ctu_w, ctu_h);
 
+    store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
     ret = 0;
     /* FIXME Temporary error report on CABAC end of stream */
     if (ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream < -2) {
