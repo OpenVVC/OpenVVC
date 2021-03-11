@@ -856,30 +856,9 @@ fbuff_new_line(struct OVBuffInfo *fbuff, uint8_t log2_ctb_s)
     fbuff->cr += fbuff->stride_c << (log2_ctb_s - 1);
 }
 
-static int
-slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
-                           const struct RectEntryInfo *const einfo)
+static void
+tmvp_entry_init(OVCTUDec *ctudec, OVSliceDec *sldec)
 {
-    int ctb_addr_rs = 0;
-    int ctb_y = 0;
-    int ret;
-
-    /* FIXME handle more than one ctu dec */
-    OVCTUDec *const ctudec = sldec->ctudec_list;
-    /*FIXME handle cabac alloc or keep it on the stack ? */
-    OVCABACCtx cabac_ctx;
-
-    const int nb_ctu_w = einfo->nb_ctu_w;
-    const int nb_ctu_h = einfo->nb_ctu_h;
-
-    struct OVBuffInfo tmp_fbuff;
-    ctudec->cabac_ctx = &cabac_ctx;
-
-    ctudec->qp_ctx.current_qp = ctudec->slice_qp;
-    derive_dequant_ctx(ctudec, &ctudec->qp_ctx, 0);
-
-    /*FIXME quick tmvp import */
-    ctudec->nb_ctb_pic_w = einfo->nb_ctb_pic_w;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.plane0 = &sldec->pic->mv_plane0;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.plane1 = &sldec->pic->mv_plane1;
 
@@ -907,6 +886,36 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
 
     memset(ctudec->drv_ctx.inter_ctx.tmvp_ctx.dir_map_v0, 0, 33 * sizeof(uint64_t));
     memset(ctudec->drv_ctx.inter_ctx.tmvp_ctx.dir_map_v1, 0, 33 * sizeof(uint64_t));
+}
+
+static int
+slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
+                           const struct RectEntryInfo *const einfo)
+{
+    int ctb_addr_rs = 0;
+    int ctb_y = 0;
+    int ret;
+
+    /* FIXME handle more than one ctu dec */
+    OVCTUDec *const ctudec = sldec->ctudec_list;
+    /*FIXME handle cabac alloc or keep it on the stack ? */
+    OVCABACCtx cabac_ctx;
+
+    const int nb_ctu_w = einfo->nb_ctu_w;
+    const int nb_ctu_h = einfo->nb_ctu_h;
+
+    struct OVBuffInfo tmp_fbuff;
+    ctudec->cabac_ctx = &cabac_ctx;
+
+    ctudec->qp_ctx.current_qp = ctudec->slice_qp;
+
+    derive_dequant_ctx(ctudec, &ctudec->qp_ctx, 0);
+
+    /*FIXME quick tmvp import */
+    ctudec->nb_ctb_pic_w = einfo->nb_ctb_pic_w;
+
+
+    tmvp_entry_init(ctudec, sldec);
 
     /* FIXME tmp Reset DBF */
     memset(&ctudec->dbf_info.edge_map_ver, 0, sizeof(ctudec->dbf_info.edge_map_ver));
