@@ -3,7 +3,6 @@
 #include <limits.h>
 #include "ovutils.h"
 #include "ovmem.h"
-#include "overror.h"
 #include "nvcl_private.h"
 #include "nvcl_structures.h"
 #include "ovframe.h"
