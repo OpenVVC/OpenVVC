@@ -633,8 +633,6 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     int ret;
     uint8_t backup_qp;
 
-    drv_line_next_ctu(ctudec, sldec, &sldec->drv_lines, prms, 0);
-
     /* Do not copy on first line */
     if (ctb_addr_rs >= nb_ctu_w) {
         rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
@@ -655,8 +653,6 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         if (ctb_x == 0) {
             backup_qp = ctudec->drv_ctx.qp_map_x[0];
         }
-
-        drv_line_next_ctu(ctudec, sldec, &sldec->drv_lines, prms, ctb_x);
 
         rcn_update_ctu_border(&ctudec->rcn_ctx, log2_ctb_s);
 
@@ -741,8 +737,6 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     int nb_ctu_w = einfo->nb_ctu_w;
     int ctb_x = 0;
 
-    drv_line_next_ctu(ctudec, sldec, &sldec->drv_lines, prms, 0);
-
     rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
 
     while (ctb_x < nb_ctu_w - 1) {
@@ -754,8 +748,6 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
                                    ctu_w, ctu_h);
 
         cabac_line_next_ctu(ctudec, prms);
-
-        drv_line_next_ctu(ctudec, sldec, &sldec->drv_lines, prms, ctb_x);
 
         store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
 

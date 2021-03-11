@@ -766,6 +766,7 @@ drv_line_next_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
 }
 
 
+#if 0
 void
 drv_line_next_ctu(OVCTUDec *const ctudec, OVSliceDec *sldec, struct DRVLines *drv_lns,
                   const OVPS *const prms, uint16_t ctb_x)
@@ -798,6 +799,7 @@ drv_line_next_ctu(OVCTUDec *const ctudec, OVSliceDec *sldec, struct DRVLines *dr
 
     #endif
 }
+#endif
 
 void
 drv_lines_uninit(OVSliceDec *sldec)

@@ -8,8 +8,10 @@ void reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms);
 
 void drv_line_next_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec);
 
+#if 0
 void drv_line_next_ctu(OVCTUDec *const ctudec, OVSliceDec *sldec, struct DRVLines *drv_line,
                        const OVPS *const prms, uint16_t ctb_x);
+#endif
 
 void drv_lines_uninit(OVSliceDec *sldec);
 
