@@ -624,6 +624,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
     uint16_t nb_pb_ctb = (1 << log2_ctb_s) >> log2_min_cb_s;
+    uint8_t slice_type = sldec->slice_type;
     int ctb_x = 0;
     int ret;
     uint8_t backup_qp;
@@ -651,7 +652,9 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         rcn_update_ctu_border(&ctudec->rcn_ctx, log2_ctb_s);
 
-        store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
+        if (slice_type != SLICE_I) {
+            store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
+        }
 
         if (!ctudec->dbf_disable) {
             struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
@@ -703,7 +706,9 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     }
 
     /* FIXME if inter only */
-    store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
+    if (slice_type != SLICE_I) {
+        store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
+    }
 
     /* Next line will use the qp of the first pu as a start value
      * for qp_prediction
@@ -732,6 +737,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
     uint16_t nb_pb_ctb = (1 << log2_ctb_s) >> log2_min_cb_s;
     int nb_ctu_w = einfo->nb_ctu_w;
+    uint8_t slice_type = sldec->slice_type;
     int ctb_x = 0;
 
     rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
@@ -746,7 +752,9 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         cabac_line_next_ctu(ctudec, nb_pb_ctb);
 
-        store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
+        if (slice_type != SLICE_I) {
+            store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
+        }
 
         rcn_update_ctu_border(&ctudec->rcn_ctx, log2_ctb_s);
 
@@ -769,7 +777,10 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     ret = decode_truncated_ctu(ctudec, einfo, ctb_addr_rs,
                                einfo->last_ctu_w, ctu_h);
 
-    store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
+    if (slice_type != SLICE_I) {
+        store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
+    }
+
     ret = 0;
     /* FIXME Temporary error report on CABAC end of stream */
     if (ctudec->cabac_ctx->bytestream_end - ctudec->cabac_ctx->bytestream < -2) {
@@ -953,6 +964,7 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
     const OVPPS *const pps = prms->pps;
     const OVSH *const sh = prms->sh;
     const OVPH *const ph = prms->ph;
+    sldec->slice_type = sh->sh_slice_type;
 
     ctudec->max_log2_transform_skip_size = sps->sps_log2_transform_skip_max_size_minus2 + 2;
 

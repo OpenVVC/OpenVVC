@@ -80,6 +80,7 @@ struct DRVLines
 
 typedef struct OVSliceDec
 {
+   uint8_t slice_type;
    /* Lins for CABAC context derivation luma and chroma */
    struct CCLines cabac_lines[2];
 
