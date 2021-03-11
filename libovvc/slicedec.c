@@ -501,12 +501,12 @@ slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
 }
 
 static void
-cabac_line_next_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
+cabac_line_next_line(OVCTUDec *const ctudec, const struct CCLines cclines[])
 {
     struct PartMap *const pmap_l = &ctudec->part_map;
     struct PartMap *const pmap_c = &ctudec->part_map_c;
-    const struct CCLines *const lns_l = &sldec->cabac_lines[0];
-    const struct CCLines *const lns_c = &sldec->cabac_lines[1];
+    const struct CCLines *const lns_l = &cclines[0];
+    const struct CCLines *const lns_c = &cclines[1];
 
     /* CTU Decoder part maps points to cabac_lines start */
     pmap_l->log2_cu_w_map_x = lns_l->log2_cu_w_map_x;
@@ -901,7 +901,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
 
     reset_drv_lines(sldec, prms);
 
-    cabac_line_next_line(ctudec, sldec);
+    cabac_line_next_line(ctudec, &sldec->cabac_lines);
 
     drv_line_next_line(ctudec, sldec);
 
@@ -917,7 +917,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
         /* New ctu line */
         ret = decode_ctu_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
 
-        cabac_line_next_line(ctudec, sldec);
+        cabac_line_next_line(ctudec, &sldec->cabac_lines);
 
         drv_line_next_line(ctudec, sldec);
 
