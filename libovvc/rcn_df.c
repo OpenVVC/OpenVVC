@@ -1172,14 +1172,43 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInfo *const d
 
     uint8_t nb_unit = (1 << log2_ctu_s) >> 2;
 
+    #if 1
     vvc_dbf_ctu_hor(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_y);
     vvc_dbf_ctu_ver(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_x);
 
     vvc_dbf_chroma_hor(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
-                       nb_unit, last_y);
+                       nb_unit, !!last_y);
 
     vvc_dbf_chroma_ver(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
-                       nb_unit, last_x);
+                       nb_unit, !!last_x);
+                       #endif
+
+}
+
+void
+rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
+                      uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y, uint8_t ctu_w, uint8_t ctu_h)
+{
+    const struct OVBuffInfo *const fbuff = &rcn_ctx->frame_buff;
+
+    uint8_t nb_unit = (1 << log2_ctu_s) >> 2;
+
+    uint8_t nb_unit_w = (ctu_w) >> 2;
+    uint8_t nb_unit_h = (ctu_h) >> 2;
+
+    dbf_info->edge_map_ver[nb_unit_w] &= -!last_x;
+    dbf_info->edge_map_hor[nb_unit_h] &= -!last_y;
+
+    #if 1
+    vvc_dbf_ctu_hor(fbuff->y, fbuff->stride, dbf_info, nb_unit_w, !!last_y);
+    vvc_dbf_ctu_ver(fbuff->y, fbuff->stride, dbf_info, nb_unit_h, !!last_x);
+
+    vvc_dbf_chroma_hor(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
+                       nb_unit_w, !!last_y);
+
+    vvc_dbf_chroma_ver(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
+                       nb_unit_h, !!last_x);
+                       #endif
 
 }
 #endif
