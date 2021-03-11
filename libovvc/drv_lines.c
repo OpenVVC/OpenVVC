@@ -37,11 +37,6 @@ free_inter_drv_lines(struct DRVLines *const drv_lns)
     }
 }
 
-static void
-inter_lines_next_ctu()
-{
-}
-
 static int
 init_inter_drv_lines(struct DRVLines *const drv_lns, int nb_pb_pic_w,
                      int nb_ctb_pic_w)
@@ -56,17 +51,17 @@ init_inter_drv_lines(struct DRVLines *const drv_lns, int nb_pb_pic_w,
 
     if (!lns->mv0 || !lns->mv1 || !lns->dir0 || !lns->dir1) {
         free_inter_drv_lines(drv_lns);
-         return OVVC_ENOMEM;
+        return OVVC_ENOMEM;
     }
 
     return 0;
 }
 
+#if 0
 /* Reset inter direction maps according to CTU neighbourhood
  */
 static void
 fill_inter_map(OVCTUDec *const ctudec, uint64_t above_map, uint64_t tr_map)
-               
 {
     const int nb_ctb_pb =  (1 << ((ctudec->part_ctx->log2_ctu_s) & 7)) >> ctudec->part_ctx->log2_min_cb_s;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -114,13 +109,14 @@ fill_inter_map(OVCTUDec *const ctudec, uint64_t above_map, uint64_t tr_map)
         }
     }
 }
+#endif
 
 /* Copy last Motion Vector from CTU to corresponding line in 
  * DRVLine
  */
 void
 store_inter_maps(struct DRVLines *const l,
-                 const OVCTUDec *const ctudec,
+                 OVCTUDec *const ctudec,
                  unsigned int ctb_x)
 {
     uint8_t nb_ctb_pb =  (1 << ((ctudec->part_ctx->log2_ctu_s) & 7)) >> ctudec->part_ctx->log2_min_cb_s;
@@ -139,14 +135,7 @@ store_inter_maps(struct DRVLines *const l,
     int i;
 
     const uint64_t lst_row0 = rows_map0[nb_ctb_pb];
-    #if 0
-    const uint64_t lst_col0 = cols_map0[nb_ctb_pb];
-    #endif
-
     const uint64_t lst_row1 = rows_map1[nb_ctb_pb];
-    #if 0
-    const uint64_t lst_col1 = cols_map1[nb_ctb_pb];
-    #endif
 
     uint64_t above_map0 = (uint64_t)lns->dir0[ctb_x + 1] | ((uint64_t)lns->dir0 [ctb_x + 2] << nb_ctb_pb);
     uint64_t above_map1 = (uint64_t)lns->dir1[ctb_x + 1] | ((uint64_t)lns->dir1 [ctb_x + 2] << nb_ctb_pb);
@@ -167,10 +156,13 @@ store_inter_maps(struct DRVLines *const l,
     cols_map1[0] = cols_map1[nb_ctb_pb];
 
     /* Replace CTU above MV line by line MV at ctb_x + 1*/
-    memcpy(&mv_ctx0->mvs[1], &lns->mv0[(ctb_x + 1) << 5], sizeof(OVMV) * nb_ctb_pb);
-    memcpy(&mv_ctx1->mvs[1], &lns->mv1[(ctb_x + 1) << 5], sizeof(OVMV) * nb_ctb_pb);
-    mv_ctx0->mvs[1 + nb_ctb_pb] = lns->mv0[(ctb_x + 2) << 5];
-    mv_ctx1->mvs[1 + nb_ctb_pb] = lns->mv1[(ctb_x + 2) << 5];
+    memcpy(&mv_ctx0->mvs[1], &lns->mv0[(ctb_x + 1) * nb_ctb_pb], sizeof(OVMV) * (nb_ctb_pb));
+    memcpy(&mv_ctx1->mvs[1], &lns->mv1[(ctb_x + 1) * nb_ctb_pb], sizeof(OVMV) * (nb_ctb_pb));
+
+    #if 1
+    mv_ctx0->mvs[1 + nb_ctb_pb] = lns->mv0[(ctb_x + 2) * nb_ctb_pb];
+    mv_ctx1->mvs[1 + nb_ctb_pb] = lns->mv1[(ctb_x + 2) * nb_ctb_pb];
+    #endif
 
     for (i = 1; i < nb_ctb_pb + 1; i++) {
         uint64_t top_available0 = !!(above_map0 & (1llu << (i - 1)));
@@ -183,8 +175,8 @@ store_inter_maps(struct DRVLines *const l,
     rows_map1[0] |= above_map1 << 1;
 
     /* Save last CTU MV line to line at ctb_x */
-    memcpy(&lns->mv0[ctb_x << 5], &mv_ctx0->mvs[1 + nb_ctb_pb * 34], sizeof(OVMV) * nb_ctb_pb);
-    memcpy(&lns->mv1[ctb_x << 5], &mv_ctx1->mvs[1 + nb_ctb_pb * 34], sizeof(OVMV) * nb_ctb_pb);
+    memcpy(&lns->mv0[ctb_x * nb_ctb_pb], &mv_ctx0->mvs[1 + nb_ctb_pb * 34], sizeof(OVMV) * nb_ctb_pb);
+    memcpy(&lns->mv1[ctb_x * nb_ctb_pb], &mv_ctx1->mvs[1 + nb_ctb_pb * 34], sizeof(OVMV) * nb_ctb_pb);
 
     /* Store last inter dir info onto line */
     lns->dir0[ctb_x] = (uint32_t)(lst_row0 >> 1);
@@ -276,6 +268,7 @@ init_dbf_lines(struct DBFLines *const l, int nb_ctu_line, int nb_pu_line)
         free_dbf_lines(l);
         return OVVC_ENOMEM;
     }
+    return 0;
 }
 
 static void
@@ -620,15 +613,15 @@ reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
     memset(i_lns->dir0, 0, (sizeof(*i_lns->dir0) * (nb_ctb_pic_w + 1)));
     memset(i_lns->dir1, 0, (sizeof(*i_lns->dir1) * (nb_ctb_pic_w + 1)));
 
-     /* PLANAR  = 0 value is used if absent so we use it as reset value
-      */
-     memset(lns->intra_luma_x,     0,  sizeof(*lns->intra_luma_x) * nb_pb_pic_w);
-     dbf_clear_lines(&lns->dbf_lines, nb_ctb_pic_w,  nb_pb_pic_w);
+    /* PLANAR  = 0 value is used if absent so we use it as reset value
+    */
+    memset(lns->intra_luma_x,     0,  sizeof(*lns->intra_luma_x) * nb_pb_pic_w);
+    dbf_clear_lines(&lns->dbf_lines, nb_ctb_pic_w,  nb_pb_pic_w);
 }
 
 static void
-load_first_ctu_inter(struct DRVLines *const l,
-                 const OVCTUDec *const ctudec,
+load_first_ctu_inter(const struct DRVLines *const l,
+                 OVCTUDec *const ctudec,
                  unsigned int ctb_x)
 {
     uint8_t nb_ctb_pb =  (1 << ((ctudec->part_ctx->log2_ctu_s) & 7)) >> ctudec->part_ctx->log2_min_cb_s;
@@ -639,34 +632,36 @@ load_first_ctu_inter(struct DRVLines *const l,
     struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
     struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
-    uint64_t *const rows_map0 = inter_ctx->mv_ctx0.map.hfield;
-    uint64_t *const cols_map0 = inter_ctx->mv_ctx0.map.vfield;
+    uint64_t *const rows_map0 = mv_ctx0->map.hfield;
+    uint64_t *const cols_map0 = mv_ctx0->map.vfield;
 
-    uint64_t *const rows_map1 = inter_ctx->mv_ctx1.map.hfield;
-    uint64_t *const cols_map1 = inter_ctx->mv_ctx1.map.vfield;
-
+    uint64_t *const rows_map1 = mv_ctx1->map.hfield;
+    uint64_t *const cols_map1 = mv_ctx1->map.vfield;
     int i;
 
     uint64_t above_map0 = (uint64_t)lns->dir0[0] | ((uint64_t)lns->dir0[1] << nb_ctb_pb);
     uint64_t above_map1 = (uint64_t)lns->dir1[0] | ((uint64_t)lns->dir1[1] << nb_ctb_pb);
 
     for (i = 0; i < nb_ctb_pb + 1; i++) {
+        #if 0
         uint64_t left_available0 = !!(cols_map0[nb_ctb_pb] & (1llu << i));
         uint64_t left_available1 = !!(cols_map1[nb_ctb_pb] & (1llu << i));
+        #endif
         rows_map0[i] = 0;
         rows_map1[i] = 0;
+        #if 0
         mv_ctx0->mvs[i * 34] = mv_ctx0->mvs[i* 34 + nb_ctb_pb];
         mv_ctx1->mvs[i * 34] = mv_ctx1->mvs[i* 34 + nb_ctb_pb];
+        #endif
     }
     cols_map0[0] = 0;
     cols_map1[0] = 0;
 
-    /* Replace CTU above MV line by line MV at ctb_x + 1*/
     memcpy(&mv_ctx0->mvs[1], &lns->mv0[0], sizeof(OVMV) * nb_ctb_pb);
     memcpy(&mv_ctx1->mvs[1], &lns->mv1[0], sizeof(OVMV) * nb_ctb_pb);
 
-    mv_ctx0->mvs[1 + nb_ctb_pb] = lns->mv0[32];
-    mv_ctx1->mvs[1 + nb_ctb_pb] = lns->mv1[32];
+    mv_ctx0->mvs[1 + nb_ctb_pb] = lns->mv0[nb_ctb_pb];
+    mv_ctx1->mvs[1 + nb_ctb_pb] = lns->mv1[nb_ctb_pb];
 
     for (i = 1; i < nb_ctb_pb + 1; i++) {
         uint64_t top_available0 = !!(above_map0 & (1llu << (i - 1)));
@@ -726,7 +721,9 @@ drv_line_next_ctu(OVCTUDec *const ctudec, OVSliceDec *sldec, struct DRVLines *dr
                   const OVPS *const prms, uint16_t ctb_x)
 {
     const OVPartInfo *const pinfo = ctudec->part_ctx;
+    #if 0
     struct IntraDRVInfo *const intra_info = &ctudec->drv_ctx.intra_info;
+    #endif
     struct OVDrvCtx *const drv_ctx = &ctudec->drv_ctx;
 
     uint8_t log2_ctb_s    = pinfo->log2_ctu_s;
