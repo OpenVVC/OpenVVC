@@ -4,8 +4,6 @@
 #include <stdio.h>
 #include <stddef.h>
 
-#include "x86/rcn_transform_sse.h"
-
 typedef int16_t TCoeff;
 typedef int16_t TMatrixCoeff;
 
@@ -201,7 +199,7 @@ void inverse_sse2_B16(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
     __m128i d[8];	//Contient coefficient DCT ou DST
     __m128i vhi[8], vlo[8], vh[16], vl[16], result[line][4]; //Variables pour calculs (result[][4] il faudrait mettre line ou la taille max 32)
 
-    int nbstore = line/2;
+    // int nbstore = line/2;
 
     for(int l = 0; l < 2; ++l){
         for(int i = 0; i < line; ++i){
@@ -262,7 +260,7 @@ void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
     __m128i d[8];	//Contient coefficient DCT ou DST
     __m128i vhi[8], vlo[8], vh[32], vl[32], result[line][8]; //Variables pour calculs  (result[][8] il faudrait mettre line ou la taille max 32)
 
-    int nbstore = line/2;
+    // int nbstore = line/2;
 
     for(int l = 0; l < 4; ++l){
         for(int i = 0; i < line; ++i){

@@ -1,7 +1,7 @@
 #include "emmintrin.h"
 #include "smmintrin.h"
-#include "x86/rcn_intra_dc_planar_sse.h"
 #include "ovutils.h"
+#include "rcn_structures.h"
 #include "stdint.h"
 
 static const uint8_t vvc_pdpc_w[3][128] = {
@@ -37,8 +37,8 @@ vvc_intra_dc_pdpc_sse(const uint16_t *const src_above,
     #else
     const uint8_t *pdpc_w = vvc_pdpc_w[pdpc_scale];
     #endif
-    int nb_sse_vec8_w = (1 << log2_pb_w) + ((1 << 3) - 1) >> 3;
-    int nb_sse_vec8_h = (1 << log2_pb_h) + ((1 << 3) - 1) >> 3;
+    int nb_sse_vec8_w = ((1 << log2_pb_w) + ((1 << 3) - 1)) >> 3;
+    // int nb_sse_vec8_h = ((1 << log2_pb_h) + ((1 << 3) - 1)) >> 3;
 
     /* FIXME don't forget to optimize those loop when specializing by size*/
     if (log2_pb_w >= log2_pb_h){
@@ -136,28 +136,28 @@ vvc_intra_planar_pdpc_sse(const uint16_t *const src_above,
     const uint32_t h_scale = OVMAX(1, log2_pb_h);
     //const uint32_t w_scale = log2_pb_w;
     //const uint32_t h_scale = log2_pb_h;
-    const uint32_t s_shift = w_scale + h_scale + 1;
-    const uint32_t offset  = 1 << (w_scale + h_scale);
+    // const uint32_t s_shift = w_scale + h_scale + 1;
+    // const uint32_t offset  = 1 << (w_scale + h_scale);
 
     const uint8_t pdpc_scale = (log2_pb_w + log2_pb_h - 2) >> 2;
 
-    int16_t t_row[128], b_row[128], r_col[128], l_col[128];
+    int16_t t_row[128],  r_col[128], l_col[128];//b_row[128],
     const int8_t *pdpc_w = vvc_pdpc_w[pdpc_scale];
-    const int16_t bl_val = src_left[height + 1];
-    const int16_t tr_val = src_above[width + 1];
+    // const int16_t bl_val = src_left[height + 1];
+    // const int16_t tr_val = src_above[width + 1];
     #if CUT_PDPC
     const int pdpc_stop_w = OVMIN(3 << pdpc_scale, width);
     const int pdpc_stop_h = OVMIN(3 << pdpc_scale, height);
     #endif
     int x,y;
-    int nb_sse_vec8_w = (1 << log2_pb_w) + ((1 << 3) - 1) >> 3;
-    int nb_sse_vec8_h = (1 << log2_pb_h) + ((1 << 3) - 1) >> 3;
+    int nb_sse_vec8_w = ((1 << log2_pb_w) + ((1 << 3) - 1)) >> 3;
+    int nb_sse_vec8_h = ((1 << log2_pb_h) + ((1 << 3) - 1)) >> 3;
 
     __m128i tr_val_v = _mm_set1_epi16(src_above[width + 1]);
     __m128i bl_val_v = _mm_set1_epi16(src_left[height + 1]);
 
     for(x = 0; x < nb_sse_vec8_w; ++x){
-        __m128i tr_v, br_v;
+        __m128i tr_v;//, br_v;
         __m128i src_a = _mm_loadu_si128((__m128i *)(src_above + x * 8 + 1));
         //br_v = _mm_sub_epi16(bl_val_v, src_a);
         tr_v = _mm_slli_epi16(src_a, h_scale);
@@ -193,11 +193,11 @@ vvc_intra_planar_pdpc_sse(const uint16_t *const src_above,
         __m128i l_v = _mm_set1_epi16(l_val);
         __m128i y_v = _mm_set1_epi16(y_wgh);
         for (x = 0; x < nb_sse_vec8_w; ++x) {
-            __m128i out_lo, out_hi;
-            __m128i rc_v_lo, rc_v_hi;
-            __m128i tr_v_lo, tr_v_hi;
-            __m128i src_v_lo, src_v_hi;
-            __m128i str_v_lo, str_v_hi;
+            __m128i out_lo;//, out_hi;
+            __m128i rc_v_lo;//, rc_v_hi;
+            __m128i tr_v_lo;//, tr_v_hi;
+            __m128i src_v_lo;//, src_v_hi;
+            __m128i str_v_lo;//, str_v_hi;
 
             __m128i src_a = _mm_loadu_si128((__m128i *)(src_above + x * 8 + 1));
             //__m128i br_v = _mm_loadu_si128((__m128i *)(b_row + x * 8));
@@ -261,7 +261,7 @@ vvc_intra_planar_pdpc_sse(const uint16_t *const src_above,
             /* FIXME applying PDPC on the whole PU is useless
                since only max 12 pel cols from left and 12 pel
                rows from top require pdpc processing*/
-            __m128i xl, yt, x_v, t_v, w_x, w_y;
+            __m128i xl, yt, x_v, w_x, w_y;//t_v, 
             __m128i pdpc_rnd, out_v;
             __m128i tst;
             x_v = _mm_loadu_si128((__m128i *) (pdpc_w    + 8 * x));
@@ -317,23 +317,23 @@ vvc_intra_planar_pdpc_2_sse(const uint16_t *const src_above,
 
     const uint8_t pdpc_scale = (log2_pb_w + log2_pb_h - 2) >> 2;
 
-    int16_t t_row[128], b_row[128], r_col[128], l_col[128];
+    int16_t t_row[128], r_col[128], l_col[128]; //b_row[128],
     const int8_t *pdpc_w = vvc_pdpc_w[pdpc_scale];
-    const int16_t bl_val = src_left[height + 1];
-    const int16_t tr_val = src_above[width + 1];
+    // const int16_t bl_val = src_left[height + 1];
+    // const int16_t tr_val = src_above[width + 1];
     #if CUT_PDPC
     const int pdpc_stop_w = OVMIN(3 << pdpc_scale, width);
     const int pdpc_stop_h = OVMIN(3 << pdpc_scale, height);
     #endif
     int x,y;
-    int nb_sse_vec8_w = (1 << log2_pb_w) + ((1 << 3) - 1) >> 3;
-    int nb_sse_vec8_h = (1 << log2_pb_h) + ((1 << 3) - 1) >> 3;
+    int nb_sse_vec8_w = ((1 << log2_pb_w) + ((1 << 3) - 1)) >> 3;
+    int nb_sse_vec8_h = ((1 << log2_pb_h) + ((1 << 3) - 1)) >> 3;
 
     __m128i tr_val_v = _mm_set1_epi16(src_above[width + 1]);
     __m128i bl_val_v = _mm_set1_epi16(src_left[height + 1]);
 
     for(x = 0; x < nb_sse_vec8_w; ++x){
-        __m128i tr_v, br_v;
+        __m128i tr_v;//, br_v;
         __m128i src_a = _mm_loadu_si128((__m128i *)(src_above + x * 8 + 1));
         //br_v = _mm_sub_epi16(bl_val_v, src_a);
         tr_v = _mm_slli_epi16(src_a, h_scale);
@@ -437,7 +437,7 @@ vvc_intra_planar_pdpc_2_sse(const uint16_t *const src_above,
             /* FIXME applying PDPC on the whole PU is useless
                since only max 12 pel cols from left and 12 pel
                rows from top require pdpc processing*/
-            __m128i xl, yt, x_v, t_v, w_x, w_y;
+            __m128i xl, yt, x_v, w_x, w_y; //t_v,
             __m128i pdpc_rnd, out_v;
             __m128i tst;
             x_v = _mm_loadu_si128((__m128i *) (pdpc_w    + 8 * x));

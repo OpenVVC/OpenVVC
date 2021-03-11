@@ -11,6 +11,7 @@
 #include "vcl.h"
 #include "drv_utils.h"
 #include "rcn.h"
+#include "x86/rcn_sse.h"
 #include "ovdpb.h"
 #include "drv_lines.h"
 

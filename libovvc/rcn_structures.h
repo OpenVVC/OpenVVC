@@ -1,6 +1,10 @@
 #ifndef RCN_STRUCTURES_H
 #define RCN_STRUCTURES_H
 
+#include <stdint.h>
+#include <stddef.h>
+
+
 enum DCTType
 {
     DST_VII = 0,

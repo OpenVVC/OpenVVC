@@ -8,8 +8,8 @@
 #include "data_rcn_transform.h"
 #include "rcn_transform.h"
 #include "x86/vvc_utils_sse.h"
-#include "x86/rcn_transform_sse.h"
 
+#if 0
 static inline void
 multiply(__m128i *x, __m128i *y, __m128i *r)
 {
@@ -18,6 +18,7 @@ multiply(__m128i *x, __m128i *y, __m128i *r)
     r[0] = _mm_unpacklo_epi16(xylo, xyhi);
     r[1] = _mm_unpackhi_epi16(xylo, xyhi);
 }
+#endif
 
 static inline void
 transpose4x4(__m128i *x, __m128i *r)
@@ -54,7 +55,7 @@ transpose4x4_step2(__m128i *x, __m128i *r)
 static inline void
 matMult4x4_red1(__m128i *x, __m128i *d, __m128i *r)
 {
-    __m128i m[8], a[4], z;
+    __m128i m[8], z;//a[4],
     z = _mm_setzero_si128();
 
     m[0] = _mm_unpacklo_epi16(x[0], z);
@@ -69,7 +70,7 @@ matMult4x4_red1(__m128i *x, __m128i *d, __m128i *r)
 static inline void
 matMult4x4_red2(__m128i *x, __m128i *d, __m128i *r)
 {
-    __m128i m[8], a[4];
+    __m128i m[8];//, a[4];
 
     m[0] = _mm_unpacklo_epi16(x[0], x[1]);
     m[1] = _mm_unpackhi_epi16(x[0], x[1]);
@@ -118,7 +119,7 @@ matMult4x4(__m128i *x, __m128i *d, __m128i *r)
 static inline void
 matMult8x8_red1(__m128i *x, __m128i *d, __m128i *r)
 {
-    __m128i m[16], a[8], b[4], z;
+    __m128i m[16], z;//a[8], b[4],
     z = _mm_setzero_si128();
 
     m[ 0] = _mm_unpacklo_epi16(x[0], z);
@@ -133,7 +134,7 @@ matMult8x8_red1(__m128i *x, __m128i *d, __m128i *r)
 static inline void
 matMult8x8_red2(__m128i *x, __m128i *d, __m128i *r)
 {
-    __m128i m[16], a[8], b[4];
+    __m128i m[16];//, a[8], b[4];
 
     m[ 0] = _mm_unpacklo_epi16(x[0], x[1]);
     m[ 1] = _mm_unpackhi_epi16(x[0], x[1]);
@@ -147,7 +148,7 @@ matMult8x8_red2(__m128i *x, __m128i *d, __m128i *r)
 static inline void
 matMult8x8_red4(__m128i *x, __m128i *d, __m128i *r)
 {
-    __m128i m[16], a[8], b[4];
+    __m128i m[16], a[8];//, b[4];
 
     m[ 0] = _mm_unpacklo_epi16(x[0], x[1]);
     m[ 1] = _mm_unpackhi_epi16(x[0], x[1]);
@@ -339,7 +340,7 @@ matMult16x16(__m128i *x, __m128i *d, __m128i *r)
 static inline void
 matMult16x16_red2(__m128i *x, __m128i *d, __m128i *r)
 {
-    __m128i m[32], a[16], b[8], c[4];
+    __m128i m[32];//, a[16], b[8], c[4];
 
     m[ 0] = _mm_unpacklo_epi16(x[ 0], x[1]);
     m[ 2] = _mm_unpacklo_epi16(d[ 0], d[1]);
@@ -355,7 +356,7 @@ matMult16x16_red2(__m128i *x, __m128i *d, __m128i *r)
 static inline void
 matMult16x16_red4(__m128i *x, __m128i *d, __m128i *r)
 {
-    __m128i m[32], a[16], b[8], c[4];
+    __m128i m[32], a[16];//, b[8], c[4];
 
     m[ 0] = _mm_unpacklo_epi16(x[ 0], x[1]);
     m[ 2] = _mm_unpacklo_epi16(d[ 0], d[1]);
@@ -381,7 +382,7 @@ matMult16x16_red4(__m128i *x, __m128i *d, __m128i *r)
 static inline void
 matMult16x16_red8(__m128i *x, __m128i *d, __m128i *r)
 {
-    __m128i m[32], a[16], b[8], c[4];
+    __m128i m[32], a[16], b[8];//, c[4];
 
     m[ 0] = _mm_unpacklo_epi16(x[ 0], x[1]);
     m[ 2] = _mm_unpacklo_epi16(d[ 0], d[1]);
@@ -464,7 +465,7 @@ transform_4x4(__m128i *x, __m128i *d, __m128i *r)
 static inline void
 transform_4x8(__m128i *x, __m128i *d, __m128i *r)
 {
-    __m128i m0[2], m1[2];
+    // __m128i m0[2], m1[2];
     __m128i a[8];
 
     #if 0
@@ -667,7 +668,7 @@ dct2_8x2(__m128i *x, __m128i *d, __m128i *r)
 static inline void
 dct2_8x4_red1(__m128i *x, __m128i *d, __m128i *r)
 {
-    __m128i e[4], o[4];
+    __m128i e[4];//, o[4];
 
     dct2_4x4_red1(x+0, d+0, e);
 
@@ -1810,7 +1811,7 @@ static inline void
 dct2_8x8_red2(__m128i *x, __m128i *d, __m128i *r)
 {
     __m128i e[8], o[8], oo[8];
-    __m128i m[8], a[4], z;
+    __m128i m[8], z;//a[4],
 
     dct2_4x8_red1(x+0, d+0, e);
 
@@ -2043,7 +2044,7 @@ static inline void
 dct2_8x8_red4(__m128i *x, __m128i *d, __m128i *r)
 {
     __m128i e[8], o[8], oo[8];
-    __m128i m[8], a[4], z;
+    __m128i m[8], z;//a[4],
 
     dct2_4x8_red2(x+0, d+0, e);
 
@@ -3156,12 +3157,12 @@ vvc_inverse_dct_ii_dc_sse(uint16_t *const dst, int log2_tb_w, int log2_tb_h,
                           int dc_val)
 {
 
-    int i, j;
+    int i;//, j;
     int tb_w = 1 << log2_tb_w;
     int tb_h = 1 << log2_tb_h;
     int clip_min = -(1 << 15);
     int clip_max = (1 << 15)-1;
-    int16_t *_dst = dst;
+    int16_t * _dst = dst;
     int value = (((dc_val + 1) >> 1) + 8) >> 4;
     value = ov_clip(value, clip_min, clip_max);
     __m128i x0 = _mm_set1_epi16(value);
