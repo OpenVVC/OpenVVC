@@ -48,11 +48,11 @@ init_inter_drv_lines(struct DRVLines *const drv_lns, int nb_pb_pic_w,
 {
     struct InterLines *const lns = &drv_lns->inter_lines;
 
-    lns->mv0  = ov_mallocz(sizeof(*lns->mv0) * nb_ctb_pic_w * 32);
-    lns->mv1  = ov_mallocz(sizeof(*lns->mv1) * nb_ctb_pic_w * 32);
+    lns->mv0  = ov_mallocz(sizeof(*lns->mv0) * (nb_ctb_pic_w + 2) * 32);
+    lns->mv1  = ov_mallocz(sizeof(*lns->mv1) * (nb_ctb_pic_w + 2) * 32);
 
-    lns->dir0  = ov_mallocz(sizeof(*lns->dir0) * (nb_ctb_pic_w + 1));
-    lns->dir1  = ov_mallocz(sizeof(*lns->dir1) * (nb_ctb_pic_w + 1));
+    lns->dir0  = ov_mallocz(sizeof(*lns->dir0) * (nb_ctb_pic_w + 2));
+    lns->dir1  = ov_mallocz(sizeof(*lns->dir1) * (nb_ctb_pic_w + 2));
 
     if (!lns->mv0 || !lns->mv1 || !lns->dir0 || !lns->dir1) {
         free_inter_drv_lines(drv_lns);
