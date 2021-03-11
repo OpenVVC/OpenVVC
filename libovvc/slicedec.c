@@ -859,33 +859,30 @@ fbuff_new_line(struct OVBuffInfo *fbuff, uint8_t log2_ctb_s)
 static void
 tmvp_entry_init(OVCTUDec *ctudec, OVSliceDec *sldec)
 {
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.plane0 = &sldec->pic->mv_plane0;
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.plane1 = &sldec->pic->mv_plane1;
+    /* FIXME try to remove ctu decoder reference from inter context */
+    struct VVCTMVP *tmvp_ctx = &ctudec->drv_ctx.inter_ctx.tmvp_ctx;
 
-    #if 0
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref = sldec->pic->tmvp.collocated_ref;
-    #endif
-    #if 0
-    if (sldec->pic->tmvp.collocated_ref) {
-    #endif
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_plane0 = &sldec->pic->tmvp.collocated_ref->mv_plane0;
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_plane1 = &sldec->pic->tmvp.collocated_ref->mv_plane1;
-    #if 0
-    } else {
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_plane0 = NULL;
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_plane1 = NULL;
-    }
-    #endif
+    OVPicture *active_pic     = sldec->pic;
+    OVPicture *collocated_ref = active_pic->tmvp.collocated_ref;
 
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctudec = ctudec;
     ctudec->rcn_ctx.ctudec = ctudec;
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.scale00 = sldec->pic->tmvp.scale00;
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.scale10 = sldec->pic->tmvp.scale10;
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.scale01 = sldec->pic->tmvp.scale01;
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.scale11 = sldec->pic->tmvp.scale11;
 
-    memset(ctudec->drv_ctx.inter_ctx.tmvp_ctx.dir_map_v0, 0, 33 * sizeof(uint64_t));
-    memset(ctudec->drv_ctx.inter_ctx.tmvp_ctx.dir_map_v1, 0, 33 * sizeof(uint64_t));
+    tmvp_ctx->plane0 = &active_pic->mv_plane0;
+    tmvp_ctx->plane1 = &active_pic->mv_plane1;
+
+    tmvp_ctx->col_plane0 = &collocated_ref->mv_plane0;
+    tmvp_ctx->col_plane1 = &collocated_ref->mv_plane1;
+
+    tmvp_ctx->ctudec = ctudec;
+
+    /* FIXME rewrite TMVP motion scaling */
+    tmvp_ctx->scale00 = sldec->pic->tmvp.scale00;
+    tmvp_ctx->scale10 = sldec->pic->tmvp.scale10;
+    tmvp_ctx->scale01 = sldec->pic->tmvp.scale01;
+    tmvp_ctx->scale11 = sldec->pic->tmvp.scale11;
+
+    memset(tmvp_ctx->dir_map_v0, 0, 33 * sizeof(uint64_t));
+    memset(tmvp_ctx->dir_map_v1, 0, 33 * sizeof(uint64_t));
 }
 
 static int
