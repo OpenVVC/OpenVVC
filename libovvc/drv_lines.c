@@ -311,7 +311,7 @@ dbf_load_qp_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
                 struct DRVLines *l2,
                 uint8_t log2_ctu_s, int ctb_x)
 {
-    uint8_t nb_units_ctb =  1 << (log2_ctu_s & 7) >> 2;
+    uint8_t nb_units_ctb = 1 << (log2_ctu_s & 7) >> 2;
     int i;
 
     for (i = 0; i < nb_units_ctb + 1; ++i) {
@@ -329,16 +329,9 @@ dbf_load_qp_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
     }
 
     for (i = 0; i < nb_units_ctb; ++i) {
-        /* FIXME copied from qp ctx*/
-        #if 0
-        dbf_info->qp_map.hor[2 + i]    = l2->qp_map_x[i >> 1];
-        dbf_info->qp_map_cb.hor[2 + i] = l2->qp_map_cb_up[i >> 1];
-        dbf_info->qp_map_cr.hor[2 + i] = l2->qp_map_cr_up[i >> 1];
-        #else
         dbf_info->qp_map_y.hor [2 + i] = l->qp_x_map   [(ctb_x << 5) + i];
         dbf_info->qp_map_cb.hor[2 + i] = l->qp_x_map_cb[(ctb_x << 5) + i];
         dbf_info->qp_map_cr.hor[2 + i] = l->qp_x_map_cr[(ctb_x << 5) + i];
-        #endif
     }
 
     for (i = 0; i < nb_units_ctb; ++i) {
@@ -357,34 +350,16 @@ dbf_store_qp_map(const struct DBFInfo *const dbf_info,
 {
     uint8_t nb_units_ctb =  1 << (log2_ctu_s & 7) >> 2;
 
-    /* Lst line copied from qp ctx */
-    #if 0
-    memcpy(&l2->qp_x_map   [ctb_x << 5], dbf_info->qp_map_up,    sizeof(uint8_t) * nb_units_ctb);
-    memcpy(&l2->qp_x_map_cb[ctb_x << 5], dbf_info->qp_map_up_cb, sizeof(uint8_t) * nb_units_ctb);
-    memcpy(&l2->qp_x_map_cr[ctb_x << 5], dbf_info->qp_map_up_cr, sizeof(uint8_t) * nb_units_ctb);
-    #else
     memcpy(&l->qp_x_map   [ctb_x << 5], &dbf_info->qp_map_y.hor[2 + 34*nb_units_ctb],  sizeof(uint8_t) * nb_units_ctb);
     memcpy(&l->qp_x_map_cb[ctb_x << 5], &dbf_info->qp_map_cb.hor[2 + 34*nb_units_ctb], sizeof(uint8_t) * nb_units_ctb);
     memcpy(&l->qp_x_map_cr[ctb_x << 5], &dbf_info->qp_map_cr.hor[2 + 34*nb_units_ctb], sizeof(uint8_t) * nb_units_ctb);
 
-    #if 0
-    memset(&dbf_info->qp_map_y.hor[2 + 34*nb_units_ctb], 1, sizeof(uint8_t) * nb_units_ctb);
-    memset(&dbf_info->qp_map_cb.hor[2 + 34*nb_units_ctb], 1, sizeof(uint8_t) * nb_units_ctb);
-    memset(&dbf_info->qp_map_cr.hor[2 + 34*nb_units_ctb], -1, sizeof(uint8_t) * nb_units_ctb);
-    #endif
-    #endif
 
-    #if 0
-    if (!dbf_info->dbf_disable) {
-    #endif
-        for (int i = 0; i < nb_units_ctb + 1; i++) {
-            l->dbf_qp_ver[(ctb_x << 5) + i]    = dbf_info->qp_map_y.ver [nb_units_ctb + 34 * i];
-            l->dbf_qp_ver_cb[(ctb_x << 5) + i] = dbf_info->qp_map_cb.ver[nb_units_ctb + 34 * i];
-            l->dbf_qp_ver_cr[(ctb_x << 5) + i] = dbf_info->qp_map_cr.ver[nb_units_ctb + 34 * i];
-        }
-    #if 0
+    for (int i = 0; i < nb_units_ctb + 1; i++) {
+        l->dbf_qp_ver[(ctb_x << 5) + i]    = dbf_info->qp_map_y.ver [nb_units_ctb + 34 * i];
+        l->dbf_qp_ver_cb[(ctb_x << 5) + i] = dbf_info->qp_map_cb.ver[nb_units_ctb + 34 * i];
+        l->dbf_qp_ver_cr[(ctb_x << 5) + i] = dbf_info->qp_map_cr.ver[nb_units_ctb + 34 * i];
     }
-    #endif
 }
 
 static void
