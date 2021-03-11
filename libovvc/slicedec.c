@@ -530,29 +530,22 @@ cabac_line_next_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
 }
 
 static void
-cabac_line_next_ctu(OVCTUDec *const ctudec, const OVPS *const prms)
+cabac_line_next_ctu(OVCTUDec *const ctudec, uint8_t nb_pb_ctb)
 {
-    const OVPartInfo *const pinfo = ctudec->part_ctx;
-
-    uint8_t log2_ctb_s    = pinfo->log2_ctu_s;
-    uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
-
-    uint16_t nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
-
     struct PartMap *const pmap_l = &ctudec->part_map;
     struct PartMap *const pmap_c = &ctudec->part_map_c;
 
     /* After each CTU move pointers to data corresponding
      * to next CTU
      */
-    pmap_l->log2_cu_w_map_x += nb_pb_ctb_w;
-    pmap_l->qt_depth_map_x  += nb_pb_ctb_w;
-    pmap_l->cu_mode_x       += nb_pb_ctb_w;
+    pmap_l->log2_cu_w_map_x += nb_pb_ctb;
+    pmap_l->qt_depth_map_x  += nb_pb_ctb;
+    pmap_l->cu_mode_x       += nb_pb_ctb;
 
     /*FIXME no diff between chroma / luma nb_pb */
-    pmap_c->log2_cu_w_map_x += nb_pb_ctb_w;
-    pmap_c->qt_depth_map_x  += nb_pb_ctb_w;
-    pmap_c->cu_mode_x       += nb_pb_ctb_w;
+    pmap_c->log2_cu_w_map_x += nb_pb_ctb;
+    pmap_c->qt_depth_map_x  += nb_pb_ctb;
+    pmap_c->cu_mode_x       += nb_pb_ctb;
 }
 
 
@@ -629,6 +622,8 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 {
     int nb_ctu_w = einfo->nb_ctu_w;
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+    uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
+    uint16_t nb_pb_ctb = (1 << log2_ctb_s) >> log2_min_cb_s;
     int ctb_x = 0;
     int ret;
     uint8_t backup_qp;
@@ -644,7 +639,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         ret = decode_ctu(ctudec, einfo, ctb_addr_rs);
 
-        cabac_line_next_ctu(ctudec, prms);
+        cabac_line_next_ctu(ctudec, nb_pb_ctb);
 
         /* Hackish way of keeping track of CTU last line
          * first QP to initialise delta qp for next ctu line
@@ -734,6 +729,8 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     const int ctu_h = einfo->last_ctu_h;
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+    uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
+    uint16_t nb_pb_ctb = (1 << log2_ctb_s) >> log2_min_cb_s;
     int nb_ctu_w = einfo->nb_ctu_w;
     int ctb_x = 0;
 
@@ -747,7 +744,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         ret = decode_truncated_ctu(ctudec, einfo, ctb_addr_rs,
                                    ctu_w, ctu_h);
 
-        cabac_line_next_ctu(ctudec, prms);
+        cabac_line_next_ctu(ctudec, nb_pb_ctb);
 
         store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
 
