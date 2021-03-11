@@ -974,6 +974,7 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
     rcn_init_dc_planar_functions(&ctudec->rcn_ctx.rcn_funcs);
 
     /*Enables SSE Functions*/
+    rcn_init_mc_functions_sse(&ctudec->rcn_ctx.rcn_funcs);
     rcn_init_tr_functions_sse(&ctudec->rcn_ctx.rcn_funcs);
     rcn_init_dc_planar_functions_sse(&ctudec->rcn_ctx.rcn_funcs);
 
