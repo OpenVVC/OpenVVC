@@ -608,8 +608,7 @@ tmvp_store_mv(OVCTUDec *ctudec)
  * without adding many thing in each lin decoder
  */
 static int
-decode_ctu(OVCTUDec *const ctudec,
-           const OVPS *const prms, const struct RectEntryInfo *const einfo,
+decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
            uint16_t ctb_addr_rs)
 {
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
@@ -641,8 +640,7 @@ decode_ctu(OVCTUDec *const ctudec,
 }
 
 static int
-decode_truncated_ctu(OVCTUDec *const ctudec,
-                     const OVPS *const prms, const struct RectEntryInfo *const einfo,
+decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
                      uint16_t ctb_addr_rs, int ctu_w, int ctu_h)
 {
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
@@ -697,7 +695,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         /*FIXME try to remove ctb_x computation */
         ctudec->ctb_x = einfo->ctb_x + ctb_x;
 
-        ret = decode_ctu(ctudec, prms, einfo, ctb_addr_rs);
+        ret = decode_ctu(ctudec, einfo, ctb_addr_rs);
 
         cabac_line_next_ctu(ctudec, prms);
 
@@ -738,7 +736,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     /* last CTU require check on picture border for implicit splits*/
     if (!einfo->implicit_w) {
 
-        ret = decode_ctu(ctudec, prms, einfo, ctb_addr_rs);
+        ret = decode_ctu(ctudec, einfo, ctb_addr_rs);
 
         if (!ctudec->dbf_disable) {
             struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
@@ -754,7 +752,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
          */
         int ctu_h = 1 << log2_ctb_s;
 
-        ret = decode_truncated_ctu(ctudec, prms, einfo, ctb_addr_rs,
+        ret = decode_truncated_ctu(ctudec, einfo, ctb_addr_rs,
                                    ctu_w, ctu_h);
 
         if (!ctudec->dbf_disable) {
@@ -764,12 +762,12 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         }
     }
 
-    /* Next line will use the qp of the first pu as a start value
-     * for qp_prediction
-     */
     /* FIXME if inter only */
     store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
 
+    /* Next line will use the qp of the first pu as a start value
+     * for qp_prediction
+     */
     ctudec->qp_ctx.current_qp = backup_qp;
 
     ret = 0;
@@ -803,7 +801,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         ctudec->ctb_x = einfo->ctb_x + ctb_x;
 
-        ret = decode_truncated_ctu(ctudec, prms, einfo, ctb_addr_rs,
+        ret = decode_truncated_ctu(ctudec, einfo, ctb_addr_rs,
                                    ctu_w, ctu_h);
 
         cabac_line_next_ctu(ctudec, prms);
@@ -830,7 +828,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     ctudec->ctb_x = einfo->ctb_x + ctb_x;
 
-    ret = decode_truncated_ctu(ctudec, prms, einfo, ctb_addr_rs,
+    ret = decode_truncated_ctu(ctudec, einfo, ctb_addr_rs,
                                einfo->last_ctu_w, ctu_h);
 
     ret = 0;
