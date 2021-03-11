@@ -909,7 +909,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     memset(ctudec->drv_ctx.inter_ctx.tmvp_ctx.dir_map_v1, 0, 33 * sizeof(uint64_t));
 
     /* FIXME tmp Reset DBF */
-    memset(&ctudec->dbf_info, 0, sizeof(ctudec->dbf_info));
+    memset(&ctudec->dbf_info.edge_map_ver, 0, sizeof(ctudec->dbf_info.edge_map_ver));
+    memset(&ctudec->dbf_info.edge_map_hor, 0, sizeof(ctudec->dbf_info.edge_map_hor));
 
     /* FIXME entry might be check before attaching entry to CABAC so there
      * is no need for this check
