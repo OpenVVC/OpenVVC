@@ -627,8 +627,7 @@ decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     rcn_write_ctu_to_frame(&ctudec->rcn_ctx, log2_ctb_s);
 
     if (!ctudec->dbf_disable) {
-        uint8_t is_last_x = (ctb_addr_rs + 1) % nb_ctu_w == 0;//!(ctudec->ctu_ngh_flags & CTU_UPRGT_FLG);
-        /*FIXMR last_y*/
+        uint8_t is_last_x = (ctb_addr_rs + 1) % nb_ctu_w == 0;
         uint8_t is_last_y = einfo->nb_ctu_h == (ctb_addr_rs / nb_ctu_w) + 1;
         rcn_dbf_ctu(&ctudec->rcn_ctx, &ctudec->dbf_info, log2_ctb_s,
                     is_last_x, is_last_y);
@@ -663,8 +662,7 @@ decode_ctu_implicit(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
                                   ctu_w, ctu_h);
 
     if (!ctudec->dbf_disable) {
-        uint8_t is_last_x = (ctb_addr_rs + 1) % nb_ctu_w == 0;//!(ctudec->ctu_ngh_flags & CTU_UPRGT_FLG);
-        /*FIXMR last_y*/
+        uint8_t is_last_x = (ctb_addr_rs + 1) % nb_ctu_w == 0;
         uint8_t is_last_y = einfo->nb_ctu_h == (ctb_addr_rs / nb_ctu_w) + 1;
         rcn_dbf_truncated_ctu(&ctudec->rcn_ctx, &ctudec->dbf_info, log2_ctb_s,
                               is_last_x, is_last_y, ctu_w, ctu_h);
@@ -714,15 +712,9 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
         uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-    dbf_store_edge_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
-    dbf_store_bs_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
-    dbf_store_qp_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, &sldec->drv_lines, log2_ctb_s, ctb_x);
+        dbf_store_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
 
-    if (ctb_x != 29){
-    dbf_load_edge_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x + 1);
-    dbf_load_bs_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x + 1);
-    dbf_load_qp_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, &sldec->drv_lines, log2_ctb_s, ctb_x + 1);
-    }
+        dbf_load_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, (ctb_x + 1) % nb_ctu_w);
         /* FIXME
          * Move this somewhere else to avoid first line check
          */
@@ -741,9 +733,8 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
         ret = decode_ctu(ctudec, sldec, prms, einfo, ctb_addr_rs);
-    dbf_store_edge_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
-    dbf_store_bs_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
-    dbf_store_qp_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, &sldec->drv_lines, log2_ctb_s, ctb_x);
+
+        dbf_store_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
 
     } else {
         uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
@@ -756,9 +747,8 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         ret = decode_ctu_implicit(ctudec, sldec, prms, einfo, ctb_addr_rs,
                                   ctu_w, ctu_h);
-    dbf_store_edge_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
-    dbf_store_bs_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
-    dbf_store_qp_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, &sldec->drv_lines, log2_ctb_s, ctb_x);
+
+        dbf_store_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
     }
 
     /* Next line will use the qp of the first pu as a start value
@@ -814,15 +804,9 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         /* FIXME is first line check if only one line? */
         rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
 
-    dbf_store_edge_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
-    dbf_store_bs_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
-    dbf_store_qp_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, &sldec->drv_lines, log2_ctb_s, ctb_x);
+        dbf_store_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
 
-    if (ctb_x != 29){
-    dbf_load_edge_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x + 1);
-    dbf_load_bs_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x + 1);
-    dbf_load_qp_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, &sldec->drv_lines, log2_ctb_s, ctb_x + 1);
-    }
+        dbf_load_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, (ctb_x + 1) % nb_ctu_w);
 
         ctb_addr_rs++;
         ctb_x++;
@@ -981,13 +965,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     if (!einfo->implicit_h) {
         ret = decode_ctu_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
     } else {
-        uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-    #if 0
-    dbf_load_edge_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, 0);
-    dbf_load_bs_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, 0);
-    dbf_load_qp_map(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines,NULL, log2_ctb_s, 0);
-    #endif
-        //memset(&ctudec->dbf_info, 0, sizeof(ctudec->dbf_info));
         ret = decode_ctu_last_line(ctudec, sldec, prms, einfo, ctb_addr_rs);
     }
 

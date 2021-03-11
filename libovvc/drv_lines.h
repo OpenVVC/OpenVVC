@@ -13,4 +13,11 @@ void drv_line_next_ctu(OVCTUDec *const ctudec, OVSliceDec *sldec, struct DRVLine
 
 void drv_lines_uninit(OVSliceDec *sldec);
 
+void dbf_load_info(struct DBFInfo *const dbf_info,
+                   const struct DBFLines *const dbf_lines,
+                   uint8_t log2_ctu_s, int ctb_x);
+
+void dbf_store_info(struct DBFInfo *const dbf_info,
+                    const struct DBFLines *const dbf_lines,
+                    uint8_t log2_ctu_s, int ctb_x);
 #endif
