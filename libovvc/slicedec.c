@@ -380,14 +380,17 @@ init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
  * reset according to entry info instead of whole line
  */
 void
-reset_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
+clear_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
 {
      const OVPartInfo *pinfo = sldec->ctudec_list->part_ctx;
      const OVSPS *const sps = prms->sps;
-     struct CCLines *const lns = &sldec->cabac_lines[0];
+
+     struct CCLines *const lns   = &sldec->cabac_lines[0];
      struct CCLines *const lns_c = &sldec->cabac_lines[1];
+
      uint8_t log2_ctb_s = pinfo->log2_ctu_s;
      uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
+
      /* TODO use active parameters such as generic pic info
       * see init_cabac_lines
       */
@@ -519,11 +522,11 @@ cabac_line_next_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
 
     /* FIXME done twice on new entry see (reset lines function) */
     /* FIXME use nb_pb_ctb instead of size */
+    memset(pmap_l->qt_depth_map_y,     0, sizeof(pmap_l->qt_depth_map_y));
     memset(pmap_l->cu_mode_y,       0xFF, sizeof(pmap_l->cu_mode_y));
-    memset(pmap_l->qt_depth_map_y,  0xFF, sizeof(pmap_l->qt_depth_map_y));
     memset(pmap_l->log2_cu_h_map_y, 0xFF, sizeof(pmap_l->log2_cu_h_map_y));
 
-    memset(pmap_c->qt_depth_map_y,  0xFF, sizeof(pmap_c->qt_depth_map_y));
+    memset(pmap_c->qt_depth_map_y,     0, sizeof(pmap_c->qt_depth_map_y));
     memset(pmap_c->log2_cu_h_map_y, 0xFF, sizeof(pmap_c->log2_cu_h_map_y));
 }
 
@@ -558,8 +561,10 @@ tmvp_store_mv(OVCTUDec *ctudec)
 {
     uint16_t ctb_x = ctudec->ctb_x;
     uint16_t ctb_y = ctudec->ctb_y;
+
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
+
     int nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
@@ -596,9 +601,7 @@ tmvp_store_mv(OVCTUDec *ctudec)
             memcpy(dst_mv, &mv_ctx->mvs[1 + 34 * (i + 1)], sizeof(*dst_mv) * nb_pb_ctb_w);
             dst_mv += nb_pb_ctb_w * nb_ctb_w;
         }
-
     }
-
 }
 
 /* Wrapper function around decode CTU calls so we can easily modify
@@ -639,9 +642,9 @@ decode_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 }
 
 static int
-decode_ctu_implicit(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
-                    const OVPS *const prms, const struct RectEntryInfo *const einfo,
-                    uint16_t ctb_addr_rs, int ctu_w, int ctu_h)
+decode_truncated_ctu(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
+                     const OVPS *const prms, const struct RectEntryInfo *const einfo,
+                     uint16_t ctb_addr_rs, int ctu_w, int ctu_h)
 {
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int nb_ctu_w = einfo->nb_ctu_w;
@@ -745,8 +748,8 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
          */
         int ctu_h = 1 << log2_ctb_s;
 
-        ret = decode_ctu_implicit(ctudec, sldec, prms, einfo, ctb_addr_rs,
-                                  ctu_w, ctu_h);
+        ret = decode_truncated_ctu(ctudec, sldec, prms, einfo, ctb_addr_rs,
+                                   ctu_w, ctu_h);
 
         dbf_store_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, ctb_x);
     }
@@ -790,8 +793,8 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         ctudec->ctb_x = einfo->ctb_x + ctb_x;
 
-        ret = decode_ctu_implicit(ctudec, sldec, prms, einfo, ctb_addr_rs,
-                                  ctu_w, ctu_h);
+        ret = decode_truncated_ctu(ctudec, sldec, prms, einfo, ctb_addr_rs,
+                                   ctu_w, ctu_h);
 
         cabac_line_next_ctu(ctudec, prms);
 
@@ -814,8 +817,8 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     ctudec->ctb_x = einfo->ctb_x + ctb_x;
 
-    ret = decode_ctu_implicit(ctudec, sldec, prms, einfo, ctb_addr_rs,
-                              einfo->last_ctu_w, ctu_h);
+    ret = decode_truncated_ctu(ctudec, sldec, prms, einfo, ctb_addr_rs,
+                               einfo->last_ctu_w, ctu_h);
 
     ret = 0;
     /* FIXME Temporary error report on CABAC end of stream */
@@ -932,7 +935,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
      */
     ovcabac_init_slice_context_table(cabac_ctx.ctx_table, prms->sh->sh_slice_type, ctudec->slice_qp);
 
-    reset_cabac_lines(sldec, prms);
+    clear_cabac_lines(sldec, prms);
 
     reset_drv_lines(sldec, prms);
 
@@ -1066,7 +1069,7 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
             return ret;
         }
     } else {
-        reset_cabac_lines(sldec, prms);
+        clear_cabac_lines(sldec, prms);
     }
 
     if (!sldec->drv_lines.intra_luma_x) {
