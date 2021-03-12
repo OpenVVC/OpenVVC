@@ -24,6 +24,8 @@ enum SliceType {
 
 
 struct RectEntryInfo {
+    int tile_x;
+    int tile_y;
     int ctb_x;
     int ctb_y;
     int nb_ctu_w;
@@ -331,40 +333,26 @@ init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
 {
      const OVPartInfo *const pinfo = sldec->ctudec_list->part_ctx;
      const OVSPS *const sps = prms->sps;
+     const struct TileInfo *const tinfo = &prms->pps_info.tile_info;
 
      struct CCLines *const lns   = &sldec->cabac_lines[0];
      struct CCLines *const lns_c = &sldec->cabac_lines[1];
 
      uint8_t log2_ctb_s = pinfo->log2_ctu_s;
      uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
-     /* TODO use active parameters such as generic pic info
-      * or something instead of this since this could be
-      * overridden by PPS in case of sub_pic etc.
-      * we could compute those values once for all earlier
-      * in the decoding process
-      */
+
      uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
 
      uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
      uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
-     #if 0
-     uint16_t pic_h = sps->sps_pic_height_max_in_luma_samples;
-     uint16_t nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
-     uint16_t nb_pb_pic_h = nb_ctb_pic_h << log2_min_cb_s;
-     #endif
 
+     lns->qt_depth_map_x  = ov_mallocz(sizeof(*lns->qt_depth_map_x)  * nb_pb_pic_w * tinfo->nb_tile_rows);
+     lns->log2_cu_w_map_x = ov_mallocz(sizeof(*lns->log2_cu_w_map_x) * nb_pb_pic_w * tinfo->nb_tile_rows);
+     lns->cu_mode_x       = ov_mallocz(sizeof(*lns->cu_mode_x)       * nb_pb_pic_w * tinfo->nb_tile_rows);
 
-     lns->qt_depth_map_x  = ov_mallocz(sizeof(*lns->qt_depth_map_x) * nb_pb_pic_w);
-     lns->log2_cu_w_map_x = ov_mallocz(sizeof(*lns->log2_cu_w_map_x) * nb_pb_pic_w);
-
-     /*FIXME check if zero init value */
-     lns->cu_mode_x       = ov_mallocz(sizeof(*lns->cu_mode_x) * nb_pb_pic_w);
-
-     lns_c->qt_depth_map_x  = ov_mallocz(sizeof(*lns_c->qt_depth_map_x) * nb_pb_pic_w);
-     lns_c->log2_cu_w_map_x = ov_mallocz(sizeof(*lns_c->log2_cu_w_map_x) * nb_pb_pic_w);
-
-     /*FIXME check if zero init value */
-     lns_c->cu_mode_x       = ov_mallocz(sizeof(*lns_c->cu_mode_x) * nb_pb_pic_w);
+     lns_c->qt_depth_map_x  = ov_mallocz(sizeof(*lns_c->qt_depth_map_x)  * nb_pb_pic_w * tinfo->nb_tile_rows);
+     lns_c->log2_cu_w_map_x = ov_mallocz(sizeof(*lns_c->log2_cu_w_map_x) * nb_pb_pic_w * tinfo->nb_tile_rows);
+     lns_c->cu_mode_x       = ov_mallocz(sizeof(*lns_c->cu_mode_x)       * nb_pb_pic_w * tinfo->nb_tile_rows);
 
      if (!lns->qt_depth_map_x || !lns->log2_cu_w_map_x || !lns->cu_mode_x ||
          !lns_c->qt_depth_map_x || !lns_c->log2_cu_w_map_x || !lns_c->cu_mode_x) {
@@ -383,6 +371,7 @@ void
 clear_cabac_lines(const OVSliceDec *sldec, const OVPS *const prms)
 {
      const OVPartInfo *pinfo = sldec->ctudec_list->part_ctx;
+     const struct TileInfo *const tinfo = &prms->pps_info.tile_info;
      const OVSPS *const sps = prms->sps;
 
      const struct CCLines *const lns   = &sldec->cabac_lines[0];
@@ -398,13 +387,13 @@ clear_cabac_lines(const OVSliceDec *sldec, const OVPS *const prms)
      uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
      uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
 
-     memset(lns->qt_depth_map_x,     0,  sizeof(*lns->qt_depth_map_x)  * nb_pb_pic_w);
-     memset(lns->log2_cu_w_map_x, 0xFF,  sizeof(*lns->log2_cu_w_map_x) * nb_pb_pic_w);
-     memset(lns->cu_mode_x,       0xFF,  sizeof(*lns->cu_mode_x)       * nb_pb_pic_w);
+     memset(lns->qt_depth_map_x,     0,  sizeof(*lns->qt_depth_map_x)  * nb_pb_pic_w * tinfo->nb_tile_rows);
+     memset(lns->log2_cu_w_map_x, 0xFF,  sizeof(*lns->log2_cu_w_map_x) * nb_pb_pic_w * tinfo->nb_tile_rows);
+     memset(lns->cu_mode_x,       0xFF,  sizeof(*lns->cu_mode_x)       * nb_pb_pic_w * tinfo->nb_tile_rows);
 
-     memset(lns_c->qt_depth_map_x,     0,  sizeof(*lns_c->qt_depth_map_x)  * nb_pb_pic_w);
-     memset(lns_c->log2_cu_w_map_x, 0xFF,  sizeof(*lns_c->log2_cu_w_map_x) * nb_pb_pic_w);
-     memset(lns_c->cu_mode_x,       0xFF,  sizeof(*lns_c->cu_mode_x)       * nb_pb_pic_w);
+     memset(lns_c->qt_depth_map_x,     0,  sizeof(*lns_c->qt_depth_map_x)  * nb_pb_pic_w * tinfo->nb_tile_rows);
+     memset(lns_c->log2_cu_w_map_x, 0xFF,  sizeof(*lns_c->log2_cu_w_map_x) * nb_pb_pic_w * tinfo->nb_tile_rows);
+     memset(lns_c->cu_mode_x,       0xFF,  sizeof(*lns_c->cu_mode_x)       * nb_pb_pic_w * tinfo->nb_tile_rows);
 }
 
 static void
@@ -413,7 +402,7 @@ offset_cabac_lines(struct CCLines *const cc_lns, uint16_t ctb_x, uint8_t log2_ct
      struct CCLines *const lns   = &cc_lns[0];
      struct CCLines *const lns_c = &cc_lns[1];
 
-     int offset = (ctb_x << log2_ctb_s) >> log2_min_cb_s;
+     int offset = ((uint32_t)ctb_x << log2_ctb_s) >> log2_min_cb_s;
 
      lns->qt_depth_map_x  += offset;
      lns->log2_cu_w_map_x += offset;
@@ -481,6 +470,8 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
         i++;
     }
     #endif
+    einfo->tile_x = tile_x;
+    einfo->tile_y = tile_y;
 
     einfo->nb_ctu_w = tile_info->nb_ctu_w[tile_x];
     einfo->nb_ctu_h = tile_info->nb_ctu_h[tile_y];
@@ -877,17 +868,20 @@ init_lines(OVCTUDec *ctudec, const OVSliceDec *sldec, const struct RectEntryInfo
     uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
 
     uint16_t nb_pb_ctb = (1 << log2_ctb_s) >> log2_min_cb_s;
+    uint32_t nb_ctb_pic_w = einfo->nb_ctb_pic_w;
+    const struct TileInfo *tinfo = &prms->pps_info.tile_info;
+
+    uint16_t ctb_offset = nb_ctb_pic_w * einfo->tile_y + einfo->ctb_x;
+
+    offset_cabac_lines(cc_lines, ctb_offset, log2_ctb_s, log2_min_cb_s);
 
     *drv_lines = sldec->drv_lines;
 
-    if (einfo->ctb_x == 0)
-        clear_cabac_lines(sldec, prms);
-
-
-    offset_cabac_lines(cc_lines, einfo->ctb_x, log2_ctb_s, log2_min_cb_s);
+    offset_drv_lines(drv_lines, einfo->tile_x, einfo->tile_y, einfo->ctb_x, log2_ctb_s,
+                     log2_min_cb_s, tinfo->nb_tile_cols, nb_ctb_pic_w);
 
     //if (einfo->ctb_x == 0)
-    reset_drv_lines(sldec, prms);
+    //reset_drv_lines(sldec, prms);
 
     cabac_line_next_line(ctudec, cc_lines);
 
@@ -1077,9 +1071,8 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
             ov_log(NULL, 3, "FAILED init cabac lines\n");
             return ret;
         }
-    } else {
-        clear_cabac_lines(sldec, prms);
     }
+    clear_cabac_lines(sldec, prms);
 
     if (!sldec->drv_lines.intra_luma_x) {
         int ret;

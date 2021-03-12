@@ -44,8 +44,8 @@ init_inter_drv_lines(struct DRVLines *const drv_lns, int nb_pb_pic_w,
 {
     struct InterLines *const lns = &drv_lns->inter_lines;
 
-    lns->mv0  = ov_mallocz(sizeof(*lns->mv0) * (nb_ctb_pic_w + 2) * 32);
-    lns->mv1  = ov_mallocz(sizeof(*lns->mv1) * (nb_ctb_pic_w + 2) * 32);
+    lns->mv0  = ov_mallocz(sizeof(*lns->mv0) * (nb_ctb_pic_w + 2));
+    lns->mv1  = ov_mallocz(sizeof(*lns->mv1) * (nb_ctb_pic_w + 2));
 
     lns->dir0  = ov_mallocz(sizeof(*lns->dir0) * (nb_ctb_pic_w + 2));
     lns->dir1  = ov_mallocz(sizeof(*lns->dir1) * (nb_ctb_pic_w + 2));
@@ -56,6 +56,19 @@ init_inter_drv_lines(struct DRVLines *const drv_lns, int nb_pb_pic_w,
     }
 
     return 0;
+}
+
+static void
+offset_inter_drv_lines(struct DRVLines *const drv_lns, int ctb_offset,
+                       uint8_t log2_ctb_s, uint8_t log2_min_cb_s)
+{
+    struct InterLines *const lns = &drv_lns->inter_lines;
+
+    lns->mv0 += ctb_offset;
+    lns->mv1 += ctb_offset;
+
+    lns->dir0 += ctb_offset;
+    lns->dir1 += ctb_offset;
 }
 
 #if 0
@@ -319,6 +332,39 @@ init_dbf_lines(struct DBFLines *const l, int nb_ctu_line, int nb_pu_line)
         return OVVC_ENOMEM;
     }
     return 0;
+}
+
+static void
+offset_dbf_lines(struct DBFLines *const l, int ctb_offset,
+                 uint8_t log2_ctb_s, uint8_t log2_min_cb_s)
+{
+    int pb_offset = (ctb_offset << log2_ctb_s) >> log2_min_cb_s;
+    pb_offset <<= 5;
+
+    l->qp_x_map       += pb_offset;
+    l->qp_x_map_cb    += pb_offset;
+    l->qp_x_map_cr    += pb_offset;
+    l->dbf_qp_ver     += pb_offset;
+    l->dbf_qp_ver_cb  += pb_offset;
+    l->dbf_qp_ver_cr  += pb_offset;
+
+    l->dbf_edge_ver   += ctb_offset;
+    l->dbf_edge_hor   += ctb_offset;
+
+    l->dbf_bs1_ver    += ctb_offset;
+    l->dbf_bs1_hor    += ctb_offset;
+
+    l->large_map_c    += ctb_offset;
+
+    l->dbf_bs1_ver_cb += ctb_offset;
+    l->dbf_bs1_hor_cb += ctb_offset;
+
+    l->dbf_bs1_ver_cr += ctb_offset;
+    l->dbf_bs1_hor_cr += ctb_offset;
+
+    l->dbf_bs2_ver    += ctb_offset;
+    l->dbf_bs2_hor    += ctb_offset;
+
 }
 
 static void
@@ -608,6 +654,7 @@ init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
      int ret;
      const OVPartInfo *const pinfo = sldec->ctudec_list->part_ctx;
      const OVSPS *const sps = prms->sps;
+     const struct TileInfo *tinfo = &prms->pps_info.tile_info;
 
      struct DRVLines *const lns = &sldec->drv_lines;
 
@@ -624,6 +671,10 @@ init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
      uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
 
      uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+
+     nb_ctb_pic_w += tinfo->nb_tile_cols;
+     nb_ctb_pic_w *= tinfo->nb_tile_rows;
+
      uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
 
      ret = init_inter_drv_lines(lns, nb_ctb_pic_w, nb_ctb_pic_w);
@@ -646,6 +697,7 @@ reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
 {
     const OVPartInfo *pinfo = sldec->ctudec_list->part_ctx;
     const OVSPS *const sps = prms->sps;
+     const struct TileInfo *tinfo = &prms->pps_info.tile_info;
 
     struct DRVLines *const lns = &sldec->drv_lines;
 
@@ -656,6 +708,10 @@ reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
      */
     uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
     uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+
+     nb_ctb_pic_w += tinfo->nb_tile_cols;
+     nb_ctb_pic_w *= tinfo->nb_tile_rows;
+
     uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
 
     struct InterLines *const i_lns = &lns->inter_lines;
@@ -666,7 +722,8 @@ reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
     /* PLANAR  = 0 value is used if absent so we use it as reset value
     */
     memset(lns->intra_luma_x,     0,  sizeof(*lns->intra_luma_x) * nb_pb_pic_w);
-    dbf_clear_lines(&lns->dbf_lines, nb_ctb_pic_w,  nb_pb_pic_w);
+
+    dbf_clear_lines(&lns->dbf_lines, nb_ctb_pic_w,  32*nb_pb_pic_w);
 }
 
 static void
@@ -801,6 +858,23 @@ drv_line_next_ctu(OVCTUDec *const ctudec, OVSliceDec *sldec, struct DRVLines *dr
 #endif
 
 void
+offset_drv_lines(struct DRVLines *const lns, uint8_t tile_x, uint8_t tile_y,
+                 uint8_t ctb_x,
+                 uint8_t log2_ctb_s, uint8_t log2_min_cb_s,
+                 uint8_t  nb_tile_cols, uint16_t nb_ctb_pic_w)
+{
+     int ctb_offset = (uint32_t) (nb_ctb_pic_w + nb_tile_cols) * tile_y;
+
+     ctb_offset += tile_x;
+     ctb_offset += ctb_x;
+
+     offset_inter_drv_lines(lns, ctb_offset, log2_ctb_s, log2_min_cb_s);
+
+     /* FIXME return */
+     offset_dbf_lines(&lns->dbf_lines, ctb_offset, log2_ctb_s, log2_min_cb_s);
+}
+
+void
 drv_lines_uninit(OVSliceDec *sldec)
 {
      struct DRVLines *const lns = &sldec->drv_lines;
@@ -809,3 +883,4 @@ drv_lines_uninit(OVSliceDec *sldec)
      free_inter_drv_lines(lns);
      free_dbf_lines(&lns->dbf_lines);
 }
+
