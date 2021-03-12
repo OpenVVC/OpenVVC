@@ -164,13 +164,13 @@ tmvp_store_mv(OVCTUDec *ctudec)
  * DRVLine
  */
 void
-store_inter_maps(struct DRVLines *const l,
+store_inter_maps(const struct DRVLines *const l,
                  OVCTUDec *const ctudec,
                  unsigned int ctb_x)
 {
     uint8_t nb_ctb_pb =  (1 << ((ctudec->part_ctx->log2_ctu_s) & 7)) >> ctudec->part_ctx->log2_min_cb_s;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-    struct InterLines  *const lns = &l->inter_lines;
+    const struct InterLines  *const lns = &l->inter_lines;
 
     struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
     struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;

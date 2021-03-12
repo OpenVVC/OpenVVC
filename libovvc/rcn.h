@@ -61,4 +61,10 @@ void rcn_init_cclm_functions(struct RCNFunctions *rcn_func);
 
 void rcn_init_ict_functions(struct RCNFunctions *rcn_func, uint8_t type);
 
+void rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInfo *const dbf_info,
+                 uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y);
+
+void rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
+                           uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y,
+                           uint8_t ctu_w, uint8_t ctu_h);
 #endif //RCN_H

@@ -13,6 +13,7 @@
 #include "rcn.h"
 #include "ovdpb.h"
 #include "drv_lines.h"
+#include "rcn_mc.h"
 
 /* TODO define in a header */
 enum SliceType {
@@ -657,7 +658,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         }
 
         if (!ctudec->dbf_disable) {
-            struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
+            const struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
             struct DBFInfo *const dbf_info = &ctudec->dbf_info;
             dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
             dbf_load_info(dbf_info, dbf_lns, log2_ctb_s, (ctb_x + 1) % nb_ctu_w);
@@ -682,7 +683,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         ret = decode_ctu(ctudec, einfo, ctb_addr_rs);
 
         if (!ctudec->dbf_disable) {
-            struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
+            const struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
             struct DBFInfo *const dbf_info = &ctudec->dbf_info;
             dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
         }
@@ -699,7 +700,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
                                    ctu_w, ctu_h);
 
         if (!ctudec->dbf_disable) {
-            struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
+            const struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
             struct DBFInfo *const dbf_info = &ctudec->dbf_info;
             dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
         }
@@ -762,7 +763,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
 
         if (!ctudec->dbf_disable) {
-            struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
+            const struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
             struct DBFInfo *const dbf_info = &ctudec->dbf_info;
             dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
             dbf_load_info(dbf_info, dbf_lns, log2_ctb_s, (ctb_x + 1) % nb_ctu_w);
@@ -827,8 +828,8 @@ tmvp_entry_init(OVCTUDec *ctudec, OVSliceDec *sldec)
     /* FIXME try to remove ctu decoder reference from inter context */
     struct VVCTMVP *tmvp_ctx = &ctudec->drv_ctx.inter_ctx.tmvp_ctx;
 
-    OVPicture *active_pic     = sldec->pic;
-    OVPicture *collocated_ref = active_pic->tmvp.collocated_ref;
+    const OVPicture *active_pic     = sldec->pic;
+    const OVPicture *collocated_ref = active_pic->tmvp.collocated_ref;
 
     ctudec->rcn_ctx.ctudec = ctudec;
 

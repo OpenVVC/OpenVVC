@@ -209,16 +209,16 @@ struct InterDRVCtx
          * information or ref idx
          */
         /* MV plane storage for current picture */
-        struct MVPlane *plane0;
-        struct MVPlane *plane1;
+        const struct MVPlane *plane0;
+        const struct MVPlane *plane1;
 
         #if 0
         OVPicture *col_ref;
         #endif
 
         /* MV plane storage for collocated reference picture */
-        struct MVPlane *col_plane0;
-        struct MVPlane *col_plane1;
+        const struct MVPlane *col_plane0;
+        const struct MVPlane *col_plane1;
 
         /* Scale info computed at slice start
          * based on the distance between collocated
