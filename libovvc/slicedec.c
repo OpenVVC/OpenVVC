@@ -380,13 +380,13 @@ init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
  * reset according to entry info instead of whole line
  */
 void
-clear_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
+clear_cabac_lines(const OVSliceDec *sldec, const OVPS *const prms)
 {
      const OVPartInfo *pinfo = sldec->ctudec_list->part_ctx;
      const OVSPS *const sps = prms->sps;
 
-     struct CCLines *const lns   = &sldec->cabac_lines[0];
-     struct CCLines *const lns_c = &sldec->cabac_lines[1];
+     const struct CCLines *const lns   = &sldec->cabac_lines[0];
+     const struct CCLines *const lns_c = &sldec->cabac_lines[1];
 
      uint8_t log2_ctb_s = pinfo->log2_ctu_s;
      uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
@@ -405,6 +405,23 @@ clear_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
      memset(lns_c->qt_depth_map_x,     0,  sizeof(*lns_c->qt_depth_map_x)  * nb_pb_pic_w);
      memset(lns_c->log2_cu_w_map_x, 0xFF,  sizeof(*lns_c->log2_cu_w_map_x) * nb_pb_pic_w);
      memset(lns_c->cu_mode_x,       0xFF,  sizeof(*lns_c->cu_mode_x)       * nb_pb_pic_w);
+}
+
+static void
+offset_cabac_lines(struct CCLines *const cc_lns, uint16_t ctb_x, uint8_t log2_ctb_s, uint8_t log2_min_cb_s)
+{
+     struct CCLines *const lns   = &cc_lns[0];
+     struct CCLines *const lns_c = &cc_lns[1];
+
+     int offset = (ctb_x << log2_ctb_s) >> log2_min_cb_s;
+
+     lns->qt_depth_map_x  += offset;
+     lns->log2_cu_w_map_x += offset;
+     lns->cu_mode_x       += offset;
+
+     lns_c->qt_depth_map_x  += offset;
+     lns_c->log2_cu_w_map_x += offset;
+     lns_c->cu_mode_x       += offset;
 }
 
 /* FIXME
@@ -618,6 +635,7 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
 
 static int
 decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
+                const struct DRVLines *const drv_lines,
                 const struct RectEntryInfo *const einfo,
                 uint16_t ctb_addr_rs)
 {
@@ -625,7 +643,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
     uint16_t nb_pb_ctb = (1 << log2_ctb_s) >> log2_min_cb_s;
-    uint8_t slice_type = sldec->slice_type;
+    const uint8_t slice_type = sldec->slice_type;
     int ctb_x = 0;
     int ret;
     uint8_t backup_qp;
@@ -654,11 +672,11 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         rcn_update_ctu_border(&ctudec->rcn_ctx, log2_ctb_s);
 
         if (slice_type != SLICE_I) {
-            store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
+            store_inter_maps(drv_lines, ctudec, ctb_x);
         }
 
         if (!ctudec->dbf_disable) {
-            const struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
+            const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
             struct DBFInfo *const dbf_info = &ctudec->dbf_info;
             dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
             dbf_load_info(dbf_info, dbf_lns, log2_ctb_s, (ctb_x + 1) % nb_ctu_w);
@@ -683,7 +701,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         ret = decode_ctu(ctudec, einfo, ctb_addr_rs);
 
         if (!ctudec->dbf_disable) {
-            const struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
+            const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
             struct DBFInfo *const dbf_info = &ctudec->dbf_info;
             dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
         }
@@ -700,7 +718,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
                                    ctu_w, ctu_h);
 
         if (!ctudec->dbf_disable) {
-            const struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
+            const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
             struct DBFInfo *const dbf_info = &ctudec->dbf_info;
             dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
         }
@@ -708,7 +726,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     /* FIXME if inter only */
     if (slice_type != SLICE_I) {
-        store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
+        store_inter_maps(drv_lines, ctudec, ctb_x);
     }
 
     /* Next line will use the qp of the first pu as a start value
@@ -728,6 +746,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
 static int
 decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
+                     const struct DRVLines *const drv_lines,
                      const struct RectEntryInfo *const einfo,
                      uint16_t ctb_addr_rs)
 {
@@ -754,7 +773,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         cabac_line_next_ctu(ctudec, nb_pb_ctb);
 
         if (slice_type != SLICE_I) {
-            store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
+            store_inter_maps(drv_lines, ctudec, ctb_x);
         }
 
         rcn_update_ctu_border(&ctudec->rcn_ctx, log2_ctb_s);
@@ -763,7 +782,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
 
         if (!ctudec->dbf_disable) {
-            const struct DBFLines *const dbf_lns = &sldec->drv_lines.dbf_lines;
+            const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
             struct DBFInfo *const dbf_info = &ctudec->dbf_info;
             dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
             dbf_load_info(dbf_info, dbf_lns, log2_ctb_s, (ctb_x + 1) % nb_ctu_w);
@@ -779,7 +798,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
                                einfo->last_ctu_w, ctu_h);
 
     if (slice_type != SLICE_I) {
-        store_inter_maps(&sldec->drv_lines, ctudec, ctb_x);
+        store_inter_maps(drv_lines, ctudec, ctb_x);
     }
 
     ret = 0;
@@ -799,10 +818,10 @@ slicedec_attach_frame_buff(OVCTUDec *const ctudec, OVSliceDec *sldec,
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
 
-    uint32_t entry_start_offset = ((uint32_t)einfo->ctb_x << (log2_ctb_s + 1));
+    uint32_t entry_start_offset   = ((uint32_t)einfo->ctb_x << (log2_ctb_s + 1));
     uint32_t entry_start_offset_c = ((uint32_t)einfo->ctb_x << (log2_ctb_s));
 
-    entry_start_offset   += ((uint32_t)einfo->ctb_y << log2_ctb_s) * (f->linesize[0]);
+    entry_start_offset   += ((uint32_t)einfo->ctb_y << log2_ctb_s)       * (f->linesize[0]);
     entry_start_offset_c += ((uint32_t)einfo->ctb_y << (log2_ctb_s - 1)) * (f->linesize[1]);
 
     /*FIXME clean offset */
@@ -851,6 +870,31 @@ tmvp_entry_init(OVCTUDec *ctudec, OVSliceDec *sldec)
     memset(tmvp_ctx->dir_map_v1, 0, 33 * sizeof(uint64_t));
 }
 
+static void
+init_lines(OVCTUDec *ctudec, const OVSliceDec *sldec, const struct RectEntryInfo *const einfo, const OVPS *const prms, const OVPartInfo*const part_ctx, struct DRVLines *drv_lines, struct CCLines *cc_lines)
+{
+    uint8_t log2_ctb_s    = part_ctx->log2_ctu_s;
+    uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
+
+    uint16_t nb_pb_ctb = (1 << log2_ctb_s) >> log2_min_cb_s;
+
+    *drv_lines = sldec->drv_lines;
+
+    if (einfo->ctb_x == 0)
+        clear_cabac_lines(sldec, prms);
+
+
+    offset_cabac_lines(cc_lines, einfo->ctb_x, log2_ctb_s, log2_min_cb_s);
+
+    //if (einfo->ctb_x == 0)
+    reset_drv_lines(sldec, prms);
+
+    cabac_line_next_line(ctudec, cc_lines);
+
+    drv_line_next_line(ctudec, drv_lines);
+
+}
+
 static int
 slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
                            const struct RectEntryInfo *const einfo)
@@ -862,7 +906,11 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     /* FIXME handle more than one ctu dec */
     OVCTUDec *const ctudec = sldec->ctudec_list;
     /*FIXME handle cabac alloc or keep it on the stack ? */
+
     OVCABACCtx cabac_ctx;
+
+    struct DRVLines drv_lines;
+    struct CCLines cc_lines[2] = {sldec->cabac_lines[0], sldec->cabac_lines[1]};
 
     const int nb_ctu_w = einfo->nb_ctu_w;
     const int nb_ctu_h = einfo->nb_ctu_h;
@@ -876,7 +924,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
 
     /*FIXME quick tmvp import */
     ctudec->nb_ctb_pic_w = einfo->nb_ctb_pic_w;
-
 
     tmvp_entry_init(ctudec, sldec);
 
@@ -896,15 +943,11 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
      * so we could only init once and recopy context tables to others
      * entries CABAC readers
      */
-    ovcabac_init_slice_context_table(cabac_ctx.ctx_table, prms->sh->sh_slice_type, ctudec->slice_qp);
+    ovcabac_init_slice_context_table(cabac_ctx.ctx_table, prms->sh->sh_slice_type,
+                                     ctudec->slice_qp);
 
-    clear_cabac_lines(sldec, prms);
-
-    reset_drv_lines(sldec, prms);
-
-    cabac_line_next_line(ctudec, sldec->cabac_lines);
-
-    drv_line_next_line(ctudec, sldec);
+    init_lines(ctudec, sldec, einfo, prms, ctudec->part_ctx,
+               &drv_lines, cc_lines);
 
     slicedec_attach_frame_buff(ctudec, sldec, einfo);
 
@@ -916,11 +959,11 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
         ctudec->ctb_y = einfo->ctb_y + ctb_y;
 
         /* New ctu line */
-        ret = decode_ctu_line(ctudec, sldec, einfo, ctb_addr_rs);
+        ret = decode_ctu_line(ctudec, sldec, &drv_lines, einfo, ctb_addr_rs);
 
-        cabac_line_next_line(ctudec, sldec->cabac_lines);
+        cabac_line_next_line(ctudec, cc_lines);
 
-        drv_line_next_line(ctudec, sldec);
+        drv_line_next_line(ctudec, &drv_lines);
 
         /*TODO 
          * CLeaner Next CTU Line
@@ -938,9 +981,9 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     ctudec->ctb_y = einfo->ctb_y + ctb_y;
     /* Last line */
     if (!einfo->implicit_h) {
-        ret = decode_ctu_line(ctudec, sldec, einfo, ctb_addr_rs);
+        ret = decode_ctu_line(ctudec, sldec, &drv_lines, einfo, ctb_addr_rs);
     } else {
-        ret = decode_ctu_last_line(ctudec, sldec, einfo, ctb_addr_rs);
+        ret = decode_ctu_last_line(ctudec, sldec, &drv_lines, einfo, ctb_addr_rs);
     }
 
     /*FIXME decide return value */

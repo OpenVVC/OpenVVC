@@ -709,7 +709,7 @@ tmvp_request_mv_plane(OVPicture *const pic, const OVVCDec *ovdec, uint8_t slice_
 
 static void
 tmvp_set_mv_scales(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic,
-                   OVPicture *const col_pic)
+                   const OVPicture *const col_pic)
 {
     /*TODO scale for every ref in RPL + don't use col pic but ref pic*/
     int32_t dist_ref0 = pic->poc - pic->rpl_info0.ref_info[0].poc;

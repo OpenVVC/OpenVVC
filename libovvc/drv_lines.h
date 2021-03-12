@@ -6,7 +6,7 @@ int init_drv_lines(OVSliceDec *sldec, const OVPS *const prms);
 
 void reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms);
 
-void drv_line_next_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec);
+void drv_line_next_line(OVCTUDec *const ctudec, const struct DRVLines *const lns);
 
 #if 0
 void drv_line_next_ctu(OVCTUDec *const ctudec, OVSliceDec *sldec, struct DRVLines *drv_line,

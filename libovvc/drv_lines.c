@@ -124,8 +124,8 @@ tmvp_store_mv(OVCTUDec *ctudec)
     int nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
-    struct MVPlane *plane0 = inter_ctx->tmvp_ctx.plane0;
-    struct MVPlane *plane1 = inter_ctx->tmvp_ctx.plane1;
+    const struct MVPlane *plane0 = inter_ctx->tmvp_ctx.plane0;
+    const struct MVPlane *plane1 = inter_ctx->tmvp_ctx.plane1;
 
     int nb_ctb_w = ctudec->nb_ctb_pic_w;
     uint16_t ctb_addr_rs = ctb_x + ctb_y * nb_ctb_w;
@@ -728,13 +728,12 @@ load_first_ctu_inter(const struct DRVLines *const l,
 
 
 void
-drv_line_next_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
+drv_line_next_line(OVCTUDec *const ctudec, const struct DRVLines *const lns)
 {
     #if 0
     struct OVDrvCtx *const drv_ctx        = &ctudec->drv_ctx;
     #endif
     struct IntraDRVInfo *const intra_info = &ctudec->drv_ctx.intra_info;
-    const struct DRVLines *const lns      = &sldec->drv_lines;
     const OVPartInfo *const pinfo = ctudec->part_ctx;
 
     uint8_t log2_ctb_s    = pinfo->log2_ctu_s;
@@ -762,7 +761,7 @@ drv_line_next_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec)
     #if 1
     memset(&ctudec->dbf_info, 0, sizeof(ctudec->dbf_info));
     #endif
-    dbf_load_info(&ctudec->dbf_info, &sldec->drv_lines.dbf_lines, log2_ctb_s, 0);
+    dbf_load_info(&ctudec->dbf_info, &lns->dbf_lines, log2_ctb_s, 0);
 }
 
 
