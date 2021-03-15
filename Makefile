@@ -8,6 +8,7 @@ CFLAGS_DEBUG?=  -O0 -g
 CFLAGS_RELEASE?= -O3 -Werror
 SHARED_LIBSUFF:=.so
 STATIC_LIBSUFF:=.a
+LD_FLAGS=-lpthread
 BUILDDIR?=.
 BUILD_TYPE?=RELEASE
 ARCH?=x86
@@ -70,7 +71,7 @@ $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF): $(LIB_OBJ)
 	ranlib $@
 
 $(BUILDDIR_TYPE)$(LIB_NAME)$(SHARED_LIBSUFF): $(LIB_OBJ)
-	$(CC) -shared $^ -o $@
+	$(CC) -shared $^ -o $@ $(LD_FLAGS)
 
 
 $(BUILDDIR_TYPE)%.o: %.c

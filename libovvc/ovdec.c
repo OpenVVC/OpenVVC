@@ -502,6 +502,7 @@ ovdec_init(OVVCDec **vvcdec)
 
     (*vvcdec)->name = decname;
 
+    init_tiles_threads(&(*vvcdec)->th_info, 7);
     return 0;
 
 fail:
@@ -528,6 +529,8 @@ ovdec_close(OVVCDec *vvcdec)
         if (vvcdec->mv_pool) {
             mvpool_uninit(&vvcdec->mv_pool);
         }
+
+        uninit_tiles_threads(&vvcdec->th_info);
 
         ov_free(vvcdec);
 
