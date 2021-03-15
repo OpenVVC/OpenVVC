@@ -56,9 +56,9 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, const OVPS *const prms, uint16_t
    
     //TODO: verifier nom et signification de tile_group_num_aps.
     uint8_t tile_group_num_aps  = prms->sh->sh_num_alf_aps_ids_luma;
-    uint8_t num_alf_chroma_alternative = prms->aps->aps_alf_data.alf_chroma_num_alt_filters_minus1 + 1;
-
+    uint8_t num_alf_chroma_alternative;
     if(alf_luma_flag){
+        num_alf_chroma_alternative = prms->aps->aps_alf_data.alf_chroma_num_alt_filters_minus1 + 1;
         ctx  = ctu_neighbour_flags & CTU_LFT_FLG  ? ((left_ctb_alf_flag & 4) >> 2) : 0;
         ctx += ctu_neighbour_flags & CTU_UP_FLG   ? ((up_ctb_alf_flag   & 4) >> 2) : 0;
         ret_luma = ovcabac_ae_read(cabac_ctx,&cabac_state[CTB_ALF_FLAG_CTX_OFFSET + ctx]);
@@ -112,7 +112,6 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, const OVPS *const prms, uint16_t
 void
 ovcabac_read_ae_cc_alf_ctu(OVCTUDec *const ctudec, const OVPS *const prms, uint16_t ctb_rs, uint16_t nb_ctu_w)
 {
-    OVALFData alf_data         = prms->aps->aps_alf_data;
     uint8_t cc_alf_cb_flag     = prms->sh->sh_alf_cc_cb_enabled_flag;
     uint8_t cc_alf_cr_flag     = prms->sh->sh_alf_cc_cr_enabled_flag;
 
@@ -123,6 +122,7 @@ ovcabac_read_ae_cc_alf_ctu(OVCTUDec *const ctudec, const OVPS *const prms, uint1
     for ( int comp_id = 0; comp_id < 2; comp_id++){
 
         if ((comp_id==0 && cc_alf_cb_flag) || (comp_id==1 && cc_alf_cr_flag)){
+            OVALFData alf_data = prms->aps->aps_alf_data;
 
             const uint8_t left_ctb_cc_alf_flag = ctudec->left_ctb_cc_alf_flag[comp_id];
             int           ctb_col              = ctb_rs % nb_ctu_w;
