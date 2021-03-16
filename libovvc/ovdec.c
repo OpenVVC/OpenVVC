@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <unistd.h>
 
 #include "ovutils.h"
 #include "ovmem.h"
@@ -496,13 +497,16 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
 int
 ovdec_init(OVVCDec **vvcdec)
 {
+    /* FIXME might not be available on every plateform */
+    int nb_threads = sysconf(_SC_NPROCESSORS_ONLN);
     *vvcdec = ov_mallocz(sizeof(OVVCDec));
 
     if (*vvcdec == NULL) goto fail;
 
     (*vvcdec)->name = decname;
 
-    init_tiles_threads(&(*vvcdec)->th_info, 7);
+
+    init_tiles_threads(&(*vvcdec)->th_info, nb_threads);
     return 0;
 
 fail:
