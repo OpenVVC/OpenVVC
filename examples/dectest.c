@@ -173,7 +173,7 @@ init_openvvc_hdl(OVVCHdl *const ovvc_hdl)
 
     if (ret < 0) goto faildec;
 
-    ov_log(vvcdec, OVLOG_INFO, "Decoder init.%d\n");
+    ov_log(vvcdec, OVLOG_INFO, "Decoder init.\n");
 
     ret = ovdmx_init(vvcdmx);
 
