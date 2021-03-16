@@ -153,16 +153,13 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
 
 
 void
-ovcabac_read_ae_sao_ctu( OVCTUDec *const ctudec, const OVPS *const prms)
+ovcabac_read_ae_sao_ctu( OVCTUDec *const ctudec, SAOParams* sao_ctu )
 {   
-    uint8_t sao_luma_flag   =  prms->sh->sh_sao_luma_used_flag;
-    uint8_t sao_chroma_flag =  prms->sh->sh_sao_chroma_used_flag;
+    uint8_t sao_luma_flag   =  ctudec->sao_info.sao_luma_flag;
+    uint8_t sao_chroma_flag =  ctudec->sao_info.sao_chroma_flag;
     if(sao_luma_flag || sao_chroma_flag)
         // loop_filter_state_flags & (VVC_SAO_LUMA_SLICE_FLAG|VVC_SAO_CHROMA_SLICE_FLAG))
     {
-        //TODO: creer le tableau de SAOParams qui va etre utilise
-        SAOParams *sao_ctu = malloc(sizeof(SAOParams));
-        // SAOParams* sao_ctu = &vvc_ctx->sao[ctb_rs];
         OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
         uint64_t *const cabac_state = cabac_ctx->ctx_table;
         const uint8_t ctu_neighbour_flags = ctudec->ctu_ngh_flags;
