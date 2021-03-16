@@ -22,7 +22,6 @@ enum SliceType {
      SLICE_I = 2
 };
 
-
 struct RectEntryInfo {
     int tile_x;
     int tile_y;
@@ -1086,9 +1085,10 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
 }
 
 int
-slicedec_init(OVSliceDec **dec_p)
+slicedec_init(OVSliceDec **dec_p, int nb_ctudec)
 {
     OVSliceDec *sldec;
+    int ret;
     sldec = ov_mallocz(sizeof(OVSliceDec));
     if (!sldec) {
         return OVVC_ENOMEM;
@@ -1096,12 +1096,19 @@ slicedec_init(OVSliceDec **dec_p)
 
     *dec_p = sldec;
 
+    sldec->nb_sbdec = nb_ctudec;
 
-    #if 1
-    ctudec_init(&sldec->ctudec_list);
-    #endif
+    ret = ctudec_init(&sldec->ctudec_list);
+    if (ret < 0) {
+        goto failctudec;
+    }
 
     return 0;
+
+failctudec:
+    ov_freep(dec_p);
+    return OVVC_ENOMEM;
+
 }
 
 static void

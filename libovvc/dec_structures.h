@@ -21,11 +21,13 @@ struct TileThread
 
 struct ThreadInfo
 {
-    int nb_threads;
     struct TileThread *tdec;
-    pthread_t thread;
-    /* Mutex on main thread
+
+    int nb_threads;
+
+    /* Main decoder thread to be used later
      */
+    pthread_t thread;
     pthread_mutex_t gnrl_mtx;
     pthread_cond_t gnrl_cnd;
 };

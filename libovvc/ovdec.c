@@ -73,9 +73,9 @@ init_subdec_list(OVVCDec *dec)
          *    -select sub dec types according to active params sets
          *    -if parameters changed we might want to change sb_dec
          */
-        ret = slicedec_init(&dec->subdec_list);
-        if (ret < 0)
-        {
+         int nb_ctudec = dec->th_info.nb_threads;
+        ret = slicedec_init(&dec->subdec_list, nb_ctudec);
+        if (ret < 0) {
             return OVVC_ENOMEM;
         }
     }
@@ -88,6 +88,7 @@ static OVSliceDec *
 select_subdec(const OVVCDec *const dec)
 {
     /* FIXME only one SLice dec at the current time */
+
     return dec->subdec_list;
 }
 

@@ -84,13 +84,16 @@ typedef struct OVSliceDec
    /* Lins for CABAC context derivation luma and chroma */
    struct CCLines cabac_lines[2];
 
+   /* Lines used to retrieve local informations to be used 
+    * by reconstructions such as MVs or intra modes
+    */
    struct DRVLines drv_lines;
 
    /* Reference to current pic being decoded */
    OVPicture *pic;
 
    OVCTUDec *ctudec_list; 
-   int nb_ctudec;
+   int nb_sbdec;
 } OVSliceDec;
 
 int slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms);
@@ -101,6 +104,6 @@ int slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms);
 int slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms);
 #endif
 
-int slicedec_init(OVSliceDec **dec);
+int slicedec_init(OVSliceDec **dec, int nb_ctudec);
 void slicedec_uninit(OVSliceDec **sldec_p);
 #endif
