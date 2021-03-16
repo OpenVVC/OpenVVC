@@ -880,9 +880,6 @@ init_lines(OVCTUDec *ctudec, const OVSliceDec *sldec, const struct RectEntryInfo
     offset_drv_lines(drv_lines, einfo->tile_x, einfo->tile_y, einfo->ctb_x, log2_ctb_s,
                      log2_min_cb_s, tinfo->nb_tile_cols, nb_ctb_pic_w);
 
-    //if (einfo->ctb_x == 0)
-    //reset_drv_lines(sldec, prms);
-
     cabac_line_next_line(ctudec, cc_lines);
 
     drv_line_next_line(ctudec, drv_lines);

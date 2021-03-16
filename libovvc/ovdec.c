@@ -28,11 +28,6 @@ struct OVVCSubDec;
 /* Actions on unsupported NAL Unit types */
 static int nalu_type_unsupported(enum OVNALUType nalu_type);
 
-#if 0
-/* Init / update vcl sub decoders based on slice header info */
-static int init_vcl_decoder(const OVVCDec *dec, OVSubDec *sub_dec);
-#endif
-
 static int
 nalu_type_unsupported(enum OVNALUType nalu_type)
 {
@@ -148,30 +143,11 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
         }
     }
 
-    #if 0
-    ovframe_unref(sldec->pic);
-    #endif
 
     ret = slicedec_init_slice_tools(sldec, &dec->active_params);
     /* TODO on failure */
 
     ret = decinit_set_entry_points(&dec->active_params, nalu, nb_sh_bytes);
-
-    #if 0
-    ret = decinti_update_subdec();
-    if (ret < 0) {
-        ov_log(dec, 3, "Failed to update sub decoder\n");
-        return ret;
-    }
-    #endif
-
-        /*TODO update DPB status */
-
-        /* TODO init VCL decoder */
-
-    #if 0
-    ret = init_slice_decoder(dec, nvcl_ctx);
-    #endif
 
     return 0;
 }
@@ -203,21 +179,16 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
         if (ret < 0) {
             return ret;
         } else {
-            #if 0
-            int nb_sh_bytes = ret;
-            #endif
 
-            #if 1
             ret = init_vcl_decoder(vvcdec, nvcl_ctx, nalu, &rdr);
             if (ret < 0) {
                 goto failvcl;
             }
-            /* Beyond this point unref current frame;
+            /* Beyond this point unref current picture on failure
              */
 
             /* FIXME handle non rect entries later */
             ret = slicedec_decode_rect_entries(vvcdec->subdec_list, &vvcdec->active_params);
-            #endif
 
 
             /* TODO start VCL decoder */
