@@ -715,8 +715,8 @@ rcn_residual(OVCTUDec *const ctudec,
 
         } else {
 #endif
-            int nb_row = tb_w;//OVMIN(lim_cg_w, 1 << log2_tb_w);
-            int nb_col = tb_h;//OVMIN(lim_cg_w, 1 << log2_tb_h);
+            int nb_row = OVMIN(lim_cg_w, 1 << log2_tb_w);
+            int nb_col = OVMIN(lim_cg_w, 1 << log2_tb_h);
 
             TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, shift_v);
             TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, shift_h);
@@ -771,8 +771,8 @@ rcn_residual_c(OVCTUDec *const ctudec,
 
     } else {
 #endif
-        int nb_row =  1 << log2_tb_w; //OVMIN(lim_cg_w, 1 << log2_tb_w);
-        int nb_col =  1 << log2_tb_h; //OVMIN(lim_cg_w, 1 << log2_tb_h);
+        int nb_row =  OVMIN(lim_cg_w, 1 << log2_tb_w);
+        int nb_col =  OVMIN(lim_cg_w, 1 << log2_tb_h);
         /*FIXME might be transform SKIP */
 
         #if 0
