@@ -184,6 +184,12 @@ enum SAOType {
     SAO_APPLIED
 };
 
+enum SAOModeMergeTypes
+{
+    NUM_SAO_MERGE_TYPES=0,
+    SAO_MERGE_LEFT,
+    SAO_MERGE_ABOVE
+};
 
 typedef struct SAOParams {
     int offset_abs[3][4];   ///< sao_offset_abs

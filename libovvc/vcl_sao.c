@@ -153,8 +153,9 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
 
 
 void
-ovcabac_read_ae_sao_ctu( OVCTUDec *const ctudec, SAOParams* sao_ctu )
+ovcabac_read_ae_sao_ctu( OVCTUDec *const ctudec, int ctb_rs )
 {   
+    SAOParams* sao_ctu      =  &ctudec->sao_info.sao_params[ctb_rs];
     uint8_t sao_luma_flag   =  ctudec->sao_info.sao_luma_flag;
     uint8_t sao_chroma_flag =  ctudec->sao_info.sao_chroma_flag;
     if(sao_luma_flag || sao_chroma_flag)
@@ -179,20 +180,19 @@ ovcabac_read_ae_sao_ctu( OVCTUDec *const ctudec, SAOParams* sao_ctu )
             ovcabac_read_ae_sao_type_idx(cabac_ctx, cabac_state, sao_ctu, sao_luma_flag, sao_chroma_flag, num_bits_sao, num_bits_sao_c);
         }
         else{
-            //TODO: gerer cas MERGE
-            // if (val == SAO_MERGE_LEFT)
-            // {
-            //     int ctb_left = ctb_rs-1; 
-            //     *sao_ctu = vvc_ctx->sao[ctb_left];
-            // }
-            // if (val == SAO_MERGE_ABOVE)
-            // {
-            //     int ctb_above = ctb_rs-vvc_ctx->nb_ctu_w; 
-            //     *sao_ctu = vvc_ctx->sao[ctb_above];
-            // }
-            // sao_ctu->type_idx[0]=sao_ctu->old_type_idx[0];
-            // sao_ctu->type_idx[1]=sao_ctu->old_type_idx[1];
-            // sao_ctu->type_idx[2]=sao_ctu->old_type_idx[2];
+            if (val == SAO_MERGE_LEFT)
+            {
+                int ctb_left = ctb_rs-1; 
+                *sao_ctu = ctudec->sao_info.sao_params[ctb_left];
+            }
+            if (val == SAO_MERGE_ABOVE)
+            {
+                int ctb_above = ctb_rs - ctudec->nb_ctb_pic_w; 
+                *sao_ctu = ctudec->sao_info.sao_params[ctb_above];;
+            }
+            sao_ctu->type_idx[0]=sao_ctu->old_type_idx[0];
+            sao_ctu->type_idx[1]=sao_ctu->old_type_idx[1];
+            sao_ctu->type_idx[2]=sao_ctu->old_type_idx[2];
         }
     }
 }

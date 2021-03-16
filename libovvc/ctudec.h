@@ -2,6 +2,7 @@
 #define CTU_DEC_H
 
 #include "ovdefs.h"
+#include "ovframe.h"
 
 #include "ovdec.h"
 #include "rcn_structures.h"
@@ -440,10 +441,31 @@ struct OVCTUDec
         struct RCNFunctions rcn_funcs;
     } rcn_ctx;
 
+
     struct DBFInfo dbf_info;
     
     struct SAOInfo sao_info;
 
+    struct OVFilterBuffers{
+        uint8_t  margin;
+
+        int16_t* saved_cols[3];
+        int16_t  saved_cols_h[3];
+        int16_t  saved_cols_stride[3];
+
+        int16_t* saved_rows[3];
+        int16_t  saved_rows_h[3];
+        int16_t  saved_rows_stride[3];
+
+        //TODO: use already existing ctu_buff ?
+        int16_t* filter_region[3];
+        int16_t  filter_region_h[3];
+        int16_t  filter_region_stride[3];
+        int16_t  filter_region_offset[3];
+
+        //TODO: other way to have the start of the frame ?
+        struct Frame* pic_frame; 
+    }filter_buffers;
 
     /* CTU neighbours availability flags
      * An aggregation of flag used to tell the decoder if
@@ -608,6 +630,10 @@ struct OVCTUDec
 };
 
 int ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec);
+
+void ctudec_create_filter_buffers(OVCTUDec *const ctudec, struct Frame *pic_frame, int nb_ctu_w, int margin);
+void ctudec_extend_filter_region(OVCTUDec *const ctudec);
+
 
 int ctudec_init(OVCTUDec **ctudec_p);
 int ctudec_uninit(OVCTUDec *ctudec_p);
