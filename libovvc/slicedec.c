@@ -15,6 +15,7 @@
 #include "drv_lines.h"
 #include "rcn_mc.h"
 #include "ovthreads.h"
+#include "rcn_sao.h"
 
 /* TODO define in a header */
 enum SliceType {
@@ -337,7 +338,7 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVSH *const sh, const OVSPS *
     int nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
     int nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
     
-    struct SAOInfo* sao_info = &ctudec->sao_info;
+    struct SAOInfo* sao_info  = &ctudec->sao_info;
     sao_info->sao_luma_flag   =  sh->sh_sao_luma_used_flag;
     sao_info->sao_chroma_flag =  sh->sh_sao_chroma_used_flag;
 
@@ -597,7 +598,7 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
      */
     derive_ctu_neighborhood(ctudec, ctb_addr_rs, nb_ctu_w);
 
-    ovcabac_read_ae_sao_ctu(ctudec,&ctudec->sao_info.sao_params[ctb_addr_rs]);
+    ovcabac_read_ae_sao_ctu(ctudec, ctb_addr_rs);
     // ovcabac_read_ae_alf_ctu(ctudec, prms, ctb_addr_rs, einfo->nb_ctu_w);
     // ovcabac_read_ae_cc_alf_ctu(ctudec, prms, ctb_addr_rs, einfo->nb_ctu_w);
 
@@ -629,7 +630,7 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
     /* FIXME pic border detection in neighbour flags ?*/
     derive_ctu_neighborhood(ctudec, ctb_addr_rs, nb_ctu_w);
 
-    ovcabac_read_ae_sao_ctu(ctudec, &ctudec->sao_info.sao_params[ctb_addr_rs]);
+    ovcabac_read_ae_sao_ctu(ctudec, ctb_addr_rs);
     // ovcabac_read_ae_alf_ctu(ctudec, prms, ctb_addr_rs, einfo->nb_ctu_w);
     // ovcabac_read_ae_cc_alf_ctu(ctudec, prms, ctb_addr_rs, einfo->nb_ctu_w);
 
@@ -971,8 +972,9 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     init_lines(ctudec, sldec, &einfo, prms, ctudec->part_ctx,
                &drv_lines, cc_lines);
 
-    slicedec_attach_frame_buff(ctudec, sldec, &einfo);
-
+    slicedec_attach_frame_buff(ctudec, sldec, einfo);
+    int margin = 3;
+    ctudec_create_filter_buffers(ctudec, sldec->pic->frame, einfo->nb_ctu_w, margin);
     tmp_fbuff = ctudec->rcn_ctx.frame_buff;
 
     while (ctb_y < nb_ctu_h - 1) {
@@ -1006,6 +1008,16 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         ret = decode_ctu_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
     } else {
         ret = decode_ctu_last_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
+    }
+
+    //TODO: do not apply in loop filters on the frame
+    ctudec_extend_filter_region(ctudec);
+    if (ctudec->sao_info.sao_luma_flag || ctudec->sao_info.sao_chroma_flag){
+        ctb_y = 0;
+        while (ctb_y < nb_ctu_h ) {
+            rcn_sao_filter_line(ctudec, einfo->nb_ctb_pic_w, ctb_y);
+            ctb_y++;
+        }
     }
 
     /*FIXME decide return value */
