@@ -5,6 +5,8 @@
 #include <stdatomic.h>
 
 #include "ovdefs.h"
+#include "ctudec.h"
+#include "dec_structures.h"
 
 struct EntryThread;
 
@@ -107,6 +109,7 @@ struct DRVLines
     /*FIXME used */
     void *inter_data;
 };
+
 
 typedef struct OVSliceDec
 {

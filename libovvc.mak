@@ -45,6 +45,7 @@ LIB_SRC:=																																 \
 					rcn_lfnst.c                                                    \
 					rcn_mc.c                                                       \
 					rcn_df.c                                                       \
+					rcn_sao.c                                                       \
 					slicedec.c                                                     \
 					vcl_alf.c                                                       \
 					vcl_sao.c                                                       \

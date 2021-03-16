@@ -5,7 +5,11 @@
 
 #include "ovdec.h"
 #include "rcn_structures.h"
+<<<<<<< HEAD
 #include "ovmem.h"
+=======
+#include "dec_structures.h"
+>>>>>>> SAO: cabac well read after changing data structures
 
     /* FIXME COMPAT old
      * Old structures to be removed
@@ -85,6 +89,22 @@ struct DBFInfo
     struct DBFQPMap qp_map_cb;
     struct DBFQPMap qp_map_cr;
 };
+
+
+struct SAOInfo
+{
+    //SAO flags on slice level 
+    uint8_t sao_luma_flag;
+    uint8_t sao_chroma_flag;
+    uint8_t chroma_format_idc;
+    uint8_t sao_truncated_bitdepth;
+    uint8_t sao_truncated_bitdepth_chroma;
+
+    /* *
+     * array of SAO parameters structure for each ctu
+     * */ 
+    SAOParams *sao_params;
+}sao_info;
 
 typedef struct VVCDeQuantCtx{
     uint8_t qp;
@@ -421,6 +441,9 @@ struct OVCTUDec
     } rcn_ctx;
 
     struct DBFInfo dbf_info;
+    
+    struct SAOInfo sao_info;
+
 
     /* CTU neighbours availability flags
      * An aggregation of flag used to tell the decoder if
@@ -578,6 +601,10 @@ struct OVCTUDec
     uint16_t ctb_x;
     uint16_t ctb_y;
     uint16_t nb_ctb_pic_w;
+    
+    //image height and width in luma samples
+    uint16_t pic_h;
+    uint16_t pic_w;
 };
 
 int ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec);
