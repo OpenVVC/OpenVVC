@@ -4,7 +4,7 @@
 #include "data_rcn_transform.h"
 #include "rcn_transform.h"
 #include "ovutils.h"
-#include "rcn_struct.h"
+#include "rcn_structures.h"
 
 static void
 matrix_multiplication(const int16_t* src, const int16_t* const tr_matrix,
@@ -611,97 +611,28 @@ vvc_inverse_dct_ii_dc(int16_t* const dst, int log2_tb_w, int log2_tb_h,
         }
 }
 
+void rcn_init_tr_functions(struct RCNFunctions *const rcn_funcs){
+  rcn_funcs->tr.func[DST_VII][0] = NULL;
+  rcn_funcs->tr.func[DST_VII][1] = NULL;
+  rcn_funcs->tr.func[DST_VII][2] = &vvc_inverse_dst_vii_4;
+  rcn_funcs->tr.func[DST_VII][3] = &vvc_inverse_dst_vii_8;
+  rcn_funcs->tr.func[DST_VII][4] = &vvc_inverse_dst_vii_16;
+  rcn_funcs->tr.func[DST_VII][5] = &vvc_inverse_dst_vii_32;
+  rcn_funcs->tr.func[DST_VII][6] = NULL;
 
-#if 0
-void (*ovtr_dct_ii_template[NB_TR_SIZES])(const int16_t *src, int16_t *dst,
-                                          ptrdiff_t src_stride,
-                                          int num_lines, int num_columns, int shift) =
-#endif
-#if 0
-static struct TrFunc ovtr_dct_ii_template[NB_TR_SIZES] = {
-    {NULL},
-    {vvc_inverse_dct_ii_2},
-    {vvc_inverse_dct_ii_4},
-    {vvc_inverse_dct_ii_8},
-    {vvc_inverse_dct_ii_16},
-    {vvc_inverse_dct_ii_32},
-    {vvc_inverse_dct_ii_64}
-};
+  rcn_funcs->tr.func[DCT_VIII][0] = NULL;
+  rcn_funcs->tr.func[DCT_VIII][1] = NULL;
+  rcn_funcs->tr.func[DCT_VIII][2] = &vvc_inverse_dct_viii_4;
+  rcn_funcs->tr.func[DCT_VIII][3] = &vvc_inverse_dct_viii_8;
+  rcn_funcs->tr.func[DCT_VIII][4] = &vvc_inverse_dct_viii_16;
+  rcn_funcs->tr.func[DCT_VIII][5] = &vvc_inverse_dct_viii_32;
+  rcn_funcs->tr.func[DCT_VIII][6] = NULL;
 
-static struct TrFunc ovtr_dct_viii_template[NB_TR_SIZES] =
-{
-    {NULL},
-    {NULL},
-    {vvc_inverse_dct_viii_4},
-    {vvc_inverse_dct_viii_8},
-    {vvc_inverse_dct_viii_16},
-    {vvc_inverse_dct_viii_32},
-    {NULL}
-};
-
-#if 0
-void (*ovtr_dst_vii_template[NB_TR_SIZES])(const int16_t *src, int16_t *dst,
-                                           ptrdiff_t src_stride,
-                                           int num_lines, int num_columns, int shift) =
-#endif
-
-static struct TrFunc ovtr_dst_vii_template[NB_TR_SIZES] =
-{
-    {NULL},
-    {NULL},
-    {vvc_inverse_dst_vii_4},
-    {vvc_inverse_dst_vii_8},
-    {vvc_inverse_dst_vii_16},
-    {vvc_inverse_dst_vii_32},
-    {NULL}
-};
-#endif
-
-#if 0
-void (*ovtr_template[NB_TR_TYPES][NB_TR_SIZES])(const int16_t *src, int16_t *dst,
-                                                ptrdiff_t src_stride,
-                                                int num_lines, int num_columns, int shift) =
-{
-    {ovtr_dct_ii_template}, {ovtr_dct_viii_template}, {ovtr_dct_viii_template}
-};
-static struct TrRCN tr_templates[NB_TR_TYPES] =
-{
-      {.func = ovtr_dct_ii_template},
-      {.func = ovtr_dct_ii_template},
-      {.func = ovtr_dct_ii_template}
-};
-#endif
-
-const struct TrFunc tr_templates[NB_TR_TYPES][NB_TR_SIZES] =
-{
-
-    {
-    {NULL},
-    {NULL},
-    {vvc_inverse_dst_vii_4},
-    {vvc_inverse_dst_vii_8},
-    {vvc_inverse_dst_vii_16},
-    {vvc_inverse_dst_vii_32},
-    {NULL}
-    },
-
-    {
-    {NULL},
-    {NULL},
-    {vvc_inverse_dct_viii_4},
-    {vvc_inverse_dct_viii_8},
-    {vvc_inverse_dct_viii_16},
-    {vvc_inverse_dct_viii_32},
-    {NULL}
-    },
-
-    {
-    {NULL},
-    {vvc_inverse_dct_ii_2},
-    {vvc_inverse_dct_ii_4},
-    {vvc_inverse_dct_ii_8},
-    {vvc_inverse_dct_ii_16},
-    {vvc_inverse_dct_ii_32},
-    {vvc_inverse_dct_ii_64}
-    }
-};
+  rcn_funcs->tr.func[DCT_II][0] = NULL;
+  rcn_funcs->tr.func[DCT_II][1] = &vvc_inverse_dct_ii_2;
+  rcn_funcs->tr.func[DCT_II][2] = &vvc_inverse_dct_ii_4;
+  rcn_funcs->tr.func[DCT_II][3] = &vvc_inverse_dct_ii_8;
+  rcn_funcs->tr.func[DCT_II][4] = &vvc_inverse_dct_ii_16;
+  rcn_funcs->tr.func[DCT_II][5] = &vvc_inverse_dct_ii_32;
+  rcn_funcs->tr.func[DCT_II][6] = &vvc_inverse_dct_ii_64;
+}

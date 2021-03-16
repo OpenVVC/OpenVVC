@@ -10,7 +10,28 @@
 void *
 ov_malloc(size_t alloc_size)
 {
-    void *ptr = malloc(alloc_size);
+  void *ptr;
+
+  //FIXME Should be checked on mutliple OS
+#if HAVE_POSIX_MEMALIGN
+  if (alloc_size){ //OS X on SDK 10.6 has a broken posix_memalign implementation
+    if (posix_memalign(&ptr, ALIGN, alloc_size)){
+      ptr = NULL;
+    }
+  }
+#elif HAVE_ALIGNED_MALLOC
+  ptr = _aligned_malloc(alloc_size, ALIGN); //For windows
+#elif HAVE_MEMALIGN
+  #ifndef __DJGPP__
+    ptr = memalign(ALIGN, alloc_size);
+  #else
+    ptr = memalign(alloc_size, ALIGN);
+  #endif
+#else
+  ptr = malloc(alloc_size);
+#endif
+
+    // void *ptr = malloc(alloc_size);
 
     return ptr;
 }
@@ -18,7 +39,7 @@ ov_malloc(size_t alloc_size)
 void *
 ov_mallocz(size_t alloc_size)
 {
-    void *ptr = malloc(alloc_size);
+    void *ptr = ov_malloc(alloc_size);
 
     if (ptr != NULL) {
         memset(ptr, 0, alloc_size);
@@ -49,5 +70,3 @@ ov_freep(void *ptr_ref)
 
     ov_free(ptr_cpy);
 }
-
-

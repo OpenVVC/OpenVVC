@@ -1,24 +1,29 @@
 #include <stdint.h>
 
 #include "data_rcn_transform.h"
+#include "ovmem.h"
+DECLARE_ALIGNED(32, const int16_t, DCT_II_2)
+// const int16_t DCT_II_2
+[4] = { 64, 64, 64, -64 };
 
-// DECLARE_ALIGNED(32, const int16_t, DCT_II_2)
-const int16_t DCT_II_2[4] = { 64, 64, 64, -64 };
-
-// DECLARE_ALIGNED(32, const int16_t, DCT_II_4)
-const int16_t DCT_II_4[4 * 4] = { 64, 64,  64,  64, 83, 36,  -36, -83,
+DECLARE_ALIGNED(32, const int16_t, DCT_II_4)
+// const int16_t DCT_II_4
+[4 * 4] = { 64, 64,  64,  64, 83, 36,  -36, -83,
                                   64, -64, -64, 64, 36, -83, 83,  -36 };
 
-// DECLARE_ALIGNED(32, const int16_t, DST_VII_4)
-const int16_t DST_VII_4[4 * 4] = { 29, 55,  74,  84, 74, 74,  0,  -74,
+DECLARE_ALIGNED(32, const int16_t, DST_VII_4)
+// const int16_t DST_VII_4
+[4 * 4] = { 29, 55,  74,  84, 74, 74,  0,  -74,
                                    84, -29, -74, 55, 55, -84, 74, -29 };
 
-// DECLARE_ALIGNED(32, const int16_t, DCT_VIII_4)
-const int16_t DCT_VIII_4[4 * 4] = { 84, 74,  55,  29, 74, 0,   -74, -74,
+DECLARE_ALIGNED(32, const int16_t, DCT_VIII_4)
+// const int16_t DCT_VIII_4
+[4 * 4] = { 84, 74,  55,  29, 74, 0,   -74, -74,
                                     55, -74, -29, 84, 29, -74, 84,  -55 };
 
-// DECLARE_ALIGNED(32, const int16_t, DST_VII_8)
-const int16_t DST_VII_8[8 * 8] = {
+DECLARE_ALIGNED(32, const int16_t, DST_VII_8)
+// const int16_t DST_VII_8
+[8 * 8] = {
         17,  32,  46,  60,  71, 78,  85,  86,  46,  78,  86,  71,  32,
         -17, -60, -85, 71,  85, 32,  -46, -86, -60, 17,  78,  85,  46,
         -60, -78, 17,  86,  32, -71, 86,  -17, -85, 32,  78,  -46, -71,
@@ -26,8 +31,9 @@ const int16_t DST_VII_8[8 * 8] = {
         -46, 85,  -78, 32,  32, -60, 78,  -86, 85,  -71, 46,  -17
 };
 
-// DECLARE_ALIGNED(32, const int16_t, DCT_VIII_8)
-const int16_t DCT_VIII_8[8 * 8] = {
+DECLARE_ALIGNED(32, const int16_t, DCT_VIII_8)
+// const int16_t DCT_VIII_8
+[8 * 8] = {
         86,  85,  78,  71, 60,  46,  32,  17,  85,  60,  17,  -32, -71,
         -86, -78, -46, 78, 17,  -60, -86, -46, 32,  85,  71,  71,  -32,
         -86, -17, 78,  60, -46, -85, 60,  -71, -46, 78,  32,  -85, -17,
@@ -35,8 +41,9 @@ const int16_t DCT_VIII_8[8 * 8] = {
         -17, 71,  -86, 60, 17,  -46, 71,  -85, 86,  -78, 60,  -32
 };
 
-// DECLARE_ALIGNED(32, const int16_t, DCT_II_8)
-const int16_t DCT_II_8[8 * 8] = {
+DECLARE_ALIGNED(32, const int16_t, DCT_II_8)
+// const int16_t DCT_II_8
+[8 * 8] = {
         64,  64,  64,  64, 64, 64,  64,  64,  89,  75,  50,  18,  -18,
         -50, -75, -89, 83, 36, -36, -83, -83, -36, 36,  83,  75,  -18,
         -89, -50, 50,  89, 18, -75, 64,  -64, -64, 64,  64,  -64, -64,
@@ -44,8 +51,9 @@ const int16_t DCT_II_8[8 * 8] = {
         -36, 83,  -83, 36, 18, -50, 75,  -89, 89,  -75, 50,  -18
 };
 
-// DECLARE_ALIGNED(32, const int16_t, DCT_II_16)
-const int16_t DCT_II_16[16 * 16] = {
+DECLARE_ALIGNED(32, const int16_t, DCT_II_16)
+// const int16_t DCT_II_16
+[16 * 16] = {
         64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,
         64,  64,  90,  87,  80,  70,  57,  43,  25,  9,   -9,  -25, -43, -57,
         -70, -80, -87, -90, 89,  75,  50,  18,  -18, -50, -75, -89, -89, -75,
@@ -67,8 +75,9 @@ const int16_t DCT_II_16[16 * 16] = {
         57,  -43, 25,  -9
 };
 
-// DECLARE_ALIGNED(32, const int16_t, DST_VII_16)
-const int16_t DST_VII_16[16 * 16] = {
+DECLARE_ALIGNED(32, const int16_t, DST_VII_16)
+// const int16_t DST_VII_16
+[16 * 16] = {
         8,   17,  25,  33,  40,  48,  55,  62,  68,  73,  77,  81,  85,  87,
         88,  88,  25,  48,  68,  81,  88,  88,  81,  68,  48,  25,  0,   -25,
         -48, -68, -81, -88, 40,  73,  88,  85,  62,  25,  -17, -55, -81, -88,
@@ -90,8 +99,9 @@ const int16_t DST_VII_16[16 * 16] = {
         55,  -40, 25,  -8
 };
 
-// DECLARE_ALIGNED(32, const int16_t, DCT_VIII_16)
-const int16_t DCT_VIII_16[16 * 16] = {
+DECLARE_ALIGNED(32, const int16_t, DCT_VIII_16)
+// const int16_t DCT_VIII_16
+[16 * 16] = {
         88,  88,  87,  85,  81,  77,  73,  68,  62,  55,  48,  40,  33,  25,
         17,  8,   88,  81,  68,  48,  25,  0,   -25, -48, -68, -81, -88, -88,
         -81, -68, -48, -25, 87,  68,  33,  -8,  -48, -77, -88, -81, -55, -17,
@@ -113,8 +123,9 @@ const int16_t DCT_VIII_16[16 * 16] = {
         62,  -48, 33,  -17
 };
 
-// DECLARE_ALIGNED(32, const int16_t, DST_VII_32)
-const int16_t DST_VII_32[32 * 32] = {
+DECLARE_ALIGNED(32, const int16_t, DST_VII_32)
+// const int16_t DST_VII_32
+[32 * 32] = {
         4,   9,   13,  17,  21,  26,  30,  34,  38,  42,  46,  50,  53,  56,
         60,  63,  66,  68,  72,  74,  77,  78,  80,  82,  84,  85,  86,  87,
         88,  89,  90,  90,  13,  26,  38,  50,  60,  68,  77,  82,  86,  89,
@@ -191,8 +202,9 @@ const int16_t DST_VII_32[32 * 32] = {
         13,  -4
 };
 
-// DECLARE_ALIGNED(32, const int16_t, DCT_VIII_32)
-const int16_t DCT_VIII_32[32 * 32] = {
+DECLARE_ALIGNED(32, const int16_t, DCT_VIII_32)
+// const int16_t DCT_VIII_32
+[32 * 32] = {
         90,  90,  89,  88,  87,  86,  85,  84,  82,  80,  78,  77,  74,  72,
         68,  66,  63,  60,  56,  53,  50,  46,  42,  38,  34,  30,  26,  21,
         17,  13,  9,   4,   90,  87,  84,  78,  72,  63,  53,  42,  30,  17,
@@ -269,8 +281,9 @@ const int16_t DCT_VIII_32[32 * 32] = {
         17,  -9
 };
 
-// DECLARE_ALIGNED(32, const int16_t, DCT_II_32)
-const int16_t DCT_II_32[32 * 32] = {
+DECLARE_ALIGNED(32, const int16_t, DCT_II_32)
+// const int16_t DCT_II_32
+[32 * 32] = {
         64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,
         64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,
         64,  64,  64,  64,  90,  90,  88,  85,  82,  78,  73,  67,  61,  54,
@@ -347,8 +360,9 @@ const int16_t DCT_II_32[32 * 32] = {
         13,  -4
 };
 
-// DECLARE_ALIGNED(32, const int16_t, DCT_II_64)
-const int16_t DCT_II_64[64 * 64] = {
+DECLARE_ALIGNED(32, const int16_t, DCT_II_64)
+// const int16_t DCT_II_64
+[64 * 64] = {
         64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,
         64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,
         64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,

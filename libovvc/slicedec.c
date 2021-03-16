@@ -11,6 +11,7 @@
 #include "vcl.h"
 #include "drv_utils.h"
 #include "rcn.h"
+#include "x86/rcn_sse.h"
 #include "ovdpb.h"
 #include "drv_lines.h"
 #include "rcn_mc.h"
@@ -955,7 +956,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
 
         drv_line_next_line(ctudec, &drv_lines);
 
-        /*TODO 
+        /*TODO
          * CLeaner Next CTU Line
          */
         fbuff_new_line(&tmp_fbuff, log2_ctb_s);
@@ -1052,6 +1053,13 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
 
     /*FIXME move rcn functions pointers init */
     rcn_init_mc_functions(&ctudec->rcn_ctx.rcn_funcs);
+    rcn_init_tr_functions(&ctudec->rcn_ctx.rcn_funcs);
+    rcn_init_dc_planar_functions(&ctudec->rcn_ctx.rcn_funcs);
+
+    /*Enables SSE Functions*/
+    rcn_init_mc_functions_sse(&ctudec->rcn_ctx.rcn_funcs);
+    rcn_init_tr_functions_sse(&ctudec->rcn_ctx.rcn_funcs);
+    rcn_init_dc_planar_functions_sse(&ctudec->rcn_ctx.rcn_funcs);
 
     /* Note it is important here that part info has already been set before calling
      * this function since it will be used to set line sizes*/

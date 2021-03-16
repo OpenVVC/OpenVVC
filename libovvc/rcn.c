@@ -9,8 +9,9 @@
 #include "data_rcn_angular.h"
 #include "ctudec.h"
 #include "rcn_intra_mip.h"
-#include "rcn_struct.h"
+#include "rcn_structures.h"
 #include "rcn.h"
+#include "ovmem.h"
 
 #if 0
 void vvc_intra_pred_isp(const OVCTUDec *const ctudec,
@@ -665,9 +666,11 @@ rcn_residual(OVCTUDec *const ctudec,
              uint8_t cu_mts_flag, uint8_t cu_mts_idx,
              uint8_t is_dc, uint8_t lfnst_flag, uint8_t is_mip, uint8_t lfnst_idx)
 {
+    struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
     int shift_v = 6 + 1;
     int shift_h = (6 + 15 - 1) - 10;
-    int16_t tmp[64*64];
+    DECLARE_ALIGNED(32, int16_t, tmp)[64*64];
+    // int16_t tmp[64*64];
     int tb_w = 1 << log2_tb_w;
     int tb_h = 1 << log2_tb_h;
     #if 0
@@ -699,8 +702,8 @@ rcn_residual(OVCTUDec *const ctudec,
              (tr_h_idx, log2_tb_w),
              (tmp, dst, tb_h, tb_h, tb_w, shift_h));
 #endif
-        tr_templates[tr_v_idx][log2_tb_w].transform(src, tmp, tb_w, tb_w, tb_h, shift_v);
-        tr_templates[tr_h_idx][log2_tb_w].transform(tmp, dst, tb_h, tb_h, tb_w, shift_h);
+        TRFunc->func[tr_v_idx][log2_tb_w](src, tmp, tb_w, tb_w, tb_h, shift_v);
+        TRFunc->func[tr_h_idx][log2_tb_w](tmp, dst, tb_h, tb_h, tb_w, shift_h);
 
     } else if (!cu_mts_flag) {
 
@@ -715,8 +718,8 @@ rcn_residual(OVCTUDec *const ctudec,
             int nb_row = tb_w;//OVMIN(lim_cg_w, 1 << log2_tb_w);
             int nb_col = tb_h;//OVMIN(lim_cg_w, 1 << log2_tb_h);
 
-            tr_templates[DCT_II][log2_tb_h].transform(src, tmp, tb_w, nb_row, nb_col, shift_v);
-            tr_templates[DCT_II][log2_tb_w].transform(tmp, dst, tb_h, tb_h, nb_row, shift_h);
+            TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, shift_v);
+            TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, shift_h);
 #if 0
         }
 #endif
@@ -724,8 +727,8 @@ rcn_residual(OVCTUDec *const ctudec,
         enum DCTType tr_h_idx = cu_mts_idx  & 1;
         enum DCTType tr_v_idx = cu_mts_idx >> 1;
 
-        tr_templates[tr_v_idx][log2_tb_h].transform(src, tmp, tb_w, tb_w, tb_h, shift_v);
-        tr_templates[tr_h_idx][log2_tb_w].transform(tmp, dst, tb_h, tb_h, tb_w, shift_h);
+        TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, tb_w, tb_w, tb_h, shift_v);
+        TRFunc->func[tr_h_idx][log2_tb_w](tmp, dst, tb_h, tb_h, tb_w, shift_h);
 
     }
 }
@@ -740,9 +743,11 @@ rcn_residual_c(OVCTUDec *const ctudec,
                uint8_t cu_mts_flag, uint8_t cu_mts_idx,
                uint8_t is_dc, uint8_t lfnst_flag, uint8_t is_mip, uint8_t lfnst_idx)
 {
+    struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
     const int shift_v = 6 + 1;
     const int shift_h = (6 + 15 - 1) - 10;
-    int16_t tmp[32*32];
+    DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
+    // int16_t tmp[32*32];
     int tb_w = 1 << log2_tb_w;
     int tb_h = 1 << log2_tb_h;
 
@@ -771,11 +776,11 @@ rcn_residual_c(OVCTUDec *const ctudec,
         /*FIXME might be transform SKIP */
 
         #if 0
-        tr_templates[DCT_II][log2_tb_h].transform(src, tmp, tb_w, tb_w, tb_h, shift_v);
-        tr_templates[DCT_II][log2_tb_w].transform(tmp, src, tb_h, tb_h, tb_w, shift_h);
+        TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, tb_w, tb_h, shift_v);
+        TRFunc->func[DCT_II][log2_tb_w](tmp, src, tb_h, tb_h, tb_w, shift_h);
         #endif
-        tr_templates[DCT_II][log2_tb_h].transform(src, tmp, tb_w, nb_row, nb_col, shift_v);
-        tr_templates[DCT_II][log2_tb_w].transform(tmp, dst, tb_h, tb_h, nb_row, shift_h);
+        TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, shift_v);
+        TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, shift_h);
 #if 0
     }
 #endif
