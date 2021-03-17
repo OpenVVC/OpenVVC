@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 
+if [ "$#" -ne 2 ];  then
+    echo "Illegal number of parameters"
+    echo
+    echo "USE ./updateMD5.sh <bitstreams folder> <decoder>"
+    echo
+    exit
+fi
+
 STREAM=$1
 DECODER=$2
 

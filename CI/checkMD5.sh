@@ -1,5 +1,12 @@
 #!/bin/bash
 
+if [ "$#" -ne 2 ];  then
+    echo "Illegal number of parameters"
+    echo
+    echo "USE ./checkMD5.sh <bitstreams folder> <decoder>"
+    exit
+fi
+
 STREAM=$1
 DECODER=$2
 
