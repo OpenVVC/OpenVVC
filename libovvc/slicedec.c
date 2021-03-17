@@ -1010,23 +1010,11 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
 
     ctudec->delta_qp_enabled = pps->pps_cu_qp_delta_enabled_flag;
 
-#if 1
     ctudec->dbf_disable = sh->sh_deblocking_filter_disabled_flag |
                           ph->ph_deblocking_filter_disabled_flag |
                           pps->pps_deblocking_filter_disabled_flag;
-#else
-    ctudec->dbf_disable = 1;
-#endif
 
     ctudec->lm_chroma_enabled = sps->sps_cclm_enabled_flag;
-    if (ctudec->lm_chroma_enabled) {
-        /* FIXME add support vertical */
-        if (sps->sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {
-            rcn_init_cclm_functions_collocated(&ctudec->rcn_ctx.rcn_funcs);
-        } else {
-            rcn_init_cclm_functions(&ctudec->rcn_ctx.rcn_funcs);
-        }
-    }
 
 
     slice_init_qp_ctx(ctudec, prms);
@@ -1040,6 +1028,15 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
     init_slice_tree_ctx(ctudec, prms);
 
     ctudec->drv_ctx.inter_ctx.tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
+
+    if (ctudec->lm_chroma_enabled) {
+        /* FIXME add support vertical */
+        if (sps->sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {
+            rcn_init_cclm_functions_collocated(&ctudec->rcn_ctx.rcn_funcs);
+        } else {
+            rcn_init_cclm_functions(&ctudec->rcn_ctx.rcn_funcs);
+        }
+    }
 
     /*FIXME move rcn functions pointers init */
     rcn_init_mc_functions(&ctudec->rcn_ctx.rcn_funcs);
