@@ -15,7 +15,7 @@
 
 void sao_band_filter(uint8_t *_dst, uint8_t *_src,
         ptrdiff_t stride_dst, ptrdiff_t stride_src,
-        SAOParams *sao,
+        SAOParamsCtu *sao,
          int width, int height,
         int c_idx)
 {
@@ -50,7 +50,7 @@ void sao_band_filter(uint8_t *_dst, uint8_t *_src,
 
 void sao_edge_filter(uint8_t *_dst, uint8_t *_src,
         ptrdiff_t stride_dst, ptrdiff_t stride_src,
-        SAOParams *sao,
+        SAOParamsCtu *sao,
          int width, int height, int x_start, int y_start, 
         int c_idx) {
     static const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
@@ -98,7 +98,7 @@ void rcn_sao_ctu(OVCTUDec *const ctudec, int ctb_x_pic, int ctb_y_pic, int nb_ct
     int x           = ctb_x_pic << log2_ctb_size;
     int y           = ctb_y_pic << log2_ctb_size;
     int ctb_addr_rs = ctb_y_pic * nb_ctu_w + ctb_x_pic;
-    SAOParams *sao  = &ctudec->sao_info.sao_params[ctb_addr_rs];
+    SAOParamsCtu *sao  = &ctudec->sao_info.sao_params[ctb_addr_rs];
 
     OVFrame *frame = fb.pic_frame;
     // struct OVBuffInfo frame_buff = ctudec->rcn_ctx.frame_buff;

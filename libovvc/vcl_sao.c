@@ -26,7 +26,7 @@ ovcabac_read_ae_sao_merge_type(OVCABACCtx *const cabac_ctx, uint64_t *const caba
 
 
 static void
-ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state, SAOParams *sao_ctu,
+ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state, SAOParamsCtu *sao_ctu,
                         uint8_t sao_luma_flag, uint8_t sao_chroma_flag, uint8_t num_bits_sao, uint8_t num_bits_sao_c)
 {
     int k;
@@ -155,7 +155,7 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
 void
 ovcabac_read_ae_sao_ctu( OVCTUDec *const ctudec, int ctb_rs )
 {   
-    SAOParams* sao_ctu      =  &ctudec->sao_info.sao_params[ctb_rs];
+    SAOParamsCtu* sao_ctu      =  &ctudec->sao_info.sao_params[ctb_rs];
     uint8_t sao_luma_flag   =  ctudec->sao_info.sao_luma_flag;
     uint8_t sao_chroma_flag =  ctudec->sao_info.sao_chroma_flag;
     if(sao_luma_flag || sao_chroma_flag)

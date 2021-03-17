@@ -101,11 +101,32 @@ struct SAOInfo
     uint8_t sao_truncated_bitdepth;
     uint8_t sao_truncated_bitdepth_chroma;
 
+    /*array of SAO parameters structure for each ctu */ 
+    SAOParamsCtu *sao_params;
+};
+
+struct ALFInfo
+{
+    uint8_t alf_luma_enabled_flag;
+    uint8_t alf_cb_enabled_flag;
+    uint8_t alf_cr_enabled_flag;
+    uint8_t num_alf_aps_ids_luma;
+
+    const struct OVALFData* aps_alf_data;
+
+    uint8_t left_ctb_alf_flag;
+    uint8_t left_ctb_cc_alf_flag[2];
+    //TODO: use width in ctu of image (or tile) instead of max value 32.
+    uint8_t ctb_alf_flag_line[32];
+    uint8_t ctb_cc_alf_flag_line[2][32];
+
+    //TODO:  better here or in slicedec ?
     /* *
-     * array of SAO parameters structure for each ctu
+     * arrays of ALF parameters structure for each ctu
      * */ 
-    SAOParams *sao_params;
-}sao_info;
+    ALFParamsCtu *alf_params;
+};
+
 
 typedef struct VVCDeQuantCtx{
     uint8_t qp;
@@ -446,6 +467,9 @@ struct OVCTUDec
     
     struct SAOInfo sao_info;
 
+    struct ALFInfo alf_info;
+
+
     struct OVFilterBuffers{
         uint8_t  margin;
 
@@ -601,12 +625,6 @@ struct OVCTUDec
     DECLARE_ALIGNED(32, int16_t, residual_cr)[64*64];
     int16_t lfnst_subblock[16*2];
     DECLARE_ALIGNED(32, int16_t, transform_buff)[64*64];
-
-    uint8_t left_ctb_alf_flag;
-    uint8_t left_ctb_cc_alf_flag[2];
-    //TODO: mettre la taille de l'image (ou tile)
-    uint8_t ctb_alf_flag_line[32];
-    uint8_t ctb_cc_alf_flag_line[2][32];
 
     uint8_t slice_qp;
     /* FIXME

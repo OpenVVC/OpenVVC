@@ -191,7 +191,7 @@ enum SAOModeMergeTypes
     SAO_MERGE_ABOVE
 };
 
-typedef struct SAOParams {
+typedef struct SAOParamsCtu {
     int offset_abs[3][4];   ///< sao_offset_abs
     int offset_sign[3][4];  ///< sao_offset_sign
 
@@ -203,7 +203,16 @@ typedef struct SAOParams {
 
     uint8_t type_idx[3];    ///< sao_type_idx
     uint8_t old_type_idx[3];    ///< sao_type_idx
-} SAOParams;
+} SAOParamsCtu;
+
+
+typedef struct ALFParamsCtu {
+    uint8_t ctb_alf_flag;
+    uint8_t ctb_alf_idx;
+    uint8_t cb_alternative;
+    uint8_t cr_alternative;
+} ALFParamsCtu;
+
 
 struct OVVCDec
 {
