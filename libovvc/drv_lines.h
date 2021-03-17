@@ -26,4 +26,8 @@ void dbf_load_info(struct DBFInfo *const dbf_info,
 void dbf_store_info(struct DBFInfo *const dbf_info,
                     const struct DBFLines *const dbf_lines,
                     uint8_t log2_ctu_s, int ctb_x);
+void offset_drv_lines(struct DRVLines *const lns, uint8_t tile_x, uint8_t tile_y,
+                      uint8_t ctb_x,
+                      uint8_t log2_ctb_s, uint8_t log2_min_cb_s,
+                      uint8_t  nb_tile_cols, uint16_t nb_ctb_pic_w);
 #endif

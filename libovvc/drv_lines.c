@@ -39,13 +39,13 @@ free_inter_drv_lines(struct DRVLines *const drv_lns)
 }
 
 static int
-init_inter_drv_lines(struct DRVLines *const drv_lns, int nb_pb_pic_w,
+init_inter_drv_lines(struct DRVLines *const drv_lns, int nb_pb_ctb,
                      int nb_ctb_pic_w)
 {
     struct InterLines *const lns = &drv_lns->inter_lines;
 
-    lns->mv0  = ov_mallocz(sizeof(*lns->mv0) * (nb_ctb_pic_w + 2));
-    lns->mv1  = ov_mallocz(sizeof(*lns->mv1) * (nb_ctb_pic_w + 2));
+    lns->mv0  = ov_mallocz(sizeof(*lns->mv0) * nb_pb_ctb * (nb_ctb_pic_w + 2));
+    lns->mv1  = ov_mallocz(sizeof(*lns->mv1) * nb_pb_ctb * (nb_ctb_pic_w + 2));
 
     lns->dir0  = ov_mallocz(sizeof(*lns->dir0) * (nb_ctb_pic_w + 2));
     lns->dir1  = ov_mallocz(sizeof(*lns->dir1) * (nb_ctb_pic_w + 2));
@@ -676,8 +676,9 @@ init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
      nb_ctb_pic_w *= tinfo->nb_tile_rows;
 
      uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
+     uint8_t nb_pb_ctb = (1 << log2_ctb_s) >> log2_min_cb_s;
 
-     ret = init_inter_drv_lines(lns, nb_ctb_pic_w, nb_ctb_pic_w);
+     ret = init_inter_drv_lines(lns, nb_pb_ctb, nb_ctb_pic_w);
 
      /* FIXME return */
      ret = init_dbf_lines(&lns->dbf_lines, nb_ctb_pic_w, 32 * nb_pb_pic_w);
