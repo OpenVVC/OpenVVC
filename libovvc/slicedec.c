@@ -330,23 +330,38 @@ cabac_lines_uninit(OVSliceDec *sldec)
 }
 
 int
-init_in_loop_filters(OVCTUDec *const ctudec, const OVSH *const sh, const OVSPS *const sps)
-{
+init_in_loop_filters(OVCTUDec *const ctudec, const OVSH *const sh, const OVSPS *const sps, const struct OVALFData* aps_alf_data)
+{   
     uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
     uint16_t pic_h = sps->sps_pic_height_max_in_luma_samples;
     uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
     int nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
     int nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
     
+    //Init SAO info and ctu params
     struct SAOInfo* sao_info  = &ctudec->sao_info;
     sao_info->sao_luma_flag   =  sh->sh_sao_luma_used_flag;
     sao_info->sao_chroma_flag =  sh->sh_sao_chroma_used_flag;
 
     sao_info->chroma_format_idc = sps->sps_chroma_format_idc;
     if(!sao_info->sao_params){
-        sao_info->sao_params = ov_malloc(sizeof(SAOParams) * nb_ctb_pic_w * nb_ctb_pic_h);
+        sao_info->sao_params = ov_malloc(sizeof(SAOParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
     } else {
-        memset(sao_info->sao_params,0,sizeof(SAOParams) * nb_ctb_pic_w * nb_ctb_pic_h);
+        memset(sao_info->sao_params,0,sizeof(SAOParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
+    }
+
+    //Init ALF info and ctu params
+    struct ALFInfo* alf_info  = &ctudec->alf_info;
+    alf_info->alf_luma_enabled_flag = sh->sh_alf_enabled_flag;
+    alf_info->alf_cb_enabled_flag = sh->sh_alf_cb_enabled_flag;
+    alf_info->alf_cr_enabled_flag = sh->sh_alf_cr_enabled_flag;
+
+    alf_info->num_alf_aps_ids_luma  = sh->sh_num_alf_aps_ids_luma;
+    alf_info->aps_alf_data = aps_alf_data;
+    if(!alf_info->alf_params){
+        alf_info->alf_params = ov_malloc(sizeof(ALFParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
+    } else {
+        memset(alf_info->alf_params,0,sizeof(ALFParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
     }
     return 0;
 }
@@ -599,7 +614,7 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
     derive_ctu_neighborhood(ctudec, ctb_addr_rs, nb_ctu_w);
 
     ovcabac_read_ae_sao_ctu(ctudec, ctb_addr_rs);
-    // ovcabac_read_ae_alf_ctu(ctudec, prms, ctb_addr_rs, einfo->nb_ctu_w);
+    ovcabac_read_ae_alf_ctu(ctudec, ctb_addr_rs, einfo->nb_ctu_w);
     // ovcabac_read_ae_cc_alf_ctu(ctudec, prms, ctb_addr_rs, einfo->nb_ctu_w);
 
     init_ctu_bitfield(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s);
@@ -631,7 +646,7 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
     derive_ctu_neighborhood(ctudec, ctb_addr_rs, nb_ctu_w);
 
     ovcabac_read_ae_sao_ctu(ctudec, ctb_addr_rs);
-    // ovcabac_read_ae_alf_ctu(ctudec, prms, ctb_addr_rs, einfo->nb_ctu_w);
+    ovcabac_read_ae_alf_ctu(ctudec, ctb_addr_rs, einfo->nb_ctu_w);
     // ovcabac_read_ae_cc_alf_ctu(ctudec, prms, ctb_addr_rs, einfo->nb_ctu_w);
 
     /* FIXME pic border detection in neighbour flags ?*/
@@ -1062,7 +1077,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->delta_qp_enabled = pps->pps_cu_qp_delta_enabled_flag;
 
     //In loop filter information for CTU reconstruction
-    init_in_loop_filters(ctudec, sh, sps);
+    init_in_loop_filters(ctudec, sh, sps, &prms->aps->aps_alf_data);
 
 #if 1
     ctudec->dbf_disable = sh->sh_deblocking_filter_disabled_flag |
