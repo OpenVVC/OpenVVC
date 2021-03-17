@@ -65,4 +65,9 @@ void rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInfo *co
 void rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
                            uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y,
                            uint8_t ctu_w, uint8_t ctu_h);
+
+void
+vvc_add_residual(const int16_t *src, uint16_t *dst,
+                int log2_tb_w, int log2_tb_h,
+                int scale);                           
 #endif //RCN_H

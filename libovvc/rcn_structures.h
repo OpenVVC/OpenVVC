@@ -111,7 +111,7 @@ struct RCNFunctions
     /* DC Functions */
     struct DCFunctions dc;
 
-    /* DC Functions */
+    /* Planar Functions */
     struct PlanarFunctions planar;
 };
 

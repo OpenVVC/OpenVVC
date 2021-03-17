@@ -213,7 +213,7 @@ vvc_scale_sub_half_residual(const int16_t *src, uint16_t *dst,
     }
 }
 
-static void
+void
 vvc_add_residual(const int16_t *src, uint16_t *dst,
                  int log2_tb_w, int log2_tb_h,
                  int scale)
