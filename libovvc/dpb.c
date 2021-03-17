@@ -601,7 +601,8 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, struct OVRPL *const rpl
                    struct OVRPL *const rpl1, OVSliceDec *const sldec)
 {
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
-    OVCTUDec *ctudec = sldec->ctudec_list;
+    /*FIXME do not use ctudec */
+    OVCTUDec *ctudec = sldec->ctudec_list[0];
     uint32_t poc = dpb->poc;
     int i, ret;
     OVPicture *current_pic;
