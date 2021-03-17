@@ -331,7 +331,9 @@ cabac_lines_uninit(OVSliceDec *sldec)
 int
 init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
 {
-     const OVPartInfo *const pinfo = sldec->ctudec_list[0]->part_ctx;
+    uint8_t slice_type = sldec->slice_type; 
+    const OVPartInfo *const pinfo = slice_type == SLICE_I ? &prms->sps_info.part_info[0]
+                                                          : &prms->sps_info.part_info[1];
      const OVSPS *const sps = prms->sps;
      const struct TileInfo *const tinfo = &prms->pps_info.tile_info;
 
@@ -370,7 +372,9 @@ init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
 void
 clear_cabac_lines(const OVSliceDec *sldec, const OVPS *const prms)
 {
-     const OVPartInfo *pinfo = sldec->ctudec_list[0]->part_ctx;
+     uint8_t slice_type = sldec->slice_type;
+     const OVPartInfo *const pinfo = slice_type == SLICE_I ? &prms->sps_info.part_info[0]
+                                                           : &prms->sps_info.part_info[1];
      const struct TileInfo *const tinfo = &prms->pps_info.tile_info;
      const OVSPS *const sps = prms->sps;
 
@@ -981,16 +985,13 @@ static uint8_t ict_type(const OVPH *const ph)
 
 /* FIXME clean this init */
 int
-slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
+slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 {
 
-    /* FIXME separate allocation outside of the scope of this function */
-    OVCTUDec *const ctudec = sldec->ctudec_list[0];
     const OVSPS *const sps = prms->sps;
     const OVPPS *const pps = prms->pps;
     const OVSH *const sh = prms->sh;
     const OVPH *const ph = prms->ph;
-    sldec->slice_type = sh->sh_slice_type;
 
     ctudec->max_log2_transform_skip_size = sps->sps_log2_transform_skip_max_size_minus2 + 2;
 
@@ -1057,6 +1058,10 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
 int
 slicedec_init_lines(OVSliceDec *const sldec, const OVPS *const prms)
 {
+    const OVSH *sh = prms->sh;
+    uint8_t slice_type = sldec->slice_type;
+    sldec->slice_type = sh->sh_slice_type;
+
     if (!sldec->cabac_lines[0].qt_depth_map_x) {
         int ret;
         ret = init_cabac_lines(sldec, prms);
@@ -1155,7 +1160,7 @@ slicedec_init(OVSliceDec **dec_p, int nb_entry_th)
     return 0;
 
 failthreads:
-     uninit_ctudec_list(sldec, nb_entry_th);
+    uninit_ctudec_list(sldec, nb_entry_th);
 failctudec:
     ov_freep(dec_p);
     return OVVC_ENOMEM;

@@ -140,13 +140,12 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
         }
     }
 
-    ret = slicedec_init_slice_tools(sldec, &dec->active_params);
-
-    /* Note it is important here that part info has already been set before calling
-     * this function since it will be used to set line sizes*/
+    /*FIXME return checks */
     ret = slicedec_init_lines(sldec, &dec->active_params);
 
     ret = decinit_set_entry_points(&dec->active_params, nalu, nb_sh_bytes);
+
+    ret = slicedec_init_slice_tools(sldec->ctudec_list[0], &dec->active_params);
 
     return 0;
 }

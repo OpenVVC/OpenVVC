@@ -115,7 +115,7 @@ typedef struct OVSliceDec
 
 } OVSliceDec;
 
-int slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms);
+int slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms);
 
 int slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms);
 
