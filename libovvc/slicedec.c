@@ -890,7 +890,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     int ret;
 
     /* FIXME handle more than one ctu dec */
-    OVCTUDec *const ctudec = sldec->ctudec_list[0];
+    OVCTUDec *const ctudec = sldec->ctudec_list[7];
     /*FIXME handle cabac alloc or keep it on the stack ? */
 
     OVCABACCtx cabac_ctx;
@@ -986,7 +986,7 @@ static uint8_t ict_type(const OVPH *const ph)
 }
 
 /* FIXME clean this init */
-int
+static int
 slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 {
 
@@ -1053,6 +1053,21 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     rcn_init_dc_planar_functions_sse(&ctudec->rcn_ctx.rcn_funcs);
     rcn_init_ict_functions_sse(&ctudec->rcn_ctx.rcn_funcs, ict_type(ph));
 
+
+    return 0;
+}
+
+/*FIXME check init return */
+int
+slicedec_update_entry_decoders(OVSliceDec *sldec, const OVPS *const prms)
+{
+    int i;
+    int nb_ctudec = sldec->nb_sbdec;
+
+    for (i = 0; i < nb_ctudec; ++i) {
+        OVCTUDec *ctudec = sldec->ctudec_list[i];
+        slicedec_init_slice_tools(ctudec, prms);
+    }
 
     return 0;
 }

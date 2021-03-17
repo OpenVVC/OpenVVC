@@ -145,7 +145,7 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
 
     ret = decinit_set_entry_points(&dec->active_params, nalu, nb_sh_bytes);
 
-    ret = slicedec_init_slice_tools(sldec->ctudec_list[0], &dec->active_params);
+    ret = slicedec_update_entry_decoders(sldec, &dec->active_params);
 
     return 0;
 }
