@@ -108,7 +108,7 @@ typedef struct OVSliceDec
    /* Reference to current pic being decoded */
    OVPicture *pic;
 
-   OVCTUDec *ctudec_list; 
+   OVCTUDec **ctudec_list; 
    int nb_sbdec;
 
    struct SliceThreads th_info;

@@ -331,7 +331,7 @@ cabac_lines_uninit(OVSliceDec *sldec)
 int
 init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
 {
-     const OVPartInfo *const pinfo = sldec->ctudec_list->part_ctx;
+     const OVPartInfo *const pinfo = sldec->ctudec_list[0]->part_ctx;
      const OVSPS *const sps = prms->sps;
      const struct TileInfo *const tinfo = &prms->pps_info.tile_info;
 
@@ -370,7 +370,7 @@ init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
 void
 clear_cabac_lines(const OVSliceDec *sldec, const OVPS *const prms)
 {
-     const OVPartInfo *pinfo = sldec->ctudec_list->part_ctx;
+     const OVPartInfo *pinfo = sldec->ctudec_list[0]->part_ctx;
      const struct TileInfo *const tinfo = &prms->pps_info.tile_info;
      const OVSPS *const sps = prms->sps;
 
@@ -886,7 +886,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     int ret;
 
     /* FIXME handle more than one ctu dec */
-    OVCTUDec *const ctudec = sldec->ctudec_list;
+    OVCTUDec *const ctudec = sldec->ctudec_list[0];
     /*FIXME handle cabac alloc or keep it on the stack ? */
 
     OVCABACCtx cabac_ctx;
@@ -985,7 +985,7 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
 {
 
     /* FIXME separate allocation outside of the scope of this function */
-    OVCTUDec *const ctudec = sldec->ctudec_list;
+    OVCTUDec *const ctudec = sldec->ctudec_list[0];
     const OVSPS *const sps = prms->sps;
     const OVPPS *const pps = prms->pps;
     const OVSH *const sh = prms->sh;
@@ -1081,6 +1081,53 @@ slicedec_init_lines(OVSliceDec *const sldec, const OVPS *const prms)
     return 0;
 }
 
+static void
+uninit_ctudec_list(OVSliceDec *const sldec, int nb_threads)
+{
+     int nb_ctudec = nb_threads;
+     int i;
+
+     for (i = 0; i < nb_ctudec; ++i) {
+         OVCTUDec *ctudec = sldec->ctudec_list[i];
+         ctudec_uninit(ctudec);
+     }
+
+     ov_freep(&sldec->ctudec_list);
+     #if 0
+     ctudec_uninit(sldec->ctudec_list);
+     #endif
+}
+
+static int
+init_ctudec_list(OVSliceDec *const sldec, int nb_threads)
+{
+     int nb_ctudec = nb_threads;
+     int i;
+
+     sldec->ctudec_list = ov_mallocz(sizeof(*sldec->ctudec_list) * nb_ctudec);
+     if (!sldec->ctudec_list) {
+         return OVVC_ENOMEM;
+     }
+
+     for (i = 0; i < nb_ctudec; ++i) {
+         int ret;
+         OVCTUDec **ctudec_p = &sldec->ctudec_list[i];
+         ret = ctudec_init(ctudec_p);
+         if (ret < 0) {
+             goto failctudec;
+         }
+     }
+
+     #if 0
+     ctudec_uninit(sldec->ctudec_list);
+     #endif
+     return 0;
+failctudec:
+     uninit_ctudec_list(sldec, nb_ctudec);
+
+     return OVVC_ENOMEM;
+}
+
 int
 slicedec_init(OVSliceDec **dec_p, int nb_entry_th)
 {
@@ -1095,7 +1142,7 @@ slicedec_init(OVSliceDec **dec_p, int nb_entry_th)
 
     sldec->nb_sbdec = nb_entry_th;
 
-    ret = ctudec_init(&sldec->ctudec_list);
+    ret = init_ctudec_list(sldec, nb_entry_th);
     if (ret < 0) {
         goto failctudec;
     }
@@ -1108,27 +1155,14 @@ slicedec_init(OVSliceDec **dec_p, int nb_entry_th)
     return 0;
 
 failthreads:
-    ctudec_uninit(&sldec->ctudec_list);
+     uninit_ctudec_list(sldec, nb_entry_th);
 failctudec:
     ov_freep(dec_p);
     return OVVC_ENOMEM;
 
 }
 
-static void
-uninit_ctudec_list(OVSliceDec *const sldec, int nb_threads)
-{
-     #if 0
-     int nb_ctudec = sldec->nb_ctudec;
-     int i;
-     for (i = 0; i < nb_ctudec; ++i) {
-         OVCTUDec *ctudec = &sldec->ctudec_list[i];
-         ctudec_uninit(ctudec);
-     }
-     #endif
-     ctudec_uninit(sldec->ctudec_list);
-}
-
+/*FIXME check is alloc in case of init failure*/
 void
 slicedec_uninit(OVSliceDec **sldec_p)
 {

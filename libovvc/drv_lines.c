@@ -652,7 +652,7 @@ int
 init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
 {
      int ret;
-     const OVPartInfo *const pinfo = sldec->ctudec_list->part_ctx;
+     const OVPartInfo *const pinfo = sldec->ctudec_list[0]->part_ctx;
      const OVSPS *const sps = prms->sps;
      const struct TileInfo *tinfo = &prms->pps_info.tile_info;
 
@@ -696,7 +696,7 @@ init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
 void
 reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
 {
-    const OVPartInfo *pinfo = sldec->ctudec_list->part_ctx;
+    const OVPartInfo *pinfo = sldec->ctudec_list[0]->part_ctx;
     const OVSPS *const sps = prms->sps;
      const struct TileInfo *tinfo = &prms->pps_info.tile_info;
 

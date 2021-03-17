@@ -31,6 +31,7 @@ t_function(void *opaque)
 
     pthread_mutex_lock(&tdec->task_mtx);
     pthread_cond_signal(&tdec->task_cnd);
+
     tdec->state = 1;
 
     while (!tdec->end){
@@ -130,4 +131,5 @@ uninit_entry_threads(struct SliceThreads *th_info)
 
     pthread_mutex_destroy(&th_info->gnrl_mtx);
     pthread_cond_destroy(&th_info->gnrl_cnd);
+    ov_freep(&th_info->tdec);
 }
