@@ -331,7 +331,7 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
     uint64_t lft_col = mv_ctx->map.vfield[pb_x];
     uint64_t abv_row = mv_ctx->map.hfield[pb_y];
 
-    OVMV cand[2];
+    OVMV cand[2] = {0};
     int nb_cand = 0;
 
     /* Derive candidates availability based on CTU inter fields */
