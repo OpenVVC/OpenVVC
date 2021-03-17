@@ -601,8 +601,6 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, struct OVRPL *const rpl
                    struct OVRPL *const rpl1, OVSliceDec *const sldec)
 {
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
-    /*FIXME do not use ctudec */
-    OVCTUDec *ctudec = sldec->ctudec_list[0];
     uint32_t poc = dpb->poc;
     int i, ret;
     OVPicture *current_pic;
@@ -622,18 +620,12 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, struct OVRPL *const rpl
     }
 
     ret = vvc_mark_refs(dpb, rpl0, poc, &current_pic->rpl_info0, current_pic->rpl0);
-    /*FIXME quick hack to copy rpl */
-    memcpy(ctudec->drv_ctx.inter_ctx.rpl0, current_pic->rpl0, sizeof(*current_pic->rpl0));
-
-
     if (ret < 0) {
         goto fail;
     }
 
     if (slice_type == SLICE_B){
         ret = vvc_mark_refs(dpb, rpl1, poc, &current_pic->rpl_info1, current_pic->rpl1);
-    /*FIXME quick hack to copy rpl */
-        memcpy(ctudec->drv_ctx.inter_ctx.rpl1, current_pic->rpl1, sizeof(*current_pic->rpl1));
         if (ret < 0) {
             goto fail;
         }
