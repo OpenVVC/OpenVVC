@@ -1063,13 +1063,12 @@ slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms)
     rcn_init_ict_functions_sse(&ctudec->rcn_ctx.rcn_funcs, ict_type(ph));
 
 
-    /* Note it is important here that part info has already been set before calling
-     * this function since it will be used to set line sizes*/
+    return 0;
+}
 
-    /* FIXME
-     * move this somewhere else so we can handle lines at a higher level
-     *     safer is allocated check
-     */
+int
+slicedec_init_lines(OVSliceDec *const sldec, const OVPS *const prms)
+{
     if (!sldec->cabac_lines[0].qt_depth_map_x) {
         int ret;
         ret = init_cabac_lines(sldec, prms);

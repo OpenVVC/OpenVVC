@@ -103,6 +103,7 @@ int slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms);
 #if 0
 int slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms);
 #endif
+int slicedec_init_lines(OVSliceDec *const sldec, const OVPS *const ps);
 
 int slicedec_init(OVSliceDec **dec, int nb_ctudec);
 void slicedec_uninit(OVSliceDec **sldec_p);

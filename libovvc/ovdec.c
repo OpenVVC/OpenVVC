@@ -133,20 +133,18 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
 #else
     if (1) {
 #endif
-        #if 0
-        ret = ovdpb_init_current_pic(dec->dpb, &sldec->pic, 0);
-        #else
         ret = ovdpb_init_picture(dec->dpb, &sldec->pic, &dec->active_params, nalu->type, sldec, dec);
-        #endif
         if (ret < 0) {
             ovdpb_flush_dpb(dec->dpb);
             return ret;
         }
     }
 
-
     ret = slicedec_init_slice_tools(sldec, &dec->active_params);
-    /* TODO on failure */
+
+    /* Note it is important here that part info has already been set before calling
+     * this function since it will be used to set line sizes*/
+    ret = slicedec_init_lines(sldec, &dec->active_params);
 
     ret = decinit_set_entry_points(&dec->active_params, nalu, nb_sh_bytes);
 
