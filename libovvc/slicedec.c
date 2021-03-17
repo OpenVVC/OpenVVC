@@ -461,15 +461,6 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
     int tile_x = entry_idx % tile_info->nb_tile_cols;
     int tile_y = entry_idx / tile_info->nb_tile_cols;
 
-    #if 0
-    int tile_offset = 0;
-    int i = 1;
-
-    while (i <= entry_idx) {
-        tile_offset += pps_info->tile_info->nb_ctu_w[(i - 1) % num_tiles_cols] + 1;
-        i++;
-    }
-    #endif
     einfo->tile_x = tile_x;
     einfo->tile_y = tile_y;
 
@@ -1094,7 +1085,7 @@ slicedec_init_lines(OVSliceDec *const sldec, const OVPS *const prms)
 }
 
 int
-slicedec_init(OVSliceDec **dec_p, int nb_ctudec)
+slicedec_init(OVSliceDec **dec_p, int nb_entry_th)
 {
     OVSliceDec *sldec;
     int ret;
@@ -1105,15 +1096,22 @@ slicedec_init(OVSliceDec **dec_p, int nb_ctudec)
 
     *dec_p = sldec;
 
-    sldec->nb_sbdec = nb_ctudec;
+    sldec->nb_sbdec = nb_entry_th;
 
     ret = ctudec_init(&sldec->ctudec_list);
     if (ret < 0) {
         goto failctudec;
     }
 
+    ret = init_entry_threads(&sldec->th_info, nb_entry_th);
+    if (ret < 0) {
+        goto failthreads;
+    }
+
     return 0;
 
+failthreads:
+    ctudec_uninit(&sldec->ctudec_list);
 failctudec:
     ov_freep(dec_p);
     return OVVC_ENOMEM;
@@ -1121,7 +1119,7 @@ failctudec:
 }
 
 static void
-uninit_ctudec_list(OVSliceDec *const sldec)
+uninit_ctudec_list(OVSliceDec *const sldec, int nb_threads)
 {
      #if 0
      int nb_ctudec = sldec->nb_ctudec;
@@ -1139,8 +1137,10 @@ slicedec_uninit(OVSliceDec **sldec_p)
 {
     OVSliceDec *sldec = *sldec_p;
 
+    uninit_entry_threads(&sldec->th_info);
+
     if (sldec->ctudec_list) {
-        uninit_ctudec_list(sldec);
+        uninit_ctudec_list(sldec, sldec->nb_sbdec);
     }
 
     /*FIXME is init test */

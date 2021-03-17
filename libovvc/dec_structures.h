@@ -1,36 +1,10 @@
 #ifndef DEC_STRUCTURES_H
 #define DEC_STRUCTURES_H
 
-#include <pthread.h>
-
 #include "ovdefs.h"
 #include "nvcl.h"
 
 struct MVPool;
-
-struct TileThread
-{
-    pthread_t thread;
-    pthread_mutex_t task_mtx;
-    pthread_cond_t  task_cnd;
-    void (*decode_entry_tile)(struct TileThread *);
-    int idx;
-    int state;
-    int end;
-};
-
-struct ThreadInfo
-{
-    struct TileThread *tdec;
-
-    int nb_threads;
-
-    /* Main decoder thread to be used later
-     */
-    pthread_t thread;
-    pthread_mutex_t gnrl_mtx;
-    pthread_cond_t gnrl_cnd;
-};
 
 struct OVPartInfo
 {
@@ -258,7 +232,8 @@ struct OVVCDec
      */
     OVSliceDec *subdec_list;
 
-    struct ThreadInfo th_info;
+    /* Number of available threads */
+    int nb_threads;
 
     /* Informations on decoder behaviour transmitted by user
      */

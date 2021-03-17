@@ -1,9 +1,25 @@
 #ifndef SLICEDEC_H
 #define SLICEDEC_H
+#include <pthread.h>
 
 #include "ovdefs.h"
 #include "ctudec.h"
 
+struct EntryThread;
+
+struct SliceThreads
+{
+    struct EntryThread *tdec;
+
+    int nb_threads;
+
+    /* Slice decoder thread to be used later if
+     * multiple slices
+     */
+    pthread_t thread;
+    pthread_mutex_t gnrl_mtx;
+    pthread_cond_t gnrl_cnd;
+};
 
 struct CCLines
 {
@@ -94,6 +110,9 @@ typedef struct OVSliceDec
 
    OVCTUDec *ctudec_list; 
    int nb_sbdec;
+
+   struct SliceThreads th_info;
+
 } OVSliceDec;
 
 int slicedec_init_slice_tools(OVSliceDec *const sldec, const OVPS *const prms);

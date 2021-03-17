@@ -73,8 +73,8 @@ init_subdec_list(OVVCDec *dec)
          *    -select sub dec types according to active params sets
          *    -if parameters changed we might want to change sb_dec
          */
-         int nb_ctudec = dec->th_info.nb_threads;
-        ret = slicedec_init(&dec->subdec_list, nb_ctudec);
+         int nb_entry_th = dec->nb_threads;
+        ret = slicedec_init(&dec->subdec_list, nb_entry_th);
         if (ret < 0) {
             return OVVC_ENOMEM;
         }
@@ -475,8 +475,8 @@ ovdec_init(OVVCDec **vvcdec)
 
     (*vvcdec)->name = decname;
 
+    (*vvcdec)->nb_threads = nb_threads;
 
-    init_tiles_threads(&(*vvcdec)->th_info, nb_threads);
     return 0;
 
 fail:
@@ -503,8 +503,6 @@ ovdec_close(OVVCDec *vvcdec)
         if (vvcdec->mv_pool) {
             mvpool_uninit(&vvcdec->mv_pool);
         }
-
-        uninit_tiles_threads(&vvcdec->th_info);
 
         ov_free(vvcdec);
 
