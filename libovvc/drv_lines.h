@@ -17,7 +17,7 @@ void drv_lines_uninit(OVSliceDec *sldec);
 
 void store_inter_maps(const struct DRVLines *const l,
                       OVCTUDec *const ctudec,
-                      unsigned int ctb_x);
+                      unsigned int ctb_x, uint8_t is_last);
 
 void dbf_load_info(struct DBFInfo *const dbf_info,
                    const struct DBFLines *const dbf_lines,

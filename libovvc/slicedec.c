@@ -42,8 +42,8 @@ struct RectEntryInfo {
 };
 
 static int
-slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
-                           const struct RectEntryInfo *const einfo);
+slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms,
+                           uint16_t entry_idx);
 
 static void derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
                                int cu_qp_delta);
@@ -493,14 +493,18 @@ slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
     /* FIXME do not recompute everywhere */
     int nb_entries = prms->pps_info.tile_info.nb_tile_cols *
                      prms->pps_info.tile_info.nb_tile_rows;
+
     int ret = 0;
+    sldec->active_params = prms;
+    #if 0
     int i;
     for (i = 0; i < nb_entries; ++i) {
-        struct RectEntryInfo entry;
-        slicedec_init_rect_entry(&entry, prms, i);
-        ret = slicedec_decode_rect_entry(sldec, prms, &entry);
+        ret = slicedec_decode_rect_entry(sldec, prms, i);
     }
     ret = 0;
+    #else
+    thread_decode_entries(&sldec->th_info, slicedec_decode_rect_entry, NULL, NULL, nb_entries);
+    #endif
     return ret;
 }
 
@@ -658,7 +662,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         rcn_update_ctu_border(&ctudec->rcn_ctx, log2_ctb_s);
 
         if (slice_type != SLICE_I) {
-            store_inter_maps(drv_lines, ctudec, ctb_x);
+            store_inter_maps(drv_lines, ctudec, ctb_x, 0);
         }
 
         if (!ctudec->dbf_disable) {
@@ -712,7 +716,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     /* FIXME if inter only */
     if (slice_type != SLICE_I) {
-        store_inter_maps(drv_lines, ctudec, ctb_x);
+        store_inter_maps(drv_lines, ctudec, ctb_x, 1);
     }
 
     /* Next line will use the qp of the first pu as a start value
@@ -759,7 +763,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         cabac_line_next_ctu(ctudec, nb_pb_ctb);
 
         if (slice_type != SLICE_I) {
-            store_inter_maps(drv_lines, ctudec, ctb_x);
+            store_inter_maps(drv_lines, ctudec, ctb_x, 0);
         }
 
         rcn_update_ctu_border(&ctudec->rcn_ctx, log2_ctb_s);
@@ -784,7 +788,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
                                einfo->last_ctu_w, ctu_h);
 
     if (slice_type != SLICE_I) {
-        store_inter_maps(drv_lines, ctudec, ctb_x);
+        store_inter_maps(drv_lines, ctudec, ctb_x, 1);
     }
 
     ret = 0;
@@ -828,29 +832,28 @@ fbuff_new_line(struct OVBuffInfo *fbuff, uint8_t log2_ctb_s)
 }
 
 static void
-tmvp_entry_init(OVCTUDec *ctudec, OVSliceDec *sldec)
+tmvp_entry_init(OVCTUDec *ctudec, OVPicture *active_pic)
 {
     /* FIXME try to remove ctu decoder reference from inter context */
     struct VVCTMVP *tmvp_ctx = &ctudec->drv_ctx.inter_ctx.tmvp_ctx;
 
-    const OVPicture *active_pic     = sldec->pic;
     const OVPicture *collocated_ref = active_pic->tmvp.collocated_ref;
 
     ctudec->rcn_ctx.ctudec = ctudec;
+    tmvp_ctx->ctudec = ctudec;
 
     tmvp_ctx->plane0 = &active_pic->mv_plane0;
     tmvp_ctx->plane1 = &active_pic->mv_plane1;
 
+    /* FIXME rewrite TMVP motion scaling */
+    tmvp_ctx->scale00 = active_pic->tmvp.scale00;
+    tmvp_ctx->scale10 = active_pic->tmvp.scale10;
+    tmvp_ctx->scale01 = active_pic->tmvp.scale01;
+    tmvp_ctx->scale11 = active_pic->tmvp.scale11;
+
     tmvp_ctx->col_plane0 = &collocated_ref->mv_plane0;
     tmvp_ctx->col_plane1 = &collocated_ref->mv_plane1;
 
-    tmvp_ctx->ctudec = ctudec;
-
-    /* FIXME rewrite TMVP motion scaling */
-    tmvp_ctx->scale00 = sldec->pic->tmvp.scale00;
-    tmvp_ctx->scale10 = sldec->pic->tmvp.scale10;
-    tmvp_ctx->scale01 = sldec->pic->tmvp.scale01;
-    tmvp_ctx->scale11 = sldec->pic->tmvp.scale11;
 
     memset(tmvp_ctx->dir_map_v0, 0, 33 * sizeof(uint64_t));
     memset(tmvp_ctx->dir_map_v1, 0, 33 * sizeof(uint64_t));
@@ -882,24 +885,25 @@ init_lines(OVCTUDec *ctudec, const OVSliceDec *sldec, const struct RectEntryInfo
 }
 
 static int
-slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
-                           const struct RectEntryInfo *const einfo)
+slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms,
+                           uint16_t entry_idx)
 {
     int ctb_addr_rs = 0;
     int ctb_y = 0;
     int ret;
 
-    /* FIXME handle more than one ctu dec */
-    OVCTUDec *const ctudec = sldec->ctudec_list[7];
+    struct RectEntryInfo einfo;
+
     /*FIXME handle cabac alloc or keep it on the stack ? */
 
     OVCABACCtx cabac_ctx;
+    slicedec_init_rect_entry(&einfo, prms, entry_idx);
 
     struct DRVLines drv_lines;
     struct CCLines cc_lines[2] = {sldec->cabac_lines[0], sldec->cabac_lines[1]};
 
-    const int nb_ctu_w = einfo->nb_ctu_w;
-    const int nb_ctu_h = einfo->nb_ctu_h;
+    const int nb_ctu_w = einfo.nb_ctu_w;
+    const int nb_ctu_h = einfo.nb_ctu_h;
 
     struct OVBuffInfo tmp_fbuff;
     ctudec->cabac_ctx = &cabac_ctx;
@@ -909,9 +913,9 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     derive_dequant_ctx(ctudec, &ctudec->qp_ctx, 0);
 
     /*FIXME quick tmvp import */
-    ctudec->nb_ctb_pic_w = einfo->nb_ctb_pic_w;
+    ctudec->nb_ctb_pic_w = einfo.nb_ctb_pic_w;
 
-    tmvp_entry_init(ctudec, sldec);
+    tmvp_entry_init(ctudec, sldec->pic);
 
     /* FIXME tmp Reset DBF */
     memset(&ctudec->dbf_info.edge_map_ver, 0, sizeof(ctudec->dbf_info.edge_map_ver));
@@ -922,7 +926,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     /* FIXME entry might be check before attaching entry to CABAC so there
      * is no need for this check
      */
-    ret = ovcabac_attach_entry(ctudec->cabac_ctx, einfo->entry_start, einfo->entry_end);
+    ret = ovcabac_attach_entry(ctudec->cabac_ctx, einfo.entry_start, einfo.entry_end);
     if (ret < 0) {
         return OVVC_EINDATA;
     }
@@ -934,20 +938,20 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
     ovcabac_init_slice_context_table(cabac_ctx.ctx_table, prms->sh->sh_slice_type,
                                      ctudec->slice_qp);
 
-    init_lines(ctudec, sldec, einfo, prms, ctudec->part_ctx,
+    init_lines(ctudec, sldec, &einfo, prms, ctudec->part_ctx,
                &drv_lines, cc_lines);
 
-    slicedec_attach_frame_buff(ctudec, sldec, einfo);
+    slicedec_attach_frame_buff(ctudec, sldec, &einfo);
 
     tmp_fbuff = ctudec->rcn_ctx.frame_buff;
 
     while (ctb_y < nb_ctu_h - 1) {
         uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
 
-        ctudec->ctb_y = einfo->ctb_y + ctb_y;
+        ctudec->ctb_y = einfo.ctb_y + ctb_y;
 
         /* New ctu line */
-        ret = decode_ctu_line(ctudec, sldec, &drv_lines, einfo, ctb_addr_rs);
+        ret = decode_ctu_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
 
         cabac_line_next_line(ctudec, cc_lines);
 
@@ -966,12 +970,12 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms,
         ctb_y++;
     }
 
-    ctudec->ctb_y = einfo->ctb_y + ctb_y;
+    ctudec->ctb_y = einfo.ctb_y + ctb_y;
     /* Last line */
-    if (!einfo->implicit_h) {
-        ret = decode_ctu_line(ctudec, sldec, &drv_lines, einfo, ctb_addr_rs);
+    if (!einfo.implicit_h) {
+        ret = decode_ctu_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
     } else {
-        ret = decode_ctu_last_line(ctudec, sldec, &drv_lines, einfo, ctb_addr_rs);
+        ret = decode_ctu_last_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
     }
 
     /*FIXME decide return value */
@@ -1013,9 +1017,13 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     ctudec->delta_qp_enabled = pps->pps_cu_qp_delta_enabled_flag;
 
+    #if 1
     ctudec->dbf_disable = sh->sh_deblocking_filter_disabled_flag |
                           ph->ph_deblocking_filter_disabled_flag |
                           pps->pps_deblocking_filter_disabled_flag;
+                          #else
+                          ctudec->dbf_disable = 1;
+#endif
 
     ctudec->lm_chroma_enabled = sps->sps_cclm_enabled_flag;
 
@@ -1173,6 +1181,8 @@ slicedec_init(OVSliceDec **dec_p, int nb_entry_th)
     if (ret < 0) {
         goto failthreads;
     }
+
+    sldec->th_info.owner = sldec;
 
     return 0;
 

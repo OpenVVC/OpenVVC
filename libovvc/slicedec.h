@@ -1,17 +1,34 @@
 #ifndef SLICEDEC_H
 #define SLICEDEC_H
 #include <pthread.h>
+#include <stdatomic.h>
 
 #include "ovdefs.h"
 #include "ctudec.h"
 
 struct EntryThread;
 
+typedef int (*DecodeFunc)(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms, uint16_t entry_idx);
+
 struct SliceThreads
 {
+    OVSliceDec *owner;
     struct EntryThread *tdec;
 
     int nb_threads;
+    int gnrl_state;
+
+    /* Information on current task */
+    int nb_task_threads;
+    int nb_entries;
+
+    DecodeFunc decode_entry;
+    /* Pointers to functions arguments and returns */
+    void *args;
+    void *rets;
+
+    atomic_uint first_job;
+    atomic_uint last_entry_idx;
 
     /* Slice decoder thread to be used later if
      * multiple slices
@@ -97,6 +114,8 @@ struct DRVLines
 typedef struct OVSliceDec
 {
    uint8_t slice_type;
+
+   const OVPS *active_params;
    /* Lins for CABAC context derivation luma and chroma */
    struct CCLines cabac_lines[2];
 
