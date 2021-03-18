@@ -37,6 +37,7 @@ void
 nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data, uint8_t aps_chroma_present_flag)
 {
     alf_data->alf_luma_filter_signal_flag = nvcl_read_flag(rdr);
+    uint8_t sign = 0;
 
     if (aps_chroma_present_flag) {
         alf_data->alf_chroma_filter_signal_flag = nvcl_read_flag(rdr);
@@ -57,9 +58,10 @@ nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data, uint8_t 
 
         for (int sfIdx = 0; sfIdx <= alf_data->alf_luma_num_filters_signalled_minus1; sfIdx++) {
             for (int j = 0; j < 12; j++) {
-                alf_data->alf_luma_coeff_abs[sfIdx][j] = nvcl_read_u_expgolomb(rdr);
-                if (alf_data->alf_luma_coeff_abs[sfIdx][j]) {
-                    alf_data->alf_luma_coeff_sign[sfIdx][j] = nvcl_read_bits(rdr, 1);
+                alf_data->alf_luma_coeff[sfIdx][j] = nvcl_read_u_expgolomb(rdr);
+                if (alf_data->alf_luma_coeff[sfIdx][j]) {
+                    sign = nvcl_read_bits(rdr, 1);
+                    if (sign) alf_data->alf_luma_coeff[sfIdx][j] *= -1;
                 }
             }
         }
@@ -78,9 +80,10 @@ nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data, uint8_t 
         alf_data->alf_chroma_num_alt_filters_minus1 = nvcl_read_u_expgolomb(rdr);
         for (int altIdx = 0; altIdx <= alf_data->alf_chroma_num_alt_filters_minus1; altIdx++) {
             for (int j = 0; j < 6; j++) {
-                alf_data->alf_chroma_coeff_abs[altIdx][j] = nvcl_read_u_expgolomb(rdr);
-                if (alf_data->alf_chroma_coeff_abs[altIdx][j] > 0) {
-                    alf_data->alf_chroma_coeff_sign[altIdx][j] = nvcl_read_bits(rdr, 1);
+                alf_data->alf_chroma_coeff[altIdx][j] =  nvcl_read_u_expgolomb(rdr);
+                if (alf_data->alf_chroma_coeff[altIdx][j] > 0) {
+                    sign = nvcl_read_bits(rdr, 1);
+                    if (sign) alf_data->alf_chroma_coeff[altIdx][j] *= -1;
                 }
             }
 
@@ -96,9 +99,10 @@ nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data, uint8_t 
         alf_data->alf_cc_cb_filters_signalled_minus1 = nvcl_read_u_expgolomb(rdr);
         for (int k = 0; k < alf_data->alf_cc_cb_filters_signalled_minus1 + 1; k++) {
             for (int j = 0; j < 7; j++) {
-                alf_data->alf_cc_cb_mapped_coeff_abs[k][j] = nvcl_read_bits(rdr, 3);
-                if (alf_data->alf_cc_cb_mapped_coeff_abs[k][j]) {
-                    alf_data->alf_cc_cb_coeff_sign[k][j] = nvcl_read_bits(rdr, 1);
+                alf_data->alf_cc_cb_mapped_coeff[k][j] = nvcl_read_bits(rdr, 3);
+                if (alf_data->alf_cc_cb_mapped_coeff[k][j]) {
+                    sign = nvcl_read_bits(rdr, 1);
+                    if (sign) alf_data->alf_cc_cb_mapped_coeff[k][j] *= -1;
                 }
             }
         }
@@ -108,9 +112,10 @@ nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data, uint8_t 
         alf_data->alf_cc_cr_filters_signalled_minus1 = nvcl_read_u_expgolomb(rdr);
         for (int k = 0; k < alf_data->alf_cc_cr_filters_signalled_minus1 + 1; k++) {
             for (int j = 0; j < 7; j++) {
-                alf_data->alf_cc_cr_mapped_coeff_abs[k][j] = nvcl_read_bits(rdr, 3);
-                if (alf_data->alf_cc_cr_mapped_coeff_abs[k][j]) {
-                    alf_data->alf_cc_cr_coeff_sign[k][j] = nvcl_read_bits(rdr, 1);
+                alf_data->alf_cc_cr_mapped_coeff[k][j] = nvcl_read_bits(rdr, 3);
+                if (alf_data->alf_cc_cr_mapped_coeff[k][j]) {
+                    sign = nvcl_read_bits(rdr, 1);
+                    if (sign) alf_data->alf_cc_cr_mapped_coeff[k][j] *= -1;
                 }
             }
         }

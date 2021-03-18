@@ -122,7 +122,6 @@ void rcn_sao_ctu(OVCTUDec *const ctudec, int ctb_x_pic, int ctb_y_pic, int nb_ct
         // uint8_t *out_pic = frame_buff.y;
         // if (c_idx != 0) 
         //     c_idx==1 ? out_pic = frame_buff.cb : frame_buff.cr;
-
         out_pic = &out_pic[ y0 * stride_out_pic + (x0<<int16_t_shift)];
  
         int margin = fb.margin;
@@ -175,6 +174,9 @@ void rcn_sao_ctu(OVCTUDec *const ctudec, int ctb_x_pic, int ctb_y_pic, int nb_ct
 
 void rcn_sao_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pic) 
 {  
+    if (!ctudec->sao_info.sao_luma_flag && !!ctudec->sao_info.sao_chroma_flag){
+        return;
+    }
     const OVPartInfo *const pinfo = ctudec->part_ctx;
     uint8_t log2_ctb_size = pinfo->log2_ctu_s;
     int ctu_width  = 1 << log2_ctb_size;

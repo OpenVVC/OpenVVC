@@ -2,8 +2,8 @@
 #include "ctudec.h"
 #include "dec_structures.h"
 #include "nvcl_structures.h"
-#include "nvcl_utils.h"
 #include "nvcl.h"
+#include "rcn_alf.h"
 
 
 static uint8_t

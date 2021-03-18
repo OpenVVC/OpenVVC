@@ -1025,14 +1025,23 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         ret = decode_ctu_last_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
     }
 
-    //TODO: do not apply in loop filters on the frame
+    //TODO: do not apply in loop filters on the frame (same ALF)
     ctudec_extend_filter_region(ctudec);
-    if (ctudec->sao_info.sao_luma_flag || ctudec->sao_info.sao_chroma_flag){
-        ctb_y = 0;
-        while (ctb_y < nb_ctu_h ) {
-            rcn_sao_filter_line(ctudec, einfo->nb_ctb_pic_w, ctb_y);
-            ctb_y++;
-        }
+    ctb_y = 0;
+    while (ctb_y < nb_ctu_h ) {
+        rcn_sao_filter_line(ctudec, einfo->nb_ctb_pic_w, ctb_y);
+        ctb_y++;
+    }
+    //TODO: create in CTUdec and init init_in_loop_filters (slicedec)
+    // RcnALF rcn_alf;
+    // alf_create(ctudec, &rcn_alf);
+
+    //TODO: last ctu row for ALF 
+    ctudec_extend_filter_region(ctudec);
+    ctb_y = 0;
+    while (ctb_y < nb_ctu_h-1) {
+        rcn_alf_filter_line(ctudec, einfo->nb_ctb_pic_w, ctb_y);
+        ctb_y++;
     }
 
     /*FIXME decide return value */
