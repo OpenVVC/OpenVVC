@@ -1010,11 +1010,12 @@ intra_hneg_cubic_mref(uint16_t* const ref_above, uint16_t* const ref_left,
 
         int delta_pos = angle_val * (multi_ref_idx + 1);
 
+        int inv_angle_sum = 256; // rounding for (shift by 8)
+
         refMain = ref_left + width - multi_ref_idx;
         refSide = ref_above + height - multi_ref_idx;
 
         // Extend the Main reference to the left.
-        int inv_angle_sum = 256; // rounding for (shift by 8)
         for (int k = -1; k >= -width; k--) {
                 inv_angle_sum += inv_angle;
                 refMain[k] = refSide[OVMIN((inv_angle_sum >> 9), width)];
@@ -1079,11 +1080,11 @@ intra_vneg_cubic_mref(uint16_t* const ref_above, uint16_t* const ref_left,
         int inv_angle = inverse_angle_table[mode_idx];
         int width = 1 << log2_pb_width;
         int height = 1 << log2_pb_height;
+        int inv_angle_sum = 256; // rounding for (shift by 8)
         refMain = ref_above + height - multi_ref_idx;
         refSide = ref_left + width - multi_ref_idx;
 
         // Extend the Main reference to the left.
-        int inv_angle_sum = 256; // rounding for (shift by 8)
         for (int k = -1; k >= -height; k--) {
                 inv_angle_sum += inv_angle;
                 refMain[k] = refSide[OVMIN(inv_angle_sum >> 9, height)];

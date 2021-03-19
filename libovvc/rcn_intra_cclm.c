@@ -1941,7 +1941,6 @@ derive_cclm_params(const struct AVGMinMax *const avgs)
     int range_l = avgs->max_l - avgs->min_l;
 
     if (range_l) {
-        const uint16_t avg_max;
         static const uint8_t div_lut[1 << 4] = {
             0,  7,  6,  5,  5,  4,  4,  3,  3,  2,  2,  1,  1,  1,  1,  0
         };
@@ -2524,7 +2523,6 @@ vvc_intra_mdlm_l2_collocated(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t 
 
         int nb_sample_lft = OVMIN(avail_ref_length_lft, 4);
         int lft_step = OVMAX(1, (avail_ref_length_lft >> 2));
-        uint8_t ctu_first_line = !y0;
 
         /* in case of lft only ref_length might be 2 while nb_sample_lft is 4
            We are forced to reduce nb_smp in this particular case*/

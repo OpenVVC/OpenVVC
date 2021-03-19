@@ -67,42 +67,44 @@ vvc_intra_planar(const uint16_t* const src_above,
                  ptrdiff_t dst_stride, int log2_pb_width, int log2_pb_height)
 {
 
-        uint16_t* _dst = dst; // TODO template according to bitdepth;
-        const uint32_t width = 1 << log2_pb_width;
-        const uint32_t height = 1 << log2_pb_height;
-        const uint32_t shift = 1 + log2_pb_width + log2_pb_height;
-        const uint32_t offset = 1 << (log2_pb_width + log2_pb_height);
-        int value;
+    uint16_t* _dst = dst; // TODO template according to bitdepth;
+    const uint32_t width = 1 << log2_pb_width;
+    const uint32_t height = 1 << log2_pb_height;
+    const uint32_t shift = 1 + log2_pb_width + log2_pb_height;
+    const uint32_t offset = 1 << (log2_pb_width + log2_pb_height);
+    int value;
 
-        int top_row[128], bottom_row[128];
-        for (int j = 0; j < width + 1; j++) {
-                bottom_row[j] = src_left[height + 1];
+    int top_row[128], bottom_row[128];
+    int top_right = src_above[width + 1];
+
+    for (int j = 0; j < width + 1; j++) {
+        bottom_row[j] = src_left[height + 1];
+    }
+
+    for (int k = 0; k < width; k++) {
+        value = src_above[k + 1];
+        bottom_row[k] -= value; // bottom_left - val
+        top_row[k] = value << log2_pb_height;
+    }
+
+    for (int y = 0; y < height; y++) {
+        int value = (int)src_left[y + 1]; // left_value y
+        int hor_pred = value << log2_pb_width;
+        int right_pred = top_right - value;
+
+        for (int x = 0; x < width; x++) {
+            int vertPred;
+            hor_pred += right_pred;
+            top_row[x] += bottom_row[x];
+
+            vertPred = top_row[x];
+
+            _dst[x] = ((hor_pred << log2_pb_height) +
+                       (vertPred << log2_pb_width) + offset) >>
+                shift;
         }
-
-        int top_right = src_above[width + 1];
-
-        for (int k = 0; k < width; k++) {
-                value = src_above[k + 1];
-                bottom_row[k] -= value; // bottom_left - val
-                top_row[k] = value << log2_pb_height;
-        }
-
-        for (int y = 0; y < height; y++) {
-                int value = (int)src_left[y + 1]; // left_value y
-                int hor_pred = value << log2_pb_width;
-                int right_pred = top_right - value;
-
-                for (int x = 0; x < width; x++) {
-                        hor_pred += right_pred;
-                        top_row[x] += bottom_row[x];
-
-                        int vertPred = top_row[x];
-                        _dst[x] = ((hor_pred << log2_pb_height) +
-                                   (vertPred << log2_pb_width) + offset) >>
-                                  shift;
-                }
-                _dst += dst_stride;
-        }
+        _dst += dst_stride;
+    }
 }
 
 void
