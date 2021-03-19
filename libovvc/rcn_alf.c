@@ -474,6 +474,7 @@ void alf_deriveClassificationBlk(ALFClassifier **classifier, int **laplacian[NUM
       int yOffset = (i + blk.y) % vbCTUHeight;
       int xOffset = (j + blk.x) % vbCTUHeight;
 
+      //TODO: divide by 16 the size of alf.classifier
       ALFClassifier *cl0 = &classifier[yOffset][xOffset];
       ALFClassifier *cl1 = &classifier[yOffset + 1][xOffset];
       ALFClassifier *cl2 = &classifier[yOffset + 2][xOffset];
@@ -502,33 +503,33 @@ void alf_deriveClassificationBlk(ALFClassifier **classifier, int **laplacian[NUM
 }
 
 
-void alf_deriveClassification(RcnALF alf, int16_t *const rcn_img, const int stride, Area blk )
+void alf_deriveClassification(RcnALF alf, int16_t *const rcn_img, const int stride, Area blk, int ctu_width, int pic_h )
 {
     ALFClassifier** classifier = alf.classifier;  
-    // int height = blk.y + blk.height;
-    // int width = blk.x + blk.width;
+    int height = blk.y + blk.height;
+    int width = blk.x + blk.width;
     //BITDEPTH: uniquement pour bitdepth 10
     int bit_depth = 10;
 
-    // for( int i = blk.y; i < height; i += CLASSIFICATION_BLK_SIZE )
-    for( int i = 0; i < blk.height; i += CLASSIFICATION_BLK_SIZE )
+    for( int i = blk.y; i < height; i += CLASSIFICATION_BLK_SIZE )
+    // for( int i = 0; i < blk.height; i += CLASSIFICATION_BLK_SIZE )
     {
         //TODO: handle alf.alfVBLumaPos
-        // int nHeight = OVMIN( i + CLASSIFICATION_BLK_SIZE, height ) - i;
-        int nHeight = OVMIN( i + CLASSIFICATION_BLK_SIZE, blk.height ) - i;
+        int nHeight = OVMIN( i + CLASSIFICATION_BLK_SIZE, height ) - i;
+        // int nHeight = OVMIN( i + CLASSIFICATION_BLK_SIZE, blk.height ) - i;
 
-        // for( int j = blk.x; j < width; j += CLASSIFICATION_BLK_SIZE )
-        for( int j = 0; j < blk.width; j += CLASSIFICATION_BLK_SIZE )
+        for( int j = blk.x; j < width; j += CLASSIFICATION_BLK_SIZE )
+        // for( int j = 0; j < blk.width; j += CLASSIFICATION_BLK_SIZE )
         {
-            // int nWidth = OVMIN( j + CLASSIFICATION_BLK_SIZE, width ) - j;
-            int nWidth = OVMIN( j + CLASSIFICATION_BLK_SIZE, blk.width ) - j;
-            Area blk_src;
-            blk_src.x = j; blk_src.y = i;
-            blk_src.width = nWidth; blk_src.height = nHeight; 
+            int nWidth = OVMIN( j + CLASSIFICATION_BLK_SIZE, width ) - j;
+            // int nWidth = OVMIN( j + CLASSIFICATION_BLK_SIZE, blk.width ) - j;
+            Area blk_class;
+            blk_class.x = j; blk_class.y = i;
+            blk_class.width = nWidth; blk_class.height = nHeight; 
 
-            int16_t* rcn_img_classblk = rcn_img + i*stride + j;
-            alf_deriveClassificationBlk(classifier, alf.laplacian, rcn_img_classblk, stride, blk_src, bit_depth + 4
-            , blk.height, blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA
+            int16_t* rcn_img_class = rcn_img + (i-blk.y)*stride + (j-blk.x);
+            alf_deriveClassificationBlk(classifier, alf.laplacian, rcn_img_class, stride, blk_class, bit_depth + 4
+            , ctu_width, (blk.height<ctu_width) ? pic_h : blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA
             // , alf.alfVBLumaCTUHeight
             // , ((i + nHeight >= ctudec->pic_h) ? ctudec->pic_h : alf.alfVBLumaPos)
             );
@@ -537,7 +538,7 @@ void alf_deriveClassification(RcnALF alf, int16_t *const rcn_img, const int stri
 }
 
 
-// dst   : buffer Frame output
+// dst   : buffer Frame output, pointing to the begining of CTU.
 // src   : filter buffer pre-ALF (of size CTU)
 // blkDst: location and dimension of destination block in frame  
 // blk   : location and dimension of destination block in filter buffer  
@@ -546,18 +547,6 @@ void alf_filterBlk(ALFClassifier **classifier, int16_t *const dst, int16_t *cons
                          const int16_t *filterSet, const int16_t *fClipSet,
                          const int vbCTUHeight, int vbPos)
 {
- 
-  // const int srcStride = vbCTUHeight + 2*margin;
-  // const int dstStride = recDst->linesize[compId]/2 ;
-
-  // const int startHeight = blkDst.y ;
-  // const int endHeight   = blkDst.y + blkDst.height ;
-  // const int startWidth  = blkDst.x ; 
-  // const int endWidth    = blkDst.x + blkDst.width ;
-
-  // const int16_t* src = (int16_t*) recSrc[compId] + margin * srcStride + margin ;
-  // int16_t* dst = (int16_t*) recDst->filtered[compId] + blkDst.y * dstStride;
-
   const int16_t *pImgYPad0, *pImgYPad1, *pImgYPad2, *pImgYPad3, *pImgYPad4, *pImgYPad5, *pImgYPad6;
   const int16_t *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
 
@@ -889,7 +878,8 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
             //BITDEPTh
             int stride_dst = frame->linesize[0]/2;
             int16_t*  dst_luma = (int16_t*) frame->data[0] + blk_dst.y*stride_dst + blk_dst.x;
-            alf_deriveClassification( alf, dst_luma, stride_dst, blk_dst );
+            // alf_deriveClassification( alf, dst_luma, stride_dst, blk_dst );
+            alf_deriveClassification( alf, src_luma, stride_src, blk_dst, ctu_width, ctudec->pic_h);
 
             int16_t filterSetIndex = alf_params_ctu.ctb_alf_idx;
             int16_t *coeff;
@@ -905,7 +895,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
 
             alf_filterBlk(alf.classifier, dst_luma, src_luma, stride_dst, stride_src,
                 blk_dst, blk, COMPONENT_Y, coeff, clip, 
-                ctu_width, blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA);
+                ctu_width, (yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h : blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA);
                 // ctu_width, ((yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h : alf.alfVBLumaPos));
         }
 
