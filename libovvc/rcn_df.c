@@ -1200,14 +1200,14 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *con
     dbf_info->edge_map_hor[nb_unit_h] &= -!last_y;
 
     #if 1
-    vvc_dbf_ctu_hor(fbuff->y, fbuff->stride, dbf_info, nb_unit_w, !!last_y);
-    vvc_dbf_ctu_ver(fbuff->y, fbuff->stride, dbf_info, nb_unit_h, !!last_x);
+    vvc_dbf_ctu_hor(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_y);
+    vvc_dbf_ctu_ver(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_x);
 
     vvc_dbf_chroma_hor(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
-                       nb_unit_w, !!last_y);
+                       nb_unit, !!last_y);
 
     vvc_dbf_chroma_ver(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
-                       nb_unit_h, !!last_x);
+                       nb_unit, !!last_x);
                        #endif
 
 }
