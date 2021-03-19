@@ -409,14 +409,17 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
     if (dec->subdec_list) {
         OVDPB *dpb = dec->dpb;
         uint16_t out_cvs_id;
+        OVSliceDec *sldec;
+        int ret;
 
         if (!dpb) {
             ov_log(dec, OVLOG_ERROR, "No DPB on output request.\n");
             /* FIXME new return value */
             return OVVC_EINDATA;
         }
+
         /* FIXME handle sbdec list */
-        OVSliceDec *sldec = dec->subdec_list;
+        sldec = dec->subdec_list;
         if (!sldec->pic) {
             ov_log(dec, OVLOG_INFO, "No output picture\n");
             return 0;
@@ -428,7 +431,7 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
         #endif
 
         out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
-        int ret = ovdpb_output_frame(dpb, frame_p, 0, out_cvs_id);
+        ret = ovdpb_output_frame(dpb, frame_p, 0, out_cvs_id);
         /*FIXME tmp */
         #if 0
         ovdpb_unref_pic(dec->dpb, sldec->pic, ~0);
