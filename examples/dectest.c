@@ -29,9 +29,9 @@ static int read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout);
 
 static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
 
-static void print_version();
+static void print_version(void);
 
-static void print_usage();
+static void print_usage(void);
 
 int
 main(int argc, char** argv)
@@ -39,8 +39,9 @@ main(int argc, char** argv)
   /* basic options parser and assign
      filenames into a functions*/
   int c;
-  char *input_file_name = NULL, *output_file_name = NULL;
+  const char *input_file_name = NULL, *output_file_name = NULL;
   int ov_log_level=OVLOG_INFO;
+  FILE *fout = NULL;
 
   uint8_t options_flag=0;
 
@@ -113,7 +114,7 @@ main(int argc, char** argv)
       return 0;
     }
 
-    FILE *fout = fopen(output_file_name, "wb");
+    fout = fopen(output_file_name, "wb");
     if (fout == NULL) {
       ov_log(NULL, OVLOG_ERROR, "Failed to open output file '%s'.\n", output_file_name);
       goto failinit;
