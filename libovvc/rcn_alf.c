@@ -530,8 +530,6 @@ void alf_deriveClassification(RcnALF alf, int16_t *const rcn_img, const int stri
             int16_t* rcn_img_class = rcn_img + (i-blk.y)*stride + (j-blk.x);
             alf_deriveClassificationBlk(classifier, alf.laplacian, rcn_img_class, stride, blk_class, bit_depth + 4
             , ctu_width, (blk.height<ctu_width) ? pic_h : blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA
-            // , alf.alfVBLumaCTUHeight
-            // , ((i + nHeight >= ctudec->pic_h) ? ctudec->pic_h : alf.alfVBLumaPos)
             );
         }
     }
@@ -875,7 +873,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
             //Destination block in the final image
             blk_dst.x=xPos; blk_dst.y=yPos;
             blk_dst.width=width; blk_dst.height=height;
-            //BITDEPTh
+            //BITDEPTH
             int stride_dst = frame->linesize[0]/2;
             int16_t*  dst_luma = (int16_t*) frame->data[0] + blk_dst.y*stride_dst + blk_dst.x;
             // alf_deriveClassification( alf, dst_luma, stride_dst, blk_dst );
@@ -896,41 +894,37 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
             alf_filterBlk(alf.classifier, dst_luma, src_luma, stride_dst, stride_src,
                 blk_dst, blk, COMPONENT_Y, coeff, clip, 
                 ctu_width, (yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h : blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA);
-                // ctu_width, ((yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h : alf.alfVBLumaPos));
         }
 
-        // for( int compIdx = 1; compIdx < MAX_NUM_COMPONENT; compIdx++ )
-        // {
-        //   ComponentID compID = (ComponentID) compIdx ;
-        //   const int chromaScale = frame->linesize[0] / frame->linesize[compID];
+        for( int compIdx = 1; compIdx < MAX_NUM_COMPONENT; compIdx++ )
+        {
+            ComponentID compID = (ComponentID) compIdx ;
+            const int chr_scale = frame->linesize[0] / frame->linesize[compID];
 
-        //   if( (compID==1 && (vvc_ctx->ctb_alf_flag_pic[ctu_rs_addr] & 2)) || (compID==2 && (vvc_ctx->ctb_alf_flag_pic[ctu_rs_addr] & 1)))
-        //   {
-        //     Area blk, blk_dst;
-        //     blk.x=0; blk.y=0;
-        //     blk.width=width/chromaScale; blk.height=height/chromaScale;
-        //     blk_dst.x=xPos/chromaScale; blk_dst.y=yPos/chromaScale;
-        //     blk_dst.width=width/chromaScale; blk_dst.height=height/chromaScale;
-        //     uint8_t alt_num = (compID == COMPONENT_Cb) ? vvc_ctx->cb_alternative_pic[ctu_rs_addr] : vvc_ctx->cr_alternative_pic[ctu_rs_addr];
+            if( (compID==1 && (alf_params_ctu.ctb_alf_flag & 2)) || (compID==2 && (alf_params_ctu.ctb_alf_flag & 1)))
+            {
+                Area blk,blk_dst;
+                //Source block in the filter buffers image
+                // blk.x=0; blk.y=0;
+                blk.x=xPos/chr_scale+margin; blk.y=yPos/chr_scale+margin;
+                blk.width=width/chr_scale; blk.height=height/chr_scale;
+                int stride_src = fb.filter_region_stride[compID];
+                int16_t*  src_chroma = &src[compID][blk.y*stride_src + blk.x];
 
-        //       if(!vvc_ctx->simd)
-        //       {
-        //         alf_filterBlk(alf.classifier, frame, data, blk_dst, blk, compID, alf.chroma_coeffFinal[alt_num], alf.chroma_clippFinal[alt_num]
-        //         , alf.alfVBChmaCTUHeight
-        //         , (( blk_dst.y + ctu_width/chromaScale >= ctudec->pic_h/chromaScale) ? ctudec->pic_h/chromaScale : alf.alfVBLumaPos/chromaScale), ALF_FILTER_5
-        //         , vvc_ctx->margin);
-        //       }
-        //       else{
-        //         call(vvc_alf_filterBlk,
-        //              (ALF_FILBLK_5),
-        //              (alf.classifier, frame, data, blk_dst, blk, compID, alf.chroma_coeffFinal[alt_num], alf.chroma_clippFinal[alt_num]
-        //              , alf.alfVBChmaCTUHeight
-        //              , (( blk_dst.y + ctu_width/chromaScale >= ctudec->pic_h/chromaScale) ? ctudec->pic_h/chromaScale : alf.alfVBLumaPos/chromaScale), ALF_FILTER_5
-        //              , vvc_ctx->margin)
-        //         );
-        //       }
-        //   }
-        // }
+                //Destination block in the final image
+                blk_dst.x=xPos/chr_scale; blk_dst.y=yPos/chr_scale;
+                blk_dst.width=width/chr_scale; blk_dst.height=height/chr_scale;
+                //BITDEPTH
+                int stride_dst = frame->linesize[compID]/2;
+                int16_t*  dst_chroma = (int16_t*) frame->data[compID] + blk_dst.y*stride_dst + blk_dst.x;
+
+                uint8_t alt_num = (compID == COMPONENT_Cb) ? alf_params_ctu.cb_alternative : alf_params_ctu.cr_alternative;
+
+                alf_filterBlk(alf.classifier, dst_chroma, src_chroma, stride_dst, stride_src, blk_dst, blk, compID,
+                    alf.chroma_coeffFinal[alt_num], alf.chroma_clippFinal[alt_num], 
+                    ctu_width/chr_scale, (( yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_width - ALF_VB_POS_ABOVE_CTUROW_LUMA)/chr_scale));
+            }
+        }
         // save_last_rows_ctu(lc_ctx, nb_ctu_w, ctb_x, ctu_width, vvc_ctx->margin, is_border);
 
         // //func save_last_cols_ctu
