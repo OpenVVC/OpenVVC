@@ -75,6 +75,7 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
 {
     const OVPPS *pps = NULL;
     const OVSPS *sps = NULL;
+    int num_ref_entries1 = 0; /* num_ref_entries[1][RplsIdx[1]] */
     int i;
 
     ph->ph_gdr_or_irap_pic_flag = nvcl_read_flag(rdr);
@@ -252,7 +253,6 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
             ph->ph_temporal_mvp_enabled_flag = nvcl_read_flag(rdr);
             if (ph->ph_temporal_mvp_enabled_flag && pps->pps_rpl_info_in_ph_flag) {
                 /* FIXME compute num_ref_entries */
-                int num_ref_entries1 = 0; /* num_ref_entries[1][RplsIdx[1]] */
                 if (num_ref_entries1 > 0) {
                     int num_ref_entries0 = 0; /* num_ref_entries[0][RplsIdx[0]] */
                     ph->ph_collocated_from_l0_flag = nvcl_read_flag(rdr);
@@ -268,7 +268,6 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
         }
 
         /* FIXME Num ref entries can be undefined if rpl info are in PH */
-        int num_ref_entries1 = 0;
         if (!pps->pps_rpl_info_in_ph_flag) {
 
             ph->ph_mvd_l1_zero_flag = nvcl_read_flag(rdr);

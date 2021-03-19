@@ -50,6 +50,8 @@ nvcl_decode_nalu_sps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
     int ret;
     uint8_t sps_id = probe_sps_id(rdr);
     OVSPS **sps_list = nvcl_ctx->sps_list;
+    OVSPS *sps;
+
     if (sps_list[sps_id]) {
         /* TODO compare RBSP data to avoid new read */
         uint8_t identical_rbsp = 0;
@@ -58,7 +60,7 @@ nvcl_decode_nalu_sps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
         }
     }
 
-    OVSPS *sps = ov_mallocz(sizeof(*sps));
+    sps = ov_mallocz(sizeof(*sps));
     if (!sps) {
         return OV_ENOMEM;
     }
@@ -403,10 +405,9 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
     sps->sps_ciip_enabled_flag = nvcl_read_flag(rdr);
 
     /*FIXME max_num_merge_cand assumption */
-    int max_nb_mrg_cand = 6 - sps->sps_six_minus_max_num_merge_cand;
-    if (max_nb_mrg_cand >= 2) {
+    if (6 - sps->sps_six_minus_max_num_merge_cand >= 2) {
         sps->sps_gpm_enabled_flag = nvcl_read_flag(rdr);
-        if (sps->sps_gpm_enabled_flag && max_nb_mrg_cand >= 3) {
+        if (sps->sps_gpm_enabled_flag && 6 - sps->sps_six_minus_max_num_merge_cand >= 3) {
             sps->sps_max_num_merge_cand_minus_max_num_gpm_cand = nvcl_read_u_expgolomb(rdr);
         }
     }

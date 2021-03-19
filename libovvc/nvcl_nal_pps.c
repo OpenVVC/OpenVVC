@@ -48,6 +48,7 @@ nvcl_decode_nalu_pps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
 {
     int ret;
     uint8_t pps_id = probe_pps_id(rdr);
+    OVPPS *pps;
     OVPPS **pps_list = nvcl_ctx->pps_list;
     if (pps_list[pps_id]) {
         /* TODO compare RBSP data to avoid new read */
@@ -57,7 +58,7 @@ nvcl_decode_nalu_pps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
         }
     }
 
-    OVPPS *pps = ov_mallocz(sizeof(*pps));
+    pps = ov_mallocz(sizeof(*pps));
     if (!pps) {
         return OV_ENOMEM;
     }
@@ -87,6 +88,7 @@ duplicated:
     #endif
     return 0;
 }
+
 static void
 pps_read_slices_in_subpic(OVNVCLReader *const rdr, OVPPS *const pps)
 {
@@ -202,7 +204,6 @@ pps_read_pic_partition(OVNVCLReader *const rdr, OVPPS *const pps)
         pps->pps_loop_filter_across_slices_enabled_flag = nvcl_read_flag(rdr);
     }
 }
-
 
 int
 nvcl_pps_read(OVNVCLReader *const rdr, OVPPS *const pps,
