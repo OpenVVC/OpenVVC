@@ -41,8 +41,6 @@ static inline void nvcl_skip_flag(OVNVCLReader *rdr);
 /* WARNING does not support n > 64 */
 static inline void nvcl_skip_bits(OVNVCLReader *rdr, int n);
 
-static inline int nvclctx_num_bits_read(const OVNVCLReader *rdr);
-
 #if 0
 static inline int nvclctx_num_bits_left(OVNVCLReader *rdr);
 #endif
@@ -124,7 +122,7 @@ fill_cache32(OVNVCLReader *rdr)
     rdr->nb_cached_bits += 32;
 }
 
-#if 0
+#if 1
 static inline int
 nvclctx_num_bits_left(OVNVCLReader *rdr)
 {
@@ -133,9 +131,6 @@ nvclctx_num_bits_left(OVNVCLReader *rdr)
 }
 #endif
 
-
-/* FIXME inline ?*/
-uint32_t nvcl_num_bytes_read(const OVNVCLReader *const rdr);
 
 /* WARNING does not support n > 64 */
 
@@ -242,17 +237,18 @@ nvcl_read_u_expgolomb(OVNVCLReader *rdr)
 static inline int32_t
 nvcl_read_s_expgolomb(OVNVCLReader *rdr)
 {
-    int32_t val;
-
     uint32_t tmp = fetch_bits(rdr, 32);
     uint32_t prf_length = ov_clz(tmp | 0x1);
+    int32_t sign;
+    int32_t val;
 
     /* Mark prefix as read */
     nvcl_skip_bits(rdr, prf_length);
 
     /* Read suffix */
-    val =  nvcl_read_bits(rdr, (prf_length + 1)) - 1;
-    int32_t sign = (val & 0x1) - 1;
+    val  = nvcl_read_bits(rdr, (prf_length + 1)) - 1;
+
+    sign = (val & 0x1) - 1;
 
     return ((val >> 1) ^ sign) + 1;
 }
