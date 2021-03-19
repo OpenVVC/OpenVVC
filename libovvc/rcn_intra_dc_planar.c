@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include "ovutils.h"
+#include "rcn_structures.h"
 
 static const uint8_t vvc_pdpc_w[3][128] = {
         { 32, 8, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
