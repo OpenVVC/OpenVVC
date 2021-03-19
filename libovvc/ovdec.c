@@ -431,7 +431,7 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
         #endif
 
         out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
-        ret = ovdpb_output_frame(dpb, frame_p, 0, out_cvs_id);
+        ret = ovdpb_output_frame(dpb, frame_p, out_cvs_id);
         /*FIXME tmp */
         #if 0
         ovdpb_unref_pic(dec->dpb, sldec->pic, ~0);

@@ -146,4 +146,8 @@ int ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_
 void ovdpb_flush_dpb(OVDPB *dpb);
 
 void ovdpb_unref_pic(OVDPB *dpb, OVPicture *pic, int flags);
+
+int ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id);
+
+int ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id);
 #endif
