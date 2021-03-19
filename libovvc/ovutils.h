@@ -16,6 +16,8 @@
 #define OVMIN(a, b) (((a) < (b)) ? (a) : (b))
 #define OVABS(a) (((a) < (0)) ? -(a) : (a))
 
+#define ov_clz(x) __builtin_clz(x)
+
 typedef enum
 {
     OVLOG_ERROR,
@@ -38,13 +40,28 @@ ov_log(void* ctx, int log_level, const char* log_content, ...);
 
 /* FIXME
  * Add specific clip for unsigned */
-int32_t
-ov_clip(int32_t val, int32_t a, int32_t b);
+static inline int32_t
+ov_clip(int32_t val, int32_t a, int32_t b)
+{
+    return OVMIN(OVMAX(val, a), b);
+}
 
 uint32_t
 ov_clip_uintp2(int32_t val, uint32_t a);
 
-int
-floor_log2(unsigned x);
+static inline int
+floor_log2(unsigned x)
+{
+#if 0
+    int bits = -1;
+    while (x > 0) {
+        bits++;
+        x >>= 1;
+    }
+    return bits;
+#else
+    return 32 - ov_clz(x) - 1;
+#endif
+}
 
 #endif
