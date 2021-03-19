@@ -8,7 +8,6 @@
 #include "ovutils.h"
 #include "ovmem.h"
 
-
 struct EntryThread
 {
     struct SliceThreads *parent;
@@ -23,13 +22,13 @@ struct EntryThread
     OVCTUDec *ctudec;
 
     int state;
-    int end;
+    int kill;
 };
 
 void uninit_entry_threads(struct SliceThreads *th_info);
 
 static int
-run_jobs(struct SliceThreads *th_info, struct EntryThread *tdec)
+thread_decode_entries(struct SliceThreads *th_info, struct EntryThread *tdec)
 {
     uint16_t nb_entries      = th_info->nb_entries;
     uint16_t nb_task_threads = th_info->nb_task_threads;
@@ -38,34 +37,26 @@ run_jobs(struct SliceThreads *th_info, struct EntryThread *tdec)
     unsigned entry_idx = first_job;
 
     do {
-        /* FIXME arguments */
-        #if 0
-        OVCTUDec *const ctudec = th_info->owner->ctudec_list[entry_idx % th_info->owner->nb_sbdec];
-        #else
-        OVCTUDec *const ctudec = tdec->ctudec;
-        #endif
-        th_info->decode_entry(th_info->owner, ctudec, th_info->owner->active_params, entry_idx);
+        OVCTUDec *const ctudec  = tdec->ctudec;
+        OVSliceDec *const sldec = th_info->owner;
+        const OVPS *const prms  = sldec->active_params;
+
+        th_info->decode_entry(sldec, ctudec, prms, entry_idx);
+
         entry_idx = atomic_fetch_add_explicit(&th_info->last_entry_idx, 1, memory_order_acq_rel);
+
     } while (entry_idx < nb_entries);
 
-    /* Last entry_idx corresponds to nb_entries + nb_task_threads - 1 ? */
+    /* Last thread to exit loop will have entry_idx set to nb_entry + nb_task_threads - 1*/
     return entry_idx == nb_entries + nb_task_threads - 1;
 }
 
 int
-thread_decode_entries(struct SliceThreads *th_info, DecodeFunc decode_entry, void *arg, int *ret, int nb_entries)
+ovthread_decode_entries(struct SliceThreads *th_info, DecodeFunc decode_entry, int nb_entries)
 {
     int i, is_last = 0;
 
-    #if 1
     int nb_task_threads = OVMIN(nb_entries, th_info->nb_threads);
-    #else
-    int nb_task_threads = 2;
-    #endif
-
-    /* FIXME if needed */
-    th_info->args = arg;
-    th_info->rets = ret;
 
     th_info->nb_task_threads = nb_task_threads;;
     th_info->nb_entries = nb_entries;
@@ -77,7 +68,6 @@ thread_decode_entries(struct SliceThreads *th_info, DecodeFunc decode_entry, voi
     /* Wake entry decoder threads by setting their state to 0 
      * and signaling on task condition
      */
-    #if 1
     for (i = 0; i < nb_task_threads; ++i) {
         struct EntryThread *tdec = &th_info->tdec[i];
         pthread_mutex_lock(&tdec->task_mtx);
@@ -86,23 +76,6 @@ thread_decode_entries(struct SliceThreads *th_info, DecodeFunc decode_entry, voi
         pthread_cond_signal(&tdec->task_cnd);
         pthread_mutex_unlock(&tdec->task_mtx);
     }
-    #else
-    for (i = 0; i < nb_entries; ++i) {
-        struct EntryThread *tdec = &th_info->tdec[0];
-        pthread_mutex_lock(&tdec->task_mtx);
-        OVCTUDec *ctudec = th_info->owner->ctudec_list[i%8];
-        tdec->ctudec = ctudec;
-        tdec->state = 0;
-        //ret = th_info->decode_entry(th_info->owner, ctudec, th_info->owner->active_params, i);
-        pthread_cond_signal(&tdec->task_cnd);
-        pthread_mutex_unlock(&tdec->task_mtx);
-        is_last = 0;
-    }
-    #endif
-
-    #if 0
-    is_last = run_jobs(th_info);
-    #endif
 
     /* Main thread wait until all gnrl_state has been set to 1 
      * by the last decoder thread
@@ -120,7 +93,7 @@ thread_decode_entries(struct SliceThreads *th_info, DecodeFunc decode_entry, voi
 }
 
 static void *
-t_function(void *opaque)
+thread_main_function(void *opaque)
 {
     struct EntryThread *tdec = (struct EntryThread *)opaque;
 
@@ -129,17 +102,17 @@ t_function(void *opaque)
 
     tdec->state = 1;
 
-    while (!tdec->end){
+    while (!tdec->kill){
         do {
             pthread_cond_wait(&tdec->task_cnd, &tdec->task_mtx);
-            if (tdec->end) {
+            if (tdec->kill) {
                 return NULL;
             }
         /*FIXME determine state value to exit loop*/
         } while (tdec->state != 0);
 
-        if (!tdec->end) {
-            uint8_t is_last = run_jobs(tdec->parent, tdec);
+        if (!tdec->kill) {
+            uint8_t is_last = thread_decode_entries(tdec->parent, tdec);
 
             /* Main thread is not last so we wake it
              * if its task has already ended
@@ -156,44 +129,44 @@ t_function(void *opaque)
     return NULL;
 }
 
-
-
 int
 init_entry_threads(struct SliceThreads *th_info, int nb_threads)
 {
     int i;
     th_info->nb_threads = nb_threads;
 
-    th_info->tdec = ov_mallocz(sizeof(struct EntryThread) * th_info->nb_threads);
+    th_info->tdec = ov_mallocz(sizeof(struct EntryThread) * nb_threads);
 
-    if (!th_info->tdec) goto failalloc;
+    if (!th_info->tdec) {
+        goto failalloc;
+    }
 
-    atomic_init(&th_info->first_job, 0);
+    atomic_init(&th_info->first_job,      0);
     atomic_init(&th_info->last_entry_idx, 0);
 
     pthread_mutex_init(&th_info->gnrl_mtx, NULL);
-    pthread_cond_init(&th_info->gnrl_cnd, NULL);
+    pthread_cond_init(&th_info->gnrl_cnd,  NULL);
 
     for (i = 0; i < nb_threads; ++i){
         struct EntryThread *tdec = &th_info->tdec[i];
-        #if 0
-        tdec->idx = i;
-        tdec->decode_entry_tile = &print_id;
-        #endif
+
         tdec->state = 0;
-        tdec->end = 0;
+        tdec->kill  = 0;
+
         tdec->parent = th_info;
 
         pthread_mutex_init(&tdec->task_mtx, NULL);
         pthread_cond_init(&tdec->task_cnd, NULL);
+
         pthread_mutex_lock(&tdec->task_mtx);
 
-        if (pthread_create(&tdec->thread, NULL, t_function, tdec)) {
+        if (pthread_create(&tdec->thread, NULL, thread_main_function, tdec)) {
             pthread_mutex_unlock(&tdec->task_mtx);
             ov_log(NULL, OVLOG_ERROR, "Thread creation failed at decoder init\n");
             goto failthread;
         }
 
+        /* Wait until subdec is set */
         while (!tdec->state) {
             pthread_cond_wait(&tdec->task_cnd, &tdec->task_mtx);
         }
@@ -222,7 +195,7 @@ uninit_entry_threads(struct SliceThreads *th_info)
     for (i = 0; i < th_info->nb_threads; ++i){
         struct EntryThread *th_dec = &th_info->tdec[i];
         pthread_mutex_lock(&th_dec->task_mtx);
-        th_dec->end = 1;
+        th_dec->kill = 1;
         pthread_cond_signal(&th_dec->task_cnd);
         pthread_mutex_unlock(&th_dec->task_mtx);
 

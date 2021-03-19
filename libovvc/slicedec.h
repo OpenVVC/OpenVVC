@@ -23,9 +23,6 @@ struct SliceThreads
     int nb_entries;
 
     DecodeFunc decode_entry;
-    /* Pointers to functions arguments and returns */
-    void *args;
-    void *rets;
 
     atomic_uint first_job;
     atomic_uint last_entry_idx;

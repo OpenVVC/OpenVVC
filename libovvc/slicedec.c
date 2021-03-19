@@ -15,6 +15,7 @@
 #include "ovdpb.h"
 #include "drv_lines.h"
 #include "rcn_mc.h"
+#include "ovthreads.h"
 
 /* TODO define in a header */
 enum SliceType {
@@ -503,7 +504,7 @@ slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
     }
     ret = 0;
     #else
-    thread_decode_entries(&sldec->th_info, slicedec_decode_rect_entry, NULL, NULL, nb_entries);
+    ovthread_decode_entries(&sldec->th_info, slicedec_decode_rect_entry, nb_entries);
     #endif
     return ret;
 }

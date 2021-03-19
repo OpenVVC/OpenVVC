@@ -19,6 +19,7 @@
  * To be removed includes
  */
 #include "ovdpb.h"
+#include "ovthreads.h"
 
 static const char *const decname = "Open VVC Decoder";
 
