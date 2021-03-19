@@ -161,11 +161,11 @@ derive_ref_buf_c(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
     const int pic_w = ref_pic->frame->width[0]  >> 1;
     const int pic_h = ref_pic->frame->height[0] >> 1;
 
-    uint8_t emulate_edge = test_for_edge_emulation_c(ref_pos_x, ref_pos_y, pic_w, pic_h,
-                                                     pu_w, pu_h);;
-
     uint16_t *src_cb  = &ref_cb[ref_pos_x + ref_pos_y * src_stride];
     uint16_t *src_cr  = &ref_cr[ref_pos_x + ref_pos_y * src_stride];
+
+    uint8_t emulate_edge = test_for_edge_emulation_c(ref_pos_x, ref_pos_y, pic_w, pic_h,
+                                                     pu_w, pu_h);;
 
     if (emulate_edge){
         int src_off  = REF_PADDING_C * (src_stride) + (REF_PADDING_C);
@@ -267,10 +267,6 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec,
 
     struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
 
-    dst.y  += x0 + y0 * dst.stride;
-    dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-    dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-
     /* TMP buffers for edge emulation
      * FIXME use tmp buffers in local contexts
      */
@@ -314,6 +310,10 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec,
 
     uint8_t prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
     uint8_t prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
+
+    dst.y  += x0 + y0 * dst.stride;
+    dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
+    dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
 
     mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride, pu_h, prec_x0, prec_y0, pu_w);
     mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride, tmp_buff, pu_h, prec_x1, prec_y1, pu_w);

@@ -145,6 +145,14 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
 
     int dst_stride = RCN_CTB_STRIDE;
 
+    //compute reduced boundaries
+    uint8_t log2_bndy = 1 << ((log2_pu_w > 2) || (log2_pu_h > 2));
+    uint8_t log2_bnd_x = log2_pu_w - log2_bndy;
+    uint8_t log2_bnd_y = log2_pu_h - log2_bndy;
+    int i, j;
+
+    int rnd = (1 << log2_bnd_x) >> 1;
+
     fill_ref_left_0(src, dst_stride, ref_lft,
                     rcn_ctx->progress_field.vfield[x0 >> 2],
                     rcn_ctx->progress_field.hfield[y0 >> 2],
@@ -154,13 +162,6 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
                      rcn_ctx->progress_field.vfield[x0 >> 2],
                      x0, y0, log2_pu_w, log2_pu_h, 0);
 
-    //compute reduced boundaries
-    uint8_t log2_bndy = 1 << ((log2_pu_w > 2) || (log2_pu_h > 2));
-    uint8_t log2_bnd_x = log2_pu_w - log2_bndy;
-    uint8_t log2_bnd_y = log2_pu_h - log2_bndy;
-    int i, j;
-
-    int rnd = (1 << log2_bnd_x) >> 1;
     for (j = 0; j < (1 << log2_bndy); ++j) {
         int sum = 0;
         for (i = 0; i < (1 << log2_bnd_x); ++i) {
