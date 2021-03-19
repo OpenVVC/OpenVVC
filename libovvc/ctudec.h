@@ -3,14 +3,12 @@
 
 #include "ovdefs.h"
 #include "ovframe.h"
-
-#include "ovdec.h"
-#include "rcn_structures.h"
-<<<<<<< HEAD
 #include "ovmem.h"
-=======
+#include "ovdec.h"
+
+#include "rcn_structures.h"
+#include "rcn_alf.h"
 #include "dec_structures.h"
->>>>>>> SAO: cabac well read after changing data structures
 
     /* FIXME COMPAT old
      * Old structures to be removed
@@ -121,10 +119,11 @@ struct ALFInfo
     uint8_t ctb_cc_alf_flag_line[2][32];
 
     //TODO:  better here or in slicedec ?
-    /* *
-     * arrays of ALF parameters structure for each ctu
-     * */ 
+     /* arrays of ALF parameters structure for each ctu*/
     ALFParamsCtu *alf_params;
+
+    //ALF reconstruction structure
+    RCNALF rcn_alf;
 };
 
 

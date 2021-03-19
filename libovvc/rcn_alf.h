@@ -1,6 +1,8 @@
 #ifndef RCN_ALF_H
 #define RCN_ALF_H
 
+struct OVCTUDec;
+
 #define MAX_ALF_NUM_CLIP_VAL  4
 #define NUM_BITS  8
 #define CLASSIFICATION_BLK_SIZE  32  //non-normative, local buffer size
@@ -57,15 +59,6 @@ typedef enum
   NUM_CHROMA_FORMAT = 4
 }ChromaFormat;
 
-typedef enum 
-{
-  COMPONENT_Y         = 0,
-  COMPONENT_Cb        = 1,
-  COMPONENT_Cr        = 2,
-  MAX_NUM_COMPONENT   = 3,
-  JOINT_CbCr          = MAX_NUM_COMPONENT,
-  MAX_NUM_TBLOCKS     = MAX_NUM_COMPONENT
-}ComponentID;
 
 typedef enum 
 {
@@ -76,27 +69,27 @@ typedef enum
 
 typedef struct 
 { 
-  int16_t                        class_to_filter_mapping[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES];
-  int16_t                        fixed_filter_coeff[ALF_FIXED_FILTER_NUM][MAX_NUM_ALF_LUMA_COEFF];
-  int16_t                        fixedFilterSetCoeffDec[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
-  int16_t                        coeffApsLuma[ALF_CTB_MAX_NUM_APS][MAX_NUM_ALF_LUMA_COEFF * MAX_NUM_ALF_CLASSES];
-  int16_t                        clippApsLuma[ALF_CTB_MAX_NUM_APS][MAX_NUM_ALF_LUMA_COEFF * MAX_NUM_ALF_CLASSES];
-  int16_t                        clipDefault[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
-  uint8_t                         created;
-  ALFClassifier**              classifier;
-  int16_t                        coeffFinal[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
-  int16_t                        clippFinal[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
-  int16_t                        chroma_coeffFinal[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF];
-  int16_t                        chroma_clippFinal[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF];
-  int**                        laplacian[NUM_DIRECTIONS];
-  int *                        laplacianPtr[NUM_DIRECTIONS][CLASSIFICATION_BLK_SIZE + 5];
-  int                          laplacianData[NUM_DIRECTIONS][CLASSIFICATION_BLK_SIZE + 5][CLASSIFICATION_BLK_SIZE + 5];
-  int16_t                      alfClippingValues[MAX_NUM_CHANNEL_TYPE][MAX_ALF_NUM_CLIP_VAL]; 
-}RcnALF;
+  int16_t           class_to_filter_mapping[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES];
+  int16_t           fixed_filter_coeff[ALF_FIXED_FILTER_NUM][MAX_NUM_ALF_LUMA_COEFF];
+  int16_t           fixed_filter_coeff_dec[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+  int16_t           coeff_aps_luma[ALF_CTB_MAX_NUM_APS][MAX_NUM_ALF_LUMA_COEFF * MAX_NUM_ALF_CLASSES];
+  int16_t           clip_aps_luma[ALF_CTB_MAX_NUM_APS][MAX_NUM_ALF_LUMA_COEFF * MAX_NUM_ALF_CLASSES];
+  int16_t           clip_default[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+  uint8_t           created;
+  ALFClassifier**   classifier;
+  int16_t           coeff_final[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+  int16_t           clip_final[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+  int16_t           chroma_coeff_final[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF];
+  int16_t           chroma_clip_final[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF];
+  int**             laplacian[NUM_DIRECTIONS];
+  int *             laplacian_ptr[NUM_DIRECTIONS][CLASSIFICATION_BLK_SIZE + 5];
+  int               laplacian_data[NUM_DIRECTIONS][CLASSIFICATION_BLK_SIZE + 5][CLASSIFICATION_BLK_SIZE + 5];
+  int16_t           alf_clipping_values[MAX_NUM_CHANNEL_TYPE][MAX_ALF_NUM_CLIP_VAL]; 
+}RCNALF;
 
-void alf_create(OVCTUDec *const ctudec, RcnALF* alf);
+void alf_create(OVCTUDec *const ctudec, RCNALF* alf);
 
-void alf_destroy(RcnALF* alf, int16_t ctu_width);
+void alf_destroy(RCNALF* alf, int16_t ctu_width);
 
 void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pic);
 
