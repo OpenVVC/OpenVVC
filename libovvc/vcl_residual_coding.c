@@ -955,33 +955,29 @@ ovcabac_read_ae_sb_dc_coeff_dpq(OVCABACCtx *const cabac_ctx,
                            uint64_t *const ctx_table,
                            int16_t *const coeffs)
 {
-    uint32_t value;
+    uint8_t rem_abs_gt1_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[GT0_FLAG_CTX_OFFSET]);
 
-    uint8_t par_level_flag   = 0;
-    uint8_t rem_abs_gt1_flag = 0;
+    uint32_t value = 1 + rem_abs_gt1_flag;
 
-    rem_abs_gt1_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[GT0_FLAG_CTX_OFFSET]);
+    uint8_t sign_flag;
 
-    value = 1 + rem_abs_gt1_flag;
-
-    if( rem_abs_gt1_flag ){
-        par_level_flag   = ovcabac_ae_read(cabac_ctx, &ctx_table[PAR_FLAG_CTX_OFFSET]);
+    if (rem_abs_gt1_flag) {
+        uint8_t par_level_flag   = ovcabac_ae_read(cabac_ctx, &ctx_table[PAR_FLAG_CTX_OFFSET]);
         uint8_t rem_abs_gt2_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[GT1_FLAG_CTX_OFFSET]);
 
         value += (rem_abs_gt2_flag << 1) + par_level_flag;
 
-        if( rem_abs_gt2_flag ){
-            //value += 2;//rem_abs_gt2_flag << 1
-            value += decode_truncated_rice(cabac_ctx,0);
+        if (rem_abs_gt2_flag) {
+            value += decode_truncated_rice(cabac_ctx, 0);
         }
     }
 
-    uint32_t sign_pattern = ovcabac_bypass_read(cabac_ctx);
+    sign_flag = ovcabac_bypass_read(cabac_ctx);
 
     /*FIXME might need a second pass*/
     //FIXME state = 0? find out shift
     //FIXME adapt this for int16_t and change coeff storage + apply inv quantif
-    coeffs[0] = ( sign_pattern ? -(int16_t)(value << 1) : (int16_t)(value << 1) );
+    coeffs[0] = ( sign_flag ? -(int16_t)(value << 1) : (int16_t)(value << 1) );
 
     return 1;
 }
@@ -1160,30 +1156,28 @@ ovcabac_read_ae_sb_dc_coeff_c_dpq(OVCABACCtx *const cabac_ctx,
                              uint64_t *const ctx_table,
                              int16_t *const coeffs)
 {
-    uint32_t value;
+    uint8_t sign_flag;
 
-    uint8_t par_level_flag   = 0;
-    uint8_t rem_abs_gt1_flag = 0;
+    uint8_t rem_abs_gt1_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[GT0_FLAG_C_CTX_OFFSET]);
 
-    rem_abs_gt1_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[GT0_FLAG_C_CTX_OFFSET]);
+    uint32_t value = 1 + rem_abs_gt1_flag;
 
-    value = 1 + rem_abs_gt1_flag;
-
-    if( rem_abs_gt1_flag ){
-        par_level_flag   = ovcabac_ae_read(cabac_ctx, &ctx_table[PAR_FLAG_C_CTX_OFFSET]);
+    if (rem_abs_gt1_flag) {
+        uint8_t par_level_flag   = ovcabac_ae_read(cabac_ctx, &ctx_table[PAR_FLAG_C_CTX_OFFSET]);
         uint8_t rem_abs_gt2_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[GT1_FLAG_C_CTX_OFFSET]);
+
         value += (rem_abs_gt2_flag << 1) + par_level_flag;
-        if( rem_abs_gt2_flag ){
-            //value += 2;//rem_abs_gt2_flag << 1
-            value += decode_truncated_rice(cabac_ctx,0);
+
+        if (rem_abs_gt2_flag) {
+            value += decode_truncated_rice(cabac_ctx, 0);
         }
     }
 
-    uint32_t sign_pattern = ovcabac_bypass_read(cabac_ctx);
+    sign_flag = ovcabac_bypass_read(cabac_ctx);
 
     //FIXME dep quant on dc
     //FIXME adapt this for int16_t and change coeff storage + apply inv quantif
-    coeffs[0] = ( sign_pattern ? -(int16_t)(value << 1) : (int16_t)(value << 1));
+    coeffs[0] = ( sign_flag ? -(int16_t)(value << 1) : (int16_t)(value << 1));
 
     return 1;
 }
@@ -1461,8 +1455,10 @@ static void decode_pass2_ts(OVCABACCtx *const cabac_ctx, uint64_t *const ctx_tab
                             int16_t *const num_remaining_bins){
     int scan_pos, x, y;
     int pass;
+    #if 0
     int num_next_pass = 0;
     uint16_t pass3_map[16] = {0};
+    #endif
 
     for (scan_pos = 0; scan_pos < num_pass2; ++scan_pos){
         int cut_off = 2;
@@ -1484,9 +1480,12 @@ static void decode_pass2_ts(OVCABACCtx *const cabac_ctx, uint64_t *const ctx_tab
                 break;
             }
         }
+        /* FIXME used ? */
+        #if 0
         if(ts_gt2_flag && pass == 4){
             pass3_map[num_next_pass++] = idx;
         }
+        #endif
     }
 }
 
@@ -2071,8 +2070,6 @@ residual_coding_subblock_dc_sdh(OVCABACCtx *const cabac_ctx,
     int num_sig_c = 0;
     int num_pass2 = 0;
 
-    uint32_t dep_quant_map = 0;
-
     uint8_t par_lvl_flag, abs_gt1_flag, abs_gt2_flag;
     int32_t coeff_val;
     uint16_t tr_ctx_pos;
@@ -2281,35 +2278,30 @@ ovcabac_read_ae_sb_4x4_last_dc_sdh(OVCABACCtx *const cabac_ctx,
 static int
 ovcabac_read_ae_sb_dc_coeff_sdh(OVCABACCtx *const cabac_ctx,
                            uint64_t *const ctx_table,
-                           int16_t *const coeffs){
+                           int16_t *const coeffs)
+{
+    uint8_t rem_abs_gt1_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[GT0_FLAG_CTX_OFFSET]);
 
-    uint32_t value;
+    uint32_t value = 1 + rem_abs_gt1_flag;
+    uint8_t sign_flag;
 
-    uint8_t par_level_flag   = 0;
-    uint8_t rem_abs_gt1_flag = 0;
-
-    rem_abs_gt1_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[GT0_FLAG_CTX_OFFSET]);
-
-    value = 1 + rem_abs_gt1_flag;
-
-    if( rem_abs_gt1_flag ){
-        par_level_flag   = ovcabac_ae_read(cabac_ctx, &ctx_table[PAR_FLAG_CTX_OFFSET]);
+    if (rem_abs_gt1_flag) {
+        uint8_t par_level_flag   = ovcabac_ae_read(cabac_ctx, &ctx_table[PAR_FLAG_CTX_OFFSET]);
         uint8_t rem_abs_gt2_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[GT1_FLAG_CTX_OFFSET]);
 
         value += (rem_abs_gt2_flag << 1) + par_level_flag;
 
-        if( rem_abs_gt2_flag ){
-            //value += 2;//rem_abs_gt2_flag << 1
+        if (rem_abs_gt2_flag) {
             value += decode_truncated_rice(cabac_ctx,0);
         }
     }
 
-    uint32_t sign_pattern = ovcabac_bypass_read(cabac_ctx);
+    sign_flag = ovcabac_bypass_read(cabac_ctx);
 
     /*FIXME might need a second pass*/
     //FIXME state = 0? find out shift
     //FIXME adapt this for int16_t and change coeff storage + apply inv quantif
-    coeffs[0] = ( sign_pattern ? -(int16_t)(value) : (int16_t)(value) );
+    coeffs[0] = ( sign_flag ? -(int16_t)(value) : (int16_t)(value) );
 
     return 1;
 }
@@ -2499,17 +2491,14 @@ ovcabac_read_ae_sb_dc_coeff_c_sdh(OVCABACCtx *const cabac_ctx,
                              uint64_t *const ctx_table,
                              int16_t *const coeffs){
 
-    uint32_t value;
+    uint8_t rem_abs_gt1_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[GT0_FLAG_C_CTX_OFFSET]);
 
-    uint8_t par_level_flag   = 0;
-    uint8_t rem_abs_gt1_flag = 0;
+    uint32_t value = 1 + rem_abs_gt1_flag;
 
-    rem_abs_gt1_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[GT0_FLAG_C_CTX_OFFSET]);
-
-    value = 1 + rem_abs_gt1_flag;
+    uint8_t sign_flag;
 
     if( rem_abs_gt1_flag ){
-        par_level_flag   = ovcabac_ae_read(cabac_ctx, &ctx_table[PAR_FLAG_C_CTX_OFFSET]);
+        uint8_t par_level_flag   = ovcabac_ae_read(cabac_ctx, &ctx_table[PAR_FLAG_C_CTX_OFFSET]);
         uint8_t rem_abs_gt2_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[GT1_FLAG_C_CTX_OFFSET]);
         value += (rem_abs_gt2_flag << 1) + par_level_flag;
         if( rem_abs_gt2_flag ){
@@ -2518,11 +2507,11 @@ ovcabac_read_ae_sb_dc_coeff_c_sdh(OVCABACCtx *const cabac_ctx,
         }
     }
 
-    uint32_t sign_pattern = ovcabac_bypass_read(cabac_ctx);
+    sign_flag = ovcabac_bypass_read(cabac_ctx);
 
     //FIXME dep quant on dc
     //FIXME adapt this for int16_t and change coeff storage + apply inv quantif
-    coeffs[0] = ( sign_pattern ? -(int16_t)(value) : (int16_t)(value));
+    coeffs[0] = ( sign_flag ? -(int16_t)(value) : (int16_t)(value));
 
     return 1;
 }
@@ -4239,6 +4228,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
     uint16_t abs_coeffs[VVC_TR_CTX_SIZE]={0};
     uint8_t sig_cg_map[17*17] = {0};
     int offset_in_buff;
+    uint8_t sig_sb_flg = 0;
 
     //offset significant_cg_map to avoid writing in < 0
     uint8_t *significant_cg_map_2 = &sig_cg_map[0];
@@ -4275,7 +4265,6 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
         int x_cg = scan_cg_x[i];
         int y_cg = scan_cg_y[i];
 
-        uint8_t sig_sb_flg = 0;
         int significant_cg_offset   = significant_cg_map_2 [x_cg + y_cg * (17)];
         sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, significant_cg_offset);
         if(sig_sb_flg){
@@ -4305,7 +4294,8 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
         }
     }
 
-    uint8_t sig_sb_flg = 1;
+    sig_sb_flg = 1;
+
     if(num_sig_cg){
         int x_cg = scan_cg_x[i];
         int y_cg = scan_cg_y[i];
