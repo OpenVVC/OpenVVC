@@ -1,10 +1,10 @@
 #ifndef SLICEDEC_H
 #define SLICEDEC_H
+#include <stdint.h>
 #include <pthread.h>
 #include <stdatomic.h>
 
 #include "ovdefs.h"
-#include "ctudec.h"
 
 struct EntryThread;
 

@@ -1,8 +1,7 @@
-#include "ovutils.h"
 #include <stddef.h>
 #include <stdint.h>
 
-#include "rcn_intra_dc_planar.h"
+#include "ovutils.h"
 
 static const uint8_t vvc_pdpc_w[3][128] = {
         { 32, 8, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -266,11 +265,13 @@ vvc_intra_planar_pdpc(const uint16_t* const src_above,
         // #endif
 }
 
-void rcn_init_dc_planar_functions(struct RCNFunctions *const rcn_funcs){
-  rcn_funcs->dc.func = &vvc_intra_dc;
-  rcn_funcs->dc.pdpc = &vvc_intra_dc_pdpc;
+void
+rcn_init_dc_planar_functions(struct RCNFunctions *const rcn_funcs)
+{
+    rcn_funcs->dc.func = &vvc_intra_dc;
+    rcn_funcs->dc.pdpc = &vvc_intra_dc_pdpc;
 
-  rcn_funcs->planar.func = &vvc_intra_planar;
-  rcn_funcs->planar.pdpc[0] = &vvc_intra_planar_pdpc;
-  rcn_funcs->planar.pdpc[1] = &vvc_intra_planar_pdpc;
+    rcn_funcs->planar.func = &vvc_intra_planar;
+    rcn_funcs->planar.pdpc[0] = &vvc_intra_planar_pdpc;
+    rcn_funcs->planar.pdpc[1] = &vvc_intra_planar_pdpc;
 }

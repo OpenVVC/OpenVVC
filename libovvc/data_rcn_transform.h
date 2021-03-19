@@ -31,6 +31,7 @@ extern const int8_t lfnst_3_0_8x8[16 * 48];
 extern const int8_t lfnst_3_1_8x8[16 * 48];
 
 extern const int8_t* const lfnst_4x4[4][2];
+#if 0
 extern const int8_t lfnst_0_0_4x4[16 * 16];
 extern const int8_t lfnst_0_1_4x4[16 * 16];
 extern const int8_t lfnst_1_0_4x4[16 * 16];
@@ -39,4 +40,5 @@ extern const int8_t lfnst_2_0_4x4[16 * 16];
 extern const int8_t lfnst_2_1_4x4[16 * 16];
 extern const int8_t lfnst_3_0_4x4[16 * 16];
 extern const int8_t lfnst_3_1_4x4[16 * 16];
+#endif
 #endif // RCN_TRANSFORM_DATA_H

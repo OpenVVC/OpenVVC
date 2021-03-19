@@ -480,7 +480,9 @@ static inline uint8_t
 use_strong_filter_c2(uint16_t* src, const int stride, const int beta, const int tc, uint8_t is_ctb_b)
 {
     const int16_t m0 = src[(-stride * 4) >> is_ctb_b];
+    #if 0
     const int16_t m2 = src[-stride * 2];
+    #endif
     const int16_t m3 = src[-stride    ];
     const int16_t m4 = src[ 0         ];
     const int16_t m7 = src[ stride * 3];
@@ -644,7 +646,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
                     } else {
                         int j;
                         uint16_t *src = src0;
-                        for (unsigned j = 0; j < 2; ++j) {
+                        for (j = 0; j < 2; ++j) {
                             filter_chroma_strong(src, 1, dbf_params.tc);
                             src += stride;
                         }
@@ -719,7 +721,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
                     } else {
                         int j;
                         uint16_t *src = src0;
-                        for (unsigned j = 0; j < 2; ++j) {
+                        for (j = 0; j < 2; ++j) {
                             filter_chroma_strong(src, 1, dbf_params.tc);
                             src += stride;
                         }

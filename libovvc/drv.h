@@ -1,7 +1,8 @@
 #ifndef DRV_H
 #define DRV_H
 #include <stdint.h>
-#include "ctudec.h"
+
+#include "ovdefs.h"
 
 enum OVIntraMode
 {
@@ -35,6 +36,7 @@ void vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx,
 void vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
                            uint8_t intra_mode, int x0, int y0,
                            int log2_pb_w, int log2_pb_h);
+
 VVCCU drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
                    uint8_t x0, uint8_t y0, uint8_t log2_cb_w, uint8_t log2_cb_h,
                    VVCCU cu);

@@ -1,8 +1,7 @@
 #ifndef RCN_H
 #define RCN_H
 
-#include "ctudec.h"
-#include "rcn_structures.h"
+#include "ovdefs.h"
 
 /* FIXME
  * rename OVINTRA
@@ -17,6 +16,10 @@ extern const struct TrFunc tr_templates[NB_TR_TYPES][NB_TR_SIZES];
 #endif
 /* FIXME remove some args and give RCNCTX instead of ctudec
  */
+struct OVRCNCtx;
+struct InterDRVCtx;
+struct RCNFunctions;
+struct DBFInfo;
 
 void rcn_residual(OVCTUDec *const ctudec,
              int16_t *const dst, int16_t *src,

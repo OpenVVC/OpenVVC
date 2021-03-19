@@ -611,7 +611,9 @@ vvc_inverse_dct_ii_dc(int16_t* const dst, int log2_tb_w, int log2_tb_h,
         }
 }
 
-void rcn_init_tr_functions(struct RCNFunctions *const rcn_funcs){
+void
+rcn_init_tr_functions(struct RCNFunctions *const rcn_funcs)
+{
   rcn_funcs->tr.func[DST_VII][0] = NULL;
   rcn_funcs->tr.func[DST_VII][1] = NULL;
   rcn_funcs->tr.func[DST_VII][2] = &vvc_inverse_dst_vii_4;

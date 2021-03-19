@@ -1,4 +1,5 @@
-#include "stdint.h"
+#include <stdint.h>
+
 #include "data_rcn_mip.h"
 
 const uint8_t mip_weight_4x4[16*16*4] =

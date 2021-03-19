@@ -8,6 +8,7 @@
  */
 
 #include <stdint.h>
+/*FIXME remove CTUDEC or do not define those in headers*/
 #include "ctudec.h"
 
 

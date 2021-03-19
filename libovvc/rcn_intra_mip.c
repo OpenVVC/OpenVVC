@@ -152,6 +152,8 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
     int i, j;
 
     int rnd = (1 << log2_bnd_x) >> 1;
+    uint8_t red_size = log2_pu_h == 2 || log2_pu_w == 2 || (log2_pu_h <= 3 && log2_pu_w <= 3);
+    int16_t input_offset;
 
     fill_ref_left_0(src, dst_stride, ref_lft,
                     rcn_ctx->progress_field.vfield[x0 >> 2],
@@ -179,9 +181,8 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
         bndy_line[(1 << log2_bndy) + j] = (sum + rnd) >> log2_bnd_y;
     }
 
-    int16_t input_offset = bndy_line[0];
+    input_offset = bndy_line[0];
 
-    uint8_t red_size = log2_pu_h == 2 || log2_pu_w == 2 || (log2_pu_h <= 3 && log2_pu_w <= 3);
 
     if (red_size) {
         bndy_line[0] = (1 << (10 - 1));
