@@ -23,6 +23,7 @@ ov_log(void* ctx, int log_level, const char* log_content, ...)
 
         va_start(args, log_content);
 
+        #if 0
         if (log_level <= ov_log_level) {
                 const char* type = "NULL";
                 if (ctx != NULL) {
@@ -33,6 +34,7 @@ ov_log(void* ctx, int log_level, const char* log_content, ...)
                 vfprintf(stderr, log_content, args);
                 fprintf(stderr, "%s", RST);
         }
+        #endif
 
         va_end(args);
 }

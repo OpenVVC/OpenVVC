@@ -287,8 +287,8 @@ static int
 compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, uint32_t poc)
 {
     const int nb_refs = rpl->num_ref_entries;
-    rpl_info->nb_refs = nb_refs;
     int i;
+    rpl_info->nb_refs = nb_refs;
     for (i = 0; i < nb_refs; ++i) {
         const struct RefPic *const rp = &rpl->rp_list[i];
         struct RefInfo *const rinfo = &rpl_info->ref_info[i];

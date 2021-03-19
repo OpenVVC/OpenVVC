@@ -15,7 +15,6 @@ extern const uint8_t ff_vvc_diag_scan_8x8_num_cg [64];
 
 extern const uint8_t *const ff_vvc_idx_2_num[6][6];
 
-extern const uint8_t ff_vvc_default_num_cg[16];
 extern const uint8_t ff_vvc_inv_diag_scan_2x2 [4];
 extern const uint8_t ff_vvc_inv_diag_scan_4x2 [8];
 extern const uint8_t ff_vvc_inv_diag_scan_2x4 [8];

@@ -89,7 +89,7 @@ typedef struct OVAccessUnit
     OVPictureUnit *picture_units;
 } OVAccessUnit;
 
-int ov_init_nalu();
+int ov_init_nalu(void);
 
 void ov_free_pu(OVPictureUnit **pu);
 
