@@ -2,15 +2,19 @@
 #define RCN_H
 
 #include "ctudec.h"
+#include "rcn_structures.h"
 
 /* FIXME
  * rename OVINTRA
  * MERGE with INTER modes ?
- * STORE on uint8_t
+ * STORE on uint8_t 
  * find meaningful place for definition
  */
 
 
+#if 0
+extern const struct TrFunc tr_templates[NB_TR_TYPES][NB_TR_SIZES];
+#endif
 /* FIXME remove some args and give RCNCTX instead of ctudec
  */
 
@@ -52,12 +56,16 @@ void rcn_mcp_b(OVCTUDec*const lc_ctx, struct InterDRVCtx *const inter_ctx,
 void rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_h,
              OVMV mv, uint8_t inter_dir);
 
-void rcn_init_cclm_functions_collocated(struct RCNFunctions *rcn_func);
-
 /* FIXME check vertical / horizontal */
 void rcn_init_cclm_functions(struct RCNFunctions *rcn_func);
 
+void rcn_init_cclm_functions_collocated(struct RCNFunctions *rcn_func);
+
 void rcn_init_ict_functions(struct RCNFunctions *rcn_func, uint8_t type);
+
+void rcn_init_tr_functions(struct RCNFunctions *const rcn_funcs);
+
+void rcn_init_dc_planar_functions(struct RCNFunctions *const rcn_funcs);
 
 void rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInfo *const dbf_info,
                  uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y);
@@ -65,9 +73,4 @@ void rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInfo *co
 void rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
                            uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y,
                            uint8_t ctu_w, uint8_t ctu_h);
-
-void
-vvc_add_residual(const int16_t *src, uint16_t *dst,
-                int log2_tb_w, int log2_tb_h,
-                int scale);                           
 #endif //RCN_H

@@ -95,6 +95,7 @@ vvc_ict_scale_residual(int16_t *residual_buff, int log2_tb_w, int log2_tb_h,
 }
 #endif
 
+#if 0
 static void
 vvc_transform_add_residual(const int16_t *src, uint16_t *dst,
                            int log2_tb_w, int log2_tb_h)
@@ -112,6 +113,7 @@ vvc_transform_add_residual(const int16_t *src, uint16_t *dst,
         _src += tb_w;
     }
 }
+#endif
 
 static void
 vvc_scale_add_residual(const int16_t *src, uint16_t *dst,
@@ -213,6 +215,7 @@ vvc_scale_sub_half_residual(const int16_t *src, uint16_t *dst,
     }
 }
 
+/*FIXME needed by sse */
 void
 vvc_add_residual(const int16_t *src, uint16_t *dst,
                  int log2_tb_w, int log2_tb_h,
@@ -220,7 +223,6 @@ vvc_add_residual(const int16_t *src, uint16_t *dst,
 {
     int i, j;
     int32_t value;
-    uint16_t sign;
     const int16_t *_src = src;
     int16_t       *_dst = dst;
     const int tb_w = 1 << log2_tb_w;
@@ -242,7 +244,6 @@ vvc_sub_residual(const int16_t *src, uint16_t *dst,
 {
     int i, j;
     int32_t value;
-    uint16_t sign;
     const int16_t *_src = src;
     int16_t       *_dst = dst;
     const int tb_w = 1 << log2_tb_w;
@@ -264,7 +265,6 @@ vvc_add_half_residual(const int16_t *src, uint16_t *dst,
 {
     int i, j;
     int32_t value;
-    uint16_t sign;
     const int16_t *_src = src;
     int16_t       *_dst = dst;
     const int tb_w = 1 << log2_tb_w;
@@ -286,7 +286,6 @@ vvc_sub_half_residual(const int16_t *src, uint16_t *dst,
 {
     int i, j;
     int32_t value;
-    uint16_t sign;
     const int16_t *_src = src;
     int16_t       *_dst = dst;
     const int tb_w = 1 << log2_tb_w;
@@ -305,8 +304,6 @@ vvc_sub_half_residual(const int16_t *src, uint16_t *dst,
 void
 rcn_init_ict_functions(struct RCNFunctions *rcn_func, uint8_t type)
 {
-    uint8_t joint_cbcr_sign = 0;
-    uint8_t chroma_residual_scale_flag = 0;
     switch (type)
     {
         case 3:
