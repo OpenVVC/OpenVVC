@@ -262,8 +262,8 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct VVCTMVP *const tmvp_ctx = &inter_ctx->tmvp_ctx;
 
-    struct MVPlane *plane0 = tmvp_ctx->col_plane0;
-    struct MVPlane *plane1 = tmvp_ctx->col_plane1;
+    const struct MVPlane *plane0 = tmvp_ctx->col_plane0;
+    const struct MVPlane *plane1 = tmvp_ctx->col_plane1;
 
     if (is_border_pic) {
         memset(tmvp_ctx->dir_map_v0, 0, sizeof(uint64_t) * 33);
@@ -596,8 +596,8 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
     if (nb_cand < 4) {
         if (cand_tl) {
             int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y - 1);
+            OVMV mv_B2   = mv_buff[pos_in_buff];
             cand_amvp[4] = mv_buff[pos_in_buff];
-            OVMV mv_B2 = mv_buff[pos_in_buff];
             if ((!cand_l || !MV_CMP(mv_B2, cand_amvp[1])) &&
                 (!cand_t || !MV_CMP(mv_B2, cand_amvp[0]))) {
                 cand[nb_cand] = mv_B2;
@@ -821,6 +821,19 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
     #if 1
     if (inter_ctx->tmvp_enabled) {
         const struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
+        uint8_t cand_c0;
+        uint8_t cand_c1;
+        uint8_t cand_c01;
+        uint8_t cand_c11;
+        uint64_t c0_col;
+        uint64_t c0_col1;
+        uint64_t c1_col;
+        uint64_t c1_col1;
+
+        int c1_x = pb_x + (nb_pb_w >> 1);
+        int c1_y = pb_y + (nb_pb_h >> 1);
+        int c0_x = pb_x + nb_pb_w;
+        int c0_y = pb_y + nb_pb_h;
         #if 1
         if (!inter_ctx->tmvp_avail) {
             /* FIXME thread synchro */
@@ -830,23 +843,14 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         }
         #endif
 
-        uint8_t cand_c0;
-        uint8_t cand_c1;
-        uint8_t cand_c01;
-        uint8_t cand_c11;
-
-        int c1_x = pb_x + (nb_pb_w >> 1);
-        int c1_y = pb_y + (nb_pb_h >> 1);
-        int c0_x = pb_x + nb_pb_w;
-        int c0_y = pb_y + nb_pb_h;
 
         #if 0
         if (tmvp->col_ref == &ctudec->ref0) {
         #endif
-            uint64_t c0_col  = tmvp->dir_map_v0[c0_x + 1];
-            uint64_t c0_col1 = tmvp->dir_map_v1[c0_x + 1];
-            uint64_t c1_col  = tmvp->dir_map_v0[c1_x + 1];
-            uint64_t c1_col1 = tmvp->dir_map_v1[c1_x + 1];
+            c0_col  = tmvp->dir_map_v0[c0_x + 1];
+            c0_col1 = tmvp->dir_map_v1[c0_x + 1];
+            c1_col  = tmvp->dir_map_v0[c1_x + 1];
+            c1_col1 = tmvp->dir_map_v1[c1_x + 1];
             cand_c0  = !!(c0_col  & POS_MASK(pb_y, nb_pb_h));
             cand_c01 = !!(c0_col1 & POS_MASK(pb_y, nb_pb_h));
             cand_c1  = !!(c1_col  & POS_MASK(pb_y, nb_pb_h >> 1));
@@ -867,8 +871,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         /*FIXME check whether TMVP candidates RPL order is correct*/
 
         if (cand_c0 | cand_c01) {
-            cand[nb_cand].inter_dir = 3;
             int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+            cand[nb_cand].inter_dir = 3;
             if (cand_c0) {
                 #if 0
                 OVMV c0  = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
@@ -895,8 +899,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                     return cand[merge_idx];
             }
         } else if (cand_c1 | cand_c11) {
-            cand[nb_cand].inter_dir = 3;
             int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+            cand[nb_cand].inter_dir = 3;
             if (cand_c1) {
                 #if 0
                 OVMV c1  = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
