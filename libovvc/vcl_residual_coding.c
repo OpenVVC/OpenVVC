@@ -121,7 +121,7 @@ static const VVCSBStates chroma_ctx_offsets = {
     GT1_FLAG_C_CTX_OFFSET,
 };
 
-uint8_t
+static uint8_t
 ovcabac_read_ae_significant_cg_flag(OVCABACCtx *const cabac_ctx,
                                     uint8_t got_significant_neighbour)
 {
@@ -129,7 +129,7 @@ ovcabac_read_ae_significant_cg_flag(OVCABACCtx *const cabac_ctx,
     return ovcabac_ae_read(cabac_ctx, &cabac_state[SIG_COEFF_GROUP_CTX_OFFSET + got_significant_neighbour]);
 }
 
-uint8_t
+static uint8_t
 ovcabac_read_ae_significant_cg_flag_chroma(OVCABACCtx *const cabac_ctx,
                                            uint8_t got_significant_neighbour)
 {
@@ -137,7 +137,7 @@ ovcabac_read_ae_significant_cg_flag_chroma(OVCABACCtx *const cabac_ctx,
     return ovcabac_ae_read(cabac_ctx, &cabac_state[SIG_COEFF_GROUP_C_CTX_OFFSET + got_significant_neighbour]);
 }
 
-uint8_t
+static uint8_t
 ovcabac_read_ae_significant_ts_cg_flag(OVCABACCtx *const cabac_ctx,
                                        uint8_t got_significant_neighbour)
 {
