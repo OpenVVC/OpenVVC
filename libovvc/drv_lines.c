@@ -822,10 +822,11 @@ drv_line_next_line(OVCTUDec *const ctudec, const struct DRVLines *const lns)
     load_first_ctu_inter(lns, ctudec, 0);
 
     memset(intra_info->luma_mode_y, 0, sizeof(*intra_info->luma_mode_y) * nb_pb_ctb_w);
+
     memset(drv_ctx->qp_map_x, qp_val, sizeof(*drv_ctx->qp_map_x) * nb_pb_ctb_w);
     memset(drv_ctx->qp_map_y, qp_val, sizeof(*drv_ctx->qp_map_y) * nb_pb_ctb_w);
 
-    #if 1
+    #if 0
     memset(&ctudec->dbf_info, 0, sizeof(ctudec->dbf_info));
     #endif
     dbf_load_info(&ctudec->dbf_info, &lns->dbf_lines, log2_ctb_s, 0);
