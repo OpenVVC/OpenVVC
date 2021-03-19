@@ -3834,9 +3834,9 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_c->bidir0[2][SIZE_BLOCK_8] = &oh_hevc_put_hevc_bi0_epel_v8_10_sse;
   mc_c->bidir1[2][SIZE_BLOCK_8] = &oh_hevc_put_hevc_bi1_epel_v8_10_sse;
 
-  mc_c->unidir[3][SIZE_BLOCK_16] = &oh_hevc_put_hevc_uni_epel_hv16_10_sse;
-  mc_c->bidir0[3][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi0_epel_hv16_10_sse;
-  mc_c->bidir1[3][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi1_epel_hv16_10_sse;
+  mc_c->unidir[3][SIZE_BLOCK_8] = &oh_hevc_put_hevc_uni_epel_hv8_10_sse;
+  mc_c->bidir0[3][SIZE_BLOCK_8] = &oh_hevc_put_hevc_bi0_epel_hv8_10_sse;
+  mc_c->bidir1[3][SIZE_BLOCK_8] = &oh_hevc_put_hevc_bi1_epel_hv8_10_sse;
 
   mc_c->unidir[0][SIZE_BLOCK_16] = &oh_hevc_put_hevc_uni_pel_pixels16_10_sse;
   mc_c->bidir0[0][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi0_pel_pixels16_10_sse;
