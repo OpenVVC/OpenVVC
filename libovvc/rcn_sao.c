@@ -174,7 +174,7 @@ void rcn_sao_ctu(OVCTUDec *const ctudec, int ctb_x_pic, int ctb_y_pic, int nb_ct
 
 void rcn_sao_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pic) 
 {  
-    if (!ctudec->sao_info.sao_luma_flag && !!ctudec->sao_info.sao_chroma_flag){
+    if (!ctudec->sao_info.sao_luma_flag && !ctudec->sao_info.sao_chroma_flag){
         return;
     }
     const OVPartInfo *const pinfo = ctudec->part_ctx;
@@ -206,5 +206,3 @@ void rcn_sao_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
         // save_last_cols_ctu(lc_ctx, ctu_width, vvc_ctx->margin, is_border_tile);
     }
 }
-
-

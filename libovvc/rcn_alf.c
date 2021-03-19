@@ -18,8 +18,7 @@ static inline int clipALF(const int clip, const int16_t ref, const int16_t val0,
   }
 
 
-//TODO: (on all functions) use the pointer to RcnALF, or directly the structure ?
-void alf_create_arrays(RcnALF* alf)
+void alf_create_arrays(RCNALF* alf)
 {
     int tab[ALF_FIXED_FILTER_NUM][MAX_NUM_ALF_LUMA_COEFF] =
     {
@@ -122,7 +121,7 @@ void alf_create_arrays(RcnALF* alf)
 }
 
 
-void alf_create(OVCTUDec *const ctudec, RcnALF* alf)
+void alf_create(OVCTUDec *const ctudec, RCNALF* alf)
 {
     const OVPartInfo *const pinfo = ctudec->part_ctx;
     uint8_t log2_ctb_size = pinfo->log2_ctu_s;
@@ -131,31 +130,28 @@ void alf_create(OVCTUDec *const ctudec, RcnALF* alf)
     alf->classifier =  0 ;
     for (int i = 0; i < NUM_DIRECTIONS; i++)
     {
-        alf->laplacian[i] = alf->laplacianPtr[i];
-        for (int j = 0; j < sizeof(alf->laplacianPtr[i]) / sizeof(alf->laplacianPtr[i][0]); j++)
+        alf->laplacian[i] = alf->laplacian_ptr[i];
+        for (int j = 0; j < sizeof(alf->laplacian_ptr[i]) / sizeof(alf->laplacian_ptr[i][0]); j++)
         {
-            alf->laplacianPtr[i][j] = alf->laplacianData[i][j];
+            alf->laplacian_ptr[i][j] = alf->laplacian_data[i][j];
         }
     }
-    // alf->numCTUsInWidth = ( ctudec->pic_w / ctu_width ) + ( ( ctudec->pic_w % ctu_width ) ? 1 : 0 );
-    // alf->numCTUsInHeight = ( ctudec->pic_h / ctu_width ) + ( ( ctudec->pic_h % ctu_width ) ? 1 : 0 );
-    // alf->numCTUsInPic = alf->numCTUsInHeight * alf->numCTUsInWidth;
-
+    
     //BITDEPTH: uniquement pour bitdepth 10
     int bit_depth = 10; 
-    alf->alfClippingValues[CHANNEL_TYPE_LUMA][0] = 1 << bit_depth;  
+    alf->alf_clipping_values[CHANNEL_TYPE_LUMA][0] = 1 << bit_depth;  
     int shift_luma = bit_depth - 8;
     for( int i = 1; i < MAX_ALF_NUM_CLIP_VAL; ++i )
     {
-        alf->alfClippingValues[CHANNEL_TYPE_LUMA][i] = 1 << (7 - 2 * i + shift_luma);
+        alf->alf_clipping_values[CHANNEL_TYPE_LUMA][i] = 1 << (7 - 2 * i + shift_luma);
     }
 
-    alf->alfClippingValues[CHANNEL_TYPE_CHROMA][0] = 1 << bit_depth;
+    alf->alf_clipping_values[CHANNEL_TYPE_CHROMA][0] = 1 << bit_depth;
     int shift_chroma = bit_depth - 8;
-    alf->alfClippingValues[CHANNEL_TYPE_CHROMA][0] = 1 << bit_depth;
+    alf->alf_clipping_values[CHANNEL_TYPE_CHROMA][0] = 1 << bit_depth;
     for( int i = 1; i < MAX_ALF_NUM_CLIP_VAL; ++i )
     {
-        alf->alfClippingValues[CHANNEL_TYPE_CHROMA][i] = 1 << (7 - 2 * i + shift_chroma);
+        alf->alf_clipping_values[CHANNEL_TYPE_CHROMA][i] = 1 << (7 - 2 * i + shift_chroma);
     }
 
     alf_create_arrays(alf);
@@ -163,10 +159,10 @@ void alf_create(OVCTUDec *const ctudec, RcnALF* alf)
     // Classification
     if ( alf->classifier == 0 )
     {
-        alf->classifier = ov_malloc(sizeof(ALFClassifier*)*ctu_width);
-        for (int i = 0; i < ctu_width; i++)
+        alf->classifier = ov_malloc(sizeof(ALFClassifier*)*ctu_width/4);
+        for (int i = 0; i < ctu_width/4; i++)
         {
-            alf->classifier[i] = ov_malloc(sizeof(ALFClassifier)*ctu_width );
+            alf->classifier[i] = ov_malloc(sizeof(ALFClassifier)*ctu_width/4 );
         }
     }
 
@@ -177,19 +173,19 @@ void alf_create(OVCTUDec *const ctudec, RcnALF* alf)
             int fixed_filter_idx = alf->class_to_filter_mapping[filter_set_idx][class_idx];
             for (int i = 0; i < MAX_NUM_ALF_LUMA_COEFF - 1; i++)
             {
-                alf->fixedFilterSetCoeffDec[filter_set_idx][class_idx * MAX_NUM_ALF_LUMA_COEFF + i] = alf->fixed_filter_coeff[fixed_filter_idx][i];
+                alf->fixed_filter_coeff_dec[filter_set_idx][class_idx * MAX_NUM_ALF_LUMA_COEFF + i] = alf->fixed_filter_coeff[fixed_filter_idx][i];
             }
-            alf->fixedFilterSetCoeffDec[filter_set_idx][class_idx * MAX_NUM_ALF_LUMA_COEFF + MAX_NUM_ALF_LUMA_COEFF - 1] = (1 << (NUM_BITS - 1));
+            alf->fixed_filter_coeff_dec[filter_set_idx][class_idx * MAX_NUM_ALF_LUMA_COEFF + MAX_NUM_ALF_LUMA_COEFF - 1] = (1 << (NUM_BITS - 1));
         }
     }
     for (int i = 0; i < MAX_NUM_ALF_LUMA_COEFF * MAX_NUM_ALF_CLASSES; i++)
     {
-        alf->clipDefault[i] = alf->alfClippingValues[CHANNEL_TYPE_LUMA][0];
+        alf->clip_default[i] = alf->alf_clipping_values[CHANNEL_TYPE_LUMA][0];
     }
 }
 
 
-void alf_reconstructCoeff(RcnALF* alf, const struct OVALFData* alf_data, ChannelType channel)
+void alf_reconstructCoeff(RCNALF* alf, const struct OVALFData* alf_data, ChannelType channel)
 {
     int factor = 1 << (NUM_BITS - 1);
     int num_classes = ( channel == CHANNEL_TYPE_LUMA ) ? MAX_NUM_ALF_CLASSES : 1;
@@ -197,30 +193,30 @@ void alf_reconstructCoeff(RcnALF* alf, const struct OVALFData* alf_data, Channel
     int num_coeff_minus1 = num_coeff - 1;
     const int num_alts = ( channel == CHANNEL_TYPE_LUMA ) ? 1 : alf_data->alf_chroma_num_alt_filters_minus1 + 1;
     
-    int numFilters = ( channel == CHANNEL_TYPE_LUMA ) ? alf_data->alf_luma_num_filters_signalled_minus1 + 1 : 1;
+    int num_filters = ( channel == CHANNEL_TYPE_LUMA ) ? alf_data->alf_luma_num_filters_signalled_minus1 + 1 : 1;
     int16_t* coeff ;
-    int16_t* clipp;
+    int16_t* clip;
 
     for( int alt_idx = 0; alt_idx < num_alts; ++ alt_idx )
     {
         if( channel == CHANNEL_TYPE_CHROMA )
         {
             coeff = alf_data->alf_chroma_coeff[alt_idx];
-            clipp = alf_data->alf_chroma_clip_idx[alt_idx];
+            clip = alf_data->alf_chroma_clip_idx[alt_idx];
             for( int coeffIdx = 0; coeffIdx < num_coeff_minus1; ++coeffIdx )
             {
-                alf->chroma_coeffFinal[alt_idx][coeffIdx] = coeff[coeffIdx];
-                int clipIdx = alf_data->alf_chroma_clip_flag ? clipp[coeffIdx] : 0;
-                alf->chroma_clippFinal[alt_idx][coeffIdx] = alf->alfClippingValues[channel][clipIdx];
+                alf->chroma_coeff_final[alt_idx][coeffIdx] = coeff[coeffIdx];
+                int clipIdx = alf_data->alf_chroma_clip_flag ? clip[coeffIdx] : 0;
+                alf->chroma_clip_final[alt_idx][coeffIdx] = alf->alf_clipping_values[channel][clipIdx];
             }
-            alf->chroma_coeffFinal[alt_idx][num_coeff_minus1] = factor;
-            alf->chroma_clippFinal[alt_idx][num_coeff_minus1] = alf->alfClippingValues[channel][0];
+            alf->chroma_coeff_final[alt_idx][num_coeff_minus1] = factor;
+            alf->chroma_clip_final[alt_idx][num_coeff_minus1] = alf->alf_clipping_values[channel][0];
             continue;
         }
         else{
             coeff = alf_data->alf_luma_coeff;
-            clipp = alf_data->alf_luma_clip_idx;
-            for( int filter_idx = 0; filter_idx < numFilters; filter_idx++ )
+            clip = alf_data->alf_luma_clip_idx;
+            for( int filter_idx = 0; filter_idx < num_filters; filter_idx++ )
             {
                 coeff[filter_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = factor;
             }
@@ -231,21 +227,21 @@ void alf_reconstructCoeff(RcnALF* alf, const struct OVALFData* alf_data, Channel
             int filter_idx = alf_data->alf_luma_coeff_delta_idx[class_idx];
             for (int coeffIdx = 0; coeffIdx < num_coeff_minus1; ++coeffIdx)
             {
-                alf->coeffFinal[class_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] = coeff[filter_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx];
+                alf->coeff_final[class_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] = coeff[filter_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx];
             }
-            alf->coeffFinal[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = factor;
-            alf->clippFinal[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = alf->alfClippingValues[channel][0];
+            alf->coeff_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = factor;
+            alf->clip_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = alf->alf_clipping_values[channel][0];
             for( int coeffIdx = 0; coeffIdx < num_coeff_minus1; ++coeffIdx )
             {
-                int clipIdx = alf_data->alf_chroma_clip_flag ? (clipp + filter_idx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] : 0;
-                (alf->clippFinal + class_idx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] = alf->alfClippingValues[channel][clipIdx];
+                int clipIdx = alf_data->alf_chroma_clip_flag ? (clip + filter_idx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] : 0;
+                (alf->clip_final + class_idx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] = alf->alf_clipping_values[channel][clipIdx];
             }
-            alf->clippFinal[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = alf->alfClippingValues[channel][0];
+            alf->clip_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = alf->alf_clipping_values[channel][0];
         }
     }
 }
 
-void alf_reconstruct_coeff_APS(RcnALF* alf, OVCTUDec *const ctudec, uint8_t luma_flag, uint8_t chroma_flag)
+void alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t luma_flag, uint8_t chroma_flag)
 {
     const struct OVALFData* alf_data = ctudec->alf_info.aps_alf_data;
 
@@ -259,9 +255,8 @@ void alf_reconstruct_coeff_APS(RcnALF* alf, OVCTUDec *const ctudec, uint8_t luma
             alf_reconstructCoeff(alf, alf_data, CHANNEL_TYPE_LUMA);
 
             for(int j = 0; j < MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF; j++){
-                //TODO: m_coeffApsLuma may be only 1 dimensional
-                alf->coeffApsLuma[0][j] = alf->coeffFinal[j];
-                alf->clippApsLuma[0][j] = alf->clippFinal[j];
+                alf->coeff_aps_luma[0][j] = alf->coeff_final[j];
+                alf->clip_aps_luma[0][j] = alf->clip_final[j];
             }
         // }
     }
@@ -275,9 +270,9 @@ void alf_reconstruct_coeff_APS(RcnALF* alf, OVCTUDec *const ctudec, uint8_t luma
 
 
 
-void alf_deriveClassificationBlk(ALFClassifier **classifier, int **laplacian[NUM_DIRECTIONS],
+void rcn_alf_derive_classificationBlk(ALFClassifier **classifier, int **laplacian[NUM_DIRECTIONS],
                                                  int16_t *const src, const int stride, const Area blk,
-                                                 const int shift, const int vbCTUHeight, int vbPos)
+                                                 const int shift, const int ctu_height, int virbnd_pos)
 {
  
   static const int th[16] = { 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4 };
@@ -287,7 +282,7 @@ void alf_deriveClassificationBlk(ALFClassifier **classifier, int **laplacian[NUM
   int flP1 = fl + 1;
   int fl2 = 2 * fl;
 
-  int mainDirection, secondaryDirection, dirTempHV, dirTempD;
+  int main_dir, secondary_dir, dir_temp_hv, dir_temp_d;
 
   int pixY;
   int height = blk.height + fl2;
@@ -302,11 +297,11 @@ void alf_deriveClassificationBlk(ALFClassifier **classifier, int **laplacian[NUM
     const int16_t *src3 = &src[yoffset + stride * 2];
 
     const int y = blk.y - 2 + i;
-    if (y > 0 && (y & (vbCTUHeight - 1)) == vbPos - 2)
+    if (y > 0 && (y & (ctu_height - 1)) == virbnd_pos - 2)
     {
       src3 = &src[yoffset + stride];
     }
-    else if (y > 0 && (y & (vbCTUHeight - 1)) == vbPos)
+    else if (y > 0 && (y & (ctu_height - 1)) == virbnd_pos)
     {
       src0 = &src[yoffset];
     }
@@ -376,14 +371,14 @@ void alf_deriveClassificationBlk(ALFClassifier **classifier, int **laplacian[NUM
     for( int j = 0; j < blk.width; j += clsSizeX )
     {
       int sumV = 0; int sumH = 0; int sumD0 = 0; int sumD1 = 0;
-      if (((i + blk.y) % vbCTUHeight) == (vbPos - 4))
+      if (((i + blk.y) % ctu_height) == (virbnd_pos - 4))
       {
         sumV = pYver[j] + pYver2[j] + pYver4[j];
         sumH = pYhor[j] + pYhor2[j] + pYhor4[j];
         sumD0 = pYdig0[j] + pYdig02[j] + pYdig04[j];
         sumD1 = pYdig1[j] + pYdig12[j] + pYdig14[j];
       }
-      else if (((i + blk.y) % vbCTUHeight) == vbPos)
+      else if (((i + blk.y) % ctu_height) == virbnd_pos)
       {
         sumV = pYver2[j] + pYver4[j] + pYver6[j];
         sumH = pYhor2[j] + pYhor4[j] + pYhor6[j];
@@ -401,8 +396,8 @@ void alf_deriveClassificationBlk(ALFClassifier **classifier, int **laplacian[NUM
       int tempAct = sumV + sumH;
       int activity = 0;
 
-      const int y = (i + blk.y) & (vbCTUHeight - 1);
-      if (y == vbPos - 4 || y == vbPos)
+      const int y = (i + blk.y) & (ctu_height - 1);
+      if (y == virbnd_pos - 4 || y == virbnd_pos)
       {
         activity = (int16_t) OVMIN( OVMAX(0, (tempAct * 96) >> shift) , maxActivity);
       }
@@ -418,39 +413,39 @@ void alf_deriveClassificationBlk(ALFClassifier **classifier, int **laplacian[NUM
       {
         hv1 = sumV;
         hv0 = sumH;
-        dirTempHV = 1;
+        dir_temp_hv = 1;
       }
       else
       {
         hv1 = sumH;
         hv0 = sumV;
-        dirTempHV = 3;
+        dir_temp_hv = 3;
       }
       if( sumD0 > sumD1 )
       {
         d1 = sumD0;
         d0 = sumD1;
-        dirTempD = 0;
+        dir_temp_d = 0;
       }
       else
       {
         d1 = sumD1;
         d0 = sumD0;
-        dirTempD = 2;
+        dir_temp_d = 2;
       }
       if( (uint32_t)d1 * (uint32_t)hv0 > (uint32_t)hv1 * (uint32_t)d0 )
       {
         hvd1 = d1;
         hvd0 = d0;
-        mainDirection = dirTempD;
-        secondaryDirection = dirTempHV;
+        main_dir = dir_temp_d;
+        secondary_dir = dir_temp_hv;
       }
       else
       {
         hvd1 = hv1;
         hvd0 = hv0;
-        mainDirection = dirTempHV;
-        secondaryDirection = dirTempD;
+        main_dir = dir_temp_hv;
+        secondary_dir = dir_temp_d;
       }
 
       int directionStrength = 0;
@@ -465,45 +460,24 @@ void alf_deriveClassificationBlk(ALFClassifier **classifier, int **laplacian[NUM
 
       if( directionStrength )
       {
-        class_idx += ( ( ( mainDirection & 0x1 ) << 1 ) + directionStrength ) * 5;
+        class_idx += ( ( ( main_dir & 0x1 ) << 1 ) + directionStrength ) * 5;
       }
 
       static const int transposeTable[8] = { 0, 1, 0, 2, 2, 3, 1, 3 };
-      int transpose_idx = transposeTable[mainDirection * 2 + ( secondaryDirection >> 1 )];
+      int transpose_idx = transposeTable[main_dir * 2 + ( secondary_dir >> 1 )];
 
-      int yOffset = (i + blk.y) % vbCTUHeight;
-      int xOffset = (j + blk.x) % vbCTUHeight;
-
-      //TODO: divide by 16 the size of alf.classifier
-      ALFClassifier *cl0 = &classifier[yOffset][xOffset];
-      ALFClassifier *cl1 = &classifier[yOffset + 1][xOffset];
-      ALFClassifier *cl2 = &classifier[yOffset + 2][xOffset];
-      ALFClassifier *cl3 = &classifier[yOffset + 3][xOffset];
+      int yOffset = (i + blk.y) % ctu_height;
+      int xOffset = (j + blk.x) % ctu_height;
       ALFClassifier alf_class;
       alf_class.class_idx = class_idx;
       alf_class.transpose_idx = transpose_idx;
-      cl0[0] = alf_class;
-      cl0[1] = alf_class;
-      cl0[2] = alf_class;
-      cl0[3] = alf_class;
-      cl1[0] = alf_class;
-      cl1[1] = alf_class;
-      cl1[2] = alf_class;
-      cl1[3] = alf_class;
-      cl2[0] = alf_class;
-      cl2[1] = alf_class;
-      cl2[2] = alf_class;
-      cl2[3] = alf_class;
-      cl3[0] = alf_class;
-      cl3[1] = alf_class;
-      cl3[2] = alf_class;
-      cl3[3] = alf_class;
+      classifier[yOffset/4][xOffset/4] = alf_class;
     }
   }
 }
 
 
-void alf_deriveClassification(RcnALF alf, int16_t *const rcn_img, const int stride, Area blk, int ctu_width, int pic_h )
+void rcn_alf_derive_classification(RCNALF alf, int16_t *const rcn_img, const int stride, Area blk, int ctu_width, int pic_h )
 {
     ALFClassifier** classifier = alf.classifier;  
     int height = blk.y + blk.height;
@@ -512,23 +486,18 @@ void alf_deriveClassification(RcnALF alf, int16_t *const rcn_img, const int stri
     int bit_depth = 10;
 
     for( int i = blk.y; i < height; i += CLASSIFICATION_BLK_SIZE )
-    // for( int i = 0; i < blk.height; i += CLASSIFICATION_BLK_SIZE )
     {
-        //TODO: handle alf.alfVBLumaPos
         int nHeight = OVMIN( i + CLASSIFICATION_BLK_SIZE, height ) - i;
-        // int nHeight = OVMIN( i + CLASSIFICATION_BLK_SIZE, blk.height ) - i;
 
         for( int j = blk.x; j < width; j += CLASSIFICATION_BLK_SIZE )
-        // for( int j = 0; j < blk.width; j += CLASSIFICATION_BLK_SIZE )
         {
             int nWidth = OVMIN( j + CLASSIFICATION_BLK_SIZE, width ) - j;
-            // int nWidth = OVMIN( j + CLASSIFICATION_BLK_SIZE, blk.width ) - j;
             Area blk_class;
             blk_class.x = j; blk_class.y = i;
             blk_class.width = nWidth; blk_class.height = nHeight; 
 
             int16_t* rcn_img_class = rcn_img + (i-blk.y)*stride + (j-blk.x);
-            alf_deriveClassificationBlk(classifier, alf.laplacian, rcn_img_class, stride, blk_class, bit_depth + 4
+            rcn_alf_derive_classificationBlk(classifier, alf.laplacian, rcn_img_class, stride, blk_class, bit_depth + 4
             , ctu_width, (blk.height<ctu_width) ? pic_h : blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA
             );
         }
@@ -538,18 +507,18 @@ void alf_deriveClassification(RcnALF alf, int16_t *const rcn_img, const int stri
 
 // dst   : buffer Frame output, pointing to the begining of CTU.
 // src   : filter buffer pre-ALF (of size CTU)
-// blkDst: location and dimension of destination block in frame  
+// blk_dst: location and dimension of destination block in frame  
 // blk   : location and dimension of destination block in filter buffer  
 void alf_filterBlk(ALFClassifier **classifier, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride, 
-                         Area blkDst, Area blk, const ComponentID compId,
-                         const int16_t *filterSet, const int16_t *fClipSet,
-                         const int vbCTUHeight, int vbPos)
+                         Area blk_dst, const uint8_t c_id,
+                         const int16_t *filter_set, const int16_t *clip_set,
+                         const int ctu_height, int virbnd_pos)
 {
   const int16_t *pImgYPad0, *pImgYPad1, *pImgYPad2, *pImgYPad3, *pImgYPad4, *pImgYPad5, *pImgYPad6;
   const int16_t *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
 
-  const int16_t *coef = filterSet;
-  const int16_t *clip = fClipSet;
+  const int16_t *coef = filter_set;
+  const int16_t *clip = clip_set;
 
   const int shift = NUM_BITS - 1;
   const int offset = 1 << ( shift - 1 );
@@ -573,79 +542,79 @@ void alf_filterBlk(ALFClassifier **classifier, int16_t *const dst, int16_t *cons
 
   //Partie a changer pour enlever les mallocs
   //creer une shuffleTab comme dans alf_sse
-  int16_t* filterCoeff;
-  int16_t* filterClipp;
-    const uint8_t bChroma = compId > 0;
+  int16_t* filt_coeff;
+  int16_t* filt_clip;
+    const uint8_t bChroma = c_id > 0;
   if( !bChroma )
   {
-    filterCoeff = ov_malloc(MAX_NUM_ALF_LUMA_COEFF*sizeof(int));
-    filterClipp = ov_malloc(MAX_NUM_ALF_LUMA_COEFF*sizeof(int));
+    filt_coeff = ov_malloc(MAX_NUM_ALF_LUMA_COEFF*sizeof(int));
+    filt_clip = ov_malloc(MAX_NUM_ALF_LUMA_COEFF*sizeof(int));
   }
   else
   {
-    filterCoeff = ov_malloc(MAX_NUM_ALF_CHROMA_COEFF*sizeof(int));
-    filterClipp = ov_malloc(MAX_NUM_ALF_CHROMA_COEFF*sizeof(int));
+    filt_coeff = ov_malloc(MAX_NUM_ALF_CHROMA_COEFF*sizeof(int));
+    filt_clip = ov_malloc(MAX_NUM_ALF_CHROMA_COEFF*sizeof(int));
   }
 
   int16_t* pRec0 = dst ;
   int16_t* pRec1 = pRec0 + dstStride;
 
-  for( int i = 0; i < blkDst.height; i += clsSizeY )
+  for( int i = 0; i < blk_dst.height; i += clsSizeY )
   {
     if( !bChroma )
     {
-      pClass = classifier[i];
+      pClass = classifier[i/4];
     }
 
-    for( int j = 0; j < blkDst.width; j += clsSizeX )
+    for( int j = 0; j < blk_dst.width; j += clsSizeX )
     {
       if( !bChroma )
       {
-        ALFClassifier cl = pClass[j];
+        ALFClassifier cl = pClass[j/4];
         transpose_idx = cl.transpose_idx;
-        coef = filterSet + cl.class_idx * MAX_NUM_ALF_LUMA_COEFF;
-        clip = fClipSet + cl.class_idx * MAX_NUM_ALF_LUMA_COEFF;
+        coef = filter_set + cl.class_idx * MAX_NUM_ALF_LUMA_COEFF;
+        clip = clip_set + cl.class_idx * MAX_NUM_ALF_LUMA_COEFF;
         // printf("%i %i : %i %i\n", j, i, cl.class_idx, cl.transpose_idx);
 
         if( transpose_idx == 1 )
         {
-          int filterCoeff_tmp[MAX_NUM_ALF_LUMA_COEFF] = { coef[9], coef[4], coef[10], coef[8], coef[1], coef[5], coef[11], coef[7], coef[3], coef[0], coef[2], coef[6], coef[12] };
-          int filterClipp_tmp[MAX_NUM_ALF_LUMA_COEFF] = { clip[9], clip[4], clip[10], clip[8], clip[1], clip[5], clip[11], clip[7], clip[3], clip[0], clip[2], clip[6], clip[12] };
+          int filt_coeff_tmp[MAX_NUM_ALF_LUMA_COEFF] = { coef[9], coef[4], coef[10], coef[8], coef[1], coef[5], coef[11], coef[7], coef[3], coef[0], coef[2], coef[6], coef[12] };
+          int filt_clip_tmp[MAX_NUM_ALF_LUMA_COEFF] = { clip[9], clip[4], clip[10], clip[8], clip[1], clip[5], clip[11], clip[7], clip[3], clip[0], clip[2], clip[6], clip[12] };
           for (int i=0; i<MAX_NUM_ALF_LUMA_COEFF; i++)
           {
-            filterCoeff[i] = filterCoeff_tmp[i];
-            filterClipp[i] = filterClipp_tmp[i];
+            filt_coeff[i] = filt_coeff_tmp[i];
+            filt_clip[i] = filt_clip_tmp[i];
           }
 
         }
         else if( transpose_idx == 2 )
         {
-          int filterCoeff_tmp[MAX_NUM_ALF_LUMA_COEFF] = { coef[0], coef[3], coef[2], coef[1], coef[8], coef[7], coef[6], coef[5], coef[4], coef[9], coef[10], coef[11], coef[12] };
-          int filterClipp_tmp[MAX_NUM_ALF_LUMA_COEFF] = { clip[0], clip[3], clip[2], clip[1], clip[8], clip[7], clip[6], clip[5], clip[4], clip[9], clip[10], clip[11], clip[12] };
+          int filt_coeff_tmp[MAX_NUM_ALF_LUMA_COEFF] = { coef[0], coef[3], coef[2], coef[1], coef[8], coef[7], coef[6], coef[5], coef[4], coef[9], coef[10], coef[11], coef[12] };
+          int filt_clip_tmp[MAX_NUM_ALF_LUMA_COEFF] = { clip[0], clip[3], clip[2], clip[1], clip[8], clip[7], clip[6], clip[5], clip[4], clip[9], clip[10], clip[11], clip[12] };
           for (int i=0; i<MAX_NUM_ALF_LUMA_COEFF; i++)
           {
-            filterCoeff[i] = filterCoeff_tmp[i];
-            filterClipp[i] = filterClipp_tmp[i];
+            filt_coeff[i] = filt_coeff_tmp[i];
+            filt_clip[i] = filt_clip_tmp[i];
           }
         }
         else if( transpose_idx == 3 )
         {
-          int filterCoeff_tmp[MAX_NUM_ALF_LUMA_COEFF] = { coef[9], coef[8], coef[10], coef[4], coef[3], coef[7], coef[11], coef[5], coef[1], coef[0], coef[2], coef[6], coef[12] };
-          int filterClipp_tmp[MAX_NUM_ALF_LUMA_COEFF] = { clip[9], clip[8], clip[10], clip[4], clip[3], clip[7], clip[11], clip[5], clip[1], clip[0], clip[2], clip[6], clip[12] };
+          int filt_coeff_tmp[MAX_NUM_ALF_LUMA_COEFF] = { coef[9], coef[8], coef[10], coef[4], coef[3], coef[7], coef[11], coef[5], coef[1], coef[0], coef[2], coef[6], coef[12] };
+          int filt_clip_tmp[MAX_NUM_ALF_LUMA_COEFF] = { clip[9], clip[8], clip[10], clip[4], clip[3], clip[7], clip[11], clip[5], clip[1], clip[0], clip[2], clip[6], clip[12] };
           for (int i=0; i<MAX_NUM_ALF_LUMA_COEFF; i++)
           {
-            filterCoeff[i] = filterCoeff_tmp[i];
-            filterClipp[i] = filterClipp_tmp[i];
+            filt_coeff[i] = filt_coeff_tmp[i];
+            filt_clip[i] = filt_clip_tmp[i];
           }
         }
         else
         {
-          int filterCoeff_tmp[MAX_NUM_ALF_LUMA_COEFF] = { coef[0], coef[1], coef[2], coef[3], coef[4], coef[5], coef[6], coef[7], coef[8], coef[9], coef[10], coef[11], coef[12] };
-          int filterClipp_tmp[MAX_NUM_ALF_LUMA_COEFF] = { clip[0], clip[1], clip[2], clip[3], clip[4], clip[5], clip[6], clip[7], clip[8], clip[9], clip[10], clip[11], clip[12] };
+          int filt_coeff_tmp[MAX_NUM_ALF_LUMA_COEFF] = { coef[0], coef[1], coef[2], coef[3], coef[4], coef[5], coef[6], coef[7], coef[8], coef[9], coef[10], coef[11], coef[12] };
+          int filt_clip_tmp[MAX_NUM_ALF_LUMA_COEFF] = { clip[0], clip[1], clip[2], clip[3], clip[4], clip[5], clip[6], clip[7], clip[8], clip[9], clip[10], clip[11], clip[12] };
           for (int i=0; i<MAX_NUM_ALF_LUMA_COEFF; i++)
           {
-            filterCoeff[i] = filterCoeff_tmp[i];
-            filterClipp[i] = filterClipp_tmp[i];
+            filt_coeff[i] = filt_coeff_tmp[i];
+            filt_clip[i] = filt_clip_tmp[i];
           }
         }
       }
@@ -653,42 +622,42 @@ void alf_filterBlk(ALFClassifier **classifier, int16_t *const dst, int16_t *cons
       {
         if( transpose_idx == 1 )
         {
-          int filterCoeff_tmp[MAX_NUM_ALF_CHROMA_COEFF] = { coef[4], coef[1], coef[5], coef[3], coef[0], coef[2], coef[6] };
-          int filterClipp_tmp[MAX_NUM_ALF_CHROMA_COEFF] = { clip[4], clip[1], clip[5], clip[3], clip[0], clip[2], clip[6] };
+          int filt_coeff_tmp[MAX_NUM_ALF_CHROMA_COEFF] = { coef[4], coef[1], coef[5], coef[3], coef[0], coef[2], coef[6] };
+          int filt_clip_tmp[MAX_NUM_ALF_CHROMA_COEFF] = { clip[4], clip[1], clip[5], clip[3], clip[0], clip[2], clip[6] };
           for (int i=0; i<MAX_NUM_ALF_CHROMA_COEFF; i++)
           {
-            filterCoeff[i] = filterCoeff_tmp[i];
-            filterClipp[i] = filterClipp_tmp[i];
+            filt_coeff[i] = filt_coeff_tmp[i];
+            filt_clip[i] = filt_clip_tmp[i];
           }
         }
         else if( transpose_idx == 2 )
         {
-          int filterCoeff_tmp[MAX_NUM_ALF_CHROMA_COEFF] = { coef[0], coef[3], coef[2], coef[1], coef[4], coef[5], coef[6] };
-          int filterClipp_tmp[MAX_NUM_ALF_CHROMA_COEFF] = { clip[0], clip[3], clip[2], clip[1], clip[4], clip[5], clip[6] };
+          int filt_coeff_tmp[MAX_NUM_ALF_CHROMA_COEFF] = { coef[0], coef[3], coef[2], coef[1], coef[4], coef[5], coef[6] };
+          int filt_clip_tmp[MAX_NUM_ALF_CHROMA_COEFF] = { clip[0], clip[3], clip[2], clip[1], clip[4], clip[5], clip[6] };
           for (int i=0; i<MAX_NUM_ALF_CHROMA_COEFF; i++)
           {
-            filterCoeff[i] = filterCoeff_tmp[i];
-            filterClipp[i] = filterClipp_tmp[i];
+            filt_coeff[i] = filt_coeff_tmp[i];
+            filt_clip[i] = filt_clip_tmp[i];
           }
         }
         else if( transpose_idx == 3 )
         {
-          int filterCoeff_tmp[MAX_NUM_ALF_CHROMA_COEFF] = { coef[4], coef[3], coef[5], coef[1], coef[0], coef[2], coef[6] };
-          int filterClipp_tmp[MAX_NUM_ALF_CHROMA_COEFF] = { clip[4], clip[3], clip[5], clip[1], clip[0], clip[2], clip[6] };
+          int filt_coeff_tmp[MAX_NUM_ALF_CHROMA_COEFF] = { coef[4], coef[3], coef[5], coef[1], coef[0], coef[2], coef[6] };
+          int filt_clip_tmp[MAX_NUM_ALF_CHROMA_COEFF] = { clip[4], clip[3], clip[5], clip[1], clip[0], clip[2], clip[6] };
           for (int i=0; i<MAX_NUM_ALF_CHROMA_COEFF; i++)
           {
-            filterCoeff[i] = filterCoeff_tmp[i];
-            filterClipp[i] = filterClipp_tmp[i];
+            filt_coeff[i] = filt_coeff_tmp[i];
+            filt_clip[i] = filt_clip_tmp[i];
           }
         }
         else
         {
-          int filterCoeff_tmp[MAX_NUM_ALF_CHROMA_COEFF] = { coef[0], coef[1], coef[2], coef[3], coef[4], coef[5], coef[6] };
-          int filterClipp_tmp[MAX_NUM_ALF_CHROMA_COEFF] = { clip[0], clip[1], clip[2], clip[3], clip[4], clip[5], clip[6] };
+          int filt_coeff_tmp[MAX_NUM_ALF_CHROMA_COEFF] = { coef[0], coef[1], coef[2], coef[3], coef[4], coef[5], coef[6] };
+          int filt_clip_tmp[MAX_NUM_ALF_CHROMA_COEFF] = { clip[0], clip[1], clip[2], clip[3], clip[4], clip[5], clip[6] };
           for (int i=0; i<MAX_NUM_ALF_CHROMA_COEFF; i++)
           {
-            filterCoeff[i] = filterCoeff_tmp[i];
-            filterClipp[i] = filterClipp_tmp[i];
+            filt_coeff[i] = filt_coeff_tmp[i];
+            filt_clip[i] = filt_clip_tmp[i];
           }
         }
       }
@@ -705,63 +674,63 @@ void alf_filterBlk(ALFClassifier **classifier, int16_t *const dst, int16_t *cons
 
         pRec1 = pRec0 + j + ii * dstStride;
 
-        int yVb = (blkDst.y + i + ii) & (vbCTUHeight - 1);
-        if (yVb < vbPos && (yVb >= vbPos - (bChroma ? 2 : 4)))   // above
+        int yVb = (blk_dst.y + i + ii) & (ctu_height - 1);
+        if (yVb < virbnd_pos && (yVb >= virbnd_pos - (bChroma ? 2 : 4)))   // above
         {
-          pImg1 = (yVb == vbPos - 1) ? pImg0 : pImg1;
-          pImg3 = (yVb >= vbPos - 2) ? pImg1 : pImg3;
-          pImg5 = (yVb >= vbPos - 3) ? pImg3 : pImg5;
+          pImg1 = (yVb == virbnd_pos - 1) ? pImg0 : pImg1;
+          pImg3 = (yVb >= virbnd_pos - 2) ? pImg1 : pImg3;
+          pImg5 = (yVb >= virbnd_pos - 3) ? pImg3 : pImg5;
 
-          pImg2 = (yVb == vbPos - 1) ? pImg0 : pImg2;
-          pImg4 = (yVb >= vbPos - 2) ? pImg2 : pImg4;
-          pImg6 = (yVb >= vbPos - 3) ? pImg4 : pImg6;
+          pImg2 = (yVb == virbnd_pos - 1) ? pImg0 : pImg2;
+          pImg4 = (yVb >= virbnd_pos - 2) ? pImg2 : pImg4;
+          pImg6 = (yVb >= virbnd_pos - 3) ? pImg4 : pImg6;
         }
-        else if (yVb >= vbPos && (yVb <= vbPos + (bChroma ? 1 : 3)))   // bottom
+        else if (yVb >= virbnd_pos && (yVb <= virbnd_pos + (bChroma ? 1 : 3)))   // bottom
         {
-          pImg2 = (yVb == vbPos) ? pImg0 : pImg2;
-          pImg4 = (yVb <= vbPos + 1) ? pImg2 : pImg4;
-          pImg6 = (yVb <= vbPos + 2) ? pImg4 : pImg6;
+          pImg2 = (yVb == virbnd_pos) ? pImg0 : pImg2;
+          pImg4 = (yVb <= virbnd_pos + 1) ? pImg2 : pImg4;
+          pImg6 = (yVb <= virbnd_pos + 2) ? pImg4 : pImg6;
 
-          pImg1 = (yVb == vbPos) ? pImg0 : pImg1;
-          pImg3 = (yVb <= vbPos + 1) ? pImg1 : pImg3;
-          pImg5 = (yVb <= vbPos + 2) ? pImg3 : pImg5;
+          pImg1 = (yVb == virbnd_pos) ? pImg0 : pImg1;
+          pImg3 = (yVb <= virbnd_pos + 1) ? pImg1 : pImg3;
+          pImg5 = (yVb <= virbnd_pos + 2) ? pImg3 : pImg5;
         }
 
 
-        uint8_t isNearVBabove = yVb < vbPos && (yVb >= vbPos - 1);
-        uint8_t isNearVBbelow = yVb >= vbPos && (yVb <= vbPos);
+        uint8_t isNearVBabove = yVb < virbnd_pos && (yVb >= virbnd_pos - 1);
+        uint8_t isNearVBbelow = yVb >= virbnd_pos && (yVb <= virbnd_pos);
         for( int jj = 0; jj < clsSizeX; jj++ )
         {
           int sum = 0;
           const int16_t curr = pImg0[+0];
           if( !bChroma )
           {
-            sum += filterCoeff[0] * ( clipALF(filterClipp[0], curr, pImg5[+0], pImg6[+0]) );
+            sum += filt_coeff[0] * ( clipALF(filt_clip[0], curr, pImg5[+0], pImg6[+0]) );
 
-            sum += filterCoeff[1] * ( clipALF(filterClipp[1], curr, pImg3[+1], pImg4[-1]) );
-            sum += filterCoeff[2] * ( clipALF(filterClipp[2], curr, pImg3[+0], pImg4[+0]) );
-            sum += filterCoeff[3] * ( clipALF(filterClipp[3], curr, pImg3[-1], pImg4[+1]) );
+            sum += filt_coeff[1] * ( clipALF(filt_clip[1], curr, pImg3[+1], pImg4[-1]) );
+            sum += filt_coeff[2] * ( clipALF(filt_clip[2], curr, pImg3[+0], pImg4[+0]) );
+            sum += filt_coeff[3] * ( clipALF(filt_clip[3], curr, pImg3[-1], pImg4[+1]) );
 
-            sum += filterCoeff[4] * ( clipALF(filterClipp[4], curr, pImg1[+2], pImg2[-2]) );
-            sum += filterCoeff[5] * ( clipALF(filterClipp[5], curr, pImg1[+1], pImg2[-1]) );
-            sum += filterCoeff[6] * ( clipALF(filterClipp[6], curr, pImg1[+0], pImg2[+0]) );
-            sum += filterCoeff[7] * ( clipALF(filterClipp[7], curr, pImg1[-1], pImg2[+1]) );
-            sum += filterCoeff[8] * ( clipALF(filterClipp[8], curr, pImg1[-2], pImg2[+2]) );
+            sum += filt_coeff[4] * ( clipALF(filt_clip[4], curr, pImg1[+2], pImg2[-2]) );
+            sum += filt_coeff[5] * ( clipALF(filt_clip[5], curr, pImg1[+1], pImg2[-1]) );
+            sum += filt_coeff[6] * ( clipALF(filt_clip[6], curr, pImg1[+0], pImg2[+0]) );
+            sum += filt_coeff[7] * ( clipALF(filt_clip[7], curr, pImg1[-1], pImg2[+1]) );
+            sum += filt_coeff[8] * ( clipALF(filt_clip[8], curr, pImg1[-2], pImg2[+2]) );
 
-            sum += filterCoeff[9] * ( clipALF(filterClipp[9], curr, pImg0[+3], pImg0[-3]) );
-            sum += filterCoeff[10] * ( clipALF(filterClipp[10], curr, pImg0[+2], pImg0[-2]) );
-            sum += filterCoeff[11] * ( clipALF(filterClipp[11], curr, pImg0[+1], pImg0[-1]) );
+            sum += filt_coeff[9] * ( clipALF(filt_clip[9], curr, pImg0[+3], pImg0[-3]) );
+            sum += filt_coeff[10] * ( clipALF(filt_clip[10], curr, pImg0[+2], pImg0[-2]) );
+            sum += filt_coeff[11] * ( clipALF(filt_clip[11], curr, pImg0[+1], pImg0[-1]) );
           }
           else
           {
-            sum += filterCoeff[0] * ( clipALF(filterClipp[0], curr, pImg3[+0], pImg4[+0]) );
+            sum += filt_coeff[0] * ( clipALF(filt_clip[0], curr, pImg3[+0], pImg4[+0]) );
 
-            sum += filterCoeff[1] * ( clipALF(filterClipp[1], curr, pImg1[+1], pImg2[-1]) );
-            sum += filterCoeff[2] * ( clipALF(filterClipp[2], curr, pImg1[+0], pImg2[+0]) );
-            sum += filterCoeff[3] * ( clipALF(filterClipp[3], curr, pImg1[-1], pImg2[+1]) );
+            sum += filt_coeff[1] * ( clipALF(filt_clip[1], curr, pImg1[+1], pImg2[-1]) );
+            sum += filt_coeff[2] * ( clipALF(filt_clip[2], curr, pImg1[+0], pImg2[+0]) );
+            sum += filt_coeff[3] * ( clipALF(filt_clip[3], curr, pImg1[-1], pImg2[+1]) );
 
-            sum += filterCoeff[4] * ( clipALF(filterClipp[4], curr, pImg0[+2], pImg0[-2]) );
-            sum += filterCoeff[5] * ( clipALF(filterClipp[5], curr, pImg0[+1], pImg0[-1]) );
+            sum += filt_coeff[4] * ( clipALF(filt_clip[4], curr, pImg0[+2], pImg0[-2]) );
+            sum += filt_coeff[5] * ( clipALF(filt_clip[5], curr, pImg0[+1], pImg0[-1]) );
           }
 
           if (!(isNearVBabove || isNearVBbelow))
@@ -775,8 +744,6 @@ void alf_filterBlk(ALFClassifier **classifier, int16_t *const dst, int16_t *cons
           }
 
           sum += curr;
-          //BITDEPTH: pour etre generique utiliser VVCSPSData: bit_depth_luma_minus8; bit_depth_chroma_minus8;
-          // pRec1[jj] = ClipPel( sum, clpRng );
           pRec1[jj] = OVMAX( OVMIN( sum, (1<<10) - 1 ), 0);
 
           pImg0++;
@@ -801,8 +768,8 @@ void alf_filterBlk(ALFClassifier **classifier, int16_t *const dst, int16_t *cons
     pImgYPad5 += srcStride2;
     pImgYPad6 += srcStride2;
   }
-  ov_free(filterCoeff);
-  ov_free(filterClipp);
+  ov_free(filt_coeff);
+  ov_free(filt_clip);
 }
 
 
@@ -823,17 +790,17 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
     int int16_t_shift = 1;
 
     //Initialization of ALF reconstruction structures
-    RcnALF alf;
-    alf_create(ctudec, &alf);
+    RCNALF alf = alf_info.rcn_alf;
+    // alf_create(ctudec, &alf);
 
     uint8_t luma_flag = 1;
     uint8_t chroma_flag = alf_info.alf_cb_enabled_flag || alf_info.alf_cr_enabled_flag;
     alf_reconstruct_coeff_APS(&alf, ctudec, luma_flag, chroma_flag);
 
     uint8_t clipTop = 0, clipBottom = 0, clipLeft = 0, clipRight = 0;
-    int numHorVirBndry = 0, numVerVirBndry = 0;
-    int horVirBndryPos[] = { 0, 0, 0 };
-    int verVirBndryPos[] = { 0, 0, 0 };
+    int n_virbnd_h = 0, numVerVirBndry = 0;
+    int virbnd_pos_h[] = { 0, 0, 0 };
+    int virbnd_pos_v[] = { 0, 0, 0 };
 
     for (int ctb_x = 0; ctb_x < nb_ctu_w; ctb_x++) {
         //TODO: change when applied on rectangular region
@@ -857,71 +824,69 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
         // extend_ctu_filter_buffer(frame, lc_ctx, tile_ctx, tile_idx,
         //       ctb_x, ctb_y, ctu_width, vvc_ctx->margin, is_border);
 
-        //TODO: int16_t** or uint8_t**??
         int margin = fb.margin;
         int16_t **src = fb.filter_region;
 
         if( alf_params_ctu.ctb_alf_flag ){
+            uint8_t c_idx = 0;
             Area blk,blk_dst;
             //Source block in the filter buffers image
             // blk.x=0; blk.y=0;
             blk.x=xPos+margin; blk.y=yPos+margin;
             blk.width=width; blk.height=height;
-            int stride_src = fb.filter_region_stride[0];
-            int16_t*  src_luma = &src[0][blk.y*stride_src + blk.x];
+            int stride_src = fb.filter_region_stride[c_idx];
+            int16_t*  src_luma = &src[c_idx][blk.y*stride_src + blk.x];
 
             //Destination block in the final image
             blk_dst.x=xPos; blk_dst.y=yPos;
             blk_dst.width=width; blk_dst.height=height;
             //BITDEPTH
-            int stride_dst = frame->linesize[0]/2;
-            int16_t*  dst_luma = (int16_t*) frame->data[0] + blk_dst.y*stride_dst + blk_dst.x;
-            // alf_deriveClassification( alf, dst_luma, stride_dst, blk_dst );
-            alf_deriveClassification( alf, src_luma, stride_src, blk_dst, ctu_width, ctudec->pic_h);
+            int stride_dst = frame->linesize[c_idx]/2;
+            int16_t*  dst_luma = (int16_t*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
+            rcn_alf_derive_classification( alf, src_luma, stride_src, blk_dst, ctu_width, ctudec->pic_h);
 
-            int16_t filterSetIndex = alf_params_ctu.ctb_alf_idx;
+            int16_t filter_idx = alf_params_ctu.ctb_alf_idx;
             int16_t *coeff;
             int16_t *clip;
-            if (filterSetIndex >= NUM_FIXED_FILTER_SETS){
-                coeff = alf.coeffApsLuma[filterSetIndex - NUM_FIXED_FILTER_SETS];
-                clip = alf.clippApsLuma[filterSetIndex - NUM_FIXED_FILTER_SETS];
+            if (filter_idx >= NUM_FIXED_FILTER_SETS){
+                coeff = alf.coeff_aps_luma[filter_idx - NUM_FIXED_FILTER_SETS];
+                clip = alf.clip_aps_luma[filter_idx - NUM_FIXED_FILTER_SETS];
             }
             else{
-                coeff = alf.fixedFilterSetCoeffDec[filterSetIndex];
-                clip = alf.clipDefault;
+                coeff = alf.fixed_filter_coeff_dec[filter_idx];
+                clip = alf.clip_default;
             }
 
             alf_filterBlk(alf.classifier, dst_luma, src_luma, stride_dst, stride_src,
-                blk_dst, blk, COMPONENT_Y, coeff, clip, 
+                blk_dst, c_idx, coeff, clip, 
                 ctu_width, (yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h : blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA);
         }
 
-        for( int compIdx = 1; compIdx < MAX_NUM_COMPONENT; compIdx++ )
+        for( uint8_t c_idx = 1; c_idx < 3; c_idx++ )
         {
-            ComponentID compID = (ComponentID) compIdx ;
-            const int chr_scale = frame->linesize[0] / frame->linesize[compID];
+            const int chr_scale = frame->linesize[0] / frame->linesize[c_idx];
 
-            if( (compID==1 && (alf_params_ctu.ctb_alf_flag & 2)) || (compID==2 && (alf_params_ctu.ctb_alf_flag & 1)))
+            if( (c_idx==1 && (alf_params_ctu.ctb_alf_flag & 2)) || (c_idx==2 && (alf_params_ctu.ctb_alf_flag & 1)))
             {
                 Area blk,blk_dst;
                 //Source block in the filter buffers image
                 // blk.x=0; blk.y=0;
                 blk.x=xPos/chr_scale+margin; blk.y=yPos/chr_scale+margin;
                 blk.width=width/chr_scale; blk.height=height/chr_scale;
-                int stride_src = fb.filter_region_stride[compID];
-                int16_t*  src_chroma = &src[compID][blk.y*stride_src + blk.x];
+                int stride_src = fb.filter_region_stride[c_idx];
+                int16_t*  src_chroma = &src[c_idx][blk.y*stride_src + blk.x];
 
                 //Destination block in the final image
                 blk_dst.x=xPos/chr_scale; blk_dst.y=yPos/chr_scale;
                 blk_dst.width=width/chr_scale; blk_dst.height=height/chr_scale;
                 //BITDEPTH
-                int stride_dst = frame->linesize[compID]/2;
-                int16_t*  dst_chroma = (int16_t*) frame->data[compID] + blk_dst.y*stride_dst + blk_dst.x;
+                int stride_dst = frame->linesize[c_idx]/2;
+                int16_t*  dst_chroma = (int16_t*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
 
-                uint8_t alt_num = (compID == COMPONENT_Cb) ? alf_params_ctu.cb_alternative : alf_params_ctu.cr_alternative;
+                uint8_t alt_num = (c_idx == 1) ? alf_params_ctu.cb_alternative : alf_params_ctu.cr_alternative;
 
-                alf_filterBlk(alf.classifier, dst_chroma, src_chroma, stride_dst, stride_src, blk_dst, blk, compID,
-                    alf.chroma_coeffFinal[alt_num], alf.chroma_clippFinal[alt_num], 
+                alf_filterBlk(alf.classifier, dst_chroma, src_chroma, stride_dst, stride_src, blk_dst, c_idx,
+                    alf.chroma_coeff_final[alt_num], alf.chroma_clip_final[alt_num], 
                     ctu_width/chr_scale, (( yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_width - ALF_VB_POS_ABOVE_CTUROW_LUMA)/chr_scale));
             }
         }
@@ -933,11 +898,11 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
 }
 
 
-void alf_destroy(RcnALF* alf, int16_t ctu_width)
+void alf_destroy(RCNALF* alf, int16_t ctu_width)
 {
     if( alf->classifier )
     {
-        for (int i = 0; i < ctu_width; i++)
+        for (int i = 0; i < ctu_width/4; i++)
             ov_free(alf->classifier[i]);
         ov_free(alf->classifier);
         alf->classifier = 0;

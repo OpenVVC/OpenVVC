@@ -344,24 +344,30 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVSH *const sh, const OVSPS *
     sao_info->sao_chroma_flag =  sh->sh_sao_chroma_used_flag;
 
     sao_info->chroma_format_idc = sps->sps_chroma_format_idc;
-    if(!sao_info->sao_params){
-        sao_info->sao_params = ov_malloc(sizeof(SAOParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
-    } else {
-        memset(sao_info->sao_params,0,sizeof(SAOParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
+    if(sao_info->sao_luma_flag || sao_info->sao_chroma_flag){
+        if(!sao_info->sao_params){
+            sao_info->sao_params = ov_malloc(sizeof(SAOParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
+        } else {
+            memset(sao_info->sao_params,0,sizeof(SAOParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
+        }
     }
-
     //Init ALF info and ctu params
     struct ALFInfo* alf_info  = &ctudec->alf_info;
     alf_info->alf_luma_enabled_flag = sh->sh_alf_enabled_flag;
     alf_info->alf_cb_enabled_flag = sh->sh_alf_cb_enabled_flag;
     alf_info->alf_cr_enabled_flag = sh->sh_alf_cr_enabled_flag;
 
-    alf_info->num_alf_aps_ids_luma  = sh->sh_num_alf_aps_ids_luma;
-    alf_info->aps_alf_data = aps_alf_data;
-    if(!alf_info->alf_params){
-        alf_info->alf_params = ov_malloc(sizeof(ALFParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
-    } else {
-        memset(alf_info->alf_params,0,sizeof(ALFParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
+    if(alf_info->alf_luma_enabled_flag || alf_info->alf_cb_enabled_flag || alf_info->alf_cr_enabled_flag){
+        alf_info->num_alf_aps_ids_luma  = sh->sh_num_alf_aps_ids_luma;
+        alf_info->aps_alf_data = aps_alf_data;
+        if(!alf_info->alf_params){
+            alf_info->alf_params = ov_malloc(sizeof(ALFParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
+        } else {
+            memset(alf_info->alf_params,0,sizeof(ALFParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
+        }
+
+        //create the structures for ALF reconstruction
+        alf_create(ctudec, &alf_info->rcn_alf);
     }
     return 0;
 }
@@ -1032,11 +1038,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         rcn_sao_filter_line(ctudec, einfo->nb_ctb_pic_w, ctb_y);
         ctb_y++;
     }
-    //TODO: create in CTUdec and init init_in_loop_filters (slicedec)
-    // RcnALF rcn_alf;
-    // alf_create(ctudec, &rcn_alf);
 
-    //TODO: last ctu row for ALF 
     ctudec_extend_filter_region(ctudec);
     ctb_y = 0;
     while (ctb_y < nb_ctu_h) {
@@ -1085,9 +1087,6 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     ctudec->delta_qp_enabled = pps->pps_cu_qp_delta_enabled_flag;
 
-    //In loop filter information for CTU reconstruction
-    init_in_loop_filters(ctudec, sh, sps, &prms->aps->aps_alf_data);
-
 #if 1
     ctudec->dbf_disable = sh->sh_deblocking_filter_disabled_flag |
                           ph->ph_deblocking_filter_disabled_flag |
@@ -1105,6 +1104,9 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     init_coding_coeff_coding_ctx(ctudec, prms);
 
     init_part_info(ctudec, prms);
+
+    //In loop filter information for CTU reconstruction
+    init_in_loop_filters(ctudec, sh, sps, &prms->aps->aps_alf_data);
 
     init_slice_tree_ctx(ctudec, prms);
 
@@ -1135,6 +1137,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     return 0;
 }
 
+<<<<<<< HEAD
 /*FIXME check init return */
 int
 slicedec_update_entry_decoders(OVSliceDec *sldec, const OVPS *const prms)
