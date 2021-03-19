@@ -3,9 +3,6 @@
 #include "mempool_internal.h"
 #include "mempool.h"
 
-MemPoolElem *ovmempool_popelem(struct MemPool *mpool);
-
-void ovmempool_pushelem(struct MemPoolElem *released_elem);
 
 static void ovmempool_free(MemPool *mpool);
 
