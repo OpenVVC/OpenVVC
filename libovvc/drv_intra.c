@@ -522,6 +522,8 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx,
                     int abs_angle_val = angle_table[-mode_idx];
                     uint8_t req_frac = !!(abs_angle_val & 0x1F);
                     if (!req_frac){
+                        int inv_angle = inverse_angle_table[-mode_idx];
+                        int inv_angle_sum    = 256;
                         if (use_gauss_filter){
                             filter_ref_samples(ref1, ref_above_filtered + pu_height,
                                                ref2, top_ref_length);
@@ -531,8 +533,6 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx,
                             ref2 = ref_left_filtered + pu_width;
                         }
 
-                        int inv_angle = inverse_angle_table[-mode_idx];
-                        int inv_angle_sum    = 256;
                         for ( int k = -1; k >= -pu_height; k-- ){
                             inv_angle_sum += inv_angle;
                             ref1[k] = ref2[OVMIN(inv_angle_sum >> 9,pu_height)];
@@ -654,7 +654,10 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx,
 
                     uint8_t req_frac = !!(abs_angle_val & 0x1F);
                     if (!req_frac){
-                        if (use_gauss_filter){
+                        int inv_angle = inverse_angle_table[-mode_idx];
+                        int inv_angle_sum    = 256;
+
+                        if (use_gauss_filter) {
                             filter_ref_samples(ref1, ref_above_filtered + pu_height,
                                                ref2, top_ref_length);
                             filter_ref_samples(ref2, ref_left_filtered + pu_width,
@@ -663,8 +666,6 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx,
                             ref2 = ref_left_filtered + pu_width;
                         }
 
-                        int inv_angle = inverse_angle_table[-mode_idx];
-                        int inv_angle_sum    = 256;
                         for ( int k = -1; k >= -pu_width; k-- ){
                             inv_angle_sum += inv_angle;
                             ref2[k] = ref1[OVMIN(inv_angle_sum >> 9,pu_width)];
