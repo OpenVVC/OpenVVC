@@ -1,6 +1,8 @@
-
+#ifndef DBF_UTILS_H
+#define DBF_UTILS_H
 
 /* Store average qp between two CB into line */
+/*FIXME should we really inline this one */
 static inline void
 dbf_fill_qp_map(struct DBFQPMap *qp_map, int x0, int y0,
                 int log2_cb_w, int log2_cb_h, int8_t qp)
@@ -69,3 +71,5 @@ fill_ctb_bound(struct DBFInfo *const dbf_info, int x0, int y0, int log2_cu_w, in
     dbf_info->ctb_bound_ver[8 + (x0 >> 2)] |= mask_ver << (1 + (y0 >> 2));
     dbf_info->ctb_bound_hor[8 + (y0 >> 2)] |= mask_hor << (2 + (x0 >> 2));
 }
+
+#endif
