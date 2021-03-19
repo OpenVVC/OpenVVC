@@ -7,10 +7,7 @@
  * etc.
  */
 
-#include <stdint.h>
-/*FIXME remove CTUDEC or do not define those in headers*/
-#include "ctudec.h"
-
+/*FIXME Must be included after ctudec*/
 
 /* Set bit fields to 1 for a PB at coordinates x_pb y_pb
  */
