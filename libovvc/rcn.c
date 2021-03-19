@@ -707,11 +707,10 @@ rcn_residual(OVCTUDec *const ctudec,
 
     } else if (!cu_mts_flag) {
 
-#if 0
+#if 1
         if (is_dc) {
 
-            vvc_dsp_context.vvc_inverse_dc(dst, log2_tb_w, log2_tb_h,
-                                           src[0]);
+            TRFunc->dc(dst, log2_tb_w, log2_tb_h, src[0]);
 
         } else {
 #endif
@@ -720,7 +719,7 @@ rcn_residual(OVCTUDec *const ctudec,
 
             TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, shift_v);
             TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, shift_h);
-#if 0
+#if 1
         }
 #endif
     } else {
@@ -763,11 +762,10 @@ rcn_residual_c(OVCTUDec *const ctudec,
 #endif
     }
 
-#if 0
+#if 1
     if (is_dc && !lfnst_flag) {
 
-        vvc_dsp_context.vvc_inverse_dc(dst, log2_tb_w, log2_tb_h,
-                                       src[0]);
+            TRFunc->dc(dst, log2_tb_w, log2_tb_h, src[0]);
 
     } else {
 #endif
@@ -781,7 +779,7 @@ rcn_residual_c(OVCTUDec *const ctudec,
         #endif
         TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, shift_v);
         TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, shift_h);
-#if 0
+#if 1
     }
 #endif
 }

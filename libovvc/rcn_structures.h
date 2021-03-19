@@ -77,6 +77,7 @@ struct CCLMFunctions
 struct TRFunctions
 {
    TrFunc func[NB_TR_TYPES][NB_TR_SIZES];
+   void (*dc)(int16_t* const dst, int log2_tb_w, int log2_tb_h, int dc_val);
 };
 
 struct DCFunctions

@@ -542,6 +542,7 @@ transform_unit(OVCTUDec *const ctu_dec,
                unsigned int log2_tb_w, unsigned int log2_tb_h,
                uint8_t tu_cbf_luma, uint8_t cu_flags)
 {
+    const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
 
     if (tu_cbf_luma) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -623,7 +624,11 @@ transform_unit(OVCTUDec *const ctu_dec,
 
         vvc_dsp_context.vvc_transform_add(src, dst, log2_tb_w, log2_tb_h, 0);
 #endif
+        #if 0
         rcn_add_residuals(&ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], ctu_dec->transform_buff, log2_tb_w, log2_tb_h);
+        #else
+            rcn_func->ict[0](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
+        #endif
     }
     return 0;
 }
@@ -689,7 +694,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
 
             last_pos_cb = ovcabac_read_ae_last_sig_pos_c(cabac_ctx, log2_tb_w, log2_tb_h);
 
-            lim_cg_w_cb = 1 << log2_tb_w;//((((last_pos_cb >> 8)) >> 2) + (((last_pos_cb & 0xFF))>> 2) + 1) << 2;
+            lim_cg_w_cb = ((((last_pos_cb >> 8)) >> 2) + (((last_pos_cb & 0xFF))>> 2) + 1) << 2;
 
             last_pos_cb = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_cb, log2_tb_w, log2_tb_h, last_pos_cb);
 
@@ -714,7 +719,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
 
             last_pos_cr = ovcabac_read_ae_last_sig_pos_c(cabac_ctx, log2_tb_w, log2_tb_h);
 
-            lim_cg_w_cr = 1 << log2_tb_w;// ((((last_pos_cr >> 8)) >> 2) + (((last_pos_cr & 0xFF))>> 2) + 1) << 2;
+            lim_cg_w_cr = ((((last_pos_cr >> 8)) >> 2) + (((last_pos_cr & 0xFF))>> 2) + 1) << 2;
 
             if (!transform_skip_flag) {
             last_pos_cr = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_cr, log2_tb_w, log2_tb_h, last_pos_cr);

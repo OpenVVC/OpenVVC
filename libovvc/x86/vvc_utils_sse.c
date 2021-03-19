@@ -3,6 +3,7 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <stdint.h>
 
 typedef int16_t TCoeff;
 typedef int16_t TMatrixCoeff;
