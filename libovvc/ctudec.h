@@ -84,7 +84,7 @@ struct DBFInfo
     struct DBFQPMap qp_map_y;
     struct DBFQPMap qp_map_cb;
     struct DBFQPMap qp_map_cr;
-}dbf_info;
+};
 
 typedef struct VVCDeQuantCtx{
     uint8_t qp;
