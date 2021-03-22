@@ -60,6 +60,9 @@ ALL_OBJS=$(LIB_OBJ) $(addprefix $(BUILDDIR_TYPE),$(addsuffix .o, $(PROG))) $($(A
 
 all: version libs examples
 
+test:
+	./CI/checkMD5.sh CI/test_bitstreams ./$(BUILDDIR_TYPE)$(PROG)
+
 version:
 	$(AT)./version.sh RELEASE $(SRC_FOLDER)$(LIB_VERSION_HEADER)
 

@@ -27,5 +27,5 @@ dectest
 
 # Video objects
 *.266
-!CI/*.266
+!CI/test_bitstreams/*.266
 *.yuv
