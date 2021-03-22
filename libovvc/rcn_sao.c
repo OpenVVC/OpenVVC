@@ -127,8 +127,8 @@ void rcn_sao_ctu(OVCTUDec *const ctudec, int ctb_x_pic, int ctb_y_pic, int nb_ct
         int margin = fb.margin;
         uint8_t *filtered = (uint8_t *) fb.filter_region[c_idx];
         int stride_filtered = fb.filter_region_stride[c_idx]<<int16_t_shift;
-        // filtered = &filtered[margin*stride_filtered + (margin<<int16_t_shift)];  
-        filtered = &filtered[ (y0 * stride_filtered) + (x0<<int16_t_shift) + (fb.filter_region_offset[c_idx]<<int16_t_shift)];  
+        filtered = &filtered[(fb.filter_region_offset[c_idx]<<int16_t_shift)];  
+        // filtered = &filtered[ (y0 * stride_filtered) + (x0<<int16_t_shift) + (fb.filter_region_offset[c_idx]<<int16_t_shift)];  
 
         switch (sao->type_idx[c_idx]) {
             case SAO_BAND:
@@ -143,27 +143,26 @@ void rcn_sao_ctu(OVCTUDec *const ctudec, int ctb_x_pic, int ctb_y_pic, int nb_ct
             {
                 // printf("EO %i %i %i\n", c_idx, x, y);
 
-                // //TODO: do not apply filters on image borders
-                // int x_start = 0;
-                // int y_start = 0;
-                // if ( (is_border & VVC_BOUNDARY_LEFT_TILE) && sao->eo_class[c_idx] != 1){
-                //     x_start = 1; 
-                //     width   = width-1; 
-                // }
-                // if ((is_border & VVC_BOUNDARY_UPPER_TILE) && sao->eo_class[c_idx] != 0){
-                //     y_start = 1; 
-                //     height  = height-1; 
-                // }
-                // if ((is_border & VVC_BOUNDARY_RIGHT_TILE) && sao->eo_class[c_idx] != 1){
-                //     width   = width-1; 
-                // }
-                // if ((is_border & VVC_BOUNDARY_BOTTOM_TILE) && sao->eo_class[c_idx] != 0){
-                //     height  = height-1; 
-                // }
+                //Do not apply filters on image borders, compliant with VTM
+                int x_start = 0;
+                int y_start = 0;
+                if ( (is_border & OV_BOUNDARY_LEFT_RECT) && sao->eo_class[c_idx] != 1){
+                    x_start = 1; 
+                    width   = width-1; 
+                }
+                if ((is_border & OV_BOUNDARY_UPPER_RECT) && sao->eo_class[c_idx] != 0){
+                    y_start = 1; 
+                    height  = height-1; 
+                }
+                if ((is_border & OV_BOUNDARY_RIGHT_RECT) && sao->eo_class[c_idx] != 1){
+                    width   = width-1; 
+                }
+                if ((is_border & OV_BOUNDARY_BOTTOM_RECT) && sao->eo_class[c_idx] != 0){
+                    height  = height-1; 
+                }
                  
                 //parameters: buffer  
-                sao_edge_filter(out_pic, filtered, stride_out_pic, stride_filtered, sao, width, height, 0, 0, c_idx);
-                // sao_edge_filter(out_pic, filtered, stride_out_pic, stride_filtered, sao, width, height, 0, 0, c_idx);
+                sao_edge_filter(out_pic, filtered, stride_out_pic, stride_filtered, sao, width, height, x_start, y_start, c_idx);
 
                 sao->type_idx[c_idx] = SAO_APPLIED;
                 break;
@@ -183,26 +182,27 @@ void rcn_sao_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
 
     for (int ctb_x = 0; ctb_x < nb_ctu_w; ctb_x++) 
     {
-        //left | right | up | down
-        uint8_t is_border_tile = 0; 
-        // is_border_tile = (ctb_x==0)          ? is_border_tile | VVC_BOUNDARY_LEFT_TILE: is_border_tile;
-        // is_border_tile = (ctb_x==nb_ctu_w-1) ? is_border_tile | VVC_BOUNDARY_RIGHT_TILE: is_border_tile;
-        // is_border_tile = (ctb_y==0)          ? is_border_tile | VVC_BOUNDARY_UPPER_TILE: is_border_tile;
-        // is_border_tile = (ctb_y==nb_ctu_h-1) ? is_border_tile | VVC_BOUNDARY_BOTTOM_TILE: is_border_tile;
-
         // int ctb_x_pic = tile_ctx->ctu_x[tile_x] + ctb_x;
         int ctb_x_pic   = ctb_x;
-        //func extend_ctu_filter_buffer
-        // AVFrame* frame = vvc_ctx->frame;
-        // extend_ctu_filter_buffer(frame, lc_ctx, tile_ctx, tile_idx, 
-        //     ctb_x, ctb_y, ctu_width, vvc_ctx->margin, is_border_tile);
+        int xPos = ctu_width * ctb_x_pic;
+        int yPos = ctu_width * ctb_y_pic;
+        int width = ( xPos + ctu_width > ctudec->pic_w ) ? ( ctudec->pic_w - xPos ) : ctu_width;
+        int height = ( yPos + ctu_width > ctudec->pic_h ) ? ( ctudec->pic_h - yPos ) : ctu_width;
+        
+        //left | right | up | down
+        uint8_t is_border = 0; 
+        is_border = (ctb_x==0)          ? is_border | OV_BOUNDARY_LEFT_RECT: is_border;
+        is_border = (ctb_x==nb_ctu_w-1) ? is_border | OV_BOUNDARY_RIGHT_RECT: is_border;
+        is_border = (ctb_y_pic==0)          ? is_border | OV_BOUNDARY_UPPER_RECT: is_border;
+        // is_border = (ctb_y==nb_ctu_h-1) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
+        is_border = (yPos + ctu_width >= ctudec->pic_h) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
 
-        rcn_sao_ctu(ctudec, ctb_x_pic, ctb_y_pic, nb_ctu_w, is_border_tile);
 
-        // save_last_rows_ctu(lc_ctx, nb_ctu_w, ctb_x, ctu_width, 
-        //     vvc_ctx->margin, is_border_tile);
+        ctudec_extend_filter_region(ctudec, xPos, yPos, is_border);
 
-        // //func save_last_cols_ctu
-        // save_last_cols_ctu(lc_ctx, ctu_width, vvc_ctx->margin, is_border_tile);
+        rcn_sao_ctu(ctudec, ctb_x_pic, ctb_y_pic, nb_ctu_w, is_border);
+
+        ctudec_save_last_rows(ctudec, xPos, yPos, is_border);
+        ctudec_save_last_cols(ctudec, xPos, yPos, is_border);
     }
 }

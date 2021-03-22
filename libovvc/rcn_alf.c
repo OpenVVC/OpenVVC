@@ -805,37 +805,36 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
     for (int ctb_x = 0; ctb_x < nb_ctu_w; ctb_x++) {
         //TODO: change when applied on rectangular region
         int ctb_y = ctb_y_pic;
-
-        //left | right | up | down
-        uint8_t is_border = 0; 
-        // is_border = (ctb_x==0)          ? is_border | VVC_BOUNDARY_LEFT_TILE: is_border;
-        // is_border = (ctb_x==nb_ctu_w-1) ? is_border | VVC_BOUNDARY_RIGHT_TILE: is_border;
-        // is_border = (ctb_y==0)          ? is_border | VVC_BOUNDARY_UPPER_TILE: is_border;
-        // is_border = (ctb_y==nb_ctu_h-1) ? is_border | VVC_BOUNDARY_BOTTOM_TILE: is_border;
-        int ctu_rs_addr = ctb_x + ctb_y * nb_ctu_w ;
-        ALFParamsCtu alf_params_ctu = ctudec->alf_info.alf_params[ctu_rs_addr];
-
         int xPos = ctu_width * ctb_x;
         int yPos = ctu_width * ctb_y;
-
         int width = ( xPos + ctu_width > ctudec->pic_w ) ? ( ctudec->pic_w - xPos ) : ctu_width;
         int height = ( yPos + ctu_width > ctudec->pic_h ) ? ( ctudec->pic_h - yPos ) : ctu_width;
 
-        // extend_ctu_filter_buffer(frame, lc_ctx, tile_ctx, tile_idx,
-        //       ctb_x, ctb_y, ctu_width, vvc_ctx->margin, is_border);
+        //left | right | up | down
+        uint8_t is_border = 0; 
+        is_border = (ctb_x==0)          ? is_border | OV_BOUNDARY_LEFT_RECT: is_border;
+        is_border = (ctb_x==nb_ctu_w-1) ? is_border | OV_BOUNDARY_RIGHT_RECT: is_border;
+        is_border = (ctb_y==0)          ? is_border | OV_BOUNDARY_UPPER_RECT: is_border;
+        // is_border = (ctb_y==nb_ctu_h-1) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
+        is_border = (yPos + ctu_width >= ctudec->pic_h) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
+        
+        int ctu_rs_addr = ctb_x + ctb_y * nb_ctu_w ;
+        ALFParamsCtu alf_params_ctu = ctudec->alf_info.alf_params[ctu_rs_addr];
 
         int margin = fb.margin;
         int16_t **src = fb.filter_region;
+        ctudec_extend_filter_region(ctudec, xPos, yPos, is_border);
 
         if( alf_params_ctu.ctb_alf_flag ){
             uint8_t c_idx = 0;
             Area blk,blk_dst;
             //Source block in the filter buffers image
-            // blk.x=0; blk.y=0;
-            blk.x=xPos+margin; blk.y=yPos+margin;
+            //TODO: get rid of blkn use only blk_dst
+            blk.x=0; blk.y=0;
+            // blk.x=xPos; blk.y=yPos;
             blk.width=width; blk.height=height;
             int stride_src = fb.filter_region_stride[c_idx];
-            int16_t*  src_luma = &src[c_idx][blk.y*stride_src + blk.x];
+            int16_t*  src_luma = &src[c_idx][blk.y*stride_src + blk.x + fb.filter_region_offset[c_idx]];
 
             //Destination block in the final image
             blk_dst.x=xPos; blk_dst.y=yPos;
@@ -870,11 +869,11 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
             {
                 Area blk,blk_dst;
                 //Source block in the filter buffers image
-                // blk.x=0; blk.y=0;
-                blk.x=xPos/chr_scale+margin; blk.y=yPos/chr_scale+margin;
+                blk.x=0; blk.y=0;
+                // blk.x=xPos/chr_scale+margin; blk.y=yPos/chr_scale+margin;
                 blk.width=width/chr_scale; blk.height=height/chr_scale;
                 int stride_src = fb.filter_region_stride[c_idx];
-                int16_t*  src_chroma = &src[c_idx][blk.y*stride_src + blk.x];
+                int16_t*  src_chroma = &src[c_idx][blk.y*stride_src + blk.x + fb.filter_region_offset[c_idx]];
 
                 //Destination block in the final image
                 blk_dst.x=xPos/chr_scale; blk_dst.y=yPos/chr_scale;
@@ -890,10 +889,8 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
                     ctu_width/chr_scale, (( yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_width - ALF_VB_POS_ABOVE_CTUROW_LUMA)/chr_scale));
             }
         }
-        // save_last_rows_ctu(lc_ctx, nb_ctu_w, ctb_x, ctu_width, vvc_ctx->margin, is_border);
-
-        // //func save_last_cols_ctu
-        // save_last_cols_ctu(lc_ctx, ctu_width, vvc_ctx->margin, is_border);
+        ctudec_save_last_rows(ctudec, xPos, yPos, is_border);
+        ctudec_save_last_cols(ctudec, xPos, yPos, is_border);
     }
 }
 
