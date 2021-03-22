@@ -994,8 +994,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
                &drv_lines, cc_lines);
 
     slicedec_attach_frame_buff(ctudec, sldec, einfo);
-    int margin = 3;
-    ctudec_create_filter_buffers(ctudec, sldec->pic->frame, einfo->nb_ctu_w, margin);
     tmp_fbuff = ctudec->rcn_ctx.frame_buff;
 
     while (ctb_y < nb_ctu_h - 1) {
@@ -1032,19 +1030,21 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     }
 
     //TODO: do not apply in loop filters on the frame (same ALF)
-    ctudec_extend_filter_region(ctudec);
+    int margin = 3;
+    ctudec_create_filter_buffers(ctudec, sldec->pic->frame, einfo->nb_ctu_w, margin);
     ctb_y = 0;
     while (ctb_y < nb_ctu_h ) {
         rcn_sao_filter_line(ctudec, einfo->nb_ctb_pic_w, ctb_y);
         ctb_y++;
     }
 
-    ctudec_extend_filter_region(ctudec);
     ctb_y = 0;
     while (ctb_y < nb_ctu_h) {
         rcn_alf_filter_line(ctudec, einfo->nb_ctb_pic_w, ctb_y);
         ctb_y++;
     }
+
+    // ctudec_free_filter_buffers(ctudec);
 
     /*FIXME decide return value */
     return ctb_addr_rs;

@@ -4,6 +4,11 @@
 #include "ovdefs.h"
 #include "nvcl.h"
 
+#define OV_BOUNDARY_LEFT_RECT      (1 << 1)
+#define OV_BOUNDARY_UPPER_RECT     (1 << 3)
+#define OV_BOUNDARY_RIGHT_RECT     (1 << 5)
+#define OV_BOUNDARY_BOTTOM_RECT    (1 << 7)
+
 struct MVPool;
 
 struct OVPartInfo

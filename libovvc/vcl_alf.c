@@ -51,6 +51,9 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu
     uint8_t alf_cb_flag     =  alf_info->alf_cb_enabled_flag;
     uint8_t alf_cr_flag     =  alf_info->alf_cr_enabled_flag;
 
+    if(!(alf_luma_flag || alf_cb_flag || alf_cr_flag))
+        return;
+
     const uint8_t left_ctb_alf_flag = alf_info->left_ctb_alf_flag;
     int           ctb_col           = ctb_rs % nb_ctu_w;
     const uint8_t up_ctb_alf_flag   = (ctb_rs - nb_ctu_w) >= 0 ? alf_info->ctb_alf_flag_line[ctb_col] : 0;

@@ -150,26 +150,236 @@ ovdec_decode_ctu_border(const VVCContext *const vvc_ctx,
 
 
 
-void ctudec_extend_filter_region(OVCTUDec *const ctudec)
-{   
+void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect)
+{
+
+    if (is_border_rect & OV_BOUNDARY_RIGHT_RECT)
+        return;
+    
     struct OVFilterBuffers fb = ctudec->filter_buffers;
-    int16_t** saved_rows = fb.saved_rows;
-    int16_t** saved_cols = fb.saved_cols;
-    int16_t** filter_region = fb.filter_region;
+    const int width_l = ( x_l + fb.filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_l ) : fb.filter_region_w[0];
+    const int height_l = ( y_l + fb.filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_l ) : fb.filter_region_h[0];
+    const int margin = fb.margin;
+
+    for(int comp = 0; comp < 3; comp++)
+    {
+        int16_t* saved_cols = fb.saved_cols[comp];
+        int16_t* filter_region = fb.filter_region[comp];
+        int stride_filter = fb.filter_region_stride[comp];
+
+        int ratio_luma_chroma = ctudec->rcn_ctx.frame_buff.stride / ctudec->rcn_ctx.frame_buff.stride_c;
+        int ratio = comp==0 ? 1 : ratio_luma_chroma;        
+        const int width = width_l/ratio;
+        const int height = height_l/ratio;
+        const int x = x_l/ratio;
+        const int y = y_l/ratio;
+
+        for(int ii=0; ii < height; ii++)
+        {
+            for(int jj=0; jj < margin; jj++)
+            {
+                saved_cols[ii*margin + jj] = filter_region[(ii+margin)*stride_filter + width + jj];
+            }
+        }
+    }
+    
+}
+
+void ctudec_save_last_rows(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect)
+{
+    struct OVFilterBuffers fb = ctudec->filter_buffers;
+    const int width_l = ( x_l + fb.filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_l ) : fb.filter_region_w[0];
+    const int height_l = ( y_l + fb.filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_l ) : fb.filter_region_h[0];
+    const int margin = fb.margin;
+
+    for(int comp = 0; comp < 3; comp++)
+    {
+        int16_t* saved_rows = fb.saved_rows[comp];
+        int16_t* filter_region = fb.filter_region[comp];
+        int stride_filter = fb.filter_region_stride[comp];
+
+        int ratio_luma_chroma = ctudec->rcn_ctx.frame_buff.stride / ctudec->rcn_ctx.frame_buff.stride_c;
+        int ratio = comp==0 ? 1 : ratio_luma_chroma;        
+        const int width = width_l/ratio;
+        const int height = height_l/ratio;
+        const int x = x_l/ratio;
+        const int y = y_l/ratio;
+
+        int stride_rows = fb.saved_rows_stride[comp];
+        // int x_tile  = ctb_x * max_cu_width;
+        int x_tile  = x;
+        //save pixels in top left corner of ctu filter
+        for(int ii=0; ii < margin; ii++)
+        {
+            for(int jj=0; jj < margin; jj++)
+            {
+                // if ( is_border_rect & VVC_BOUNDARY_RIGHT_TILE)
+                if ( 0 )
+                    filter_region[ii*stride_filter + jj] = saved_rows[ii*stride_rows];
+                else
+                    filter_region[ii*stride_filter + jj] = saved_rows[ii*stride_rows + x_tile + width - margin + jj];
+            }
+        }
+
+        if ( is_border_rect & OV_BOUNDARY_BOTTOM_RECT)
+            continue;
+
+        for(int ii=0 ; ii < margin; ii++)
+        {
+            memcpy(&saved_rows[ii*stride_rows + x_tile], &filter_region[(height+ii)*stride_filter + margin], width * sizeof(int16_t));
+        }
+    } 
+}
+
+
+void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect)
+{   
+    const OVPartInfo *const pinfo = ctudec->part_ctx;
+    uint8_t log2_ctb_size = pinfo->log2_ctu_s;
+    int max_cu_width_l = 1 << log2_ctb_size;
+
+    struct OVFilterBuffers fb = ctudec->filter_buffers;
+    const int width_l = ( x_l + fb.filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_l ) : fb.filter_region_w[0];
+    const int height_l = ( y_l + fb.filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_l ) : fb.filter_region_h[0];
+    const int margin = fb.margin;
 
     for(int comp = 0; comp < 3; comp++)
     {
         int ratio_luma_chroma = ctudec->rcn_ctx.frame_buff.stride / ctudec->rcn_ctx.frame_buff.stride_c;
         int ratio = comp==0 ? 1 : ratio_luma_chroma;        
+        const int max_cu_width = max_cu_width_l/ratio;
+        const int width = width_l/ratio;
+        const int height = height_l/ratio;
+        const int x = x_l/ratio;
+        const int y = y_l/ratio;
+
+        int16_t* saved_rows = fb.saved_rows[comp];
+        int16_t* saved_cols = fb.saved_cols[comp];
+        int16_t* filter_region = fb.filter_region[comp];
+        int stride_filter = fb.filter_region_stride[comp];
 
         int stride_pic = fb.pic_frame->linesize[comp]/2;
-        int16_t* frame_comp = (int16_t*) fb.pic_frame->data[comp];
+        int16_t* frame = (int16_t*) fb.pic_frame->data[comp] + y*stride_pic + x;
+
+        // //*******************************************************/
+        // //Copy of entire frame in filter buffer
+        // for(int ii=0; ii < ctudec->pic_h / ratio; ii++)
+        // {
+        //     memcpy(&filter_region[ii*fb.filter_region_stride[comp] + fb.filter_region_offset[comp]], &frame[ii * stride_pic], sizeof(int16_t)* stride_pic);
+        // }
 
         //*******************************************************/
-        //Copy of entire frame in filter buffer
-        for(int ii=0; ii < ctudec->pic_h / ratio; ii++)
+        //Copy of entire CTU from frame, before border extension
+        for(int ii=0; ii < height; ii++)
         {
-            memcpy(&filter_region[comp][ii*fb.filter_region_stride[comp] + fb.filter_region_offset[comp]], &frame_comp[ii * stride_pic], sizeof(int16_t)* stride_pic);
+            memcpy(&filter_region[ii*stride_filter + fb.filter_region_offset[comp]], &frame[ii*stride_pic], sizeof(int16_t)* width);
+        }
+
+        // //*******************************************************/
+        //Left margins
+        for(int ii=0; ii < height; ii++)
+        {
+          for(int jj=0; jj < margin; jj++)
+          {
+            if ( !(is_border_rect & OV_BOUNDARY_LEFT_RECT) ){
+                //mettre un memcpy de taille margin
+                filter_region[(ii+margin)*stride_filter + jj] = saved_cols[ii*margin + jj];
+            }
+            else{
+                filter_region[(ii+margin)*stride_filter + jj] = filter_region[(ii+margin)*stride_filter + margin];
+            }
+          }
+        }
+
+        //Right margins
+        int h = margin+height;
+        int w = margin+width;
+        for(int ii=0; ii < height; ii++)
+        {
+          for(int jj=0; jj < margin; jj++)
+          {
+            if ( !(is_border_rect & OV_BOUNDARY_RIGHT_RECT) ){
+                filter_region[(ii+margin)*stride_filter + w + jj] = frame[ii*stride_pic + width + jj];
+            }
+            else{
+                filter_region[(ii+margin)*stride_filter + w + jj] = filter_region[(ii+margin)*stride_filter + w - 1 ];
+            }
+          }
+        }
+
+
+        //*******************************************************/
+        //Upper margins
+        int stride_rows = fb.saved_rows_stride[comp];
+        // int x_tile  = ctb_x * max_cu_width;
+        int x_tile  = x;
+        for(int ii=0; ii < margin; ii++)
+        {
+            int x_offset_end = 0;
+            if ( !(is_border_rect & OV_BOUNDARY_RIGHT_RECT ) )
+                x_offset_end = margin;
+
+            if ( !(is_border_rect & OV_BOUNDARY_UPPER_RECT) ){
+                memcpy(&filter_region[ii*stride_filter + margin], &saved_rows[ii*stride_rows + x_tile], 
+                    sizeof(int16_t)* (width + x_offset_end));
+            }
+            else{
+                memcpy(&filter_region[ii*stride_filter + margin], &filter_region[margin*stride_filter + margin], 
+                    sizeof(int16_t)* (width + x_offset_end));
+            }
+        }
+        //Bottom margins
+        for(int ii=0; ii < margin; ii++)
+        {
+            if ( !(is_border_rect & OV_BOUNDARY_BOTTOM_RECT) ){
+                memcpy(&filter_region[(h+ii)*stride_filter], &frame[(height+ii)*stride_pic - margin],
+                    sizeof(int16_t)* (width + 2*margin));
+            }
+            else{
+                memcpy(&filter_region[(h+ii)*stride_filter ], &filter_region[(h-1)*stride_filter],
+                    sizeof(int16_t)* (width + 2*margin));
+            }
+        }
+
+        //*******************************************************/
+        //Fill all corners on boudaries
+        if (is_border_rect & OV_BOUNDARY_UPPER_RECT)
+        {
+            for(int ii=0; ii < margin; ii++)
+            {
+                memcpy(&filter_region[ii*stride_filter], &filter_region[margin*stride_filter], sizeof(int16_t)*margin);
+                memcpy(&filter_region[ii*stride_filter + w], &filter_region[margin*stride_filter + w],sizeof(int16_t)* margin);
+            }
+        }
+        if (is_border_rect & OV_BOUNDARY_BOTTOM_RECT)
+        {
+            for(int ii=0; ii < margin; ii++)
+            {
+                memcpy(&filter_region[(h+ii)*stride_filter ], &filter_region[(h-1)*stride_filter ], sizeof(int16_t)*margin) ;
+                memcpy(&filter_region[(h+ii)*stride_filter + w ], &filter_region[(h-1)*stride_filter + w ], sizeof(int16_t)*margin) ;
+            }
+        }
+        if (is_border_rect & OV_BOUNDARY_LEFT_RECT)
+        {
+            for(int ii=0; ii < margin; ii++)
+            {
+                for(int jj=0; jj < margin; jj++)
+                {
+                    filter_region[ii*stride_filter + jj] = filter_region[ii*stride_filter + margin];
+                    filter_region[(h+ii)*stride_filter + jj] = filter_region[(h+ii)*stride_filter + margin];
+                }
+            }
+        }
+        if (is_border_rect & OV_BOUNDARY_RIGHT_RECT)
+        {
+            for(int ii=0; ii < margin; ii++)
+            {
+                for(int jj=0; jj < margin; jj++)
+                {
+                    filter_region[ii*stride_filter + w + jj] = filter_region[ii*stride_filter + w - 1];
+                    filter_region[(h+ii)*stride_filter + w + jj] = filter_region[(h+ii)*stride_filter + w - 1];
+                }
+            }
         }
     }
 }
@@ -194,42 +404,42 @@ void ctudec_create_filter_buffers(OVCTUDec *const ctudec, struct Frame *pic_fram
         int ratio_luma_chroma = ctudec->rcn_ctx.frame_buff.stride / ctudec->rcn_ctx.frame_buff.stride_c;
         int ratio = comp==0 ? 1 : ratio_luma_chroma;
 
-        // fb->saved_rows_h[comp]        = margin ;
-        // fb->saved_rows_stride[comp]   = nb_ctu_w * max_cu_width_l /ratio + 2 * margin ;
-        // if(!saved_rows[comp]){
-        //     saved_rows[comp] = ov_malloc(fb->saved_rows_h[comp] * fb->saved_rows_stride[comp] * sizeof(int16_t));
-        // } else {
-        //     memset(saved_rows[comp],0, fb->saved_rows_h[comp] * fb->saved_rows_stride[comp] * sizeof(int16_t));
-        // }
-
-        // fb->saved_cols_h[comp]        = max_cu_width_l /ratio ;
-        // fb->saved_cols_stride[comp]   = margin ;
-        // if(!saved_cols[comp]){
-        //     saved_cols[comp] = ov_malloc(fb->saved_cols_h[comp] * fb->saved_cols_stride[comp] * sizeof(int16_t));
-        // } else {
-        //     memset(saved_cols[comp],0, fb->saved_cols_h[comp] * fb->saved_cols_stride[comp] * sizeof(int16_t));
-        // }
-        
-        // fb->filter_region_h[comp]        = max_cu_width_l /ratio + 2*margin ;
-        // fb->filter_region_stride[comp]   = max_cu_width_l /ratio + 2*margin ;
-        // if(!filter_region[comp]){
-        //     filter_region[comp] = ov_malloc( fb->filter_region_stride[comp] * fb->filter_region_h[comp] * sizeof(int16_t));
-        // } else {
-        //     memset(filter_region[comp],0, fb->filter_region_stride[comp] * fb->filter_region_h[comp] * sizeof(int16_t));
-        // }
-
-        fb->filter_region_h[comp]        = ctudec->pic_h /ratio + 2 * margin ;
-        fb->filter_region_stride[comp]   = ctudec->pic_w /ratio + 2 * margin ;
+        fb->filter_region_w[comp]        = max_cu_width_l /ratio ;
+        fb->filter_region_h[comp]        = max_cu_width_l /ratio ;
+        fb->filter_region_stride[comp]   = max_cu_width_l /ratio + 2*margin ;
         fb->filter_region_offset[comp]   = margin * fb->filter_region_stride[comp] + margin;
         if(!filter_region[comp]){
-            filter_region[comp] = ov_malloc( fb->filter_region_stride[comp] * fb->filter_region_h[comp] * sizeof(int16_t));
+            filter_region[comp] = ov_malloc( fb->filter_region_stride[comp] * (fb->filter_region_h[comp] + 2*margin) * sizeof(int16_t));
         } else {
-            memset(filter_region[comp],0, fb->filter_region_stride[comp] * fb->filter_region_h[comp] * sizeof(int16_t));
+            memset(filter_region[comp],0, fb->filter_region_stride[comp] * (fb->filter_region_h[comp] + 2*margin) * sizeof(int16_t));
         }
+
+        fb->saved_rows_stride[comp]   = nb_ctu_w*max_cu_width_l/ratio; ;
+        if(!saved_rows[comp]){
+            saved_rows[comp] = ov_malloc(margin * fb->saved_rows_stride[comp] * sizeof(int16_t));
+        } else {
+            memset(saved_rows[comp],0, margin * fb->saved_rows_stride[comp] * sizeof(int16_t));
+        }
+
+        if(!saved_cols[comp]){
+            saved_cols[comp] = ov_malloc(fb->filter_region_h[comp] * margin * sizeof(int16_t));
+        } else {
+            memset(saved_cols[comp],0, fb->filter_region_h[comp] * margin * sizeof(int16_t));
+        }
+
+        // fb->filter_region_w[comp]        = ctudec->pic_w /ratio ;
+        // fb->filter_region_h[comp]        = ctudec->pic_h /ratio ;
+        // fb->filter_region_stride[comp]   = ctudec->pic_w /ratio + 2 * margin ;
+        // fb->filter_region_offset[comp]   = margin * fb->filter_region_stride[comp] + margin;
+        // if(!filter_region){
+        //     filter_region = ov_malloc( fb->filter_region_stride[comp] * fb->filter_region_h[comp] * sizeof(int16_t));
+        // } else {
+        //     memset(filter_region,0, fb->filter_region_stride[comp] * fb->filter_region_h[comp] * sizeof(int16_t));
+        // }
     }
 }
 
-void free_filter_buffers(OVCTUDec *const ctudec)
+void ctudec_free_filter_buffers(OVCTUDec *const ctudec)
 {
     int16_t** saved_rows    = ctudec->filter_buffers.saved_rows;
     int16_t** saved_cols    = ctudec->filter_buffers.saved_cols;
@@ -237,9 +447,9 @@ void free_filter_buffers(OVCTUDec *const ctudec)
 
     for(int comp = 0; comp < 3; comp++)
     {
-        if(saved_rows[comp])    ov_free(saved_rows[comp]);
-        if(saved_cols[comp])    ov_free(saved_cols[comp]);
-        if(filter_region[comp]) ov_free(filter_region[comp]);
+        if(filter_region) ov_freep(filter_region);
+        if(saved_rows[comp])    ov_freep(saved_rows[comp]);
+        if(saved_cols[comp])    ov_freep(saved_cols[comp]);
     }
 }
 
@@ -265,7 +475,6 @@ ctudec_init(OVCTUDec **ctudec_p)
 int
 ctudec_uninit(OVCTUDec *ctudec)
 {
-    free_filter_buffers(ctudec);
     ov_free(ctudec);
     return 0;
 }
