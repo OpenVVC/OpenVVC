@@ -152,7 +152,6 @@ ovdec_decode_ctu_border(const VVCContext *const vvc_ctx,
 
 void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect)
 {
-
     if (is_border_rect & OV_BOUNDARY_RIGHT_RECT)
         return;
     
@@ -306,7 +305,6 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x_l, int y_l, uint8
             }
           }
         }
-
 
         //*******************************************************/
         //Upper margins

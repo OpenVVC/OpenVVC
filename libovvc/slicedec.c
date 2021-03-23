@@ -1044,6 +1044,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         ctb_y++;
     }
 
+    //TODO: correction to avoid segmentation fault.
     // ctudec_free_filter_buffers(ctudec);
 
     /*FIXME decide return value */
