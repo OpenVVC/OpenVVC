@@ -22,7 +22,7 @@ non_reg_gcc_debug:
   dependencies:
     - build_linux_gcc_debug
   script:
-    - ./CI/checkMD5.sh CI ./debug/examples/dectest
+    - ./CI/checkMD5.sh CI/test_bitstreams/ ./debug/examples/dectest
 
 build_linux_clang_debug:
   stage: build
@@ -46,7 +46,7 @@ non_reg_clang_debug:
   dependencies:
     - build_linux_clang_debug
   script:
-    - ./CI/checkMD5.sh CI ./debug/examples/dectest
+    - ./CI/checkMD5.sh CI/test_bitstreams/ ./debug/examples/dectest
 
 build_linux_gcc_release:
   stage: build
