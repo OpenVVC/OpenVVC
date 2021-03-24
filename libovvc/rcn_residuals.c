@@ -124,7 +124,7 @@ vvc_scale_add_residual(const int16_t *src, uint16_t *dst,
     int32_t value;
     uint16_t sign;
     const int16_t *_src = src;
-    int16_t       *_dst = dst;
+    uint16_t       *_dst = dst;
     const int tb_w = 1 << log2_tb_w;
     const int tb_h = 1 << log2_tb_h;
     for (i = 0; i < tb_h; ++i){
@@ -149,7 +149,7 @@ vvc_scale_sub_residual(const int16_t *src, uint16_t *dst,
     int32_t value;
     uint16_t sign;
     const int16_t *_src = src;
-    int16_t       *_dst = dst;
+    uint16_t       *_dst = dst;
     const int tb_w = 1 << log2_tb_w;
     const int tb_h = 1 << log2_tb_h;
     for (i = 0; i < tb_h; ++i){
@@ -174,7 +174,7 @@ vvc_scale_add_half_residual(const int16_t *src, uint16_t *dst,
     int32_t value;
     uint16_t sign;
     const int16_t *_src = src;
-    int16_t       *_dst = dst;
+    uint16_t       *_dst = dst;
     const int tb_w = 1 << log2_tb_w;
     const int tb_h = 1 << log2_tb_h;
     for (i = 0; i < tb_h; ++i){
@@ -199,7 +199,7 @@ vvc_scale_sub_half_residual(const int16_t *src, uint16_t *dst,
     int32_t value;
     uint16_t sign;
     const int16_t *_src = src;
-    int16_t       *_dst = dst;
+    uint16_t       *_dst = dst;
     const int tb_w = 1 << log2_tb_w;
     const int tb_h = 1 << log2_tb_h;
     for (i = 0; i < tb_h; ++i){
@@ -224,7 +224,7 @@ vvc_add_residual(const int16_t *src, uint16_t *dst,
     int i, j;
     int32_t value;
     const int16_t *_src = src;
-    int16_t       *_dst = dst;
+    uint16_t       *_dst = dst;
     const int tb_w = 1 << log2_tb_w;
     const int tb_h = 1 << log2_tb_h;
     for (i = 0; i < tb_h; ++i){
@@ -245,7 +245,7 @@ vvc_sub_residual(const int16_t *src, uint16_t *dst,
     int i, j;
     int32_t value;
     const int16_t *_src = src;
-    int16_t       *_dst = dst;
+    uint16_t       *_dst = dst;
     const int tb_w = 1 << log2_tb_w;
     const int tb_h = 1 << log2_tb_h;
     for (i = 0; i < tb_h; ++i){
@@ -266,7 +266,7 @@ vvc_add_half_residual(const int16_t *src, uint16_t *dst,
     int i, j;
     int32_t value;
     const int16_t *_src = src;
-    int16_t       *_dst = dst;
+    uint16_t       *_dst = dst;
     const int tb_w = 1 << log2_tb_w;
     const int tb_h = 1 << log2_tb_h;
     for (i = 0; i < tb_h; ++i){

@@ -11,6 +11,7 @@
 #include "drv.h"
 #include "vcl.h"
 #include "drv_utils.h"
+#include "rcn.h"
 #include "rcn_fill_ref.h"
 #include "rcn_intra_angular.h"
 #include "rcn_intra_dc_planar.h"
