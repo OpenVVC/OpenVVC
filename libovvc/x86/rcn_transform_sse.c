@@ -3153,7 +3153,7 @@ void vvc_inverse_dct_viii_32_sse(const int16_t *src, int16_t *dst, ptrdiff_t src
 
 
 void
-vvc_inverse_dct_ii_dc_sse(uint16_t *const dst, int log2_tb_w, int log2_tb_h,
+vvc_inverse_dct_ii_dc_sse(int16_t *const dst, int log2_tb_w, int log2_tb_h,
                           int dc_val)
 {
 
@@ -3162,7 +3162,7 @@ vvc_inverse_dct_ii_dc_sse(uint16_t *const dst, int log2_tb_w, int log2_tb_h,
     int tb_h = 1 << log2_tb_h;
     int clip_min = -(1 << 15);
     int clip_max = (1 << 15)-1;
-    int16_t * _dst = dst;
+    int16_t * _dst = (int16_t *)dst;
     int value = (((dc_val + 1) >> 1) + 8) >> 4;
     value = ov_clip(value, clip_min, clip_max);
     __m128i x0 = _mm_set1_epi16(value);

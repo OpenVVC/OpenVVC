@@ -142,7 +142,7 @@ vvc_intra_planar_pdpc_sse(const uint16_t *const src_above,
     const uint8_t pdpc_scale = (log2_pb_w + log2_pb_h - 2) >> 2;
 
     int16_t t_row[128],  r_col[128], l_col[128];//b_row[128],
-    const int8_t *pdpc_w = vvc_pdpc_w[pdpc_scale];
+    const uint8_t *pdpc_w = vvc_pdpc_w[pdpc_scale];
     // const int16_t bl_val = src_left[height + 1];
     // const int16_t tr_val = src_above[width + 1];
     #if CUT_PDPC
@@ -261,7 +261,7 @@ vvc_intra_planar_pdpc_sse(const uint16_t *const src_above,
             /* FIXME applying PDPC on the whole PU is useless
                since only max 12 pel cols from left and 12 pel
                rows from top require pdpc processing*/
-            __m128i xl, yt, x_v, w_x, w_y;//t_v, 
+            __m128i xl, yt, x_v, w_x, w_y;//t_v,
             __m128i pdpc_rnd, out_v;
             __m128i tst;
             x_v = _mm_loadu_si128((__m128i *) (pdpc_w    + 8 * x));
@@ -318,7 +318,7 @@ vvc_intra_planar_pdpc_2_sse(const uint16_t *const src_above,
     const uint8_t pdpc_scale = (log2_pb_w + log2_pb_h - 2) >> 2;
 
     int16_t t_row[128], r_col[128], l_col[128]; //b_row[128],
-    const int8_t *pdpc_w = vvc_pdpc_w[pdpc_scale];
+    const uint8_t *pdpc_w = vvc_pdpc_w[pdpc_scale];
     // const int16_t bl_val = src_left[height + 1];
     // const int16_t tr_val = src_above[width + 1];
     #if CUT_PDPC

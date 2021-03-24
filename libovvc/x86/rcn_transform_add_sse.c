@@ -127,7 +127,7 @@ vvc_add_residual_sse(const int16_t *const src, uint16_t *const dst,
     int i, j;
     int tb_w = 1 << log2_tb_w;
     int tb_h = 1 << log2_tb_h;
-    const uint16_t *_src = src;
+    const int16_t *_src = (const int16_t *)src;
     uint16_t *_dst = dst;
     if (log2_tb_h > 1) {
     switch (log2_tb_w){
