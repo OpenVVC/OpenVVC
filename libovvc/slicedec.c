@@ -1049,18 +1049,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
         }
     }
 
-    /*FIXME move rcn functions pointers init */
-    rcn_init_mc_functions(&ctudec->rcn_ctx.rcn_funcs);
-    rcn_init_tr_functions(&ctudec->rcn_ctx.rcn_funcs);
-    rcn_init_dc_planar_functions(&ctudec->rcn_ctx.rcn_funcs);
-    rcn_init_ict_functions(&ctudec->rcn_ctx.rcn_funcs, ict_type(ph));
-
-    /*Enables SSE Functions*/
-    rcn_init_mc_functions_sse(&ctudec->rcn_ctx.rcn_funcs);
-    rcn_init_tr_functions_sse(&ctudec->rcn_ctx.rcn_funcs);
-    rcn_init_dc_planar_functions_sse(&ctudec->rcn_ctx.rcn_funcs);
-    rcn_init_ict_functions_sse(&ctudec->rcn_ctx.rcn_funcs, ict_type(ph));
-
+    rcn_init_functions(&ctudec->rcn_ctx.rcn_funcs, ict_type(ph));
 
     return 0;
 }

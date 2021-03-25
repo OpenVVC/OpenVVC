@@ -3,6 +3,13 @@
 
 #include "ovdefs.h"
 
+/* FIXME to be set by configure */
+#define ARCH_X86 1
+#define SSE_ENABLED 1
+#define AVX_ENABLED 0
+#define ARCH_ARM 0
+#define NEON_ENABLED 0
+
 /* FIXME
  * rename OVINTRA
  * MERGE with INTER modes ?
@@ -60,6 +67,8 @@ void rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_
              OVMV mv, uint8_t inter_dir);
 
 /* FIXME check vertical / horizontal */
+void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type);
+
 void rcn_init_cclm_functions(struct RCNFunctions *rcn_func);
 
 void rcn_init_cclm_functions_collocated(struct RCNFunctions *rcn_func);
