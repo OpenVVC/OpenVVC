@@ -2,6 +2,7 @@
 
 cat > config.mak <<EOF
 CC=$1
+ARCH=$2
 VERBOSITY=0
 CFLAGS_COMMON= --pedantic -fPIC
 CFLAGS_DEBUG= -O0 -g
