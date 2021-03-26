@@ -548,9 +548,8 @@ typedef struct OVALFData
     int16_t alf_chroma_clip_idx[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF];
 
     uint8_t alf_cc_cb_filters_signalled_minus1;
-    int16_t alf_cc_cb_mapped_coeff[MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF];
     uint8_t alf_cc_cr_filters_signalled_minus1;
-    int16_t alf_cc_cr_mapped_coeff[MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF];
+    int16_t alf_cc_mapped_coeff[2][MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF];
 } OVALFData;
 
 typedef struct OVAPS

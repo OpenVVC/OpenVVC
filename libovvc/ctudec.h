@@ -109,18 +109,22 @@ struct ALFInfo
     uint8_t alf_cb_enabled_flag;
     uint8_t alf_cr_enabled_flag;
     uint8_t num_alf_aps_ids_luma;
+    uint8_t left_ctb_alf_flag;
+    //TODO: use width in ctu of image (or tile) instead of max value 32.
+    uint8_t ctb_cc_alf_flag_line[2][32];
 
     const struct OVALFData* aps_alf_data;
 
-    uint8_t left_ctb_alf_flag;
+    uint8_t cc_alf_cb_enabled_flag;
+    uint8_t cc_alf_cr_enabled_flag;
     uint8_t left_ctb_cc_alf_flag[2];
     //TODO: use width in ctu of image (or tile) instead of max value 32.
     uint8_t ctb_alf_flag_line[32];
-    uint8_t ctb_cc_alf_flag_line[2][32];
+    uint8_t* ctb_cc_alf_filter_idx[2];
 
     //TODO:  better here or in slicedec ?
      /* arrays of ALF parameters structure for each ctu*/
-    ALFParamsCtu *alf_params;
+    ALFParamsCtu *ctb_alf_params;
 
     //ALF reconstruction structure
     RCNALF rcn_alf;

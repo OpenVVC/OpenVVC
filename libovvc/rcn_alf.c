@@ -504,6 +504,82 @@ void rcn_alf_derive_classification(RCNALF alf, int16_t *const rcn_img, const int
     }
 }
 
+void cc_alf_filterBlk(int16_t * chroma_dst, int16_t * luma_src, const int chr_stride, const int luma_stride, 
+                        const Area blk_dst, const uint8_t c_id, const int16_t *filt_coeff, 
+                        const int vbCTUHeight, int vbPos)
+{
+  const int clsSizeY           = 4;
+  const int clsSizeX           = 4;
+  //ATTENTION: scaleX et Y fixed to 1 (en 4 2 0)
+  const int scaleX             = 1;
+  const int scaleY             = 1;
+
+  for( int i = 0; i < blk_dst.height; i += clsSizeY )
+  {
+    for( int j = 0; j < blk_dst.width; j += clsSizeX )
+    {
+      for( int ii = 0; ii < clsSizeY; ii++ )
+      {
+        int row       = ii;
+        int col       = j;
+        int16_t *srcSelf  = chroma_dst + col + row * chr_stride;
+
+        int offset1 = luma_stride;
+        int offset2 = -luma_stride;
+        int offset3 = 2 * luma_stride;
+        row <<= scaleY;
+        col <<= scaleX;
+        const int16_t *srcCross = luma_src + col + row * luma_stride;
+
+        int pos = ((blk_dst.y + i + ii) << scaleY) & (vbCTUHeight - 1);
+        if (scaleY == 0 && (pos == vbPos || pos == vbPos + 1))
+        {
+          continue;
+        }
+        if (pos == (vbPos - 2) || pos == (vbPos + 1))
+        {
+          offset3 = offset1;
+        }
+        else if (pos == (vbPos - 1) || pos == vbPos)
+        {
+          offset1 = 0;
+          offset2 = 0;
+          offset3 = 0;
+        }
+
+        for (int jj = 0; jj < clsSizeX; jj++)
+        {
+          const int jj2     = (jj << scaleX);
+          const int offset0 = 0;
+
+          int sum = 0;
+          const int16_t currSrcCross = srcCross[offset0 + jj2];
+          sum += filt_coeff[0] * (srcCross[offset2 + jj2    ] - currSrcCross);
+          sum += filt_coeff[1] * (srcCross[offset0 + jj2 - 1] - currSrcCross);
+          sum += filt_coeff[2] * (srcCross[offset0 + jj2 + 1] - currSrcCross);
+          sum += filt_coeff[3] * (srcCross[offset1 + jj2 - 1] - currSrcCross);
+          sum += filt_coeff[4] * (srcCross[offset1 + jj2    ] - currSrcCross);
+          sum += filt_coeff[5] * (srcCross[offset1 + jj2 + 1] - currSrcCross);
+          sum += filt_coeff[6] * (srcCross[offset3 + jj2    ] - currSrcCross);
+
+          const int scale_bits = 7;
+          sum = (sum + ((1 << scale_bits ) >> 1)) >> scale_bits;    
+
+          //BITDEPTH: uniquement pour bitdepth 10
+          const int bit_depth = 10;
+          const int offset = 1 << bit_depth >> 1;
+          sum = OVMAX( OVMIN( sum + offset, (1<<bit_depth) - 1 ), 0) - offset;
+
+          sum += srcSelf[jj];
+          srcSelf[jj] = OVMAX( OVMIN( sum, (1<<bit_depth) - 1 ), 0) ;
+        }
+      }
+    }
+    chroma_dst += chr_stride * clsSizeY;
+    luma_src += luma_stride * clsSizeY << scaleY;
+  }
+}
+
 
 // dst   : buffer Frame output, pointing to the begining of CTU.
 // src   : filter buffer pre-ALF (of size CTU)
@@ -538,7 +614,6 @@ void alf_filterBlk(ALFClassifier **classifier, int16_t *const dst, int16_t *cons
   pImgYPad4 = pImgYPad2 - srcStride;
   pImgYPad5 = pImgYPad3 + srcStride;
   pImgYPad6 = pImgYPad4 - srcStride;
-
 
   //Partie a changer pour enlever les mallocs
   //creer une shuffleTab comme dans alf_sse
@@ -773,6 +848,7 @@ void alf_filterBlk(ALFClassifier **classifier, int16_t *const dst, int16_t *cons
 }
 
 
+
 void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pic)
 {
     struct ALFInfo alf_info = ctudec->alf_info;
@@ -819,7 +895,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
         is_border = (yPos + ctu_width >= ctudec->pic_h) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
         
         int ctu_rs_addr = ctb_x + ctb_y * nb_ctu_w ;
-        ALFParamsCtu alf_params_ctu = ctudec->alf_info.alf_params[ctu_rs_addr];
+        ALFParamsCtu alf_params_ctu = alf_info.ctb_alf_params[ctu_rs_addr];
 
         int margin = fb.margin;
         int16_t **src = fb.filter_region;
@@ -888,6 +964,35 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
                     alf.chroma_coeff_final[alt_num], alf.chroma_clip_final[alt_num], 
                     ctu_width/chr_scale, (( yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_width - ALF_VB_POS_ABOVE_CTUROW_LUMA)/chr_scale));
             }
+
+            if (c_idx==1 && alf_info.cc_alf_cb_enabled_flag || c_idx==2 && alf_info.cc_alf_cr_enabled_flag)
+            {
+                const struct OVALFData* alf_data = alf_info.aps_alf_data;
+                const int filt_idx = alf_info.ctb_cc_alf_filter_idx[c_idx - 1][ctu_rs_addr];
+                if (filt_idx != 0)
+                {
+                    //TODO: maybe reverse buffer use, the alf reconstructed pixels are in the pic frame.
+                    Area blk,blk_dst;
+                    //Source block in the filter buffers image
+                    blk.x=0; blk.y=0;
+                    blk.width=width; blk.height=height;
+                    int stride_src = fb.filter_region_stride[0];
+                    int16_t*  src_chroma = &src[0][blk.y*stride_src + blk.x + fb.filter_region_offset[0]];
+
+                    //Destination block in the final image
+                    blk_dst.x=xPos/chr_scale; blk_dst.y=yPos/chr_scale;
+                    blk_dst.width=width/chr_scale; blk_dst.height=height/chr_scale;
+                    //BITDEPTH
+                    int stride_dst = frame->linesize[c_idx]/2;
+                    int16_t*  dst_chroma = (int16_t*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
+
+                    // const int16_t *filt_coeff = alf_data.alf_cc_mapped_coeff[c_idx - 1][filt_idx];
+                    const int16_t *filt_coeff = alf_data->alf_cc_mapped_coeff[c_idx - 1][filt_idx - 1];
+                    cc_alf_filterBlk(dst_chroma, src_chroma, stride_dst, stride_src, blk_dst, c_idx, filt_coeff,
+                    ctu_width, (( yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_width - ALF_VB_POS_ABOVE_CTUROW_LUMA)));
+                }
+            }
+
         }
         ctudec_save_last_rows(ctudec, xPos, yPos, is_border);
         ctudec_save_last_cols(ctudec, xPos, yPos, is_border);
