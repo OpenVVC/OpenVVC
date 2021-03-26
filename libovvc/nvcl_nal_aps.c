@@ -99,10 +99,14 @@ nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data, uint8_t 
         alf_data->alf_cc_cb_filters_signalled_minus1 = nvcl_read_u_expgolomb(rdr);
         for (int k = 0; k < alf_data->alf_cc_cb_filters_signalled_minus1 + 1; k++) {
             for (int j = 0; j < 7; j++) {
-                alf_data->alf_cc_cb_mapped_coeff[k][j] = nvcl_read_bits(rdr, 3);
-                if (alf_data->alf_cc_cb_mapped_coeff[k][j]) {
+                int code = nvcl_read_bits(rdr, 3);
+                if (code) {
+                    code = 1 << (code - 1);
                     sign = nvcl_read_bits(rdr, 1);
-                    if (sign) alf_data->alf_cc_cb_mapped_coeff[k][j] *= -1;
+                    alf_data->alf_cc_mapped_coeff[0][k][j] = sign ? -1*code : code;
+                }
+                else{
+                    alf_data->alf_cc_mapped_coeff[0][k][j] = 0;
                 }
             }
         }
@@ -112,10 +116,14 @@ nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data, uint8_t 
         alf_data->alf_cc_cr_filters_signalled_minus1 = nvcl_read_u_expgolomb(rdr);
         for (int k = 0; k < alf_data->alf_cc_cr_filters_signalled_minus1 + 1; k++) {
             for (int j = 0; j < 7; j++) {
-                alf_data->alf_cc_cr_mapped_coeff[k][j] = nvcl_read_bits(rdr, 3);
-                if (alf_data->alf_cc_cr_mapped_coeff[k][j]) {
+                int code = nvcl_read_bits(rdr, 3);
+                if (code) {
+                    code = 1 << (code - 1);
                     sign = nvcl_read_bits(rdr, 1);
-                    if (sign) alf_data->alf_cc_cr_mapped_coeff[k][j] *= -1;
+                    alf_data->alf_cc_mapped_coeff[1][k][j] = sign ? -1*code : code;
+                }
+                else{
+                    alf_data->alf_cc_mapped_coeff[1][k][j] = 0;
                 }
             }
         }

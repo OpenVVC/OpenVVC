@@ -360,15 +360,29 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVSH *const sh, const OVSPS *
     if(alf_info->alf_luma_enabled_flag || alf_info->alf_cb_enabled_flag || alf_info->alf_cr_enabled_flag){
         alf_info->num_alf_aps_ids_luma  = sh->sh_num_alf_aps_ids_luma;
         alf_info->aps_alf_data = aps_alf_data;
-        if(!alf_info->alf_params){
-            alf_info->alf_params = ov_malloc(sizeof(ALFParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
+        if(!alf_info->ctb_alf_params){
+            alf_info->ctb_alf_params = ov_malloc(sizeof(ALFParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
         } else {
-            memset(alf_info->alf_params,0,sizeof(ALFParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
+            memset(alf_info->ctb_alf_params, 0, sizeof(ALFParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
         }
 
         //create the structures for ALF reconstruction
         alf_create(ctudec, &alf_info->rcn_alf);
     }
+
+    //Init CC ALF ctu params
+    alf_info->cc_alf_cb_enabled_flag = sh->sh_alf_cc_cb_enabled_flag;
+    alf_info->cc_alf_cr_enabled_flag = sh->sh_alf_cc_cr_enabled_flag;
+    if(alf_info->cc_alf_cb_enabled_flag || alf_info->cc_alf_cr_enabled_flag){
+        alf_info->aps_alf_data = aps_alf_data;
+        if(!alf_info->ctb_cc_alf_filter_idx[0]){
+            alf_info->ctb_cc_alf_filter_idx[0] = ov_malloc(sizeof(uint8_t) * nb_ctb_pic_w * nb_ctb_pic_h);
+            alf_info->ctb_cc_alf_filter_idx[1] = ov_malloc(sizeof(uint8_t) * nb_ctb_pic_w * nb_ctb_pic_h);
+        } else {
+            memset(alf_info->ctb_cc_alf_filter_idx[0], 0, sizeof(uint8_t) * nb_ctb_pic_w * nb_ctb_pic_h);
+            memset(alf_info->ctb_cc_alf_filter_idx[1], 0, sizeof(uint8_t) * nb_ctb_pic_w * nb_ctb_pic_h);
+        }
+    }    
     return 0;
 }
 
@@ -621,7 +635,7 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
 
     ovcabac_read_ae_sao_ctu(ctudec, ctb_addr_rs);
     ovcabac_read_ae_alf_ctu(ctudec, ctb_addr_rs, einfo->nb_ctu_w);
-    // ovcabac_read_ae_cc_alf_ctu(ctudec, prms, ctb_addr_rs, einfo->nb_ctu_w);
+    ovcabac_read_ae_cc_alf_ctu(ctudec, ctb_addr_rs, einfo->nb_ctu_w);
 
     init_ctu_bitfield(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s);
 
@@ -653,7 +667,7 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
 
     ovcabac_read_ae_sao_ctu(ctudec, ctb_addr_rs);
     ovcabac_read_ae_alf_ctu(ctudec, ctb_addr_rs, einfo->nb_ctu_w);
-    // ovcabac_read_ae_cc_alf_ctu(ctudec, prms, ctb_addr_rs, einfo->nb_ctu_w);
+    ovcabac_read_ae_cc_alf_ctu(ctudec, ctb_addr_rs, einfo->nb_ctu_w);
 
     /* FIXME pic border detection in neighbour flags ?*/
     init_ctu_bitfield_border(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s,
@@ -993,7 +1007,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     init_lines(ctudec, sldec, &einfo, prms, ctudec->part_ctx,
                &drv_lines, cc_lines);
 
-    slicedec_attach_frame_buff(ctudec, sldec, einfo);
+    slicedec_attach_frame_buff(ctudec, sldec, &einfo);
     tmp_fbuff = ctudec->rcn_ctx.frame_buff;
 
     while (ctb_y < nb_ctu_h - 1) {
@@ -1031,16 +1045,16 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
 
     //TODO: do not apply in loop filters on the frame (same ALF)
     int margin = 3;
-    ctudec_create_filter_buffers(ctudec, sldec->pic->frame, einfo->nb_ctu_w, margin);
+    ctudec_create_filter_buffers(ctudec, sldec->pic->frame, einfo.nb_ctu_w, margin);
     ctb_y = 0;
     while (ctb_y < nb_ctu_h ) {
-        rcn_sao_filter_line(ctudec, einfo->nb_ctb_pic_w, ctb_y);
+        rcn_sao_filter_line(ctudec, einfo.nb_ctb_pic_w, ctb_y);
         ctb_y++;
     }
 
     ctb_y = 0;
     while (ctb_y < nb_ctu_h) {
-        rcn_alf_filter_line(ctudec, einfo->nb_ctb_pic_w, ctb_y);
+        rcn_alf_filter_line(ctudec, einfo.nb_ctb_pic_w, ctb_y);
         ctb_y++;
     }
 
@@ -1069,8 +1083,6 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     const OVPH *const ph = prms->ph;
 
     ctudec->max_log2_transform_skip_size = sps->sps_log2_transform_skip_max_size_minus2 + 2;
-    ctudec->pic_w = sldec->pic->frame->width[0];
-    ctudec->pic_h = sldec->pic->frame->height[0];
 
     #if 0
     ctudec->alf_num_chroma_alt = vvc_ctx->alf_num_alt_chroma;
@@ -1138,7 +1150,6 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     return 0;
 }
 
-<<<<<<< HEAD
 /*FIXME check init return */
 int
 slicedec_update_entry_decoders(OVSliceDec *sldec, const OVPS *const prms)
@@ -1148,6 +1159,8 @@ slicedec_update_entry_decoders(OVSliceDec *sldec, const OVPS *const prms)
 
     for (i = 0; i < nb_ctudec; ++i) {
         OVCTUDec *ctudec = sldec->ctudec_list[i];
+        ctudec->pic_w = sldec->pic->frame->width[0];
+        ctudec->pic_h = sldec->pic->frame->height[0];
         slicedec_init_slice_tools(ctudec, prms);
     }
 
