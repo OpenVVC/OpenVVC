@@ -1,5 +1,6 @@
 SRC_FOLDER:=libovvc/
 LIB_VERSION_HEADER:=ovversion.h
+
 LIB_SRC:=																																 \
 					ctudec.c                                                       \
 					data_rcn_angular.c                                           	 \
@@ -52,4 +53,8 @@ LIB_SRC:=																																 \
 					vcl_residual_coding.c                                          \
 					vcl_cabac.c																										 \
 
-LIB_HEADER:=
+LIB_HEADER:=ovversion.h   \
+						ovdefs.h       \
+						ovunits.h      \
+						ovdec.h        \
+						ovframe.h
