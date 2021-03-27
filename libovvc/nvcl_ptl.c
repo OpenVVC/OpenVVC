@@ -196,7 +196,7 @@ profile_tier_level_sps(OVNVCLReader *const rdr,  uint8_t sps_max_sublayers_minus
     ptl->general_profile_idc = nvcl_read_bits(rdr, 7);
     ptl->general_tier_flag = nvcl_read_flag(rdr);
 
-    #if 0
+    #if 1
     ptl->general_level_idc = nvcl_read_bits(rdr, 8);
     ptl->ptl_frame_only_constraint_flag = nvcl_read_flag(rdr);
     ptl->ptl_multilayer_enabled_flag = nvcl_read_flag(rdr);
@@ -208,7 +208,9 @@ profile_tier_level_sps(OVNVCLReader *const rdr,  uint8_t sps_max_sublayers_minus
         ptl->ptl_sublayer_level_present_flag[i] = nvcl_read_flag(rdr);
     }
 
+    #if 0
     ptl->general_level_idc = nvcl_read_bits(rdr, 8);
+    #endif
     /* FIXME check align function */
     #if 0
     while(!byte_aligned()) {
