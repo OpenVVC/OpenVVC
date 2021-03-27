@@ -1,16 +1,84 @@
 #!/bin/sh
 
+show_help() {
+    cat <<EOF
+Usage: configure [options]
+Options: [defaults in brackets after descriptions]
+
+Options:
+  --prefix=PREFIX          install in PREFIX [$prefix_default]
+  --libdir=DIR             install library in DIR [LIBDIR]
+  --includedir=DIR         install includes in DIR [PREFIX/include]
+  --pkgconfigdir=DIR       install pkg-config files in DIR [LIBDIR/pkgconfig]
+
+  --help                   print this message
+
+
+  --disable-static         do not build static libraries [no]
+  --enable-shared          build shared libraries [no]
+
+  --arch=ARCH              select architecture [$arch]
+
+  --cross-prefix=PREFIX    use PREFIX for compilation tools [$cross_prefix]
+  --enable-cross-compile   assume a cross-compiler is used
+
+EOF
+  exit 0
+}
+
+# Set default values
+prefix="/usr/local"
+libdir='${prefix}/lib'
+includedir='${prefix}/include'
+pkgconfigdir='${libdir}/pkgconfig'
+
+
+#TODO
+# toolchain
+#ar_default="ar"
+#cc_default="gcc"
+
+for opt do
+    optval="${opt#*=}"
+    case "$opt" in
+        --help|-h) show_help
+        ;;
+        *)
+            optname="${opt%%=*}"
+            optname="${optname#--}"
+            optname=$(echo "$optname" | sed 's/-/_/g')
+            eval $optname='$optval'
+        ;;
+    esac
+done
+
 cat > config.mak <<EOF
 CC=$1
 ARCH=$2
 VERBOSITY=0
-CFLAGS_COMMON= --pedantic -fPIC
-CFLAGS_DEBUG= -O0 -g
-CFLAGS_RELEASE= -Werror -O3
+CFLAGS_COMMON= -Wall --pedantic -fPIC
+CFLAGS_DEBUG=  -O0 -g
+CFLAGS_RELEASE=  -Wall -O3 -std=c11 -fomit-frame-pointer -pthread -g
 SSE_CFLAGS= -mssse3
 SHARED_LIBSUFF:=.so
 STATIC_LIBSUFF:=.a
-BUILDDIR=.
+BUILDDIR=build
+BUILD_TYPE=RELEASE
+
+INSTALL_PREFIX=${prefix}
+INSTALL_LIB=\$(INSTALL_PREFIX)/lib/libopenvvc
+INSTALL_INCLUDE=\$(INSTALL_PREFIX)/include/libopenvvc
+INSTALL_PKGCONFIG=\$(INSTALL_PREFIX)/lib/pkgconfig
+INSTALL_BIN=\$(INSTALL_PREFIX)/bin
+EOF
+
+cat > config.sh <<EOF
+# Install Directories
+INSTALL_PREFIX=${prefix}
+INSTALL_LIB=\${INSTALL_PREFIX}/lib/libopenvvc
+INSTALL_INCLUDE=\${INSTALL_PREFIX}/include/libopenvvc
+INSTALL_PKGCONFIG=\${INSTALL_PREFIX}/lib/pkgconfig
+INSTALL_BIN=\${INSTALL_PREFIX}/bin
 EOF
 
 exit 0
