@@ -1,3 +1,4 @@
+#include "mempool.h"
 #include "mempool_internal.h"
 #include "overror.h"
 #include "ovutils.h"

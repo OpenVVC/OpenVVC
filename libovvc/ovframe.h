@@ -5,8 +5,6 @@
 #include <stdint.h>
 #include "ovdefs.h"
 
-#include "mempool.h"
-
 /* TODO Decide on values */
 enum ChromaFmt
 {
@@ -14,6 +12,7 @@ enum ChromaFmt
     OV_YUV_420_P10 = 1,
 };
 
+struct MemPool;
 /* Miscelaneous information on Picture */
 struct FrameInfo
 {
@@ -34,7 +33,7 @@ struct PlaneProp
 
 struct FramePool
 {
-    MemPool *plane_pool[4];
+    struct MemPool *plane_pool[4];
     struct PlaneProp plane_prop[4];
 };
 
