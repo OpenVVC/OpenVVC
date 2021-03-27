@@ -1073,7 +1073,6 @@ int
 slicedec_init_lines(OVSliceDec *const sldec, const OVPS *const prms)
 {
     const OVSH *sh = prms->sh;
-    uint8_t slice_type = sldec->slice_type;
     sldec->slice_type = sh->sh_slice_type;
 
     if (!sldec->cabac_lines[0].qt_depth_map_x) {
