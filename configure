@@ -3,6 +3,7 @@
 
 prefix_default="/usr/local"
 cc_default="gcc"
+builddir_default="$(pwd)"
 
 show_help() {
     cat <<EOF
@@ -14,6 +15,7 @@ Options:
   --libdir=LIBDIR          install library in LIBDIR [PREFIX/lib]
   --includedir=DIR         install includes in DIR [PREFIX/include]
   --pkgconfigdir=DIR       install pkg-config files in DIR [LIBDIR/pkgconfig]
+  --build-dir=DIR           build objects in DIR [$builddir_default]
 
   --help                   print this message
 
@@ -37,6 +39,8 @@ prefix=$prefix_default
 libdir='${prefix}/lib'
 includedir='${prefix}/include'
 pkgconfigdir='${libdir}/pkgconfig'
+
+build_dir=$builddir_default
 
 cc=$cc_default
 arch="$(uname -m)"
@@ -89,7 +93,7 @@ CFLAGS_RELEASE=  -Wall -O3 -std=c11 -fomit-frame-pointer -pthread -g
 SSE_CFLAGS= -mssse3
 SHARED_LIBSUFF:=.so
 STATIC_LIBSUFF:=.a
-BUILDDIR=build
+BUILDDIR=${build_dir}
 BUILD_TYPE=RELEASE
 
 INSTALL_PREFIX=${prefix}
