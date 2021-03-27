@@ -7,7 +7,7 @@ build_linux_gcc_debug:
   image: gcc
   script:
     - gcc --version
-    - ./configure gcc x86
+    - ./configure --cc=gcc
     - make BUILD_TYPE=DEBUG
 # Files to keep after compilation
   artifacts:
@@ -31,7 +31,7 @@ build_linux_clang_debug:
     - apt update && apt install -y build-essential clang
   script:
     - clang --version
-    - ./configure clang x86
+    - ./configure --cc=clang
     - make BUILD_TYPE=DEBUG
 # Files to keep after compilation
   artifacts:
@@ -54,7 +54,7 @@ build_linux_gcc_release:
   allow_failure: true
   script:
     - gcc --version
-    - ./configure gcc x86
+    - ./configure --cc=gcc
     - make BUILD_TYPE=RELEASE
 # Files to keep after compilation
   artifacts:
@@ -70,7 +70,7 @@ build_arm_linux_gcc_release:
   allow_failure: true
   script:
     - gcc --version
-    - ./configure gcc arm
+    - ./configure --cc=gcc
     - make BUILD_TYPE=RELEASE
 # Files to keep after compilation
   artifacts:
@@ -85,7 +85,7 @@ build_arm_linux_gcc_debug:
     - ARM
   script:
     - gcc --version
-    - ./configure gcc arm
+    - ./configure --cc=gcc
     - make BUILD_TYPE=DEBUG
 # Files to keep after compilation
   artifacts:
