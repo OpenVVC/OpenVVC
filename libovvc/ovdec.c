@@ -499,7 +499,9 @@ ovdec_close(OVVCDec *vvcdec)
 
         nvcl_free_ctx(&vvcdec->nvcl_ctx);
 
-        slicedec_uninit(&vvcdec->subdec_list);
+        if (vvcdec->subdec_list) {
+            slicedec_uninit(&vvcdec->subdec_list);
+        }
 
         ovdpb_uninit(&vvcdec->dpb);
 
