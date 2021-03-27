@@ -17,7 +17,9 @@ Options:
   --disable-static         do not build static libraries [no]
   --enable-shared          build shared libraries [no]
 
+  --cc=CC                  select compiler [$cc]
   --arch=ARCH              select architecture [$arch]
+  --target-os=OS           compiler targets OS [$target_os]
 
   --cross-prefix=PREFIX    use PREFIX for compilation tools [$cross_prefix]
   --enable-cross-compile   assume a cross-compiler is used
@@ -33,10 +35,9 @@ includedir='${prefix}/include'
 pkgconfigdir='${libdir}/pkgconfig'
 
 
-#TODO
-# toolchain
-#ar_default="ar"
-#cc_default="gcc"
+cc="cc"
+arch="$(uname -m)"
+target_os="$(uname)"
 
 for opt do
     optval="${opt#*=}"
@@ -52,9 +53,24 @@ for opt do
     esac
 done
 
+# Select arch var according to common arch names
+case "$arch" in
+    arm*)
+        arch="arm"
+    ;;
+    i[3-6]86*|x86_64|x86_32|amd64)
+        arch="x86"
+    ;;
+		*)
+		echo "Unsupported archictecture $arch"
+		exit 1.
+		;;
+esac
+
+
 cat > config.mak <<EOF
-CC=$1
-ARCH=$2
+CC=${cc}
+ARCH=${arch}
 VERBOSITY=0
 CFLAGS_COMMON= -Wall --pedantic -fPIC
 CFLAGS_DEBUG=  -O0 -g
@@ -73,7 +89,6 @@ INSTALL_BIN=\$(INSTALL_PREFIX)/bin
 EOF
 
 cat > config.sh <<EOF
-# Install Directories
 INSTALL_PREFIX=${prefix}
 INSTALL_LIB=\${INSTALL_PREFIX}/lib/libopenvvc
 INSTALL_INCLUDE=\${INSTALL_PREFIX}/include/libopenvvc

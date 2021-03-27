@@ -1,17 +1,12 @@
 include config.mak
 
 # Set defaults
-CC?=gcc
 VERBOSITY?=0
-CFLAGS_COMMON?= --pedantic -fPIC
-CFLAGS_DEBUG?=  -O0 -g
-CFLAGS_RELEASE?= -O3 -Werror
 SHARED_LIBSUFF:=.so
 STATIC_LIBSUFF:=.a
 LD_FLAGS?=-lpthread
 BUILDDIR?=build
 BUILD_TYPE?=RELEASE
-ARCH?=x86
 
 
 # Compiler Verbosity Control
