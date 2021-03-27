@@ -21,3 +21,23 @@ cat > $2 << EOF
 
 #endif // OVVERSION_H
 EOF
+
+source config.sh
+prefix=${INSTALL_PREFIX}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+cat > libopenvvc.pc << EOF
+prefix=${INSTALL_PREFIX}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: OpenVVC Library
+Description: Open Source VVC Decoder Library
+Version: ${MAJOR}.${MINOR}.${REVISION}
+Requires:
+Conflicts:
+Libs: -L\${libdir}/libopenvvc -lovvc
+Libs.private: -lpthreads
+Cflags: -I\${includedir}/libopenvvc -I\${libdir}/libopenvvc
+EOF
