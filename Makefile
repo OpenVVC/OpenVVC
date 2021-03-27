@@ -74,7 +74,7 @@ $(BUILDDIR_TYPE)$(PROG)_stat:  $(BUILDDIR_TYPE)$(PROG).o $(BUILDDIR_TYPE)$(LIB_N
 
 $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF): $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
 	$(AR) rcD $@ $^
-	ranlib $@
+	$(RANLIB) $@
 
 $(BUILDDIR_TYPE)$(LIB_NAME)$(SHARED_LIBSUFF): $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
 	$(CC) -shared $^ -o $@ $(LD_FLAGS)

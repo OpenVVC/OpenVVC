@@ -1,5 +1,9 @@
 #!/bin/sh
 
+
+prefix_default="/usr/local"
+cc_default="gcc"
+
 show_help() {
     cat <<EOF
 Usage: configure [options]
@@ -17,7 +21,7 @@ Options:
   --disable-static         do not build static libraries [no]
   --enable-shared          build shared libraries [no]
 
-  --cc=CC                  select compiler [$cc]
+  --cc=CC                  select compiler [$cc_default]
   --arch=ARCH              select architecture [$arch]
   --target-os=OS           compiler targets OS [$target_os]
 
@@ -29,16 +33,17 @@ EOF
 }
 
 # Set default values
-prefix="/usr/local"
+prefix=$prefix_default
 libdir='${prefix}/lib'
 includedir='${prefix}/include'
 pkgconfigdir='${libdir}/pkgconfig'
 
-
-cc="cc"
+cc=$cc_default
 arch="$(uname -m)"
-target_os="$(uname)"
+target_os="$(uname -o)"
 
+
+# Override values set by user
 for opt do
     optval="${opt#*=}"
     case "$opt" in
@@ -68,8 +73,14 @@ case "$arch" in
 esac
 
 
+cc="${cross_prefix}${cc}"
+ar="${cross_prefix}ar"
+ranlib="${cross_prefix}ranlib"
+
 cat > config.mak <<EOF
 CC=${cc}
+AR=${ar}
+RANLIB=${ranlib}
 ARCH=${arch}
 VERBOSITY=0
 CFLAGS_COMMON= -Wall --pedantic -fPIC
