@@ -2,10 +2,7 @@ include config.mak
 
 # Set defaults
 VERBOSITY?=0
-SHARED_LIBSUFF:=.so
-STATIC_LIBSUFF:=.a
 LD_FLAGS?=-lpthread
-BUILDDIR?=build
 BUILD_TYPE?=RELEASE
 
 
