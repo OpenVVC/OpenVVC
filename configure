@@ -11,7 +11,7 @@ Options: [defaults in brackets after descriptions]
 
 Options:
   --prefix=PREFIX          install in PREFIX [$prefix_default]
-  --libdir=DIR             install library in DIR [LIBDIR]
+  --libdir=LIBDIR          install library in LIBDIR [PREFIX/lib]
   --includedir=DIR         install includes in DIR [PREFIX/include]
   --pkgconfigdir=DIR       install pkg-config files in DIR [LIBDIR/pkgconfig]
 
