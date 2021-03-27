@@ -94,6 +94,22 @@ $(BUILDDIR_TYPE)%.o: %.c
 	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) -I$(SRC_FOLDER)
 
 
+.PHONY: install install-shared install-headers install-pkgconfig
+
+install-shared: $(BUILDDIR_TYPE)$(LIB_NAME)$(SHARED_LIBSUFF)
+	$(AT)mkdir -p $(INSTALL_LIB)
+	cp $< $(INSTALL_LIB)/$(<F)
+
+install-headers: $(LIB_HEADER)
+	$(AT)mkdir -p $(INSTALL_INCLUDE)
+	cp $^ $(INSTALL_INCLUDE)/
+
+install: install-shared install-headers install-pkgconfig
+
+install-pkgconfig: version
+	$(AT)mkdir -p $(INSTALL_PKGCONFIG)
+	cp libopenvvc.pc $(INSTALL_PKGCONFIG)/libopenvvc.pc
+
 .PHONY: style check-style tidy version
 FILE_TO_STYLE:=$(shell find . -type f -name "*.[ch]")
 style:
