@@ -4,6 +4,8 @@ include config.mak
 VERBOSITY?=0
 LD_FLAGS?=-lpthread
 BUILD_TYPE?=RELEASE
+SRC_FOLDER:=libovvc/
+
 
 
 # Compiler Verbosity Control
@@ -27,13 +29,13 @@ CFLAGS=$(CFLAGS_COMMON)
 CFLAGS+=$(CFLAGS_$(BUILD_TYPE))
 
 # Find Sources
-include libovvc.mak
+include $(SRC_FOLDER)/libobj.mak
 LIB_SRC:=$(addprefix $(SRC_FOLDER),$(LIB_SRC))
 LIB_HEADER:=$(addprefix $(SRC_FOLDER),$(LIB_HEADER))
 LIB_OBJ:=$(addprefix $(BUILDDIR_TYPE),$(LIB_SRC:%.c=%.o))
 LIB_FILE:=$(LIB_HEADER) $(LIB_SRC)
 
-include $(ARCH)libovvc.mak
+include $(SRC_FOLDER)/$(ARCH)/$(ARCH)obj.mak
 $(ARCH)_LIB_SRC:=$(addprefix $($(ARCH)_SRC_FOLDER),$($(ARCH)_LIB_SRC))
 $(ARCH)_LIB_OBJ:=$(addprefix $(BUILDDIR_TYPE),$($(ARCH)_LIB_SRC:%.c=%.o))
 BUILDDIR_TYPE_ARCH:=$(addprefix $(BUILDDIR_TYPE), $($(ARCH)_SRC_FOLDER))
@@ -75,7 +77,6 @@ $(BUILDDIR_TYPE)$(LIB_NAME)$(SHARED_LIBSUFF): $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
 	$(CC) -shared $^ -o $@ $(LD_FLAGS)
 
 $(BUILDDIR_TYPE_ARCH)%_sse.o: $($(ARCH)_SRC_FOLDER)%_sse.c
-	echo $(BUILDDIR_TYPE_ARCH)
 	$(AT)mkdir -p $(@D)
 	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) $(SSE_CFLAGS) -I$(SRC_FOLDER)
 
@@ -140,7 +141,3 @@ include $(wildcard $(ALL_OBJS:.o=.d))
 clean:
 	$(AT)rm -f $(SRC_FOLDER)$(LIB_VERSION_HEADER)
 	$(AT)rm -f $(ALL_OBJS) $(ALL_OBJS:.o=.d) $(addprefix $(BUILDDIR_TYPE),$(PROG)) $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF)
-
-mrproper:
-	$(AT)rm -f $(SRC_FOLDER)$(LIB_VERSION_HEADER)
-	$(AT)rm -rf $(BUILDDIR)
