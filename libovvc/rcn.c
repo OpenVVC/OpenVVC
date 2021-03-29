@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include <string.h>
-#include "rcn.h"
 #include "nvcl_utils.h"
 #include "ovutils.h"
 #include "rcn_fill_ref.h"
@@ -13,6 +12,9 @@
 #include "rcn_mc.h"
 #include "rcn.h"
 #include "ovmem.h"
+#if SSE_ENABLED
+#include "x86/rcn_sse.h"
+#endif
 
 #if 0
 void vvc_intra_pred_isp(const OVCTUDec *const ctudec,
