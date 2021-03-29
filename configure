@@ -5,6 +5,8 @@ prefix_default="/usr/local"
 cc_default="gcc"
 builddir_default="$(pwd)/build"
 
+teststreams_dir_default="./CI/test_bitstreams"
+
 debug_cflags="-O0 -g -Wall --pedantic"
 release_cflags="-O3 -Wall"
 
@@ -42,6 +44,7 @@ Options:
   --release                use specific release compiler flags [CFLAGS ${release_cflags}]
   --debug                  use specific debug compiler cflags [CFLAGS ${debug_cflags}]
 
+  --teststreams-dir=DIR    read test bitstreams from DIR[$teststream_dir_default]
 EOF
   exit 0
 }
@@ -53,6 +56,7 @@ includedir='${prefix}/include'
 pkgconfigdir='${libdir}/pkgconfig'
 
 build_dir=$builddir_default
+teststreams_dir=$teststreams_dir_default
 
 cc=$cc_default
 arch="$(uname -m)"
@@ -128,7 +132,8 @@ SSE_CFLAGS= -mssse3
 SHARED_LIBSUFF:=${shlib_suffix}
 STATIC_LIBSUFF:=${stlib_suffix}
 BUILDDIR=${build_dir}
-BUILD_TYPE=RELEASE
+
+TESTSTREAMSDIR=$teststreams_dir_default
 
 INSTALL_PREFIX=${prefix}
 INSTALL_LIB=\$(INSTALL_PREFIX)/lib/libopenvvc
