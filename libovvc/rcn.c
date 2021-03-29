@@ -10,6 +10,7 @@
 #include "ctudec.h"
 #include "rcn_intra_mip.h"
 #include "rcn_structures.h"
+#include "rcn_mc.h"
 #include "rcn.h"
 #include "ovmem.h"
 
