@@ -60,7 +60,7 @@ teststreams_dir=$teststreams_dir_default
 
 cc=$cc_default
 arch="$(uname -m)"
-target_os="$(uname -o)"
+target_os="$(uname -s)"
 
 
 

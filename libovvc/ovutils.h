@@ -31,6 +31,8 @@ typedef enum
 extern OVLOG_TYPE ov_log_level;
 
 
+void
+print_ov_lib_version();
 
 void
 set_ov_log_level(OVLOG_TYPE log_level);

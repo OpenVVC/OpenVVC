@@ -45,7 +45,7 @@ ALL_OBJS=$(LIB_OBJ) $(addprefix $(BUILDDIR),$(addsuffix .o, $(PROG))) $($(ARCH)_
 
 .PHONY: all test version libs examples
 
-all: version libs examples
+all: libs examples
 
 test:
 	./CI/checkMD5.sh $(TESTSTREAMSDIR) $(BUILDDIR)$(PROG)
@@ -55,7 +55,10 @@ version:
 
 libs: version $(BUILDDIR)$(LIB_NAME)$(STATIC_LIBSUFF) $(BUILDDIR)$(LIB_NAME)$(SHARED_LIBSUFF)
 
-examples: version $(BUILDDIR)$(PROG) $(BUILDDIR)$(PROG)_stat
+examples: $(BUILDDIR)$(PROG) $(BUILDDIR)$(PROG)_stat
+
+$(SRC_FOLDER)$(LIB_VERSION_HEADER): RELEASE
+	$(AT)./version.sh $< $@
 
 $(BUILDDIR)$(PROG):  $(BUILDDIR)$(PROG).o $(BUILDDIR)$(LIB_NAME)$(SHARED_LIBSUFF)
 	$(CC) $^ -o $@ $(LD_FLAGS)
@@ -64,11 +67,11 @@ $(BUILDDIR)$(PROG)_stat:  $(BUILDDIR)$(PROG).o $(BUILDDIR)$(LIB_NAME)$(STATIC_LI
 	$(CC) $^ -o $@ $(LD_FLAGS)
 
 
-$(BUILDDIR)$(LIB_NAME)$(STATIC_LIBSUFF): $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
-	$(AR) rcD $@ $^
+$(BUILDDIR)$(LIB_NAME)$(STATIC_LIBSUFF): $(SRC_FOLDER)$(LIB_VERSION_HEADER) $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
+	$(AR) rc $@ $^
 	$(RANLIB) $@
 
-$(BUILDDIR)$(LIB_NAME)$(SHARED_LIBSUFF): $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
+$(BUILDDIR)$(LIB_NAME)$(SHARED_LIBSUFF): $(SRC_FOLDER)$(LIB_VERSION_HEADER) $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
 	$(CC) -shared $^ -o $@ $(LD_FLAGS)
 
 $(BUILDDIR_TYPE_ARCH)%_sse.o: $($(ARCH)_SRC_FOLDER)%_sse.c
@@ -126,8 +129,4 @@ include $(wildcard $(ALL_OBJS:.o=.d))
 
 clean:
 	$(AT)rm -f $(SRC_FOLDER)$(LIB_VERSION_HEADER)
-	$(AT)rm -f $(ALL_OBJS) $(ALL_OBJS:.o=.d) $(addprefix $(BUILDDIR),$(PROG)) $(BUILDDIR)$(LIB_NAME)$(STATIC_LIBSUFF)
-
-mrproper:
-	$(AT)rm -f $(SRC_FOLDER)$(LIB_VERSION_HEADER)
-	$(AT)rm -rf $(BUILDDIR)
+	$(AT)rm -f $(ALL_OBJS) $(ALL_OBJS:.o=.d) $(addprefix $(BUILDDIR),$(PROG)*) $(BUILDDIR)$(LIB_NAME)$(STATIC_LIBSUFF) $(BUILDDIR)$(LIB_NAME)$(SHARED_LIBSUFF)

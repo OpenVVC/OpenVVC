@@ -310,7 +310,7 @@ static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp){
 
 
 static void print_version(){
-  printf("libovvc version %u.%u.%u-%s\n", VER_MAJOR,VER_MINOR,VER_REVISION, VER_BUILD);
+  print_ov_lib_version();
 }
 
 static void print_usage(){

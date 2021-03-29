@@ -3,12 +3,19 @@
 #include <stdio.h>
 
 #include "ovutils.h"
+#include "ovversion.h"
+
 
 OVLOG_TYPE ov_log_level = OVLOG_INFO;
 
 static const char* vvctype = "VVCDec";
 
 static const char *OVLOG_COLORIFY[6] = { RED, YEL, BLU, CYN, GRN, MAG};
+
+void
+print_ov_lib_version(){
+  printf("libovvc version %u.%u.%u-%s\n", VER_MAJOR,VER_MINOR,VER_REVISION, VER_BUILD);
+}
 
 void
 set_ov_log_level(OVLOG_TYPE log_level)
