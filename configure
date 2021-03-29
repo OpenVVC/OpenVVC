@@ -1,9 +1,17 @@
 #!/bin/sh
-
+config="$@"
 
 prefix_default="/usr/local"
 cc_default="gcc"
-builddir_default="$(pwd)"
+builddir_default="$(pwd)/build"
+
+debug_cflags="-O0 -g -Wall --pedantic"
+release_cflags="-O3 -Wall"
+
+cflags_olevel="-O3"
+cflags_warnings="-Wall"
+cflags_error=
+cflags_default="${cflags_warnings} ${cflags_olevel}"
 
 show_help() {
     cat <<EOF
@@ -15,7 +23,7 @@ Options:
   --libdir=LIBDIR          install library in LIBDIR [PREFIX/lib]
   --includedir=DIR         install includes in DIR [PREFIX/include]
   --pkgconfigdir=DIR       install pkg-config files in DIR [LIBDIR/pkgconfig]
-  --build-dir=DIR           build objects in DIR [$builddir_default]
+  --build-dir=DIR          build objects in DIR [$builddir_default]
 
   --help                   print this message
 
@@ -29,6 +37,10 @@ Options:
 
   --cross-prefix=PREFIX    use PREFIX for compilation tools [$cross_prefix]
   --enable-cross-compile   assume a cross-compiler is used
+
+  --cflags=CFLAGS          use CFLAGS as compiler flags [$cflags_default]
+  --release                use specific release compiler flags [CFLAGS ${release_cflags}]
+  --debug                  use specific debug compiler cflags [CFLAGS ${debug_cflags}]
 
 EOF
   exit 0
@@ -47,11 +59,18 @@ arch="$(uname -m)"
 target_os="$(uname -o)"
 
 
+
 # Override values set by user
 for opt do
     optval="${opt#*=}"
     case "$opt" in
         --help|-h) show_help
+        ;;
+        --release)
+            cflags="${cflags} ${release_cflags}"
+        ;;
+        --debug)
+            cflags="${cflags} ${debug_cflags}"
         ;;
         *)
             optname="${opt%%=*}"
@@ -61,6 +80,10 @@ for opt do
         ;;
     esac
 done
+
+if [ -z "$cflags" ] ; then
+    cflags="$cflags_default"
+fi
 
 # Select arch var according to common arch names
 case "$arch" in
@@ -84,6 +107,8 @@ case $target_os in
     *)
     shlib_suffix=".so"
     stlib_suffix=".a"
+    # Append PIC flag for shared lib
+    cflags="${cflags} -fPIC"
     ;;
 esac
 
@@ -93,14 +118,12 @@ ranlib="${cross_prefix}ranlib"
 
 
 cat > config.mak <<EOF
+OVVC_CONFIG="${config}"
 CC=${cc}
 AR=${ar}
 RANLIB=${ranlib}
 ARCH=${arch}
-VERBOSITY=0
-CFLAGS_COMMON= -Wall --pedantic -fPIC
-CFLAGS_DEBUG=  -O0 -g
-CFLAGS_RELEASE=  -Wall -O3 -std=c11 -fomit-frame-pointer -pthread -g
+CFLAGS=${cflags}
 SSE_CFLAGS= -mssse3
 SHARED_LIBSUFF:=${shlib_suffix}
 STATIC_LIBSUFF:=${stlib_suffix}

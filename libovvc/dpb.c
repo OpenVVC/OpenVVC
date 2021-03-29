@@ -295,10 +295,10 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, uint32_t
         enum RefType ref_type = rp->st_ref_pic_flag ? ST_REF
                                                     : (rp->inter_layer_ref_pic_flag ? ILRP_REF
                                                                                     : LT_REF);
+        int ref_poc = 0;
         rinfo->type = ref_type;
 
         switch (ref_type) {
-        int ref_poc = 0;
         case ST_REF:
            ref_poc = !rp->strp_entry_sign_flag ? poc +  rp->abs_delta_poc_st + 1
                                                : poc - (rp->abs_delta_poc_st + 1);
@@ -388,7 +388,8 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
         const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
         int nb_output = 0;
         int min_poc   = INT_MAX;
-        int i, min_idx, ret;
+        int min_idx   = INT_MAX;
+        int i, ret;
 
         #if 0
         if (dpb->sh.no_output_of_prior_pics_flag == 1 && dpb->no_rasl_output_flag == 1) {
@@ -466,7 +467,8 @@ ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
         const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
         int nb_output = 0;
         int min_poc   = INT_MAX;
-        int i, min_idx, ret;
+        int min_idx   = 0;
+        int i, ret;
 
         #if 0
         if (dpb->sh.no_output_of_prior_pics_flag == 1 && dpb->no_rasl_output_flag == 1) {
@@ -603,7 +605,7 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, struct OVRPL *const rpl
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     uint32_t poc = dpb->poc;
     int i, ret;
-    OVPicture *current_pic;
+    OVPicture *current_pic = NULL;
 
     /* This is the same as clear_refs except we do not remove
      * flags on current picture

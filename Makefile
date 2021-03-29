@@ -3,9 +3,7 @@ include config.mak
 # Set defaults
 VERBOSITY?=0
 LD_FLAGS?=-lpthread
-BUILD_TYPE?=RELEASE
 SRC_FOLDER:=libovvc/
-
 
 
 # Compiler Verbosity Control
@@ -23,68 +21,68 @@ AT_0 = @
 AT_1 =
 AT = $(AT_$(VERBOSITY))
 
-BUILDDIR_TYPE:=$(addprefix $(BUILDDIR)/, $(shell echo $(BUILD_TYPE) | tr A-Z a-z)/)
-# Handle flags depending of BUILD_TYPE
-CFLAGS=$(CFLAGS_COMMON)
-CFLAGS+=$(CFLAGS_$(BUILD_TYPE))
+# Quick hack to avoid missing / in builddir 
+BUILDDIR:=$(BUILDDIR)/
 
 # Find Sources
 include $(SRC_FOLDER)/libobj.mak
 LIB_SRC:=$(addprefix $(SRC_FOLDER),$(LIB_SRC))
 LIB_HEADER:=$(addprefix $(SRC_FOLDER),$(LIB_HEADER))
-LIB_OBJ:=$(addprefix $(BUILDDIR_TYPE),$(LIB_SRC:%.c=%.o))
+LIB_OBJ:=$(addprefix $(BUILDDIR),$(LIB_SRC:%.c=%.o))
 LIB_FILE:=$(LIB_HEADER) $(LIB_SRC)
 
 include $(SRC_FOLDER)/$(ARCH)/$(ARCH)obj.mak
 $(ARCH)_LIB_SRC:=$(addprefix $($(ARCH)_SRC_FOLDER),$($(ARCH)_LIB_SRC))
-$(ARCH)_LIB_OBJ:=$(addprefix $(BUILDDIR_TYPE),$($(ARCH)_LIB_SRC:%.c=%.o))
-BUILDDIR_TYPE_ARCH:=$(addprefix $(BUILDDIR_TYPE), $($(ARCH)_SRC_FOLDER))
+$(ARCH)_LIB_OBJ:=$(addprefix $(BUILDDIR),$($(ARCH)_LIB_SRC:%.c=%.o))
+BUILDDIR_TYPE_ARCH:=$(addprefix $(BUILDDIR), $($(ARCH)_SRC_FOLDER))
 
 LIB_NAME:= libovvc
 
 PROG=examples/dectest
 
-ALL_OBJS=$(LIB_OBJ) $(addprefix $(BUILDDIR_TYPE),$(addsuffix .o, $(PROG))) $($(ARCH)_LIB_OBJ)
+ALL_OBJS=$(LIB_OBJ) $(addprefix $(BUILDDIR),$(addsuffix .o, $(PROG))) $($(ARCH)_LIB_OBJ)
 
+
+.PHONY: all test version libs examples
 
 all: version libs examples
 
 test:
-	./CI/checkMD5.sh CI/test_bitstreams ./$(BUILDDIR_TYPE)$(PROG)
+	./CI/checkMD5.sh CI/test_bitstreams ./$(BUILDDIR)$(PROG)
 
 version:
 	$(AT)./version.sh RELEASE $(SRC_FOLDER)$(LIB_VERSION_HEADER)
 
-libs: version $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF) $(BUILDDIR_TYPE)$(LIB_NAME)$(SHARED_LIBSUFF)
+libs: version $(BUILDDIR)$(LIB_NAME)$(STATIC_LIBSUFF) $(BUILDDIR)$(LIB_NAME)$(SHARED_LIBSUFF)
 
-examples: version $(BUILDDIR_TYPE)$(PROG) $(BUILDDIR_TYPE)$(PROG)_stat
+examples: version $(BUILDDIR)$(PROG) $(BUILDDIR)$(PROG)_stat
 
-$(BUILDDIR_TYPE)$(PROG):  $(BUILDDIR_TYPE)$(PROG).o $(BUILDDIR_TYPE)$(LIB_NAME)$(SHARED_LIBSUFF)
+$(BUILDDIR)$(PROG):  $(BUILDDIR)$(PROG).o $(BUILDDIR)$(LIB_NAME)$(SHARED_LIBSUFF)
 	$(CC) $^ -o $@ $(LD_FLAGS)
 
-$(BUILDDIR_TYPE)$(PROG)_stat:  $(BUILDDIR_TYPE)$(PROG).o $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF)
+$(BUILDDIR)$(PROG)_stat:  $(BUILDDIR)$(PROG).o $(BUILDDIR)$(LIB_NAME)$(STATIC_LIBSUFF)
 	$(CC) $^ -o $@ $(LD_FLAGS)
 
 
-$(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF): $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
+$(BUILDDIR)$(LIB_NAME)$(STATIC_LIBSUFF): $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
 	$(AR) rcD $@ $^
 	$(RANLIB) $@
 
-$(BUILDDIR_TYPE)$(LIB_NAME)$(SHARED_LIBSUFF): $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
+$(BUILDDIR)$(LIB_NAME)$(SHARED_LIBSUFF): $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
 	$(CC) -shared $^ -o $@ $(LD_FLAGS)
 
 $(BUILDDIR_TYPE_ARCH)%_sse.o: $($(ARCH)_SRC_FOLDER)%_sse.c
 	$(AT)mkdir -p $(@D)
 	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) $(SSE_CFLAGS) -I$(SRC_FOLDER)
 
-$(BUILDDIR_TYPE)%.o: %.c
+$(BUILDDIR)%.o: %.c
 	$(AT)mkdir -p $(@D)
 	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) -I$(SRC_FOLDER)
 
 
 .PHONY: install install-shared install-headers install-pkgconfig
 
-install-shared: $(BUILDDIR_TYPE)$(LIB_NAME)$(SHARED_LIBSUFF)
+install-shared: $(BUILDDIR)$(LIB_NAME)$(SHARED_LIBSUFF)
 	$(AT)mkdir -p $(INSTALL_LIB)
 	cp $< $(INSTALL_LIB)/$(<F)
 
@@ -137,4 +135,8 @@ include $(wildcard $(ALL_OBJS:.o=.d))
 
 clean:
 	$(AT)rm -f $(SRC_FOLDER)$(LIB_VERSION_HEADER)
-	$(AT)rm -f $(ALL_OBJS) $(ALL_OBJS:.o=.d) $(addprefix $(BUILDDIR_TYPE),$(PROG)) $(BUILDDIR_TYPE)$(LIB_NAME)$(STATIC_LIBSUFF)
+	$(AT)rm -f $(ALL_OBJS) $(ALL_OBJS:.o=.d) $(addprefix $(BUILDDIR),$(PROG)) $(BUILDDIR)$(LIB_NAME)$(STATIC_LIBSUFF)
+
+mrproper:
+	$(AT)rm -f $(SRC_FOLDER)$(LIB_VERSION_HEADER)
+	$(AT)rm -rf $(BUILDDIR)
