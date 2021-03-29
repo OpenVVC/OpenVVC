@@ -18,6 +18,8 @@ ov_malloc(size_t alloc_size)
     if (posix_memalign(&ptr, ALIGN, alloc_size)){
       ptr = NULL;
     }
+  } else {
+      ptr = NULL;
   }
 #elif HAVE_ALIGNED_MALLOC
   ptr = _aligned_malloc(alloc_size, ALIGN); //For windows
