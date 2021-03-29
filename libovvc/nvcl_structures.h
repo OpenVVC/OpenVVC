@@ -64,8 +64,8 @@ struct OVHRPL
 {
     struct RPLHeader rpl_h0;
     struct RPLHeader rpl_h1;
-    struct OVRPL *rpl0;
-    struct OVRPL *rpl1;
+    const struct OVRPL *rpl0;
+    const struct OVRPL *rpl1;
 };
 
 /* FIXME find a better place for this structure */

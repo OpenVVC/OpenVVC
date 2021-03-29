@@ -327,7 +327,7 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, uint32_t
 
 
 static int
-vvc_mark_refs(OVDPB *dpb, OVRPL *rpl, uint8_t poc, struct RPLInfo *rpl_info, const OVPicture **dst_rpl)
+vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, uint8_t poc, struct RPLInfo *rpl_info, const OVPicture **dst_rpl)
 {
     int i, j;
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
@@ -599,8 +599,8 @@ ovdpb_bump_frame(OVDPB *dpb, uint32_t poc, uint16_t output_cvs_id)
 }
 
 static int
-mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, struct OVRPL *const rpl0,
-                   struct OVRPL *const rpl1, OVSliceDec *const sldec)
+mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *const rpl0,
+                   const struct OVRPL *const rpl1, OVSliceDec *const sldec)
 {
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     uint32_t poc = dpb->poc;
@@ -860,8 +860,8 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
      * or not
      */
     if (!idr_flag) {
-        OVRPL *rpl0 = sh->hrpl.rpl0;
-        OVRPL *rpl1 = sh->hrpl.rpl1;
+        const OVRPL *rpl0 = sh->hrpl.rpl0;
+        const OVRPL *rpl1 = sh->hrpl.rpl1;
         uint8_t slice_type = sh->sh_slice_type;
         mark_ref_pic_lists(dpb, slice_type, rpl0, rpl1, sldec);
     }
