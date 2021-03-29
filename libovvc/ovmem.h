@@ -4,9 +4,6 @@
 
 #define ALIGN 32
 
-//FIXME Should note be passed here, should go into configure
-#define HAVE_POSIX_MEMALIGN 1
-
 #define DECLARE_ALIGNED(n, t, v) t __attribute__ ((aligned (n))) v
 #define ov_malloc_attrib   __attribute__((__malloc__))
 

@@ -8,6 +8,9 @@ libovvc/ovversion.h
 *.d
 *.a
 *.so
+*.dll
+*.lib
+*.exe
 
 # Editor created objects
 *.sw?

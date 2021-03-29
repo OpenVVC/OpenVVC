@@ -15,6 +15,12 @@ cflags_warnings="-Wall"
 cflags_error=
 cflags_default="${cflags_warnings} ${cflags_olevel}"
 
+sse_enabled="1"
+posix_memalign="0"
+aligned_malloc="0"
+log_enabled="1"
+is_win32="0"
+
 show_help() {
     cat <<EOF
 Usage: configure [options]
@@ -30,6 +36,8 @@ Options:
   --help                   print this message
 
 
+  --disable-log            disable log reportings [no]
+  --disable-sse            disable sse optimizations [no]
   --disable-static         do not build static libraries [no]
   --enable-shared          build shared libraries [no]
 
@@ -76,6 +84,12 @@ for opt do
         --debug)
             cflags="${cflags} ${debug_cflags}"
         ;;
+        --disable-sse)
+            sse_enabled="0"
+        ;;
+        --disable-log)
+            log_enabled="0"
+        ;;
         *)
             optname="${opt%%=*}"
             optname="${optname#--}"
@@ -90,12 +104,16 @@ if [ -z "$cflags" ] ; then
 fi
 
 # Select arch var according to common arch names
+is_arm="0"
+is_x86="0"
 case "$arch" in
     arm*)
         arch="arm"
+        is_arm="1"
     ;;
     i[3-6]86*|x86_64|x86_32|amd64)
         arch="x86"
+        is_x86="1"
     ;;
 		*)
 		echo "Unsupported archictecture $arch"
@@ -107,12 +125,15 @@ case $target_os in
     *win32|*win64)
     shlib_suffix=".dll"
     stlib_suffix=".lib"
+    aligned_malloc="1"
+    is_win32="1"
     ;;
     *)
     shlib_suffix=".so"
     stlib_suffix=".a"
     # Append PIC flag for shared lib
     cflags="${cflags} -fPIC"
+    posix_memalign="1"
     ;;
 esac
 
@@ -149,5 +170,21 @@ INSTALL_INCLUDE=\${INSTALL_PREFIX}/include/libopenvvc
 INSTALL_PKGCONFIG=\${INSTALL_PREFIX}/lib/pkgconfig
 INSTALL_BIN=\${INSTALL_PREFIX}/bin
 EOF
+
+cat > libovvc/ovconfig.h <<EOF
+#define _WIN32 $is_win32
+
+#define ARCH_x86 $is_x86
+#define SSE_ENABLED $sse_enabled
+#define AVX_ENABLED 0
+#define ARCH_ARM $is_arm
+#define NEON_ENABLED 0
+
+#define HAVE_POSIX_MEMALIGN $posix_memalign
+#define HAVE_ALIGNED_MALLOC $aligned_malloc
+
+#define ENABLE_LOG $log_enabled
+EOF
+
 
 exit 0

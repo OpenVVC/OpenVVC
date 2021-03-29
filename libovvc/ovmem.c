@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ovmem.h"
+#include "ovconfig.h"
+
 
 /* Wrappers around memory related function this will
    be useful if we plan later to adapt our allocations to

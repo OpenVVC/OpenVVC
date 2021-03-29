@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdint.h>
-#include <unistd.h>
 
 #include "ovutils.h"
 #include "ovmem.h"
@@ -471,7 +470,7 @@ int
 ovdec_init(OVVCDec **vvcdec)
 {
     /* FIXME might not be available on every plateform */
-    int nb_threads = sysconf(_SC_NPROCESSORS_ONLN);
+    int nb_threads = get_number_of_cores();
     *vvcdec = ov_mallocz(sizeof(OVVCDec));
 
     if (*vvcdec == NULL) goto fail;

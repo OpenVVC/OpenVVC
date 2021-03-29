@@ -4,6 +4,13 @@
 
 #include "ovutils.h"
 #include "ovversion.h"
+#include "ovconfig.h"
+#if _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
 
 
 OVLOG_TYPE ov_log_level = OVLOG_INFO;
@@ -30,7 +37,7 @@ ov_log(void* ctx, int log_level, const char* log_content, ...)
 
         va_start(args, log_content);
 
-        #if 0
+        #if ENABLE_LOG
         if (log_level <= ov_log_level) {
                 const char* type = "NULL";
                 if (ctx != NULL) {
@@ -60,4 +67,14 @@ ov_clip_uintp2(int32_t val, uint32_t a)
     #if 0
     return OVMIN(OVMAX(0, val), (1 << a) - 1);
     #endif
+}
+
+int get_number_of_cores() {
+#if _WIN32
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo(&sysinfo);
+    return sysinfo.dwNumberOfProcessors;
+#else
+    return sysconf(_SC_NPROCESSORS_ONLN);
+#endif
 }

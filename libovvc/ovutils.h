@@ -66,4 +66,6 @@ floor_log2(unsigned x)
 #endif
 }
 
+int get_number_of_cores();
+
 #endif

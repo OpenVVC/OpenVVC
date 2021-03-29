@@ -3,12 +3,6 @@
 
 #include "ovdefs.h"
 
-/* FIXME to be set by configure */
-#define ARCH_X86 0
-#define SSE_ENABLED 0
-#define AVX_ENABLED 0
-#define ARCH_ARM 0
-#define NEON_ENABLED 0
 
 /* FIXME
  * rename OVINTRA

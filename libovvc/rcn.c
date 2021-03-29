@@ -12,6 +12,8 @@
 #include "rcn_mc.h"
 #include "rcn.h"
 #include "ovmem.h"
+#include "ovconfig.h"
+
 #if SSE_ENABLED
 #include "x86/rcn_sse.h"
 #endif
