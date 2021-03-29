@@ -418,7 +418,7 @@ extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
             /* No NALU in dmx try to extract NALU units from next
                chunk */
             struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
-            int ret;
+            int ret = -1;
 
             if (!eof)
             ret = refill_reader_cache(cache_ctx, dmx->io_str);
