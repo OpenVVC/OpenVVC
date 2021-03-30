@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include "ovdefs.h"
+#include "ctudec.h"
 
 enum OVIntraMode
 {
@@ -21,6 +22,9 @@ enum OVIntraMode
     OVINTRA_NOT_AVAILABLE=128,
 };
 
+struct OVRCNCtx;
+struct OVMVCtx;
+struct InterDRVCtx;
 
 uint8_t derive_intra_mode_c(uint8_t cclm_flag, uint8_t mpm_flag,
                             uint8_t mpm_idx, uint8_t luma_mode,
@@ -65,4 +69,14 @@ VVCMergeInfo drv_mvp_b(struct InterDRVCtx *const inter_ctx,
                        OVMV mvd0, OVMV mvd1,
                        uint8_t mvp_idx0, uint8_t mvp_idx1,
                        uint8_t inter_dir);
+
+void process_lfnst(OVCTUDec *const ctudec,
+              int16_t *dst, const int16_t *src,
+              int log2_tb_w, int log2_tb_h,
+              int x0, int y0, uint8_t lfnst_idx);
+
+void process_lfnst_luma(OVCTUDec *const ctudec,
+                   int16_t *dst, const int16_t *src,
+                   int log2_tb_w, int log2_tb_h,
+                   int x0, int y0, uint8_t lfnst_idx);
 #endif

@@ -30,6 +30,7 @@ LIB_SRC:=																																 \
 					ovframe.c                                                      \
 					ovthreads.c                                                    \
 					drv_lines.c                                                    \
+					drv_lfnst.c                                                    \
 					drv_intra.c                                                    \
 					drv_mvp.c                                                      \
 					rcn.c																													 \

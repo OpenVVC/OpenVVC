@@ -757,6 +757,7 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
                                 y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
 
 
+    ctu_dec->intra_mode_c = intra_mode;
     vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, intra_mode, x0, y0, log2_cb_w, log2_cb_h);
 
     return cu;

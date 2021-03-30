@@ -645,6 +645,7 @@ struct OVCTUDec
     //image height and width in luma samples
     uint16_t pic_h;
     uint16_t pic_w;
+    uint8_t intra_mode_c;
 };
 
 int ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec);

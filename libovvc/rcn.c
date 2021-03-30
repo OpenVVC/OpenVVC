@@ -13,6 +13,7 @@
 #include "rcn.h"
 #include "ovmem.h"
 #include "ovconfig.h"
+#include "drv.h"
 
 #if SSE_ENABLED
 #include "x86/rcn_sse.h"
@@ -687,8 +688,9 @@ rcn_residual(OVCTUDec *const ctudec,
 
     if (lfnst_flag) {
         lim_cg_w = 8;
+        is_dc = 0;
         /* FIXME separate lfnst mode derivation from lfnst reconstruction */
-#if 0
+#if 1
         process_lfnst_luma(ctudec, src, ctudec->lfnst_subblock, log2_tb_w, log2_tb_h, x0, y0,
                            lfnst_idx);
 #endif
@@ -760,8 +762,9 @@ rcn_residual_c(OVCTUDec *const ctudec,
     if (lfnst_flag) {
         /* Update lim_cg_w since lfnst part of coeff are now non zero */
         lim_cg_w = 8;
+        is_dc = 0;
         /* FIXME separate lfnst mode derivation from lfnst reconstruction */
-#if 0
+#if 1
         process_lfnst(ctudec, src, lfnst_sb, log2_tb_w, log2_tb_h,
                       x0, y0, lfnst_idx);
 #endif
