@@ -21,7 +21,7 @@ An open-source VVC decoder library licensed under LGPLv2.1. OpenVVC is still und
 
 ### Example:
 
-This library package a simple executable to test the library. The executable can used as follow:
+This library includes a simple executable to test the library. The executable can used as follows:
 
     dectest -i <file>.266 -o out.yuv
 
