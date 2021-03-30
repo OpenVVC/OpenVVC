@@ -170,8 +170,6 @@ void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_
         int ratio = comp==0 ? 1 : ratio_luma_chroma;        
         const int width = width_l/ratio;
         const int height = height_l/ratio;
-        const int x = x_l/ratio;
-        const int y = y_l/ratio;
 
         for(int ii=0; ii < height; ii++)
         {
@@ -202,7 +200,6 @@ void ctudec_save_last_rows(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_
         const int width = width_l/ratio;
         const int height = height_l/ratio;
         const int x = x_l/ratio;
-        const int y = y_l/ratio;
 
         int stride_rows = fb.saved_rows_stride[comp];
         // int x_tile  = ctb_x * max_cu_width;
@@ -233,9 +230,6 @@ void ctudec_save_last_rows(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_
 
 void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect)
 {   
-    const OVPartInfo *const pinfo = ctudec->part_ctx;
-    uint8_t log2_ctb_size = pinfo->log2_ctu_s;
-    int max_cu_width_l = 1 << log2_ctb_size;
 
     struct OVFilterBuffers fb = ctudec->filter_buffers;
     const int width_l = ( x_l + fb.filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_l ) : fb.filter_region_w[0];
@@ -246,7 +240,6 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x_l, int y_l, uint8
     {
         int ratio_luma_chroma = ctudec->rcn_ctx.frame_buff.stride / ctudec->rcn_ctx.frame_buff.stride_c;
         int ratio = comp==0 ? 1 : ratio_luma_chroma;        
-        const int max_cu_width = max_cu_width_l/ratio;
         const int width = width_l/ratio;
         const int height = height_l/ratio;
         const int x = x_l/ratio;
