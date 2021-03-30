@@ -1977,7 +1977,7 @@ sort_average_lm_ref_samples(const uint16_t *const lm_smp, const uint16_t *const 
         avg_min_max.min_cb = smp_cb[min_idx];
         avg_min_max.max_cb = smp_cb[max_idx];
 
-        avg_min_max.min_cr = smp_cb[min_idx];
+        avg_min_max.min_cr = smp_cr[min_idx];
         avg_min_max.max_cr = smp_cr[max_idx];
 
     } else {
