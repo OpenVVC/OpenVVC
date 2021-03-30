@@ -2,6 +2,13 @@ OpenVVC
 =======
 An open-source VVC decoder library licensed under LGPLv2.1. OpenVVC is still under development.
 
+| CI | master | dev |
+|---|---|---|
+| Travis CI | [![Build Status](https://travis-ci.com/OpenVVC/OpenVVC.svg?branch=master)](https://travis-ci.com/OpenVVC/OpenVVC)  |  [![Build Status](https://travis-ci.com/OpenVVC/OpenVVC.svg?branch=dev)](https://travis-ci.com/OpenVVC/OpenVVC) |
+| Gitlab CI | [![pipeline status](https://gitlab.com/openvvc/openvvc/badges/master/pipeline.svg)](https://gitlab.com/openvvc/openvvc/-/commits/master) |  [![pipeline status](https://gitlab.com/openvvc/openvvc/badges/dev/pipeline.svg)](https://gitlab.com/openvvc/openvvc/-/commits/dev) |
+
+
+
 ## Table of Contents
 
 - [Using OpenVVC](#using-openvvc-test-program)

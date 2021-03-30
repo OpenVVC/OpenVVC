@@ -1,0 +1,14 @@
+#
+# Mailmap for IETR/INSA Rennes OpenVVC
+#
+# Format is :
+#   "printed Name" "<printed mail>" "logged Name" "<logged mail>"
+#
+
+Pierre-Loup Cabarat <pcabarat@insa-rennes.fr>
+
+Guillaume Gautier <guillaume.gautier@insa-rennes.fr> Guillaume GAUTIER <guillaume.gautier@insa-rennes.fr>
+Guillaume Gautier <guillaume.gautier@insa-rennes.fr> Gautier Guillaume <guillaume.gautier@insa-rennes.fr>
+
+Thomas Amestoy <thomas.amestoy@insa-rennes.fr> Amestoy Thomas <thomas.amestoy@insa-rennes.fr>
+Thomas Amestoy <thomas.amestoy@insa-rennes.fr> Thomas INSA <tamestoy@pc-eii181>
