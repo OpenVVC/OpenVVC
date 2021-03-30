@@ -6,7 +6,7 @@
 #include "rcn_lfnst.h"
 
 void
-compute_lfnst_4x4(const int16_t* const src, uint16_t* const dst,
+compute_lfnst_4x4(const int16_t* const src, int16_t* const dst,
                   const int8_t* const lfnst_matrix, int log2_tb_w,
                   int log2_tb_h)
 {
@@ -22,7 +22,7 @@ compute_lfnst_4x4(const int16_t* const src, uint16_t* const dst,
 }
 
 void
-compute_lfnst_8x8(const int16_t* const src, uint16_t* const dst,
+compute_lfnst_8x8(const int16_t* const src, int16_t* const dst,
                   const int8_t* const lfnst_matrix, int log2_tb_w,
                   int log2_tb_h)
 {
@@ -50,7 +50,7 @@ compute_lfnst_8x8(const int16_t* const src, uint16_t* const dst,
 }
 
 void
-compute_lfnst_4x4_tr(const int16_t* const src, uint16_t* const dst,
+compute_lfnst_4x4_tr(const int16_t* const src, int16_t* const dst,
                      const int8_t* const lfnst_matrix, int log2_tb_w,
                      int log2_tb_h)
 {
@@ -66,7 +66,7 @@ compute_lfnst_4x4_tr(const int16_t* const src, uint16_t* const dst,
 }
 
 void
-compute_lfnst_8x8_tr(const int16_t* const src, uint16_t* const dst,
+compute_lfnst_8x8_tr(const int16_t* const src, int16_t* const dst,
                      const int8_t* const lfnst_matrix, int log2_tb_w,
                      int log2_tb_h)
 {
