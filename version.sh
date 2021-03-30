@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Parse file given in $1 argument
-VERSION=($(sed 's/\./\n/g' $1))
+VERSION=($(sed 's/\./\ /g' $1))
 
 MAJOR=${VERSION[0]}
 MINOR=${VERSION[1]}
