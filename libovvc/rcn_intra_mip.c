@@ -137,7 +137,7 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
     const uint16_t *src = &rcn_ctx->ctu_buff.y[0];
 
     int32_t bndy_line[8];//buffer used to store averaged boundaries use int
-    int16_t mip_pred[64];//buffer used to store reduced matrix vector results
+    uint16_t mip_pred[64];//buffer used to store reduced matrix vector results
 
     /* FIXME determine max size of those buffers */
     uint16_t ref_abv[(128<<1) + 128];
@@ -248,7 +248,7 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
         const uint16_t *src;
         if (log2_scale_x) {
             uint16_t *_dst = dst + ((1 << log2_scale_y) - 1) * RCN_CTB_STRIDE;
-            up_sample(_dst, mip_pred, ref_lft, log2_red_w, log2_red_h,
+            up_sample(_dst, (int16_t *)mip_pred, ref_lft, log2_red_w, log2_red_h,
                        1, (1 << log2_red_w),
                        1, (1 << log2_scale_y) * RCN_CTB_STRIDE,
                        (1 << log2_scale_y), log2_scale_x);
@@ -260,7 +260,7 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
             src_step   = (1 << log2_pu_w);
             src_stride = 1;
         }
-        up_sample(dst, src, ref_abv, log2_red_h, log2_pu_w,
+        up_sample(dst, (int16_t *)src, ref_abv, log2_red_h, log2_pu_w,
                    src_step, src_stride,
                    RCN_CTB_STRIDE, 1,
                    1, log2_scale_y);
@@ -290,7 +290,7 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
     const uint16_t *src = &rcn_ctx->ctu_buff.y[0];
 
     int32_t bndy_line[8]; //buffer used to store averaged boundaries use int
-    int16_t mip_pred[64];//buffer used to store reduced matrix vector results
+    uint16_t mip_pred[64];//buffer used to store reduced matrix vector results
 
     uint16_t ref_abv[(128<<1) + 128];
     uint16_t ref_lft[(128<<1) + 128];
@@ -390,7 +390,7 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
             const uint16_t *src;
             if (log2_scale_x) {
                 uint16_t *_dst = dst + ((1 << log2_scale_y) - 1) * RCN_CTB_STRIDE;
-                up_sample(_dst, mip_pred, ref_lft,
+                up_sample(_dst, (int16_t *)mip_pred, ref_lft,
                            log2_red_w, log2_red_h,
                            (1 << log2_red_h), 1,
                            1, (1 << log2_scale_y) * RCN_CTB_STRIDE,
@@ -403,7 +403,7 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
                 src_step   = 1;
                 src_stride = 1 << log2_red_h;
             }
-            up_sample(dst, src, ref_abv, log2_red_h, log2_pu_w,
+            up_sample(dst, (int16_t *)src, ref_abv, log2_red_h, log2_pu_w,
                        src_step, src_stride,
                        RCN_CTB_STRIDE, 1,
                        1, log2_scale_y);
