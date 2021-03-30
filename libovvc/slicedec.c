@@ -1124,7 +1124,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     init_part_info(ctudec, prms);
 
     //In loop filter information for CTU reconstruction
-    init_in_loop_filters(ctudec, sh, sps, &prms->aps->aps_alf_data);
+    init_in_loop_filters(ctudec, sh, sps, &prms->aps_alf->aps_alf_data);
 
     init_slice_tree_ctx(ctudec, prms);
 

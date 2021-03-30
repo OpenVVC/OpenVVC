@@ -13,16 +13,6 @@
 //     uint8_t scaling_list_delta_coef[id][i];
 // } OVScalingList;
 
-// typedef struct OVLMCS
-// {
-//     uint8_t lmcs_min_bin_idx;
-//     uint8_t lmcs_delta_max_bin_idx;
-//     uint8_t lmcs_delta_cw_prec_minus1;
-//     uint8_t lmcs_delta_abs_cw[i];
-//     uint8_t lmcs_delta_sign_cw_flag[i];
-//     uint8_t lmcs_delta_abs_crs;
-//     uint8_t lmcs_delta_sign_crs_flag;
-// } OVLMCS;
 
 
 static int
@@ -130,6 +120,31 @@ nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data, uint8_t 
     }
 }
 
+static int 
+nvcl_read_lmcs_data(OVNVCLReader *const rdr, struct OVLMCSData* lmcs, uint8_t aps_chroma_present_flag)
+{
+    lmcs->lmcs_min_bin_idx = nvcl_read_u_expgolomb(rdr);
+    lmcs->lmcs_delta_max_bin_idx = nvcl_read_u_expgolomb(rdr);
+    lmcs->lmcs_delta_cw_prec_minus1 = nvcl_read_u_expgolomb(rdr);
+    for (int i = lmcs->lmcs_min_bin_idx; i <= PIC_CODE_CW_BINS-(lmcs->lmcs_delta_max_bin_idx + 1); i++) {
+        lmcs->lmcs_delta_abs_cw[i] = nvcl_read_bits(rdr, lmcs->lmcs_delta_cw_prec_minus1 + 1);
+        if (lmcs->lmcs_delta_abs_cw[i] > 0) {
+            lmcs->lmcs_delta_sign_cw_flag[i] = nvcl_read_flag(rdr);
+        }
+    }
+
+    if (aps_chroma_present_flag) {
+        lmcs->lmcs_delta_abs_crs = nvcl_read_bits(rdr, 3);
+        if (lmcs->lmcs_delta_abs_crs > 0) {
+            lmcs->lmcs_delta_sign_crs_flag = nvcl_read_flag(rdr);
+        }
+    }
+    //ATTENTION: Utilite ?
+    //int signCW = code;
+    //info.chrResScalingOffset = (1 - 2 * signCW) * absCW;
+    //aps->setReshaperAPSInfo(info);
+}
+
 
 void
 nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
@@ -145,7 +160,7 @@ nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
         nvcl_read_alf_data(rdr, &aps->aps_alf_data, aps->aps_chroma_present_flag);
     // } else if(aps->aps_params_type == LMCS_APS) {
     } else if(aps->aps_params_type == 1) {
-        // lmcs_data();
+        nvcl_read_lmcs_data(rdr, &aps->aps_lmcs_data, aps->aps_chroma_present_flag);
     // } else if(aps->aps_params_type == SCALING_APS) {
     } else if(aps->aps_params_type == 2) {
         // scaling_list_data();
@@ -199,27 +214,6 @@ cleanup:
 
 
 #if 0
-lmcs_data()
-{
-    lmcs->lmcs_min_bin_idx = nvcl_read_u_expgolomb(rdr);
-    lmcs->lmcs_delta_max_bin_idx = nvcl_read_u_expgolomb(rdr);
-    lmcs->lmcs_delta_cw_prec_minus1 = nvcl_read_u_expgolomb(rdr);
-    for (i = lmcs->lmcs_min_bin_idx; i <= LmcsMaxBinIdx; i++) {
-        lmcs->lmcs_delta_abs_cw[i] = nvcl_read_bits(rdr, lmcs->lmcs_delta_cw_prec_minus1 + 1);
-        if (lmcs->lmcs_delta_abs_cw[i] > 0) {
-            lmcs->lmcs_delta_sign_cw_flag[i] = nvcl_read_flag(rdr);
-        }
-    }
-
-    if (aps_chroma_present_flag) {
-        lmcs->lmcs_delta_abs_crs nvcl_read_bits(rdr, 3);
-        if (lmcs->lmcs_delta_abs_crs > 0) {
-            lmcs->lmcs_delta_sign_crs_flag = nvcl_read_flag(rdr);
-        }
-    }
-}
-
-#if 0
 scaling_list_data()
 {
     for (id = 0; id < 28; id ++) {
@@ -255,7 +249,7 @@ scaling_list_data()
     }
 }
 #endif
-
+#if 0
 scaling_list_data2()
 {
     int id;

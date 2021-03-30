@@ -41,7 +41,7 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu
     uint8_t ret;
 
     uint8_t ctx;
-    uint8_t alf_idx;
+    uint8_t alf_idx = 0;
 
     struct ALFInfo* alf_info  = &ctudec->alf_info;
     OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
@@ -71,7 +71,8 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu
         }
     }
 
-    uint8_t cb_alternative, cr_alternative = 0;
+    uint8_t cb_alternative = 0;
+    uint8_t cr_alternative = 0;
     if(alf_cb_flag){
         int decoded = 0;
         ctx  = ctu_neighbour_flags & CTU_LFT_FLG ? ((left_ctb_alf_flag & 2) >> 1) : 0;

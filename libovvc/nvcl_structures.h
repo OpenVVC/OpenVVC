@@ -6,6 +6,7 @@
 #include "rcn_alf.h"
 
 #define OV_MAX_NB_RP 16
+#define PIC_CODE_CW_BINS 16
 
 /* FIXME :
  *     -use union to shorten size and better reflect
@@ -552,6 +553,17 @@ typedef struct OVALFData
     int16_t alf_cc_mapped_coeff[2][MAX_NUM_CC_ALF_FILTERS][MAX_NUM_CC_ALF_CHROMA_COEFF];
 } OVALFData;
 
+typedef struct OVLMCSData
+{
+    uint8_t lmcs_min_bin_idx;
+    uint8_t lmcs_delta_max_bin_idx;
+    uint8_t lmcs_delta_cw_prec_minus1;
+    uint8_t lmcs_delta_abs_cw[PIC_CODE_CW_BINS];
+    uint8_t lmcs_delta_sign_cw_flag[PIC_CODE_CW_BINS];
+    uint8_t lmcs_delta_abs_crs;
+    uint8_t lmcs_delta_sign_crs_flag;
+} OVLMCSData;
+
 typedef struct OVAPS
 {
     uint8_t aps_params_type;
@@ -561,7 +573,8 @@ typedef struct OVAPS
     uint8_t aps_extension_flag;
     uint8_t aps_extension_data_flag;
 
-    struct OVALFData aps_alf_data;
+    struct OVALFData  aps_alf_data;
+    struct OVLMCSData aps_lmcs_data;
 } OVAPS;
 
 

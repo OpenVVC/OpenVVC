@@ -237,7 +237,8 @@ struct OVVCDec
         /* Pointers to active parameter sets */
         const OVSPS *sps;
         const OVPPS *pps;
-        const OVAPS *aps;
+        const OVAPS *aps_alf;
+        const OVAPS *aps_lmcs;
         const OVPH *ph;
         const OVSH *sh;
 
