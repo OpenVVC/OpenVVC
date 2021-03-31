@@ -860,11 +860,10 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                                   max_nb_cand);
 
     } else {
-        uint8_t inter_dir;
         OVMV mvd0, mvd1;
         uint8_t mvp_idx0, mvp_idx1;
 
-        inter_dir = ovcabac_read_ae_inter_dir(cabac_ctx, log2_pb_w, log2_pb_h);
+        uint8_t inter_dir = ovcabac_read_ae_inter_dir(cabac_ctx, log2_pb_w, log2_pb_h);
 
         if (inter_dir & 0x1) {
             /*FIXME add ref_idx*/
@@ -893,11 +892,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                                 y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
     ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x_pu << pu_shift,
                                 y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
-#if 0
-    fill_dbf_mv_map(&ctu_dec->dbf_info, mv_ctx0, mv0, x_pu, y_pu, nb_pb_w, nb_pb_h);
-#endif
 
-    /*FIXME this have to be moved to DRV */
+    /*FIXME this has to be moved to DRV */
     /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
     memset(&i_info->luma_mode_x[x_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_w);
     memset(&i_info->luma_mode_y[y_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_h);
