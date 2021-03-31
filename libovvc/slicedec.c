@@ -935,7 +935,6 @@ init_lines(OVCTUDec *ctudec, const OVSliceDec *sldec, const struct RectEntryInfo
     uint8_t log2_ctb_s    = part_ctx->log2_ctu_s;
     uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
 
-    uint16_t nb_pb_ctb = (1 << log2_ctb_s) >> log2_min_cb_s;
     uint32_t nb_ctb_pic_w = einfo->nb_ctb_pic_w;
     const struct TileInfo *tinfo = &prms->pps_info.tile_info;
 
