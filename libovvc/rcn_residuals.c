@@ -287,7 +287,7 @@ vvc_sub_half_residual(const int16_t *src, uint16_t *dst,
     int i, j;
     int32_t value;
     const int16_t *_src = src;
-    int16_t       *_dst = dst;
+    int16_t       *_dst = (int16_t *)dst;
     const int tb_w = 1 << log2_tb_w;
     const int tb_h = 1 << log2_tb_h;
     for (i = 0; i < tb_h; ++i){

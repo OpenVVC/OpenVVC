@@ -44,7 +44,7 @@ compute_lfnst_8x8(const int16_t* const src, int16_t* const dst,
                      ++j) {
                         sum += src[j] * lfnst_matrix[i + j * 48];
                 }
-                dst[(i & 3) + (4 + ((i - 32) >> 2) << log2_tb_w)] =
+                dst[(i & 3) + ((4 + ((i - 32) >> 2)) << log2_tb_w)] =
                   ov_clip((sum + 64) >> 7, -(1 << 15), (1 << 15));
         }
 }
