@@ -53,7 +53,6 @@ void sao_edge_filter(uint8_t *_dst, uint8_t *_src,
         SAOParamsCtu *sao,
          int width, int height, int x_start, int y_start, 
         int c_idx) {
-    static const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
     static const int8_t pos[4][2][2] = {
         { { -1,  0 }, {  1, 0 } }, // horizontal
         { {  0, -1 }, {  0, 1 } }, // vertical
@@ -79,7 +78,6 @@ void sao_edge_filter(uint8_t *_dst, uint8_t *_src,
         for (x = x_start; x < x_start + width; x++) {
             int diff0         = CMP(src[x + src_offset], src[x + src_offset + a_stride]);
             int diff1         = CMP(src[x + src_offset], src[x + src_offset + b_stride]);
-            // int offset_val    = edge_idx[2 + diff0 + diff1];
             int offset_val    = 2 + diff0 + diff1;
             dst[x + dst_offset] = ov_clip_uintp2( src[x + src_offset] + sao_offset_val[offset_val], BIT_DEPTH );
         }
@@ -124,7 +122,6 @@ void rcn_sao_ctu(OVCTUDec *const ctudec, int ctb_x_pic, int ctb_y_pic, int nb_ct
         //     c_idx==1 ? out_pic = frame_buff.cb : frame_buff.cr;
         out_pic = &out_pic[ y0 * stride_out_pic + (x0<<int16_t_shift)];
  
-        int margin = fb.margin;
         uint8_t *filtered = (uint8_t *) fb.filter_region[c_idx];
         int stride_filtered = fb.filter_region_stride[c_idx]<<int16_t_shift;
         filtered = &filtered[(fb.filter_region_offset[c_idx]<<int16_t_shift)];  
@@ -186,8 +183,6 @@ void rcn_sao_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
         int ctb_x_pic   = ctb_x;
         int xPos = ctu_width * ctb_x_pic;
         int yPos = ctu_width * ctb_y_pic;
-        int width = ( xPos + ctu_width > ctudec->pic_w ) ? ( ctudec->pic_w - xPos ) : ctu_width;
-        int height = ( yPos + ctu_width > ctudec->pic_h ) ? ( ctudec->pic_h - yPos ) : ctu_width;
         
         //left | right | up | down
         uint8_t is_border = 0; 
