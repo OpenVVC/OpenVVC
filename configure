@@ -174,7 +174,7 @@ EOF
 cat > libovvc/ovconfig.h <<EOF
 #define _WIN32 $is_win32
 
-#define ARCH_x86 $is_x86
+#define ARCH_X86 $is_x86
 #define SSE_ENABLED $sse_enabled
 #define AVX_ENABLED 0
 #define ARCH_ARM $is_arm
