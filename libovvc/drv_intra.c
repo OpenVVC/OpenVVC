@@ -33,7 +33,7 @@ derive_wide_angular_mode(int log2_pb_w, int log2_pb_h, int pred_mode)
 
     if (log2_pb_w > log2_pb_h && pred_mode < 2 + mode_shift) {
         pred_mode += (OVINTRA_VDIA - 1);
-    } else if (log2_pb_h > log2_pb_w && pred_mode > OVINTRA_VDIA - mode_shift){
+    } else if (log2_pb_h > log2_pb_w && pred_mode > OVINTRA_VDIA - mode_shift) {
         pred_mode -= (OVINTRA_VDIA - 1);
     }
     return pred_mode;
@@ -457,7 +457,7 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx,
                      x0, y0, log2_pb_width, log2_pb_height, 0);
 
     switch (intra_mode) {
-    case OVINTRA_PLANAR://PLANAR
+    case OVINTRA_PLANAR:
     {
         if((log2_pb_height + log2_pb_width) > 5){
             filter_ref_samples(ref1, ref_above_filtered, ref2,
@@ -467,20 +467,18 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx,
             ref1 = ref_above_filtered;
             ref2 = ref_left_filtered;
         }
-        // FIXED? :vvc_intra_dsp_ctx.planar_pdpc[log2_pb_width > 5 || log2_pb_height > 5](ref1, ref2, dst, dst_stride,
-                              // log2_pb_width, log2_pb_height);
+
         planar->pdpc[log2_pb_width > 5 || log2_pb_height > 5](ref1, ref2, dst, dst_stride,
-                              log2_pb_width, log2_pb_height);
+                                                              log2_pb_width, log2_pb_height);
         break;
     }
-    case OVINTRA_DC://DC
+    case OVINTRA_DC:
     {
-      // FIXED? :vvc_intra_dsp_ctx.dc_pdpc(ref1, ref2, dst, dst_stride, log2_pb_width, log2_pb_height);
-      dc->pdpc(ref1, ref2, dst, dst_stride, log2_pb_width, log2_pb_height);
+        dc->pdpc(ref1, ref2, dst, dst_stride, log2_pb_width, log2_pb_height);
 
         break;
     }
-    default://angular
+    default:
     {
         int pred_mode = derive_wide_angular_mode(log2_pb_width, log2_pb_height,
                                                  intra_mode);
@@ -525,6 +523,7 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx,
                     if (!req_frac){
                         int inv_angle = inverse_angle_table[-mode_idx];
                         int inv_angle_sum    = 256;
+
                         if (use_gauss_filter){
                             filter_ref_samples(ref1, ref_above_filtered + pu_height,
                                                ref2, top_ref_length);
@@ -603,9 +602,9 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx,
                                                     mode_idx);
                     } else {
                         if (use_gauss_filter){
-                        intra_angular_v_gauss_pdpc(ref1, ref2, dst, dst_stride,
-                                             log2_pb_width, log2_pb_height,
-                                             mode_idx);
+                            intra_angular_v_gauss_pdpc(ref1, ref2, dst, dst_stride,
+                                                       log2_pb_width, log2_pb_height,
+                                                       mode_idx);
                         } else {
                             intra_angular_v_cubic_pdpc(ref1, ref2, dst, dst_stride,
                                                   log2_pb_width, log2_pb_height,

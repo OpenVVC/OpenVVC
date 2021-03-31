@@ -7,6 +7,8 @@
 #include "ctudec.h"
 #include "rcn.h"
 #include "dbf_utils.h"
+#include "drv_utils.h"
+#include "drv.h"
 
 /* FIXME refactor dequant*/
 static void
@@ -296,6 +298,216 @@ decode_cbf_c(const OVCTUDec *const ctu_dec)
     return cbf_mask;
 }
 
+static void
+recon_isp_subtree_v(OVCTUDec *const ctudec,
+                    unsigned int x0, unsigned int y0,
+                    unsigned int log2_cb_w, unsigned int log2_cb_h,
+                    uint8_t intra_mode, uint8_t cbf_flags,
+                    uint16_t lfnst_sb[4][16], uint8_t lfnst_flag, uint8_t lfnst_idx)
+{
+    #if 0
+    struct OVDrvCtx *const pred_ctx = &ctudec->drv_ctx;
+    #endif
+    const struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
+    const struct RCNFunctions *const rcn_func = &ctudec->rcn_ctx.rcn_funcs;
+
+    int offset_x;
+    int log2_pb_w = log2_cb_w - 2;
+    int nb_pb;
+    int pb_w;
+
+    if (log2_cb_h < 4 && (log2_pb_w <= (4 - log2_cb_h))) {
+        log2_pb_w = 4 - log2_cb_h;
+    }
+    nb_pb = (1 << log2_cb_w) >> log2_pb_w;
+    pb_w =  1 << log2_pb_w;
+    offset_x = 0;
+
+    uint8_t x_pu = x0 >> ctudec->part_ctx->log2_min_cb_s;
+    uint8_t y_pu = y0 >> ctudec->part_ctx->log2_min_cb_s;
+    uint8_t map_shift = ctudec->part_ctx->log2_min_cb_s - 2;
+    uint8_t nb_pb_w = (1 << log2_cb_w) >> ctudec->part_ctx->log2_min_cb_s;
+    uint8_t nb_pb_h = (1 << log2_cb_h) >> ctudec->part_ctx->log2_min_cb_s;
+
+    uint8_t type_h = ctudec->mts_enabled && log2_pb_w <= 4 && log2_pb_w > 1 ? DST_VII : DCT_II;
+    uint8_t type_v = ctudec->mts_enabled && log2_cb_h <= 4 ? DST_VII : DCT_II;
+    int i;
+
+    /* This has to be here since maps are required for each PUs */
+    #if 0
+    update_availability_maps(&ctudec->progress_map, x_pu << map_shift, y_pu << map_shift, nb_pb_w << map_shift, nb_pb_h << map_shift);
+
+    memset(&pred_ctx->intra_modes_y_luma[y_pu], intra_mode, sizeof(uint8_t) * nb_pb_h);
+    memset(&pred_ctx->intra_modes_x_luma[x_pu], intra_mode, sizeof(uint8_t) * nb_pb_w);
+
+    for (i = 0; i < nb_pb_h; i++) {
+        memset(&pred_ctx->cclm_intra_mode[x_pu + (i << 5) + (y_pu << 5)], intra_mode,
+                sizeof(uint8_t) * nb_pb_w);
+    }
+    #endif
+    ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field, x_pu<<map_shift,
+                                y_pu<<map_shift, nb_pb_w<<map_shift, nb_pb_h<<map_shift);
+
+
+    for (i = 0; i < nb_pb; ++i) {
+        uint8_t cbf = (cbf_flags >> (nb_pb - i - 1)) & 0x1;
+
+        /* On vertical ISP the intra prediction can only be performed with a min width of 4
+           thus requiring to perform prediction on 2 PBs for size 2xX and all PBs in the
+           case of 1xX. Even when transforms are smaller
+         */
+         /*FIXME separate small cases */
+        if (!(offset_x & 0x3)) {
+            vvc_intra_pred_isp(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
+                               RCN_CTB_STRIDE, intra_mode, x0, y0,
+                               log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h,
+                               log2_cb_w, log2_cb_h, offset_x, 0);
+        }
+
+        if (cbf) {
+            int16_t *coeffs_y = ctudec->residual_y + i * (1 << (log2_pb_w + log2_cb_h));
+
+            if (log2_pb_w) {
+                int shift_v = 6 + 1;
+                int shift_h = (6 + 15 - 1) - 10;
+                int16_t tmp[64*64];
+                int16_t *src = coeffs_y;
+                int16_t *dst = ctudec->transform_buff;
+                int cb_h = 1 << log2_cb_h;
+
+                memset(tmp, 0, sizeof(int16_t) << (log2_pb_w + log2_cb_h));
+                if (lfnst_flag) {
+                    process_lfnst_luma_isp(ctudec, coeffs_y, lfnst_sb[i], log2_pb_w, log2_cb_h,log2_cb_w, log2_cb_h, x0 -offset_x, y0,
+                                       lfnst_idx);
+                    /* lfnst forces IDCT II usage */
+                    type_v = type_h = DCT_II;
+                }
+
+                TRFunc->func[type_v][log2_cb_h](src, tmp, pb_w, pb_w, cb_h, shift_v);
+                TRFunc->func[type_h][log2_pb_w](tmp, dst, cb_h, cb_h, pb_w, shift_h);
+            } else {
+                int shift_h = (6 + 15 - 1) - 10;
+                int cb_h = 1 << log2_cb_h;
+                int16_t tmp[64];
+
+                memset(tmp, 0, sizeof(int16_t) << (log2_pb_w + log2_cb_h));
+
+                TRFunc->func[type_v][log2_cb_h](coeffs_y, tmp, pb_w, pb_w, cb_h, shift_h + 1);
+
+                memcpy(ctudec->transform_buff, tmp, sizeof(uint16_t) * (1 << log2_cb_h));
+            }
+
+            uint16_t *dst  = &ctudec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
+            int16_t *src  = ctudec->transform_buff;
+
+            rcn_func->ict[0](src, dst, log2_pb_w, log2_cb_h, 0);
+        }
+        x0 += pb_w;
+        offset_x += pb_w;
+    }
+}
+
+static void
+recon_isp_subtree_h(OVCTUDec *const ctudec,
+                    unsigned int x0, unsigned int y0,
+                    unsigned int log2_cb_w, unsigned int log2_cb_h,
+                uint8_t intra_mode, uint8_t cbf_flags,
+                uint16_t lfnst_sb[4][16], uint8_t lfnst_flag, uint8_t lfnst_idx)
+{
+    const struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
+    const struct RCNFunctions *const rcn_func = &ctudec->rcn_ctx.rcn_funcs;
+    int log2_pb_h = log2_cb_h - 2;
+    int nb_pb;
+    int pb_h, offset_y;
+
+    // width < 16 imposes restrictions on split numbers
+    if (log2_cb_w < 4 && (log2_pb_h <= (4 - log2_cb_w))) {
+        log2_pb_h = 4 - log2_cb_w;
+    }
+
+    nb_pb = (1 << log2_cb_h) >> log2_pb_h;
+    pb_h =  1 << log2_pb_h;
+    offset_y = 0;
+
+    uint8_t x_pu = x0 >> ctudec->part_ctx->log2_min_cb_s;
+    uint8_t y_pu = y0 >> ctudec->part_ctx->log2_min_cb_s;
+    uint8_t map_shift = ctudec->part_ctx->log2_min_cb_s - 2;
+
+    uint8_t nb_pb_w = (1 << log2_cb_w) >> ctudec->part_ctx->log2_min_cb_s;
+    uint8_t nb_pb_h = (1 << log2_cb_h) >> ctudec->part_ctx->log2_min_cb_s;
+
+    uint8_t type_h = ctudec->mts_enabled && log2_cb_w <= 4 ? DST_VII : DCT_II;
+    uint8_t type_v = ctudec->mts_enabled && log2_pb_h <= 4 && log2_pb_h > 1 ? DST_VII : DCT_II;
+    int i;
+
+    #if 0
+    update_availability_maps(&ctudec->progress_map,
+                             x_pu << map_shift, y_pu << map_shift, nb_pb_w << map_shift, nb_pb_h << map_shift);
+
+    for (i = 0; i < nb_pb_h; i++) {
+        memset(&pred_ctx->cclm_intra_mode[x_pu + (i << 5) + (y_pu << 5)], intra_mode,
+                sizeof(uint8_t) * nb_pb_w);
+    }
+
+    memset(&pred_ctx->intra_modes_y_luma[y_pu], intra_mode, sizeof(uint8_t) * nb_pb_h);
+    memset(&pred_ctx->intra_modes_x_luma[x_pu], intra_mode, sizeof(uint8_t) * nb_pb_w);
+    #endif
+    ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field, x_pu<<map_shift,
+                                y_pu<<map_shift, nb_pb_w<<map_shift, nb_pb_h<<map_shift);
+
+    for (i = 0; i < nb_pb; ++i) {
+
+        uint8_t cbf = (cbf_flags >> (nb_pb - i - 1)) & 0x1;
+
+        vvc_intra_pred_isp(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
+                           RCN_CTB_STRIDE, intra_mode, x0, y0,
+                           log2_cb_w, log2_pb_h, log2_cb_w, log2_cb_h, 0, offset_y);
+        if (cbf) {
+            int16_t *coeffs_y = ctudec->residual_y + i * (1 << (log2_cb_w + log2_pb_h));
+
+            if (log2_pb_h) {
+                int16_t tmp[64*64];
+                int shift_v = 6 + 1;
+                int shift_h = (6 + 15 - 1) - 10;
+                int16_t *src = coeffs_y;
+                int16_t *dst = ctudec->transform_buff;
+                int cb_w = 1 << log2_cb_w;
+
+                memset(tmp, 0, sizeof(int16_t) << (log2_cb_w + log2_pb_h));
+
+                if (lfnst_flag) {
+                    /*FIXME avoid distinguishing isp case in lfnst */
+                    process_lfnst_luma_isp(ctudec, coeffs_y, lfnst_sb[i], log2_cb_w, log2_pb_h,log2_cb_w, log2_cb_h, x0, y0-offset_y,
+                                       lfnst_idx);
+
+                    /* lfnst forces IDCT II usage */
+                    type_v = type_h = DCT_II;
+                }
+
+                TRFunc->func[type_v][log2_pb_h](src, tmp, cb_w, cb_w, pb_h, shift_v);
+                TRFunc->func[type_h][log2_cb_w](tmp, dst, pb_h, pb_h, cb_w, shift_h);
+            } else {
+                int shift_h = (6 + 15 - 1) - 10;
+                int cb_w = 1 << log2_cb_w;
+                int16_t tmp[64];
+
+                memset(tmp, 0, sizeof(int16_t) << (log2_cb_w + log2_pb_h));
+
+                TRFunc->func[type_v][log2_cb_w](coeffs_y, tmp, pb_h, pb_h, cb_w, shift_h + 1);
+
+                memcpy(ctudec->transform_buff, tmp, sizeof(uint16_t) * (1 << log2_cb_w));
+            }
+
+            uint16_t *dst  = &ctudec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
+            int16_t *src  = ctudec->transform_buff;
+
+            rcn_func->ict[0](src, dst, log2_cb_w, log2_pb_h, 0);
+        }
+        y0 += pb_h;
+        offset_y += pb_h;
+    }
+}
+
 static int
 transform_tree(OVCTUDec *const ctu_dec,
                const OVPartInfo *const part_ctx,
@@ -429,7 +641,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
         }
     }
 
-#if 0
+#if 1
     recon_isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, cbf_flags,
                         lfnst_sb, lfnst_flag, lfnst_idx);
 #endif
@@ -525,7 +737,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
         }
     }
 
-#if 0
+#if 1
     recon_isp_subtree_h(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, cbf_flags,
                         lfnst_sb, lfnst_flag, lfnst_idx);
 #endif
@@ -547,7 +759,6 @@ transform_unit(OVCTUDec *const ctu_dec,
         uint8_t cu_mts_idx = 0;
         uint8_t transform_skip_flag = 0;
         int16_t *const coeffs_y = ctu_dec->residual_y;
-        int is_lfnst;
         #if 0
         int cu_qp_delta = 0;
         #endif
@@ -612,7 +823,7 @@ transform_unit(OVCTUDec *const ctu_dec,
             int x_pu = x0 >> 2;
             int y_pu = y0 >> 2;
             #endif
-            is_lfnst = residual_coding_ts(ctu_dec, log2_tb_w, log2_tb_h);
+            residual_coding_ts(ctu_dec, log2_tb_w, log2_tb_h);
             //FIXME transform residual is currently performed in the dequant function
         }
 

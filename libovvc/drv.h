@@ -41,6 +41,15 @@ void vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
                            uint8_t intra_mode, int x0, int y0,
                            int log2_pb_w, int log2_pb_h);
 
+void vvc_intra_pred_isp(const OVCTUDec *const ctudec,
+                        uint16_t *const src,
+                        ptrdiff_t dst_stride,
+                        uint8_t intra_mode,
+                        int x0, int y0,
+                        int log2_pb_width, int log2_pb_height,
+                        int log2_cu_width,int log2_cu_height,
+                        int offset_x, int offset_y);
+
 VVCCU drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
                    uint8_t x0, uint8_t y0, uint8_t log2_cb_w, uint8_t log2_cb_h,
                    VVCCU cu);
