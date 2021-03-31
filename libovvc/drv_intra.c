@@ -385,10 +385,10 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
                                log2_cb_w, log2_cb_h);
             }
 
-        #if 0
+        #if 1
             if (mrl_flag){
                 uint8_t mrl_idx = cu.cu_opaque;
-                vvc_intra_pred_multi_ref(ctudec, &ctudec->ctu_data_y[0],
+                vvc_intra_pred_multi_ref(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
                                          RCN_CTB_STRIDE, intra_mode, x0, y0,
                                          log2_cb_w, log2_cb_h,
                                          mrl_idx);
