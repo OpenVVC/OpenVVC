@@ -333,22 +333,6 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
     uint8_t type_v = ctudec->mts_enabled && log2_cb_h <= 4 ? DST_VII : DCT_II;
     int i;
 
-    /* This has to be here since maps are required for each PUs */
-    #if 0
-    update_availability_maps(&ctudec->progress_map, x_pu << map_shift, y_pu << map_shift, nb_pb_w << map_shift, nb_pb_h << map_shift);
-
-    memset(&pred_ctx->intra_modes_y_luma[y_pu], intra_mode, sizeof(uint8_t) * nb_pb_h);
-    memset(&pred_ctx->intra_modes_x_luma[x_pu], intra_mode, sizeof(uint8_t) * nb_pb_w);
-
-    for (i = 0; i < nb_pb_h; i++) {
-        memset(&pred_ctx->cclm_intra_mode[x_pu + (i << 5) + (y_pu << 5)], intra_mode,
-                sizeof(uint8_t) * nb_pb_w);
-    }
-    #endif
-    ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field, x_pu<<map_shift,
-                                y_pu<<map_shift, nb_pb_w<<map_shift, nb_pb_h<<map_shift);
-
-
     for (i = 0; i < nb_pb; ++i) {
         uint8_t cbf = (cbf_flags >> (nb_pb - i - 1)) & 0x1;
 
@@ -439,21 +423,6 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
     uint8_t type_h = ctudec->mts_enabled && log2_cb_w <= 4 ? DST_VII : DCT_II;
     uint8_t type_v = ctudec->mts_enabled && log2_pb_h <= 4 && log2_pb_h > 1 ? DST_VII : DCT_II;
     int i;
-
-    #if 0
-    update_availability_maps(&ctudec->progress_map,
-                             x_pu << map_shift, y_pu << map_shift, nb_pb_w << map_shift, nb_pb_h << map_shift);
-
-    for (i = 0; i < nb_pb_h; i++) {
-        memset(&pred_ctx->cclm_intra_mode[x_pu + (i << 5) + (y_pu << 5)], intra_mode,
-                sizeof(uint8_t) * nb_pb_w);
-    }
-
-    memset(&pred_ctx->intra_modes_y_luma[y_pu], intra_mode, sizeof(uint8_t) * nb_pb_h);
-    memset(&pred_ctx->intra_modes_x_luma[x_pu], intra_mode, sizeof(uint8_t) * nb_pb_w);
-    #endif
-    ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field, x_pu<<map_shift,
-                                y_pu<<map_shift, nb_pb_w<<map_shift, nb_pb_h<<map_shift);
 
     for (i = 0; i < nb_pb; ++i) {
 
