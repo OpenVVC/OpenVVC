@@ -493,7 +493,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
 
                 memset(tmp, 0, sizeof(int16_t) << (log2_cb_w + log2_pb_h));
 
-                TRFunc->func[type_v][log2_cb_w](coeffs_y, tmp, pb_h, pb_h, cb_w, shift_h + 1);
+                TRFunc->func[type_h][log2_cb_w](coeffs_y, tmp, pb_h, pb_h, cb_w, shift_h + 1);
 
                 memcpy(ctudec->transform_buff, tmp, sizeof(uint16_t) * (1 << log2_cb_w));
             }
