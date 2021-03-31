@@ -43,12 +43,15 @@ PROG=examples/dectest
 ALL_OBJS=$(LIB_OBJ) $(addprefix $(BUILDDIR),$(addsuffix .o, $(PROG))) $($(ARCH)_LIB_OBJ)
 
 
-.PHONY: all test version libs examples
+.PHONY: all test version libs examples profiling
 
 all: libs examples
 
 test:
 	./CI/checkMD5.sh $(TESTSTREAMSDIR) $(BUILDDIR)$(PROG)
+
+profiling:
+	./CI/profiling.sh $(TESTSTREAMSDIR) $(BUILDDIR)$(PROG)
 
 version:
 	$(AT)./version.sh VERSION $(SRC_FOLDER)$(LIB_VERSION_HEADER)

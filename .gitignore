@@ -11,6 +11,7 @@ libovvc/ovversion.h
 *.dll
 *.lib
 *.exe
+*.cache
 
 # Editor created objects
 *.sw?
