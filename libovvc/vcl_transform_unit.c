@@ -8,8 +8,6 @@
 #include "rcn.h"
 #include "dbf_utils.h"
 
-static void
-rcn_add_residuals(uint16_t *dst, const int16_t *src, uint8_t log2_tb_w, uint8_t log2_tb_h);
 /* FIXME refactor dequant*/
 static void
 derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
@@ -618,38 +616,11 @@ transform_unit(OVCTUDec *const ctu_dec,
             is_lfnst = residual_coding_ts(ctu_dec, log2_tb_w, log2_tb_h);
             //FIXME transform residual is currently performed in the dequant function
         }
-#if 0
-        int16_t *dst  = &ctu_dec->ctu_data_y[VVC_CTB_OFFSET + x0 + VVC_CTB_STRIDE * y0];
-        int16_t *src  = ctu_dec->transform_buff;
 
-        vvc_dsp_context.vvc_transform_add(src, dst, log2_tb_w, log2_tb_h, 0);
-#endif
-        #if 0
-        rcn_add_residuals(&ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], ctu_dec->transform_buff, log2_tb_w, log2_tb_h);
-        #else
-            rcn_func->ict[0](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
-        #endif
+        rcn_func->ict[0](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
     }
+
     return 0;
-}
-
-/* FIXME Tmp */
-static void
-rcn_add_residuals(uint16_t *dst, const int16_t *src, uint8_t log2_tb_w, uint8_t log2_tb_h)
-{
-    int tb_h = 1 << log2_tb_h;
-    int tb_w = 1 << log2_tb_w;
-    int i, j;
-
-    for (i = 0; i < tb_h; ++i) {
-        for (j = 0; j < tb_w; ++j) {
-            /*FIXME Power of 2 clip */
-            dst[j] = (uint16_t)ov_clip(((int16_t)dst[j] + src[j]), 0, 1023);
-        }
-        dst += RCN_CTB_STRIDE;
-        src += 1 << log2_tb_w;
-    }
-
 }
 
 static int
