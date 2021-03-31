@@ -597,7 +597,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
         uint64_t bs2_map = dbf_info->bs2_map.ver[i << 2];
         uint64_t bs1_map = dbf_info->bs1_map_cb.ver[i << 2];
         uint64_t large_map_q = dbf_info->ctb_bound_ver[(i << 2) + 1 + 8];
-        const int8_t *qp_col = &dbf_info->qp_map_cb.ver[34 * (i << 2)];
+        const uint8_t *qp_col = &dbf_info->qp_map_cb.ver[34 * (i << 2)];
 
         large_map_q |= dbf_info->ctb_bound_ver[(i << 2) - 3 + 8];
         large_map_q |= dbf_info->ctb_bound_ver[(i << 2) - 2 + 8];
@@ -619,10 +619,10 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
                     uint8_t is_strong = 0;
 
                     if (max_l >= 3) {
-                        const int dp0 = compute_dp(src0, 1);
-                        const int dq0 = compute_dq(src0, 1);
-                        const int dp3 = compute_dp(src1, 1);
-                        const int dq3 = compute_dq(src1, 1);
+                        const int dp0 = compute_dp((int16_t *)src0, 1);
+                        const int dq0 = compute_dq((int16_t *)src0, 1);
+                        const int dp3 = compute_dp((int16_t *)src1, 1);
+                        const int dq3 = compute_dq((int16_t *)src1, 1);
 
                         const int d0 = dp0 + dq0;
                         const int d3 = dp3 + dq3;
@@ -672,7 +672,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
         uint64_t bs2_map = dbf_info->bs2_map.ver[i << 2];
         uint64_t bs1_map = dbf_info->bs1_map_cr.ver[i << 2];
         uint64_t large_map_q = dbf_info->ctb_bound_ver[(i << 2) + 1 + 8];
-        const int8_t *qp_col = &dbf_info->qp_map_cr.ver[34 * (i << 2)];
+        const uint8_t *qp_col = &dbf_info->qp_map_cr.ver[34 * (i << 2)];
 
         large_map_q |= dbf_info->ctb_bound_ver[(i << 2) - 3 + 8];
         large_map_q |= dbf_info->ctb_bound_ver[(i << 2) - 2 + 8];
@@ -695,10 +695,10 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
 
                     if (max_l >= 3) {
 
-                        const int dp0 = compute_dp(src0, 1);
-                        const int dq0 = compute_dq(src0, 1);
-                        const int dp3 = compute_dp(src1, 1);
-                        const int dq3 = compute_dq(src1, 1);
+                        const int dp0 = compute_dp((int16_t *)src0, 1);
+                        const int dq0 = compute_dq((int16_t *)src0, 1);
+                        const int dp3 = compute_dp((int16_t *)src1, 1);
+                        const int dq3 = compute_dq((int16_t *)src1, 1);
 
                         const int d0 = dp0 + dq0;
                         const int d3 = dp3 + dq3;
@@ -755,15 +755,15 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
     src_cr -= blk_stride << 1;
 
     for (i = 0; i < (nb_unit_w >> 2); i++) {
-        int16_t *src0 = src_cb;
-        int16_t *src1 = src_cb + 1;
+        uint16_t *src0 = src_cb;
+        uint16_t *src1 = src_cb + 1;
         uint8_t is_ctb_b = i == 0;
 
         uint64_t edge_map = dbf_info->edge_map_hor[(i << 2) + 0];
         uint64_t bs2_map  = dbf_info->bs2_map.hor[i << 2];
         uint64_t bs1_map  = dbf_info->bs1_map_cb.hor[i << 2];
         uint64_t large_map_q = dbf_info->ctb_bound_hor[(i << 2) + 1 + 8];
-        const int8_t *qp_row = &dbf_info->qp_map_cb.hor[34 * (i << 2)];
+        const uint8_t *qp_row = &dbf_info->qp_map_cb.hor[34 * (i << 2)];
 
         large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor[(i << 2) - 3 + 8];
         large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor[(i << 2) - 2 + 8];
@@ -786,10 +786,10 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
                     uint8_t is_strong = 0;
 
                     if (max_l >= 3) {
-                        const int dp0 = compute_dp_c(src0, stride, is_ctb_b);
-                        const int dq0 = compute_dq(src0, stride);
-                        const int dp3 = compute_dp_c(src1, stride, is_ctb_b);
-                        const int dq3 = compute_dq(src1, stride);
+                        const int dp0 = compute_dp_c((int16_t *)src0, stride, is_ctb_b);
+                        const int dq0 = compute_dq((int16_t *)src0, stride);
+                        const int dp3 = compute_dp_c((int16_t *)src1, stride, is_ctb_b);
+                        const int dq3 = compute_dq((int16_t *)src1, stride);
 
                         const int d0 = dp0 + dq0;
                         const int d3 = dp3 + dq3;
@@ -839,7 +839,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
         uint64_t bs2_map = dbf_info->bs2_map.hor[i << 2];
         uint64_t bs1_map = dbf_info->bs1_map_cr.hor[i << 2];
         uint64_t large_map_q = dbf_info->ctb_bound_hor[(i << 2) + 1 + 8];
-        const int8_t *qp_row = &dbf_info->qp_map_cr.hor[34 * (i << 2)];
+        const uint8_t *qp_row = &dbf_info->qp_map_cr.hor[34 * (i << 2)];
 
         large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor[(i << 2) - 3 + 8];
         large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor[(i << 2) - 2 + 8];
@@ -862,10 +862,10 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
                     uint8_t is_strong = 0;
 
                     if (max_l >= 3) {
-                        const int dp0 = compute_dp_c(src0, stride, is_ctb_b);
-                        const int dq0 = compute_dq(src0, stride);
-                        const int dp3 = compute_dp_c(src1, stride, is_ctb_b);
-                        const int dq3 = compute_dq(src1, stride);
+                        const int dp0 = compute_dp_c((int16_t *)src0, stride, is_ctb_b);
+                        const int dq0 = compute_dq((int16_t *)src0, stride);
+                        const int dp3 = compute_dp_c((int16_t *)src1, stride, is_ctb_b);
+                        const int dq3 = compute_dq((int16_t *)src1, stride);
 
                         const int d0 = dp0 + dq0;
                         const int d3 = dp3 + dq3;
@@ -922,15 +922,15 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
     src -= blk_stride;
 
     for (i = 0; i < nb_unit_h - 1; ++i) {
-        int16_t* src0 = src;
-        int16_t* src3 = src + stride * 3;
+        uint16_t* src0 = src;
+        uint16_t* src3 = src + stride * 3;
         uint64_t edge_map = dbf_info->edge_map_ver[i];
         uint64_t bs1_map  = dbf_info->bs1_map.ver[i];
         uint64_t bs2_map  = dbf_info->bs2_map.ver[i];
         uint64_t large_p_map = derive_size_3_map(edge_map_p2 - 7);
         uint64_t large_q_map = derive_size_3_map(edge_map_p2 + 1);
         uint64_t small_map = edge_map_p2[-1] | edge_map_p2[1];
-        const int8_t *qp_col = &dbf_info->qp_map_y.ver[34 * i];
+        const uint8_t *qp_col = &dbf_info->qp_map_y.ver[34 * i];
 
         edge_map &= last_pb_mask;
         edge_map &= bs2_map | bs1_map;
@@ -944,10 +944,10 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
                 const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_col, bs);
 
-                const int dp0 = compute_dp(src0, 1);
-                const int dq0 = compute_dq(src0, 1);
-                const int dp3 = compute_dp(src3, 1);
-                const int dq3 = compute_dq(src3, 1);
+                const int dp0 = compute_dp((int16_t *)src0, 1);
+                const int dq0 = compute_dq((int16_t *)src0, 1);
+                const int dp3 = compute_dp((int16_t *)src3, 1);
+                const int dq3 = compute_dq((int16_t *)src3, 1);
 
                 uint8_t use_strong_large = 0;
                 if (max_l_p > 3 || max_l_q > 3) {
@@ -957,15 +957,15 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                     int dq3L = dq3;
 
                     if (max_l_p > 3) {
-                        dp0L += compute_dp(src0 - 3, 1) + 1;
-                        dp3L += compute_dp(src3 - 3, 1) + 1;
+                        dp0L += compute_dp((int16_t *)src0 - 3, 1) + 1;
+                        dp3L += compute_dp((int16_t *)src3 - 3, 1) + 1;
                         dp0L >>= 1;
                         dp3L >>= 1;
                     }
 
                     if (max_l_q > 3) {
-                        dq0L += compute_dq(src0 + 3, 1) + 1;
-                        dq3L += compute_dq(src3 + 3, 1) + 1;
+                        dq0L += compute_dq((int16_t *)src0 + 3, 1) + 1;
+                        dq3L += compute_dq((int16_t *)src3 + 3, 1) + 1;
                         dq0L >>= 1;
                         dq3L >>= 1;
                     }
@@ -978,12 +978,12 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                     use_strong_large = (dL < dbf_params.beta) &&
                                       ((d0L << 1) < (dbf_params.beta >> 4)) &&
                                       ((d3L << 1) < (dbf_params.beta >> 4)) &&
-                                      use_strong_filter_l0(src0, 1, dbf_params.beta, dbf_params.tc, max_l_p, max_l_q) &&
-                                      use_strong_filter_l0(src3, 1, dbf_params.beta, dbf_params.tc, max_l_p, max_l_q);
+                                      use_strong_filter_l0((int16_t *)src0, 1, dbf_params.beta, dbf_params.tc, max_l_p, max_l_q) &&
+                                      use_strong_filter_l0((int16_t *)src3, 1, dbf_params.beta, dbf_params.tc, max_l_p, max_l_q);
                 }
 
                 if (use_strong_large) {
-                    int16_t *_src = src0;
+                    int16_t *_src = (int16_t *)src0;
                     max_l_p = max_l_p > 3 ? max_l_p : 3; 
                     max_l_q = max_l_q > 3 ? max_l_q : 3; 
                     for (int i = 0; i < 4; i++) {
@@ -1000,11 +1000,11 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
                         sw = sw && ((d0 << 1) < (dbf_params.beta >> 2))
                                 && ((d3 << 1) < (dbf_params.beta >> 2))
-                                && use_strong_filter_l1(src0, 1, dbf_params.beta, dbf_params.tc)
-                                && use_strong_filter_l1(src3, 1, dbf_params.beta, dbf_params.tc);
+                                && use_strong_filter_l1((int16_t *)src0, 1, dbf_params.beta, dbf_params.tc)
+                                && use_strong_filter_l1((int16_t *)src3, 1, dbf_params.beta, dbf_params.tc);
 
                         if (sw){
-                            int16_t *_src = src0;
+                            int16_t *_src = (int16_t *)src0;
                             for (int i = 0; i < 4; i++) {
                                 filter_luma_strong_small(_src, 1, dbf_params.tc);
                                 _src += stride;
@@ -1016,7 +1016,7 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                             const int th_cut  = dbf_params.tc * 10;
                             uint8_t extend_p = (max_l_p > 1 && max_l_q > 1) && (dp < side_thd);
                             uint8_t extend_q = (max_l_p > 1 && max_l_q > 1) && (dq < side_thd);
-                            int16_t *_src = src0;
+                            int16_t *_src = (int16_t *)src0;
                             for (int i = 0; i < 4; i++) {
                                 filter_luma_weak(_src, 1, dbf_params.tc, th_cut, extend_p, extend_q);
                                 _src += stride;
@@ -1055,8 +1055,8 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
     src -= blk_stride << 1;
 
     for (i = 0; i < nb_unit_w; ++i) {
-        int16_t *src0 = src;
-        int16_t *src3 = src + 3;
+        int16_t *src0 = (int16_t *)src;
+        int16_t *src3 = (int16_t *)src + 3;
 
         uint64_t edge_map = dbf_info->edge_map_hor[i];
         uint64_t bs2_map = dbf_info->bs2_map.hor[i];
@@ -1065,7 +1065,7 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
         uint64_t large_p_map = derive_size_3_map(&edge_map_p2[i - 7]);
         uint64_t large_q_map = derive_size_3_map(&edge_map_p2[i + 1]);
         uint64_t small_map = edge_map_p2[i - 1] | edge_map_p2[i + 1];
-        const int8_t *qp_row = &dbf_info->qp_map_y.hor[34 * i];
+        const uint8_t *qp_row = &dbf_info->qp_map_y.hor[34 * i];
 
         edge_map &= last_pb_mask;
         edge_map &= bs2_map | bs1_map;
@@ -1080,10 +1080,10 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
                 const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_row, bs);
 
-                const int dp0 = compute_dp(src0, stride);
-                const int dq0 = compute_dq(src0, stride);
-                const int dp3 = compute_dp(src3, stride);
-                const int dq3 = compute_dq(src3, stride);
+                const int dp0 = compute_dp((int16_t *)src0, stride);
+                const int dq0 = compute_dq((int16_t *)src0, stride);
+                const int dp3 = compute_dp((int16_t *)src3, stride);
+                const int dq3 = compute_dq((int16_t *)src3, stride);
 
                 uint8_t use_strong_large = 0;
 
