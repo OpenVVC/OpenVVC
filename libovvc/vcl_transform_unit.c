@@ -205,7 +205,6 @@ uint16_t
 ovcabac_read_ae_last_sig_pos(OVCABACCtx *const cabac_ctx,
                              uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
-    uint64_t *const cabac_state = cabac_ctx->ctx_table;
     uint8_t last_x;
     uint8_t last_y;
 
@@ -213,11 +212,11 @@ ovcabac_read_ae_last_sig_pos(OVCABACCtx *const cabac_ctx,
 
     last_y = decode_last_sig_prefix(cabac_ctx, log2_tb_h, LAST_Y_CTX_OFFSET);
 
-    if (last_x > 3){
+    if (last_x > 3) {
         last_x = decode_last_sig_suffix(cabac_ctx, last_x);
     }
 
-    if(last_y > 3){
+    if (last_y > 3) {
         last_y = decode_last_sig_suffix(cabac_ctx, last_y);
     }
 
