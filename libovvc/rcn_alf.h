@@ -2,6 +2,7 @@
 #define RCN_ALF_H
 
 struct OVCTUDec;
+struct RCNFunctions;
 
 #define MAX_ALF_NUM_CLIP_VAL  4
 #define NUM_BITS  8
@@ -29,13 +30,13 @@ struct OVCTUDec;
 #define CCALF_BITS_PER_COEFF_LEVEL                     3
 
 
-typedef struct 
+typedef struct ALFClassifier
 {
   uint8_t class_idx;
   uint8_t transpose_idx;
 }ALFClassifier;
 
-typedef struct
+typedef struct Area
 {
   int x,y;
   int width,height;
@@ -93,5 +94,6 @@ void alf_destroy(RCNALF* alf, int16_t ctu_width);
 
 void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pic);
 
-#endif
+void rcn_init_alf_functions(struct RCNFunctions *rcn_func);
 
+#endif

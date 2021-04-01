@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+struct ALFClassifier;
+struct Area;
 
 enum DCTType
 {
@@ -55,6 +57,10 @@ typedef void (*PlanarFunc)(const uint16_t* const src_above,
                      const uint16_t* const src_left, uint16_t* const dst,
                      ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h);
 
+typedef void (*ALFFilterBlkFunc)(struct ALFClassifier **classifier, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
+                        struct Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
+                        const int ctu_height, int virbnd_pos);
+
 /**
  * The Context put together all functions used by strategies.
  */
@@ -93,6 +99,11 @@ struct PlanarFunctions
 };
 
 
+struct ALFFunctions{
+    ALFFilterBlkFunc luma;
+    ALFFilterBlkFunc chroma;
+};
+
 struct RCNFunctions
 {
     /* Motion Compensation Luma */
@@ -114,6 +125,9 @@ struct RCNFunctions
 
     /* Planar Functions */
     struct PlanarFunctions planar;
+
+    /* Planar Functions */
+    struct ALFFunctions alf;
 };
 
 
