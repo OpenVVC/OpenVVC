@@ -1496,8 +1496,10 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
 
     for (coeff_idx = 0; coeff_idx < 16 - 1 && *num_remaining_bins >= 4; ++coeff_idx) {
 
-        int x = ff_vvc_inv_diag_scan_4x4_x[coeff_idx];
-        int y = ff_vvc_inv_diag_scan_4x4_y[coeff_idx];
+        int idx = ff_vvc_inv_diag_scan_4x4[coeff_idx];
+
+        int x = idx & 0x3;
+        int y = idx >> 2;
 
         uint8_t nb_sig_c_ngh = nb_sig_ngh_map[x + y * VVC_TR_CTX_STRIDE];
 
@@ -1506,7 +1508,6 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
         --(*num_remaining_bins);
 
         if (ts_sig_c_flag) {
-            int idx = ff_vvc_inv_diag_scan_4x4[coeff_idx];
 
             int sign_offset = nb_sig_c_ngh != 2 ? nb_sig_c_ngh + sign_table[x + y * VVC_TR_CTX_STRIDE] :
                 (sign_table[x + y * VVC_TR_CTX_STRIDE] == 2 ? 2 : sign_table[x + y * VVC_TR_CTX_STRIDE] ^ 1);
