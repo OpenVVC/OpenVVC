@@ -784,9 +784,13 @@ transform_unit(OVCTUDec *const ctu_dec,
             //FIXME transform residual is currently performed in the dequant function
         }
 
-        rcn_func->ict[0](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
+        #if 1
+        vvc_add_residual(&ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], ctu_dec->transform_buff, log2_tb_w, log2_tb_h, 0);
+        #else
+        rcn_func->ict[0](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE],
+                             log2_tb_w, log2_tb_h, 0);
+        #endif
     }
-
     return 0;
 }
 
@@ -913,9 +917,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
         #if 1
         if (cbf_mask & 0x2) {
             uint16_t *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[(x0) + (y0 * RCN_CTB_STRIDE)];
-            #if 0
-            int16_t scale  = ctu_dec->lmcs_chroma_scale;
-            #endif
+            int16_t scale  = ctu_dec->lmcs_info.lmcs_chroma_scale;
             int16_t *const coeffs_cb = ctu_dec->residual_cb;
 
             if (!(transform_skip_flag & 0x2)) {
@@ -925,7 +927,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
                 memcpy(ctu_dec->transform_buff, coeffs_cb, sizeof(uint16_t) << (log2_tb_h + log2_tb_w));
             }
 
-            rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, 0);
+            rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
 #if 0
             (*ctu_dec->scale_addsub_residuals)[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
 
@@ -935,9 +937,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
 
         if (cbf_mask & 0x1) {
             uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[(x0) + (y0 * RCN_CTB_STRIDE)];
-            #if 0
-            int16_t scale  = ctu_dec->lmcs_chroma_scale;
-            #endif
+            int16_t scale  = ctu_dec->lmcs_info.lmcs_chroma_scale;
 
             if (!(transform_skip_flag & 0x1)) {
                 rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cr, tmp_lfnst_cr, x0, y0, log2_tb_w, log2_tb_h,
@@ -946,7 +946,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
                 memcpy(ctu_dec->transform_buff, coeffs_cr, sizeof(uint16_t) << (log2_tb_h + log2_tb_w));
             }
 
-            rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, 0);
+            rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
 #if 0
             (*ctu_dec->scale_addsub_residuals)[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
 
@@ -960,12 +960,10 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
         uint16_t last_pos_cbcr;
         uint16_t *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[(x0) + (y0 * RCN_CTB_STRIDE)];
         uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[(x0) + (y0 * RCN_CTB_STRIDE)];
-        #if 0
         int shift_v = 6 + 1;
         int shift_h = (6 + 15 - 1) - 10;
         int16_t *src  = ctu_dec->transform_buff;
-        int16_t scale = ctu_dec->lmcs_chroma_scale;
-        #endif
+        int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
         int16_t *const coeffs_jcbcr = ctu_dec->residual_cb;
         uint8_t lfnst_flag = 0;
         uint8_t lfnst_idx = 0;
@@ -1044,14 +1042,14 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
         /* FIXME better organisation based on cbf_mask */
         if (cbf_mask == 3) {
-            rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, 0);
-            rcn_func->ict[1](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, 0);
+            rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+            rcn_func->ict[1](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
         } else if (cbf_mask == 2) {
-            rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, 0);
-            rcn_func->ict[2](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, 0);
+            rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+            rcn_func->ict[2](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
         } else {
-            rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, 0);
-            rcn_func->ict[2](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, 0);
+            rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+            rcn_func->ict[2](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
         }
 #endif
     }

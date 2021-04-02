@@ -4,6 +4,7 @@
 #include "cabac_internal.h"
 #include "dec_structures.h"
 #include "ctudec.h"
+#include "rcn_lmcs.h"
 
 #if 0
 static int coding_quadtree(OVCTUDec *const ctu_dec,
@@ -194,10 +195,10 @@ coding_quadtree(OVCTUDec *const ctu_dec,
     allow_tt &= log2_cb_s > 2;
     allow_bt &= log2_cb_s > 2;
 
-#if 0
-    if (log2_cb_s == 6)
-        ctu_dec->compute_lmcs(ctu_dec, x0, y0);
-#endif
+    //TODO: check if compliant when lmcs is disabled ?
+    //TODO: compute array lmcs_output_pivot
+    if (log2_cb_s == 6 && ctu_dec->lmcs_info.lmcs_enabled_flag)
+        rcn_compute_lmcs_chroma_scale(ctu_dec, x0, y0);
 
     if (allow_qt | allow_bt | allow_tt) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;

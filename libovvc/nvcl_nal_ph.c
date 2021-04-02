@@ -17,15 +17,6 @@ enum OVChromaFormat{
     OV_NUM_CHROMA_FORMAT = 4,
 };
 
-//TODO: declare in another header file
-enum OVChromaFormat{
-    OV_CHROMA_400        = 0,
-    OV_CHROMA_420        = 1,
-    OV_CHROMA_422        = 2,
-    OV_CHROMA_444        = 3,
-    OV_NUM_CHROMA_FORMAT = 4,
-};
-
 static int
 validate_ph(OVNVCLReader *rdr, OVPH *const ph)
 {

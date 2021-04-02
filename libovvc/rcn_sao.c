@@ -10,7 +10,6 @@
 // #include "dec_structures.h"
 // #include "ctudec.h"
 
-
 #define BIT_DEPTH 10
 
 void sao_band_filter(uint8_t *_dst, uint8_t *_src,

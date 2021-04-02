@@ -139,6 +139,7 @@ nvcl_read_lmcs_data(OVNVCLReader *const rdr, struct OVLMCSData* lmcs, uint8_t ap
             lmcs->lmcs_delta_sign_crs_flag = nvcl_read_flag(rdr);
         }
     }
+    return 1;
     //ATTENTION: Utilite ?
     //int signCW = code;
     //info.chrResScalingOffset = (1 - 2 * signCW) * absCW;

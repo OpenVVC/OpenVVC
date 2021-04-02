@@ -6,6 +6,7 @@
 #include "ovmem.h"
 #include "ovdec.h"
 
+#include "nvcl_structures.h"
 #include "rcn_structures.h"
 #include "rcn_alf.h"
 #include "dec_structures.h"
@@ -128,6 +129,14 @@ struct ALFInfo
 
     //ALF reconstruction structure
     RCNALF rcn_alf;
+};
+
+struct LMCSInfo
+{
+    uint16_t lmcs_output_pivot[PIC_CODE_CW_BINS];
+    uint16_t lmcs_chroma_scale;
+    int16_t  lmcs_chroma_scaling_offset;
+    uint8_t  lmcs_enabled_flag;
 };
 
 
@@ -471,6 +480,8 @@ struct OVCTUDec
     struct SAOInfo sao_info;
 
     struct ALFInfo alf_info;
+
+    struct LMCSInfo lmcs_info;
 
 
     struct OVFilterBuffers{
