@@ -1430,7 +1430,6 @@ update_ts_neighbourhood_other_passes( uint16_t *const abs_coeffs,
                                      int x, int y,
                                      int value, int16_t coeff){
 
-
     abs_coeffs[x +  y      * VVC_TR_CTX_STRIDE] =  coeff;
 }
 
@@ -1442,17 +1441,19 @@ static const uint8_t rice_param_ts[32] = {
 
 static uint8_t
 decode_pass2_ts(OVCABACCtx *const cabac_ctx, uint64_t *const ctx_table,
-                int16_t *const coeffs, int num_pass2,
+                int16_t *const sb_coeffs,
+                uint8_t nb_pass2,
                 uint8_t *const pass2_idx_map,
+                uint8_t *nb_pass3_p,
+                uint8_t *const pass3_idx_map,
                 uint16_t *const abs_coeffs,
                 int16_t *const num_remaining_bins){
-    int scan_pos;
+    int nb_read;
     int nb_pass3 = 0;
-    uint16_t pass3_map[16] = {0};
     uint64_t *const ts_ctx_table = &ctx_table[TS_GTX_FLAG_CTX_OFFSET];
 
-    for (scan_pos = 0; scan_pos < num_pass2 && *num_remaining_bins>= 4; ++scan_pos){
-        int idx = pass2_idx_map[scan_pos];
+    for (nb_read = 0; nb_read < nb_pass2 && *num_remaining_bins>= 4; ++nb_read){
+        int idx = pass2_idx_map[nb_read];
         int x = idx & 0x3;
         int y = idx >> 2;
         int val = 0;
@@ -1471,35 +1472,36 @@ decode_pass2_ts(OVCABACCtx *const cabac_ctx, uint64_t *const ctx_table,
                     uint8_t ts_gt5_flag = ovcabac_ae_read(cabac_ctx, ts_ctx_table + 4);
                     --(*num_remaining_bins);
                     val += 2;
-                    if(ts_gt4_flag){
+                    if(ts_gt5_flag){
                         val += 2;
-                        pass3_map[nb_pass3++] = idx;
+                        pass3_idx_map[nb_pass3++] = idx;
                     }
                 }
             }
-            coeffs[idx] += val;
-            update_ts_neighbourhood_other_passes(abs_coeffs, x, y, 2, coeffs[idx]);
+            sb_coeffs[idx] += val;
         }
+        abs_coeffs[x +  y * VVC_TR_CTX_STRIDE] = sb_coeffs[idx];
     }
-    return scan_pos;
+    *nb_pass3_p = nb_pass3;
+    return nb_read;
 }
 
 static int
 ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
-                         int16_t  *const coeffs,
-                         uint8_t  *const nb_sig_ngh_map,
-                         uint8_t  *const sign_map,
-                         uint16_t *const abs_coeffs,
-                         int16_t *const num_remaining_bins)
+                          int16_t  *const coeffs,
+                          uint8_t  *const nb_sig_ngh_map,
+                          uint8_t  *const sign_table,
+                          uint16_t *const abs_coeffs,
+                          int16_t *const num_remaining_bins)
 {
-    uint8_t ts_sig_c_flag;
     uint8_t sig_c_idx_map[16];
-    uint16_t sign_mapl = 0;
     uint8_t pass2_idx_map[16];
-    int nb_pass2 = 0;
-    int nb_read_pass2 = 0;
+    uint8_t pass3_idx_map[16];
+    uint16_t sign_map = 0;
+    uint8_t nb_pass2 = 0;
+    uint8_t nb_pass3 = 0;
+    uint8_t nb_read_pass2 = 0;
     int coeff_idx;
-    int nb_sig_c_ngh;
     int nb_sig_c = 0;
     uint64_t *const ctx_table = cabac_ctx->ctx_table;
 
@@ -1508,23 +1510,23 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
         int x = ff_vvc_inv_diag_scan_4x4_x[coeff_idx];
         int y = ff_vvc_inv_diag_scan_4x4_y[coeff_idx];
 
-        nb_sig_c_ngh = nb_sig_ngh_map[x + y * VVC_TR_CTX_STRIDE];
+        uint8_t nb_sig_c_ngh = nb_sig_ngh_map[x + y * VVC_TR_CTX_STRIDE];
 
-        ts_sig_c_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_SIG_FLAG_CTX_OFFSET + nb_sig_c_ngh]);
+        uint8_t ts_sig_c_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_SIG_FLAG_CTX_OFFSET + nb_sig_c_ngh]);
 
         --(*num_remaining_bins);
 
         if (ts_sig_c_flag) {
             int idx = ff_vvc_inv_diag_scan_4x4[coeff_idx];
 
-            int sign_offset = nb_sig_c_ngh != 2 ? nb_sig_c_ngh + sign_map[x + y * VVC_TR_CTX_STRIDE] :
-                (sign_map[x + y * VVC_TR_CTX_STRIDE] == 2 ? 2 : sign_map[x + y * VVC_TR_CTX_STRIDE] ^ 1);
+            int sign_offset = nb_sig_c_ngh != 2 ? nb_sig_c_ngh + sign_table[x + y * VVC_TR_CTX_STRIDE] :
+                (sign_table[x + y * VVC_TR_CTX_STRIDE] == 2 ? 2 : sign_table[x + y * VVC_TR_CTX_STRIDE] ^ 1);
 
             uint8_t ts_sign_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_RESIDUAL_SIGN_CTX_OFFSET + sign_offset]);
             uint8_t ts_gt1_flag  = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_LRG1_FLAG_CTX_OFFSET + nb_sig_c_ngh]);
             int value = 1;
 
-            sign_mapl |= ts_sign_flag << nb_sig_c;
+            sign_map |= ts_sign_flag << nb_sig_c;
 
             sig_c_idx_map[nb_sig_c++] = idx;
 
@@ -1540,104 +1542,113 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
                 --(*num_remaining_bins);
             }
 
-            /* FIXME sign_map will change derived value we have to apply it at the end */
-            coeffs[idx] =/* (sign_map& 1) ? -value :*/ value;
-            update_ts_neighbourhood_first_pass(nb_sig_ngh_map, sign_map,
+            coeffs[idx] = value;
+            update_ts_neighbourhood_first_pass(nb_sig_ngh_map, sign_table,
                                                abs_coeffs, x, y, value, ts_sign_flag);
         }
     }
-    //check for last implicit significant coeff
-    ts_sig_c_flag = !nb_sig_c;
 
-    /* FIXME check num_remaining_bins */
-    if (nb_sig_c) {
-        nb_sig_c_ngh  = nb_sig_ngh_map[3 + 3 * VVC_TR_CTX_STRIDE];
-        ts_sig_c_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_SIG_FLAG_CTX_OFFSET + nb_sig_c_ngh]);
-        --(*num_remaining_bins);
-    }
+    if (*num_remaining_bins >= 4) {
 
-    if (ts_sig_c_flag) {
-        int sign_offset = nb_sig_c_ngh != 2 ? nb_sig_c_ngh + sign_map[3 + 3 * VVC_TR_CTX_STRIDE] :
-                                            (sign_map[3 + 3 * VVC_TR_CTX_STRIDE] == 2 ? 2 :
-                                                                                        sign_map[3 + 3 * VVC_TR_CTX_STRIDE] ^ 1);
+        uint8_t ts_sig_c_flag = !nb_sig_c;
+        uint8_t nb_sig_c_ngh  = nb_sig_ngh_map[3 + 3 * VVC_TR_CTX_STRIDE];
 
-        uint8_t ts_sign_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_RESIDUAL_SIGN_CTX_OFFSET + sign_offset]);
-        uint8_t ts_gt1_flag  = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_LRG1_FLAG_CTX_OFFSET + nb_sig_c_ngh]);
-        int value = 1;
-
-        sign_mapl |= ts_sign_flag << nb_sig_c;
-
-        sig_c_idx_map[nb_sig_c++] = 15;
-
-        --(*num_remaining_bins);
-        --(*num_remaining_bins);
-
-        if(ts_gt1_flag){
-            uint8_t ts_parity_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_PAR_FLAG_CTX_OFFSET]);
-            value += 1 + ts_parity_flag;
-            pass2_idx_map[nb_pass2++] = 15;
+        if (nb_sig_c) {
+            ts_sig_c_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_SIG_FLAG_CTX_OFFSET + nb_sig_c_ngh]);
             --(*num_remaining_bins);
         }
 
-        update_ts_neighbourhood_first_pass(nb_sig_ngh_map, sign_map, abs_coeffs,
-                                           3, 3, value, ts_sign_flag);
+        if (ts_sig_c_flag) {
+            int sign_offset = nb_sig_c_ngh != 2 ? nb_sig_c_ngh + sign_table[3 + 3 * VVC_TR_CTX_STRIDE] :
+                (sign_table[3 + 3 * VVC_TR_CTX_STRIDE] == 2 ? 2 : sign_table[3 + 3 * VVC_TR_CTX_STRIDE] ^ 1);
 
-        /* FIXME sign_map will change derived value we have to apply it at the end */
-        coeffs[15] = /*ts_sign_flag ? -value :*/ value;
-    }
+            uint8_t ts_sign_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_RESIDUAL_SIGN_CTX_OFFSET + sign_offset]);
+            uint8_t ts_gt1_flag  = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_LRG1_FLAG_CTX_OFFSET + nb_sig_c_ngh]);
+            int value = 1;
 
-    if(nb_pass2){
-        nb_read_pass2 = decode_pass2_ts(cabac_ctx, ctx_table, coeffs, nb_pass2, pass2_idx_map,
-                                        abs_coeffs, num_remaining_bins);
-    }
+            sign_map |= ts_sign_flag << nb_sig_c;
 
-    for (int scan_pos = 0; scan_pos < 16 && *num_remaining_bins >= 4; ++scan_pos) {
+            sig_c_idx_map[nb_sig_c++] = 15;
 
-        int x = ff_vvc_inv_diag_scan_4x4_x[scan_pos];
-        int y = ff_vvc_inv_diag_scan_4x4_y[scan_pos];
+            --(*num_remaining_bins);
+            --(*num_remaining_bins);
 
-        int idx = x + (y << 2);
-
-        if (coeffs[idx] >= 10) {
-            int sum_abs ;
-            int rice_param ;
-            int remainder;
-
-            sum_abs = OVMIN(abs_coeffs[x     + ((y - 1) * VVC_TR_CTX_STRIDE)]+
-                            abs_coeffs[x - 1 + ( y      * VVC_TR_CTX_STRIDE)], 31);
-
-            rice_param = rice_param_ts[sum_abs];
-
-            remainder = decode_truncated_rice(cabac_ctx, rice_param);
-
-            if (remainder) {
-                coeffs[idx] += (remainder);
-                update_ts_neighbourhood_other_passes(abs_coeffs, x, y,
-                        (remainder), coeffs[idx]);
+            if (ts_gt1_flag) {
+                uint8_t ts_parity_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_PAR_FLAG_CTX_OFFSET]);
+                value += 1 + ts_parity_flag;
+                pass2_idx_map[nb_pass2++] = 15;
+                --(*num_remaining_bins);
             }
+
+            update_ts_neighbourhood_first_pass(nb_sig_ngh_map, sign_table, abs_coeffs,
+                                               3, 3, value, ts_sign_flag);
+
+            coeffs[15] = value;
         }
+        ++coeff_idx;
+    }
+
+    //if(nb_pass2){
+    nb_read_pass2 = decode_pass2_ts(cabac_ctx, ctx_table, coeffs, nb_pass2, pass2_idx_map,
+                                    &nb_pass3, pass3_idx_map, abs_coeffs, num_remaining_bins);
+    //}
+
+    /* Loop over already read pass2 requiring pass 3 */
+    for (int i = 0; i < nb_pass3; i++) {
+        int idx = pass3_idx_map[i];
+        int remainder = decode_truncated_rice(cabac_ctx, 1);
+        int x = idx & 0x3;
+        int y = idx >> 2;
+
+        coeffs[idx] += remainder;
+        abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = coeffs[idx];
+    }
+
+    /* Loop over non already processed in pass 2 => bypass coded from pass 2 */
+    for (int i = nb_read_pass2; i < nb_pass2; i++) {
+        int idx = pass2_idx_map[i];
+        int remainder = decode_truncated_rice(cabac_ctx, 1);
+        int x = idx & 0x3;
+        int y = idx >> 2;
+
+        coeffs[idx] += remainder;
+        abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = coeffs[idx];
+    }
+
+    /* Bypass coded coefficients from pass 1 */
+    for (int scan_idx = coeff_idx; scan_idx <= 15; scan_idx++) {
+        int idx = ff_vvc_inv_diag_scan_4x4[scan_idx];
+        coeffs[idx] = decode_truncated_rice(cabac_ctx, 1) >> 1;
 
         if (coeffs[idx]) {
-            /* FIXME rewrite coeff prediciton */
-            int max_neighbor_local = OVMAX(abs_coeffs[x     + ((y - 1) * VVC_TR_CTX_STRIDE)],
-                                           abs_coeffs[x - 1 +  (y      * VVC_TR_CTX_STRIDE)]);
-            int old_val = coeffs[idx];
-            if (old_val == 1 && max_neighbor_local) {
-                coeffs[idx] = max_neighbor_local;
-                update_ts_neighbourhood_other_passes( abs_coeffs, x, y,
-                                                     max_neighbor_local - 1, max_neighbor_local);
-            } else {
-                coeffs[idx] -= (old_val<=max_neighbor_local);
-                update_ts_neighbourhood_other_passes( abs_coeffs,
-                                                     x, y, -(old_val <= max_neighbor_local),OVABS(coeffs[idx]));
-            }
+            uint8_t sign_flag = ovcabac_bypass_read(cabac_ctx);
+            int x = idx & 0x3;
+            int y = idx >> 2;
+            sign_map |= (sign_flag << nb_sig_c);
+            sig_c_idx_map[nb_sig_c++] = idx;
+            abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = coeffs[idx];
         }
     }
 
     for (int i = 0; i < nb_sig_c; i++) {
-        int  idx = sig_c_idx_map[i];
-        coeffs[idx] = (sign_mapl & 0x1) ? -coeffs[idx] : coeffs[idx];
-        sign_mapl = sign_mapl >> 1;
+        int idx = sig_c_idx_map[i];
+        int x = idx & 0x3;
+        int y = idx >> 2;
+        /* TS coeff Prediction */
+        int max_neighbor_local = OVMAX(abs_coeffs[x     + ((y - 1) * VVC_TR_CTX_STRIDE)],
+                                       abs_coeffs[x - 1 +  (y      * VVC_TR_CTX_STRIDE)]);
+
+        if (coeffs[idx] == 1 && max_neighbor_local) {
+            coeffs[idx] = max_neighbor_local;
+            abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = coeffs[idx];
+        } else {
+            coeffs[idx] = coeffs[idx] - (coeffs[idx] <= max_neighbor_local);
+            abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = coeffs[idx];
+        }
+
+        /* Apply coeff signs */
+        coeffs[idx] = (sign_map & 0x1) ? -coeffs[idx] : coeffs[idx];
+        sign_map = sign_map >> 1;
     }
 
     return 0;
