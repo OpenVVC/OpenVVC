@@ -88,11 +88,11 @@ typedef struct
   int16_t           alf_clipping_values[MAX_NUM_CHANNEL_TYPE][MAX_ALF_NUM_CLIP_VAL]; 
 }RCNALF;
 
-void alf_create(OVCTUDec *const ctudec, RCNALF* alf);
+void alf_create(struct OVCTUDec *const ctudec, RCNALF* alf);
 
 void alf_destroy(RCNALF* alf, int16_t ctu_width);
 
-void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pic);
+void rcn_alf_filter_line(struct OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pic);
 
 void rcn_init_alf_functions(struct RCNFunctions *rcn_func);
 

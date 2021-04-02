@@ -711,7 +711,6 @@ void alf_filterBlkLuma(ALFClassifier **classifier, int16_t *const dst, int16_t *
                          Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                          const int ctu_height, int virbnd_pos)
 {
-  const int16_t *pImgYPad0, *pImgYPad1, *pImgYPad2, *pImgYPad3, *pImgYPad4, *pImgYPad5, *pImgYPad6;
   const int16_t *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
 
   const int16_t *coef = filter_set;
@@ -728,13 +727,8 @@ void alf_filterBlkLuma(ALFClassifier **classifier, int16_t *const dst, int16_t *
   int dstStride2 = dstStride * clsSizeY;
   int srcStride2 = srcStride * clsSizeY;
 
-  pImgYPad0 = src ;
-  pImgYPad1 = pImgYPad0 + srcStride;
-  pImgYPad2 = pImgYPad0 - srcStride;
-  pImgYPad3 = pImgYPad1 + srcStride;
-  pImgYPad4 = pImgYPad2 - srcStride;
-  pImgYPad5 = pImgYPad3 + srcStride;
-  pImgYPad6 = pImgYPad4 - srcStride;
+  int16_t * _src = src;
+  int16_t * _dst = dst;
 
   int16_t* pRec0 = dst ;
   int16_t* pRec1 = pRec0 + dstStride;
@@ -781,13 +775,13 @@ void alf_filterBlkLuma(ALFClassifier **classifier, int16_t *const dst, int16_t *
 
       for( int ii = 0; ii < clsSizeY; ii++ )
       {
-        pImg0 = pImgYPad0 + j + ii * srcStride;
-        pImg1 = pImgYPad1 + j + ii * srcStride;
-        pImg2 = pImgYPad2 + j + ii * srcStride;
-        pImg3 = pImgYPad3 + j + ii * srcStride;
-        pImg4 = pImgYPad4 + j + ii * srcStride;
-        pImg5 = pImgYPad5 + j + ii * srcStride;
-        pImg6 = pImgYPad6 + j + ii * srcStride;
+        pImg0 = _src + j + ii * srcStride;
+        pImg1 = pImg0 + srcStride;
+        pImg2 = pImg0 - srcStride;
+        pImg3 = pImg1 + srcStride;
+        pImg4 = pImg2 - srcStride;
+        pImg5 = pImg3 + srcStride;
+        pImg6 = pImg4 - srcStride;
 
         pRec1 = pRec0 + j + ii * dstStride;
 
@@ -821,18 +815,20 @@ void alf_filterBlkLuma(ALFClassifier **classifier, int16_t *const dst, int16_t *
           int sum = 0;
           const int16_t curr = pImg0[+0];
           sum += filt_coeff[0] * ( clipALF(filt_clip[0], curr, pImg5[+0], pImg6[+0]) );
-
           sum += filt_coeff[1] * ( clipALF(filt_clip[1], curr, pImg3[+1], pImg4[-1]) );
+
           sum += filt_coeff[2] * ( clipALF(filt_clip[2], curr, pImg3[+0], pImg4[+0]) );
           sum += filt_coeff[3] * ( clipALF(filt_clip[3], curr, pImg3[-1], pImg4[+1]) );
 
           sum += filt_coeff[4] * ( clipALF(filt_clip[4], curr, pImg1[+2], pImg2[-2]) );
           sum += filt_coeff[5] * ( clipALF(filt_clip[5], curr, pImg1[+1], pImg2[-1]) );
+
           sum += filt_coeff[6] * ( clipALF(filt_clip[6], curr, pImg1[+0], pImg2[+0]) );
           sum += filt_coeff[7] * ( clipALF(filt_clip[7], curr, pImg1[-1], pImg2[+1]) );
-          sum += filt_coeff[8] * ( clipALF(filt_clip[8], curr, pImg1[-2], pImg2[+2]) );
 
+          sum += filt_coeff[8] * ( clipALF(filt_clip[8], curr, pImg1[-2], pImg2[+2]) );
           sum += filt_coeff[9] * ( clipALF(filt_clip[9], curr, pImg0[+3], pImg0[-3]) );
+
           sum += filt_coeff[10] * ( clipALF(filt_clip[10], curr, pImg0[+2], pImg0[-2]) );
           sum += filt_coeff[11] * ( clipALF(filt_clip[11], curr, pImg0[+1], pImg0[-1]) );
 
@@ -863,13 +859,8 @@ void alf_filterBlkLuma(ALFClassifier **classifier, int16_t *const dst, int16_t *
     pRec0 += dstStride2;
     pRec1 += dstStride2;
 
-    pImgYPad0 += srcStride2;
-    pImgYPad1 += srcStride2;
-    pImgYPad2 += srcStride2;
-    pImgYPad3 += srcStride2;
-    pImgYPad4 += srcStride2;
-    pImgYPad5 += srcStride2;
-    pImgYPad6 += srcStride2;
+    _src += srcStride2;
+    _dst += dstStride2;
   }
 }
 

@@ -514,6 +514,7 @@ void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type){
       rcn_init_tr_functions_sse(rcn_func);
       rcn_init_dc_planar_functions_sse(rcn_func);
       rcn_init_ict_functions_sse(rcn_func, ict_type);
+      rcn_init_alf_functions_sse(rcn_func);
     #elif AVX_ENABLED
       //Link AVX optims
     #else
