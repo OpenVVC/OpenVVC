@@ -1602,6 +1602,27 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
         abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = coeffs[idx];
     }
 
+    /* FIXME we could probably move this to an other pass
+     * based on the fact coeffs[idx] == 1 can only be true in first pass
+     * when no greater flag is encountered
+     */
+    /* TS coeff Prediction */
+    for (int i = 0; i < nb_sig_c; i++) {
+        int idx = sig_c_idx_map[i];
+        int x = idx & 0x3;
+        int y = idx >> 2;
+        int max_abs_ngh = OVMAX(abs_coeffs[x     + ((y - 1) * VVC_TR_CTX_STRIDE)],
+                                abs_coeffs[x - 1 + ( y      * VVC_TR_CTX_STRIDE)]);
+
+        if (coeffs[idx] == 1 && max_abs_ngh) {
+            coeffs[idx] = max_abs_ngh;
+            abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = coeffs[idx];
+        } else {
+            coeffs[idx] = coeffs[idx] - (coeffs[idx] <= max_abs_ngh);
+            abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = coeffs[idx];
+        }
+    }
+
     /* Bypass coded coefficients from pass 1 */
     for (int scan_idx = coeff_idx; scan_idx <= 15; scan_idx++) {
         int idx = ff_vvc_inv_diag_scan_4x4[scan_idx];
@@ -1617,23 +1638,12 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
         }
     }
 
+    /* Apply coeff signs */
     for (int i = 0; i < nb_sig_c; i++) {
         int idx = sig_c_idx_map[i];
         int x = idx & 0x3;
         int y = idx >> 2;
-        /* TS coeff Prediction */
-        int max_neighbor_local = OVMAX(abs_coeffs[x     + ((y - 1) * VVC_TR_CTX_STRIDE)],
-                                       abs_coeffs[x - 1 +  (y      * VVC_TR_CTX_STRIDE)]);
 
-        if (coeffs[idx] == 1 && max_neighbor_local) {
-            coeffs[idx] = max_neighbor_local;
-            abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = coeffs[idx];
-        } else {
-            coeffs[idx] = coeffs[idx] - (coeffs[idx] <= max_neighbor_local);
-            abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = coeffs[idx];
-        }
-
-        /* Apply coeff signs */
         coeffs[idx] = (sign_map & 0x1) ? -coeffs[idx] : coeffs[idx];
         sign_map = sign_map >> 1;
     }
