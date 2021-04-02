@@ -1440,45 +1440,48 @@ static const uint8_t rice_param_ts[32] = {
     2, 2, 2, 2, 2, 2, 2
 };
 
-static void decode_pass2_ts(OVCABACCtx *const cabac_ctx, uint64_t *const ctx_table,
-                            int16_t  *const coeffs, int num_pass2,
-                            uint8_t  *const next_pass_idx_map,
-                            uint16_t *const abs_coeffs,
-                            int16_t *const num_remaining_bins){
-    int scan_pos, x, y;
-    int pass;
-    #if 1
-    int num_next_pass = 0;
+static uint8_t
+decode_pass2_ts(OVCABACCtx *const cabac_ctx, uint64_t *const ctx_table,
+                int16_t *const coeffs, int num_pass2,
+                uint8_t *const pass2_idx_map,
+                uint16_t *const abs_coeffs,
+                int16_t *const num_remaining_bins){
+    int scan_pos;
+    int nb_pass3 = 0;
     uint16_t pass3_map[16] = {0};
-    #endif
+    uint64_t *const ts_ctx_table = &ctx_table[TS_GTX_FLAG_CTX_OFFSET];
 
     for (scan_pos = 0; scan_pos < num_pass2 && *num_remaining_bins>= 4; ++scan_pos){
-        int cut_off = 2;
-        int idx = next_pass_idx_map[scan_pos];
-        uint8_t ts_gt2_flag = 0;
-        x = idx %  4;
-        y = idx >> 2;
-        for(pass = 0; pass < 4; ++pass){
+        int idx = pass2_idx_map[scan_pos];
+        int x = idx & 0x3;
+        int y = idx >> 2;
+        int val = 0;
 
-            ts_gt2_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_GTX_FLAG_CTX_OFFSET + (cut_off >> 1)]);
-
+        uint8_t ts_gt2_flag = ovcabac_ae_read(cabac_ctx, ts_ctx_table + 1);
+        --(*num_remaining_bins);
+        if (ts_gt2_flag) {
+            uint8_t ts_gt3_flag = ovcabac_ae_read(cabac_ctx, ts_ctx_table + 2);
             --(*num_remaining_bins);
-            cut_off += 2;
-
-            if(ts_gt2_flag){
-                coeffs[idx] += 2;
-                update_ts_neighbourhood_other_passes(abs_coeffs, x, y, 2, coeffs[idx]);
-            } else {
-                break;
+            val += 2;
+            if (ts_gt3_flag) {
+                uint8_t ts_gt4_flag = ovcabac_ae_read(cabac_ctx, ts_ctx_table + 3);
+                --(*num_remaining_bins);
+                val += 2;
+                if (ts_gt4_flag) {
+                    uint8_t ts_gt5_flag = ovcabac_ae_read(cabac_ctx, ts_ctx_table + 4);
+                    --(*num_remaining_bins);
+                    val += 2;
+                    if(ts_gt4_flag){
+                        val += 2;
+                        pass3_map[nb_pass3++] = idx;
+                    }
+                }
             }
+            coeffs[idx] += val;
+            update_ts_neighbourhood_other_passes(abs_coeffs, x, y, 2, coeffs[idx]);
         }
-        /* FIXME used ? */
-        #if 1
-        if(ts_gt2_flag && pass == 4){
-            pass3_map[num_next_pass++] = idx;
-        }
-        #endif
     }
+    return scan_pos;
 }
 
 static int
@@ -1491,9 +1494,10 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
 {
     uint8_t ts_sig_c_flag;
     uint8_t sig_c_idx_map[16];
-    uint8_t next_pass_idx_map[16];
     uint16_t sign_mapl = 0;
-    int num_pass2 = 0;
+    uint8_t pass2_idx_map[16];
+    int nb_pass2 = 0;
+    int nb_read_pass2 = 0;
     int coeff_idx;
     int nb_sig_c_ngh;
     int nb_sig_c = 0;
@@ -1531,7 +1535,7 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
                 uint8_t ts_parity_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_PAR_FLAG_CTX_OFFSET]);
 
                 value += 1 + ts_parity_flag;
-                next_pass_idx_map[num_pass2++] = idx;
+                pass2_idx_map[nb_pass2++] = idx;
 
                 --(*num_remaining_bins);
             }
@@ -1571,7 +1575,7 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
         if(ts_gt1_flag){
             uint8_t ts_parity_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_PAR_FLAG_CTX_OFFSET]);
             value += 1 + ts_parity_flag;
-            next_pass_idx_map[num_pass2++] = 15;
+            pass2_idx_map[nb_pass2++] = 15;
             --(*num_remaining_bins);
         }
 
@@ -1582,9 +1586,9 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
         coeffs[15] = /*ts_sign_flag ? -value :*/ value;
     }
 
-    if(num_pass2){
-        decode_pass2_ts(cabac_ctx, ctx_table, coeffs, num_pass2, next_pass_idx_map,
-                        abs_coeffs, num_remaining_bins);
+    if(nb_pass2){
+        nb_read_pass2 = decode_pass2_ts(cabac_ctx, ctx_table, coeffs, nb_pass2, pass2_idx_map,
+                                        abs_coeffs, num_remaining_bins);
     }
 
     for (int scan_pos = 0; scan_pos < 16 && *num_remaining_bins >= 4; ++scan_pos) {
