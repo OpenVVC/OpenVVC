@@ -4201,132 +4201,144 @@ residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     }
 }
 
+
 int
 residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int log2_tb_h)
 {
     /*FIXME add nb_rem_bins counter */
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint64_t *const ctx_table   = cabac_ctx->ctx_table;
-    uint8_t tb_width  = 1 << log2_tb_w;
 
-    const uint8_t *const scan_cg_x = ff_vvc_scan_x[log2_tb_w  - 2]
-                                                   [log2_tb_h - 2];
-    const uint8_t *const scan_cg_y = ff_vvc_scan_y[log2_tb_w  - 2]
-                                                   [log2_tb_h - 2];
+    const uint8_t *const scan_cg_x = ff_vvc_scan_x[log2_tb_w  - 2][log2_tb_h - 2];
+    const uint8_t *const scan_cg_y = ff_vvc_scan_y[log2_tb_w  - 2][log2_tb_h - 2];
     int i;
-    int num_cg, num_sig_coeffs;
+    int nb_cg, nb_sig_c;
 
-    int num_sig_cg = 0;
+    int nb_sig_cg = 0;
     int cg_offset;
-    uint16_t max_num_bins = 1 << (log2_tb_h + log2_tb_w + 1);
+    uint8_t log2_tb_s = log2_tb_h + log2_tb_w;
+
+    uint16_t max_nb_bins = (((1 << log2_tb_s) << 3) - (1 << log2_tb_s)) >> 2;
 
     //TODO avoid offsets tabs
-    int16_t cg_coeffs[16] = {0}; //temporary table to store coeffs in process
-    uint8_t num_significant[VVC_TR_CTX_SIZE]={0};
+    uint8_t nb_significant[VVC_TR_CTX_SIZE]={0};
     uint8_t sign_map[VVC_TR_CTX_SIZE]={0};
     uint16_t sum_abs_level [VVC_TR_CTX_SIZE]={0};
     uint16_t abs_coeffs[VVC_TR_CTX_SIZE]={0};
+
     uint8_t sig_cg_map[17*17] = {0};
-    int offset_in_buff;
     uint8_t sig_sb_flg = 0;
 
-    //offset significant_cg_map to avoid writing in < 0
+    /* FIXME use bit map of significant sb instead */
     uint8_t *significant_cg_map_2 = &sig_cg_map[0];
-    int tb_width_in_cg;
 
+    /* FIXME if called from chroma ? */
     int qp = ctu_dec->dequant_luma_skip.qp;
 
     struct IQScale deq_prms = derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
 
-    memset(&ctu_dec->transform_buff, 0, sizeof(uint16_t)<< (log2_tb_h + log2_tb_w));
-    //TODO no offset in tables since we upde from left to right
+    int16_t cg_coeffs[16] = {0};
 
-    if(!(log2_tb_w - 2) && !(log2_tb_h - 2)){
-         num_sig_coeffs =
-                 ovcabac_read_ae_sb_ts_4x4(cabac_ctx, ctx_table,
-                                                       cg_coeffs,
-                                                       &num_significant [0],
-                                                       &sign_map        [0],
-                                                       &sum_abs_level   [0],
-                                                       &abs_coeffs    [36+0],
-                                                       (int16_t*)&max_num_bins);
-         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
-         memcpy(&ctu_dec->transform_buff[0] , &cg_coeffs[0], sizeof(int16_t)*4);
-         memcpy(&ctu_dec->transform_buff[tb_width] , &cg_coeffs[4], sizeof(int16_t)*4);
-         memcpy(&ctu_dec->transform_buff[tb_width << 1] , &cg_coeffs[8], sizeof(int16_t)*4);
-         memcpy(&ctu_dec->transform_buff[(tb_width << 1) + tb_width] , &cg_coeffs[12], sizeof(int16_t)*4);
-         return num_sig_coeffs;
+    memset(&ctu_dec->transform_buff, 0, sizeof(uint16_t) << log2_tb_s);
+
+    if (!(log2_tb_w - 2) && !(log2_tb_h - 2)) {
+        int16_t *dst = &ctu_dec->transform_buff[0];
+
+        nb_sig_c = ovcabac_read_ae_sb_ts_4x4(cabac_ctx, ctx_table,
+                                             cg_coeffs,
+                                             &nb_significant   [0],
+                                             &sign_map         [0],
+                                             &sum_abs_level    [0],
+                                             &abs_coeffs  [36 + 0],
+                                             (int16_t*)&max_nb_bins);
+
+        deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
+
+        memcpy(&dst[0             ] , &cg_coeffs[0],  sizeof(int16_t) * 4);
+        memcpy(&dst[1 << log2_tb_w] , &cg_coeffs[4],  sizeof(int16_t) * 4);
+        memcpy(&dst[2 << log2_tb_w] , &cg_coeffs[8],  sizeof(int16_t) * 4);
+        memcpy(&dst[3 << log2_tb_w] , &cg_coeffs[12], sizeof(int16_t) * 4);
+
+        return nb_sig_c;
     }
 
-    tb_width_in_cg  = tb_width  >> 2;
-    num_cg = 1 << (log2_tb_w + log2_tb_h - 4);
+    nb_cg = (1 << log2_tb_s) >> 4;
 
-    for(i = 0; i < num_cg - 1; ++i){
+    for (i = 0; i < nb_cg - 1; ++i) {
         int x_cg = scan_cg_x[i];
         int y_cg = scan_cg_y[i];
 
-        int significant_cg_offset   = significant_cg_map_2 [x_cg + y_cg * (17)];
+        int significant_cg_offset = significant_cg_map_2 [x_cg + y_cg * (17)];
+
         sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, significant_cg_offset);
-        if(sig_sb_flg){
-            offset_in_buff = (x_cg << 2) + ((y_cg * tb_width_in_cg) << 4);
+
+        if (sig_sb_flg) {
+            int16_t *dst = &ctu_dec->transform_buff[(x_cg << 2) + ((y_cg << log2_tb_w) << 2)];
+
             memset(cg_coeffs, 0, sizeof(int16_t) * 16);
-            ++num_sig_cg;
-            //offset for ctx buffers
+
             cg_offset = (x_cg << 2) + (y_cg << 2) * (VVC_TR_CTX_STRIDE);
-            // propagate implicit sig_cg to upper and left cg
+
+            /* FIXME use bit map of significant sb instead */
             significant_cg_map_2[x_cg + 1 +  y_cg      * (17)] += 1;
             significant_cg_map_2[x_cg     + (y_cg + 1) * (17)] += 1;
 
-            num_sig_coeffs += ovcabac_read_ae_sb_ts_4x4(cabac_ctx,
-                                                                    ctx_table,
-                                                                    cg_coeffs,
-                                                                    &num_significant[cg_offset],
-                                                                    &sign_map       [cg_offset],
-                                                                    &sum_abs_level  [cg_offset],
-                                                                    &abs_coeffs   [36+cg_offset],
-                                                                    (int16_t *)&max_num_bins);
-            //store coeffs in coeff;
+            nb_sig_c += ovcabac_read_ae_sb_ts_4x4(cabac_ctx,
+                                                  ctx_table,
+                                                  cg_coeffs,
+                                                  &nb_significant[cg_offset],
+                                                  &sign_map      [cg_offset],
+                                                  &sum_abs_level [cg_offset],
+                                                  &abs_coeffs [36+cg_offset],
+                                                  (int16_t *)&max_nb_bins);
+
             deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
-            memcpy(&ctu_dec->transform_buff[offset_in_buff               ], &cg_coeffs[ 0], sizeof(int16_t) * 4);
-            memcpy(&ctu_dec->transform_buff[offset_in_buff + tb_width    ], &cg_coeffs[ 4], sizeof(int16_t) * 4);
-            memcpy(&ctu_dec->transform_buff[offset_in_buff + tb_width * 2], &cg_coeffs[ 8], sizeof(int16_t) * 4);
-            memcpy(&ctu_dec->transform_buff[offset_in_buff + tb_width * 3], &cg_coeffs[12], sizeof(int16_t) * 4);
+
+            memcpy(&dst[0             ] , &cg_coeffs[0],  sizeof(int16_t) * 4);
+            memcpy(&dst[1 << log2_tb_w] , &cg_coeffs[4],  sizeof(int16_t) * 4);
+            memcpy(&dst[2 << log2_tb_w] , &cg_coeffs[8],  sizeof(int16_t) * 4);
+            memcpy(&dst[3 << log2_tb_w] , &cg_coeffs[12], sizeof(int16_t) * 4);
+
+            ++nb_sig_cg;
         }
     }
 
-    sig_sb_flg = 1;
+    sig_sb_flg = !nb_sig_cg;
 
-    if(num_sig_cg){
+    if (nb_sig_cg) {
         int x_cg = scan_cg_x[i];
         int y_cg = scan_cg_y[i];
-        int significant_cg_offset   = significant_cg_map_2 [x_cg + y_cg * (17)];
+        int significant_cg_offset = significant_cg_map_2 [x_cg + y_cg * (17)];
+
         sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, significant_cg_offset);
     }
 
-    if(sig_sb_flg){
+    if (sig_sb_flg) {
         int x_cg = scan_cg_x[i];
         int y_cg = scan_cg_y[i];
-        offset_in_buff = (x_cg << 2) + ((y_cg * tb_width_in_cg) << 4);
+        int16_t *dst = &ctu_dec->transform_buff[(x_cg << 2) + ((y_cg << log2_tb_w) << 2)];
+
         cg_offset = (x_cg << 2) + (y_cg << 2) * (VVC_TR_CTX_STRIDE);
 
         memset(cg_coeffs, 0, sizeof(uint16_t) * 16);
-        //read implicit significant last cg in scan ordercg
-        num_sig_coeffs += ovcabac_read_ae_sb_ts_4x4(cabac_ctx, ctx_table,
-                                                                cg_coeffs,
-                                                                &num_significant[cg_offset],
-                                                                &sign_map       [cg_offset],
-                                                                &sum_abs_level  [cg_offset],
-                                                                &abs_coeffs   [36+cg_offset],
-                                                                (int16_t*)&max_num_bins);
+
+        nb_sig_c += ovcabac_read_ae_sb_ts_4x4(cabac_ctx, ctx_table,
+                                              cg_coeffs,
+                                              &nb_significant[cg_offset],
+                                              &sign_map      [cg_offset],
+                                              &sum_abs_level [cg_offset],
+                                              &abs_coeffs   [36+cg_offset],
+                                              (int16_t*) &max_nb_bins);
 
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
-        memcpy(&ctu_dec->transform_buff[offset_in_buff               ], &cg_coeffs[ 0], sizeof(int16_t) * 4);
-        memcpy(&ctu_dec->transform_buff[offset_in_buff + tb_width    ], &cg_coeffs[ 4], sizeof(int16_t) * 4);
-        memcpy(&ctu_dec->transform_buff[offset_in_buff + tb_width * 2], &cg_coeffs[ 8], sizeof(int16_t) * 4);
-        memcpy(&ctu_dec->transform_buff[offset_in_buff + tb_width * 3], &cg_coeffs[12], sizeof(int16_t) * 4);
+
+        memcpy(&dst[0             ] , &cg_coeffs[0],  sizeof(int16_t) * 4);
+        memcpy(&dst[1 << log2_tb_w] , &cg_coeffs[4],  sizeof(int16_t) * 4);
+        memcpy(&dst[2 << log2_tb_w] , &cg_coeffs[8],  sizeof(int16_t) * 4);
+        memcpy(&dst[3 << log2_tb_w] , &cg_coeffs[12], sizeof(int16_t) * 4);
     }
 
-    return num_sig_coeffs;
+    return nb_sig_c;
 }
 
 uint64_t
