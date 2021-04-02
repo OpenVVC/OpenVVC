@@ -5,36 +5,9 @@
 #include <stdint.h>
 #include "data_scan_lut.h"
 
-
-const uint8_t ff_vvc_default_num_cg[16] = {
-    0, 1, 2, 3, 4, 5, 6, 7,8,9,10,11,12,13,14,15
-};
-
-const uint8_t ff_vvc_diag_scan_2x2_num_cg [4] = {
-    0,  2,
-    1,  3
-};
-
 const uint8_t ff_vvc_inv_diag_scan_2x2 [4] = {
     0,  2,
     1,  3,
-};
-
-const uint8_t ff_vvc_inv_diag_scan_2x2_x [4] = {
-    0,  0,
-    1,  1,
-};
-
-const uint8_t ff_vvc_inv_diag_scan_2x2_y [4] = {
-    0,  1,
-    0,  1,
-};
-
-const uint8_t ff_vvc_diag_scan_2x4_num_cg [8] = {
-    0,  2,
-    1,  4,
-    3,  6,
-    5,  7
 };
 
 const uint8_t ff_vvc_inv_diag_scan_2x4 [8] = {
@@ -42,31 +15,6 @@ const uint8_t ff_vvc_inv_diag_scan_2x4 [8] = {
     1,  4,
     3,  6,
     5,  7
-};
-
-const uint8_t ff_vvc_inv_diag_scan_2x4_x [8] = {
-    0,  0,
-    1,  0,
-    1,  0,
-    1,  1
-};
-
-const uint8_t ff_vvc_inv_diag_scan_2x4_y [8] = {
-    0,  1,
-    0,  2,
-    1,  3,
-    2,  3
-};
-
-const uint8_t ff_vvc_diag_scan_2x8_num_cg [16] = {
-     0,  2,
-     1,  4,
-     3,  6,
-     5,  8,
-     7, 10,
-     9, 12,
-    11, 14,
-    13, 15
 };
 
 const uint8_t ff_vvc_inv_diag_scan_2x8 [16] = {
@@ -80,53 +28,9 @@ const uint8_t ff_vvc_inv_diag_scan_2x8 [16] = {
     13, 15
 };
 
-const uint8_t ff_vvc_inv_diag_scan_2x8_x [16] = {
-     0,  0,
-     1,  0,
-     1,  0,
-     1,  0,
-     1,  0,
-     1,  0,
-     1,  0,
-     1,  1
-};
-
-const uint8_t ff_vvc_inv_diag_scan_2x8_y [16] = {
-     0,  1,
-     0,  2,
-     1,  3,
-     2,  4,
-     3,  5,
-     4,  6,
-     5,  7,
-     6,  7
-};
-
-const uint8_t ff_vvc_diag_scan_4x2_num_cg [8] = {
-    0,  2,  4,  6,
-    1,  3,  5,  7
-};
-
 const uint8_t ff_vvc_inv_diag_scan_4x2 [8] = {
     0,  4,  1,  5,
     2,  6,  3,  7
-};
-
-const uint8_t ff_vvc_inv_diag_scan_4x2_x [8] = {
-    0,  0,  1,  1,
-    2,  2,  3,  3
-};
-
-const uint8_t ff_vvc_inv_diag_scan_4x2_y [8] = {
-    0,  1,  0,  1,
-    0,  1,  0,  1
-};
-
-const uint8_t ff_vvc_diag_scan_4x4_num_cg [16] = {
-    0,  2,  5,  9,
-    1,  4,  8, 12,
-    3,  7, 11, 14,
-    6, 10, 13, 15
 };
 
 const uint8_t ff_vvc_inv_diag_scan_4x4 [16] = {
@@ -134,31 +38,6 @@ const uint8_t ff_vvc_inv_diag_scan_4x4 [16] = {
     5,  2, 12,  9,
     6,  3, 13, 10,
     7, 14, 11, 15
-};
-
-const uint8_t ff_vvc_inv_diag_scan_4x4_x[16] = {
-    0, 0, 1, 0,
-    1, 2, 0, 1,
-    2, 3, 1, 2,
-    3, 2, 3, 3,
-};
-
-const uint8_t ff_vvc_inv_diag_scan_4x4_y[16] = {
-    0, 1, 0, 2,
-    1, 0, 3, 2,
-    1, 0, 3, 2,
-    1, 3, 2, 3,
-};
-
-const uint8_t ff_vvc_diag_scan_4x8_num_cg [32] = {
-     0,  2,  5,  9,
-     1,  4,  8, 13,
-     3,  7, 12, 17,
-     6, 11, 16, 21,
-    10, 15, 20, 25,
-    14, 19, 24, 28,
-    18, 23, 27, 30,
-    22, 26, 29, 31
 };
 
 const uint8_t ff_vvc_inv_diag_scan_4x8 [32] = {
@@ -172,53 +51,9 @@ const uint8_t ff_vvc_inv_diag_scan_4x8 [32] = {
     23, 30, 27, 31
 };
 
-const uint8_t ff_vvc_inv_diag_scan_4x8_x [32] = {
-     0,  0,  1,  0,
-     1,  2,  0,  1,
-     2,  3,  0,  1,
-     2,  3,  0,  1,
-     2,  3,  0,  1,
-     2,  3,  0,  1,
-     2,  3,  1,  2,
-     3,  2,  3,  3
-};
-
-const uint8_t ff_vvc_inv_diag_scan_4x8_y [32] = {
-     0,  1,  0,  2,
-     1,  0,  3,  2,
-     1,  0,  4,  3,
-     2,  1,  5,  4,
-     3,  2,  6,  5,
-     4,  3,  7,  6,
-     5,  4,  7,  6,
-     5,  7,  6,  7
-};
-
-const uint8_t ff_vvc_diag_scan_8x2_num_cg [16] = {
-    0,  2,  4,  6,  8, 10, 12, 14,
-    1,  3,  5,  7,  9, 11, 13, 15
-};
-
 const uint8_t ff_vvc_inv_diag_scan_8x2 [16] = {
     0,  8,  1,  9,  2, 10,  3, 11,
     4, 12,  5, 13,  6, 14,  7, 15
-};
-
-const uint8_t ff_vvc_inv_diag_scan_8x2_x [16] = {
-    0,  0,  1,  1,  2,  2,  3,  3,
-    4,  4,  5,  5,  6,  6,  7,  7
-};
-
-const uint8_t ff_vvc_inv_diag_scan_8x2_y [16] = {
-    0,  1,  0,  1,  0,  1,  0,  1,
-    0,  1,  0,  1,  0,  1,  0,  1
-};
-
-const uint8_t ff_vvc_diag_scan_8x4_num_cg [32] = {
-    0,  2,  5,  9, 13, 17, 21, 25,
-    1,  4,  8, 12, 16, 20, 24, 28,
-    3,  7, 11, 15, 19, 23, 27, 30,
-    6, 10, 14, 18, 22, 26, 29, 31
 };
 
 const uint8_t ff_vvc_inv_diag_scan_8x4 [32] = {
@@ -226,31 +61,6 @@ const uint8_t ff_vvc_inv_diag_scan_8x4 [32] = {
     10,  3, 25, 18, 11,  4, 26, 19,
     12,  5, 27, 20, 13,  6, 28, 21,
     14,  7, 29, 22, 15, 30, 23, 31
-};
-
-const uint8_t ff_vvc_inv_diag_scan_8x4_x [32] = {
-     0,  0,  1,  0,  1,  2,  0,  1,
-     2,  3,  1,  2,  3,  4,  2,  3,
-     4,  5,  3,  4,  5,  6,  4,  5,
-     6,  7,  5,  6,  7,  6,  7,  7
-};
-
-const uint8_t ff_vvc_inv_diag_scan_8x4_y [32] = {
-     0,  1,  0,  2,  1,  0,  3,  2,
-     1,  0,  3,  2,  1,  0,  3,  2,
-     1,  0,  3,  2,  1,  0,  3,  2,
-     1,  0,  3,  2,  1,  3,  2,  3
-};
-
-const uint8_t ff_vvc_diag_scan_8x8_num_cg [64] = {
-     0,  2,  5,  9, 14, 20, 27, 35,
-     1,  4,  8, 13, 19, 26, 34, 42,
-     3,  7, 12, 18, 25, 33, 41, 48,
-     6, 11, 17, 24, 32, 40, 47, 53,
-    10, 16, 23, 31, 39, 46, 52, 57,
-    15, 22, 30, 38, 45, 51, 56, 60,
-    21, 29, 37, 44, 50, 55, 59, 62,
-    28, 36, 43, 49, 54, 58, 61, 63
 };
 
 const uint8_t ff_vvc_inv_diag_scan_8x8 [64] = {
@@ -264,28 +74,6 @@ const uint8_t ff_vvc_inv_diag_scan_8x8 [64] = {
     46, 39, 61, 54, 47, 62, 55, 63
 };
 
-
-const uint8_t ff_vvc_inv_diag_scan_8x8_x[64] = {
-    0, 0, 1, 0, 1, 2, 0, 1,
-    2, 3, 0, 1, 2, 3, 4, 0,
-    1, 2, 3, 4, 5, 0, 1, 2,
-    3, 4, 5, 6, 0, 1, 2, 3,
-    4, 5, 6, 7, 1, 2, 3, 4,
-    5, 6, 7, 2, 3, 4, 5, 6,
-    7, 3, 4, 5, 6, 7, 4, 5,
-    6, 7, 5, 6, 7, 6, 7, 7,
-};
-
-const uint8_t ff_vvc_inv_diag_scan_8x8_y[64] = {
-    0, 1, 0, 2, 1, 0, 3, 2,
-    1, 0, 4, 3, 2, 1, 0, 5,
-    4, 3, 2, 1, 0, 6, 5, 4,
-    3, 2, 1, 0, 7, 6, 5, 4,
-    3, 2, 1, 0, 7, 6, 5, 4,
-    3, 2, 1, 7, 6, 5, 4, 3,
-    2, 7, 6, 5, 4, 3, 7, 6,
-    5, 4, 7, 6, 5, 7, 6, 7
-};
 
 const uint8_t ff_vvc_inv_diag_scan_1x16[16] = {
    0,
@@ -406,6 +194,75 @@ const uint8_t ff_vvc_inv_diag_scan_16x16[256] = {
 };
 
 
+const uint8_t ff_vvc_inv_diag_scan_2x2_x [4] = {
+    0,  0,
+    1,  1,
+};
+
+const uint8_t ff_vvc_inv_diag_scan_2x4_x [8] = {
+    0,  0,
+    1,  0,
+    1,  0,
+    1,  1
+};
+
+const uint8_t ff_vvc_inv_diag_scan_4x2_x [8] = {
+    0,  0,  1,  1,
+    2,  2,  3,  3
+};
+
+const uint8_t ff_vvc_inv_diag_scan_2x8_x [16] = {
+     0,  0,
+     1,  0,
+     1,  0,
+     1,  0,
+     1,  0,
+     1,  0,
+     1,  0,
+     1,  1
+};
+
+const uint8_t ff_vvc_inv_diag_scan_4x8_x [32] = {
+     0,  0,  1,  0,
+     1,  2,  0,  1,
+     2,  3,  0,  1,
+     2,  3,  0,  1,
+     2,  3,  0,  1,
+     2,  3,  0,  1,
+     2,  3,  1,  2,
+     3,  2,  3,  3
+};
+
+const uint8_t ff_vvc_inv_diag_scan_4x4_x[16] = {
+    0, 0, 1, 0,
+    1, 2, 0, 1,
+    2, 3, 1, 2,
+    3, 2, 3, 3,
+};
+
+const uint8_t ff_vvc_inv_diag_scan_8x2_x [16] = {
+    0,  0,  1,  1,  2,  2,  3,  3,
+    4,  4,  5,  5,  6,  6,  7,  7
+};
+
+const uint8_t ff_vvc_inv_diag_scan_8x4_x [32] = {
+     0,  0,  1,  0,  1,  2,  0,  1,
+     2,  3,  1,  2,  3,  4,  2,  3,
+     4,  5,  3,  4,  5,  6,  4,  5,
+     6,  7,  5,  6,  7,  6,  7,  7
+};
+
+const uint8_t ff_vvc_inv_diag_scan_8x8_x[64] = {
+    0, 0, 1, 0, 1, 2, 0, 1,
+    2, 3, 0, 1, 2, 3, 4, 0,
+    1, 2, 3, 4, 5, 0, 1, 2,
+    3, 4, 5, 6, 0, 1, 2, 3,
+    4, 5, 6, 7, 1, 2, 3, 4,
+    5, 6, 7, 2, 3, 4, 5, 6,
+    7, 3, 4, 5, 6, 7, 4, 5,
+    6, 7, 5, 6, 7, 6, 7, 7,
+};
+
 const uint8_t ff_vvc_inv_diag_scan_1x16_x[16] = {
     0,
     0,
@@ -425,6 +282,7 @@ const uint8_t ff_vvc_inv_diag_scan_1x16_x[16] = {
     0,
 };
 
+/* FIXME tables 16x X should not be required by residual coding */
 const uint8_t ff_vvc_inv_diag_scan_16x2_x[32] = {
     0,    0,    1,    1,    2,    2,    3,    3,    4,    4,    5,    5,    6,    6,    7,    7,
     8,    8,    9,    9,   10,   10,   11,   11,   12,   12,   13,   13,   14,   14,   15,   15,
@@ -526,6 +384,75 @@ const uint8_t ff_vvc_inv_diag_scan_16x16_x[256] = {
 };
 
 
+const uint8_t ff_vvc_inv_diag_scan_2x2_y [4] = {
+    0,  1,
+    0,  1,
+};
+
+const uint8_t ff_vvc_inv_diag_scan_2x4_y [8] = {
+    0,  1,
+    0,  2,
+    1,  3,
+    2,  3
+};
+
+const uint8_t ff_vvc_inv_diag_scan_4x2_y [8] = {
+    0,  1,  0,  1,
+    0,  1,  0,  1
+};
+
+const uint8_t ff_vvc_inv_diag_scan_2x8_y [16] = {
+     0,  1,
+     0,  2,
+     1,  3,
+     2,  4,
+     3,  5,
+     4,  6,
+     5,  7,
+     6,  7
+};
+
+const uint8_t ff_vvc_inv_diag_scan_4x8_y [32] = {
+     0,  1,  0,  2,
+     1,  0,  3,  2,
+     1,  0,  4,  3,
+     2,  1,  5,  4,
+     3,  2,  6,  5,
+     4,  3,  7,  6,
+     5,  4,  7,  6,
+     5,  7,  6,  7
+};
+
+const uint8_t ff_vvc_inv_diag_scan_4x4_y[16] = {
+    0, 1, 0, 2,
+    1, 0, 3, 2,
+    1, 0, 3, 2,
+    1, 3, 2, 3,
+};
+
+const uint8_t ff_vvc_inv_diag_scan_8x2_y [16] = {
+    0,  1,  0,  1,  0,  1,  0,  1,
+    0,  1,  0,  1,  0,  1,  0,  1
+};
+
+const uint8_t ff_vvc_inv_diag_scan_8x4_y [32] = {
+     0,  1,  0,  2,  1,  0,  3,  2,
+     1,  0,  3,  2,  1,  0,  3,  2,
+     1,  0,  3,  2,  1,  0,  3,  2,
+     1,  0,  3,  2,  1,  3,  2,  3
+};
+
+const uint8_t ff_vvc_inv_diag_scan_8x8_y[64] = {
+    0, 1, 0, 2, 1, 0, 3, 2,
+    1, 0, 4, 3, 2, 1, 0, 5,
+    4, 3, 2, 1, 0, 6, 5, 4,
+    3, 2, 1, 0, 7, 6, 5, 4,
+    3, 2, 1, 0, 7, 6, 5, 4,
+    3, 2, 1, 7, 6, 5, 4, 3,
+    2, 7, 6, 5, 4, 3, 7, 6,
+    5, 4, 7, 6, 5, 7, 6, 7
+};
+
 const uint8_t ff_vvc_inv_diag_scan_1x16_y[16] = {
    0,
    1,
@@ -545,6 +472,7 @@ const uint8_t ff_vvc_inv_diag_scan_1x16_y[16] = {
   15,
 };
 
+/* FIXME tables 16x X should not be required by residual coding */
 const uint8_t ff_vvc_inv_diag_scan_16x2_y[32] = {
     0,    1,    0,    1,    0,    1,    0,    1,    0,    1,    0,    1,    0,    1,    0,    1,
     0,    1,    0,    1,    0,    1,    0,    1,    0,    1,    0,    1,    0,    1,    0,    1,
@@ -645,10 +573,84 @@ const uint8_t ff_vvc_inv_diag_scan_16x16_y[256] = {
 };
 
 
+const uint8_t ff_vvc_default_num_cg[16] = {
+    0, 1, 2, 3, 4, 5, 6, 7,8,9,10,11,12,13,14,15
+};
+
+const uint8_t ff_vvc_diag_scan_2x2_num_cg [4] = {
+    0,  2,
+    1,  3
+};
+
+const uint8_t ff_vvc_diag_scan_2x4_num_cg [8] = {
+    0,  2,
+    1,  4,
+    3,  6,
+    5,  7
+};
+
+const uint8_t ff_vvc_diag_scan_2x8_num_cg [16] = {
+     0,  2,
+     1,  4,
+     3,  6,
+     5,  8,
+     7, 10,
+     9, 12,
+    11, 14,
+    13, 15
+};
+
+const uint8_t ff_vvc_diag_scan_4x2_num_cg [8] = {
+    0,  2,  4,  6,
+    1,  3,  5,  7
+};
+
+const uint8_t ff_vvc_diag_scan_4x4_num_cg [16] = {
+    0,  2,  5,  9,
+    1,  4,  8, 12,
+    3,  7, 11, 14,
+    6, 10, 13, 15
+};
+
+const uint8_t ff_vvc_diag_scan_4x8_num_cg [32] = {
+     0,  2,  5,  9,
+     1,  4,  8, 13,
+     3,  7, 12, 17,
+     6, 11, 16, 21,
+    10, 15, 20, 25,
+    14, 19, 24, 28,
+    18, 23, 27, 30,
+    22, 26, 29, 31
+};
+
+const uint8_t ff_vvc_diag_scan_8x2_num_cg [16] = {
+    0,  2,  4,  6,  8, 10, 12, 14,
+    1,  3,  5,  7,  9, 11, 13, 15
+};
+
+const uint8_t ff_vvc_diag_scan_8x4_num_cg [32] = {
+    0,  2,  5,  9, 13, 17, 21, 25,
+    1,  4,  8, 12, 16, 20, 24, 28,
+    3,  7, 11, 15, 19, 23, 27, 30,
+    6, 10, 14, 18, 22, 26, 29, 31
+};
+
+const uint8_t ff_vvc_diag_scan_8x8_num_cg [64] = {
+     0,  2,  5,  9, 14, 20, 27, 35,
+     1,  4,  8, 13, 19, 26, 34, 42,
+     3,  7, 12, 18, 25, 33, 41, 48,
+     6, 11, 17, 24, 32, 40, 47, 53,
+    10, 16, 23, 31, 39, 46, 52, 57,
+    15, 22, 30, 38, 45, 51, 56, 60,
+    21, 29, 37, 44, 50, 55, 59, 62,
+    28, 36, 43, 49, 54, 58, 61, 63
+};
+
 const uint8_t ff_vvc_diag_scan_16x1_num_cg [16] = {
    0,    1,    2,    3,    4,    5,    6,    7,    8,    9,   10,   11,   12,   13,   14,   15,
 };
 
+/* FIXME tables 16x X should not be required by residual coding */
 const uint8_t ff_vvc_diag_scan_16x2_num_cg [32] = {
    0,    2,    4,    6,    8,   10,   12,   14,   16,   18,   20,   22,   24,   26,   28,   30,
    1,    3,    5,    7,    9,   11,   13,   15,   17,   19,   21,   23,   25,   27,   29,   31,
@@ -767,108 +769,12 @@ const uint8_t ff_vvc_diag_scan_16x16_num_cg [256] = {
  120,  136,  151,  165,  178,  190,  201,  211,  220,  228,  235,  241,  246,  250,  253,  255,
 };
 
-const uint8_t ff_vvc_per_cg_dist_significant_flag_ctx_offset_0 [16] = {
-     8,  8, 8, 4,
-     4,  4, 4, 4,
-     4,  4, 4, 4,
-     4,  0, 0, 0
-};
-
-const uint8_t ff_vvc_per_cg_dist_significant_flag_ctx_offset_1 [16] = {
-    4, 0, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0
-};
-
-const uint8_t ff_vvc_per_cg_dist_significant_flag_ctx_offset_isp_1x16 [16] = {
-    8, 8, 4, 4,
-     4,  0, 0, 0,
-     0,  0, 0, 0,
-     0,  0, 0, 0
-};
-
-const uint8_t ff_vvc_per_cg_dist_significant_flag_ctx_offset_isp_2x8 [16] = {
-    8, 8,8, 4,
-     4,  4, 4, 4,
-     4,  0, 0, 0,
-     0,  0, 0, 0
-};
-
-const uint8_t ff_vvc_per_cg_dist_parity_flag_ctx_offset_0 [16] = {
-    15, 10, 10,10,
-    10, 10,  5, 5,
-     5,  5,  5, 5,
-     5,  5,  5, 5
-};
-
-const uint8_t ff_vvc_per_cg_dist_parity_flag_ctx_offset_1 [16] = {
-     5,  5,  5, 5,
-     5,  5,  5, 5,
-     5,  5,  5, 5,
-     5,  5,  5, 0
-};
-
-const uint8_t ff_vvc_per_cg_dist_parity_flag_ctx_offset_isp_1x16 [16] = {
-    15, 10, 10, 5,
-     5,  5,  5, 5,
-     5,  5,  0, 0,
-     0,  0,  0, 0
-};
-
-const uint8_t ff_vvc_per_cg_dist_parity_flag_ctx_offset_isp_2x8_0 [16] = {
-    15, 10, 10,10,
-    10,  5,  5, 5,
-     5,  5,  5, 5,
-     5,  5,  5, 5
-};
-
-const uint8_t ff_vvc_per_cg_dist_parity_flag_ctx_offset_isp_2x8_1 [16] = {
-    5, 5, 5, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0
-};
-
-
-const uint8_t ff_vvc_per_cg_dist_parity_flag_ctx_offset_2 [16] = {
-     5,  5,  5, 0,
-     0,  0,  0, 0,
-     0,  0,  0, 0,
-     0,  0,  0, 0
-};
 
 const uint8_t ff_vvc_no_ctx_offset [16] = {
      0,  0,  0, 0,
      0,  0,  0, 0,
      0,  0,  0, 0,
      0,  0,  0, 0
-};
-
-const uint8_t ff_vvc_parity_flag_ctx_offset_chroma [16] = {
-     5,  0,  0, 0,
-     0,  0,  0, 0,
-     0,  0,  0, 0,
-     0,  0,  0, 0
-};
-
-const uint8_t ff_vvc_significant_flag_ctx_offset_chroma [16] = {
-    4, 4, 4, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0
-};
-
-const uint8_t *const ff_vvc_parity_offset[3]={
-    ff_vvc_per_cg_dist_parity_flag_ctx_offset_0,
-    ff_vvc_per_cg_dist_parity_flag_ctx_offset_1,
-    ff_vvc_per_cg_dist_parity_flag_ctx_offset_2
-};
-
-const uint8_t *const ff_vvc_significant_offset[3] = {
-    ff_vvc_per_cg_dist_significant_flag_ctx_offset_0,
-    ff_vvc_per_cg_dist_significant_flag_ctx_offset_1,
-    ff_vvc_no_ctx_offset
 };
 
 const uint8_t *const ff_vvc_idx_2_num[6][6] ={
@@ -887,24 +793,6 @@ const uint8_t *const ff_vvc_idx_2_num[6][6] ={
     {     ff_vvc_default_num_cg, ff_vvc_diag_scan_16x2_num_cg,
     ff_vvc_diag_scan_16x4_num_cg, ff_vvc_diag_scan_16x8_num_cg,
     ff_vvc_diag_scan_16x8_num_cg, ff_vvc_diag_scan_16x16_num_cg }
-};
-
-const uint8_t *const ff_vvc_scan_2_idx[6][6] ={
-    {     ff_vvc_default_num_cg,       ff_vvc_default_num_cg,
-          ff_vvc_default_num_cg,       ff_vvc_default_num_cg,
-          ff_vvc_default_num_cg, ff_vvc_default_num_cg },
-    {     ff_vvc_default_num_cg,     ff_vvc_inv_diag_scan_2x2,
-    ff_vvc_inv_diag_scan_2x4, ff_vvc_inv_diag_scan_2x8,
-    ff_vvc_inv_diag_scan_2x8, ff_vvc_inv_diag_scan_2x8 },
-    {     ff_vvc_default_num_cg,     ff_vvc_inv_diag_scan_4x2,
-    ff_vvc_inv_diag_scan_4x4, ff_vvc_inv_diag_scan_4x8,
-    ff_vvc_inv_diag_scan_4x8, ff_vvc_inv_diag_scan_4x8 },
-    {     ff_vvc_default_num_cg,     ff_vvc_inv_diag_scan_8x2,
-    ff_vvc_inv_diag_scan_8x4, ff_vvc_inv_diag_scan_8x8,
-    ff_vvc_inv_diag_scan_8x8, ff_vvc_inv_diag_scan_8x8  },
-    {     ff_vvc_default_num_cg,     ff_vvc_inv_diag_scan_8x2,
-    ff_vvc_inv_diag_scan_8x4, ff_vvc_inv_diag_scan_8x8,
-    ff_vvc_inv_diag_scan_8x8, ff_vvc_inv_diag_scan_8x8}
 };
 
 const uint8_t *const ff_vvc_scan_x[6][6] ={
