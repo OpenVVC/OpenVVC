@@ -1410,11 +1410,11 @@ ovcabac_read_ae_sb_2x8_far_dpq(OVCABACCtx *const cabac_ctx,
 }
 
 static void
-update_ts_neighbourhood_first_pass(uint8_t  *const num_significant,
-                                       uint8_t  *const sign_map,
-                                       uint16_t  *const abs_coeffs,
-                                       int x, int y,
-                                       int value, int sign){
+update_ts_neighbourhood_first_pass(uint8_t   *const num_significant,
+                                   uint8_t   *const sign_map,
+                                   uint16_t  *const abs_coeffs,
+                                   int x, int y,
+                                   int value, int sign){
 
     num_significant[x + 1 +  y      * VVC_TR_CTX_STRIDE] += 1;
     num_significant[x     + (y + 1) * VVC_TR_CTX_STRIDE] += 1;
@@ -1480,16 +1480,19 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
                           uint16_t *const abs_coeffs,
                           int16_t *const num_remaining_bins)
 {
+    uint64_t *const ctx_table = cabac_ctx->ctx_table;
+
     uint8_t sig_c_idx_map[16];
     uint8_t pass2_idx_map[16];
     uint8_t pass3_idx_map[16];
-    uint16_t sign_map = 0;
+    uint8_t nb_sig_c = 0;
     uint8_t nb_pass2 = 0;
     uint8_t nb_pass3 = 0;
     uint8_t nb_read_pass2 = 0;
+
+    uint16_t sign_map = 0;
+
     int coeff_idx;
-    int nb_sig_c = 0;
-    uint64_t *const ctx_table = cabac_ctx->ctx_table;
 
     for (coeff_idx = 0; coeff_idx < 16 - 1 && *num_remaining_bins >= 4; ++coeff_idx) {
 
@@ -1574,10 +1577,8 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
         ++coeff_idx;
     }
 
-    //if(nb_pass2){
     nb_read_pass2 = decode_pass2_ts(cabac_ctx, ctx_table, coeffs, nb_pass2, pass2_idx_map,
                                     &nb_pass3, pass3_idx_map, abs_coeffs, num_remaining_bins);
-    //}
 
     /* Loop over already read pass2 requiring pass 3 */
     for (int i = 0; i < nb_pass3; i++) {
