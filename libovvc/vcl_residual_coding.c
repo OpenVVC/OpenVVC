@@ -1422,22 +1422,8 @@ update_ts_neighbourhood_first_pass(uint8_t  *const num_significant,
     sign_map[x + 1 +  y      * VVC_TR_CTX_STRIDE] += sign;
     sign_map[x     + (y + 1) * VVC_TR_CTX_STRIDE] += sign;
 
-    abs_coeffs[x/* + 1*/ +  y      * VVC_TR_CTX_STRIDE] =  value;
+    abs_coeffs[x +  y * VVC_TR_CTX_STRIDE] =  value;
 }
-
-static void
-update_ts_neighbourhood_other_passes( uint16_t *const abs_coeffs,
-                                     int x, int y,
-                                     int value, int16_t coeff){
-
-    abs_coeffs[x +  y      * VVC_TR_CTX_STRIDE] =  coeff;
-}
-
-static const uint8_t rice_param_ts[32] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    2, 2, 2, 2, 2, 2, 2
-};
 
 static uint8_t
 decode_pass2_ts(OVCABACCtx *const cabac_ctx, uint64_t *const ctx_table,
