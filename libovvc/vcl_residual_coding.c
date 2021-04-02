@@ -1631,19 +1631,14 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
 
         if (coeffs[idx]) {
             uint8_t sign_flag = ovcabac_bypass_read(cabac_ctx);
-            int x = idx & 0x3;
-            int y = idx >> 2;
             sign_map |= (sign_flag << nb_sig_c);
             sig_c_idx_map[nb_sig_c++] = idx;
-            abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = coeffs[idx];
         }
     }
 
     /* Apply coeff signs */
     for (int i = 0; i < nb_sig_c; i++) {
         int idx = sig_c_idx_map[i];
-        int x = idx & 0x3;
-        int y = idx >> 2;
 
         coeffs[idx] = (sign_map & 0x1) ? -coeffs[idx] : coeffs[idx];
         sign_map = sign_map >> 1;
