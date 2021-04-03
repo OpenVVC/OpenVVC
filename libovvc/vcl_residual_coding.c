@@ -4137,16 +4137,13 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
 
     uint16_t max_nb_bins = (((1 << log2_tb_s) << 3) - (1 << log2_tb_s)) >> 2;
 
-    /* FIXME better tables */
+    /* FIXME smaller reset tables */
     uint8_t nb_significant[VVC_TR_CTX_SIZE]={0};
     uint8_t sign_map[VVC_TR_CTX_SIZE]={0};
     uint16_t abs_coeffs[VVC_TR_CTX_SIZE]={0};
 
-    uint8_t sig_cg_map[17*17] = {0};
+    uint64_t sig_sb_map = 0;
     uint8_t sig_sb_flg = 0;
-
-    /* FIXME use bit map of significant sb instead */
-    uint8_t *significant_cg_map_2 = &sig_cg_map[0];
 
     /* FIXME if called from chroma ? */
     int qp = ctu_dec->dequant_luma_skip.qp;
@@ -4157,7 +4154,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
 
     memset(&ctu_dec->transform_buff, 0, sizeof(uint16_t) << log2_tb_s);
 
-    if (!(log2_tb_w - 2) && !(log2_tb_h - 2)) {
+    if (log2_tb_w == 2 && log2_tb_h == 2) {
         int16_t *dst = &ctu_dec->transform_buff[0];
 
         nb_sig_c = ovcabac_read_ae_sb_ts_4x4(cabac_ctx, cg_coeffs,
@@ -4182,9 +4179,13 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
         int x_cg = scan_cg_x[i];
         int y_cg = scan_cg_y[i];
 
-        int significant_cg_offset = significant_cg_map_2 [x_cg + y_cg * (17)];
+        uint8_t sig_sb_abv = (((sig_sb_map >> ((y_cg - 1) << 3)) & 0xFF) >> x_cg) & 0x1;
+        uint8_t sig_sb_lft = (((sig_sb_map >> ( y_cg      << 3)) & 0xFF) >> (x_cg - 1)) & 0x1;
 
-        sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, significant_cg_offset);
+        int sig_sb_offset = !!sig_sb_abv + !!sig_sb_lft;
+
+
+        sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, sig_sb_offset);
 
         if (sig_sb_flg) {
             int16_t *dst = &ctu_dec->transform_buff[(x_cg << 2) + ((y_cg << log2_tb_w) << 2)];
@@ -4193,9 +4194,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
 
             cg_offset = (x_cg << 2) + (y_cg << 2) * (VVC_TR_CTX_STRIDE);
 
-            /* FIXME use bit map of significant sb instead */
-            significant_cg_map_2[x_cg + 1 +  y_cg      * (17)] += 1;
-            significant_cg_map_2[x_cg     + (y_cg + 1) * (17)] += 1;
+            sig_sb_map |= 1llu << (x_cg + (y_cg << 3));
 
             nb_sig_c += ovcabac_read_ae_sb_ts_4x4(cabac_ctx,
                                                   cg_coeffs,
@@ -4220,9 +4219,11 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
     if (nb_sig_cg) {
         int x_cg = scan_cg_x[i];
         int y_cg = scan_cg_y[i];
-        int significant_cg_offset = significant_cg_map_2 [x_cg + y_cg * (17)];
+        uint8_t sig_sb_abv = (((sig_sb_map >> ((y_cg - 1) << 3)) & 0xFF) >> x_cg) & 0x1;
+        uint8_t sig_sb_lft = (((sig_sb_map >> ( y_cg      << 3)) & 0xFF) >> (x_cg - 1)) & 0x1;
+        int sig_sb_offset = !!sig_sb_abv + !!sig_sb_lft;
 
-        sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, significant_cg_offset);
+        sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, sig_sb_offset);
     }
 
     if (sig_sb_flg) {
@@ -4234,8 +4235,9 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
 
         memset(cg_coeffs, 0, sizeof(uint16_t) * 16);
 
-        nb_sig_c += ovcabac_read_ae_sb_ts_4x4(cabac_ctx,
-                                              cg_coeffs,
+        sig_sb_map |= 1llu << (x_cg + (y_cg << 3));
+
+        nb_sig_c += ovcabac_read_ae_sb_ts_4x4(cabac_ctx, cg_coeffs,
                                               &nb_significant[cg_offset],
                                               &sign_map      [cg_offset],
                                               &abs_coeffs   [36+cg_offset],
