@@ -2825,10 +2825,10 @@ derive_dequant_ts(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
 }
 
 static void
-reset_ctx_buffers (const VVCCoeffCodingCtx * ctx, int log2_w, int log2_h)
+reset_ctx_buffers (const VVCCoeffCodingCtx *ctx, int log2_w, int log2_h)
 {
-    uint8_t *nb_sig    = ctx->sum_sig_nbs;
-    uint8_t *sum_abs1  = ctx->sum_abs_lvl;
+    uint8_t *nb_sig   = ctx->sum_sig_nbs;
+    uint8_t *sum_abs1 = ctx->sum_abs_lvl;
     uint8_t *sum_abs2 = ctx->sum_abs_lvl2;
     for (int i = 0; i < (1 << log2_h); ++i){
         memset(nb_sig, 0, sizeof(*nb_sig) << log2_w);
@@ -2879,7 +2879,7 @@ residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
 
-    if(!last_pos){
+    if (!last_pos) {
         ovcabac_read_ae_sb_dc_coeff_sdh(cabac_ctx, cg_coeffs);
 
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
