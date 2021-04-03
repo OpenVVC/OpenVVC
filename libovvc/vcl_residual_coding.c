@@ -3477,8 +3477,6 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint64_t *const ctx_table = cabac_ctx->ctx_table;
-    int16_t *const _dst = dst;
-    uint8_t tb_width  = 1 << log2_tb_w;
     //check for dependent quantization
     int state = 0;
     uint16_t max_num_bins = ((1 << (log2_tb_w + log2_tb_h) << 5)
@@ -3508,25 +3506,23 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     uint64_t sig_sb_map = 0;
 
-    int tb_width_in_cg  = tb_width  >> 2;
-
     int qp = ctu_dec->dequant_chroma->qp;
 
     struct IQScale deq_prms = derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
 
-    memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
+    memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
 
     if (!last_pos){
         ovcabac_read_ae_sb_dc_coeff_c_sdh(cabac_ctx, ctx_table, cg_coeffs);
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
-        _dst[0] = cg_coeffs [0];
+        dst[0] = cg_coeffs [0];
         memcpy(ctu_dec->lfnst_subblock, cg_coeffs, sizeof(int16_t) * 16);
         return last_pos;
     }
 
     reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
 
-    if(log2_tb_w > 1 && log2_tb_h > 1){
+    if (log2_tb_w > 1 && log2_tb_h > 1) {
         const uint8_t *const cg_idx_2_cg_num = ff_vvc_idx_2_num[log2_tb_w - 2]
                                                                [log2_tb_h - 2];
 
@@ -3541,26 +3537,27 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         last_cg_x = last_x >> 2;
         last_cg_y = last_y >> 2;
 
-        num_cg = cg_idx_2_cg_num[last_cg_x + last_cg_y * tb_width_in_cg];
+        num_cg = cg_idx_2_cg_num[last_cg_x + ((last_cg_y << log2_tb_w) >> 2)];
 
         if(!num_cg){
             int last_coeff_idx = last_x + (last_y << 2);
             int num_coeffs = ff_vvc_diag_scan_4x4_num_cg [last_coeff_idx];
             ovcabac_read_ae_sb_4x4_dc_c_sdh(cabac_ctx, ctx_table, cg_coeffs,
-                                       &state, num_coeffs, &c_coding_ctx);
+                                            &state, num_coeffs, &c_coding_ctx);
 
             deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
-            memcpy(&_dst[0]             , &cg_coeffs[ 0], sizeof(int16_t) * 4);
-            memcpy(&_dst[1 << log2_tb_w], &cg_coeffs[ 4], sizeof(int16_t) * 4);
-            memcpy(&_dst[2 << log2_tb_w], &cg_coeffs[ 8], sizeof(int16_t) * 4);
-            memcpy(&_dst[3 << log2_tb_w], &cg_coeffs[12], sizeof(int16_t) * 4);
+            memcpy(&dst[0]             , &cg_coeffs[ 0], sizeof(int16_t) * 4);
+            memcpy(&dst[1 << log2_tb_w], &cg_coeffs[ 4], sizeof(int16_t) * 4);
+            memcpy(&dst[2 << log2_tb_w], &cg_coeffs[ 8], sizeof(int16_t) * 4);
+            memcpy(&dst[3 << log2_tb_w], &cg_coeffs[12], sizeof(int16_t) * 4);
+
             memcpy(ctu_dec->lfnst_subblock, cg_coeffs, sizeof(int16_t) * 16);
 
             return num_coeffs;
         }
 
-        sb_pos = (last_cg_x << 2) + ((last_cg_y * tb_width_in_cg) << 4);
+        sb_pos = (last_cg_x << 2) + (((last_cg_y << log2_tb_w) >> 2) << 4);
 
         x = last_x - (last_cg_x << 2);
         y = last_y - (last_cg_y << 2);
@@ -3579,10 +3576,10 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
-        memcpy(&_dst[sb_pos + (0)]             , &cg_coeffs[ 0], sizeof(int16_t) * 4);
-        memcpy(&_dst[sb_pos + (1 << log2_tb_w)], &cg_coeffs[ 4], sizeof(int16_t) * 4);
-        memcpy(&_dst[sb_pos + (2 << log2_tb_w)], &cg_coeffs[ 8], sizeof(int16_t) * 4);
-        memcpy(&_dst[sb_pos + (3 << log2_tb_w)], &cg_coeffs[12], sizeof(int16_t) * 4);
+        memcpy(&dst[sb_pos + (0)]             , &cg_coeffs[ 0], sizeof(int16_t) * 4);
+        memcpy(&dst[sb_pos + (1 << log2_tb_w)], &cg_coeffs[ 4], sizeof(int16_t) * 4);
+        memcpy(&dst[sb_pos + (2 << log2_tb_w)], &cg_coeffs[ 8], sizeof(int16_t) * 4);
+        memcpy(&dst[sb_pos + (3 << log2_tb_w)], &cg_coeffs[12], sizeof(int16_t) * 4);
 
         sig_sb_map |= 1llu << (last_cg_x + (last_cg_y << 3));
 
@@ -3600,7 +3597,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
                 memset(cg_coeffs, 0, sizeof(int16_t) * 16);
 
-                sb_pos = (x_cg << 2) + ((y_cg * tb_width_in_cg) << 4);
+                sb_pos = (x_cg << 2) + (((y_cg << log2_tb_w) >> 2) << 4);
                 cg_offset = (x_cg << 2) + (y_cg << 2) * (VVC_TR_CTX_STRIDE);
 
                 sig_sb_map |= 1llu << (x_cg + (y_cg << 3));
@@ -3614,10 +3611,10 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
                 deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
-                memcpy(&_dst[sb_pos + (0)]             , &cg_coeffs[ 0], sizeof(int16_t) * 4);
-                memcpy(&_dst[sb_pos + (1 << log2_tb_w)], &cg_coeffs[ 4], sizeof(int16_t) * 4);
-                memcpy(&_dst[sb_pos + (2 << log2_tb_w)], &cg_coeffs[ 8], sizeof(int16_t) * 4);
-                memcpy(&_dst[sb_pos + (3 << log2_tb_w)], &cg_coeffs[12], sizeof(int16_t) * 4);
+                memcpy(&dst[sb_pos + (0)]             , &cg_coeffs[ 0], sizeof(int16_t) * 4);
+                memcpy(&dst[sb_pos + (1 << log2_tb_w)], &cg_coeffs[ 4], sizeof(int16_t) * 4);
+                memcpy(&dst[sb_pos + (2 << log2_tb_w)], &cg_coeffs[ 8], sizeof(int16_t) * 4);
+                memcpy(&dst[sb_pos + (3 << log2_tb_w)], &cg_coeffs[12], sizeof(int16_t) * 4);
             }
         }
 
@@ -3632,10 +3629,10 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
-        memcpy(&_dst[0]             , &cg_coeffs[ 0], sizeof(int16_t) * 4);
-        memcpy(&_dst[1 << log2_tb_w], &cg_coeffs[ 4], sizeof(int16_t) * 4);
-        memcpy(&_dst[2 << log2_tb_w], &cg_coeffs[ 8], sizeof(int16_t) * 4);
-        memcpy(&_dst[3 << log2_tb_w], &cg_coeffs[12], sizeof(int16_t) * 4);
+        memcpy(&dst[0]             , &cg_coeffs[ 0], sizeof(int16_t) * 4);
+        memcpy(&dst[1 << log2_tb_w], &cg_coeffs[ 4], sizeof(int16_t) * 4);
+        memcpy(&dst[2 << log2_tb_w], &cg_coeffs[ 8], sizeof(int16_t) * 4);
+        memcpy(&dst[3 << log2_tb_w], &cg_coeffs[12], sizeof(int16_t) * 4);
 
        return 0xFFFF;
 
@@ -3657,8 +3654,8 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
-            memcpy(&_dst[0        ]     , &cg_coeffs[0], sizeof(int16_t) * 8);
-            memcpy(&_dst[1 << log2_tb_w], &cg_coeffs[8], sizeof(int16_t) * 8);
+            memcpy(&dst[0        ]     , &cg_coeffs[0], sizeof(int16_t) * 8);
+            memcpy(&dst[1 << log2_tb_w], &cg_coeffs[8], sizeof(int16_t) * 8);
             /*FIXME determine whether or not we should read lfnst*/
 
             return 0xFFFF;
@@ -3682,8 +3679,8 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
-        memcpy(&_dst[sb_pos + 0               ], &cg_coeffs[0], sizeof(int16_t) * 8);
-        memcpy(&_dst[sb_pos + (1 << log2_tb_w)], &cg_coeffs[8], sizeof(int16_t) * 8);
+        memcpy(&dst[sb_pos + 0               ], &cg_coeffs[0], sizeof(int16_t) * 8);
+        memcpy(&dst[sb_pos + (1 << log2_tb_w)], &cg_coeffs[8], sizeof(int16_t) * 8);
 
         num_cg = last_cg_x;
         num_cg--;
@@ -3708,8 +3705,8 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
                 deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
-                memcpy(&_dst[sb_pos + 0               ], &cg_coeffs[0], sizeof(int16_t) * 8);
-                memcpy(&_dst[sb_pos + (1 << log2_tb_w)], &cg_coeffs[8], sizeof(int16_t) * 8);
+                memcpy(&dst[sb_pos + 0               ], &cg_coeffs[0], sizeof(int16_t) * 8);
+                memcpy(&dst[sb_pos + (1 << log2_tb_w)], &cg_coeffs[8], sizeof(int16_t) * 8);
             }
         }
 
@@ -3725,8 +3722,8 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
-        memcpy(&_dst[0             ], &cg_coeffs[0], sizeof(int16_t) * 8);
-        memcpy(&_dst[1 << log2_tb_w], &cg_coeffs[8], sizeof(int16_t) * 8);
+        memcpy(&dst[0             ], &cg_coeffs[0], sizeof(int16_t) * 8);
+        memcpy(&dst[1 << log2_tb_w], &cg_coeffs[8], sizeof(int16_t) * 8);
 
         return 0xFFFF;
 
@@ -3747,7 +3744,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
-            memcpy(&_dst[0], &cg_coeffs[0],  sizeof(int16_t) * 16);
+            memcpy(&dst[0], &cg_coeffs[0],  sizeof(int16_t) * 16);
             /*FIXME determine whether or not we should read lfnst*/
 
             return 0xFFFF;
@@ -3773,7 +3770,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
-        memcpy(&_dst[sb_pos + 0], &cg_coeffs[0], sizeof(int16_t) * 16);
+        memcpy(&dst[sb_pos + 0], &cg_coeffs[0], sizeof(int16_t) * 16);
 
         num_cg--;
 
@@ -3796,7 +3793,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
                 deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
-                memcpy(&_dst[sb_pos], &cg_coeffs[0], sizeof(int16_t) * 16);
+                memcpy(&dst[sb_pos], &cg_coeffs[0], sizeof(int16_t) * 16);
             }
         }
 
@@ -3812,7 +3809,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
-        memcpy(&_dst[0], &cg_coeffs[0],  sizeof(int16_t) * 16);
+        memcpy(&dst[0], &cg_coeffs[0],  sizeof(int16_t) * 16);
 
         return 0xFFFF;
     }
@@ -4584,7 +4581,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
 
-    if(log2_tb_w > 1 && log2_tb_h > 1){
+    if (log2_tb_w > 1 && log2_tb_h > 1) {
         const uint8_t *const cg_idx_2_cg_num = ff_vvc_idx_2_num[log2_tb_w - 2]
                                                                [log2_tb_h - 2];
 
@@ -4669,7 +4666,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
                 c_coding_ctx.sum_sig_nbs  = &num_significant[VVC_TR_CTX_OFFSET + cg_offset];
 
                 num_sig_coeff += ovcabac_read_ae_sb_4x4_c_dpq(cabac_ctx, ctx_table, cg_coeffs,
-                                                         &state, &c_coding_ctx);
+                                                              &state, &c_coding_ctx);
 
                 deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -4698,7 +4695,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
        return 0xFFFF;
 
-    } else if (log2_tb_h == 1){
+    } else if (log2_tb_h == 1) {
         int num_sig_c;
         uint8_t sig_sb_flg = 1;
 
@@ -4707,12 +4704,12 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         last_cg_x = last_x >> 3;
 
-        if(!last_cg_x){
+        if (!last_cg_x) {
             int last_coeff_idx = last_x + (last_y << 3) ;
             int num_coeffs = ff_vvc_diag_scan_8x2_num_cg [last_coeff_idx];
             num_sig_c = ovcabac_read_ae_sb_8x2_dc_c_dpq(cabac_ctx, ctx_table, cg_coeffs,
-                                                   &state, num_coeffs,
-                                                   &c_coding_ctx);
+                                                        &state, num_coeffs,
+                                                        &c_coding_ctx);
 
             deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -4736,8 +4733,8 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         c_coding_ctx.sum_sig_nbs  = &num_significant[VVC_TR_CTX_OFFSET + cg_offset];
 
         num_sig_c = ovcabac_read_ae_sb_8x2_first_c_dpq(cabac_ctx, ctx_table, cg_coeffs,
-                                                  &state, start_coeff_idx,
-                                                  &c_coding_ctx);
+                                                       &state, start_coeff_idx,
+                                                       &c_coding_ctx);
 
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -4747,7 +4744,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         num_cg = last_cg_x;
         num_cg--;
 
-        for(;num_cg > 0; --num_cg){
+        for ( ;num_cg > 0; --num_cg) {
 
             sig_sb_flg = ovcabac_read_ae_significant_cg_flag_chroma(cabac_ctx, sig_sb_flg);
 
@@ -4763,7 +4760,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
                 c_coding_ctx.sum_sig_nbs  = &num_significant[VVC_TR_CTX_OFFSET + cg_offset];
 
                 num_sig_c = ovcabac_read_ae_sb_8x2_c_dpq(cabac_ctx, ctx_table, cg_coeffs, &state,
-                                                                      &c_coding_ctx);
+                                                         &c_coding_ctx);
 
                 deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -4779,8 +4776,8 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         c_coding_ctx.sum_sig_nbs  = &num_significant[VVC_TR_CTX_OFFSET];
 
         num_sig_c += ovcabac_read_ae_sb_8x2_last_dc_c_dpq(cabac_ctx, ctx_table,
-                                                     cg_coeffs, &state,
-                                                     &c_coding_ctx);
+                                                          cg_coeffs, &state,
+                                                          &c_coding_ctx);
 
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -4789,7 +4786,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         return 0xFFFF;
 
-    } else if(log2_tb_w == 1){
+    } else if (log2_tb_w == 1) {
         uint8_t sig_sb_flg = 1;
         int num_sig_c;
 
@@ -4801,8 +4798,8 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
             int last_coeff_idx = last_x + (last_y << 1);
             int num_coeffs = ff_vvc_diag_scan_2x8_num_cg [last_coeff_idx];
             num_sig_c = ovcabac_read_ae_sb_2x8_dc_c_dpq(cabac_ctx, ctx_table, cg_coeffs,
-                                                   &state, num_coeffs,
-                                                   &c_coding_ctx);
+                                                        &state, num_coeffs,
+                                                        &c_coding_ctx);
 
             deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -4836,7 +4833,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         num_cg--;
 
-        for( ;num_cg > 0; --num_cg){
+        for ( ;num_cg > 0; --num_cg) {
 
             sig_sb_flg = ovcabac_read_ae_significant_cg_flag_chroma(cabac_ctx, sig_sb_flg);
 
@@ -4850,9 +4847,8 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
                 c_coding_ctx.sum_abs_lvl2 = &sum_abs_level2[VVC_TR_CTX_OFFSET + cg_offset];
                 c_coding_ctx.sum_sig_nbs  = &num_significant[VVC_TR_CTX_OFFSET + cg_offset];
 
-                num_sig_c =
-                    ovcabac_read_ae_sb_2x8_c_dpq(cabac_ctx, ctx_table, cg_coeffs, &state,
-                                            &c_coding_ctx);
+                num_sig_c = ovcabac_read_ae_sb_2x8_c_dpq(cabac_ctx, ctx_table, cg_coeffs, &state,
+                                                         &c_coding_ctx);
 
                 deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -4867,8 +4863,8 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         c_coding_ctx.sum_sig_nbs  = &num_significant[VVC_TR_CTX_OFFSET];
 
         num_sig_c += ovcabac_read_ae_sb_2x8_last_dc_c_dpq(cabac_ctx, ctx_table,
-                                                     cg_coeffs, &state,
-                                                     &c_coding_ctx);
+                                                          cg_coeffs, &state,
+                                                          &c_coding_ctx);
 
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
