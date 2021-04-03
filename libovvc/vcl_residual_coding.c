@@ -1521,8 +1521,9 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
         if (ts_sig_c_flag) {
 
             /* FIXME better computation of sign_offset */
-            int sign_offset = nb_sig_c_ngh != 2 ? nb_sig_c_ngh + sign_table[x + y * VVC_TR_CTX_STRIDE] :
-                (sign_table[x + y * VVC_TR_CTX_STRIDE] == 2 ? 2 : sign_table[x + y * VVC_TR_CTX_STRIDE] ^ 1);
+            uint8_t nb_signs_ngh = sign_table[x + y * VVC_TR_CTX_STRIDE];
+            int sign_offset = nb_sig_c_ngh != 2 ? nb_sig_c_ngh + nb_signs_ngh :
+                (nb_signs_ngh == 2 ? 2 : nb_signs_ngh ^ 1);
 
             uint8_t ts_sign_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_RESIDUAL_SIGN_CTX_OFFSET + sign_offset]);
             uint8_t ts_gt1_flag  = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_LRG1_FLAG_CTX_OFFSET + nb_sig_c_ngh]);
@@ -1566,8 +1567,9 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
         }
 
         if (ts_sig_c_flag) {
-            int sign_offset = nb_sig_c_ngh != 2 ? nb_sig_c_ngh + sign_table[x + y * VVC_TR_CTX_STRIDE] :
-                (sign_table[x + y * VVC_TR_CTX_STRIDE] == 2 ? 2 : sign_table[x + y * VVC_TR_CTX_STRIDE] ^ 1);
+            uint8_t nb_signs_ngh = sign_table[x + y * VVC_TR_CTX_STRIDE];
+            int sign_offset = nb_sig_c_ngh != 2 ? nb_sig_c_ngh + nb_signs_ngh :
+                (nb_signs_ngh == 2 ? 2 : nb_signs_ngh ^ 1);
 
             uint8_t ts_sign_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_RESIDUAL_SIGN_CTX_OFFSET + sign_offset]);
             uint8_t ts_gt1_flag  = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_LRG1_FLAG_CTX_OFFSET + nb_sig_c_ngh]);
