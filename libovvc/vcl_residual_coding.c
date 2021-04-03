@@ -100,11 +100,11 @@ static const VVCSBScanContext inv_diag_1x16_scan = {
      4,
 };
 
-    static const uint64_t parity_flag_offset_map[3] ={
-        0xFAAAAA5555555555,
-        0x5555555555555550,
-        0x5550000000000000
-    };
+static const uint64_t parity_flag_offset_map[3] ={
+    0xFAAAAA5555555555,
+    0x5555555555555550,
+    0x5550000000000000
+};
 
 static const uint64_t sig_flag_offset_map[3] ={
     0x8884444444444000,
@@ -176,6 +176,7 @@ set_implicit_coeff_ngbh(const VVCCoeffCodingCtx *const coef_nbh_ctx,
 
 #define updt_sat(x,val,sat) \
 (x) = OVMIN((sat),(x)+(val));
+
 static void inline
 update_coeff_nbgh_bypassed(const VVCCoeffCodingCtx *const coef_nbh_ctx,
                            int tr_ctx_pos, int value)
@@ -225,8 +226,8 @@ update_coeff_nbgh_other_pass(const VVCCoeffCodingCtx *const coef_nbh_ctx,
     updt_sat(coef_nbh_ctx->sum_abs_lvl2[tr_ctx_pos - VVC_TR_CTX_STRIDE * 2], value, 51);
 }
 
-static int inline decode_truncated_rice(OVCABACCtx *const cabac_ctx,
-                                                   unsigned int rice_param){
+static int inline
+decode_truncated_rice(OVCABACCtx *const cabac_ctx, unsigned int rice_param){
 
     unsigned int prefix = 0;
     unsigned int length = rice_param;
@@ -3815,12 +3816,12 @@ residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         if(last_cg_x < 2){
             num_sig_c = ovcabac_read_ae_sb_8x2_first_dpq(cabac_ctx, cg_coeffs,
-                                                    &state, start_coeff_idx,
-                                                    &c_coding_ctx);
+                                                         &state, start_coeff_idx,
+                                                         &c_coding_ctx);
         } else {
             num_sig_c = ovcabac_read_ae_sb_8x2_first_far_dpq(cabac_ctx, cg_coeffs,
-                                                        &state, start_coeff_idx,
-                                                        &c_coding_ctx);
+                                                             &state, start_coeff_idx,
+                                                             &c_coding_ctx);
         }
 
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
@@ -4266,7 +4267,7 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     uint8_t lim_log2_h = OVMIN(log2_tb_h, 5);
 
     const uint8_t *const cg_idx_2_cg_num = ff_vvc_idx_2_num[lim_log2_w  - 2]
-                                                            [lim_log2_h - 2];
+                                                           [lim_log2_h - 2];
 
     const uint8_t *const scan_cg_x = ff_vvc_scan_x[lim_log2_w - 2][lim_log2_h - 2];
     const uint8_t *const scan_cg_y = ff_vvc_scan_y[lim_log2_w - 2][lim_log2_h - 2];
@@ -4287,8 +4288,8 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     int16_t cg_coeffs[16] = {0};
 
     //TODO avoid offsets tabs
-    uint8_t  num_significant[VVC_TR_CTX_SIZE];
-    uint8_t  sum_abs_level  [VVC_TR_CTX_SIZE];
+    uint8_t num_significant[VVC_TR_CTX_SIZE];
+    uint8_t sum_abs_level  [VVC_TR_CTX_SIZE];
     uint8_t sum_abs_level2 [VVC_TR_CTX_SIZE];
 
     VVCCoeffCodingCtx c_coding_ctx = {
@@ -4323,6 +4324,7 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     last_x =  last_pos       & 0x1F;
     last_y = (last_pos >> 8) & 0x1F;
+
     last_cg_x = last_x >> 2;
     last_cg_y = last_y >> 2;
 
@@ -4342,6 +4344,7 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         memcpy(&_dst[1 << log2_tb_w], &cg_coeffs[ 4], sizeof(int16_t) * 4);
         memcpy(&_dst[2 << log2_tb_w], &cg_coeffs[ 8], sizeof(int16_t) * 4);
         memcpy(&_dst[3 << log2_tb_w], &cg_coeffs[12], sizeof(int16_t) * 4);
+
         memcpy(ctu_dec->lfnst_subblock, cg_coeffs, sizeof(int16_t) * 16);
 
         return sig_sb_map;
@@ -4352,8 +4355,8 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     d_cg = last_cg_x + last_cg_y;
 
-    x = last_x & 3;
-    y = last_y & 3;
+    x = last_x & 0x3;
+    y = last_y & 0x3;
 
     start_coeff_idx = ff_vvc_diag_scan_4x4_num_cg[x + (y << 2)];
 
