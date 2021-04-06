@@ -50,6 +50,14 @@ void vvc_intra_pred_isp(const OVCTUDec *const ctudec,
                         int log2_cu_width,int log2_cu_height,
                         int offset_x, int offset_y);
 
+void vvc_intra_pred_multi_ref( const OVCTUDec *const ctudec,
+                               uint16_t *const src,
+                               ptrdiff_t dst_stride,
+                               uint8_t intra_mode, int x0, int y0,
+                               int log2_pb_width, int log2_pb_height,
+                               int multi_ref_idx);
+
+
 VVCCU drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
                    uint8_t x0, uint8_t y0, uint8_t log2_cb_w, uint8_t log2_cb_h,
                    VVCCU cu);
@@ -88,4 +96,10 @@ void process_lfnst_luma(OVCTUDec *const ctudec,
                    int16_t *dst, const int16_t *src,
                    int log2_tb_w, int log2_tb_h,
                    int x0, int y0, uint8_t lfnst_idx);
+
+void process_lfnst_luma_isp(OVCTUDec *const ctudec,
+                            int16_t *dst, const int16_t *src,
+                            int log2_tb_w, int log2_tb_h,
+                            int log2_cb_w, int log2_cb_h,
+                            int x0, int y0, uint8_t lfnst_idx);
 #endif
