@@ -106,58 +106,43 @@ static const int16_t DCT_II_2_sse[8] = {
 };
 
 void inverse_sse2_B2(const TCoeff *src, TCoeff *dst, int src_stride, int shift, int line, const TMatrixCoeff* iT){
-    __m128i x, x1, x2; //Contient le vecteur à transformer
-    __m128i d;	//Contient coefficient DCT ou DST
-    __m128i vhi, vlo, vh, vl, result[line/2]; //Variables pour calculs (result[] il faudrait mettre line/2 ou la taille max 32/2)
+    __m128i x, x1, x2;
+    __m128i d;
+    __m128i vhi, vlo, vh, vl, result[line/2];
 
-    int nbline = line/2; //Nombre de ligne à traiter (divisé par 2)
+    int nbline = line/2;
     int nbstore = nbline/2;
-    d = _mm_load_si128((__m128i *)&(DCT_II_2_sse[0])); //Si je la stocke comme souhaité
-//    d = _mm_set_epi64x(*(int64_t *)&(iT[0]),*(int64_t *)&(iT[0]));
+    d = _mm_load_si128((__m128i *)&(DCT_II_2_sse[0]));
 
     for(int i = 0; i < nbline; i++){
-        //Même chose d'utiliser unpacklo et unpackhi ici
         x1 = _mm_unpacklo_epi32(_mm_set1_epi16(src[2*i]),_mm_set1_epi16(src[src_stride+2*i]));
         x2 = _mm_unpacklo_epi32(_mm_set1_epi16(src[2*i+1]),_mm_set1_epi16(src[src_stride+2*i+1]));
 
         x = _mm_unpacklo_epi32(x1, x2);
-//        afficherVecteur8SSE128(x);
-
-//        afficherVecteur8SSE128(d);
-        vhi = _mm_mulhi_epi16(x, d);            // mul hi
-        vlo = _mm_mullo_epi16(x, d);            // mul lo
+        vhi = _mm_mulhi_epi16(x, d);
+        vlo = _mm_mullo_epi16(x, d);
         vl = _mm_unpacklo_epi16(vlo, vhi);
         vh = _mm_unpackhi_epi16(vlo, vhi);
-//        afficherVecteur4SSE128(vl);
-//        afficherVecteur4SSE128(vh);
 
         result[i] = _mm_add_epi32(_mm_add_epi32(vl,vh), _mm_set1_epi32(1<<(shift-1)));
         result[i] = _mm_srai_epi32(result[i], shift);
-//        afficherVecteur4SSE128(result[i]);
-
-//        afficherVecteur4SSE128(result[i]);
     }
 
-//    printf("%d\n", nbstore);
     if(nbstore == 0){
-//        afficherVecteur4SSE128(result[0]);
-//        afficherVecteur4SSE128(result[1]);
-        result[0] = _mm_packs_epi32(result[2 * 0], result[2 * 0 + 1]); //clip pour repasser en 16
-//        afficherVecteur8SSE128(result[0]);
+        result[0] = _mm_packs_epi32(result[2 * 0], result[2 * 0 + 1]);
         _mm_storel_epi64((__m128i *) &(dst[0]), result[0]);
     }else {
         for (int i = 0; i < nbstore; i++) {
-            //Ne fonctione pas pour src de taille 2*2 car tableau sur 64 bits et pas 128
-            result[i] = _mm_packs_epi32(result[2 * i], result[2 * i + 1]); //clip pour repasser en 16
-            _mm_store_si128((__m128i *) &(dst[i * 8]), result[i]); //dst[i*8] car result contient 8 résultat
+            result[i] = _mm_packs_epi32(result[2 * i], result[2 * i + 1]);
+            _mm_store_si128((__m128i *) &(dst[i * 8]), result[i]);
         }
     }
 }
 
 void inverse_sse2_B8(const TCoeff *src, TCoeff *dst, int src_stride, int shift, int line, const TMatrixCoeff* iT){
-    __m128i x[8]; //Contient le vecteur à transformer
-    __m128i d[8];	//Contient coefficient DCT ou DST
-    __m128i vhi[8], vlo[8], vh[8], vl[8], result[line][2]; //Variables pour calculs (result[][2] il faudrait mettre line ou la taille max 32)
+    __m128i x[8];
+    __m128i d[8];
+    __m128i vhi[8], vlo[8], vh[8], vl[8], result[line][2];
 
     for(int i = 0; i < 8; ++i){
         d[i] = _mm_load_si128((__m128i *)&(iT[i*8]));
@@ -167,8 +152,8 @@ void inverse_sse2_B8(const TCoeff *src, TCoeff *dst, int src_stride, int shift, 
         for(int j = 0; j < 8; ++j){
             x[j] = _mm_set1_epi16(src[j*src_stride+i]);
 
-            vhi[j] = _mm_mulhi_epi16(x[j], d[j]);            // mul hi
-            vlo[j] = _mm_mullo_epi16(x[j], d[j]);            // mul lo
+            vhi[j] = _mm_mulhi_epi16(x[j], d[j]);
+            vlo[j] = _mm_mullo_epi16(x[j], d[j]);
             vl[j] = _mm_unpacklo_epi16(vlo[j], vhi[j]);
             vh[j] = _mm_unpackhi_epi16(vlo[j], vhi[j]);
         }
@@ -178,15 +163,10 @@ void inverse_sse2_B8(const TCoeff *src, TCoeff *dst, int src_stride, int shift, 
             result[i][0] = _mm_add_epi32(result[i][0], _mm_add_epi32(vl[2*j],vl[2*j+1]));
             result[i][1] = _mm_add_epi32(result[i][1], _mm_add_epi32(vh[2*j],vh[2*j+1]));
         }
-        //afficherVecteur4SSE128(result[i][0]);
-        //afficherVecteur4SSE128(result[i][1]);
         result[i][0] = _mm_add_epi32(result[i][0], _mm_set1_epi32(1<<(shift-1)));
         result[i][1] = _mm_add_epi32(result[i][1], _mm_set1_epi32(1<<(shift-1)));
         result[i][0] = _mm_srai_epi32(result[i][0], shift);
         result[i][1] = _mm_srai_epi32(result[i][1], shift);
-
-        //afficherVecteur4SSE128(result[i][0]);
-        //afficherVecteur4SSE128(result[i][1]);
     }
 
     for(int i = 0; i < line; i++){
@@ -196,9 +176,9 @@ void inverse_sse2_B8(const TCoeff *src, TCoeff *dst, int src_stride, int shift, 
 }
 
 void inverse_sse2_B16(const TCoeff *src, TCoeff *dst, int src_stride, int shift, int line, const TMatrixCoeff* iT){
-    __m128i x[8]; //Contient le vecteur à transformer
-    __m128i d[8];	//Contient coefficient DCT ou DST
-    __m128i vhi[8], vlo[8], vh[16], vl[16], result[line][4]; //Variables pour calculs (result[][4] il faudrait mettre line ou la taille max 32)
+    __m128i x[8];
+    __m128i d[8];
+    __m128i vhi[8], vlo[8], vh[16], vl[16], result[line][4];
 
     // int nbstore = line/2;
 
@@ -209,24 +189,24 @@ void inverse_sse2_B16(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
         }
     }
 
-    for(int l = 0; l < 2; ++l){ //l permet calculer "la partie basse" de la matrice de transformé DCT/DST
-        for(int k = 0; k < 2; ++k){ //k permet calculer l'autre partie des multiplications (la partie de droite de la matrice de transformé DCT/DST)
+    for(int l = 0; l < 2; ++l){
+        for(int k = 0; k < 2; ++k){
             for(int i = 0; i < 8; ++i){
                 d[i] = _mm_load_si128((__m128i *)&(iT[i*16+k*128+l*8]));
             }
 
             for(int i = 0; i < line; ++i){
+
                 for(int j = 0; j < 8; ++j){
                     x[j] = _mm_set1_epi16(src[j*src_stride+i+k*8*src_stride]);
 
-                    vhi[j] = _mm_mulhi_epi16(x[j], d[j]);            // mul hi
-                    vlo[j] = _mm_mullo_epi16(x[j], d[j]);            // mul lo
+                    vhi[j] = _mm_mulhi_epi16(x[j], d[j]);
+                    vlo[j] = _mm_mullo_epi16(x[j], d[j]);
                     vl[j+8*k] = _mm_unpacklo_epi16(vlo[j], vhi[j]);
                     vh[j+8*k] = _mm_unpackhi_epi16(vlo[j], vhi[j]);
                 }
+
                 for(int j = 0; j < 4; ++j){
-                    //afficherVecteur4SSE128(_mm_add_epi32(vl[2*j+8*k],vl[2*j+1+8*k]));
-                    //afficherVecteur4SSE128(_mm_add_epi32(vh[2*j+8*k],vh[2*j+1+8*k]));
                     result[i][2*l] = _mm_add_epi32(result[i][2*l], _mm_add_epi32(vl[2*j+8*k],vl[2*j+1+8*k]));
                     result[i][2*l+1] = _mm_add_epi32(result[i][2*l+1], _mm_add_epi32(vh[2*j+8*k],vh[2*j+1+8*k]));
                 }
@@ -236,15 +216,10 @@ void inverse_sse2_B16(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
 
     for(int l = 0; l < 2; ++l){
         for(int i = 0; i < line; ++i){
-            //afficherVecteur4SSE128(result[i][0]);
-            //afficherVecteur4SSE128(result[i][1]);
             result[i][2*l] = _mm_add_epi32(result[i][2*l], _mm_set1_epi32(1<<(shift-1)));
             result[i][2*l+1] = _mm_add_epi32(result[i][2*l+1], _mm_set1_epi32(1<<(shift-1)));
             result[i][2*l] = _mm_srai_epi32(result[i][2*l], shift);
             result[i][2*l+1] = _mm_srai_epi32(result[i][2*l+1], shift);
-
-            //afficherVecteur4SSE128(result[i][2*l]);
-            //afficherVecteur4SSE128(result[i][2*l+1]);
         }
     }
 
@@ -257,11 +232,9 @@ void inverse_sse2_B16(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
 }
 
 void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift, int line, const TMatrixCoeff* iT){
-    __m128i x[8]; //Contient le vecteur à transformer
-    __m128i d[8];	//Contient coefficient DCT ou DST
-    __m128i vhi[8], vlo[8], vh[32], vl[32], result[line][8]; //Variables pour calculs  (result[][8] il faudrait mettre line ou la taille max 32)
-
-    // int nbstore = line/2;
+    __m128i x[8];
+    __m128i d[8];
+    __m128i vhi[8], vlo[8], vh[32], vl[32], result[line][8];
 
     for(int l = 0; l < 4; ++l){
         for(int i = 0; i < line; ++i){
@@ -270,8 +243,8 @@ void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
         }
     }
 
-    for(int l = 0; l < 4; ++l){ //l permet calculer "les parties basses" de la matrice de transformé DCT/DST
-        for(int k = 0; k < 4; ++k){ //k permet calculer les autres parties des multiplications (la partie de droite de la matrice de transformé DCT/DST)
+    for(int l = 0; l < 4; ++l){
+        for(int k = 0; k < 4; ++k){
             for(int i = 0; i < 8; ++i){
                 d[i] = _mm_load_si128((__m128i *)&(iT[i*32+k*256+l*8]));
             }
@@ -280,14 +253,12 @@ void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
                 for(int j = 0; j < 8; ++j){
                     x[j] = _mm_set1_epi16(src[j*src_stride+i+k*8*src_stride]);
 
-                    vhi[j] = _mm_mulhi_epi16(x[j], d[j]);            // mul hi
-                    vlo[j] = _mm_mullo_epi16(x[j], d[j]);            // mul lo
+                    vhi[j] = _mm_mulhi_epi16(x[j], d[j]);
+                    vlo[j] = _mm_mullo_epi16(x[j], d[j]);
                     vl[j+8*k] = _mm_unpacklo_epi16(vlo[j], vhi[j]);
                     vh[j+8*k] = _mm_unpackhi_epi16(vlo[j], vhi[j]);
                 }
                 for(int j = 0; j < 4; ++j){
-                    //afficherVecteur4SSE128(_mm_add_epi32(vl[2*j+8*k],vl[2*j+1+8*k]));
-                    //afficherVecteur4SSE128(_mm_add_epi32(vh[2*j+8*k],vh[2*j+1+8*k]));
                     result[i][2*l] = _mm_add_epi32(result[i][2*l], _mm_add_epi32(vl[2*j+8*k],vl[2*j+1+8*k]));
                     result[i][2*l+1] = _mm_add_epi32(result[i][2*l+1], _mm_add_epi32(vh[2*j+8*k],vh[2*j+1+8*k]));
                 }
@@ -297,21 +268,16 @@ void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
 
     for(int l = 0; l < 4; ++l){
         for(int i = 0; i < line; ++i){
-            //afficherVecteur4SSE128(result[i][0]);
-            //afficherVecteur4SSE128(result[i][1]);
             result[i][2*l] = _mm_add_epi32(result[i][2*l], _mm_set1_epi32(1<<(shift-1)));
             result[i][2*l+1] = _mm_add_epi32(result[i][2*l+1], _mm_set1_epi32(1<<(shift-1)));
             result[i][2*l] = _mm_srai_epi32(result[i][2*l], shift);
             result[i][2*l+1] = _mm_srai_epi32(result[i][2*l+1], shift);
-
-            //afficherVecteur4SSE128(result[i][2*l]);
-            //afficherVecteur4SSE128(result[i][2*l+1]);
         }
     }
 
     for(int l = 0; l < 4; ++l){
         for(int i = 0; i < line; i++){
-            result[i][l] = _mm_packs_epi32(result[i][2*l], result[i][2*l+1]); //clip pour repasser en 16
+            result[i][l] = _mm_packs_epi32(result[i][2*l], result[i][2*l+1]);
             _mm_store_si128((__m128i *)&(dst[i*32+l*8]), result[i][l]);
         }
     }
