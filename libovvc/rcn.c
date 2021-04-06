@@ -19,7 +19,6 @@
 #include "x86/rcn_sse.h"
 #endif
 
-#if 1
 static int
 derive_wide_angular_mode(int log2_pb_w, int log2_pb_h, int pred_mode)
 {
@@ -34,96 +33,94 @@ derive_wide_angular_mode(int log2_pb_w, int log2_pb_h, int pred_mode)
     return pred_mode;
 }
 
-void vvc_intra_pred_isp(const OVCTUDec *const ctudec,
-                        uint16_t *const src,
-                        ptrdiff_t dst_stride,
-                        uint8_t intra_mode,
-                        int x0, int y0,
-                        int log2_pb_width, int log2_pb_height,
-                        int log2_cu_width,int log2_cu_height,
-                        int offset_x, int offset_y){
+void
+vvc_intra_pred_isp(const OVCTUDec *const ctudec,
+                   uint16_t *const src,
+                   ptrdiff_t dst_stride,
+                   uint8_t intra_mode,
+                   int x0, int y0,
+                   int log2_pb_w, int log2_pb_h,
+                   int log2_cb_w, int log2_cb_h,
+                   int offset_x, int offset_y)
+{
 
-    uint16_t ref_above[(128<<1) + 128]/*={512}*/;
-    uint16_t ref_left [(128<<1) + 128]/*={512}*/;
-    uint16_t *dst = &src[x0 + (y0*dst_stride)];
-    uint16_t *ref1 = ref_above + (1 << log2_pb_height);
-    uint16_t *ref2 = ref_left + (1 << log2_pb_width);
+    uint16_t ref_abv[(128<<1) + 128];
+    uint16_t ref_lft[(128<<1) + 128];
+    uint16_t *dst = &src[x0 + (y0 * dst_stride)];
+    uint16_t *ref1 = ref_abv + (1 << log2_pb_h);
+    uint16_t *ref2 = ref_lft + (1 << log2_pb_w);
     const struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
     const struct DCFunctions *dc = &rcn_ctx->rcn_funcs.dc;
     const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
 
-    // FIXED? :fill_ref_left_0(src, dst_stride, ref2,
-    //                 ctudec->progress_map.cols[(x0 >> 2) + !!(offset_x % 4)],
-    //                 ctudec->progress_map.rows[((y0 ) >> 2) + !!(y0 % 4)],
-    //                 x0, y0 - offset_y, log2_cu_width, log2_cu_height, offset_y);
     fill_ref_left_0(src, dst_stride, ref2,
                     ctudec->rcn_ctx.progress_field.vfield[(x0 >> 2) + !!(offset_x % 4)],
                     ctudec->rcn_ctx.progress_field.hfield[((y0 ) >> 2) + !!(y0 % 4)],
-                    x0, y0 - offset_y, log2_cu_width, log2_cu_height, offset_y);
-    //  FIXED? :fill_ref_above_0(src, dst_stride, ref1,
-    //                  ctudec->progress_map.rows[(y0 >> 2) + !!(offset_y % 4)],
-    //                  ctudec->progress_map.cols[((x0 ) >> 2) + !!(x0 % 4)],
-    //                  x0 - offset_x, y0, log2_cu_width, log2_cu_height, offset_x);
-   fill_ref_above_0(src, dst_stride, ref1,
-                    ctudec->rcn_ctx.progress_field.hfield[(y0 >> 2) + !!(offset_y % 4)],
-                    ctudec->rcn_ctx.progress_field.vfield[((x0 ) >> 2) + !!(x0 % 4)],
-                    x0 - offset_x, y0, log2_cu_width, log2_cu_height, offset_x);
-    ref1+= offset_x;
-    ref2+= offset_y;
+                    x0, y0 - offset_y, log2_cb_w, log2_cb_h, offset_y);
+
+    fill_ref_above_0(src, dst_stride, ref1,
+                     ctudec->rcn_ctx.progress_field.hfield[(y0 >> 2) + !!(offset_y % 4)],
+                     ctudec->rcn_ctx.progress_field.vfield[((x0 ) >> 2) + !!(x0 % 4)],
+                     x0 - offset_x, y0, log2_cb_w, log2_cb_h, offset_x);
+
+    ref1 += offset_x;
+    ref2 += offset_y;
+
     for (int i = 0; i < 4; ++i){
-        ref2[(1 << log2_cu_height) + (1 << log2_pb_height) + 1 + i] = ref2[(1 << log2_cu_height) + (1 << log2_pb_height) + i];
+        ref2[(1 << log2_cb_h) + (1 << log2_pb_h) + 1 + i] = ref2[(1 << log2_cb_h) + (1 << log2_pb_h) + i];
     }
+
     for (int i = 0; i < 4 ; ++i){
-        ref1[(1 << log2_cu_width) + (1 << log2_pb_width) + 1 + i] = ref1[(1 << log2_cu_width) + (1 << log2_pb_width) + i];
+        ref1[(1 << log2_cb_w) + (1 << log2_pb_w) + 1 + i] = ref1[(1 << log2_cb_w) + (1 << log2_pb_w) + i];
     }
 
     switch (intra_mode) {
-    case OVINTRA_PLANAR://PLANAR
+    case OVINTRA_PLANAR:
     {
-        if (log2_pb_height > 1)
-            planar->pdpc[log2_pb_width > 5 || log2_pb_height > 5](ref1, ref2, dst, dst_stride,
-                                                                  log2_pb_width, log2_pb_height);
-        else
-            planar->func(ref1, ref2, dst, dst_stride, log2_pb_width, log2_pb_height);
+        if (log2_pb_h > 1) {
+            planar->pdpc[log2_pb_w > 5 || log2_pb_h > 5](ref1, ref2, dst, dst_stride,
+                                                         log2_pb_w, log2_pb_h);
+        } else {
+            planar->func(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
+        }
         break;
     }
-    case OVINTRA_DC://DC
+    case OVINTRA_DC:
     {
-        if (log2_pb_height > 1)
-            dc->pdpc(ref1, ref2, dst, dst_stride, log2_pb_width, log2_pb_height);
-        else
-            dc->func(ref1, ref2, dst, dst_stride, log2_pb_width, log2_pb_height);
+        if (log2_pb_h > 1) {
+            dc->pdpc(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
+        } else {
+            dc->func(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
+        }
         break;
     }
-    default://angular
+    default:
     {
-        int pred_mode = derive_wide_angular_mode(log2_cu_width, log2_cu_height,
-                                                 intra_mode);
+        int pred_mode = derive_wide_angular_mode(log2_cb_w, log2_cb_h, intra_mode);
 
         int is_vertical = pred_mode >= OVINTRA_DIA ? 1 : 0;
 
-        if(is_vertical){
+        if(is_vertical) {
             int mode_idx = pred_mode - OVINTRA_VER;
             switch (mode_idx) {
             case 0:
-                //pure vertical
-                if (log2_pb_height > 1){
-                    vvc_intra_ver_pdpc(ref1, ref2, dst, dst_stride, log2_pb_width,
-                                       log2_pb_height);
+                if (log2_pb_h > 1) {
+                    vvc_intra_ver_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w,
+                                       log2_pb_h);
                 } else {
-                    vvc_intra_ver(ref1, ref2, dst, dst_stride, log2_pb_width,
-                                  log2_pb_height);
+                    vvc_intra_ver(ref1, ref2, dst, dst_stride, log2_pb_w,
+                                  log2_pb_h);
                 }
                 break;
-            case (16)://Pure diagonal
+            case 16:
                 vvc_intra_angular_vdia(ref1, ref2, dst, dst_stride,
-                                       log2_pb_width, log2_pb_height);
+                                       log2_pb_w, log2_pb_h);
                 break;
             default:
                 if (mode_idx < 0){
                     int abs_angle_val = angle_table[-mode_idx];
                     uint8_t req_frac = !!(abs_angle_val & 0x1F);
-                    int pu_height = 1 << log2_pb_height;
+                    int pu_height = 1 << log2_pb_h;
                     int inv_angle = inverse_angle_table[-mode_idx];
                     int inv_angle_sum    = 256;
 
@@ -134,35 +131,35 @@ void vvc_intra_pred_isp(const OVCTUDec *const ctudec,
 
                     if (!req_frac){
                         intra_angular_v_nofrac(ref1, dst, dst_stride,
-                                                log2_pb_width, log2_pb_height,
-                                                -abs_angle_val);
+                                               log2_pb_w, log2_pb_h,
+                                               -abs_angle_val);
                     } else {
                         intra_angular_v_cubic(ref1, dst, dst_stride,
-                                              log2_pb_width, log2_pb_height,
+                                              log2_pb_w, log2_pb_h,
                                               -abs_angle_val);
                     }
 
-                } else if ((mode_idx < 8 &&  OVMIN(2, log2_pb_height - (floor_log2(3*inverse_angle_table[mode_idx] - 2) - 8)) < 0) || log2_pb_height < 2){//FIXME check this
+                } else if ((mode_idx < 8 &&  OVMIN(2, log2_pb_h - (floor_log2(3*inverse_angle_table[mode_idx] - 2) - 8)) < 0) || log2_pb_h < 2){//FIXME check this
                     int abs_angle_val = angle_table[mode_idx];
                     uint8_t req_frac = !!(abs_angle_val & 0x1F);
                     if (!req_frac){
                         intra_angular_v_nofrac(ref1, dst, dst_stride,
-                                                log2_pb_width, log2_pb_height,
+                                                log2_pb_w, log2_pb_h,
                                                 abs_angle_val);
                     } else {
                         intra_angular_v_cubic(ref1, dst, dst_stride,
-                                              log2_pb_width, log2_pb_height,
+                                              log2_pb_w, log2_pb_h,
                                               abs_angle_val);
                     }
                 } else {
                     uint8_t req_frac = !!(angle_table[mode_idx] & 0x1F);
                     if (!req_frac){
                         intra_angular_v_nofrac_pdpc(ref1, ref2, dst, dst_stride,
-                                                    log2_pb_width, log2_pb_height,
+                                                    log2_pb_w, log2_pb_h,
                                                     mode_idx);
                     } else {
                         intra_angular_v_cubic_pdpc(ref1, ref2, dst, dst_stride,
-                                              log2_pb_width, log2_pb_height,
+                                              log2_pb_w, log2_pb_h,
                                               mode_idx);
                     }
                 }
@@ -172,24 +169,24 @@ void vvc_intra_pred_isp(const OVCTUDec *const ctudec,
             int mode_idx = -(pred_mode - OVINTRA_HOR);
             switch (mode_idx) {
             case 0:
-                if (log2_pb_height > 1){
+                if (log2_pb_h > 1){
                     vvc_intra_hor_pdpc(ref1, ref2, dst, dst_stride,
-                                       log2_pb_width, log2_pb_height);
+                                       log2_pb_w, log2_pb_h);
                 } else {
                     vvc_intra_hor(ref1, ref2, dst, dst_stride,
-                                  log2_pb_width, log2_pb_height);
+                                  log2_pb_w, log2_pb_h);
                 }
                 break;
-            case (16):
+            case 16:
                 vvc_intra_angular_hdia(ref1, ref2, dst, dst_stride,
-                                       log2_pb_width, log2_pb_height);
+                                       log2_pb_w, log2_pb_h);
                 break;
             default:
             {
                 if (mode_idx < 0){
                     int abs_angle_val = angle_table[-mode_idx];
                     uint8_t req_frac = !!(abs_angle_val & 0x1F);
-                    int pu_width = 1 << log2_pb_width;
+                    int pu_width = 1 << log2_pb_w;
                     int inv_angle = inverse_angle_table[-mode_idx];
                     int inv_angle_sum    = 256;
 
@@ -200,35 +197,35 @@ void vvc_intra_pred_isp(const OVCTUDec *const ctudec,
 
                     if (!req_frac){
                         intra_angular_h_nofrac(ref2, dst, dst_stride,
-                                               log2_pb_width, log2_pb_height,
+                                               log2_pb_w, log2_pb_h,
                                                -abs_angle_val);
                     } else {
                         intra_angular_h_cubic(ref2, dst, dst_stride,
-                                              log2_pb_width, log2_pb_height,
+                                              log2_pb_w, log2_pb_h,
                                               -abs_angle_val);
 
                     }
-                } else if ((mode_idx < 8 &&  OVMIN(2, log2_pb_width - (floor_log2(3*inverse_angle_table[mode_idx] - 2) - 8)) < 0) || log2_pb_height < 2){//FIXME check this
+                } else if ((mode_idx < 8 &&  OVMIN(2, log2_pb_w - (floor_log2(3*inverse_angle_table[mode_idx] - 2) - 8)) < 0) || log2_pb_h < 2){//FIXME check this
                     int abs_angle_val = angle_table[mode_idx];
                     uint8_t req_frac = !!(abs_angle_val & 0x1F);
                     if (!req_frac){
                         intra_angular_h_nofrac(ref2, dst, dst_stride,
-                                                log2_pb_width, log2_pb_height,
+                                                log2_pb_w, log2_pb_h,
                                                 abs_angle_val);
                     } else {
                         intra_angular_h_cubic(ref2, dst, dst_stride,
-                                              log2_pb_width, log2_pb_height,
+                                              log2_pb_w, log2_pb_h,
                                               abs_angle_val);
                     }
                 } else {
                     uint8_t req_frac = !!(angle_table[mode_idx] & 0x1F);
                     if (!req_frac){
                         intra_angular_h_nofrac_pdpc(ref1, ref2, dst, dst_stride,
-                                                    log2_pb_width, log2_pb_height,
+                                                    log2_pb_w, log2_pb_h,
                                                     mode_idx);
                     } else {
                         intra_angular_h_cubic_pdpc(ref1, ref2, dst, dst_stride,
-                                              log2_pb_width, log2_pb_height,
+                                              log2_pb_w, log2_pb_h,
                                               mode_idx);
                     }
                 }
@@ -241,60 +238,48 @@ void vvc_intra_pred_isp(const OVCTUDec *const ctudec,
     }
 }
 
-void vvc_intra_pred_multi_ref( const OVCTUDec *const ctudec,
-                               uint16_t *const src,
-                               ptrdiff_t dst_stride,
-                               uint8_t intra_mode, int x0, int y0,
-                               int log2_pb_width, int log2_pb_height,
-                               int multi_ref_idx){
-
-    uint16_t ref_above[(128<<1) + 128]/*={0}*/;
-    uint16_t ref_left [(128<<1) + 128]/*={0}*/;
-    uint16_t *dst = &src[x0 + (y0*dst_stride)];
-    uint16_t *ref1 = ref_above + (1 << log2_pb_height);
-    uint16_t *ref2 = ref_left  + (1 << log2_pb_width);
+void
+vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
+                         uint16_t *const src,
+                         ptrdiff_t dst_stride,
+                         uint8_t intra_mode, int x0, int y0,
+                         int log2_pb_w, int log2_pb_h,
+                         int mrl_idx)
+{
+    uint16_t ref_abv[(128<<1) + 128];
+    uint16_t ref_lft [(128<<1) + 128];
+    uint16_t *dst = &src[x0 + (y0 * dst_stride)];
+    uint16_t *ref1 = ref_abv + (1 << log2_pb_h);
+    uint16_t *ref2 = ref_lft  + (1 << log2_pb_w);
     const struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
     const struct DCFunctions *dc = &rcn_ctx->rcn_funcs.dc;
     const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
-// FIXED? fill_ref_left_0_mref(src, dst_stride, ref2,
-//                      ctudec->progress_map.cols[x0 >> 2],
-//         ctudec->progress_map.rows[y0 >> 2],
-//         multi_ref_idx, x0, y0,
-//         log2_pb_width, log2_pb_height);
-fill_ref_left_0_mref(src, dst_stride, ref2,
-                   ctudec->rcn_ctx.progress_field.vfield[x0 >> 2],
-                    ctudec->rcn_ctx.progress_field.hfield[y0 >> 2],
-                    multi_ref_idx, x0, y0,
-                    log2_pb_width, log2_pb_height);
-                // FIXED? :fill_ref_above_0_mref(src, dst_stride, ref1,
-                //                       ctudec->progress_map.rows[y0 >> 2],
-                //         ctudec->progress_map.cols[x0 >> 2],
-                //         multi_ref_idx, x0 , y0,
-                //         log2_pb_width, log2_pb_height);
-          fill_ref_above_0_mref(src, dst_stride, ref1,
-                  ctudec->rcn_ctx.progress_field.hfield[y0 >> 2],
-                  ctudec->rcn_ctx.progress_field.vfield[x0 >> 2],
-                  multi_ref_idx, x0 , y0,
-                  log2_pb_width, log2_pb_height);
 
-    ref1 += multi_ref_idx;
-    ref2 += multi_ref_idx;
+    fill_ref_left_0_mref(src, dst_stride, ref2,
+                         ctudec->rcn_ctx.progress_field.vfield[x0 >> 2],
+                         ctudec->rcn_ctx.progress_field.hfield[y0 >> 2],
+                         mrl_idx, x0, y0,
+                         log2_pb_w, log2_pb_h);
+
+    fill_ref_above_0_mref(src, dst_stride, ref1,
+                          ctudec->rcn_ctx.progress_field.hfield[y0 >> 2],
+                          ctudec->rcn_ctx.progress_field.vfield[x0 >> 2],
+                          mrl_idx, x0 , y0,
+                          log2_pb_w, log2_pb_h);
+
+    ref1 += mrl_idx;
+    ref2 += mrl_idx;
 
     switch (intra_mode) {
-    case OVINTRA_PLANAR://PLANAR
-    {
-        planar->func(ref1, ref2, dst, dst_stride, log2_pb_width, log2_pb_height);
+    case OVINTRA_PLANAR:
+        planar->func(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
         break;
-    }
-    case OVINTRA_DC://DC
-    {
-        dc->func(ref1, ref2, dst, dst_stride, log2_pb_width, log2_pb_height);
+    case OVINTRA_DC:
+        dc->func(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
         break;
-    }
-    default://angular
+    default:
     {
-        int pred_mode = derive_wide_angular_mode(log2_pb_width, log2_pb_height,
-                                                 intra_mode);
+        int pred_mode = derive_wide_angular_mode(log2_pb_w, log2_pb_h, intra_mode);
 
         int is_vertical = pred_mode >= OVINTRA_DIA ? 1 : 0;
 
@@ -302,27 +287,25 @@ fill_ref_left_0_mref(src, dst_stride, ref2,
             int mode_idx = pred_mode - OVINTRA_VER ;
             switch (mode_idx) {
             case 0:
-                //pure vertical
-                vvc_intra_ver(ref1, ref2,
-                              dst, dst_stride, log2_pb_width, log2_pb_height);
+                vvc_intra_ver(ref1, ref2, dst, dst_stride,
+                              log2_pb_w, log2_pb_h);
                 break;
-            case (16)://Pure diagonal
-                intra_angular_vdia_mref(ref1, ref2,
-                                        dst, dst_stride,
-                                        log2_pb_width, log2_pb_height,
-                                        multi_ref_idx);
+            case 16:
+                intra_angular_vdia_mref(ref1, ref2, dst, dst_stride,
+                                        log2_pb_w, log2_pb_h,
+                                        mrl_idx);
                 break;
             default:
                 if (mode_idx < 0){
-                    ref1 = ref_above + multi_ref_idx;
-                    ref2 = ref_left  + multi_ref_idx;
+                    ref1 = ref_abv + mrl_idx;
+                    ref2 = ref_lft + mrl_idx;
                     intra_vneg_cubic_mref(ref1, ref2, dst, dst_stride,
-                                          log2_pb_width, log2_pb_height,
-                                          -mode_idx, multi_ref_idx);
+                                          log2_pb_w, log2_pb_h,
+                                          -mode_idx, mrl_idx);
                 } else {
                     intra_angular_v_cubic_mref(ref1, dst, dst_stride,
-                                          log2_pb_width, log2_pb_height,
-                                          mode_idx, multi_ref_idx);
+                                               log2_pb_w, log2_pb_h,
+                                               mode_idx, mrl_idx);
 
                 }
                 break;
@@ -331,41 +314,37 @@ fill_ref_left_0_mref(src, dst_stride, ref2,
             int mode_idx = -(pred_mode - OVINTRA_HOR);
             switch (mode_idx) {
             case 0:
-                //pure horizontal
-                vvc_intra_hor(ref1, ref2,
-                              dst, dst_stride, log2_pb_width, log2_pb_height);
+                vvc_intra_hor(ref1, ref2, dst, dst_stride,
+                              log2_pb_w, log2_pb_h);
                 break;
-
-            case (16)://Pure diagonal
-                intra_angular_hdia_mref(ref1, ref2,
-                                        dst, dst_stride,
-                                        log2_pb_width, log2_pb_height,
-                                        multi_ref_idx);
+            case 16:
+                intra_angular_hdia_mref(ref1, ref2, dst, dst_stride,
+                                        log2_pb_w, log2_pb_h,
+                                        mrl_idx);
                 break;
             default:
             {
                 if (mode_idx < 0){ //TODO move copy inside neg function
-                    ref1 = ref_above + multi_ref_idx;
-                    ref2 = ref_left  + multi_ref_idx;
+                    ref1 = ref_abv + mrl_idx;
+                    ref2 = ref_lft + mrl_idx;
                     intra_hneg_cubic_mref(ref1, ref2,
                                           dst, dst_stride,
-                                          log2_pb_width, log2_pb_height,
-                                          -mode_idx, multi_ref_idx);
+                                          log2_pb_w, log2_pb_h,
+                                          -mode_idx, mrl_idx);
                 } else {
                     //from 0 to ref_lengths +1, 0 being top_left sample
                     intra_angular_h_cubic_mref(ref2, dst, dst_stride,mode_idx,
-                                          log2_pb_width, log2_pb_height,
-                                          multi_ref_idx);
+                                               log2_pb_w, log2_pb_h,
+                                               mrl_idx);
                 }
             }
-                break;
+            break;
             }
         }
         break;
     }
     }
 }
-#endif
 
 void
 rcn_residual(OVCTUDec *const ctudec,
