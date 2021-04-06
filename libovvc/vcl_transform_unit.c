@@ -303,7 +303,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
                     unsigned int x0, unsigned int y0,
                     unsigned int log2_cb_w, unsigned int log2_cb_h,
                     uint8_t intra_mode, uint8_t cbf_flags,
-                    uint16_t lfnst_sb[4][16], uint8_t lfnst_flag, uint8_t lfnst_idx)
+                    int16_t lfnst_sb[4][16], uint8_t lfnst_flag, uint8_t lfnst_idx)
 {
     #if 0
     struct OVDrvCtx *const pred_ctx = &ctudec->drv_ctx;
@@ -396,7 +396,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                     unsigned int x0, unsigned int y0,
                     unsigned int log2_cb_w, unsigned int log2_cb_h,
                 uint8_t intra_mode, uint8_t cbf_flags,
-                uint16_t lfnst_sb[4][16], uint8_t lfnst_flag, uint8_t lfnst_idx)
+                int16_t lfnst_sb[4][16], uint8_t lfnst_flag, uint8_t lfnst_idx)
 {
     const struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
     const struct RCNFunctions *const rcn_func = &ctudec->rcn_ctx.rcn_funcs;
@@ -536,7 +536,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
     int nb_pb;
     uint64_t sig_sb_map[4] = {0};
     uint8_t nb_coeffs[4] = {0};
-    uint16_t lfnst_sb[4][16];
+    int16_t lfnst_sb[4][16];
     int i;
 
     /* height < 16 imposes restrictions on split dimension */
@@ -634,7 +634,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
     int16_t *coeffs_y = ctu_dec->residual_y;
     uint64_t sig_sb_map[4] = {0};
     uint8_t nb_coeffs[4] = {0};
-    uint16_t lfnst_sb[4][16];
+    int16_t lfnst_sb[4][16];
 
     /* width < 16 imposes restrictions on split numbers */
     if (log2_cb_w < 4 && (log2_pb_h <= (4 - log2_cb_w))) {
