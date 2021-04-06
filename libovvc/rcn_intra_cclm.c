@@ -1993,10 +1993,11 @@ sort_average_lm_ref_samples(const uint16_t *const lm_smp, const uint16_t *const 
         uint8_t max_idxs = 0x31;
         #endif
 
+        /* FIXME check if == */
         if (lm_smp[0] > lm_smp[2]) SWAP(int8_t, min_idx[0], min_idx[1]);
         if (lm_smp[1] > lm_smp[3]) SWAP(int8_t, max_idx[0], max_idx[1]);
 
-        if (lm_smp[min_idx[0]] > lm_smp[max_idx[1]]) SWAP(int16_t*, min_idx, max_idx);
+        if (lm_smp[min_idx[0]] > lm_smp[max_idx[1]]) SWAP(int8_t*, min_idx, max_idx);
         if (lm_smp[min_idx[1]] > lm_smp[max_idx[0]]) SWAP(int8_t, min_idx[1], max_idx[0]);
 
         /* FIXME average should be performed in an other function */
