@@ -144,7 +144,7 @@ vvc_intra_angular_h_c(const uint16_t* ref_lft, uint16_t* dst,
 
         for (int y = 0; y < width; y++) {
                 const int delta_int = delta_pos >> 5;
-                const int delta_frac = delta_pos & (32 - 1);
+                const int delta_frac = delta_pos & 0x1F;
                 // TODO for bit depth <= 10 we can use uint16_t for computation
                 const uint16_t* pRM = ref_lft + delta_int + 1;
                 int last_ref_val = *pRM++;
@@ -186,7 +186,7 @@ vvc_intra_angular_v_c(const uint16_t* ref_abv, uint16_t* dst,
 
         for (int y = 0, delta_pos = angle_val; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
-                const int delta_frac = delta_pos & (32 - 1);
+                const int delta_frac = delta_pos & 0x1F;
                 const uint16_t* pRM = ref_abv + delta_int + 1;
                 int last_ref_val = *pRM++;
                 for (int x = 0; x < width; pRM++, x++) {
@@ -317,7 +317,7 @@ vvc_intra_angular_hpos_wide(const uint16_t* const ref_abv,
         // swapped width/height for horizontal mode:
         for (int y = 0; y < width; y++) {
                 const int delta_int = delta_pos >> 5;        // Integer part
-                const int delta_frac = delta_pos & (32 - 1); // Fractionnal part
+                const int delta_frac = delta_pos & 0x1F; // Fractionnal part
                 int inv_angle_sum = 256 + inv_angle;
 
                 // Do linear filtering
@@ -381,7 +381,7 @@ vvc_intra_angular_vpos_wide(const uint16_t* const ref_abv,
                              8)); //(log2_pb_w + log2_pb_h - 2) >> 2;
         for (int y = 0; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
-                const int delta_frac = delta_pos & (32 - 1);
+                const int delta_frac = delta_pos & 0x1F;
                 int inv_angle_sum = 256 + inv_angle;
 
                 // Do linear filtering
@@ -637,7 +637,7 @@ intra_angular_v_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
 
         for (int y = 0; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
-                const int delta_frac = delta_pos & (32 - 1);
+                const int delta_frac = delta_pos & 0x1F;
                 int inv_angle_sum = 256 + inv_angle;
                 const int16_t* ref = (int16_t*)ref_abv + delta_int;
                 for (int x = 0; x < width; x++) {
@@ -681,7 +681,7 @@ intra_angular_h_cubic(const uint16_t* ref_lft, uint16_t* dst,
         int delta_pos = angle_val;
         for (int y = 0; y < width; y++) {
                 const int delta_int = delta_pos >> 5;
-                const int delta_frac = delta_pos & (32 - 1);
+                const int delta_frac = delta_pos & 0x1F;
                 const int16_t* ref = (int16_t*)ref_lft + delta_int;
                 const int8_t* filter = &chroma_filter[delta_frac << 2];
                 for (int x = 0; x < height; x++) {
@@ -725,7 +725,7 @@ intra_angular_h_gauss(const uint16_t* ref_lft, uint16_t* dst,
         int delta_pos = angle_val;
         for (int y = 0; y < width; y++) {
                 const int delta_int = delta_pos >> 5;
-                const int delta_frac = delta_pos & (32 - 1);
+                const int delta_frac = delta_pos & 0x1F;
                 const int16_t* ref = (int16_t*)ref_lft + delta_int;
                 for (int x = 0; x < height; x++) {
                         _tmp[x] =
@@ -764,7 +764,7 @@ intra_angular_v_cubic(const uint16_t* ref_abv, uint16_t* dst,
 
         for (int y = 0; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
-                const int delta_frac = delta_pos & (32 - 1);
+                const int delta_frac = delta_pos & 0x1F;
 
                 const int16_t* ref = (int16_t*)ref_abv + delta_int;
                 const int8_t* filter = &chroma_filter[delta_frac << 2];
@@ -796,7 +796,7 @@ intra_angular_v_gauss(const uint16_t* ref_abv, uint16_t* dst,
 
         for (int y = 0; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
-                const int delta_frac = delta_pos & (32 - 1);
+                const int delta_frac = delta_pos & 0x1F;
 
                 const int16_t* ref = (int16_t*)ref_abv + delta_int;
 
@@ -836,7 +836,7 @@ intra_angular_h_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
 
         for (int y = 0; y < width; y++) {
                 const int delta_int = delta_pos >> 5;
-                const int delta_frac = delta_pos & (32 - 1);
+                const int delta_frac = delta_pos & 0x1F;
                 int inv_angle_sum = 256 + inv_angle;
                 const int16_t* ref = (int16_t*)ref_lft + delta_int;
                 const int8_t* filter = &chroma_filter[delta_frac << 2];
@@ -894,7 +894,7 @@ intra_angular_v_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
           OVMIN(2, log2_pb_h - (floor_log2(3 * inv_angle - 2) - 8));
         for (int y = 0; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
-                const int delta_frac = delta_pos & (32 - 1);
+                const int delta_frac = delta_pos & 0x1F;
                 int inv_angle_sum = 256 + inv_angle;
                 const int16_t* ref = (int16_t *)ref_abv + delta_int;
                 const int8_t* filter = &chroma_filter[delta_frac << 2];
@@ -972,8 +972,7 @@ intra_angular_vdia_mref(const uint16_t* const ref_abv,
                         ptrdiff_t dst_stride, int log2_pb_w,
                         int log2_pb_h, uint8_t mrl_idx)
 {
-        int delta_pos =
-          32 * (mrl_idx + 1); // angle val = 32 for strict diag
+        int delta_pos = 32 * (mrl_idx + 1); // angle val = 32 for strict diag
         uint16_t* _dst = dst;
         int width = 1 << log2_pb_w;
         int height = 1 << log2_pb_h;
@@ -1011,7 +1010,7 @@ intra_hneg_cubic_mref(uint16_t* const ref_abv, uint16_t* const ref_lft,
         if ((-angle_val & 0x1F)) {
                 for (int y = 0; y < width; y++) {
                         const int delta_int = delta_pos >> 5;
-                        const int delta_frac = delta_pos & (32 - 1);
+                        const int delta_frac = delta_pos & 0x1F;
                         const int16_t* ref = (int16_t *)refMain + delta_int;
                         const int8_t* filter = &chroma_filter[delta_frac << 2];
                         for (int x = 0; x < height;
@@ -1069,7 +1068,7 @@ intra_vneg_cubic_mref(uint16_t* const ref_abv, uint16_t* const ref_lft,
                      y < height;
                      y++) {
                         const int delta_int = delta_pos >> 5;
-                        const int delta_frac = delta_pos & (32 - 1);
+                        const int delta_frac = delta_pos & 0x1F;
                         const int16_t* ref = (int16_t *)refMain + delta_int;
                         const int8_t* filter = &chroma_filter[delta_frac << 2];
                         for (int x = 0; x < width; x++) {
@@ -1117,7 +1116,7 @@ intra_angular_h_cubic_mref(const uint16_t* const ref_lft, uint16_t* const dst,
         if ((angle_val & 0x1F)) {
                 for (int y = 0; y < width; y++) {
                         const int delta_int = delta_pos >> 5;
-                        const int delta_frac = delta_pos & (32 - 1);
+                        const int delta_frac = delta_pos & 0x1F;
                         const int16_t* ref = (int16_t *)ref_lft + delta_int;
                         const int8_t* filter = &chroma_filter[delta_frac << 2];
                         for (int x = 0; x < height;
@@ -1172,7 +1171,7 @@ intra_angular_v_cubic_mref(const uint16_t* const ref_abv, uint16_t* const dst,
         if ((angle_val & 0x1F)) {
                 for (int y = 0; y < height; y++) {
                         const int delta_int = delta_pos >> 5;
-                        const int delta_frac = delta_pos & (32 - 1);
+                        const int delta_frac = delta_pos & 0x1F;
                         const int16_t* ref = (int16_t *)ref_abv + delta_int;
                         const int8_t* filter = &chroma_filter[delta_frac << 2];
                         for (int x = 0; x < width; x++) { // FIXME check
