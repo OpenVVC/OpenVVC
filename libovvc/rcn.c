@@ -298,6 +298,7 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
             default:
                 if (mode_idx < 0){
                     int inv_angle = inverse_angle_table[-mode_idx];
+                    int angle_val = -angle_table[-mode_idx];
                     int pb_h  = 1 << log2_pb_h;
                     int inv_angle_sum = 256;
 
@@ -310,13 +311,14 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
                         dst_ref[k] = tmp_lft[OVMIN(inv_angle_sum >> 9, pb_h)];
                     }
 
-                    intra_vneg_cubic_mref(ref1, ref2, dst, dst_stride,
-                                          log2_pb_w, log2_pb_h,
-                                          -mode_idx, mrl_idx);
-                } else {
                     intra_angular_v_cubic_mref(ref1, dst, dst_stride,
                                                log2_pb_w, log2_pb_h,
-                                               mode_idx, mrl_idx);
+                                               angle_val, mrl_idx);
+                } else {
+                    int angle_val = angle_table[mode_idx];
+                    intra_angular_v_cubic_mref(ref1, dst, dst_stride,
+                                               log2_pb_w, log2_pb_h,
+                                               angle_val, mrl_idx);
 
                 }
                 break;
@@ -336,6 +338,7 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
             default:
             {
                 if (mode_idx < 0) {
+                    int angle_val = -angle_table[-mode_idx];
                     int inv_angle = inverse_angle_table[-mode_idx];
                     int inv_angle_sum = 256;
 
@@ -349,13 +352,13 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
                         inv_angle_sum += inv_angle;
                         dst_ref[k] = tmp_abv[OVMIN((inv_angle_sum >> 9), pb_w)];
                     }
+                    intra_angular_h_cubic_mref(ref2, dst, dst_stride, angle_val,
+                                               log2_pb_w, log2_pb_h,
+                                               mrl_idx);
 
-                    intra_hneg_cubic_mref(ref1, ref2, dst, dst_stride,
-                                          log2_pb_w, log2_pb_h,
-                                          -mode_idx, mrl_idx);
                 } else {
-                    //from 0 to ref_lengths +1, 0 being top_left sample
-                    intra_angular_h_cubic_mref(ref2, dst, dst_stride, mode_idx,
+                    int angle_val = angle_table[mode_idx];
+                    intra_angular_h_cubic_mref(ref2, dst, dst_stride, angle_val,
                                                log2_pb_w, log2_pb_h,
                                                mrl_idx);
                 }
