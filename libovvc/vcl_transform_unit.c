@@ -348,7 +348,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
             if (log2_pb_w) {
                 int shift_v = 6 + 1;
                 int shift_h = (6 + 15 - 1) - 10;
-                int16_t tmp[64*64];
+                DECLARE_ALIGNED(32, int16_t, tmp)[64*64];
                 int16_t *src = coeffs_y;
                 int16_t *dst = ctudec->transform_buff;
                 int cb_h = 1 << log2_cb_h;
@@ -366,7 +366,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
             } else {
                 int shift_h = (6 + 15 - 1) - 10;
                 int cb_h = 1 << log2_cb_h;
-                int16_t tmp[64];
+                DECLARE_ALIGNED(32, int16_t, tmp)[64];
 
                 memset(tmp, 0, sizeof(int16_t) << (log2_pb_w + log2_cb_h));
 
@@ -422,7 +422,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
             int16_t *coeffs_y = ctudec->residual_y + i * (1 << (log2_cb_w + log2_pb_h));
 
             if (log2_pb_h) {
-                int16_t tmp[64*64];
+                DECLARE_ALIGNED(32, int16_t, tmp)[64*64];
                 int shift_v = 6 + 1;
                 int shift_h = (6 + 15 - 1) - 10;
                 int16_t *src = coeffs_y;
@@ -445,7 +445,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
             } else {
                 int shift_h = (6 + 15 - 1) - 10;
                 int cb_w = 1 << log2_cb_w;
-                int16_t tmp[64];
+                DECLARE_ALIGNED(32, int16_t, tmp)[64];
 
                 memset(tmp, 0, sizeof(int16_t) << (log2_cb_w + log2_pb_h));
 
