@@ -346,7 +346,7 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVSH *const sh, const OVSPS *
     sao_info->chroma_format_idc = sps->sps_chroma_format_idc;
     if(sao_info->sao_luma_flag || sao_info->sao_chroma_flag){
         if(!sao_info->sao_params){
-            sao_info->sao_params = ov_malloc(sizeof(SAOParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
+            sao_info->sao_params = ov_mallocz(sizeof(SAOParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
         } else {
             memset(sao_info->sao_params,0,sizeof(SAOParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
         }
