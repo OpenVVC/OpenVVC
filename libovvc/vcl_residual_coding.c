@@ -1435,11 +1435,12 @@ decode_pass2_ts(OVCABACCtx *const cabac_ctx,
                 uint8_t log2_sb_w){
     int nb_read;
     int nb_pass3 = 0;
+    const int x_mask = ((1 << log2_sb_w) - 1);
     uint64_t *const ts_ctx_table = &cabac_ctx->ctx_table[TS_GTX_FLAG_CTX_OFFSET];
 
-    for (nb_read = 0; nb_read < nb_pass2 && *num_remaining_bins>= 4; ++nb_read){
+    for (nb_read = 0; nb_read < nb_pass2 && *num_remaining_bins >= 4; ++nb_read){
         int idx = pass2_idx_map[nb_read];
-        int x = idx & ((1 << log2_sb_w) - 1);
+        int x = idx & x_mask;
         int y = idx >> log2_sb_w;
         int val = 0;
 
@@ -1472,16 +1473,18 @@ decode_pass2_ts(OVCABACCtx *const cabac_ctx,
 }
 
 static int
-ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
-                          int16_t  *const coeffs,
-                          uint8_t  *const nb_sig_ngh_map,
-                          uint8_t  *const sign_table,
-                          uint16_t *const abs_coeffs,
-                          int16_t *const num_remaining_bins)
+ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
+                           int16_t  *const coeffs,
+                           uint8_t  *const nb_sig_ngh_map,
+                           uint8_t  *const sign_table,
+                           uint16_t *const abs_coeffs,
+                           int16_t *const num_remaining_bins,
+                           uint8_t log2_sb_w,
+                           uint64_t scan_map)
 {
     uint64_t *const ctx_table = cabac_ctx->ctx_table;
 
-    const uint8_t log2_sb_w = 2;
+    const int x_mask = (1 << log2_sb_w) - 1;
     
     uint8_t sig_c_idx_map[16];
     uint8_t pass2_idx_map[16];
@@ -1494,15 +1497,13 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
 
     uint16_t sign_map = 0;
 
-    uint64_t scan_map = diag_map_4X4;
-
     int coeff_idx;
 
     for (coeff_idx = 0; coeff_idx < 16 - 1 && *num_remaining_bins >= 4; ++coeff_idx) {
 
         int idx = scan_map & 0xF;
 
-        int x = idx & ((1 << log2_sb_w) - 1);
+        int x = idx & x_mask;
         int y = idx >> log2_sb_w;
 
         uint8_t nb_sig_c_ngh = nb_sig_ngh_map[x + y * VVC_TR_CTX_STRIDE];
@@ -1548,7 +1549,7 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
     if (*num_remaining_bins >= 4) {
         int idx = scan_map & 0xF;
 
-        int x = idx & ((1 << log2_sb_w) - 1);
+        int x = idx & x_mask;
         int y = idx >> log2_sb_w;
 
         uint8_t ts_sig_c_flag = !nb_sig_c;
@@ -1601,7 +1602,7 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
     for (int i = 0; i < nb_pass3; i++) {
         int idx = pass3_idx_map[i];
         int remainder = decode_truncated_rice(cabac_ctx, 1);
-        int x = idx & ((1 << log2_sb_w) - 1);
+        int x = idx & x_mask;
         int y = idx >> log2_sb_w;
 
         coeffs[idx] += remainder;
@@ -1612,7 +1613,7 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
     for (int i = nb_read_pass2; i < nb_pass2; i++) {
         int idx = pass2_idx_map[i];
         int remainder = decode_truncated_rice(cabac_ctx, 1);
-        int x = idx & ((1 << log2_sb_w) - 1);
+        int x = idx & x_mask;
         int y = idx >> log2_sb_w;
 
         coeffs[idx] += remainder;
@@ -1626,7 +1627,7 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
     /* TS coeff Prediction */
     for (int i = 0; i < nb_sig_c; i++) {
         int idx = sig_c_idx_map[i];
-        int x = idx & ((1 << log2_sb_w) - 1);
+        int x = idx & x_mask;
         int y = idx >> log2_sb_w;
         int max_abs_ngh = OVMAX(abs_coeffs[x     + ((y - 1) * VVC_TR_CTX_STRIDE)],
                                 abs_coeffs[x - 1 + ( y      * VVC_TR_CTX_STRIDE)]);
@@ -1662,6 +1663,60 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
     }
 
     return 0;
+}
+
+static int
+ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
+                          int16_t  *const coeffs,
+                          uint8_t  *const nb_sig_ngh_map,
+                          uint8_t  *const sign_table,
+                          uint16_t *const abs_coeffs,
+                          int16_t *const num_remaining_bins)
+{
+    int ret;
+    uint64_t scan_map = diag_map_4X4;
+
+    ret = ovcabac_read_ae_sb_ts_core(cabac_ctx, coeffs,
+                                     nb_sig_ngh_map, sign_table,
+                                     abs_coeffs, num_remaining_bins,
+                                     2, scan_map);
+    return ret;
+}
+
+static int
+ovcabac_read_ae_sb_ts_2x8(OVCABACCtx *const cabac_ctx,
+                          int16_t  *const coeffs,
+                          uint8_t  *const nb_sig_ngh_map,
+                          uint8_t  *const sign_table,
+                          uint16_t *const abs_coeffs,
+                          int16_t *const num_remaining_bins)
+{
+    int ret;
+    uint64_t scan_map = diag_map_2x8;
+
+    ret = ovcabac_read_ae_sb_ts_core(cabac_ctx, coeffs,
+                                     nb_sig_ngh_map, sign_table,
+                                     abs_coeffs, num_remaining_bins,
+                                     1, scan_map);
+    return ret;
+}
+
+static int
+ovcabac_read_ae_sb_ts_8x2(OVCABACCtx *const cabac_ctx,
+                          int16_t  *const coeffs,
+                          uint8_t  *const nb_sig_ngh_map,
+                          uint8_t  *const sign_table,
+                          uint16_t *const abs_coeffs,
+                          int16_t *const num_remaining_bins)
+{
+    int ret;
+    uint64_t scan_map = diag_map_8x2;
+
+    ret = ovcabac_read_ae_sb_ts_core(cabac_ctx, coeffs,
+                                     nb_sig_ngh_map, sign_table,
+                                     abs_coeffs, num_remaining_bins,
+                                     3, scan_map);
+    return ret;
 }
 
 static inline void
@@ -4125,14 +4180,8 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
-    const uint8_t *const scan_cg_x = ff_vvc_scan_x[log2_tb_w  - 2][log2_tb_h - 2];
-    const uint8_t *const scan_cg_y = ff_vvc_scan_y[log2_tb_w  - 2][log2_tb_h - 2];
-
-    int i;
-    int nb_cg, nb_sig_c;
-
-    int nb_sig_cg = 0;
-    int cg_offset;
+    /* FIXME usefull return ?? */
+    int nb_sig_c = 0;
 
     uint8_t log2_tb_s = log2_tb_h + log2_tb_w;
 
@@ -4142,9 +4191,6 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
     uint8_t nb_significant[VVC_TR_CTX_SIZE]={0};
     uint8_t sign_map[VVC_TR_CTX_SIZE]={0};
     uint16_t abs_coeffs[VVC_TR_CTX_SIZE]={0};
-
-    uint64_t sig_sb_map = 0;
-    uint8_t sig_sb_flg = 0;
 
     /* FIXME if called from chroma ? */
     int qp = ctu_dec->dequant_luma_skip.qp;
@@ -4171,38 +4217,85 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
         memcpy(&dst[2 << log2_tb_w] , &cg_coeffs[8],  sizeof(int16_t) * 4);
         memcpy(&dst[3 << log2_tb_w] , &cg_coeffs[12], sizeof(int16_t) * 4);
 
-        return nb_sig_c;
-    }
+        return 0xFFFF;
+    } else if (log2_tb_w > 1 && log2_tb_h > 1) {
+        const uint8_t *const scan_cg_x = ff_vvc_scan_x[log2_tb_w  - 2][log2_tb_h - 2];
+        const uint8_t *const scan_cg_y = ff_vvc_scan_y[log2_tb_w  - 2][log2_tb_h - 2];
 
-    nb_cg = (1 << log2_tb_s) >> 4;
+        uint64_t sig_sb_map = 0;
+        uint8_t sig_sb_flg = 0;
 
-    for (i = 0; i < nb_cg - 1; ++i) {
-        int x_cg = scan_cg_x[i];
-        int y_cg = scan_cg_y[i];
+        int nb_cg = (1 << log2_tb_s) >> 4;
+        int i;
 
-        uint8_t sig_sb_abv = (((sig_sb_map >> ((y_cg - 1) << 3)) & 0xFF) >> x_cg) & 0x1;
-        uint8_t sig_sb_lft = (((sig_sb_map >> ( y_cg      << 3)) & 0xFF) >> (x_cg - 1)) & 0x1;
+        for (i = 0; i < nb_cg - 1; ++i) {
+            int x_cg = scan_cg_x[i];
+            int y_cg = scan_cg_y[i];
 
-        int sig_sb_offset = !!sig_sb_abv + !!sig_sb_lft;
+            /* FIXME this could be simplified */
+            uint8_t sig_sb_abv = (((sig_sb_map >> ((y_cg - 1) << 3)) & 0xFF) >> x_cg) & 0x1;
+            uint8_t sig_sb_lft = (((sig_sb_map >> ( y_cg      << 3)) & 0xFF) >> (x_cg - 1)) & 0x1;
+
+            int sig_sb_offset = !!sig_sb_abv + !!sig_sb_lft;
 
 
-        sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, sig_sb_offset);
+            sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, sig_sb_offset);
+
+            if (sig_sb_flg) {
+                int16_t *dst = &ctu_dec->transform_buff[(x_cg << 2) + ((y_cg << log2_tb_w) << 2)];
+
+                int cg_offset = (x_cg << 2) + (y_cg << 2) * (VVC_TR_CTX_STRIDE);
+
+                memset(cg_coeffs, 0, sizeof(int16_t) * 16);
+
+
+                sig_sb_map |= 1llu << (x_cg + (y_cg << 3));
+
+                nb_sig_c += ovcabac_read_ae_sb_ts_4x4(cabac_ctx,
+                                                      cg_coeffs,
+                                                      &nb_significant[cg_offset],
+                                                      &sign_map      [cg_offset],
+                                                      &abs_coeffs [36+cg_offset],
+                                                      (int16_t *)&max_nb_bins);
+
+                deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
+
+                memcpy(&dst[0             ] , &cg_coeffs[0],  sizeof(int16_t) * 4);
+                memcpy(&dst[1 << log2_tb_w] , &cg_coeffs[4],  sizeof(int16_t) * 4);
+                memcpy(&dst[2 << log2_tb_w] , &cg_coeffs[8],  sizeof(int16_t) * 4);
+                memcpy(&dst[3 << log2_tb_w] , &cg_coeffs[12], sizeof(int16_t) * 4);
+
+            }
+        }
+
+        sig_sb_flg = !sig_sb_map;
+
+        if (sig_sb_map) {
+            int x_cg = scan_cg_x[i];
+            int y_cg = scan_cg_y[i];
+            uint8_t sig_sb_abv = (((sig_sb_map >> ((y_cg - 1) << 3)) & 0xFF) >> x_cg) & 0x1;
+            uint8_t sig_sb_lft = (((sig_sb_map >> ( y_cg      << 3)) & 0xFF) >> (x_cg - 1)) & 0x1;
+            int sig_sb_offset = !!sig_sb_abv + !!sig_sb_lft;
+
+            sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, sig_sb_offset);
+        }
 
         if (sig_sb_flg) {
+            int x_cg = scan_cg_x[i];
+            int y_cg = scan_cg_y[i];
             int16_t *dst = &ctu_dec->transform_buff[(x_cg << 2) + ((y_cg << log2_tb_w) << 2)];
 
-            memset(cg_coeffs, 0, sizeof(int16_t) * 16);
+            int cg_offset = (x_cg << 2) + (y_cg << 2) * (VVC_TR_CTX_STRIDE);
 
-            cg_offset = (x_cg << 2) + (y_cg << 2) * (VVC_TR_CTX_STRIDE);
+            memset(cg_coeffs, 0, sizeof(uint16_t) * 16);
 
             sig_sb_map |= 1llu << (x_cg + (y_cg << 3));
 
-            nb_sig_c += ovcabac_read_ae_sb_ts_4x4(cabac_ctx,
-                                                  cg_coeffs,
+            nb_sig_c += ovcabac_read_ae_sb_ts_4x4(cabac_ctx, cg_coeffs,
                                                   &nb_significant[cg_offset],
                                                   &sign_map      [cg_offset],
-                                                  &abs_coeffs [36+cg_offset],
-                                                  (int16_t *)&max_nb_bins);
+                                                  &abs_coeffs   [36+cg_offset],
+                                                  (int16_t*) &max_nb_bins);
 
             deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -4210,49 +4303,189 @@ residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int
             memcpy(&dst[1 << log2_tb_w] , &cg_coeffs[4],  sizeof(int16_t) * 4);
             memcpy(&dst[2 << log2_tb_w] , &cg_coeffs[8],  sizeof(int16_t) * 4);
             memcpy(&dst[3 << log2_tb_w] , &cg_coeffs[12], sizeof(int16_t) * 4);
+        }
 
-            ++nb_sig_cg;
+    } else if (log2_tb_w == 1) {
+        uint64_t sig_sb_map = 0;
+        uint8_t sig_sb_flg = 0;
+
+        int nb_cg = (1 << log2_tb_s) >> 4;
+        int i;
+
+        if (nb_cg == 1) {
+            int16_t *dst = &ctu_dec->transform_buff[0];
+
+            nb_sig_c = ovcabac_read_ae_sb_ts_2x8(cabac_ctx, cg_coeffs,
+                                                 &nb_significant   [0],
+                                                 &sign_map         [0],
+                                                 &abs_coeffs  [36 + 0],
+                                                 (int16_t*)&max_nb_bins);
+
+            deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
+
+            memcpy(&dst[0] , &cg_coeffs[0],  sizeof(int16_t) * 16);
+
+            return 0xFFFF;
+        }
+
+        for (i = 0; i < nb_cg - 1; ++i) {
+            int y_cg = i;
+
+            /* FIXME this could be simplified */
+            uint8_t sig_sb_abv = ((sig_sb_map >> ((y_cg - 1) << 3)) & 0xFF) & 0x1;
+
+            int sig_sb_offset = !!sig_sb_abv;
+
+
+            sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, sig_sb_offset);
+
+            if (sig_sb_flg) {
+                int16_t *dst = &ctu_dec->transform_buff[(y_cg << log2_tb_w) << 3];
+
+                int cg_offset = (y_cg << 3) * (VVC_TR_CTX_STRIDE);
+
+                memset(cg_coeffs, 0, sizeof(int16_t) * 16);
+
+
+                sig_sb_map |= 1llu << (y_cg << 3);
+
+                nb_sig_c += ovcabac_read_ae_sb_ts_2x8(cabac_ctx,
+                                                      cg_coeffs,
+                                                      &nb_significant[cg_offset],
+                                                      &sign_map      [cg_offset],
+                                                      &abs_coeffs [36+cg_offset],
+                                                      (int16_t *)&max_nb_bins);
+
+                deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
+
+                memcpy(&dst[0] , &cg_coeffs[0],  sizeof(int16_t) * 16);
+            }
+        }
+
+        sig_sb_flg = !sig_sb_map;
+
+        if (sig_sb_map) {
+            int x_cg = 0;
+            int y_cg = i;
+            uint8_t sig_sb_abv = (((sig_sb_map >> ((y_cg - 1) << 3)) & 0xFF) >> x_cg) & 0x1;
+            uint8_t sig_sb_lft = (((sig_sb_map >> ( y_cg      << 3)) & 0xFF) >> (x_cg - 1)) & 0x1;
+            int sig_sb_offset = !!sig_sb_abv + !!sig_sb_lft;
+
+            sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, sig_sb_offset);
+        }
+
+        if (sig_sb_flg) {
+            int y_cg = i;
+            int16_t *dst = &ctu_dec->transform_buff[(y_cg << log2_tb_w) << 3];
+
+            int cg_offset = (y_cg << 3) * (VVC_TR_CTX_STRIDE);
+
+            memset(cg_coeffs, 0, sizeof(uint16_t) * 16);
+
+            sig_sb_map |= 1llu << (y_cg << 3);
+
+            nb_sig_c += ovcabac_read_ae_sb_ts_2x8(cabac_ctx, cg_coeffs,
+                                                  &nb_significant[cg_offset],
+                                                  &sign_map      [cg_offset],
+                                                  &abs_coeffs   [36+cg_offset],
+                                                  (int16_t*) &max_nb_bins);
+
+            deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
+
+            memcpy(&dst[0] , &cg_coeffs[0],  sizeof(int16_t) * 16);
+        }
+
+    } else {
+        uint64_t sig_sb_map = 0;
+        uint8_t sig_sb_flg = 0;
+
+        int nb_cg = (1 << log2_tb_s) >> 4;
+        int i;
+
+        if (nb_cg == 1) {
+            int16_t *dst = &ctu_dec->transform_buff[0];
+
+            nb_sig_c = ovcabac_read_ae_sb_ts_8x2(cabac_ctx, cg_coeffs,
+                                                 &nb_significant   [0],
+                                                 &sign_map         [0],
+                                                 &abs_coeffs  [36 + 0],
+                                                 (int16_t*)&max_nb_bins);
+
+            deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
+
+            memcpy(&dst[0             ] , &cg_coeffs[0],  sizeof(int16_t) * 8);
+            memcpy(&dst[1 << log2_tb_w] , &cg_coeffs[8],  sizeof(int16_t) * 8);
+
+            return 0xFFFF;
+        }
+
+        for (i = 0; i < nb_cg - 1; ++i) {
+            int x_cg = i;
+
+            /* FIXME this could be simplified */
+            uint8_t sig_sb_lft = (((sig_sb_map) & 0xFF) >> (x_cg - 1)) & 0x1;
+
+            int sig_sb_offset = !!sig_sb_lft;
+
+
+            sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, sig_sb_offset);
+
+            if (sig_sb_flg) {
+                int16_t *dst = &ctu_dec->transform_buff[x_cg << 3];
+
+                int cg_offset = x_cg << 3;
+
+                memset(cg_coeffs, 0, sizeof(int16_t) * 16);
+
+                sig_sb_map |= 1llu << x_cg;
+
+                nb_sig_c += ovcabac_read_ae_sb_ts_8x2(cabac_ctx, cg_coeffs,
+                                                      &nb_significant[cg_offset],
+                                                      &sign_map      [cg_offset],
+                                                      &abs_coeffs [36+cg_offset],
+                                                      (int16_t *)&max_nb_bins);
+
+                deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
+
+                memcpy(&dst[0             ] , &cg_coeffs[0],  sizeof(int16_t) * 8);
+                memcpy(&dst[1 << log2_tb_w] , &cg_coeffs[8],  sizeof(int16_t) * 8);
+            }
+        }
+
+        sig_sb_flg = !sig_sb_map;
+
+        if (sig_sb_map) {
+            int x_cg = i;
+            uint8_t sig_sb_lft = ((sig_sb_map & 0xFF) >> (x_cg - 1)) & 0x1;
+            int sig_sb_offset = !!sig_sb_lft;
+
+            sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, sig_sb_offset);
+        }
+
+        if (sig_sb_flg) {
+            int x_cg = i;
+            int16_t *dst = &ctu_dec->transform_buff[x_cg << 3];
+
+            int cg_offset = x_cg << 3;
+
+            memset(cg_coeffs, 0, sizeof(uint16_t) * 16);
+
+            sig_sb_map |= 1llu << x_cg;
+
+            nb_sig_c += ovcabac_read_ae_sb_ts_8x2(cabac_ctx, cg_coeffs,
+                                                  &nb_significant[cg_offset],
+                                                  &sign_map      [cg_offset],
+                                                  &abs_coeffs   [36+cg_offset],
+                                                  (int16_t*) &max_nb_bins);
+
+            deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
+
+            memcpy(&dst[0             ] , &cg_coeffs[0],  sizeof(int16_t) * 8);
+            memcpy(&dst[1 << log2_tb_w] , &cg_coeffs[8],  sizeof(int16_t) * 8);
         }
     }
 
-    sig_sb_flg = !nb_sig_cg;
-
-    if (nb_sig_cg) {
-        int x_cg = scan_cg_x[i];
-        int y_cg = scan_cg_y[i];
-        uint8_t sig_sb_abv = (((sig_sb_map >> ((y_cg - 1) << 3)) & 0xFF) >> x_cg) & 0x1;
-        uint8_t sig_sb_lft = (((sig_sb_map >> ( y_cg      << 3)) & 0xFF) >> (x_cg - 1)) & 0x1;
-        int sig_sb_offset = !!sig_sb_abv + !!sig_sb_lft;
-
-        sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, sig_sb_offset);
-    }
-
-    if (sig_sb_flg) {
-        int x_cg = scan_cg_x[i];
-        int y_cg = scan_cg_y[i];
-        int16_t *dst = &ctu_dec->transform_buff[(x_cg << 2) + ((y_cg << log2_tb_w) << 2)];
-
-        cg_offset = (x_cg << 2) + (y_cg << 2) * (VVC_TR_CTX_STRIDE);
-
-        memset(cg_coeffs, 0, sizeof(uint16_t) * 16);
-
-        sig_sb_map |= 1llu << (x_cg + (y_cg << 3));
-
-        nb_sig_c += ovcabac_read_ae_sb_ts_4x4(cabac_ctx, cg_coeffs,
-                                              &nb_significant[cg_offset],
-                                              &sign_map      [cg_offset],
-                                              &abs_coeffs   [36+cg_offset],
-                                              (int16_t*) &max_nb_bins);
-
-        deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
-
-        memcpy(&dst[0             ] , &cg_coeffs[0],  sizeof(int16_t) * 4);
-        memcpy(&dst[1 << log2_tb_w] , &cg_coeffs[4],  sizeof(int16_t) * 4);
-        memcpy(&dst[2 << log2_tb_w] , &cg_coeffs[8],  sizeof(int16_t) * 4);
-        memcpy(&dst[3 << log2_tb_w] , &cg_coeffs[12], sizeof(int16_t) * 4);
-    }
-
-    return nb_sig_c;
+    return 0xFFFF;
 }
 
 uint64_t
