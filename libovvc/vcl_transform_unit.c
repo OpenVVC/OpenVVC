@@ -577,7 +577,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
         }
     }
     uint8_t lfnst_flag = 0;
-    uint8_t lfnst_idx;
+    uint8_t lfnst_idx = 0;
 
     if (ctu_dec->enable_lfnst) {
         int max_lfnst_pos = (log2_cb_h == log2_pb_w) && (log2_pb_w <= 3) ? 7 : 15;
@@ -674,7 +674,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
     }
 
     uint8_t lfnst_flag = 0;
-    uint8_t lfnst_idx;
+    uint8_t lfnst_idx = 0;
     if (ctu_dec->enable_lfnst) {
         uint8_t can_lfnst = (sig_sb_map[0] | sig_sb_map[1] | sig_sb_map[2] | sig_sb_map[3]) == 1;
         int max_lfnst_pos = (log2_pb_h == log2_cb_w) && (log2_cb_w <= 3) ? 7 : 15;
@@ -733,7 +733,7 @@ transform_unit(OVCTUDec *const ctu_dec,
 
         if (!transform_skip_flag) {
             int lfnst_flag = 0;
-            int lfnst_idx;
+            int lfnst_idx = 0;
             uint16_t last_pos = ovcabac_read_ae_last_sig_pos(cabac_ctx, log2_tb_w, log2_tb_h);
             int lim_cg_w = ((((last_pos >> 8)) >> 2) + (((last_pos & 0xFF))>> 2) + 1) << 2;
             uint8_t is_dc_c = !last_pos;
@@ -806,12 +806,12 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
         int16_t *const coeffs_cr = ctu_dec->residual_cr;
         uint16_t last_pos_cb; /* Max == 64 -> uint8_t */
         uint16_t last_pos_cr; /* Max == 64 -> uint8_t */
-        int lim_cg_w_cb; /* Max == 64 -> uint8_t */
-        int lim_cg_w_cr; /* Max == 64 -> uint8_t */
+        int lim_cg_w_cb = OVMAX(1 << log2_tb_w, 1 << log2_tb_h);
+        int lim_cg_w_cr = OVMAX(1 << log2_tb_w, 1 << log2_tb_h);
         int16_t tmp_lfnst_cb[16];
         int16_t tmp_lfnst_cr[16];
         uint8_t lfnst_flag = 0;
-        uint8_t lfnst_idx;
+        uint8_t lfnst_idx = 0;
         uint8_t transform_skip_flag = 0;
 
         /* FIXME move dequant to reconstruction this require modification in coeff
@@ -968,7 +968,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
         #endif
         int16_t *const coeffs_jcbcr = ctu_dec->residual_cb;
         uint8_t lfnst_flag = 0;
-        uint8_t lfnst_idx;
+        uint8_t lfnst_idx = 0;
         uint8_t transform_skip_flag = 0;
         int lim_cg_w_cbcr = 0;
 
