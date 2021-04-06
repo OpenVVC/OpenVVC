@@ -1012,8 +1012,8 @@ intra_hneg_cubic_mref(uint16_t* const ref_abv, uint16_t* const ref_lft,
 
         int inv_angle_sum = 256; // rounding for (shift by 8)
 
-        refMain = ref_lft + width - mrl_idx;
-        refSide = ref_abv + height - mrl_idx;
+        refMain = ref_lft - mrl_idx;
+        refSide = ref_abv - mrl_idx;
 
         // Extend the Main reference to the left.
         for (int k = -1; k >= -width; k--) {
@@ -1081,8 +1081,8 @@ intra_vneg_cubic_mref(uint16_t* const ref_abv, uint16_t* const ref_lft,
         int width = 1 << log2_pb_w;
         int height = 1 << log2_pb_h;
         int inv_angle_sum = 256; // rounding for (shift by 8)
-        refMain = ref_abv + height - mrl_idx;
-        refSide = ref_lft + width - mrl_idx;
+        refMain = ref_abv - mrl_idx;
+        refSide = ref_lft - mrl_idx;
 
         // Extend the Main reference to the left.
         for (int k = -1; k >= -height; k--) {

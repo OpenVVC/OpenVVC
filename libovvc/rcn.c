@@ -297,8 +297,6 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
                 break;
             default:
                 if (mode_idx < 0){
-                    ref1 = ref_abv + mrl_idx;
-                    ref2 = ref_lft + mrl_idx;
                     intra_vneg_cubic_mref(ref1, ref2, dst, dst_stride,
                                           log2_pb_w, log2_pb_h,
                                           -mode_idx, mrl_idx);
@@ -325,8 +323,6 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
             default:
             {
                 if (mode_idx < 0){ //TODO move copy inside neg function
-                    ref1 = ref_abv + mrl_idx;
-                    ref2 = ref_lft + mrl_idx;
                     intra_hneg_cubic_mref(ref1, ref2,
                                           dst, dst_stride,
                                           log2_pb_w, log2_pb_h,
