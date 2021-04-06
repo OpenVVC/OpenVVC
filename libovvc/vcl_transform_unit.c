@@ -1157,16 +1157,12 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
                 ctu_dec->tmp_disable_cclm = log2_cb_h == log2_cb_w && log2_cb_h == 6;
 
                 if (isp_mode == 2) {
-                    uint8_t cbf_flags;
-
-                    cbf_flags = isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode);
+                    isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode);
 
                     //return cu;
 
                 } else if (isp_mode == 1) {
-                    uint8_t cbf_flags;
-
-                    cbf_flags = isp_subtree_h(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode);
+                    isp_subtree_h(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode);
 
                     ////return cu;
                 }
