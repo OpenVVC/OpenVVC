@@ -113,13 +113,13 @@ intra_angular_vdia_mref(const uint16_t* const ref_above,
                         int log2_pb_height, uint8_t multi_ref_idx);
 void
 intra_angular_h_cubic_mref(const uint16_t* const ref_left, uint16_t* const dst,
-                           ptrdiff_t dst_stride, int angle_val,
+                           ptrdiff_t dst_stride,
                            int log2_pb_width, int log2_pb_height,
-                           uint8_t multi_ref_idx);
+                           int angle_val, uint8_t multi_ref_idx);
 void
 intra_angular_v_cubic_mref(const uint16_t* const ref_above, uint16_t* const dst,
                            int dst_stride, int log2_pb_width,
-                           int log2_pb_height, int angle_val,
-                           uint8_t multi_ref_idx);
+                           int log2_pb_height,
+                           int angle_val, uint8_t multi_ref_idx);
 
 #endif // RCN_INTRA_ANGULAR_H

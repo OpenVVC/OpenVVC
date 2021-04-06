@@ -352,15 +352,16 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
                         inv_angle_sum += inv_angle;
                         dst_ref[k] = tmp_abv[OVMIN((inv_angle_sum >> 9), pb_w)];
                     }
-                    intra_angular_h_cubic_mref(ref2, dst, dst_stride, angle_val,
+
+                    intra_angular_h_cubic_mref(ref2, dst, dst_stride,
                                                log2_pb_w, log2_pb_h,
-                                               mrl_idx);
+                                               angle_val, mrl_idx);
 
                 } else {
                     int angle_val = angle_table[mode_idx];
-                    intra_angular_h_cubic_mref(ref2, dst, dst_stride, angle_val,
+                    intra_angular_h_cubic_mref(ref2, dst, dst_stride,
                                                log2_pb_w, log2_pb_h,
-                                               mrl_idx);
+                                               angle_val, mrl_idx);
                 }
             }
             break;

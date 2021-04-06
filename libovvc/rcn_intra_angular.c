@@ -1012,9 +1012,9 @@ intra_angular_vdia_mref(const uint16_t* const ref_abv,
 
 void
 intra_angular_h_cubic_mref(const uint16_t* const ref_lft, uint16_t* const dst,
-                           ptrdiff_t dst_stride, int angle_val,
+                           ptrdiff_t dst_stride,
                            int log2_pb_w, int log2_pb_h,
-                           uint8_t mrl_idx)
+                           int angle_val, uint8_t mrl_idx)
 {
     uint16_t tmp_dst[128 * 128];
     const int tmp_stride = 128;
