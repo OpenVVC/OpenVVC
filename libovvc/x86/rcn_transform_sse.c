@@ -1108,8 +1108,8 @@ void vvc_inverse_dct_ii_2_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_st
         __m128i outlhi = _mm_unpacklo_epi32(ehi,ohi);
         __m128i outhhi = _mm_unpackhi_epi32(ehi,ohi);
 
-        outl = _mm_packs_epi32(outllo, outlhi);
-        outh = _mm_packs_epi32(outhlo, outhhi);
+        outl = _mm_packs_epi32(outllo, outhlo);
+        outh = _mm_packs_epi32(outlhi, outhhi);
 
         _mm_store_si128((__m128i *) &(dst[0]), outl);
         _mm_store_si128((__m128i *) &(dst[8]), outh);
