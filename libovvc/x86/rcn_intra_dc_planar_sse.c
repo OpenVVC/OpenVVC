@@ -60,15 +60,18 @@ vvc_intra_dc_pdpc_sse(const uint16_t *const src_above,
 
     for (int y = 0; y < (1 << log2_pb_h); ++y){
         int x;
-        __m128i l_v, y_v;
+        __m128i l_v;
         #if 1
         int y_wgh = pdpc_sh[y];
         #else
+        __m128i y_v;
         int y_wgh = pdpc_w[y];
         #endif
         const int16_t l_val = src_left[y + 1];
         l_v  = _mm_set1_epi16(l_val);
+        #if 0
         y_v  = _mm_set1_epi16(y_wgh);
+        #endif
         /*FIXME PDPC weights are derived from log2 values all
            multiplications could be replaced by shift operations
            It will be easier to derive shift when specializing according

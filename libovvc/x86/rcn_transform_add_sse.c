@@ -124,7 +124,7 @@ vvc_add_residual_sse(const int16_t *const src, uint16_t *const dst,
 {
     /* FIXME specialize this function for each TU sizes so we make
        better use of SIMD  + avoid switch*/
-    int i, j;
+    int i;
     int tb_w = 1 << log2_tb_w;
     int tb_h = 1 << log2_tb_h;
     const int16_t *_src = (const int16_t *)src;
