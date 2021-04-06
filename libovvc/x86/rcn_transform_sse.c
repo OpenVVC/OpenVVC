@@ -586,9 +586,7 @@ dct2_4x4_red1(__m128i *x, __m128i *d, __m128i *r)
 static inline void
 dct2_4x4_red2(__m128i *x, __m128i *d, __m128i *r)
 {
-    __m128i m[4], t[4], z;
-
-    z = _mm_setzero_si128();
+    __m128i m[4], t[4];
 
     /*FIXME we could use swizzling to make more
      efficient use of madd here */
@@ -2044,12 +2042,11 @@ static inline void
 dct2_8x8_red4(__m128i *x, __m128i *d, __m128i *r)
 {
     __m128i e[8], o[8], oo[8];
-    __m128i m[8], z;//a[4],
+    __m128i m[8];
 
     dct2_4x8_red2(x+0, d+0, e);
 
     __m128i tmp[4];
-    z = _mm_setzero_si128();
 
     m[0] = _mm_unpacklo_epi16(x[4], x[5]);
     m[1] = _mm_unpackhi_epi16(x[4], x[5]);
