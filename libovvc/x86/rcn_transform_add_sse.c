@@ -11,7 +11,7 @@
 
 static inline void
 ovvc_transform_add_sse_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
-                              const uint16_t *src, ptrdiff_t src_stride)
+                              const int16_t *src, ptrdiff_t src_stride)
 {
    __m128i l0, l1, l2, l3, r0, r1, r2, r3;
 
@@ -47,7 +47,7 @@ ovvc_transform_add_sse_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
 
 static inline void
 ovvc_transform_add_sse_16_2_10(uint16_t *dst, ptrdiff_t dst_stride,
-                               const uint16_t *src, ptrdiff_t src_stride)
+                               const int16_t *src, ptrdiff_t src_stride)
 {
    __m128i l0, l1, l2, l3, r0, r1, r2, r3;
 
@@ -83,7 +83,7 @@ ovvc_transform_add_sse_16_2_10(uint16_t *dst, ptrdiff_t dst_stride,
 
 static inline void
 ovvc_transform_add_sse_32_1_10(uint16_t *dst, ptrdiff_t dst_stride,
-                               const uint16_t *src, ptrdiff_t src_stride)
+                               const int16_t *src, ptrdiff_t src_stride)
 {
    __m128i l0, l1, l2, l3, r0, r1, r2, r3;
 
