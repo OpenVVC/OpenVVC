@@ -804,8 +804,8 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
     if (!joint_cb_cr) {
         int16_t *const coeffs_cb = ctu_dec->residual_cb;
         int16_t *const coeffs_cr = ctu_dec->residual_cr;
-        uint16_t last_pos_cb; /* Max == 64 -> uint8_t */
-        uint16_t last_pos_cr; /* Max == 64 -> uint8_t */
+        uint16_t last_pos_cb = (1 << (log2_tb_h + log2_tb_w)) - 1;
+        uint16_t last_pos_cr = (1 << (log2_tb_h + log2_tb_w)) - 1;
         int lim_cg_w_cb = OVMAX(1 << log2_tb_w, 1 << log2_tb_h);
         int lim_cg_w_cr = OVMAX(1 << log2_tb_w, 1 << log2_tb_h);
         int16_t tmp_lfnst_cb[16];
