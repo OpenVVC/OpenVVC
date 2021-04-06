@@ -256,8 +256,7 @@ void simdFilter7x7Blk(ALFClassifier **classifier, int16_t *const dst, int16_t *c
 
     for (size_t i = 0; i < blk_dst.height; i += STEP_Y)
     {
-        // const ALFClassifier *pClass = classifier[blk_dst.y + i] + blk_dst.x;
-        const ALFClassifier *pClass = classifier[i/4];
+        const ALFClassifier *pClass = classifier[i>>2];
 
         for (size_t j = 0; j < blk_dst.width; j += STEP_X)
         {
@@ -265,7 +264,7 @@ void simdFilter7x7Blk(ALFClassifier **classifier, int16_t *const dst, int16_t *c
 
             for (int k = 0; k < 2; ++k)
             {
-                const ALFClassifier cl = pClass[j/4 * k];
+                const ALFClassifier cl = pClass[(j>>2) + k];
 
                 const int transpose_idx = cl.transpose_idx;
                 const int class_idx     = cl.class_idx;
@@ -379,7 +378,6 @@ void simdFilter7x7Blk(ALFClassifier **classifier, int16_t *const dst, int16_t *c
 
                 // if (j>=x0 && i+ii>=y0 && j<=w_max && i+ii<=h_max)
                 _mm_storeu_si128((__m128i *) (_dst + ii * dstStride + j), accumA);
-                int16_t* pRec1 = _dst + ii * dstStride + j;
             }
         }
 
