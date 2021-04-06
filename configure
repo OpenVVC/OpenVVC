@@ -37,7 +37,7 @@ Options:
 
 
   --disable-log            disable log reportings [no]
-  --disable-sse            disable sse optimizations [no]
+  --disable-sse            disable sse optimizations [$sse_enabled]
   --disable-static         do not build static libraries [no]
   --enable-shared          build shared libraries [no]
 
