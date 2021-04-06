@@ -1000,28 +1000,13 @@ intra_hneg_cubic_mref(uint16_t* const ref_abv, uint16_t* const ref_lft,
         uint16_t tmp_dst[128 * 128];
         uint16_t* _tmp = tmp_dst;
         uint16_t* _dst = dst;
-        uint16_t* refMain;
-        uint16_t* refSide;
+        uint16_t* refMain = ref_lft;
         int angle_val = -angle_table[mode_idx];
-        int inv_angle = inverse_angle_table[mode_idx];
         int width = 1 << log2_pb_w;
         int height = 1 << log2_pb_h;
         const int tmp_stride = 128;
 
         int delta_pos = angle_val * (mrl_idx + 1);
-
-        int inv_angle_sum = 256; // rounding for (shift by 8)
-
-        refMain = ref_lft - mrl_idx;
-        refSide = ref_abv - mrl_idx;
-
-        // Extend the Main reference to the left.
-        for (int k = -1; k >= -width; k--) {
-                inv_angle_sum += inv_angle;
-                refMain[k] = refSide[OVMIN((inv_angle_sum >> 9), width)];
-        }
-
-        refMain += mrl_idx;
 
         if ((-angle_val & 0x1F)) {
                 for (int y = 0; y < width; y++) {
@@ -1074,23 +1059,11 @@ intra_vneg_cubic_mref(uint16_t* const ref_abv, uint16_t* const ref_lft,
 {
 
         uint16_t* _dst = dst;
-        uint16_t* refMain;
-        uint16_t* refSide;
+        uint16_t* refMain = ref_abv;
         int angle_val = -angle_table[mode_idx];
-        int inv_angle = inverse_angle_table[mode_idx];
         int width = 1 << log2_pb_w;
         int height = 1 << log2_pb_h;
-        int inv_angle_sum = 256; // rounding for (shift by 8)
-        refMain = ref_abv - mrl_idx;
-        refSide = ref_lft - mrl_idx;
 
-        // Extend the Main reference to the left.
-        for (int k = -1; k >= -height; k--) {
-                inv_angle_sum += inv_angle;
-                refMain[k] = refSide[OVMIN(inv_angle_sum >> 9, height)];
-        }
-
-        refMain += mrl_idx;
         if ((-angle_val & 0x1F)) {
                 for (int y = 0, delta_pos = angle_val * (mrl_idx + 1);
                      y < height;

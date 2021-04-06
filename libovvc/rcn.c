@@ -297,6 +297,19 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
                 break;
             default:
                 if (mode_idx < 0){
+                    int inv_angle = inverse_angle_table[-mode_idx];
+                    int pb_h  = 1 << log2_pb_h;
+                    int inv_angle_sum = 256;
+
+                    uint16_t *dst_ref = ref1 - mrl_idx;
+                    uint16_t *tmp_lft = ref2 - mrl_idx;
+
+                    /* FIXME two stage fill and broadcast last value */
+                    for (int k = -1; k >= -pb_h; k--) {
+                        inv_angle_sum += inv_angle;
+                        dst_ref[k] = tmp_lft[OVMIN(inv_angle_sum >> 9, pb_h)];
+                    }
+
                     intra_vneg_cubic_mref(ref1, ref2, dst, dst_stride,
                                           log2_pb_w, log2_pb_h,
                                           -mode_idx, mrl_idx);
@@ -322,14 +335,27 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
                 break;
             default:
             {
-                if (mode_idx < 0){ //TODO move copy inside neg function
-                    intra_hneg_cubic_mref(ref1, ref2,
-                                          dst, dst_stride,
+                if (mode_idx < 0) {
+                    int inv_angle = inverse_angle_table[-mode_idx];
+                    int inv_angle_sum = 256;
+
+                    uint16_t *dst_ref = ref2 - mrl_idx;
+                    uint16_t *tmp_abv = ref1 - mrl_idx;
+
+                    int pb_w = 1 << log2_pb_w;
+
+                    /* FIXME two stage fill and broadcast last value */
+                    for (int k = -1; k >= -pb_w; k--) {
+                        inv_angle_sum += inv_angle;
+                        dst_ref[k] = tmp_abv[OVMIN((inv_angle_sum >> 9), pb_w)];
+                    }
+
+                    intra_hneg_cubic_mref(ref1, ref2, dst, dst_stride,
                                           log2_pb_w, log2_pb_h,
                                           -mode_idx, mrl_idx);
                 } else {
                     //from 0 to ref_lengths +1, 0 being top_left sample
-                    intra_angular_h_cubic_mref(ref2, dst, dst_stride,mode_idx,
+                    intra_angular_h_cubic_mref(ref2, dst, dst_stride, mode_idx,
                                                log2_pb_w, log2_pb_h,
                                                mrl_idx);
                 }
