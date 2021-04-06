@@ -323,12 +323,6 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
     pb_w =  1 << log2_pb_w;
     offset_x = 0;
 
-    uint8_t x_pu = x0 >> ctudec->part_ctx->log2_min_cb_s;
-    uint8_t y_pu = y0 >> ctudec->part_ctx->log2_min_cb_s;
-    uint8_t map_shift = ctudec->part_ctx->log2_min_cb_s - 2;
-    uint8_t nb_pb_w = (1 << log2_cb_w) >> ctudec->part_ctx->log2_min_cb_s;
-    uint8_t nb_pb_h = (1 << log2_cb_h) >> ctudec->part_ctx->log2_min_cb_s;
-
     uint8_t type_h = ctudec->mts_enabled && log2_pb_w <= 4 && log2_pb_w > 1 ? DST_VII : DCT_II;
     uint8_t type_v = ctudec->mts_enabled && log2_cb_h <= 4 ? DST_VII : DCT_II;
     int i;
@@ -412,13 +406,6 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
     nb_pb = (1 << log2_cb_h) >> log2_pb_h;
     pb_h =  1 << log2_pb_h;
     offset_y = 0;
-
-    uint8_t x_pu = x0 >> ctudec->part_ctx->log2_min_cb_s;
-    uint8_t y_pu = y0 >> ctudec->part_ctx->log2_min_cb_s;
-    uint8_t map_shift = ctudec->part_ctx->log2_min_cb_s - 2;
-
-    uint8_t nb_pb_w = (1 << log2_cb_w) >> ctudec->part_ctx->log2_min_cb_s;
-    uint8_t nb_pb_h = (1 << log2_cb_h) >> ctudec->part_ctx->log2_min_cb_s;
 
     uint8_t type_h = ctudec->mts_enabled && log2_cb_w <= 4 ? DST_VII : DCT_II;
     uint8_t type_v = ctudec->mts_enabled && log2_pb_h <= 4 && log2_pb_h > 1 ? DST_VII : DCT_II;
