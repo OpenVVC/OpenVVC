@@ -296,14 +296,17 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
                                         mrl_idx);
                 break;
             default:
+            {
+                int angle_val;
                 if (mode_idx < 0){
                     int inv_angle = inverse_angle_table[-mode_idx];
-                    int angle_val = -angle_table[-mode_idx];
                     int pb_h  = 1 << log2_pb_h;
                     int inv_angle_sum = 256;
 
                     uint16_t *dst_ref = ref1 - mrl_idx;
                     uint16_t *tmp_lft = ref2 - mrl_idx;
+
+                    angle_val = -angle_table[-mode_idx];
 
                     /* FIXME two stage fill and broadcast last value */
                     for (int k = -1; k >= -pb_h; k--) {
@@ -311,17 +314,16 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
                         dst_ref[k] = tmp_lft[OVMIN(inv_angle_sum >> 9, pb_h)];
                     }
 
-                    intra_angular_v_cubic_mref(ref1, dst, dst_stride,
-                                               log2_pb_w, log2_pb_h,
-                                               angle_val, mrl_idx);
                 } else {
-                    int angle_val = angle_table[mode_idx];
-                    intra_angular_v_cubic_mref(ref1, dst, dst_stride,
-                                               log2_pb_w, log2_pb_h,
-                                               angle_val, mrl_idx);
-
+                    angle_val = angle_table[mode_idx];
                 }
+
+                intra_angular_v_cubic_mref(ref1, dst, dst_stride,
+                                           log2_pb_w, log2_pb_h,
+                                           angle_val, mrl_idx);
+
                 break;
+            }
             }
         } else {
             int mode_idx = -(pred_mode - OVINTRA_HOR);
@@ -337,8 +339,8 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
                 break;
             default:
             {
+                int angle_val;
                 if (mode_idx < 0) {
-                    int angle_val = -angle_table[-mode_idx];
                     int inv_angle = inverse_angle_table[-mode_idx];
                     int inv_angle_sum = 256;
 
@@ -347,24 +349,23 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
 
                     int pb_w = 1 << log2_pb_w;
 
+                    angle_val = -angle_table[-mode_idx];
+
                     /* FIXME two stage fill and broadcast last value */
                     for (int k = -1; k >= -pb_w; k--) {
                         inv_angle_sum += inv_angle;
                         dst_ref[k] = tmp_abv[OVMIN((inv_angle_sum >> 9), pb_w)];
                     }
 
-                    intra_angular_h_cubic_mref(ref2, dst, dst_stride,
-                                               log2_pb_w, log2_pb_h,
-                                               angle_val, mrl_idx);
-
                 } else {
-                    int angle_val = angle_table[mode_idx];
-                    intra_angular_h_cubic_mref(ref2, dst, dst_stride,
-                                               log2_pb_w, log2_pb_h,
-                                               angle_val, mrl_idx);
+                    angle_val = angle_table[mode_idx];
                 }
+
+                intra_angular_h_cubic_mref(ref2, dst, dst_stride,
+                                           log2_pb_w, log2_pb_h,
+                                           angle_val, mrl_idx);
+                break;
             }
-            break;
             }
         }
         break;
