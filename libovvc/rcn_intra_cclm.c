@@ -1968,7 +1968,7 @@ sort_average_lm_ref_samples(const uint16_t *const lm_smp, const uint16_t *const 
     struct AVGMinMax avg_min_max;
 
     if (nb_samples == 2) {
-        int min_idx = lm_smp[0] > lm_smp[1];
+        int min_idx = lm_smp[0] >= lm_smp[1];
         int max_idx = !min_idx;
 
         avg_min_max.min_l = lm_smp[min_idx];
