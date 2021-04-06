@@ -44,19 +44,19 @@ static const uint8_t vvc_pdpc_w[3][128] = {
 };
 
 void
-vvc_intra_angular_hdia(const uint16_t* const ref_above,
-                       const uint16_t* const ref_left, uint16_t* const dst,
-                       ptrdiff_t dst_stride, int log2_pb_width,
-                       int log2_pb_height)
+vvc_intra_angular_hdia(const uint16_t* const ref_abv,
+                       const uint16_t* const ref_lft, uint16_t* const dst,
+                       ptrdiff_t dst_stride, int log2_pb_w,
+                       int log2_pb_h)
 {
 
         int16_t tmp_dst[128 * 128];
         const int tmp_stride = 128;
         int16_t* _tmp = tmp_dst;
         uint16_t* _dst = dst;
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
-        int scale = OVMIN(2, log2_pb_width - (floor_log2(3 * 512 - 2) - 8));
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
+        int scale = OVMIN(2, log2_pb_w - (floor_log2(3 * 512 - 2) - 8));
 
         int delta_pos = 32; // angle val is 32 for diag
         for (int y = 0; y < width; y++) {
@@ -65,12 +65,12 @@ vvc_intra_angular_hdia(const uint16_t* const ref_above,
                 int wT = 16 >> OVMIN(31, ((y << 1) >> scale));
                 #endif
                 for (int x = 0; x < height; x++) {
-                        _tmp[x] = ref_left[x + delta_int + 1];
+                        _tmp[x] = ref_lft[x + delta_int + 1];
                 }
                 if (height >= 4 && scale >= 0)
                         for (int x = 0; x < OVMIN(3 << scale, height); x++) {
                                 int wL = 32 >> (2 * x >> scale);
-                                const int16_t above = ref_above[y + x + 2];
+                                const int16_t above = ref_abv[y + x + 2];
                                 _tmp[x] = ov_clip(
                                   _tmp[x] +
                                     ((wL * (above - _tmp[x]) + 32) >> 6),
@@ -94,16 +94,16 @@ vvc_intra_angular_hdia(const uint16_t* const ref_above,
 }
 
 void
-vvc_intra_angular_vdia(const uint16_t* const ref_above,
-                       const uint16_t* const ref_left, uint16_t* const dst,
-                       ptrdiff_t dst_stride, int log2_pb_width,
-                       int log2_pb_height)
+vvc_intra_angular_vdia(const uint16_t* const ref_abv,
+                       const uint16_t* const ref_lft, uint16_t* const dst,
+                       ptrdiff_t dst_stride, int log2_pb_w,
+                       int log2_pb_h)
 {
         int delta_pos = 32; // angle val = 32 for strict diag
         uint16_t* _dst = dst;
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
-        int scale = OVMIN(2, log2_pb_height - (floor_log2(3 * 512 - 2) - 8));
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
+        int scale = OVMIN(2, log2_pb_h - (floor_log2(3 * 512 - 2) - 8));
 
         for (int y = 0; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
@@ -112,12 +112,12 @@ vvc_intra_angular_vdia(const uint16_t* const ref_above,
                 #endif
 
                 for (int x = 0; x < width; x++) {
-                        _dst[x] = ref_above[x + delta_int + 1];
+                        _dst[x] = ref_abv[x + delta_int + 1];
                 }
                 if (height >= 4 && scale >= 0)
                         for (int x = 0; x < OVMIN(3 << scale, width); x++) {
                                 int wL = 32 >> (2 * x >> scale);
-                                const int16_t left = ref_left[y + x + 2];
+                                const int16_t left = ref_lft[y + x + 2];
                                 _dst[x] = ov_clip(
                                   _dst[x] + ((wL * (left - _dst[x]) + 32) >> 6),
                                   0,
@@ -129,15 +129,15 @@ vvc_intra_angular_vdia(const uint16_t* const ref_above,
 }
 
 void
-vvc_intra_angular_h_c(const uint16_t* ref_left, uint16_t* dst,
-                      ptrdiff_t dst_stride, int log2_pb_width,
-                      int log2_pb_height, int angle_val)
+vvc_intra_angular_h_c(const uint16_t* ref_lft, uint16_t* dst,
+                      ptrdiff_t dst_stride, int log2_pb_w,
+                      int log2_pb_h, int angle_val)
 {
         int16_t tmp_dst[128 * 128];
         int16_t* _tmp = tmp_dst;
         uint16_t* _dst = dst;
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         const int tmp_stride = 128;
 
         int delta_pos = angle_val;
@@ -146,7 +146,7 @@ vvc_intra_angular_h_c(const uint16_t* ref_left, uint16_t* dst,
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
                 // TODO for bit depth <= 10 we can use uint16_t for computation
-                const uint16_t* pRM = ref_left + delta_int + 1;
+                const uint16_t* pRM = ref_lft + delta_int + 1;
                 int last_ref_val = *pRM++;
                 for (int x = 0; x < height; x++) {
                         int curr_ref_val = *pRM;
@@ -176,18 +176,18 @@ vvc_intra_angular_h_c(const uint16_t* ref_left, uint16_t* dst,
 }
 
 void
-vvc_intra_angular_v_c(const uint16_t* ref_above, uint16_t* dst,
-                      ptrdiff_t dst_stride, int log2_pb_width,
-                      int log2_pb_height, int angle_val)
+vvc_intra_angular_v_c(const uint16_t* ref_abv, uint16_t* dst,
+                      ptrdiff_t dst_stride, int log2_pb_w,
+                      int log2_pb_h, int angle_val)
 {
         uint16_t* _dst = dst;
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
 
         for (int y = 0, delta_pos = angle_val; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
-                const uint16_t* pRM = ref_above + delta_int + 1;
+                const uint16_t* pRM = ref_abv + delta_int + 1;
                 int last_ref_val = *pRM++;
                 for (int x = 0; x < width; pRM++, x++) {
                         int curr_ref_val = *pRM;
@@ -205,23 +205,23 @@ vvc_intra_angular_v_c(const uint16_t* ref_above, uint16_t* dst,
 }
 
 void
-vvc_intra_hor_pdpc(const uint16_t* const ref_above,
-                   const uint16_t* const ref_left, uint16_t* const dst,
-                   ptrdiff_t dst_stride, uint16_t log2_pb_width,
-                   uint16_t log2_pb_height)
+vvc_intra_hor_pdpc(const uint16_t* const ref_abv,
+                   const uint16_t* const ref_lft, uint16_t* const dst,
+                   ptrdiff_t dst_stride, uint16_t log2_pb_w,
+                   uint16_t log2_pb_h)
 {
         uint16_t* _dst = dst;
-        int pb_width = 1 << log2_pb_width;
-        int pb_height = 1 << log2_pb_height;
-        int pdpc_scale = (log2_pb_width + log2_pb_height - 2) >> 2;
+        int pb_width = 1 << log2_pb_w;
+        int pb_height = 1 << log2_pb_h;
+        int pdpc_scale = (log2_pb_w + log2_pb_h - 2) >> 2;
         const uint8_t* pdpc_w = vvc_pdpc_w[pdpc_scale];
 
-        const uint16_t tl_val = ref_above[0];
+        const uint16_t tl_val = ref_abv[0];
         for (int y = 0; y < pb_height; y++) {
                 int l_wgh = pdpc_w[y];
-                int32_t l_val = ref_left[y + 1];
+                int32_t l_val = ref_lft[y + 1];
                 for (int x = 0; x < pb_width; x++) {
-                        const int32_t t_val = ref_above[x + 1];
+                        const int32_t t_val = ref_abv[x + 1];
                         int val =
                           (l_wgh * (t_val - tl_val) + (l_val << 6) + 32) >> 6;
                         _dst[x] = ov_clip(val, 0, 1023);
@@ -231,23 +231,23 @@ vvc_intra_hor_pdpc(const uint16_t* const ref_above,
 }
 
 void
-vvc_intra_ver_pdpc(const uint16_t* const ref_above,
-                   const uint16_t* const ref_left, uint16_t* const dst,
-                   ptrdiff_t dst_stride, uint16_t log2_pb_width,
-                   uint16_t log2_pb_height)
+vvc_intra_ver_pdpc(const uint16_t* const ref_abv,
+                   const uint16_t* const ref_lft, uint16_t* const dst,
+                   ptrdiff_t dst_stride, uint16_t log2_pb_w,
+                   uint16_t log2_pb_h)
 {
         uint16_t* _dst = dst;
-        const uint16_t tl_val = ref_above[0];
-        int pdpc_scale = (log2_pb_width + log2_pb_height - 2) >> 2;
+        const uint16_t tl_val = ref_abv[0];
+        int pdpc_scale = (log2_pb_w + log2_pb_h - 2) >> 2;
         const uint8_t* pdpc_w = vvc_pdpc_w[pdpc_scale];
 
-        int pb_width = 1 << log2_pb_width;
-        int pb_height = 1 << log2_pb_height;
+        int pb_width = 1 << log2_pb_w;
+        int pb_height = 1 << log2_pb_h;
 
         for (int y = 0; y < pb_height; y++) {
-                const uint16_t l_val = ref_left[y + 1];
+                const uint16_t l_val = ref_lft[y + 1];
                 for (int x = 0; x < pb_width; x++) {
-                        const int32_t t_val = ref_above[x + 1];
+                        const int32_t t_val = ref_abv[x + 1];
                         int l_wgh = pdpc_w[x];
                         int val =
                           (l_wgh * (l_val - tl_val) + (t_val << 6) + 32) >> 6;
@@ -258,60 +258,60 @@ vvc_intra_ver_pdpc(const uint16_t* const ref_above,
 }
 
 void
-vvc_intra_hor(const uint16_t* const ref_above, const uint16_t* const ref_left,
-              uint16_t* const dst, ptrdiff_t dst_stride, uint16_t log2_pb_width,
-              uint16_t log2_pb_height)
+vvc_intra_hor(const uint16_t* const ref_abv, const uint16_t* const ref_lft,
+              uint16_t* const dst, ptrdiff_t dst_stride, uint16_t log2_pb_w,
+              uint16_t log2_pb_h)
 {
         uint16_t* _dst = dst;
-        int pb_width = 1 << log2_pb_width;
-        int pb_height = 1 << log2_pb_height;
+        int pb_width = 1 << log2_pb_w;
+        int pb_height = 1 << log2_pb_h;
 
         for (int y = 0; y < pb_height; y++) {
                 for (int j = 0; j < pb_width; j++) {
-                        _dst[j] = ref_left[y + 1];
+                        _dst[j] = ref_lft[y + 1];
                 }
-                //        memset(_dst, ref_left[y+1], sizeof(uint16_t) *
+                //        memset(_dst, ref_lft[y+1], sizeof(uint16_t) *
                 //        cb_width);
                 _dst += dst_stride;
         }
 }
 
 void
-vvc_intra_ver(const uint16_t* const ref_above, const uint16_t* const ref_left,
-              uint16_t* const dst, ptrdiff_t dst_stride, uint16_t log2_pb_width,
-              uint16_t log2_pb_height)
+vvc_intra_ver(const uint16_t* const ref_abv, const uint16_t* const ref_lft,
+              uint16_t* const dst, ptrdiff_t dst_stride, uint16_t log2_pb_w,
+              uint16_t log2_pb_h)
 {
         uint16_t* _dst = dst;
-        int pb_width = 1 << log2_pb_width;
-        int pb_height = 1 << log2_pb_height;
+        int pb_width = 1 << log2_pb_w;
+        int pb_height = 1 << log2_pb_h;
 
         for (int y = 0; y < pb_height; y++) {
-                memcpy(_dst, &ref_above[1], sizeof(uint16_t) * pb_width);
+                memcpy(_dst, &ref_abv[1], sizeof(uint16_t) * pb_width);
                 _dst += dst_stride;
         }
 }
 
 void
-vvc_intra_angular_hpos_wide(const uint16_t* const ref_above,
-                            const uint16_t* const ref_left, uint16_t* const dst,
-                            ptrdiff_t dst_stride, int log2_pb_width,
-                            int log2_pb_height, int mode_idx)
+vvc_intra_angular_hpos_wide(const uint16_t* const ref_abv,
+                            const uint16_t* const ref_lft, uint16_t* const dst,
+                            ptrdiff_t dst_stride, int log2_pb_w,
+                            int log2_pb_h, int mode_idx)
 {
         int16_t tmp_dst[128 * 128];
         const int tmp_stride = 128;
         int16_t* _tmp = tmp_dst;
         uint16_t* _dst = dst;
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         int angle_val = angle_table[mode_idx];
         int inv_angle = inverse_angle_table[mode_idx];
         int delta_pos = angle_val;
         int scale = OVMIN(2,
-                          log2_pb_width -
+                          log2_pb_w -
                             (floor_log2(3 * inv_angle - 2) -
-                             8)); //(log2_pb_width + log2_pb_height - 2) >> 2;
+                             8)); //(log2_pb_w + log2_pb_h - 2) >> 2;
         #if 0
-        int top_ref_length = 1 << (log2_pb_width + 1);
+        int top_ref_length = 1 << (log2_pb_w + 1);
         #endif
 
         // swapped width/height for horizontal mode:
@@ -321,7 +321,7 @@ vvc_intra_angular_hpos_wide(const uint16_t* const ref_above,
                 int inv_angle_sum = 256 + inv_angle;
 
                 // Do linear filtering
-                const uint16_t* pRM = ref_left + delta_int + 1;
+                const uint16_t* pRM = ref_lft + delta_int + 1;
                 int last_ref_val = *pRM++;
                 for (int x = 0; x < height; pRM++, x++) {
                         int curr_ref_val = *pRM;
@@ -337,7 +337,7 @@ vvc_intra_angular_hpos_wide(const uint16_t* const ref_above,
                         // TODO check if we can use LUTs instead
                         int wL = 32 >> ((x << 1) >> scale);
                         const uint16_t* p =
-                          ref_above + y + (inv_angle_sum >> 9) + 1;
+                          ref_abv + y + (inv_angle_sum >> 9) + 1;
 
                         int32_t left = p[0];
                         _tmp[x] =
@@ -363,29 +363,29 @@ vvc_intra_angular_hpos_wide(const uint16_t* const ref_above,
 }
 
 void
-vvc_intra_angular_vpos_wide(const uint16_t* const ref_above,
-                            const uint16_t* const ref_left, uint16_t* const dst,
-                            ptrdiff_t dst_stride, int log2_pb_width,
-                            int log2_pb_height, int mode_idx)
+vvc_intra_angular_vpos_wide(const uint16_t* const ref_abv,
+                            const uint16_t* const ref_lft, uint16_t* const dst,
+                            ptrdiff_t dst_stride, int log2_pb_w,
+                            int log2_pb_h, int mode_idx)
 {
 
         uint16_t* _dst = dst;
         int angle_val = angle_table[mode_idx];
         int inv_angle = inverse_angle_table[mode_idx];
         int delta_pos = angle_val;
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         int scale = OVMIN(2,
-                          log2_pb_height -
+                          log2_pb_h -
                             (floor_log2(3 * inv_angle - 2) -
-                             8)); //(log2_pb_width + log2_pb_height - 2) >> 2;
+                             8)); //(log2_pb_w + log2_pb_h - 2) >> 2;
         for (int y = 0; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
                 int inv_angle_sum = 256 + inv_angle;
 
                 // Do linear filtering
-                const uint16_t* pRM = ref_above + delta_int + 1;
+                const uint16_t* pRM = ref_abv + delta_int + 1;
                 int last_ref_val = *pRM++;
                 for (int x = 0; x < width; pRM++, x++) {
                         int curr_ref_val = *pRM;
@@ -400,7 +400,7 @@ vvc_intra_angular_vpos_wide(const uint16_t* const ref_above,
                         // TODO check if we can use LUTs instead
                         int wL = 32 >> ((x << 1) >> scale);
                         const uint16_t* p =
-                          ref_left + y + (inv_angle_sum >> 9) + 1;
+                          ref_lft + y + (inv_angle_sum >> 9) + 1;
 
                         int32_t left = p[0];
                         _dst[x] =
@@ -415,22 +415,22 @@ vvc_intra_angular_vpos_wide(const uint16_t* const ref_above,
 }
 
 void
-intra_angular_h_nofrac(const uint16_t* ref_left, uint16_t* dst,
-                       ptrdiff_t dst_stride, int log2_pb_width,
-                       int log2_pb_height, int angle_val)
+intra_angular_h_nofrac(const uint16_t* ref_lft, uint16_t* dst,
+                       ptrdiff_t dst_stride, int log2_pb_w,
+                       int log2_pb_h, int angle_val)
 {
         uint16_t tmp_dst[128 * 128];
         const int tmp_stride = 128;
         uint16_t* _tmp = tmp_dst;
         uint16_t* _dst = dst;
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         int delta_pos = angle_val >> 5;
         int y, x;
 
         for (y = 0; y < width; ++y) {
                 for (x = 0; x < height; ++x) {
-                        _tmp[x] = ref_left[x + delta_pos + 1];
+                        _tmp[x] = ref_lft[x + delta_pos + 1];
                 }
                 delta_pos += angle_val >> 5;
                 _tmp += tmp_stride;
@@ -450,9 +450,9 @@ intra_angular_h_nofrac(const uint16_t* ref_left, uint16_t* dst,
 }
 
 void
-intra_angular_h_nofrac_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
+intra_angular_h_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                             uint16_t* dst, ptrdiff_t dst_stride,
-                            int log2_pb_width, int log2_pb_height, int mode_idx)
+                            int log2_pb_w, int log2_pb_h, int mode_idx)
 {
         int16_t tmp_dst[128 * 128];
         const int tmp_stride = 128;
@@ -460,22 +460,22 @@ intra_angular_h_nofrac_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
         uint16_t* _dst = dst;
         int angle_val = angle_table[mode_idx];
         int inv_angle = inverse_angle_table[mode_idx];
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         int delta_pos = angle_val >> 5;
         int scale =
-          OVMIN(2, log2_pb_width - (floor_log2(3 * inv_angle - 2) - 8));
+          OVMIN(2, log2_pb_w - (floor_log2(3 * inv_angle - 2) - 8));
         int y/*, x*/;
 
         for (y = 0; y < width; ++y) {
                 int inv_angle_sum = 256 + inv_angle;
                 for (int x = 0; x < height; x++) {
-                        _tmp[x] = ref_left[x + delta_pos + 1];
+                        _tmp[x] = ref_lft[x + delta_pos + 1];
                 }
                 for (int x = 0; x < OVMIN(3 << scale, height); x++) {
                         int wL = 32 >> ((x << 1) >> scale);
                         const uint16_t* p =
-                          ref_above + y + (inv_angle_sum >> 9) + 1;
+                          ref_abv + y + (inv_angle_sum >> 9) + 1;
 
                         int16_t left = p[0];
                         _tmp[x] =
@@ -502,9 +502,9 @@ intra_angular_h_nofrac_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
 }
 
 void
-intra_angular_h_gauss_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
+intra_angular_h_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                            uint16_t* const dst, ptrdiff_t dst_stride,
-                           int log2_pb_width, int log2_pb_height, int mode_idx)
+                           int log2_pb_w, int log2_pb_h, int mode_idx)
 {
         uint16_t tmp_dst[128 * 128];
         const int tmp_stride = 128;
@@ -512,17 +512,17 @@ intra_angular_h_gauss_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
         uint16_t* _dst = dst;
         int angle_val = angle_table[mode_idx];
         int inv_angle = inverse_angle_table[mode_idx];
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         int delta_pos = angle_val;
         int scale =
-          OVMIN(2, log2_pb_width - (floor_log2(3 * inv_angle - 2) - 8));
+          OVMIN(2, log2_pb_w - (floor_log2(3 * inv_angle - 2) - 8));
 
         for (int y = 0; y < width; y++) {
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & 0x1F;
                 int inv_angle_sum = 256 + inv_angle;
-                const int16_t* ref = (int16_t *)ref_left + delta_int;
+                const int16_t* ref = (int16_t *)ref_lft + delta_int;
                 for (int x = 0; x < height; x++) {
                         _tmp[x] =
                           ((int32_t)(ref[0] * (16 - (delta_frac >> 1))) +
@@ -535,7 +535,7 @@ intra_angular_h_gauss_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
                 for (int x = 0; x < OVMIN(3 << scale, height); x++) {
                         int wL = 32 >> ((x << 1) >> scale);
                         const uint16_t* p =
-                          ref_above + y + (inv_angle_sum >> 9) + 1;
+                          ref_abv + y + (inv_angle_sum >> 9) + 1;
 
                         int16_t left = p[0];
                         _tmp[x] =
@@ -562,20 +562,20 @@ intra_angular_h_gauss_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
 }
 
 void
-intra_angular_v_nofrac(const uint16_t* ref_above, uint16_t* dst,
-                       ptrdiff_t dst_stride, int log2_pb_width,
-                       int log2_pb_height, int angle_val)
+intra_angular_v_nofrac(const uint16_t* ref_abv, uint16_t* dst,
+                       ptrdiff_t dst_stride, int log2_pb_w,
+                       int log2_pb_h, int angle_val)
 {
         uint16_t* _dst = dst;
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         int delta_pos = angle_val;
 
         int y, x;
         for (y = 0; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
                 for (x = 0; x < width; x++) {
-                        _dst[x] = ref_above[x + delta_int + 1];
+                        _dst[x] = ref_abv[x + delta_int + 1];
                 }
                 delta_pos += angle_val;
                 _dst += dst_stride;
@@ -583,31 +583,31 @@ intra_angular_v_nofrac(const uint16_t* ref_above, uint16_t* dst,
 }
 
 void
-intra_angular_v_nofrac_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
+intra_angular_v_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                             uint16_t* const dst, ptrdiff_t dst_stride,
-                            int log2_pb_width, int log2_pb_height, int mode_idx)
+                            int log2_pb_w, int log2_pb_h, int mode_idx)
 {
         uint16_t* _dst = dst;
         int angle_val = angle_table[mode_idx];
         int inv_angle = inverse_angle_table[mode_idx];
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         int delta_pos = angle_val;
         int scale =
-          OVMIN(2, log2_pb_height - (floor_log2(3 * inv_angle - 2) - 8));
+          OVMIN(2, log2_pb_h - (floor_log2(3 * inv_angle - 2) - 8));
 
         int y, x;
         for (y = 0; y < height; ++y) {
                 const int delta_int = delta_pos >> 5;
                 int inv_angle_sum = 256 + inv_angle;
                 for (x = 0; x < width; x++) {
-                        _dst[x] = ref_above[x + delta_int + 1];
+                        _dst[x] = ref_abv[x + delta_int + 1];
                 }
                 for (x = 0; x < OVMIN(3 << scale, width); ++x) {
                         int wL = 32 >> ((x << 1) >> scale);
 
                         const uint16_t* p =
-                          ref_left + y + (inv_angle_sum >> 9) + 1;
+                          ref_lft + y + (inv_angle_sum >> 9) + 1;
 
                         int16_t left = p[0];
                         _dst[x] =
@@ -622,24 +622,24 @@ intra_angular_v_nofrac_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
 }
 
 void
-intra_angular_v_gauss_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
+intra_angular_v_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                            uint16_t* const dst, ptrdiff_t dst_stride,
-                           int log2_pb_width, int log2_pb_height, int mode_idx)
+                           int log2_pb_w, int log2_pb_h, int mode_idx)
 {
         uint16_t* _dst = dst;
         int angle_val = angle_table[mode_idx];
         int inv_angle = inverse_angle_table[mode_idx];
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         int delta_pos = angle_val;
         int scale =
-          OVMIN(2, log2_pb_height - (floor_log2(3 * inv_angle - 2) - 8));
+          OVMIN(2, log2_pb_h - (floor_log2(3 * inv_angle - 2) - 8));
 
         for (int y = 0; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
                 int inv_angle_sum = 256 + inv_angle;
-                const int16_t* ref = (int16_t*)ref_above + delta_int;
+                const int16_t* ref = (int16_t*)ref_abv + delta_int;
                 for (int x = 0; x < width; x++) {
                         _dst[x] =
                           ((int32_t)(ref[0] * (16 - (delta_frac >> 1))) +
@@ -652,7 +652,7 @@ intra_angular_v_gauss_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
                 for (int x = 0; x < OVMIN(3 << scale, width); x++) {
                         int wL = 32 >> ((x << 1) >> scale);
                         const uint16_t* p =
-                          ref_left + y + (inv_angle_sum >> 9) + 1;
+                          ref_lft + y + (inv_angle_sum >> 9) + 1;
 
                         int16_t left = p[0];
                         _dst[x] =
@@ -667,14 +667,14 @@ intra_angular_v_gauss_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
 }
 
 void
-intra_angular_h_cubic(const uint16_t* ref_left, uint16_t* dst,
-                      ptrdiff_t dst_stride, int log2_pb_width,
-                      int log2_pb_height, int angle_val)
+intra_angular_h_cubic(const uint16_t* ref_lft, uint16_t* dst,
+                      ptrdiff_t dst_stride, int log2_pb_w,
+                      int log2_pb_h, int angle_val)
 {
         uint16_t tmp_dst[128 * 128];
         const int tmp_stride = 128;
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         uint16_t* _tmp = tmp_dst;
         uint16_t* _dst = dst;
 
@@ -682,7 +682,7 @@ intra_angular_h_cubic(const uint16_t* ref_left, uint16_t* dst,
         for (int y = 0; y < width; y++) {
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
-                const int16_t* ref = (int16_t*)ref_left + delta_int;
+                const int16_t* ref = (int16_t*)ref_lft + delta_int;
                 const int8_t* filter = &chroma_filter[delta_frac << 2];
                 for (int x = 0; x < height; x++) {
                         int32_t val;
@@ -711,14 +711,14 @@ intra_angular_h_cubic(const uint16_t* ref_left, uint16_t* dst,
 }
 
 void
-intra_angular_h_gauss(const uint16_t* ref_left, uint16_t* dst,
-                      ptrdiff_t dst_stride, int log2_pb_width,
-                      int log2_pb_height, int angle_val)
+intra_angular_h_gauss(const uint16_t* ref_lft, uint16_t* dst,
+                      ptrdiff_t dst_stride, int log2_pb_w,
+                      int log2_pb_h, int angle_val)
 {
         uint16_t tmp_dst[128 * 128];
         const int tmp_stride = 128;
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         uint16_t* _tmp = tmp_dst;
         uint16_t* _dst = dst;
 
@@ -726,7 +726,7 @@ intra_angular_h_gauss(const uint16_t* ref_left, uint16_t* dst,
         for (int y = 0; y < width; y++) {
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
-                const int16_t* ref = (int16_t*)ref_left + delta_int;
+                const int16_t* ref = (int16_t*)ref_lft + delta_int;
                 for (int x = 0; x < height; x++) {
                         _tmp[x] =
                           ((int32_t)(ref[0] * (16 - (delta_frac >> 1))) +
@@ -753,20 +753,20 @@ intra_angular_h_gauss(const uint16_t* ref_left, uint16_t* dst,
 }
 
 void
-intra_angular_v_cubic(const uint16_t* ref_above, uint16_t* dst,
-                      ptrdiff_t dst_stride, int log2_pb_width,
-                      int log2_pb_height, int angle_val)
+intra_angular_v_cubic(const uint16_t* ref_abv, uint16_t* dst,
+                      ptrdiff_t dst_stride, int log2_pb_w,
+                      int log2_pb_h, int angle_val)
 {
         int delta_pos = angle_val;
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         uint16_t* _dst = dst;
 
         for (int y = 0; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
 
-                const int16_t* ref = (int16_t*)ref_above + delta_int;
+                const int16_t* ref = (int16_t*)ref_abv + delta_int;
                 const int8_t* filter = &chroma_filter[delta_frac << 2];
 
                 for (int x = 0; x < width; x++) {
@@ -785,20 +785,20 @@ intra_angular_v_cubic(const uint16_t* ref_above, uint16_t* dst,
 }
 
 void
-intra_angular_v_gauss(const uint16_t* ref_above, uint16_t* dst,
-                      ptrdiff_t dst_stride, int log2_pb_width,
-                      int log2_pb_height, int angle_val)
+intra_angular_v_gauss(const uint16_t* ref_abv, uint16_t* dst,
+                      ptrdiff_t dst_stride, int log2_pb_w,
+                      int log2_pb_h, int angle_val)
 {
         int delta_pos = angle_val;
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         uint16_t* _dst = dst;
 
         for (int y = 0; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
 
-                const int16_t* ref = (int16_t*)ref_above + delta_int;
+                const int16_t* ref = (int16_t*)ref_abv + delta_int;
 
                 for (int x = 0; x < width; x++) {
                         _dst[x] =
@@ -815,9 +815,9 @@ intra_angular_v_gauss(const uint16_t* ref_above, uint16_t* dst,
 }
 
 void
-intra_angular_h_cubic_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
+intra_angular_h_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                            uint16_t* const dst, ptrdiff_t dst_stride,
-                           int log2_pb_width, int log2_pb_height, int mode_idx)
+                           int log2_pb_w, int log2_pb_h, int mode_idx)
 {
         uint16_t tmp_dst[128 * 128];
         const int tmp_stride = 128;
@@ -825,20 +825,20 @@ intra_angular_h_cubic_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
         uint16_t* _dst = dst;
         int angle_val = angle_table[mode_idx];
         int inv_angle = inverse_angle_table[mode_idx];
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         int delta_pos = angle_val;
         int scale =
-          OVMIN(2, log2_pb_width - (floor_log2(3 * inv_angle - 2) - 8));
+          OVMIN(2, log2_pb_w - (floor_log2(3 * inv_angle - 2) - 8));
         #if 0
-        int top_ref_length = 1 << (log2_pb_width + 1);
+        int top_ref_length = 1 << (log2_pb_w + 1);
         #endif
 
         for (int y = 0; y < width; y++) {
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
                 int inv_angle_sum = 256 + inv_angle;
-                const int16_t* ref = (int16_t*)ref_left + delta_int;
+                const int16_t* ref = (int16_t*)ref_lft + delta_int;
                 const int8_t* filter = &chroma_filter[delta_frac << 2];
 
                 for (int x = 0; x < height; x++) {
@@ -854,7 +854,7 @@ intra_angular_h_cubic_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
                 for (int x = 0; x < OVMIN(3 << scale, height); x++) {
                         int wL = 32 >> ((x << 1) >> scale);
                         const uint16_t* p =
-                          ref_above + y + (inv_angle_sum >> 9) + 1;
+                          ref_abv + y + (inv_angle_sum >> 9) + 1;
 
                         int16_t left = p[0];
                         _tmp[x] =
@@ -880,23 +880,23 @@ intra_angular_h_cubic_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
 }
 
 void
-intra_angular_v_cubic_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
+intra_angular_v_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                            uint16_t* const dst, ptrdiff_t dst_stride,
-                           int log2_pb_width, int log2_pb_height, int mode_idx)
+                           int log2_pb_w, int log2_pb_h, int mode_idx)
 {
         uint16_t* _dst = dst;
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         int angle_val = angle_table[mode_idx];
         int inv_angle = inverse_angle_table[mode_idx];
         int delta_pos = angle_val;
         int scale =
-          OVMIN(2, log2_pb_height - (floor_log2(3 * inv_angle - 2) - 8));
+          OVMIN(2, log2_pb_h - (floor_log2(3 * inv_angle - 2) - 8));
         for (int y = 0; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
                 const int delta_frac = delta_pos & (32 - 1);
                 int inv_angle_sum = 256 + inv_angle;
-                const int16_t* ref = (int16_t *)ref_above + delta_int;
+                const int16_t* ref = (int16_t *)ref_abv + delta_int;
                 const int8_t* filter = &chroma_filter[delta_frac << 2];
                 for (int x = 0; x < width; x++) {
                         int val = ((int32_t)(ref[0] * filter[0]) +
@@ -911,7 +911,7 @@ intra_angular_v_cubic_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
                 for (int x = 0; x < OVMIN(3 << scale, width); x++) {
                         int wL = 32 >> ((x << 1) >> scale);
                         const uint16_t* p =
-                          ref_left + y + (inv_angle_sum >> 9) + 1;
+                          ref_lft + y + (inv_angle_sum >> 9) + 1;
 
                         int16_t left = p[0];
                         _dst[x] =
@@ -926,29 +926,29 @@ intra_angular_v_cubic_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
 }
 
 void
-intra_angular_hdia_mref(const uint16_t* const ref_above,
-                        const uint16_t* const ref_left, uint16_t* const dst,
-                        ptrdiff_t dst_stride, int log2_pb_width,
-                        int log2_pb_height, uint8_t multi_ref_idx)
+intra_angular_hdia_mref(const uint16_t* const ref_abv,
+                        const uint16_t* const ref_lft, uint16_t* const dst,
+                        ptrdiff_t dst_stride, int log2_pb_w,
+                        int log2_pb_h, uint8_t mrl_idx)
 {
 
         uint16_t tmp_dst[128 * 128];
         const int tmp_stride = 128;
         uint16_t* _tmp = tmp_dst;
         uint16_t* _dst = dst;
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         #if 0
-        int scale = (log2_pb_width + log2_pb_height - 2) >> 2;
+        int scale = (log2_pb_w + log2_pb_h - 2) >> 2;
         #endif
 
-        int delta_pos = 32 * (multi_ref_idx + 1); // angle val is 32 for diag
+        int delta_pos = 32 * (mrl_idx + 1); // angle val is 32 for diag
 
         // and delta int is incremented of 1 (==y)
         for (int y = 0; y < width; y++) {
                 const int delta_int = delta_pos >> 5;
                 for (int x = 0; x < height; x++) {
-                        _tmp[x] = ref_left[x + delta_int + 1];
+                        _tmp[x] = ref_lft[x + delta_int + 1];
                 }
                 delta_pos += 32;
                 _tmp += tmp_stride;
@@ -967,22 +967,22 @@ intra_angular_hdia_mref(const uint16_t* const ref_above,
 }
 
 void
-intra_angular_vdia_mref(const uint16_t* const ref_above,
-                        const uint16_t* const ref_left, uint16_t* const dst,
-                        ptrdiff_t dst_stride, int log2_pb_width,
-                        int log2_pb_height, uint8_t multi_ref_idx)
+intra_angular_vdia_mref(const uint16_t* const ref_abv,
+                        const uint16_t* const ref_lft, uint16_t* const dst,
+                        ptrdiff_t dst_stride, int log2_pb_w,
+                        int log2_pb_h, uint8_t mrl_idx)
 {
         int delta_pos =
-          32 * (multi_ref_idx + 1); // angle val = 32 for strict diag
+          32 * (mrl_idx + 1); // angle val = 32 for strict diag
         uint16_t* _dst = dst;
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
 
         for (int y = 0; y < height; y++) {
                 const int delta_int = delta_pos >> 5;
 
                 for (int x = 0; x < width; x++) {
-                        _dst[x] = ref_above[x + delta_int + 1];
+                        _dst[x] = ref_abv[x + delta_int + 1];
                 }
 
                 delta_pos += 32;
@@ -991,10 +991,10 @@ intra_angular_vdia_mref(const uint16_t* const ref_above,
 }
 
 void
-intra_hneg_cubic_mref(uint16_t* const ref_above, uint16_t* const ref_left,
+intra_hneg_cubic_mref(uint16_t* const ref_abv, uint16_t* const ref_lft,
                       uint16_t* const dst, ptrdiff_t dst_stride,
-                      int log2_pb_width, int log2_pb_height, int mode_idx,
-                      uint8_t multi_ref_idx)
+                      int log2_pb_w, int log2_pb_h, int mode_idx,
+                      uint8_t mrl_idx)
 {
 
         uint16_t tmp_dst[128 * 128];
@@ -1004,16 +1004,16 @@ intra_hneg_cubic_mref(uint16_t* const ref_above, uint16_t* const ref_left,
         uint16_t* refSide;
         int angle_val = -angle_table[mode_idx];
         int inv_angle = inverse_angle_table[mode_idx];
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         const int tmp_stride = 128;
 
-        int delta_pos = angle_val * (multi_ref_idx + 1);
+        int delta_pos = angle_val * (mrl_idx + 1);
 
         int inv_angle_sum = 256; // rounding for (shift by 8)
 
-        refMain = ref_left + width - multi_ref_idx;
-        refSide = ref_above + height - multi_ref_idx;
+        refMain = ref_lft + width - mrl_idx;
+        refSide = ref_abv + height - mrl_idx;
 
         // Extend the Main reference to the left.
         for (int k = -1; k >= -width; k--) {
@@ -1021,7 +1021,7 @@ intra_hneg_cubic_mref(uint16_t* const ref_above, uint16_t* const ref_left,
                 refMain[k] = refSide[OVMIN((inv_angle_sum >> 9), width)];
         }
 
-        refMain += multi_ref_idx;
+        refMain += mrl_idx;
 
         if ((-angle_val & 0x1F)) {
                 for (int y = 0; y < width; y++) {
@@ -1067,10 +1067,10 @@ intra_hneg_cubic_mref(uint16_t* const ref_above, uint16_t* const ref_left,
 }
 
 void
-intra_vneg_cubic_mref(uint16_t* const ref_above, uint16_t* const ref_left,
+intra_vneg_cubic_mref(uint16_t* const ref_abv, uint16_t* const ref_lft,
                       uint16_t* const dst, ptrdiff_t dst_stride,
-                      int log2_pb_width, int log2_pb_height, int mode_idx,
-                      uint8_t multi_ref_idx)
+                      int log2_pb_w, int log2_pb_h, int mode_idx,
+                      uint8_t mrl_idx)
 {
 
         uint16_t* _dst = dst;
@@ -1078,11 +1078,11 @@ intra_vneg_cubic_mref(uint16_t* const ref_above, uint16_t* const ref_left,
         uint16_t* refSide;
         int angle_val = -angle_table[mode_idx];
         int inv_angle = inverse_angle_table[mode_idx];
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         int inv_angle_sum = 256; // rounding for (shift by 8)
-        refMain = ref_above + height - multi_ref_idx;
-        refSide = ref_left + width - multi_ref_idx;
+        refMain = ref_abv + height - mrl_idx;
+        refSide = ref_lft + width - mrl_idx;
 
         // Extend the Main reference to the left.
         for (int k = -1; k >= -height; k--) {
@@ -1090,9 +1090,9 @@ intra_vneg_cubic_mref(uint16_t* const ref_above, uint16_t* const ref_left,
                 refMain[k] = refSide[OVMIN(inv_angle_sum >> 9, height)];
         }
 
-        refMain += multi_ref_idx;
+        refMain += mrl_idx;
         if ((-angle_val & 0x1F)) {
-                for (int y = 0, delta_pos = angle_val * (multi_ref_idx + 1);
+                for (int y = 0, delta_pos = angle_val * (mrl_idx + 1);
                      y < height;
                      y++) {
                         const int delta_int = delta_pos >> 5;
@@ -1113,7 +1113,7 @@ intra_vneg_cubic_mref(uint16_t* const ref_above, uint16_t* const ref_left,
                         _dst += dst_stride;
                 }
         } else {
-                for (int y = 0, delta_pos = angle_val * (multi_ref_idx + 1);
+                for (int y = 0, delta_pos = angle_val * (mrl_idx + 1);
                      y < height;
                      y++) {
                         const int delta_int = delta_pos >> 5;
@@ -1127,25 +1127,25 @@ intra_vneg_cubic_mref(uint16_t* const ref_above, uint16_t* const ref_left,
 }
 
 void
-intra_angular_h_cubic_mref(const uint16_t* const ref_left, uint16_t* const dst,
+intra_angular_h_cubic_mref(const uint16_t* const ref_lft, uint16_t* const dst,
                            ptrdiff_t dst_stride, int mode_idx,
-                           int log2_pb_width, int log2_pb_height,
-                           uint8_t multi_ref_idx)
+                           int log2_pb_w, int log2_pb_h,
+                           uint8_t mrl_idx)
 {
         uint16_t tmp_dst[128 * 128];
         const int tmp_stride = 128;
         uint16_t* _tmp = tmp_dst;
         uint16_t* _dst = dst;
         int angle_val = angle_table[mode_idx];
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
-        int delta_pos = angle_val * (multi_ref_idx + 1);
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
+        int delta_pos = angle_val * (mrl_idx + 1);
 
         if ((angle_val & 0x1F)) {
                 for (int y = 0; y < width; y++) {
                         const int delta_int = delta_pos >> 5;
                         const int delta_frac = delta_pos & (32 - 1);
-                        const int16_t* ref = (int16_t *)ref_left + delta_int;
+                        const int16_t* ref = (int16_t *)ref_lft + delta_int;
                         const int8_t* filter = &chroma_filter[delta_frac << 2];
                         for (int x = 0; x < height;
                              x++) { // FIXME check boundary
@@ -1165,7 +1165,7 @@ intra_angular_h_cubic_mref(const uint16_t* const ref_left, uint16_t* const dst,
                 for (int y = 0; y < width; y++) {
                         const int delta_int = delta_pos >> 5;
                         for (int x = 0; x < height; x++) {
-                                _tmp[x] = ref_left[x + delta_int + 1];
+                                _tmp[x] = ref_lft[x + delta_int + 1];
                         }
                         delta_pos += angle_val;
                         _tmp += tmp_stride;
@@ -1185,22 +1185,22 @@ intra_angular_h_cubic_mref(const uint16_t* const ref_left, uint16_t* const dst,
 }
 
 void
-intra_angular_v_cubic_mref(const uint16_t* const ref_above, uint16_t* const dst,
-                           int dst_stride, int log2_pb_width,
-                           int log2_pb_height, int mode_idx,
-                           uint8_t multi_ref_idx)
+intra_angular_v_cubic_mref(const uint16_t* const ref_abv, uint16_t* const dst,
+                           int dst_stride, int log2_pb_w,
+                           int log2_pb_h, int mode_idx,
+                           uint8_t mrl_idx)
 {
         int angle_val = angle_table[mode_idx];
-        int delta_pos = angle_val * (multi_ref_idx + 1);
+        int delta_pos = angle_val * (mrl_idx + 1);
         uint16_t* _dst = dst;
-        int width = 1 << log2_pb_width;
-        int height = 1 << log2_pb_height;
+        int width = 1 << log2_pb_w;
+        int height = 1 << log2_pb_h;
         // Note this can be vectorized
         if ((angle_val & 0x1F)) {
                 for (int y = 0; y < height; y++) {
                         const int delta_int = delta_pos >> 5;
                         const int delta_frac = delta_pos & (32 - 1);
-                        const int16_t* ref = (int16_t *)ref_above + delta_int;
+                        const int16_t* ref = (int16_t *)ref_abv + delta_int;
                         const int8_t* filter = &chroma_filter[delta_frac << 2];
                         for (int x = 0; x < width; x++) { // FIXME check
                                                           // boundary
@@ -1220,7 +1220,7 @@ intra_angular_v_cubic_mref(const uint16_t* const ref_above, uint16_t* const dst,
                 for (int y = 0; y < height; y++) {
                         const int delta_int = delta_pos >> 5;
                         for (int x = 0; x < width; x++) {
-                                _dst[x] = ref_above[x + delta_int + 1];
+                                _dst[x] = ref_abv[x + delta_int + 1];
                         }
                         delta_pos += angle_val;
                         _dst += dst_stride;
