@@ -901,7 +901,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
         int16_t **src = fb.filter_region;
         ctudec_extend_filter_region(ctudec, xPos, yPos, is_border);
 
-        if( alf_params_ctu.ctb_alf_flag ){
+        if( alf_params_ctu.ctb_alf_flag & 0x4){
             uint8_t c_idx = 0;
             Area blk,blk_dst;
             //Source block in the filter buffers image
