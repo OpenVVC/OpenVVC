@@ -636,8 +636,12 @@ struct OVCTUDec
     VVCDeQuantCtx dequant_cb;
     VVCDeQuantCtx dequant_cr;
     VVCDeQuantCtx dequant_joint_cb_cr;
+    VVCDeQuantCtx dequant_cb_skip;
+    VVCDeQuantCtx dequant_cr_skip;
+    VVCDeQuantCtx dequant_jcbcr_skip;
 
     const VVCDeQuantCtx *dequant_chroma;
+    const VVCDeQuantCtx *dequant_skip;
     uint16_t ctb_x;
     uint16_t ctb_y;
     uint16_t nb_ctb_pic_w;

@@ -792,6 +792,7 @@ transform_unit(OVCTUDec *const ctu_dec,
             int x_pu = x0 >> 2;
             int y_pu = y0 >> 2;
             #endif
+            ctu_dec->dequant_skip = &ctu_dec->dequant_luma_skip;
             residual_coding_ts(ctu_dec, log2_tb_w, log2_tb_h);
             //FIXME transform residual is currently performed in the dequant function
         }
