@@ -861,7 +861,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
     } else {
         OVMV mvd0, mvd1;
-        uint8_t mvp_idx0, mvp_idx1;
+        uint8_t mvp_idx0 = 0;
+        uint8_t mvp_idx1 = 0;
 
         uint8_t inter_dir = ovcabac_read_ae_inter_dir(cabac_ctx, log2_pb_w, log2_pb_h);
 
