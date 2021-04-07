@@ -159,10 +159,10 @@ void alf_create(OVCTUDec *const ctudec, RCNALF* alf)
     // Classification
     if ( alf->classifier == 0 )
     {
-        alf->classifier = ov_malloc(sizeof(ALFClassifier*)*ctu_width/4);
-        for (int i = 0; i < ctu_width/4; i++)
+        alf->classifier = ov_malloc(sizeof(ALFClassifier*)*ctu_width>>2);
+        for (int i = 0; i < ctu_width>>2; i++)
         {
-            alf->classifier[i] = ov_malloc(sizeof(ALFClassifier)*ctu_width/4 );
+            alf->classifier[i] = ov_malloc(sizeof(ALFClassifier)*ctu_width>>2 );
         }
     }
 
@@ -471,7 +471,7 @@ void rcn_alf_derive_classificationBlk(ALFClassifier **classifier, int **laplacia
       ALFClassifier alf_class;
       alf_class.class_idx = class_idx;
       alf_class.transpose_idx = transpose_idx;
-      classifier[yOffset/4][xOffset/4] = alf_class;
+      classifier[yOffset>>2][xOffset>>2] = alf_class;
     }
   }
 }
@@ -638,14 +638,14 @@ void alf_filterBlk(ALFClassifier **classifier, int16_t *const dst, int16_t *cons
   {
     if( !bChroma )
     {
-      pClass = classifier[i/4];
+      pClass = classifier[i>>2];
     }
 
     for( int j = 0; j < blk_dst.width; j += clsSizeX )
     {
       if( !bChroma )
       {
-        ALFClassifier cl = pClass[j/4];
+        ALFClassifier cl = pClass[j>>2];
         transpose_idx = cl.transpose_idx;
         coef = filter_set + cl.class_idx * MAX_NUM_ALF_LUMA_COEFF;
         clip = clip_set + cl.class_idx * MAX_NUM_ALF_LUMA_COEFF;
@@ -995,7 +995,7 @@ void alf_destroy(RCNALF* alf, int16_t ctu_width)
 {
     if( alf->classifier )
     {
-        for (int i = 0; i < ctu_width/4; i++)
+        for (int i = 0; i < ctu_width>>2; i++)
             ov_free(alf->classifier[i]);
         ov_free(alf->classifier);
         alf->classifier = 0;

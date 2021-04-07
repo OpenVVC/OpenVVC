@@ -785,7 +785,7 @@ transform_unit(OVCTUDec *const ctu_dec,
         }
 
         #if 1
-        vvc_add_residual(&ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], ctu_dec->transform_buff, log2_tb_w, log2_tb_h, 0);
+        vvc_add_residual( ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
         #else
         rcn_func->ict[0](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE],
                              log2_tb_w, log2_tb_h, 0);
