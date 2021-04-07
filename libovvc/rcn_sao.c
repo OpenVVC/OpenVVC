@@ -51,7 +51,9 @@ void sao_edge_filter(uint8_t *_dst, uint8_t *_src,
         ptrdiff_t stride_dst, ptrdiff_t stride_src,
         SAOParamsCtu *sao,
          int width, int height, int x_start, int y_start, 
-        int c_idx) {
+        int c_idx) 
+{
+    // static const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
     static const int8_t pos[4][2][2] = {
         { { -1,  0 }, {  1, 0 } }, // horizontal
         { {  0, -1 }, {  0, 1 } }, // vertical

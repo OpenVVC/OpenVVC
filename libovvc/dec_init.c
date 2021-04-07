@@ -389,7 +389,6 @@ retrieve_aps_alf(const OVNVCLCtx *const nvcl_ctx, const OVSH *const sh)
 static const OVAPS *
 retrieve_aps_lmcs(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
 {
-    //TODO: which aps_id for lmcs ?
     uint8_t aps_id = ph->ph_lmcs_aps_id;
     const OVAPS *aps = NULL;
     if (aps_id < 16) {

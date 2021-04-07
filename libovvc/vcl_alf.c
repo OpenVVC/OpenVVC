@@ -58,7 +58,6 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu
     int           ctb_col           = ctb_rs % nb_ctu_w;
     const uint8_t up_ctb_alf_flag   = (ctb_rs - nb_ctu_w) >= 0 ? alf_info->ctb_alf_flag_line[ctb_col] : 0;
    
-    //TODO: verifier nom et signification de tile_group_num_aps.
     uint8_t tile_group_num_aps  = alf_info->num_alf_aps_ids_luma;
     uint8_t num_alf_chroma_alternative;
     if(alf_luma_flag){

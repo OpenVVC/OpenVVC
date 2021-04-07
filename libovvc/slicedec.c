@@ -395,12 +395,21 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
     struct LMCSInfo* lmcs_info  = &ctudec->lmcs_info;
     lmcs_info->lmcs_enabled_flag = ph->ph_lmcs_enabled_flag;
     if(ph->ph_lmcs_enabled_flag){
+        int bitdepth = 10;
+        if(!lmcs_info->lmcs_lut_luma){
+            lmcs_info->lmcs_lut_luma = ov_malloc(sizeof(uint16_t) * (1<<bitdepth));
+        } else {
+            memset(lmcs_info->lmcs_lut_luma, 0, sizeof(uint16_t) * (1<<bitdepth));
+        }
+
         lmcs_info->lmcs_chroma_scaling_offset = aps_lmcs_data->lmcs_delta_sign_crs_flag ? 
                                                 -aps_lmcs_data->lmcs_delta_abs_crs 
                                                 : aps_lmcs_data->lmcs_delta_abs_crs;
 
         uint16_t *const output_pivot = lmcs_info->lmcs_output_pivot;
         rcn_derive_lmcs_params(output_pivot, aps_lmcs_data);
+        rcn_lmcs_compute_lut_luma(lmcs_info->lmcs_lut_luma, lmcs_info->lmcs_output_pivot);
+
     }
 
     return 0;
@@ -662,6 +671,15 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
     ret = ctudec->coding_tree(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s, 0);
 
     rcn_write_ctu_to_frame(&ctudec->rcn_ctx, log2_ctb_s);
+    rcn_ctu_to_intra_line(ctudec, ctudec->ctb_x << log2_ctb_s);
+
+    if (ctudec->lmcs_info.lmcs_enabled_flag){
+      const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
+      ptrdiff_t stride_out_pic = fbuff->stride;
+      uint16_t *out_pic = fbuff->y;
+      rcn_lmcs_reshape_luma_blk_lut(out_pic, stride_out_pic,ctudec->lmcs_info.lmcs_lut_luma, 
+                                ctudec->lmcs_info.lmcs_output_pivot, 1 << log2_ctb_s, 1 << log2_ctb_s);
+    }
 
     if (!ctudec->dbf_disable) {
         uint8_t is_last_x = (ctb_addr_rs + 1) % nb_ctu_w == 0;
@@ -698,6 +716,15 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
 
     rcn_write_ctu_to_frame_border(&ctudec->rcn_ctx,
                                   ctu_w, ctu_h);
+    rcn_ctu_to_intra_line(ctudec, ctudec->ctb_x << log2_ctb_s);
+
+    if (ctudec->lmcs_info.lmcs_enabled_flag){
+      const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
+      ptrdiff_t stride_out_pic = fbuff->stride;
+      uint16_t *out_pic = fbuff->y;
+      rcn_lmcs_reshape_luma_blk_lut(out_pic, stride_out_pic,ctudec->lmcs_info.lmcs_lut_luma, 
+                                ctudec->lmcs_info.lmcs_output_pivot, ctu_w, ctu_h);
+    }
 
     if (!ctudec->dbf_disable) {
         uint8_t is_last_x = (ctb_addr_rs + 1) % nb_ctu_w == 0;
@@ -726,7 +753,8 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     /* Do not copy on first line */
     if (ctb_addr_rs >= nb_ctu_w) {
-        rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
+        // rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
+        rcn_intra_line_to_ctu(&ctudec->rcn_ctx, 0, log2_ctb_s);
     }
 
     while (ctb_x < nb_ctu_w - 1) {
@@ -751,34 +779,6 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
             store_inter_maps(drv_lines, ctudec, ctb_x, 0);
         }
 
-        //TODO: do not apply here
-        if (ctudec->lmcs_info.lmcs_enabled_flag){
-        // int shift_chr = c_idx==0 ? 0 : 1;
-        // int x0       = x >> shift_chr;
-        // int y0       = y >> shift_chr;
-        // int f_width  = (ctudec->pic_w) >> shift_chr;
-        // int f_height = (ctudec->pic_h) >> shift_chr;
-        // int ctb_size_h = (1 << log2_ctb_size) >> shift_chr;
-        // int ctb_size_v = (1 << log2_ctb_size) >> shift_chr;
-        // int width    = OVMIN(ctb_size_h, f_width - x0);
-        // int height   = OVMIN(ctb_size_v, f_height - y0);
-
-          int ctb_y = einfo->ctb_y + ctb_addr_rs/nb_ctu_w;
-          int x_ctu = ctudec->ctb_x << log2_ctb_s;
-          int y_ctu = ctb_y << log2_ctb_s;
-          int ctb_size = 1 << log2_ctb_s;
-          int width    = OVMIN(ctb_size, ctudec->pic_w - x_ctu);
-          int height   = OVMIN(ctb_size, ctudec->pic_h - y_ctu);
-
-          ptrdiff_t stride_out_pic = sldec->pic->frame->linesize[0];
-          uint8_t *out_pic = sldec->pic->frame->data[0];
-          out_pic = &out_pic[ y_ctu * stride_out_pic + (x_ctu<<1)];
-
-          //TODO: careful with last CTU column
-          rcn_lmcs_reshape_luma_blk(out_pic, stride_out_pic,ctudec->lmcs_info.lmcs_output_pivot, 
-                                    width, height);
-        }
-
         if (!ctudec->dbf_disable) {
             const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
             struct DBFInfo *const dbf_info = &ctudec->dbf_info;
@@ -786,15 +786,16 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
             dbf_load_info(dbf_info, dbf_lns, log2_ctb_s, (ctb_x + 1) % nb_ctu_w);
         }
 
-        /* FIXME
-         * Move this somewhere else to avoid first line check
-         */
-        if (ctb_addr_rs >= nb_ctu_w) {
-            rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
-        }
-
         ctb_addr_rs++;
         ctb_x++;
+
+        /* FIXME
+       * Move this somewhere else to avoid first line check
+       */
+        if (ctb_addr_rs >= nb_ctu_w) {
+            // rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
+            rcn_intra_line_to_ctu(&ctudec->rcn_ctx, ctb_x << log2_ctb_s, log2_ctb_s);
+        }
     }
 
     ctudec->ctb_x = einfo->ctb_x + ctb_x;
@@ -803,34 +804,6 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     if (!einfo->implicit_w) {
 
         ret = decode_ctu(ctudec, einfo, ctb_addr_rs);
-
-                //TODO: do not apply here
-        if (ctudec->lmcs_info.lmcs_enabled_flag){
-        // int shift_chr = c_idx==0 ? 0 : 1;
-        // int x0       = x >> shift_chr;
-        // int y0       = y >> shift_chr;
-        // int f_width  = (ctudec->pic_w) >> shift_chr;
-        // int f_height = (ctudec->pic_h) >> shift_chr;
-        // int ctb_size_h = (1 << log2_ctb_size) >> shift_chr;
-        // int ctb_size_v = (1 << log2_ctb_size) >> shift_chr;
-        // int width    = OVMIN(ctb_size_h, f_width - x0);
-        // int height   = OVMIN(ctb_size_v, f_height - y0);
-
-          int ctb_y = einfo->ctb_y + ctb_addr_rs/nb_ctu_w;
-          int x_ctu = ctudec->ctb_x << log2_ctb_s;
-          int y_ctu = ctb_y << log2_ctb_s;
-          int ctb_size = 1 << log2_ctb_s;
-          int width    = OVMIN(ctb_size, ctudec->pic_w - x_ctu);
-          int height   = OVMIN(ctb_size, ctudec->pic_h - y_ctu);
-
-          ptrdiff_t stride_out_pic = sldec->pic->frame->linesize[0];
-          uint8_t *out_pic = sldec->pic->frame->data[0];
-          out_pic = &out_pic[ y_ctu * stride_out_pic + (x_ctu<<1)];
-
-          //TODO: careful with last CTU column
-          rcn_lmcs_reshape_luma_blk(out_pic, stride_out_pic,ctudec->lmcs_info.lmcs_output_pivot, 
-                                    width, height);
-        }
 
         if (!ctudec->dbf_disable) {
             const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
@@ -849,34 +822,6 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         ret = decode_truncated_ctu(ctudec, einfo, ctb_addr_rs,
                                    ctu_w, ctu_h);
 
-                //TODO: do not apply here
-        if (ctudec->lmcs_info.lmcs_enabled_flag){
-        // int shift_chr = c_idx==0 ? 0 : 1;
-        // int x0       = x >> shift_chr;
-        // int y0       = y >> shift_chr;
-        // int f_width  = (ctudec->pic_w) >> shift_chr;
-        // int f_height = (ctudec->pic_h) >> shift_chr;
-        // int ctb_size_h = (1 << log2_ctb_size) >> shift_chr;
-        // int ctb_size_v = (1 << log2_ctb_size) >> shift_chr;
-        // int width    = OVMIN(ctb_size_h, f_width - x0);
-        // int height   = OVMIN(ctb_size_v, f_height - y0);
-
-          int ctb_y = einfo->ctb_y + ctb_addr_rs/nb_ctu_w;
-          int x_ctu = ctudec->ctb_x << log2_ctb_s;
-          int y_ctu = ctb_y << log2_ctb_s;
-          int ctb_size = 1 << log2_ctb_s;
-          int width    = OVMIN(ctb_size, ctudec->pic_w - x_ctu);
-          int height   = OVMIN(ctb_size, ctudec->pic_h - y_ctu);
-
-          ptrdiff_t stride_out_pic = sldec->pic->frame->linesize[0];
-          uint8_t *out_pic = sldec->pic->frame->data[0];
-          out_pic = &out_pic[ y_ctu * stride_out_pic + (x_ctu<<1)];
-
-          //TODO: careful with last CTU column
-          rcn_lmcs_reshape_luma_blk(out_pic, stride_out_pic,ctudec->lmcs_info.lmcs_output_pivot, 
-                                    width, height);
-        }
-        
         if (!ctudec->dbf_disable) {
             const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
             struct DBFInfo *const dbf_info = &ctudec->dbf_info;
@@ -924,7 +869,8 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     uint8_t slice_type = sldec->slice_type;
     int ctb_x = 0;
 
-    rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
+    // rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
+    rcn_intra_line_to_ctu(&ctudec->rcn_ctx, 0, log2_ctb_s);
 
     while (ctb_x < nb_ctu_w - 1) {
         uint8_t ctu_w = 1 << log2_ctb_s;
@@ -942,22 +888,6 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         rcn_update_ctu_border(&ctudec->rcn_ctx, log2_ctb_s);
 
-        /* FIXME is first line check if only one line? */
-        rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
-
-        //TODO: do not apply here
-        if (ctudec->lmcs_info.lmcs_enabled_flag){
-          int ctb_y = einfo->ctb_y + ctb_addr_rs/nb_ctu_w;
-          int x_ctu = ctudec->ctb_x << log2_ctb_s;
-          int y_ctu = ctb_y << log2_ctb_s;
-          ptrdiff_t stride_out_pic = sldec->pic->frame->linesize[0];
-          uint8_t *out_pic = sldec->pic->frame->data[0];
-          out_pic = &out_pic[ y_ctu * stride_out_pic + (x_ctu<<1)];
-
-          rcn_lmcs_reshape_luma_blk(out_pic, stride_out_pic,ctudec->lmcs_info.lmcs_output_pivot, 
-                                    ctu_w, ctu_h);
-        }
-
         if (!ctudec->dbf_disable) {
             const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
             struct DBFInfo *const dbf_info = &ctudec->dbf_info;
@@ -967,6 +897,10 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
         ctb_addr_rs++;
         ctb_x++;
+
+        /* FIXME is first line check if only one line? */
+        // rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
+        rcn_intra_line_to_ctu(&ctudec->rcn_ctx, ctb_x << log2_ctb_s, log2_ctb_s);
     }
 
     ctudec->ctb_x = einfo->ctb_x + ctb_x;
@@ -1085,6 +1019,10 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     OVCABACCtx cabac_ctx;
     slicedec_init_rect_entry(&einfo, prms, entry_idx);
 
+    int margin = 3;
+    ctudec_create_filter_buffers(ctudec, sldec->pic->frame, einfo.nb_ctu_w, margin);
+    ctudec_create_intra_line_buff(ctudec, einfo.nb_ctu_w);
+
     struct DRVLines drv_lines;
     struct CCLines cc_lines[2] = {sldec->cabac_lines[0], sldec->cabac_lines[1]};
 
@@ -1163,8 +1101,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         ret = decode_ctu_last_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
     }
 
-    int margin = 3;
-    ctudec_create_filter_buffers(ctudec, sldec->pic->frame, einfo.nb_ctu_w, margin);
     ctb_y = 0;
     while (ctb_y < nb_ctu_h ) {
         rcn_sao_filter_line(ctudec, einfo.nb_ctb_pic_w, ctb_y);
@@ -1195,7 +1131,6 @@ static uint8_t ict_type(const OVPH *const ph)
 static int
 slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 {
-
     const OVSPS *const sps = prms->sps;
     const OVPPS *const pps = prms->pps;
     const OVSH *const sh = prms->sh;

@@ -168,15 +168,11 @@ ovcabac_read_ae_sao_ctu( OVCTUDec *const ctudec, int ctb_rs )
         // val = vvc_decode_sao_merge_type(cabac_ctx, cabac_state, ctu_neighbour_flags);
 
         if (!val) {
-            //TODO: calculer les vraies valeurs dans sps
+            //TODO: compute true values in sps
             uint8_t num_bits_sao   = 31;
             uint8_t num_bits_sao_c = 31;
             // uint8_t sao_trunc_bitdepth   = vvc_ctx->sao_truncated_bitdepth;
             // uint8_t sao_trunc_bitdepth_c = vvc_ctx->sao_truncated_bitdepth_chroma;
-            // ff_vvc_decode_sao_type_idx(cabac_ctx,cabac_state,
-            //                                  loop_filter_state_flags,
-            //                                  sao_trunc_bitdepth,
-            //                                  sao_trunc_bitdepth_c,sao_ctu);
             ovcabac_read_ae_sao_type_idx(cabac_ctx, cabac_state, sao_ctu, sao_luma_flag, sao_chroma_flag, num_bits_sao, num_bits_sao_c);
         }
         else{

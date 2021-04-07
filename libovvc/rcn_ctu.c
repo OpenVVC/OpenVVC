@@ -152,6 +152,47 @@ rcn_frame_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s)
 }
 
 void
+rcn_intra_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log2_ctb_s)
+{
+    const struct OVBuffInfo *const il = &rcn_ctx->intra_line_buff;
+    const uint16_t *src_y  = il->y  + x_l;
+    const uint16_t *src_cb = il->cb + (x_l>>1);
+    const uint16_t *src_cr = il->cr + (x_l>>1);
+
+    uint16_t *dst_y  =  rcn_ctx->ctu_buff.y  - RCN_CTB_STRIDE;
+    uint16_t *dst_cb =  rcn_ctx->ctu_buff.cb - RCN_CTB_STRIDE;
+    uint16_t *dst_cr =  rcn_ctx->ctu_buff.cr - RCN_CTB_STRIDE;
+
+    // memcpy(dst_y,  src_y , sizeof(uint16_t) * 1 << log2_ctb_s);
+    memcpy(dst_y,  src_y , sizeof(uint16_t) * OVMIN(((1 << log2_ctb_s) + (1 << log2_ctb_s)), RCN_CTB_STRIDE - 16));
+    // memcpy(dst_cb, src_cb, sizeof(uint16_t) * 1 << log2_ctb_s);
+    // memcpy(dst_cr, src_cr, sizeof(uint16_t) * 1 << log2_ctb_s);
+    memcpy(dst_cb, src_cb, sizeof(uint16_t) * ((1 << (log2_ctb_s - 1)) + (1 << (log2_ctb_s - 1))));
+    memcpy(dst_cr, src_cr, sizeof(uint16_t) * ((1 << (log2_ctb_s - 1)) + (1 << (log2_ctb_s - 1))));
+}
+
+void rcn_ctu_to_intra_line(OVCTUDec *const ctudec, int x_l)
+{
+    struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
+    struct OVBuffInfo *intra_line_binfo = &rcn_ctx->intra_line_buff;
+
+    const OVPartInfo *const pinfo = ctudec->part_ctx;
+    uint8_t log2_ctb_size = pinfo->log2_ctu_s;
+    int max_cu_width_l = 1 << log2_ctb_size;
+    int max_cu_width_c = 1 << (log2_ctb_size-1);
+    uint16_t *_src;
+
+    _src = &ctudec->rcn_ctx.ctu_buff.y[(max_cu_width_l - 1) * RCN_CTB_STRIDE];
+    memcpy(&intra_line_binfo->y[x_l], _src, sizeof(int16_t) << log2_ctb_size);
+
+    _src = &ctudec->rcn_ctx.ctu_buff.cb[(max_cu_width_c - 1) * RCN_CTB_STRIDE ];
+    memcpy(&intra_line_binfo->cb[x_l>>1], _src, sizeof(int16_t) << (log2_ctb_size-1));
+
+    _src = &ctudec->rcn_ctx.ctu_buff.cr[(max_cu_width_c - 1) * RCN_CTB_STRIDE ];
+    memcpy(&intra_line_binfo->cr[x_l>>1], _src, sizeof(int16_t) << (log2_ctb_size-1));
+}
+
+void
 rcn_write_ctu_to_frame_border(const struct OVRCNCtx *const rcn_ctx,
                               int last_ctu_w, int last_ctu_h)
 {

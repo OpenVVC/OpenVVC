@@ -134,6 +134,7 @@ struct ALFInfo
 struct LMCSInfo
 {
     uint16_t lmcs_output_pivot[PIC_CODE_CW_BINS];
+    uint16_t* lmcs_lut_luma;
     uint16_t lmcs_chroma_scale;
     int16_t  lmcs_chroma_scaling_offset;
     uint8_t  lmcs_enabled_flag;
@@ -452,6 +453,9 @@ struct OVCTUDec
          */
         struct OVBuffInfo ctu_buff;
 
+        /*Pointers to intra line reconstruction buffers*/
+        struct OVBuffInfo intra_line_buff;
+
         /* Side Buffer to be used by reconstruction functions
          * when needed
          */
@@ -498,7 +502,7 @@ struct OVCTUDec
 
         uint8_t  margin;
 
-        //TODO: other way to have the start of the frame ?
+        //TODO: change alf/sao to use ctudec buffer instead of frame buffer.
         struct Frame* pic_frame; 
     }filter_buffers;
 
@@ -670,6 +674,7 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x, int y, uint8_t i
 void ctudec_save_last_rows(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect);
 void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect);
 
+void ctudec_create_intra_line_buff(OVCTUDec *const ctudec, int nb_ctu_w);
 
 int ctudec_init(OVCTUDec **ctudec_p);
 int ctudec_uninit(OVCTUDec *ctudec_p);

@@ -195,10 +195,10 @@ coding_quadtree(OVCTUDec *const ctu_dec,
     allow_tt &= log2_cb_s > 2;
     allow_bt &= log2_cb_s > 2;
 
-    //TODO: check if compliant when lmcs is disabled ?
-    //TODO: compute array lmcs_output_pivot
-    if (log2_cb_s == 6 && ctu_dec->lmcs_info.lmcs_enabled_flag)
-        rcn_compute_lmcs_chroma_scale(ctu_dec, x0, y0);
+    uint8_t compute_chr_scale = (log2_cb_s == 6 && ctu_dec->lmcs_info.lmcs_enabled_flag) ;
+    if (compute_chr_scale){
+        rcn_lmcs_compute_chroma_scale(ctu_dec, x0, y0);
+    }
 
     if (allow_qt | allow_bt | allow_tt) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -294,7 +294,6 @@ coding_quadtree(OVCTUDec *const ctu_dec,
 
             multi_type_tree(ctu_dec, part_ctx, x0, y0, log2_cb_s, log2_cb_s,
                             0, 0, 0);
-
             return 1;
         }
     }
@@ -338,6 +337,11 @@ coding_quadtree_implicit(OVCTUDec *const ctu_dec,
 
     uint8_t allow_qt = log2_cb_s >  part_ctx->log2_min_qt_s;
     uint8_t allow_bt = log2_cb_s <= part_ctx->log2_max_bt_s;
+
+    uint8_t compute_chr_scale = (log2_cb_s == 6 && ctu_dec->lmcs_info.lmcs_enabled_flag) ;
+    if (compute_chr_scale){
+        rcn_lmcs_compute_chroma_scale(ctu_dec, x0, y0);
+    }
 
     /* FIXME check everything is correct */
     if ((x1 > rem_w || y1 > rem_h)) {

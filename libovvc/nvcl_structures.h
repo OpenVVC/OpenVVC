@@ -539,7 +539,6 @@ typedef struct OVALFData
     uint8_t alf_cc_cb_filter_signal_flag;
     uint8_t alf_cc_cr_filter_signal_flag;
 
-    //TODO: garder signe et abs ? ou tout dans short ?
     uint8_t alf_luma_coeff_delta_idx[MAX_NUM_ALF_CLASSES];
     int16_t alf_luma_coeff[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF];
     int16_t alf_luma_clip_idx[MAX_NUM_ALF_CLASSES][MAX_NUM_ALF_LUMA_COEFF];
