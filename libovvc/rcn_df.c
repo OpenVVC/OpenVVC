@@ -937,8 +937,8 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
         while (edge_map){
             if (edge_map & 0x1) {
-                int max_l_p = (large_p_map & 0x1) ? 7 : small_map & 0x1 ? 1 : 3;
-                int max_l_q = (large_q_map & 0x1) ? 7 : small_map & 0x1 ? 1 : 3;
+                int max_l_p = small_map & 0x1 ? 1 : (large_p_map & 0x1) ? 7 : 3;
+                int max_l_q = small_map & 0x1 ? 1 : (large_q_map & 0x1) ? 7 : 3;
                 uint8_t bs = 1 + (bs2_map & 0x1);
                 /*FIXME subblock handling */
 
@@ -1072,8 +1072,8 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
         while(edge_map){
             if (edge_map & 0x1) {
-                int max_l_p = (large_p_map & 0x1) ? 7 : small_map & 0x1 ? 1 : 3;
-                int max_l_q = (large_q_map & 0x1) ? 7 : small_map & 0x1 ? 1 : 3;
+                int max_l_p = small_map & 0x1 ? 1 : (large_p_map & 0x1) ? 7 : 3;
+                int max_l_q = small_map & 0x1 ? 1 : (large_q_map & 0x1) ? 7 : 3;
                 uint8_t bs = 1 + (bs2_map & 0x1);
 
                 /*FIXME subblock handling */
