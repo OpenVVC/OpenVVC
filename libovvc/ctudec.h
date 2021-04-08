@@ -673,8 +673,10 @@ void ctudec_create_filter_buffers(OVCTUDec *const ctudec, struct Frame *pic_fram
 void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x, int y, uint8_t is_border_rect);
 void ctudec_save_last_rows(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect);
 void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect);
+void ctudec_free_filter_buffers(OVCTUDec *const ctudec);
 
 void ctudec_create_intra_line_buff(OVCTUDec *const ctudec, int nb_ctu_w);
+void ctudec_free_intra_line_buff(OVCTUDec *const ctudec);
 
 int ctudec_init(OVCTUDec **ctudec_p);
 int ctudec_uninit(OVCTUDec *ctudec_p);

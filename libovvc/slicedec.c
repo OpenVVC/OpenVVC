@@ -330,6 +330,36 @@ cabac_lines_uninit(OVSliceDec *sldec)
      ov_freep(&lns_c->cu_mode_x);
 }
 
+void
+uninit_in_loop_filters(OVCTUDec *const ctudec)
+{
+    //Uninit SAO info and ctu params
+    struct SAOInfo* sao_info  = &ctudec->sao_info;
+    if(sao_info->sao_params){
+        ov_free(sao_info->sao_params);
+    }
+
+    //Uninit ALF info and ctu params
+    struct ALFInfo* alf_info  = &ctudec->alf_info;
+    if(alf_info->ctb_alf_params){
+        ov_free(alf_info->ctb_alf_params);
+        alf_destroy(&alf_info->rcn_alf, 128);
+    }
+
+    //Uninit CC ALF ctu params
+    if(alf_info->ctb_cc_alf_filter_idx[0]){
+        ov_free(alf_info->ctb_cc_alf_filter_idx[0]);
+        ov_free(alf_info->ctb_cc_alf_filter_idx[1]);
+    }
+
+    //Uninit LMCS info and output pivots
+    struct LMCSInfo* lmcs_info  = &ctudec->lmcs_info;
+    if(lmcs_info->lmcs_lut_luma){
+        ov_free(lmcs_info->lmcs_lut_luma);
+    }
+}
+
+
 int
 init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms) 
 {   
@@ -1019,6 +1049,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     OVCABACCtx cabac_ctx;
     slicedec_init_rect_entry(&einfo, prms, entry_idx);
 
+    //TODO: do not create and free here, find a way to make the sizes
+    //  independent from the rectangular region sizes.
     int margin = 3;
     ctudec_create_filter_buffers(ctudec, sldec->pic->frame, einfo.nb_ctu_w, margin);
     ctudec_create_intra_line_buff(ctudec, einfo.nb_ctu_w);
@@ -1113,8 +1145,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         ctb_y++;
     }
 
-    //TODO: correction to avoid segmentation fault.
-    // ctudec_free_filter_buffers(ctudec);
+    ctudec_free_filter_buffers(ctudec);
+    ctudec_free_intra_line_buff(ctudec);
 
     /*FIXME decide return value */
     return ctb_addr_rs;
@@ -1248,6 +1280,7 @@ uninit_ctudec_list(OVSliceDec *const sldec, int nb_threads)
 
      for (i = 0; i < nb_ctudec; ++i) {
          OVCTUDec *ctudec = sldec->ctudec_list[i];
+         uninit_in_loop_filters(ctudec);
          ctudec_uninit(ctudec);
      }
 
@@ -1340,6 +1373,7 @@ slicedec_uninit(OVSliceDec **sldec_p)
         cabac_lines_uninit(sldec);
         drv_lines_uninit(sldec);
     }
+
 
     ov_freep(sldec_p);
 

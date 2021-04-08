@@ -127,7 +127,6 @@ void alf_create(OVCTUDec *const ctudec, RCNALF* alf)
     uint8_t log2_ctb_size = pinfo->log2_ctu_s;
     int ctu_width  = 1 << log2_ctb_size;  
 
-    alf->classifier =  0 ;
     for (int i = 0; i < NUM_DIRECTIONS; i++)
     {
         alf->laplacian[i] = alf->laplacian_ptr[i];
@@ -995,8 +994,9 @@ void alf_destroy(RCNALF* alf, int16_t ctu_width)
 {
     if( alf->classifier )
     {
-        for (int i = 0; i < ctu_width>>2; i++)
+        for (int i = 0; i < ctu_width>>2; i++){
             ov_free(alf->classifier[i]);
+        }
         ov_free(alf->classifier);
         alf->classifier = 0;
     }

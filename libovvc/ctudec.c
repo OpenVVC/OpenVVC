@@ -41,8 +41,17 @@ ctudec_create_intra_line_buff(OVCTUDec *const ctudec, int nb_ctu_w)
     }
 }
 
+void ctudec_free_intra_line_buff(OVCTUDec *const ctudec)
+{
+    struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
+    struct OVBuffInfo *intra_line_binfo = &rcn_ctx->intra_line_buff;
 
-
+   if(intra_line_binfo->y){
+        ov_freep(&intra_line_binfo->y);
+        ov_freep(&intra_line_binfo->cb);
+        ov_freep(&intra_line_binfo->cr);
+    }
+}
 
 int
 ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec)
@@ -468,9 +477,9 @@ void ctudec_free_filter_buffers(OVCTUDec *const ctudec)
 
     for(int comp = 0; comp < 3; comp++)
     {
-        if(filter_region) ov_freep(filter_region);
-        if(saved_rows[comp])    ov_freep(saved_rows[comp]);
-        if(saved_cols[comp])    ov_freep(saved_cols[comp]);
+        if(filter_region[comp]) ov_freep(&filter_region[comp]);
+        if(saved_rows[comp])    ov_freep(&saved_rows[comp]);
+        if(saved_cols[comp])    ov_freep(&saved_cols[comp]);
     }
 }
 
