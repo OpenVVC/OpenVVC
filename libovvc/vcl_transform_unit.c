@@ -342,6 +342,11 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
                                log2_cb_w, log2_cb_h, offset_x, 0);
         }
 
+        /* FIXME determine if DBF is applied on ISP subblocks */
+        #if 0
+        fill_edge_map(&ctudec->dbf_info, x0, y0, log2_pb_w, log2_cb_h);
+        #endif
+
         if (cbf) {
             int16_t *coeffs_y = ctudec->residual_y + i * (1 << (log2_pb_w + log2_cb_h));
 
@@ -414,6 +419,11 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
     for (i = 0; i < nb_pb; ++i) {
 
         uint8_t cbf = (cbf_flags >> (nb_pb - i - 1)) & 0x1;
+
+        /* FIXME determine if DBF is applied on ISP subblocks */
+        #if 0
+        fill_edge_map(&ctudec->dbf_info, x0, y0, log2_cb_w, log2_pb_h);
+        #endif
 
         vvc_intra_pred_isp(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
                            RCN_CTB_STRIDE, intra_mode, x0, y0,
