@@ -383,7 +383,11 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
             uint16_t *dst  = &ctudec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
             int16_t *src  = ctudec->transform_buff;
 
-            rcn_func->ict[0](src, dst, log2_pb_w, log2_cb_h, 0);
+            #if 1
+            vvc_add_residual(src, dst, log2_pb_w, log2_cb_h, 0);
+            #else
+            rcn_func->ict[0](src, dst, log2_pb_w, log2_cb_h, 512);
+            #endif
         }
         x0 += pb_w;
         offset_x += pb_w;
@@ -467,7 +471,11 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
             uint16_t *dst  = &ctudec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
             int16_t *src  = ctudec->transform_buff;
 
+        #if 1
+        vvc_add_residual(src, dst, log2_cb_w, log2_pb_h, 0);
+        #else
             rcn_func->ict[0](src, dst, log2_cb_w, log2_pb_h, 0);
+        #endif
         }
         y0 += pb_h;
         offset_y += pb_h;
