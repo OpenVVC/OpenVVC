@@ -575,7 +575,7 @@ dbf_store_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const 
     l->dbf_edge_hor_c[ctb_x] = dbf_info->edge_map_hor_c[nb_pb_s];
     l->dbf_edge_ver_c[ctb_x] = 0;
 
-    for (i = 0; i < nb_pb_s + 1; ++i) {
+    for (i = 0; i < nb_pb_s + 0; ++i) {
         l->dbf_edge_ver[ctb_x] |= (!!(dbf_info->edge_map_ver[i] & mask)) << i;
         l->dbf_edge_ver_c[ctb_x] |= (!!(dbf_info->edge_map_ver_c[i] & mask)) << i;
     }
