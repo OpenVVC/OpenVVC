@@ -327,9 +327,10 @@ void rcn_alf_derive_classificationBlk(ALFClassifier **classifier, int **laplacia
       pYhor[j] = abs( y0 - pY[1] - pY[-1] ) + abs( yup1 - pYup[2] - pYup[0] );
       pYdig0[j] = abs( y0 - pYdown[-1] - pYup[1] ) + abs( yup1 - pY[0] - pYup2[2] );
       pYdig1[j] = abs( y0 - pYup[-1] - pYdown[1] ) + abs( yup1 - pYup2[0] - pY[2] );
+    }
 
-      if( j > 4 && ( j - 6 ) % 4 == 0 )
-      {
+    for( int j = 6; j < width; j += 4 )
+    {
         int jM6 = j - 6;
         int jM4 = j - 4;
         int jM2 = j - 2;
@@ -338,7 +339,6 @@ void rcn_alf_derive_classificationBlk(ALFClassifier **classifier, int **laplacia
         pYhor[jM6] += pYhor[jM4] + pYhor[jM2] + pYhor[j];
         pYdig0[jM6] += pYdig0[jM4] + pYdig0[jM2] + pYdig0[j];
         pYdig1[jM6] += pYdig1[jM4] + pYdig1[jM2] + pYdig1[j];
-      }
     }
   }
 
