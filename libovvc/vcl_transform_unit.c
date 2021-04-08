@@ -343,13 +343,19 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
         }
 
         /* FIXME determine if DBF is applied on ISP subblocks */
-        #if 0
-        fill_edge_map(&ctudec->dbf_info, x0, y0, log2_pb_w, log2_cb_h);
+        #if 1
+        if (!(offset_x & 0x3) ) {
+        dbf_fill_qp_map(&ctudec->dbf_info.qp_map_y, x0, y0,  log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h, ctudec->qp_ctx.current_qp);
+        fill_edge_map(&ctudec->dbf_info, x0 & ~0x3, y0, log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h);
+        fill_ctb_bound(&ctudec->dbf_info, x0 & ~0x3, y0, log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h);
+        fill_bs_map(&ctudec->dbf_info.bs2_map, x0 & ~0x3, y0, log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h);
+        }
         #endif
 
         if (cbf) {
             int16_t *coeffs_y = ctudec->residual_y + i * (1 << (log2_pb_w + log2_cb_h));
 
+            fill_bs_map(&ctudec->dbf_info.bs1_map, x0, y0, log2_pb_w, log2_cb_h);
             if (log2_pb_w) {
                 int shift_v = 6 + 1;
                 int shift_h = (6 + 15 - 1) - 10;
@@ -425,8 +431,13 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
         uint8_t cbf = (cbf_flags >> (nb_pb - i - 1)) & 0x1;
 
         /* FIXME determine if DBF is applied on ISP subblocks */
-        #if 0
-        fill_edge_map(&ctudec->dbf_info, x0, y0, log2_cb_w, log2_pb_h);
+        #if 1
+        if (!(offset_y & 0x3) ) {
+        dbf_fill_qp_map(&ctudec->dbf_info.qp_map_y, x0, y0, log2_cb_w, log2_pb_h >=2 ? log2_pb_h : 2, ctudec->qp_ctx.current_qp);
+        fill_edge_map(&ctudec->dbf_info, x0, y0, log2_cb_w, log2_pb_h >=2 ? log2_pb_h : 2);
+        fill_ctb_bound(&ctudec->dbf_info, x0, y0, log2_cb_w, log2_pb_h >=2 ? log2_pb_h : 2);
+        fill_bs_map(&ctudec->dbf_info.bs2_map, x0, y0, log2_cb_w, log2_pb_h >=2 ? log2_pb_h : 2);
+        }
         #endif
 
         vvc_intra_pred_isp(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
@@ -434,6 +445,8 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                            log2_cb_w, log2_pb_h, log2_cb_w, log2_cb_h, 0, offset_y);
         if (cbf) {
             int16_t *coeffs_y = ctudec->residual_y + i * (1 << (log2_cb_w + log2_pb_h));
+
+            fill_bs_map(&ctudec->dbf_info.bs1_map, x0, y0, log2_cb_w, log2_pb_h);
 
             if (log2_pb_h) {
                 DECLARE_ALIGNED(32, int16_t, tmp)[64*64];

@@ -457,7 +457,7 @@ coding_unit(OVCTUDec *const ctu_dec,
 
 #if 1
     /* update dqp for deblocking filter usage */
-    if (!ctu_dec->dbf_disable) {
+    if (!ctu_dec->dbf_disable && !(cu.cu_flags & flg_isp_flag)) {
         struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
         dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_cb_w, log2_cb_h, ctu_dec->qp_ctx.current_qp);
         if (ctu_dec->coding_unit == &coding_unit_intra) {
