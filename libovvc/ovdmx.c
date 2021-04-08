@@ -385,7 +385,7 @@ is_access_unit_delimiter(struct NALUnitListElem *elem)
      * Since some AU delimitations rules involve POC computation
      * this require reading until slice header
      */
-    return elem->nalu.type == OVNALU_AUD;
+    return elem->nalu.type == OVNALU_AUD || elem->nalu.type == OVNALU_SPS;
 }
 
 static struct NALUnitListElem *pop_nalu_elem(struct NALUnitsList *list)
