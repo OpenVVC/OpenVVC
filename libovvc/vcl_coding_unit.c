@@ -604,8 +604,6 @@ coding_unit_intra_st(OVCTUDec *const ctu_dec,
                            log2_cu_w - 1, log2_cu_h - 1);
    }
 
-   /*FIXME move to derivation */
-   fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_cu_w, log2_cu_h);
 
    return cu;
 }
@@ -709,6 +707,7 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
      * transform trees
      */
     cu = drv_intra_cu(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, cu);
+    fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_cb_w, log2_cb_h);
 
     return cu;
 }
@@ -772,6 +771,7 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
     ctu_dec->intra_mode_c = intra_mode;
     vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, intra_mode, x0, y0, log2_cb_w, log2_cb_h);
 
+    fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1);
     return cu;
 }
 
