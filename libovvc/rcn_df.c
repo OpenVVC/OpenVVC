@@ -583,7 +583,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
     const int nb_unit_h = (1 << part_size->log2_ctu_s) >> 2;
     #endif
     const int blk_stride = stride << 1;
-    const uint64_t last_pb_mask = ((1 << nb_unit_h) - 1) | (-(!!is_last_h));
+    const uint64_t last_pb_mask = (((uint64_t)1 << nb_unit_h) - 1) | (uint64_t)-(!!is_last_h);
     int i;
 
     src_cb -= blk_stride;
@@ -748,7 +748,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
     const int nb_unit_w = (1 << part_size->log2_ctu_s) >> 2;
     #endif
     const int blk_stride = 1 << 1;
-    const uint64_t last_pb_mask = ((1 << (nb_unit_w)) - 1) | (-(!!is_last_w));
+    const uint64_t last_pb_mask = (((uint64_t)1 << (nb_unit_w)) - 1) | (uint64_t)(-(!!is_last_w));
     int i;
 
     src_cb -= blk_stride << 1;
@@ -914,7 +914,7 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
     const int nb_unit_h = (1 << part_size->log2_ctu_s) >> 2;
     #endif
     const int blk_stride = stride << 2; 
-    const uint64_t last_pb_mask = ((1 << nb_unit_h) - 1) | (-(!!is_last_h));
+    const uint64_t last_pb_mask = (((uint64_t)1 << nb_unit_h) - 1) | (uint64_t)(-(!!is_last_h));
     int i;
 
     const uint64_t *edge_map_p2 = &dbf_info->ctb_bound_ver[8];
@@ -1047,7 +1047,7 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
     const int nb_unit_w = (1 << part_size->log2_ctu_s) >> 2;
     #endif
     const int blk_stride = 1 << 2;
-    const uint64_t last_pb_mask = ((1 << (nb_unit_w)) - 1) | (-(!!is_last_w));
+    const uint64_t last_pb_mask = (((uint64_t)1 << (nb_unit_w)) - 1) | (uint64_t)(-(!!is_last_w));
     int i;
 
     const uint64_t *edge_map_p2 = &dbf_info->ctb_bound_hor[8];
