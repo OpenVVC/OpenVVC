@@ -66,12 +66,21 @@ struct DBFInfo
     /*FIXME replace with DBFMap structure */
     uint64_t edge_map_ver[33]; /* Column map of vertical edges */
     uint64_t edge_map_hor[33]; /* Row map of horizontal edges */
+    uint64_t edge_map_ver_c[33]; /* Column map of vertical edges */
+    uint64_t edge_map_hor_c[33]; /* Row map of horizontal edges */
+
 
     /* FIXME this overlap with edge maps */
     uint64_t ctb_bound_ver[16 + 33]; /* Column map of vertical edges */
     uint64_t ctb_bound_hor[16 + 33]; /* Row map of horizontal edges */
+    uint64_t ctb_bound_ver_c[16 + 33]; /* Column map of vertical edges */
+    uint64_t ctb_bound_hor_c[16 + 33]; /* Row map of horizontal edges */
 
+
+    /* FIXME this overlap with edge maps */
     struct DBFMap bs2_map;
+    struct DBFMap bs2_map_c;
+
     struct DBFMap bs1_map;
     struct DBFMap bs1_map_cb;
     struct DBFMap bs1_map_cr;

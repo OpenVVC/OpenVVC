@@ -92,8 +92,14 @@ struct DRVLines
         uint64_t *dbf_edge_ver;
         uint64_t *dbf_edge_hor;
 
+        uint64_t *dbf_edge_ver_c;
+        uint64_t *dbf_edge_hor_c;
+
         uint64_t *dbf_bs2_ver;
         uint64_t *dbf_bs2_hor;
+
+        uint64_t *dbf_bs2_ver_c;
+        uint64_t *dbf_bs2_hor_c;
 
         uint64_t *dbf_bs1_ver;
         uint64_t *dbf_bs1_hor;

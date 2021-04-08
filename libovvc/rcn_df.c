@@ -593,17 +593,17 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
         uint16_t *src0 = src_cb;
         uint16_t *src1 = src_cb + stride;
 
-        uint64_t edge_map = dbf_info->edge_map_ver[(i << 2) + 0];
-        uint64_t bs2_map = dbf_info->bs2_map.ver[i << 2];
+        uint64_t edge_map = dbf_info->edge_map_ver_c[(i << 2) + 0];
+        uint64_t bs2_map = dbf_info->bs2_map_c.ver[i << 2];
         uint64_t bs1_map = dbf_info->bs1_map_cb.ver[i << 2];
-        uint64_t large_map_q = dbf_info->ctb_bound_ver[(i << 2) + 1 + 8];
+        uint64_t large_map_q = dbf_info->ctb_bound_ver_c[(i << 2) + 1 + 8];
         const uint8_t *qp_col = &dbf_info->qp_map_cb.ver[34 * (i << 2)];
 
-        large_map_q |= dbf_info->ctb_bound_ver[(i << 2) - 3 + 8];
-        large_map_q |= dbf_info->ctb_bound_ver[(i << 2) - 2 + 8];
-        large_map_q |= dbf_info->ctb_bound_ver[(i << 2) - 1 + 8];
-        large_map_q |= dbf_info->ctb_bound_ver[(i << 2) + 2 + 8];
-        large_map_q |= dbf_info->ctb_bound_ver[(i << 2) + 3 + 8];
+        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) - 3 + 8];
+        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) - 2 + 8];
+        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) - 1 + 8];
+        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) + 2 + 8];
+        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) + 3 + 8];
 
         edge_map &= last_pb_mask;
         edge_map &= bs2_map | bs1_map;
@@ -668,17 +668,17 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
         uint16_t *src0 = src_cr;
         uint16_t *src1 = src_cr + stride;
 
-        uint64_t edge_map = dbf_info->edge_map_ver[(i << 2) + 0];
-        uint64_t bs2_map = dbf_info->bs2_map.ver[i << 2];
+        uint64_t edge_map = dbf_info->edge_map_ver_c[(i << 2) + 0];
+        uint64_t bs2_map = dbf_info->bs2_map_c.ver[i << 2];
         uint64_t bs1_map = dbf_info->bs1_map_cr.ver[i << 2];
-        uint64_t large_map_q = dbf_info->ctb_bound_ver[(i << 2) + 1 + 8];
+        uint64_t large_map_q = dbf_info->ctb_bound_ver_c[(i << 2) + 1 + 8];
         const uint8_t *qp_col = &dbf_info->qp_map_cr.ver[34 * (i << 2)];
 
-        large_map_q |= dbf_info->ctb_bound_ver[(i << 2) - 3 + 8];
-        large_map_q |= dbf_info->ctb_bound_ver[(i << 2) - 2 + 8];
-        large_map_q |= dbf_info->ctb_bound_ver[(i << 2) - 1 + 8];
-        large_map_q |= dbf_info->ctb_bound_ver[(i << 2) + 2 + 8];
-        large_map_q |= dbf_info->ctb_bound_ver[(i << 2) + 3 + 8];
+        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) - 3 + 8];
+        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) - 2 + 8];
+        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) - 1 + 8];
+        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) + 2 + 8];
+        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) + 3 + 8];
 
         edge_map &= last_pb_mask;
         edge_map &= bs2_map | bs1_map;
@@ -759,17 +759,17 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
         uint16_t *src1 = src_cb + 1;
         uint8_t is_ctb_b = i == 0;
 
-        uint64_t edge_map = dbf_info->edge_map_hor[(i << 2) + 0];
-        uint64_t bs2_map  = dbf_info->bs2_map.hor[i << 2];
+        uint64_t edge_map = dbf_info->edge_map_hor_c[(i << 2) + 0];
+        uint64_t bs2_map  = dbf_info->bs2_map_c.hor[i << 2];
         uint64_t bs1_map  = dbf_info->bs1_map_cb.hor[i << 2];
-        uint64_t large_map_q = dbf_info->ctb_bound_hor[(i << 2) + 1 + 8];
+        uint64_t large_map_q = dbf_info->ctb_bound_hor_c[(i << 2) + 1 + 8];
         const uint8_t *qp_row = &dbf_info->qp_map_cb.hor[34 * (i << 2)];
 
-        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor[(i << 2) - 3 + 8];
-        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor[(i << 2) - 2 + 8];
-        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor[(i << 2) - 1 + 8];
-        large_map_q |= dbf_info->ctb_bound_hor[(i << 2) + 2 + 8];
-        large_map_q |= dbf_info->ctb_bound_hor[(i << 2) + 3 + 8];
+        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[(i << 2) - 3 + 8];
+        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[(i << 2) - 2 + 8];
+        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[(i << 2) - 1 + 8];
+        large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) + 2 + 8];
+        large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) + 3 + 8];
 
         edge_map &= last_pb_mask;
         edge_map &= bs2_map | bs1_map;
@@ -835,18 +835,18 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
         uint8_t is_ctb_b = i == 0;
 
         /*Filter cr*/
-        uint64_t edge_map = dbf_info->edge_map_hor[(i << 2) + 0];
-        uint64_t bs2_map = dbf_info->bs2_map.hor[i << 2];
+        uint64_t edge_map = dbf_info->edge_map_hor_c[(i << 2) + 0];
+        uint64_t bs2_map = dbf_info->bs2_map_c.hor[i << 2];
         uint64_t bs1_map = dbf_info->bs1_map_cr.hor[i << 2];
-        uint64_t large_map_q = dbf_info->ctb_bound_hor[(i << 2) + 1 + 8];
+        uint64_t large_map_q = dbf_info->ctb_bound_hor_c[(i << 2) + 1 + 8];
         const uint8_t *qp_row = &dbf_info->qp_map_cr.hor[34 * (i << 2)];
 
-        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor[(i << 2) - 3 + 8];
-        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor[(i << 2) - 2 + 8];
-        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor[(i << 2) - 1 + 8];
+        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[(i << 2) - 3 + 8];
+        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[(i << 2) - 2 + 8];
+        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[(i << 2) - 1 + 8];
 
-        large_map_q |= dbf_info->ctb_bound_hor[(i << 2) + 2 + 8];
-        large_map_q |= dbf_info->ctb_bound_hor[(i << 2) + 3 + 8];
+        large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) + 2 + 8];
+        large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) + 3 + 8];
 
         edge_map &= last_pb_mask;
         edge_map &= bs2_map | bs1_map;
