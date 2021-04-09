@@ -226,7 +226,7 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
         break;
     case OVNALU_PREFIX_SEI:
     case OVNALU_SUFFIX_SEI:
-        ret = 0;
+        ret = nvcl_decode_nalu_sei(&rdr, nvcl_ctx);
         if (ret < 0)
             goto fail;
         break;
