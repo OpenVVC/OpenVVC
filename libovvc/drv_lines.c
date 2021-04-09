@@ -267,6 +267,8 @@ free_dbf_lines(struct DBFLines *const l)
     ov_freep(&l->dbf_edge_ver_c);
     ov_freep(&l->dbf_edge_hor_c);
 
+    ov_freep(&l->small_map);
+
     ov_freep(&l->dbf_bs2_ver);
     ov_freep(&l->dbf_bs2_hor);
     ov_freep(&l->dbf_bs2_ver_c);
@@ -299,6 +301,8 @@ init_dbf_lines(struct DBFLines *const l, int nb_ctu_line, int nb_pu_line)
     l->dbf_edge_hor   = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
     l->dbf_edge_ver_c = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
     l->dbf_edge_hor_c = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+
+    l->small_map    = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
 
     l->dbf_bs1_ver    = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
     l->dbf_bs1_hor    = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
@@ -378,6 +382,8 @@ offset_dbf_lines(struct DBFLines *const l, int ctb_offset,
 
     l->large_map_c    += ctb_offset;
 
+    l->small_map    += ctb_offset;
+
     l->dbf_bs1_ver_cb += ctb_offset;
     l->dbf_bs1_hor_cb += ctb_offset;
 
@@ -404,6 +410,8 @@ dbf_clear_lines(const struct DBFLines *const l, int nb_ctu_line, int nb_pu_line)
 
     memset(l->dbf_edge_ver, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
     memset(l->dbf_edge_hor, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
+
+    memset(l->small_map, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
 
     memset(l->dbf_edge_ver_c, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
     memset(l->dbf_edge_hor_c, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
@@ -524,6 +532,7 @@ dbf_load_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l
     dbf_info->ctb_bound_ver[8] = (uint64_t) - 1ll;
     dbf_info->ctb_bound_hor[8] = (uint64_t) - 1ll;
     dbf_info->ctb_bound_hor[6] = (uint64_t) - 1ll;
+    dbf_info->ctb_bound_hor[7] = l->small_map[ctb_x];
 
     dbf_info->ctb_bound_ver_c[8 + nb_pb_s] = (uint64_t) - 1ll;
     dbf_info->ctb_bound_hor_c[8 + nb_pb_s] = (uint64_t) - 1ll;
@@ -586,6 +595,8 @@ dbf_store_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const 
     l->large_map_c[ctb_x]  = dbf_info->edge_map_hor_c[nb_pb_s - 1];
     l->large_map_c[ctb_x] |= dbf_info->edge_map_hor_c[nb_pb_s - 2];
     l->large_map_c[ctb_x] |= dbf_info->edge_map_hor_c[nb_pb_s - 3];
+
+    l->small_map[ctb_x] = dbf_info->edge_map_hor[nb_pb_s - 1];
 }
 
 static void
