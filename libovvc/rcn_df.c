@@ -921,7 +921,7 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
     src -= blk_stride;
 
-    for (i = 0; i < nb_unit_h - 1; ++i) {
+    for (i = 0; i < nb_unit_h; ++i) {
         uint16_t* src0 = src;
         uint16_t* src3 = src + stride * 3;
         uint64_t edge_map = dbf_info->edge_map_ver[i];
