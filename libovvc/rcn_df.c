@@ -1047,7 +1047,7 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
     const int nb_unit_w = (1 << part_size->log2_ctu_s) >> 2;
     #endif
     const int blk_stride = 1 << 2;
-    const uint64_t last_pb_mask = (((uint64_t)1 << (nb_unit_w)) - 1) | (uint64_t)(-(!!is_last_w));
+    const uint64_t last_pb_mask = (((uint64_t)1 << nb_unit_w) - 1) | (uint64_t)(-(!!is_last_w));
     int i;
 
     const uint64_t *edge_map_p2 = &dbf_info->ctb_bound_hor[8];
