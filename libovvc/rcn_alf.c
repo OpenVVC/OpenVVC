@@ -108,62 +108,55 @@ static const int16_t class_to_filter_mapping[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_
 };
 
 
-void alf_create(OVCTUDec *const ctudec, RCNALF* alf)
+void
+alf_create(OVCTUDec *const ctudec, RCNALF* alf)
 {
     const OVPartInfo *const pinfo = ctudec->part_ctx;
     uint8_t log2_ctb_size = pinfo->log2_ctu_s;
     int ctu_width  = 1 << log2_ctb_size;  
 
-    for (int i = 0; i < NUM_DIRECTIONS; i++)
-    {
+    for (int i = 0; i < NUM_DIRECTIONS; i++) {
         alf->laplacian[i] = alf->laplacian_ptr[i];
-        for (int j = 0; j < sizeof(alf->laplacian_ptr[i]) / sizeof(alf->laplacian_ptr[i][0]); j++)
-        {
+        for (int j = 0; j < sizeof(alf->laplacian_ptr[i]) / sizeof(alf->laplacian_ptr[i][0]); j++) {
             alf->laplacian_ptr[i][j] = alf->laplacian_data[i][j];
         }
     }
-    
+
     //BITDEPTH: uniquement pour bitdepth 10
     int bit_depth = 10; 
     alf->alf_clipping_values[CHANNEL_TYPE_LUMA][0] = 1 << bit_depth;  
     int shift_luma = bit_depth - 8;
-    for( int i = 1; i < MAX_ALF_NUM_CLIP_VAL; ++i )
-    {
+    for(int i = 1; i < MAX_ALF_NUM_CLIP_VAL; ++i) {
         alf->alf_clipping_values[CHANNEL_TYPE_LUMA][i] = 1 << (7 - 2 * i + shift_luma);
     }
 
     alf->alf_clipping_values[CHANNEL_TYPE_CHROMA][0] = 1 << bit_depth;
     int shift_chroma = bit_depth - 8;
     alf->alf_clipping_values[CHANNEL_TYPE_CHROMA][0] = 1 << bit_depth;
-    for( int i = 1; i < MAX_ALF_NUM_CLIP_VAL; ++i )
-    {
+
+    for(int i = 1; i < MAX_ALF_NUM_CLIP_VAL; ++i) {
         alf->alf_clipping_values[CHANNEL_TYPE_CHROMA][i] = 1 << (7 - 2 * i + shift_chroma);
     }
 
     // Classification
-    if ( alf->classifier == 0 )
-    {
+    if (alf->classifier == 0) {
         alf->classifier = ov_malloc(sizeof(ALFClassifier*)*ctu_width >> 2);
-        for (int i = 0; i < ctu_width/4; i++)
-        {
+        for (int i = 0; i < ctu_width/4; i++) {
             alf->classifier[i] = ov_malloc(sizeof(ALFClassifier)*ctu_width >> 2 );
         }
     }
 
-    for (int filter_set_idx = 0; filter_set_idx < NUM_FIXED_FILTER_SETS; filter_set_idx++)
-    {
-        for (int class_idx = 0; class_idx < MAX_NUM_ALF_CLASSES; class_idx++)
-        {
+    for (int filter_set_idx = 0; filter_set_idx < NUM_FIXED_FILTER_SETS; filter_set_idx++) {
+        for (int class_idx = 0; class_idx < MAX_NUM_ALF_CLASSES; class_idx++) {
             int fixed_filter_idx = class_to_filter_mapping[filter_set_idx][class_idx];
-            for (int i = 0; i < MAX_NUM_ALF_LUMA_COEFF - 1; i++)
-            {
+            for (int i = 0; i < MAX_NUM_ALF_LUMA_COEFF - 1; i++) {
                 alf->fixed_filter_coeff_dec[filter_set_idx][class_idx * MAX_NUM_ALF_LUMA_COEFF + i] = fixed_filter_coeff[fixed_filter_idx][i];
             }
             alf->fixed_filter_coeff_dec[filter_set_idx][class_idx * MAX_NUM_ALF_LUMA_COEFF + MAX_NUM_ALF_LUMA_COEFF - 1] = (1 << (NUM_BITS - 1));
         }
     }
-    for (int i = 0; i < MAX_NUM_ALF_LUMA_COEFF * MAX_NUM_ALF_CLASSES; i++)
-    {
+
+    for (int i = 0; i < MAX_NUM_ALF_LUMA_COEFF * MAX_NUM_ALF_CLASSES; i++) {
         alf->clip_default[i] = alf->alf_clipping_values[CHANNEL_TYPE_LUMA][0];
     }
 }
