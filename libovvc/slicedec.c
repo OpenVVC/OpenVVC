@@ -707,15 +707,24 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
       const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
       ptrdiff_t stride_out_pic = fbuff->stride;
       uint16_t *out_pic = fbuff->y;
+      #if 1
       rcn_lmcs_reshape_luma_blk_lut(out_pic, stride_out_pic,ctudec->lmcs_info.lmcs_lut_luma, 
                                 ctudec->lmcs_info.lmcs_output_pivot, 1 << log2_ctb_s, 1 << log2_ctb_s);
+                                #endif
     }
 
     if (!ctudec->dbf_disable) {
         uint8_t is_last_x = (ctb_addr_rs + 1) % nb_ctu_w == 0;
         uint8_t is_last_y = einfo->nb_ctu_h == (ctb_addr_rs / nb_ctu_w) + 1;
+        #if 1
+        //if (ctb_addr_rs <= nb_ctu_w)
+        if (!ctb_addr_rs % nb_ctu_w) {
+             ctudec->dbf_info.edge_map_ver[0] = 0;
+        }
+
         rcn_dbf_ctu(&ctudec->rcn_ctx, &ctudec->dbf_info, log2_ctb_s,
                     is_last_x, is_last_y);
+                    #endif
     }
 
     return ret;

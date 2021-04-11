@@ -436,6 +436,8 @@ coding_unit(OVCTUDec *const ctu_dec,
 
     cu = ctu_dec->coding_unit(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h);
 
+    ctu_dec->dequant_chroma = &ctu_dec->dequant_cb;
+
     if (!(cu.cu_flags & flg_cu_skip_flag)) {
          /*TODO rename */
          transform_unit_wrap(ctu_dec, part_ctx,  x0, y0, log2_cb_w, log2_cb_h, cu);
@@ -464,10 +466,16 @@ coding_unit(OVCTUDec *const ctu_dec,
             fill_edge_map(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
             fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
         } else if (ctu_dec->coding_unit == &coding_unit_intra_c) {
+            if (ctu_dec->dequant_chroma == &ctu_dec->dequant_joint_cb_cr) {
+            dbf_fill_qp_map(&dbf_info->qp_map_cb, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1, ctu_dec->dequant_joint_cb_cr.qp - 12);
+            dbf_fill_qp_map(&dbf_info->qp_map_cr, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1, ctu_dec->dequant_joint_cb_cr.qp - 12);
+            } else {
             dbf_fill_qp_map(&dbf_info->qp_map_cb, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1, ctu_dec->dequant_cb.qp - 12);
             dbf_fill_qp_map(&dbf_info->qp_map_cr, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1, ctu_dec->dequant_cr.qp - 12);
+            }
             fill_edge_map_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1);
             fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1);
+
         } else {
             fill_edge_map(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
             fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
@@ -476,6 +484,8 @@ coding_unit(OVCTUDec *const ctu_dec,
             fill_edge_map_c(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
             fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
         }
+    } else {
+        fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
     }
 #endif
 

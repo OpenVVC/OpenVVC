@@ -567,6 +567,7 @@ dbf_load_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l
         dbf_info->edge_map_ver_c[i] = tmp & 0x1;
         tmp >>= 1;
     }
+    if (!ctb_x) dbf_info->edge_map_ver[1]=0;
 }
 
 static void
