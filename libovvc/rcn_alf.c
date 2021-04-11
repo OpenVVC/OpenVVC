@@ -436,9 +436,9 @@ rcn_alf_derive_classificationBlk(ALFClassifier **classifier, int **laplacian[NUM
 }
 
 
-void rcn_alf_derive_classification(RCNALF alf, int16_t *const rcn_img, const int stride, Area blk, int ctu_width, int pic_h )
+void rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const int stride, Area blk, int ctu_width, int pic_h )
 {
-    ALFClassifier** classifier = alf.classifier;  
+    ALFClassifier** classifier = alf->classifier;
     int height = blk.y + blk.height;
     int width = blk.x + blk.width;
     //BITDEPTH: uniquement pour bitdepth 10
@@ -456,7 +456,7 @@ void rcn_alf_derive_classification(RCNALF alf, int16_t *const rcn_img, const int
             blk_class.width = nWidth; blk_class.height = nHeight; 
 
             int16_t* rcn_img_class = rcn_img + (i-blk.y)*stride + (j-blk.x);
-            rcn_alf_derive_classificationBlk(classifier, alf.laplacian, rcn_img_class, stride, blk_class, bit_depth + 4
+            rcn_alf_derive_classificationBlk(classifier, alf->laplacian, rcn_img_class, stride, blk_class, bit_depth + 4
             , ctu_width, (blk.height<ctu_width) ? pic_h : blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA
             );
         }
@@ -884,7 +884,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
             //BITDEPTH
             int stride_dst = frame->linesize[c_idx]/2;
             int16_t*  dst_luma = (int16_t*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
-            rcn_alf_derive_classification( alf, src_luma, stride_src, blk_dst, ctu_width, ctudec->pic_h);
+            rcn_alf_derive_classification( &alf, src_luma, stride_src, blk_dst, ctu_width, ctudec->pic_h);
 
             int16_t filter_idx = alf_params_ctu.ctb_alf_idx;
             int16_t *coeff;
