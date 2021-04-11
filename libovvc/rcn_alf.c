@@ -270,210 +270,192 @@ void alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t luma
 
 
 
-void rcn_alf_derive_classificationBlk(ALFClassifier **classifier, int **laplacian[NUM_DIRECTIONS],
-                                                 int16_t *const src, const int stride, const Area blk,
-                                                 const int shift, const int ctu_height, int virbnd_pos)
+void
+rcn_alf_derive_classificationBlk(ALFClassifier **classifier, int **laplacian[NUM_DIRECTIONS],
+                                 int16_t *const src, const int stride, const Area blk,
+                                 const int shift, const int ctu_height, int virbnd_pos)
 {
- 
-  static const int th[16] = { 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4 };
-  const int maxActivity = 15;
 
-  int fl = 2;
-  int flP1 = fl + 1;
-  int fl2 = 2 * fl;
+    static const int th[16] = { 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4 };
+    const int maxActivity = 15;
 
-  int main_dir, secondary_dir, dir_temp_hv, dir_temp_d;
+    int fl = 2;
+    int flP1 = fl + 1;
+    int fl2 = 2 * fl;
 
-  int pixY;
-  int height = blk.height + fl2;
-  int width = blk.width + fl2;
+    int main_dir, secondary_dir, dir_temp_hv, dir_temp_d;
 
-  for( int i = 0; i < height; i += 2 )
-  {
-    int yoffset = ( i + 1 - flP1 ) * stride - flP1;
-    const int16_t *src0 = &src[yoffset - stride];
-    const int16_t *src1 = &src[yoffset];
-    const int16_t *src2 = &src[yoffset + stride];
-    const int16_t *src3 = &src[yoffset + stride * 2];
+    int pixY;
+    int height = blk.height + fl2;
+    int width = blk.width + fl2;
 
-    const int y = blk.y - 2 + i;
-    if (y > 0 && (y & (ctu_height - 1)) == virbnd_pos - 2)
-    {
-      src3 = &src[yoffset + stride];
+    for( int i = 0; i < height; i += 2 ) {
+        int yoffset = ( i + 1 - flP1 ) * stride - flP1;
+        const int16_t *src0 = &src[yoffset - stride];
+        const int16_t *src1 = &src[yoffset];
+        const int16_t *src2 = &src[yoffset + stride];
+        const int16_t *src3 = &src[yoffset + stride * 2];
+
+        const int y = blk.y - 2 + i;
+        if (y > 0 && (y & (ctu_height - 1)) == virbnd_pos - 2) {
+            src3 = &src[yoffset + stride];
+        } else if (y > 0 && (y & (ctu_height - 1)) == virbnd_pos) {
+            src0 = &src[yoffset];
+        }
+
+        int* pYver = laplacian[VER][i];
+        int* pYhor = laplacian[HOR][i];
+        int* pYdig0 = laplacian[DIAG0][i];
+        int* pYdig1 = laplacian[DIAG1][i];
+
+        for( int j = 0; j < width; j += 2 ) {
+            // pixY = j + 1 + posX;
+            pixY = j + 1 ;
+            const int16_t *pY = src1 + pixY;
+            const int16_t* pYdown = src0 + pixY;
+            const int16_t* pYup = src2 + pixY;
+            const int16_t* pYup2 = src3 + pixY;
+
+            const int16_t y0 = pY[0] << 1;
+            const int16_t yup1 = pYup[1] << 1;
+
+            //modification des buffers laplacian ici 
+            pYver[j]  = abs( y0 - pYdown[0] - pYup[0] )  + abs( yup1 - pY[1] - pYup2[1] );
+            pYhor[j]  = abs( y0 - pY[1] - pY[-1] )       + abs( yup1 - pYup[2] - pYup[0] );
+            pYdig0[j] = abs( y0 - pYdown[-1] - pYup[1] ) + abs( yup1 - pY[0] - pYup2[2] );
+            pYdig1[j] = abs( y0 - pYup[-1] - pYdown[1] ) + abs( yup1 - pYup2[0] - pY[2] );
+        }
+
+        for( int j = 6; j < width; j += 4 ) {
+            int jM6 = j - 6;
+            int jM4 = j - 4;
+            int jM2 = j - 2;
+
+            pYver[jM6]  += pYver[jM4] + pYver[jM2] + pYver[j];
+            pYhor[jM6]  += pYhor[jM4] + pYhor[jM2] + pYhor[j];
+            pYdig0[jM6] += pYdig0[jM4] + pYdig0[jM2] + pYdig0[j];
+            pYdig1[jM6] += pYdig1[jM4] + pYdig1[jM2] + pYdig1[j];
+        }
     }
-    else if (y > 0 && (y & (ctu_height - 1)) == virbnd_pos)
-    {
-      src0 = &src[yoffset];
+
+    // classification block size
+    const int clsSizeY = 4;
+    const int clsSizeX = 4;
+
+    for( int i = 0; i < blk.height; i += clsSizeY ) {
+        int* pYver = laplacian[VER][i];
+        int* pYver2 = laplacian[VER][i + 2];
+        int* pYver4 = laplacian[VER][i + 4];
+        int* pYver6 = laplacian[VER][i + 6];
+
+        int* pYhor = laplacian[HOR][i];
+        int* pYhor2 = laplacian[HOR][i + 2];
+        int* pYhor4 = laplacian[HOR][i + 4];
+        int* pYhor6 = laplacian[HOR][i + 6];
+
+        int* pYdig0 = laplacian[DIAG0][i];
+        int* pYdig02 = laplacian[DIAG0][i + 2];
+        int* pYdig04 = laplacian[DIAG0][i + 4];
+        int* pYdig06 = laplacian[DIAG0][i + 6];
+
+        int* pYdig1 = laplacian[DIAG1][i];
+        int* pYdig12 = laplacian[DIAG1][i + 2];
+        int* pYdig14 = laplacian[DIAG1][i + 4];
+        int* pYdig16 = laplacian[DIAG1][i + 6];
+
+        for( int j = 0; j < blk.width; j += clsSizeX ) {
+            int sumV = 0; int sumH = 0; int sumD0 = 0; int sumD1 = 0;
+
+            if (((i + blk.y) % ctu_height) == (virbnd_pos - 4)) {
+                sumV = pYver[j] + pYver2[j] + pYver4[j];
+                sumH = pYhor[j] + pYhor2[j] + pYhor4[j];
+                sumD0 = pYdig0[j] + pYdig02[j] + pYdig04[j];
+                sumD1 = pYdig1[j] + pYdig12[j] + pYdig14[j];
+            } else if (((i + blk.y) % ctu_height) == virbnd_pos) {
+                sumV = pYver2[j] + pYver4[j] + pYver6[j];
+                sumH = pYhor2[j] + pYhor4[j] + pYhor6[j];
+                sumD0 = pYdig02[j] + pYdig04[j] + pYdig06[j];
+                sumD1 = pYdig12[j] + pYdig14[j] + pYdig16[j];
+            } else {
+                sumV = pYver[j] + pYver2[j] + pYver4[j] + pYver6[j];
+                sumH = pYhor[j] + pYhor2[j] + pYhor4[j] + pYhor6[j];
+                sumD0 = pYdig0[j] + pYdig02[j] + pYdig04[j] + pYdig06[j];
+                sumD1 = pYdig1[j] + pYdig12[j] + pYdig14[j] + pYdig16[j];
+            }
+
+            int tempAct = sumV + sumH;
+            int activity = 0;
+
+            const int y = (i + blk.y) & (ctu_height - 1);
+
+            if (y == virbnd_pos - 4 || y == virbnd_pos) {
+                activity = (int16_t) OVMIN( OVMAX(0, (tempAct * 96) >> shift) , maxActivity);
+            } else {
+                activity = (int16_t) OVMIN( OVMAX(0, (tempAct * 64) >> shift) , maxActivity);
+            }
+
+            int class_idx = th[activity];
+
+            int hv1, hv0, d1, d0, hvd1, hvd0;
+
+            if( sumV > sumH ) {
+                hv1 = sumV;
+                hv0 = sumH;
+                dir_temp_hv = 1;
+            } else {
+                hv1 = sumH;
+                hv0 = sumV;
+                dir_temp_hv = 3;
+            }
+
+            if( sumD0 > sumD1 ) {
+                d1 = sumD0;
+                d0 = sumD1;
+                dir_temp_d = 0;
+            } else {
+                d1 = sumD1;
+                d0 = sumD0;
+                dir_temp_d = 2;
+            }
+
+            if( (uint32_t)d1 * (uint32_t)hv0 > (uint32_t)hv1 * (uint32_t)d0 ) {
+                hvd1 = d1;
+                hvd0 = d0;
+                main_dir = dir_temp_d;
+                secondary_dir = dir_temp_hv;
+            } else {
+                hvd1 = hv1;
+                hvd0 = hv0;
+                main_dir = dir_temp_hv;
+                secondary_dir = dir_temp_d;
+            }
+
+            int directionStrength = 0;
+
+            if( hvd1 > 2 * hvd0 ) {
+                directionStrength = 1;
+
+            }
+
+            if( hvd1 * 2 > 9 * hvd0 ) {
+                directionStrength = 2;
+            }
+
+            if( directionStrength ) {
+                class_idx += ( ( ( main_dir & 0x1 ) << 1 ) + directionStrength ) * 5;
+            }
+
+            static const int transposeTable[8] = { 0, 1, 0, 2, 2, 3, 1, 3 };
+            int transpose_idx = transposeTable[main_dir * 2 + ( secondary_dir >> 1 )];
+
+            int yOffset = (i + blk.y) % ctu_height;
+            int xOffset = (j + blk.x) % ctu_height;
+            ALFClassifier alf_class;
+            alf_class.class_idx = class_idx;
+            alf_class.transpose_idx = transpose_idx;
+            classifier[yOffset>>2][xOffset>>2] = alf_class;
+        }
     }
-    int* pYver = laplacian[VER][i];
-    int* pYhor = laplacian[HOR][i];
-    int* pYdig0 = laplacian[DIAG0][i];
-    int* pYdig1 = laplacian[DIAG1][i];
-
-    for( int j = 0; j < width; j += 2 )
-    {
-      // pixY = j + 1 + posX;
-      pixY = j + 1 ;
-      const int16_t *pY = src1 + pixY;
-      const int16_t* pYdown = src0 + pixY;
-      const int16_t* pYup = src2 + pixY;
-      const int16_t* pYup2 = src3 + pixY;
-
-      const int16_t y0 = pY[0] << 1;
-      const int16_t yup1 = pYup[1] << 1;
-
-      //modification des buffers laplacian ici 
-      pYver[j] = abs( y0 - pYdown[0] - pYup[0] ) + abs( yup1 - pY[1] - pYup2[1] );
-      pYhor[j] = abs( y0 - pY[1] - pY[-1] ) + abs( yup1 - pYup[2] - pYup[0] );
-      pYdig0[j] = abs( y0 - pYdown[-1] - pYup[1] ) + abs( yup1 - pY[0] - pYup2[2] );
-      pYdig1[j] = abs( y0 - pYup[-1] - pYdown[1] ) + abs( yup1 - pYup2[0] - pY[2] );
-    }
-
-    for( int j = 6; j < width; j += 4 )
-    {
-        int jM6 = j - 6;
-        int jM4 = j - 4;
-        int jM2 = j - 2;
-
-        pYver[jM6] += pYver[jM4] + pYver[jM2] + pYver[j];
-        pYhor[jM6] += pYhor[jM4] + pYhor[jM2] + pYhor[j];
-        pYdig0[jM6] += pYdig0[jM4] + pYdig0[jM2] + pYdig0[j];
-        pYdig1[jM6] += pYdig1[jM4] + pYdig1[jM2] + pYdig1[j];
-    }
-  }
-
-  // classification block size
-  const int clsSizeY = 4;
-  const int clsSizeX = 4;
-
-  for( int i = 0; i < blk.height; i += clsSizeY )
-  {
-    int* pYver = laplacian[VER][i];
-    int* pYver2 = laplacian[VER][i + 2];
-    int* pYver4 = laplacian[VER][i + 4];
-    int* pYver6 = laplacian[VER][i + 6];
-
-    int* pYhor = laplacian[HOR][i];
-    int* pYhor2 = laplacian[HOR][i + 2];
-    int* pYhor4 = laplacian[HOR][i + 4];
-    int* pYhor6 = laplacian[HOR][i + 6];
-
-    int* pYdig0 = laplacian[DIAG0][i];
-    int* pYdig02 = laplacian[DIAG0][i + 2];
-    int* pYdig04 = laplacian[DIAG0][i + 4];
-    int* pYdig06 = laplacian[DIAG0][i + 6];
-
-    int* pYdig1 = laplacian[DIAG1][i];
-    int* pYdig12 = laplacian[DIAG1][i + 2];
-    int* pYdig14 = laplacian[DIAG1][i + 4];
-    int* pYdig16 = laplacian[DIAG1][i + 6];
-
-    for( int j = 0; j < blk.width; j += clsSizeX )
-    {
-      int sumV = 0; int sumH = 0; int sumD0 = 0; int sumD1 = 0;
-      if (((i + blk.y) % ctu_height) == (virbnd_pos - 4))
-      {
-        sumV = pYver[j] + pYver2[j] + pYver4[j];
-        sumH = pYhor[j] + pYhor2[j] + pYhor4[j];
-        sumD0 = pYdig0[j] + pYdig02[j] + pYdig04[j];
-        sumD1 = pYdig1[j] + pYdig12[j] + pYdig14[j];
-      }
-      else if (((i + blk.y) % ctu_height) == virbnd_pos)
-      {
-        sumV = pYver2[j] + pYver4[j] + pYver6[j];
-        sumH = pYhor2[j] + pYhor4[j] + pYhor6[j];
-        sumD0 = pYdig02[j] + pYdig04[j] + pYdig06[j];
-        sumD1 = pYdig12[j] + pYdig14[j] + pYdig16[j];
-      }
-      else
-      {
-        sumV = pYver[j] + pYver2[j] + pYver4[j] + pYver6[j];
-        sumH = pYhor[j] + pYhor2[j] + pYhor4[j] + pYhor6[j];
-        sumD0 = pYdig0[j] + pYdig02[j] + pYdig04[j] + pYdig06[j];
-        sumD1 = pYdig1[j] + pYdig12[j] + pYdig14[j] + pYdig16[j];
-      }
-
-      int tempAct = sumV + sumH;
-      int activity = 0;
-
-      const int y = (i + blk.y) & (ctu_height - 1);
-      if (y == virbnd_pos - 4 || y == virbnd_pos)
-      {
-        activity = (int16_t) OVMIN( OVMAX(0, (tempAct * 96) >> shift) , maxActivity);
-      }
-      else
-      {
-        activity = (int16_t) OVMIN( OVMAX(0, (tempAct * 64) >> shift) , maxActivity);
-      }
-      int class_idx = th[activity];
-
-      int hv1, hv0, d1, d0, hvd1, hvd0;
-
-      if( sumV > sumH )
-      {
-        hv1 = sumV;
-        hv0 = sumH;
-        dir_temp_hv = 1;
-      }
-      else
-      {
-        hv1 = sumH;
-        hv0 = sumV;
-        dir_temp_hv = 3;
-      }
-      if( sumD0 > sumD1 )
-      {
-        d1 = sumD0;
-        d0 = sumD1;
-        dir_temp_d = 0;
-      }
-      else
-      {
-        d1 = sumD1;
-        d0 = sumD0;
-        dir_temp_d = 2;
-      }
-      if( (uint32_t)d1 * (uint32_t)hv0 > (uint32_t)hv1 * (uint32_t)d0 )
-      {
-        hvd1 = d1;
-        hvd0 = d0;
-        main_dir = dir_temp_d;
-        secondary_dir = dir_temp_hv;
-      }
-      else
-      {
-        hvd1 = hv1;
-        hvd0 = hv0;
-        main_dir = dir_temp_hv;
-        secondary_dir = dir_temp_d;
-      }
-
-      int directionStrength = 0;
-      if( hvd1 > 2 * hvd0 )
-      {
-        directionStrength = 1;
-      }
-      if( hvd1 * 2 > 9 * hvd0 )
-      {
-        directionStrength = 2;
-      }
-
-      if( directionStrength )
-      {
-        class_idx += ( ( ( main_dir & 0x1 ) << 1 ) + directionStrength ) * 5;
-      }
-
-      static const int transposeTable[8] = { 0, 1, 0, 2, 2, 3, 1, 3 };
-      int transpose_idx = transposeTable[main_dir * 2 + ( secondary_dir >> 1 )];
-
-      int yOffset = (i + blk.y) % ctu_height;
-      int xOffset = (j + blk.x) % ctu_height;
-      ALFClassifier alf_class;
-      alf_class.class_idx = class_idx;
-      alf_class.transpose_idx = transpose_idx;
-      classifier[yOffset>>2][xOffset>>2] = alf_class;
-    }
-  }
 }
 
 
@@ -705,6 +687,7 @@ void alf_filterBlkChroma(ALFClassifier **classifier, int16_t *const dst, int16_t
     pImgYPad6 += srcStride2;
   }
 }
+
 void alf_filterBlkLuma(ALFClassifier **classifier, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
                          Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                          const int ctu_height, int virbnd_pos)
