@@ -10,7 +10,7 @@
 #include "rcn_structures.h"
 
 
-static inline int clipALF(const int clip, const int16_t ref, const int16_t val0, const int16_t val1)
+static inline int clipALF(const int clip, const int32_t ref, const int32_t val0, const int32_t val1)
   {
     // return Clip3<int>(-clip, +clip, val0-ref) + Clip3<int>(-clip, +clip, val1-ref);
     int clip1 = (int) OVMIN( OVMAX(-clip, val0-ref) , +clip);
