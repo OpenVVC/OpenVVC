@@ -36,7 +36,11 @@ void sao_band_filter(uint8_t *_dst, uint8_t *_src,
         // offset_table[(k + sao_left_class) & 31] = sao_offset_val[k + 1];
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
+            #if 0
             dst[x] = ov_clip_uintp2(src[x] + offset_table[src[x] >> shift], BIT_DEPTH);
+            #else
+            dst[x] = ov_clip(src[x] + offset_table[src[x] >> shift], 0, 1023);
+            #endif
         dst += stride_dst;
         src += stride_src;
     }
@@ -80,7 +84,11 @@ void sao_edge_filter(uint8_t *_dst, uint8_t *_src,
             int diff0         = CMP(src[x + src_offset], src[x + src_offset + a_stride]);
             int diff1         = CMP(src[x + src_offset], src[x + src_offset + b_stride]);
             int offset_val    = 2 + diff0 + diff1;
+            #if 0
             dst[x + dst_offset] = ov_clip_uintp2( src[x + src_offset] + sao_offset_val[offset_val], BIT_DEPTH );
+            #else
+            dst[x + dst_offset] = ov_clip( src[x + src_offset] + sao_offset_val[offset_val], 0, 1023 );
+            #endif
         }
         src_offset += stride_src;
         dst_offset += stride_dst;
