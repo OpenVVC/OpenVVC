@@ -115,13 +115,6 @@ alf_create(OVCTUDec *const ctudec, RCNALF* alf)
     uint8_t log2_ctb_size = pinfo->log2_ctu_s;
     int ctu_width  = 1 << log2_ctb_size;  
 
-    for (int i = 0; i < NUM_DIRECTIONS; i++) {
-        alf->laplacian[i] = alf->laplacian_ptr[i];
-        for (int j = 0; j < sizeof(alf->laplacian_ptr[i]) / sizeof(alf->laplacian_ptr[i][0]); j++) {
-            alf->laplacian_ptr[i][j] = alf->laplacian_data[i][j];
-        }
-    }
-
     //BITDEPTH: uniquement pour bitdepth 10
     int bit_depth = 10; 
     alf->alf_clipping_values[CHANNEL_TYPE_LUMA][0] = 1 << bit_depth;  
@@ -248,13 +241,14 @@ void alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t luma
 
 
 void
-rcn_alf_derive_classificationBlk(ALFClassifier **classifier, int **laplacian[NUM_DIRECTIONS],
+rcn_alf_derive_classificationBlk(ALFClassifier **classifier,
                                  int16_t *const src, const int stride, const Area blk,
                                  const int shift, const int ctu_height, int virbnd_pos)
 {
 
     static const int th[16] = { 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4 };
     const int maxActivity = 15;
+    int laplacian[NUM_DIRECTIONS][CLASSIFICATION_BLK_SIZE + 5][CLASSIFICATION_BLK_SIZE + 5];
 
     int fl = 2;
     int flP1 = fl + 1;
@@ -456,7 +450,7 @@ void rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const in
             blk_class.width = nWidth; blk_class.height = nHeight; 
 
             int16_t* rcn_img_class = rcn_img + (i-blk.y)*stride + (j-blk.x);
-            rcn_alf_derive_classificationBlk(classifier, alf->laplacian, rcn_img_class, stride, blk_class, bit_depth + 4
+            rcn_alf_derive_classificationBlk(classifier, rcn_img_class, stride, blk_class, bit_depth + 4
             , ctu_width, (blk.height<ctu_width) ? pic_h : blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA
             );
         }
