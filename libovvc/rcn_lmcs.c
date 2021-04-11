@@ -73,9 +73,9 @@ rcn_lmcs_compute_chroma_scale(struct OVCTUDec* ctudec, int x0, int y0)
     //When image border, num_luma_pum may be different from 16.
     if(num_luma_pu_above){
         _src -= 4;
-        luma_sum1 += _src[0]*(16-num_luma_pu_above);
-        luma_sum2 += _src[1]*(16-num_luma_pu_above);
-        luma_sum3 += _src[2]*(16-num_luma_pu_above);
+        luma_sum1 += _src[3]*(16-num_luma_pu_above);
+        luma_sum2 += _src[3]*(16-num_luma_pu_above);
+        luma_sum3 += _src[3]*(16-num_luma_pu_above);
         luma_sum4 += _src[3]*(16-num_luma_pu_above);
         num_luma_pu_above = 16;
     }
@@ -95,9 +95,14 @@ rcn_lmcs_compute_chroma_scale(struct OVCTUDec* ctudec, int x0, int y0)
     //When image border, num_luma_pum may be different from 16.
     if(num_luma_pu_left){
         _src -= RCN_CTB_STRIDE << 2;
+        #if 0
         luma_sum1 += _src[0]*(16-num_luma_pu_left);
         luma_sum2 += _src[RCN_CTB_STRIDE]*(16-num_luma_pu_left);
         luma_sum3 += _src[RCN_CTB_STRIDE << 1]*(16-num_luma_pu_left);
+        #endif
+        luma_sum1 += _src[RCN_CTB_STRIDE * 3]*(16-num_luma_pu_left);
+        luma_sum2 += _src[RCN_CTB_STRIDE * 3]*(16-num_luma_pu_left);
+        luma_sum3 += _src[RCN_CTB_STRIDE * 3]*(16-num_luma_pu_left);
         luma_sum4 += _src[RCN_CTB_STRIDE * 3]*(16-num_luma_pu_left);
         num_luma_pu_left = 16;
     }
