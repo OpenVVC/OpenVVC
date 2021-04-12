@@ -859,7 +859,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
      * Slices it is not clear whether we should still mark them
      * or not
      */
-    if (!idr_flag) {
+    if (!idr_flag && !cra_flag) {
         const OVRPL *rpl0 = sh->hrpl.rpl0;
         const OVRPL *rpl1 = sh->hrpl.rpl1;
         uint8_t slice_type = sh->sh_slice_type;
