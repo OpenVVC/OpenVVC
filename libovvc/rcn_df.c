@@ -576,7 +576,7 @@ filter_chroma_weak(uint16_t* src, const int stride, const int tc)
 static void
 vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
                    const struct DBFInfo *const dbf_info,
-                   uint8_t nb_unit_h, int is_last_h)
+                   uint8_t nb_unit_h, int is_last_h, uint8_t nb_unit_w)
 {
 
     #if 0
@@ -589,7 +589,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
     src_cb -= blk_stride;
     src_cr -= blk_stride;
 
-    for (i = 0; i < (nb_unit_h >> 2) ; i++) {
+    for (i = 0; i < (nb_unit_w >> 2) ; i++) {
         uint16_t *src0 = src_cb;
         uint16_t *src1 = src_cb + stride;
 
@@ -664,7 +664,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
     }
 
 
-    for (i = 0; i < (nb_unit_h >> 2); i++) {
+    for (i = 0; i < (nb_unit_w >> 2); i++) {
         uint16_t *src0 = src_cr;
         uint16_t *src1 = src_cr + stride;
 
@@ -742,7 +742,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
 static void
 vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
                    const struct DBFInfo *const dbf_info,
-                   uint8_t nb_unit_w, int is_last_w)
+                   uint8_t nb_unit_w, int is_last_w, uint8_t nb_unit_h)
 {
     #if 0
     const int nb_unit_w = (1 << part_size->log2_ctu_s) >> 2;
@@ -754,7 +754,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
     src_cb -= blk_stride << 1;
     src_cr -= blk_stride << 1;
 
-    for (i = 0; i < (nb_unit_w >> 2); i++) {
+    for (i = 0; i < (nb_unit_h >> 2); i++) {
         uint16_t *src0 = src_cb;
         uint16_t *src1 = src_cb + 1;
         uint8_t is_ctb_b = i == 0;
@@ -829,7 +829,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
         src_cb += stride << 3;
     }
 
-    for (i = 0; i < (nb_unit_w >> 2); i++) {
+    for (i = 0; i < (nb_unit_h >> 2); i++) {
         uint16_t *src0 = src_cr;
         uint16_t *src1 = src_cr + 1;
         uint8_t is_ctb_b = i == 0;
@@ -1179,10 +1179,10 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInfo *const d
     vvc_dbf_ctu_ver(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_x);
 
     vvc_dbf_chroma_hor(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
-                       nb_unit, !!last_y);
+                       nb_unit, !!last_y, nb_unit);
 
     vvc_dbf_chroma_ver(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
-                       nb_unit, !!last_x);
+                       nb_unit, !!last_x, nb_unit);
                        #endif
 
 }
@@ -1206,10 +1206,10 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *con
     vvc_dbf_ctu_ver(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_x);
 
     vvc_dbf_chroma_hor(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
-                       nb_unit, !!last_y);
+                       nb_unit_h, !!last_y, nb_unit_w);
 
     vvc_dbf_chroma_ver(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
-                       nb_unit, !!last_x);
+                       nb_unit_w, !!last_x, nb_unit_h);
                        #endif
 
 }
