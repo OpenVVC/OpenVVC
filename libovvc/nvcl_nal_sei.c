@@ -3,6 +3,7 @@
 #include "ovutils.h"
 #include "nvcl.h"
 #include "nvcl_utils.h"
+#include "nvcl_structures.h"
 
 enum SEIPayloadtype
 {
@@ -40,30 +41,6 @@ struct OVSEIPayload
     uint32_t size;
 };
 
-struct OVSEIFGrain
-{
-    uint8_t fg_characteristics_cancel_flag;
-    uint8_t fg_model_id;
-    uint8_t fg_separate_colour_description_present_flag;
-    uint8_t fg_bit_depth_luma_minus8;
-    uint8_t fg_bit_depth_chroma_minus8;
-    uint8_t fg_full_range_flag;
-    uint8_t fg_colour_primaries;
-    uint8_t fg_transfer_characteristics;
-    uint8_t fg_matrix_coeffs;
-    uint8_t fg_blending_mode_id;
-    uint8_t fg_log2_scale_factor;
-
-    uint8_t fg_comp_model_present_flag[3];
-    uint8_t fg_num_intensity_intervals_minus1[3];
-    uint8_t fg_num_model_values_minus1[3];
-
-    //TODO: maybe more than 8 intensity intervals?
-    uint8_t fg_intensity_interval_lower_bound[3][8];
-    uint8_t fg_intensity_interval_upper_bound[3][8];
-
-    uint8_t fg_characteristics_persistence_flag;
-};
 
 /* FIXME find other spec */
 struct OVSEIPayload
@@ -73,14 +50,12 @@ nvcl_sei_payload(OVNVCLReader *const rdr) {
     do
     {
         val = nvcl_read_bits(rdr, 8);
-        // sei_read_code(NULL, 8, val, "payload_type");
         pl_type += val;
     } while (val==0xFF);
 
     uint32_t pl_size = 0;
     do
     {
-        // sei_read_code(NULL, 8, val, "payload_size");
         val = nvcl_read_bits(rdr, 8);
         pl_size += val;
     } while (val==0xFF);
@@ -95,7 +70,6 @@ void
 nvcl_film_grain_read(OVNVCLReader *const rdr, struct OVSEIFGrain *const fg, OVNVCLCtx *const nvcl_ctx)
 {
   fg->fg_characteristics_cancel_flag = nvcl_read_flag(rdr);
-  // sei.m_filmGrainCharacteristicsCancelFlag = code != 0;
   if (!fg->fg_characteristics_cancel_flag )
   {
     fg->fg_model_id = nvcl_read_bits(rdr,2);
@@ -126,6 +100,10 @@ nvcl_film_grain_read(OVNVCLReader *const rdr, struct OVSEIFGrain *const fg, OVNV
         {
           fg->fg_intensity_interval_lower_bound[c][i] = nvcl_read_bits(rdr, 8);
           fg->fg_intensity_interval_upper_bound[c][i] = nvcl_read_bits(rdr, 8);
+          for (uint32_t j = 0; j < fg->fg_num_model_values_minus1[c] + 1; j++)
+          {
+            fg->fg_comp_model_value[c][i][j] = nvcl_read_s_expgolomb(rdr);
+          }
         }
       }
     } // for c

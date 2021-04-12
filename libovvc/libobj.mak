@@ -49,6 +49,7 @@ LIB_SRC:=																																 \
 					rcn_df.c                                                       \
 					rcn_sao.c                                                       \
 					rcn_alf.c                                                       \
+					rcn_film_grain.c                                                 \
 					rcn_lmcs.c                                                       \
 					slicedec.c                                                     \
 					vcl_alf.c                                                       \
