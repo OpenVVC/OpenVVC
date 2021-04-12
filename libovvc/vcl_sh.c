@@ -188,7 +188,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
      * and sps_idr_rpl_present is OFF
      */
     int nb_ref_entries0 = hrpl->rpl0 ? hrpl->rpl0->num_ref_entries : 0;
-    int nb_ref_entries1 = hrpl->rpl1 ? hrpl->rpl0->num_ref_entries : 0;
+    int nb_ref_entries1 = hrpl->rpl1 ? hrpl->rpl1->num_ref_entries : 0;
 
     if ((sh->sh_slice_type != I && nb_ref_entries0 > 1) ||
         (sh->sh_slice_type == B && nb_ref_entries1 > 1)) {
@@ -203,13 +203,29 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
             #else
             if (nb_ref_entries0 > 1) {
                 sh->sh_num_ref_idx_active_l0_minus1 = nvcl_read_u_expgolomb(rdr);
+                nb_ref_entries0 = sh->sh_num_ref_idx_active_l0_minus1 + 1;
             }
 
             if (sh->sh_slice_type == B && nb_ref_entries1 > 1) {
                 sh->sh_num_ref_idx_active_l1_minus1 = nvcl_read_u_expgolomb(rdr);
+                nb_ref_entries1 = sh->sh_num_ref_idx_active_l1_minus1 + 1;
             }
             #endif
+        } else if (nb_ref_entries0 > pps->pps_num_ref_idx_default_active_minus1[0] ||
+                    nb_ref_entries1 > pps->pps_num_ref_idx_default_active_minus1[1]) {
+
+            if (nb_ref_entries0 > pps->pps_num_ref_idx_default_active_minus1[0]) {
+                nb_ref_entries0 = pps->pps_num_ref_idx_default_active_minus1[0] + 1;
+            }
+
+            if (sh->sh_slice_type == B &&
+                nb_ref_entries1 > pps->pps_num_ref_idx_default_active_minus1[1]) {
+                nb_ref_entries1 = pps->pps_num_ref_idx_default_active_minus1[1] + 1;
+            }
+
         }
+        sh->hrpl.rpl_h0.rpl_data.num_ref_entries = nb_ref_entries0;
+        sh->hrpl.rpl_h1.rpl_data.num_ref_entries = nb_ref_entries1;
     }
 
     if (sh->sh_slice_type != I) {
@@ -223,8 +239,8 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
             }
 
             /* FIXME check NumRefIdxActive[0] > 1 NumRefIdxActive[1] > 1*/
-            if ((sh->sh_collocated_from_l0_flag && sh->sh_num_ref_idx_active_l0_minus1) ||
-                (!sh->sh_collocated_from_l0_flag && sh->sh_num_ref_idx_active_l1_minus1 > 1)) {
+            if ((sh->sh_collocated_from_l0_flag && nb_ref_entries0 > 1) ||
+                sh->sh_slice_type == B && (!sh->sh_collocated_from_l0_flag && nb_ref_entries1 > 1)) {
                 sh->sh_collocated_ref_idx = nvcl_read_u_expgolomb(rdr);
             }
         }

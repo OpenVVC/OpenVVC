@@ -345,7 +345,7 @@ struct OVPPS
     uint8_t pps_loop_filter_across_slices_enabled_flag;
 
     uint8_t pps_cabac_init_present_flag;
-    uint8_t pps_num_ref_idx_default_active_minus1[16];
+    uint8_t pps_num_ref_idx_default_active_minus1[2];
 
     uint8_t pps_rpl1_idx_present_flag;
     uint8_t pps_weighted_pred_flag;
