@@ -343,7 +343,7 @@ uninit_in_loop_filters(OVCTUDec *const ctudec)
     struct ALFInfo* alf_info  = &ctudec->alf_info;
     if(alf_info->ctb_alf_params){
         ov_free(alf_info->ctb_alf_params);
-        alf_destroy(&alf_info->rcn_alf, 128);
+        rcn_alf_destroy(&alf_info->rcn_alf, 128);
     }
 
     //Uninit CC ALF ctu params
@@ -404,7 +404,13 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
         }
 
         //create the structures for ALF reconstruction
-        alf_create(ctudec, &alf_info->rcn_alf);
+        rcn_alf_create(ctudec, &alf_info->rcn_alf);
+
+        //Initialization of ALF reconstruction structures
+        RCNALF* alf = &alf_info->rcn_alf;
+        uint8_t luma_flag = alf_info->alf_luma_enabled_flag;
+        uint8_t chroma_flag = alf_info->alf_cb_enabled_flag || alf_info->alf_cr_enabled_flag;
+        rcn_alf_reconstruct_coeff_APS(alf, ctudec, luma_flag, chroma_flag);
     }
 
     //Init CC ALF ctu params
@@ -439,7 +445,6 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
         uint16_t *const output_pivot = lmcs_info->lmcs_output_pivot;
         rcn_derive_lmcs_params(output_pivot, aps_lmcs_data);
         rcn_lmcs_compute_lut_luma(lmcs_info->lmcs_lut_luma, lmcs_info->lmcs_output_pivot);
-
     }
 
     return 0;
