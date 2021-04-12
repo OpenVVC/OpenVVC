@@ -97,7 +97,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
 
     /* FIXME subpic/tile  support */
     int nb_slices_subpic = 1; /*NumSlicesInSubpic[CurrSubpicIdx] */
-    int nb_tiles_pic = (pps->pps_num_exp_tile_columns_minus1 + 1) * (pps->pps_num_exp_tile_rows_minus1 + 1) - 1;
+    int nb_tiles_pic = (pps->pps_num_exp_tile_columns_minus1 + 1) * (pps->pps_num_exp_tile_rows_minus1 + 1);
 
     /* FIXME would be better to distinguish in two different branches */
     if ((pps->pps_rect_slice_flag && nb_slices_subpic > 1) ||
