@@ -108,7 +108,7 @@ struct DPB
     * when encountering IDR Picture Units
     */
    uint16_t cvs_id;
-   uint8_t poc;
+   uint32_t poc;
 
    /* DPB status info
     * to be used to determine whether the decoder is waiting
