@@ -284,7 +284,7 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc)
 }
 
 static int
-compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, uint32_t poc)
+compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t poc)
 {
     const int nb_refs = rpl->num_ref_entries;
     int i;
@@ -327,7 +327,7 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, uint32_t
 
 
 static int
-vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, uint8_t poc, struct RPLInfo *rpl_info, const OVPicture **dst_rpl)
+vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_info, const OVPicture **dst_rpl)
 {
     int i, j;
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
