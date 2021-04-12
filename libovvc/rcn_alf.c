@@ -117,21 +117,20 @@ alf_create(OVCTUDec *const ctudec, RCNALF* alf)
 
     //BITDEPTH: uniquement pour bitdepth 10
     int bit_depth = 10; 
-    alf->alf_clipping_values[CHANNEL_TYPE_LUMA][0] = 1 << bit_depth;  
     int shift_luma = bit_depth - 8;
+    int shift_chroma = bit_depth - 8;
+
+    /* FIXME would be better to get (1 << bitdepth) - 1 for clipping */
+    alf->alf_clipping_values[CHANNEL_TYPE_LUMA][0] = 1 << bit_depth;
+    alf->alf_clipping_values[CHANNEL_TYPE_CHROMA][0] = 1 << bit_depth;
     for(int i = 1; i < MAX_ALF_NUM_CLIP_VAL; ++i) {
         alf->alf_clipping_values[CHANNEL_TYPE_LUMA][i] = 1 << (7 - 2 * i + shift_luma);
-    }
-
-    alf->alf_clipping_values[CHANNEL_TYPE_CHROMA][0] = 1 << bit_depth;
-    int shift_chroma = bit_depth - 8;
-    alf->alf_clipping_values[CHANNEL_TYPE_CHROMA][0] = 1 << bit_depth;
-
-    for(int i = 1; i < MAX_ALF_NUM_CLIP_VAL; ++i) {
         alf->alf_clipping_values[CHANNEL_TYPE_CHROMA][i] = 1 << (7 - 2 * i + shift_chroma);
     }
 
-    // Classification
+    /* FIXME Use two fixed 32x32 tables instead of alloc (one for tr_idx one for cl_idx
+     * We could also use a joint idx for both.
+     */
     if (alf->classifier == 0) {
         alf->classifier = ov_malloc(sizeof(ALFClassifier*)*ctu_width >> 2);
         for (int i = 0; i < ctu_width/4; i++) {
