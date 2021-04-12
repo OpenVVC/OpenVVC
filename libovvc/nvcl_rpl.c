@@ -131,7 +131,7 @@ ref_pic_list_ltrp(OVNVCLReader *const rdr, struct OVRPL *const rpl,
 }
 
 static int
-ref_pic_list_strp(OVNVCLReader *const rdr, struct OVRPL *const rpl)
+ref_pic_list_strp(OVNVCLReader *const rdr, struct OVRPL *const rpl, uint8_t use_weighted_pred)
 {
     int i;
     for (i = 0; i < rpl->num_ref_entries; i++) {
@@ -142,7 +142,7 @@ ref_pic_list_strp(OVNVCLReader *const rdr, struct OVRPL *const rpl)
          */
         rp->st_ref_pic_flag = 1;
         rp->abs_delta_poc_st = nvcl_read_u_expgolomb(rdr);
-        if (rp->abs_delta_poc_st > 0 || (i == 0)) {
+        if (rp->abs_delta_poc_st > 0 || (!use_weighted_pred) || (i == 0)) {
             rp->strp_entry_sign_flag = nvcl_read_flag(rdr);
         }
     }
@@ -196,6 +196,8 @@ static int
 ref_pic_list_header(OVNVCLReader *const rdr, const OVSPS *const sps,
                     struct OVRPL *const rpl)
 {
+    uint8_t use_weighted_pred = sps->sps_weighted_pred_flag || sps->sps_weighted_bipred_flag;
+
     rpl->num_ref_entries = nvcl_read_u_expgolomb(rdr);
 
     if (rpl->num_ref_entries > 0) {
@@ -212,7 +214,7 @@ ref_pic_list_header(OVNVCLReader *const rdr, const OVSPS *const sps,
             if (sps->sps_inter_layer_prediction_enabled_flag) {
                 ref_pic_list_ilrp(rdr, rpl);
             } else {
-                ref_pic_list_strp(rdr, rpl);
+                ref_pic_list_strp(rdr, rpl, use_weighted_pred);
             }
         }
     }
@@ -345,6 +347,7 @@ int
 nvcl_read_sps_ref_pic_list(OVNVCLReader *const rdr, const OVSPS *const sps,
                            OVRPL *const rpl)
 {
+    uint8_t use_weighted_pred = sps->sps_weighted_pred_flag || sps->sps_weighted_bipred_flag;
     rpl->num_ref_entries = nvcl_read_u_expgolomb(rdr);
 
     if (rpl->num_ref_entries > 0) {
@@ -361,7 +364,7 @@ nvcl_read_sps_ref_pic_list(OVNVCLReader *const rdr, const OVSPS *const sps,
             if (sps->sps_inter_layer_prediction_enabled_flag) {
                 ref_pic_list_ilrp(rdr, rpl);
             } else {
-                ref_pic_list_strp(rdr, rpl);
+                ref_pic_list_strp(rdr, rpl, use_weighted_pred);
             }
         }
     }
