@@ -710,7 +710,7 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
     ret = ctudec->coding_tree(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s, 0);
 
     rcn_write_ctu_to_frame(&ctudec->rcn_ctx, log2_ctb_s);
-    rcn_ctu_to_intra_line(ctudec, ctudec->ctb_x << log2_ctb_s);
+    rcn_ctu_to_intra_line(ctudec, ctb_addr_rs % nb_ctu_w << log2_ctb_s);
 
     if (ctudec->lmcs_info.lmcs_enabled_flag){
       const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
@@ -764,7 +764,7 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
 
     rcn_write_ctu_to_frame_border(&ctudec->rcn_ctx,
                                   ctu_w, ctu_h);
-    rcn_ctu_to_intra_line(ctudec, ctudec->ctb_x << log2_ctb_s);
+    rcn_ctu_to_intra_line(ctudec, ctb_addr_rs % nb_ctu_w << log2_ctb_s);
 
     if (ctudec->lmcs_info.lmcs_enabled_flag){
       const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
@@ -1071,7 +1071,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     //  independent from the rectangular region sizes.
     int margin = 3;
     ctudec_create_filter_buffers(ctudec, sldec->pic->frame, einfo.nb_ctu_w, margin);
-    ctudec_create_intra_line_buff(ctudec, einfo.nb_ctu_w);
+    ctudec_create_intra_line_buff(ctudec, einfo.nb_ctu_w + 2);
 
     struct DRVLines drv_lines;
     struct CCLines cc_lines[2] = {sldec->cabac_lines[0], sldec->cabac_lines[1]};
