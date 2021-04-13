@@ -471,6 +471,8 @@ decinit_update_params(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
     const OVAPS *const aps_alf = retrieve_aps_alf(nvcl_ctx, sh);
     const OVAPS *const aps_lmcs = retrieve_aps_lmcs(nvcl_ctx, ph);
 
+    ps->sei = nvcl_ctx->sei;
+
     if (!sh || !ph || !pps || !sps) {
         ov_log(NULL, 3, "Missing Parameter sets for dec initialisation\n");
         return OVVC_EINDATA;

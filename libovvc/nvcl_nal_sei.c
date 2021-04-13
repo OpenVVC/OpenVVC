@@ -1,6 +1,8 @@
 #include <stddef.h>
 
 #include "ovutils.h"
+#include "ovmem.h"
+
 #include "nvcl.h"
 #include "nvcl_utils.h"
 #include "nvcl_structures.h"
@@ -113,16 +115,19 @@ nvcl_film_grain_read(OVNVCLReader *const rdr, struct OVSEIFGrain *const fg, OVNV
 
 int 
 nvcl_decode_nalu_sei(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
-{
-    //TODO: create a list of sei with all possible sei?
+{   
+    if(!nvcl_ctx->sei)
+        nvcl_ctx->sei = ov_mallocz(sizeof(struct OVSEI));    
+    struct OVSEI* sei = nvcl_ctx->sei;
+    
     struct OVSEIPayload payload = nvcl_sei_payload(rdr);
-
      switch (payload.type)
     {
-        struct OVSEIFGrain fg;
         uint8_t sei_byte;
         case FILM_GRAIN_CHARACTERISTICS:
-            nvcl_film_grain_read(rdr, &fg, nvcl_ctx);
+            if(!sei->sei_fg)
+                sei->sei_fg = ov_mallocz(sizeof(struct OVSEIFGrain));
+            nvcl_film_grain_read(rdr, sei->sei_fg, nvcl_ctx);
             break;
         default:
             for (int i = 0; i < payload.size; i++)

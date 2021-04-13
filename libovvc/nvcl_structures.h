@@ -79,6 +79,7 @@ struct OVDPBParams
     uint8_t dpb_max_latency_increase_plus1;
 };
 
+
 struct OVSEIFGrain
 {
     uint8_t fg_characteristics_cancel_flag;
@@ -104,6 +105,12 @@ struct OVSEIFGrain
 
     uint8_t fg_characteristics_persistence_flag;
     int16_t fg_idr_pic;
+};
+
+/*Structure containing all SEI structures*/
+struct OVSEI
+{
+    struct OVSEIFGrain* sei_fg;
 };
 
 struct OVSPS

@@ -562,7 +562,7 @@ void blendStripe(int16_t *decSampleOffsetY, int32_t *grainStripe, uint32_t width
 {
   uint32_t  k, l;
   int32_t   grainSample;
-  int16_t       decodeSample;
+  int16_t   decodeSample;
   uint16_t  maxRange;
   maxRange = (1 << bitDepth) - 1;
 
@@ -570,10 +570,10 @@ void blendStripe(int16_t *decSampleOffsetY, int32_t *grainStripe, uint32_t width
   {
     for (k = 0; k < widthComp; k++) /* x direction */
     {
-        decodeSample  =   *(decSampleOffsetY + k + (l*widthComp));
-        grainSample   =   *(grainStripe + k + (l*widthComp));
+        decodeSample  =   decSampleOffsetY[k + (l*widthComp)];
+        grainSample   =   grainStripe[k + (l*widthComp)];
         grainSample   <<=  (bitDepth - 8);
-        grainSample = (int16_t) OVMIN(OVMAX(0, grainSample + decodeSample), maxRange );
+        grainSample = (int32_t) OVMIN(OVMAX(0, grainSample + decodeSample), maxRange );
         decSampleOffsetY[k + (l*widthComp)] = (int16_t)grainSample;
     }
   }
@@ -700,7 +700,7 @@ void dataBaseGen( uint8_t enableDeblocking)
 }
 
 /* Down converts the chroma model values for 4:2:0 and 4:2:2 chroma_formats */
-void compute_model_values(struct OVSEIFGrain* fgrain, int16_t** intensityInterval)
+void compute_model_values(struct OVSEIFGrain* fgrain, int16_t intensityInterval[3][MAX_NUM_INTENSITIES])
 {   
     /* validation of intensity intervals and  */
     for (int compCtr = 0; compCtr < 3; compCtr++)
@@ -749,14 +749,14 @@ void grainSynthesizeAndBlend(int16_t** decComp, struct OVSEIFGrain* fgrain, int 
     uint8_t   bitDepth; /*grain bit depth and decoded bit depth are assumed to be same */
     uint8_t   color_offset[3];
     uint32_t  widthComp[3], heightComp[3], strideComp[3];
-    int16_t       *decSampleBlk16, *decSampleBlk8, *decSampleOffsetY;
+    int16_t   *decSampleBlk16, *decSampleBlk8, *decSampleOffsetY;
     uint16_t  numSamples;
     int16_t   scaleFactor;
     uint32_t  kOffset, lOffset, grainStripeOffset, grainStripeOffsetBlk8, offsetBlk8x8;
     int32_t   *grainStripe; /* worth a row of 16x16 : Max size : 16xw;*/
     int32_t   yOffset8x8, xOffset8x8;
     uint32_t  picOffset, x, y, intensityInt;
-    int16_t       blockAvg; 
+    int16_t   blockAvg; 
     uint32_t  pseudoRandValEc; /* ec : seed to be used for the psudo random generator for a given color component */
     uint32_t  picOrderCntOffset=0;
 
@@ -791,7 +791,7 @@ void grainSynthesizeAndBlend(int16_t** decComp, struct OVSEIFGrain* fgrain, int 
 
     int16_t intensityInterval[3][MAX_NUM_INTENSITIES] ;
     memset(intensityInterval, -1, sizeof(intensityInterval));
-    compute_model_values(fgrain, (int16_t**)intensityInterval);
+    compute_model_values(fgrain, intensityInterval);
 
     if (isIdrPic)
     {

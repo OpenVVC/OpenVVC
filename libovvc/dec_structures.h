@@ -202,7 +202,6 @@ typedef struct SAOParamsCtu {
 
     int16_t offset_val[3][5];   ///<SaoOffsetVal
 
-
     uint8_t band_position[3];   ///< sao_band_position
     uint8_t eo_class[3];        ///< sao_eo_class
 
@@ -241,6 +240,7 @@ struct OVVCDec
         const OVAPS *aps_lmcs;
         const OVPH *ph;
         const OVSH *sh;
+        const OVSEI *sei;
 
         /* Human readable information from active parameter sets */
         struct SPSInfo sps_info;

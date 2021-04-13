@@ -19,6 +19,7 @@ struct OVNVCLCtx
     OVAPS *aps_list[OV_MAX_NUM_APS];
     OVPH *ph;
     OVSH *sh;
+    OVSEI *sei;
 };
 
 struct OVNVCLReader
