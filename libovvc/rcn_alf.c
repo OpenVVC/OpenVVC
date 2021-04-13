@@ -160,37 +160,34 @@ void alf_reconstructCoeff_luma(RCNALF* alf, const struct OVALFData* alf_data)
     int num_classes =  MAX_NUM_ALF_CLASSES;
     int num_coeff = 13;
     int num_coeff_minus1 = num_coeff - 1;
-    const int num_alts = 1 ;
+    const int alt_idx = 0 ;
     
     int num_filters = alf_data->alf_luma_num_filters_signalled_minus1 + 1 ;
     int16_t* coeff ;
     int16_t* clip;
 
-    for( int alt_idx = 0; alt_idx < num_alts; ++ alt_idx )
+    coeff = (int16_t*) alf_data->alf_luma_coeff;
+    clip = (int16_t*) alf_data->alf_luma_clip_idx;
+    for( int filter_idx = 0; filter_idx < num_filters; filter_idx++ )
     {
-        coeff = (int16_t*) alf_data->alf_luma_coeff;
-        clip = (int16_t*) alf_data->alf_luma_clip_idx;
-        for( int filter_idx = 0; filter_idx < num_filters; filter_idx++ )
-        {
-            coeff[filter_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = factor;
-        }
+        coeff[filter_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = factor;
+    }
 
-        for( int class_idx = 0; class_idx < num_classes; class_idx++ )
+    for( int class_idx = 0; class_idx < num_classes; class_idx++ )
+    {
+        int filter_idx = alf_data->alf_luma_coeff_delta_idx[class_idx];
+        for (int coeffIdx = 0; coeffIdx < num_coeff_minus1; ++coeffIdx)
         {
-            int filter_idx = alf_data->alf_luma_coeff_delta_idx[class_idx];
-            for (int coeffIdx = 0; coeffIdx < num_coeff_minus1; ++coeffIdx)
-            {
-                alf->coeff_final[class_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] = coeff[filter_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx];
-            }
-            alf->coeff_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = factor;
-            alf->clip_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = alf->alf_clipping_values[0][0];
-            for( int coeffIdx = 0; coeffIdx < num_coeff_minus1; ++coeffIdx )
-            {
-                int clipIdx = alf_data->alf_luma_clip_flag ? (clip + filter_idx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] : 0;
-                (alf->clip_final + class_idx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] = alf->alf_clipping_values[0][clipIdx];
-            }
-            alf->clip_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = alf->alf_clipping_values[0][0];
+            alf->coeff_final[class_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] = coeff[filter_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx];
         }
+        alf->coeff_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = factor;
+        alf->clip_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = alf->alf_clipping_values[0][0];
+        for( int coeffIdx = 0; coeffIdx < num_coeff_minus1; ++coeffIdx )
+        {
+            int clipIdx = alf_data->alf_luma_clip_flag ? (clip + filter_idx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] : 0;
+            (alf->clip_final + class_idx * MAX_NUM_ALF_LUMA_COEFF)[coeffIdx] = alf->alf_clipping_values[0][clipIdx];
+        }
+        alf->clip_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = alf->alf_clipping_values[0][0];
     }
 }
 
@@ -238,16 +235,11 @@ void alf_reconstructCoeff_chroma(RCNALF* alf, const struct OVALFData* alf_data)
 }
 
 void rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t luma_flag, uint8_t chroma_flag)
-{
-    const struct OVALFData* alf_data = ctudec->alf_info.aps_alf_data;
-    const struct OVALFData* alf_data_c = ctudec->alf_info.aps_alf_data_c;
-
+{ 
     if (luma_flag){
-        // for (int i = 0; i < sh.slice_num_alf_aps_ids_luma; i++)
-        // {
-        //     //ATTENTION: pourquoi pas un tableau comme VTM -> parce que toujours une seule boucle
-        //     int apsIdx = sh.slice_alf_aps_id_luma;
-        //     int ret = ff_vvc_activate_alf(vvc_ctx, apsIdx);
+        for (int i = 0; i < ctudec->alf_info.num_alf_aps_ids_luma; i++)
+        {
+            const struct OVALFData* alf_data = ctudec->alf_info.aps_alf_data[i];
 
             alf_reconstructCoeff_luma(alf, alf_data);
 
@@ -255,12 +247,11 @@ void rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t 
                 alf->coeff_aps_luma[0][j] = alf->coeff_final[j];
                 alf->clip_aps_luma[0][j] = alf->clip_final[j];
             }
-        // }
+        }
     }
 
     if (chroma_flag){
-        // int apsIdx = sh.slice_alf_aps_id_chroma;
-        // int ret = ff_vvc_activate_alf(vvc_ctx, apsIdx);
+        const struct OVALFData* alf_data_c = ctudec->alf_info.aps_alf_data_c;
         alf_reconstructCoeff_chroma(alf, alf_data_c);
     }
 }

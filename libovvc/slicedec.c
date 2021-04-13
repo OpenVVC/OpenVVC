@@ -395,7 +395,10 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
 
     if(alf_info->alf_luma_enabled_flag || alf_info->alf_cb_enabled_flag || alf_info->alf_cr_enabled_flag){
         alf_info->num_alf_aps_ids_luma  = sh->sh_num_alf_aps_ids_luma;
-        alf_info->aps_alf_data   = &prms->aps_alf->aps_alf_data;
+        for (int i = 0; i < alf_info->num_alf_aps_ids_luma; i++)
+        {
+            alf_info->aps_alf_data[i] = &prms->aps_alf[i]->aps_alf_data;
+        }
         alf_info->aps_alf_data_c = &prms->aps_alf_c->aps_alf_data;
         if(!alf_info->ctb_alf_params){
             alf_info->ctb_alf_params = ov_malloc(sizeof(ALFParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
