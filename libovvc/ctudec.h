@@ -124,6 +124,9 @@ struct ALFInfo
     uint8_t ctb_cc_alf_flag_line[2][32];
 
     const struct OVALFData* aps_alf_data;
+    const struct OVALFData* aps_alf_data_c;
+    const struct OVALFData* aps_cc_alf_data_cb;
+    const struct OVALFData* aps_cc_alf_data_cr;
 
     uint8_t cc_alf_cb_enabled_flag;
     uint8_t cc_alf_cr_enabled_flag;

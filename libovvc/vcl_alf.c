@@ -59,9 +59,7 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu
     const uint8_t up_ctb_alf_flag   = (ctb_rs - nb_ctu_w) >= 0 ? alf_info->ctb_alf_flag_line[ctb_col] : 0;
    
     uint8_t tile_group_num_aps  = alf_info->num_alf_aps_ids_luma;
-    uint8_t num_alf_chroma_alternative;
     if(alf_luma_flag){
-        num_alf_chroma_alternative = alf_info->aps_alf_data->alf_chroma_num_alt_filters_minus1 + 1;
         ctx  = ctu_neighbour_flags & CTU_LFT_FLG  ? ((left_ctb_alf_flag & 4) >> 2) : 0;
         ctx += ctu_neighbour_flags & CTU_UP_FLG   ? ((up_ctb_alf_flag   & 4) >> 2) : 0;
         ret_luma = ovcabac_ae_read(cabac_ctx,&cabac_state[CTB_ALF_FLAG_CTX_OFFSET + ctx]);
@@ -72,7 +70,9 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu
 
     uint8_t cb_alternative = 0;
     uint8_t cr_alternative = 0;
+    uint8_t num_alf_chroma_alternative;
     if(alf_cb_flag){
+        num_alf_chroma_alternative = alf_info->aps_alf_data_c->alf_chroma_num_alt_filters_minus1 + 1;
         int decoded = 0;
         ctx  = ctu_neighbour_flags & CTU_LFT_FLG ? ((left_ctb_alf_flag & 2) >> 1) : 0;
         ctx += ctu_neighbour_flags & CTU_UP_FLG   ? ((up_ctb_alf_flag   & 2) >> 1) : 0;
@@ -84,6 +84,7 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu
         cb_alternative = decoded;
     }
     if(alf_cr_flag){
+        num_alf_chroma_alternative = alf_info->aps_alf_data_c->alf_chroma_num_alt_filters_minus1 + 1;
         int decoded = 0;
         ctx  = ctu_neighbour_flags & CTU_LFT_FLG ? (left_ctb_alf_flag & 1) : 0;
         ctx += ctu_neighbour_flags & CTU_UP_FLG   ? (up_ctb_alf_flag   & 1) : 0;
@@ -119,7 +120,7 @@ ovcabac_read_ae_cc_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_
     for ( int comp_id = 0; comp_id < 2; comp_id++){
 
         if ((comp_id==0 && cc_alf_cb_flag) || (comp_id==1 && cc_alf_cr_flag)){
-            const OVALFData* alf_data = alf_info->aps_alf_data;
+            const OVALFData* alf_data = (comp_id==0) ? alf_info->aps_cc_alf_data_cb : alf_info->aps_cc_alf_data_cr;
 
             const uint8_t left_ctb_cc_alf_flag = alf_info->left_ctb_cc_alf_flag[comp_id];
             int           ctb_col              = ctb_rs % nb_ctu_w;

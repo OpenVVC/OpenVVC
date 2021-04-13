@@ -373,10 +373,8 @@ update_sh_info(struct SHInfo *const sh_info, const OVSH *const sh)
 
 
 static const OVAPS *
-retrieve_aps_alf(const OVNVCLCtx *const nvcl_ctx, const OVSH *const sh)
+retrieve_aps_alf(const OVNVCLCtx *const nvcl_ctx, uint8_t aps_id)
 {
-    //TODO: comment savoir a quel indice aller dans sh_alf_aps_id_luma?
-    uint8_t aps_id = sh->sh_alf_aps_id_luma[0];
     const OVAPS *aps = NULL;
     if (aps_id < 16) {
         aps = nvcl_ctx->aps_list[aps_id];
@@ -385,6 +383,7 @@ retrieve_aps_alf(const OVNVCLCtx *const nvcl_ctx, const OVSH *const sh)
     }
     return aps;
 }
+
 
 static const OVAPS *
 retrieve_aps_lmcs(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
@@ -468,7 +467,13 @@ decinit_update_params(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
     const OVPH *const ph = nvcl_ctx->ph;
     const OVPPS *const pps = retrieve_pps(nvcl_ctx, ph);
     const OVSPS *const sps = retrieve_sps(nvcl_ctx, pps);
-    const OVAPS *const aps_alf = retrieve_aps_alf(nvcl_ctx, sh);
+
+    //TODO: comment savoir a quel indice aller dans sh_alf_aps_id_luma?
+    uint8_t aps_id = sh->sh_alf_aps_id_luma[0];
+    const OVAPS *const aps_alf = retrieve_aps_alf(nvcl_ctx, aps_id);
+    const OVAPS *const aps_alf_c = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_aps_id_chroma);
+    const OVAPS *const aps_cc_alf_cb = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_cc_cb_aps_id);
+    const OVAPS *const aps_cc_alf_cr = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_cc_cr_aps_id);
     const OVAPS *const aps_lmcs = retrieve_aps_lmcs(nvcl_ctx, ph);
 
     if (!sh || !ph || !pps || !sps) {
@@ -516,6 +521,15 @@ decinit_update_params(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
 
     if (ps->aps_alf != aps_alf) {
         ps->aps_alf = aps_alf;
+    }
+    if (ps->aps_alf_c != aps_alf_c) {
+        ps->aps_alf_c = aps_alf_c;
+    }
+    if (ps->aps_cc_alf_cb != aps_cc_alf_cb) {
+        ps->aps_cc_alf_cb = aps_cc_alf_cb;
+    }
+    if (ps->aps_cc_alf_cr != aps_cc_alf_cr) {
+        ps->aps_cc_alf_cr = aps_cc_alf_cr;
     }
     if (ps->aps_lmcs != aps_lmcs) {
         ps->aps_lmcs = aps_lmcs;

@@ -240,6 +240,7 @@ void alf_reconstructCoeff_chroma(RCNALF* alf, const struct OVALFData* alf_data)
 void rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t luma_flag, uint8_t chroma_flag)
 {
     const struct OVALFData* alf_data = ctudec->alf_info.aps_alf_data;
+    const struct OVALFData* alf_data_c = ctudec->alf_info.aps_alf_data_c;
 
     if (luma_flag){
         // for (int i = 0; i < sh.slice_num_alf_aps_ids_luma; i++)
@@ -260,7 +261,7 @@ void rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t 
     if (chroma_flag){
         // int apsIdx = sh.slice_alf_aps_id_chroma;
         // int ret = ff_vvc_activate_alf(vvc_ctx, apsIdx);
-        alf_reconstructCoeff_chroma(alf, alf_data);
+        alf_reconstructCoeff_chroma(alf, alf_data_c);
     }
 }
 
@@ -846,8 +847,8 @@ void alf_filterBlkLuma(ALFClassifier **classifier, int16_t *const dst, int16_t *
 
 void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pic)
 {
-    struct ALFInfo alf_info = ctudec->alf_info;
-    if (!alf_info.alf_luma_enabled_flag && !alf_info.alf_cb_enabled_flag && !alf_info.alf_cr_enabled_flag){
+    struct ALFInfo* alf_info = &ctudec->alf_info;
+    if (!alf_info->alf_luma_enabled_flag && !alf_info->alf_cb_enabled_flag && !alf_info->alf_cr_enabled_flag){
     return;
     }
     struct OVFilterBuffers fb = ctudec->filter_buffers;
@@ -857,7 +858,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
     uint8_t log2_ctb_size = pinfo->log2_ctu_s;
     int ctu_width  = 1 << log2_ctb_size;
 
-    RCNALF* alf = &alf_info.rcn_alf;
+    RCNALF* alf = &alf_info->rcn_alf;
     for (int ctb_x = 0; ctb_x < nb_ctu_w; ctb_x++) {
         //TODO: change when applied on rectangular region
         int ctb_y = ctb_y_pic;
@@ -875,7 +876,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
         is_border = (yPos + ctu_width >= ctudec->pic_h) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
 
         int ctu_rs_addr = ctb_x + ctb_y * nb_ctu_w ;
-        ALFParamsCtu alf_params_ctu = alf_info.ctb_alf_params[ctu_rs_addr];
+        ALFParamsCtu alf_params_ctu = alf_info->ctb_alf_params[ctu_rs_addr];
 
         int16_t **src = fb.filter_region;
         ctudec_extend_filter_region(ctudec, xPos, yPos, is_border);
@@ -944,10 +945,11 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
                     ctu_width/chr_scale, (( yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_width - ALF_VB_POS_ABOVE_CTUROW_LUMA)/chr_scale));
             }
 
-            if ((c_idx==1 && alf_info.cc_alf_cb_enabled_flag) || (c_idx==2 && alf_info.cc_alf_cr_enabled_flag))
+            if ((c_idx==1 && alf_info->cc_alf_cb_enabled_flag) || (c_idx==2 && alf_info->cc_alf_cr_enabled_flag))
             {
-                const struct OVALFData* alf_data = alf_info.aps_alf_data;
-                const int filt_idx = alf_info.ctb_cc_alf_filter_idx[c_idx - 1][ctu_rs_addr];
+                const OVALFData* alf_data = (c_idx==1) ? alf_info->aps_cc_alf_data_cb : alf_info->aps_cc_alf_data_cr;
+
+                const int filt_idx = alf_info->ctb_cc_alf_filter_idx[c_idx - 1][ctu_rs_addr];
                 if (filt_idx != 0)
                 {
                     //TODO: maybe reverse buffer use, the alf reconstructed pixels are in the pic frame.

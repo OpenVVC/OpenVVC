@@ -366,7 +366,6 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
     const OVSPS *const sps = prms->sps;
     const OVSH *const sh = prms->sh;
     const OVPH *const ph = prms->ph;
-    const struct OVALFData* aps_alf_data   = &prms->aps_alf->aps_alf_data;
     const struct OVLMCSData* aps_lmcs_data = &prms->aps_lmcs->aps_lmcs_data;
 
     uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
@@ -396,7 +395,8 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
 
     if(alf_info->alf_luma_enabled_flag || alf_info->alf_cb_enabled_flag || alf_info->alf_cr_enabled_flag){
         alf_info->num_alf_aps_ids_luma  = sh->sh_num_alf_aps_ids_luma;
-        alf_info->aps_alf_data = aps_alf_data;
+        alf_info->aps_alf_data   = &prms->aps_alf->aps_alf_data;
+        alf_info->aps_alf_data_c = &prms->aps_alf_c->aps_alf_data;
         if(!alf_info->ctb_alf_params){
             alf_info->ctb_alf_params = ov_malloc(sizeof(ALFParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
         } else {
@@ -417,7 +417,8 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
     alf_info->cc_alf_cb_enabled_flag = sh->sh_alf_cc_cb_enabled_flag;
     alf_info->cc_alf_cr_enabled_flag = sh->sh_alf_cc_cr_enabled_flag;
     if(alf_info->cc_alf_cb_enabled_flag || alf_info->cc_alf_cr_enabled_flag){
-        alf_info->aps_alf_data = aps_alf_data;
+        alf_info->aps_cc_alf_data_cb   = &prms->aps_cc_alf_cb->aps_alf_data;
+        alf_info->aps_cc_alf_data_cr = &prms->aps_cc_alf_cr->aps_alf_data;
         if(!alf_info->ctb_cc_alf_filter_idx[0]){
             alf_info->ctb_cc_alf_filter_idx[0] = ov_malloc(sizeof(uint8_t) * nb_ctb_pic_w * nb_ctb_pic_h);
             alf_info->ctb_cc_alf_filter_idx[1] = ov_malloc(sizeof(uint8_t) * nb_ctb_pic_w * nb_ctb_pic_h);
