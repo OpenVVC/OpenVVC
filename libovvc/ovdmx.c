@@ -268,7 +268,7 @@ ovdmx_close(OVVCDmx *vvcdmx)
     }
 
 fail:
-    ov_log(vvcdmx, 3, "Trying to close a something not a demuxer.\n");
+    ov_log(vvcdmx, OVLOG_ERROR, "Trying to close a something not a demuxer.\n");
     return -1;
 }
 

@@ -852,7 +852,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     }
 
 
-    ov_log(NULL, OVLOG_INFO, "DPB start new picture POC: %d\n", (*pic_p)->poc);
+    ov_log(NULL, OVLOG_TRACE, "DPB start new picture POC: %d\n", (*pic_p)->poc);
 
     /* If the picture is not an IDR Picture we set all flags to
      * FIXME in VVC we might still get some ref pic list in IDR

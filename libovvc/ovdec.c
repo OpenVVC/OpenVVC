@@ -421,7 +421,7 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
         /* FIXME handle sbdec list */
         sldec = dec->subdec_list;
         if (!sldec->pic) {
-            ov_log(dec, OVLOG_INFO, "No output picture\n");
+            ov_log(dec, OVLOG_TRACE, "No output picture\n");
             return 0;
         }
 
