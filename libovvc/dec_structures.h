@@ -3,6 +3,7 @@
 
 #include "ovdefs.h"
 #include "nvcl.h"
+#include "post_proc.h"
 
 #define OV_BOUNDARY_LEFT_RECT      (1 << 1)
 #define OV_BOUNDARY_UPPER_RECT     (1 << 3)

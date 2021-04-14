@@ -55,6 +55,7 @@ typedef void (*PlanarFunc)(const uint16_t* const src_above,
                      const uint16_t* const src_left, uint16_t* const dst,
                      ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h);
 
+
 /**
  * The Context put together all functions used by strategies.
  */

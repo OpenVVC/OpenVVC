@@ -598,6 +598,7 @@ ovdpb_bump_frame(OVDPB *dpb, uint32_t poc, uint16_t output_cvs_id)
     }
 }
 
+
 static int
 mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *const rpl0,
                    const struct OVRPL *const rpl1, OVSliceDec *const sldec)

@@ -7,6 +7,9 @@
 #include "ovdpb_internal.h"
 #include "ovdec_internal.h"
 
+struct DPBInternal;
+
+
 /* OVDPB is intended to be in charge of Frame pool management
    Coded Video sequence switch and RPL list management */
 

@@ -531,7 +531,7 @@ static int8_t  fg_data_base[NUM_CUT_OFF_FREQ][NUM_CUT_OFF_FREQ][DATA_BASE_SIZE][
 
 
 /* Function to calculate block average */
-int16_t blockAverage(int16_t *dstSampleBlk8, uint32_t widthComp, uint16_t *pNumSamples,
+int16_t fg_compute_block_avg(int16_t *dstSampleBlk8, uint32_t widthComp, uint16_t *pNumSamples,
                       uint8_t ySize, uint8_t xSize, uint8_t bitDepth)
 {
   uint32_t blockAvg   = 0;
@@ -560,7 +560,7 @@ int16_t blockAverage(int16_t *dstSampleBlk8, uint32_t widthComp, uint16_t *pNumS
   return blockAvg;
 }
 
-void deblockGrainStripe(int32_t *grainStripe, uint32_t widthComp, uint32_t strideComp)
+void fg_deblock_grain_stripe(int32_t *grainStripe, uint32_t widthComp, uint32_t strideComp)
 {
   int32_t left1, left0, right0, right1;
   uint32_t pos8, vertCtr;
@@ -580,7 +580,7 @@ void deblockGrainStripe(int32_t *grainStripe, uint32_t widthComp, uint32_t strid
   return;
 }
 
-void blendStripe(int16_t *dstSampleOffsetY, int16_t *srcSampleOffsetY, int32_t *grainStripe, uint32_t widthComp, uint32_t blockHeight, uint8_t bitDepth)
+void fg_blend_stripe(int16_t *dstSampleOffsetY, int16_t *srcSampleOffsetY, int32_t *grainStripe, uint32_t widthComp, uint32_t blockHeight, uint8_t bitDepth)
 {
   uint32_t  k, l;
   int32_t   grainSample;
@@ -610,8 +610,8 @@ uint32_t prng(uint32_t x_r)
   return x_r;
 }
 
-// void simulateGrainBlk8x8(int32_t *grainStripe, uint32_t grainStripeOffsetBlk8, int8_t****  dataBase,
-void simulateGrainBlk8x8(int32_t *grainStripe, uint32_t grainStripeOffsetBlk8,
+// void fg_simulate_grain_blk8x8(int32_t *grainStripe, uint32_t grainStripeOffsetBlk8, int8_t****  dataBase,
+void fg_simulate_grain_blk8x8(int32_t *grainStripe, uint32_t grainStripeOffsetBlk8,
   uint32_t width, uint8_t log2ScaleFactor, int16_t scaleFactor, uint32_t kOffset, uint32_t lOffset, uint8_t h, uint8_t v, uint32_t xSize)
 {
   uint32_t k, l;
@@ -626,8 +626,8 @@ void simulateGrainBlk8x8(int32_t *grainStripe, uint32_t grainStripeOffsetBlk8,
   return;
 }
 
-// void dataBaseGen(int8_t****  dataBase, uint8_t enableDeblocking)
-void dataBaseGen( uint8_t enableDeblocking)
+// void fg_data_base_generation(int8_t****  dataBase, uint8_t enableDeblocking)
+void fg_data_base_generation( uint8_t enableDeblocking)
 {
   uint32_t  pseudoRandValEhv;
   uint8_t   h, v; /* Horizaontal and vertical cut off frequencies (+2)*/
@@ -722,7 +722,7 @@ void dataBaseGen( uint8_t enableDeblocking)
 }
 
 /* Down converts the chroma model values for 4:2:0 and 4:2:2 chroma_formats */
-void compute_model_values(struct OVSEIFGrain* fgrain, int16_t intensityInterval[3][MAX_NUM_INTENSITIES])
+void fg_compute_model_values(struct OVSEIFGrain* fgrain, int16_t intensityInterval[3][MAX_NUM_INTENSITIES])
 {   
     /* validation of intensity intervals and  */
     for (int compCtr = 0; compCtr < 3; compCtr++)
@@ -764,7 +764,8 @@ void compute_model_values(struct OVSEIFGrain* fgrain, int16_t intensityInterval[
 }
 
 
-void grainSynthesizeAndBlend(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain* fgrain, int pic_w, int pic_h, int poc, uint8_t isIdrPic, uint8_t enableDeblocking)
+void fg_grain_apply_pic(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain* fgrain, int pic_w, 
+                            int pic_h, int poc, uint8_t isIdrPic, uint8_t enableDeblocking)
 {
     uint8_t   compCtr, blkId; /* number of color components */
     uint8_t   log2ScaleFactor, h, v;
@@ -814,7 +815,10 @@ void grainSynthesizeAndBlend(int16_t** dstComp, int16_t** srcComp, struct OVSEIF
 
     int16_t intensityInterval[3][MAX_NUM_INTENSITIES] ;
     memset(intensityInterval, -1, sizeof(intensityInterval));
-    compute_model_values(fgrain, intensityInterval);
+    fg_compute_model_values(fgrain, intensityInterval);
+
+    //TODO: do only if not done before
+    fg_data_base_generation(enableDeblocking);
 
     if (isIdrPic)
     {
@@ -853,7 +857,7 @@ void grainSynthesizeAndBlend(int16_t** dstComp, int16_t** srcComp, struct OVSEIF
                 grainStripeOffsetBlk8 = grainStripeOffset + offsetBlk8x8;
 
                 srcSampleBlk8 = srcSampleBlk16 + offsetBlk8x8;
-                blockAvg      = blockAverage(srcSampleBlk8, strideComp[compCtr], &numSamples,
+                blockAvg      = fg_compute_block_avg(srcSampleBlk8, strideComp[compCtr], &numSamples,
                                              OVMIN(8, (heightComp[compCtr] - y - yOffset8x8)),
                                              OVMIN(8, (widthComp[compCtr] - x - xOffset8x8)),
                                              bitDepth);
@@ -879,8 +883,8 @@ void grainSynthesizeAndBlend(int16_t** dstComp, int16_t** srcComp, struct OVSEIF
                     v           =  fgrain->fg_comp_model_value[compCtr][intensityInt][2] - 2;
 
                     /* 8x8 block grain simulation */
-                    // simulateGrainBlk8x8(grainStripe, grainStripeOffsetBlk8, m_pGrainSynt, strideComp[compCtr],
-                    simulateGrainBlk8x8(grainStripe, grainStripeOffsetBlk8, strideComp[compCtr],
+                    // fg_simulate_grain_blk8x8(grainStripe, grainStripeOffsetBlk8, m_pGrainSynt, strideComp[compCtr],
+                    fg_simulate_grain_blk8x8(grainStripe, grainStripeOffsetBlk8, strideComp[compCtr],
                                         log2ScaleFactor, scaleFactor, kOffset, lOffset, h, v, OVMIN(8, (widthComp[compCtr] - x - xOffset8x8)));
                   }/* only if average falls in any interval */
                 } /* includes corner case handling */
@@ -894,10 +898,10 @@ void grainSynthesizeAndBlend(int16_t** dstComp, int16_t** srcComp, struct OVSEIF
             /* deblocking at the vertical edges of 8x8 at 16xwidth*/
             if (enableDeblocking)
             {
-              deblockGrainStripe(grainStripe, widthComp[compCtr], strideComp[compCtr]);
+              fg_deblock_grain_stripe(grainStripe, widthComp[compCtr], strideComp[compCtr]);
             }
             /* Blending of size 16xwidth*/
-            blendStripe(dstSampleOffsetY, srcSampleOffsetY, grainStripe, strideComp[compCtr], OVMIN(16, (heightComp[compCtr] - y)), bitDepth);
+            fg_blend_stripe(dstSampleOffsetY, srcSampleOffsetY, grainStripe, strideComp[compCtr], OVMIN(16, (heightComp[compCtr] - y)), bitDepth);
             dstSampleOffsetY += OVMIN(16, heightComp[compCtr] - y) * strideComp[compCtr];
             srcSampleOffsetY += OVMIN(16, heightComp[compCtr] - y) * strideComp[compCtr];
 
