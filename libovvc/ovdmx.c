@@ -409,6 +409,31 @@ static struct NALUnitListElem *pop_nalu_elem(struct NALUnitsList *list)
 }
 
 static int
+extract_nal_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
+{
+    struct NALUnitsList *nalu_list = &dmx->nalu_list;
+    struct NALUnitListElem *current_nalu = pop_nalu_elem(nalu_list);
+
+    if (!current_nalu && !eof) {
+        struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
+        int ret = 0;
+
+        ret = refill_reader_cache(cache_ctx, dmx->io_str);
+
+        ret = extract_cache_segments(dmx, cache_ctx);
+
+        current_nalu = pop_nalu_elem(nalu_list);
+    }
+
+    if (current_nalu) {
+
+        append_nalu_elem(dst_list, current_nalu);
+    }
+
+    return -(current_nalu == NULL && eof);
+}
+
+static int
 extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
 {
     struct NALUnitsList *nalu_list = &dmx->nalu_list;
@@ -520,13 +545,15 @@ ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
         return OV_ENOMEM;
     }
 
+    #if 0
     if (/*!eof &&*/ dmx->nalu_list.first_nalu) {
         ret = extract_access_unit(dmx, &pending_nalu_list);
 
         /* FIXME return */
 
 
-        if (ret < 0) {
+        if (!eof && ret < 0) {
+            ov_log(dmx, OVLOG_ERROR, "No valid Access Unit found \n");
             free_nalu_list(&pending_nalu_list);
             ov_free(pu);
             return ret;
@@ -536,6 +563,15 @@ ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
         *dst_pu = NULL;
         return -1;
     }
+    #else
+    ret = extract_nal_unit(dmx, &pending_nalu_list);
+    if (!eof && ret < 0) {
+        ov_log(dmx, OVLOG_ERROR, "No valid Access Unit found \n");
+        free_nalu_list(&pending_nalu_list);
+        ov_free(pu);
+        return ret;
+    }
+    #endif
 
     ret = convert_nalu_list_to_pu(pu, &pending_nalu_list);
     if (ret < 0) {
