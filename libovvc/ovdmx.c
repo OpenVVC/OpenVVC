@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "ovutils.h"
+#include "overror.h"
 #include "ovmem.h"
 #include "mempool.h"
 #include "mempool_internal.h"
@@ -614,7 +615,7 @@ append_rbsp_segment_to_cache(struct ReaderCache *const cache_ctx,
     ptrdiff_t sgmt_size = sgmt_ctx->end_p - sgmt_ctx->start_p;
     /* FIXME use an assert instead this is not supposed to happen */
     if (sgmt_size <= 0) {
-        ov_log(NULL, 2, "Invalid segment\n");
+        ov_log(NULL, OVLOG_ERROR, "Invalid segment\n");
         return -1;
     }
 
@@ -653,7 +654,7 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
     enum OVNALUType nalu_type = (bytestream[4] >> 3) & 0x1F;
 
     if (!nalu_elem) {
-        printf("NALU alloc fail\n");
+        ov_log(dmx, OVLOG_ERROR, "Could not alloc NALU element\n");
         return OV_ENOMEM;
     }
 
@@ -731,7 +732,7 @@ process_emulation_prevention_byte(OVVCDmx *const dmx, struct ReaderCache *const 
     if (epb_info->nb_epb + 1 > (epb_info->cache_size)/sizeof(*epb_info->epb_pos)) {
         int ret = extend_epb_cache(epb_info);
         if (ret < 0) {
-            printf("ERROR extending cache\n");
+            ov_log(dmx, OVLOG_ERROR, "ERROR extending cache\n");
             return ret;
         }
     }
@@ -774,7 +775,7 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
             int ret;
             ret = ovannexb_check_stc_or_epb(bytestream);
             if (ret < 0) {
-                ov_log(dmx, 3, "Invalid raw VVC data\n");
+                ov_log(dmx, OVLOG_ERROR, "Invalid raw VVC data\n");
                 ret = OV_INVALID_DATA;
             }
 
@@ -797,7 +798,7 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
                     /* FIXME we should not have something different from STC or
                      * EPB here
                      */
-                    ov_log(dmx, 2, "Invalid raw VVC data\n");
+                    ov_log(dmx, OVLOG_ERROR, "Invalid raw VVC data\n");
                     ret = OV_INVALID_DATA;
                     break;
                 }
