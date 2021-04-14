@@ -609,12 +609,17 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
 
 
     #if 1
+    /*FIXME TMVP disabled for 4x8 8x4 blocks*/
     if (inter_ctx->tmvp_enabled) {
         const struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
         uint64_t c1_col;
         uint64_t c0_col;
+        uint64_t c1_col1;
+        uint64_t c0_col1;
         uint8_t cand_c0;
         uint8_t cand_c1;
+        uint8_t cand_c01;
+        uint8_t cand_c11;
         int c1_x = pb_x + (nb_pb_w >> 1);
         int c1_y = pb_y + (nb_pb_h >> 1);
         int c0_x = pb_x + nb_pb_w;
@@ -632,9 +637,13 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
 
         c0_col  = tmvp->dir_map_v0[c0_x + 1];
         c1_col  = tmvp->dir_map_v0[c1_x + 1];
+        c0_col1 = tmvp->dir_map_v1[c0_x + 1];
+        c1_col1 = tmvp->dir_map_v1[c1_x + 1];
 
         cand_c0  = !!(c0_col  & POS_MASK(pb_y, nb_pb_h));
+        cand_c01 = !!(c0_col1 & POS_MASK(pb_y, nb_pb_h));
         cand_c1  = !!(c1_col  & POS_MASK(pb_y, nb_pb_h >> 1));
+        cand_c11 = !!(c1_col1 & POS_MASK(pb_y, nb_pb_h >> 1));
 
         if (cand_c0) {
             int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
@@ -651,6 +660,20 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
             if (nb_cand++ == merge_idx)
                 return c0;
 
+        } else if (cand_c01) {
+            int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+            int scale = tmvp->scale01;
+            #if 0
+            OVMV c0 = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
+            #else
+            OVMV c0 = tmvp->mvs1[pos_in_buff];
+            #endif
+            c0.x = tmvp_round_mv(c0.x);
+            c0.y = tmvp_round_mv(c0.y);
+            c0 = tmvp_scale_mv(scale, c0);
+            cand[nb_cand] = c0;
+            if (nb_cand++ == merge_idx)
+                return c0;
         } else if (cand_c1) {
             int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
             int scale = tmvp->scale00;
@@ -658,6 +681,20 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
             OVMV c1 = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
             #else
             OVMV c1 = tmvp->mvs0[pos_in_buff];
+            #endif
+            c1.x = tmvp_round_mv(c1.x);
+            c1.y = tmvp_round_mv(c1.y);
+            c1 = tmvp_scale_mv(scale , c1);
+            cand[nb_cand] = c1;
+            if (nb_cand++ == merge_idx)
+                return c1;
+        } else if (cand_c11) {
+            int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+            int scale = tmvp->scale01;
+            #if 0
+            OVMV c1 = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
+            #else
+            OVMV c1 = tmvp->mvs1[pos_in_buff];
             #endif
             c1.x = tmvp_round_mv(c1.x);
             c1.y = tmvp_round_mv(c1.y);
