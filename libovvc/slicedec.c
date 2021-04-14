@@ -17,8 +17,6 @@
 #include "ovthreads.h"
 #include "rcn_sao.h"
 #include "rcn_lmcs.h"
-//TODO: do not use here
-#include "rcn_film_grain.h"
 
 /* TODO define in a header */
 enum SliceType {
@@ -1147,13 +1145,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         ctb_y++;
     }
     
-    //TODO: do not apply here
-    dataBaseGen(1);
-    struct Frame* frame = ctudec->filter_buffers.pic_frame;
-    int16_t* decComp[3] = {(int16_t*)frame->data[0], (int16_t*)frame->data[1], (int16_t*)frame->data[2]};
-    // grainSynthesizeAndBlend(int16_t** decComp, struct OVSEIFGrain* fgrain, int pic_w, int pic_h, int poc, uint8_t isIdrPic, uint8_t enableDeblocking)
-    grainSynthesizeAndBlend(decComp, prms->sei->sei_fg, ctudec->pic_w, ctudec->pic_h, sldec->pic->poc, 0, 1);
-
     ctudec_free_filter_buffers(ctudec);
     ctudec_free_intra_line_buff(ctudec);
 

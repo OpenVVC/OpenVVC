@@ -127,6 +127,7 @@ nvcl_decode_nalu_sei(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
         case FILM_GRAIN_CHARACTERISTICS:
             if(!sei->sei_fg)
                 sei->sei_fg = ov_mallocz(sizeof(struct OVSEIFGrain));
+            sei->post_proc = 1;
             nvcl_film_grain_read(rdr, sei->sei_fg, nvcl_ctx);
             break;
         default:

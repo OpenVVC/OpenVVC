@@ -14,6 +14,7 @@
 #include "slicedec.h"
 #include "dec_structures.h"
 #include "ovdec_internal.h"
+#include "rcn_post_proc.h"
 /* FIXME
  * To be removed includes
  */
@@ -432,6 +433,23 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
 
         out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
         ret = ovdpb_output_frame(dpb, frame_p, out_cvs_id);
+
+        //TODO: launch function ov_post_proc (pointer function)
+        if (dec->active_params.sei->post_proc){
+            struct Frame* frame = *frame_p;
+            struct Frame* frame_post_proc;
+            ret = dpbpriv_request_frame(&dpb->internal, &frame_post_proc);
+
+            int16_t* srcComp[3] = {(int16_t*)frame->data[0], (int16_t*)frame->data[1], (int16_t*)frame->data[2]};
+            int16_t* dstComp[3] = {(int16_t*)frame_post_proc->data[0], (int16_t*)frame_post_proc->data[1], 
+                                    (int16_t*)frame_post_proc->data[2]};
+            dataBaseGen(1);
+            grainSynthesizeAndBlend(dstComp, srcComp, dec->active_params.sei->sei_fg, 
+                frame->width[0], frame->height[0], frame->poc, 0, 1);
+
+            *frame_p = frame_post_proc;
+        }
+
         /*FIXME tmp */
         #if 0
         ovdpb_unref_pic(dec->dpb, sldec->pic, ~0);

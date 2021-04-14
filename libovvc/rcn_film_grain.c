@@ -4,7 +4,33 @@
 #include "ovutils.h"
 #include "ovmem.h"
 #include "nvcl_structures.h"
-#include "rcn_film_grain.h"
+
+
+#define MAX_NUM_INTENSITIES                             256 // Maximum nuber of intensity intervals supported in FGC SEI
+#define MAX_NUM_MODEL_VALUES                              6 // Maximum nuber of model values supported in FGC SEI
+
+#define MAX_ALLOWED_MODEL_VALUES        3
+#define MIN_LOG2SCALE_VALUE             2
+#define MAX_LOG2SCALE_VALUE             7
+#define FILM_GRAIN_MODEL_ID_VALUE       0
+#define BLENDING_MODE_VALUE             0
+#define MAX_STANDARD_DEVIATION          255
+#define MIN_CUT_OFF_FREQUENCY           2
+#define MAX_CUT_OFF_FREQUENCY           14
+#define DEFAULT_HORZ_CUT_OFF_FREQUENCY  8
+#define MAX_ALLOWED_COMP_MODEL_PAIRS    10
+
+#define GRAIN_SCALE                     6
+#define COLOUR_OFFSET_LUMA           0
+#define COLOUR_OFFSET_CR             85
+#define COLOUR_OFFSET_CB             170
+
+#define DATA_BASE_SIZE               64
+#define NUM_CUT_OFF_FREQ             13
+
+#define MSB16(x) ((x&0xFFFF0000)>>16)
+#define LSB16(x) (x&0x0000FFFF)
+#define BIT0(x) (x&0x1)
 
 
 /* static look up table definitions */
@@ -505,12 +531,8 @@ static int8_t  fg_data_base[NUM_CUT_OFF_FREQ][NUM_CUT_OFF_FREQ][DATA_BASE_SIZE][
 
 
 /* Function to calculate block average */
-int16_t blockAverage(int16_t *decSampleBlk8,
-                                          uint32_t widthComp,
-                                          uint16_t *pNumSamples,
-                                          uint8_t ySize,
-                                          uint8_t xSize,
-                                          uint8_t bitDepth)
+int16_t blockAverage(int16_t *dstSampleBlk8, uint32_t widthComp, uint16_t *pNumSamples,
+                      uint8_t ySize, uint8_t xSize, uint8_t bitDepth)
 {
   uint32_t blockAvg   = 0;
   uint16_t numSamples = 0;
@@ -520,7 +542,7 @@ int16_t blockAverage(int16_t *decSampleBlk8,
   {
     for (l = 0; l < xSize; l++)
     {
-      blockAvg += decSampleBlk8[(k*widthComp)+l];
+      blockAvg += dstSampleBlk8[(k*widthComp)+l];
       numSamples++;
     }
   }
@@ -558,7 +580,7 @@ void deblockGrainStripe(int32_t *grainStripe, uint32_t widthComp, uint32_t strid
   return;
 }
 
-void blendStripe(int16_t *decSampleOffsetY, int32_t *grainStripe, uint32_t widthComp, uint32_t blockHeight, uint8_t bitDepth)
+void blendStripe(int16_t *dstSampleOffsetY, int16_t *srcSampleOffsetY, int32_t *grainStripe, uint32_t widthComp, uint32_t blockHeight, uint8_t bitDepth)
 {
   uint32_t  k, l;
   int32_t   grainSample;
@@ -570,11 +592,11 @@ void blendStripe(int16_t *decSampleOffsetY, int32_t *grainStripe, uint32_t width
   {
     for (k = 0; k < widthComp; k++) /* x direction */
     {
-        decodeSample  =   decSampleOffsetY[k + (l*widthComp)];
+        decodeSample  =   srcSampleOffsetY[k + (l*widthComp)];
         grainSample   =   grainStripe[k + (l*widthComp)];
         grainSample   <<=  (bitDepth - 8);
         grainSample = (int32_t) OVMIN(OVMAX(0, grainSample + decodeSample), maxRange );
-        decSampleOffsetY[k + (l*widthComp)] = (int16_t)grainSample;
+        dstSampleOffsetY[k + (l*widthComp)] = (int16_t)grainSample;
     }
   }
   return;
@@ -742,14 +764,15 @@ void compute_model_values(struct OVSEIFGrain* fgrain, int16_t intensityInterval[
 }
 
 
-void grainSynthesizeAndBlend(int16_t** decComp, struct OVSEIFGrain* fgrain, int pic_w, int pic_h, int poc, uint8_t isIdrPic, uint8_t enableDeblocking)
+void grainSynthesizeAndBlend(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain* fgrain, int pic_w, int pic_h, int poc, uint8_t isIdrPic, uint8_t enableDeblocking)
 {
     uint8_t   compCtr, blkId; /* number of color components */
     uint8_t   log2ScaleFactor, h, v;
     uint8_t   bitDepth; /*grain bit depth and decoded bit depth are assumed to be same */
     uint8_t   color_offset[3];
     uint32_t  widthComp[3], heightComp[3], strideComp[3];
-    int16_t   *decSampleBlk16, *decSampleBlk8, *decSampleOffsetY;
+    int16_t   *dstSampleOffsetY;
+    int16_t   *srcSampleBlk16, *srcSampleBlk8, *srcSampleOffsetY;
     uint16_t  numSamples;
     int16_t   scaleFactor;
     uint32_t  kOffset, lOffset, grainStripeOffset, grainStripeOffsetBlk8, offsetBlk8x8;
@@ -808,7 +831,8 @@ void grainSynthesizeAndBlend(int16_t** decComp, struct OVSEIFGrain* fgrain, int 
           /* Seed initialization for current picture*/
           pseudoRandValEc = seedLUT[((picOffset + color_offset[compCtr]) % 256)];
 
-          decSampleOffsetY = decComp[compCtr];
+          dstSampleOffsetY = dstComp[compCtr];
+          srcSampleOffsetY = srcComp[compCtr];
 
           /* Loop of 16x16 blocks */
           for (y = 0; y < heightComp[compCtr]; y += 16)
@@ -819,7 +843,7 @@ void grainSynthesizeAndBlend(int16_t** decComp, struct OVSEIFGrain* fgrain, int 
             {
               /* start position offset of decoded sample in x direction */
               grainStripeOffset = x;
-              decSampleBlk16 = decSampleOffsetY + x;
+              srcSampleBlk16 = srcSampleOffsetY + x;
 
               for (blkId = 0; blkId < 4; blkId++)
               {
@@ -828,8 +852,8 @@ void grainSynthesizeAndBlend(int16_t** decComp, struct OVSEIFGrain* fgrain, int 
                 offsetBlk8x8 = xOffset8x8 + (yOffset8x8 * strideComp[compCtr]);
                 grainStripeOffsetBlk8 = grainStripeOffset + offsetBlk8x8;
 
-                decSampleBlk8 = decSampleBlk16 + offsetBlk8x8;
-                blockAvg      = blockAverage(decSampleBlk8, strideComp[compCtr], &numSamples,
+                srcSampleBlk8 = srcSampleBlk16 + offsetBlk8x8;
+                blockAvg      = blockAverage(srcSampleBlk8, strideComp[compCtr], &numSamples,
                                              OVMIN(8, (heightComp[compCtr] - y - yOffset8x8)),
                                              OVMIN(8, (widthComp[compCtr] - x - xOffset8x8)),
                                              bitDepth);
@@ -873,8 +897,9 @@ void grainSynthesizeAndBlend(int16_t** decComp, struct OVSEIFGrain* fgrain, int 
               deblockGrainStripe(grainStripe, widthComp[compCtr], strideComp[compCtr]);
             }
             /* Blending of size 16xwidth*/
-            blendStripe(decSampleOffsetY, grainStripe, strideComp[compCtr], OVMIN(16, (heightComp[compCtr] - y)), bitDepth);
-            decSampleOffsetY += OVMIN(16, heightComp[compCtr] - y) * strideComp[compCtr];
+            blendStripe(dstSampleOffsetY, srcSampleOffsetY, grainStripe, strideComp[compCtr], OVMIN(16, (heightComp[compCtr] - y)), bitDepth);
+            dstSampleOffsetY += OVMIN(16, heightComp[compCtr] - y) * strideComp[compCtr];
+            srcSampleOffsetY += OVMIN(16, heightComp[compCtr] - y) * strideComp[compCtr];
 
           } /* end of component loop */
         }

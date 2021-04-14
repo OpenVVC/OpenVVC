@@ -110,6 +110,7 @@ struct OVSEIFGrain
 /*Structure containing all SEI structures*/
 struct OVSEI
 {
+    uint8_t post_proc;
     struct OVSEIFGrain* sei_fg;
 };
 
