@@ -1167,13 +1167,18 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
 #if 1
 void
-rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInfo *const dbf_info,
+rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
             uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y)
 {
     const struct OVBuffInfo *const fbuff = &rcn_ctx->frame_buff;
 
     uint8_t nb_unit = (1 << log2_ctu_s) >> 2;
 
+    //dbf_info->edge_map_ver[nb_unit_w] &= -!last_x;
+    //dbf_info->edge_map_hor[nb_unit_h] &= -!last_y;
+
+    dbf_info->edge_map_ver_c[nb_unit] &= -!last_x;
+    dbf_info->edge_map_hor_c[nb_unit] &= -!last_y;
     #if 1
     vvc_dbf_ctu_hor(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_y);
     vvc_dbf_ctu_ver(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_x);

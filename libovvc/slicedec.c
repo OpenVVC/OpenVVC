@@ -729,6 +729,10 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
         //if (ctb_addr_rs <= nb_ctu_w)
         if (!ctb_addr_rs % nb_ctu_w) {
              ctudec->dbf_info.edge_map_ver[0] = 0;
+             ctudec->dbf_info.edge_map_ver_c[0] = 0;
+        } else if (ctb_addr_rs / nb_ctu_w == einfo->nb_ctu_h){
+             //ctudec->dbf_info.edge_map_hor[8] = 0;
+             //ctudec->dbf_info.edge_map_hor_c[10] = 0;
         }
 
         rcn_dbf_ctu(&ctudec->rcn_ctx, &ctudec->dbf_info, log2_ctb_s,
@@ -1213,6 +1217,8 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
                           #else
                           ctudec->dbf_disable = 1;
 #endif
+    ctudec->dbf_info.beta_offset = sh->sh_luma_beta_offset_div2 * 2;
+    ctudec->dbf_info.tc_offset = sh->sh_luma_tc_offset_div2 * 2;
 
     ctudec->lm_chroma_enabled = sps->sps_cclm_enabled_flag;
 
