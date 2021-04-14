@@ -174,13 +174,13 @@ init_openvvc_hdl(OVVCHdl *const ovvc_hdl)
 
     if (ret < 0) goto faildec;
 
-    ov_log(vvcdec, OVLOG_INFO, "Decoder init.\n");
+    ov_log(vvcdec, OVLOG_TRACE, "Decoder init.\n");
 
     ret = ovdmx_init(vvcdmx);
 
     if (ret < 0) goto faildmx;
 
-    ov_log(vvcdmx, OVLOG_INFO, "Demuxer init.\n");
+    ov_log(vvcdmx, OVLOG_TRACE, "Demuxer init.\n");
 
     return 0;
 
@@ -240,7 +240,6 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
     int nb_pic = 0;
     do {
         OVFrame *frame = NULL;
-        printf("NEW PIC %d\n", nb_pic);
         ret = ovdmx_extract_picture_unit(dmx, &pu);
         if (ret < 0) {
             break;
@@ -260,9 +259,10 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
                 if (frame) {
                     if (fout) {
                         write_decoded_frame_to_file(frame, fout);
+                        ++nb_pic;
                     }
 
-                    ov_log(NULL, OVLOG_INFO, "Received pic with POC: %d\n", frame->poc);
+                    ov_log(NULL, OVLOG_TRACE, "Received pic with POC: %d\n", frame->poc);
                     ovframe_unref(&frame);
                 }
             } while (frame);
@@ -273,7 +273,6 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
             ov_free_pu(&pu);
         }
 
-        ++nb_pic;
 
     } while (ret >= 0);
 
@@ -281,17 +280,18 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
         OVFrame *frame = NULL;
         ret = ovdec_drain_picture(dec, &frame);
         if (frame) {
-            ov_log(NULL, OVLOG_INFO, "Draining decoder\n");
+            ov_log(NULL, OVLOG_TRACE, "Draining decoder\n");
             if (fout) {
                 write_decoded_frame_to_file(frame, fout);
+                ++nb_pic;
             }
 
-            ov_log(NULL, OVLOG_INFO, "Draining last pictures with POC: %d\n", frame->poc);
+            ov_log(NULL, OVLOG_TRACE, "Draining last pictures with POC: %d\n", frame->poc);
             ovframe_unref(&frame);
         }
     }
 
-    printf("nb_pic : %d\n", nb_pic);
+    ov_log(NULL, OVLOG_INFO, "Decoded %d pictures\n", nb_pic);
 
     #endif
     return 1;
