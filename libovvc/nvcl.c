@@ -48,6 +48,13 @@ nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
         }
     }
 
+    nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->aps_list);
+    for (i = 0; i < nb_elems; ++i) {
+        if (nvcl_ctx->aps_list[i]) {
+            ov_freep(&nvcl_ctx->aps_list[i]);
+        }
+    }
+
     if (nvcl_ctx->ph) {
         ov_freep(&nvcl_ctx->ph);
     }

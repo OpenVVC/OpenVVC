@@ -385,7 +385,7 @@ is_access_unit_delimiter(struct NALUnitListElem *elem)
      * Since some AU delimitations rules involve POC computation
      * this require reading until slice header
      */
-    return elem->nalu.type == OVNALU_AUD || elem->nalu.type == OVNALU_SPS;
+    return elem->nalu.type == OVNALU_AUD || elem->nalu.type == OVNALU_PPS;
 }
 
 static struct NALUnitListElem *pop_nalu_elem(struct NALUnitsList *list)
@@ -439,6 +439,7 @@ extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
             do {
                 /* Move NALU from NALU list to pending list */
                 append_nalu_elem(dst_list, current_nalu);
+                printf("%d\n",current_nalu->nalu.type);
 
                 current_nalu = pop_nalu_elem(nalu_list);
 
