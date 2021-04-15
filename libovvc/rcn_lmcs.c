@@ -5,7 +5,7 @@
 #include "rcn_lmcs.h"
 
 void 
-rcn_derive_lmcs_params(uint16_t *const output_pivot, const OVLMCSData *const lmcs)
+rcn_derive_lmcs_params(struct LMCSInfo *lmcs_info, uint16_t *const output_pivot, const OVLMCSData *const lmcs)
 {
     int i;
     //BITDEPTH: only 10
@@ -14,7 +14,9 @@ rcn_derive_lmcs_params(uint16_t *const output_pivot, const OVLMCSData *const lmc
     int16_t code_words[17] = {0};
     uint16_t   mapped_intervals[17];
     uint16_t unmapped_intervals[17];
-    uint16_t interval_low = 0;
+    uint16_t interval_low =  lmcs->lmcs_min_bin_idx ? 0 : window_size;
+    lmcs_info->min_idx = lmcs->lmcs_min_bin_idx;
+    lmcs_info->max_idx = 16 - lmcs->lmcs_delta_max_bin_idx;
 
     memset(output_pivot, 0, sizeof(uint16_t)*16);
 
@@ -26,7 +28,7 @@ rcn_derive_lmcs_params(uint16_t *const output_pivot, const OVLMCSData *const lmc
     for (i = 0; i < 16; ++i){
         code_words[i] = lmcs->lmcs_delta_sign_cw_flag[i] ? -lmcs->lmcs_delta_abs_cw[i] + interval_low
                                                         : lmcs->lmcs_delta_abs_cw[i] + interval_low;
-        interval_low = i + 1 < 15 ? window_size:0;
+        interval_low = i + 1 >= lmcs->lmcs_min_bin_idx && i + 1 < lmcs_info->max_idx ? window_size : 0;
     }
 
     for (i = 0; i < 16; ++i){
@@ -58,7 +60,7 @@ rcn_lmcs_compute_chroma_scale(struct OVCTUDec* ctudec, int x0, int y0)
     uint8_t num_luma_pu = 0;
     uint32_t log2_num_luma_pu = 0;
     uint32_t luma_avg=512;
-    int idx = 1;
+    int idx = lmcs_info->min_idx;
     
     uint8_t num_luma_pu_above = 0;
     while (available_above_mask){
@@ -116,7 +118,7 @@ rcn_lmcs_compute_chroma_scale(struct OVCTUDec* ctudec, int x0, int y0)
     log2_num_luma_pu -= !!log2_num_luma_pu;
 
     luma_avg = log2_num_luma_pu ? ((luma_sum1 + luma_sum2) + (luma_sum3 + luma_sum4) + (1 << (log2_num_luma_pu + 1))) >> (log2_num_luma_pu + 2) : 512;
-    while (idx < 16 && luma_avg >= lmcs_info->lmcs_output_pivot[idx+1]){
+    while (idx < lmcs_info->max_idx && luma_avg >= lmcs_info->lmcs_output_pivot[idx+1]){
         idx++;
     }
 
@@ -167,15 +169,15 @@ rcn_lmcs_reshape_luma_blk_lut(uint16_t *dst, ptrdiff_t stride_dst, uint16_t* lmc
 }
 
 void 
-rcn_lmcs_compute_lut_luma(uint16_t* lmcs_lut_luma, uint16_t* lmcs_output_pivot)
+rcn_lmcs_compute_lut_luma(struct LMCSInfo *lmcs_info, uint16_t* lmcs_lut_luma, uint16_t* lmcs_output_pivot)
 {
     int bitdepth = 10;
     uint8_t window_size = (1 << bitdepth) >> 4; 
-    uint16_t idx = 1;
+    uint16_t idx = lmcs_info->min_idx;
     for (uint16_t val = 0; val < (1<<bitdepth); val++){
 // int idxYInv = getPWLIdxInv(lumaSample);
 // int invSample = m_inputPivot[idxYInv] + ((m_invScaleCoef[idxYInv] * (lumaSample - m_reshapePivot[idxYInv]) + (1 << (FP_PREC - 1))) >> FP_PREC); 
-        if (idx < 15 && val >= lmcs_output_pivot[idx+1]){
+        if (idx < lmcs_info->max_idx && val >= lmcs_output_pivot[idx+1]){
             idx++;
         }
         int16_t map_low  = lmcs_output_pivot[idx];

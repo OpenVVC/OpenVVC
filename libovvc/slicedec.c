@@ -447,8 +447,8 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
                                                 : aps_lmcs_data->lmcs_delta_abs_crs;
 
         uint16_t *const output_pivot = lmcs_info->lmcs_output_pivot;
-        rcn_derive_lmcs_params(output_pivot, aps_lmcs_data);
-        rcn_lmcs_compute_lut_luma(lmcs_info->lmcs_lut_luma, lmcs_info->lmcs_output_pivot);
+        rcn_derive_lmcs_params(lmcs_info, output_pivot, aps_lmcs_data);
+        rcn_lmcs_compute_lut_luma(lmcs_info, lmcs_info->lmcs_lut_luma, lmcs_info->lmcs_output_pivot);
     }
 
     return 0;
