@@ -148,7 +148,7 @@ void simdFilter5x5Blk(ALFClassifier **classifier, int16_t *const dst, int16_t *c
             {
                 const uint16_t *pImg0, *pImg1, *pImg2, *pImg3, *pImg4;
 
-                pImg0 = _src + j + ii * srcStride ;
+                pImg0 = (uint16_t*)_src + j + ii * srcStride ;
                 pImg1 = pImg0 + srcStride;
                 pImg2 = pImg0 - srcStride;
                 pImg3 = pImg1 + srcStride;
@@ -306,7 +306,7 @@ void simdFilter7x7Blk(ALFClassifier **classifier, int16_t *const dst, int16_t *c
             {
                 const uint16_t *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
 
-                pImg0 = _src + j + ii * srcStride;
+                pImg0 = (uint16_t *)_src + j + ii * srcStride;
                 pImg1 = pImg0 + srcStride;
                 pImg2 = pImg0 - srcStride;
                 pImg3 = pImg1 + srcStride;
