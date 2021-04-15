@@ -812,7 +812,8 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     const uint8_t slice_type = sldec->slice_type;
     int ctb_x = 0;
     int ret;
-    uint8_t backup_qp;
+    /* FIXME not really required ?*/
+    uint8_t backup_qp = ctudec->drv_ctx.qp_map_x[0];
 
     /* Do not copy on first line */
     if (ctb_addr_rs >= nb_ctu_w) {
