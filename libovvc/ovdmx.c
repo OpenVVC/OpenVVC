@@ -379,6 +379,7 @@ refill_reader_cache(struct ReaderCache *const cache_ctx, OVIOStream *const io_st
     return 0;
 }
 
+#if 0
 static uint8_t
 is_access_unit_delimiter(struct NALUnitListElem *elem)
 {
@@ -388,6 +389,7 @@ is_access_unit_delimiter(struct NALUnitListElem *elem)
      */
     return elem->nalu.type == OVNALU_AUD || elem->nalu.type == OVNALU_PPS;
 }
+#endif
 
 static struct NALUnitListElem *pop_nalu_elem(struct NALUnitsList *list)
 {
@@ -417,11 +419,11 @@ extract_nal_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
     do {
         if (!current_nalu && !eof) {
             struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
-            int ret = 0;
 
-            ret = refill_reader_cache(cache_ctx, dmx->io_str);
+            /* FIXME error handling from demux + use return values */
+            refill_reader_cache(cache_ctx, dmx->io_str);
 
-            ret = extract_cache_segments(dmx, cache_ctx);
+            extract_cache_segments(dmx, cache_ctx);
 
             current_nalu = pop_nalu_elem(nalu_list);
         }
@@ -435,6 +437,7 @@ extract_nal_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
     return -(current_nalu == NULL && eof);
 }
 
+#if 0
 static int
 extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
 {
@@ -492,6 +495,7 @@ readfail:
     return -1;
 #endif
 }
+#endif
 
 static void
 free_nalu_list(struct NALUnitsList *list)
