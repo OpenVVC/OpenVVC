@@ -576,7 +576,6 @@ dbf_store_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const 
 {
     int nb_pb_s = (1 << log2_ctu_s) >> 2;
     uint64_t mask = (uint64_t)1 << nb_pb_s;
-    uint64_t ctb_lft_msk = -(!!ctb_x);
     int i;
 
     l->dbf_edge_hor[ctb_x] = dbf_info->edge_map_hor[nb_pb_s];

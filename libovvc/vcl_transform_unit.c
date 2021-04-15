@@ -309,7 +309,6 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
     struct OVDrvCtx *const pred_ctx = &ctudec->drv_ctx;
     #endif
     const struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
-    const struct RCNFunctions *const rcn_func = &ctudec->rcn_ctx.rcn_funcs;
 
     int offset_x;
     int log2_pb_w = log2_cb_w - 2;
@@ -411,7 +410,6 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                 int16_t lfnst_sb[4][16], uint8_t lfnst_flag, uint8_t lfnst_idx)
 {
     const struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
-    const struct RCNFunctions *const rcn_func = &ctudec->rcn_ctx.rcn_funcs;
     int log2_pb_h = log2_cb_h - 2;
     int nb_pb;
     int pb_h, offset_y;
@@ -744,7 +742,6 @@ transform_unit(OVCTUDec *const ctu_dec,
                unsigned int log2_tb_w, unsigned int log2_tb_h,
                uint8_t tu_cbf_luma, uint8_t cu_flags)
 {
-    const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
 
     if (tu_cbf_luma) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -997,9 +994,6 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
         uint16_t last_pos_cbcr;
         uint16_t *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[(x0) + (y0 * RCN_CTB_STRIDE)];
         uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[(x0) + (y0 * RCN_CTB_STRIDE)];
-        int shift_v = 6 + 1;
-        int shift_h = (6 + 15 - 1) - 10;
-        int16_t *src  = ctu_dec->transform_buff;
         int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
         int16_t *const coeffs_jcbcr = ctu_dec->residual_cb;
         uint8_t lfnst_flag = 0;

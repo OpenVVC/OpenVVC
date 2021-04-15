@@ -160,7 +160,6 @@ void alf_reconstructCoeff_luma(RCNALF* alf, const struct OVALFData* alf_data)
     int num_classes =  MAX_NUM_ALF_CLASSES;
     int num_coeff = 13;
     int num_coeff_minus1 = num_coeff - 1;
-    const int alt_idx = 0 ;
     
     int num_filters = alf_data->alf_luma_num_filters_signalled_minus1 + 1 ;
     int16_t* coeff ;

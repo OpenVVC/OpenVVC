@@ -240,7 +240,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
 
             /* FIXME check NumRefIdxActive[0] > 1 NumRefIdxActive[1] > 1*/
             if ((sh->sh_collocated_from_l0_flag && nb_ref_entries0 > 1) ||
-                sh->sh_slice_type == B && (!sh->sh_collocated_from_l0_flag && nb_ref_entries1 > 1)) {
+                (sh->sh_slice_type == B && (!sh->sh_collocated_from_l0_flag && nb_ref_entries1 > 1))) {
                 sh->sh_collocated_ref_idx = nvcl_read_u_expgolomb(rdr);
             }
         }
