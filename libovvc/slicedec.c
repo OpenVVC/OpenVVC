@@ -706,6 +706,11 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
     ovcabac_read_ae_cc_alf_ctu(ctudec, ctb_addr_rs, einfo->nb_ctu_w);
 
     init_ctu_bitfield(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s);
+    if ((ctb_addr_rs + 2) % nb_ctu_w == 0 && einfo->implicit_w) {
+         uint64_t mask = ((uint64_t)1 << (((einfo->last_ctu_w + (1 << log2_ctb_s)) >> 2) + 1)) - 1;
+         ctudec->rcn_ctx.progress_field_c.hfield[0] &= mask;
+         ctudec->rcn_ctx.progress_field.hfield[0] &= mask;
+    }
 
     ret = ctudec->coding_tree(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s, 0);
 
@@ -762,6 +767,12 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
     /* FIXME pic border detection in neighbour flags ?*/
     init_ctu_bitfield_border(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s,
                              ctu_w, ctu_h);
+
+    if ((ctb_addr_rs + 2) % nb_ctu_w == 0 && einfo->implicit_w) {
+         uint64_t mask = ((uint64_t)1 << (((einfo->last_ctu_w + (1 << log2_ctb_s)) >> 2) + 1)) - 1;
+         ctudec->rcn_ctx.progress_field_c.hfield[0] &= mask;
+         ctudec->rcn_ctx.progress_field.hfield[0] &= mask;
+    }
 
     ret = ctudec->coding_tree_implicit(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s,
                                        0, ctu_w, ctu_h);
