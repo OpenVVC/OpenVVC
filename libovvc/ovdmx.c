@@ -414,21 +414,23 @@ extract_nal_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
     struct NALUnitsList *nalu_list = &dmx->nalu_list;
     struct NALUnitListElem *current_nalu = pop_nalu_elem(nalu_list);
 
-    if (!current_nalu && !eof) {
-        struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
-        int ret = 0;
+    do {
+        if (!current_nalu && !eof) {
+            struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
+            int ret = 0;
 
-        ret = refill_reader_cache(cache_ctx, dmx->io_str);
+            ret = refill_reader_cache(cache_ctx, dmx->io_str);
 
-        ret = extract_cache_segments(dmx, cache_ctx);
+            ret = extract_cache_segments(dmx, cache_ctx);
 
-        current_nalu = pop_nalu_elem(nalu_list);
-    }
+            current_nalu = pop_nalu_elem(nalu_list);
+        }
 
-    if (current_nalu) {
+        if (current_nalu) {
 
-        append_nalu_elem(dst_list, current_nalu);
-    }
+            append_nalu_elem(dst_list, current_nalu);
+        }
+    } while (current_nalu == NULL && !eof);
 
     return -(current_nalu == NULL && eof);
 }
