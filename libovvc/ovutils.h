@@ -51,6 +51,9 @@ ov_clip(int32_t val, int32_t a, int32_t b)
 uint32_t
 ov_clip_uintp2(int32_t val, uint32_t a);
 
+int32_t
+ov_clip_intp2(int32_t val, uint32_t a);
+
 static inline int
 floor_log2(unsigned x)
 {

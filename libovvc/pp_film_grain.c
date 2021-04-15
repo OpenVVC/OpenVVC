@@ -528,7 +528,7 @@ static const uint32_t deblockFactor[13] =
 { 64, 71, 77, 84, 90, 96, 103, 109, 116, 122, 128, 128, 128 };
 
 static int8_t  fg_data_base[NUM_CUT_OFF_FREQ][NUM_CUT_OFF_FREQ][DATA_BASE_SIZE][DATA_BASE_SIZE];
-
+static uint8_t fg_data_base_created = 0;
 
 /* Function to calculate block average */
 int16_t fg_compute_block_avg(int16_t *dstSampleBlk8, uint32_t widthComp, uint16_t *pNumSamples,
@@ -553,10 +553,10 @@ int16_t fg_compute_block_avg(int16_t *dstSampleBlk8, uint32_t widthComp, uint16_
   }
 
   // assert(blockAvg < (1 << 8));
-
   *pNumSamples = numSamples;
 
-  blockAvg = (int16_t) OVMIN(OVMAX(0, blockAvg), (1 << 8) - 1 );
+  // blockAvg = (int16_t) OVMIN(OVMAX(0, blockAvg), (1 << 8) - 1 );
+  blockAvg = (int16_t) ov_clip_uintp2(blockAvg, 8 );
   return blockAvg;
 }
 
@@ -584,19 +584,14 @@ void fg_blend_stripe(int16_t *dstSampleOffsetY, int16_t *srcSampleOffsetY, int32
 {
   uint32_t  k, l;
   int32_t   grainSample;
-  int16_t   decodeSample;
-  uint16_t  maxRange;
-  maxRange = (1 << bitDepth) - 1;
 
   for (l = 0; l < blockHeight; l++) /* y direction */
   {
     for (k = 0; k < widthComp; k++) /* x direction */
     {
-        decodeSample  =   srcSampleOffsetY[k + (l*widthComp)];
         grainSample   =   grainStripe[k + (l*widthComp)];
         grainSample   <<=  (bitDepth - 8);
-        grainSample = (int32_t) OVMIN(OVMAX(0, grainSample + decodeSample), maxRange );
-        dstSampleOffsetY[k + (l*widthComp)] = (int16_t)grainSample;
+        dstSampleOffsetY[k + (l*widthComp)] = (int16_t) ov_clip_uintp2(grainSample + srcSampleOffsetY[k + (l*widthComp)], bitDepth);
     }
   }
   return;
@@ -633,16 +628,7 @@ void fg_data_base_generation( uint8_t enableDeblocking)
   uint8_t   h, v; /* Horizaontal and vertical cut off frequencies (+2)*/
   uint32_t  ScaleCutOffFh, ScaleCutOffFv, l, r, i, j, k;
   int32_t   B[DATA_BASE_SIZE][DATA_BASE_SIZE], bIDCT[DATA_BASE_SIZE][DATA_BASE_SIZE];
-  int32_t   bGrain[DATA_BASE_SIZE][DATA_BASE_SIZE];
-  int8_t    R64_IDCT_TR[DATA_BASE_SIZE][DATA_BASE_SIZE]; /* Transpose of R64_IDCT[64][64]*/
-
-  for (l = 0; l < DATA_BASE_SIZE; l++)
-  {
-    for (k = 0; k < DATA_BASE_SIZE; k++)
-    {
-      R64_IDCT_TR[l][k] = R64_IDCT[k][l]; /* Matrix Transpose */
-    }
-  }
+  int32_t   bGrain;
 
   for (h = 0; h < NUM_CUT_OFF_FREQ; h++)
   {
@@ -650,7 +636,6 @@ void fg_data_base_generation( uint8_t enableDeblocking)
     {
       memset(&B,      0, DATA_BASE_SIZE*DATA_BASE_SIZE * sizeof(int32_t));
       memset(&bIDCT,  0, DATA_BASE_SIZE*DATA_BASE_SIZE * sizeof(int32_t));
-      memset(&bGrain, 0, DATA_BASE_SIZE*DATA_BASE_SIZE * sizeof(int32_t));
       ScaleCutOffFh = ((h + 3) << 2) - 1;
       ScaleCutOffFv = ((v + 3) << 2) - 1;
 
@@ -677,7 +662,9 @@ void fg_data_base_generation( uint8_t enableDeblocking)
         {
           for (k = 0; k < DATA_BASE_SIZE; k++)
           {
-            bIDCT[i][j] += R64_IDCT_TR[i][k] * B[k][j];
+            //Apply transpose R64_IDCT
+            // bIDCT[i][j] += R64_IDCT_TR[i][k] * B[k][j];
+            bIDCT[i][j] += R64_IDCT[k][i] * B[k][j];
           }
           bIDCT[i][j] += 128;
           bIDCT[i][j] = bIDCT[i][j] >> 8;
@@ -688,13 +675,16 @@ void fg_data_base_generation( uint8_t enableDeblocking)
       {
         for (j = 0; j < DATA_BASE_SIZE; j++)
         {
+          bGrain = 0;
           for (k = 0; k < DATA_BASE_SIZE; k++)
           {
-            bGrain[i][j] += bIDCT[i][k] * R64_IDCT[k][j];
+            //Apply original R64_IDCT
+            bGrain += bIDCT[i][k] * R64_IDCT[k][j];
           }
-          bGrain[i][j] += 128;
-          bGrain[i][j] = bGrain[i][j] >> 8;
-          fg_data_base[h][v][j][i] = (int8_t) OVMIN(OVMAX(-127, bGrain[i][j]), 127 );
+          bGrain += 128;
+          bGrain = bGrain >> 8;
+          // fg_data_base[h][v][j][i] = (int8_t) OVMIN(OVMAX(-127, bGrain), 127 );
+          fg_data_base[h][v][j][i] = (int8_t) ov_clip_intp2(bGrain, 8);
         }
       }
     }   
@@ -817,8 +807,10 @@ void fg_grain_apply_pic(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain
     memset(intensityInterval, -1, sizeof(intensityInterval));
     fg_compute_model_values(fgrain, intensityInterval);
 
-    //TODO: do only if not done before
-    fg_data_base_generation(enableDeblocking);
+    if(!fg_data_base_created){
+        fg_data_base_generation(enableDeblocking);
+        fg_data_base_created = 1;
+    }
 
     if (isIdrPic)
     {
