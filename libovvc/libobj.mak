@@ -17,6 +17,7 @@ LIB_SRC:=																																 \
 					nvcl_nal_aps.c                                                 \
 					nvcl_nal_pps.c                                                 \
 					nvcl_nal_sps.c                                                 \
+					nvcl_nal_sei.c                                                     \
 					nvcl_ptl.c                                                     \
 					nvcl_rpl.c                                                     \
 					ovdec.c                                                        \
@@ -28,6 +29,8 @@ LIB_SRC:=																																 \
 					ovannexb.c                                                     \
 					ovunits.c                                                      \
 					ovframe.c                                                      \
+					pp_film_grain.c                                                 \
+					post_proc.c                                                 \
 					ovthreads.c                                                    \
 					drv_lines.c                                                    \
 					drv_lfnst.c                                                    \

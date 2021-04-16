@@ -102,6 +102,7 @@ enum OVSliceType {
      OV_SLICE_I = 2,
 };
 
+#if 0
 /* Values used for CABAC context table initialisation
  * for INTER B slice table
  */
@@ -197,6 +198,7 @@ static const uint8_t ctx_init_table_b_slice[OVCABAC_NB_CTX] =
     19,  11,   4,   6,   /*ts_lrg1_flag*/
     35,  25,  46,  28,  33,  38,   /*ts_residual_sign*/
 };
+
 
 /* Values used for CABAC context table initialisation
  * for INTER P slice table
@@ -389,7 +391,7 @@ static const uint8_t ctx_init_table_i_slice[OVCABAC_NB_CTX] =
     11,   5,   5,  14,   /*ts_lrg1_flag*/
     12,  17,  46,  28,  25,  46,   /*ts_residual_sign*/
 };
-
+#endif
 /* Values used for CABAC context table initialisation
  * for INTRA slice table
  */

@@ -14,6 +14,7 @@
 #include "slicedec.h"
 #include "dec_structures.h"
 #include "ovdec_internal.h"
+#include "post_proc.h"
 /* FIXME
  * To be removed includes
  */
@@ -226,7 +227,7 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
         break;
     case OVNALU_PREFIX_SEI:
     case OVNALU_SUFFIX_SEI:
-        ret = 0;
+        ret = nvcl_decode_nalu_sei(&rdr, nvcl_ctx);
         if (ret < 0)
             goto fail;
         break;
@@ -400,6 +401,7 @@ ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *const pu)
     return ret;
 }
 
+
 int
 ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
 {
@@ -432,6 +434,9 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
 
         out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
         ret = ovdpb_output_frame(dpb, frame_p, out_cvs_id);
+
+        ret = pp_process_frame(dec, dpb, frame_p);
+
         /*FIXME tmp */
         #if 0
         ovdpb_unref_pic(dec->dpb, sldec->pic, ~0);
@@ -465,6 +470,7 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
 
     return ret;
 }
+
 
 int
 ovdec_init(OVVCDec **vvcdec)

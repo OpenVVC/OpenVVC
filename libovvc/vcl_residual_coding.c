@@ -67,9 +67,11 @@ static const VVCDepQuantCtx chroma_dep_quant_ctx = {
     8
 };
 
+#if 0
 static const uint64_t inv_diag_map_4x4 = 0x041852C963DA7EBF;
 static const uint64_t inv_diag_map_2x8 = 0x021436587A9CBEDF;
 static const uint64_t inv_diag_map_8x2 = 0x08192A3B4C5D6E7F;
+#endif
 
 static const uint64_t diag_map_4X4 = 0xFBE7AD369C258140;
 static const uint64_t diag_map_2x8 = 0xFDEBC9A785634120;
@@ -93,6 +95,7 @@ static const VVCSBScanContext inv_diag_8x2_scan = {
      0x02468ACE13579BDF,
      3,
 };
+
 
 static const VVCSBScanContext inv_diag_1x16_scan = {
      0x0123456789ABCDEF,

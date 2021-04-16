@@ -7,29 +7,36 @@ if [ "$#" -ne 2 ];  then
     exit
 fi
 
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
 STREAM=$1
 DECODER=$2
-
+error=0
+rm -f failed.txt
 for file in $STREAM/*.266
 do
-  echo $file
   yuv=${file%.266}.yuv
-  $DECODER -i $file -o $yuv
+  $DECODER -i $file -o $yuv 2> ${file%.266}.log
   MD5=$(md5sum $yuv | grep -o '[0-9,a-f]*\ ')
   MD5fc=$(cat ${file%.266}.md5 | grep -o '[0-9,a-f]*\ ')
-  echo $MD5
-  echo $MD5fc
   if [[ $MD5 == $MD5fc ]]
   then
-    error=0
+    echo -e $GREEN$(basename ${file%.266})
+    echo -e Computed MD5:'\t'$MD5 $NC
+    rm -f ${file%.266}.log
   else
-    error=1
+    basename ${file%.266} >> failed.txt
+    echo -e $RED$(basename ${file%.266})
+    echo -e Computed MD5:'\t'$MD5
+    echo -e Reference MD5:'\t'$MD5fc $NC
+    cat ${file%.266}.log
+    ((error=error+1))
   fi
+  echo
   rm -f $yuv
-  if [ $error -ne 0 ]
-  then
-    exit $error
-  fi
 done
 
-exit 0
+exit $error

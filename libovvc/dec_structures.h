@@ -3,6 +3,7 @@
 
 #include "ovdefs.h"
 #include "nvcl.h"
+#include "post_proc.h"
 
 #define OV_BOUNDARY_LEFT_RECT      (1 << 1)
 #define OV_BOUNDARY_UPPER_RECT     (1 << 3)
@@ -202,7 +203,6 @@ typedef struct SAOParamsCtu {
 
     int16_t offset_val[3][5];   ///<SaoOffsetVal
 
-
     uint8_t band_position[3];   ///< sao_band_position
     uint8_t eo_class[3];        ///< sao_eo_class
 
@@ -244,6 +244,7 @@ struct OVVCDec
         const OVAPS *aps_lmcs;
         const OVPH *ph;
         const OVSH *sh;
+        const OVSEI *sei;
 
         /* Human readable information from active parameter sets */
         struct SPSInfo sps_info;

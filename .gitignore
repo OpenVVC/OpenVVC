@@ -1,7 +1,10 @@
 # Configuration object
 config.mak
+config.sh
 config.h
 libovvc/ovversion.h
+libovvc/ovconfig.h
+libopenvvc.pc
 
 # Build objects
 *.o
@@ -28,8 +31,10 @@ lib/
 
 # Programs
 dectest
+dectest_stat
 
 # Video objects
 *.266
-!CI/test_bitstreams/*.266
 *.yuv
+*.md5
+*.log

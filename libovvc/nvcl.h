@@ -19,6 +19,7 @@ struct OVNVCLCtx
     OVAPS *aps_list[OV_MAX_NUM_APS];
     OVPH *ph;
     OVSH *sh;
+    OVSEI *sei;
 };
 
 struct OVNVCLReader
@@ -85,5 +86,7 @@ int nvcl_decode_nalu_ph(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx);
 int nvcl_decode_nalu_sh(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
 
 int nvcl_decode_nalu_aps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx);
+
+int nvcl_decode_nalu_sei(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx);
 
 #endif

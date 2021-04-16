@@ -47,10 +47,10 @@ ALL_OBJS=$(LIB_OBJ) $(addprefix $(BUILDDIR),$(addsuffix .o, $(PROG))) $($(ARCH)_
 all: libs examples
 
 test:
-	./CI/checkMD5.sh $(TESTSTREAMSDIR) $(BUILDDIR)$(PROG)
+	$(AT)./CI/checkMD5.sh $(TESTSTREAMSDIR) $(BUILDDIR)$(PROG)
 
 profiling:
-	./CI/profiling.sh $(TESTSTREAMSDIR) $(BUILDDIR)$(PROG)
+	$(AT)./CI/profiling.sh $(TESTSTREAMSDIR) $(BUILDDIR)$(PROG)
 
 version:
 	$(AT)./version.sh VERSION $(SRC_FOLDER)$(LIB_VERSION_HEADER)

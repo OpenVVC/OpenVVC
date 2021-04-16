@@ -1180,7 +1180,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         rcn_alf_filter_line(ctudec, einfo.nb_ctb_pic_w, ctb_y);
         ctb_y++;
     }
-
+    
     ctudec_free_filter_buffers(ctudec);
     ctudec_free_intra_line_buff(ctudec);
 

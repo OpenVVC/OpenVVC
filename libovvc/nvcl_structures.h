@@ -79,6 +79,40 @@ struct OVDPBParams
     uint8_t dpb_max_latency_increase_plus1;
 };
 
+
+struct OVSEIFGrain
+{
+    uint8_t fg_characteristics_cancel_flag;
+    uint8_t fg_model_id;
+    uint8_t fg_separate_colour_description_present_flag;
+    uint8_t fg_bit_depth_luma_minus8;
+    uint8_t fg_bit_depth_chroma_minus8;
+    uint8_t fg_full_range_flag;
+    uint8_t fg_colour_primaries;
+    uint8_t fg_transfer_characteristics;
+    uint8_t fg_matrix_coeffs;
+    uint8_t fg_blending_mode_id;
+    uint8_t fg_log2_scale_factor;
+
+    uint8_t fg_comp_model_present_flag[3];
+    uint8_t fg_num_intensity_intervals_minus1[3];
+    uint8_t fg_num_model_values_minus1[3];
+
+    //TODO: maybe more than 8 intensity intervals?
+    uint8_t fg_intensity_interval_lower_bound[3][8];
+    uint8_t fg_intensity_interval_upper_bound[3][8];
+    int16_t fg_comp_model_value[3][8][3];
+
+    uint8_t fg_characteristics_persistence_flag;
+    int16_t fg_idr_pic;
+};
+
+/*Structure containing all SEI structures*/
+struct OVSEI
+{
+    struct OVSEIFGrain* sei_fg;
+};
+
 struct OVSPS
 {
     uint8_t sps_seq_parameter_set_id;
