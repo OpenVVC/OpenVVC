@@ -612,16 +612,17 @@ void fg_simulate_grain_blk8x8(int32_t *grainStripe, uint32_t grainStripeOffsetBl
   uint32_t width, uint8_t log2ScaleFactor, int16_t scaleFactor, uint32_t kOffset, uint32_t lOffset, uint8_t h, uint8_t v, uint32_t xSize)
 {
   uint32_t k, l;
-  int index;
+  uint32_t idx, idx_offset, idx_offset_l, grainStripeOffsetBlk8_l;
+
+  idx_offset = ( h*NUM_CUT_OFF_FREQ +  v ) * DATA_BASE_SIZE  * DATA_BASE_SIZE;
   for (l = 0; l < 8; l++) /* y direction */
   {
+    idx_offset_l            = idx_offset + (l + lOffset) * DATA_BASE_SIZE;
+    grainStripeOffsetBlk8_l = grainStripeOffsetBlk8 + (l*width);
     for (k = 0; k < xSize; k++) /* x direction */
     {
-        // fg_data_base[NUM_CUT_OFF_FREQ][NUM_CUT_OFF_FREQ][DATA_BASE_SIZE][DATA_BASE_SIZE]
-      index = (( h*NUM_CUT_OFF_FREQ +  v ) * DATA_BASE_SIZE  +  (l + lOffset)) * DATA_BASE_SIZE + (k + kOffset);
-
-      grainStripe[grainStripeOffsetBlk8 + k + (l*width)] =
-        ((scaleFactor * fg_data_base[index]) >> (log2ScaleFactor + GRAIN_SCALE));
+      idx = idx_offset_l + (k + kOffset);
+      grainStripe[grainStripeOffsetBlk8_l + k ] = ((scaleFactor * fg_data_base[idx]) >> (log2ScaleFactor + GRAIN_SCALE));
         // ((scaleFactor * fg_data_base[h][v][l + lOffset][k + kOffset]) >> (log2ScaleFactor + GRAIN_SCALE));
     }
   }
@@ -636,16 +637,18 @@ void fg_data_base_generation( uint8_t enableDeblocking)
   uint32_t  ScaleCutOffFh, ScaleCutOffFv, l, r, i, j, k;
   int32_t   B[DATA_BASE_SIZE][DATA_BASE_SIZE], bIDCT[DATA_BASE_SIZE][DATA_BASE_SIZE];
   int32_t   bGrain;
-  int       index;
+  uint32_t  idx, idx_offset_h, idx_offset_v, idx_offset_j;
 
   for (h = 0; h < NUM_CUT_OFF_FREQ; h++)
   {
+    idx_offset_h = h * NUM_CUT_OFF_FREQ;
     for (v = 0; v < NUM_CUT_OFF_FREQ; v++)
     {
       memset(&B,      0, DATA_BASE_SIZE*DATA_BASE_SIZE * sizeof(int32_t));
       memset(&bIDCT,  0, DATA_BASE_SIZE*DATA_BASE_SIZE * sizeof(int32_t));
       ScaleCutOffFh = ((h + 3) << 2) - 1;
       ScaleCutOffFv = ((v + 3) << 2) - 1;
+      idx_offset_v  = (idx_offset_h + v) * DATA_BASE_SIZE;
 
       /* ehv : seed to be used for the psudo random generator for a given h and v */
       pseudoRandValEhv = seedLUT[h + v * 13];
@@ -679,9 +682,10 @@ void fg_data_base_generation( uint8_t enableDeblocking)
         }
       }
 
-      for (i = 0; i < DATA_BASE_SIZE; i++)
+      for (j = 0; j < DATA_BASE_SIZE; j++)
       {
-        for (j = 0; j < DATA_BASE_SIZE; j++)
+        idx_offset_j  = (idx_offset_v + j) * DATA_BASE_SIZE;
+        for (i = 0; i < DATA_BASE_SIZE; i++)
         {
           bGrain = 0;
           for (k = 0; k < DATA_BASE_SIZE; k++)
@@ -691,8 +695,8 @@ void fg_data_base_generation( uint8_t enableDeblocking)
           }
           bGrain += 128;
           bGrain = bGrain >> 8;
-          index = (( h*NUM_CUT_OFF_FREQ +  v ) * DATA_BASE_SIZE  +  j) * DATA_BASE_SIZE + i;
-          fg_data_base[index] = (int8_t) ov_clip_intp2(bGrain, 8);
+          idx = idx_offset_j + i;
+          fg_data_base[idx] = (int8_t) ov_clip_intp2(bGrain, 8);
           // fg_data_base[h][v][j][i] = (int8_t) ov_clip_intp2(bGrain, 8);
         }
       }
@@ -704,17 +708,20 @@ void fg_data_base_generation( uint8_t enableDeblocking)
     {  
         for (h = 0; h < NUM_CUT_OFF_FREQ; h++)
         {
+            idx_offset_h = h * NUM_CUT_OFF_FREQ;
             for (v = 0; v < NUM_CUT_OFF_FREQ; v++)
             {
+                idx_offset_v  = (idx_offset_h + v) * DATA_BASE_SIZE;
                 for (l = 0; l < DATA_BASE_SIZE; l += 8)
                 {
+                    idx_offset_j  = (idx_offset_v + l) * DATA_BASE_SIZE;
                     for (k = 0; k < DATA_BASE_SIZE; k++)
                     {   
-                        index = (( h*NUM_CUT_OFF_FREQ +  v ) * DATA_BASE_SIZE  +  l) * DATA_BASE_SIZE + k;
-                        fg_data_base[index]     = ((fg_data_base[index]) * deblockFactor[v]) >> 7;
+                        idx = idx_offset_j + k;
+                        fg_data_base[idx] = ((fg_data_base[idx]) * deblockFactor[v]) >> 7;
+                        idx = idx + 7 * DATA_BASE_SIZE;
+                        fg_data_base[idx] = ((fg_data_base[idx]) * deblockFactor[v]) >> 7;
                         // fg_data_base[h][v][l][k]     = ((fg_data_base[h][v][l][k]) * deblockFactor[v]) >> 7;
-                        index = (( h*NUM_CUT_OFF_FREQ +  v ) * DATA_BASE_SIZE  +  l + 7) * DATA_BASE_SIZE + k;
-                        fg_data_base[index] = ((fg_data_base[index]) * deblockFactor[v]) >> 7;
                         // fg_data_base[h][v][l + 7][k] = ((fg_data_base[h][v][l + 7][k]) * deblockFactor[v]) >> 7;
                     }
                 }
