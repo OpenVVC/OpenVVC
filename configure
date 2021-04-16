@@ -6,6 +6,7 @@ cc_default="gcc"
 builddir_default="$(pwd)/build"
 
 teststreams_dir_default="./CI/test_bitstreams"
+teststreams_url_default="http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/all_intra/"
 
 debug_cflags="-O0 -g -Wall --pedantic"
 release_cflags="-O3 -Wall"
@@ -53,6 +54,7 @@ Options:
   --debug                  use specific debug compiler cflags [CFLAGS ${debug_cflags}]
 
   --teststreams-dir=DIR    read test bitstreams from DIR[$teststream_dir_default]
+  --teststreams-url=URL    download test bitstreams and md5sum from URL[$teststream_url_default]
 EOF
   exit 0
 }
@@ -65,6 +67,7 @@ pkgconfigdir='${libdir}/pkgconfig'
 
 build_dir=$builddir_default
 teststreams_dir=$teststreams_dir_default
+teststreams_url=$teststreams_url_default
 
 cc=$cc_default
 arch="$(uname -m)"
@@ -155,6 +158,7 @@ STATIC_LIBSUFF:=${stlib_suffix}
 BUILDDIR=${build_dir}
 
 TESTSTREAMSDIR=$teststreams_dir_default
+STREAMURL=$teststreams_url
 
 INSTALL_PREFIX=${prefix}
 INSTALL_LIB=\$(INSTALL_PREFIX)/lib/libopenvvc

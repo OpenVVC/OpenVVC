@@ -21,8 +21,11 @@ non_reg_gcc_debug:
   image: ubuntu
   dependencies:
     - build_linux_gcc_debug
+  before_script:
+    - apt update && apt install -y build-essential curl
   script:
-    - ./CI/checkMD5.sh CI/test_bitstreams/ ./debug/examples/dectest
+    - ./configure --debug --build-dir=debug --teststreams-url=http://openvvc.insa-rennes.fr/bitstreams/misc/
+    - make test
 
 build_linux_clang_debug:
   stage: build
@@ -45,8 +48,11 @@ non_reg_clang_debug:
   image: ubuntu
   dependencies:
     - build_linux_clang_debug
+  before_script:
+    - apt update && apt install -y build-essential curl
   script:
-    - ./CI/checkMD5.sh CI/test_bitstreams/ ./debug/examples/dectest
+    - ./configure --debug --build-dir=debug --teststreams-url=http://openvvc.insa-rennes.fr/bitstreams/misc/
+    - make test
 
 build_linux_gcc_release:
   stage: build
@@ -62,6 +68,17 @@ build_linux_gcc_release:
       - release/libovvc.a
       - release/libovvc.so
       - release/examples/dectest
+
+AllIntra_CTC_gcc:
+  stage: test
+  image: ubuntu
+  dependencies:
+    - build_linux_gcc_release
+  before_script:
+    - apt update && apt install -y build-essential curl
+  script:
+    - ./configure --release --build-dir=release
+    - make test
 
 build_arm_linux_gcc_release:
   stage: build
@@ -100,5 +117,8 @@ arm_non_reg_gcc_debug:
     - ARM
   dependencies:
     - build_arm_linux_gcc_debug
+  before_script:
+    - apt update && apt install -y curl
   script:
-    - ./CI/checkMD5.sh CI/test_bitstreams/ ./debug/examples/dectest
+    - ./configure --debug --build-dir=debug --teststreams-url=http://openvvc.insa-rennes.fr/bitstreams/misc/
+    - make test
