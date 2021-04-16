@@ -527,7 +527,9 @@ static const int8_t R64_IDCT[64][64] =
 static const uint32_t deblockFactor[13] =
 { 64, 71, 77, 84, 90, 96, 103, 109, 116, 122, 128, 128, 128 };
 
-static int8_t  fg_data_base[NUM_CUT_OFF_FREQ][NUM_CUT_OFF_FREQ][DATA_BASE_SIZE][DATA_BASE_SIZE];
+
+// static int16_t  fg_data_base[NUM_CUT_OFF_FREQ][NUM_CUT_OFF_FREQ][DATA_BASE_SIZE][DATA_BASE_SIZE];
+static int8_t  fg_data_base[NUM_CUT_OFF_FREQ*NUM_CUT_OFF_FREQ*DATA_BASE_SIZE*DATA_BASE_SIZE];
 static uint8_t fg_data_base_created = 0;
 
 /* Function to calculate block average */
@@ -610,12 +612,17 @@ void fg_simulate_grain_blk8x8(int32_t *grainStripe, uint32_t grainStripeOffsetBl
   uint32_t width, uint8_t log2ScaleFactor, int16_t scaleFactor, uint32_t kOffset, uint32_t lOffset, uint8_t h, uint8_t v, uint32_t xSize)
 {
   uint32_t k, l;
+  int index;
   for (l = 0; l < 8; l++) /* y direction */
   {
     for (k = 0; k < xSize; k++) /* x direction */
     {
+        // fg_data_base[NUM_CUT_OFF_FREQ][NUM_CUT_OFF_FREQ][DATA_BASE_SIZE][DATA_BASE_SIZE]
+      index = (( h*NUM_CUT_OFF_FREQ +  v ) * DATA_BASE_SIZE  +  (l + lOffset)) * DATA_BASE_SIZE + (k + kOffset);
+
       grainStripe[grainStripeOffsetBlk8 + k + (l*width)] =
-        ((scaleFactor * fg_data_base[h][v][l + lOffset][k + kOffset]) >> (log2ScaleFactor + GRAIN_SCALE));
+        ((scaleFactor * fg_data_base[index]) >> (log2ScaleFactor + GRAIN_SCALE));
+        // ((scaleFactor * fg_data_base[h][v][l + lOffset][k + kOffset]) >> (log2ScaleFactor + GRAIN_SCALE));
     }
   }
   return;
@@ -629,6 +636,7 @@ void fg_data_base_generation( uint8_t enableDeblocking)
   uint32_t  ScaleCutOffFh, ScaleCutOffFv, l, r, i, j, k;
   int32_t   B[DATA_BASE_SIZE][DATA_BASE_SIZE], bIDCT[DATA_BASE_SIZE][DATA_BASE_SIZE];
   int32_t   bGrain;
+  int       index;
 
   for (h = 0; h < NUM_CUT_OFF_FREQ; h++)
   {
@@ -683,8 +691,9 @@ void fg_data_base_generation( uint8_t enableDeblocking)
           }
           bGrain += 128;
           bGrain = bGrain >> 8;
-          // fg_data_base[h][v][j][i] = (int8_t) OVMIN(OVMAX(-127, bGrain), 127 );
-          fg_data_base[h][v][j][i] = (int8_t) ov_clip_intp2(bGrain, 8);
+          index = (( h*NUM_CUT_OFF_FREQ +  v ) * DATA_BASE_SIZE  +  j) * DATA_BASE_SIZE + i;
+          fg_data_base[index] = (int8_t) ov_clip_intp2(bGrain, 8);
+          // fg_data_base[h][v][j][i] = (int8_t) ov_clip_intp2(bGrain, 8);
         }
       }
     }   
@@ -700,9 +709,13 @@ void fg_data_base_generation( uint8_t enableDeblocking)
                 for (l = 0; l < DATA_BASE_SIZE; l += 8)
                 {
                     for (k = 0; k < DATA_BASE_SIZE; k++)
-                    {
-                        fg_data_base[h][v][l][k]     = ((fg_data_base[h][v][l][k]) * deblockFactor[v]) >> 7;
-                        fg_data_base[h][v][l + 7][k] = ((fg_data_base[h][v][l + 7][k]) * deblockFactor[v]) >> 7;
+                    {   
+                        index = (( h*NUM_CUT_OFF_FREQ +  v ) * DATA_BASE_SIZE  +  l) * DATA_BASE_SIZE + k;
+                        fg_data_base[index]     = ((fg_data_base[index]) * deblockFactor[v]) >> 7;
+                        // fg_data_base[h][v][l][k]     = ((fg_data_base[h][v][l][k]) * deblockFactor[v]) >> 7;
+                        index = (( h*NUM_CUT_OFF_FREQ +  v ) * DATA_BASE_SIZE  +  l + 7) * DATA_BASE_SIZE + k;
+                        fg_data_base[index] = ((fg_data_base[index]) * deblockFactor[v]) >> 7;
+                        // fg_data_base[h][v][l + 7][k] = ((fg_data_base[h][v][l + 7][k]) * deblockFactor[v]) >> 7;
                     }
                 }
             }
