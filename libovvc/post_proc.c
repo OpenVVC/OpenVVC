@@ -42,10 +42,8 @@ pp_process_frame(OVVCDec *dec, OVDPB *dpb, OVFrame **frame_p)
         pp_funcs.pp_film_grain(dstComp, srcComp, dec->active_params.sei->sei_fg, 
             frame->width[0], frame->height[0], frame->poc, 0, enable_deblock);
 
+        ovframe_unref(frame_p);
         *frame_p = frame_post_proc;
-
-        //TODO: handle new ref and unref on post proc picture
-        // ovdpb_unref_pic(dpb, vvcdec->subdec_list->pic, ~0);
     }
     return ret;
 }
