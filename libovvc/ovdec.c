@@ -441,7 +441,8 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
         #if 0
         ovdpb_unref_pic(dec->dpb, sldec->pic, ~0);
         #endif
-        sldec->pic = NULL;
+        //TODO: why null?
+        // sldec->pic = NULL;
         return ret;
     }
 

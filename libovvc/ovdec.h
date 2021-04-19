@@ -3,10 +3,31 @@
 
 #include <stdint.h>
 #include <stddef.h>
+//TODO: very probable that we dont need to store the output file here
+#include <stdio.h>
+#include <pthread.h>
 
 #include "ovunits.h"
 
 #include "ovdefs.h"
+
+//TODO: other name ?
+struct OutputFrameThread
+{
+    // OVVCDec *owner;
+    FILE *fout;
+    // atomic_uint first_job;
+    // atomic_uint last_entry_idx;
+
+    /* Slice decoder thread to be used later if
+     * multiple slices
+     */
+    pthread_t thread;
+    pthread_mutex_t gnrl_mtx;
+    pthread_cond_t gnrl_cnd;
+
+    uint8_t kill;
+};
 
 /**
  * Submit raw Annex B data corresponding to a Picture Unit

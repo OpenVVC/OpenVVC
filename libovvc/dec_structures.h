@@ -281,6 +281,7 @@ struct OVVCDec
 
     /* Number of available threads */
     int nb_threads;
+    struct OutputFrameThread* out_frame_thread;
 
     /* Informations on decoder behaviour transmitted by user
      */

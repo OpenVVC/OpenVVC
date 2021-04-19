@@ -3,6 +3,11 @@
 #include <stdlib.h>
 #include <getopt.h>
 
+//TODO: remove 3
+#include "ovmem.h"
+#include "overror.h"
+#include "dec_structures.h"
+
 #include "ovdec.h"
 #include "ovdefs.h"
 #include "ovdmx.h"
@@ -32,6 +37,153 @@ static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
 static void print_version(void);
 
 static void print_usage(void);
+
+
+static void *
+ovthread_out_frame(void *opaque)
+{
+    OVVCDec *dec = (struct OVVCDec *)opaque;
+    OVFrame *frame = NULL;
+    struct OutputFrameThread* t_out = dec->out_frame_thread;
+    FILE *fout = t_out->fout;
+    int nb_pic = 0;
+    do {
+        pthread_mutex_lock(&t_out->gnrl_mtx);
+        pthread_cond_wait(&t_out->gnrl_cnd, &t_out->gnrl_mtx);
+        pthread_mutex_unlock(&t_out->gnrl_mtx);
+
+        do {
+             ovdec_receive_picture(dec, &frame);
+
+            /* FIXME use ret instead of frame */
+            if (frame) {
+                //TODO: protection of the DPB if orher frame threads try to access it ?
+                write_decoded_frame_to_file(frame, fout);
+                ++nb_pic;
+
+                ov_log(NULL, OVLOG_TRACE, "Received pic with POC: %d\n", frame->poc);
+                ovframe_unref(&frame);
+            }
+        } while (frame && !t_out->kill);
+    } while (!t_out->kill);
+
+
+    //TODO: handle failure(kill) different from normal exit (state = 0?)
+    int ret;
+    while (ret > 0) {
+        OVFrame *frame = NULL;
+        ret = ovdec_drain_picture(dec, &frame);
+        if (frame) {
+            ov_log(NULL, OVLOG_TRACE, "Draining decoder\n");
+            if (fout) {
+                write_decoded_frame_to_file(frame, fout);
+                ++nb_pic;
+            }
+
+            ov_log(NULL, OVLOG_TRACE, "Draining last pictures with POC: %d\n", frame->poc);
+            ovframe_unref(&frame);
+        }
+    }
+
+    ov_log(NULL, OVLOG_INFO, "Decoded %d pictures\n", nb_pic);
+    return NULL;
+}
+
+int
+init_output_frame_thread(OVVCDec *dec, FILE* fout)
+{
+    dec->out_frame_thread = ov_mallocz(sizeof(struct OutputFrameThread));
+    
+    if (!dec->out_frame_thread) {
+        goto failalloc;
+    }
+    dec->out_frame_thread->fout = fout;
+    dec->out_frame_thread->kill = 0;
+
+    pthread_mutex_init(&dec->out_frame_thread->gnrl_mtx, NULL);
+    pthread_cond_init(&dec->out_frame_thread->gnrl_cnd,  NULL);
+    // dec->out_frame_thread->state = 0;
+    // dec->out_frame_thread->kill  = 0;
+
+    // pthread_mutex_lock(&dec->out_frame_thread->gnrl_mtx);
+
+    if (pthread_create(&dec->out_frame_thread->thread, NULL, ovthread_out_frame, dec)) {
+        pthread_mutex_unlock(&dec->out_frame_thread->gnrl_mtx);
+        ov_log(NULL, OVLOG_ERROR, "Thread creation failed for output frame init\n");
+        goto failthread;
+    }
+
+    // /* Wait until subdec is set */
+    // while (!dec->out_frame_thread->state) {
+    //     pthread_cond_wait(&dec->out_frame_thread->task_cnd, &dec->out_frame_thread->task_mtx);
+    // }
+
+    // pthread_mutex_unlock(&dec->out_frame_thread->task_mtx);
+
+    return 0;
+
+failthread:
+    ov_freep(&dec->out_frame_thread);
+
+    return OVVC_ENOMEM;
+
+failalloc:
+    return OVVC_ENOMEM;
+}
+
+
+static int
+ovthread_read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
+{
+    int ret;
+    OVVCDmx *const dmx = hdl->dmx;
+    OVVCDec *const dec = hdl->dec;
+    OVPictureUnit *pu = NULL;
+    
+    init_output_frame_thread(dec, fout);
+    struct OutputFrameThread* t_out = dec->out_frame_thread;
+    int nb_pic = 0;
+    do {
+        ret = ovdmx_extract_picture_unit(dmx, &pu);
+        if (ret < 0) {
+            goto failread;
+        }
+
+        if (pu){
+            ret = ovdec_submit_picture_unit(dec, pu);
+            if (ret < 0) {
+                ov_free_pu(&pu);
+                goto failread;
+            }
+            ++nb_pic;
+            pthread_mutex_lock(&t_out->gnrl_mtx);
+            pthread_cond_signal(&t_out->gnrl_cnd);
+            pthread_mutex_unlock(&t_out->gnrl_mtx);
+
+            /* FIXME Picture unit freeing be inside the decoder
+             * use ref_counted buffer and call unref here instead
+             */
+            ov_free_pu(&pu);
+        }
+
+
+    } while (ret >= 0);
+
+    ov_log(NULL, OVLOG_INFO, "Decoded %d pictures\n", nb_pic);
+
+    pthread_mutex_lock(&t_out->gnrl_mtx);
+    t_out->kill = 1;
+    pthread_cond_signal(&t_out->gnrl_cnd);
+    pthread_mutex_unlock(&t_out->gnrl_mtx);
+    return 1;
+
+failread:
+    pthread_mutex_lock(&t_out->gnrl_mtx);
+    t_out->kill = 1;
+    pthread_cond_signal(&t_out->gnrl_cnd);
+    pthread_mutex_unlock(&t_out->gnrl_mtx);
+    return OVVC_ENOMEM;
+}
 
 int
 main(int argc, char** argv)
@@ -129,7 +281,8 @@ main(int argc, char** argv)
 
     if (ret < 0) goto failattach;
 
-    read_stream(&ovvc_hdl, ovvc_hdl.fp, fout);
+    // read_stream(&ovvc_hdl, ovvc_hdl.fp, fout);
+    ovthread_read_stream(&ovvc_hdl, ovvc_hdl.fp, fout);
 
     ovdmx_detach_stream(ovvc_hdl.dmx);
 
@@ -297,6 +450,7 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
     #endif
     return 1;
 }
+
 
 static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp){
   uint8_t component = 0;
