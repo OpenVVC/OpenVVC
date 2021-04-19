@@ -349,6 +349,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
             if (ref_pic->poc == ref_poc){
                 if(ref_pic->frame && ref_pic->frame->data[0]){
                     found = 1;
+                    ov_log(NULL, OVLOG_DEBUG, "Mark active reference %d for picture %d\n", ref_poc, dpb->poc);
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
                     ref_pic->flags |= flag;
                     dst_rpl[i] = ref_pic; 
@@ -360,7 +361,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
             /* If reference picture is not in the DPB we try create a new
              * Picture with requested POC ID in the DPB
              */
-            ov_log(NULL, OVLOG_ERROR, "Could not find ref %d for picture %d\n", ref_poc, dpb->poc);
+            ov_log(NULL, OVLOG_ERROR, "Generating missing reference %d for picture %d\n", ref_poc, dpb->poc);
             ref_pic = alloc_frame(dpb);
 
             if (ref_pic == NULL){

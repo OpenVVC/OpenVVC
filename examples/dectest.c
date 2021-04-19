@@ -275,18 +275,19 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
 
 
     } while (ret >= 0);
+    ret = 1;
 
     while (ret > 0) {
         OVFrame *frame = NULL;
         ret = ovdec_drain_picture(dec, &frame);
         if (frame) {
-            ov_log(NULL, OVLOG_TRACE, "Draining decoder\n");
+            ov_log(NULL, OVLOG_DEBUG, "Draining decoder\n");
             if (fout) {
                 write_decoded_frame_to_file(frame, fout);
                 ++nb_pic;
             }
 
-            ov_log(NULL, OVLOG_TRACE, "Draining last pictures with POC: %d\n", frame->poc);
+            ov_log(NULL, OVLOG_DEBUG, "Draining last pictures with POC: %d\n", frame->poc);
             ovframe_unref(&frame);
         }
     }
