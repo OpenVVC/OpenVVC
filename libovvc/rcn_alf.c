@@ -13,8 +13,8 @@
 static inline int clipALF(const int clip, const int32_t ref, const int32_t val0, const int32_t val1)
   {
     // return Clip3<int>(-clip, +clip, val0-ref) + Clip3<int>(-clip, +clip, val1-ref);
-    int clip1 = (int) OVMIN( OVMAX(-clip, val0-ref) , +clip);
-    int clip2 = (int) OVMIN( OVMAX(-clip, val1-ref) , +clip);
+    int clip1 = (int) OVMIN( OVMAX(-clip, val0 - ref) , clip);
+    int clip2 = (int) OVMIN( OVMAX(-clip, val1 - ref) , clip);
     return clip1 + clip2;
   }
 
@@ -555,117 +555,111 @@ void cc_alf_filterBlk(int16_t * chroma_dst, int16_t * luma_src, const int chr_st
 // src   : filter buffer pre-ALF (of size CTU)
 // blk_dst: location and dimension of destination block in frame
 // blk   : location and dimension of destination block in filter buffer
-void alf_filterBlkChroma(ALFClassifier **classifier, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
+void alf_filter_c(ALFClassifier **classifier, int16_t *const dst, int16_t *const src, const int dst_stride, const int src_stride,
                          Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                          const int ctu_height, int virbnd_pos)
 {
-  const int16_t *lm_src0, *lm_src1, *lm_src2, *lm_src3, *lm_src4, *lm_src5, *lm_src6;
+    const int shift = NUM_BITS - 1;
+    const int offset = 1 << ( shift - 1 );
 
-  const int16_t *coef = filter_set;
-  const int16_t *clip = clip_set;
+    const int blk_h = 4;
+    const int blk_w = 4;
 
-  const int shift = NUM_BITS - 1;
-  const int offset = 1 << ( shift - 1 );
+    int dst_blk_stride = dst_stride * blk_h;
+    int src_blk_stride = src_stride * blk_h;
 
-  const int clsSizeY = 4;
-  const int clsSizeX = 4;
+    int16_t* dst0 = dst ;
+    int16_t* dst1 = dst + dst_stride;
+    int i;
 
-  int dstStride2 = dstStride * clsSizeY;
-  int srcStride2 = srcStride * clsSizeY;
+    const int16_t *lm_src0 = src;
+    const int16_t *lm_src1 = lm_src0 + src_stride;
+    const int16_t *lm_src2 = lm_src0 - src_stride;
+    const int16_t *lm_src3 = lm_src1 + src_stride;
+    const int16_t *lm_src4 = lm_src2 - src_stride;
+    const int16_t *lm_src5 = lm_src3 + src_stride;
+    const int16_t *lm_src6 = lm_src4 - src_stride;
 
-  int16_t* pRec0 = dst ;
-  int16_t* pRec1 = pRec0 + dstStride;
-  int i;
+    for (i = 0; i < blk_dst.height; i += blk_h) {
+        int j;
+        for (j = 0; j < blk_dst.width; j += blk_w) {
+            int k;
+            for (k = 0; k < blk_h; k++) {
+                int l;
+                const int16_t *src_0 = lm_src0 + j + k * src_stride;
+                const int16_t *src_1 = lm_src1 + j + k * src_stride;
+                const int16_t *src_2 = lm_src2 + j + k * src_stride;
+                const int16_t *src_3 = lm_src3 + j + k * src_stride;
+                const int16_t *src_4 = lm_src4 + j + k * src_stride;
+                const int16_t *src_5 = lm_src5 + j + k * src_stride;
+                const int16_t *src_6 = lm_src6 + j + k * src_stride;
 
-  lm_src0 = src;
-  lm_src1 = lm_src0 + srcStride;
-  lm_src2 = lm_src0 - srcStride;
-  lm_src3 = lm_src1 + srcStride;
-  lm_src4 = lm_src2 - srcStride;
-  lm_src5 = lm_src3 + srcStride;
-  lm_src6 = lm_src4 - srcStride;
+                dst1 = dst0 + j + k * dst_stride;
 
-  for (i = 0; i < blk_dst.height; i += clsSizeY) {
-      int j;
-      for (j = 0; j < blk_dst.width; j += clsSizeX) {
-          int k;
-          for (k = 0; k < clsSizeY; k++) {
-              int l;
-              const int16_t *src_0, *src_1, *src_2, *src_3, *src_4, *src_5, *src_6;
-              src_0 = lm_src0 + j + k * srcStride;
-              src_1 = lm_src1 + j + k * srcStride;
-              src_2 = lm_src2 + j + k * srcStride;
-              src_3 = lm_src3 + j + k * srcStride;
-              src_4 = lm_src4 + j + k * srcStride;
-              src_5 = lm_src5 + j + k * srcStride;
-              src_6 = lm_src6 + j + k * srcStride;
+                int yVb = (blk_dst.y + i + k) & (ctu_height - 1);
+                if (yVb < virbnd_pos && (yVb >= virbnd_pos - 2)) {
+                    src_1 = (yVb == virbnd_pos - 1) ? src_0 : src_1;
+                    src_3 = (yVb >= virbnd_pos - 2) ? src_1 : src_3;
+                    src_5 = (yVb >= virbnd_pos - 3) ? src_3 : src_5;
 
-              pRec1 = pRec0 + j + k * dstStride;
+                    src_2 = (yVb == virbnd_pos - 1) ? src_0 : src_2;
+                    src_4 = (yVb >= virbnd_pos - 2) ? src_2 : src_4;
+                    src_6 = (yVb >= virbnd_pos - 3) ? src_4 : src_6;
+                } else if (yVb >= virbnd_pos && (yVb <= virbnd_pos + 1)) {
+                    src_2 = (yVb == virbnd_pos    ) ? src_0 : src_2;
+                    src_4 = (yVb <= virbnd_pos + 1) ? src_2 : src_4;
+                    src_6 = (yVb <= virbnd_pos + 2) ? src_4 : src_6;
 
-              int yVb = (blk_dst.y + i + k) & (ctu_height - 1);
-              if (yVb < virbnd_pos && (yVb >= virbnd_pos - 2)) {
-                  src_1 = (yVb == virbnd_pos - 1) ? src_0 : src_1;
-                  src_3 = (yVb >= virbnd_pos - 2) ? src_1 : src_3;
-                  src_5 = (yVb >= virbnd_pos - 3) ? src_3 : src_5;
+                    src_1 = (yVb == virbnd_pos    ) ? src_0 : src_1;
+                    src_3 = (yVb <= virbnd_pos + 1) ? src_1 : src_3;
+                    src_5 = (yVb <= virbnd_pos + 2) ? src_3 : src_5;
+                }
 
-                  src_2 = (yVb == virbnd_pos - 1) ? src_0 : src_2;
-                  src_4 = (yVb >= virbnd_pos - 2) ? src_2 : src_4;
-                  src_6 = (yVb >= virbnd_pos - 3) ? src_4 : src_6;
-              } else if (yVb >= virbnd_pos && (yVb <= virbnd_pos + 1)) {
-                  src_2 = (yVb == virbnd_pos) ? src_0 : src_2;
-                  src_4 = (yVb <= virbnd_pos + 1) ? src_2 : src_4;
-                  src_6 = (yVb <= virbnd_pos + 2) ? src_4 : src_6;
+                uint8_t isNearVBabove = yVb < virbnd_pos && (yVb >= virbnd_pos - 1);
+                uint8_t isNearVBbelow = yVb >= virbnd_pos && (yVb <= virbnd_pos);
 
-                  src_1 = (yVb == virbnd_pos) ? src_0 : src_1;
-                  src_3 = (yVb <= virbnd_pos + 1) ? src_1 : src_3;
-                  src_5 = (yVb <= virbnd_pos + 2) ? src_3 : src_5;
-              }
+                for (l = 0; l < blk_w; l++) {
+                    int sum = 0;
+                    const int16_t curr = src_0[0];
+                    sum += filter_set[0] * clipALF(clip_set[0], curr, src_3[ 0], src_4[ 0]);
+                    sum += filter_set[1] * clipALF(clip_set[1], curr, src_1[ 1], src_2[-1]);
+                    sum += filter_set[2] * clipALF(clip_set[2], curr, src_1[ 0], src_2[ 0]);
+                    sum += filter_set[3] * clipALF(clip_set[3], curr, src_1[-1], src_2[ 1]);
+                    sum += filter_set[4] * clipALF(clip_set[4], curr, src_0[ 2], src_0[-2]);
+                    sum += filter_set[5] * clipALF(clip_set[5], curr, src_0[ 1], src_0[-1]);
 
-              uint8_t isNearVBabove = yVb < virbnd_pos && (yVb >= virbnd_pos - 1);
-              uint8_t isNearVBbelow = yVb >= virbnd_pos && (yVb <= virbnd_pos);
+                    if (!(isNearVBabove || isNearVBbelow)) {
+                        sum = (sum + offset) >> shift;
+                    } else {
+                        //Rounding offset fix
+                        sum = (sum + (1 << ((shift + 3) - 1))) >> (shift + 3);
+                    }
 
-              for (l = 0; l < clsSizeX; l++) {
-                  int sum = 0;
-                  const int16_t curr = src_0[+0];
-                  sum += coef[0] * ( clipALF(clip[0], curr, src_3[+0], src_4[+0]) );
-                  sum += coef[1] * ( clipALF(clip[1], curr, src_1[+1], src_2[-1]) );
-                  sum += coef[2] * ( clipALF(clip[2], curr, src_1[+0], src_2[+0]) );
-                  sum += coef[3] * ( clipALF(clip[3], curr, src_1[-1], src_2[+1]) );
-                  sum += coef[4] * ( clipALF(clip[4], curr, src_0[+2], src_0[-2]) );
-                  sum += coef[5] * ( clipALF(clip[5], curr, src_0[+1], src_0[-1]) );
+                    sum += curr;
+                    dst1[l] = OVMAX( OVMIN( sum, (1<<10) - 1 ), 0);
 
-                  if (!(isNearVBabove || isNearVBbelow)) {
-                      sum = (sum + offset) >> shift;
-                  } else {
-                      //Rounding offset fix
-                      sum = (sum + (1 << ((shift + 3) - 1))) >> (shift + 3);
-                  }
+                    src_0++;
+                    src_1++;
+                    src_2++;
+                    src_3++;
+                    src_4++;
+                    src_5++;
+                    src_6++;
+                }
+            }
+        }
 
-                  sum += curr;
-                  pRec1[l] = OVMAX( OVMIN( sum, (1<<10) - 1 ), 0);
+        dst0 += dst_blk_stride;
+        dst1 += dst_blk_stride;
 
-                  src_0++;
-                  src_1++;
-                  src_2++;
-                  src_3++;
-                  src_4++;
-                  src_5++;
-                  src_6++;
-              }
-          }
-      }
-
-      pRec0 += dstStride2;
-      pRec1 += dstStride2;
-
-      lm_src0 += srcStride2;
-      lm_src1 += srcStride2;
-      lm_src2 += srcStride2;
-      lm_src3 += srcStride2;
-      lm_src4 += srcStride2;
-      lm_src5 += srcStride2;
-      lm_src6 += srcStride2;
-  }
+        lm_src0 += src_blk_stride;
+        lm_src1 += src_blk_stride;
+        lm_src2 += src_blk_stride;
+        lm_src3 += src_blk_stride;
+        lm_src4 += src_blk_stride;
+        lm_src5 += src_blk_stride;
+        lm_src6 += src_blk_stride;
+    }
 }
 
 void alf_filterBlkLuma(ALFClassifier **classifier, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
@@ -906,25 +900,34 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
             if( (c_idx==1 && (alf_params_ctu.ctb_alf_flag & 2)) || (c_idx==2 && (alf_params_ctu.ctb_alf_flag & 1)))
             {
                 Area blk, blk_dst;
-                //Source block in the filter buffers image
-                blk.x=0; blk.y=0;
-                // blk.x=xPos/chr_scale+margin; blk.y=yPos/chr_scale+margin;
-                blk.width=width/chr_scale; blk.height=height/chr_scale;
+                blk.x = 0;
+                blk.y = 0;
+
+                blk.width  = width /chr_scale;
+                blk.height = height/chr_scale;
+
                 int stride_src = fb.filter_region_stride[c_idx];
                 int16_t*  src_chroma = &src[c_idx][blk.y*stride_src + blk.x + fb.filter_region_offset[c_idx]];
-
                 //Destination block in the final image
-                blk_dst.x=xPos/chr_scale; blk_dst.y=yPos/chr_scale;
-                blk_dst.width=width/chr_scale; blk_dst.height=height/chr_scale;
-                //BITDEPTH
+                blk_dst.x = xPos/chr_scale;
+                blk_dst.y = yPos/chr_scale;
+
+                blk_dst.width  = width /chr_scale;
+                blk_dst.height = height/chr_scale;
+
                 int stride_dst = frame->linesize[c_idx]/2;
+
                 int16_t*  dst_chroma = (int16_t*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
 
                 uint8_t alt_num = (c_idx == 1) ? alf_params_ctu.cb_alternative : alf_params_ctu.cr_alternative;
 
-                (ctudec->rcn_ctx.rcn_funcs.alf.chroma)(alf->classifier, dst_chroma, src_chroma, stride_dst, stride_src, blk_dst,
-                    alf->chroma_coeff_final[alt_num], alf->chroma_clip_final[alt_num],
-                    ctu_width/chr_scale, (( yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_width - ALF_VB_POS_ABOVE_CTUROW_LUMA)/chr_scale));
+                ctudec->rcn_ctx.rcn_funcs.alf.chroma(alf->classifier, dst_chroma, src_chroma,
+                                                       stride_dst, stride_src, blk_dst,
+                                                       alf->chroma_coeff_final[alt_num],
+                                                       alf->chroma_clip_final[alt_num],
+                                                       ctu_width/chr_scale,
+                                                       (( yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h/chr_scale 
+                                                        : (ctu_width - ALF_VB_POS_ABOVE_CTUROW_LUMA)/chr_scale));
             }
 
             if ((c_idx==1 && alf_info->cc_alf_cb_enabled_flag) || (c_idx==2 && alf_info->cc_alf_cr_enabled_flag))
@@ -978,5 +981,5 @@ void rcn_alf_destroy(RCNALF* alf, int16_t ctu_width)
 
 void rcn_init_alf_functions(struct RCNFunctions *rcn_func){
   rcn_func->alf.luma=&alf_filterBlkLuma;
-  rcn_func->alf.chroma=&alf_filterBlkChroma;
+  rcn_func->alf.chroma=&alf_filter_c;
 }
