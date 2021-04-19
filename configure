@@ -38,7 +38,7 @@ Options:
 
 
   --disable-log            disable log reportings [no]
-  --disable-sse            disable sse optimizations [$sse_enabled]
+  --disable-sse            disable sse optimizations [no]
   --disable-static         do not build static libraries [no]
   --enable-shared          build shared libraries [no]
 
@@ -53,8 +53,8 @@ Options:
   --release                use specific release compiler flags [CFLAGS ${release_cflags}]
   --debug                  use specific debug compiler cflags [CFLAGS ${debug_cflags}]
 
-  --teststreams-dir=DIR    read test bitstreams from DIR[$teststream_dir_default]
-  --teststreams-url=URL    download test bitstreams and md5sum from URL[$teststream_url_default]
+  --teststreams-dir=DIR    read test bitstreams from DIR[$teststreams_dir_default]
+  --teststreams-url=URL    download test bitstreams and md5sum from URL[$teststreams_url_default]
 EOF
   exit 0
 }

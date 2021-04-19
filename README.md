@@ -10,13 +10,19 @@ An open-source VVC decoder library licensed under LGPLv2.1. OpenVVC is still und
 
 
 ## Table of Contents
-
+- [Changelog](#changelog)
 - [Using OpenVVC](#using-openvvc-test-program)
   - [Example](#example)
   - [Parameters](#parameters)
 - [Compiling OpenVVC](#compiling-openvvc)
   - [Minimal Compilation Steps](#minimal-compilation-steps)
   - [Configure Parameters](#configure-parameters)
+
+## Changelog
+### v0.2.0
+* Support the all intra configuration with JVET CTCs.
+* Support JVET-V0093 Film Grain filter.
+
 ## Using OpenVVC Test Program
 
 ### Example:
@@ -77,5 +83,6 @@ Options:
   --release                use specific release compiler flags [CFLAGS -O3 -Wall]
   --debug                  use specific debug compiler cflags [CFLAGS -O0 -g -Wall --pedantic]
 
-  --teststreams-dir=DIR    read test bitstreams from DIR[]
+  --teststreams-dir=DIR    read test bitstreams from DIR[./CI/test_bitstreams]
+  --teststreams-url=URL    download test bitstreams and md5sum from URL[http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/all_intra/]
 ```
