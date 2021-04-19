@@ -57,7 +57,7 @@ ovdpb_init(OVDPB **dpb_p, const OVPS *ps)
     }
 
     /* FIXME handle temporal and sub layers*/
-    dpb_init_params(*dpb_p, &ps->sps->dpb_parameters[0]);
+    dpb_init_params(*dpb_p, &ps->sps->dpb_parameters[ps->sps->sps_max_sublayers_minus1]);
 
     return 0;
 
