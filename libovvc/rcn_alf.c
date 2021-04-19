@@ -555,9 +555,11 @@ void cc_alf_filterBlk(int16_t * chroma_dst, int16_t * luma_src, const int chr_st
 // src   : filter buffer pre-ALF (of size CTU)
 // blk_dst: location and dimension of destination block in frame
 // blk   : location and dimension of destination block in filter buffer
-void alf_filter_c(ALFClassifier **classifier, int16_t *const dst, int16_t *const src, const int dst_stride, const int src_stride,
-                         Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
-                         const int ctu_height, int virbnd_pos)
+void alf_filter_c(int16_t *const dst, const int16_t *const src,
+                  const int dst_stride, const int src_stride,
+                  Area blk_dst,
+                  const int16_t *const filter_set, const int16_t *const clip_set,
+                  const int ctu_height, int virbnd_pos)
 {
     const int shift = NUM_BITS - 1;
     const int offset = 1 << ( shift - 1 );
@@ -921,13 +923,13 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
 
                 uint8_t alt_num = (c_idx == 1) ? alf_params_ctu.cb_alternative : alf_params_ctu.cr_alternative;
 
-                ctudec->rcn_ctx.rcn_funcs.alf.chroma(alf->classifier, dst_chroma, src_chroma,
-                                                       stride_dst, stride_src, blk_dst,
-                                                       alf->chroma_coeff_final[alt_num],
-                                                       alf->chroma_clip_final[alt_num],
-                                                       ctu_width/chr_scale,
-                                                       (( yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h/chr_scale 
-                                                        : (ctu_width - ALF_VB_POS_ABOVE_CTUROW_LUMA)/chr_scale));
+                ctudec->rcn_ctx.rcn_funcs.alf.chroma(dst_chroma, src_chroma,
+                                                     stride_dst, stride_src, blk_dst,
+                                                     alf->chroma_coeff_final[alt_num],
+                                                     alf->chroma_clip_final[alt_num],
+                                                     ctu_width/chr_scale,
+                                                     (( yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h/chr_scale
+                                                      : (ctu_width - ALF_VB_POS_ABOVE_CTUROW_LUMA)/chr_scale));
             }
 
             if ((c_idx==1 && alf_info->cc_alf_cb_enabled_flag) || (c_idx==2 && alf_info->cc_alf_cr_enabled_flag))

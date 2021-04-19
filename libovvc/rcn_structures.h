@@ -101,7 +101,11 @@ struct PlanarFunctions
 
 struct ALFFunctions{
     ALFFilterBlkFunc luma;
-    ALFFilterBlkFunc chroma;
+    void (*chroma)(int16_t *const dst, const int16_t *const src,
+                   const int dstStride, const int srcStride,
+                   struct Area blk_dst,
+                   const int16_t *const filter_set, const int16_t *const clip_set,
+                   const int ctu_height, int virbnd_pos);
 };
 
 struct RCNFunctions

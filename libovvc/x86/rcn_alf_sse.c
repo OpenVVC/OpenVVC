@@ -106,9 +106,12 @@ static const uint16_t shuffleTab[4][2][8] = {
 //                              const short *filter_set, const short *clip_set,
 //                              const int ctu_height, int virbnd_pos, AlfFilterType filtType, int margin)
 
-void simdFilter5x5Blk(ALFClassifier **classifier, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
-                                                                                   Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
-                                                                                   const int ctu_height, int virbnd_pos)
+static void
+simdFilter5x5Blk(int16_t *const dst, const int16_t *const src,
+                 const int dstStride, const int srcStride,
+                 Area blk_dst,
+                 const int16_t *const filter_set, const int16_t *const clip_set,
+                 const int ctu_height, int virbnd_pos)
 {
     const int SHIFT = NUM_BITS - 1;
     const int ROUND = 1 << (SHIFT - 1);
@@ -140,12 +143,9 @@ void simdFilter5x5Blk(ALFClassifier **classifier, int16_t *const dst, int16_t *c
     params[1][1] = _mm_shuffle_epi32(fc, 0x55);
     params[1][2] = _mm_shuffle_epi32(fc, 0xaa);
 
-    for (size_t i = 0; i < blk_dst.height; i += STEP_Y)
-    {
-        for (size_t j = 0; j < blk_dst.width; j += STEP_X)
-        {
-            for (size_t ii = 0; ii < STEP_Y; ii++)
-            {
+    for (size_t i = 0; i < blk_dst.height; i += STEP_Y) {
+        for (size_t j = 0; j < blk_dst.width; j += STEP_X) {
+            for (size_t ii = 0; ii < STEP_Y; ii++) {
                 const uint16_t *pImg0, *pImg1, *pImg2, *pImg3, *pImg4;
 
                 pImg0 = (uint16_t*)_src + j + ii * srcStride ;
@@ -155,35 +155,31 @@ void simdFilter5x5Blk(ALFClassifier **classifier, int16_t *const dst, int16_t *c
                 pImg4 = pImg2 - srcStride;
 
                 const int yVb = (blk_dst.y + i + ii) & (ctu_height - 1);
-                if (yVb < virbnd_pos && (yVb >= virbnd_pos - 2))   // above
-                {
+
+                if (yVb < virbnd_pos && (yVb >= virbnd_pos - 2)) {
                     pImg1 = (yVb == virbnd_pos - 1) ? pImg0 : pImg1;
                     pImg3 = (yVb >= virbnd_pos - 2) ? pImg1 : pImg3;
 
                     pImg2 = (yVb == virbnd_pos - 1) ? pImg0 : pImg2;
                     pImg4 = (yVb >= virbnd_pos - 2) ? pImg2 : pImg4;
-                }
-                else if (yVb >= virbnd_pos && (yVb <= virbnd_pos + 1))   // bottom
-                {
+                } else if (yVb >= virbnd_pos && (yVb <= virbnd_pos + 1)) {
                     pImg2 = (yVb == virbnd_pos) ? pImg0 : pImg2;
                     pImg4 = (yVb <= virbnd_pos + 1) ? pImg2 : pImg4;
 
                     pImg1 = (yVb == virbnd_pos) ? pImg0 : pImg1;
                     pImg3 = (yVb <= virbnd_pos + 1) ? pImg1 : pImg3;
                 }
+
                 __m128i cur = _mm_loadu_si128((const __m128i *) pImg0);
 
                 uint8_t isNearVBabove = yVb < virbnd_pos && (yVb >= virbnd_pos - 1);
                 uint8_t isNearVBbelow = yVb >= virbnd_pos && (yVb <= virbnd_pos);
 
                 __m128i accumA, accumB;
-                if (!(isNearVBabove || isNearVBbelow))
-                {
+                if (!(isNearVBabove || isNearVBbelow)) {
                     accumA = mmOffset;
                     accumB = mmOffset;
-                }
-                else
-                {
+                } else {
                     //Rounding offset fix
                     accumA = mmOffsetborder;
                     accumB = mmOffsetborder;
@@ -193,13 +189,10 @@ void simdFilter5x5Blk(ALFClassifier **classifier, int16_t *const dst, int16_t *c
                 process2coeffs5x5(1, pImg1 + 0, pImg2 + 0, pImg1 - 1, pImg2 + 1);
                 process2coeffs5x5(2, pImg0 + 2, pImg0 - 2, pImg0 + 1, pImg0 - 1);
 
-                if (!(isNearVBabove || isNearVBbelow))
-                {
+                if (!(isNearVBabove || isNearVBbelow)) {
                     accumA = _mm_srai_epi32(accumA, SHIFT);
                     accumB = _mm_srai_epi32(accumB, SHIFT);
-                }
-                else
-                {
+                } else {
                     //Rounding offset fix
                     accumA = _mm_srai_epi32(accumA, SHIFTborder);
                     accumB = _mm_srai_epi32(accumB, SHIFTborder);
@@ -209,13 +202,10 @@ void simdFilter5x5Blk(ALFClassifier **classifier, int16_t *const dst, int16_t *c
                 accumA = _mm_add_epi16(accumA, cur);
                 accumA = _mm_min_epi16(mmMax, _mm_max_epi16(accumA, mmMin));
 
-                if (j + STEP_X <= blk_dst.width)
-                {
+                if (j + STEP_X <= blk_dst.width) {
                     // if (j>=x0 && i+ii>=y0 && j<=w_max && i+ii<=h_max)
                         _mm_storeu_si128((__m128i *) (_dst + ii * dstStride + j), accumA);
-                }
-                else
-                {
+                } else {
                     // if (j>=x0 && i+ii>=y0 && j<=w_max && i+ii<=h_max)
                         _mm_storel_epi64((__m128i *) (_dst + ii * dstStride + j), accumA);
                 }
