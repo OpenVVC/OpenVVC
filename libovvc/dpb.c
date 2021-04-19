@@ -148,6 +148,7 @@ ovdpb_unref_pic(OVDPB *dpb, OVPicture *pic, int flags)
      */
     if (!pic->flags) {
         /* Release TMVP  MV maps */
+        ov_log(NULL, OVLOG_DEBUG, "Release picture %d\n", pic->poc);
         dpbpriv_release_pic(pic);
     }
 }
@@ -313,11 +314,11 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t 
            ref_poc = rp->rpls_poc_lsb_lt;
 
            rinfo->poc = ref_poc;
-           ov_log(NULL, 2, "Partially supported Long Term Ref \n");
+           ov_log(NULL, OVLOG_WARNING, "Partially supported Long Term Ref \n");
 
         break;
         case ILRP_REF:
-           ov_log(NULL, 3, "Unsupported Inter Layer Ref \n");
+           ov_log(NULL, OVLOG_ERROR, "Unsupported Inter Layer Ref \n");
            rinfo->poc = ref_poc;
         break;
         }
@@ -356,6 +357,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
             /* If reference picture is not in the DPB we try create a new
              * Picture with requested POC ID in the DPB
              */
+            ov_log(NULL, OVLOG_ERROR, "Could not find ref %d for picture %d\n", ref_poc, dpb->poc);
             ref_pic = alloc_frame(dpb);
 
             if (ref_pic == NULL){
@@ -370,7 +372,6 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
             ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
             ref_pic->flags |= flag;
             /*FIXME  Set output flag ? */
-            ov_log(NULL, OVLOG_ERROR, "Could not find ref %d for picture\n", ref_poc);
             dst_rpl[i] = ref_pic; 
             #if 0
             return 0;
@@ -441,7 +442,7 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
                 return ret;
             }
 
-            ov_log(NULL, OVLOG_TRACE, "Got ouput picture with POC %d.\n", pic->poc);
+            ov_log(NULL, OVLOG_TRACE, "Drain picture with POC %d.\n", pic->poc);
 
             return nb_output;
         }
@@ -463,6 +464,7 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
 int
 ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
 {
+    ov_log(NULL, OVLOG_DEBUG, "Try to output picture\n");
     do {
         const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
         int nb_output = 0;
@@ -515,6 +517,8 @@ ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
 
             ret = ovframe_new_ref(out, pic->frame);
 
+            ov_log(NULL, OVLOG_DEBUG, "Ouput picture with POC %d.\n", pic->poc);
+
             /* we unref the picture even if ref failed the picture
              * will still be usable by the decoder if not bumped
              * */
@@ -523,8 +527,6 @@ ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
             if (ret < 0) {
                 return ret;
             }
-
-            ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", pic->poc);
 
             return nb_output;
         }
