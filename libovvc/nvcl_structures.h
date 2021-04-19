@@ -34,6 +34,7 @@ struct RefPic
 struct OVRPL
 {
     uint8_t num_ref_entries;
+    uint8_t num_ref_active_entries;
     uint8_t ltrp_in_header_flag;
     struct RefPic rp_list[OV_MAX_NB_RP];
 };

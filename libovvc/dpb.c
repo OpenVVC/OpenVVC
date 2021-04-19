@@ -338,7 +338,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
 
     compute_ref_poc(rpl, rpl_info, poc);
 
-    for (i = 0;  i < rpl->num_ref_entries; ++i){
+    for (i = 0;  i < rpl->num_ref_active_entries; ++i){
         int16_t ref_poc  = rpl_info->ref_info[i].poc;
         int16_t ref_type = rpl_info->ref_info[i].type;
         uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
@@ -380,6 +380,25 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
             #if 0
             return 0;
             #endif
+        }
+    }
+
+    /* Mark non active refrences pictures as used for reference */
+    for (; i < rpl->num_ref_entries; ++i) {
+        int16_t ref_poc  = rpl_info->ref_info[i].poc;
+        int16_t ref_type = rpl_info->ref_info[i].type;
+        uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
+        OVPicture *ref_pic;
+        for (j = 0; j < nb_dpb_pic; j++) {
+            ref_pic = &dpb->pictures[j];
+            if (ref_pic->poc == ref_poc){
+                if(ref_pic->frame && ref_pic->frame->data[0]){
+                    ov_log(NULL, OVLOG_DEBUG, "Mark non active reference %d for picture %d\n", ref_poc, dpb->poc);
+                    ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
+                    ref_pic->flags |= flag;
+                    dst_rpl[i] = ref_pic;
+                }
+            }
         }
     }
 

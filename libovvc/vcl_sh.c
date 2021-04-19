@@ -194,13 +194,6 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
         (sh->sh_slice_type == B && nb_ref_entries1 > 1)) {
         sh->sh_num_ref_idx_active_override_flag = nvcl_read_flag(rdr);
         if (sh->sh_num_ref_idx_active_override_flag) {
-            #if 0
-            for (i = 0; i < (sh->sh_slice_type == B ? 2: 1); i++) {
-                if (num_ref_entries[i][RplsIdx[i]] > 1) {
-                    sh->sh_num_ref_idx_active_minus1[i] = nvcl_read_u_expgolomb(rdr);
-                }
-            }
-            #else
             if (nb_ref_entries0 > 1) {
                 sh->sh_num_ref_idx_active_l0_minus1 = nvcl_read_u_expgolomb(rdr);
                 nb_ref_entries0 = sh->sh_num_ref_idx_active_l0_minus1 + 1;
@@ -210,7 +203,6 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
                 sh->sh_num_ref_idx_active_l1_minus1 = nvcl_read_u_expgolomb(rdr);
                 nb_ref_entries1 = sh->sh_num_ref_idx_active_l1_minus1 + 1;
             }
-            #endif
         } else if (nb_ref_entries0 > pps->pps_num_ref_idx_default_active_minus1[0] ||
                     nb_ref_entries1 > pps->pps_num_ref_idx_default_active_minus1[1]) {
 
@@ -224,12 +216,12 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
             }
 
         }
-        /* FIXME do not overwrite */
-        sh->hrpl.rpl_h0.rpl_data.num_ref_entries = nb_ref_entries0;
-        sh->hrpl.rpl_h1.rpl_data.num_ref_entries = nb_ref_entries1;
-        ph->hrpl.rpl_h0.rpl_data.num_ref_entries = nb_ref_entries0;
-        ph->hrpl.rpl_h1.rpl_data.num_ref_entries = nb_ref_entries1;
     }
+    /* FIXME do this in Info structures ?*/
+    sh->hrpl.rpl_h0.rpl_data.num_ref_active_entries = nb_ref_entries0;
+    sh->hrpl.rpl_h1.rpl_data.num_ref_active_entries = nb_ref_entries1;
+    ph->hrpl.rpl_h0.rpl_data.num_ref_active_entries = nb_ref_entries0;
+    ph->hrpl.rpl_h1.rpl_data.num_ref_active_entries = nb_ref_entries1;
 
     if (sh->sh_slice_type != I) {
         if (pps->pps_cabac_init_present_flag) {
@@ -241,7 +233,6 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
                 sh->sh_collocated_from_l0_flag = nvcl_read_flag(rdr);
             }
 
-            /* FIXME check NumRefIdxActive[0] > 1 NumRefIdxActive[1] > 1*/
             if ((sh->sh_collocated_from_l0_flag && nb_ref_entries0 > 1) ||
                 (sh->sh_slice_type == B && (!sh->sh_collocated_from_l0_flag && nb_ref_entries1 > 1))) {
                 sh->sh_collocated_ref_idx = nvcl_read_u_expgolomb(rdr);
