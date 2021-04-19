@@ -375,7 +375,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
 
             ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
             ref_pic->flags |= flag;
-            /*FIXME  Set output flag ? */
+            /*FIXME  Set output / corrupt flag ? */
             dst_rpl[i] = ref_pic; 
             #if 0
             return 0;
