@@ -415,6 +415,24 @@ ovcabac_read_ae_intra_chroma_mpm_idx(OVCABACCtx *const cabac_ctx)
     return (idx | ovcabac_bypass_read(cabac_ctx));
 }
 
+static uint8_t
+ovcabac_read_ae_ref_idx(OVCABACCtx *const cabac_ctx, uint8_t nb_active_ref)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    uint8_t ref_idx = 0;
+    if (ovcabac_ae_read(cabac_ctx, &cabac_state[REF_PIC_CTX_OFFSET])) {
+        ref_idx += 1;
+        if (nb_active_ref > 2 && ovcabac_ae_read(cabac_ctx, &cabac_state[REF_PIC_CTX_OFFSET + 1])) {
+            ref_idx += 1;
+            while (nb_active_ref <= ref_idx && ovcabac_bypass_read(cabac_ctx)) {
+                ref_idx++;
+            }
+        }
+    }
+
+    return ref_idx;
+}
+
 int
 coding_unit(OVCTUDec *const ctu_dec,
             const OVPartInfo *const part_ctx,
@@ -823,9 +841,9 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_w = (1 << log2_pb_w) >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_h = (1 << log2_pb_h) >> part_ctx->log2_min_cb_s;
+    uint8_t ref_idx = 0;
 
     OVMV mv0;
-
     if (merge_flag) {
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
@@ -838,6 +856,9 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     } else {
         /*FIXME add ref_idx*/
         OVMV mvd = ovcabac_read_ae_mvd(cabac_ctx);
+        if (inter_ctx->nb_active_ref0 > 1) {
+            ref_idx = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref0);
+        }
 
         uint8_t mvp_idx = ovcabac_read_ae_mvp_flag(cabac_ctx);
 
@@ -909,6 +930,10 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         uint8_t inter_dir = ovcabac_read_ae_inter_dir(cabac_ctx, log2_pb_w, log2_pb_h);
 
         if (inter_dir & 0x1) {
+            uint8_t ref_idx = 0;
+            if (inter_ctx->nb_active_ref0 > 1) {
+                ref_idx = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref0);
+            }
             /*FIXME add ref_idx*/
             mvd0 = ovcabac_read_ae_mvd(cabac_ctx);
 
@@ -916,6 +941,10 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         }
 
         if (inter_dir & 0x2) {
+            uint8_t ref_idx = 0;
+            if (inter_ctx->nb_active_ref1 > 1) {
+                ref_idx = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref1);
+            }
             /*FIXME add ref_idx*/
             mvd1 = ovcabac_read_ae_mvd(cabac_ctx);
 

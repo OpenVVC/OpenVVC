@@ -253,6 +253,8 @@ struct InterDRVCtx
     /* References Pictures Lists */
     OVPicture *rpl0[16];
     OVPicture *rpl1[16];
+    uint8_t nb_active_ref0;
+    uint8_t nb_active_ref1;
 
     /* CTU Local Map Motion Vectors */
     struct OVMVCtx mv_ctx0;
