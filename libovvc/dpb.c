@@ -322,6 +322,9 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t 
            rinfo->poc = ref_poc;
         break;
         }
+
+        poc = ref_poc;
+
     }
     return 0;
 }
