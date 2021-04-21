@@ -221,7 +221,8 @@ simdFilter5x5Blk(int16_t *const dst, const int16_t *const src,
 //                              const Area blk_dst, const Area blk, const ComponentID compId,
 //                              const short *filter_set, const short *clip_set,
 //                              const int ctu_height, int virbnd_pos, AlfFilterType filtType, int margin)
-void simdFilter7x7Blk(ALFClassifier **classifier, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
+static void
+simdFilter7x7Blk(ALFClassifier **classifier, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
                          Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                          const int ctu_height, int virbnd_pos)
 {
