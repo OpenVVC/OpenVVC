@@ -262,7 +262,7 @@ ovcabac_read_ae_lfnst_idx(OVCABACCtx *const cabac_ctx)
 }
 
 static uint8_t
-decode_cbf_st(const OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf)
+decode_cbf_st(const OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t tu_cbf_cb = ovcabac_read_ae_tu_cbf_cb(cabac_ctx);
@@ -270,7 +270,7 @@ decode_cbf_st(const OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf)
     uint8_t cbf_mask = (tu_cbf_cb << 1) | tu_cbf_cr;
     uint8_t tu_cbf_luma = rqt_root_cbf;
 
-    if (!rqt_root_cbf || (cbf_mask && rqt_root_cbf)){
+    if (!rqt_root_cbf || (cbf_mask && rqt_root_cbf) || (tr_depth == 1 && rqt_root_cbf)){
         tu_cbf_luma = ovcabac_read_ae_tu_cbf_luma(cabac_ctx);
     }
 
@@ -1093,7 +1093,7 @@ transform_unit_st(OVCTUDec *const ctu_dec,
                   unsigned int log2_tb_w, unsigned int log2_tb_h,
                   uint8_t rqt_root_cbf, uint8_t cu_flags, uint8_t tr_depth)
 {
-    uint8_t cbf_mask = decode_cbf_st(ctu_dec, rqt_root_cbf);
+    uint8_t cbf_mask = decode_cbf_st(ctu_dec, rqt_root_cbf, tr_depth);
 
     /* FIXME check if delta_qp is read per cu or per tu */
     if (cbf_mask) {
