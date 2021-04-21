@@ -275,7 +275,7 @@ rcn_alf_derive_classificationBlk(ALFClassifier **classifier,
 
     int pixY;
     int height = blk.height + fl2;
-    int width = blk.width + fl2;
+    int width  = blk.width + fl2;
 
     for( int i = 0; i < height; i += 2 ) {
         int yoffset = ( i + 1 - flP1 ) * stride - flP1;
@@ -300,18 +300,18 @@ rcn_alf_derive_classificationBlk(ALFClassifier **classifier,
             // pixY = j + 1 + posX;
             pixY = j + 1 ;
             const int16_t *pY = src1 + pixY;
-            const int16_t* pYdown = src0 + pixY;
-            const int16_t* pYup = src2 + pixY;
-            const int16_t* pYup2 = src3 + pixY;
+            const int16_t *pYdown = src0 + pixY;
+            const int16_t *pYup = src2 + pixY;
+            const int16_t *pYup2 = src3 + pixY;
 
             const int16_t y0 = pY[0] << 1;
             const int16_t yup1 = pYup[1] << 1;
 
             //modification des buffers laplacian ici 
-            pYver[j]  = abs( y0 - pYdown[0] - pYup[0] )  + abs( yup1 - pY[1] - pYup2[1] );
-            pYhor[j]  = abs( y0 - pY[1] - pY[-1] )       + abs( yup1 - pYup[2] - pYup[0] );
-            pYdig0[j] = abs( y0 - pYdown[-1] - pYup[1] ) + abs( yup1 - pY[0] - pYup2[2] );
-            pYdig1[j] = abs( y0 - pYup[-1] - pYdown[1] ) + abs( yup1 - pYup2[0] - pY[2] );
+            pYver[j]  = abs(y0 - pYdown[0]  - pYup[0])   + abs(yup1 - pY[1]    - pYup2[1]);
+            pYhor[j]  = abs(y0 - pY[1]      - pY[-1])    + abs(yup1 - pYup[2]  - pYup[0]);
+            pYdig0[j] = abs(y0 - pYdown[-1] - pYup[1])   + abs(yup1 - pY[0]    - pYup2[2]);
+            pYdig1[j] = abs(y0 - pYup[-1]   - pYdown[1]) + abs(yup1 - pYup2[0] - pY[2]);
         }
 
         for( int j = 6; j < width; j += 4 ) {
@@ -319,8 +319,8 @@ rcn_alf_derive_classificationBlk(ALFClassifier **classifier,
             int jM4 = j - 4;
             int jM2 = j - 2;
 
-            pYver[jM6]  += pYver[jM4] + pYver[jM2] + pYver[j];
-            pYhor[jM6]  += pYhor[jM4] + pYhor[jM2] + pYhor[j];
+            pYver[jM6]  += pYver[jM4]  + pYver[jM2]  + pYver[j];
+            pYhor[jM6]  += pYhor[jM4]  + pYhor[jM2]  + pYhor[j];
             pYdig0[jM6] += pYdig0[jM4] + pYdig0[jM2] + pYdig0[j];
             pYdig1[jM6] += pYdig1[jM4] + pYdig1[jM2] + pYdig1[j];
         }
@@ -463,13 +463,16 @@ void rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const in
         {
             int nWidth = OVMIN( j + CLASSIFICATION_BLK_SIZE, width ) - j;
             Area blk_class;
-            blk_class.x = j; blk_class.y = i;
-            blk_class.width = nWidth; blk_class.height = nHeight; 
+            blk_class.x = j;
+            blk_class.y = i;
+            blk_class.width = nWidth;
+            blk_class.height = nHeight;
 
-            int16_t* rcn_img_class = rcn_img + (i-blk.y)*stride + (j-blk.x);
-            rcn_alf_derive_classificationBlk(classifier, rcn_img_class, stride, blk_class, bit_depth + 4
-            , ctu_width, (blk.height<ctu_width) ? pic_h : blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA
-            );
+            int16_t* rcn_img_class = rcn_img + (i - blk.y) * stride + (j - blk.x);
+
+            rcn_alf_derive_classificationBlk(classifier, rcn_img_class, stride, blk_class,
+                                             bit_depth + 4, ctu_width,
+                                             (blk.height<ctu_width) ? pic_h : blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA);
         }
     }
 }
@@ -859,16 +862,12 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
         int16_t **src = fb.filter_region;
         ctudec_extend_filter_region(ctudec, xPos, yPos, is_border);
 
-        if( alf_params_ctu.ctb_alf_flag & 0x4){
+        if (alf_params_ctu.ctb_alf_flag & 0x4) {
             uint8_t c_idx = 0;
-            Area blk,blk_dst;
+            Area blk_dst;
             //Source block in the filter buffers image
-            //TODO: get rid of blkn use only blk_dst
-            blk.x=0; blk.y=0;
-            // blk.x=xPos; blk.y=yPos;
-            blk.width=width; blk.height=height;
             int stride_src = fb.filter_region_stride[c_idx];
-            int16_t*  src_luma = &src[c_idx][blk.y*stride_src + blk.x + fb.filter_region_offset[c_idx]];
+            int16_t*  src_luma = &src[c_idx][fb.filter_region_offset[c_idx]];
 
             //Destination block in the final image
             blk_dst.x=xPos; blk_dst.y=yPos;
@@ -876,23 +875,24 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
             //BITDEPTH
             int stride_dst = frame->linesize[c_idx]/2;
             int16_t*  dst_luma = (int16_t*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
-            rcn_alf_derive_classification( alf, src_luma, stride_src, blk_dst, ctu_width, ctudec->pic_h);
+
+            rcn_alf_derive_classification(alf, src_luma, stride_src, blk_dst, ctu_width, ctudec->pic_h);
 
             int16_t filter_idx = alf_params_ctu.ctb_alf_idx;
             int16_t *coeff;
             int16_t *clip;
-            if (filter_idx >= NUM_FIXED_FILTER_SETS){
+
+            if (filter_idx >= NUM_FIXED_FILTER_SETS) {
                 coeff = alf->coeff_aps_luma[filter_idx - NUM_FIXED_FILTER_SETS];
-                clip = alf->clip_aps_luma[filter_idx - NUM_FIXED_FILTER_SETS];
-            }
-            else{
+                clip  = alf->clip_aps_luma[filter_idx - NUM_FIXED_FILTER_SETS];
+            } else {
                 coeff = alf->fixed_filter_coeff_dec[filter_idx];
-                clip = alf->clip_default;
+                clip  = alf->clip_default;
             }
 
             (ctudec->rcn_ctx.rcn_funcs.alf.luma)(alf->classifier, dst_luma, src_luma, stride_dst, stride_src,
                 blk_dst, coeff, clip,
-                ctu_width, (yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h : blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA);
+                ctu_width, (yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h : height - ALF_VB_POS_ABOVE_CTUROW_LUMA);
         }
 
         for( uint8_t c_idx = 1; c_idx < 3; c_idx++ )
