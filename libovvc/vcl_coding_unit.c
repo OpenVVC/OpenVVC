@@ -905,6 +905,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     struct IntraDRVInfo *const i_info = &ctu_dec->drv_ctx.intra_info;
     VVCMergeInfo mv_info;
     #endif
+    uint8_t ref_idx0 = 0;
+    uint8_t ref_idx1 = 0;
 
 #if 1
     uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
@@ -923,16 +925,15 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                                   max_nb_cand);
 
     } else {
-        OVMV mvd0, mvd1;
+        OVMV mvd0, mvd1 = {0};
         uint8_t mvp_idx0 = 0;
         uint8_t mvp_idx1 = 0;
 
         uint8_t inter_dir = ovcabac_read_ae_inter_dir(cabac_ctx, log2_pb_w, log2_pb_h);
 
         if (inter_dir & 0x1) {
-            uint8_t ref_idx = 0;
             if (inter_ctx->nb_active_ref0 > 1) {
-                ref_idx = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref0);
+                ref_idx0 = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref0);
             }
             /*FIXME add ref_idx*/
             mvd0 = ovcabac_read_ae_mvd(cabac_ctx);
@@ -941,9 +942,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         }
 
         if (inter_dir & 0x2) {
-            uint8_t ref_idx = 0;
             if (inter_ctx->nb_active_ref1 > 1) {
-                ref_idx = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref1);
+                ref_idx1 = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref1);
             }
             /*FIXME add ref_idx*/
             mvd1 = ovcabac_read_ae_mvd(cabac_ctx);
@@ -956,7 +956,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     }
 
     rcn_mcp_b(ctu_dec, inter_ctx, part_ctx, mv_info.mv0, mv_info.mv1, x0, y0,
-              log2_pb_w, log2_pb_h, mv_info.inter_dir);
+              log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
 
     uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
 

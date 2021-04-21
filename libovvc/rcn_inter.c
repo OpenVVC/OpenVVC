@@ -252,15 +252,15 @@ static void
 rcn_motion_compensation_b(OVCTUDec *const ctudec,
                           uint8_t x0, uint8_t y0,
                           uint8_t log2_pu_w, uint8_t log2_pu_h,
-                          OVMV mv0, OVMV mv1)
+                          OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
     struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
     /* FIXME derive ref_idx */
-    uint8_t ref_idx_0 = 0;
-    uint8_t ref_idx_1 = 0;
+    uint8_t ref_idx_0 = ref_idx0;
+    uint8_t ref_idx_1 = ref_idx1;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
@@ -349,7 +349,7 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec,
 
 void
 rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_h,
-        OVMV mv, uint8_t type )
+        OVMV mv, uint8_t type, uint8_t ref_idx0, uint8_t ref_idx1)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -359,8 +359,8 @@ rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_h,
 
     struct OVBuffInfo dst = rcn_ctx->ctu_buff;
 
-    uint8_t ref_idx_0 = 0;
-    uint8_t ref_idx_1 = 0;
+    uint8_t ref_idx_0 = ref_idx0;
+    uint8_t ref_idx_1 = ref_idx1;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
@@ -475,19 +475,19 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct InterDRVCtx *const inter_ctx,
           const OVMV mv0, const OVMV mv1,
           unsigned int x0, unsigned int y0,
           unsigned int log2_pb_w, unsigned int log2_pb_h,
-          uint8_t inter_dir)
+          uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1)
 {
     if (inter_dir == 3) {
 
-        rcn_motion_compensation_b(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1);
+        rcn_motion_compensation_b(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
 
     } else if (inter_dir & 0x2) {
 
-        rcn_mcp(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv1, 1);
+        rcn_mcp(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx0, ref_idx1);
 
     } else if (inter_dir & 0x1) {
 
-        rcn_mcp(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv0, 0);
+        rcn_mcp(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0, ref_idx1);
 
     }
 }
