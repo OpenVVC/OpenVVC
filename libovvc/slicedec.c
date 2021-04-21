@@ -1250,6 +1250,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     init_slice_tree_ctx(ctudec, prms);
 
     ctudec->drv_ctx.inter_ctx.tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
+    ctudec->drv_ctx.inter_ctx.mvd1_zero_flag = ph->ph_mvd_l1_zero_flag;
 
     if (ctudec->lm_chroma_enabled) {
         /* FIXME add support vertical */
