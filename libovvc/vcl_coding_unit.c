@@ -141,7 +141,7 @@ ovcabac_read_ae_inter_dir(OVCABACCtx *const cabac_ctx,
     uint8_t inter_dir = 0;
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
     /*FIXME Note no Bi predicition on 4x4 8x4 4x8*/
-    if (log2_pb_w + log2_pb_h >= 5) {
+    if (log2_pb_w + log2_pb_h > 5) {
         int ctx_id = 7 - ((log2_pb_w + log2_pb_h + 1) >> 1);
         inter_dir = ovcabac_ae_read(cabac_ctx, &cabac_state[INTER_DIR_CTX_OFFSET + ctx_id]);
         if (inter_dir) {
