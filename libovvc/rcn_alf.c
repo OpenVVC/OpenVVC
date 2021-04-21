@@ -901,15 +901,9 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
 
             if( (c_idx==1 && (alf_params_ctu.ctb_alf_flag & 2)) || (c_idx==2 && (alf_params_ctu.ctb_alf_flag & 1)))
             {
-                Area blk, blk_dst;
-                blk.x = 0;
-                blk.y = 0;
-
-                blk.width  = width /chr_scale;
-                blk.height = height/chr_scale;
-
+                Area blk_dst;
                 int stride_src = fb.filter_region_stride[c_idx];
-                int16_t*  src_chroma = &src[c_idx][blk.y*stride_src + blk.x + fb.filter_region_offset[c_idx]];
+                int16_t*  src_chroma = &src[c_idx][fb.filter_region_offset[c_idx]];
                 //Destination block in the final image
                 blk_dst.x = xPos/chr_scale;
                 blk_dst.y = yPos/chr_scale;
@@ -940,12 +934,10 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
                 if (filt_idx != 0)
                 {
                     //TODO: maybe reverse buffer use, the alf reconstructed pixels are in the pic frame.
-                    Area blk,blk_dst;
+                    Area blk_dst;
                     //Source block in the filter buffers image
-                    blk.x=0; blk.y=0;
-                    blk.width=width; blk.height=height;
                     int stride_src = fb.filter_region_stride[0];
-                    int16_t*  src_chroma = &src[0][blk.y*stride_src + blk.x + fb.filter_region_offset[0]];
+                    int16_t*  src_chroma = &src[0][fb.filter_region_offset[0]];
 
                     //Destination block in the final image
                     blk_dst.x=xPos/chr_scale; blk_dst.y=yPos/chr_scale;
