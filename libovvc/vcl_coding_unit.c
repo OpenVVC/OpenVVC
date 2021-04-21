@@ -870,7 +870,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                           mvp_idx, 1);
     }
 
-    rcn_mcp(ctu_dec, x0, y0, log2_pb_w, log2_pb_h, mv0, 0);
+    rcn_mcp(ctu_dec, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx);
 
     uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
 
