@@ -385,25 +385,20 @@ rcn_residual(OVCTUDec *const ctudec,
     struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
     int shift_v = 6 + 1;
     int shift_h = (6 + 15 - 1) - 10;
+
     DECLARE_ALIGNED(32, int16_t, tmp)[64*64];
-    // int16_t tmp[64*64];
+
     int tb_w = 1 << log2_tb_w;
     int tb_h = 1 << log2_tb_h;
-    #if 0
-    struct OVRCNCtx *const rcn = &ctudec->rcn_ctx;
-    #endif
-    /* TODO switch */
 
     memset(tmp, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
 
     if (lfnst_flag) {
-        lim_cg_w = 8;
-        is_dc = 0;
         /* FIXME separate lfnst mode derivation from lfnst reconstruction */
-#if 1
         process_lfnst_luma(ctudec, src, ctudec->lfnst_subblock, log2_tb_w, log2_tb_h, x0, y0,
                            lfnst_idx);
-#endif
+        lim_cg_w = 8;
+        is_dc = 0;
     }
 
     if (!is_mip && ctudec->mts_implicit && (log2_tb_w <= 4 || log2_tb_h <= 4) && !lfnst_flag) {
@@ -411,41 +406,29 @@ rcn_residual(OVCTUDec *const ctudec,
         enum DCTType tr_h_idx = log2_tb_w <= 4 ? DST_VII : DCT_II;
         enum DCTType tr_v_idx = log2_tb_h <= 4 ? DST_VII : DCT_II;
 
-#if 0
-        call(vvc_inverse_mts_func,
-             (tr_v_idx, log2_tb_h),
-             (src, tmp, tb_w, tb_w, tb_h, shift_v));
-        call(vvc_inverse_mts_func,
-             (tr_h_idx, log2_tb_w),
-             (tmp, dst, tb_h, tb_h, tb_w, shift_h));
-#endif
+        /* FIXME use coefficient zeroing in MTS */
         TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, tb_w, tb_w, tb_h, shift_v);
         TRFunc->func[tr_h_idx][log2_tb_w](tmp, dst, tb_h, tb_h, tb_w, shift_h);
 
     } else if (!cu_mts_flag) {
 
-#if 1
         if (is_dc) {
 
             TRFunc->dc(dst, log2_tb_w, log2_tb_h, src[0]);
 
         } else {
-#endif
             int nb_row = OVMIN(lim_cg_w, 1 << log2_tb_w);
             int nb_col = OVMIN(lim_cg_w, 1 << log2_tb_h);
 
             TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, shift_v);
             TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, shift_h);
-#if 1
         }
-#endif
     } else {
         enum DCTType tr_h_idx = cu_mts_idx  & 1;
         enum DCTType tr_v_idx = cu_mts_idx >> 1;
 
         TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, tb_w, tb_w, tb_h, shift_v);
         TRFunc->func[tr_h_idx][log2_tb_w](tmp, dst, tb_h, tb_h, tb_w, shift_h);
-
     }
 }
 
@@ -460,46 +443,39 @@ rcn_residual_c(OVCTUDec *const ctudec,
                uint8_t is_dc, uint8_t lfnst_flag, uint8_t is_mip, uint8_t lfnst_idx)
 {
     struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
+
     const int shift_v = 6 + 1;
     const int shift_h = (6 + 15 - 1) - 10;
+
     DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
-    // int16_t tmp[32*32];
+
     int tb_w = 1 << log2_tb_w;
     int tb_h = 1 << log2_tb_h;
 
     memset(tmp, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
 
     if (lfnst_flag) {
+        /* FIXME separate lfnst mode derivation from lfnst reconstruction */
+        process_lfnst(ctudec, src, lfnst_sb, log2_tb_w, log2_tb_h,
+                      x0, y0, lfnst_idx);
+
         /* Update lim_cg_w since lfnst part of coeff are now non zero */
         lim_cg_w = 8;
         is_dc = 0;
-        /* FIXME separate lfnst mode derivation from lfnst reconstruction */
-#if 1
-        process_lfnst(ctudec, src, lfnst_sb, log2_tb_w, log2_tb_h,
-                      x0, y0, lfnst_idx);
-#endif
     }
 
-#if 1
     if (is_dc && !lfnst_flag) {
 
-            TRFunc->dc(dst, log2_tb_w, log2_tb_h, src[0]);
+        TRFunc->dc(dst, log2_tb_w, log2_tb_h, src[0]);
 
     } else {
-#endif
         int nb_row =  OVMIN(lim_cg_w, 1 << log2_tb_w);
         int nb_col =  OVMIN(lim_cg_w, 1 << log2_tb_h);
         /*FIXME might be transform SKIP */
 
-        #if 0
-        TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, tb_w, tb_h, shift_v);
-        TRFunc->func[DCT_II][log2_tb_w](tmp, src, tb_h, tb_h, tb_w, shift_h);
-        #endif
         TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, shift_v);
         TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, shift_h);
-#if 1
     }
-#endif
 }
 
 void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type){

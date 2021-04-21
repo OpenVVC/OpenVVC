@@ -1,3 +1,4 @@
+#include <string.h>
 #include "nvcl.h"
 #include "nvcl_utils.h"
 #include "nvcl_structures.h"
@@ -284,7 +285,6 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
     if (rpl_h0->rpl_sps_flag) {
         const struct OVRPL *rpl0;
         if (sps->sps_num_ref_pic_lists0 > 1) {
-            /* FIXME check v is correct */
             int nb_bits = ov_ceil_log2(sps->sps_num_ref_pic_lists0);
             rpl_h0->rpl_idx = nvcl_read_bits(rdr, nb_bits);
         }
@@ -295,7 +295,9 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
             /* Call long term post function */
             header_read_long_term_info(rdr, rpl0, rpl_h0, sps);
         }
-        rpl_h->rpl0 = rpl0;
+        /* FIXME update long term informations */
+        memcpy(&rpl_h0->rpl_data, rpl0, sizeof(*rpl0));
+        rpl_h->rpl0 = &rpl_h0->rpl_data;
     } else {
         struct OVRPL *rpl0 = &rpl_h0->rpl_data;
 
@@ -326,7 +328,9 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
             /* Call long term post function */
             header_read_long_term_info(rdr, rpl1, rpl_h1, sps);
         }
-        rpl_h->rpl1 = rpl1;
+        /* FIXME update long term informations */
+        memcpy(&rpl_h1->rpl_data, rpl1, sizeof(*rpl1));
+        rpl_h->rpl1 = &rpl_h1->rpl_data;
 
     } else {
         struct OVRPL *rpl1 = &rpl_h1->rpl_data;

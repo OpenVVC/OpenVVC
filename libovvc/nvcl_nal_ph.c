@@ -79,7 +79,8 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
 {
     const OVPPS *pps = NULL;
     const OVSPS *sps = NULL;
-    int num_ref_entries1 = 0; /* num_ref_entries[1][RplsIdx[1]] */
+    int num_ref_entries0 = 0;
+    int num_ref_entries1 = 0;
     int i;
 
     ph->ph_gdr_or_irap_pic_flag = nvcl_read_flag(rdr);
@@ -197,10 +198,11 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
 
     if (pps->pps_rpl_info_in_ph_flag) {
          struct OVHRPL *const hrpl = &ph->hrpl;
+
          nvcl_read_header_ref_pic_lists(rdr, hrpl, sps, pps);
-        #if 0
-        ref_pic_lists();
-        #endif
+
+         num_ref_entries0 = hrpl->rpl0->num_ref_entries;
+         num_ref_entries1 = hrpl->rpl1->num_ref_entries;
     }
 
     if (sps->sps_partition_constraints_override_enabled_flag) {
@@ -257,8 +259,7 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
             ph->ph_temporal_mvp_enabled_flag = nvcl_read_flag(rdr);
             if (ph->ph_temporal_mvp_enabled_flag && pps->pps_rpl_info_in_ph_flag) {
                 /* FIXME compute num_ref_entries */
-                if (num_ref_entries1 > 0) {
-                    int num_ref_entries0 = 0; /* num_ref_entries[0][RplsIdx[0]] */
+                if (num_ref_entries0 > 0) {
                     ph->ph_collocated_from_l0_flag = nvcl_read_flag(rdr);
                     if ((ph->ph_collocated_from_l0_flag && num_ref_entries0 > 1) || (!ph->ph_collocated_from_l0_flag && num_ref_entries1 > 1)) {
                         ph->ph_collocated_ref_idx = nvcl_read_u_expgolomb(rdr);
@@ -275,18 +276,20 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
         if (!pps->pps_rpl_info_in_ph_flag) {
 
             ph->ph_mvd_l1_zero_flag = nvcl_read_flag(rdr);
-            if (sps->sps_bdof_control_present_in_ph_flag) {
+            if (sps->sps_bdof_control_present_in_ph_flag && num_ref_entries1 > 0) {
                 ph->ph_bdof_disabled_flag = nvcl_read_flag(rdr);
             }
 
-            if (sps->sps_dmvr_control_present_in_ph_flag) {
+            if (sps->sps_dmvr_control_present_in_ph_flag && num_ref_entries1 > 0) {
                 ph->ph_dmvr_disabled_flag = nvcl_read_flag(rdr);
             }
 
-        } else if (num_ref_entries1 > 0){
+        } else /*if (num_ref_entries1 > 0)*/{
 
             /* FIXME compute num_ref_entries */
+            #if 0
             if (num_ref_entries1 > 0) {
+            #endif
                 ph->ph_mvd_l1_zero_flag = nvcl_read_flag(rdr);
                 if (sps->sps_bdof_control_present_in_ph_flag) {
                     ph->ph_bdof_disabled_flag = nvcl_read_flag(rdr);
@@ -295,7 +298,9 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
                 if (sps->sps_dmvr_control_present_in_ph_flag) {
                     ph->ph_dmvr_disabled_flag = nvcl_read_flag(rdr);
                 }
+            #if 0
             }
+            #endif
         }
 
         if (sps->sps_prof_control_present_in_ph_flag) {

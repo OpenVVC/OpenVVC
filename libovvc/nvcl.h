@@ -20,6 +20,8 @@ struct OVNVCLCtx
     OVPH *ph;
     OVSH *sh;
     OVSEI *sei;
+    OVRPL *hrpl0;
+    OVRPL *hrpl1;
 };
 
 struct OVNVCLReader
