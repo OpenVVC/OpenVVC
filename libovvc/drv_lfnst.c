@@ -49,29 +49,6 @@ derive_lfnst_mode_l(OVCTUDec *const ctudec,
 }
 
 static int8_t
-derive_lfnst_mode_l_isp(OVCTUDec *const ctudec,
-                        int log2_cb_w, int log2_cb_h,
-                        int x0, int y0)
-{
-    const OVPartInfo *const part_ctx = ctudec->part_ctx;
-    int log2_min_cb_s = part_ctx->log2_min_cb_s;
-    int x_pu = x0 >> log2_min_cb_s;
-    int y_pu = y0 >> log2_min_cb_s;
-    int8_t intra_mode = ctudec->drv_ctx.intra_info.luma_modes[x_pu + (y_pu << 5)];
-
-    intra_mode = (intra_mode == OVINTRA_MIP_MODE) ? OVINTRA_PLANAR : intra_mode;
-
-    if (intra_mode > OVINTRA_DC) {
-        intra_mode = derive_wide_angular_mode2(log2_cb_w, log2_cb_h, intra_mode);
-    }
-
-    intra_mode = intra_mode < 0 ? intra_mode + 14 + 67: intra_mode >= 67
-        ? intra_mode + 14 : intra_mode;
-
-    return intra_mode;
-}
-
-static int8_t
 derive_lfnst_mode_c(OVCTUDec *const ctudec,
                    int log2_tb_w, int log2_tb_h,
                    int x0, int y0, uint8_t intra_mode_c)
@@ -116,6 +93,7 @@ process_lfnst(OVCTUDec *const ctudec,
     uint8_t need_transpose = ((intra_mode < 67) && (intra_mode > OVINTRA_DIA)) || (intra_mode >= 67 + 14);
 
     uint64_t scan_map = 0xfbe7ad369c258140;
+
     int16_t tmp[16];
 
     for (int i = 0; i < 16; ++i) {
@@ -193,7 +171,7 @@ process_lfnst_luma_isp(OVCTUDec *const ctudec,
                    int log2_cb_w, int log2_cb_h,
                    int x0, int y0, uint8_t lfnst_idx)
 {
-    int8_t intra_mode = derive_lfnst_mode_l_isp(ctudec, log2_cb_w, log2_cb_h, x0, y0);
+    int8_t intra_mode = derive_lfnst_mode_l(ctudec, log2_cb_w, log2_cb_h, x0, y0);
 
     uint8_t need_transpose = (intra_mode < 67  && intra_mode > OVINTRA_DIA) || intra_mode >= 67 + 14;
 
