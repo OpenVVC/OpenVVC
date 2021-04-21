@@ -749,15 +749,9 @@ transform_unit(OVCTUDec *const ctu_dec,
         uint8_t cu_mts_idx = 0;
         uint8_t transform_skip_flag = 0;
         int16_t *const coeffs_y = ctu_dec->residual_y;
-        #if 0
-        int cu_qp_delta = 0;
-        #endif
 
-
-#if 1
         /*FIXME move bs map filling to to cbf_flag reading */
         fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
-#endif
 
         if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
                 && log2_tb_h <= ctu_dec->max_log2_transform_skip_size && !(cu_flags &flg_isp_flag  )) {
@@ -801,21 +795,14 @@ transform_unit(OVCTUDec *const ctu_dec,
                 }
             }
 
-#if 1
             uint8_t is_mip = !!(cu_flags & flg_mip_flag);
 
             rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
                            lim_cg_w, cu_mts_flag, cu_mts_idx, is_dc_c, lfnst_flag, is_mip, lfnst_idx);
-#endif
 
-        } else { //Renorm transform skipped residuals
-            #if 0
-            int x_pu = x0 >> 2;
-            int y_pu = y0 >> 2;
-            #endif
+        } else {
             ctu_dec->dequant_skip = &ctu_dec->dequant_luma_skip;
             residual_coding_ts(ctu_dec, log2_tb_w, log2_tb_h);
-            //FIXME transform residual is currently performed in the dequant function
         }
 
         #if 1
@@ -962,10 +949,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
             }
 
             rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
-#if 0
-            (*ctu_dec->scale_addsub_residuals)[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
 
-#endif
             fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
         }
 
@@ -981,10 +965,7 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
             }
 
             rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
-#if 0
-            (*ctu_dec->scale_addsub_residuals)[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
 
-#endif
             fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
         }
         #endif
@@ -1056,19 +1037,6 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
                            lim_cg_w_cbcr, 0, 0, !last_pos_cbcr, lfnst_flag, 1, lfnst_idx);
         }
 
-#if 0
-        if (cbf_mask == 3) {
-            (*ctu_dec->scale_addsub_residuals)[0](src, dst_cb, log2_tb_w, log2_tb_h, scale);
-            (*ctu_dec->scale_addsub_residuals)[1](src, dst_cr, log2_tb_w, log2_tb_h, scale);
-        } else if (cbf_mask == 2) {
-            (*ctu_dec->scale_addsub_residuals)[0](src, dst_cb, log2_tb_w, log2_tb_h, scale);
-            (*ctu_dec->scale_addsub_residuals)[2](src, dst_cr, log2_tb_w, log2_tb_h, scale);
-        } else {
-            (*ctu_dec->scale_addsub_residuals)[0](src, dst_cr, log2_tb_w, log2_tb_h, scale);
-            (*ctu_dec->scale_addsub_residuals)[2](src, dst_cb, log2_tb_w, log2_tb_h, scale);
-        }
-
-#else
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
         /* FIXME better organisation based on cbf_mask */
@@ -1082,7 +1050,6 @@ transform_unit_chroma(OVCTUDec *const ctu_dec,
             rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
             rcn_func->ict[2](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
         }
-#endif
     }
     return 0;
 }
@@ -1123,7 +1090,7 @@ int
 transform_unit_l(OVCTUDec *const ctu_dec,
                   unsigned int x0, unsigned int y0,
                   unsigned int log2_tb_w, unsigned int log2_tb_h,
-                  uint8_t rqt_root_cbf, uint8_t cu_flags, uint8_t  tr_depth)
+                  uint8_t rqt_root_cbf, uint8_t cu_flags, uint8_t tr_depth)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t cbf_mask = ovcabac_read_ae_tu_cbf_luma(cabac_ctx);
