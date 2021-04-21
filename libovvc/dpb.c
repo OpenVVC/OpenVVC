@@ -576,6 +576,7 @@ ovdpb_bump_frame(OVDPB *dpb, uint32_t poc, uint16_t output_cvs_id)
 {
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     int min_poc = INT_MAX;
+    int nb_output_pic;
     int i;
 
     /* Count pictures in current output target Coded Video Sequence
@@ -587,11 +588,11 @@ ovdpb_bump_frame(OVDPB *dpb, uint32_t poc, uint16_t output_cvs_id)
         uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
         uint8_t not_current = pic->poc != poc;
         if (flags && is_output_cvs && not_current) {
-            nb_dpb_pic++;
+            nb_output_pic++;
         }
     }
 
-    if (nb_dpb_pic >= dpb->max_nb_dpb_pic) {
+    if (nb_output_pic >= dpb->max_nb_dpb_pic) {
         /* Determine the min POC among those pic
          */
         for (i = 0; i < nb_dpb_pic; i++) {
@@ -618,7 +619,7 @@ ovdpb_bump_frame(OVDPB *dpb, uint32_t poc, uint16_t output_cvs_id)
                 pic->flags |= OV_BUMPED_PIC_FLAG;
             }
         }
-        nb_dpb_pic--;
+        nb_output_pic--;
     }
 }
 
