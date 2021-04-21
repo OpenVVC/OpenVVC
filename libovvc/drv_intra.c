@@ -410,7 +410,7 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
     ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field, x_pu<<pu_shift,
                                 y_pu<<pu_shift, nb_pb_w<<pu_shift, nb_pb_h<<pu_shift);
 
-    if (!ctudec->share && ctudec->coding_tree != &dual_tree
+    if (ctudec->share != 1 && ctudec->coding_tree != &dual_tree
         && ctudec->coding_tree_implicit != &dual_tree_implicit) {
         ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field_c, x_pu << pu_shift,
                                     y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
