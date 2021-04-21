@@ -1174,8 +1174,8 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_inf
 
     uint8_t nb_unit = (1 << log2_ctu_s) >> 2;
 
-    //dbf_info->edge_map_ver[nb_unit_w] &= -!last_x;
-    //dbf_info->edge_map_hor[nb_unit_h] &= -!last_y;
+    dbf_info->edge_map_ver[nb_unit] &= -!last_x;
+    dbf_info->edge_map_hor[nb_unit] &= -!last_y;
 
     dbf_info->edge_map_ver_c[nb_unit] &= -!last_x;
     dbf_info->edge_map_hor_c[nb_unit] &= -!last_y;
