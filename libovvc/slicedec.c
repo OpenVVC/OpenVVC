@@ -1112,8 +1112,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     memset(&ctudec->dbf_info.edge_map_hor, 0, sizeof(ctudec->dbf_info.edge_map_hor));
     memset(&ctudec->dbf_info.edge_map_ver_c, 0, sizeof(ctudec->dbf_info.edge_map_ver));
     memset(&ctudec->dbf_info.edge_map_hor_c, 0, sizeof(ctudec->dbf_info.edge_map_hor));
-    memcpy(ctudec->drv_ctx.inter_ctx.rpl0, sldec->pic->rpl0, sizeof(*sldec->pic->rpl0));
-    memcpy(ctudec->drv_ctx.inter_ctx.rpl1, sldec->pic->rpl1, sizeof(*sldec->pic->rpl1));
+    memcpy(ctudec->drv_ctx.inter_ctx.rpl0, sldec->pic->rpl0, sizeof(sldec->pic->rpl0));
+    memcpy(ctudec->drv_ctx.inter_ctx.rpl1, sldec->pic->rpl1, sizeof(sldec->pic->rpl1));
     ctudec->drv_ctx.inter_ctx.nb_active_ref0 = prms->sh->hrpl.rpl_h0.rpl_data.num_ref_active_entries;
     ctudec->drv_ctx.inter_ctx.nb_active_ref1 = prms->sh->hrpl.rpl_h1.rpl_data.num_ref_active_entries;
 
