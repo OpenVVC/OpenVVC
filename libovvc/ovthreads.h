@@ -35,6 +35,10 @@ int init_entry_threads(struct SliceThread *th_info, int nb_threads);
 
 void uninit_entry_threads(struct SliceThread *th_info);
 
+
+int ovthread_slice_thread_init(struct SliceThread *th_slice, int nb_threads);
+
+
 uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
 
 int ovthread_out_frame_init(OVVCDec *dec, FILE* fout);

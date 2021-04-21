@@ -136,21 +136,22 @@ thread_main_function(void *opaque)
 int
 init_entry_threads(struct SliceThread *th_info, int nb_threads)
 {
-    int i;
-    th_info->nb_threads = nb_threads;
+    if(!th_info->tdec){
+        th_info->nb_threads = nb_threads;
 
-    th_info->tdec = ov_mallocz(sizeof(struct EntryThread) * nb_threads);
+        th_info->tdec = ov_mallocz(sizeof(struct EntryThread) * nb_threads);
 
-    if (!th_info->tdec) {
-        goto failalloc;
+        if (!th_info->tdec) {
+            goto failalloc;
+        }
+
+        atomic_init(&th_info->first_job,      0);
+        atomic_init(&th_info->last_entry_idx, 0);
+
+        pthread_mutex_init(&th_info->gnrl_mtx, NULL);
+        pthread_cond_init(&th_info->gnrl_cnd,  NULL);
     }
-
-    atomic_init(&th_info->first_job,      0);
-    atomic_init(&th_info->last_entry_idx, 0);
-
-    pthread_mutex_init(&th_info->gnrl_mtx, NULL);
-    pthread_cond_init(&th_info->gnrl_cnd,  NULL);
-
+    int i;
     for (i = 0; i < nb_threads; ++i){
         struct EntryThread *tdec = &th_info->tdec[i];
 
@@ -216,7 +217,50 @@ uninit_entry_threads(struct SliceThread *th_info)
 
 
 /*
-Functions for the thread writing the output frames
+Functions needed by the threads decoding an entire slice
+*/
+int
+ovthread_slice_thread_init(struct SliceThread *th_slice, int nb_threads)
+{   
+
+    th_slice->nb_threads = nb_threads;
+    th_slice->tdec = ov_mallocz(sizeof(struct EntryThread) * nb_threads);
+    if (!th_slice->tdec) {
+        goto failalloc;
+    }
+
+    //TODO: why atomic?
+    atomic_init(&th_slice->first_job,      0);
+    atomic_init(&th_slice->last_entry_idx, 0);
+
+    pthread_mutex_init(&th_slice->gnrl_mtx, NULL);
+    pthread_cond_init(&th_slice->gnrl_cnd,  NULL);
+
+    // if (pthread_create(&tdec->thread, NULL, thread_main_function, tdec)) {
+    //     pthread_mutex_unlock(&tdec->task_mtx);
+    //     ov_log(NULL, OVLOG_ERROR, "Thread creation failed at decoder init\n");
+    //     goto failthread;
+    // }
+
+
+failthread:
+    ov_freep(&th_slice->tdec);
+    return OVVC_ENOMEM;
+
+failalloc:
+    return OVVC_ENOMEM;
+}
+
+
+// int
+// ovthread_slice_decode(void *opaque)
+
+
+
+
+
+/*
+Functions needed by the thread writing the output frames
 */
 
 uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp){
@@ -275,6 +319,7 @@ ovthread_out_frame_write(void *opaque)
         }
     }
 
+    //Signal the main thread that the last picture has been written
     pthread_mutex_lock(&t_out->gnrl_mtx);
     pthread_cond_signal(&t_out->gnrl_cnd);
     pthread_mutex_unlock(&t_out->gnrl_mtx);

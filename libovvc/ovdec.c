@@ -63,19 +63,15 @@ init_slice_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
 #endif
 
 static int
-init_subdec_list(OVVCDec *dec)
+ovdec_init_subdec_list(OVVCDec *dec)
 {
     int ret;
+    uint8_t nb_threads = dec->nb_threads;
+    if (!dec->subdec_list) 
+        dec->subdec_list = ov_mallocz(sizeof(OVSliceDec) * nb_threads);
 
-    /* TODO */
-    if (!dec->subdec_list) {
-        /* FIXME
-         *    -at the current time we suppose only one slice decoder
-         *    -select sub dec types according to active params sets
-         *    -if parameters changed we might want to change sb_dec
-         */
-         int nb_entry_th = dec->nb_threads;
-        ret = slicedec_init(&dec->subdec_list, nb_entry_th);
+    for (int i = 0; i < nb_threads; ++i){
+        ret = slicedec_init(&dec->subdec_list, nb_threads);
         if (ret < 0) {
             return OVVC_ENOMEM;
         }
@@ -121,7 +117,7 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
         ret = mvpool_init(&dec->mv_pool, &dec->active_params.pic_info);
     }
 
-    ret = init_subdec_list(dec);
+    ret = ovdec_init_subdec_list(dec);
     if (ret < 0) {
         return ret;
     }

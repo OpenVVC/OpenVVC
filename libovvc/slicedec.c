@@ -1505,6 +1505,7 @@ slicedec_init(OVSliceDec **dec_p, int nb_entry_th)
         goto failctudec;
     }
 
+    ret = ovthread_slice_thread_init(&sldec->th_info, nb_entry_th);
     ret = init_entry_threads(&sldec->th_info, nb_entry_th);
     if (ret < 0) {
         goto failthreads;

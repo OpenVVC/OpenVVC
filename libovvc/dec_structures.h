@@ -278,7 +278,6 @@ struct OVVCDec
      * decoding
      */
     OVSliceDec *subdec_list;
-    // SliceThread *slicethread_list;
 
     /* Number of available threads */
     int nb_threads;
