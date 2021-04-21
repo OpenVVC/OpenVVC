@@ -504,7 +504,7 @@ transform_tree(OVCTUDec *const ctu_dec,
                unsigned int x0, unsigned int y0,
                unsigned int log2_tb_w, unsigned int log2_tb_h,
                unsigned int log2_max_tb_s, uint8_t rqt_root_cbf,
-               uint8_t cu_flags)
+               uint8_t cu_flags, uint8_t tr_depth)
 {
     uint8_t split_v = log2_tb_w > log2_max_tb_s;
     uint8_t split_h = log2_tb_h > log2_max_tb_s;
@@ -518,26 +518,26 @@ transform_tree(OVCTUDec *const ctu_dec,
 
         transform_tree(ctu_dec, part_ctx, x0, y0,
                        log2_tb_w1, log2_tb_h1,
-                       log2_max_tb_s, rqt_root_cbf, cu_flags);
+                       log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1);
         if (split_v) {
             transform_tree(ctu_dec, part_ctx, x0 + tb_w1, y0,
                            log2_tb_w1, log2_tb_h1,
-                           log2_max_tb_s, rqt_root_cbf, cu_flags);
+                           log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1);
         }
 
         if (split_h) {
             transform_tree(ctu_dec, part_ctx, x0, y0 + tb_h1,
                            log2_tb_w1, log2_tb_h1,
-                           log2_max_tb_s, rqt_root_cbf, cu_flags);
+                           log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1);
         }
 
         if (split_h && split_v) {
             transform_tree(ctu_dec, part_ctx, x0 + tb_w1, y0 + tb_h1,
-                           log2_tb_w1, log2_tb_h1, log2_max_tb_s, rqt_root_cbf, cu_flags);
+                           log2_tb_w1, log2_tb_h1, log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1);
         }
 
     } else {
-        ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, rqt_root_cbf, cu_flags);
+        ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, rqt_root_cbf, cu_flags, tr_depth);
     }
 
     return 0;
@@ -740,7 +740,7 @@ static int
 transform_unit(OVCTUDec *const ctu_dec,
                unsigned int x0, unsigned int y0,
                unsigned int log2_tb_w, unsigned int log2_tb_h,
-               uint8_t tu_cbf_luma, uint8_t cu_flags)
+               uint8_t tu_cbf_luma, uint8_t cu_flags, uint8_t tr_depth)
 {
 
     if (tu_cbf_luma) {
@@ -1091,7 +1091,7 @@ int
 transform_unit_st(OVCTUDec *const ctu_dec,
                   unsigned int x0, unsigned int y0,
                   unsigned int log2_tb_w, unsigned int log2_tb_h,
-                  uint8_t rqt_root_cbf, uint8_t cu_flags)
+                  uint8_t rqt_root_cbf, uint8_t cu_flags, uint8_t tr_depth)
 {
     uint8_t cbf_mask = decode_cbf_st(ctu_dec, rqt_root_cbf);
 
@@ -1106,7 +1106,7 @@ transform_unit_st(OVCTUDec *const ctu_dec,
         }
 
         if (cbf_mask & (1 << 4)) {
-            transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, 1, cu_flags);
+            transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, 1, cu_flags, tr_depth);
         }
 
         if (cbf_mask & 0xF) {
@@ -1123,7 +1123,7 @@ int
 transform_unit_l(OVCTUDec *const ctu_dec,
                   unsigned int x0, unsigned int y0,
                   unsigned int log2_tb_w, unsigned int log2_tb_h,
-                  uint8_t rqt_root_cbf, uint8_t cu_flags)
+                  uint8_t rqt_root_cbf, uint8_t cu_flags, uint8_t  tr_depth)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t cbf_mask = ovcabac_read_ae_tu_cbf_luma(cabac_ctx);
@@ -1136,7 +1136,7 @@ transform_unit_l(OVCTUDec *const ctu_dec,
             #endif
         }
 
-        transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cbf_mask, cu_flags);
+        transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cbf_mask, cu_flags, tr_depth);
     }
 
     return 0;
@@ -1146,7 +1146,7 @@ int
 transform_unit_c(OVCTUDec *const ctu_dec,
                   unsigned int x0, unsigned int y0,
                   unsigned int log2_tb_w, unsigned int log2_tb_h,
-                  uint8_t rqt_root_cbf, uint8_t cu_flags)
+                  uint8_t rqt_root_cbf, uint8_t cu_flags, uint8_t tr_depth)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t cbf_mask = decode_cbf_c(ctu_dec);
@@ -1177,7 +1177,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
         if (!(cu.cu_flags & flg_isp_flag)) {
             /*FIXME check if part_ctx mandatory for transform_tree */
             transform_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                           part_ctx->log2_max_tb_s, 0, cu.cu_flags);
+                           part_ctx->log2_max_tb_s, 0, cu.cu_flags, 0);
         } else {
             uint8_t isp_mode = cu.cu_opaque;
             uint8_t intra_mode = cu.cu_mode_idx;
@@ -1206,7 +1206,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
 
         if (rqt_root_cbf) {
             transform_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                           part_ctx->log2_max_tb_s, 1, cu.cu_flags);
+                           part_ctx->log2_max_tb_s, 1, cu.cu_flags, 0);
         }
     }
     return 0;

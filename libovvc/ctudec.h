@@ -618,7 +618,8 @@ struct OVCTUDec
                           unsigned int x0, unsigned int y0,
                           unsigned int log2_tb_w,
                           unsigned int log2_tb_h,
-                          uint8_t cbf_ctx, uint8_t cu_flags);
+                          uint8_t cbf_ctx, uint8_t cu_flags,
+                          uint8_t tr_depth);
 
     int (*prediction_unit)(struct OVCTUDec *const lc_ctx,
                            const OVPartInfo *const part_ctx,
