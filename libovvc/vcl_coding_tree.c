@@ -906,8 +906,10 @@ multi_type_tree(OVCTUDec *const ctu_dec,
 
                 /* FIXME Separable tree */
                 void (*transform_unit_bkup) = ctu_dec->transform_unit;
-                if (sep_tree) {
+                void (*coding_unit_bkup) = ctu_dec->coding_unit;
+                if (sep_tree == 1) {
                     ctu_dec->transform_unit = &transform_unit_l;
+                    ctu_dec->coding_unit = &coding_unit_intra;
                 }
 
                 bt_split(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
@@ -915,6 +917,7 @@ multi_type_tree(OVCTUDec *const ctu_dec,
 
                 /* FIXME Separable tree */
                 ctu_dec->transform_unit = transform_unit_bkup;
+                ctu_dec->coding_unit = coding_unit_bkup;
 
                 /* FIXME Separable tree */
                 if (sep_tree == 1) {
@@ -945,8 +948,10 @@ multi_type_tree(OVCTUDec *const ctu_dec,
                 }
 
                 void (*transform_unit_bkup) = ctu_dec->transform_unit;
+                void (*coding_unit_bkup) = ctu_dec->coding_unit;
                 if (sep_tree == 1) {
                     ctu_dec->transform_unit = &transform_unit_l;
+                    ctu_dec->coding_unit = &coding_unit_intra;
                 }
                 /* end of FIXME */
 

@@ -532,10 +532,9 @@ coding_unit(OVCTUDec *const ctu_dec,
     /* if we are in single tree and outside of separable tree we also need to
      * update chroma partition context
      */
-    if (!ctu_dec->share &&
+    if (ctu_dec->share != 1  &&
         ctu_dec->coding_tree != &dual_tree &&
-        ctu_dec->coding_tree_implicit != &dual_tree_implicit
-       ) {
+        ctu_dec->coding_tree_implicit != &dual_tree_implicit) {
         /* Note since we are in single tree the log2_diff_size of cu are the same no need
          * to recompute the nb_cb and cb coordinates
          */
