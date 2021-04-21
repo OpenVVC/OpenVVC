@@ -6,6 +6,14 @@
 #include "ctudec.h"
 #include "rcn_lmcs.h"
 
+enum CUMode {
+    OV_NA = 0xFF,
+    OV_INTER = 1,
+    OV_INTRA = 2,
+    OV_INTER_SKIP = 3,
+    OV_MIP = 4,
+};
+
 #if 0
 static int coding_quadtree(OVCTUDec *const ctu_dec,
                            const OVPartInfo *const part_ctx,

@@ -100,7 +100,7 @@ ovcabac_read_ae_pred_mode_flag(OVCABACCtx *const cabac_ctx,
 {
     uint8_t pred_mode_flag;
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    int ctx_offset = (above_pu == OV_INTRA) | (left_pu == OV_INTRA);
+    int ctx_offset = (above_pu == OV_INTRA) | (left_pu == OV_INTRA) | above_pu == OV_MIP | left_pu == OV_MIP;
     pred_mode_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[PRED_MODE_CTX_OFFSET + ctx_offset]);
     return pred_mode_flag;
 }
@@ -598,17 +598,23 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
         FLG_STORE(cu_skip_flag, cu.cu_flags);
 
     } else {
-        uint8_t pred_mode_flag;
+        uint8_t pred_mode_flag = ctu_dec->share == 1 ? 1 : 0;
 
-        pred_mode_flag = ovcabac_read_ae_pred_mode_flag(cabac_ctx, cu_type_abv,
-                                                        cu_type_lft);
+        if (!ctu_dec->share) {
+            pred_mode_flag = ovcabac_read_ae_pred_mode_flag(cabac_ctx, cu_type_abv,
+                                                            cu_type_lft);
+        }
 
         FLG_STORE(pred_mode_flag, cu.cu_flags);
 
         if (pred_mode_flag) {
-            coding_unit_intra_st(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h);
+            cu = coding_unit_intra_st(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h);
 
-            cu_type = OV_INTRA;
+            if (cu.cu_flags & flg_mip_flag) {
+                cu_type = OV_MIP;
+            } else {
+                cu_type = OV_INTRA;
+            }
 
             fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_cu_w, log2_cu_h);
             fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0, y0, log2_cu_w, log2_cu_h);
@@ -621,7 +627,6 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
             cu_type = OV_INTER;
 
             FLG_STORE(merge_flag, cu.cu_flags);
-
         }
     }
 
@@ -639,9 +644,8 @@ coding_unit_intra_st(OVCTUDec *const ctu_dec,
    VVCCU cu = {0};
 
    /* Force pred_mode_flag to 2 so we know cu was intra */
-   cu.cu_flags = 2;
 
-   coding_unit_intra(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h);
+   cu = coding_unit_intra(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h);
 
    fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_cu_w, log2_cu_h);
    /* if not in separable tree */
