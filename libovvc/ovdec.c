@@ -188,8 +188,14 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
 
             /* FIXME handle non rect entries later */
             ret = slicedec_decode_rect_entries(vvcdec->subdec_list, &vvcdec->active_params);
-
-
+            
+            //Signal output thread that slice is ready for writing
+            struct OutputFrameThread* t_out = vvcdec->out_frame_thread;
+            if(t_out){
+                pthread_mutex_lock(&t_out->gnrl_mtx);
+                pthread_cond_signal(&t_out->gnrl_cnd);
+                pthread_mutex_unlock(&t_out->gnrl_mtx);
+            }
             /* TODO start VCL decoder */
         }
 
@@ -408,43 +414,32 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
     /* FIXME this is temporary request output from DPB
      * instead
      */
-    if (dec->subdec_list) {
-        OVDPB *dpb = dec->dpb;
-        uint16_t out_cvs_id;
-        OVSliceDec *sldec;
-        int ret;
+    OVDPB *dpb = dec->dpb;
+    uint16_t out_cvs_id;
+    int ret;
 
-        if (!dpb) {
-            ov_log(dec, OVLOG_ERROR, "No DPB on output request.\n");
-            /* FIXME new return value */
-            return OVVC_EINDATA;
-        }
+    if (!dpb) {
+        ov_log(dec, OVLOG_ERROR, "No DPB on output request.\n");
+        /* FIXME new return value */
+        return OVVC_EINDATA;
+    }
 
-        /* FIXME handle sbdec list */
-        sldec = dec->subdec_list;
-        if (!sldec->pic) {
-            ov_log(dec, OVLOG_TRACE, "No output picture\n");
-            return 0;
-        }
+    #if 0
+    /* FIXME here or inside function */
+    ovframe_new_ref(frame_p, sldec->pic->frame);
+    #endif
 
-        #if 0
-        /* FIXME here or inside function */
-        ovframe_new_ref(frame_p, sldec->pic->frame);
-        #endif
+    out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
+    ret = ovdpb_output_frame(dpb, frame_p, out_cvs_id);
 
-        out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
-        ret = ovdpb_output_frame(dpb, frame_p, out_cvs_id);
-
+    if (*frame_p)
         ret = pp_process_frame(dec, dpb, frame_p);
 
-        /*FIXME tmp */
-        #if 0
-        ovdpb_unref_pic(dec->dpb, sldec->pic, ~0);
-        #endif
-        //TODO: why null?
-        // sldec->pic = NULL;
-        return ret;
-    }
+    /*FIXME tmp */
+    #if 0
+    ovdpb_unref_pic(dec->dpb, sldec->pic, ~0);
+    #endif
+    return ret;
 
     return 0;
 }

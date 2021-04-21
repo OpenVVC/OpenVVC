@@ -12,7 +12,7 @@ struct EntryThread;
 
 typedef int (*DecodeFunc)(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms, uint16_t entry_idx);
 
-struct SliceThreads
+struct SliceThread
 {
     OVSliceDec *owner;
     struct EntryThread *tdec;
@@ -130,7 +130,7 @@ typedef struct OVSliceDec
    OVCTUDec **ctudec_list; 
    int nb_sbdec;
 
-   struct SliceThreads th_info;
+   struct SliceThread th_info;
 
 } OVSliceDec;
 

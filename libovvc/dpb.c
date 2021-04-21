@@ -235,11 +235,7 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc)
     int i;
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
 
-    if (*pic_p) {
-        /* FIXME tmp this shall not happen*/
-        ov_log(NULL, OVLOG_ERROR, "Picture not unreferenced by previous dec run.\n");
-        *pic_p = NULL;
-    }
+    *pic_p = NULL;
 
     /* check that this POC doesn't already exist */
     for (i = 0; i < nb_dpb_pic; i++) {
