@@ -36,6 +36,9 @@ static void separate_tree_mtt(OVCTUDec *const ctu_dec,
                               unsigned int mtt_depth,
                               uint8_t implicit_mt_depth);
 #endif
+static uint8_t separate_trees_qt(OVCTUDec *ctudec, const OVPartInfo *const part_ctx,
+                                 uint8_t x0, uint8_t y0,
+                                 uint8_t log2_cb_w, uint8_t log2_cb_h, uint8_t split_cu_v);
 
 /* FIXME cast to uint8_t and check result */
 static int bt_split(OVCTUDec *const ctu_dec,
@@ -149,6 +152,13 @@ ovcabac_read_ae_mtt_split_cu_binary_flag(OVCABACCtx *const cabac_ctx,
     return ovcabac_ae_read(cabac_ctx, &cabac_state[SPLIT12_FLAG_CTX_OFFSET + ctx]);
 }
 
+static uint8_t
+ovcabac_read_ae_mode_constraint(OVCABACCtx *const cabac_ctx, uint8_t intra_ngh)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[MODE_CONS_FLAG_CTX_OFFSET + intra_ngh]);
+}
+
 static void
 store_qt_depth(OVCTUDec *const ctu_dec,
                const OVPartInfo *const part_ctx, uint8_t log2_cb_s,
@@ -229,18 +239,24 @@ coding_quadtree(OVCTUDec *const ctu_dec,
                 unsigned int x1 = x0 + (1 << (log2_cb_s - 1));
                 unsigned int y1 = y0 + (1 << (log2_cb_s - 1));
                 /* FIXME Find a better way to handle separable tree */
+                #if 0
                 uint8_t sep_tree = !ctu_dec->share && log2_cb_s == 3 &&
                                    ctu_dec->coding_tree_implicit != &dual_tree_implicit
                                    && ctu_dec->coding_tree != &dual_tree;
+                #else
+                uint8_t sep_tree = separate_trees_qt(ctu_dec, part_ctx, x0, y0, log2_cb_s, log2_cb_s, 1);
+                #endif
 
-                ctu_dec->share = ctu_dec->share || sep_tree;
+                if (!ctu_dec->share) {
+                    ctu_dec->share = sep_tree;
+                }
 
                 /* FIXME dirty hack for CCLM management */
                 if (log2_cb_s == 5) {
                     ctu_dec->enable_cclm = 1;
                 }
 
-                if (sep_tree) {
+                if (sep_tree == 1) {
                     /*FIXME use specific function to launch chroma tree */
                     const OVPartInfo * part_ctx = ctu_dec->part_ctx;
                     void (*coding_unit_bkup)    = ctu_dec->coding_unit;
@@ -271,13 +287,17 @@ coding_quadtree(OVCTUDec *const ctu_dec,
                     ctu_dec->coding_unit = coding_unit_bkup;
                     ctu_dec->transform_unit = transform_unit_bkup;
                     ctu_dec->active_part_map = &ctu_dec->part_map;
-                    ctu_dec->share = 0;
                 } else {
                     coding_quadtree(ctu_dec, part_ctx, x0, y0, log2_cb_s - 1, qt_depth + 1);
                     coding_quadtree(ctu_dec, part_ctx, x1, y0, log2_cb_s - 1, qt_depth + 1);
                     coding_quadtree(ctu_dec, part_ctx, x0, y1, log2_cb_s - 1, qt_depth + 1);
                     coding_quadtree(ctu_dec, part_ctx, x1, y1, log2_cb_s - 1, qt_depth + 1);
                 }
+
+                if (sep_tree) {
+                    ctu_dec->share = 0;
+                }
+
                 return 1;
             }
 
@@ -646,6 +666,91 @@ tt_split(OVCTUDec *const ctu_dec,
     return 1;
 }
 
+static uint8_t
+separate_trees_tt(OVCTUDec *ctudec, const OVPartInfo *const part_ctx, uint8_t x0, uint8_t y0,
+                  uint8_t log2_cb_w, uint8_t log2_cb_h, uint8_t split_cu_v)
+{
+    uint8_t log2_cb_s = log2_cb_w + log2_cb_h;
+    uint16_t luma_area = (1 << log2_cb_s) >> 2;
+    uint16_t chroma_area = luma_area >> 2;
+
+    if (ctudec->share || ctudec->coding_tree == &dual_tree) {
+        return 0;
+    }
+
+    if (chroma_area >= 16 && !(split_cu_v && log2_cb_w == 4)) {
+        return 0;
+    } else if (luma_area < 32 || ctudec->coding_unit == &coding_unit_intra_st) {
+        return 1;
+    } else {
+       /* signal */
+        OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
+        int x_cb = x0 >> part_ctx->log2_min_cb_s;
+        int y_cb = y0 >> part_ctx->log2_min_cb_s;
+        uint8_t cu_type_abv = ctudec->part_map.cu_mode_x[x_cb];
+        uint8_t cu_type_lft = ctudec->part_map.cu_mode_y[y_cb];
+        return 2 >> ovcabac_read_ae_mode_constraint(cabac_ctx, cu_type_abv == OV_INTRA || cu_type_abv == OV_MIP || cu_type_lft == OV_INTRA || cu_type_lft == OV_MIP);
+    }
+}
+
+static uint8_t
+separate_trees_qt(OVCTUDec *ctudec, const OVPartInfo *const part_ctx, uint8_t x0, uint8_t y0,
+                  uint8_t log2_cb_w, uint8_t log2_cb_h, uint8_t split_cu_v)
+{
+    uint8_t log2_cb_s = log2_cb_w + log2_cb_h;
+    uint16_t luma_area = (1 << log2_cb_s) >> 2;
+    uint16_t chroma_area = luma_area >> 2;
+    uint8_t sep_tree = 0;
+
+    if (ctudec->share || ctudec->coding_tree == &dual_tree) {
+        return 0;
+    }
+
+    if (chroma_area >= 16 && !(log2_cb_w == 3)) {
+        return 0;
+    } else if (luma_area < 32 || ctudec->coding_unit == &coding_unit_intra_st) {
+        /* infer */
+        return 1;
+    } else {
+        /* signal */
+        OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
+        int x_cb = x0 >> part_ctx->log2_min_cb_s;
+        int y_cb = y0 >> part_ctx->log2_min_cb_s;
+        uint8_t cu_type_abv = ctudec->part_map.cu_mode_x[x_cb];
+        uint8_t cu_type_lft = ctudec->part_map.cu_mode_y[y_cb];
+        return 2 >> ovcabac_read_ae_mode_constraint(cabac_ctx, cu_type_abv == OV_INTRA || cu_type_abv == OV_MIP || cu_type_lft == OV_INTRA || cu_type_lft == OV_MIP);
+    }
+}
+
+static uint8_t
+separate_trees_bt(OVCTUDec *ctudec, const OVPartInfo *const part_ctx, uint8_t x0, uint8_t y0,
+                  uint8_t log2_cb_w, uint8_t log2_cb_h, uint8_t split_cu_v)
+{
+    uint8_t log2_cb_s = log2_cb_w + log2_cb_h;
+    uint16_t luma_area = (1 << log2_cb_s) >> 1;
+    uint16_t chroma_area = luma_area >> 2;
+    uint8_t sep_tree = 0;
+
+    if (ctudec->share || ctudec->coding_tree == &dual_tree) {
+        return 0;
+    }
+
+    if (chroma_area >= 16 && !(split_cu_v && log2_cb_w == 3)) {
+        return 0;
+    } else if (luma_area < 32 || ctudec->coding_unit == &coding_unit_intra_st) {
+        /* infer */
+        return 1;
+    } else {
+        /* signal */
+        OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
+        int x_cb = x0 >> part_ctx->log2_min_cb_s;
+        int y_cb = y0 >> part_ctx->log2_min_cb_s;
+        uint8_t cu_type_abv = ctudec->part_map.cu_mode_x[x_cb];
+        uint8_t cu_type_lft = ctudec->part_map.cu_mode_y[y_cb];
+        return 2 >> ovcabac_read_ae_mode_constraint(cabac_ctx, cu_type_abv == OV_INTRA || cu_type_abv == OV_MIP || cu_type_lft == OV_INTRA || cu_type_lft == OV_MIP);
+    }
+}
+
 static int
 multi_type_tree(OVCTUDec *const ctu_dec,
                const OVPartInfo *const part_ctx,
@@ -748,13 +853,19 @@ multi_type_tree(OVCTUDec *const ctu_dec,
             if (split_cu_bt) {
                 unsigned int log2_nb_s = log2_cb_w + log2_cb_h;
                 /* FIXME Separable tree */
+#if 0
                 uint8_t sep_tree = !ctu_dec->share && ((log2_nb_s == 6) || (log2_nb_s == 5) ||
                                     (split_cu_v && log2_cb_w == 3)) &&
                                     ctu_dec->coding_tree_implicit != &dual_tree_implicit
                                     && ctu_dec->coding_tree != &dual_tree;
+#else
+                uint8_t sep_tree = separate_trees_bt(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, split_cu_v);
+#endif
 
                 /* FIXME Separable tree */
-                ctu_dec->share = ctu_dec->share || sep_tree;
+                if (!ctu_dec->share && sep_tree) {
+                    ctu_dec->share = sep_tree;
+                }
 
                 /* FIXME CCLM */
                 if (!split_cu_v && (mtt_depth == 0) && ctu_dec->enable_cclm != 1) {
@@ -780,9 +891,13 @@ multi_type_tree(OVCTUDec *const ctu_dec,
                 ctu_dec->transform_unit = transform_unit_bkup;
 
                 /* FIXME Separable tree */
-                if (sep_tree) {
+                if (sep_tree == 1) {
                     separate_tree_mtt(ctu_dec, x0, y0, log2_cb_w, log2_cb_h,
                                       mtt_depth, implicit_mt_depth);
+                }
+
+                if  (sep_tree)  {
+                    ctu_dec->share = 0;
                 }
 
                 return 1;
@@ -790,15 +905,21 @@ multi_type_tree(OVCTUDec *const ctu_dec,
             } else {
                 unsigned int log2_nb_s = log2_cb_w + log2_cb_h;
                 /* FIXME separable tree */
+#if 0
                 uint8_t sep_tree = !ctu_dec->share && ((log2_nb_s == 7) || (log2_nb_s == 6) ||
                                     (split_cu_v && log2_cb_w == 4)) &&
                                     ctu_dec->coding_tree_implicit != &dual_tree_implicit
                                     && ctu_dec->coding_tree != &dual_tree;
+#else
+                uint8_t sep_tree = separate_trees_tt(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, split_cu_v);
+#endif
 
-                ctu_dec->share = ctu_dec->share || sep_tree;
+                if (!ctu_dec->share && sep_tree) {
+                    ctu_dec->share = sep_tree;
+                }
 
                 void (*transform_unit_bkup) = ctu_dec->transform_unit;
-                if (sep_tree) {
+                if (sep_tree == 1) {
                     ctu_dec->transform_unit = &transform_unit_l;
                 }
                 /* end of FIXME */
@@ -808,10 +929,15 @@ multi_type_tree(OVCTUDec *const ctu_dec,
 
                 /* FIXME separable tree */
                 ctu_dec->transform_unit = transform_unit_bkup; 
+                ctu_dec->coding_unit = coding_unit_bkup;
 
-                if (sep_tree) {
+                if (sep_tree == 1) {
                     separate_tree_mtt(ctu_dec, x0, y0, log2_cb_w, log2_cb_h,
                                       mtt_depth, implicit_mt_depth);
+                }
+
+                if  (sep_tree)  {
+                    ctu_dec->share = 0;
                 }
                 /* end of FIXME */
                 return 1;
