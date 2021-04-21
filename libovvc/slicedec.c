@@ -308,7 +308,7 @@ init_part_info(OVCTUDec *const ctudec, const struct OVPS *const prms)
         ctudec->part_ctx_c = &prms->sps_info.part_info[2];
     } else {
         ctudec->part_ctx = &prms->sps_info.part_info[1];
-        ctudec->part_ctx_c = &prms->sps_info.part_info[2];
+        ctudec->part_ctx_c = &prms->sps_info.part_info[3];
     }
 }
 

@@ -59,6 +59,28 @@ sps_init_partition_constraint_info_inter(OVPartInfo *const pinfo, const OVSPS *c
 }
 
 static int
+sps_init_partition_constraint_info_inter_chroma(OVPartInfo *const pinfo, const OVSPS *const sps)
+{
+    uint8_t log2_ctu_s = sps->sps_log2_ctu_size_minus5 + 5;
+    uint8_t log2_min_cb_s = sps->sps_log2_min_luma_coding_block_size_minus2 + 2;
+    uint8_t log2_min_qt_s = sps->sps_log2_diff_min_qt_min_cb_inter_slice + log2_min_cb_s - 1;
+
+    pinfo->log2_ctu_s    = log2_ctu_s;
+    pinfo->log2_min_cb_s = log2_min_cb_s;
+
+    pinfo->log2_min_qt_s = log2_min_qt_s;
+
+    pinfo->log2_max_bt_s =  log2_min_qt_s + sps->sps_log2_diff_max_bt_min_qt_inter_slice;
+    pinfo->log2_max_tt_s =  log2_min_qt_s + sps->sps_log2_diff_max_tt_min_qt_inter_slice;
+
+    pinfo->max_mtt_depth = sps->sps_max_mtt_hierarchy_depth_inter_slice;
+
+    pinfo->log2_max_tb_s = 5 + sps->sps_max_luma_transform_size_64_flag - 1;
+
+    return 0;
+}
+
+static int
 sps_init_partition_constraint_info_chroma(OVPartInfo *const pinfo, const OVSPS *const sps)
 {
     /* FIXME we could handle chroma format from here */
@@ -222,6 +244,7 @@ update_sps_info(struct SPSInfo *const sps_info, const OVSPS *const sps)
     sps_init_partition_constraint_info_intra(&sps_info->part_info[0], sps);
     sps_init_partition_constraint_info_inter(&sps_info->part_info[1], sps);
     sps_init_partition_constraint_info_chroma(&sps_info->part_info[2], sps);
+    sps_init_partition_constraint_info_inter_chroma(&sps_info->part_info[3], sps);
 
     sps_init_chroma_qp_tables(sps_info, sps);
 

@@ -73,7 +73,7 @@ struct SPSInfo
 
     } pic_info;
 
-    struct OVPartInfo part_info[3];
+    struct OVPartInfo part_info[4];
 
     #if 0
     struct {
