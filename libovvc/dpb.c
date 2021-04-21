@@ -396,7 +396,6 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
                     ov_log(NULL, OVLOG_DEBUG, "Mark non active reference %d for picture %d\n", ref_poc, dpb->poc);
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
                     ref_pic->flags |= flag;
-                    dst_rpl[i] = ref_pic;
                 }
             }
         }
