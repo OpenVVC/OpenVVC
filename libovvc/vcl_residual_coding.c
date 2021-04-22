@@ -3489,7 +3489,6 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         ovcabac_read_ae_sb_dc_coeff_c_sdh(cabac_ctx, cg_coeffs);
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
         dst[0] = cg_coeffs [0];
-        memcpy(ctu_dec->lfnst_subblock, cg_coeffs, sizeof(int16_t) * 16);
         return 0x1;
     }
 
@@ -3526,8 +3525,6 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
             memcpy(&dst[1 << log2_tb_w], &cg_coeffs[ 4], sizeof(int16_t) * 4);
             memcpy(&dst[2 << log2_tb_w], &cg_coeffs[ 8], sizeof(int16_t) * 4);
             memcpy(&dst[3 << log2_tb_w], &cg_coeffs[12], sizeof(int16_t) * 4);
-
-            memcpy(ctu_dec->lfnst_subblock, cg_coeffs, sizeof(int16_t) * 16);
 
             return 0x1;
         }
@@ -4722,7 +4719,6 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
         _dst[0] = cg_coeffs [0];
-        memcpy(ctu_dec->lfnst_subblock, cg_coeffs, sizeof(int16_t) * 16);
         return 0x1;
     }
 
@@ -4758,7 +4754,6 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
             memcpy(&_dst[1 << log2_tb_w], &cg_coeffs[ 4], sizeof(int16_t) * 4);
             memcpy(&_dst[2 << log2_tb_w], &cg_coeffs[ 8], sizeof(int16_t) * 4);
             memcpy(&_dst[3 << log2_tb_w], &cg_coeffs[12], sizeof(int16_t) * 4);
-            memcpy(ctu_dec->lfnst_subblock, cg_coeffs, sizeof(int16_t) * 16);
 
             return 0x1;
         }
