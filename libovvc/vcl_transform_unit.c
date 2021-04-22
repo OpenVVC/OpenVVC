@@ -825,6 +825,8 @@ residual_coding_c(OVCTUDec *const ctu_dec,
     int16_t *const coeffs_cr = ctu_dec->residual_cr;
     uint16_t last_pos_cb = (1 << (log2_tb_h + log2_tb_w)) - 1;
     uint16_t last_pos_cr = (1 << (log2_tb_h + log2_tb_w)) - 1;
+    uint32_t sig_sb_map_cb = 0x1;
+    uint32_t sig_sb_map_cr = 0x1;
     int lim_cg_w_cb = OVMAX(1 << log2_tb_w, 1 << log2_tb_h);
     int lim_cg_w_cr = OVMAX(1 << log2_tb_w, 1 << log2_tb_h);
     int16_t tmp_lfnst_cb[16];
@@ -855,7 +857,7 @@ residual_coding_c(OVCTUDec *const ctu_dec,
 
             lim_cg_w_cb = ((((last_pos_cb >> 8)) >> 2) + (((last_pos_cb & 0xFF))>> 2) + 1) << 2;
 
-            last_pos_cb = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_cb, log2_tb_w, log2_tb_h, last_pos_cb);
+            sig_sb_map_cb = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_cb, log2_tb_w, log2_tb_h, last_pos_cb);
 
             /*FIXME avoid copy of lfnst_sb */
             memcpy(tmp_lfnst_cb, ctu_dec->lfnst_subblock, sizeof(int16_t) * 16);
@@ -886,7 +888,7 @@ residual_coding_c(OVCTUDec *const ctu_dec,
 
             lim_cg_w_cr = ((((last_pos_cr >> 8)) >> 2) + (((last_pos_cr & 0xFF))>> 2) + 1) << 2;
 
-            last_pos_cr = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_cr, log2_tb_w, log2_tb_h, last_pos_cr);
+            sig_sb_map_cr = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_cr, log2_tb_w, log2_tb_h, last_pos_cr);
         } else {
             ctu_dec->dequant_skip = &ctu_dec->dequant_cr_skip;
             residual_coding_ts(ctu_dec, log2_tb_w, log2_tb_h);
@@ -897,24 +899,37 @@ residual_coding_c(OVCTUDec *const ctu_dec,
         memcpy(tmp_lfnst_cr, ctu_dec->lfnst_subblock, sizeof(int16_t) * 16);
     }
 
-    if (ctu_dec->enable_lfnst && !transform_skip_flag) {
+    if (ctu_dec->enable_lfnst && sig_sb_map_cb == 0x1 && sig_sb_map_cr == 0x1 && log2_tb_w > 1 && log2_tb_h > 1 && !transform_skip_flag) {
         uint8_t need_cb_chk = cbf_mask & 0x2;
         uint8_t need_cr_chk = cbf_mask & 0x1;
 
         int max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
 
         uint8_t can_lfnst = !!cbf_mask;
+        uint64_t scan_map = 0xFDA6EB73C8419520;
 
         /*FIXME better can_lfnst derivation */
         if (need_cb_chk && need_cr_chk) {
-            can_lfnst &= last_pos_cr <= max_lfnst_pos && last_pos_cb <= max_lfnst_pos;
-            can_lfnst &= !!(last_pos_cr | last_pos_cb);
+            int last_y_cb = last_pos_cb >> 8;
+            int last_x_cb = last_pos_cb & 0xFF;
+            int last_y_cr = last_pos_cr >> 8;
+            int last_x_cr = last_pos_cr & 0xFF;
+            int nb_coeffs_cb = (scan_map >> ((last_x_cb + (last_y_cb << 2)) << 2)) & 0xF;
+            int nb_coeffs_cr = (scan_map >> ((last_x_cr + (last_y_cr << 2)) << 2)) & 0xF;
+            can_lfnst &= nb_coeffs_cr <= max_lfnst_pos && nb_coeffs_cb <= max_lfnst_pos;
+            can_lfnst &= !!(nb_coeffs_cr | nb_coeffs_cb);
         } else if (need_cb_chk) {
-            can_lfnst &= last_pos_cb <= max_lfnst_pos;
-            can_lfnst &= !!last_pos_cb;
+            int last_y_cb = last_pos_cb >> 8;
+            int last_x_cb = last_pos_cb & 0xFF;
+            int nb_coeffs_cb = (scan_map >> ((last_x_cb + (last_y_cb << 2)) << 2)) & 0xF;
+            can_lfnst &= nb_coeffs_cb <= max_lfnst_pos;
+            can_lfnst &= !!nb_coeffs_cb;
         } else {
-            can_lfnst &= last_pos_cr <= max_lfnst_pos;
-            can_lfnst &= !!last_pos_cr;
+            int last_y_cr = last_pos_cr >> 8;
+            int last_x_cr = last_pos_cr & 0xFF;
+            int nb_coeffs_cr = (scan_map >> ((last_x_cr + (last_y_cr << 2)) << 2)) & 0xF;
+            can_lfnst &= nb_coeffs_cr <= max_lfnst_pos;
+            can_lfnst &= !!nb_coeffs_cr;
         }
 
         if (can_lfnst) {
@@ -936,7 +951,8 @@ residual_coding_c(OVCTUDec *const ctu_dec,
         int16_t *const coeffs_cb = ctu_dec->residual_cb;
 
         if (!(transform_skip_flag & 0x2)) {
-            rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cb, tmp_lfnst_cb, x0, y0, log2_tb_w, log2_tb_h,
+            rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cb, tmp_lfnst_cb,
+                           x0, y0, log2_tb_w, log2_tb_h,
                            lim_cg_w_cb, 0, 0, !last_pos_cb, lfnst_flag, 1, lfnst_idx);
         } else {
             memcpy(ctu_dec->transform_buff, coeffs_cb, sizeof(uint16_t) << (log2_tb_h + log2_tb_w));
@@ -982,6 +998,7 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
     int16_t *const coeffs_jcbcr = ctu_dec->residual_cb;
     uint8_t lfnst_flag = 0;
     uint8_t lfnst_idx = 0;
+    uint32_t sig_sb_map = 0x1;
     uint8_t transform_skip_flag = 0;
     int lim_cg_w = 0;
 
@@ -1010,18 +1027,23 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
 
         lim_cg_w = ((((last_pos >> 8)) >> 2) + (((last_pos & 0xFF))>> 2) + 1) << 2;
 
-        last_pos = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_jcbcr, log2_tb_w, log2_tb_h,
-                                                   last_pos);
+        sig_sb_map = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_jcbcr, log2_tb_w, log2_tb_h,
+                                                     last_pos);
     } else {
         residual_coding_ts(ctu_dec, log2_tb_w, log2_tb_h);
     }
 
-    if (ctu_dec->enable_lfnst && !transform_skip_flag) {
+    if (ctu_dec->enable_lfnst && !transform_skip_flag && sig_sb_map == 0x1) {
         int max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
 
-        uint8_t can_lfnst =  last_pos <= max_lfnst_pos;
+        uint64_t scan_map = 0xFDA6EB73C8419520;
+        int last_y = last_pos >> 8;
+        int last_x = last_pos & 0xFF;
+        int nb_coeffs = (scan_map >> ((last_x + (last_y << 2)) << 2)) & 0xF;
 
-        can_lfnst &= !!last_pos;
+        uint8_t can_lfnst = nb_coeffs <= max_lfnst_pos;
+
+        can_lfnst &= !!nb_coeffs;
 
         if (can_lfnst) {
             uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;

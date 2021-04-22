@@ -3490,7 +3490,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
         dst[0] = cg_coeffs [0];
         memcpy(ctu_dec->lfnst_subblock, cg_coeffs, sizeof(int16_t) * 16);
-        return last_pos;
+        return 0x1;
     }
 
     reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
@@ -3529,7 +3529,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             memcpy(ctu_dec->lfnst_subblock, cg_coeffs, sizeof(int16_t) * 16);
 
-            return num_coeffs;
+            return 0x1;
         }
 
         sb_pos = (last_cg_x << 2) + (((last_cg_y << log2_tb_w) >> 2) << 4);
@@ -4723,7 +4723,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
         _dst[0] = cg_coeffs [0];
         memcpy(ctu_dec->lfnst_subblock, cg_coeffs, sizeof(int16_t) * 16);
-        return last_pos;
+        return 0x1;
     }
 
     reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
@@ -4760,7 +4760,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
             memcpy(&_dst[3 << log2_tb_w], &cg_coeffs[12], sizeof(int16_t) * 4);
             memcpy(ctu_dec->lfnst_subblock, cg_coeffs, sizeof(int16_t) * 16);
 
-            return num_coeffs;
+            return 0x1;
         }
 
         sb_pos = (last_cg_x << 2) + ((last_cg_y * tb_width_in_cg) << 4);
