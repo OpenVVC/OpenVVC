@@ -951,11 +951,11 @@ residual_coding_c(OVCTUDec *const ctu_dec,
             rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cb, tmp_lfnst_cb,
                            x0, y0, log2_tb_w, log2_tb_h,
                            last_pos_cb, lfnst_flag, lfnst_idx);
+            rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
         } else {
-            memcpy(ctu_dec->transform_buff, coeffs_cb, sizeof(uint16_t) << (log2_tb_h + log2_tb_w));
+            rcn_func->ict[0](coeffs_cb, dst_cb, log2_tb_w, log2_tb_h, scale);
         }
 
-        rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
 
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
     }
@@ -968,11 +968,11 @@ residual_coding_c(OVCTUDec *const ctu_dec,
             rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cr, tmp_lfnst_cr,
                            x0, y0, log2_tb_w, log2_tb_h,
                            last_pos_cr, lfnst_flag, lfnst_idx);
+            rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
         } else {
-            memcpy(ctu_dec->transform_buff, coeffs_cr, sizeof(uint16_t) << (log2_tb_h + log2_tb_w));
+            rcn_func->ict[0](coeffs_cr, dst_cr, log2_tb_w, log2_tb_h, scale);
         }
 
-        rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
 
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
     }
