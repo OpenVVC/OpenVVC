@@ -993,8 +993,6 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
     uint16_t last_pos;
-    uint16_t *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[(x0) + (y0 * RCN_CTB_STRIDE)];
-    uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[(x0) + (y0 * RCN_CTB_STRIDE)];
     int16_t *const coeffs_jcbcr = ctu_dec->residual_cb;
     uint8_t lfnst_flag = 0;
     uint8_t lfnst_idx = 0;
@@ -1063,20 +1061,6 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
     fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
     fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
 
-    /* FIXME better organisation based on cbf_mask */
-    if (cbf_mask == 3) {
-        int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
-        rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
-        rcn_func->ict[1](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
-    } else if (cbf_mask == 2) {
-        int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
-        rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
-        rcn_func->ict[2](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
-    } else {
-        int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
-        rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
-        rcn_func->ict[2](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
-    }
     return 0;
 }
 
@@ -1103,8 +1087,29 @@ transform_unit_st(OVCTUDec *const ctu_dec,
         }
 
         if (cbf_mask & (1 << 3)) {
+            const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
+            uint16_t *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[(x0) + (y0 * RCN_CTB_STRIDE)];
+            uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[(x0) + (y0 * RCN_CTB_STRIDE)];
+
+            cbf_mask &= 0x3;
+
             residual_coding_jcbcr(ctu_dec, x0 >> 1, y0 >> 1, log2_tb_w - 1,
-                                  log2_tb_h - 1, (cbf_mask & 0x3), cu_flags);
+                                  log2_tb_h - 1, cbf_mask, cu_flags);
+
+            /* FIXME better organisation based on cbf_mask */
+            if (cbf_mask == 3) {
+                int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
+                rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+                rcn_func->ict[1](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+            } else if (cbf_mask == 2) {
+                int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
+                rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+                rcn_func->ict[2](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+            } else {
+                int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
+                rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+                rcn_func->ict[2](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+            }
         } else if (cbf_mask & 0x3) {
             residual_coding_c(ctu_dec, x0 >> 1, y0 >> 1, log2_tb_w - 1,
                               log2_tb_h - 1, (cbf_mask & 0x3), cu_flags);
@@ -1156,7 +1161,28 @@ transform_unit_c(OVCTUDec *const ctu_dec,
         }
 
         if (cbf_mask & (1 << 3)) {
-            residual_coding_jcbcr(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, (cbf_mask & 0x3), cu_flags);
+            const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
+            uint16_t *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[(x0) + (y0 * RCN_CTB_STRIDE)];
+            uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[(x0) + (y0 * RCN_CTB_STRIDE)];
+
+            cbf_mask &= 0x3;
+
+            residual_coding_jcbcr(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cbf_mask, cu_flags);
+
+            /* FIXME better organisation based on cbf_mask */
+            if (cbf_mask == 3) {
+                int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
+                rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+                rcn_func->ict[1](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+            } else if (cbf_mask == 2) {
+                int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
+                rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+                rcn_func->ict[2](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+            } else {
+                int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
+                rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+                rcn_func->ict[2](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+            }
         } else if (cbf_mask & 0x3) {
             residual_coding_c(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, (cbf_mask & 0x3), cu_flags);
         }
