@@ -32,7 +32,6 @@ void rcn_residual(OVCTUDec *const ctudec,
 
 void rcn_residual_c(OVCTUDec *const ctudec,
                     int16_t *const dst, int16_t *src,
-                    int16_t *const lfnst_sb,
                     uint8_t x0, uint8_t y0,
                     uint8_t log2_tb_w, uint8_t log2_tb_h,
                     uint16_t lim_cg_w,

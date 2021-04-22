@@ -826,8 +826,6 @@ residual_coding_c(OVCTUDec *const ctu_dec,
     uint16_t last_pos_cr = (1 << (log2_tb_h + log2_tb_w)) - 1;
     uint32_t sig_sb_map_cb = 0x1;
     uint32_t sig_sb_map_cr = 0x1;
-    int16_t tmp_lfnst_cb[16];
-    int16_t tmp_lfnst_cr[16];
     uint8_t lfnst_flag = 0;
     uint8_t lfnst_idx = 0;
     uint8_t transform_skip_flag = 0;
@@ -856,8 +854,6 @@ residual_coding_c(OVCTUDec *const ctu_dec,
                                                             log2_tb_w, log2_tb_h,
                                                             last_pos_cb);
 
-            /*FIXME avoid copy of lfnst_sb */
-            memcpy(tmp_lfnst_cb, ctu_dec->lfnst_subblock, sizeof(int16_t) * 16);
         }  else {
             /* FIXME Chroma TS */
             ctu_dec->dequant_skip = &ctu_dec->dequant_cb_skip;
@@ -891,9 +887,6 @@ residual_coding_c(OVCTUDec *const ctu_dec,
             residual_coding_ts(ctu_dec, log2_tb_w, log2_tb_h);
             memcpy(coeffs_cr, ctu_dec->transform_buff, sizeof(uint16_t) << (log2_tb_h + log2_tb_w));
         }
-
-        /*FIXME avoid copy of lfnst_sb */
-        memcpy(tmp_lfnst_cr, ctu_dec->lfnst_subblock, sizeof(int16_t) * 16);
     }
 
     if (ctu_dec->enable_lfnst && sig_sb_map_cb == 0x1 && sig_sb_map_cr == 0x1 && log2_tb_w > 1 && log2_tb_h > 1 && !transform_skip_flag) {
@@ -948,7 +941,7 @@ residual_coding_c(OVCTUDec *const ctu_dec,
         int16_t *const coeffs_cb = ctu_dec->residual_cb;
 
         if (!(transform_skip_flag & 0x2)) {
-            rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cb, tmp_lfnst_cb,
+            rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cb,
                            x0, y0, log2_tb_w, log2_tb_h,
                            last_pos_cb, lfnst_flag, lfnst_idx);
             rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
@@ -965,7 +958,7 @@ residual_coding_c(OVCTUDec *const ctu_dec,
         int16_t scale  = ctu_dec->lmcs_info.lmcs_chroma_scale;
 
         if (!(transform_skip_flag & 0x1)) {
-            rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cr, tmp_lfnst_cr,
+            rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cr,
                            x0, y0, log2_tb_w, log2_tb_h,
                            last_pos_cr, lfnst_flag, lfnst_idx);
             rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
@@ -1048,7 +1041,7 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
 
     if (!transform_skip_flag) {
         rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_jcbcr,
-                       ctu_dec->lfnst_subblock, x0, y0, log2_tb_w, log2_tb_h,
+                       x0, y0, log2_tb_w, log2_tb_h,
                        last_pos, lfnst_flag, lfnst_idx);
     }
 
