@@ -437,10 +437,9 @@ rcn_residual_c(OVCTUDec *const ctudec,
                int16_t *const dst, int16_t *src,
                int16_t *const lfnst_sb,
                uint8_t x0, uint8_t y0,
-               unsigned int log2_tb_w, unsigned int log2_tb_h,
-               unsigned int lim_cg_w,
-               uint8_t cu_mts_flag, uint8_t cu_mts_idx,
-               uint8_t is_dc, uint8_t lfnst_flag, uint8_t is_mip, uint8_t lfnst_idx)
+               uint8_t log2_tb_w, uint8_t log2_tb_h,
+               uint16_t last_pos,
+               uint8_t lfnst_flag, uint8_t lfnst_idx)
 {
     struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
 
@@ -458,19 +457,17 @@ rcn_residual_c(OVCTUDec *const ctudec,
         /* FIXME separate lfnst mode derivation from lfnst reconstruction */
         process_lfnst(ctudec, src, lfnst_sb, log2_tb_w, log2_tb_h,
                       x0, y0, lfnst_idx);
-
-        /* Update lim_cg_w since lfnst part of coeff are now non zero */
-        lim_cg_w = 8;
-        is_dc = 0;
     }
 
-    if (is_dc && !lfnst_flag) {
+    if (!last_pos && !lfnst_flag) {
 
         TRFunc->dc(dst, log2_tb_w, log2_tb_h, src[0]);
 
     } else {
-        int nb_row =  OVMIN(lim_cg_w, 1 << log2_tb_w);
-        int nb_col =  OVMIN(lim_cg_w, 1 << log2_tb_h);
+        int lim_sb_s = ((((last_pos >> 8)) >> 2) + (((last_pos & 0xFF))>> 2) + 1) << 2;
+        if (lfnst_flag) lim_sb_s = 8;
+        int nb_row =  OVMIN(lim_sb_s, 1 << log2_tb_w);
+        int nb_col =  OVMIN(lim_sb_s, 1 << log2_tb_h);
         /*FIXME might be transform SKIP */
 
         TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, shift_v);

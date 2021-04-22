@@ -948,10 +948,9 @@ residual_coding_c(OVCTUDec *const ctu_dec,
         int16_t *const coeffs_cb = ctu_dec->residual_cb;
 
         if (!(transform_skip_flag & 0x2)) {
-            int lim_sb_s = ((((last_pos_cb >> 8)) >> 2) + (((last_pos_cb & 0xFF))>> 2) + 1) << 2;
             rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cb, tmp_lfnst_cb,
                            x0, y0, log2_tb_w, log2_tb_h,
-                           lim_sb_s, 0, 0, !last_pos_cb, lfnst_flag, 1, lfnst_idx);
+                           last_pos_cb, lfnst_flag, lfnst_idx);
         } else {
             memcpy(ctu_dec->transform_buff, coeffs_cb, sizeof(uint16_t) << (log2_tb_h + log2_tb_w));
         }
@@ -966,9 +965,9 @@ residual_coding_c(OVCTUDec *const ctu_dec,
         int16_t scale  = ctu_dec->lmcs_info.lmcs_chroma_scale;
 
         if (!(transform_skip_flag & 0x1)) {
-            int lim_sb_s = ((((last_pos_cr >> 8)) >> 2) + (((last_pos_cr & 0xFF))>> 2) + 1) << 2;
-            rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cr, tmp_lfnst_cr, x0, y0, log2_tb_w, log2_tb_h,
-                           lim_sb_s, 0, 0, !last_pos_cr, lfnst_flag, 1, lfnst_idx);
+            rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cr, tmp_lfnst_cr,
+                           x0, y0, log2_tb_w, log2_tb_h,
+                           last_pos_cr, lfnst_flag, lfnst_idx);
         } else {
             memcpy(ctu_dec->transform_buff, coeffs_cr, sizeof(uint16_t) << (log2_tb_h + log2_tb_w));
         }
@@ -1048,10 +1047,9 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
     }
 
     if (!transform_skip_flag) {
-        int lim_sb_s = ((((last_pos >> 8)) >> 2) + (((last_pos & 0xFF))>> 2) + 1) << 2;
         rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_jcbcr,
                        ctu_dec->lfnst_subblock, x0, y0, log2_tb_w, log2_tb_h,
-                       lim_sb_s, 0, 0, !last_pos, lfnst_flag, 1, lfnst_idx);
+                       last_pos, lfnst_flag, lfnst_idx);
     }
 
     fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);

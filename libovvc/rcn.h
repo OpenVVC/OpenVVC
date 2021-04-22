@@ -31,13 +31,12 @@ void rcn_residual(OVCTUDec *const ctudec,
              uint8_t is_dc, uint8_t lfnst_flag, uint8_t is_mip, uint8_t lfnst_idx);
 
 void rcn_residual_c(OVCTUDec *const ctudec,
-               int16_t *const dst, int16_t *src,
-               int16_t *const lfnst_sb,
-               uint8_t x0, uint8_t y0,
-               unsigned int log2_tb_w, unsigned int log2_tb_h,
-               unsigned int lim_cg_w,
-               uint8_t cu_mts_flag, uint8_t cu_mts_idx,
-               uint8_t is_dc, uint8_t lfnst_flag, uint8_t is_mip, uint8_t lfnst_idx);
+                    int16_t *const dst, int16_t *src,
+                    int16_t *const lfnst_sb,
+                    uint8_t x0, uint8_t y0,
+                    uint8_t log2_tb_w, uint8_t log2_tb_h,
+                    uint16_t lim_cg_w,
+                    uint8_t lfnst_flag, uint8_t lfnst_idx);
 
 void rcn_frame_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s);
 
