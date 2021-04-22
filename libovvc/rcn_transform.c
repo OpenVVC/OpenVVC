@@ -307,144 +307,101 @@ void
 vvc_inverse_dct_ii_64(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                       int num_lines, int num_columns, int shift)
 {
-        int round_factor = 1 << (shift - 1);
+  int round_factor = 1 << (shift - 1);
 
-        int clip_min = -(1 << 15);
-        int clip_max = (1 << 15) - 1;
-        int j, k;
-        int E[32], O[32];
-        int EE[16], EO[16];
-        int EEE[8], EEO[8];
-        int EEEE[4], EEEO[4];
-        int EEEEE[2], EEEEO[2];
-        uint8_t zo = num_columns >= 32;
-        for (j = 0; j < num_lines; j++) {
-                /* Utilizing symmetry properties to the maximum to minimize
-                the
-                 * number of multiplications */
-                for (k = 0; k < 32; k++) {
-                        O[k] =
-                          DCT_II_64[1 * 64 + k] * src[src_stride] +
-                          DCT_II_64[3 * 64 + k] * src[3 * src_stride] +
-                          DCT_II_64[5 * 64 + k] * src[5 * src_stride] +
-                          DCT_II_64[7 * 64 + k] * src[7 * src_stride] +
-                          DCT_II_64[9 * 64 + k] * src[9 * src_stride] +
-                          DCT_II_64[11 * 64 + k] * src[11 * src_stride] +
-                          DCT_II_64[13 * 64 + k] * src[13 * src_stride] +
-                          DCT_II_64[15 * 64 + k] * src[15 * src_stride] +
-                          DCT_II_64[17 * 64 + k] * src[17 * src_stride] +
-                          DCT_II_64[19 * 64 + k] * src[19 * src_stride] +
-                          DCT_II_64[21 * 64 + k] * src[21 * src_stride] +
-                          DCT_II_64[23 * 64 + k] * src[23 * src_stride] +
-                          DCT_II_64[25 * 64 + k] * src[25 * src_stride] +
-                          DCT_II_64[27 * 64 + k] * src[27 * src_stride] +
-                          DCT_II_64[29 * 64 + k] * src[29 * src_stride] +
-                          DCT_II_64[31 * 64 + k] * src[31 * src_stride] +
-                          (zo
-                             ? 0
-                             : (DCT_II_64[33 * 64 + k] * src[33 * src_stride] +
-                                DCT_II_64[35 * 64 + k] * src[35 * src_stride] +
-                                DCT_II_64[37 * 64 + k] * src[37 * src_stride] +
-                                DCT_II_64[39 * 64 + k] * src[39 * src_stride] +
-                                DCT_II_64[41 * 64 + k] * src[41 * src_stride] +
-                                DCT_II_64[43 * 64 + k] * src[43 * src_stride] +
-                                DCT_II_64[45 * 64 + k] * src[45 * src_stride] +
-                                DCT_II_64[47 * 64 + k] * src[47 * src_stride] +
-                                DCT_II_64[49 * 64 + k] * src[49 * src_stride] +
-                                DCT_II_64[51 * 64 + k] * src[51 * src_stride] +
-                                DCT_II_64[53 * 64 + k] * src[53 * src_stride] +
-                                DCT_II_64[55 * 64 + k] * src[55 * src_stride] +
-                                DCT_II_64[57 * 64 + k] * src[57 * src_stride] +
-                                DCT_II_64[59 * 64 + k] * src[59 * src_stride] +
-                                DCT_II_64[61 * 64 + k] * src[61 * src_stride] +
-                                DCT_II_64[63 * 64 + k] * src[63 * src_stride]));
-                }
-                for (k = 0; k < 16; k++) {
-                        EO[k] =
-                          DCT_II_64[2 * 64 + k] * src[2 * src_stride] +
-                          DCT_II_64[6 * 64 + k] * src[6 * src_stride] +
-                          DCT_II_64[10 * 64 + k] * src[10 * src_stride] +
-                          DCT_II_64[14 * 64 + k] * src[14 * src_stride] +
-                          DCT_II_64[18 * 64 + k] * src[18 * src_stride] +
-                          DCT_II_64[22 * 64 + k] * src[22 * src_stride] +
-                          DCT_II_64[26 * 64 + k] * src[26 * src_stride] +
-                          DCT_II_64[30 * 64 + k] * src[30 * src_stride] +
-                          (zo
-                             ? 0
-                             : (DCT_II_64[34 * 64 + k] * src[34 * src_stride] +
-                                DCT_II_64[38 * 64 + k] * src[38 * src_stride] +
-                                DCT_II_64[42 * 64 + k] * src[42 * src_stride] +
-                                DCT_II_64[46 * 64 + k] * src[46 * src_stride] +
-                                DCT_II_64[50 * 64 + k] * src[50 * src_stride] +
-                                DCT_II_64[54 * 64 + k] * src[54 * src_stride] +
-                                DCT_II_64[58 * 64 + k] * src[58 * src_stride] +
-                                DCT_II_64[62 * 64 + k] * src[62 * src_stride]));
-                }
-                for (k = 0; k < 8; k++) {
-                        EEO[k] =
-                          DCT_II_64[4 * 64 + k] * src[4 * src_stride] +
-                          DCT_II_64[12 * 64 + k] * src[12 * src_stride] +
-                          DCT_II_64[20 * 64 + k] * src[20 * src_stride] +
-                          DCT_II_64[28 * 64 + k] * src[28 * src_stride] +
-                          (zo
-                             ? 0
-                             : (DCT_II_64[36 * 64 + k] * src[36 * src_stride] +
-                                DCT_II_64[44 * 64 + k] * src[44 * src_stride] +
-                                DCT_II_64[52 * 64 + k] * src[52 * src_stride] +
-                                DCT_II_64[60 * 64 + k] * src[60 * src_stride]));
-                }
-                for (k = 0; k < 4; k++) {
-                        EEEO[k] =
-                          DCT_II_64[8 * 64 + k] * src[8 * src_stride] +
-                          DCT_II_64[24 * 64 + k] * src[24 * src_stride] +
-                          (zo
-                             ? 0
-                             : (DCT_II_64[40 * 64 + k] * src[40 * src_stride] +
-                                DCT_II_64[56 * 64 + k] * src[56 * src_stride]));
-                }
-                EEEEO[0] =
-                  DCT_II_64[16 * 64 + 0] * src[16 * src_stride] +
-                  (zo ? 0 : DCT_II_64[48 * 64 + 0] * src[48 * src_stride]);
-                EEEEO[1] =
-                  DCT_II_64[16 * 64 + 1] * src[16 * src_stride] +
-                  (zo ? 0 : DCT_II_64[48 * 64 + 1] * src[48 * src_stride]);
-                EEEEE[0] =
-                  DCT_II_64[0 * 64 + 0] * src[0] +
-                  (zo ? 0 : DCT_II_64[32 * 64 + 0] * src[32 * src_stride]);
-                EEEEE[1] =
-                  DCT_II_64[0 * 64 + 1] * src[0] +
-                  (zo ? 0 : DCT_II_64[32 * 64 + 1] * src[32 * src_stride]);
+  int clip_min = -(1 << 15);
+  int clip_max = (1 << 15) - 1;
+  int j, k;
+  int E[32], O[32];
+  int EE[16], EO[16];
+  int EEE[8], EEO[8];
+  int EEEE[4], EEEO[4];
+  int EEEEE[2], EEEEO[2];
+  for (j = 0; j < num_lines; j++) {
+          /* Utilizing symmetry properties to the maximum to minimize
+          the
+           * number of multiplications */
+          for (k = 0; k < 32; k++) {
+                  O[k] =
+                    DCT_II_64_OT[k * 16 + 0 ] * src[src_stride] +
+                    DCT_II_64_OT[k * 16 + 1 ] * src[3 * src_stride] +
+                    DCT_II_64_OT[k * 16 + 2 ] * src[5 * src_stride] +
+                    DCT_II_64_OT[k * 16 + 3 ] * src[7 * src_stride] +
+                    DCT_II_64_OT[k * 16 + 4 ] * src[9 * src_stride] +
+                    DCT_II_64_OT[k * 16 + 5 ] * src[11 * src_stride] +
+                    DCT_II_64_OT[k * 16 + 6 ] * src[13 * src_stride] +
+                    DCT_II_64_OT[k * 16 + 7 ] * src[15 * src_stride] +
+                    DCT_II_64_OT[k * 16 + 8 ] * src[17 * src_stride] +
+                    DCT_II_64_OT[k * 16 + 9 ] * src[19 * src_stride] +
+                    DCT_II_64_OT[k * 16 + 10] * src[21 * src_stride] +
+                    DCT_II_64_OT[k * 16 + 11] * src[23 * src_stride] +
+                    DCT_II_64_OT[k * 16 + 12] * src[25 * src_stride] +
+                    DCT_II_64_OT[k * 16 + 13] * src[27 * src_stride] +
+                    DCT_II_64_OT[k * 16 + 14] * src[29 * src_stride] +
+                    DCT_II_64_OT[k * 16 + 15] * src[31 * src_stride];
+          }
+          for (k = 0; k < 16; k++) {
+                  EO[k] =
+                    DCT_II_64_EOT[k * 8 + 0] * src[2 * src_stride] +
+                    DCT_II_64_EOT[k * 8 + 1] * src[6 * src_stride] +
+                    DCT_II_64_EOT[k * 8 + 2] * src[10 * src_stride] +
+                    DCT_II_64_EOT[k * 8 + 3] * src[14 * src_stride] +
+                    DCT_II_64_EOT[k * 8 + 4] * src[18 * src_stride] +
+                    DCT_II_64_EOT[k * 8 + 5] * src[22 * src_stride] +
+                    DCT_II_64_EOT[k * 8 + 6] * src[26 * src_stride] +
+                    DCT_II_64_EOT[k * 8 + 7] * src[30 * src_stride];
+          }
+          for (k = 0; k < 8; k++) {
+                  EEO[k] =
+                    DCT_II_64_EEOT[k * 4 + 0] * src[4 * src_stride] +
+                    DCT_II_64_EEOT[k * 4 + 1] * src[12 * src_stride] +
+                    DCT_II_64_EEOT[k * 4 + 2] * src[20 * src_stride] +
+                    DCT_II_64_EEOT[k * 4 + 3] * src[28 * src_stride];
+          }
+          for (k = 0; k < 4; k++) {
+                  EEEO[k] =
+                    DCT_II_64_EEEOT[k * 2 + 0] * src[8 * src_stride] +
+                    DCT_II_64_EEEOT[k * 2 + 1] * src[24 * src_stride];
+          }
+          EEEEO[0] =
+            DCT_II_64_EEEEO[0] * src[16 * src_stride];
+          EEEEO[1] =
+            DCT_II_64_EEEEO[1] * src[16 * src_stride];
+          EEEEE[0] =
+            DCT_II_64_EEEEE[0] * src[0];
+          EEEEE[1] =
+            DCT_II_64_EEEEE[1] * src[0];
 
-                /* Combining even and odd terms at each hierarchy levels to
-                 * calculate the final spatial domain vector */
-                for (k = 0; k < 2; k++) {
-                        EEEE[k] = EEEEE[k] + EEEEO[k];
-                        EEEE[k + 2] = EEEEE[1 - k] - EEEEO[1 - k];
-                }
-                for (k = 0; k < 4; k++) {
-                        EEE[k] = EEEE[k] + EEEO[k];
-                        EEE[k + 4] = EEEE[3 - k] - EEEO[3 - k];
-                }
-                for (k = 0; k < 8; k++) {
-                        EE[k] = EEE[k] + EEO[k];
-                        EE[k + 8] = EEE[7 - k] - EEO[7 - k];
-                }
-                for (k = 0; k < 16; k++) {
-                        E[k] = EE[k] + EO[k];
-                        E[k + 16] = EE[15 - k] - EO[15 - k];
-                }
-                for (k = 0; k < 32; k++) {
-                        dst[k] = ov_clip((E[k] + O[k] + round_factor) >> shift,
-                                         clip_min,
-                                         clip_max);
-                        dst[k + 32] = ov_clip(
-                          (E[31 - k] - O[31 - k] + round_factor) >> shift,
-                          clip_min,
-                          clip_max);
-                }
-                src++;
-                dst += 64;
-        }
+          /* Combining even and odd terms at each hierarchy levels to
+           * calculate the final spatial domain vector */
+          for (k = 0; k < 2; k++) {
+                  EEEE[k] = EEEEE[k] + EEEEO[k];
+                  EEEE[k + 2] = EEEEE[1 - k] - EEEEO[1 - k];
+          }
+          for (k = 0; k < 4; k++) {
+                  EEE[k] = EEEE[k] + EEEO[k];
+                  EEE[k + 4] = EEEE[3 - k] - EEEO[3 - k];
+          }
+          for (k = 0; k < 8; k++) {
+                  EE[k] = EEE[k] + EEO[k];
+                  EE[k + 8] = EEE[7 - k] - EEO[7 - k];
+          }
+          for (k = 0; k < 16; k++) {
+                  E[k] = EE[k] + EO[k];
+                  E[k + 16] = EE[15 - k] - EO[15 - k];
+          }
+          for (k = 0; k < 32; k++) {
+                  dst[k] = ov_clip((E[k] + O[k] + round_factor) >> shift,
+                                   clip_min,
+                                   clip_max);
+                  dst[k + 32] = ov_clip(
+                    (E[31 - k] - O[31 - k] + round_factor) >> shift,
+                    clip_min,
+                    clip_max);
+          }
+          src++;
+          dst += 64;
+  }
 }
 
 void
