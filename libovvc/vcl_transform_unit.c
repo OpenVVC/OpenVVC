@@ -824,6 +824,49 @@ residual_coding_l(OVCTUDec *const ctu_dec,
     return 0;
 }
 
+static uint8_t
+chroma_lfnst_check(const struct TBsInfoChroma *tbs_info, uint8_t cbf_mask, uint8_t log2_tb_w, uint8_t log2_tb_h)
+{
+    uint8_t can_lfnst = 0;
+
+    if (log2_tb_w > 1 && log2_tb_h > 1&& tbs_info->sig_sb_map_cb == 0x1 && tbs_info->sig_sb_map_cr == 0x1 && !tbs_info->tr_skip_mask) {
+        uint8_t need_cb_chk = cbf_mask & 0x2;
+        uint8_t need_cr_chk = cbf_mask & 0x1;
+
+        int max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
+
+        uint64_t scan_map = 0xfda6eb73c8419520;
+
+        can_lfnst = !!cbf_mask;
+
+        /*fixme better can_lfnst derivation */
+        if (need_cb_chk && need_cr_chk) {
+            int last_y_cb = tbs_info->last_pos_cb >> 8;
+            int last_x_cb = tbs_info->last_pos_cb & 0xff;
+            int last_y_cr = tbs_info->last_pos_cr >> 8;
+            int last_x_cr = tbs_info->last_pos_cr & 0xff;
+            int nb_coeffs_cb = (scan_map >> ((last_x_cb + (last_y_cb << 2)) << 2)) & 0xf;
+            int nb_coeffs_cr = (scan_map >> ((last_x_cr + (last_y_cr << 2)) << 2)) & 0xf;
+            can_lfnst &= nb_coeffs_cr <= max_lfnst_pos && nb_coeffs_cb <= max_lfnst_pos;
+            can_lfnst &= !!(nb_coeffs_cr | nb_coeffs_cb);
+        } else if (need_cb_chk) {
+            int last_y_cb = tbs_info->last_pos_cb >> 8;
+            int last_x_cb = tbs_info->last_pos_cb & 0xff;
+            int nb_coeffs_cb = (scan_map >> ((last_x_cb + (last_y_cb << 2)) << 2)) & 0xf;
+            can_lfnst &= nb_coeffs_cb <= max_lfnst_pos;
+            can_lfnst &= !!nb_coeffs_cb;
+        } else {
+            int last_y_cr = tbs_info->last_pos_cr >> 8;
+            int last_x_cr = tbs_info->last_pos_cr & 0xff;
+            int nb_coeffs_cr = (scan_map >> ((last_x_cr + (last_y_cr << 2)) << 2)) & 0xf;
+            can_lfnst &= nb_coeffs_cr <= max_lfnst_pos;
+            can_lfnst &= !!nb_coeffs_cr;
+        }
+    }
+
+    return can_lfnst;
+}
+
 static int
 residual_coding_c(OVCTUDec *const ctu_dec,
                   unsigned int x0, unsigned int y0,
@@ -898,38 +941,14 @@ residual_coding_c(OVCTUDec *const ctu_dec,
         }
     }
 
-    if (ctu_dec->enable_lfnst && sig_sb_map_cb == 0x1 && sig_sb_map_cr == 0x1 && log2_tb_w > 1 && log2_tb_h > 1 && !transform_skip_flag) {
-        uint8_t need_cb_chk = cbf_mask & 0x2;
-        uint8_t need_cr_chk = cbf_mask & 0x1;
+    tbs_info->tr_skip_mask = transform_skip_flag;
+    tbs_info->last_pos_cb   = last_pos_cb;
+    tbs_info->last_pos_cr   = last_pos_cr;
+    tbs_info->sig_sb_map_cb = sig_sb_map_cb;
+    tbs_info->sig_sb_map_cr = sig_sb_map_cr;
 
-        int max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
-
-        uint8_t can_lfnst = !!cbf_mask;
-        uint64_t scan_map = 0xFDA6EB73C8419520;
-
-        /*FIXME better can_lfnst derivation */
-        if (need_cb_chk && need_cr_chk) {
-            int last_y_cb = last_pos_cb >> 8;
-            int last_x_cb = last_pos_cb & 0xFF;
-            int last_y_cr = last_pos_cr >> 8;
-            int last_x_cr = last_pos_cr & 0xFF;
-            int nb_coeffs_cb = (scan_map >> ((last_x_cb + (last_y_cb << 2)) << 2)) & 0xF;
-            int nb_coeffs_cr = (scan_map >> ((last_x_cr + (last_y_cr << 2)) << 2)) & 0xF;
-            can_lfnst &= nb_coeffs_cr <= max_lfnst_pos && nb_coeffs_cb <= max_lfnst_pos;
-            can_lfnst &= !!(nb_coeffs_cr | nb_coeffs_cb);
-        } else if (need_cb_chk) {
-            int last_y_cb = last_pos_cb >> 8;
-            int last_x_cb = last_pos_cb & 0xFF;
-            int nb_coeffs_cb = (scan_map >> ((last_x_cb + (last_y_cb << 2)) << 2)) & 0xF;
-            can_lfnst &= nb_coeffs_cb <= max_lfnst_pos;
-            can_lfnst &= !!nb_coeffs_cb;
-        } else {
-            int last_y_cr = last_pos_cr >> 8;
-            int last_x_cr = last_pos_cr & 0xFF;
-            int nb_coeffs_cr = (scan_map >> ((last_x_cr + (last_y_cr << 2)) << 2)) & 0xF;
-            can_lfnst &= nb_coeffs_cr <= max_lfnst_pos;
-            can_lfnst &= !!nb_coeffs_cr;
-        }
+    if (ctu_dec->enable_lfnst) {
+        uint8_t can_lfnst = chroma_lfnst_check(tbs_info, cbf_mask&0x3, log2_tb_w, log2_tb_h);
 
         if (can_lfnst) {
             OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -938,20 +957,10 @@ residual_coding_c(OVCTUDec *const ctu_dec,
             if (lfnst_flag) {
                 lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
             }
+            tbs_info->lfnst_flag = lfnst_flag;
+            tbs_info->lfnst_idx = lfnst_idx;
         }
-
     }
-
-   tbs_info->tr_skip_mask = transform_skip_flag;
-   tbs_info->lfnst_flag = lfnst_flag;
-   tbs_info->lfnst_idx = lfnst_idx;
-   tbs_info->last_pos_cb   = last_pos_cb;
-   tbs_info->last_pos_cr   = last_pos_cr;
-   tbs_info->sig_sb_map_cb = sig_sb_map_cb;
-   tbs_info->sig_sb_map_cr = sig_sb_map_cr;
-
-#if 1
-#endif
 
     return 0;
 }
