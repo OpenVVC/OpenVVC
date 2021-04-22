@@ -4712,6 +4712,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     const struct IQScale deq_prms = derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
 
+    /* FIXME this is a bit wasteful if we only read a few sub blocks */
     memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
 
     if (!last_pos){

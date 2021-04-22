@@ -306,6 +306,7 @@ decode_cbf_c(const OVCTUDec *const ctu_dec)
                 (cbf_mask & 0x3) - 1);
         cbf_mask |= joint_cb_cr << 3;
     }
+
     return cbf_mask;
 }
 
@@ -814,6 +815,7 @@ residual_coding_l(OVCTUDec *const ctu_dec,
     }
 
 #if 1
+    /* FIXME use transform add optimization */
     vvc_add_residual( ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
 #else
     rcn_func->ict[0](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE],
