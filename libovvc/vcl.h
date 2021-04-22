@@ -117,7 +117,7 @@ int residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
                                     unsigned int log2_tb_w, unsigned int log2_tb_h,
                                     uint16_t last_pos);
 
-int residual_coding_ts(OVCTUDec *const ctu_dec, unsigned int log2_tb_w, unsigned int log2_tb_h);
+int residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst, uint8_t log2_tb_w, uint8_t log2_tb_h);
 
 int coding_unit(OVCTUDec *const ctu_dec,
                 const OVPartInfo *const part_ctx,

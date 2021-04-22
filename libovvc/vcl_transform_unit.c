@@ -274,6 +274,7 @@ decode_cbf_st(const OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_de
         tu_cbf_luma = ovcabac_read_ae_tu_cbf_luma(cabac_ctx);
     }
 
+    /* FIXME intra if inter we only check for cbf_mask == 3*/
     if (ctu_dec->jcbcr_enabled && cbf_mask) {
         uint8_t joint_cb_cr = ovcabac_read_ae_joint_cb_cr_flag(cabac_ctx, (cbf_mask & 0x3) - 1);
         cbf_mask |= joint_cb_cr << 3;
@@ -800,7 +801,7 @@ residual_coding_l(OVCTUDec *const ctu_dec,
 
     } else {
         ctu_dec->dequant_skip = &ctu_dec->dequant_luma_skip;
-        residual_coding_ts(ctu_dec, log2_tb_w, log2_tb_h);
+        residual_coding_ts(ctu_dec, ctu_dec->transform_buff, log2_tb_w, log2_tb_h);
     }
 
 #if 1
@@ -857,8 +858,7 @@ residual_coding_c(OVCTUDec *const ctu_dec,
         }  else {
             /* FIXME Chroma TS */
             ctu_dec->dequant_skip = &ctu_dec->dequant_cb_skip;
-            residual_coding_ts(ctu_dec, log2_tb_w, log2_tb_h);
-            memcpy(coeffs_cb ,ctu_dec->transform_buff, sizeof(uint16_t) << (log2_tb_h + log2_tb_w));
+            residual_coding_ts(ctu_dec, coeffs_cb, log2_tb_w, log2_tb_h);
         }
     }
 
@@ -884,8 +884,7 @@ residual_coding_c(OVCTUDec *const ctu_dec,
                                                             last_pos_cr);
         } else {
             ctu_dec->dequant_skip = &ctu_dec->dequant_cr_skip;
-            residual_coding_ts(ctu_dec, log2_tb_w, log2_tb_h);
-            memcpy(coeffs_cr, ctu_dec->transform_buff, sizeof(uint16_t) << (log2_tb_h + log2_tb_w));
+            residual_coding_ts(ctu_dec, coeffs_cr, log2_tb_w, log2_tb_h);
         }
     }
 
@@ -1015,7 +1014,7 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
         sig_sb_map = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_jcbcr, log2_tb_w, log2_tb_h,
                                                      last_pos);
     } else {
-        residual_coding_ts(ctu_dec, log2_tb_w, log2_tb_h);
+        residual_coding_ts(ctu_dec, ctu_dec->transform_buff, log2_tb_w, log2_tb_h);
     }
 
     if (ctu_dec->enable_lfnst && !transform_skip_flag && sig_sb_map == 0x1) {
