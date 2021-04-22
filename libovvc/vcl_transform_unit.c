@@ -737,10 +737,10 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
 }
 
 static int
-transform_unit(OVCTUDec *const ctu_dec,
-               unsigned int x0, unsigned int y0,
-               unsigned int log2_tb_w, unsigned int log2_tb_h,
-               uint8_t tu_cbf_luma, uint8_t cu_flags, uint8_t tr_depth)
+residual_coding_l(OVCTUDec *const ctu_dec,
+                  unsigned int x0, unsigned int y0,
+                  unsigned int log2_tb_w, unsigned int log2_tb_h,
+                  uint8_t tu_cbf_luma, uint8_t cu_flags, uint8_t tr_depth)
 {
 
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -814,10 +814,10 @@ transform_unit(OVCTUDec *const ctu_dec,
 }
 
 static int
-transform_unit_chroma(OVCTUDec *const ctu_dec,
-                      unsigned int x0, unsigned int y0,
-                      unsigned int log2_tb_w, unsigned int log2_tb_h,
-                      uint8_t cbf_mask, uint8_t cu_flags)
+residual_coding_c(OVCTUDec *const ctu_dec,
+                  unsigned int x0, unsigned int y0,
+                  unsigned int log2_tb_w, unsigned int log2_tb_h,
+                  uint8_t cbf_mask, uint8_t cu_flags)
 {
     uint8_t joint_cb_cr = cbf_mask & (1 << 3);
     const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
@@ -1071,12 +1071,12 @@ transform_unit_st(OVCTUDec *const ctu_dec,
         }
 
         if (cbf_mask & (1 << 4)) {
-            transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, 1, cu_flags, tr_depth);
+            residual_coding_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, 1, cu_flags, tr_depth);
         }
 
         if (cbf_mask & 0xF) {
-            transform_unit_chroma(ctu_dec, x0 >> 1, y0 >> 1, log2_tb_w - 1,
-                                  log2_tb_h - 1, cbf_mask, cu_flags);
+            residual_coding_c(ctu_dec, x0 >> 1, y0 >> 1, log2_tb_w - 1,
+                              log2_tb_h - 1, cbf_mask, cu_flags);
         }
     }
 
@@ -1086,9 +1086,9 @@ transform_unit_st(OVCTUDec *const ctu_dec,
 
 int
 transform_unit_l(OVCTUDec *const ctu_dec,
-                  unsigned int x0, unsigned int y0,
-                  unsigned int log2_tb_w, unsigned int log2_tb_h,
-                  uint8_t rqt_root_cbf, uint8_t cu_flags, uint8_t tr_depth)
+                 unsigned int x0, unsigned int y0,
+                 unsigned int log2_tb_w, unsigned int log2_tb_h,
+                 uint8_t rqt_root_cbf, uint8_t cu_flags, uint8_t tr_depth)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t cbf_mask = ovcabac_read_ae_tu_cbf_luma(cabac_ctx);
@@ -1101,7 +1101,7 @@ transform_unit_l(OVCTUDec *const ctu_dec,
             #endif
         }
 
-        transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cbf_mask, cu_flags, tr_depth);
+        residual_coding_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cbf_mask, cu_flags, tr_depth);
     }
 
     return 0;
@@ -1124,7 +1124,7 @@ transform_unit_c(OVCTUDec *const ctu_dec,
             #endif
         }
 
-        transform_unit_chroma(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cbf_mask, cu_flags);
+        residual_coding_c(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cbf_mask, cu_flags);
     }
 
     return 0;
