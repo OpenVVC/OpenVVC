@@ -852,7 +852,9 @@ residual_coding_c(OVCTUDec *const ctu_dec,
 
             last_pos_cb = ovcabac_read_ae_last_sig_pos_c(cabac_ctx, log2_tb_w, log2_tb_h);
 
-            sig_sb_map_cb = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_cb, log2_tb_w, log2_tb_h, last_pos_cb);
+            sig_sb_map_cb = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_cb,
+                                                            log2_tb_w, log2_tb_h,
+                                                            last_pos_cb);
 
             /*FIXME avoid copy of lfnst_sb */
             memcpy(tmp_lfnst_cb, ctu_dec->lfnst_subblock, sizeof(int16_t) * 16);
@@ -881,7 +883,9 @@ residual_coding_c(OVCTUDec *const ctu_dec,
 
             last_pos_cr = ovcabac_read_ae_last_sig_pos_c(cabac_ctx, log2_tb_w, log2_tb_h);
 
-            sig_sb_map_cr = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_cr, log2_tb_w, log2_tb_h, last_pos_cr);
+            sig_sb_map_cr = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_cr,
+                                                            log2_tb_w, log2_tb_h,
+                                                            last_pos_cr);
         } else {
             ctu_dec->dequant_skip = &ctu_dec->dequant_cr_skip;
             residual_coding_ts(ctu_dec, log2_tb_w, log2_tb_h);
