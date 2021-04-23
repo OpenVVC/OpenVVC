@@ -277,7 +277,7 @@ struct OVVCDec
      * Contains context for Tile / Slice / Picture / SubPicture
      * decoding
      */
-    OVSliceDec *subdec_list;
+    OVSliceDec **subdec_list;
 
     /* Number of available threads */
     int nb_threads;

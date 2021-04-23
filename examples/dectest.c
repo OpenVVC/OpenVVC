@@ -262,8 +262,6 @@ ovthread_read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
              */
             ov_free_pu(&pu);
         }
-
-
     } while (ret >= 0);
 
 end_out:

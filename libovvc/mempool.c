@@ -30,15 +30,16 @@ failalloc:
 MemPoolElem *
 ovmempool_popelem(MemPool *mpool)
 {
-    MemPoolElem *elem = mpool->stack_elem;
+    pthread_mutex_lock(&mpool->pool_mtx);
 
+    MemPoolElem *elem = mpool->stack_elem;
     if (elem) {
         mpool->stack_elem = elem->next_elem;
         elem->next_elem = NULL;
     } else {
         elem = ov_mallocz(sizeof(*elem));
         if (!elem) {
-            return elem;
+            goto ret_and_unlock;
         }
         /* Keep track of parent pool so elem can be released
            without knowledge of responsible mempool */
@@ -47,7 +48,7 @@ ovmempool_popelem(MemPool *mpool)
         elem->data = ov_mallocz(mpool->elem_size);
         if (!elem->data) {
             ov_freep(&elem);
-            return elem;
+            goto ret_and_unlock;
         }
     }
 
@@ -55,6 +56,8 @@ ovmempool_popelem(MemPool *mpool)
        mempool if some of its elements did not return */
     mpool->nb_ref++;
 
+ret_and_unlock:
+    pthread_mutex_unlock(&mpool->pool_mtx);
     return elem;
 }
 
@@ -78,17 +81,19 @@ ovmempool_free(MemPool *mpool)
 
 void
 ovmempool_pushelem(MemPoolElem *released_elem)
-{
-   if (released_elem) {
-       MemPool *mpool = released_elem->mempool;
+{  
+    if (released_elem) {
+        MemPool *mpool = released_elem->mempool;
+        pthread_mutex_lock(&mpool->pool_mtx);
 
-       released_elem->next_elem = mpool->stack_elem;
-       mpool->stack_elem = released_elem;
-       mpool->nb_ref--;
-       if (!mpool->nb_ref) {
-           ovmempool_free(mpool);
-       }
-   }
+        released_elem->next_elem = mpool->stack_elem;
+        mpool->stack_elem = released_elem;
+        mpool->nb_ref--;
+        if (!mpool->nb_ref) {
+            ovmempool_free(mpool);
+        }
+        pthread_mutex_unlock(&mpool->pool_mtx);
+    }
 }
 
 void

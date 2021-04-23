@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "ovdefs.h"
+#include <stdatomic.h>
 
 /* TODO Decide on values */
 enum ChromaFmt
@@ -40,7 +41,8 @@ struct FramePool
 struct FrameInternal
 {
     /* reference counter */
-    int ref_count;
+    atomic_uint ref_count;
+    // int ref_count;
 
     struct frame_pool *frame_pool;
     void *pool_elem[4];

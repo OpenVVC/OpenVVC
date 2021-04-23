@@ -68,10 +68,11 @@ ovdec_init_subdec_list(OVVCDec *dec)
     int ret;
     uint8_t nb_threads = dec->nb_threads;
     if (!dec->subdec_list) 
-        dec->subdec_list = ov_mallocz(sizeof(OVSliceDec) * nb_threads);
+        dec->subdec_list = ov_mallocz(sizeof(OVSliceDec*) * nb_threads);
 
     for (int i = 0; i < nb_threads; ++i){
-        ret = slicedec_init(&dec->subdec_list, nb_threads);
+        dec->subdec_list[i] = ov_mallocz(sizeof(OVSliceDec));
+        ret = slicedec_init(dec->subdec_list[i], dec->nb_threads);
         if (ret < 0) {
             return OVVC_ENOMEM;
         }
@@ -81,22 +82,12 @@ ovdec_init_subdec_list(OVVCDec *dec)
 }
 
 
-static OVSliceDec *
-select_subdec(const OVVCDec *const dec)
-{
-    /* FIXME only one SLice dec at the current time */
-
-    return dec->subdec_list;
-}
-
 static int
-init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
+init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const nvcl_ctx,
                  const OVNALUnit *const nalu, const OVNVCLReader *const rdr)
 {
 
     int ret;
-    OVSliceDec *sldec;
-
     int nb_sh_bytes = nvcl_num_bytes_read(rdr);
 
     ret = decinit_update_params(dec, nvcl_ctx);
@@ -116,13 +107,6 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
     if (!dec->mv_pool) {
         ret = mvpool_init(&dec->mv_pool, &dec->active_params.pic_info);
     }
-
-    ret = ovdec_init_subdec_list(dec);
-    if (ret < 0) {
-        return ret;
-    }
-
-    sldec = select_subdec(dec);
 
     /* FIXME clean way on new slice with address 0 */
 #if 0
@@ -146,6 +130,29 @@ init_vcl_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx,
 
     return 0;
 }
+
+
+OVSliceDec *
+ovdec_select_subdec(OVSliceDec **sldec_list, int nb_threads)
+{
+    OVSliceDec * selected_subdec;
+    struct SliceThread* th_subdec;
+    for(int i = 0; i < nb_threads; i++){
+        selected_subdec = sldec_list[i];
+        th_subdec = &selected_subdec->th_info;
+        pthread_mutex_lock(&th_subdec->gnrl_mtx);
+        
+        if(!th_subdec->gnrl_state){
+            th_subdec->gnrl_state = 1;
+            pthread_mutex_unlock(&th_subdec->gnrl_mtx);
+            return selected_subdec;
+        }
+        pthread_mutex_unlock(&th_subdec->gnrl_mtx);  
+    }
+    //No slice thread is currently available
+    return NULL;
+}
+
 
 static int
 decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
@@ -174,8 +181,23 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
         if (ret < 0) {
             return ret;
         } else {
+            OVSliceDec *sldec = NULL;
+            struct OutputFrameThread* t_out = vvcdec->out_frame_thread;
+            if(t_out){
+                // do{
+                    sldec = ovdec_select_subdec(vvcdec->subdec_list, vvcdec->nb_threads);
+                    
+                //     //Wait for output thread to finish writing
+                //     pthread_mutex_lock(&t_out->gnrl_mtx);
+                //     pthread_cond_wait(&t_out->gnrl_cnd, &t_out->gnrl_mtx);
+                //     pthread_mutex_unlock(&t_out->gnrl_mtx);
+                // }while(!sldec);
+            }
+            else{
+                sldec = vvcdec->subdec_list[0];
+            }
 
-            ret = init_vcl_decoder(vvcdec, nvcl_ctx, nalu, &rdr);
+            ret = init_vcl_decoder(vvcdec, sldec, nvcl_ctx, nalu, &rdr);
             if (ret < 0) {
                 goto failvcl;
             }
@@ -183,15 +205,17 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
              */
 
             /* FIXME handle non rect entries later */
-            ret = slicedec_decode_rect_entries(vvcdec->subdec_list, &vvcdec->active_params);
+            //TODO: create more than 1 active params in ovdec 
+            //TODO: wake up thread in sldec giving him the picture to encode (table of active params in ovdec ?)
+            ret = slicedec_decode_rect_entries(sldec, &vvcdec->active_params);
             
             //Signal output thread that slice is ready for writing
-            struct OutputFrameThread* t_out = vvcdec->out_frame_thread;
             if(t_out){
                 pthread_mutex_lock(&t_out->gnrl_mtx);
                 pthread_cond_signal(&t_out->gnrl_cnd);
                 pthread_mutex_unlock(&t_out->gnrl_mtx);
             }
+
             /* TODO start VCL decoder */
         }
 
@@ -255,8 +279,9 @@ fail:
     return ret;
 
 failvcl:
-    if (vvcdec->subdec_list->pic) {
-        ovdpb_unref_pic(vvcdec->dpb, vvcdec->subdec_list->pic, ~0);
+    //TODO: change 0
+    if (vvcdec->subdec_list[0]->pic) {
+        ovdpb_unref_pic(vvcdec->dpb, vvcdec->subdec_list[0]->pic, ~0);
     }
     return ret;
 }
@@ -477,6 +502,8 @@ ovdec_init(OVVCDec **vvcdec)
 
     (*vvcdec)->nb_threads = nb_threads;
 
+    ovdec_init_subdec_list(*vvcdec);
+
     return 0;
 
 fail:
@@ -488,6 +515,8 @@ int
 ovdec_close(OVVCDec *vvcdec)
 {
     int not_dec;
+    OVSliceDec *sldec;
+
     if (vvcdec != NULL) {
 
         not_dec = vvcdec->name != decname;
@@ -497,9 +526,11 @@ ovdec_close(OVVCDec *vvcdec)
         nvcl_free_ctx(&vvcdec->nvcl_ctx);
 
         if (vvcdec->subdec_list) {
-            slicedec_uninit(&vvcdec->subdec_list);
+            for (int i = 0; i < vvcdec->nb_threads; ++i){
+                sldec = vvcdec->subdec_list[i];
+                slicedec_uninit(&sldec);
+            }
         }
-
         ovdpb_uninit(&vvcdec->dpb);
 
         if (vvcdec->mv_pool) {

@@ -215,6 +215,7 @@ alloc_frame(OVDPB *dpb)
         }
 
         ret = dpbpriv_request_frame(&dpb->internal, &pic->frame);
+        
         if (ret < 0) {
             return NULL;
         }

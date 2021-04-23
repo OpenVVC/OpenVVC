@@ -50,7 +50,8 @@ framepool_request_planes(OVFrame *const frame, struct FramePool *const fp)
         frame->linesize[i] = prop->stride;
     }
 
-    frame->internal.ref_count = 1;
+    atomic_init(&frame->internal.ref_count, 1);
+    // frame->internal.ref_count = 1;
 
     return 0;
 

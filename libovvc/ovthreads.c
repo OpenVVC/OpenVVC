@@ -51,6 +51,7 @@ thread_decode_entries(struct SliceThread *th_info, struct EntryThread *tdec)
 
     } while (entry_idx < nb_entries);
 
+    //TODOpar: verify nb_task_threads and if islast is correct.
     /* Last thread to exit loop will have entry_idx set to nb_entry + nb_task_threads - 1*/
     return entry_idx == nb_entries + nb_task_threads - 1;
 }
@@ -86,12 +87,20 @@ ovthread_decode_entries(struct SliceThread *th_info, DecodeFunc decode_entry, in
      */
     if (!is_last) {
         pthread_mutex_lock(&th_info->gnrl_mtx);
-        while (!th_info->gnrl_state) {
+        while (th_info->gnrl_state) {
             pthread_cond_wait(&th_info->gnrl_cnd, &th_info->gnrl_mtx);
         }
-        th_info->gnrl_state = 0;
+        // th_info->gnrl_state = 0;
         pthread_mutex_unlock(&th_info->gnrl_mtx);
     }
+
+    //Signal output thread that slice is ready for writing
+    // struct OutputFrameThread* t_out = vvcdec->out_frame_thread;
+    // if(t_out){
+    //     pthread_mutex_lock(&t_out->gnrl_mtx);
+    //     pthread_cond_signal(&t_out->gnrl_cnd);
+    //     pthread_mutex_unlock(&t_out->gnrl_mtx);
+    // }
 
     return 0;
 }
@@ -104,9 +113,8 @@ thread_main_function(void *opaque)
     pthread_mutex_lock(&tdec->task_mtx);
     pthread_cond_signal(&tdec->task_cnd);
 
-    tdec->state = 1;
-
     while (!tdec->kill){
+        tdec->state = 1;
         do {
             pthread_cond_wait(&tdec->task_cnd, &tdec->task_mtx);
             if (tdec->kill) {
@@ -124,7 +132,7 @@ thread_main_function(void *opaque)
             if (is_last) {
                 struct SliceThread *th_info = tdec->parent;
                 pthread_mutex_lock(&th_info->gnrl_mtx);
-                th_info->gnrl_state = 1;
+                th_info->gnrl_state = 0;
                 pthread_cond_signal(&th_info->gnrl_cnd);
                 pthread_mutex_unlock(&th_info->gnrl_mtx);
             }
@@ -222,14 +230,12 @@ Functions needed by the threads decoding an entire slice
 int
 ovthread_slice_thread_init(struct SliceThread *th_slice, int nb_threads)
 {   
-
     th_slice->nb_threads = nb_threads;
     th_slice->tdec = ov_mallocz(sizeof(struct EntryThread) * nb_threads);
     if (!th_slice->tdec) {
         goto failalloc;
     }
 
-    //TODO: why atomic?
     atomic_init(&th_slice->first_job,      0);
     atomic_init(&th_slice->last_entry_idx, 0);
 
@@ -242,6 +248,7 @@ ovthread_slice_thread_init(struct SliceThread *th_slice, int nb_threads)
     //     goto failthread;
     // }
 
+    return 0;
 
 failthread:
     ov_freep(&th_slice->tdec);
@@ -252,10 +259,47 @@ failalloc:
 }
 
 
-// int
-// ovthread_slice_decode(void *opaque)
+//TODO: function unecessary if the pthread in SliceThread is not launched.
+void
+ovthread_slice_thread_uninit(struct SliceThread *th_slice)
+{
+    pthread_mutex_lock(&th_slice->gnrl_mtx);
+    //TODO: need for a kill in SliceThread ?
+    // th_slice->kill = 1;
+    pthread_cond_signal(&th_slice->gnrl_cnd);
+    pthread_mutex_unlock(&th_slice->gnrl_mtx);
+
+    uninit_entry_threads(th_slice);
+
+    // void *ret;
+    // // pthread_join(th_slice->thread, &ret);
+    // pthread_mutex_destroy(&th_slice->gnrl_mtx);
+    // pthread_cond_destroy(&th_slice->gnrl_cnd);
+}
 
 
+int
+ovthread_slice_main_function(void *opaque)
+{
+    OVVCDec *dec = (struct OVVCDec *)opaque;
+    struct OutputFrameThread* t_out = dec->out_frame_thread;
+    int nb_pic = 0;
+    do {
+        pthread_mutex_lock(&t_out->gnrl_mtx);
+        pthread_cond_wait(&t_out->gnrl_cnd, &t_out->gnrl_mtx);
+        pthread_mutex_unlock(&t_out->gnrl_mtx);
+
+
+    } while (!t_out->kill);
+
+
+    //Signal the main thread that the last picture has been written
+    pthread_mutex_lock(&t_out->gnrl_mtx);
+    pthread_cond_signal(&t_out->gnrl_cnd);
+    pthread_mutex_unlock(&t_out->gnrl_mtx);
+    ov_log(NULL, OVLOG_INFO, "Decoded %d pictures\n", nb_pic);
+    return 0;
+}
 
 
 

@@ -1487,17 +1487,9 @@ failctudec:
 }
 
 int
-slicedec_init(OVSliceDec **dec_p, int nb_entry_th)
+slicedec_init(OVSliceDec *sldec, int nb_entry_th)
 {
-    OVSliceDec *sldec;
     int ret;
-    sldec = ov_mallocz(sizeof(OVSliceDec));
-    if (!sldec) {
-        return OVVC_ENOMEM;
-    }
-
-    *dec_p = sldec;
-
     sldec->nb_sbdec = nb_entry_th;
 
     ret = init_ctudec_list(sldec, nb_entry_th);
@@ -1505,6 +1497,7 @@ slicedec_init(OVSliceDec **dec_p, int nb_entry_th)
         goto failctudec;
     }
 
+    sldec->th_info.owner = sldec;
     ret = ovthread_slice_thread_init(&sldec->th_info, nb_entry_th);
     ret = init_entry_threads(&sldec->th_info, nb_entry_th);
     if (ret < 0) {
@@ -1518,7 +1511,7 @@ slicedec_init(OVSliceDec **dec_p, int nb_entry_th)
 failthreads:
     uninit_ctudec_list(sldec, nb_entry_th);
 failctudec:
-    ov_freep(dec_p);
+    ov_freep(&sldec);
     return OVVC_ENOMEM;
 
 }
@@ -1529,7 +1522,7 @@ slicedec_uninit(OVSliceDec **sldec_p)
 {
     OVSliceDec *sldec = *sldec_p;
 
-    uninit_entry_threads(&sldec->th_info);
+    ovthread_slice_thread_uninit(&sldec->th_info);
 
     if (sldec->ctudec_list) {
         uninit_ctudec_list(sldec, sldec->nb_sbdec);
@@ -1540,7 +1533,6 @@ slicedec_uninit(OVSliceDec **sldec_p)
         cabac_lines_uninit(sldec);
         drv_lines_uninit(sldec);
     }
-
 
     ov_freep(sldec_p);
 
