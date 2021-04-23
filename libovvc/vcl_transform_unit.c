@@ -1075,6 +1075,82 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
 
 }
 
+static uint8_t
+lfnst_check_st(const struct TUInfo *const tu_info, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t cbf_mask, uint8_t cu_flags)
+{
+    uint8_t cbf_flag_l  = cbf_mask & 0x10;
+    uint8_t jcbcr_flag  = cbf_mask & 0x8;
+    uint8_t cbf_mask_cb = cbf_mask & 0x2;
+    uint8_t cbf_mask_cr = cbf_mask & 0x1;
+    uint8_t non_only_dc = 0;
+    /* FIXME chroma size ? */
+    const uint8_t max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
+
+    /*FIXME MIP check on ly for luma TB*/
+    uint8_t is_mip = !!(cu_flags & flg_mip_flag);
+    uint8_t mip_lfnst = !is_mip || (log2_tb_h >= 4 && log2_tb_w >= 4);
+
+    uint8_t can_lfnst = mip_lfnst;
+
+    can_lfnst &= log2_tb_h > 1 && log2_tb_w > 1;
+
+    /* FIXME check condition on component ?*/
+    can_lfnst &= !(tu_info->tr_skip_mask & 0x10);
+
+    /* FIXME Note that sig_sb_map check is sufficient if max is 15 */
+    if (can_lfnst) {
+        static const uint64_t scan_map = 0xFDA6EB73C8419520;
+        if (cbf_flag_l) {
+            const struct TBInfo *tb_info = &tu_info->tb_info[2];
+            int last_y = tb_info->last_pos >> 8;
+            int last_x = tb_info->last_pos & 0xFF;
+            int nb_coeffs = (scan_map >> ((last_x + (last_y << 2)) << 2)) & 0xF;
+
+            can_lfnst &= tb_info->sig_sb_map == 0x1;
+            can_lfnst &= nb_coeffs <= max_lfnst_pos;
+            non_only_dc |= nb_coeffs;
+        }
+
+        if (jcbcr_flag) {
+            const struct TBInfo *const tb_info_cbcr = &tu_info->tb_info[0];
+            int last_y_cbcr = tb_info_cbcr->last_pos >> 8;
+            int last_x_cbcr = tb_info_cbcr->last_pos & 0xff;
+            int nb_coeffs_cbcr = (scan_map >> ((last_x_cbcr + (last_y_cbcr << 2)) << 2)) & 0xf;
+            can_lfnst &= tb_info_cbcr->sig_sb_map == 0x1;
+            can_lfnst &= nb_coeffs_cbcr <= max_lfnst_pos;
+            can_lfnst &= log2_tb_h > 2 && log2_tb_w > 2;
+            non_only_dc |= nb_coeffs_cbcr;
+        } else {
+            if (cbf_mask_cb) {
+                const struct TBInfo *const tb_info_cb = &tu_info->tb_info[0];
+                int last_y_cb = tb_info_cb->last_pos >> 8;
+                int last_x_cb = tb_info_cb->last_pos & 0xff;
+                int nb_coeffs_cb = (scan_map >> ((last_x_cb + (last_y_cb << 2)) << 2)) & 0xf;
+                can_lfnst &= tb_info_cb->sig_sb_map == 0x1;
+                can_lfnst &= nb_coeffs_cb <= max_lfnst_pos;
+                //can_lfnst &= log2_tb_h > 2 && log2_tb_w > 2;
+                non_only_dc |= nb_coeffs_cb;
+            }
+
+            if (cbf_mask_cr) {
+                const struct TBInfo *const tb_info_cr = &tu_info->tb_info[1];
+                int last_y_cr = tb_info_cr->last_pos >> 8;
+                int last_x_cr = tb_info_cr->last_pos & 0xff;
+                int nb_coeffs_cr = (scan_map >> ((last_x_cr + (last_y_cr << 2)) << 2)) & 0xf;
+                can_lfnst &= tb_info_cr->sig_sb_map == 0x1;
+                can_lfnst &= nb_coeffs_cr <= max_lfnst_pos;
+                //can_lfnst &= log2_tb_h > 2 && log2_tb_w > 2;
+                non_only_dc |= nb_coeffs_cr;
+            }
+        }
+
+        can_lfnst &= !!non_only_dc;
+
+    }
+
+    return can_lfnst;
+}
+
 int
 transform_unit_st(OVCTUDec *const ctu_dec,
                   unsigned int x0, unsigned int y0,
@@ -1100,45 +1176,8 @@ transform_unit_st(OVCTUDec *const ctu_dec,
         }
 
         if (cbf_flag_l) {
-            struct TBInfo *tb_info = &tu_info.tb_info[2];
 
             residual_coding_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, &tu_info);
-
-            if (!tu_info.tr_skip_mask) {
-                /* FIXME use sb_sig_map instead of last pos */
-                if (ctu_dec->enable_lfnst && tb_info->sig_sb_map == 0x1) {
-                    int max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
-                    int last_y = tb_info->last_pos >> 8;
-                    int last_x = tb_info->last_pos & 0xFF;
-                    uint64_t scan_map = 0xFDA6EB73C8419520;
-                    int nb_coeffs = (scan_map >> ((last_x + (last_y << 2)) << 2)) & 0xF;
-                    uint8_t is_mip = !!(cu_flags & flg_mip_flag);
-                    uint8_t allow_mip_lfnst = !is_mip || (log2_tb_h >= 4 && log2_tb_w >= 4);
-
-                    if (allow_mip_lfnst && nb_coeffs <= max_lfnst_pos && !!tb_info->last_pos) {
-                        OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-                        uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;
-                        uint8_t lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
-                        tu_info.lfnst_flag = lfnst_flag;
-                        if (lfnst_flag) {
-                            uint8_t lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
-                            tu_info.lfnst_idx = lfnst_idx;
-                        }
-                    }
-                }
-
-                if (!tu_info.lfnst_flag && !!tb_info->last_pos
-                    && ctu_dec->mts_enabled && (log2_tb_w < 6) && (log2_tb_h < 6)
-                    && !(tb_info->sig_sb_map & (~0x000000000F0F0F0F))) {
-                    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-                    uint8_t cu_mts_flag = ovcabac_read_ae_cu_mts_flag(cabac_ctx);
-                    tu_info.cu_mts_flag = cu_mts_flag;
-                    if (cu_mts_flag) {
-                        uint8_t cu_mts_idx = ovcabac_read_ae_cu_mts_idx(cabac_ctx);
-                        tu_info.cu_mts_idx = cu_mts_idx;
-                    }
-                }
-            }
 
         }
 
@@ -1156,9 +1195,8 @@ transform_unit_st(OVCTUDec *const ctu_dec,
         }
 
         if (ctu_dec->enable_lfnst) {
-            uint8_t can_lfnst = jcbcr_flag ? jcbcr_lfnst_check(&tu_info, log2_tb_w - 1, log2_tb_h - 1)
-                                           : chroma_lfnst_check(&tu_info, cbf_mask_c, log2_tb_w - 1, log2_tb_h - 1);
-
+            uint8_t can_lfnst = lfnst_check_st(&tu_info, log2_tb_w, log2_tb_h,
+                                               cbf_mask, cu_flags);
             if (can_lfnst) {
                 OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
                 uint8_t is_dual = ctu_dec->transform_unit != &transform_unit_st;
@@ -1167,6 +1205,20 @@ transform_unit_st(OVCTUDec *const ctu_dec,
                 if (lfnst_flag) {
                     uint8_t lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
                     tu_info.lfnst_idx = lfnst_idx;
+                }
+            }
+        }
+
+        if (ctu_dec->mts_enabled) {
+            const struct TBInfo *tb_info = &tu_info.tb_info[2];
+            if (!tu_info.lfnst_flag && !!tb_info->last_pos && (log2_tb_w < 6) && (log2_tb_h < 6)
+                && !(tb_info->sig_sb_map & (~0x000000000F0F0F0F))) {
+                OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+                uint8_t cu_mts_flag = ovcabac_read_ae_cu_mts_flag(cabac_ctx);
+                tu_info.cu_mts_flag = cu_mts_flag;
+                if (cu_mts_flag) {
+                    uint8_t cu_mts_idx = ovcabac_read_ae_cu_mts_idx(cabac_ctx);
+                    tu_info.cu_mts_idx = cu_mts_idx;
                 }
             }
         }
@@ -1283,7 +1335,7 @@ transform_unit_c(OVCTUDec *const ctu_dec,
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t cbf_mask = decode_cbf_c(ctu_dec);
-    uint8_t jcbcr_flag  = cbf_mask & 0x8;
+    uint8_t jcbcr_flag = cbf_mask & 0x8;
     uint8_t cbf_mask_c = cbf_mask & 0x3;
     struct TUInfo tu_info = {0};
 
