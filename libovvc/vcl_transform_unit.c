@@ -757,75 +757,40 @@ static int
 residual_coding_l(OVCTUDec *const ctu_dec,
                   unsigned int x0, unsigned int y0,
                   unsigned int log2_tb_w, unsigned int log2_tb_h,
-                  uint8_t cu_flags)
+                  uint8_t cu_flags, struct TUInfo *const tu_info)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    uint8_t cu_mts_flag = 0;
-    uint8_t cu_mts_idx = 0;
-    uint8_t transform_skip_flag = 0;
+    uint8_t tr_skip_flag = 0;
     int16_t *const coeffs_y = ctu_dec->residual_y;
+
+    struct TBInfo *tb_info = &tu_info->tb_info[0];
 
     /*FIXME move bs map filling to to cbf_flag reading */
     fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
 
     if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
         && log2_tb_h <= ctu_dec->max_log2_transform_skip_size && !(cu_flags &flg_isp_flag  )) {
-        transform_skip_flag = ovcabac_read_ae_transform_skip_luma_flag(cabac_ctx);
+        tr_skip_flag = ovcabac_read_ae_transform_skip_luma_flag(cabac_ctx);
+        tu_info->tr_skip_mask |= tr_skip_flag;
     }
 
 
-    if (!transform_skip_flag) {
-        int lfnst_flag = 0;
-        int lfnst_idx = 0;
+    if (!tr_skip_flag) {
         uint16_t last_pos = ovcabac_read_ae_last_sig_pos(cabac_ctx, log2_tb_w, log2_tb_h);
         uint64_t sig_sb_map;
         sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_tb_w, log2_tb_h,
                                               last_pos);
 
-        if (ctu_dec->enable_lfnst && sig_sb_map == 0x1) {
-            int max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
-            int last_y = last_pos >> 8;
-            int last_x = last_pos & 0xFF;
-            uint64_t scan_map = 0xFDA6EB73C8419520;
-            int nb_coeffs = (scan_map >> ((last_x + (last_y << 2)) << 2)) & 0xF;
-            uint8_t is_mip = !!(cu_flags & flg_mip_flag);
-            uint8_t allow_mip_lfnst = !is_mip || (log2_tb_h >= 4 && log2_tb_w >= 4);
+        tb_info->sig_sb_map = sig_sb_map;
+        tb_info->last_pos   = last_pos;
 
-            if (allow_mip_lfnst && nb_coeffs <= max_lfnst_pos && !!last_pos) {
-                uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;
-                lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
-                if (lfnst_flag) {
-                    lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
-                }
-            }
-        }
-
-        if (!lfnst_flag && !!last_pos && ctu_dec->mts_enabled && (log2_tb_w < 6) && (log2_tb_h < 6)
-            && !(sig_sb_map & (~0x000000000F0F0F0F))) {
-            cu_mts_flag = ovcabac_read_ae_cu_mts_flag(cabac_ctx);
-            if (cu_mts_flag) {
-                cu_mts_idx = ovcabac_read_ae_cu_mts_idx(cabac_ctx);
-            }
-        }
-
-        uint8_t is_mip = !!(cu_flags & flg_mip_flag);
-        int lim_sb_s = ((((last_pos >> 8)) >> 2) + (((last_pos & 0xFF))>> 2) + 1) << 2;
-
-        rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
-                     lim_sb_s, cu_mts_flag, cu_mts_idx, !last_pos, lfnst_flag, is_mip, lfnst_idx);
 
     } else {
         ctu_dec->dequant_skip = &ctu_dec->dequant_luma_skip;
         residual_coding_ts(ctu_dec, ctu_dec->transform_buff, log2_tb_w, log2_tb_h);
     }
 
-#if 1
-    /* FIXME use transform add optimization */
-    vvc_add_residual( ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
-#else
-    rcn_func->ict[0](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE],
-                     log2_tb_w, log2_tb_h, 0);
-#endif
+
     return 0;
 }
 
@@ -1135,7 +1100,56 @@ transform_unit_st(OVCTUDec *const ctu_dec,
         }
 
         if (cbf_flag_l) {
-            residual_coding_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags);
+            struct TBInfo *tb_info = &tu_info.tb_info[0];
+            residual_coding_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, &tu_info);
+            if (!tu_info.tr_skip_mask) {
+                /* FIXME use sb_sig_map instead of last pos */
+                if (ctu_dec->enable_lfnst && tb_info->sig_sb_map == 0x1) {
+                    int max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
+                    int last_y = tb_info->last_pos >> 8;
+                    int last_x = tb_info->last_pos & 0xFF;
+                    uint64_t scan_map = 0xFDA6EB73C8419520;
+                    int nb_coeffs = (scan_map >> ((last_x + (last_y << 2)) << 2)) & 0xF;
+                    uint8_t is_mip = !!(cu_flags & flg_mip_flag);
+                    uint8_t allow_mip_lfnst = !is_mip || (log2_tb_h >= 4 && log2_tb_w >= 4);
+
+                    if (allow_mip_lfnst && nb_coeffs <= max_lfnst_pos && !!tb_info->last_pos) {
+                        OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+                        uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;
+                        uint8_t lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
+                        tu_info.lfnst_flag = lfnst_flag;
+                        if (lfnst_flag) {
+                            uint8_t lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
+                            tu_info.lfnst_idx = lfnst_idx;
+                        }
+                    }
+                }
+
+                if (!tu_info.lfnst_flag && !!tb_info->last_pos
+                    && ctu_dec->mts_enabled && (log2_tb_w < 6) && (log2_tb_h < 6)
+                    && !(tb_info->sig_sb_map & (~0x000000000F0F0F0F))) {
+                    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+                    uint8_t cu_mts_flag = ovcabac_read_ae_cu_mts_flag(cabac_ctx);
+                    tu_info.cu_mts_flag = cu_mts_flag;
+                    if (cu_mts_flag) {
+                        uint8_t cu_mts_idx = ovcabac_read_ae_cu_mts_idx(cabac_ctx);
+                        tu_info.cu_mts_idx = cu_mts_idx;
+                    }
+                }
+            }
+
+            if (!tu_info.tr_skip_mask) {
+                int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;
+                int16_t *const coeffs_y = ctu_dec->residual_y;
+                uint8_t is_mip = !!(cu_flags & flg_mip_flag);
+                rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
+                             lim_sb_s, tu_info.cu_mts_flag, tu_info.cu_mts_idx,
+                             !tb_info->last_pos, tu_info.lfnst_flag, is_mip, tu_info.lfnst_idx);
+
+            }
+
+            /* FIXME use transform add optimization */
+            vvc_add_residual(ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
         }
 
         if (jcbcr_flag) {
@@ -1189,16 +1203,66 @@ transform_unit_l(OVCTUDec *const ctu_dec,
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t cbf_mask = ovcabac_read_ae_tu_cbf_luma(cabac_ctx);
+    struct TUInfo tu_info = {0};
 
     if (cbf_mask) {
+        struct TBInfo *tb_info = &tu_info.tb_info[0];
         if (ctu_dec->delta_qp_enabled && cbf_mask) {
             int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
-            #if 1
+#if 1
             derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
-            #endif
+#endif
         }
 
-        residual_coding_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags);
+        residual_coding_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, &tu_info);
+
+        if (!tu_info.tr_skip_mask) {
+            /* FIXME use sb_sig_map instead of last pos */
+            if (ctu_dec->enable_lfnst && tb_info->sig_sb_map == 0x1) {
+                int max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
+                int last_y = tb_info->last_pos >> 8;
+                int last_x = tb_info->last_pos & 0xFF;
+                uint64_t scan_map = 0xFDA6EB73C8419520;
+                int nb_coeffs = (scan_map >> ((last_x + (last_y << 2)) << 2)) & 0xF;
+                uint8_t is_mip = !!(cu_flags & flg_mip_flag);
+                uint8_t allow_mip_lfnst = !is_mip || (log2_tb_h >= 4 && log2_tb_w >= 4);
+
+                if (allow_mip_lfnst && nb_coeffs <= max_lfnst_pos && !!tb_info->last_pos) {
+                    uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;
+                    uint8_t lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
+                    tu_info.lfnst_flag = lfnst_flag;
+                    if (lfnst_flag) {
+                        uint8_t lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
+                        tu_info.lfnst_idx = lfnst_idx;
+                    }
+                }
+            }
+
+            if (!tu_info.lfnst_flag && !!tb_info->last_pos
+                && ctu_dec->mts_enabled && (log2_tb_w < 6) && (log2_tb_h < 6)
+                && !(tb_info->sig_sb_map & (~0x000000000F0F0F0F))) {
+
+                uint8_t cu_mts_flag = ovcabac_read_ae_cu_mts_flag(cabac_ctx);
+                tu_info.cu_mts_flag = cu_mts_flag;
+                if (cu_mts_flag) {
+                    uint8_t cu_mts_idx = ovcabac_read_ae_cu_mts_idx(cabac_ctx);
+                    tu_info.cu_mts_idx = cu_mts_idx;
+                }
+            }
+        }
+
+        if (!tu_info.tr_skip_mask) {
+            int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;
+            int16_t *const coeffs_y = ctu_dec->residual_y;
+            uint8_t is_mip = !!(cu_flags & flg_mip_flag);
+            rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
+                         lim_sb_s, tu_info.cu_mts_flag, tu_info.cu_mts_idx,
+                         !tb_info->last_pos, tu_info.lfnst_flag, is_mip, tu_info.lfnst_idx);
+
+        }
+
+        /* FIXME use transform add optimization */
+        vvc_add_residual(ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
     }
 
     return 0;
