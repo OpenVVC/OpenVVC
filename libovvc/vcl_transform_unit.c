@@ -12,7 +12,7 @@
 
 struct TBInfo {
    uint16_t last_pos;
-   uint32_t sig_sb_map;
+   uint64_t sig_sb_map;
 };
 
 struct TUInfo {
