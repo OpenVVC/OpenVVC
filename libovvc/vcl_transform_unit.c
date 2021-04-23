@@ -771,7 +771,7 @@ residual_coding_l(OVCTUDec *const ctu_dec,
     if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
         && log2_tb_h <= ctu_dec->max_log2_transform_skip_size && !(cu_flags &flg_isp_flag  )) {
         tr_skip_flag = ovcabac_read_ae_transform_skip_luma_flag(cabac_ctx);
-        tu_info->tr_skip_mask |= tr_skip_flag;
+        tu_info->tr_skip_mask |= tr_skip_flag << 4;
     }
 
 
@@ -935,7 +935,7 @@ residual_coding_c(OVCTUDec *const ctu_dec,
         }
     }
 
-    tu_info->tr_skip_mask  = transform_skip_flag;
+    tu_info->tr_skip_mask  |= transform_skip_flag;
     tb_info_cb->last_pos   = last_pos_cb;
     tb_info_cr->last_pos   = last_pos_cr;
     tb_info_cb->sig_sb_map = sig_sb_map_cb;
@@ -1223,7 +1223,7 @@ transform_unit_l(OVCTUDec *const ctu_dec,
 
         residual_coding_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, &tu_info);
 
-        if (!tu_info.tr_skip_mask) {
+        if (!(tu_info.tr_skip_mask & 0x10)) {
             /* FIXME use sb_sig_map instead of last pos */
             if (ctu_dec->enable_lfnst && tb_info->sig_sb_map == 0x1) {
                 int max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
