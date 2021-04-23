@@ -1069,6 +1069,41 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TBsInfoChroma *tbs_info,
     }
 }
 
+static void
+rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TBInfo *const tb_info,
+          uint8_t x0, uint8_t y0, uint8_t log2_tb_w, uint8_t log2_tb_h,
+          uint8_t cbf_mask)
+{
+    const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
+    uint16_t *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[x0 + (y0 * RCN_CTB_STRIDE)];
+    uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[x0 + (y0 * RCN_CTB_STRIDE)];
+    if (!tb_info->tr_skip) {
+        int16_t *const coeffs_jcbcr = ctu_dec->residual_cb;
+        rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_jcbcr,
+                       x0, y0, log2_tb_w, log2_tb_h,
+                       tb_info->last_pos, tb_info->lfnst_flag, tb_info->lfnst_idx);
+    }
+
+    fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0, y0, log2_tb_w, log2_tb_h);
+    fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0, y0, log2_tb_w, log2_tb_h);
+
+    /* FIXME better organisation based on cbf_mask */
+    if (cbf_mask == 3) {
+        int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
+        rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+        rcn_func->ict[1](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+    } else if (cbf_mask == 2) {
+        int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
+        rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+        rcn_func->ict[2](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+    } else {
+        int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
+        rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+        rcn_func->ict[2](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+    }
+
+}
+
 int
 transform_unit_st(OVCTUDec *const ctu_dec,
                   unsigned int x0, unsigned int y0,
@@ -1092,10 +1127,7 @@ transform_unit_st(OVCTUDec *const ctu_dec,
         }
 
         if (cbf_mask & (1 << 3)) {
-            const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
             struct TBInfo tb_info = {0};
-            uint16_t *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[(x0 >> 1) + ((y0 >> 1) * RCN_CTB_STRIDE)];
-            uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[(x0 >> 1) + ((y0 >> 1) * RCN_CTB_STRIDE)];
 
             cbf_mask &= 0x3;
 
@@ -1116,31 +1148,8 @@ transform_unit_st(OVCTUDec *const ctu_dec,
                     }
                 }
             }
+            rcn_jcbcr(ctu_dec, &tb_info, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1, cbf_mask);
 
-            if (!tb_info.tr_skip) {
-                int16_t *const coeffs_jcbcr = ctu_dec->residual_cb;
-                rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_jcbcr,
-                               x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1,
-                               tb_info.last_pos, tb_info.lfnst_flag, tb_info.lfnst_idx);
-            }
-
-            fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0, y0, log2_tb_w, log2_tb_h);
-            fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0, y0, log2_tb_w, log2_tb_h);
-
-            /* FIXME better organisation based on cbf_mask */
-            if (cbf_mask == 3) {
-                int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
-                rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
-                rcn_func->ict[1](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
-            } else if (cbf_mask == 2) {
-                int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
-                rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
-                rcn_func->ict[2](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
-            } else {
-                int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
-                rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
-                rcn_func->ict[2](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
-            }
         } else if (cbf_mask & 0x3) {
             struct TBsInfoChroma tbs_info = {0};
             residual_coding_c(ctu_dec, x0 >> 1, y0 >> 1, log2_tb_w - 1,
