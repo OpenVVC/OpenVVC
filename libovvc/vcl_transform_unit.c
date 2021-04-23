@@ -18,6 +18,8 @@ struct TBInfo {
 struct TUInfo {
    uint8_t cbf_mask;
    uint8_t tr_skip_mask;
+   uint8_t cu_mts_flag;
+   uint8_t cu_mts_idx;
    uint8_t lfnst_flag;
    uint8_t lfnst_idx;
    struct TBInfo tb_info[3];
