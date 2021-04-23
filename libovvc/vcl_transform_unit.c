@@ -641,7 +641,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
         can_lfnst &= nb_coeffs[3] <= max_lfnst_pos;
 
         if (can_lfnst) {
-            uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;
+            uint8_t is_dual = ctu_dec->transform_unit != &transform_unit_st;
             lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
             if (lfnst_flag) {
                 lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
@@ -737,7 +737,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
         can_lfnst &= nb_coeffs[3] <= max_lfnst_pos;
 
         if (can_lfnst) {
-            uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;
+            uint8_t is_dual = ctu_dec->transform_unit != &transform_unit_st;
             lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
             if (lfnst_flag) {
                 lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
@@ -1161,7 +1161,7 @@ transform_unit_st(OVCTUDec *const ctu_dec,
 
             if (can_lfnst) {
                 OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-                uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;
+                uint8_t is_dual = ctu_dec->transform_unit != &transform_unit_st;
                 uint8_t lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
                 tu_info.lfnst_flag = lfnst_flag;
                 if (lfnst_flag) {
@@ -1235,7 +1235,7 @@ transform_unit_l(OVCTUDec *const ctu_dec,
                 uint8_t allow_mip_lfnst = !is_mip || (log2_tb_h >= 4 && log2_tb_w >= 4);
 
                 if (allow_mip_lfnst && nb_coeffs <= max_lfnst_pos && !!tb_info->last_pos) {
-                    uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;
+                    uint8_t is_dual = ctu_dec->transform_unit != &transform_unit_st;
                     uint8_t lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
                     tu_info.lfnst_flag = lfnst_flag;
                     if (lfnst_flag) {
@@ -1315,7 +1315,7 @@ transform_unit_c(OVCTUDec *const ctu_dec,
 
             if (can_lfnst) {
                 OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-                uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;
+                uint8_t is_dual = ctu_dec->transform_unit != &transform_unit_st;
                 uint8_t lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
                 tu_info.lfnst_flag = lfnst_flag;
                 if (lfnst_flag) {
