@@ -1064,7 +1064,6 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TBsInfoChroma *tbs_info,
             rcn_func->ict[0](coeffs_cr, dst_cr, log2_tb_w, log2_tb_h, scale);
         }
 
-
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
     }
 }
@@ -1111,6 +1110,11 @@ transform_unit_st(OVCTUDec *const ctu_dec,
                   uint8_t rqt_root_cbf, uint8_t cu_flags, uint8_t tr_depth)
 {
     uint8_t cbf_mask = decode_cbf_st(ctu_dec, rqt_root_cbf, tr_depth);
+    uint8_t cbf_l = cbf_mask & 0x10;
+    uint8_t jcbcr_flag    = cbf_mask & 0x8;
+    uint8_t cbf_mask_c = cbf_mask & 0x3;
+    struct TBInfo tb_info = {0};
+    struct TBsInfoChroma tbs_info = {0};
 
     /* FIXME check if delta_qp is read per cu or per tu */
     if (cbf_mask) {
@@ -1122,59 +1126,51 @@ transform_unit_st(OVCTUDec *const ctu_dec,
             #endif
         }
 
-        if (cbf_mask & (1 << 4)) {
+        if (cbf_l) {
             residual_coding_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags);
         }
 
-        if (cbf_mask & (1 << 3)) {
-            struct TBInfo tb_info = {0};
-
-            cbf_mask &= 0x3;
+        if (jcbcr_flag) {
 
             residual_coding_jcbcr(ctu_dec, x0 >> 1, y0 >> 1, log2_tb_w - 1,
-                                  log2_tb_h - 1, cbf_mask, &tb_info);
+                                  log2_tb_h - 1, cbf_mask_c, &tb_info);
 
-            if (ctu_dec->enable_lfnst) {
-                uint8_t can_lfnst = jcbcr_lfnst_check(&tb_info, log2_tb_w, log2_tb_h);
 
-                if (can_lfnst) {
-                    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-                    uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;
-                    uint8_t lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
-                    tb_info.lfnst_flag = lfnst_flag;
-                    if (lfnst_flag) {
-                        uint8_t lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
-                        tb_info.lfnst_idx = lfnst_idx;
-                    }
-                }
-            }
-            rcn_jcbcr(ctu_dec, &tb_info, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1, cbf_mask);
+        } else if (cbf_mask_c) {
 
-        } else if (cbf_mask & 0x3) {
-            struct TBsInfoChroma tbs_info = {0};
             residual_coding_c(ctu_dec, x0 >> 1, y0 >> 1, log2_tb_w - 1,
-                              log2_tb_h - 1, (cbf_mask & 0x3), &tbs_info);
+                              log2_tb_h - 1, cbf_mask_c, &tbs_info);
 
-            if (ctu_dec->enable_lfnst) {
-                uint8_t can_lfnst = chroma_lfnst_check(&tbs_info, cbf_mask&0x3, log2_tb_w - 1, log2_tb_h - 1);
+        }
 
-                if (can_lfnst) {
-                    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-                    uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;
-                    uint8_t lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
-                    if (lfnst_flag) {
-                        uint8_t lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
-                        tbs_info.lfnst_idx = lfnst_idx;
-                    }
-                    tbs_info.lfnst_flag = lfnst_flag;
+        if (ctu_dec->enable_lfnst) {
+            uint8_t can_lfnst = jcbcr_flag ? jcbcr_lfnst_check(&tb_info, log2_tb_w - 1, log2_tb_h - 1)
+                                           : chroma_lfnst_check(&tbs_info, cbf_mask_c, log2_tb_w - 1, log2_tb_h - 1);
+
+            if (can_lfnst) {
+                OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+                uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;
+                uint8_t lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
+                tb_info.lfnst_flag = lfnst_flag;
+                tbs_info.lfnst_flag = lfnst_flag;
+                if (lfnst_flag) {
+                    uint8_t lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
+                    tbs_info.lfnst_idx = lfnst_idx;
+                    tb_info.lfnst_idx = lfnst_idx;
                 }
             }
+        }
 
-            rcn_res_c(ctu_dec, &tbs_info, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1, cbf_mask);
+        if (jcbcr_flag) {
+
+            rcn_jcbcr(ctu_dec, &tb_info, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1, cbf_mask_c);
+
+        } else if (cbf_mask_c) {
+
+            rcn_res_c(ctu_dec, &tbs_info, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1, cbf_mask_c);
 
         }
     }
-
 
     return 0;
 }
@@ -1210,8 +1206,13 @@ transform_unit_c(OVCTUDec *const ctu_dec,
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t cbf_mask = decode_cbf_c(ctu_dec);
+    uint8_t jcbcr_flag  = cbf_mask & 0x8;
+    uint8_t cbf_mask_c = cbf_mask & 0x3;
+    struct TBInfo tb_info = {0};
+    struct TBsInfoChroma tbs_info = {0};
 
     if (cbf_mask) {
+        /* FIXME check this */
         if (ctu_dec->delta_qp_enabled && cbf_mask) {
             int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
             #if 1
@@ -1219,75 +1220,44 @@ transform_unit_c(OVCTUDec *const ctu_dec,
             #endif
         }
 
-        if (cbf_mask & (1 << 3)) {
-            const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
-            struct TBInfo tb_info = {0};
-            uint16_t *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[(x0) + (y0 * RCN_CTB_STRIDE)];
-            uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[(x0) + (y0 * RCN_CTB_STRIDE)];
+        if (jcbcr_flag) {
 
-            cbf_mask &= 0x3;
+            residual_coding_jcbcr(ctu_dec, x0, y0, log2_tb_w, log2_tb_h,
+                                  cbf_mask_c, &tb_info);
 
-            residual_coding_jcbcr(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cbf_mask, &tb_info);
 
-            /* FIXME better organisation based on cbf_mask */
-            if (ctu_dec->enable_lfnst) {
-                uint8_t can_lfnst = jcbcr_lfnst_check(&tb_info, log2_tb_w, log2_tb_h);
+        } else if (cbf_mask_c) {
 
-                if (can_lfnst) {
-                    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-                    uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;
-                    uint8_t lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
-                    tb_info.lfnst_flag = lfnst_flag;
-                    if (lfnst_flag) {
-                        uint8_t lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
-                        tb_info.lfnst_idx = lfnst_idx;
-                    }
+            residual_coding_c(ctu_dec, x0, y0, log2_tb_w, log2_tb_h,
+                              cbf_mask_c, &tbs_info);
+
+        }
+
+        if (ctu_dec->enable_lfnst) {
+            uint8_t can_lfnst = jcbcr_flag ? jcbcr_lfnst_check(&tb_info, log2_tb_w, log2_tb_h)
+                                           : chroma_lfnst_check(&tbs_info, cbf_mask_c, log2_tb_w, log2_tb_h);
+
+            if (can_lfnst) {
+                OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+                uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;
+                uint8_t lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
+                tb_info.lfnst_flag = lfnst_flag;
+                tbs_info.lfnst_flag = lfnst_flag;
+                if (lfnst_flag) {
+                    uint8_t lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
+                    tbs_info.lfnst_idx = lfnst_idx;
+                    tb_info.lfnst_idx = lfnst_idx;
                 }
             }
+        }
 
-            if (!tb_info.tr_skip) {
-                int16_t *const coeffs_jcbcr = ctu_dec->residual_cb;
-                rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_jcbcr,
-                               x0, y0, log2_tb_w, log2_tb_h,
-                               tb_info.last_pos, tb_info.lfnst_flag, tb_info.lfnst_idx);
-            }
+        if (jcbcr_flag) {
 
-            fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
-            fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
+            rcn_jcbcr(ctu_dec, &tb_info, x0, y0, log2_tb_w, log2_tb_h, cbf_mask_c);
 
-            if (cbf_mask == 3) {
-                int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
-                rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
-                rcn_func->ict[1](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
-            } else if (cbf_mask == 2) {
-                int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
-                rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
-                rcn_func->ict[2](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
-            } else {
-                int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
-                rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
-                rcn_func->ict[2](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
-            }
-        } else if (cbf_mask & 0x3) {
-            struct TBsInfoChroma tbs_info = {0};
-            residual_coding_c(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, (cbf_mask & 0x3), &tbs_info);
+        } else if (cbf_mask_c) {
 
-            if (ctu_dec->enable_lfnst) {
-                uint8_t can_lfnst = chroma_lfnst_check(&tbs_info, cbf_mask&0x3, log2_tb_w, log2_tb_h);
-
-                if (can_lfnst) {
-                    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-                    uint8_t is_dual = ctu_dec->transform_unit != transform_unit_st;
-                    uint8_t lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
-                    if (lfnst_flag) {
-                        uint8_t lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
-                        tbs_info.lfnst_idx = lfnst_idx;
-                    }
-                    tbs_info.lfnst_flag = lfnst_flag;
-                }
-            }
-
-            rcn_res_c(ctu_dec, &tbs_info, x0, y0, log2_tb_w, log2_tb_h, cbf_mask);
+            rcn_res_c(ctu_dec, &tbs_info, x0, y0, log2_tb_w, log2_tb_h, cbf_mask_c);
 
         }
     }
