@@ -15,6 +15,7 @@ libopenvvc.pc
 *.lib
 *.exe
 *.cache
+*.annote
 
 # Editor created objects
 *.sw?
