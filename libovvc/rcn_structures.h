@@ -119,7 +119,7 @@ struct RCNFunctions
     /* Motion Compensation Chroma */
     struct CCLMFunctions cclm;
 
-    ResidualAddScaleFunc ict[3];
+    ResidualAddScaleFunc ict[NB_TR_SIZES][3];
 
     /* Transform Functions */
     struct TRFunctions tr;

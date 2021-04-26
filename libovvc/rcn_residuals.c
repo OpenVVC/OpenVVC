@@ -1,5 +1,5 @@
 /* Operation performed on residual after residual coefficient have been
- * decoded and transform has been performed before adding them to 
+ * decoded and transform has been performed before adding them to
  * Prediction Block
  */
 
@@ -307,24 +307,104 @@ rcn_init_ict_functions(struct RCNFunctions *rcn_func, uint8_t type)
     switch (type)
     {
         case 3:
-            rcn_func->ict[0] = &vvc_scale_add_residual;
-            rcn_func->ict[1] = &vvc_scale_sub_residual;
-            rcn_func->ict[2] = &vvc_scale_sub_half_residual;
+            rcn_func->ict[0][0] = &vvc_scale_add_residual;
+            rcn_func->ict[1][0] = &vvc_scale_add_residual;
+            rcn_func->ict[2][0] = &vvc_scale_add_residual;
+            rcn_func->ict[3][0] = &vvc_scale_add_residual;
+            rcn_func->ict[4][0] = &vvc_scale_add_residual;
+            rcn_func->ict[5][0] = &vvc_scale_add_residual;
+            rcn_func->ict[6][0] = &vvc_scale_add_residual;
+
+            rcn_func->ict[0][1] = &vvc_scale_sub_residual;
+            rcn_func->ict[1][1] = &vvc_scale_sub_residual;
+            rcn_func->ict[2][1] = &vvc_scale_sub_residual;
+            rcn_func->ict[3][1] = &vvc_scale_sub_residual;
+            rcn_func->ict[4][1] = &vvc_scale_sub_residual;
+            rcn_func->ict[5][1] = &vvc_scale_sub_residual;
+            rcn_func->ict[6][1] = &vvc_scale_sub_residual;
+
+            rcn_func->ict[0][2] = &vvc_scale_sub_half_residual;
+            rcn_func->ict[1][2] = &vvc_scale_sub_half_residual;
+            rcn_func->ict[2][2] = &vvc_scale_sub_half_residual;
+            rcn_func->ict[3][2] = &vvc_scale_sub_half_residual;
+            rcn_func->ict[4][2] = &vvc_scale_sub_half_residual;
+            rcn_func->ict[5][2] = &vvc_scale_sub_half_residual;
+            rcn_func->ict[6][2] = &vvc_scale_sub_half_residual;
             break;
         case 2:
-            rcn_func->ict[0] = &vvc_add_residual;
-            rcn_func->ict[1] = &vvc_sub_residual;
-            rcn_func->ict[2] = &vvc_sub_half_residual;
+            rcn_func->ict[0][0] = &vvc_add_residual;
+            rcn_func->ict[1][0] = &vvc_add_residual;
+            rcn_func->ict[2][0] = &vvc_add_residual;
+            rcn_func->ict[3][0] = &vvc_add_residual;
+            rcn_func->ict[4][0] = &vvc_add_residual;
+            rcn_func->ict[5][0] = &vvc_add_residual;
+            rcn_func->ict[6][0] = &vvc_add_residual;
+
+            rcn_func->ict[0][1] = &vvc_sub_residual;
+            rcn_func->ict[1][1] = &vvc_sub_residual;
+            rcn_func->ict[2][1] = &vvc_sub_residual;
+            rcn_func->ict[3][1] = &vvc_sub_residual;
+            rcn_func->ict[4][1] = &vvc_sub_residual;
+            rcn_func->ict[5][1] = &vvc_sub_residual;
+            rcn_func->ict[6][1] = &vvc_sub_residual;
+
+            rcn_func->ict[0][2] = &vvc_sub_half_residual;
+            rcn_func->ict[1][2] = &vvc_sub_half_residual;
+            rcn_func->ict[2][2] = &vvc_sub_half_residual;
+            rcn_func->ict[3][2] = &vvc_sub_half_residual;
+            rcn_func->ict[4][2] = &vvc_sub_half_residual;
+            rcn_func->ict[5][2] = &vvc_sub_half_residual;
+            rcn_func->ict[6][2] = &vvc_sub_half_residual;
             break;
         case 1:
-            rcn_func->ict[0] = &vvc_scale_add_residual;
-            rcn_func->ict[1] = &vvc_scale_add_residual;
-            rcn_func->ict[2] = &vvc_scale_add_half_residual;
+            rcn_func->ict[0][0] = &vvc_scale_add_residual;
+            rcn_func->ict[1][0] = &vvc_scale_add_residual;
+            rcn_func->ict[2][0] = &vvc_scale_add_residual;
+            rcn_func->ict[3][0] = &vvc_scale_add_residual;
+            rcn_func->ict[4][0] = &vvc_scale_add_residual;
+            rcn_func->ict[5][0] = &vvc_scale_add_residual;
+            rcn_func->ict[6][0] = &vvc_scale_add_residual;
+
+            rcn_func->ict[0][1] = &vvc_scale_add_residual;
+            rcn_func->ict[1][1] = &vvc_scale_add_residual;
+            rcn_func->ict[2][1] = &vvc_scale_add_residual;
+            rcn_func->ict[3][1] = &vvc_scale_add_residual;
+            rcn_func->ict[4][1] = &vvc_scale_add_residual;
+            rcn_func->ict[5][1] = &vvc_scale_add_residual;
+            rcn_func->ict[6][1] = &vvc_scale_add_residual;
+
+            rcn_func->ict[0][2] = &vvc_scale_add_half_residual;
+            rcn_func->ict[1][2] = &vvc_scale_add_half_residual;
+            rcn_func->ict[2][2] = &vvc_scale_add_half_residual;
+            rcn_func->ict[3][2] = &vvc_scale_add_half_residual;
+            rcn_func->ict[4][2] = &vvc_scale_add_half_residual;
+            rcn_func->ict[5][2] = &vvc_scale_add_half_residual;
+            rcn_func->ict[6][2] = &vvc_scale_add_half_residual;
             break;
         default:
-            rcn_func->ict[0] = &vvc_add_residual;
-            rcn_func->ict[1] = &vvc_add_residual;
-            rcn_func->ict[2] = &vvc_add_half_residual;
+            rcn_func->ict[0][0] = &vvc_add_residual;
+            rcn_func->ict[1][0] = &vvc_add_residual;
+            rcn_func->ict[2][0] = &vvc_add_residual;
+            rcn_func->ict[3][0] = &vvc_add_residual;
+            rcn_func->ict[4][0] = &vvc_add_residual;
+            rcn_func->ict[5][0] = &vvc_add_residual;
+            rcn_func->ict[6][0] = &vvc_add_residual;
+
+            rcn_func->ict[0][1] = &vvc_add_residual;
+            rcn_func->ict[1][1] = &vvc_add_residual;
+            rcn_func->ict[2][1] = &vvc_add_residual;
+            rcn_func->ict[3][1] = &vvc_add_residual;
+            rcn_func->ict[4][1] = &vvc_add_residual;
+            rcn_func->ict[5][1] = &vvc_add_residual;
+            rcn_func->ict[6][1] = &vvc_add_residual;
+
+            rcn_func->ict[0][2] = &vvc_add_half_residual;
+            rcn_func->ict[1][2] = &vvc_add_half_residual;
+            rcn_func->ict[2][2] = &vvc_add_half_residual;
+            rcn_func->ict[3][2] = &vvc_add_half_residual;
+            rcn_func->ict[4][2] = &vvc_add_half_residual;
+            rcn_func->ict[5][2] = &vvc_add_half_residual;
+            rcn_func->ict[6][2] = &vvc_add_half_residual;
             break;
     }
 }

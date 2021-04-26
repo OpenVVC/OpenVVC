@@ -411,7 +411,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
             #if 1
             vvc_add_residual(src, dst, log2_pb_w, log2_cb_h, 0);
             #else
-            rcn_func->ict[0](src, dst, log2_pb_w, log2_cb_h, 512);
+            rcn_func->ict[log2_pb_w][0](src, dst, log2_pb_w, log2_cb_h, 512);
             #endif
         }
         x0 += pb_w;
@@ -507,7 +507,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
         #if 1
         vvc_add_residual(src, dst, log2_cb_w, log2_pb_h, 0);
         #else
-            rcn_func->ict[0](src, dst, log2_cb_w, log2_pb_h, 0);
+            rcn_func->ict[log2_cb_w][0](src, dst, log2_cb_w, log2_pb_h, 0);
         #endif
         }
         y0 += pb_h;
@@ -1011,9 +1011,9 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
             rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cb,
                            x0, y0, log2_tb_w, log2_tb_h,
                            tb_info_cb->last_pos, tu_info->lfnst_flag, tu_info->lfnst_idx);
-            rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+            rcn_func->ict[log2_tb_w][0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
         } else {
-            rcn_func->ict[0](coeffs_cb, dst_cb, log2_tb_w, log2_tb_h, scale);
+            rcn_func->ict[log2_tb_w][0](coeffs_cb, dst_cb, log2_tb_w, log2_tb_h, scale);
         }
 
 
@@ -1030,9 +1030,9 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
             rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cr,
                            x0, y0, log2_tb_w, log2_tb_h,
                            tb_info_cr->last_pos, tu_info->lfnst_flag, tu_info->lfnst_idx);
-            rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+            rcn_func->ict[log2_tb_w][0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
         } else {
-            rcn_func->ict[0](coeffs_cr, dst_cr, log2_tb_w, log2_tb_h, scale);
+            rcn_func->ict[log2_tb_w][0](coeffs_cr, dst_cr, log2_tb_w, log2_tb_h, scale);
         }
 
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
@@ -1064,16 +1064,16 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
     /* FIXME better organisation based on cbf_mask */
     if (cbf_mask == 3) {
         int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
-        rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
-        rcn_func->ict[1](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+        rcn_func->ict[log2_tb_w][0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+        rcn_func->ict[log2_tb_w][1](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
     } else if (cbf_mask == 2) {
         int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
-        rcn_func->ict[0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
-        rcn_func->ict[2](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+        rcn_func->ict[log2_tb_w][0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+        rcn_func->ict[log2_tb_w][2](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
     } else {
         int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
-        rcn_func->ict[0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
-        rcn_func->ict[2](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+        rcn_func->ict[log2_tb_w][0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+        rcn_func->ict[log2_tb_w][2](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
     }
 
 }
