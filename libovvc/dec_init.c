@@ -583,10 +583,9 @@ set_pic_part_info(struct PicPartInfo *pic_info, const OVSPS *const sps)
 }
 
 int
-decinit_update_params(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
+decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
 {
     /* FIXME assert nvcl_ctx params sets are not NULL*/
-    struct OVPS *const ps = &dec->active_params;
     int ret;
     const OVSH *const sh = nvcl_ctx->sh;
     const OVPH *const ph = nvcl_ctx->ph;

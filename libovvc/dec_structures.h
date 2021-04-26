@@ -234,16 +234,16 @@ struct OVVCDec
 
     struct OVPS{
         /* Pointers to active parameter sets */
-        const OVSPS *sps;
-        const OVPPS *pps;
-        const OVAPS *aps_alf[8];
-        const OVAPS *aps_alf_c;
-        const OVAPS *aps_cc_alf_cb;
-        const OVAPS *aps_cc_alf_cr;
-        const OVAPS *aps_lmcs;
-        const OVPH *ph;
-        const OVSH *sh;
-        const OVSEI *sei;
+        OVSPS *sps;
+        OVPPS *pps;
+        OVAPS *aps_alf[8];
+        OVAPS *aps_alf_c;
+        OVAPS *aps_cc_alf_cb;
+        OVAPS *aps_cc_alf_cr;
+        OVAPS *aps_lmcs;
+        OVPH *ph;
+        OVSH *sh;
+        OVSEI *sei;
 
         /* Human readable information from active parameter sets */
         struct SPSInfo sps_info;

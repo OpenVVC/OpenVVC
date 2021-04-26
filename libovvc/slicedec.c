@@ -617,6 +617,94 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
 
 }
 
+//TODOpar: temporary function, change with refs and ref_counts when functional
+void
+slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
+{   
+    //structures not allocated yet
+    if(!sldec->active_params)
+        sldec->active_params = ov_mallocz(sizeof(struct OVPS));
+    struct OVPS* slice_params = sldec->active_params;
+
+    if(!slice_params->sps){
+        slice_params->sps = ov_mallocz(sizeof(struct OVSPS));
+        slice_params->pps = ov_mallocz(sizeof(struct OVPPS));
+        slice_params->sh = ov_mallocz(sizeof(struct OVSH));
+        slice_params->ph = ov_mallocz(sizeof(struct OVPH));
+
+        for (int i=0; i<8; i++)
+            slice_params->aps_alf[i] = ov_mallocz(sizeof(struct OVAPS));
+
+        slice_params->aps_alf_c = ov_mallocz(sizeof(struct OVAPS));
+        slice_params->aps_cc_alf_cb = ov_mallocz(sizeof(struct OVAPS));
+        slice_params->aps_cc_alf_cr = ov_mallocz(sizeof(struct OVAPS));
+        slice_params->aps_lmcs = ov_mallocz(sizeof(struct OVAPS));
+    }
+
+    *(slice_params->sps) = *(dec_params->sps);        
+    *(slice_params->pps) = *(dec_params->pps);
+    *(slice_params->sh) = *(dec_params->sh);
+    *(slice_params->ph) = *(dec_params->ph);
+
+    if(dec_params->aps_alf_c){
+        for (int i=0; i<8; i++){
+            if(dec_params->aps_alf[i])
+                *(slice_params->aps_alf[i]) = *(dec_params->aps_alf[i]);
+        }
+        
+        *(slice_params->aps_alf_c) = *(dec_params->aps_alf_c);
+    }
+    if(dec_params->aps_cc_alf_cb){
+        *(slice_params->aps_cc_alf_cb) = *(dec_params->aps_cc_alf_cb);
+    }
+    if(dec_params->aps_cc_alf_cr){
+        *(slice_params->aps_cc_alf_cr) = *(dec_params->aps_cc_alf_cr);
+    }
+    if(dec_params->aps_lmcs)
+        *(slice_params->aps_lmcs) = *(dec_params->aps_lmcs);
+
+    //TODOpar: change to copy the structures inside OVSEI, instead of pointers
+    if (dec_params->sei)
+        *(slice_params->sei) = *(dec_params->sei);
+
+    slice_params->sps_info = dec_params->sps_info;
+    slice_params->pps_info = dec_params->pps_info;
+    slice_params->ph_info = dec_params->ph_info;
+    slice_params->sh_info = dec_params->sh_info;
+    slice_params->pic_info = dec_params->pic_info;
+}
+
+//TODOpar: temporary function, change with refs and ref_counts when functional
+void
+slicedec_free_params(OVSliceDec *sldec)
+{   
+    if(!sldec->active_params)
+        return;
+
+    struct OVPS* slice_params = sldec->active_params;
+    if(slice_params->sps){
+        ov_freep(&slice_params->sps);
+        ov_freep(&slice_params->pps);
+        ov_freep(&slice_params->sh);
+        ov_freep(&slice_params->ph);
+
+    }
+    if(slice_params->aps_alf_c){
+        for (int i=0; i<8; i++)
+            ov_freep(&(slice_params->aps_alf[i]));
+
+        ov_freep(&slice_params->aps_alf_c);
+    }
+    if(slice_params->aps_cc_alf_cb){
+        ov_freep(&slice_params->aps_cc_alf_cb);
+        ov_freep(&slice_params->aps_cc_alf_cr);
+    }
+    if(slice_params->aps_lmcs)
+        ov_freep(&slice_params->aps_lmcs);
+
+    ov_freep(&sldec->active_params);
+}
+
 int
 slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
 {
@@ -625,7 +713,7 @@ slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
                      prms->pps_info.tile_info.nb_tile_rows;
 
     int ret = 0;
-    sldec->active_params = prms;
+    // sldec->active_params = prms;
     #if 0
     int i;
     for (i = 0; i < nb_entries; ++i) {
@@ -1490,7 +1578,10 @@ int
 slicedec_init(OVSliceDec *sldec, int nb_entry_th)
 {
     int ret;
+    //Test frame par
+    nb_entry_th = 1;
     sldec->nb_sbdec = nb_entry_th;
+    sldec->nb_sbdec = 1;
 
     ret = init_ctudec_list(sldec, nb_entry_th);
     if (ret < 0) {
@@ -1533,6 +1624,8 @@ slicedec_uninit(OVSliceDec **sldec_p)
         cabac_lines_uninit(sldec);
         drv_lines_uninit(sldec);
     }
+
+    slicedec_free_params(sldec);
 
     ov_freep(sldec_p);
 

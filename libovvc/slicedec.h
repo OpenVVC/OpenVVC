@@ -115,7 +115,7 @@ typedef struct OVSliceDec
 {
    uint8_t slice_type;
 
-   const OVPS *active_params;
+   OVPS *active_params;
    /* Lins for CABAC context derivation luma and chroma */
    struct CCLines cabac_lines[2];
 
@@ -133,6 +133,8 @@ typedef struct OVSliceDec
    struct SliceThread th_info;
 
 } OVSliceDec;
+
+void slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params);
 
 int slicedec_update_entry_decoders(OVSliceDec *sldec, const OVPS *const prms);
 

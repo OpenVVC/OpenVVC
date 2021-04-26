@@ -67,11 +67,12 @@ ovframe_new_ref(OVFrame **dst, OVFrame *src)
          return -1;
      }
 
-     src->internal.ref_count++;
+    atomic_fetch_add_explicit(&src->internal.ref_count, 1, memory_order_acq_rel);
+    // src->internal.ref_count++;
 
-     *dst = src;
+    *dst = src;
 
-     return 0;
+    return 0;
 }
 
 void
@@ -84,9 +85,10 @@ ovframe_unref(OVFrame **frame)
         return;
     }
 
-    (*frame)->internal.ref_count--;
+    unsigned ref_count = atomic_fetch_add_explicit(&(*frame)->internal.ref_count, -1, memory_order_acq_rel);
+    // (*frame)->internal.ref_count--;
 
-    if (!(*frame)->internal.ref_count) {
+    if (!ref_count) {
         framepool_release_planes(*frame);
         ov_freep(frame);
     }

@@ -90,7 +90,8 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
     int ret;
     int nb_sh_bytes = nvcl_num_bytes_read(rdr);
 
-    ret = decinit_update_params(dec, nvcl_ctx);
+    // sldec->active_params = prms;
+    ret = decinit_update_params(&dec->active_params, nvcl_ctx);
     if (ret < 0) {
         ov_log(dec, 3, "Failed to activate parameters\n");
         return ret;
@@ -145,6 +146,7 @@ ovdec_select_subdec(OVSliceDec **sldec_list, int nb_threads)
         if(!th_subdec->gnrl_state){
             th_subdec->gnrl_state = 1;
             pthread_mutex_unlock(&th_subdec->gnrl_mtx);
+            ov_log(NULL, OVLOG_INFO, "Thread %d selected\n", i);
             return selected_subdec;
         }
         pthread_mutex_unlock(&th_subdec->gnrl_mtx);  
@@ -198,6 +200,8 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
             }
 
             ret = init_vcl_decoder(vvcdec, sldec, nvcl_ctx, nalu, &rdr);
+            slicedec_copy_params(sldec, &vvcdec->active_params);
+
             if (ret < 0) {
                 goto failvcl;
             }
@@ -493,7 +497,11 @@ int
 ovdec_init(OVVCDec **vvcdec)
 {
     /* FIXME might not be available on every plateform */
-    int nb_threads = get_number_of_cores();
+
+    // int nb_threads = get_number_of_cores();
+   
+    //Test frame par
+    int nb_threads = 2;
     *vvcdec = ov_mallocz(sizeof(OVVCDec));
 
     if (*vvcdec == NULL) goto fail;

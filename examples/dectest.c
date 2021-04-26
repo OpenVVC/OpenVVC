@@ -271,10 +271,8 @@ end_out:
     pthread_cond_signal(&t_out->gnrl_cnd);
     pthread_mutex_unlock(&t_out->gnrl_mtx);
 
-    //Wait for output thread to finish writing
-    pthread_mutex_lock(&t_out->gnrl_mtx);
-    pthread_cond_wait(&t_out->gnrl_cnd, &t_out->gnrl_mtx);
-    pthread_mutex_unlock(&t_out->gnrl_mtx);
+    void *ret_join;
+    pthread_join(t_out->thread, &ret_join);
 
     return 1;
 }
