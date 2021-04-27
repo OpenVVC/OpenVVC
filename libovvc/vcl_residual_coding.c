@@ -3628,7 +3628,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
             memcpy(&dst[1 << log2_tb_w], &cg_coeffs[8], sizeof(int16_t) * 8);
             /*FIXME determine whether or not we should read lfnst*/
 
-            return 0xFFFF;
+            return 0x1;
         }
 
         x -= last_cg_x << 3;
@@ -4861,7 +4861,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
             memcpy(&_dst[1 << log2_tb_w], &cg_coeffs[8], sizeof(int16_t) * 8);
             /*FIXME determine whether or not we should read lfnst*/
 
-            return 0xFFFF;
+            return 0x1;
         }
 
         x = last_x - (last_cg_x << 3);
