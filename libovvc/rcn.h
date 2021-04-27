@@ -7,7 +7,7 @@
 /* FIXME
  * rename OVINTRA
  * MERGE with INTER modes ?
- * STORE on uint8_t 
+ * STORE on uint8_t
  * find meaningful place for definition
  */
 
@@ -97,4 +97,40 @@ void
 vvc_add_residual(const int16_t *src, uint16_t *dst,
                  int log2_tb_w, int log2_tb_h,
                  int scale);
+
+void
+vvc_sub_residual(const int16_t *src, uint16_t *dst,
+                int log2_tb_w, int log2_tb_h,
+                int scale);
+
+void
+vvc_add_half_residual(const int16_t *src, uint16_t *dst,
+                      int log2_tb_w, int log2_tb_h,
+                      int scale);
+
+void
+vvc_sub_half_residual(const int16_t *src, uint16_t *dst,
+                      int log2_tb_w, int log2_tb_h,
+                      int scale);
+
+void
+vvc_scale_add_residual(const int16_t *src, uint16_t *dst,
+                     int log2_tb_w, int log2_tb_h,
+                     int scale);
+
+void
+vvc_scale_sub_residual(const int16_t *src, uint16_t *dst,
+                     int log2_tb_w, int log2_tb_h,
+                     int scale);
+
+void
+vvc_scale_add_half_residual(const int16_t *src, uint16_t *dst,
+                          int log2_tb_w, int log2_tb_h,
+                          int scale);
+
+void
+vvc_scale_sub_half_residual(const int16_t *src, uint16_t *dst,
+                           int log2_tb_w, int log2_tb_h,
+                           int scale);
+
 #endif //RCN_H
