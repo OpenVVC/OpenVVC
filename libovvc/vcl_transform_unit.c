@@ -1087,15 +1087,14 @@ lfnst_check_st(const struct TUInfo *const tu_info, uint8_t log2_tb_w, uint8_t lo
     uint8_t cbf_mask_cr = cbf_mask & 0x1;
     uint8_t non_only_dc = 0;
     /* FIXME chroma size ? */
-    const uint8_t max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
+    const uint8_t max_lfnst_pos   = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
+    const uint8_t max_lfnst_pos_c = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 4) ? 7 : 15;
 
     /*FIXME MIP check on ly for luma TB*/
     uint8_t is_mip = !!(cu_flags & flg_mip_flag);
     uint8_t mip_lfnst = !is_mip || (log2_tb_h >= 4 && log2_tb_w >= 4);
 
     uint8_t can_lfnst = mip_lfnst;
-
-    can_lfnst &= log2_tb_h > 1 && log2_tb_w > 1;
 
     /* FIXME check condition on component ?*/
     can_lfnst &= !(tu_info->tr_skip_mask & 0x10);
@@ -1114,35 +1113,32 @@ lfnst_check_st(const struct TUInfo *const tu_info, uint8_t log2_tb_w, uint8_t lo
             non_only_dc |= nb_coeffs;
         }
 
-        if (jcbcr_flag) {
+        if (jcbcr_flag && log2_tb_h > 2 && log2_tb_w > 2) {
             const struct TBInfo *const tb_info_cbcr = &tu_info->tb_info[0];
             int last_y_cbcr = tb_info_cbcr->last_pos >> 8;
             int last_x_cbcr = tb_info_cbcr->last_pos & 0xff;
             int nb_coeffs_cbcr = (scan_map >> ((last_x_cbcr + (last_y_cbcr << 2)) << 2)) & 0xf;
             can_lfnst &= tb_info_cbcr->sig_sb_map == 0x1;
-            can_lfnst &= nb_coeffs_cbcr <= max_lfnst_pos;
-            can_lfnst &= log2_tb_h > 2 && log2_tb_w > 2;
+            can_lfnst &= nb_coeffs_cbcr <= max_lfnst_pos_c;
             non_only_dc |= nb_coeffs_cbcr;
         } else {
-            if (cbf_mask_cb) {
+            if (cbf_mask_cb && log2_tb_h > 2 && log2_tb_w > 2) {
                 const struct TBInfo *const tb_info_cb = &tu_info->tb_info[0];
                 int last_y_cb = tb_info_cb->last_pos >> 8;
                 int last_x_cb = tb_info_cb->last_pos & 0xff;
                 int nb_coeffs_cb = (scan_map >> ((last_x_cb + (last_y_cb << 2)) << 2)) & 0xf;
                 can_lfnst &= tb_info_cb->sig_sb_map == 0x1;
-                can_lfnst &= nb_coeffs_cb <= max_lfnst_pos;
-                //can_lfnst &= log2_tb_h > 2 && log2_tb_w > 2;
+                can_lfnst &= nb_coeffs_cb <= max_lfnst_pos_c;
                 non_only_dc |= nb_coeffs_cb;
             }
 
-            if (cbf_mask_cr) {
+            if (cbf_mask_cr && log2_tb_h > 2 && log2_tb_w > 2) {
                 const struct TBInfo *const tb_info_cr = &tu_info->tb_info[1];
                 int last_y_cr = tb_info_cr->last_pos >> 8;
                 int last_x_cr = tb_info_cr->last_pos & 0xff;
                 int nb_coeffs_cr = (scan_map >> ((last_x_cr + (last_y_cr << 2)) << 2)) & 0xf;
                 can_lfnst &= tb_info_cr->sig_sb_map == 0x1;
-                can_lfnst &= nb_coeffs_cr <= max_lfnst_pos;
-                //can_lfnst &= log2_tb_h > 2 && log2_tb_w > 2;
+                can_lfnst &= nb_coeffs_cr <= max_lfnst_pos_c;
                 non_only_dc |= nb_coeffs_cr;
             }
         }
