@@ -787,7 +787,7 @@ residual_coding_l(OVCTUDec *const ctu_dec,
 
     } else {
         ctu_dec->dequant_skip = &ctu_dec->dequant_luma_skip;
-        residual_coding_ts(ctu_dec, ctu_dec->transform_buff, log2_tb_w, log2_tb_h);
+        residual_coding_ts(ctu_dec, ctu_dec->residual_y, log2_tb_w, log2_tb_h);
     }
 
 
@@ -985,7 +985,7 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
         sig_sb_map = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_jcbcr, log2_tb_w, log2_tb_h,
                                                      last_pos);
     } else {
-        residual_coding_ts(ctu_dec, ctu_dec->transform_buff, log2_tb_w, log2_tb_h);
+        residual_coding_ts(ctu_dec, ctu_dec->residual_cb, log2_tb_w, log2_tb_h);
     }
 
     tb_info->sig_sb_map = sig_sb_map;
@@ -1053,6 +1053,9 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
         rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_jcbcr,
                        x0, y0, log2_tb_w, log2_tb_h,
                        tb_info->last_pos, tu_info->lfnst_flag, tu_info->lfnst_idx);
+    } else {
+        int16_t *const coeffs_jcbcr = ctu_dec->residual_cb;
+        memcpy(ctu_dec->transform_buff, coeffs_jcbcr, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
     }
 
     fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0, y0, log2_tb_w, log2_tb_h);
@@ -1244,6 +1247,9 @@ transform_unit_st(OVCTUDec *const ctu_dec,
                              lim_sb_s, tu_info.cu_mts_flag, tu_info.cu_mts_idx,
                              !tb_info->last_pos, tu_info.lfnst_flag, is_mip, tu_info.lfnst_idx);
 
+            } else {
+                int16_t *const coeffs_y = ctu_dec->residual_y;
+                memcpy(ctu_dec->transform_buff, coeffs_y, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
             }
 
             /* FIXME use transform add optimization */
@@ -1318,6 +1324,9 @@ transform_unit_l(OVCTUDec *const ctu_dec,
                          lim_sb_s, tu_info.cu_mts_flag, tu_info.cu_mts_idx,
                          !tb_info->last_pos, tu_info.lfnst_flag, is_mip, tu_info.lfnst_idx);
 
+        } else {
+            int16_t *const coeffs_y = ctu_dec->residual_y;
+            memcpy(ctu_dec->transform_buff, coeffs_y, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
         }
 
         /* FIXME use transform add optimization */
