@@ -722,7 +722,7 @@ separate_trees_qt(OVCTUDec *ctudec, const OVPartInfo *const part_ctx, uint8_t x0
         return 0;
     }
 
-    if (chroma_area >= 16 && !(log2_cb_w == 3)) {
+    if (chroma_area >= 16) {
         return 0;
     } else if (luma_area < 32 || ctudec->coding_unit == &coding_unit_intra_st) {
         /* infer */
