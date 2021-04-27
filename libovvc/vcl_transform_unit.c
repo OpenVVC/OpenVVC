@@ -330,7 +330,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
                     unsigned int x0, unsigned int y0,
                     unsigned int log2_cb_w, unsigned int log2_cb_h,
                     uint8_t intra_mode, uint8_t cbf_flags,
-                    int16_t lfnst_sb[4][16], uint8_t lfnst_flag, uint8_t lfnst_idx)
+                    uint8_t lfnst_flag, uint8_t lfnst_idx)
 {
     #if 0
     struct OVDrvCtx *const pred_ctx = &ctudec->drv_ctx;
@@ -396,7 +396,12 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
 
                 memset(tmp, 0, sizeof(int16_t) << (log2_pb_w + log2_cb_h));
                 if (lfnst_flag) {
-                    process_lfnst_luma_isp(ctudec, coeffs_y, lfnst_sb[i], log2_pb_w, log2_cb_h,log2_cb_w, log2_cb_h, x0 -offset_x, y0,
+                    int16_t lfnst_sb[16];
+                    memcpy(lfnst_sb     , &coeffs_y[0], sizeof(int16_t) * 4);
+                    memcpy(lfnst_sb +  4, &coeffs_y[1 << log2_pb_w], sizeof(int16_t) * 4);
+                    memcpy(lfnst_sb +  8, &coeffs_y[2 << log2_pb_w], sizeof(int16_t) * 4);
+                    memcpy(lfnst_sb + 12, &coeffs_y[3 << log2_pb_w], sizeof(int16_t) * 4);
+                    process_lfnst_luma_isp(ctudec, coeffs_y, lfnst_sb, log2_pb_w, log2_cb_h,log2_cb_w, log2_cb_h, x0 -offset_x, y0,
                                        lfnst_idx);
                     /* lfnst forces IDCT II usage */
                     type_v = type_h = DCT_II;
@@ -430,8 +435,8 @@ static void
 recon_isp_subtree_h(OVCTUDec *const ctudec,
                     unsigned int x0, unsigned int y0,
                     unsigned int log2_cb_w, unsigned int log2_cb_h,
-                uint8_t intra_mode, uint8_t cbf_flags,
-                int16_t lfnst_sb[4][16], uint8_t lfnst_flag, uint8_t lfnst_idx)
+                    uint8_t intra_mode, uint8_t cbf_flags,
+                    uint8_t lfnst_flag, uint8_t lfnst_idx)
 {
     const struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
     const struct RCNFunctions *const rcn_func = &ctudec->rcn_ctx.rcn_funcs;
@@ -489,7 +494,12 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
 
                 if (lfnst_flag) {
                     /*FIXME avoid distinguishing isp case in lfnst */
-                    process_lfnst_luma_isp(ctudec, coeffs_y, lfnst_sb[i], log2_cb_w, log2_pb_h,log2_cb_w, log2_cb_h, x0, y0-offset_y,
+                    int16_t lfnst_sb[16];
+                    memcpy(lfnst_sb     , &coeffs_y[0], sizeof(int16_t) * 4);
+                    memcpy(lfnst_sb +  4, &coeffs_y[1 << log2_cb_w], sizeof(int16_t) * 4);
+                    memcpy(lfnst_sb +  8, &coeffs_y[2 << log2_cb_w], sizeof(int16_t) * 4);
+                    memcpy(lfnst_sb + 12, &coeffs_y[3 << log2_cb_w], sizeof(int16_t) * 4);
+                    process_lfnst_luma_isp(ctudec, coeffs_y, lfnst_sb, log2_cb_w, log2_pb_h,log2_cb_w, log2_cb_h, x0, y0-offset_y,
                                        lfnst_idx);
 
                     /* lfnst forces IDCT II usage */
@@ -577,7 +587,6 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
     int cbf = 0;
     int log2_pb_w = log2_cb_w - 2;
     int nb_pb;
-    int16_t lfnst_sb[4][16];
     int i;
     struct ISPTUInfo tu_info = {0};
 
@@ -608,7 +617,6 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
                 ctu_dec->residual_coding_isp_v(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
             }else {
                 tb_info->sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
-                memcpy(lfnst_sb[i], ctu_dec->lfnst_subblock, sizeof(uint16_t) * 16);
             }
         }
     }
@@ -631,7 +639,6 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
             int last_x = last_pos & 0xFF;
             tb_info->last_pos  = (scan_map >> ((last_x + (last_y << 2)) << 2)) & 0xF;
             tb_info->sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
-            memcpy(lfnst_sb[i], ctu_dec->lfnst_subblock, sizeof(uint16_t) * 16);
         }
     }
     uint8_t lfnst_flag = 0;
@@ -661,7 +668,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
 
 #if 1
     recon_isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, tu_info.cbf_mask,
-                        lfnst_sb, tu_info.lfnst_flag, tu_info.lfnst_idx);
+                        tu_info.lfnst_flag, tu_info.lfnst_idx);
 #endif
 
     return cbf_flags;
@@ -681,7 +688,6 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
     int log2_pb_h = log2_cb_h - 2;
     int nb_pb;
     int16_t *coeffs_y = ctu_dec->residual_y;
-    int16_t lfnst_sb[4][16];
     struct ISPTUInfo tu_info = {0};
 
     /* width < 16 imposes restrictions on split numbers */
@@ -709,7 +715,6 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
                 int last_x = last_pos & 0xFF;
                 tb_info->last_pos   = (scan_map >> ((last_x + (last_y << 2)) << 2)) & 0xF;
                 tb_info->sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
-                memcpy(lfnst_sb[i], ctu_dec->lfnst_subblock, sizeof(uint16_t) * 16);
             }
         }
         coeffs_y += tb_s;
@@ -732,7 +737,6 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
             int last_x = last_pos & 0xFF;
             tb_info->last_pos  = (scan_map >> ((last_x + (last_y << 2)) << 2)) & 0xF;
             tb_info->sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
-            memcpy(lfnst_sb[i], ctu_dec->lfnst_subblock, sizeof(uint16_t) * 16);
         }
     }
 
@@ -762,7 +766,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
 
 #if 1
     recon_isp_subtree_h(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, tu_info.cbf_mask,
-                        lfnst_sb, tu_info.lfnst_flag, tu_info.lfnst_idx);
+                        tu_info.lfnst_flag, tu_info.lfnst_idx);
 #endif
 
     return cbf_flags;
