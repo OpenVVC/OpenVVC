@@ -598,6 +598,8 @@ create_nalu_elem(OVVCDmx *const dmx)
     nalu_elem->nalu.epb_pos = NULL;
     nalu_elem->nalu.nb_epb = 0;
 
+    atomic_init(&nalu_elem->nalu.ref_count, 1);
+
     return nalu_elem;
 }
 

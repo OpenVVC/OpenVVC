@@ -16,6 +16,12 @@ struct SliceThread
 {
     OVSliceDec *owner;
     struct EntryThread *tdec;
+    
+    struct OutputThread* output_thread;
+    struct MainThread* main_thread;
+    
+    //TODOpar: change localisation
+    OVNALUnit* slice_nalu;
 
     int nb_threads;
     int gnrl_state;

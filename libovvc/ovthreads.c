@@ -63,7 +63,7 @@ ovthread_decode_entries(struct SliceThread *th_info, DecodeFunc decode_entry, in
 
     int nb_task_threads = OVMIN(nb_entries, th_info->nb_threads);
 
-    th_info->nb_task_threads = nb_task_threads;;
+    th_info->nb_task_threads = nb_task_threads;
     th_info->nb_entries = nb_entries;
     th_info->decode_entry = decode_entry;
 
@@ -82,24 +82,17 @@ ovthread_decode_entries(struct SliceThread *th_info, DecodeFunc decode_entry, in
         pthread_mutex_unlock(&tdec->task_mtx);
     }
 
+    //TODOpar: re-use when the entry task will be launched by slice threads.  
     /* Main thread wait until all gnrl_state has been set to 1 
      * by the last decoder thread
      */
-    if (!is_last) {
-        pthread_mutex_lock(&th_info->gnrl_mtx);
-        while (th_info->gnrl_state) {
-            pthread_cond_wait(&th_info->gnrl_cnd, &th_info->gnrl_mtx);
-        }
-        // th_info->gnrl_state = 0;
-        pthread_mutex_unlock(&th_info->gnrl_mtx);
-    }
-
-    //Signal output thread that slice is ready for writing
-    // struct OutputFrameThread* t_out = vvcdec->out_frame_thread;
-    // if(t_out){
-    //     pthread_mutex_lock(&t_out->gnrl_mtx);
-    //     pthread_cond_signal(&t_out->gnrl_cnd);
-    //     pthread_mutex_unlock(&t_out->gnrl_mtx);
+    // if (!is_last) {
+    //     pthread_mutex_lock(&th_info->gnrl_mtx);
+    //     while (th_info->gnrl_state) {
+    //         pthread_cond_wait(&th_info->gnrl_cnd, &th_info->gnrl_mtx);
+    //     }
+    //     // th_info->gnrl_state = 0;
+    //     pthread_mutex_unlock(&th_info->gnrl_mtx);
     // }
 
     return 0;
@@ -135,6 +128,24 @@ thread_main_function(void *opaque)
                 th_info->gnrl_state = 0;
                 pthread_cond_signal(&th_info->gnrl_cnd);
                 pthread_mutex_unlock(&th_info->gnrl_mtx);
+
+                //TODOpar: change localisation
+                ov_nalu_unref(&th_info->slice_nalu);
+
+                //Signal output thread that slice is ready for writing
+                struct OutputThread* t_out = th_info->output_thread;
+                if(t_out){
+                    pthread_mutex_lock(&t_out->gnrl_mtx);
+                    pthread_cond_signal(&t_out->gnrl_cnd);
+                    pthread_mutex_unlock(&t_out->gnrl_mtx);
+                }
+                //Signal main thread that a slice thread is available
+                struct MainThread* t_main = th_info->main_thread;
+                if(t_main){
+                    pthread_mutex_lock(&t_main->main_mtx);
+                    pthread_cond_signal(&t_main->main_cnd);
+                    pthread_mutex_unlock(&t_main->main_mtx);
+                }
             }
         }
     }
@@ -281,9 +292,9 @@ ovthread_slice_thread_uninit(struct SliceThread *th_slice)
 int
 ovthread_slice_main_function(void *opaque)
 {
+    //Change type OVDEC to OVSliceDec
     OVVCDec *dec = (struct OVVCDec *)opaque;
-    struct OutputFrameThread* t_out = dec->out_frame_thread;
-    int nb_pic = 0;
+    struct OutputThread* t_out = &dec->output_thread;
     do {
         pthread_mutex_lock(&t_out->gnrl_mtx);
         pthread_cond_wait(&t_out->gnrl_cnd, &t_out->gnrl_mtx);
@@ -297,7 +308,6 @@ ovthread_slice_main_function(void *opaque)
     pthread_mutex_lock(&t_out->gnrl_mtx);
     pthread_cond_signal(&t_out->gnrl_cnd);
     pthread_mutex_unlock(&t_out->gnrl_mtx);
-    ov_log(NULL, OVLOG_INFO, "Decoded %d pictures\n", nb_pic);
     return 0;
 }
 
@@ -322,7 +332,7 @@ ovthread_out_frame_write(void *opaque)
 {
     OVVCDec *dec = (struct OVVCDec *)opaque;
     OVFrame *frame = NULL;
-    struct OutputFrameThread* t_out = dec->out_frame_thread;
+    struct OutputThread* t_out = &dec->output_thread;
     FILE *fout = t_out->fout;
     int nb_pic = 0;
     do {
@@ -363,52 +373,46 @@ ovthread_out_frame_write(void *opaque)
         }
     }
 
-    //Signal the main thread that the last picture has been written
-    pthread_mutex_lock(&t_out->gnrl_mtx);
-    pthread_cond_signal(&t_out->gnrl_cnd);
-    pthread_mutex_unlock(&t_out->gnrl_mtx);
     ov_log(NULL, OVLOG_INFO, "Decoded %d pictures\n", nb_pic);
     return NULL;
 }
 
 int
-ovthread_out_frame_init(OVVCDec *dec, FILE* fout)
+ovthread_output_init(OVVCDec *dec, FILE* fout)
 {
-    dec->out_frame_thread = ov_mallocz(sizeof(struct OutputFrameThread));
+    // dec->output_thread = ov_mallocz(sizeof(struct OutputThread));
     
-    if (!dec->out_frame_thread) {
-        goto failalloc;
-    }
-    dec->out_frame_thread->fout = fout;
-    dec->out_frame_thread->kill = 0;
+    // if (!dec->output_thread) {
+    //     goto failalloc;
+    // }
+    struct OutputThread* th_out = &dec->output_thread;
+    th_out->fout = fout;
+    th_out->kill = 0;
+    // th_out->state = 0;
 
-    pthread_mutex_init(&dec->out_frame_thread->gnrl_mtx, NULL);
-    pthread_cond_init(&dec->out_frame_thread->gnrl_cnd,  NULL);
-    // dec->out_frame_thread->state = 0;
-    // dec->out_frame_thread->kill  = 0;
+    pthread_mutex_init(&th_out->gnrl_mtx, NULL);
+    pthread_cond_init(&th_out->gnrl_cnd,  NULL);
 
-    // pthread_mutex_lock(&dec->out_frame_thread->gnrl_mtx);
+    // pthread_mutex_lock(&dec->output_thread->gnrl_mtx);
 
-    if (pthread_create(&dec->out_frame_thread->thread, NULL, ovthread_out_frame_write, dec)) {
-        pthread_mutex_unlock(&dec->out_frame_thread->gnrl_mtx);
+    if (pthread_create(&th_out->thread, NULL, ovthread_out_frame_write, dec)) {
+        pthread_mutex_unlock(&th_out->gnrl_mtx);
         ov_log(NULL, OVLOG_ERROR, "Thread creation failed for output frame init\n");
         goto failthread;
     }
 
     // /* Wait until subdec is set */
-    // while (!dec->out_frame_thread->state) {
-    //     pthread_cond_wait(&dec->out_frame_thread->task_cnd, &dec->out_frame_thread->task_mtx);
+    // while (!th_out->state) {
+    //     pthread_cond_wait(&th_out->task_cnd, &th_out->task_mtx);
     // }
 
-    // pthread_mutex_unlock(&dec->out_frame_thread->task_mtx);
+    // pthread_mutex_unlock(&th_out->task_mtx);
 
     return 0;
 
 failthread:
-    ov_freep(&dec->out_frame_thread);
-
     return OVVC_ENOMEM;
 
-failalloc:
-    return OVVC_ENOMEM;
+// failalloc:
+//     return OVVC_ENOMEM;
 }

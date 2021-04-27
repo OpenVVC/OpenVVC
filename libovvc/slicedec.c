@@ -713,7 +713,6 @@ slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
                      prms->pps_info.tile_info.nb_tile_rows;
 
     int ret = 0;
-    // sldec->active_params = prms;
     #if 0
     int i;
     for (i = 0; i < nb_entries; ++i) {
@@ -1249,7 +1248,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     struct RectEntryInfo einfo;
 
     /*FIXME handle cabac alloc or keep it on the stack ? */
-
     OVCABACCtx cabac_ctx;
     slicedec_init_rect_entry(&einfo, prms, entry_idx);
 
@@ -1581,7 +1579,6 @@ slicedec_init(OVSliceDec *sldec, int nb_entry_th)
     //Test frame par
     nb_entry_th = 1;
     sldec->nb_sbdec = nb_entry_th;
-    sldec->nb_sbdec = 1;
 
     ret = init_ctudec_list(sldec, nb_entry_th);
     if (ret < 0) {

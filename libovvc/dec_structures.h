@@ -1,6 +1,9 @@
 #ifndef DEC_STRUCTURES_H
 #define DEC_STRUCTURES_H
 
+#include <stdio.h>
+#include <pthread.h>
+
 #include "ovdefs.h"
 #include "nvcl.h"
 #include "post_proc.h"
@@ -218,6 +221,28 @@ typedef struct ALFParamsCtu {
 } ALFParamsCtu;
 
 
+struct OutputThread
+{
+    FILE *fout;
+
+    /* Thread displaying the frames after 
+     * the decoding is finished.
+     */
+    pthread_t thread;
+    pthread_mutex_t gnrl_mtx;
+    pthread_cond_t gnrl_cnd;
+
+    // uint8_t state;
+    uint8_t kill;
+};
+
+struct MainThread
+{
+    int kill;
+    pthread_mutex_t main_mtx;
+    pthread_cond_t main_cnd;
+};
+
 struct OVVCDec
 {
     const char *name;
@@ -232,6 +257,7 @@ struct OVVCDec
     /* Paramters sets context */
     OVNVCLCtx nvcl_ctx;
 
+    //TODOpar: remove frrom this structure and put into subdec (slicedec in our case)
     struct OVPS{
         /* Pointers to active parameter sets */
         OVSPS *sps;
@@ -281,7 +307,10 @@ struct OVVCDec
 
     /* Number of available threads */
     int nb_threads;
-    struct OutputFrameThread* out_frame_thread;
+
+    struct OutputThread output_thread;
+
+    struct MainThread main_thread;
 
     /* Informations on decoder behaviour transmitted by user
      */

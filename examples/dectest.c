@@ -241,8 +241,8 @@ ovthread_read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
     OVVCDec *const dec = hdl->dec;
     OVPictureUnit *pu = NULL;
     
-    ovthread_out_frame_init(dec, fout);
-    struct OutputFrameThread* t_out = dec->out_frame_thread;
+    ovthread_output_init(dec, fout);
+    struct OutputThread* t_out = &dec->output_thread;
     do {
         ret = ovdmx_extract_picture_unit(dmx, &pu);
         if (ret < 0) {
