@@ -798,7 +798,7 @@ static uint8_t
 jcbcr_lfnst_check(const struct TUInfo *tu_info, uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
     const struct TBInfo *const tb_info = &tu_info->tb_info[0];
-    if (!tu_info->tr_skip_mask && tb_info->sig_sb_map == 0x1) {
+    if (!tu_info->tr_skip_mask && tb_info->sig_sb_map == 0x1 && log2_tb_h > 1 && log2_tb_w > 1) {
         int max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
 
         uint64_t scan_map = 0xFDA6EB73C8419520;
@@ -822,7 +822,7 @@ chroma_lfnst_check(const struct TUInfo *tu_info, uint8_t cbf_mask, uint8_t log2_
     const struct TBInfo *const tb_info_cb = &tu_info->tb_info[0];
     const struct TBInfo *const tb_info_cr = &tu_info->tb_info[1];
 
-    if (log2_tb_w > 1 && log2_tb_h > 1&& tb_info_cb->sig_sb_map == 0x1 && tb_info_cr->sig_sb_map == 0x1 && !tu_info->tr_skip_mask) {
+    if (log2_tb_w > 1 && log2_tb_h > 1 && tb_info_cb->sig_sb_map == 0x1 && tb_info_cr->sig_sb_map == 0x1 && !tu_info->tr_skip_mask) {
         uint8_t need_cb_chk = cbf_mask & 0x2;
         uint8_t need_cr_chk = cbf_mask & 0x1;
 
