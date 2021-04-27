@@ -1096,8 +1096,7 @@ lfnst_check_st(const struct TUInfo *const tu_info, uint8_t log2_tb_w, uint8_t lo
 
     uint8_t can_lfnst = mip_lfnst;
 
-    /* FIXME check condition on component ?*/
-    can_lfnst &= !(tu_info->tr_skip_mask & 0x10);
+    can_lfnst &= !(tu_info->tr_skip_mask);
 
     /* FIXME Note that sig_sb_map check is sufficient if max is 15 */
     if (can_lfnst) {
