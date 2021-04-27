@@ -452,7 +452,7 @@ rcn_residual_c(OVCTUDec *const ctudec,
 
     memset(tmp, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
 
-    if (lfnst_flag) {
+    if (lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) {
         /* FIXME separate lfnst mode derivation from lfnst reconstruction */
         int16_t lfnst_sb[16];
         memcpy(lfnst_sb     , &src[0], sizeof(int16_t) * 4);
@@ -470,7 +470,7 @@ rcn_residual_c(OVCTUDec *const ctudec,
 
     } else {
         int lim_sb_s = ((((last_pos >> 8)) >> 2) + (((last_pos & 0xFF))>> 2) + 1) << 2;
-        if (lfnst_flag) lim_sb_s = 8;
+        if (lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) lim_sb_s = 8;
         int nb_row =  OVMIN(lim_sb_s, 1 << log2_tb_w);
         int nb_col =  OVMIN(lim_sb_s, 1 << log2_tb_h);
         /*FIXME might be transform SKIP */
