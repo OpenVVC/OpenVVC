@@ -1226,16 +1226,6 @@ transform_unit_st(OVCTUDec *const ctu_dec,
             }
         }
 
-        if (jcbcr_flag) {
-
-            rcn_jcbcr(ctu_dec, &tu_info, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1, cbf_mask_c);
-
-        } else if (cbf_mask_c) {
-
-            rcn_res_c(ctu_dec, &tu_info, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1, cbf_mask_c);
-
-        }
-
         if (cbf_flag_l) {
             struct TBInfo *tb_info = &tu_info.tb_info[2];
 
@@ -1255,6 +1245,18 @@ transform_unit_st(OVCTUDec *const ctu_dec,
             /* FIXME use transform add optimization */
             vvc_add_residual(ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
         }
+        if (jcbcr_flag) {
+
+            tu_info.lfnst_flag = 0;
+            rcn_jcbcr(ctu_dec, &tu_info, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1, cbf_mask_c);
+
+        } else if (cbf_mask_c) {
+
+            tu_info.lfnst_flag = 0;
+            rcn_res_c(ctu_dec, &tu_info, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1, cbf_mask_c);
+
+        }
+
     }
 
     return 0;
