@@ -142,11 +142,13 @@ ovdpb_unref_pic(OVDPB *dpb, OVPicture *pic, int flags)
         return;
 
     pic->flags &= ~flags;
+    //TODOpar: do it also in inter for ref piclist
+    uint16_t ref_count = atomic_fetch_add_explicit(&pic->ref_count, 0, memory_order_acq_rel);
 
     /* If there is no more flags the picture can be
      * returned to the DPB;
      */
-    if (!pic->flags) {
+    if (!pic->flags && !ref_count) {
         /* Release TMVP  MV maps */
         ov_log(NULL, OVLOG_DEBUG, "Release picture %d\n", pic->poc);
         dpbpriv_release_pic(pic);
@@ -220,6 +222,7 @@ alloc_frame(OVDPB *dpb)
             return NULL;
         }
 
+        atomic_init(&pic->ref_count, 0);
         return pic;
     }
 

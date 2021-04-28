@@ -126,6 +126,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
             return ret;
         }
     }
+    atomic_fetch_add_explicit(&sldec->pic->ref_count, 1, memory_order_acq_rel);
 
     slicedec_copy_params(sldec, &dec->active_params);
 

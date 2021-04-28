@@ -7,6 +7,7 @@
 #include "ovutils.h"
 #include "ovmem.h"
 #include "ovthreads.h"
+#include "ovdpb.h"
 
 /*
 Functions for the threads decoding rectangular entries
@@ -125,8 +126,9 @@ thread_main_function(void *opaque)
                 pthread_cond_signal(&th_info->gnrl_cnd);
                 pthread_mutex_unlock(&th_info->gnrl_mtx);
 
-                //TODOpar: change localisation
+                //TODOpar: change location when using SliceThreads
                 ov_nalu_unref(&th_info->slice_nalu);
+                atomic_fetch_add_explicit(&th_info->owner->pic->ref_count, -1, memory_order_acq_rel);
 
                 //Signal output thread that slice is ready for writing
                 struct OutputThread* t_out = th_info->output_thread;

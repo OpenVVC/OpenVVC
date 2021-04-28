@@ -48,6 +48,7 @@ struct OVPicture
     * FIXME enum ?
     */
    uint8_t flags;
+   atomic_uint ref_count;
 
    /* Pointers to ref_pic_list */
    /* FIXME use frame directly ? */
