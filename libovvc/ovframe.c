@@ -50,8 +50,7 @@ framepool_request_planes(OVFrame *const frame, struct FramePool *const fp)
         frame->linesize[i] = prop->stride;
     }
 
-    atomic_init(&frame->internal.ref_count, 1);
-    // frame->internal.ref_count = 1;
+    atomic_init(&frame->internal.ref_count, 0);
 
     return 0;
 
@@ -68,7 +67,6 @@ ovframe_new_ref(OVFrame **dst, OVFrame *src)
      }
 
     atomic_fetch_add_explicit(&src->internal.ref_count, 1, memory_order_acq_rel);
-    // src->internal.ref_count++;
 
     *dst = src;
 
@@ -86,7 +84,6 @@ ovframe_unref(OVFrame **frame)
     }
 
     unsigned ref_count = atomic_fetch_add_explicit(&(*frame)->internal.ref_count, -1, memory_order_acq_rel);
-    // (*frame)->internal.ref_count--;
 
     if (!ref_count) {
         framepool_release_planes(*frame);

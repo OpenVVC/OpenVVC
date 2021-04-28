@@ -318,7 +318,7 @@ vvc_decode_picture_unit(OVVCDec *dec, const OVPictureUnit *pu)
     int i;
     int ret;
     for (i = 0; i < pu->nb_nalus; ++i) {
-        ret = decode_nal_unit(dec, &pu->nalus[i]);
+        ret = decode_nal_unit(dec, pu->nalus[i]);
         if (ret < 0) {
             goto fail;
         }
@@ -560,6 +560,7 @@ ovdec_close(OVVCDec *vvcdec)
                 sldec = vvcdec->subdec_list[i];
                 slicedec_uninit(&sldec);
             }
+            ov_freep(&vvcdec->subdec_list);
         }
         ovdpb_uninit(&vvcdec->dpb);
 

@@ -42,7 +42,6 @@ struct FrameInternal
 {
     /* reference counter */
     atomic_uint ref_count;
-    // int ref_count;
 
     struct frame_pool *frame_pool;
     void *pool_elem[4];

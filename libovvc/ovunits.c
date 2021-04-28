@@ -41,7 +41,7 @@ ov_nalu_unref(OVNALUnit **nalu_p)
         if (nalu->epb_pos) {
             ov_freep(&nalu->epb_pos);
         }
-        ov_freep(nalu);
+        ov_free(nalu);
     }
     *nalu_p = NULL;
 }
@@ -54,7 +54,7 @@ ov_free_pu(OVPictureUnit **pu)
     if (to_free) {
         int i;
         for (i = 0; i < to_free->nb_nalus; ++i) {
-            OVNALUnit *nalu = &to_free->nalus[i];
+            OVNALUnit *nalu = to_free->nalus[i];
 
             ov_nalu_unref(&nalu);
             // ov_freep(&nalu->rbsp_data);

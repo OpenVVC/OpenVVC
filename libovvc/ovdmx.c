@@ -512,11 +512,13 @@ convert_nalu_list_to_pu(OVPictureUnit *dst, struct NALUnitsList *const src)
     if (!dst->nalus) {
         return OV_ENOMEM;
     }
+    for(int i=0; i < nb_nalus; i++)
+        dst->nalus[i] = ov_mallocz(sizeof(*dst->nalus[i]));
 
     lelem = src->first_nalu;
 
     while (lelem) {
-        memcpy(&dst->nalus[i++], &lelem->nalu, sizeof(*dst->nalus)) ;
+        memcpy(dst->nalus[i++], &lelem->nalu, sizeof(lelem->nalu)) ;
         memset(&lelem->nalu, 0, sizeof(lelem->nalu));
         lelem = lelem->next_nalu;
     }
@@ -598,7 +600,7 @@ create_nalu_elem(OVVCDmx *const dmx)
     nalu_elem->nalu.epb_pos = NULL;
     nalu_elem->nalu.nb_epb = 0;
 
-    atomic_init(&nalu_elem->nalu.ref_count, 1);
+    atomic_init(&nalu_elem->nalu.ref_count, 0);
 
     return nalu_elem;
 }

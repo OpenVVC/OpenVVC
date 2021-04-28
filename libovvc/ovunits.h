@@ -67,7 +67,7 @@ typedef struct OVNALUnit {
 typedef struct OVPictureUnit
 {
     /* A vector of NAL Units */
-    OVNALUnit *nalus;
+    OVNALUnit **nalus;
 
     /*
      * The number of NAL Units in this Picture Unit

@@ -59,8 +59,7 @@ thread_decode_entries(struct SliceThread *th_info, struct EntryThread *tdec)
 int
 ovthread_decode_entries(struct SliceThread *th_info, DecodeFunc decode_entry, int nb_entries)
 {
-    int i, is_last = 0;
-
+    int i;
     int nb_task_threads = OVMIN(nb_entries, th_info->nb_threads);
 
     th_info->nb_task_threads = nb_task_threads;
@@ -86,14 +85,12 @@ ovthread_decode_entries(struct SliceThread *th_info, DecodeFunc decode_entry, in
     /* Main thread wait until all gnrl_state has been set to 1 
      * by the last decoder thread
      */
-    // if (!is_last) {
-    //     pthread_mutex_lock(&th_info->gnrl_mtx);
-    //     while (th_info->gnrl_state) {
-    //         pthread_cond_wait(&th_info->gnrl_cnd, &th_info->gnrl_mtx);
-    //     }
-    //     // th_info->gnrl_state = 0;
-    //     pthread_mutex_unlock(&th_info->gnrl_mtx);
+    // pthread_mutex_lock(&th_info->gnrl_mtx);
+    // while (th_info->gnrl_state) {
+    //     pthread_cond_wait(&th_info->gnrl_cnd, &th_info->gnrl_mtx);
     // }
+    // // th_info->gnrl_state = 0;
+    // pthread_mutex_unlock(&th_info->gnrl_mtx);
 
     return 0;
 }
