@@ -329,14 +329,16 @@ static void
 recon_isp_subtree_v(OVCTUDec *const ctudec,
                     unsigned int x0, unsigned int y0,
                     unsigned int log2_cb_w, unsigned int log2_cb_h,
-                    uint8_t intra_mode, uint8_t cbf_flags,
-                    uint8_t lfnst_flag, uint8_t lfnst_idx)
+                    uint8_t intra_mode,
+                    const struct ISPTUInfo *const tu_info)
 {
     #if 0
     struct OVDrvCtx *const pred_ctx = &ctudec->drv_ctx;
     #endif
     const struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
     const struct RCNFunctions *const rcn_func = &ctudec->rcn_ctx.rcn_funcs;
+    uint8_t cbf_flags = tu_info->cbf_mask;
+    uint8_t lfnst_flag = tu_info->lfnst_flag;
 
     int offset_x;
     int log2_pb_w = log2_cb_w - 2;
@@ -396,6 +398,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
 
                 memset(tmp, 0, sizeof(int16_t) << (log2_pb_w + log2_cb_h));
                 if (lfnst_flag) {
+                    uint8_t lfnst_idx = tu_info->lfnst_idx;
                     int16_t lfnst_sb[16];
                     memcpy(lfnst_sb     , &coeffs_y[0], sizeof(int16_t) * 4);
                     memcpy(lfnst_sb +  4, &coeffs_y[1 << log2_pb_w], sizeof(int16_t) * 4);
@@ -435,14 +438,16 @@ static void
 recon_isp_subtree_h(OVCTUDec *const ctudec,
                     unsigned int x0, unsigned int y0,
                     unsigned int log2_cb_w, unsigned int log2_cb_h,
-                    uint8_t intra_mode, uint8_t cbf_flags,
-                    uint8_t lfnst_flag, uint8_t lfnst_idx)
+                    uint8_t intra_mode,
+                    const struct ISPTUInfo *const tu_info)
 {
     const struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
     const struct RCNFunctions *const rcn_func = &ctudec->rcn_ctx.rcn_funcs;
 
     int log2_pb_h = log2_cb_h - 2;
     int nb_pb;
+    uint8_t cbf_flags = tu_info->cbf_mask;
+    uint8_t lfnst_flag = tu_info->lfnst_flag;
     int pb_h, offset_y;
 
     // width < 16 imposes restrictions on split numbers
@@ -493,6 +498,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                 memset(tmp, 0, sizeof(int16_t) << (log2_cb_w + log2_pb_h));
 
                 if (lfnst_flag) {
+                    uint8_t lfnst_idx = tu_info->lfnst_idx;
                     /*FIXME avoid distinguishing isp case in lfnst */
                     int16_t lfnst_sb[16];
                     memcpy(lfnst_sb     , &coeffs_y[0], sizeof(int16_t) * 4);
@@ -641,8 +647,6 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
             tb_info->sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
         }
     }
-    uint8_t lfnst_flag = 0;
-    uint8_t lfnst_idx = 0;
 
     if (ctu_dec->enable_lfnst) {
         int max_lfnst_pos = (log2_cb_h == log2_pb_w) && (log2_pb_w <= 3) ? 7 : 15;
@@ -655,10 +659,10 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
 
         if (can_lfnst) {
             uint8_t is_dual = ctu_dec->transform_unit != &transform_unit_st;
-            lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
+            uint8_t lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
             tu_info.lfnst_flag = lfnst_flag;
             if (lfnst_flag) {
-                lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
+                uint8_t lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
                 tu_info.lfnst_idx = lfnst_idx;
             }
         }
@@ -667,8 +671,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
     tu_info.cbf_mask = cbf_flags;
 
 #if 1
-    recon_isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, tu_info.cbf_mask,
-                        tu_info.lfnst_flag, tu_info.lfnst_idx);
+    recon_isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, &tu_info);
 #endif
 
     return cbf_flags;
@@ -740,8 +743,6 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
         }
     }
 
-    uint8_t lfnst_flag = 0;
-    uint8_t lfnst_idx = 0;
     if (ctu_dec->enable_lfnst) {
         uint8_t can_lfnst = (tu_info.tb_info[0].sig_sb_map | tu_info.tb_info[1].sig_sb_map | tu_info.tb_info[2].sig_sb_map | tu_info.tb_info[3].sig_sb_map) == 1;
         int max_lfnst_pos = (log2_pb_h == log2_cb_w) && (log2_cb_w <= 3) ? 7 : 15;
@@ -753,10 +754,10 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
 
         if (can_lfnst) {
             uint8_t is_dual = ctu_dec->transform_unit != &transform_unit_st;
-            lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
+            uint8_t lfnst_flag = ovcabac_read_ae_lfnst_flag(cabac_ctx, is_dual);
             tu_info.lfnst_flag = lfnst_flag;
             if (lfnst_flag) {
-                lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
+                uint8_t lfnst_idx = ovcabac_read_ae_lfnst_idx(cabac_ctx);
                 tu_info.lfnst_idx = lfnst_idx;
             }
         }
@@ -765,8 +766,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
     tu_info.cbf_mask = cbf_flags;
 
 #if 1
-    recon_isp_subtree_h(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, tu_info.cbf_mask,
-                        tu_info.lfnst_flag, tu_info.lfnst_idx);
+    recon_isp_subtree_h(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, &tu_info);
 #endif
 
     return cbf_flags;
