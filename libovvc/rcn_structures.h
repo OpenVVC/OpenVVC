@@ -98,6 +98,12 @@ struct PlanarFunctions
   PlanarFunc pdpc[2];
 };
 
+struct ICTFunctions
+{
+  ResidualAddScaleFunc add[7];
+  ResidualAddScaleFunc ict[6][3];
+};
+
 
 struct ALFFunctions{
     ALFFilterBlkFunc luma;
@@ -119,7 +125,7 @@ struct RCNFunctions
     /* Motion Compensation Chroma */
     struct CCLMFunctions cclm;
 
-    ResidualAddScaleFunc ict[6][3];
+    struct ICTFunctions ict;
 
     /* Transform Functions */
     struct TRFunctions tr;
