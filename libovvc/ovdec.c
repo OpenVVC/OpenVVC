@@ -516,14 +516,14 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
 
 
 int
-ovdec_init(OVVCDec **vvcdec)
+ovdec_init(OVVCDec **vvcdec, FILE *fout)
 {
     /* FIXME might not be available on every plateform */
 
     // int nb_threads = get_number_of_cores();
    
     //Test frame par
-    int nb_threads = 1;
+    int nb_threads = 2;
     *vvcdec = ov_mallocz(sizeof(OVVCDec));
 
     if (*vvcdec == NULL) goto fail;
@@ -532,6 +532,8 @@ ovdec_init(OVVCDec **vvcdec)
 
     (*vvcdec)->nb_threads = nb_threads;
 
+    ovthread_output_init((*vvcdec), fout);
+    
     ovdec_init_subdec_list(*vvcdec);
 
     return 0;
@@ -567,6 +569,8 @@ ovdec_close(OVVCDec *vvcdec)
         if (vvcdec->mv_pool) {
             mvpool_uninit(&vvcdec->mv_pool);
         }
+
+        ovthread_output_uninit(&vvcdec->output_thread);    
 
         ov_free(vvcdec);
 

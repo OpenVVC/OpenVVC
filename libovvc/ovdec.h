@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #include "ovunits.h"
 
@@ -34,7 +35,7 @@ int ovdec_receive_picture(OVVCDec *vvcdec, OVFrame **frame);
 
 int ovdec_drain_picture(OVVCDec *vvcdec, OVFrame **frame);
 
-int ovdec_init(OVVCDec **ovvcdec);
+int ovdec_init(OVVCDec **ovvcdec, FILE* fout);
 
 int ovdec_close(OVVCDec *ovvcdec);
 

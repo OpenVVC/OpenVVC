@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <getopt.h>
 
+//TODOpar: remove when write_frame_to_file not needed anymore
 #include "ovthreads.h"
-#include "overror.h"
 
 #include "ovdec.h"
 #include "ovdefs.h"
@@ -24,12 +24,12 @@ typedef struct OVVCHdl{
 
 static int dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name);
 
-static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl);
+static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl, FILE *fout);
 
 static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
 static int read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout);
-static int ovthread_read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout);
+static int ovthread_read_stream(OVVCHdl *const hdl, FILE *fp);
 
 // static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
 
@@ -126,7 +126,7 @@ main(int argc, char** argv)
     } else {
       ov_log(NULL, OVLOG_INFO, "Decoded stream will be written to '%s'.\n", output_file_name);
     }
-    ret = init_openvvc_hdl(&ovvc_hdl);
+    ret = init_openvvc_hdl(&ovvc_hdl, fout);
 
     if (ret < 0) goto failinit;
 
@@ -135,7 +135,7 @@ main(int argc, char** argv)
     if (ret < 0) goto failattach;
 
     // read_stream(&ovvc_hdl, ovvc_hdl.fp, fout);
-    ovthread_read_stream(&ovvc_hdl, ovvc_hdl.fp, fout);
+    ovthread_read_stream(&ovvc_hdl, ovvc_hdl.fp);
 
     ovdmx_detach_stream(ovvc_hdl.dmx);
 
@@ -170,13 +170,13 @@ dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name)
 }
 
 static int
-init_openvvc_hdl(OVVCHdl *const ovvc_hdl)
+init_openvvc_hdl(OVVCHdl *const ovvc_hdl, FILE *fout)
 {
     OVVCDec **vvcdec = &ovvc_hdl->dec;
     OVVCDmx **vvcdmx = &ovvc_hdl->dmx;
     int ret;
 
-    ret = ovdec_init(vvcdec);
+    ret = ovdec_init(vvcdec, fout);
 
     if (ret < 0) goto faildec;
 
@@ -234,15 +234,13 @@ faildmxclose:
 
 
 static int
-ovthread_read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
+ovthread_read_stream(OVVCHdl *const hdl, FILE *fp)
 {
     int ret;
     OVVCDmx *const dmx = hdl->dmx;
     OVVCDec *const dec = hdl->dec;
     OVPictureUnit *pu = NULL;
     
-    ovthread_output_init(dec, fout);
-    struct OutputThread* t_out = &dec->output_thread;
     do {
         ret = ovdmx_extract_picture_unit(dmx, &pu);
         if (ret < 0) {
@@ -264,16 +262,8 @@ ovthread_read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
         }
     } while (ret >= 0);
 
+//TODOpar: stop cleanly program in case of error
 end_out:
-    //Signal output thread that there is no more to read
-    pthread_mutex_lock(&t_out->gnrl_mtx);
-    t_out->kill = 1;
-    pthread_cond_signal(&t_out->gnrl_cnd);
-    pthread_mutex_unlock(&t_out->gnrl_mtx);
-
-    void *ret_join;
-    pthread_join(t_out->thread, &ret_join);
-
     return 1;
 }
 

@@ -2,7 +2,6 @@
 #define OVTHREADS_H
 
 #include <stdint.h>
-// #include <stdio.h>
 
 #include "slicedec.h"
 
@@ -40,5 +39,7 @@ void ovthread_slice_thread_uninit(struct SliceThread *th_slice);
 uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
 
 int ovthread_output_init(OVVCDec *dec, FILE* fout);
+
+void ovthread_output_uninit(struct OutputThread* t_out);
 
 #endif

@@ -1,7 +1,6 @@
 #include <pthread.h>
 /* FIXME tmp*/
 #include <stdatomic.h>
-#include <stdio.h>
 
 #include "slicedec.h"
 #include "overror.h"
@@ -228,6 +227,7 @@ uninit_entry_threads(struct SliceThread *th_info)
     pthread_mutex_destroy(&th_info->gnrl_mtx);
     pthread_cond_destroy(&th_info->gnrl_cnd);
     ov_freep(&th_info->tdec);
+
 }
 
 
@@ -342,7 +342,6 @@ ovthread_out_frame_write(void *opaque)
 
             /* FIXME use ret instead of frame */
             if (frame) {
-                //TODO: protection of the DPB if other threads try to access it ?
                 write_decoded_frame_to_file(frame, fout);
                 ++nb_pic;
 
@@ -412,4 +411,17 @@ failthread:
 
 // failalloc:
 //     return OVVC_ENOMEM;
+}
+
+
+void ovthread_output_uninit(struct OutputThread* t_out)
+{
+    //Signal output thread that main thread is finished
+    pthread_mutex_lock(&t_out->gnrl_mtx);
+    t_out->kill = 1;
+    pthread_cond_signal(&t_out->gnrl_cnd);
+    pthread_mutex_unlock(&t_out->gnrl_mtx);
+
+    void *ret_join;
+    pthread_join(t_out->thread, &ret_join);
 }
