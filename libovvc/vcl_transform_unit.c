@@ -35,16 +35,6 @@ struct ISPTUInfo {
    struct TBInfo tb_info[4];
 };
 
-static int residual_coding_jcbcr(OVCTUDec *const ctu_dec,
-                                 unsigned int x0, unsigned int y0,
-                                 unsigned int log2_tb_w, unsigned int log2_tb_h,
-                                 uint8_t cbf_mask, struct TUInfo *tu_info);
-
-static int residual_coding_c(OVCTUDec *const ctu_dec,
-                             unsigned int x0, unsigned int y0,
-                             unsigned int log2_tb_w, unsigned int log2_tb_h,
-                             uint8_t cbf_mask, struct TUInfo *tu_info);
-
 /* FIXME refactor dequant*/
 static void
 derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
