@@ -1062,47 +1062,6 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
     return cbf_flags;
 }
 
-static int
-residual_coding_l(OVCTUDec *const ctu_dec,
-                  unsigned int x0, unsigned int y0,
-                  unsigned int log2_tb_w, unsigned int log2_tb_h,
-                  uint8_t cu_flags, struct TUInfo *const tu_info)
-{
-    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    uint8_t tr_skip_flag = 0;
-    int16_t *const coeffs_y = ctu_dec->residual_y;
-
-    struct TBInfo *tb_info = &tu_info->tb_info[2];
-
-    /*FIXME move bs map filling to to cbf_flag reading */
-    fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
-
-    if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
-        && log2_tb_h <= ctu_dec->max_log2_transform_skip_size && !(cu_flags &flg_isp_flag  )) {
-        tr_skip_flag = ovcabac_read_ae_transform_skip_luma_flag(cabac_ctx);
-        tu_info->tr_skip_mask |= tr_skip_flag << 4;
-    }
-
-
-    if (!tr_skip_flag) {
-        uint16_t last_pos = ovcabac_read_ae_last_sig_pos(cabac_ctx, log2_tb_w, log2_tb_h);
-        uint64_t sig_sb_map;
-        sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_tb_w, log2_tb_h,
-                                              last_pos);
-
-        tb_info->sig_sb_map = sig_sb_map;
-        tb_info->last_pos   = last_pos;
-
-
-    } else {
-        ctu_dec->dequant_skip = &ctu_dec->dequant_luma_skip;
-        residual_coding_ts(ctu_dec, ctu_dec->residual_y, log2_tb_w, log2_tb_h);
-    }
-
-
-    return 0;
-}
-
 static uint8_t
 jcbcr_lfnst_check(const struct TUInfo *tu_info, uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
@@ -1167,6 +1126,119 @@ chroma_lfnst_check(const struct TUInfo *tu_info, uint8_t cbf_mask, uint8_t log2_
     }
 
     return can_lfnst;
+}
+
+static uint8_t
+lfnst_check_st(const struct TUInfo *const tu_info, uint8_t log2_tb_w, uint8_t log2_tb_h,
+               uint8_t cbf_mask, uint8_t cu_flags)
+{
+    uint8_t cbf_flag_l  = cbf_mask & 0x10;
+    uint8_t jcbcr_flag  = cbf_mask & 0x8;
+    uint8_t cbf_mask_cb = cbf_mask & 0x2;
+    uint8_t cbf_mask_cr = cbf_mask & 0x1;
+    uint8_t non_only_dc = 0;
+    /* FIXME chroma size ? */
+    const uint8_t max_lfnst_pos   = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
+    const uint8_t max_lfnst_pos_c = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 4) ? 7 : 15;
+
+    /*FIXME MIP check on ly for luma TB*/
+    uint8_t is_mip = !!(cu_flags & flg_mip_flag);
+    uint8_t mip_lfnst = !is_mip || (log2_tb_h >= 4 && log2_tb_w >= 4);
+
+    uint8_t can_lfnst = mip_lfnst;
+
+    can_lfnst &= !(tu_info->tr_skip_mask);
+
+    /* FIXME Note that sig_sb_map check is sufficient if max is 15 */
+    if (can_lfnst) {
+        static const uint64_t scan_map = 0xFDA6EB73C8419520;
+        if (cbf_flag_l) {
+            const struct TBInfo *tb_info = &tu_info->tb_info[2];
+            int last_y = tb_info->last_pos >> 8;
+            int last_x = tb_info->last_pos & 0xFF;
+            int nb_coeffs = (scan_map >> ((last_x + (last_y << 2)) << 2)) & 0xF;
+
+            can_lfnst &= tb_info->sig_sb_map == 0x1;
+            can_lfnst &= nb_coeffs <= max_lfnst_pos;
+            non_only_dc |= nb_coeffs;
+        }
+
+        if (jcbcr_flag && log2_tb_h > 2 && log2_tb_w > 2) {
+            const struct TBInfo *const tb_info_cbcr = &tu_info->tb_info[0];
+            int last_y_cbcr = tb_info_cbcr->last_pos >> 8;
+            int last_x_cbcr = tb_info_cbcr->last_pos & 0xff;
+            int nb_coeffs_cbcr = (scan_map >> ((last_x_cbcr + (last_y_cbcr << 2)) << 2)) & 0xf;
+            can_lfnst &= tb_info_cbcr->sig_sb_map == 0x1;
+            can_lfnst &= nb_coeffs_cbcr <= max_lfnst_pos_c;
+            non_only_dc |= nb_coeffs_cbcr;
+        } else {
+            if (cbf_mask_cb && log2_tb_h > 2 && log2_tb_w > 2) {
+                const struct TBInfo *const tb_info_cb = &tu_info->tb_info[0];
+                int last_y_cb = tb_info_cb->last_pos >> 8;
+                int last_x_cb = tb_info_cb->last_pos & 0xff;
+                int nb_coeffs_cb = (scan_map >> ((last_x_cb + (last_y_cb << 2)) << 2)) & 0xf;
+                can_lfnst &= tb_info_cb->sig_sb_map == 0x1;
+                can_lfnst &= nb_coeffs_cb <= max_lfnst_pos_c;
+                non_only_dc |= nb_coeffs_cb;
+            }
+
+            if (cbf_mask_cr && log2_tb_h > 2 && log2_tb_w > 2) {
+                const struct TBInfo *const tb_info_cr = &tu_info->tb_info[1];
+                int last_y_cr = tb_info_cr->last_pos >> 8;
+                int last_x_cr = tb_info_cr->last_pos & 0xff;
+                int nb_coeffs_cr = (scan_map >> ((last_x_cr + (last_y_cr << 2)) << 2)) & 0xf;
+                can_lfnst &= tb_info_cr->sig_sb_map == 0x1;
+                can_lfnst &= nb_coeffs_cr <= max_lfnst_pos_c;
+                non_only_dc |= nb_coeffs_cr;
+            }
+        }
+
+        can_lfnst &= !!non_only_dc;
+
+    }
+
+    return can_lfnst;
+}
+
+static int
+residual_coding_l(OVCTUDec *const ctu_dec,
+                  unsigned int x0, unsigned int y0,
+                  unsigned int log2_tb_w, unsigned int log2_tb_h,
+                  uint8_t cu_flags, struct TUInfo *const tu_info)
+{
+    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+    uint8_t tr_skip_flag = 0;
+    int16_t *const coeffs_y = ctu_dec->residual_y;
+
+    struct TBInfo *tb_info = &tu_info->tb_info[2];
+
+    /*FIXME move bs map filling to to cbf_flag reading */
+    fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
+
+    if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
+        && log2_tb_h <= ctu_dec->max_log2_transform_skip_size && !(cu_flags &flg_isp_flag  )) {
+        tr_skip_flag = ovcabac_read_ae_transform_skip_luma_flag(cabac_ctx);
+        tu_info->tr_skip_mask |= tr_skip_flag << 4;
+    }
+
+
+    if (!tr_skip_flag) {
+        uint16_t last_pos = ovcabac_read_ae_last_sig_pos(cabac_ctx, log2_tb_w, log2_tb_h);
+        uint64_t sig_sb_map;
+        sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_tb_w, log2_tb_h,
+                                              last_pos);
+
+        tb_info->sig_sb_map = sig_sb_map;
+        tb_info->last_pos   = last_pos;
+
+
+    } else {
+        ctu_dec->dequant_skip = &ctu_dec->dequant_luma_skip;
+        residual_coding_ts(ctu_dec, ctu_dec->residual_y, log2_tb_w, log2_tb_h);
+    }
+
+
+    return 0;
 }
 
 static int
@@ -1301,77 +1373,6 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
     tb_info->last_pos   = last_pos;
 
     return 0;
-}
-
-static uint8_t
-lfnst_check_st(const struct TUInfo *const tu_info, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t cbf_mask, uint8_t cu_flags)
-{
-    uint8_t cbf_flag_l  = cbf_mask & 0x10;
-    uint8_t jcbcr_flag  = cbf_mask & 0x8;
-    uint8_t cbf_mask_cb = cbf_mask & 0x2;
-    uint8_t cbf_mask_cr = cbf_mask & 0x1;
-    uint8_t non_only_dc = 0;
-    /* FIXME chroma size ? */
-    const uint8_t max_lfnst_pos   = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
-    const uint8_t max_lfnst_pos_c = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 4) ? 7 : 15;
-
-    /*FIXME MIP check on ly for luma TB*/
-    uint8_t is_mip = !!(cu_flags & flg_mip_flag);
-    uint8_t mip_lfnst = !is_mip || (log2_tb_h >= 4 && log2_tb_w >= 4);
-
-    uint8_t can_lfnst = mip_lfnst;
-
-    can_lfnst &= !(tu_info->tr_skip_mask);
-
-    /* FIXME Note that sig_sb_map check is sufficient if max is 15 */
-    if (can_lfnst) {
-        static const uint64_t scan_map = 0xFDA6EB73C8419520;
-        if (cbf_flag_l) {
-            const struct TBInfo *tb_info = &tu_info->tb_info[2];
-            int last_y = tb_info->last_pos >> 8;
-            int last_x = tb_info->last_pos & 0xFF;
-            int nb_coeffs = (scan_map >> ((last_x + (last_y << 2)) << 2)) & 0xF;
-
-            can_lfnst &= tb_info->sig_sb_map == 0x1;
-            can_lfnst &= nb_coeffs <= max_lfnst_pos;
-            non_only_dc |= nb_coeffs;
-        }
-
-        if (jcbcr_flag && log2_tb_h > 2 && log2_tb_w > 2) {
-            const struct TBInfo *const tb_info_cbcr = &tu_info->tb_info[0];
-            int last_y_cbcr = tb_info_cbcr->last_pos >> 8;
-            int last_x_cbcr = tb_info_cbcr->last_pos & 0xff;
-            int nb_coeffs_cbcr = (scan_map >> ((last_x_cbcr + (last_y_cbcr << 2)) << 2)) & 0xf;
-            can_lfnst &= tb_info_cbcr->sig_sb_map == 0x1;
-            can_lfnst &= nb_coeffs_cbcr <= max_lfnst_pos_c;
-            non_only_dc |= nb_coeffs_cbcr;
-        } else {
-            if (cbf_mask_cb && log2_tb_h > 2 && log2_tb_w > 2) {
-                const struct TBInfo *const tb_info_cb = &tu_info->tb_info[0];
-                int last_y_cb = tb_info_cb->last_pos >> 8;
-                int last_x_cb = tb_info_cb->last_pos & 0xff;
-                int nb_coeffs_cb = (scan_map >> ((last_x_cb + (last_y_cb << 2)) << 2)) & 0xf;
-                can_lfnst &= tb_info_cb->sig_sb_map == 0x1;
-                can_lfnst &= nb_coeffs_cb <= max_lfnst_pos_c;
-                non_only_dc |= nb_coeffs_cb;
-            }
-
-            if (cbf_mask_cr && log2_tb_h > 2 && log2_tb_w > 2) {
-                const struct TBInfo *const tb_info_cr = &tu_info->tb_info[1];
-                int last_y_cr = tb_info_cr->last_pos >> 8;
-                int last_x_cr = tb_info_cr->last_pos & 0xff;
-                int nb_coeffs_cr = (scan_map >> ((last_x_cr + (last_y_cr << 2)) << 2)) & 0xf;
-                can_lfnst &= tb_info_cr->sig_sb_map == 0x1;
-                can_lfnst &= nb_coeffs_cr <= max_lfnst_pos_c;
-                non_only_dc |= nb_coeffs_cr;
-            }
-        }
-
-        can_lfnst &= !!non_only_dc;
-
-    }
-
-    return can_lfnst;
 }
 
 int
