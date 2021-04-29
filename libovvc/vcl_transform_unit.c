@@ -845,6 +845,12 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
     recon_isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, &tu_info);
 #endif
 
+    if(ctu_dec->transform_unit == &transform_unit_st) {
+        if (ctu_dec->intra_mode_c >= 67 && ctu_dec->intra_mode_c < 70) {
+            vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1);
+        }
+    }
+
     if (cbf_mask_c) {
         uint8_t jcbcr_flag = cbf_mask_c & 0x8;
         tu_info_c.cbf_mask = cbf_mask_c;
@@ -1030,6 +1036,12 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
 #if 1
     recon_isp_subtree_h(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, &tu_info);
 #endif
+    if(ctu_dec->transform_unit == &transform_unit_st) {
+        if (ctu_dec->intra_mode_c >= 67 && ctu_dec->intra_mode_c < 70) {
+            vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1);
+        }
+    }
+
     if (cbf_mask_c) {
         uint8_t jcbcr_flag = cbf_mask_c & 0x8;
         tu_info_c.cbf_mask = cbf_mask_c;
@@ -1452,6 +1464,10 @@ transform_unit_st(OVCTUDec *const ctu_dec,
 
             /* FIXME use transform add optimization */
             vvc_add_residual(ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
+            /* FIXME Avoid reprocessing CCLM from here by recontructing at the end of transform tree */
+            if (ctu_dec->intra_mode_c >= 67 && ctu_dec->intra_mode_c < 70) {
+                vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1);
+            }
         }
         if (jcbcr_flag) {
 
