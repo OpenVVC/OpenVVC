@@ -45,14 +45,6 @@ static int residual_coding_c(OVCTUDec *const ctu_dec,
                              unsigned int log2_tb_w, unsigned int log2_tb_h,
                              uint8_t cbf_mask, struct TUInfo *tu_info);
 
-static void rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
-                      uint8_t x0, uint8_t y0,
-                      uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t cbf_mask);
-
-static void rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
-                      uint8_t x0, uint8_t y0, uint8_t log2_tb_w, uint8_t log2_tb_h,
-                      uint8_t cbf_mask);
-
 /* FIXME refactor dequant*/
 static void
 derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
