@@ -79,7 +79,9 @@ ovthread_decode_entries(struct SliceThread *th_info, DecodeFunc decode_entry, in
         tdec->state = 0;
         pthread_cond_signal(&tdec->task_cnd);
         pthread_mutex_unlock(&tdec->task_mtx);
+        ov_log(NULL, OVLOG_INFO, "Signal frame %d entrytask %d\n", th_info->owner->pic->poc, i);
     }
+
 
     //TODOpar: re-use when the entry task will be launched by slice threads.  
     /* Main thread wait until all gnrl_state has been set to 1 
@@ -134,6 +136,7 @@ thread_main_function(void *opaque)
                 struct OutputThread* t_out = th_info->output_thread;
                 if(t_out){
                     pthread_mutex_lock(&t_out->gnrl_mtx);
+                    t_out->write = 1;
                     pthread_cond_signal(&t_out->gnrl_cnd);
                     pthread_mutex_unlock(&t_out->gnrl_mtx);
                 }
@@ -334,11 +337,14 @@ ovthread_out_frame_write(void *opaque)
     struct OutputThread* t_out = &dec->output_thread;
     FILE *fout = t_out->fout;
     int nb_pic = 0;
+    t_out->write = 0;
     do {
-        pthread_mutex_lock(&t_out->gnrl_mtx);
-        pthread_cond_wait(&t_out->gnrl_cnd, &t_out->gnrl_mtx);
-        pthread_mutex_unlock(&t_out->gnrl_mtx);
-
+        if(!t_out->write){
+            pthread_mutex_lock(&t_out->gnrl_mtx);
+            pthread_cond_wait(&t_out->gnrl_cnd, &t_out->gnrl_mtx);
+            pthread_mutex_unlock(&t_out->gnrl_mtx);
+        }
+        t_out->write = 0;
         do {
             ovdec_receive_picture(dec, &frame);
 
@@ -355,7 +361,7 @@ ovthread_out_frame_write(void *opaque)
 
 
     //TODO: handle failure(kill) different from normal exit (state = 0?)
-    int ret;
+    int ret = 1;
     while (ret > 0) {
         OVFrame *frame = NULL;
         ret = ovdec_drain_picture(dec, &frame);

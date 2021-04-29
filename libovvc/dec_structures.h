@@ -232,7 +232,7 @@ struct OutputThread
     pthread_mutex_t gnrl_mtx;
     pthread_cond_t gnrl_cnd;
 
-    // uint8_t state;
+    uint8_t write;
     uint8_t kill;
 };
 

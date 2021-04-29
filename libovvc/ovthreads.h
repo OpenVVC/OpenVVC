@@ -9,20 +9,6 @@ struct SliceThread;
 struct OVVCDec;
 struct OVFrame;
 
-// struct OutputThread
-// {
-//     FILE *fout;
-
-//     /* Thread displaying the frames after 
-//      * the decoding is finished.
-//      */
-//     pthread_t thread;
-//     pthread_mutex_t gnrl_mtx;
-//     pthread_cond_t gnrl_cnd;
-
-//     // uint8_t state;
-//     uint8_t kill;
-// };
 
 int ovthread_decode_entries(struct SliceThread *th_info, DecodeFunc decode_entry, int nb_entries);
 

@@ -92,9 +92,6 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
     int ret;
     int nb_sh_bytes = nvcl_num_bytes_read(rdr);
 
-    ov_nalu_new_ref(&sldec->th_info.slice_nalu, nalu);
-
-    // sldec->active_params = prms;
     ret = decinit_update_params(&dec->active_params, nvcl_ctx);
     if (ret < 0) {
         ov_log(dec, 3, "Failed to activate parameters\n");
@@ -126,18 +123,17 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
             return ret;
         }
     }
-    atomic_fetch_add_explicit(&sldec->pic->ref_count, 1, memory_order_acq_rel);
+    //Add refs on nalu
+    ov_nalu_new_ref(&sldec->th_info.slice_nalu, nalu);
 
+    //Temporary: copy active parameters
     slicedec_copy_params(sldec, &dec->active_params);
 
     /*FIXME return checks */
-    // ret = slicedec_init_lines(sldec, &dec->active_params);
     ret = slicedec_init_lines(sldec, sldec->active_params);
 
-    // ret = decinit_set_entry_points(&dec->active_params, nalu, nb_sh_bytes);
     ret = decinit_set_entry_points(sldec->active_params, nalu, nb_sh_bytes);
 
-    // ret = slicedec_update_entry_decoders(sldec, &dec->active_params);
     ret = slicedec_update_entry_decoders(sldec, sldec->active_params);
 
     return 0;
@@ -162,7 +158,7 @@ ovdec_select_subdec(OVVCDec *const dec)
             
             if(!th_subdec->gnrl_state){
                 th_subdec->gnrl_state = 1;
-                ov_log(NULL, OVLOG_INFO, "Thread %d selected\n", i);
+                ov_log(NULL, OVLOG_TRACE, "Thread %d selected\n", i);
                 pthread_mutex_unlock(&th_subdec->gnrl_mtx);
                 return selected_subdec;
             }
@@ -524,7 +520,7 @@ ovdec_init(OVVCDec **vvcdec, FILE *fout)
     // int nb_threads = get_number_of_cores();
    
     //Test frame par
-    int nb_threads = 2;
+    int nb_threads = 4;
     *vvcdec = ov_mallocz(sizeof(OVVCDec));
 
     if (*vvcdec == NULL) goto fail;
@@ -565,13 +561,14 @@ ovdec_close(OVVCDec *vvcdec)
             }
             ov_freep(&vvcdec->subdec_list);
         }
+
+        ovthread_output_uninit(&vvcdec->output_thread);
+
         ovdpb_uninit(&vvcdec->dpb);
 
         if (vvcdec->mv_pool) {
             mvpool_uninit(&vvcdec->mv_pool);
         }
-
-        ovthread_output_uninit(&vvcdec->output_thread);    
 
         ov_free(vvcdec);
 

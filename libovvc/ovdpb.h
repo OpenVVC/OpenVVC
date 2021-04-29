@@ -49,6 +49,7 @@ struct OVPicture
     */
    uint8_t flags;
    atomic_uint ref_count;
+   pthread_mutex_t pic_mtx;
 
    /* Pointers to ref_pic_list */
    /* FIXME use frame directly ? */
