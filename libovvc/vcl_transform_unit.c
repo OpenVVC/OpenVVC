@@ -630,51 +630,6 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
     }
 }
 
-static int
-transform_tree(OVCTUDec *const ctu_dec,
-               const OVPartInfo *const part_ctx,
-               unsigned int x0, unsigned int y0,
-               unsigned int log2_tb_w, unsigned int log2_tb_h,
-               unsigned int log2_max_tb_s, uint8_t rqt_root_cbf,
-               uint8_t cu_flags, uint8_t tr_depth)
-{
-    uint8_t split_v = log2_tb_w > log2_max_tb_s;
-    uint8_t split_h = log2_tb_h > log2_max_tb_s;
-
-    if (split_v || split_h) {
-        unsigned int tb_w1 = ((1 << log2_tb_w) >> split_v);
-        unsigned int tb_h1 = ((1 << log2_tb_h) >> split_h);
-
-        unsigned int log2_tb_w1 = log2_tb_w - split_v;
-        unsigned int log2_tb_h1 = log2_tb_h - split_h;
-
-        transform_tree(ctu_dec, part_ctx, x0, y0,
-                       log2_tb_w1, log2_tb_h1,
-                       log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1);
-        if (split_v) {
-            transform_tree(ctu_dec, part_ctx, x0 + tb_w1, y0,
-                           log2_tb_w1, log2_tb_h1,
-                           log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1);
-        }
-
-        if (split_h) {
-            transform_tree(ctu_dec, part_ctx, x0, y0 + tb_h1,
-                           log2_tb_w1, log2_tb_h1,
-                           log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1);
-        }
-
-        if (split_h && split_v) {
-            transform_tree(ctu_dec, part_ctx, x0 + tb_w1, y0 + tb_h1,
-                           log2_tb_w1, log2_tb_h1, log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1);
-        }
-
-    } else {
-        ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, rqt_root_cbf, cu_flags, tr_depth);
-    }
-
-    return 0;
-}
-
 static uint8_t
 isp_subtree_v(OVCTUDec *const ctu_dec,
               unsigned int x0, unsigned int y0,
@@ -1622,6 +1577,51 @@ transform_unit_c(OVCTUDec *const ctu_dec,
             rcn_res_c(ctu_dec, &tu_info, x0, y0, log2_tb_w, log2_tb_h, cbf_mask_c);
 
         }
+    }
+
+    return 0;
+}
+
+static int
+transform_tree(OVCTUDec *const ctu_dec,
+               const OVPartInfo *const part_ctx,
+               unsigned int x0, unsigned int y0,
+               unsigned int log2_tb_w, unsigned int log2_tb_h,
+               unsigned int log2_max_tb_s, uint8_t rqt_root_cbf,
+               uint8_t cu_flags, uint8_t tr_depth)
+{
+    uint8_t split_v = log2_tb_w > log2_max_tb_s;
+    uint8_t split_h = log2_tb_h > log2_max_tb_s;
+
+    if (split_v || split_h) {
+        unsigned int tb_w1 = ((1 << log2_tb_w) >> split_v);
+        unsigned int tb_h1 = ((1 << log2_tb_h) >> split_h);
+
+        unsigned int log2_tb_w1 = log2_tb_w - split_v;
+        unsigned int log2_tb_h1 = log2_tb_h - split_h;
+
+        transform_tree(ctu_dec, part_ctx, x0, y0,
+                       log2_tb_w1, log2_tb_h1,
+                       log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1);
+        if (split_v) {
+            transform_tree(ctu_dec, part_ctx, x0 + tb_w1, y0,
+                           log2_tb_w1, log2_tb_h1,
+                           log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1);
+        }
+
+        if (split_h) {
+            transform_tree(ctu_dec, part_ctx, x0, y0 + tb_h1,
+                           log2_tb_w1, log2_tb_h1,
+                           log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1);
+        }
+
+        if (split_h && split_v) {
+            transform_tree(ctu_dec, part_ctx, x0 + tb_w1, y0 + tb_h1,
+                           log2_tb_w1, log2_tb_h1, log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1);
+        }
+
+    } else {
+        ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, rqt_root_cbf, cu_flags, tr_depth);
     }
 
     return 0;
