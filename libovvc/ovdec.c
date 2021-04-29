@@ -111,13 +111,16 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
         ret = mvpool_init(&dec->mv_pool, &dec->active_params.pic_info);
     }
 
+    //Temporary: copy active parameters
+    slicedec_copy_params(sldec, &dec->active_params);
+
     /* FIXME clean way on new slice with address 0 */
 #if 0
     if (dec->active_params.sh->sh_slice_address) {
 #else
     if (1) {
 #endif
-        ret = ovdpb_init_picture(dec->dpb, &sldec->pic, &dec->active_params, nalu->type, sldec, dec);
+        ret = ovdpb_init_picture(dec->dpb, &sldec->pic, sldec->active_params, nalu->type, sldec, dec);
         if (ret < 0) {
             ovdpb_flush_dpb(dec->dpb);
             return ret;
@@ -125,9 +128,6 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
     }
     //Add refs on nalu
     ov_nalu_new_ref(&sldec->th_info.slice_nalu, nalu);
-
-    //Temporary: copy active parameters
-    slicedec_copy_params(sldec, &dec->active_params);
 
     /*FIXME return checks */
     ret = slicedec_init_lines(sldec, sldec->active_params);
@@ -520,7 +520,7 @@ ovdec_init(OVVCDec **vvcdec, FILE *fout)
     // int nb_threads = get_number_of_cores();
    
     //Test frame par
-    int nb_threads = 4;
+    int nb_threads = 2;
     *vvcdec = ov_mallocz(sizeof(OVVCDec));
 
     if (*vvcdec == NULL) goto fail;

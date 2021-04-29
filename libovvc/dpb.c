@@ -227,6 +227,7 @@ alloc_frame(OVDPB *dpb)
         }
 
         atomic_init(&pic->ref_count, 0);
+        atomic_init(&pic->decoded, 0);
         return pic;
     }
 
@@ -504,6 +505,7 @@ ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
         int min_poc   = INT_MAX;
         int min_idx   = 0;
         int i, ret;
+        uint8_t decoded;
 
         #if 0
         if (dpb->sh.no_output_of_prior_pics_flag == 1 && dpb->no_rasl_output_flag == 1) {
@@ -531,10 +533,17 @@ ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
             uint8_t output_flag = (pic->flags & OV_OUTPUT_PIC_FLAG);
             uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
             if (output_flag && is_output_cvs) {
-                nb_output++;
-                if (pic->poc < min_poc || nb_output == 1) {
+                // if (pic->poc < min_poc || nb_output == 1) {
+                if (pic->poc < min_poc ) {
                     min_poc = pic->poc;
                     min_idx = i;
+                    decoded = atomic_fetch_add_explicit(&pic->decoded, 0, memory_order_acq_rel);
+                    if(decoded) {
+                        nb_output++;
+                    }
+                    else{
+                        nb_output = 0;
+                    }
                 }
             }
         }

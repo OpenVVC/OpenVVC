@@ -1,4 +1,5 @@
 #include "ovmem.h"
+#include "ovutils.h"
 
 #include "nvcl.h"
 #include "nvcl_utils.h"
@@ -210,7 +211,6 @@ nvcl_decode_nalu_aps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
         ov_free(nvcl_ctx->lmcs_aps_list[aps_id]);
         nvcl_ctx->lmcs_aps_list[aps_id] = aps;
     }
-    // av_log(avctx, AV_LOG_DEBUG, "Success decoding APS:%d \n",aps_id);
     return aps_id;
 
 cleanup:

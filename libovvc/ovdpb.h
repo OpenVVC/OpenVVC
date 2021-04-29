@@ -49,6 +49,8 @@ struct OVPicture
     */
    uint8_t flags;
    atomic_uint ref_count;
+   //TODOpar: change in inter with the map of decoded CTUs
+   atomic_uint decoded;
    pthread_mutex_t pic_mtx;
 
    /* Pointers to ref_pic_list */

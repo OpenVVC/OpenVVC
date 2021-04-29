@@ -1052,6 +1052,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
         if (alf_params_ctu.ctb_alf_flag & 0x4) {
             uint8_t c_idx = 0;
             Area blk_dst;
+            
             //Source block in the filter buffers image
             int stride_src = fb.filter_region_stride[c_idx];
             int16_t*  src_luma = &src[c_idx][fb.filter_region_offset[c_idx]];

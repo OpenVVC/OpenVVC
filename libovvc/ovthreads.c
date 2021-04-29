@@ -8,6 +8,7 @@
 #include "ovmem.h"
 #include "ovthreads.h"
 #include "ovdpb.h"
+// #include <unistd.h>
 
 /*
 Functions for the threads decoding rectangular entries
@@ -45,13 +46,13 @@ thread_decode_entries(struct SliceThread *th_info, struct EntryThread *tdec)
         OVSliceDec *const sldec = th_info->owner;
         const OVPS *const prms  = sldec->active_params;
 
+        // usleep(1000000);
         th_info->decode_entry(sldec, ctudec, prms, entry_idx);
 
         entry_idx = atomic_fetch_add_explicit(&th_info->last_entry_idx, 1, memory_order_acq_rel);
 
     } while (entry_idx < nb_entries);
 
-    //TODOpar: verify nb_task_threads and if islast is correct.
     /* Last thread to exit loop will have entry_idx set to nb_entry + nb_task_threads - 1*/
     return entry_idx == nb_entries + nb_task_threads - 1;
 }
@@ -131,6 +132,7 @@ thread_main_function(void *opaque)
                 //TODOpar: change location when using SliceThreads
                 ov_nalu_unref(&th_info->slice_nalu);
                 atomic_fetch_add_explicit(&th_info->owner->pic->ref_count, -1, memory_order_acq_rel);
+                atomic_init(&th_info->owner->pic->decoded, 1);
 
                 //Signal output thread that slice is ready for writing
                 struct OutputThread* t_out = th_info->output_thread;
@@ -237,9 +239,9 @@ uninit_entry_threads(struct SliceThread *th_info)
 
 
 
-/*
-Functions needed by the threads decoding an entire slice
-*/
+// /*
+// Functions needed by the threads decoding an entire slice
+// */
 int
 ovthread_slice_thread_init(struct SliceThread *th_slice, int nb_threads)
 {   
@@ -291,27 +293,27 @@ ovthread_slice_thread_uninit(struct SliceThread *th_slice)
 }
 
 
-int
-ovthread_slice_main_function(void *opaque)
-{
-    //Change type OVDEC to OVSliceDec
-    OVVCDec *dec = (struct OVVCDec *)opaque;
-    struct OutputThread* t_out = &dec->output_thread;
-    do {
-        pthread_mutex_lock(&t_out->gnrl_mtx);
-        pthread_cond_wait(&t_out->gnrl_cnd, &t_out->gnrl_mtx);
-        pthread_mutex_unlock(&t_out->gnrl_mtx);
+// int
+// ovthread_slice_main_function(void *opaque)
+// {
+//     //Change type OVDEC to OVSliceDec
+//     OVVCDec *dec = (struct OVVCDec *)opaque;
+//     struct OutputThread* t_out = &dec->output_thread;
+//     do {
+//         pthread_mutex_lock(&t_out->gnrl_mtx);
+//         pthread_cond_wait(&t_out->gnrl_cnd, &t_out->gnrl_mtx);
+//         pthread_mutex_unlock(&t_out->gnrl_mtx);
 
 
-    } while (!t_out->kill);
+//     } while (!t_out->kill);
 
 
-    //Signal the main thread that the last picture has been written
-    pthread_mutex_lock(&t_out->gnrl_mtx);
-    pthread_cond_signal(&t_out->gnrl_cnd);
-    pthread_mutex_unlock(&t_out->gnrl_mtx);
-    return 0;
-}
+//     //Signal the main thread that the last picture has been written
+//     pthread_mutex_lock(&t_out->gnrl_mtx);
+//     pthread_cond_signal(&t_out->gnrl_cnd);
+//     pthread_mutex_unlock(&t_out->gnrl_mtx);
+//     return 0;
+// }
 
 
 
