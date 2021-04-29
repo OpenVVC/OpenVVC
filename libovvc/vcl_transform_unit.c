@@ -59,7 +59,7 @@ ovcabac_read_ae_root_cbf(OVCABACCtx *const cabac_ctx)
     return ovcabac_ae_read(cabac_ctx, &cabac_state[QT_ROOT_CBF_CTX_OFFSET]);
 }
 
-uint8_t
+static uint8_t
 ovcabac_read_ae_tu_cbf_luma_isp(OVCABACCtx *const cabac_ctx,
                                 uint8_t prev_cbf)
 {
@@ -68,21 +68,21 @@ ovcabac_read_ae_tu_cbf_luma_isp(OVCABACCtx *const cabac_ctx,
     return ovcabac_ae_read(cabac_ctx, &cabac_state[QT_CBF_CTX_OFFSET + offset] );
 }
 
-uint8_t
+static uint8_t
 ovcabac_read_ae_tu_cbf_luma(OVCABACCtx *const cabac_ctx)
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
     return ovcabac_ae_read(cabac_ctx, &cabac_state[QT_CBF_CTX_OFFSET] );
 }
 
-uint8_t
+static uint8_t
 ovcabac_read_ae_tu_cbf_cb(OVCABACCtx *const cabac_ctx)
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
     return ovcabac_ae_read(cabac_ctx, &cabac_state[QT_CBF_CB_CTX_OFFSET] );
 }
 
-uint8_t
+static uint8_t
 ovcabac_read_ae_tu_cbf_cr(OVCABACCtx *const cabac_ctx,
                           uint8_t tu_cbf_cb)
 {
@@ -90,7 +90,7 @@ ovcabac_read_ae_tu_cbf_cr(OVCABACCtx *const cabac_ctx,
     return ovcabac_ae_read(cabac_ctx, &cabac_state[QT_CBF_CR_CTX_OFFSET + tu_cbf_cb] );
 }
 
-uint8_t
+static uint8_t
 ovcabac_read_ae_joint_cb_cr_flag(OVCABACCtx *const cabac_ctx,
                                  uint8_t cbf_mask_minus1)
 {
@@ -121,7 +121,7 @@ vvc_exp_golomb(OVCABACCtx *const cabac_ctx)
      return symbol + add_val;
 }
 
-int
+static int
 ovcabac_read_ae_cu_delta_qp(OVCABACCtx *const cabac_ctx)
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
@@ -141,14 +141,14 @@ ovcabac_read_ae_cu_delta_qp(OVCABACCtx *const cabac_ctx)
    return delta_qp;
 }
 
-uint8_t
+static uint8_t
 ovcabac_read_ae_cu_mts_flag(OVCABACCtx *const cabac_ctx)
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
     return ovcabac_ae_read(cabac_ctx,&cabac_state[MTS_IDX_CTX_OFFSET]);
 }
 
-uint8_t
+static uint8_t
 ovcabac_read_ae_cu_mts_idx(OVCABACCtx *const cabac_ctx)
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
@@ -162,14 +162,14 @@ ovcabac_read_ae_cu_mts_idx(OVCABACCtx *const cabac_ctx)
     return symbol;
 }
 
-uint8_t
+static uint8_t
 ovcabac_read_ae_transform_skip_luma_flag(OVCABACCtx *const cabac_ctx)
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
     return ovcabac_ae_read(cabac_ctx, &cabac_state[TRANSFORM_SKIP_FLAG_CTX_OFFSET]);
 }
 
-uint8_t
+static uint8_t
 ovcabac_read_ae_transform_skip_flag_c(OVCABACCtx *const cabac_ctx)
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
@@ -228,7 +228,7 @@ decode_last_sig_suffix(OVCABACCtx *const cabac_ctx, int prefix)
     return val;
 }
 
-uint16_t
+static uint16_t
 ovcabac_read_ae_last_sig_pos(OVCABACCtx *const cabac_ctx,
                              uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
@@ -250,7 +250,7 @@ ovcabac_read_ae_last_sig_pos(OVCABACCtx *const cabac_ctx,
     return ((uint16_t) last_y << 8) | (last_x & 0xFF);
 }
 
-uint16_t
+static uint16_t
 ovcabac_read_ae_last_sig_pos_c(OVCABACCtx *const cabac_ctx,
                                uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
@@ -271,7 +271,7 @@ ovcabac_read_ae_last_sig_pos_c(OVCABACCtx *const cabac_ctx,
     return ((uint16_t) last_y << 8) | (last_x & 0xFF);
 }
 
-uint8_t
+static uint8_t
 ovcabac_read_ae_lfnst_flag(OVCABACCtx *const cabac_ctx, uint8_t is_dual_tree)
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
@@ -279,7 +279,7 @@ ovcabac_read_ae_lfnst_flag(OVCABACCtx *const cabac_ctx, uint8_t is_dual_tree)
     return lfnst_flag;
 }
 
-uint8_t
+static uint8_t
 ovcabac_read_ae_lfnst_idx(OVCABACCtx *const cabac_ctx)
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
