@@ -520,7 +520,7 @@ ovdec_init(OVVCDec **vvcdec, FILE *fout)
     // int nb_threads = get_number_of_cores();
    
     //Test frame par
-    int nb_threads = 2;
+    int nb_threads = 1;
     *vvcdec = ov_mallocz(sizeof(OVVCDec));
 
     if (*vvcdec == NULL) goto fail;
@@ -558,6 +558,8 @@ ovdec_close(OVVCDec *vvcdec)
             for (int i = 0; i < vvcdec->nb_threads; ++i){
                 sldec = vvcdec->subdec_list[i];
                 slicedec_uninit(&sldec);
+                ov_log(NULL, OVLOG_INFO, "Main joined thread: %d\n", i);
+
             }
             ov_freep(&vvcdec->subdec_list);
         }
@@ -570,6 +572,8 @@ ovdec_close(OVVCDec *vvcdec)
             mvpool_uninit(&vvcdec->mv_pool);
         }
 
+        pthread_mutex_destroy(&vvcdec->main_thread.main_mtx);
+        pthread_cond_destroy(&vvcdec->main_thread.main_cnd);
         ov_free(vvcdec);
 
         return 0;

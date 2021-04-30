@@ -40,7 +40,7 @@ thread_decode_entries(struct SliceThread *th_info, struct EntryThread *tdec)
 
     unsigned first_job = atomic_fetch_add_explicit(&th_info->first_job, 1, memory_order_acq_rel);
     unsigned entry_idx = first_job;
-
+    ov_log(NULL, OVLOG_INFO, "Decoder with POC %d, start entry, nb_entries %d\n", th_info->owner->pic->poc, nb_entries);
     do {
         OVCTUDec *const ctudec  = tdec->ctudec;
         OVSliceDec *const sldec = th_info->owner;
@@ -80,7 +80,7 @@ ovthread_decode_entries(struct SliceThread *th_info, DecodeFunc decode_entry, in
         tdec->state = 0;
         pthread_cond_signal(&tdec->task_cnd);
         pthread_mutex_unlock(&tdec->task_mtx);
-        ov_log(NULL, OVLOG_INFO, "Signal frame %d entrytask %d\n", th_info->owner->pic->poc, i);
+        ov_log(NULL, OVLOG_INFO, "Main signals frame %d entrytask %d\n", th_info->owner->pic->poc, i);
     }
 
 
@@ -104,51 +104,53 @@ thread_main_function(void *opaque)
     struct EntryThread *tdec = (struct EntryThread *)opaque;
 
     pthread_mutex_lock(&tdec->task_mtx);
+    tdec->state = 1;
     pthread_cond_signal(&tdec->task_cnd);
+    pthread_mutex_unlock(&tdec->task_mtx);
 
     while (!tdec->kill){
-        tdec->state = 1;
-        do {
+        do { 
             pthread_cond_wait(&tdec->task_cnd, &tdec->task_mtx);
-            if (tdec->kill) {
+            ov_log(NULL, OVLOG_INFO, "Decoder entry state %d kill %d\n", tdec->state, tdec->kill);
+            if (tdec->kill && tdec->state != 0) {
                 return NULL;
             }
         /*FIXME determine state value to exit loop*/
-        } while (tdec->state != 0);
+        } while (tdec->state != 0 );
+        tdec->state = 1;
 
-        if (!tdec->kill) {
-            uint8_t is_last = thread_decode_entries(tdec->parent, tdec);
+        uint8_t is_last = thread_decode_entries(tdec->parent, tdec);
 
-            /* Main thread is not last so we wake it
-             * if its task has already ended
-             */
-            if (is_last) {
-                struct SliceThread *th_info = tdec->parent;
-                pthread_mutex_lock(&th_info->gnrl_mtx);
-                th_info->gnrl_state = 0;
-                pthread_cond_signal(&th_info->gnrl_cnd);
-                pthread_mutex_unlock(&th_info->gnrl_mtx);
+        /* Main thread is not last so we wake it
+         * if its task has already ended
+         */
+        if (is_last) {
+            struct SliceThread *th_info = tdec->parent;
+            //TODOpar: change location when using SliceThreads
+            ov_nalu_unref(&th_info->slice_nalu);
+            ov_log(NULL, OVLOG_INFO, "Decoder with POC %d, finished frame \n", th_info->owner->pic->poc);
+            atomic_fetch_add_explicit(&th_info->owner->pic->ref_count, -1, memory_order_acq_rel);
+            atomic_init(&th_info->owner->pic->decoded, 1);
+            
+            pthread_mutex_lock(&th_info->gnrl_mtx);
+            th_info->gnrl_state = 0;
+            pthread_cond_signal(&th_info->gnrl_cnd);
+            pthread_mutex_unlock(&th_info->gnrl_mtx);
 
-                //TODOpar: change location when using SliceThreads
-                ov_nalu_unref(&th_info->slice_nalu);
-                atomic_fetch_add_explicit(&th_info->owner->pic->ref_count, -1, memory_order_acq_rel);
-                atomic_init(&th_info->owner->pic->decoded, 1);
-
-                //Signal output thread that slice is ready for writing
-                struct OutputThread* t_out = th_info->output_thread;
-                if(t_out){
-                    pthread_mutex_lock(&t_out->gnrl_mtx);
-                    t_out->write = 1;
-                    pthread_cond_signal(&t_out->gnrl_cnd);
-                    pthread_mutex_unlock(&t_out->gnrl_mtx);
-                }
-                //Signal main thread that a slice thread is available
-                struct MainThread* t_main = th_info->main_thread;
-                if(t_main){
-                    pthread_mutex_lock(&t_main->main_mtx);
-                    pthread_cond_signal(&t_main->main_cnd);
-                    pthread_mutex_unlock(&t_main->main_mtx);
-                }
+            //Signal output thread that slice is ready for writing
+            struct OutputThread* t_out = th_info->output_thread;
+            if(t_out){
+                pthread_mutex_lock(&t_out->gnrl_mtx);
+                t_out->write = 1;
+                pthread_cond_signal(&t_out->gnrl_cnd);
+                pthread_mutex_unlock(&t_out->gnrl_mtx);
+            }
+            //Signal main thread that a slice thread is available
+            struct MainThread* t_main = th_info->main_thread;
+            if(t_main){
+                pthread_mutex_lock(&t_main->main_mtx);
+                pthread_cond_signal(&t_main->main_cnd);
+                pthread_mutex_unlock(&t_main->main_mtx);
             }
         }
     }
@@ -197,7 +199,6 @@ init_entry_threads(struct SliceThread *th_info, int nb_threads)
         while (!tdec->state) {
             pthread_cond_wait(&tdec->task_cnd, &tdec->task_mtx);
         }
-
         pthread_mutex_unlock(&tdec->task_mtx);
     }
 
@@ -341,10 +342,8 @@ ovthread_out_frame_write(void *opaque)
     int nb_pic = 0;
     t_out->write = 0;
     do {
-        if(!t_out->write){
-            pthread_mutex_lock(&t_out->gnrl_mtx);
+        while(!t_out->write && !t_out->kill){
             pthread_cond_wait(&t_out->gnrl_cnd, &t_out->gnrl_mtx);
-            pthread_mutex_unlock(&t_out->gnrl_mtx);
         }
         t_out->write = 0;
         do {
@@ -355,7 +354,7 @@ ovthread_out_frame_write(void *opaque)
                 write_decoded_frame_to_file(frame, fout);
                 ++nb_pic;
 
-                ov_log(NULL, OVLOG_TRACE, "Received pic with POC: %d\n", frame->poc);
+                // ov_log(NULL, OVLOG_TRACE, "Received pic with POC: %d\n", frame->poc);
                 ovframe_unref(&frame);
             }
         } while (frame);
@@ -368,13 +367,11 @@ ovthread_out_frame_write(void *opaque)
         OVFrame *frame = NULL;
         ret = ovdec_drain_picture(dec, &frame);
         if (frame) {
-            ov_log(NULL, OVLOG_TRACE, "Draining decoder\n");
             if (fout) {
+                // ov_log(NULL, OVLOG_TRACE, "Draining last pictures with POC: %d\n", frame->poc);
                 write_decoded_frame_to_file(frame, fout);
                 ++nb_pic;
             }
-
-            ov_log(NULL, OVLOG_TRACE, "Draining last pictures with POC: %d\n", frame->poc);
             ovframe_unref(&frame);
         }
     }
@@ -434,4 +431,6 @@ void ovthread_output_uninit(struct OutputThread* t_out)
 
     void *ret_join;
     pthread_join(t_out->thread, &ret_join);
+    pthread_mutex_destroy(&t_out->gnrl_mtx);
+    pthread_cond_destroy(&t_out->gnrl_cnd);
 }
