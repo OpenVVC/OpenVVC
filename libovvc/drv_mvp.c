@@ -71,6 +71,30 @@ tmvp_round_mv(int32_t val)
 }
 
 static void
+hmvp_add_cand_1(const struct HMVPLUT *const hmvp_lut,
+                OVMV *const cand_list,
+                int *const nb_cand, uint8_t inter_dir)
+{
+    int max_nb_cand = OVMIN(4, hmvp_lut->nb_mv);
+    int i;
+    for (i = 1; i <= max_nb_cand && *nb_cand < 2;  ++i) {
+        if(hmvp_lut->dir[i - 1] & inter_dir) {
+            cand_list[(*nb_cand)++] = inter_dir & 0x1 ? hmvp_lut->hmv0[i - 1]
+                                                      : hmvp_lut->hmv1[i - 1];
+        }
+
+        if (*nb_cand == 2) {
+            return;
+        }
+
+        if (hmvp_lut->dir[i - 1] & (3 - inter_dir)) {
+            cand_list[(*nb_cand)++] = (3 - inter_dir) & 0x1 ? hmvp_lut->hmv0[i - 1]
+                                                            : hmvp_lut->hmv1[i - 1];
+        }
+    }
+}
+
+static void
 hmvp_add_cand(const struct HMVPLUT *const hmvp_lut,
               OVMV *const cand_list,
               int *const nb_cand, uint8_t inter_dir)
@@ -318,6 +342,220 @@ tmvp_scale_mv(int scale, OVMV mv)
     mv.x = ov_clip((scale * mv.x + 128 - (scale * mv.x >= 0)) >> 8, MV_MIN, MV_MAX);
     mv.y = ov_clip((scale * mv.y + 128 - (scale * mv.y >= 0)) >> 8, MV_MIN, MV_MAX);
     return mv;
+}
+
+static OVMV
+derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
+                        const struct OVMVCtx *const mv_ctx,
+                        uint8_t pb_x, uint8_t pb_y,
+                        uint8_t nb_pb_w, uint8_t nb_pb_h,
+                        uint8_t mvp_idx, uint8_t inter_dir,
+                        const struct OVMVCtx *const mv_ctx_opp)
+{
+    const OVMV *const mv_buff = mv_ctx->mvs;
+    const OVMV *const mv_buff_opp = mv_ctx_opp->mvs;
+    uint64_t lft_col = mv_ctx->map.vfield[pb_x];
+    uint64_t abv_row = mv_ctx->map.hfield[pb_y];
+
+    uint64_t lft_col0 = mv_ctx_opp->map.vfield[pb_x];
+    uint64_t abv_row0 = mv_ctx_opp->map.hfield[pb_y];
+
+    OVMV cand[2] = {0};
+    int nb_cand = 0;
+
+    /* Derive candidates availability based on CTU inter fields */
+    uint8_t cand_bl = !!(lft_col & POS_MASK(pb_y, nb_pb_h));     /*AO*/
+    uint8_t cand_l  = !!(lft_col & POS_MASK(pb_y, nb_pb_h - 1)); /*A1*/
+    uint8_t cand_tr = !!(abv_row & POS_MASK(pb_x, nb_pb_w));     /*B0*/
+    uint8_t cand_t  = !!(abv_row & POS_MASK(pb_x, nb_pb_w - 1)); /*B1*/
+    uint8_t cand_tl = !!(abv_row & POS_MASK(pb_x - 1, 0));      /*B2*/
+
+    uint8_t cand_bl0 = !!(lft_col0 & POS_MASK(pb_y, nb_pb_h));     /*AO*/
+    uint8_t cand_l0  = !!(lft_col0 & POS_MASK(pb_y, nb_pb_h - 1)); /*A1*/
+    uint8_t cand_tr0 = !!(abv_row0 & POS_MASK(pb_x, nb_pb_w));     /*B0*/
+    uint8_t cand_t0  = !!(abv_row0 & POS_MASK(pb_x, nb_pb_w - 1)); /*B1*/
+    uint8_t cand_tl0 = !!(abv_row0 & POS_MASK(pb_x - 1, 0));      /*B2*/
+
+    if (cand_bl | cand_bl0) {
+        int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y + nb_pb_h);
+        cand[nb_cand++] = cand_bl ? mv_buff[pos_in_buff] : mv_buff_opp[pos_in_buff];
+    } else if (cand_l | cand_l0) {
+        int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y + nb_pb_h - 1);
+        cand[nb_cand++] = cand_l ? mv_buff[pos_in_buff] : mv_buff_opp[pos_in_buff];
+    }
+
+    if (cand_tr | cand_tr0) {
+        int pos_in_buff = OFFSET_BUFF(pb_x + nb_pb_w, pb_y - 1);
+        cand[nb_cand++] = cand_tr ? mv_buff[pos_in_buff] : mv_buff_opp[pos_in_buff];
+    } else if (cand_t | cand_t0) {
+        int pos_in_buff = OFFSET_BUFF(pb_x + nb_pb_w - 1, pb_y - 1);
+        cand[nb_cand++] = cand_t ? mv_buff[pos_in_buff] : mv_buff_opp[pos_in_buff];
+    } else if (cand_tl | cand_tl0) {
+        int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y - 1);
+        cand[nb_cand++] = cand_tl ? mv_buff[pos_in_buff] : mv_buff_opp[pos_in_buff];
+    }
+
+    cand[0].x += 2 - (cand[0].x >= 0);
+    cand[0].y += 2 - (cand[0].y >= 0);
+
+    cand[0].x >>= 2;
+    cand[0].y >>= 2;
+
+    cand[0].x <<= 2;
+    cand[0].y <<= 2;
+
+    cand[1].x += 2 - (cand[1].x >= 0);
+    cand[1].y += 2 - (cand[1].y >= 0);
+
+    cand[1].x >>= 2;
+    cand[1].y >>= 2;
+
+    cand[1].x <<= 2;
+    cand[1].y <<= 2;
+
+
+    /* Remove on candidates if duplicated */
+    if (nb_cand == 2) {
+        if (MV_CMP(cand[0], cand[1])) {
+            --nb_cand;
+        }
+    }
+
+    #if 0
+    if (inter_ctx->tmvp_enabled && nb_cand < 2) {
+    }
+    #else
+    if (inter_ctx->tmvp_enabled && nb_cand < 2) {
+        const struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
+        uint64_t c1_col;
+        uint64_t c0_col;
+        uint64_t c1_col1;
+        uint64_t c0_col1;
+        uint8_t cand_c0;
+        uint8_t cand_c1;
+        uint8_t cand_c01;
+        uint8_t cand_c11;
+        int c1_x = pb_x + (nb_pb_w >> 1);
+        int c1_y = pb_y + (nb_pb_h >> 1);
+        int c0_x = pb_x + nb_pb_w;
+        int c0_y = pb_y + nb_pb_h;
+        int scale0, scale1;
+        #if 1
+        if (!inter_ctx->tmvp_avail) {
+            /* FIXME thread synchro */
+            /*FIXME dirty ref to ctudec */
+            OVCTUDec *ctudec = inter_ctx->tmvp_ctx.ctudec;
+            load_ctb_tmvp(ctudec, ctudec->ctb_x, ctudec->ctb_y);
+        }
+
+        #endif
+
+        /* Derive availability based on CTB inter fields */
+        c0_col  = tmvp->dir_map_v0[c0_x + 1];
+        c0_col1 = tmvp->dir_map_v1[c0_x + 1];
+        c1_col  = tmvp->dir_map_v0[c1_x + 1];
+        c1_col1 = tmvp->dir_map_v1[c1_x + 1];
+
+        cand_c0  = !!(c0_col  & POS_MASK(pb_y, nb_pb_h));
+        cand_c01 = !!(c0_col1 & POS_MASK(pb_y, nb_pb_h));
+        cand_c1  = !!(c1_col  & POS_MASK(pb_y, nb_pb_h >> 1));
+        cand_c11 = !!(c1_col1 & POS_MASK(pb_y, nb_pb_h >> 1));
+
+        /*FIXME there might be an issue considering the order of RPL check 
+         * for TMVP candidates
+         */
+        if (mv_ctx == &inter_ctx->mv_ctx0) {
+            scale0 = tmvp->scale00;
+            scale1 = tmvp->scale01;
+        } else {
+            scale0 = tmvp->scale10;
+            scale1 = tmvp->scale11;
+        }
+
+        if (cand_c0) {
+            /* Candidate 0 in collocated picture 0 */
+            int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+            #if 0
+            OVMV c0 = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
+            #else
+            OVMV c0 = tmvp->mvs0[pos_in_buff];
+            #endif
+            c0.x = tmvp_round_mv(c0.x);
+            c0.y = tmvp_round_mv(c0.y);
+            c0 = tmvp_scale_mv(scale0, c0);
+            c0.x = ((c0.x + 2 - (c0.x >= 0)) >> 2) << 2;
+            c0.y = ((c0.y + 2 - (c0.y >= 0)) >> 2) << 2;
+            cand[nb_cand++] = c0;
+        } else if (cand_c01) {
+            /* Candidate 0 in collocated picture 1 */
+            int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+            #if 0
+            OVMV c0 = tmvp->tmvp_mv.mv_ctx1.mvs[pos_in_buff];
+            #else
+            OVMV c0 = tmvp->mvs1[pos_in_buff];
+            #endif
+            c0.x = tmvp_round_mv(c0.x);
+            c0.y = tmvp_round_mv(c0.y);
+            c0 = tmvp_scale_mv(scale1, c0);
+            c0.x = ((c0.x + 2 - (c0.x >= 0)) >> 2) << 2;
+            c0.y = ((c0.y + 2 - (c0.y >= 0)) >> 2) << 2;
+            cand[nb_cand++] = c0;
+        } else if (cand_c1) {
+            /* Candidate 1 in collocated picture 0 */
+            int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+            #if 0
+            OVMV c1 = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
+            #else
+            OVMV c1 = tmvp->mvs0[pos_in_buff];
+            #endif
+            c1.x = tmvp_round_mv(c1.x);
+            c1.y = tmvp_round_mv(c1.y);
+            c1 = tmvp_scale_mv(scale0, c1);
+            c1.x = ((c1.x + 2 - (c1.x >= 0)) >> 2) << 2;
+            c1.y = ((c1.y + 2 - (c1.y >= 0)) >> 2) << 2;
+            cand[nb_cand++] = c1;
+        } else if (cand_c11) {
+            /* Candidate 1 in collocated picture 1 */
+            int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+            #if 0
+            OVMV c1 = tmvp->tmvp_mv.mv_ctx1.mvs[pos_in_buff];
+            #else
+            OVMV c1 = tmvp->mvs1[pos_in_buff];
+            #endif
+            c1.x = tmvp_round_mv(c1.x);
+            c1.y = tmvp_round_mv(c1.y);
+            c1 = tmvp_scale_mv(scale1, c1);
+            c1.x = ((c1.x + 2 - (c1.x >= 0)) >> 2) << 2;
+            c1.y = ((c1.y + 2 - (c1.y >= 0)) >> 2) << 2;
+            cand[nb_cand++] = c1;
+        }
+    }
+    #endif
+
+    if (nb_cand < 2) {
+        const struct HMVPLUT *hmvp_lut = &inter_ctx->hmvp_lut;
+        hmvp_add_cand_1(hmvp_lut, cand, &nb_cand, inter_dir);
+    }
+
+    while (nb_cand < 2) {
+        OVMV zmv = {0};
+        cand[nb_cand++] = zmv;
+    }
+
+    cand[0].x += 2 - (cand[0].x >= 0);
+    cand[0].y += 2 - (cand[0].y >= 0);
+    cand[1].x += 2 - (cand[1].x >= 0);
+    cand[1].y += 2 - (cand[1].y >= 0);
+    cand[0].x >>= 2;
+    cand[0].y >>= 2;
+    cand[1].x >>= 2;
+    cand[1].y >>= 2;
+    cand[0].x <<= 2;
+    cand[0].y <<= 2;
+    cand[1].x <<= 2;
+    cand[1].y <<= 2;
+
+    return cand[mvp_idx];
 }
 
 static OVMV
@@ -1220,37 +1458,70 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
           uint8_t nb_pb_w, uint8_t nb_pb_h,
           OVMV mvd0, OVMV mvd1,
           uint8_t mvp_idx0, uint8_t mvp_idx1,
-          uint8_t inter_dir)
+          uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1)
 {
     OVMV mv0 = {0}, mv1 = {0};
     VVCMergeInfo mv_info;
+    uint8_t same_ref = inter_ctx->rpl0[ref_idx0] == inter_ctx->rpl1[ref_idx1];
 
     /* FIXME can we combine mvp derivation for bi pred */
-    if (inter_dir & 0x1) {
-        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+    if (same_ref) {
+        if (inter_dir & 0x1) {
+            struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+            struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
-        mv0 = derive_mvp_candidates(inter_ctx, mv_ctx0,
-                                    pb_x, pb_y, nb_pb_w, nb_pb_h,
-                                    mvp_idx0, inter_dir & 0x1);
+            mv0 = derive_mvp_candidates_1(inter_ctx, mv_ctx0,
+                                          pb_x, pb_y, nb_pb_w, nb_pb_h,
+                                          mvp_idx0, inter_dir & 0x1, mv_ctx1);
 
-        mvd0 = scale_mvd(mvd0);
+            mvd0 = scale_mvd(mvd0);
 
-        mv0.x += mvd0.x;
-        mv0.y += mvd0.y;
-    }
+            mv0.x += mvd0.x;
+            mv0.y += mvd0.y;
+        }
 
-    if (inter_dir & 0x2) {
-        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+        if (inter_dir & 0x2) {
+            struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+            struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
 
-        mv1 = derive_mvp_candidates(inter_ctx, mv_ctx1,
-                                    pb_x, pb_y,
-                                    nb_pb_w, nb_pb_h,
-                                    mvp_idx1, inter_dir & 0x2);
+            mv1 = derive_mvp_candidates_1(inter_ctx, mv_ctx1,
+                                          pb_x, pb_y,
+                                          nb_pb_w, nb_pb_h,
+                                          mvp_idx1, inter_dir & 0x2, mv_ctx0);
 
-        mvd1 = scale_mvd(mvd1);
+            mvd1 = scale_mvd(mvd1);
 
-        mv1.x += mvd1.x;
-        mv1.y += mvd1.y;
+            mv1.x += mvd1.x;
+            mv1.y += mvd1.y;
+        }
+    } else {
+        if (inter_dir & 0x1) {
+            struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+
+            mv0 = derive_mvp_candidates(inter_ctx, mv_ctx0,
+                                        pb_x, pb_y, nb_pb_w, nb_pb_h,
+                                        mvp_idx0, inter_dir & 0x1);
+
+            mvd0 = scale_mvd(mvd0);
+
+            mv0.x += mvd0.x;
+            mv0.y += mvd0.y;
+        }
+
+        if (inter_dir & 0x2) {
+            struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+            mv1 = derive_mvp_candidates(inter_ctx, mv_ctx1,
+                                        pb_x, pb_y,
+                                        nb_pb_w, nb_pb_h,
+                                        mvp_idx1, inter_dir & 0x2);
+
+            mvd1 = scale_mvd(mvd1);
+
+            mv1.x += mvd1.x;
+            mv1.y += mvd1.y;
+        }
+
     }
 
     mv_info.inter_dir = inter_dir;
@@ -1285,12 +1556,23 @@ drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
             OVMV mvd,
             uint8_t pb_x, uint8_t pb_y,
             uint8_t nb_pb_w, uint8_t nb_pb_h,
-            uint8_t mvp_idx, uint8_t inter_dir)
+            uint8_t mvp_idx, uint8_t inter_dir,
+            uint8_t ref_idx0, uint8_t ref_idx1)
 {
     OVMV mv;
-    mv = derive_mvp_candidates(inter_ctx, mv_ctx,
-                               pb_x, pb_y, nb_pb_w, nb_pb_h,
-                               mvp_idx, 1);
+    uint8_t same_ref = inter_ctx->rpl0[ref_idx0] == inter_ctx->rpl1[ref_idx1];
+    if (same_ref) {
+
+        const struct OVMVCtx *const mv_ctx_opp = &inter_ctx->mv_ctx0 == mv_ctx ? &inter_ctx->mv_ctx1 :
+                                                 &inter_ctx->mv_ctx0;
+        mv = derive_mvp_candidates_1(inter_ctx, mv_ctx,
+                                     pb_x, pb_y, nb_pb_w, nb_pb_h,
+                                     mvp_idx, 1, mv_ctx_opp);
+    } else {
+        mv = derive_mvp_candidates(inter_ctx, mv_ctx,
+                                   pb_x, pb_y, nb_pb_w, nb_pb_h,
+                                   mvp_idx, 1);
+    }
     mvd = scale_mvd(mvd);
 
     mv.x += mvd.x;
