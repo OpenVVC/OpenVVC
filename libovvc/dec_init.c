@@ -62,8 +62,8 @@ static int
 sps_init_partition_constraint_info_inter_chroma(OVPartInfo *const pinfo, const OVSPS *const sps)
 {
     uint8_t log2_ctu_s = sps->sps_log2_ctu_size_minus5 + 5;
-    uint8_t log2_min_cb_s = sps->sps_log2_min_luma_coding_block_size_minus2 + 2;
-    uint8_t log2_min_qt_s = sps->sps_log2_diff_min_qt_min_cb_inter_slice + log2_min_cb_s - 1;
+    uint8_t log2_min_cb_s = sps->sps_log2_min_luma_coding_block_size_minus2 + 2 - 1;
+    uint8_t log2_min_qt_s = sps->sps_log2_diff_min_qt_min_cb_inter_slice + log2_min_cb_s;
 
     pinfo->log2_ctu_s    = log2_ctu_s;
     pinfo->log2_min_cb_s = log2_min_cb_s;
