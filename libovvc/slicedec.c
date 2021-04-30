@@ -1129,7 +1129,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
      * so we could only init once and recopy context tables to others
      * entries CABAC readers
      */
-    ovcabac_init_slice_context_table(cabac_ctx.ctx_table, prms->sh->sh_slice_type,
+    ovcabac_init_slice_context_table(cabac_ctx.ctx_table, prms->sh->sh_slice_type ^ prms->sh->sh_cabac_init_flag,
                                      ctudec->slice_qp);
 
     init_lines(ctudec, sldec, &einfo, prms, ctudec->part_ctx,
