@@ -7,5 +7,6 @@ void rcn_init_tr_functions_sse(struct RCNFunctions *const rcn_funcs);
 void rcn_init_dc_planar_functions_sse(struct RCNFunctions *const rcn_funcs);
 void rcn_init_ict_functions_sse(struct RCNFunctions *rcn_func, uint8_t type);
 void rcn_init_alf_functions_sse(struct RCNFunctions *rcn_func);
+void rcn_init_cclm_functions_sse(struct RCNFunctions *rcn_func);
 
 #endif//RCN_SSE_H

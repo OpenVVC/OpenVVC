@@ -1669,17 +1669,6 @@ vvc_intra_mdlm_left(const uint16_t* const src_luma, uint16_t* const dst_cb,
 #endif
 
 
-struct LMParams{
-   int shift;
-   int a;
-   int b;
-};
-
-struct CCLMParams{
-   struct LMParams cb;
-   struct LMParams cr;
-};
-
 struct AVGMinMax{
     uint16_t min_l;
     uint16_t max_l;
@@ -1755,7 +1744,7 @@ void vvc_intra_cclm2_collocated(const uint16_t *lm_src, uint16_t *dst_cb, uint16
 void
 vvc_intra_cclm_cl(const uint16_t *const src_luma, uint16_t *const dst_cb,
                   uint16_t *const dst_cr, int log2_pb_w, int log2_pb_h,
-                  int y0, int up_available, int left_available)
+                  int y0, int up_available, int left_available, LMsubsampleFunc const *compute_subsample)
 {
     vvc_intra_cclm2_collocated(src_luma, dst_cb, dst_cr, RCN_CTB_STRIDE, RCN_CTB_STRIDE,
                log2_pb_w, log2_pb_h, left_available, up_available, y0);
@@ -1766,7 +1755,7 @@ vvc_intra_mdlm_top_cl(const uint16_t *const src_luma,
                       uint16_t *const dst_cb, uint16_t *const dst_cr,
                       uint64_t intra_map_rows, int log2_pb_w,
                       int log2_pb_h, int x0, int y0,
-                      uint8_t left_available , uint8_t up_available)
+                      uint8_t left_available , uint8_t up_available, LMsubsampleFunc const *compute_subsample)
 {
     vvc_intra_mdlm_t2_collocated(src_luma, dst_cb, dst_cr, RCN_CTB_STRIDE, RCN_CTB_STRIDE,
                       log2_pb_w, log2_pb_h, left_available, up_available,
@@ -1778,7 +1767,7 @@ vvc_intra_mdlm_left_cl(const uint16_t *const src_luma,
                        uint16_t *const dst_cb, uint16_t *const dst_cr,
                        uint64_t intra_map_cols, int log2_pb_w,
                        int log2_pb_h, int x0, int y0,
-                       uint8_t left_available, uint8_t up_available)
+                       uint8_t left_available, uint8_t up_available, LMsubsampleFunc const *compute_subsample)
 {
     vvc_intra_mdlm_l2_collocated(src_luma, dst_cb, dst_cr, RCN_CTB_STRIDE, RCN_CTB_STRIDE,
                       log2_pb_w, log2_pb_h, left_available, up_available,
@@ -2160,7 +2149,7 @@ void
 vvc_intra_cclm2(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
                ptrdiff_t lm_src_stride, ptrdiff_t dst_stride_c,
                int log2_pb_w, int log2_pb_h, uint8_t lft_avail, uint8_t abv_avail,
-               uint8_t y0)
+               uint8_t y0, LMsubsampleFunc const *compute_subsample)
 {
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = 512, .shift = 0},
@@ -2224,8 +2213,8 @@ vvc_intra_cclm2(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
         lm_params = derive_cclm_params(&avg_min_max);
     }
 
-    compute_lm_subsample(lm_src, dst_cb, dst_cr, lm_src_stride, dst_stride_c,
-                         &lm_params, pb_w, pb_h, lft_avail);
+    (*compute_subsample)(lm_src, dst_cb, dst_cr, lm_src_stride, dst_stride_c,
+                       &lm_params, pb_w, pb_h, lft_avail);
 }
 
 void
@@ -2303,17 +2292,17 @@ vvc_intra_cclm2_collocated(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *d
 void
 vvc_intra_cclm(const uint16_t *const src_luma, uint16_t *const dst_cb,
                uint16_t *const dst_cr, int log2_pb_w, int log2_pb_h,
-               int y0, int up_available, int left_available)
+               int y0, int up_available, int left_available, LMsubsampleFunc const *compute_subsample)
 {
     vvc_intra_cclm2(src_luma, dst_cb, dst_cr, RCN_CTB_STRIDE, RCN_CTB_STRIDE,
-               log2_pb_w, log2_pb_h, left_available, up_available, y0);
+               log2_pb_w, log2_pb_h, left_available, up_available, y0, compute_subsample);
 }
 
 static void
 vvc_intra_mdlm_t2(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
                   ptrdiff_t lm_src_stride, ptrdiff_t dst_stride_c,
                   int log2_pb_w, int log2_pb_h, uint8_t lft_avail, uint8_t abv_avail,
-                  uint8_t y0, uint8_t x0, uint64_t abv_map)
+                  uint8_t y0, uint8_t x0, uint64_t abv_map, LMsubsampleFunc const *compute_subsample)
 {
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = 512, .shift = 0},
@@ -2364,7 +2353,7 @@ vvc_intra_mdlm_t2(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
         lm_params = derive_cclm_params(&avg_min_max);
     }
 
-    compute_lm_subsample(lm_src, dst_cb, dst_cr, lm_src_stride, dst_stride_c,
+    (*compute_subsample)(lm_src, dst_cb, dst_cr, lm_src_stride, dst_stride_c,
                          &lm_params, pb_w, pb_h, lft_avail);
 }
 
@@ -2432,18 +2421,18 @@ vvc_intra_mdlm_top(const uint16_t *const src_luma,
                    uint16_t *const dst_cb, uint16_t *const dst_cr,
                    uint64_t intra_map_rows, int log2_pb_w,
                    int log2_pb_h, int x0, int y0,
-                   uint8_t left_available , uint8_t up_available)
+                   uint8_t left_available , uint8_t up_available, LMsubsampleFunc const *compute_subsample)
 {
     vvc_intra_mdlm_t2(src_luma, dst_cb, dst_cr, RCN_CTB_STRIDE, RCN_CTB_STRIDE,
                       log2_pb_w, log2_pb_h, left_available, up_available,
-                      y0, x0, intra_map_rows);
+                      y0, x0, intra_map_rows, compute_subsample);
 }
 
 static void
 vvc_intra_mdlm_l2(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
                   ptrdiff_t lm_src_stride, ptrdiff_t dst_stride_c,
                   int log2_pb_w, int log2_pb_h, uint8_t lft_avail, uint8_t abv_avail,
-                  uint8_t y0, uint8_t x0, uint64_t lft_map)
+                  uint8_t y0, uint8_t x0, uint64_t lft_map, LMsubsampleFunc const *compute_subsample)
 {
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = 512, .shift = 0},
@@ -2486,7 +2475,7 @@ vvc_intra_mdlm_l2(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
         lm_params = derive_cclm_params(&avg_min_max);
     }
 
-    compute_lm_subsample(lm_src, dst_cb, dst_cr, lm_src_stride, dst_stride_c,
+    (*compute_subsample)(lm_src, dst_cb, dst_cr, lm_src_stride, dst_stride_c,
                          &lm_params, pb_w, pb_h, lft_avail);
 }
 
@@ -2546,11 +2535,11 @@ vvc_intra_mdlm_left(const uint16_t *const src_luma,
                     uint16_t *const dst_cb, uint16_t *const dst_cr,
                     uint64_t intra_map_cols, int log2_pb_w,
                     int log2_pb_h, int x0, int y0,
-                    uint8_t left_available, uint8_t up_available)
+                    uint8_t left_available, uint8_t up_available, LMsubsampleFunc const *compute_subsample)
 {
     vvc_intra_mdlm_l2(src_luma, dst_cb, dst_cr, RCN_CTB_STRIDE, RCN_CTB_STRIDE,
                       log2_pb_w, log2_pb_h, left_available, up_available,
-                      y0, x0, intra_map_cols);
+                      y0, x0, intra_map_cols, compute_subsample);
 }
 
 void
@@ -2570,6 +2559,7 @@ rcn_init_cclm_functions(struct RCNFunctions *rcn_func)
    cclm->cclm = &vvc_intra_cclm;
    cclm->mdlm_left = &vvc_intra_mdlm_left;
    cclm->mdlm_top  = &vvc_intra_mdlm_top;
+   cclm->compute_subsample = &compute_lm_subsample;
 }
 
 #undef W_SHIFT

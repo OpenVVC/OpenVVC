@@ -4,7 +4,7 @@ stages:
 # Linux builds
 build_linux_gcc_debug:
   stage: build
-  image: gcc
+  image: gcc:10.3
   script:
     - gcc --version
     - ./configure --cc=gcc --debug --build-dir=debug
@@ -56,7 +56,7 @@ non_reg_clang_debug:
 
 build_linux_gcc_release:
   stage: build
-  image: gcc
+  image: gcc:10.3
   allow_failure: true
   script:
     - gcc --version
@@ -69,7 +69,18 @@ build_linux_gcc_release:
       - release/libovvc.so
       - release/examples/dectest
 
-AllIntra_CTC_gcc:
+AllIntra_CTC_gcc_debug:
+  stage: test
+  image: ubuntu
+  dependencies:
+    - build_linux_gcc_debug
+  before_script:
+    - apt update && apt install -y build-essential curl
+  script:
+    - ./configure --debug --build-dir=debug
+    - make test
+
+AllIntra_CTC_gcc_release:
   stage: test
   image: ubuntu
   dependencies:
@@ -80,45 +91,45 @@ AllIntra_CTC_gcc:
     - ./configure --release --build-dir=release
     - make test
 
-# build_arm_linux_gcc_release:
-#   stage: build
-#   tags:
-#     - ARM
-#   allow_failure: true
-#   script:
-#     - gcc --version
-#     - ./configure --cc=gcc --release --build-dir=release
-#     - make
-# # Files to keep after compilation
-#   artifacts:
-#     paths:
-#       - release/libovvc.a
-#       - release/libovvc.so
-#       - release/examples/dectest
-#
-# build_arm_linux_gcc_debug:
-#   stage: build
-#   tags:
-#     - ARM
-#   script:
-#     - gcc --version
-#     - ./configure --cc=gcc --debug --build-dir=debug
-#     - make
-# # Files to keep after compilation
-#   artifacts:
-#     paths:
-#       - debug/libovvc.a
-#       - debug/libovvc.so
-#       - debug/examples/dectest
-#
-# arm_non_reg_gcc_debug:
-#   stage: test
-#   tags:
-#     - ARM
-#   dependencies:
-#     - build_arm_linux_gcc_debug
-#   before_script:
-#     - apt update && apt install -y curl
-#   script:
-#     - ./configure --debug --build-dir=debug --teststreams-url=http://openvvc.insa-rennes.fr/bitstreams/misc/
-#     - make test
+build_arm_linux_gcc_release:
+  stage: build
+  tags:
+    - ARM
+  allow_failure: true
+  script:
+    - gcc --version
+    - ./configure --cc=gcc --release --build-dir=release
+    - make
+# Files to keep after compilation
+  artifacts:
+    paths:
+      - release/libovvc.a
+      - release/libovvc.so
+      - release/examples/dectest
+
+build_arm_linux_gcc_debug:
+  stage: build
+  tags:
+    - ARM
+  script:
+    - gcc --version
+    - ./configure --cc=gcc --debug --build-dir=debug
+    - make
+# Files to keep after compilation
+  artifacts:
+    paths:
+      - debug/libovvc.a
+      - debug/libovvc.so
+      - debug/examples/dectest
+
+arm_non_reg_gcc_debug:
+  stage: test
+  tags:
+    - ARM
+  dependencies:
+    - build_arm_linux_gcc_debug
+  before_script:
+    - apt update && apt install -y curl
+  script:
+    - ./configure --debug --build-dir=debug --teststreams-url=http://openvvc.insa-rennes.fr/bitstreams/misc/
+    - make test

@@ -480,12 +480,20 @@ rcn_residual_c(OVCTUDec *const ctudec,
     }
 }
 
-void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type){
+void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled, uint8_t sps_chroma_vertical_collocated_flag){
   rcn_init_mc_functions(rcn_func);
   rcn_init_tr_functions(rcn_func);
   rcn_init_dc_planar_functions(rcn_func);
   rcn_init_ict_functions(rcn_func, ict_type);
   rcn_init_alf_functions(rcn_func);
+  if (lm_chroma_enabled) {
+      /* FIXME add support vertical */
+      if (sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {
+          rcn_init_cclm_functions_collocated(rcn_func);
+      } else {
+          rcn_init_cclm_functions(rcn_func);
+      }
+  }
   #if ARCH_X86
     #if SSE_ENABLED
       rcn_init_mc_functions_sse(rcn_func);
@@ -493,6 +501,11 @@ void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type){
       rcn_init_dc_planar_functions_sse(rcn_func);
       rcn_init_ict_functions_sse(rcn_func, ict_type);
       rcn_init_alf_functions_sse(rcn_func);
+      if (lm_chroma_enabled) {
+          if (!sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {
+              rcn_init_cclm_functions_sse(rcn_func);
+          }
+      }
     #elif AVX_ENABLED
       //Link AVX optims
     #else

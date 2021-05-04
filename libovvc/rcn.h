@@ -62,7 +62,7 @@ void rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_
              OVMV mv, uint8_t inter_dir, uint8_t ref_idx);
 
 /* FIXME check vertical / horizontal */
-void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type);
+void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled, uint8_t sps_chroma_vertical_collocated_flag);
 
 void rcn_init_cclm_functions(struct RCNFunctions *rcn_func);
 

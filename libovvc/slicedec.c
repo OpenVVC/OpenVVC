@@ -1252,16 +1252,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->drv_ctx.inter_ctx.tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
     ctudec->drv_ctx.inter_ctx.mvd1_zero_flag = ph->ph_mvd_l1_zero_flag;
 
-    if (ctudec->lm_chroma_enabled) {
-        /* FIXME add support vertical */
-        if (sps->sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {
-            rcn_init_cclm_functions_collocated(&ctudec->rcn_ctx.rcn_funcs);
-        } else {
-            rcn_init_cclm_functions(&ctudec->rcn_ctx.rcn_funcs);
-        }
-    }
-
-    rcn_init_functions(&ctudec->rcn_ctx.rcn_funcs, ict_type(ph));
+    rcn_init_functions(&ctudec->rcn_ctx.rcn_funcs, ict_type(ph), ctudec->lm_chroma_enabled, sps->sps_chroma_vertical_collocated_flag);
 
     return 0;
 }

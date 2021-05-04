@@ -46,6 +46,21 @@ enum VVCCUFlag{
      DECL_FLG(inter_dir,3),
 };
 
+/* FIXME: Move here for SSE */
+struct LMParams{
+   int shift;
+   int a;
+   int b;
+};
+
+/* FIXME: Move here for SSE */
+struct CCLMParams{
+   struct LMParams cb;
+   struct LMParams cr;
+};
+
+
+
 struct DBFMap
 {
     uint64_t ver[33]; /* Column map of vertical edges */
