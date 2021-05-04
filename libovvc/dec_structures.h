@@ -257,7 +257,6 @@ struct OVVCDec
     /* Paramters sets context */
     OVNVCLCtx nvcl_ctx;
 
-    //TODOpar: remove frrom this structure and put into subdec (slicedec in our case)
     struct OVPS{
         /* Pointers to active parameter sets */
         OVSPS *sps;

@@ -331,7 +331,7 @@ cabac_lines_uninit(OVSliceDec *sldec)
 }
 
 void
-uninit_in_loop_filters(OVCTUDec *const ctudec)
+uninit_in_loop_filters(OVCTUDec *const ctudec, int ctb_size)
 {
     //Uninit SAO info and ctu params
     struct SAOInfo* sao_info  = &ctudec->sao_info;
@@ -343,6 +343,7 @@ uninit_in_loop_filters(OVCTUDec *const ctudec)
     struct ALFInfo* alf_info  = &ctudec->alf_info;
     if(alf_info->ctb_alf_params){
         ov_free(alf_info->ctb_alf_params);
+        rcn_alf_destroy(&alf_info->rcn_alf, ctb_size);
     }
 
     //Uninit CC ALF ctu params
@@ -646,12 +647,13 @@ slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
     *(slice_params->sh) = *(dec_params->sh);
     *(slice_params->ph) = *(dec_params->ph);
 
-    if(dec_params->aps_alf_c){
+    if(dec_params->aps_alf){
         for (int i=0; i<8; i++){
             if(dec_params->aps_alf[i])
                 *(slice_params->aps_alf[i]) = *(dec_params->aps_alf[i]);
         }
-        
+    }
+    if(dec_params->aps_alf_c){
         *(slice_params->aps_alf_c) = *(dec_params->aps_alf_c);
     }
     if(dec_params->aps_cc_alf_cb){
@@ -1527,19 +1529,22 @@ slicedec_init_lines(OVSliceDec *const sldec, const OVPS *const prms)
 static void
 uninit_ctudec_list(OVSliceDec *const sldec, int nb_threads)
 {
-     int nb_ctudec = nb_threads;
-     int i;
+    const OVSPS *const sps = sldec->active_params->sps;
+    uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
 
-     for (i = 0; i < nb_ctudec; ++i) {
-         OVCTUDec *ctudec = sldec->ctudec_list[i];
-         uninit_in_loop_filters(ctudec);
-         ctudec_uninit(ctudec);
-     }
+    int nb_ctudec = nb_threads;
+    int i;
 
-     ov_freep(&sldec->ctudec_list);
-     #if 0
-     ctudec_uninit(sldec->ctudec_list);
-     #endif
+    for (i = 0; i < nb_ctudec; ++i) {
+        OVCTUDec *ctudec = sldec->ctudec_list[i];
+        uninit_in_loop_filters(ctudec, (1<<log2_ctb_s));
+        ctudec_uninit(ctudec);
+    }
+
+    ov_freep(&sldec->ctudec_list);
+    #if 0
+    ctudec_uninit(sldec->ctudec_list);
+    #endif
 }
 
 static int

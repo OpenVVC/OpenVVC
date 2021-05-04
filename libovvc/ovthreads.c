@@ -40,7 +40,7 @@ thread_decode_entries(struct SliceThread *th_info, struct EntryThread *tdec)
 
     unsigned first_job = atomic_fetch_add_explicit(&th_info->first_job, 1, memory_order_acq_rel);
     unsigned entry_idx = first_job;
-    ov_log(NULL, OVLOG_INFO, "Decoder with POC %d, start entry, nb_entries %d\n", th_info->owner->pic->poc, nb_entries);
+    ov_log(NULL, OVLOG_TRACE, "Decoder with POC %d, start entry, nb_entries %d\n", th_info->owner->pic->poc, nb_entries);
     do {
         OVCTUDec *const ctudec  = tdec->ctudec;
         OVSliceDec *const sldec = th_info->owner;
@@ -80,7 +80,7 @@ ovthread_decode_entries(struct SliceThread *th_info, DecodeFunc decode_entry, in
         tdec->state = 0;
         pthread_cond_signal(&tdec->task_cnd);
         pthread_mutex_unlock(&tdec->task_mtx);
-        ov_log(NULL, OVLOG_INFO, "Main signals frame %d entrytask %d\n", th_info->owner->pic->poc, i);
+        ov_log(NULL, OVLOG_TRACE, "Main signals frame %d entrytask %d\n", th_info->owner->pic->poc, i);
     }
 
 
@@ -106,12 +106,10 @@ thread_main_function(void *opaque)
     pthread_mutex_lock(&tdec->task_mtx);
     tdec->state = 1;
     pthread_cond_signal(&tdec->task_cnd);
-    pthread_mutex_unlock(&tdec->task_mtx);
 
     while (!tdec->kill){
         do { 
             pthread_cond_wait(&tdec->task_cnd, &tdec->task_mtx);
-            ov_log(NULL, OVLOG_INFO, "Decoder entry state %d kill %d\n", tdec->state, tdec->kill);
             if (tdec->kill && tdec->state != 0) {
                 return NULL;
             }
@@ -128,7 +126,7 @@ thread_main_function(void *opaque)
             struct SliceThread *th_info = tdec->parent;
             //TODOpar: change location when using SliceThreads
             ov_nalu_unref(&th_info->slice_nalu);
-            ov_log(NULL, OVLOG_INFO, "Decoder with POC %d, finished frame \n", th_info->owner->pic->poc);
+            ov_log(NULL, OVLOG_TRACE, "Decoder with POC %d, finished frame \n", th_info->owner->pic->poc);
             atomic_fetch_add_explicit(&th_info->owner->pic->ref_count, -1, memory_order_acq_rel);
             atomic_init(&th_info->owner->pic->decoded, 1);
             
@@ -154,6 +152,7 @@ thread_main_function(void *opaque)
             }
         }
     }
+    pthread_mutex_unlock(&tdec->task_mtx);
     return NULL;
 }
 

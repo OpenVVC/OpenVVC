@@ -210,14 +210,8 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
         if (ret < 0) {
             return ret;
         } else {
-            // OVSliceDec *sldec = NULL;
-            // struct OutputThread* t_out = &vvcdec->output_thread;
-            // if(t_out){
+            /*Select the first available subdecoder, or wait until one is available*/
             OVSliceDec *sldec = ovdec_select_subdec(vvcdec);
-            // }
-            // else{
-            //     sldec = vvcdec->subdec_list[0];
-            // }
 
             ret = init_vcl_decoder(vvcdec, sldec, nvcl_ctx, nalu, &rdr);
 
@@ -228,17 +222,8 @@ decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
              */
 
             /* FIXME handle non rect entries later */
-            //TODO: create more than 1 active params in ovdec 
-            //TODO: wake up thread in sldec giving him the picture to encode (table of active params in ovdec ?)
             ret = slicedec_decode_rect_entries(sldec, &vvcdec->active_params);
-            
-            // //Signal output thread that slice is ready for writing
-            // if(t_out){
-            //     pthread_mutex_lock(&t_out->gnrl_mtx);
-            //     pthread_cond_signal(&t_out->gnrl_cnd);
-            //     pthread_mutex_unlock(&t_out->gnrl_mtx);
-            // }
-
+ 
             /* TODO start VCL decoder */
         }
 
@@ -520,7 +505,7 @@ ovdec_init(OVVCDec **vvcdec, FILE *fout)
     // int nb_threads = get_number_of_cores();
    
     //Test frame par
-    int nb_threads = 1;
+    int nb_threads = 4;
     *vvcdec = ov_mallocz(sizeof(OVVCDec));
 
     if (*vvcdec == NULL) goto fail;
