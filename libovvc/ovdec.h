@@ -31,7 +31,7 @@ int ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *pu);
  * the frame must be unreferenced by a calling
  * ovframe_unref()
  */
-int ovdec_receive_picture(OVVCDec *vvcdec, OVFrame **frame);
+int ovdec_receive_picture(OVVCDec *dec, OVPicture **pic_p);
 
 int ovdec_drain_picture(OVVCDec *vvcdec, OVFrame **frame);
 

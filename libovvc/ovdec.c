@@ -289,7 +289,7 @@ fail:
 failvcl:
     //TODOpar: change 0
     if (vvcdec->subdec_list[0]->pic) {
-        ovdpb_unref_pic(vvcdec->dpb, vvcdec->subdec_list[0]->pic, ~0);
+        ovdpb_unref_pic(vvcdec->subdec_list[0]->pic, ~0);
     }
     return ret;
 }
@@ -438,7 +438,7 @@ ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *const pu)
 
 
 int
-ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
+ovdec_receive_picture(OVVCDec *dec, OVPicture **pic_p)
 {
     /* FIXME this is temporary request output from DPB
      * instead
@@ -459,10 +459,12 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
     #endif
 
     out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
-    ret = ovdpb_output_frame(dpb, frame_p, out_cvs_id);
+    ret = ovdpb_output_pic(dpb, pic_p, out_cvs_id);
 
-    if (*frame_p)
-        ret = pp_process_frame(dec, dpb, frame_p);
+    if (*pic_p){
+        OVFrame* frame = (*pic_p)->frame;
+        ret = pp_process_frame(dec, dpb, &frame);
+    }
 
     /*FIXME tmp */
     #if 0

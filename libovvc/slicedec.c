@@ -343,7 +343,7 @@ uninit_in_loop_filters(OVCTUDec *const ctudec, int ctb_size)
     struct ALFInfo* alf_info  = &ctudec->alf_info;
     if(alf_info->ctb_alf_params){
         ov_free(alf_info->ctb_alf_params);
-        rcn_alf_destroy(&alf_info->rcn_alf, ctb_size);
+        // rcn_alf_destroy(&alf_info->rcn_alf, ctb_size);
     }
 
     //Uninit CC ALF ctu params
@@ -1258,10 +1258,12 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     const int nb_ctu_w = einfo.nb_ctu_w;
     const int nb_ctu_h = einfo.nb_ctu_h;
     
+    struct OVFilterBuffers* fb = &ctudec->filter_buffers;
+    fb->pic_frame = sldec->pic->frame;
     if(nb_ctu_w > ctudec->prev_nb_ctu_w_rect_entry)
     {
         int margin = 3;
-        ctudec_alloc_filter_buffers(ctudec, sldec->pic->frame, einfo.nb_ctu_w, margin);
+        ctudec_alloc_filter_buffers(ctudec, einfo.nb_ctu_w, margin);
         ctudec_alloc_intra_line_buff(ctudec, einfo.nb_ctu_w + 2);
         ctudec->prev_nb_ctu_w_rect_entry = nb_ctu_w;
     }
@@ -1379,7 +1381,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         ctb_y++;
     }
 
-     /*FIXME decide return value */
+    /*FIXME decide return value */
     return ctb_addr_rs;
 }
 

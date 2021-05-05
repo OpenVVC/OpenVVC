@@ -10,6 +10,7 @@
 #include "ovdefs.h"
 #include "ovdmx.h"
 #include "ovframe.h"
+#include "ovdpb.h"
 #include "ovutils.h"
 #include "ovversion.h"
 
@@ -288,7 +289,7 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
 
     int nb_pic = 0;
     do {
-        OVFrame *frame = NULL;
+        OVPicture *pic = NULL;
         ret = ovdmx_extract_picture_unit(dmx, &pu);
         if (ret < 0) {
             break;
@@ -302,19 +303,20 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
             }
 
             do {
-                 ovdec_receive_picture(dec, &frame);
+                ovdec_receive_picture(dec, &pic);
 
                 /* FIXME use ret instead of frame */
-                if (frame) {
-                    if (fout) {
-                        write_decoded_frame_to_file(frame, fout);
-                        ++nb_pic;
-                    }
+                if (pic) {
+                    write_decoded_frame_to_file(pic->frame, fout);
+                    ++nb_pic;
 
-                    ov_log(NULL, OVLOG_TRACE, "Received pic with POC: %d\n", frame->poc);
-                    ovframe_unref(&frame);
+                    // /* we unref the picture even if ref failed the picture
+                    //  * will still be usable by the decoder if not bumped
+                    //  * */
+                    ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
+                    ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", pic->poc);
                 }
-            } while (frame);
+            } while (pic);
 
             /* FIXME Picture unit freeing be inside the decoder
              * use ref_counted buffer and call unref here instead

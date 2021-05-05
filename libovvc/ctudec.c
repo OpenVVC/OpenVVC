@@ -35,7 +35,6 @@ ctudec_alloc_intra_line_buff(OVCTUDec *const ctudec, int nb_ctu_w)
     intra_line_b->y = ov_malloc(intra_line_b->stride * sizeof(uint16_t));
     intra_line_b->cb = ov_malloc(intra_line_b->stride_c * sizeof(uint16_t));
     intra_line_b->cr = ov_malloc(intra_line_b->stride_c * sizeof(uint16_t));
-
 }
 
 void ctudec_free_intra_line_buff(OVCTUDec *const ctudec)
@@ -285,7 +284,7 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x_l, int y_l, uint8
     }
 }
 
-void ctudec_alloc_filter_buffers(OVCTUDec *const ctudec, struct Frame *pic_frame, int nb_ctu_w, int margin)
+void ctudec_alloc_filter_buffers(OVCTUDec *const ctudec, int nb_ctu_w, int margin)
 {   
     const OVPartInfo *const pinfo = ctudec->part_ctx;
     uint8_t log2_ctb_size = pinfo->log2_ctu_s;
@@ -296,7 +295,6 @@ void ctudec_alloc_filter_buffers(OVCTUDec *const ctudec, struct Frame *pic_frame
     int16_t** saved_cols = fb->saved_cols;
     int16_t** filter_region = fb->filter_region;
     fb->margin    = margin;
-    fb->pic_frame = pic_frame;
 
     for(int comp = 0; comp < 3; comp++)
     {   

@@ -7,6 +7,14 @@
 #include "ovdpb_internal.h"
 #include "ovdec_internal.h"
 
+
+#define OV_OUTPUT_PIC_FLAG (1 << 0)
+#define OV_LT_REF_PIC_FLAG (1 << 1)
+#define OV_ST_REF_PIC_FLAG (1 << 2)
+#define OV_BUMPED_PIC_FLAG (1 << 3)
+#define OV_IN_DECODING_PIC_FLAG (1 << 4)
+
+
 struct DPBInternal;
 
 
@@ -148,12 +156,15 @@ int ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_
 
 void ovdpb_flush_dpb(OVDPB *dpb);
 
-void ovdpb_unref_pic(OVDPB *dpb, OVPicture *pic, int flags);
+void ovdpb_unref_pic(OVPicture *pic, int flags);
+
+void ovdpb_release_pic(OVDPB *dpb, OVPicture *pic);
 
 int ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id);
 
-int ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id);
-
 int16_t tmvp_compute_scale(int32_t dist_current, int32_t dist_colocated);
+
+// int ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id);
+int ovdpb_output_pic(OVDPB *dpb, OVPicture **out, int output_cvs_id);
 
 #endif

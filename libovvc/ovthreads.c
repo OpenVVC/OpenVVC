@@ -125,9 +125,9 @@ thread_main_function(void *opaque)
             struct SliceThread *th_info = tdec->parent;
             //TODOpar: change location when using SliceThreads
             ov_nalu_unref(&th_info->slice_nalu);
+
             ov_log(NULL, OVLOG_TRACE, "Decoder with POC %d, finished frame \n", th_info->owner->pic->poc);
-            atomic_fetch_add_explicit(&th_info->owner->pic->ref_count, -1, memory_order_acq_rel);
-            atomic_init(&th_info->owner->pic->decoded, 1);
+            ovdpb_unref_pic(th_info->owner->pic, OV_IN_DECODING_PIC_FLAG);
             
             pthread_mutex_lock(&th_info->gnrl_mtx);
             th_info->gnrl_state = 0;
@@ -334,7 +334,7 @@ static void *
 ovthread_out_frame_write(void *opaque)
 {
     OVVCDec *dec = (struct OVVCDec *)opaque;
-    OVFrame *frame = NULL;
+    OVPicture *pic;
     struct OutputThread* t_out = &dec->output_thread;
     FILE *fout = t_out->fout;
     int nb_pic = 0;
@@ -345,31 +345,21 @@ ovthread_out_frame_write(void *opaque)
         }
         t_out->write = 0;
         do {
-            ovdec_receive_picture(dec, &frame);
+            pic = NULL;
+            ovdec_receive_picture(dec, &pic);
 
             /* FIXME use ret instead of frame */
-            if (frame) {
-                write_decoded_frame_to_file(frame, fout);
+            if (pic) {
+                write_decoded_frame_to_file(pic->frame, fout);
                 ++nb_pic;
 
-                //Probleme: 
-                //Out: la frame est trouvee, puis new_ref, puis la pic associee n'a plus le flag output dans ovdec_receive_picture,
-                //Main:  et la pic est  
-                ret = ovframe_new_ref(out, pic->frame);
-                atomic_fetch_add_explicit(&pic->ref_count, -1, memory_order_acq_rel);
-
-                /* we unref the picture even if ref failed the picture
-                 * will still be usable by the decoder if not bumped
-                 * */
-                ovdpb_unref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
-
+                // /* we unref the picture even if ref failed the picture
+                //  * will still be usable by the decoder if not bumped
+                //  * */
+                ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
                 ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", pic->poc);
-
-
-
-                ovframe_unref(&frame);
             }
-        } while (frame);
+        } while (pic);
     } while (!t_out->kill);
 
 

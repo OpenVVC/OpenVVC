@@ -18,12 +18,6 @@
 #if 1
 #endif
 
-#define OV_OUTPUT_PIC_FLAG (1 << 0)
-#define OV_LT_REF_PIC_FLAG (1 << 1)
-#define OV_ST_REF_PIC_FLAG (1 << 2)
-#define OV_BUMPED_PIC_FLAG (1 << 3)
-
-
 /* FIXME More global scope for this enum
  */
 enum SliceType
@@ -136,44 +130,68 @@ derive_poc(int poc_lsb, int log2_max_poc_lsb, int prev_poc)
 
 
 void
-ovdpb_unref_pic(OVDPB *dpb, OVPicture *pic, int flags)
+ovdpb_unref_pic(OVPicture *pic, int flags)
 {
     /* pic->frame can be NULL if context init failed */
     if (!pic->frame || !pic->frame->data[0])
         return;
 
+    pthread_mutex_lock(&pic->pic_mtx);
     pic->flags &= ~flags;
 
-    pthread_mutex_lock(&pic->pic_mtx);
+    //TODOpar: do it also in inter for ref piclist
+    ovframe_unref(&pic->frame);
+
+    pthread_mutex_unlock(&pic->pic_mtx);
+
+    atomic_fetch_add_explicit(&pic->ref_count, -1, memory_order_acq_rel);
+}
+
+void
+ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
+{
+    /* pic->frame can be NULL if context init failed */
+    if (!pic->frame || !pic->frame->data[0])
+        return;
+
     //TODOpar: do it also in inter for ref piclist
     uint16_t ref_count = atomic_fetch_add_explicit(&pic->ref_count, 0, memory_order_acq_rel);
+
     /* If there is no more flags the picture can be
      * returned to the DPB;
      */
-    if (!pic->flags && !ref_count) {
+    pthread_mutex_lock(&pic->pic_mtx);
+    if (! pic->flags && !ref_count) {
         /* Release TMVP  MV maps */
         ov_log(NULL, OVLOG_DEBUG, "Release picture %d\n", pic->poc);
         dpbpriv_release_pic(pic);
-        // atomic_fetch_add_explicit(&pic->ref_count, -1, memory_order_acq_rel);
     }
     pthread_mutex_unlock(&pic->pic_mtx);
 }
 
+
 int
-ovdpb_ref_pic(OVDPB *dpb, OVPicture *dst, OVPicture *src)
+ovdpb_ref_pic(OVDPB *dpb, OVPicture *pic, int flags)
 {
     int ret;
 
-    ret = ovframe_new_ref(&dst->frame, src->frame);
+    atomic_fetch_add_explicit(&pic->ref_count, 1, memory_order_acq_rel);
+
+    pthread_mutex_lock(&pic->pic_mtx);
+    pic->flags |= flags;
+
+    //Todopar: check this why need ** frame in this case?
+    ret = ovframe_new_ref(&pic->frame, pic->frame);
+    pthread_mutex_unlock(&pic->pic_mtx);
+
     if (ret < 0) {
         return ret;
     }
 
     /* TMVP */
-
-    dst->poc     = src->poc;
-    dst->flags   = src->flags;
-    dst->cvs_id  = src->cvs_id;
+    // dst->poc     = src->poc;
+    // dst->flags   = src->flags;
+    // dst->cvs_id  = src->cvs_id;
 
     return 0;
 }
@@ -184,10 +202,11 @@ vvc_clear_refs(OVDPB *dpb)
 {
     int i;
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
-    const uint8_t flags = OV_ST_REF_PIC_FLAG | OV_LT_REF_PIC_FLAG;
+    // const uint8_t flags = OV_ST_REF_PIC_FLAG | OV_LT_REF_PIC_FLAG;
 
     for (i = 0; i < nb_dpb_pic; i++) {
-        ovdpb_unref_pic(dpb, &dpb->pictures[i], flags);
+        ovdpb_release_pic(dpb, &dpb->pictures[i]);
+        // ovdpb_unref_pic(dpb, &dpb->pictures[i], flags);
     }
 }
 
@@ -197,10 +216,10 @@ ovdpb_flush_dpb(OVDPB *dpb)
 {
     int i;
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
-    const uint8_t flags = ~0;
+    // const uint8_t flags = ~0;
 
     for (i = 0; i < nb_dpb_pic; i++) {
-        ovdpb_unref_pic(dpb, &dpb->pictures[i], flags);
+        ovdpb_release_pic(dpb, &dpb->pictures[i]);
     }
 }
 
@@ -220,14 +239,15 @@ alloc_frame(OVDPB *dpb)
             continue;
         }
 
+        ov_log(NULL, OVLOG_ERROR, "Chose Picture : %d\n", i);
         ret = dpbpriv_request_frame(&dpb->internal, &pic->frame);
         
         if (ret < 0) {
             return NULL;
         }
 
+        pic->flags = 0;
         atomic_init(&pic->ref_count, 0);
-        atomic_init(&pic->decoded, 0);
         return pic;
     }
 
@@ -270,24 +290,20 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc)
     dpb->active_pic = pic;
     #endif
 
-    int ref_count_increment;
     #if 0
     if (dpb->ps.ph_data->ph_pic_output_flag) {
     #endif
-        pic->flags = OV_OUTPUT_PIC_FLAG | OV_ST_REF_PIC_FLAG;
-        ref_count_increment = 2;
+        ovdpb_ref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG);
+        ovdpb_ref_pic(dpb, pic, OV_IN_DECODING_PIC_FLAG);
     #if 0
     } else {
-        pic->flags = OV_ST_REF_PIC_FLAG;
-        ref_count_increment = 1;
+        ovdpb_ref_pic(dpb, pic, OV_ST_REF_PIC_FLAG);
     }
     #endif
 
     pic->poc    = poc;
     pic->cvs_id = dpb->cvs_id;
     pic->frame->poc = poc;
-
-    atomic_fetch_add_explicit(&pic->ref_count, ref_count_increment, memory_order_acq_rel);
 
     /* Copy display or conformance window properties */
 
@@ -438,8 +454,7 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
                 uint8_t not_current = pic->poc != dpb->poc;
                 uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
                 if (not_bumped && not_current && is_output_cvs) {
-                    atomic_fetch_add_explicit(&pic->ref_count, -1, memory_order_acq_rel);
-                    ovdpb_unref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG);
+                    ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG);
                 }
             }
         }
@@ -450,7 +465,7 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
             uint8_t output_flag = (pic->flags & OV_OUTPUT_PIC_FLAG);
             uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
             /* Unref pic not marked for output */
-            ovdpb_unref_pic(dpb, pic, ~OV_OUTPUT_PIC_FLAG);
+            ovdpb_unref_pic(pic, ~OV_OUTPUT_PIC_FLAG);
             if (output_flag && is_output_cvs) {
                 nb_output++;
                 if (pic->poc < min_poc || nb_output == 1) {
@@ -467,10 +482,9 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
             OVPicture *pic = &dpb->pictures[min_idx];
 
             ret = ovframe_new_ref(out, pic->frame);
-            atomic_fetch_add_explicit(&pic->ref_count, -1, memory_order_acq_rel);
 
             /* we unref the pic even if ref failed */
-            ovdpb_unref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
+            ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
 
             if (ret < 0) {
                 return ret;
@@ -495,8 +509,9 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
     return 0;
 }
 
+
 int
-ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
+ovdpb_output_pic(OVDPB *dpb, OVPicture **out, int output_cvs_id)
 {
     ov_log(NULL, OVLOG_DEBUG, "Try to output picture\n");
     do {
@@ -504,8 +519,8 @@ ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
         int nb_output = 0;
         int min_poc   = INT_MAX;
         int min_idx   = 0;
-        int i, ret;
-        uint8_t decoded;
+        int i;
+        uint8_t in_decoding;
 
         #if 0
         if (dpb->sh.no_output_of_prior_pics_flag == 1 && dpb->no_rasl_output_flag == 1) {
@@ -521,8 +536,7 @@ ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
                 uint8_t not_current = pic->poc != dpb->poc;
                 uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
                 if (not_bumped && not_current && is_output_cvs) {
-                    atomic_fetch_add_explicit(&pic->ref_count, -1, memory_order_acq_rel);
-                    ovdpb_unref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG);
+                    ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG);
                 }
             }
         }
@@ -530,15 +544,15 @@ ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
         /* Count pic marked for output in output cvs and find the min poc_id */
         for (i = 0; i < nb_dpb_pic; i++) {
             OVPicture *pic = &dpb->pictures[i];
+            //TODOpar check if decoded here ?
             uint8_t output_flag = (pic->flags & OV_OUTPUT_PIC_FLAG);
             uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
             if (output_flag && is_output_cvs) {
-                // if (pic->poc < min_poc || nb_output == 1) {
                 if (pic->poc < min_poc ) {
                     min_poc = pic->poc;
                     min_idx = i;
-                    decoded = atomic_fetch_add_explicit(&pic->decoded, 0, memory_order_acq_rel);
-                    if(decoded) {
+                    in_decoding = (pic->flags & OV_IN_DECODING_PIC_FLAG);
+                    if(!in_decoding) {
                         nb_output++;
                     }
                     else{
@@ -557,21 +571,7 @@ ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
 
         if (nb_output) {
             OVPicture *pic = &dpb->pictures[min_idx];
-
-            ret = ovframe_new_ref(out, pic->frame);
-            atomic_fetch_add_explicit(&pic->ref_count, -1, memory_order_acq_rel);
-
-            ov_log(NULL, OVLOG_DEBUG, "Ouput picture with POC %d.\n", pic->poc);
-
-            /* we unref the picture even if ref failed the picture
-             * will still be usable by the decoder if not bumped
-             * */
-            ovdpb_unref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
-
-            if (ret < 0) {
-                return ret;
-            }
-
+            *out = pic;
             return nb_output;
         }
 
@@ -684,7 +684,7 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
     /* Unreference all non marked Picture */
     for (i = 0; i < nb_dpb_pic; i++) {
         OVPicture *pic = &dpb->pictures[i];
-        ovdpb_unref_pic(dpb, pic, 0);
+        ovdpb_unref_pic(pic, 0);
     }
 
     return 0;
