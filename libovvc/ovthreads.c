@@ -8,7 +8,6 @@
 #include "ovmem.h"
 #include "ovthreads.h"
 #include "ovdpb.h"
-// #include <unistd.h>
 
 /*
 Functions for the threads decoding rectangular entries
@@ -265,9 +264,9 @@ ovthread_slice_thread_init(struct SliceThread *th_slice, int nb_threads)
 
     return 0;
 
-failthread:
-    ov_freep(&th_slice->tdec);
-    return OVVC_ENOMEM;
+// failthread:
+//     ov_freep(&th_slice->tdec);
+//     return OVVC_ENOMEM;
 
 failalloc:
     return OVVC_ENOMEM;
@@ -353,7 +352,21 @@ ovthread_out_frame_write(void *opaque)
                 write_decoded_frame_to_file(frame, fout);
                 ++nb_pic;
 
-                // ov_log(NULL, OVLOG_TRACE, "Received pic with POC: %d\n", frame->poc);
+                //Probleme: 
+                //Out: la frame est trouvee, puis new_ref, puis la pic associee n'a plus le flag output dans ovdec_receive_picture,
+                //Main:  et la pic est  
+                ret = ovframe_new_ref(out, pic->frame);
+                atomic_fetch_add_explicit(&pic->ref_count, -1, memory_order_acq_rel);
+
+                /* we unref the picture even if ref failed the picture
+                 * will still be usable by the decoder if not bumped
+                 * */
+                ovdpb_unref_pic(dpb, pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
+
+                ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", pic->poc);
+
+
+
                 ovframe_unref(&frame);
             }
         } while (frame);
@@ -367,7 +380,6 @@ ovthread_out_frame_write(void *opaque)
         ret = ovdec_drain_picture(dec, &frame);
         if (frame) {
             if (fout) {
-                // ov_log(NULL, OVLOG_TRACE, "Draining last pictures with POC: %d\n", frame->poc);
                 write_decoded_frame_to_file(frame, fout);
                 ++nb_pic;
             }

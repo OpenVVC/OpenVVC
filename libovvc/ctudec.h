@@ -809,6 +809,7 @@ struct OVCTUDec
     uint16_t ctb_x;
     uint16_t ctb_y;
     uint16_t nb_ctb_pic_w;
+    uint16_t prev_nb_ctu_w_rect_entry;
     
     //image height and width in luma samples
     uint16_t pic_h;
@@ -822,13 +823,13 @@ struct OVCTUDec
 
 int ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec);
 
-void ctudec_create_filter_buffers(OVCTUDec *const ctudec, struct Frame *pic_frame, int nb_ctu_w, int margin);
+void ctudec_alloc_filter_buffers(OVCTUDec *const ctudec, struct Frame *pic_frame, int nb_ctu_w, int margin);
 void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x, int y, uint8_t is_border_rect);
 void ctudec_save_last_rows(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect);
 void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect);
 void ctudec_free_filter_buffers(OVCTUDec *const ctudec);
 
-void ctudec_create_intra_line_buff(OVCTUDec *const ctudec, int nb_ctu_w);
+void ctudec_alloc_intra_line_buff(OVCTUDec *const ctudec, int nb_ctu_w);
 void ctudec_free_intra_line_buff(OVCTUDec *const ctudec);
 
 int ctudec_init(OVCTUDec **ctudec_p);

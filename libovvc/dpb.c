@@ -87,8 +87,8 @@ dpbpriv_release_pic(OVPicture *pic)
 {
     if (pic->frame) {
         /* FIXME unref frame */
-        ov_log(NULL, OVLOG_TRACE, "Unref frame in pic %d\n", pic->poc);
         ovframe_unref(&pic->frame);
+        ov_log(NULL, OVLOG_TRACE, "Unref frame in pic %d\n", pic->poc);
 
         /* FIXME better existence check */
         if (pic->mv_plane0.mvs){
@@ -154,7 +154,7 @@ ovdpb_unref_pic(OVDPB *dpb, OVPicture *pic, int flags)
         /* Release TMVP  MV maps */
         ov_log(NULL, OVLOG_DEBUG, "Release picture %d\n", pic->poc);
         dpbpriv_release_pic(pic);
-        atomic_fetch_add_explicit(&pic->ref_count, -1, memory_order_acq_rel);
+        // atomic_fetch_add_explicit(&pic->ref_count, -1, memory_order_acq_rel);
     }
     pthread_mutex_unlock(&pic->pic_mtx);
 }

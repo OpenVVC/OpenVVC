@@ -86,7 +86,7 @@ ovdec_init_subdec_list(OVVCDec *dec)
 
 static int
 init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const nvcl_ctx,
-                 const OVNALUnit *const nalu, const OVNVCLReader *const rdr)
+                OVNALUnit * nalu, const OVNVCLReader *const rdr)
 {
 
     int ret;
@@ -184,7 +184,7 @@ ovdec_select_subdec(OVVCDec *const dec)
 
 
 static int
-decode_nal_unit(OVVCDec *const vvcdec, const OVNALUnit *const nalu)
+decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
 {
     OVNVCLReader rdr;
     OVNVCLCtx *const nvcl_ctx = &vvcdec->nvcl_ctx;
@@ -498,14 +498,13 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
 
 
 int
-ovdec_init(OVVCDec **vvcdec, FILE *fout)
+ovdec_init(OVVCDec **vvcdec, FILE *fout, int nb_threads)
 {
     /* FIXME might not be available on every plateform */
+    if (nb_threads < 1)
+        nb_threads = 1;
+        // nb_threads = get_number_of_cores();
 
-    // int nb_threads = get_number_of_cores();
-   
-    //Test frame par
-    int nb_threads = 4;
     *vvcdec = ov_mallocz(sizeof(OVVCDec));
 
     if (*vvcdec == NULL) goto fail;

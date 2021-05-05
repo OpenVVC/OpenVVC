@@ -615,7 +615,6 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
     einfo->implicit_w = 0;
 
     init_pic_border_info(einfo, prms, entry_idx);
-
 }
 
 //TODOpar: temporary function, change with refs and ref_counts when functional
@@ -1253,15 +1252,19 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     OVCABACCtx cabac_ctx;
     slicedec_init_rect_entry(&einfo, prms, entry_idx);
 
-    int margin = 3;
-    ctudec_create_filter_buffers(ctudec, sldec->pic->frame, einfo.nb_ctu_w, margin);
-    ctudec_create_intra_line_buff(ctudec, einfo.nb_ctu_w + 2);
-
     struct DRVLines drv_lines;
     struct CCLines cc_lines[2] = {sldec->cabac_lines[0], sldec->cabac_lines[1]};
 
     const int nb_ctu_w = einfo.nb_ctu_w;
     const int nb_ctu_h = einfo.nb_ctu_h;
+    
+    if(nb_ctu_w > ctudec->prev_nb_ctu_w_rect_entry)
+    {
+        int margin = 3;
+        ctudec_alloc_filter_buffers(ctudec, sldec->pic->frame, einfo.nb_ctu_w, margin);
+        ctudec_alloc_intra_line_buff(ctudec, einfo.nb_ctu_w + 2);
+        ctudec->prev_nb_ctu_w_rect_entry = nb_ctu_w;
+    }
 
     struct OVBuffInfo tmp_fbuff;
     ctudec->cabac_ctx = &cabac_ctx;
@@ -1376,10 +1379,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         ctb_y++;
     }
 
-    ctudec_free_filter_buffers(ctudec);
-    ctudec_free_intra_line_buff(ctudec);
-
-    /*FIXME decide return value */
+     /*FIXME decide return value */
     return ctb_addr_rs;
 }
 

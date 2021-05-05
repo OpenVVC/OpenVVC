@@ -497,10 +497,10 @@ update_sh_info(struct SHInfo *const sh_info, const OVSH *const sh)
 }
 
 
-static const OVAPS *
+static OVAPS *
 retrieve_aps_alf(const OVNVCLCtx *const nvcl_ctx, uint8_t aps_id)
 {
-    const OVAPS *aps = NULL;
+    OVAPS *aps = NULL;
     if (aps_id < 16) {
         aps = nvcl_ctx->alf_aps_list[aps_id];
     } else {
@@ -510,11 +510,11 @@ retrieve_aps_alf(const OVNVCLCtx *const nvcl_ctx, uint8_t aps_id)
 }
 
 
-static const OVAPS *
+static OVAPS *
 retrieve_aps_lmcs(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
 {
     uint8_t aps_id = ph->ph_lmcs_aps_id;
-    const OVAPS *aps = NULL;
+    OVAPS *aps = NULL;
     if (aps_id < 16) {
         aps = nvcl_ctx->lmcs_aps_list[aps_id];
     } else {
@@ -523,11 +523,11 @@ retrieve_aps_lmcs(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
     return aps;
 }
 
-static const OVSPS *
+static OVSPS *
 retrieve_sps(const OVNVCLCtx *const nvcl_ctx, const OVPPS *const pps)
 {
     uint8_t sps_id = pps->pps_seq_parameter_set_id;
-    const OVSPS *sps = NULL;
+    OVSPS *sps = NULL;
     if (sps_id < 16) {
         sps = nvcl_ctx->sps_list[sps_id];
     } else {
@@ -537,11 +537,11 @@ retrieve_sps(const OVNVCLCtx *const nvcl_ctx, const OVPPS *const pps)
     return sps;
 }
 
-static const OVPPS *
+static OVPPS *
 retrieve_pps(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
 {
     uint8_t pps_id = ph->ph_pic_parameter_set_id;
-    const OVPPS *pps = NULL;
+    OVPPS *pps = NULL;
     if (pps_id < 16) {
         pps = nvcl_ctx->pps_list[pps_id];
     } else {
@@ -587,10 +587,10 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
 {
     /* FIXME assert nvcl_ctx params sets are not NULL*/
     int ret;
-    const OVSH *const sh = nvcl_ctx->sh;
-    const OVPH *const ph = nvcl_ctx->ph;
-    const OVPPS *const pps = retrieve_pps(nvcl_ctx, ph);
-    const OVSPS *const sps = retrieve_sps(nvcl_ctx, pps);
+    OVSH * sh = nvcl_ctx->sh;
+    OVPH * ph = nvcl_ctx->ph;
+    OVPPS * pps = retrieve_pps(nvcl_ctx, ph);
+    OVSPS * sps = retrieve_sps(nvcl_ctx, pps);
 
     ps->sei = nvcl_ctx->sei;
 
@@ -640,25 +640,25 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
 
     for(int i = 0; i < sh->sh_num_alf_aps_ids_luma; i++){
         uint8_t aps_id = sh->sh_alf_aps_id_luma[i];
-        const OVAPS *const aps_alf = retrieve_aps_alf(nvcl_ctx, aps_id);
+        OVAPS * aps_alf = retrieve_aps_alf(nvcl_ctx, aps_id);
         if (ps->aps_alf[i] != aps_alf) {
             ps->aps_alf[i] = aps_alf;
         }  
     }
-    const OVAPS *const aps_alf_c = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_aps_id_chroma);
+    OVAPS * aps_alf_c = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_aps_id_chroma);
     if (ps->aps_alf_c != aps_alf_c) {
         ps->aps_alf_c = aps_alf_c;
     }
-    const OVAPS *const aps_cc_alf_cb = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_cc_cb_aps_id);
+    OVAPS * aps_cc_alf_cb = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_cc_cb_aps_id);
     if (ps->aps_cc_alf_cb != aps_cc_alf_cb) {
         ps->aps_cc_alf_cb = aps_cc_alf_cb;
     }
-    const OVAPS *const aps_cc_alf_cr = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_cc_cr_aps_id);
+    OVAPS * aps_cc_alf_cr = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_cc_cr_aps_id);
     if (ps->aps_cc_alf_cr != aps_cc_alf_cr) {
         ps->aps_cc_alf_cr = aps_cc_alf_cr;
     }
 
-    const OVAPS *const aps_lmcs = retrieve_aps_lmcs(nvcl_ctx, ph);
+    OVAPS * aps_lmcs = retrieve_aps_lmcs(nvcl_ctx, ph);
     if (ps->aps_lmcs != aps_lmcs) {
         ps->aps_lmcs = aps_lmcs;
     }

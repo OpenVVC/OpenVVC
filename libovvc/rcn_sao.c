@@ -108,7 +108,6 @@ void rcn_sao_ctu(OVCTUDec *const ctudec, int ctb_x_pic, int ctb_y_pic, int nb_ct
     const struct SAOFunctions *saofunc = &ctudec->rcn_ctx.rcn_funcs.sao;
 
     OVFrame *frame = fb.pic_frame;
-    // struct OVBuffInfo frame_buff = ctudec->rcn_ctx.frame_buff;
 
     for (int c_idx = 0; c_idx < (ctudec->sao_info.chroma_format_idc ? 3 : 1); c_idx++) {
         int shift_chr = c_idx==0 ? 0 : 1;
@@ -125,16 +124,11 @@ void rcn_sao_ctu(OVCTUDec *const ctudec, int ctb_x_pic, int ctb_y_pic, int nb_ct
         int int16_t_shift = 1;
         ptrdiff_t stride_out_pic = frame->linesize[c_idx];
         uint8_t *out_pic = frame->data[c_idx];
-        // ptrdiff_t stride_out_pic = c_idx==0 ? frame_buff.stride : frame_buff.stride_c;
-        // uint8_t *out_pic = frame_buff.y;
-        // if (c_idx != 0)
-        //     c_idx==1 ? out_pic = frame_buff.cb : frame_buff.cr;
         out_pic = &out_pic[ y0 * stride_out_pic + (x0<<int16_t_shift)];
 
         uint8_t *filtered = (uint8_t *) fb.filter_region[c_idx];
         int stride_filtered = fb.filter_region_stride[c_idx]<<int16_t_shift;
-        filtered = &filtered[(fb.filter_region_offset[c_idx]<<int16_t_shift)];
-        // filtered = &filtered[ (y0 * stride_filtered) + (x0<<int16_t_shift) + (fb.filter_region_offset[c_idx]<<int16_t_shift)];
+        filtered = &filtered[(fb.filter_region_offset[c_idx]<<int16_t_shift)];  
 
         switch (sao->type_idx[c_idx]) {
             case SAO_BAND:

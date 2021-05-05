@@ -19,37 +19,34 @@ attach_rcn_ctu_buff(OVCTUDec *const ctudec)
 }
 
 void
-ctudec_create_intra_line_buff(OVCTUDec *const ctudec, int nb_ctu_w)
+ctudec_alloc_intra_line_buff(OVCTUDec *const ctudec, int nb_ctu_w)
 {
     struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
-    struct OVBuffInfo *intra_line_binfo = &rcn_ctx->intra_line_buff;
+    struct OVBuffInfo *intra_line_b = &rcn_ctx->intra_line_buff;
 
     const OVPartInfo *const pinfo = ctudec->part_ctx;
     uint8_t log2_ctb_size = pinfo->log2_ctu_s;
     int max_cu_width_l = 1 << log2_ctb_size;
-    intra_line_binfo->stride    = nb_ctu_w*max_cu_width_l ;
-    intra_line_binfo->stride_c  = nb_ctu_w*max_cu_width_l / 2 ;
-    if(!intra_line_binfo->y){
-        intra_line_binfo->y = ov_malloc(intra_line_binfo->stride * sizeof(uint16_t));
-        intra_line_binfo->cb = ov_malloc(intra_line_binfo->stride_c * sizeof(uint16_t));
-        intra_line_binfo->cr = ov_malloc(intra_line_binfo->stride_c * sizeof(uint16_t));
-    }
-    else{
-        memset(intra_line_binfo->y, 0, intra_line_binfo->stride * sizeof(uint16_t));
-        memset(intra_line_binfo->cb, 0, intra_line_binfo->stride_c * sizeof(uint16_t));
-        memset(intra_line_binfo->cr, 0, intra_line_binfo->stride_c * sizeof(uint16_t));
-    }
+    intra_line_b->stride    = nb_ctu_w*max_cu_width_l ;
+    intra_line_b->stride_c  = nb_ctu_w*max_cu_width_l / 2 ;
+
+    //Free and re-alloc when new ctu width for rectangular entry. 
+    ctudec_free_intra_line_buff(ctudec);
+    intra_line_b->y = ov_malloc(intra_line_b->stride * sizeof(uint16_t));
+    intra_line_b->cb = ov_malloc(intra_line_b->stride_c * sizeof(uint16_t));
+    intra_line_b->cr = ov_malloc(intra_line_b->stride_c * sizeof(uint16_t));
+
 }
 
 void ctudec_free_intra_line_buff(OVCTUDec *const ctudec)
 {
     struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
-    struct OVBuffInfo *intra_line_binfo = &rcn_ctx->intra_line_buff;
+    struct OVBuffInfo *intra_line_b = &rcn_ctx->intra_line_buff;
 
-   if(intra_line_binfo->y){
-        ov_freep(&intra_line_binfo->y);
-        ov_freep(&intra_line_binfo->cb);
-        ov_freep(&intra_line_binfo->cr);
+   if(intra_line_b->y){
+        ov_freep(&intra_line_b->y);
+        ov_freep(&intra_line_b->cb);
+        ov_freep(&intra_line_b->cr);
     }
 }
 
@@ -288,7 +285,7 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x_l, int y_l, uint8
     }
 }
 
-void ctudec_create_filter_buffers(OVCTUDec *const ctudec, struct Frame *pic_frame, int nb_ctu_w, int margin)
+void ctudec_alloc_filter_buffers(OVCTUDec *const ctudec, struct Frame *pic_frame, int nb_ctu_w, int margin)
 {   
     const OVPartInfo *const pinfo = ctudec->part_ctx;
     uint8_t log2_ctb_size = pinfo->log2_ctu_s;
@@ -302,7 +299,8 @@ void ctudec_create_filter_buffers(OVCTUDec *const ctudec, struct Frame *pic_fram
     fb->pic_frame = pic_frame;
 
     for(int comp = 0; comp < 3; comp++)
-    {
+    {   
+        //CHROMA: only 420
         int ratio_luma_chroma = 2;
         int ratio = comp==0 ? 1 : ratio_luma_chroma;
 
@@ -312,33 +310,17 @@ void ctudec_create_filter_buffers(OVCTUDec *const ctudec, struct Frame *pic_fram
         fb->filter_region_offset[comp]   = margin * fb->filter_region_stride[comp] + margin;
         if(!filter_region[comp]){
             filter_region[comp] = ov_malloc( fb->filter_region_stride[comp] * (fb->filter_region_h[comp] + 2*margin) * sizeof(int16_t));
-        } else {
-            memset(filter_region[comp],0, fb->filter_region_stride[comp] * (fb->filter_region_h[comp] + 2*margin) * sizeof(int16_t));
-        }
+            saved_cols[comp]    = ov_malloc(fb->filter_region_h[comp] * margin * sizeof(int16_t));
+        } 
 
-        fb->saved_rows_stride[comp]   = nb_ctu_w*max_cu_width_l/ratio; ;
-        if(!saved_rows[comp]){
-            saved_rows[comp] = ov_malloc(margin * fb->saved_rows_stride[comp] * sizeof(int16_t));
-        } else {
-            memset(saved_rows[comp],0, margin * fb->saved_rows_stride[comp] * sizeof(int16_t));
+        //Re-alloc saved_rows with a new value of nb_ctu_w
+        fb->saved_rows_stride[comp] = nb_ctu_w*max_cu_width_l/ratio; ;
+        if(saved_rows[comp]){
+            ov_freep(&saved_rows[comp]);
         }
-
-        if(!saved_cols[comp]){
-            saved_cols[comp] = ov_malloc(fb->filter_region_h[comp] * margin * sizeof(int16_t));
-        } else {
-            memset(saved_cols[comp],0, fb->filter_region_h[comp] * margin * sizeof(int16_t));
-        }
-
-        // fb->filter_region_w[comp]        = ctudec->pic_w /ratio ;
-        // fb->filter_region_h[comp]        = ctudec->pic_h /ratio ;
-        // fb->filter_region_stride[comp]   = ctudec->pic_w /ratio + 2 * margin ;
-        // fb->filter_region_offset[comp]   = margin * fb->filter_region_stride[comp] + margin;
-        // if(!filter_region){
-        //     filter_region = ov_malloc( fb->filter_region_stride[comp] * fb->filter_region_h[comp] * sizeof(int16_t));
-        // } else {
-        //     memset(filter_region,0, fb->filter_region_stride[comp] * fb->filter_region_h[comp] * sizeof(int16_t));
-        // }
+        saved_rows[comp] = ov_mallocz(margin * fb->saved_rows_stride[comp] * sizeof(int16_t));
     }
+
 }
 
 void ctudec_free_filter_buffers(OVCTUDec *const ctudec)
@@ -369,6 +351,8 @@ ctudec_init(OVCTUDec **ctudec_p)
      *ctudec_p = ctudec;
 
      attach_rcn_ctu_buff(ctudec);
+     
+     ctudec->prev_nb_ctu_w_rect_entry = 0;
 
      return 0;
 }
@@ -376,6 +360,9 @@ ctudec_init(OVCTUDec **ctudec_p)
 int
 ctudec_uninit(OVCTUDec *ctudec)
 {
+    ctudec_free_filter_buffers(ctudec);    
+    ctudec_free_intra_line_buff(ctudec);
+
     ov_free(ctudec);
     return 0;
 }

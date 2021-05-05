@@ -66,7 +66,8 @@ ovframe_new_ref(OVFrame **dst, OVFrame *src)
          return -1;
      }
 
-    atomic_fetch_add_explicit(&src->internal.ref_count, 1, memory_order_acq_rel);
+    unsigned ref_count = atomic_fetch_add_explicit(&src->internal.ref_count, 1, memory_order_acq_rel);
+    ov_log(NULL, OVLOG_TRACE, "Reference count for frame %d: %d\n", src, ref_count);
 
     *dst = src;
 
@@ -84,6 +85,7 @@ ovframe_unref(OVFrame **frame)
     }
 
     unsigned ref_count = atomic_fetch_add_explicit(&(*frame)->internal.ref_count, -1, memory_order_acq_rel);
+    ov_log(NULL, OVLOG_TRACE, "Reference count for frame %d: %d\n", *frame, ref_count);
 
     if (!ref_count) {
         framepool_release_planes(*frame);
