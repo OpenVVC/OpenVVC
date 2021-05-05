@@ -453,20 +453,6 @@ DECLARE_ALIGNED(32, const int16_t, DCT_II_64_EEEEE)
   64, 64
 };
 
-const int8_t* const lfnst_8x8[4][2] = {
-        { lfnst_0_0_8x8, lfnst_0_1_8x8 },
-        { lfnst_1_0_8x8, lfnst_1_1_8x8 },
-        { lfnst_2_0_8x8, lfnst_2_1_8x8 },
-        { lfnst_3_0_8x8, lfnst_3_1_8x8 },
-};
-
-const int8_t* const lfnst_4x4[4][2] = {
-        { lfnst_0_0_4x4, lfnst_0_1_4x4 },
-        { lfnst_1_0_4x4, lfnst_1_1_4x4 },
-        { lfnst_2_0_4x4, lfnst_2_1_4x4 },
-        { lfnst_3_0_4x4, lfnst_3_1_4x4 },
-};
-
 const int8_t lfnst_0_0_8x8[16 * 48] = {
         -117, 28,  18,  2,   4,   1,   2,   1,   32,  -18,  -2,   0,   -1,  0,
         0,    0,   14,  -1,  -3,  0,   -1,  0,   0,   0,    2,    0,   0,   0,
@@ -1110,4 +1096,19 @@ const int8_t lfnst_3_1_4x4[16 * 16] = {
         2,    -6,  11,  45,  3,   -10, 33,  55,  8,   -5,  59,  4,   7,   -4,
         44,   -66, -1,  1,   -14, 36,  -1,  2,   -20, 69,  0,   0,   -15, 72,
         3,    4,   5,   65,
+};
+
+const int8_t* const lfnst[2][4][2] = {
+  {
+          { lfnst_0_0_4x4, lfnst_0_1_4x4 },
+          { lfnst_1_0_4x4, lfnst_1_1_4x4 },
+          { lfnst_2_0_4x4, lfnst_2_1_4x4 },
+          { lfnst_3_0_4x4, lfnst_3_1_4x4 },
+  },
+  {
+          { lfnst_0_0_8x8, lfnst_0_1_8x8 },
+          { lfnst_1_0_8x8, lfnst_1_1_8x8 },
+          { lfnst_2_0_8x8, lfnst_2_1_8x8 },
+          { lfnst_3_0_8x8, lfnst_3_1_8x8 },
+  }
 };

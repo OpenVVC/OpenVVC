@@ -2,10 +2,9 @@
 
 #include "ovutils.h"
 
-#include "data_rcn_transform.h"
-#include "rcn_lfnst.h"
+#include "rcn_structures.h"
 
-void
+static void
 compute_lfnst_4x4(const int16_t* const src, int16_t* const dst,
                   const int8_t* const lfnst_matrix, int log2_tb_w,
                   int log2_tb_h)
@@ -21,7 +20,7 @@ compute_lfnst_4x4(const int16_t* const src, int16_t* const dst,
         }
 }
 
-void
+static void
 compute_lfnst_8x8(const int16_t* const src, int16_t* const dst,
                   const int8_t* const lfnst_matrix, int log2_tb_w,
                   int log2_tb_h)
@@ -49,7 +48,7 @@ compute_lfnst_8x8(const int16_t* const src, int16_t* const dst,
         }
 }
 
-void
+static void
 compute_lfnst_4x4_tr(const int16_t* const src, int16_t* const dst,
                      const int8_t* const lfnst_matrix, int log2_tb_w,
                      int log2_tb_h)
@@ -65,7 +64,7 @@ compute_lfnst_4x4_tr(const int16_t* const src, int16_t* const dst,
         }
 }
 
-void
+static void
 compute_lfnst_8x8_tr(const int16_t* const src, int16_t* const dst,
                      const int8_t* const lfnst_matrix, int log2_tb_w,
                      int log2_tb_h)
@@ -91,4 +90,13 @@ compute_lfnst_8x8_tr(const int16_t* const src, int16_t* const dst,
                 dst[((i & 3) << log2_tb_w) + (4 + ((i - 32) >> 2))] =
                   ov_clip((sum + 64) >> 7, -(1 << 15), (1 << 15));
         }
+}
+
+void
+rcn_init_lfnst_functions(struct RCNFunctions *rcn_func)
+{
+   rcn_func->lfnst.func[0][0] = &compute_lfnst_4x4;
+   rcn_func->lfnst.func[0][1] = &compute_lfnst_8x8;
+   rcn_func->lfnst.func[1][0] = &compute_lfnst_4x4_tr;
+   rcn_func->lfnst.func[1][1] = &compute_lfnst_8x8_tr;
 }

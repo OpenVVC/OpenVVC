@@ -1,8 +1,8 @@
 #include <stdint.h>
 #include <string.h>
-#include "rcn_lfnst.h"
-#include "data_rcn_transform.h"
 
+#include "data_rcn_transform.h"
+#include "rcn.h"
 #include "ovutils.h"
 #include "drv.h"
 #include "ctudec.h"
@@ -85,6 +85,8 @@ process_lfnst(OVCTUDec *const ctudec,
               int log2_tb_w, int log2_tb_h,
               int x0, int y0, uint8_t lfnst_idx)
 {
+    struct RCNFunctions *const rcnFunc = &ctudec->rcn_ctx.rcn_funcs;
+
     int8_t intra_mode = derive_lfnst_mode_c(ctudec, log2_tb_w, log2_tb_h,
                                             x0, y0, ctudec->intra_mode_c);
 
@@ -104,23 +106,8 @@ process_lfnst(OVCTUDec *const ctudec,
     /* FIXME reduce memset since limited transform */
     memset(dst, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
 
-    if (need_transpose) {
-        if (!(log2_tb_w >= 3 && log2_tb_h >= 3)) {
-            const int8_t *lfnst_matrix = lfnst_4x4[lfnst_mode][lfnst_idx];
-            compute_lfnst_4x4_tr(tmp, dst, lfnst_matrix, log2_tb_w, log2_tb_h);
-        } else {
-            const int8_t *lfnst_matrix = lfnst_8x8[lfnst_mode][lfnst_idx];
-            compute_lfnst_8x8_tr(tmp, dst, lfnst_matrix, log2_tb_w, log2_tb_h);
-        }
-    } else {
-        if (!(log2_tb_w >= 3 && log2_tb_h >= 3)) {
-            const int8_t *lfnst_matrix = lfnst_4x4[lfnst_mode][lfnst_idx];
-            compute_lfnst_4x4(tmp, dst, lfnst_matrix, log2_tb_w, log2_tb_h);
-        } else {
-            const int8_t *lfnst_matrix = lfnst_8x8[lfnst_mode][lfnst_idx];
-            compute_lfnst_8x8(tmp, dst, lfnst_matrix, log2_tb_w, log2_tb_h);
-        }
-    }
+    const int8_t *lfnst_matrix = lfnst[(log2_tb_w >= 3 && log2_tb_h >= 3)][lfnst_mode][lfnst_idx];
+    (rcnFunc->lfnst.func[need_transpose][(log2_tb_w >= 3 && log2_tb_h >= 3)])(tmp, dst, lfnst_matrix, log2_tb_w, log2_tb_h);
 }
 
 void
@@ -129,6 +116,8 @@ process_lfnst_luma(OVCTUDec *const ctudec,
                    int log2_tb_w, int log2_tb_h,
                    int x0, int y0, uint8_t lfnst_idx)
 {
+    struct RCNFunctions *const rcnFunc = &ctudec->rcn_ctx.rcn_funcs;
+
     int8_t intra_mode = derive_lfnst_mode_l(ctudec, log2_tb_w, log2_tb_h, x0, y0);
 
     uint8_t need_transpose = (intra_mode < 67  && intra_mode > OVINTRA_DIA) || intra_mode >= 67 + 14;
@@ -138,30 +127,15 @@ process_lfnst_luma(OVCTUDec *const ctudec,
     int16_t tmp[16];
 
     for (int i = 0; i < 16; ++i) {
-        tmp[i] = src[scan_map & 15];
+        tmp[i] = src[scan_map & 0xF];
         scan_map >>= 4;
     }
 
     /* FIXME reduce memset since limited transform */
     memset(dst, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
 
-    if (need_transpose) {
-        if (!(log2_tb_w >= 3 && log2_tb_h >= 3)) {
-            const int8_t *lfnst_matrix = lfnst_4x4[lfnst_mode][lfnst_idx];
-            compute_lfnst_4x4_tr(tmp, dst, lfnst_matrix, log2_tb_w, log2_tb_h);
-        } else {
-            const int8_t *lfnst_matrix = lfnst_8x8[lfnst_mode][lfnst_idx];
-            compute_lfnst_8x8_tr(tmp, dst, lfnst_matrix, log2_tb_w, log2_tb_h);
-        }
-    } else {
-        if (!(log2_tb_w >= 3 && log2_tb_h >= 3)) {
-            const int8_t *lfnst_matrix = lfnst_4x4[lfnst_mode][lfnst_idx];
-            compute_lfnst_4x4(tmp, dst, lfnst_matrix, log2_tb_w, log2_tb_h);
-        } else {
-            const int8_t *lfnst_matrix = lfnst_8x8[lfnst_mode][lfnst_idx];
-            compute_lfnst_8x8(tmp, dst, lfnst_matrix, log2_tb_w, log2_tb_h);
-        }
-    }
+    const int8_t *lfnst_matrix = lfnst[(log2_tb_w >= 3 && log2_tb_h >= 3)][lfnst_mode][lfnst_idx];
+    (rcnFunc->lfnst.func[need_transpose][(log2_tb_w >= 3 && log2_tb_h >= 3)])(tmp, dst, lfnst_matrix, log2_tb_w, log2_tb_h);
 }
 
 void
@@ -171,6 +145,8 @@ process_lfnst_luma_isp(OVCTUDec *const ctudec,
                    int log2_cb_w, int log2_cb_h,
                    int x0, int y0, uint8_t lfnst_idx)
 {
+    struct RCNFunctions *const rcnFunc = &ctudec->rcn_ctx.rcn_funcs;
+
     int8_t intra_mode = derive_lfnst_mode_l(ctudec, log2_cb_w, log2_cb_h, x0, y0);
 
     uint8_t need_transpose = (intra_mode < 67  && intra_mode > OVINTRA_DIA) || intra_mode >= 67 + 14;
@@ -187,21 +163,6 @@ process_lfnst_luma_isp(OVCTUDec *const ctudec,
     /* FIXME reduce memset since limited transform */
     memset(dst, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
 
-    if (need_transpose) {
-        if (!(log2_tb_w >= 3 && log2_tb_h >= 3)) {
-            const int8_t *lfnst_matrix = lfnst_4x4[lfnst_mode][lfnst_idx];
-                 compute_lfnst_4x4_tr(tmp, dst, lfnst_matrix, log2_tb_w, log2_tb_h);
-        } else {
-            const int8_t *lfnst_matrix = lfnst_8x8[lfnst_mode][lfnst_idx];
-                 compute_lfnst_8x8_tr(tmp, dst, lfnst_matrix, log2_tb_w, log2_tb_h);
-        }
-    } else {
-        if (!(log2_tb_w >= 3 && log2_tb_h >= 3)) {
-            const int8_t *lfnst_matrix = lfnst_4x4[lfnst_mode][lfnst_idx];
-            compute_lfnst_4x4(tmp, dst, lfnst_matrix, log2_tb_w, log2_tb_h);
-        } else {
-            const int8_t *lfnst_matrix = lfnst_8x8[lfnst_mode][lfnst_idx];
-            compute_lfnst_8x8(tmp, dst, lfnst_matrix, log2_tb_w, log2_tb_h);
-        }
-    }
+    const int8_t *lfnst_matrix = lfnst[(log2_tb_w >= 3 && log2_tb_h >= 3)][lfnst_mode][lfnst_idx];
+    (rcnFunc->lfnst.func[need_transpose][(log2_tb_w >= 3 && log2_tb_h >= 3)])(tmp, dst, lfnst_matrix, log2_tb_w, log2_tb_h);
 }

@@ -486,6 +486,8 @@ void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t
   rcn_init_dc_planar_functions(rcn_func);
   rcn_init_ict_functions(rcn_func, ict_type);
   rcn_init_alf_functions(rcn_func);
+  rcn_init_lfnst_functions(rcn_func);
+
   if (lm_chroma_enabled) {
       /* FIXME add support vertical */
       if (sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {

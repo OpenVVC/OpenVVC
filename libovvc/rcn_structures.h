@@ -63,9 +63,14 @@ typedef void (*PlanarFunc)(const uint16_t* const src_above,
                      const uint16_t* const src_left, uint16_t* const dst,
                      ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h);
 
+typedef void (*LFNSTFunc)(const int16_t* const src, int16_t* const dst,
+                     const int8_t* const lfnst_matrix, int log2_tb_w,
+                     int log2_tb_h);
+
 typedef void (*ALFFilterBlkFunc)(struct ALFClassifier **classifier, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
                         struct Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                         const int ctu_height, int virbnd_pos);
+
 
 
 /**
@@ -112,6 +117,10 @@ struct ICTFunctions
   ResidualAddScaleFunc ict[6][3];
 };
 
+struct LFNSTFunctions
+{
+  LFNSTFunc func[2][2];
+};
 
 struct ALFFunctions{
     ALFFilterBlkFunc luma;
@@ -137,6 +146,9 @@ struct RCNFunctions
 
     /* Transform Functions */
     struct TRFunctions tr;
+
+    /* LFNST Functions */
+    struct LFNSTFunctions lfnst;
 
     /* DC Functions */
     struct DCFunctions dc;

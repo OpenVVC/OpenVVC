@@ -74,6 +74,8 @@ void rcn_init_tr_functions(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_dc_planar_functions(struct RCNFunctions *const rcn_funcs);
 
+void rcn_init_lfnst_functions(struct RCNFunctions *rcn_func);
+
 void rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
                  uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y);
 
