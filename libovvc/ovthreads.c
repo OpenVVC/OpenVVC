@@ -350,7 +350,10 @@ ovthread_out_frame_write(void *opaque)
 
             /* FIXME use ret instead of frame */
             if (pic) {
-                write_decoded_frame_to_file(pic->frame, fout);
+                OVFrame* frame_output = pic->frame;
+                pp_process_frame(dec, dec->dpb, &frame_output);
+
+                write_decoded_frame_to_file(frame_output, fout);
                 ++nb_pic;
 
                 // /* we unref the picture even if ref failed the picture
