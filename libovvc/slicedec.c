@@ -665,12 +665,8 @@ slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
         *(slice_params->aps_lmcs) = *(dec_params->aps_lmcs);
     }
 
-    //TODOpar: change to copy the structures inside OVSEI, instead of pointers
-    if (dec_params->sei){
-        if(!slice_params->sei)
-            slice_params->sei = ov_mallocz(sizeof(struct OVSEI));
-        *(slice_params->sei) = *(dec_params->sei);
-    }
+    copy_sei_params(&slice_params->sei, dec_params->sei);
+
     slice_params->sps_info = dec_params->sps_info;
     slice_params->pps_info = dec_params->pps_info;
     slice_params->ph_info = dec_params->ph_info;
