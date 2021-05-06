@@ -503,6 +503,8 @@ void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t
       rcn_init_dc_planar_functions_sse(rcn_func);
       rcn_init_ict_functions_sse(rcn_func, ict_type);
       rcn_init_alf_functions_sse(rcn_func);
+      rcn_init_lfnst_functions_sse(rcn_func);
+
       if (lm_chroma_enabled) {
           if (!sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {
               rcn_init_cclm_functions_sse(rcn_func);
