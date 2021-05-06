@@ -58,6 +58,19 @@ copy_sei_params(OVSEI **dst_p, OVSEI *src)
     }
 }
 
+//TODOpp: find where to free in pic
+void
+free_sei_params(OVSEI *sei)
+{   
+    if(sei){
+
+        if(sei->sei_fg)
+            ov_freep(&sei->sei_fg);
+
+        ov_freep(&sei);
+    }
+}
+
 /* FIXME find other spec */
 struct OVSEIPayload
 nvcl_sei_payload(OVNVCLReader *const rdr) {

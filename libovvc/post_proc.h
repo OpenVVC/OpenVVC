@@ -15,7 +15,7 @@ struct PostProcFunctions
     FGFunc pp_film_grain;
 };
 
-int pp_process_frame(OVVCDec *dec, OVDPB *dpb, OVFrame **frame_p);
+int pp_process_frame(const OVSEI* sei, OVDPB *dpb, OVFrame **frame_p);
 
 
 //TODO: change function names.

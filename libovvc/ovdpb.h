@@ -106,6 +106,9 @@ struct OVPicture
        /* TODO tmvp scaling */
    } tmvp;
 
+   //Sub decoder that decoded the picture
+    OVSEI *sei;
+
    int32_t poc;
 
    /* Coded Video Sequence Id to which this Picture is

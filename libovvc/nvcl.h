@@ -94,4 +94,6 @@ int nvcl_decode_nalu_sei(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx);
 
 void copy_sei_params(OVSEI **dst_p, OVSEI *src);
 
+void free_sei_params(OVSEI *sei);
+
 #endif

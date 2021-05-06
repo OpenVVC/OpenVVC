@@ -665,8 +665,6 @@ slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
         *(slice_params->aps_lmcs) = *(dec_params->aps_lmcs);
     }
 
-    copy_sei_params(&slice_params->sei, dec_params->sei);
-
     slice_params->sps_info = dec_params->sps_info;
     slice_params->pps_info = dec_params->pps_info;
     slice_params->ph_info = dec_params->ph_info;

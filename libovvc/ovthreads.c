@@ -351,14 +351,17 @@ ovthread_out_frame_write(void *opaque)
             /* FIXME use ret instead of frame */
             if (pic) {
                 OVFrame* frame_output = pic->frame;
-                pp_process_frame(dec, dec->dpb, &frame_output);
+                pp_process_frame(pic->sei, dec->dpb, &frame_output);
 
                 write_decoded_frame_to_file(frame_output, fout);
                 ++nb_pic;
 
-                // /* we unref the picture even if ref failed the picture
-                //  * will still be usable by the decoder if not bumped
-                //  * */
+                if(frame_output !=  pic->frame){
+                    ovframe_unref(&frame_output);
+                }
+                /* we unref the picture even if ref failed the picture
+                 * will still be usable by the decoder if not bumped
+                 * */
                 ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
                 ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", pic->poc);
             }
@@ -387,11 +390,6 @@ ovthread_out_frame_write(void *opaque)
 int
 ovthread_output_init(OVVCDec *dec, FILE* fout)
 {
-    // dec->output_thread = ov_mallocz(sizeof(struct OutputThread));
-    
-    // if (!dec->output_thread) {
-    //     goto failalloc;
-    // }
     struct OutputThread* th_out = &dec->output_thread;
     th_out->fout = fout;
     th_out->kill = 0;
@@ -400,28 +398,16 @@ ovthread_output_init(OVVCDec *dec, FILE* fout)
     pthread_mutex_init(&th_out->gnrl_mtx, NULL);
     pthread_cond_init(&th_out->gnrl_cnd,  NULL);
 
-    // pthread_mutex_lock(&dec->output_thread->gnrl_mtx);
-
     if (pthread_create(&th_out->thread, NULL, ovthread_out_frame_write, dec)) {
         pthread_mutex_unlock(&th_out->gnrl_mtx);
         ov_log(NULL, OVLOG_ERROR, "Thread creation failed for output frame init\n");
         goto failthread;
     }
-
-    // /* Wait until subdec is set */
-    // while (!th_out->state) {
-    //     pthread_cond_wait(&th_out->task_cnd, &th_out->task_mtx);
-    // }
-
-    // pthread_mutex_unlock(&th_out->task_mtx);
-
     return 0;
 
 failthread:
     return OVVC_ENOMEM;
 
-// failalloc:
-//     return OVVC_ENOMEM;
 }
 
 

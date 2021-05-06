@@ -935,6 +935,8 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         goto fail;
     }
 
+    copy_sei_params(&(*pic_p)->sei, ovdec->active_params.sei);
+    
     ov_log(NULL, OVLOG_TRACE, "DPB start new picture POC: %d\n", (*pic_p)->poc);
 
     /* If the picture is not an IDR Picture we set all flags to
