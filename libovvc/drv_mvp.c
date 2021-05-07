@@ -1269,10 +1269,10 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         avg_mv.inter_dir = cand[0].inter_dir & cand[1].inter_dir;
 
         if (avg_mv.inter_dir & 0x1) {
-            avg_mv.mv0.x += cand[1].mv0.x + 1;
-            avg_mv.mv0.y += cand[1].mv0.y + 1;
-            avg_mv.mv0.x -= avg_mv.mv0.x >= 0;
-            avg_mv.mv0.y -= avg_mv.mv0.y >= 0;
+            avg_mv.mv0.x += cand[1].mv0.x;
+            avg_mv.mv0.y += cand[1].mv0.y;
+            avg_mv.mv0.x += 1 - (avg_mv.mv0.x >= 0);
+            avg_mv.mv0.y += 1 - (avg_mv.mv0.y >= 0);
             avg_mv.mv0.x >>= 1;
             avg_mv.mv0.y >>= 1;
         } else if (cand[1].inter_dir & 0x1) {
@@ -1284,10 +1284,10 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         }
 
         if (avg_mv.inter_dir & 0x2) {
-            avg_mv.mv1.x += cand[1].mv1.x + 1;
-            avg_mv.mv1.y += cand[1].mv1.y + 1;
-            avg_mv.mv1.x -= avg_mv.mv1.x >= 0;
-            avg_mv.mv1.y -= avg_mv.mv1.y >= 0;
+            avg_mv.mv1.x += cand[1].mv1.x;
+            avg_mv.mv1.y += cand[1].mv1.y;
+            avg_mv.mv1.x += 1 - (avg_mv.mv1.x >= 0);
+            avg_mv.mv1.y += 1 - (avg_mv.mv1.y >= 0);
             avg_mv.mv1.x >>= 1;
             avg_mv.mv1.y >>= 1;
         } else if (cand[1].inter_dir & 0x2) {
