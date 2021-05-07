@@ -531,13 +531,17 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
         /*FIXME there might be an issue considering the order of RPL check 
          * for TMVP candidates
          */
+        #if 0
         if (mv_ctx == &inter_ctx->mv_ctx0) {
+            /*ref current*/
             scale0 = tmvp->scale00;
             scale1 = tmvp->scale01;
         } else {
+            /*ref current*/
             scale0 = tmvp->scale10;
             scale1 = tmvp->scale11;
         }
+        #endif
         uint8_t col_ref_l0 = tmvp->col_ref_l0;
 
         if ((!col_ref_l0 && !tmvp->ldc) || (tmvp->ldc && mv_ctx == &inter_ctx->mv_ctx0)) {
