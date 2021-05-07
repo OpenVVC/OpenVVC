@@ -308,6 +308,8 @@ struct InterDRVCtx
         /* MV plane storage for collocated reference picture */
         const struct MVPlane *col_plane0;
         const struct MVPlane *col_plane1;
+        uint8_t col_ref_l0;
+        uint8_t ldc;
 
         /* Scale info computed at slice start
          * based on the distance between collocated

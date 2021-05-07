@@ -1119,8 +1119,22 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     memset(&ctudec->dbf_info.edge_map_hor_c, 0, sizeof(ctudec->dbf_info.edge_map_hor));
     memcpy(ctudec->drv_ctx.inter_ctx.rpl0, sldec->pic->rpl0, sizeof(sldec->pic->rpl0));
     memcpy(ctudec->drv_ctx.inter_ctx.rpl1, sldec->pic->rpl1, sizeof(sldec->pic->rpl1));
+
     ctudec->drv_ctx.inter_ctx.nb_active_ref0 = prms->sh->hrpl.rpl_h0.rpl_data.num_ref_active_entries;
     ctudec->drv_ctx.inter_ctx.nb_active_ref1 = prms->sh->hrpl.rpl_h1.rpl_data.num_ref_active_entries;
+
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 1;
+    for (int i = 0; i < ctudec->drv_ctx.inter_ctx.nb_active_ref0; ++i) {
+        if(ctudec->drv_ctx.inter_ctx.rpl0[i]->poc > sldec->pic->poc) {
+            ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 0;
+        }
+    }
+
+    for (int i = 0; i < ctudec->drv_ctx.inter_ctx.nb_active_ref1; ++i) {
+        if(ctudec->drv_ctx.inter_ctx.rpl1[i]->poc > sldec->pic->poc) {
+            ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 0;
+        }
+    }
 
     /* FIXME entry might be check before attaching entry to CABAC so there
      * is no need for this check
@@ -1256,6 +1270,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     ctudec->drv_ctx.inter_ctx.tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
     ctudec->drv_ctx.inter_ctx.mvd1_zero_flag = ph->ph_mvd_l1_zero_flag;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref_l0 = ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag || sh->sh_slice_type == SLICE_P;
 
     rcn_init_functions(&ctudec->rcn_ctx.rcn_funcs, ict_type(ph), ctudec->lm_chroma_enabled, sps->sps_chroma_vertical_collocated_flag);
 
