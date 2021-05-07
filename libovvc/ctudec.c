@@ -135,9 +135,6 @@ void ctudec_save_last_rows(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_
 
 void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect)
 {   
-    // const OVPartInfo *const pinfo = ctudec->part_ctx;
-    // uint8_t log2_ctb_size = pinfo->log2_ctu_s;
-    // int max_cu_width_l = 1 << log2_ctb_size;
 
     struct OVFilterBuffers fb = ctudec->filter_buffers;
     const int width_l = ( x_l + fb.filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_l ) : fb.filter_region_w[0];
