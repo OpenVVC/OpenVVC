@@ -551,6 +551,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
         cu_type = OV_INTER_SKIP;
 
         FLG_STORE(cu_skip_flag, cu.cu_flags);
+        ctu_dec->intra_mode_c = 0;
 
     } else {
         uint8_t pred_mode_flag = ctu_dec->share == 1 ? 1 : 0;
@@ -582,6 +583,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
             cu_type = OV_INTER;
 
             FLG_STORE(merge_flag, cu.cu_flags);
+            ctu_dec->intra_mode_c = 0;
         }
     }
 
