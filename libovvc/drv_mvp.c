@@ -13,6 +13,8 @@
 
 #define POS_MASK(x, w) ((uint64_t) 1 << ((((x + 1)) + ((w)))))
 
+#define TMVP_POS_MASK(y) ((uint64_t) 1 << ((y) + 1))
+
 #define OFFSET_BUFF(x,y) (35 + x + (y) * 34)
 #define MV_CMP(mv0,mv1) ((mv0.x == mv1.x) && (mv0.y == mv1.y))
 
@@ -499,6 +501,8 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
 
         c0_x &= ~(0x1);
         c1_x &= ~(0x1);
+        c0_y &= ~(0x1);
+        c1_y &= ~(0x1);
 
         /* Derive availability based on CTB inter fields */
         c0_col  = tmvp->dir_map_v0[c0_x + 1];
@@ -506,13 +510,10 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
         c1_col  = tmvp->dir_map_v0[c1_x + 1];
         c1_col1 = tmvp->dir_map_v1[c1_x + 1];
 
-        cand_c0  = !!(c0_col  & POS_MASK(pb_y -(c0_y & 0x1), nb_pb_h));
-        cand_c01 = !!(c0_col1 & POS_MASK(pb_y -(c0_y & 0x1), nb_pb_h));
-        cand_c1  = !!(c1_col  & POS_MASK(pb_y -(c1_y & 0x1), nb_pb_h >> 1));
-        cand_c11 = !!(c1_col1 & POS_MASK(pb_y -(c1_y & 0x1), nb_pb_h >> 1));
-
-        c0_y &= ~(0x1);
-        c1_y &= ~(0x1);
+        cand_c0  = !!(c0_col  & TMVP_POS_MASK(c0_y));
+        cand_c01 = !!(c0_col1 & TMVP_POS_MASK(c0_y));
+        cand_c1  = !!(c1_col  & TMVP_POS_MASK(c1_y));
+        cand_c11 = !!(c1_col1 & TMVP_POS_MASK(c1_y));
 
         uint8_t col_ref_l0 = tmvp->col_ref_l0;
 
@@ -746,6 +747,9 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
 
         c0_x &= ~(0x1);
         c1_x &= ~(0x1);
+        c0_y &= ~(0x1);
+        c1_y &= ~(0x1);
+
 
         /* Derive availability based on CTB inter fields */
         c0_col  = tmvp->dir_map_v0[c0_x + 1];
@@ -753,13 +757,10 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
         c1_col  = tmvp->dir_map_v0[c1_x + 1];
         c1_col1 = tmvp->dir_map_v1[c1_x + 1];
 
-        cand_c0  = !!(c0_col  & POS_MASK(pb_y -(c0_y & 0x1), nb_pb_h));
-        cand_c01 = !!(c0_col1 & POS_MASK(pb_y -(c0_y & 0x1), nb_pb_h));
-        cand_c1  = !!(c1_col  & POS_MASK(pb_y -(c1_y & 0x1), nb_pb_h >> 1));
-        cand_c11 = !!(c1_col1 & POS_MASK(pb_y -(c1_y & 0x1), nb_pb_h >> 1));
-
-        c0_y &= ~(0x1);
-        c1_y &= ~(0x1);
+        cand_c0  = !!(c0_col  & TMVP_POS_MASK(c0_y));
+        cand_c01 = !!(c0_col1 & TMVP_POS_MASK(c0_y));
+        cand_c1  = !!(c1_col  & TMVP_POS_MASK(c1_y));
+        cand_c11 = !!(c1_col1 & TMVP_POS_MASK(c1_y));
 
         /*FIXME there might be an issue considering the order of RPL check 
          * for TMVP candidates
@@ -950,19 +951,19 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
 
         c0_x &= ~(0x1);
         c1_x &= ~(0x1);
+        c0_y &= ~(0x1);
+        c1_y &= ~(0x1);
+
 
         c0_col  = tmvp->dir_map_v0[c0_x + 1];
         c1_col  = tmvp->dir_map_v0[c1_x + 1];
         c0_col1 = tmvp->dir_map_v1[c0_x + 1];
         c1_col1 = tmvp->dir_map_v1[c1_x + 1];
 
-        cand_c0  = !!(c0_col  & POS_MASK(pb_y -(c0_y & 0x1), nb_pb_h));
-        cand_c01 = !!(c0_col1 & POS_MASK(pb_y -(c0_y & 0x1), nb_pb_h));
-        cand_c1  = !!(c1_col  & POS_MASK(pb_y -(c1_y & 0x1), nb_pb_h >> 1));
-        cand_c11 = !!(c1_col1 & POS_MASK(pb_y -(c1_y & 0x1), nb_pb_h >> 1));
-
-        c0_y &= ~(0x1);
-        c1_y &= ~(0x1);
+        cand_c0  = !!(c0_col  & TMVP_POS_MASK(c0_y));
+        cand_c01 = !!(c0_col1 & TMVP_POS_MASK(c0_y));
+        cand_c1  = !!(c1_col  & TMVP_POS_MASK(c1_y));
+        cand_c11 = !!(c1_col1 & TMVP_POS_MASK(c1_y));
 
         if (cand_c0) {
             int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
@@ -1186,19 +1187,18 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
 
         c0_x &= ~(0x1);
         c1_x &= ~(0x1);
+        c0_y &= ~(0x1);
+        c1_y &= ~(0x1);
 
         c0_col  = tmvp->dir_map_v0[c0_x + 1];
         c0_col1 = tmvp->dir_map_v1[c0_x + 1];
         c1_col  = tmvp->dir_map_v0[c1_x + 1];
         c1_col1 = tmvp->dir_map_v1[c1_x + 1];
 
-        cand_c0  = !!(c0_col  & POS_MASK(pb_y -(c0_y & 0x1), nb_pb_h));
-        cand_c01 = !!(c0_col1 & POS_MASK(pb_y -(c0_y & 0x1), nb_pb_h));
-        cand_c1  = !!(c1_col  & POS_MASK(pb_y -(c1_y & 0x1), nb_pb_h >> 1));
-        cand_c11 = !!(c1_col1 & POS_MASK(pb_y -(c1_y & 0x1), nb_pb_h >> 1));
-
-        c0_y &= ~(0x1);
-        c1_y &= ~(0x1);
+        cand_c0  = !!(c0_col  & TMVP_POS_MASK(c0_y));
+        cand_c01 = !!(c0_col1 & TMVP_POS_MASK(c0_y));
+        cand_c1  = !!(c1_col  & TMVP_POS_MASK(c1_y));
+        cand_c11 = !!(c1_col1 & TMVP_POS_MASK(c1_y));
 
         /*FIXME check whether TMVP candidates RPL order is correct*/
         if ((!tmvp->col_ref_l0)/* && !tmvp->ldc) || tmvp->ldc*/) {
