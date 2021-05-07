@@ -354,6 +354,27 @@ tmvp_scale_mv(int scale, OVMV mv)
     return mv;
 }
 
+static int16_t
+derive_tmvp_scale(int32_t dist_ref, int32_t dist_col)
+{
+    int32_t scale = 0;
+
+    if (dist_ref == dist_col || !dist_col)
+        return 256;
+
+    /*FIXME POW2 clip */
+    dist_ref = ov_clip(dist_ref, -128, 127);
+    dist_col = ov_clip(dist_col, -128, 127);
+
+    scale = dist_ref * ((0x4000 + OVABS(dist_col >> 1)) / dist_col);
+    scale += 32;
+    scale >>= 6;
+    /* FIXME pow2_clip */
+    scale = ov_clip(scale, -4096, 4095);
+
+    return (int16_t)scale;
+}
+
 static OVMV
 derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                         const struct OVMVCtx *const mv_ctx,
@@ -486,7 +507,6 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
         int c1_y = pb_y + (nb_pb_h >> 1);
         int c0_x = pb_x + nb_pb_w;
         int c0_y = pb_y + nb_pb_h;
-        int scale0, scale1;
         #if 1
         if (!inter_ctx->tmvp_avail) {
             /* FIXME thread synchro */

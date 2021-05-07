@@ -77,6 +77,12 @@ struct OVPicture
        int16_t scale01;
        int16_t scale10;
        int16_t scale11;
+
+       int16_t dist_ref_0[16];
+       int16_t dist_ref_1[16];
+
+       int16_t dist_col_0[16];
+       int16_t dist_col_1[16];
        /* Per CTU Bit fields for available Motion Vectors */
        void *mv_field0;
        void *mv_field1;

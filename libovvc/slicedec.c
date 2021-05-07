@@ -1039,6 +1039,11 @@ tmvp_entry_init(OVCTUDec *ctudec, OVPicture *active_pic)
     tmvp_ctx->col_plane0 = &collocated_ref->mv_plane0;
     tmvp_ctx->col_plane1 = &collocated_ref->mv_plane1;
 
+    memcpy(tmvp_ctx->dist_ref_0, active_pic->tmvp.dist_ref_0, sizeof(tmvp_ctx->dist_ref_0));
+    memcpy(tmvp_ctx->dist_ref_1, active_pic->tmvp.dist_ref_1, sizeof(tmvp_ctx->dist_ref_1));
+    memcpy(tmvp_ctx->dist_col_0, active_pic->tmvp.dist_col_0, sizeof(tmvp_ctx->dist_col_0));
+    memcpy(tmvp_ctx->dist_col_1, active_pic->tmvp.dist_col_1, sizeof(tmvp_ctx->dist_col_1));
+
 
     memset(tmvp_ctx->dir_map_v0, 0, 33 * sizeof(uint64_t));
     memset(tmvp_ctx->dir_map_v1, 0, 33 * sizeof(uint64_t));

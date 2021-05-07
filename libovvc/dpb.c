@@ -738,12 +738,34 @@ tmvp_set_mv_scales(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic,
 
     int32_t dist_col0 = col_pic->rpl_info0.nb_refs ? col_pic->poc - col_pic->rpl_info0.ref_info[0].poc : 0;
     int32_t dist_col1 = col_pic->rpl_info1.nb_refs ? col_pic->poc - col_pic->rpl_info1.ref_info[0].poc : 0;
+    const struct RPLInfo *const col_rpl0 = &col_pic->rpl_info0;
+    const struct RPLInfo *const col_rpl1 = &col_pic->rpl_info1;
+    const struct RPLInfo *const rpl0 = &pic->rpl_info0;
+    const struct RPLInfo *const rpl1 = &pic->rpl_info1;
+    const int32_t col_poc = col_pic->poc;
+    const int32_t poc = pic->poc;
 
     tmvp_ctx->scale00 = tmvp_compute_scale(dist_ref0, dist_col0);
     tmvp_ctx->scale01 = tmvp_compute_scale(dist_ref0, dist_col1);
 
     tmvp_ctx->scale10 = tmvp_compute_scale(dist_ref1, dist_col0);
     tmvp_ctx->scale11 = tmvp_compute_scale(dist_ref1, dist_col1);
+
+    for (int i = 0; i < rpl0->nb_refs; ++i) {
+        tmvp_ctx->dist_ref_0[i] = poc - rpl0->ref_info[i].poc;
+    }
+
+    for (int i = 0; i < rpl1->nb_refs; ++i) {
+        tmvp_ctx->dist_ref_1[i] = poc - rpl1->ref_info[i].poc;
+    }
+
+    for (int i = 0; i < col_rpl0->nb_refs; ++i) {
+        tmvp_ctx->dist_col_0[i] = col_poc - col_rpl0->ref_info[i].poc;
+    }
+
+    for (int i = 0; i < col_rpl1->nb_refs; ++i) {
+        tmvp_ctx->dist_col_1[i] = col_poc - col_rpl1->ref_info[i].poc;
+    }
 }
 
 static int
