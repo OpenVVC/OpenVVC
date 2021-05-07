@@ -4208,7 +4208,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
         nb_sig_c = ovcabac_read_ae_sb_ts_4x4(cabac_ctx, cg_coeffs,
                                              &nb_significant   [0],
                                              &sign_map         [0],
-                                             &abs_coeffs  [36 + 0],
+                                             &abs_coeffs  [VVC_TR_CTX_STRIDE + 0],
                                              (int16_t*)&max_nb_bins);
 
         deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
@@ -4256,7 +4256,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
                                                       cg_coeffs,
                                                       &nb_significant[cg_offset],
                                                       &sign_map      [cg_offset],
-                                                      &abs_coeffs [36+cg_offset],
+                                                      &abs_coeffs [VVC_TR_CTX_STRIDE+cg_offset],
                                                       (int16_t *)&max_nb_bins);
 
                 deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
@@ -4295,7 +4295,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
             nb_sig_c += ovcabac_read_ae_sb_ts_4x4(cabac_ctx, cg_coeffs,
                                                   &nb_significant[cg_offset],
                                                   &sign_map      [cg_offset],
-                                                  &abs_coeffs   [36+cg_offset],
+                                                  &abs_coeffs   [VVC_TR_CTX_STRIDE+cg_offset],
                                                   (int16_t*) &max_nb_bins);
 
             deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
@@ -4319,7 +4319,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
             nb_sig_c = ovcabac_read_ae_sb_ts_2x8(cabac_ctx, cg_coeffs,
                                                  &nb_significant   [0],
                                                  &sign_map         [0],
-                                                 &abs_coeffs  [36 + 0],
+                                                 &abs_coeffs  [VVC_TR_CTX_STRIDE + 0],
                                                  (int16_t*)&max_nb_bins);
 
             deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
@@ -4354,7 +4354,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
                                                       cg_coeffs,
                                                       &nb_significant[cg_offset],
                                                       &sign_map      [cg_offset],
-                                                      &abs_coeffs [36+cg_offset],
+                                                      &abs_coeffs [VVC_TR_CTX_STRIDE+cg_offset],
                                                       (int16_t *)&max_nb_bins);
 
                 deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
@@ -4388,7 +4388,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
             nb_sig_c += ovcabac_read_ae_sb_ts_2x8(cabac_ctx, cg_coeffs,
                                                   &nb_significant[cg_offset],
                                                   &sign_map      [cg_offset],
-                                                  &abs_coeffs   [36+cg_offset],
+                                                  &abs_coeffs   [VVC_TR_CTX_STRIDE+cg_offset],
                                                   (int16_t*) &max_nb_bins);
 
             deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
@@ -4409,7 +4409,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
             nb_sig_c = ovcabac_read_ae_sb_ts_8x2(cabac_ctx, cg_coeffs,
                                                  &nb_significant   [0],
                                                  &sign_map         [0],
-                                                 &abs_coeffs  [36 + 0],
+                                                 &abs_coeffs  [VVC_TR_CTX_STRIDE + 0],
                                                  (int16_t*)&max_nb_bins);
 
             deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
@@ -4443,7 +4443,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
                 nb_sig_c += ovcabac_read_ae_sb_ts_8x2(cabac_ctx, cg_coeffs,
                                                       &nb_significant[cg_offset],
                                                       &sign_map      [cg_offset],
-                                                      &abs_coeffs [36+cg_offset],
+                                                      &abs_coeffs [VVC_TR_CTX_STRIDE+cg_offset],
                                                       (int16_t *)&max_nb_bins);
 
                 deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
@@ -4476,7 +4476,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
             nb_sig_c += ovcabac_read_ae_sb_ts_8x2(cabac_ctx, cg_coeffs,
                                                   &nb_significant[cg_offset],
                                                   &sign_map      [cg_offset],
-                                                  &abs_coeffs   [36+cg_offset],
+                                                  &abs_coeffs   [VVC_TR_CTX_STRIDE+cg_offset],
                                                   (int16_t*) &max_nb_bins);
 
             deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
