@@ -1300,7 +1300,15 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
 
         if (nb_cand == merge_idx)
             return avg_mv;
+
+        nb_cand++;
     }
+    /*FIXME saturation or ridx based on nb_active_ref*/
+    int8_t ridx = OVMIN(merge_idx - nb_cand, OVMIN(inter_ctx->nb_active_ref0, inter_ctx->nb_active_ref1));
+
+    mv_z.inter_dir = 3;
+    mv_z.mv0.ref_idx = ridx;
+    mv_z.mv1.ref_idx = ridx;
 
     return mv_z;
 }
