@@ -300,7 +300,7 @@ decode_cbf_st(const OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_de
     }
 
     /* FIXME intra if inter we only check for cbf_mask == 3*/
-    if (ctu_dec->jcbcr_enabled && ((cu_flags & 0x2) && cbf_mask) || cbf_mask == 3) {
+    if (ctu_dec->jcbcr_enabled && (((cu_flags & 0x2) && cbf_mask) || cbf_mask == 3)) {
         uint8_t joint_cb_cr = ovcabac_read_ae_joint_cb_cr_flag(cabac_ctx, (cbf_mask & 0x3) - 1);
         cbf_mask |= joint_cb_cr << 3;
     }
