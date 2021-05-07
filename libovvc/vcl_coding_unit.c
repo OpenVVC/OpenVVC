@@ -572,9 +572,6 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
                 cu_type = OV_INTRA;
             }
 
-            fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_cu_w, log2_cu_h);
-            fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0, y0, log2_cu_w, log2_cu_h);
-
         } else {
             uint8_t merge_flag = ovcabac_read_ae_cu_merge_flag(cabac_ctx);
 
@@ -604,15 +601,11 @@ coding_unit_intra_st(OVCTUDec *const ctu_dec,
 
    cu = coding_unit_intra(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h);
 
-   fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_cu_w, log2_cu_h);
    /* if not in separable tree */
    if (!ctu_dec->share) {
        coding_unit_intra_c(ctu_dec, ctu_dec->part_ctx_c, x0 >> 1, y0 >> 1,
                            log2_cu_w - 1, log2_cu_h - 1);
-
-       fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0, y0, log2_cu_w, log2_cu_h);
    }
-
 
    return cu;
 }
@@ -711,8 +704,6 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
      */
     cu = drv_intra_cu(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, cu);
 
-    fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_cb_w, log2_cb_h);
-
     return cu;
 }
 
@@ -775,7 +766,6 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
     ctu_dec->intra_mode_c = intra_mode;
     vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, intra_mode, x0, y0, log2_cb_w, log2_cb_h);
 
-    fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1);
     return cu;
 }
 

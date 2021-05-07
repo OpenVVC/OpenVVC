@@ -16,6 +16,7 @@
 #include "rcn_intra_angular.h"
 #include "rcn_intra_dc_planar.h"
 #include "data_rcn_angular.h"
+#include "dbf_utils.h"
 
 /* Modify angular mode for non square according to width / height
  * ratio.
@@ -416,9 +417,7 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
                                     y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
     }
 
-    #if 0
     fill_bs_map(&ctudec->dbf_info.bs2_map, x0, y0, log2_cb_w, log2_cb_h);
-    #endif
 
     return cu;
 }
@@ -771,6 +770,7 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
     const struct RCNFunctions *rcn_func = &rcn_ctx->rcn_funcs;
     const struct DCFunctions *dc = &rcn_ctx->rcn_funcs.dc;
     const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
+    OVCTUDec *const ctudec = rcn_ctx->ctudec;
 
     uint16_t *const dst_cb = &ctu_buff->cb[(x0) + (y0 * RCN_CTB_STRIDE)];
     uint16_t *const dst_cr = &ctu_buff->cr[(x0) + (y0 * RCN_CTB_STRIDE)];
@@ -929,6 +929,9 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
 
     }
     }
+
+    fill_bs_map(&ctudec->dbf_info.bs2_map_c, x0 << 1, y0 << 1, log2_pb_w + 1, log2_pb_h + 1);
+
 }
 
 
