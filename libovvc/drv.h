@@ -79,14 +79,16 @@ OVMV drv_merge_mvp(struct InterDRVCtx *const inter_ctx,
 VVCMergeInfo drv_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                              uint8_t pb_x, uint8_t pb_y,
                              uint8_t nb_pb_w, uint8_t nb_pb_h,
-                             uint8_t merge_idx, uint8_t max_nb_merge_cand);
+                             uint8_t merge_idx, uint8_t max_nb_merge_cand,
+                             uint8_t is_small);
 
 VVCMergeInfo drv_mvp_b(struct InterDRVCtx *const inter_ctx,
                        uint8_t pb_x, uint8_t pb_y,
                        uint8_t nb_pb_w, uint8_t nb_pb_h,
                        OVMV mvd0, OVMV mvd1,
                        uint8_t mvp_idx0, uint8_t mvp_idx1,
-                       uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1);
+                       uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
+                       uint8_t is_small);
 
 void process_lfnst(OVCTUDec *const ctudec,
               int16_t *dst, const int16_t *src,

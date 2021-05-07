@@ -883,7 +883,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
         mv_info = drv_merge_mvp_b(inter_ctx, x_pu, y_pu,
                                   nb_pb_w, nb_pb_h, merge_idx,
-                                  max_nb_cand);
+                                  max_nb_cand, log2_pb_w + log2_pb_h <= 5);
 
         ref_idx0 = mv_info.mv0.ref_idx;
         ref_idx1 = mv_info.mv1.ref_idx;
@@ -919,7 +919,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         }
 
         mv_info = drv_mvp_b(inter_ctx, x_pu, y_pu, nb_pb_w, nb_pb_h,
-                            mvd0, mvd1, mvp_idx0, mvp_idx1, inter_dir, ref_idx0, ref_idx1);
+                            mvd0, mvd1, mvp_idx0, mvp_idx1, inter_dir, ref_idx0, ref_idx1,
+                            log2_pb_w + log2_pb_h <= 5);
 
         //mv_info.mv0.ref_idx = inter_dir & 0x1 ? ref_idx0 : 0xFF;
         //mv_info.mv1.ref_idx = inter_dir & 0x2 ? ref_idx1 : 0xFF;
