@@ -1528,18 +1528,24 @@ slicedec_init_lines(OVSliceDec *const sldec, const OVPS *const prms)
 static void
 uninit_ctudec_list(OVSliceDec *const sldec, int nb_threads)
 {
-    const OVSPS *const sps = sldec->active_params->sps;
-    uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
-
     int nb_ctudec = nb_threads;
     int i;
 
-    for (i = 0; i < nb_ctudec; ++i) {
-        OVCTUDec *ctudec = sldec->ctudec_list[i];
-        uninit_in_loop_filters(ctudec, (1<<log2_ctb_s));
-        ctudec_uninit(ctudec);
+    if(sldec->active_params)
+    {    const OVSPS *const sps = sldec->active_params->sps;
+        uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
+
+
+        for (i = 0; i < nb_ctudec; ++i) {
+            OVCTUDec *ctudec = sldec->ctudec_list[i];
+            uninit_in_loop_filters(ctudec, (1<<log2_ctb_s));
+        }
     }
 
+    for (i = 0; i < nb_ctudec; ++i) {
+        OVCTUDec *ctudec = sldec->ctudec_list[i];
+        ctudec_uninit(ctudec);
+    }
     ov_freep(&sldec->ctudec_list);
     #if 0
     ctudec_uninit(sldec->ctudec_list);
