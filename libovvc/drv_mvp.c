@@ -538,63 +538,148 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
             scale0 = tmvp->scale10;
             scale1 = tmvp->scale11;
         }
+        uint8_t col_ref_l0 = tmvp->col_ref_l0;
 
-        if (cand_c0) {
-            /* Candidate 0 in collocated picture 0 */
-            int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
-            #if 0
-            OVMV c0 = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
-            #else
-            OVMV c0 = tmvp->mvs0[pos_in_buff];
-            #endif
-            c0.x = tmvp_round_mv(c0.x);
-            c0.y = tmvp_round_mv(c0.y);
-            c0 = tmvp_scale_mv(scale0, c0);
-            c0.x = ((c0.x + 2 - (c0.x >= 0)) >> 2) << 2;
-            c0.y = ((c0.y + 2 - (c0.y >= 0)) >> 2) << 2;
-            cand[nb_cand++] = c0;
-        } else if (cand_c01) {
-            /* Candidate 0 in collocated picture 1 */
-            int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
-            #if 0
-            OVMV c0 = tmvp->tmvp_mv.mv_ctx1.mvs[pos_in_buff];
-            #else
-            OVMV c0 = tmvp->mvs1[pos_in_buff];
-            #endif
-            c0.x = tmvp_round_mv(c0.x);
-            c0.y = tmvp_round_mv(c0.y);
-            c0 = tmvp_scale_mv(scale1, c0);
-            c0.x = ((c0.x + 2 - (c0.x >= 0)) >> 2) << 2;
-            c0.y = ((c0.y + 2 - (c0.y >= 0)) >> 2) << 2;
-            cand[nb_cand++] = c0;
-        } else if (cand_c1) {
-            /* Candidate 1 in collocated picture 0 */
-            int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
-            #if 0
-            OVMV c1 = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
-            #else
-            OVMV c1 = tmvp->mvs0[pos_in_buff];
-            #endif
-            c1.x = tmvp_round_mv(c1.x);
-            c1.y = tmvp_round_mv(c1.y);
-            c1 = tmvp_scale_mv(scale0, c1);
-            c1.x = ((c1.x + 2 - (c1.x >= 0)) >> 2) << 2;
-            c1.y = ((c1.y + 2 - (c1.y >= 0)) >> 2) << 2;
-            cand[nb_cand++] = c1;
-        } else if (cand_c11) {
-            /* Candidate 1 in collocated picture 1 */
-            int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
-            #if 0
-            OVMV c1 = tmvp->tmvp_mv.mv_ctx1.mvs[pos_in_buff];
-            #else
-            OVMV c1 = tmvp->mvs1[pos_in_buff];
-            #endif
-            c1.x = tmvp_round_mv(c1.x);
-            c1.y = tmvp_round_mv(c1.y);
-            c1 = tmvp_scale_mv(scale1, c1);
-            c1.x = ((c1.x + 2 - (c1.x >= 0)) >> 2) << 2;
-            c1.y = ((c1.y + 2 - (c1.y >= 0)) >> 2) << 2;
-            cand[nb_cand++] = c1;
+        if ((!col_ref_l0 && !tmvp->ldc) || (tmvp->ldc && mv_ctx == &inter_ctx->mv_ctx0)) {
+            if (cand_c0) {
+                /* Candidate 0 in collocated picture 0 */
+                int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+#if 0
+                OVMV c0 = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
+#else
+                OVMV c0 = tmvp->mvs0[pos_in_buff];
+                int16_t col_ref_idx = c0.ref_idx;
+                int16_t scale0 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_0[col_ref_idx]);
+#endif
+                c0.x = tmvp_round_mv(c0.x);
+                c0.y = tmvp_round_mv(c0.y);
+                c0 = tmvp_scale_mv(scale0, c0);
+                c0.x = ((c0.x + 2 - (c0.x >= 0)) >> 2) << 2;
+                c0.y = ((c0.y + 2 - (c0.y >= 0)) >> 2) << 2;
+                c0.ref_idx = ref_idx;
+                cand[nb_cand++] = c0;
+            } else if (cand_c01) {
+                /* Candidate 0 in collocated picture 1 */
+                int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+#if 0
+                OVMV c0 = tmvp->tmvp_mv.mv_ctx1.mvs[pos_in_buff];
+#else
+                OVMV c0 = tmvp->mvs1[pos_in_buff];
+                int16_t col_ref_idx = c0.ref_idx;
+                int16_t scale1 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_1[col_ref_idx]);
+#endif
+                c0.x = tmvp_round_mv(c0.x);
+                c0.y = tmvp_round_mv(c0.y);
+                c0 = tmvp_scale_mv(scale1, c0);
+                c0.x = ((c0.x + 2 - (c0.x >= 0)) >> 2) << 2;
+                c0.y = ((c0.y + 2 - (c0.y >= 0)) >> 2) << 2;
+                c0.ref_idx = ref_idx;
+                cand[nb_cand++] = c0;
+            } else if (cand_c1) {
+                /* Candidate 1 in collocated picture 0 */
+                int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+#if 0
+                OVMV c1 = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
+#else
+                OVMV c1 = tmvp->mvs0[pos_in_buff];
+                int16_t col_ref_idx = c1.ref_idx;
+                int16_t scale0 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_0[col_ref_idx]);
+#endif
+                c1.x = tmvp_round_mv(c1.x);
+                c1.y = tmvp_round_mv(c1.y);
+                c1 = tmvp_scale_mv(scale0, c1);
+                c1.x = ((c1.x + 2 - (c1.x >= 0)) >> 2) << 2;
+                c1.y = ((c1.y + 2 - (c1.y >= 0)) >> 2) << 2;
+                c1.ref_idx = ref_idx;
+                cand[nb_cand++] = c1;
+            } else if (cand_c11) {
+                /* Candidate 1 in collocated picture 1 */
+                int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+#if 0
+                OVMV c1 = tmvp->tmvp_mv.mv_ctx1.mvs[pos_in_buff];
+#else
+                OVMV c1 = tmvp->mvs1[pos_in_buff];
+                int16_t col_ref_idx = c1.ref_idx;
+                int16_t scale1 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_1[col_ref_idx]);
+#endif
+                c1.x = tmvp_round_mv(c1.x);
+                c1.y = tmvp_round_mv(c1.y);
+                c1 = tmvp_scale_mv(scale1, c1);
+                c1.x = ((c1.x + 2 - (c1.x >= 0)) >> 2) << 2;
+                c1.y = ((c1.y + 2 - (c1.y >= 0)) >> 2) << 2;
+                c1.ref_idx = ref_idx;
+                cand[nb_cand++] = c1;
+            }
+        } else {
+            if (cand_c01) {
+                /* Candidate 0 in collocated picture 1 */
+                int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+#if 0
+                OVMV c0 = tmvp->tmvp_mv.mv_ctx1.mvs[pos_in_buff];
+#else
+                OVMV c0 = tmvp->mvs1[pos_in_buff];
+                int16_t col_ref_idx = c0.ref_idx;
+                int16_t scale1 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_1[col_ref_idx]);
+#endif
+                c0.x = tmvp_round_mv(c0.x);
+                c0.y = tmvp_round_mv(c0.y);
+                c0 = tmvp_scale_mv(scale1, c0);
+                c0.x = ((c0.x + 2 - (c0.x >= 0)) >> 2) << 2;
+                c0.y = ((c0.y + 2 - (c0.y >= 0)) >> 2) << 2;
+                c0.ref_idx = ref_idx;
+                cand[nb_cand++] = c0;
+            } else if (cand_c0) {
+                /* Candidate 0 in collocated picture 0 */
+                int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+#if 0
+                OVMV c0 = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
+#else
+                OVMV c0 = tmvp->mvs0[pos_in_buff];
+                int16_t col_ref_idx = c0.ref_idx;
+                int16_t scale0 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_0[col_ref_idx]);
+#endif
+                c0.x = tmvp_round_mv(c0.x);
+                c0.y = tmvp_round_mv(c0.y);
+                c0 = tmvp_scale_mv(scale0, c0);
+                c0.x = ((c0.x + 2 - (c0.x >= 0)) >> 2) << 2;
+                c0.y = ((c0.y + 2 - (c0.y >= 0)) >> 2) << 2;
+                c0.ref_idx = ref_idx;
+                cand[nb_cand++] = c0;
+            } else if (cand_c11) {
+                /* Candidate 1 in collocated picture 1 */
+                int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+#if 0
+                OVMV c1 = tmvp->tmvp_mv.mv_ctx1.mvs[pos_in_buff];
+#else
+                OVMV c1 = tmvp->mvs1[pos_in_buff];
+                int16_t col_ref_idx = c1.ref_idx;
+                int16_t scale1 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_1[col_ref_idx]);
+#endif
+                c1.x = tmvp_round_mv(c1.x);
+                c1.y = tmvp_round_mv(c1.y);
+                c1 = tmvp_scale_mv(scale1, c1);
+                c1.x = ((c1.x + 2 - (c1.x >= 0)) >> 2) << 2;
+                c1.y = ((c1.y + 2 - (c1.y >= 0)) >> 2) << 2;
+                c1.ref_idx = ref_idx;
+                cand[nb_cand++] = c1;
+            } else if (cand_c1) {
+                /* Candidate 1 in collocated picture 0 */
+                int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+#if 0
+                OVMV c1 = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
+#else
+                OVMV c1 = tmvp->mvs0[pos_in_buff];
+                int16_t col_ref_idx = c1.ref_idx;
+                int16_t scale0 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_0[col_ref_idx]);
+#endif
+                c1.x = tmvp_round_mv(c1.x);
+                c1.y = tmvp_round_mv(c1.y);
+                c1 = tmvp_scale_mv(scale0, c1);
+                c1.x = ((c1.x + 2 - (c1.x >= 0)) >> 2) << 2;
+                c1.y = ((c1.y + 2 - (c1.y >= 0)) >> 2) << 2;
+                c1.ref_idx = ref_idx;
+                cand[nb_cand++] = c1;
+            }
         }
     }
     #endif
@@ -1215,62 +1300,245 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         #endif
 
         /*FIXME check whether TMVP candidates RPL order is correct*/
+        if ((!tmvp->col_ref_l0)/* && !tmvp->ldc) || tmvp->ldc*/) {
 
-        if (cand_c0 | cand_c01) {
-            int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
-            cand[nb_cand].inter_dir = 3;
-            if (cand_c0) {
-                #if 0
-                OVMV c0  = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
-                #else
-                OVMV c0  = tmvp->mvs0[pos_in_buff];
-                #endif
-                c0.x = tmvp_round_mv(c0.x);
-                c0.y = tmvp_round_mv(c0.y);
-                cand[nb_cand].mv0 = tmvp_scale_mv(tmvp->scale00, c0);
-                cand[nb_cand].mv1 = tmvp_scale_mv(tmvp->scale10, c0);
-                if (nb_cand++ == merge_idx)
-                    return cand[merge_idx];
-            } else {
-                #if 0
-                OVMV c0  = tmvp->tmvp_mv.mv_ctx1.mvs[pos_in_buff];
-                #else
-                OVMV c0  = tmvp->mvs1[pos_in_buff];
-                #endif
-                c0.x = tmvp_round_mv(c0.x);
-                c0.y = tmvp_round_mv(c0.y);
-                cand[nb_cand].mv0 = tmvp_scale_mv(tmvp->scale01, c0);
-                cand[nb_cand].mv1 = tmvp_scale_mv(tmvp->scale11, c0);
-                if (nb_cand++ == merge_idx)
-                    return cand[merge_idx];
+            if (cand_c0 | cand_c01) {
+                int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+                cand[nb_cand].inter_dir = 3;
+                if (cand_c0) {
+#if 0
+                    OVMV c0  = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
+#else
+                    OVMV c0  = tmvp->mvs0[pos_in_buff];
+#if 1
+                    uint8_t col_ref_idx = c0.ref_idx;
+                    int16_t scale00 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
+                    int16_t scale10 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_0[col_ref_idx]);
+#else
+                    int16_t scale00 = tmvp->scale00;
+                    int16_t scale10 = tmvp->scale10;
+#endif
+#endif
+                    c0.x = tmvp_round_mv(c0.x);
+                    c0.y = tmvp_round_mv(c0.y);
+                    cand[nb_cand].mv0 = tmvp_scale_mv(scale00, c0);
+                    cand[nb_cand].mv0.ref_idx = 0;
+                    if (cand_c01 && tmvp->ldc) {
+                        OVMV c01  = tmvp->mvs1[pos_in_buff];
+                        col_ref_idx = c01.ref_idx;
+                        int16_t scale11 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
+                        c01.x = tmvp_round_mv(c01.x);
+                        c01.y = tmvp_round_mv(c01.y);
+                        cand[nb_cand].mv1 = tmvp_scale_mv(scale11, c01);
+                        cand[nb_cand].mv1.ref_idx = 0;
+                    } else {
+                        cand[nb_cand].mv1 = tmvp_scale_mv(scale10, c0);
+                        cand[nb_cand].mv1.ref_idx = 0;
+                    }
+                    if (nb_cand++ == merge_idx)
+                        return cand[merge_idx];
+                } else {
+#if 0
+                    OVMV c0  = tmvp->tmvp_mv.mv_ctx1.mvs[pos_in_buff];
+#else
+                    OVMV c0  = tmvp->mvs1[pos_in_buff];
+#if 1
+                    uint8_t col_ref_idx = c0.ref_idx;
+                    int16_t scale01 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_1[col_ref_idx]);
+                    int16_t scale11 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
+#else
+                    int16_t scale01 = tmvp->scale01;
+                    int16_t scale11 = tmvp->scale11;
+#endif
+#endif
+                    c0.x = tmvp_round_mv(c0.x);
+                    c0.y = tmvp_round_mv(c0.y);
+                    cand[nb_cand].mv0 = tmvp_scale_mv(scale01, c0);
+                    cand[nb_cand].mv1 = tmvp_scale_mv(scale11, c0);
+                    cand[nb_cand].mv0.ref_idx = 0;
+                    cand[nb_cand].mv1.ref_idx = 0;
+                    if (nb_cand++ == merge_idx)
+                        return cand[merge_idx];
+                }
+            } else if (cand_c1 | cand_c11) {
+                int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+                cand[nb_cand].inter_dir = 3;
+                if (cand_c1) {
+#if 0
+                    OVMV c1  = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
+#else
+                    OVMV c1  = tmvp->mvs0[pos_in_buff];
+#if 1
+                    uint8_t col_ref_idx = c1.ref_idx;
+                    int16_t scale00 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
+                    int16_t scale10 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_0[col_ref_idx]);
+#else
+                    int16_t scale00 = tmvp->scale00;
+                    int16_t scale10 = tmvp->scale10;
+#endif
+#endif
+                    c1.x = tmvp_round_mv(c1.x);
+                    c1.y = tmvp_round_mv(c1.y);
+                    cand[nb_cand].mv0 = tmvp_scale_mv(scale00, c1);
+                    cand[nb_cand].mv0.ref_idx = 0;
+                    if (cand_c11 && tmvp->ldc) {
+                        OVMV c11  = tmvp->mvs1[pos_in_buff];
+                        col_ref_idx = c11.ref_idx;
+                        int16_t scale11 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
+                        c11.x = tmvp_round_mv(c11.x);
+                        c11.y = tmvp_round_mv(c11.y);
+                        cand[nb_cand].mv1 = tmvp_scale_mv(scale11, c11);
+                        cand[nb_cand].mv1.ref_idx = 0;
+                    } else {
+                        cand[nb_cand].mv1 = tmvp_scale_mv(scale10, c1);
+                        cand[nb_cand].mv1.ref_idx = 0;
+                    }
+                    if (nb_cand++ == merge_idx)
+                        return cand[merge_idx];
+                } else {
+#if 0
+                    OVMV c1  = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
+#else
+                    OVMV c1  = tmvp->mvs1[pos_in_buff];
+#if 1
+                    uint8_t col_ref_idx = c1.ref_idx;
+                    int16_t scale01 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_1[col_ref_idx]);
+                    int16_t scale11 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
+#else
+                    int16_t scale01 = tmvp->scale01;
+                    int16_t scale11 = tmvp->scale11;
+#endif
+#endif
+                    c1.x = tmvp_round_mv(c1.x);
+                    c1.y = tmvp_round_mv(c1.y);
+                    cand[nb_cand].mv0 = tmvp_scale_mv(scale01, c1);
+                    cand[nb_cand].mv1 = tmvp_scale_mv(scale11, c1);
+                    cand[nb_cand].mv0.ref_idx = 0;
+                    cand[nb_cand].mv1.ref_idx = 0;
+                    if (nb_cand++ == merge_idx)
+                        return cand[merge_idx];
+                }
             }
-        } else if (cand_c1 | cand_c11) {
-            int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
-            cand[nb_cand].inter_dir = 3;
-            if (cand_c1) {
-                #if 0
-                OVMV c1  = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
-                #else
-                OVMV c1  = tmvp->mvs0[pos_in_buff];
-                #endif
-                c1.x = tmvp_round_mv(c1.x);
-                c1.y = tmvp_round_mv(c1.y);
-                cand[nb_cand].mv0 = tmvp_scale_mv(tmvp->scale00, c1);
-                cand[nb_cand].mv1 = tmvp_scale_mv(tmvp->scale10, c1);
-                if (nb_cand++ == merge_idx)
-                    return cand[merge_idx];
-            } else {
-                #if 0
-                OVMV c1  = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
-                #else
-                OVMV c1  = tmvp->mvs1[pos_in_buff];
-                #endif
-                c1.x = tmvp_round_mv(c1.x);
-                c1.y = tmvp_round_mv(c1.y);
-                cand[nb_cand].mv0 = tmvp_scale_mv(tmvp->scale01, c1);
-                cand[nb_cand].mv1 = tmvp_scale_mv(tmvp->scale11, c1);
-                if (nb_cand++ == merge_idx)
-                    return cand[merge_idx];
+        } else {
+            if (cand_c0 | cand_c01) {
+                int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+                cand[nb_cand].inter_dir = 3;
+                if (cand_c01) {
+#if 0
+                    OVMV c0  = tmvp->tmvp_mv.mv_ctx1.mvs[pos_in_buff];
+#else
+                    OVMV c0  = tmvp->mvs1[pos_in_buff];
+#if 1
+                    uint8_t col_ref_idx = c0.ref_idx;
+                    int16_t scale01 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_1[col_ref_idx]);
+                    int16_t scale11 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
+#else
+                    int16_t scale01 = tmvp->scale01;
+                    int16_t scale11 = tmvp->scale11;
+#endif
+#endif
+                    c0.x = tmvp_round_mv(c0.x);
+                    c0.y = tmvp_round_mv(c0.y);
+                    cand[nb_cand].mv1 = tmvp_scale_mv(scale11, c0);
+                    cand[nb_cand].mv1.ref_idx = 0;
+
+                    if (cand_c0 && tmvp->ldc) {
+                        OVMV c00  = tmvp->mvs0[pos_in_buff];
+                        col_ref_idx = c00.ref_idx;
+                        int16_t scale00 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
+                        c00.x = tmvp_round_mv(c00.x);
+                        c00.y = tmvp_round_mv(c00.y);
+                        cand[nb_cand].mv0 = tmvp_scale_mv(scale00, c00);
+                        cand[nb_cand].mv0.ref_idx = 0;
+                    } else {
+                        cand[nb_cand].mv0 = tmvp_scale_mv(scale01, c0);
+                        cand[nb_cand].mv0.ref_idx = 0;
+                    }
+                    if (nb_cand++ == merge_idx)
+                        return cand[merge_idx];
+                } else {
+#if 0
+                    OVMV c0  = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
+#else
+                    OVMV c0  = tmvp->mvs0[pos_in_buff];
+#if 1
+                    uint8_t col_ref_idx = c0.ref_idx;
+                    int16_t scale00 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
+                    int16_t scale10 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_0[col_ref_idx]);
+#else
+                    int16_t scale00 = tmvp->scale00;
+                    int16_t scale10 = tmvp->scale10;
+#endif
+#endif
+                    c0.x = tmvp_round_mv(c0.x);
+                    c0.y = tmvp_round_mv(c0.y);
+                    cand[nb_cand].mv0 = tmvp_scale_mv(scale00, c0);
+                    cand[nb_cand].mv1 = tmvp_scale_mv(scale10, c0);
+                    cand[nb_cand].mv0.ref_idx = 0;
+                    cand[nb_cand].mv1.ref_idx = 0;
+                    if (nb_cand++ == merge_idx)
+                        return cand[merge_idx];
+                }
+            } else if (cand_c1 | cand_c11) {
+                int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+                cand[nb_cand].inter_dir = 3;
+                if (cand_c11) {
+#if 0
+                    OVMV c1  = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
+#else
+                    OVMV c1  = tmvp->mvs1[pos_in_buff];
+#if 1
+                    uint8_t col_ref_idx = c1.ref_idx;
+                    int16_t scale01 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_1[col_ref_idx]);
+                    int16_t scale11 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
+#else
+                    int16_t scale01 = tmvp->scale01;
+                    int16_t scale11 = tmvp->scale11;
+#endif
+#endif
+                    c1.x = tmvp_round_mv(c1.x);
+                    c1.y = tmvp_round_mv(c1.y);
+                    cand[nb_cand].mv1 = tmvp_scale_mv(scale11, c1);
+                    cand[nb_cand].mv1.ref_idx = 0;
+
+                    if (cand_c1 && tmvp->ldc) {
+                        OVMV c10  = tmvp->mvs0[pos_in_buff];
+                        col_ref_idx = c10.ref_idx;
+                        int16_t scale00 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
+                        c10.x = tmvp_round_mv(c10.x);
+                        c10.y = tmvp_round_mv(c10.y);
+                        cand[nb_cand].mv0 = tmvp_scale_mv(scale00, c10);
+                        cand[nb_cand].mv0.ref_idx = 0;
+                    } else {
+                        cand[nb_cand].mv0 = tmvp_scale_mv(scale01, c1);
+                        cand[nb_cand].mv0.ref_idx = 0;
+                    }
+
+                    if (nb_cand++ == merge_idx)
+                        return cand[merge_idx];
+                } else {
+#if 0
+                    OVMV c1  = tmvp->tmvp_mv.mv_ctx0.mvs[pos_in_buff];
+#else
+                    OVMV c1  = tmvp->mvs0[pos_in_buff];
+#if 1
+                    uint8_t col_ref_idx = c1.ref_idx;
+                    int16_t scale00 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
+                    int16_t scale10 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_0[col_ref_idx]);
+#else
+                    int16_t scale00 = tmvp->scale00;
+                    int16_t scale10 = tmvp->scale10;
+#endif
+#endif
+                    c1.x = tmvp_round_mv(c1.x);
+                    c1.y = tmvp_round_mv(c1.y);
+                    cand[nb_cand].mv0 = tmvp_scale_mv(scale00, c1);
+                    cand[nb_cand].mv1 = tmvp_scale_mv(scale10, c1);
+                    cand[nb_cand].mv0.ref_idx = 0;
+                    cand[nb_cand].mv1.ref_idx = 0;
+                    if (nb_cand++ == merge_idx)
+                        return cand[merge_idx];
+                }
             }
         }
     }
