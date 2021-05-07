@@ -4,7 +4,7 @@
 #include "ctudec.h"
 
 void rcn_sao_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pic) ;
-void rcn_sao_filter_last_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pic) ;
+void rcn_sao_filter_row(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pic) ; 
 
 #endif
 

@@ -1367,6 +1367,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     }
 
     ctb_y = 0;
+    rcn_sao_filter_row(ctudec, einfo.nb_ctb_pic_w, ctb_y); 
     while (ctb_y < nb_ctu_h ) {
         rcn_sao_filter_line(ctudec, einfo.nb_ctb_pic_w, ctb_y);
         ctb_y++;

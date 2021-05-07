@@ -97,7 +97,7 @@ static void sao_edge_filter(uint8_t *_dst, uint8_t *_src,
 
 void rcn_sao_ctu(OVCTUDec *const ctudec, int ctb_x_pic, int ctb_y_pic, int start_h, int end_h, int fb_offset, int nb_ctu_w, uint8_t is_border) 
 {   
-    struct OVFilterBuffers fb   = ctudec->filter_buffers;
+    struct OVFilterBuffers* fb   = &ctudec->filter_buffers;
     const OVPartInfo *const pinfo = ctudec->part_ctx;
     uint8_t log2_ctb_size = pinfo->log2_ctu_s;
 
@@ -108,7 +108,7 @@ void rcn_sao_ctu(OVCTUDec *const ctudec, int ctb_x_pic, int ctb_y_pic, int start
     SAOParamsCtu *sao  = &ctudec->sao_info.sao_params[ctb_addr_rs];
     const struct SAOFunctions *saofunc = &ctudec->rcn_ctx.rcn_funcs.sao;
 
-    OVFrame *frame = fb.pic_frame;
+    OVFrame *frame = fb->pic_frame;
 
     for (int c_idx = 0; c_idx < (ctudec->sao_info.chroma_format_idc ? 3 : 1); c_idx++) {
         int shift_chr = c_idx==0 ? 0 : 1;
@@ -128,9 +128,9 @@ void rcn_sao_ctu(OVCTUDec *const ctudec, int ctb_x_pic, int ctb_y_pic, int start
         uint8_t *out_pic = frame->data[c_idx];
         out_pic = &out_pic[ y0 * stride_out_pic + (x0<<int16_t_shift)];
 
-        uint8_t *filtered = (uint8_t *) fb.filter_region[c_idx];
-        int stride_filtered = fb.filter_region_stride[c_idx]<<int16_t_shift;
-        filtered = &filtered[(fb.filter_region_offset[c_idx]<<int16_t_shift) + stride_filtered*(fb_offset>> shift_chr)];  
+        uint8_t *filtered = (uint8_t *) fb->filter_region[c_idx];
+        int stride_filtered = fb->filter_region_stride[c_idx]<<int16_t_shift;
+        filtered = &filtered[(fb->filter_region_offset[c_idx]<<int16_t_shift) + stride_filtered*(fb_offset>> shift_chr)];  
 
         switch (sao->type_idx[c_idx]) {
             case SAO_BAND:
@@ -197,12 +197,9 @@ void rcn_sao_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
         uint8_t is_border = 0;
         is_border = (ctb_x==0)          ? is_border | OV_BOUNDARY_LEFT_RECT: is_border;
         is_border = (ctb_x==nb_ctu_w-1) ? is_border | OV_BOUNDARY_RIGHT_RECT: is_border;
-        is_border = (ctb_y_pic==0)          ? is_border | OV_BOUNDARY_UPPER_RECT: is_border;
+        // is_border = (ctb_y_pic==0)          ? is_border | OV_BOUNDARY_UPPER_RECT: is_border;
         // is_border = (ctb_y==nb_ctu_h-1) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
         is_border = (y_pos_ctu + ctu_width >= ctudec->pic_h) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
-
-        //TODOfilt: leave y_start_h negative and treat in ctudec extend and 
-        //ctudec_save_last_rows and ctudec_save_last_cols
 
         //Apply SAO of previous ctu line
         int y_start = y_pos_ctu + margin;
@@ -217,6 +214,68 @@ void rcn_sao_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
         }
 
         ctudec_save_last_rows(ctudec, x_pos_ctu, y_start, is_border);
+        ctudec_save_last_cols(ctudec, x_pos_ctu, y_start, is_border);
+    }
+}
+
+void rcn_sao_filter_row(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pic) 
+{  
+    if (!ctudec->sao_info.sao_luma_flag && !ctudec->sao_info.sao_chroma_flag){
+        return;
+    }
+    const OVPartInfo *const pinfo = ctudec->part_ctx;
+    uint8_t log2_ctb_size = pinfo->log2_ctu_s;
+    int ctu_width  = 1 << log2_ctb_size;
+
+    struct OVFilterBuffers* fb = &ctudec->filter_buffers;
+    //change name margin
+    int margin = 2*fb->margin;
+
+    for (int ctb_x = 0; ctb_x < nb_ctu_w; ctb_x++) 
+    {
+        // int ctb_x_pic = tile_ctx->ctu_x[tile_x] + ctb_x;
+        int ctb_x_pic   = ctb_x;
+        int x_pos_ctu = ctu_width * ctb_x_pic;
+        int y_pos_ctu = ctu_width * ctb_y_pic;
+        
+        //left | right | up | down
+        uint8_t is_border = 0; 
+        is_border = (ctb_x==0)          ? is_border | OV_BOUNDARY_LEFT_RECT: is_border;
+        is_border = (ctb_x==nb_ctu_w-1) ? is_border | OV_BOUNDARY_RIGHT_RECT: is_border;
+        is_border = (ctb_y_pic==0)          ? is_border | OV_BOUNDARY_UPPER_RECT: is_border;
+
+        //Apply SAO of previous ctu line
+        int y_start = 0;
+        ctudec_extend_filter_region(ctudec, x_pos_ctu, y_start, is_border);
+
+        int fb_offset = 0;
+        rcn_sao_ctu(ctudec, ctb_x_pic, ctb_y_pic, y_start, y_start + margin, fb_offset, nb_ctu_w, is_border);
+
+        // ctudec_save_last_rows(ctudec, x_pos_ctu, y_start, is_border);
+        int x_l = x_pos_ctu;
+        const int width_l = fb->filter_region_w[0];
+        for(int comp = 0; comp < 3; comp++)
+        {
+            int16_t* saved_rows = fb->saved_rows[comp];
+            int16_t* filter_region = fb->filter_region[comp];
+            int stride_filter = fb->filter_region_stride[comp];
+
+            int ratio_luma_chroma = 2;
+            int ratio = comp==0 ? 1 : ratio_luma_chroma;        
+            const int width = width_l/ratio;
+            const int x = x_l/ratio;
+            int stride_rows = fb->saved_rows_stride[comp];
+            int offset_y = comp==0 ? fb->margin : 0;
+            // int x_tile  = ctb_x * max_cu_width;
+            int x_tile  = x;
+   
+            // for(int ii=0 ; ii < fb->margin; ii++)
+            for(int ii=0; ii < fb->margin; ii++)
+            {
+                memcpy(&saved_rows[ii*stride_rows + x_tile], &filter_region[(offset_y+ii)*stride_filter + fb->margin], width * sizeof(int16_t));
+            }
+        } 
+
         ctudec_save_last_cols(ctudec, x_pos_ctu, y_start, is_border);
     }
 }

@@ -60,16 +60,16 @@ void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_
     if (is_border_rect & OV_BOUNDARY_RIGHT_RECT)
         return;
     
-    struct OVFilterBuffers fb = ctudec->filter_buffers;
-    const int width_l = ( x_l + fb.filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_l ) : fb.filter_region_w[0];
-    const int height_l = ( y_l + fb.filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_l ) : fb.filter_region_h[0];
-    const int margin = fb.margin;
+    struct OVFilterBuffers* fb = &ctudec->filter_buffers;
+    const int width_l = ( x_l + fb->filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_l ) : fb->filter_region_w[0];
+    const int height_l = ( y_l + fb->filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_l ) : fb->filter_region_h[0];
+    const int margin = fb->margin;
 
     for(int comp = 0; comp < 3; comp++)
     {
-        int16_t* saved_cols = fb.saved_cols[comp];
-        int16_t* filter_region = fb.filter_region[comp];
-        int stride_filter = fb.filter_region_stride[comp];
+        int16_t* saved_cols = fb->saved_cols[comp];
+        int16_t* filter_region = fb->filter_region[comp];
+        int stride_filter = fb->filter_region_stride[comp];
 
         int ratio_luma_chroma = 2;
         int ratio = comp==0 ? 1 : ratio_luma_chroma;        
@@ -89,16 +89,16 @@ void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_
 
 void ctudec_save_last_rows(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect)
 {
-    struct OVFilterBuffers fb = ctudec->filter_buffers;
-    const int width_l = ( x_l + fb.filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_l ) : fb.filter_region_w[0];
-    const int height_l = ( y_l + fb.filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_l ) : fb.filter_region_h[0];
-    const int margin = fb.margin;
+    struct OVFilterBuffers* fb = &ctudec->filter_buffers;
+    const int width_l = ( x_l + fb->filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_l ) : fb->filter_region_w[0];
+    const int height_l = ( y_l + fb->filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_l ) : fb->filter_region_h[0];
+    const int margin = fb->margin;
 
     for(int comp = 0; comp < 3; comp++)
     {
-        int16_t* saved_rows = fb.saved_rows[comp];
-        int16_t* filter_region = fb.filter_region[comp];
-        int stride_filter = fb.filter_region_stride[comp];
+        int16_t* saved_rows = fb->saved_rows[comp];
+        int16_t* filter_region = fb->filter_region[comp];
+        int stride_filter = fb->filter_region_stride[comp];
 
         int ratio_luma_chroma = 2;
         int ratio = comp==0 ? 1 : ratio_luma_chroma;        
@@ -106,7 +106,7 @@ void ctudec_save_last_rows(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_
         const int height = height_l/ratio;
         const int x = x_l/ratio;
 
-        int stride_rows = fb.saved_rows_stride[comp];
+        int stride_rows = fb->saved_rows_stride[comp];
         // int x_tile  = ctb_x * max_cu_width;
         int x_tile  = x;
         //save pixels in top left corner of ctu filter
@@ -136,10 +136,10 @@ void ctudec_save_last_rows(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_
 void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect)
 {   
 
-    struct OVFilterBuffers fb = ctudec->filter_buffers;
-    const int width_l = ( x_l + fb.filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_l ) : fb.filter_region_w[0];
-    const int height_l = ( y_l + fb.filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_l ) : fb.filter_region_h[0];
-    const int margin = fb.margin;
+    struct OVFilterBuffers* fb = &ctudec->filter_buffers;
+    const int width_l = ( x_l + fb->filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_l ) : fb->filter_region_w[0];
+    const int height_l = ( y_l + fb->filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_l ) : fb->filter_region_h[0];
+    const int margin = fb->margin;
 
     for(int comp = 0; comp < 3; comp++)
     {
@@ -151,26 +151,26 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x_l, int y_l, uint8
         const int x = x_l/ratio;
         const int y = y_l/ratio;
 
-        int16_t* saved_rows = fb.saved_rows[comp];
-        int16_t* saved_cols = fb.saved_cols[comp];
-        int16_t* filter_region = fb.filter_region[comp];
-        int stride_filter = fb.filter_region_stride[comp];
+        int16_t* saved_rows = fb->saved_rows[comp];
+        int16_t* saved_cols = fb->saved_cols[comp];
+        int16_t* filter_region = fb->filter_region[comp];
+        int stride_filter = fb->filter_region_stride[comp];
 
-        int stride_pic = fb.pic_frame->linesize[comp]/2;
-        int16_t* frame = (int16_t*) fb.pic_frame->data[comp] + y*stride_pic + x;
+        int stride_pic = fb->pic_frame->linesize[comp]/2;
+        int16_t* frame = (int16_t*) fb->pic_frame->data[comp] + y*stride_pic + x;
 
         // //*******************************************************/
         // //Copy of entire frame in filter buffer
         // for(int ii=0; ii < ctudec->pic_h / ratio; ii++)
         // {
-        //     memcpy(&filter_region[ii*fb.filter_region_stride[comp] + fb.filter_region_offset[comp]], &frame[ii * stride_pic], sizeof(int16_t)* stride_pic);
+        //     memcpy(&filter_region[ii*fb->filter_region_stride[comp] + fb->filter_region_offset[comp]], &frame[ii * stride_pic], sizeof(int16_t)* stride_pic);
         // }
 
         //*******************************************************/
         //Copy of entire CTU from frame, before border extension
         for(int ii=0; ii < height; ii++)
         {
-            memcpy(&filter_region[ii*stride_filter + fb.filter_region_offset[comp]], &frame[ii*stride_pic], sizeof(int16_t)* width);
+            memcpy(&filter_region[ii*stride_filter + fb->filter_region_offset[comp]], &frame[ii*stride_pic], sizeof(int16_t)* width);
         }
 
         // //*******************************************************/
@@ -207,7 +207,7 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x_l, int y_l, uint8
 
         //*******************************************************/
         //Upper margins
-        int stride_rows = fb.saved_rows_stride[comp];
+        int stride_rows = fb->saved_rows_stride[comp];
         // int x_tile  = ctb_x * max_cu_width;
         int x_tile  = x;
         for(int ii=0; ii < margin; ii++)
