@@ -976,7 +976,7 @@ transform_unit_st(OVCTUDec *const ctu_dec,
 
         }
 
-        if (ctu_dec->enable_lfnst) {
+        if (ctu_dec->enable_lfnst && cu_flags & 0x2) {
             uint8_t can_lfnst = lfnst_check_st(&tu_info, log2_tb_w, log2_tb_h,
                                                cbf_mask, cu_flags);
             if (can_lfnst) {
@@ -991,7 +991,7 @@ transform_unit_st(OVCTUDec *const ctu_dec,
             }
         }
 
-        if (ctu_dec->mts_enabled) {
+        if (ctu_dec->mts_enabled && (cu_flags & 0x2)) {
             const struct TBInfo *tb_info = &tu_info.tb_info[2];
             if (!tu_info.lfnst_flag && !!tb_info->last_pos && (log2_tb_w < 6) && (log2_tb_h < 6)
                 && !(tb_info->sig_sb_map & (~0x000000000F0F0F0F))) {
@@ -1068,7 +1068,7 @@ transform_unit_l(OVCTUDec *const ctu_dec,
 
         if (!(tu_info.tr_skip_mask & 0x10)) {
             /* FIXME use sb_sig_map instead of last pos */
-            if (ctu_dec->enable_lfnst && tb_info->sig_sb_map == 0x1) {
+            if (ctu_dec->enable_lfnst && cu_flags & 0x2 && tb_info->sig_sb_map == 0x1) {
                 int max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
                 int last_y = tb_info->last_pos >> 8;
                 int last_x = tb_info->last_pos & 0xFF;
@@ -1088,7 +1088,7 @@ transform_unit_l(OVCTUDec *const ctu_dec,
                 }
             }
 
-            if (!tu_info.lfnst_flag && !!tb_info->last_pos
+            if (!tu_info.lfnst_flag && !!tb_info->last_pos && (cu_flags & 0x2)
                 && ctu_dec->mts_enabled && (log2_tb_w < 6) && (log2_tb_h < 6)
                 && !(tb_info->sig_sb_map & (~0x000000000F0F0F0F))) {
 
