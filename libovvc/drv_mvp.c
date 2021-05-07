@@ -491,6 +491,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
         int c1_y = pb_y + (nb_pb_h >> 1);
         int c0_x = pb_x + nb_pb_w;
         int c0_y = pb_y + nb_pb_h;
+        uint8_t pos_8x8 = tmvp->ctudec->part_ctx->log2_min_cb_s == 2;
 
         if (!inter_ctx->tmvp_avail) {
             /* FIXME thread synchro */
@@ -499,10 +500,10 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
             load_ctb_tmvp(ctudec, ctudec->ctb_x, ctudec->ctb_y);
         }
 
-        c0_x &= ~(0x1);
-        c1_x &= ~(0x1);
-        c0_y &= ~(0x1);
-        c1_y &= ~(0x1);
+        c0_x &= ~(pos_8x8);
+        c1_x &= ~(pos_8x8);
+        c0_y &= ~(pos_8x8);
+        c1_y &= ~(pos_8x8);
 
         /* Derive availability based on CTB inter fields */
         c0_col  = tmvp->dir_map_v0[c0_x + 1];
@@ -737,6 +738,7 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
         int c0_x = pb_x + nb_pb_w;
         int c0_y = pb_y + nb_pb_h;
         int scale0, scale1;
+        uint8_t pos_8x8 = tmvp->ctudec->part_ctx->log2_min_cb_s == 2;
 
         if (!inter_ctx->tmvp_avail) {
             /* FIXME thread synchro */
@@ -745,11 +747,10 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
             load_ctb_tmvp(ctudec, ctudec->ctb_x, ctudec->ctb_y);
         }
 
-        c0_x &= ~(0x1);
-        c1_x &= ~(0x1);
-        c0_y &= ~(0x1);
-        c1_y &= ~(0x1);
-
+        c0_x &= ~(pos_8x8);
+        c1_x &= ~(pos_8x8);
+        c0_y &= ~(pos_8x8);
+        c1_y &= ~(pos_8x8);
 
         /* Derive availability based on CTB inter fields */
         c0_col  = tmvp->dir_map_v0[c0_x + 1];
@@ -941,6 +942,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
         int c1_y = pb_y + (nb_pb_h >> 1);
         int c0_x = pb_x + nb_pb_w;
         int c0_y = pb_y + nb_pb_h;
+        uint8_t pos_8x8 = tmvp->ctudec->part_ctx->log2_min_cb_s == 2;
 
         if (!inter_ctx->tmvp_avail) {
             /* FIXME thread synchro */
@@ -949,11 +951,10 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
             load_ctb_tmvp(ctudec, ctudec->ctb_x, ctudec->ctb_y);
         }
 
-        c0_x &= ~(0x1);
-        c1_x &= ~(0x1);
-        c0_y &= ~(0x1);
-        c1_y &= ~(0x1);
-
+        c0_x &= ~(pos_8x8);
+        c1_x &= ~(pos_8x8);
+        c0_y &= ~(pos_8x8);
+        c1_y &= ~(pos_8x8);
 
         c0_col  = tmvp->dir_map_v0[c0_x + 1];
         c1_col  = tmvp->dir_map_v0[c1_x + 1];
@@ -1178,6 +1179,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         int c0_x = pb_x + nb_pb_w;
         int c0_y = pb_y + nb_pb_h;
 
+        uint8_t pos_8x8 = tmvp->ctudec->part_ctx->log2_min_cb_s == 2;
+
         if (!inter_ctx->tmvp_avail) {
             /* FIXME thread synchro */
             /*FIXME dirty ref to ctudec */
@@ -1185,10 +1188,10 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
             load_ctb_tmvp(ctudec, ctudec->ctb_x, ctudec->ctb_y);
         }
 
-        c0_x &= ~(0x1);
-        c1_x &= ~(0x1);
-        c0_y &= ~(0x1);
-        c1_y &= ~(0x1);
+        c0_x &= ~(pos_8x8);
+        c1_x &= ~(pos_8x8);
+        c0_y &= ~(pos_8x8);
+        c1_y &= ~(pos_8x8);
 
         c0_col  = tmvp->dir_map_v0[c0_x + 1];
         c0_col1 = tmvp->dir_map_v1[c0_x + 1];
