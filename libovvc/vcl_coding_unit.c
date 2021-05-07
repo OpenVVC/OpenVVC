@@ -885,6 +885,9 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                                   nb_pb_w, nb_pb_h, merge_idx,
                                   max_nb_cand);
 
+        ref_idx0 = mv_info.mv0.ref_idx;
+        ref_idx1 = mv_info.mv1.ref_idx;
+
     } else {
         OVMV mvd0, mvd1 = {0};
         uint8_t mvp_idx0 = 0;
@@ -917,6 +920,9 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
         mv_info = drv_mvp_b(inter_ctx, x_pu, y_pu, nb_pb_w, nb_pb_h,
                             mvd0, mvd1, mvp_idx0, mvp_idx1, inter_dir, ref_idx0, ref_idx1);
+
+        //mv_info.mv0.ref_idx = inter_dir & 0x1 ? ref_idx0 : 0xFF;
+        //mv_info.mv1.ref_idx = inter_dir & 0x2 ? ref_idx1 : 0xFF;
     }
 
     rcn_mcp_b(ctu_dec, inter_ctx, part_ctx, mv_info.mv0, mv_info.mv1, x0, y0,
