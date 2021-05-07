@@ -624,23 +624,17 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
                   uint8_t log2_cb_w, uint8_t log2_cb_h)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    #if 0
-    uint8_t intra_mode;
-    #endif
     uint8_t mip_flag = 0;
-    uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
-    uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
-    uint8_t nb_pb_w = (1 << log2_cb_w) >> part_ctx->log2_min_cb_s;
-    uint8_t nb_pb_h = (1 << log2_cb_h) >> part_ctx->log2_min_cb_s;
-    #if 0
-    uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
-    #endif
     VVCCU cu = {0};
 
     cu.cu_flags |= flg_pred_mode_flag;
 
     if (ctu_dec->enabled_mip) {
         struct PartMap *part_map = &ctu_dec->part_map;
+        uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
+        uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
+        uint8_t nb_pb_w = (1 << log2_cb_w) >> part_ctx->log2_min_cb_s;
+        uint8_t nb_pb_h = (1 << log2_cb_h) >> part_ctx->log2_min_cb_s;
         uint8_t mip_abv = part_map->cu_mode_x[x_pu];
         uint8_t mip_lft = part_map->cu_mode_y[y_pu];
 
@@ -661,8 +655,8 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
             memset(&part_map->cu_mode_x[x_pu], OV_MIP, sizeof(uint8_t) * nb_pb_w);
             memset(&part_map->cu_mode_y[y_pu], OV_MIP, sizeof(uint8_t) * nb_pb_h);
 
-            /* FIXME Check default to PLANAR for modes derivation */
         } else {
+
             memset(&part_map->cu_mode_x[x_pu], OV_INTRA, sizeof(uint8_t) * nb_pb_w);
             memset(&part_map->cu_mode_y[y_pu], OV_INTRA, sizeof(uint8_t) * nb_pb_h);
         }
@@ -716,6 +710,7 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
      * transform trees
      */
     cu = drv_intra_cu(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, cu);
+
     fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_cb_w, log2_cb_h);
 
     return cu;
