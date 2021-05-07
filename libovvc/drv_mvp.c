@@ -514,6 +514,8 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
             OVCTUDec *ctudec = inter_ctx->tmvp_ctx.ctudec;
             load_ctb_tmvp(ctudec, ctudec->ctb_x, ctudec->ctb_y);
         }
+        c0_x &= ~(0x1);
+        c1_x &= ~(0x1);
 
         #endif
 
@@ -523,10 +525,20 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
         c1_col  = tmvp->dir_map_v0[c1_x + 1];
         c1_col1 = tmvp->dir_map_v1[c1_x + 1];
 
+        #if 1
+        cand_c0  = !!(c0_col  & POS_MASK(pb_y -(c0_y & 0x1), nb_pb_h));
+        cand_c01 = !!(c0_col1 & POS_MASK(pb_y -(c0_y & 0x1), nb_pb_h));
+        cand_c1  = !!(c1_col  & POS_MASK(pb_y -(c1_y & 0x1), nb_pb_h >> 1));
+        cand_c11 = !!(c1_col1 & POS_MASK(pb_y -(c1_y & 0x1), nb_pb_h >> 1));
+        #else
         cand_c0  = !!(c0_col  & POS_MASK(pb_y, nb_pb_h));
         cand_c01 = !!(c0_col1 & POS_MASK(pb_y, nb_pb_h));
         cand_c1  = !!(c1_col  & POS_MASK(pb_y, nb_pb_h >> 1));
         cand_c11 = !!(c1_col1 & POS_MASK(pb_y, nb_pb_h >> 1));
+        #endif
+
+        c0_y &= ~(0x1);
+        c1_y &= ~(0x1);
 
         /*FIXME there might be an issue considering the order of RPL check 
          * for TMVP candidates
@@ -809,6 +821,9 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
             load_ctb_tmvp(ctudec, ctudec->ctb_x, ctudec->ctb_y);
         }
 
+        c0_x &= ~(0x1);
+        c1_x &= ~(0x1);
+
         #endif
 
         /* Derive availability based on CTB inter fields */
@@ -817,10 +832,21 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
         c1_col  = tmvp->dir_map_v0[c1_x + 1];
         c1_col1 = tmvp->dir_map_v1[c1_x + 1];
 
+
+        #if 1
+        cand_c0  = !!(c0_col  & POS_MASK(pb_y -(c0_y & 0x1), nb_pb_h));
+        cand_c01 = !!(c0_col1 & POS_MASK(pb_y -(c0_y & 0x1), nb_pb_h));
+        cand_c1  = !!(c1_col  & POS_MASK(pb_y -(c1_y & 0x1), nb_pb_h >> 1));
+        cand_c11 = !!(c1_col1 & POS_MASK(pb_y -(c1_y & 0x1), nb_pb_h >> 1));
+        #else
         cand_c0  = !!(c0_col  & POS_MASK(pb_y, nb_pb_h));
         cand_c01 = !!(c0_col1 & POS_MASK(pb_y, nb_pb_h));
         cand_c1  = !!(c1_col  & POS_MASK(pb_y, nb_pb_h >> 1));
         cand_c11 = !!(c1_col1 & POS_MASK(pb_y, nb_pb_h >> 1));
+        #endif
+
+        c0_y &= ~(0x1);
+        c1_y &= ~(0x1);
 
         /*FIXME there might be an issue considering the order of RPL check 
          * for TMVP candidates
@@ -1031,16 +1057,28 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
             load_ctb_tmvp(ctudec, ctudec->ctb_x, ctudec->ctb_y);
         }
         #endif
+        c0_x &= ~(0x1);
+        c1_x &= ~(0x1);
 
         c0_col  = tmvp->dir_map_v0[c0_x + 1];
         c1_col  = tmvp->dir_map_v0[c1_x + 1];
         c0_col1 = tmvp->dir_map_v1[c0_x + 1];
         c1_col1 = tmvp->dir_map_v1[c1_x + 1];
 
+        #if 1
+        cand_c0  = !!(c0_col  & POS_MASK(pb_y -(c0_y & 0x1), nb_pb_h));
+        cand_c01 = !!(c0_col1 & POS_MASK(pb_y -(c0_y & 0x1), nb_pb_h));
+        cand_c1  = !!(c1_col  & POS_MASK(pb_y -(c1_y & 0x1), nb_pb_h >> 1));
+        cand_c11 = !!(c1_col1 & POS_MASK(pb_y -(c1_y & 0x1), nb_pb_h >> 1));
+        #else
         cand_c0  = !!(c0_col  & POS_MASK(pb_y, nb_pb_h));
         cand_c01 = !!(c0_col1 & POS_MASK(pb_y, nb_pb_h));
         cand_c1  = !!(c1_col  & POS_MASK(pb_y, nb_pb_h >> 1));
         cand_c11 = !!(c1_col1 & POS_MASK(pb_y, nb_pb_h >> 1));
+        #endif
+
+        c0_y &= ~(0x1);
+        c1_y &= ~(0x1);
 
         if (cand_c0) {
             int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
@@ -1280,6 +1318,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
             load_ctb_tmvp(ctudec, ctudec->ctb_x, ctudec->ctb_y);
         }
         #endif
+        c0_x &= ~(0x1);
+        c1_x &= ~(0x1);
 
 
         #if 0
@@ -1289,10 +1329,21 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
             c0_col1 = tmvp->dir_map_v1[c0_x + 1];
             c1_col  = tmvp->dir_map_v0[c1_x + 1];
             c1_col1 = tmvp->dir_map_v1[c1_x + 1];
-            cand_c0  = !!(c0_col  & POS_MASK(pb_y, nb_pb_h));
-            cand_c01 = !!(c0_col1 & POS_MASK(pb_y, nb_pb_h));
-            cand_c1  = !!(c1_col  & POS_MASK(pb_y, nb_pb_h >> 1));
-            cand_c11 = !!(c1_col1 & POS_MASK(pb_y, nb_pb_h >> 1));
+
+            #if 1
+            cand_c0  = !!(c0_col  & POS_MASK(pb_y -(c0_y & 0x1), nb_pb_h));
+            cand_c01 = !!(c0_col1 & POS_MASK(pb_y -(c0_y & 0x1), nb_pb_h));
+            cand_c1  = !!(c1_col  & POS_MASK(pb_y -(c1_y & 0x1), nb_pb_h >> 1));
+            cand_c11 = !!(c1_col1 & POS_MASK(pb_y -(c1_y & 0x1), nb_pb_h >> 1));
+        #else
+        cand_c0  = !!(c0_col  & POS_MASK(pb_y, nb_pb_h));
+        cand_c01 = !!(c0_col1 & POS_MASK(pb_y, nb_pb_h));
+        cand_c1  = !!(c1_col  & POS_MASK(pb_y, nb_pb_h >> 1));
+        cand_c11 = !!(c1_col1 & POS_MASK(pb_y, nb_pb_h >> 1));
+        #endif
+
+        c0_y &= ~(0x1);
+        c1_y &= ~(0x1);
         #if 0
         } else {
             uint64_t c0_col  = tmvp->tmvp_mv.mv_ctx0.map.vfield[c0_x + 1];
