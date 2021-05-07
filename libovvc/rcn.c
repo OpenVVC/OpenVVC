@@ -480,7 +480,9 @@ rcn_residual_c(OVCTUDec *const ctudec,
     }
 }
 
-void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled, uint8_t sps_chroma_vertical_collocated_flag){
+void
+rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled, uint8_t sps_chroma_vertical_collocated_flag)
+{
   rcn_init_mc_functions(rcn_func);
   rcn_init_tr_functions(rcn_func);
   rcn_init_dc_planar_functions(rcn_func);
