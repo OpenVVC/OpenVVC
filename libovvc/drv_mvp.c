@@ -1124,8 +1124,11 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
         avg_mv.y >>= 1;
         if (nb_cand == merge_idx)
             return avg_mv;
+
+        nb_cand++;
     }
 
+    /*FIXME ref_idx*/
     while (nb_cand < max_nb_merge_cand) {
         OVMV zmv = {0};
         cand[nb_cand++] = zmv;
