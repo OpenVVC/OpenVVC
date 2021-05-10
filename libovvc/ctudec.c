@@ -87,7 +87,7 @@ void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_
     
 }
 
-void ctudec_save_last_rows(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect)
+void ctudec_save_last_rows(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l, int y_l, uint8_t is_border_rect)
 {
     struct OVFilterBuffers* fb = &ctudec->filter_buffers;
     const int width_l = ( x_l + fb->filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_l ) : fb->filter_region_w[0];
@@ -96,7 +96,7 @@ void ctudec_save_last_rows(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_
 
     for(int comp = 0; comp < 3; comp++)
     {
-        int16_t* saved_rows = fb->saved_rows[comp];
+        int16_t* saved_rows_comp = saved_rows[comp];
         int16_t* filter_region = fb->filter_region[comp];
         int stride_filter = fb->filter_region_stride[comp];
 
@@ -116,9 +116,9 @@ void ctudec_save_last_rows(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_
             {
                 // if ( is_border_rect & VVC_BOUNDARY_RIGHT_TILE)
                 if ( 0 )
-                    filter_region[ii*stride_filter + jj] = saved_rows[ii*stride_rows];
+                    filter_region[ii*stride_filter + jj] = saved_rows_comp[ii*stride_rows];
                 else
-                    filter_region[ii*stride_filter + jj] = saved_rows[ii*stride_rows + x_tile + width - margin + jj];
+                    filter_region[ii*stride_filter + jj] = saved_rows_comp[ii*stride_rows + x_tile + width - margin + jj];
             }
         }
 
@@ -127,13 +127,13 @@ void ctudec_save_last_rows(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_
 
         for(int ii=0 ; ii < margin; ii++)
         {
-            memcpy(&saved_rows[ii*stride_rows + x_tile], &filter_region[(height+ii)*stride_filter + margin], width * sizeof(int16_t));
+            memcpy(&saved_rows_comp[ii*stride_rows + x_tile], &filter_region[(height+ii)*stride_filter + margin], width * sizeof(int16_t));
         }
     } 
 }
 
 
-void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect)
+void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l, int y_l, uint8_t is_border_rect)
 {   
 
     struct OVFilterBuffers* fb = &ctudec->filter_buffers;
@@ -151,7 +151,7 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x_l, int y_l, uint8
         const int x = x_l/ratio;
         const int y = y_l/ratio;
 
-        int16_t* saved_rows = fb->saved_rows[comp];
+        int16_t* saved_rows_comp = saved_rows[comp];
         int16_t* saved_cols = fb->saved_cols[comp];
         int16_t* filter_region = fb->filter_region[comp];
         int stride_filter = fb->filter_region_stride[comp];
@@ -217,7 +217,7 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x_l, int y_l, uint8
                 x_offset_end = margin;
 
             if ( !(is_border_rect & OV_BOUNDARY_UPPER_RECT) ){
-                memcpy(&filter_region[ii*stride_filter + margin], &saved_rows[ii*stride_rows + x_tile], 
+                memcpy(&filter_region[ii*stride_filter + margin], &saved_rows_comp[ii*stride_rows + x_tile], 
                     sizeof(int16_t)* (width + x_offset_end));
             }
             else{
@@ -288,8 +288,9 @@ void ctudec_alloc_filter_buffers(OVCTUDec *const ctudec, int nb_ctu_w, int margi
     int max_cu_width_l = 1 << log2_ctb_size;
 
     struct OVFilterBuffers* fb = &ctudec->filter_buffers;
-    int16_t** saved_rows = fb->saved_rows;
-    int16_t** saved_cols = fb->saved_cols;
+    int16_t** saved_rows_sao = fb->saved_rows_sao;
+    int16_t** saved_rows_alf = fb->saved_rows_alf;
+    int16_t** saved_cols    = fb->saved_cols;
     int16_t** filter_region = fb->filter_region;
     fb->margin    = margin;
 
@@ -310,25 +311,32 @@ void ctudec_alloc_filter_buffers(OVCTUDec *const ctudec, int nb_ctu_w, int margi
 
         //Re-alloc saved_rows with a new value of nb_ctu_w
         fb->saved_rows_stride[comp] = nb_ctu_w*max_cu_width_l/ratio; ;
-        if(saved_rows[comp]){
-            ov_freep(&saved_rows[comp]);
+        if(saved_rows_sao[comp]){
+            ov_freep(&saved_rows_sao[comp]);
         }
-        saved_rows[comp] = ov_mallocz(margin * fb->saved_rows_stride[comp] * sizeof(int16_t));
+        saved_rows_sao[comp] = ov_mallocz(margin * fb->saved_rows_stride[comp] * sizeof(int16_t));
+
+        if(saved_rows_alf[comp]){
+            ov_freep(&saved_rows_alf[comp]);
+        }
+        saved_rows_alf[comp] = ov_mallocz(margin * fb->saved_rows_stride[comp] * sizeof(int16_t));
     }
 
 }
 
 void ctudec_free_filter_buffers(OVCTUDec *const ctudec)
 {
-    int16_t** saved_rows    = ctudec->filter_buffers.saved_rows;
-    int16_t** saved_cols    = ctudec->filter_buffers.saved_cols;
-    int16_t** filter_region = ctudec->filter_buffers.filter_region;
+    int16_t** saved_rows_sao    = ctudec->filter_buffers.saved_rows_sao;
+    int16_t** saved_rows_alf    = ctudec->filter_buffers.saved_rows_alf;
+    int16_t** saved_cols        = ctudec->filter_buffers.saved_cols;
+    int16_t** filter_region     = ctudec->filter_buffers.filter_region;
 
     for(int comp = 0; comp < 3; comp++)
     {
-        if(filter_region[comp]) ov_freep(&filter_region[comp]);
-        if(saved_rows[comp])    ov_freep(&saved_rows[comp]);
-        if(saved_cols[comp])    ov_freep(&saved_cols[comp]);
+        if(filter_region[comp])     ov_freep(&filter_region[comp]);
+        if(saved_rows_sao[comp])    ov_freep(&saved_rows_sao[comp]);
+        if(saved_rows_alf[comp])    ov_freep(&saved_rows_alf[comp]);
+        if(saved_cols[comp])        ov_freep(&saved_cols[comp]);
     }
 }
 

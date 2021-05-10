@@ -976,6 +976,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     }
     else{
         rcn_sao_filter_line(ctudec, einfo->nb_ctb_pic_w, ctudec->ctb_y-1);
+        rcn_alf_filter_line(ctudec, einfo->nb_ctb_pic_w, ctudec->ctb_y-1);
     }
 
     if (ctb_x == 0) {
@@ -1065,6 +1066,9 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     rcn_sao_filter_line(ctudec, einfo->nb_ctb_pic_w, ctudec->ctb_y-1);
     rcn_sao_filter_line(ctudec, einfo->nb_ctb_pic_w, ctudec->ctb_y);
+
+    rcn_alf_filter_line(ctudec, einfo->nb_ctb_pic_w, ctudec->ctb_y-1);
+    rcn_alf_filter_line(ctudec, einfo->nb_ctb_pic_w, ctudec->ctb_y);
 
     if (slice_type != SLICE_I) {
         store_inter_maps(drv_lines, ctudec, ctb_x, 1);
@@ -1373,12 +1377,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         ret = decode_ctu_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
     } else {
         ret = decode_ctu_last_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
-    }
-
-    ctb_y = 0;
-    while (ctb_y < nb_ctu_h) {
-        rcn_alf_filter_line(ctudec, einfo.nb_ctb_pic_w, ctb_y);
-        ctb_y++;
     }
 
     /*FIXME decide return value */

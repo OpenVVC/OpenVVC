@@ -202,7 +202,7 @@ void rcn_sao_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
 
         //Apply SAO of previous ctu line
         int y_start = y_pos_ctu + margin;
-        ctudec_extend_filter_region(ctudec, x_pos_ctu, y_start, is_border);
+        ctudec_extend_filter_region(ctudec, fb->saved_rows_sao, x_pos_ctu, y_start, is_border);
 
         int fb_offset = 0;
         rcn_sao_ctu(ctudec, ctb_x_pic, ctb_y_pic, y_start, y_pos_ctu + ctu_width, fb_offset, nb_ctu_w, is_border);
@@ -212,7 +212,7 @@ void rcn_sao_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
             rcn_sao_ctu(ctudec, ctb_x_pic, ctb_y_pic+1, y_pos_ctu, y_pos_ctu + margin, fb_offset, nb_ctu_w, is_border);
         }
 
-        ctudec_save_last_rows(ctudec, x_pos_ctu, y_start, is_border);
+        ctudec_save_last_rows(ctudec, fb->saved_rows_sao, x_pos_ctu, y_start, is_border);
         ctudec_save_last_cols(ctudec, x_pos_ctu, y_start, is_border);
     }
 }
@@ -245,7 +245,7 @@ void rcn_sao_first_pix_rows(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y
 
         //Apply SAO of previous ctu line
         int y_start = 0;
-        ctudec_extend_filter_region(ctudec, x_pos_ctu, y_start, is_border);
+        ctudec_extend_filter_region(ctudec, fb->saved_rows_sao, x_pos_ctu, y_start, is_border);
 
         int fb_offset = 0;
         rcn_sao_ctu(ctudec, ctb_x_pic, ctb_y_pic, y_start, y_start + margin, fb_offset, nb_ctu_w, is_border);
@@ -255,7 +255,7 @@ void rcn_sao_first_pix_rows(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y
         const int width_l = fb->filter_region_w[0];
         for(int comp = 0; comp < 3; comp++)
         {
-            int16_t* saved_rows = fb->saved_rows[comp];
+            int16_t* saved_rows = fb->saved_rows_sao[comp];
             int16_t* filter_region = fb->filter_region[comp];
             int stride_filter = fb->filter_region_stride[comp];
 

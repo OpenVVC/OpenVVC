@@ -630,7 +630,8 @@ struct OVCTUDec
         int16_t  filter_region_stride[3];
         int16_t  filter_region_offset[3];
 
-        int16_t* saved_rows[3];
+        int16_t* saved_rows_sao[3];
+        int16_t* saved_rows_alf[3];
         int16_t* saved_cols[3];
         int16_t  saved_rows_stride[3];
 
@@ -824,8 +825,8 @@ struct OVCTUDec
 int ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec);
 
 void ctudec_alloc_filter_buffers(OVCTUDec *const ctudec, int nb_ctu_w, int margin);
-void ctudec_extend_filter_region(OVCTUDec *const ctudec, int x, int y, uint8_t is_border_rect);
-void ctudec_save_last_rows(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect);
+void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l, int y_l, uint8_t is_border_rect);
+void ctudec_save_last_rows(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l, int y_l, uint8_t is_border_rect);
 void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect);
 void ctudec_free_filter_buffers(OVCTUDec *const ctudec);
 

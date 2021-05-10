@@ -1047,7 +1047,8 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
         ALFParamsCtu alf_params_ctu = alf_info->ctb_alf_params[ctu_rs_addr];
 
         int16_t **src = fb.filter_region;
-        ctudec_extend_filter_region(ctudec, xPos, yPos, is_border);
+        int16_t **saved_rows = fb.saved_rows_alf;
+        ctudec_extend_filter_region(ctudec, saved_rows, xPos, yPos, is_border);
 
         if (alf_params_ctu.ctb_alf_flag & 0x4) {
             uint8_t c_idx = 0;
@@ -1152,7 +1153,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
             }
 
         }
-        ctudec_save_last_rows(ctudec, xPos, yPos, is_border);
+        ctudec_save_last_rows(ctudec, saved_rows, xPos, yPos, is_border);
         ctudec_save_last_cols(ctudec, xPos, yPos, is_border);
     }
 }
