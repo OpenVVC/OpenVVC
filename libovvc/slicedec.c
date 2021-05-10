@@ -894,7 +894,6 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     /* Do not copy on first line */
     if (ctb_addr_rs >= nb_ctu_w) {
-        // rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
         rcn_intra_line_to_ctu(&ctudec->rcn_ctx, 0, log2_ctb_s);
     }
 
@@ -970,6 +969,13 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
             struct DBFInfo *const dbf_info = &ctudec->dbf_info;
             dbf_store_info(dbf_info, dbf_lns, log2_ctb_s, ctb_x);
         }
+    }
+
+    if(ctudec->ctb_y == 0){
+        rcn_sao_first_pix_rows(ctudec, einfo->nb_ctb_pic_w, 0); 
+    }
+    else{
+        rcn_sao_filter_line(ctudec, einfo->nb_ctb_pic_w, ctudec->ctb_y-1);
     }
 
     if (ctb_x == 0) {
@@ -1056,6 +1062,9 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     ret = decode_truncated_ctu(ctudec, einfo, ctb_addr_rs,
                                einfo->last_ctu_w, ctu_h);
+
+    rcn_sao_filter_line(ctudec, einfo->nb_ctb_pic_w, ctudec->ctb_y-1);
+    rcn_sao_filter_line(ctudec, einfo->nb_ctb_pic_w, ctudec->ctb_y);
 
     if (slice_type != SLICE_I) {
         store_inter_maps(drv_lines, ctudec, ctb_x, 1);
@@ -1365,14 +1374,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     } else {
         ret = decode_ctu_last_line(ctudec, sldec, &drv_lines, &einfo, ctb_addr_rs);
     }
-
-    ctb_y = 0;
-    rcn_sao_filter_row(ctudec, einfo.nb_ctb_pic_w, ctb_y); 
-    while (ctb_y < nb_ctu_h ) {
-        rcn_sao_filter_line(ctudec, einfo.nb_ctb_pic_w, ctb_y);
-        ctb_y++;
-    }
-
 
     ctb_y = 0;
     while (ctb_y < nb_ctu_h) {
