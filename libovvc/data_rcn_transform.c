@@ -13,8 +13,10 @@ DECLARE_ALIGNED(32, const int16_t, DCT_II_4)
 
 DECLARE_ALIGNED(32, const int16_t, DST_VII_4)
 // const int16_t DST_VII_4
-[4 * 4] = { 29, 55,  74,  84, 74, 74,  0,  -74,
-                                   84, -29, -74, 55, 55, -84, 74, -29 };
+[4 * 4] = { 29,  55,  74, 84,
+            74,  74,  0, -74,
+            84, -29, -74, 55,
+            55, -84, 74, -29 };
 
 DECLARE_ALIGNED(32, const int16_t, DCT_VIII_4)
 // const int16_t DCT_VIII_4

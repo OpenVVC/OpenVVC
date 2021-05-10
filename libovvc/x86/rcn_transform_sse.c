@@ -1,6 +1,5 @@
 #include <emmintrin.h>
 #include <smmintrin.h>
-#include <getopt.h>
 #include <stdio.h>
 #include <stddef.h>
 
