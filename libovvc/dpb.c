@@ -464,8 +464,6 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id)
             OVPicture *pic = &dpb->pictures[i];
             uint8_t output_flag = (pic->flags & OV_OUTPUT_PIC_FLAG);
             uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
-            /* Unref pic not marked for output */
-            ovdpb_unref_pic(pic, ~OV_OUTPUT_PIC_FLAG);
             if (output_flag && is_output_cvs) {
                 nb_output++;
                 if (pic->poc < min_poc || nb_output == 1) {

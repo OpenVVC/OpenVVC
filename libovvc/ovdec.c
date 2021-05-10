@@ -430,7 +430,7 @@ ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *const pu)
 
 
 int
-ovdec_receive_picture(OVVCDec *dec, OVPicture **pic_p)
+ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
 {
     /* FIXME this is temporary request output from DPB
      * instead
@@ -450,8 +450,25 @@ ovdec_receive_picture(OVVCDec *dec, OVPicture **pic_p)
     ovframe_new_ref(frame_p, sldec->pic->frame);
     #endif
 
-    out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
-    ret = ovdpb_output_pic(dpb, pic_p, out_cvs_id);
+    OVPicture *pic = NULL;
+    //TODOpar: why change here ?
+    // out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
+    out_cvs_id = dpb->cvs_id ;
+    ret = ovdpb_output_pic(dpb, &pic, out_cvs_id);
+
+    if (pic) {
+        *frame_p = pic->frame;
+        pp_process_frame(pic->sei, dec->dpb, frame_p);
+
+        //New ref if it is a frame already in a DPB pic
+        if(*frame_p ==  pic->frame){
+            ovframe_new_ref(frame_p, pic->frame);
+        }
+        /* we unref the picture even if ref failed the picture
+         * will still be usable by the decoder if not bumped
+         * */
+        ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
+    }
 
     /*FIXME tmp */
     #if 0
@@ -478,7 +495,7 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
         return OVVC_EINDATA;
     }
 
-    out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
+    out_cvs_id = dpb->cvs_id ;
 
     ret = ovdpb_drain_frame(dpb, frame_p, out_cvs_id);
 
@@ -514,7 +531,7 @@ fail:
 }
 
 void
-ovdec_uninit_subdec(OVVCDec *vvcdec)
+ovdec_uninit_subdec_list(OVVCDec *vvcdec)
 {
     OVSliceDec *sldec;
 
@@ -537,8 +554,6 @@ int
 ovdec_close(OVVCDec *vvcdec)
 {
     int not_dec;
-    OVSliceDec *sldec;
-
     if (vvcdec != NULL) {
 
         not_dec = vvcdec->name != decname;
@@ -547,17 +562,7 @@ ovdec_close(OVVCDec *vvcdec)
 
         nvcl_free_ctx(&vvcdec->nvcl_ctx);
 
-        // if (vvcdec->subdec_list) {
-        //     for (int i = 0; i < vvcdec->nb_threads; ++i){
-        //         sldec = vvcdec->subdec_list[i];
-        //         slicedec_uninit(&sldec);
-        //         ov_log(NULL, OVLOG_INFO, "Main joined thread: %d\n", i);
-
-        //     }
-        //     ov_freep(&vvcdec->subdec_list);
-        // }
-
-        // // ovthread_output_uninit(&vvcdec->output_thread);
+        ovdec_uninit_subdec_list(vvcdec);
 
         ovdpb_uninit(&vvcdec->dpb);
 

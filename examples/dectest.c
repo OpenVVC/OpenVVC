@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <getopt.h>
 
-//TODOpar: remove when write_frame_to_file not needed anymore
-#include "ovthreads.h"
-
 #include "ovdec.h"
 #include "ovdefs.h"
 #include "ovdmx.h"
@@ -29,10 +26,10 @@ static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl, FILE *fout, int nb_threads)
 
 static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
-static int read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout);
-static int ovthread_read_stream(OVVCHdl *const hdl, FILE *fp);
+static int read_write_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout);
+static int read_stream(OVVCHdl *const hdl, FILE *fp);
 
-// static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
+static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
 
 static void print_version(void);
 
@@ -143,8 +140,8 @@ main(int argc, char** argv)
 
     if (ret < 0) goto failattach;
 
-    read_stream(&ovvc_hdl, ovvc_hdl.fp, fout);
-    // ovthread_read_stream(&ovvc_hdl, ovvc_hdl.fp);
+    read_write_stream(&ovvc_hdl, ovvc_hdl.fp, fout);
+    //read_stream(&ovvc_hdl, ovvc_hdl.fp);
 
     ovdmx_detach_stream(ovvc_hdl.dmx);
 
@@ -243,7 +240,7 @@ faildmxclose:
 
 
 static int
-ovthread_read_stream(OVVCHdl *const hdl, FILE *fp)
+read_stream(OVVCHdl *const hdl, FILE *fp)
 {
     int ret;
     OVVCDmx *const dmx = hdl->dmx;
@@ -277,7 +274,7 @@ end_out:
 }
 
 static int
-read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
+read_write_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
 {
     #if 0
     ovdmx_read_stream(dmx);
@@ -286,7 +283,7 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
     OVVCDmx *const dmx = hdl->dmx;
     OVVCDec *const dec = hdl->dec;
     OVPictureUnit *pu = NULL;
-    OVPicture *pic = NULL;
+    OVFrame *frame = NULL;
 
     int nb_pic = 0;
     do {
@@ -303,27 +300,18 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
             }
 
             do {
-                pic = NULL;
-                ovdec_receive_picture(dec, &pic);
+                frame = NULL;
+                ovdec_receive_picture(dec, &frame);
 
                 /* FIXME use ret instead of frame */
-                if (pic) {
-                    OVFrame* frame_output = pic->frame;
-                    pp_process_frame(pic->sei, dec->dpb, &frame_output);
-
-                    write_decoded_frame_to_file(frame_output, fout);
+                if (frame) {
+                    write_decoded_frame_to_file(frame, fout);
                     ++nb_pic;
+                    ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", frame->poc);
 
-                    if(frame_output !=  pic->frame){
-                        ovframe_unref(&frame_output);
-                    }
-                    /* we unref the picture even if ref failed the picture
-                     * will still be usable by the decoder if not bumped
-                     * */
-                    ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
-                    ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", pic->poc);
+                    ovframe_unref(&frame);
                 }
-            } while (pic);
+            } while (frame);
 
             /* FIXME Picture unit freeing be inside the decoder
              * use ref_counted buffer and call unref here instead
@@ -335,19 +323,18 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
     } while (ret >= 0);
 
     //Wait for all the sub decoders to finish before draining dpb
-    ovdec_uninit_subdec(dec);
+    ovdec_uninit_subdec_list(dec);
 
     ret = 1;
     while (ret > 0) {
-        OVFrame *frame = NULL;
-        ret = ovdec_drain_picture(dec, &frame);
+        frame = NULL;
+        ret = ovdec_receive_picture(dec, &frame);
+        /* FIXME use ret instead of frame */
         if (frame) {
-            if (fout) {
-                write_decoded_frame_to_file(frame, fout);
-                ++nb_pic;
-            }
+            write_decoded_frame_to_file(frame, fout);
+            ++nb_pic;
+            ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", frame->poc);
 
-            ov_log(NULL, OVLOG_DEBUG, "Draining last pictures with POC: %d\n", frame->poc);
             ovframe_unref(&frame);
         }
     }
@@ -359,15 +346,15 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
 }
 
 
-// static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp){
-//   uint8_t component = 0;
-//   uint32_t ret = 0;
-//   for(component=0; component<3; component++){
-//     uint32_t frame_size = frame->height[component] * frame->linesize[component];
-//     ret +=fwrite(frame->data[component], frame_size, sizeof(uint8_t), fp);
-//   }
-//   return ret;
-// }
+static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp){
+  uint8_t component = 0;
+  uint32_t ret = 0;
+  for(component=0; component<3; component++){
+    uint32_t frame_size = frame->height[component] * frame->linesize[component];
+    ret +=fwrite(frame->data[component], frame_size, sizeof(uint8_t), fp);
+  }
+  return ret;
+}
 
 
 

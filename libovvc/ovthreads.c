@@ -134,14 +134,6 @@ thread_main_function(void *opaque)
             // pthread_cond_signal(&th_info->gnrl_cnd);
             pthread_mutex_unlock(&th_info->gnrl_mtx);
 
-            //Signal output thread that slice is ready for writing
-            struct OutputThread* t_out = th_info->output_thread;
-            if(t_out){
-                pthread_mutex_lock(&t_out->gnrl_mtx);
-                t_out->write = 1;
-                pthread_cond_signal(&t_out->gnrl_cnd);
-                pthread_mutex_unlock(&t_out->gnrl_mtx);
-            }
             //Signal main thread that a slice thread is available
             struct MainThread* t_main = th_info->main_thread;
             if(t_main){
@@ -237,7 +229,6 @@ uninit_entry_threads(struct SliceThread *th_info)
 }
 
 
-
 // /*
 // Functions needed by the threads decoding an entire slice
 // */
@@ -292,30 +283,6 @@ ovthread_slice_thread_uninit(struct SliceThread *th_slice)
 }
 
 
-// int
-// ovthread_slice_main_function(void *opaque)
-// {
-//     //Change type OVDEC to OVSliceDec
-//     OVVCDec *dec = (struct OVVCDec *)opaque;
-//     struct OutputThread* t_out = &dec->output_thread;
-//     do {
-//         pthread_mutex_lock(&t_out->gnrl_mtx);
-//         pthread_cond_wait(&t_out->gnrl_cnd, &t_out->gnrl_mtx);
-//         pthread_mutex_unlock(&t_out->gnrl_mtx);
-
-
-//     } while (!t_out->kill);
-
-
-//     //Signal the main thread that the last picture has been written
-//     pthread_mutex_lock(&t_out->gnrl_mtx);
-//     pthread_cond_signal(&t_out->gnrl_cnd);
-//     pthread_mutex_unlock(&t_out->gnrl_mtx);
-//     return 0;
-// }
-
-
-
 /*
 Functions needed by the thread writing the output frames
 */
@@ -334,7 +301,7 @@ static void *
 ovthread_out_frame_write(void *opaque)
 {
     OVVCDec *dec = (struct OVVCDec *)opaque;
-    OVPicture *pic;
+    OVFrame *frame;
     struct OutputThread* t_out = &dec->output_thread;
     FILE *fout = t_out->fout;
     int nb_pic = 0;
@@ -344,40 +311,30 @@ ovthread_out_frame_write(void *opaque)
             pthread_cond_wait(&t_out->gnrl_cnd, &t_out->gnrl_mtx);
         }
         t_out->write = 0;
+
         do {
-            pic = NULL;
-            ovdec_receive_picture(dec, &pic);
+            frame = NULL;
+            ovdec_receive_picture(dec, &frame);
 
             /* FIXME use ret instead of frame */
-            if (pic) {
-                OVFrame* frame_output = pic->frame;
-                pp_process_frame(pic->sei, dec->dpb, &frame_output);
-
-                write_decoded_frame_to_file(frame_output, fout);
-                ++nb_pic;
-
-                if(frame_output !=  pic->frame){
-                    ovframe_unref(&frame_output);
-                }
-                /* we unref the picture even if ref failed the picture
-                 * will still be usable by the decoder if not bumped
-                 * */
-                ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
-                ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", pic->poc);
-            }
-        } while (pic);
-    } while (!t_out->kill);
-
-    //TODO: handle failure(kill) different from normal exit (state = 0?)
-    int ret = 1;
-    while (ret > 0) {
-        OVFrame *frame = NULL;
-        ret = ovdec_drain_picture(dec, &frame);
-        if (frame) {
-            if (fout) {
+            if (frame) {
                 write_decoded_frame_to_file(frame, fout);
                 ++nb_pic;
+
+                ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", frame->poc);
             }
+        } while (frame);
+    } while (!t_out->kill);
+
+    int ret = 1;
+    while (ret > 0) {
+        frame = NULL;
+        ret = ovdec_receive_picture(dec, &frame);
+        if (frame) {
+            write_decoded_frame_to_file(frame, fout);
+            ++nb_pic;
+            ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", frame->poc);
+
             ovframe_unref(&frame);
         }
     }
