@@ -131,7 +131,7 @@ thread_main_function(void *opaque)
             
             pthread_mutex_lock(&th_info->gnrl_mtx);
             th_info->gnrl_state = 0;
-            pthread_cond_signal(&th_info->gnrl_cnd);
+            // pthread_cond_signal(&th_info->gnrl_cnd);
             pthread_mutex_unlock(&th_info->gnrl_mtx);
 
             //Signal output thread that slice is ready for writing
@@ -367,7 +367,6 @@ ovthread_out_frame_write(void *opaque)
             }
         } while (pic);
     } while (!t_out->kill);
-
 
     //TODO: handle failure(kill) different from normal exit (state = 0?)
     int ret = 1;

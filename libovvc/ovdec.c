@@ -158,7 +158,7 @@ ovdec_select_subdec(OVVCDec *const dec)
             
             if(!th_subdec->gnrl_state){
                 th_subdec->gnrl_state = 1;
-                ov_log(NULL, OVLOG_TRACE, "Thread %d selected\n", i);
+                ov_log(NULL, OVLOG_TRACE, "Subdec %d selected\n", i);
                 pthread_mutex_unlock(&th_subdec->gnrl_mtx);
                 return selected_subdec;
             }
@@ -172,14 +172,6 @@ ovdec_select_subdec(OVVCDec *const dec)
     } while(!th_main->kill);
 
     return NULL;
-
-    //Random selection of a thread, only for testing
-    // int idx = rand() % nb_threads;
-    // selected_subdec = sldec_list[idx];
-    // th_subdec = &selected_subdec->th_info;
-    // th_subdec->gnrl_state = 1;
-    // ov_log(NULL, OVLOG_INFO, "Thread %d selected\n", idx);
-    // return selected_subdec;
 }
 
 
@@ -510,7 +502,7 @@ ovdec_init(OVVCDec **vvcdec, FILE *fout, int nb_threads)
 
     (*vvcdec)->nb_threads = nb_threads;
 
-    ovthread_output_init((*vvcdec), fout);
+    // ovthread_output_init((*vvcdec), fout);
     
     ovdec_init_subdec_list(*vvcdec);
 
@@ -519,6 +511,26 @@ ovdec_init(OVVCDec **vvcdec, FILE *fout, int nb_threads)
 fail:
     /* TODO proper error management (ENOMEM)*/
     return -1;
+}
+
+void
+ovdec_uninit_subdec(OVVCDec *vvcdec)
+{
+    OVSliceDec *sldec;
+
+    if (vvcdec != NULL)
+    {
+        if (vvcdec->subdec_list) {
+            for (int i = 0; i < vvcdec->nb_threads; ++i){
+                sldec = vvcdec->subdec_list[i];
+                slicedec_uninit(&sldec);
+                ov_log(NULL, OVLOG_INFO, "Main joined thread: %d\n", i);
+            }
+            ov_freep(&vvcdec->subdec_list);
+        }
+
+        // ovthread_output_uninit(&vvcdec->output_thread);
+    }
 }
 
 int
@@ -535,17 +547,17 @@ ovdec_close(OVVCDec *vvcdec)
 
         nvcl_free_ctx(&vvcdec->nvcl_ctx);
 
-        if (vvcdec->subdec_list) {
-            for (int i = 0; i < vvcdec->nb_threads; ++i){
-                sldec = vvcdec->subdec_list[i];
-                slicedec_uninit(&sldec);
-                ov_log(NULL, OVLOG_INFO, "Main joined thread: %d\n", i);
+        // if (vvcdec->subdec_list) {
+        //     for (int i = 0; i < vvcdec->nb_threads; ++i){
+        //         sldec = vvcdec->subdec_list[i];
+        //         slicedec_uninit(&sldec);
+        //         ov_log(NULL, OVLOG_INFO, "Main joined thread: %d\n", i);
 
-            }
-            ov_freep(&vvcdec->subdec_list);
-        }
+        //     }
+        //     ov_freep(&vvcdec->subdec_list);
+        // }
 
-        ovthread_output_uninit(&vvcdec->output_thread);
+        // // ovthread_output_uninit(&vvcdec->output_thread);
 
         ovdpb_uninit(&vvcdec->dpb);
 

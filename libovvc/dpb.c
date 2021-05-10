@@ -544,7 +544,6 @@ ovdpb_output_pic(OVDPB *dpb, OVPicture **out, int output_cvs_id)
         /* Count pic marked for output in output cvs and find the min poc_id */
         for (i = 0; i < nb_dpb_pic; i++) {
             OVPicture *pic = &dpb->pictures[i];
-            //TODOpar check if decoded here ?
             uint8_t output_flag = (pic->flags & OV_OUTPUT_PIC_FLAG);
             uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
             if (output_flag && is_output_cvs) {

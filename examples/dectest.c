@@ -143,8 +143,8 @@ main(int argc, char** argv)
 
     if (ret < 0) goto failattach;
 
-    // read_stream(&ovvc_hdl, ovvc_hdl.fp, fout);
-    ovthread_read_stream(&ovvc_hdl, ovvc_hdl.fp);
+    read_stream(&ovvc_hdl, ovvc_hdl.fp, fout);
+    // ovthread_read_stream(&ovvc_hdl, ovvc_hdl.fp);
 
     ovdmx_detach_stream(ovvc_hdl.dmx);
 
@@ -253,14 +253,14 @@ ovthread_read_stream(OVVCHdl *const hdl, FILE *fp)
     do {
         ret = ovdmx_extract_picture_unit(dmx, &pu);
         if (ret < 0) {
-            ov_log(NULL, OVLOG_ERROR, "Picture unit not extracted\n");
+            ov_log(NULL, OVLOG_INFO, "Picture unit not extracted\n");
             goto end_out;
         }
 
         if (pu){
             ret = ovdec_submit_picture_unit(dec, pu);
             if (ret < 0) {
-                ov_log(NULL, OVLOG_ERROR, "Picture unit not submitted\n");
+                ov_log(NULL, OVLOG_INFO, "Picture unit not submitted\n");
                 ov_free_pu(&pu);
                 goto end_out;
             }
@@ -286,10 +286,10 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
     OVVCDmx *const dmx = hdl->dmx;
     OVVCDec *const dec = hdl->dec;
     OVPictureUnit *pu = NULL;
+    OVPicture *pic = NULL;
 
     int nb_pic = 0;
     do {
-        OVPicture *pic = NULL;
         ret = ovdmx_extract_picture_unit(dmx, &pu);
         if (ret < 0) {
             break;
@@ -303,16 +303,23 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
             }
 
             do {
+                pic = NULL;
                 ovdec_receive_picture(dec, &pic);
 
                 /* FIXME use ret instead of frame */
                 if (pic) {
-                    write_decoded_frame_to_file(pic->frame, fout);
+                    OVFrame* frame_output = pic->frame;
+                    pp_process_frame(pic->sei, dec->dpb, &frame_output);
+
+                    write_decoded_frame_to_file(frame_output, fout);
                     ++nb_pic;
 
-                    // /* we unref the picture even if ref failed the picture
-                    //  * will still be usable by the decoder if not bumped
-                    //  * */
+                    if(frame_output !=  pic->frame){
+                        ovframe_unref(&frame_output);
+                    }
+                    /* we unref the picture even if ref failed the picture
+                     * will still be usable by the decoder if not bumped
+                     * */
                     ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
                     ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", pic->poc);
                 }
@@ -326,13 +333,15 @@ read_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
 
 
     } while (ret >= 0);
-    ret = 1;
 
+    //Wait for all the sub decoders to finish before draining dpb
+    ovdec_uninit_subdec(dec);
+
+    ret = 1;
     while (ret > 0) {
         OVFrame *frame = NULL;
         ret = ovdec_drain_picture(dec, &frame);
         if (frame) {
-            ov_log(NULL, OVLOG_DEBUG, "Draining decoder\n");
             if (fout) {
                 write_decoded_frame_to_file(frame, fout);
                 ++nb_pic;

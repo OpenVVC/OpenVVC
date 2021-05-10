@@ -39,4 +39,6 @@ int ovdec_init(OVVCDec **ovvcdec, FILE* fout, int nb_threads);
 
 int ovdec_close(OVVCDec *ovvcdec);
 
+void ovdec_uninit_subdec(OVVCDec *vvcdec);
+
 #endif
