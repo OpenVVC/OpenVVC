@@ -55,7 +55,7 @@ ovcabac_read_ae_pred_mode_flag(OVCABACCtx *const cabac_ctx,
 {
     uint8_t pred_mode_flag;
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    int ctx_offset = (above_pu == OV_INTRA) | (left_pu == OV_INTRA) | above_pu == OV_MIP | left_pu == OV_MIP;
+    int ctx_offset = (above_pu == OV_INTRA) | (left_pu == OV_INTRA) | (above_pu == OV_MIP) | (left_pu == OV_MIP);
     pred_mode_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[PRED_MODE_CTX_OFFSET + ctx_offset]);
     return pred_mode_flag;
 }
