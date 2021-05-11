@@ -49,35 +49,39 @@ struct RPLInfo
 struct OVPicture
 {
    /* Associated frame */
-   OVFrame *frame;
+    OVFrame *frame;
 
-   /* Flags used to mark Picture referenced by the
+    /* Flags used to mark Picture referenced by the
     * active picture (current picture being decoded)
     * FIXME enum ?
     */
-   uint8_t flags;
-   atomic_uint ref_count;
-   //TODOpar: change in inter with the map of decoded CTUs
-   atomic_uint decoded;
-   pthread_mutex_t pic_mtx;
+    uint8_t flags;
+    atomic_uint ref_count;
+    pthread_mutex_t pic_mtx;
 
-   /* Pointers to ref_pic_list */
-   /* FIXME use frame directly ? */
-   const struct OVPicture *rpl0[16];
-   const struct OVPicture *rpl1[16];
+    //Map of decoded CTUs
+    //TODOpar: change 32 with n_ctu_w 
+    int64_t decoded_ctus[32];
+    pthread_mutex_t ref_mtx;
+    pthread_cond_t  ref_cnd;
 
-   /* FIXME Used only by TMPV? */
-   #if 0
-   uint32_t ref_poc0[16];
-   uint32_t ref_poc1[16];
-   #endif
-   struct RPLInfo rpl_info0;
-   struct RPLInfo rpl_info1;
+    /* Pointers to ref_pic_list */
+    /* FIXME use frame directly ? */
+    const struct OVPicture *rpl0[16];
+    const struct OVPicture *rpl1[16];
 
-   struct MVPlane mv_plane0;
-   struct MVPlane mv_plane1;
+    /* FIXME Used only by TMPV? */
+    #if 0
+    uint32_t ref_poc0[16];
+    uint32_t ref_poc1[16];
+    #endif
+    struct RPLInfo rpl_info0;
+    struct RPLInfo rpl_info1;
 
-   struct TMVPInfo {
+    struct MVPlane mv_plane0;
+    struct MVPlane mv_plane1;
+
+    struct TMVPInfo {
        const struct OVPicture *collocated_ref;
        /* Per ref_idx Motion Scaling information */
        struct TMVPScale {
@@ -104,18 +108,18 @@ struct OVPicture
             int8_t ref_idx_rpl1;
         }col_info;
        /* TODO tmvp scaling */
-   } tmvp;
+    } tmvp;
 
-   //Sub decoder that decoded the picture
+    //Sub decoder that decoded the picture
     OVSEI *sei;
 
-   int32_t poc;
+    int32_t poc;
 
-   /* Coded Video Sequence Id to which this Picture is
+    /* Coded Video Sequence Id to which this Picture is
     * Associated : this avoid confusing ref with same POC
     * when the refresh period is shorter than DPB
     */
-   uint16_t cvs_id;
+    uint16_t cvs_id;
 };
 
 /* Decoded Picture Buffer

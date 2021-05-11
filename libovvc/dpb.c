@@ -74,7 +74,6 @@ ovdpb_uninit(OVDPB **dpb_p)
     }
 }
 
-
 /* Clean OVPicture from DPB and unref associated Frame */
 static void
 dpbpriv_release_pic(OVPicture *pic)
@@ -205,8 +204,8 @@ vvc_clear_refs(OVDPB *dpb)
     // const uint8_t flags = OV_ST_REF_PIC_FLAG | OV_LT_REF_PIC_FLAG;
 
     for (i = 0; i < nb_dpb_pic; i++) {
+        //TODOpar: try to release pictures before this function (16 pics in RA)?
         ovdpb_release_pic(dpb, &dpb->pictures[i]);
-        // ovdpb_unref_pic(dpb, &dpb->pictures[i], flags);
     }
 }
 
@@ -964,4 +963,52 @@ fail:
     #endif
 
     return ret;
+}
+
+
+    //Map of decoded CTUs
+    int64_t decoded_ctus[32];
+    pthread_mutex_t ref_mtx;
+    pthread_cond_t  ref_cnd;
+
+void
+ovdpb_update_decoded_ctus(OVPicture *const pic, int y_ctu, int xmin_ctu, int xmax_ctu)
+{
+    if (xmin_ctu < 0 || xmax_ctu > 63 || y_ctu > 31)
+        ov_log(NULL, OVLOG_ERROR, "Picture (poc:%d): impossible to update decoded ctus\n", pic->poc);
+
+    uint64_t mask = 0;
+    for(int i = xmin_ctu; i <= xmax_ctu; i++)
+        mask |= 1 << i;
+
+    pthread_mutex_lock(&pic->ref_mtx);
+    pic->decoded_ctus[y_ctu] |= mask;
+    pthread_cond_broadcast(&pic->ref_cnd);
+    pthread_mutex_unlock(&pic->ref_mtx);
+}
+
+void
+ovdpb_reset_decoded_ctus(OVPicture *const pic)
+{
+    pthread_mutex_lock(&pic->ref_mtx);
+    for(int i = 0; i <= 32; i++)
+        pic->decoded_ctus[i] = 0;
+    pthread_mutex_unlock(&pic->ref_mtx);
+}
+
+void
+ovdpb_get_all_decoded_ctus(OVPicture *const pic, int64_t* decoded )
+{
+    pthread_mutex_lock(&pic->ref_mtx);
+    for(int i = 0; i <= 32; i++)
+        decoded[i] = pic->decoded_ctus[i] ;
+    pthread_mutex_unlock(&pic->ref_mtx);
+}
+
+int64_t
+ovdpb_get_line_decoded_ctus(OVPicture *const pic, int y_ctu)
+{
+    pthread_mutex_lock(&pic->ref_mtx);
+    return pic->decoded_ctus[y_ctu];
+    pthread_mutex_unlock(&pic->ref_mtx);
 }
