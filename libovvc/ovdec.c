@@ -451,9 +451,7 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
     #endif
 
     OVPicture *pic = NULL;
-    //TODOpar: why change here ?
-    // out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
-    out_cvs_id = dpb->cvs_id ;
+    out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
     ret = ovdpb_output_pic(dpb, &pic, out_cvs_id);
 
     if (pic) {
@@ -495,9 +493,23 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
         return OVVC_EINDATA;
     }
 
-    out_cvs_id = dpb->cvs_id ;
+    OVPicture *pic = NULL;
+    out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
+    ret = ovdpb_drain_frame(dpb, &pic, out_cvs_id);
 
-    ret = ovdpb_drain_frame(dpb, frame_p, out_cvs_id);
+    if (pic) {
+        *frame_p = pic->frame;
+        pp_process_frame(pic->sei, dec->dpb, frame_p);
+
+        //New ref if it is a frame already in a DPB pic
+        if(*frame_p ==  pic->frame){
+            ovframe_new_ref(frame_p, pic->frame);
+        }
+        /* we unref the picture even if ref failed the picture
+         * will still be usable by the decoder if not bumped
+         * */
+        ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
+    }
 
     return ret;
 }

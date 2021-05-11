@@ -328,12 +328,12 @@ read_write_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
     ret = 1;
     while (ret > 0) {
         frame = NULL;
-        ret = ovdec_receive_picture(dec, &frame);
+        ret = ovdec_drain_picture(dec, &frame);
         /* FIXME use ret instead of frame */
         if (frame) {
             write_decoded_frame_to_file(frame, fout);
             ++nb_pic;
-            ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", frame->poc);
+            ov_log(NULL, OVLOG_DEBUG, "Drain picture with POC %d.\n", frame->poc);
 
             ovframe_unref(&frame);
         }
