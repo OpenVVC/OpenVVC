@@ -58,9 +58,9 @@ void vvc_intra_pred_multi_ref( const OVCTUDec *const ctudec,
                                int multi_ref_idx);
 
 
-VVCCU drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
-                   uint8_t x0, uint8_t y0, uint8_t log2_cb_w, uint8_t log2_cb_h,
-                   VVCCU cu);
+uint8_t drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
+                     uint8_t x0, uint8_t y0, uint8_t log2_cb_w, uint8_t log2_cb_h,
+                     VVCCU cu);
 
 OVMV drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
                  const struct OVMVCtx *const mv_ctx,

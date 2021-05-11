@@ -329,7 +329,7 @@ derive_intra_angular_mode(struct IntraDRVInfo *i_info,
     return intra_mode;
 }
 
-VVCCU
+uint8_t
 drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
              uint8_t x0, uint8_t y0, uint8_t log2_cb_w, uint8_t log2_cb_h,
              VVCCU cu)
@@ -419,7 +419,7 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
 
     fill_bs_map(&ctudec->dbf_info.bs2_map, x0, y0, log2_cb_w, log2_cb_h);
 
-    return cu;
+    return intra_mode;
 }
 
 void
