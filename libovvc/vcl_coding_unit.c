@@ -428,14 +428,13 @@ coding_unit(OVCTUDec *const ctu_dec,
      * transform trees
      */
     if (cu.cu_flags & 0x2) {
-        if (ctu_dec->coding_tree != &dual_tree) {
+        if (ctu_dec->coding_unit == &coding_unit_intra_st || ctu_dec->coding_unit == &coding_unit_inter_st) {
             uint8_t luma_mode;
             luma_mode = drv_intra_cu(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, cu);
+            cu.cu_mode_idx = luma_mode;
 
-            if (ctu_dec->share != 1) {
-                ctu_dec->intra_mode_c = drv_intra_mode_c(cu, luma_mode);
-                vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1);
-            }
+            ctu_dec->intra_mode_c = drv_intra_mode_c(cu, luma_mode);
+            vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1);
         } else {
             /* FIXME inter */
             if (ctu_dec->coding_unit == &coding_unit_intra) {
