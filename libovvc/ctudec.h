@@ -46,6 +46,8 @@ enum VVCCUFlag{
      DECL_FLG(inter_dir,3),
 };
 
+struct TUInfo;
+
 /* FIXME: Move here for SSE */
 struct LMParams{
    int shift;
@@ -644,7 +646,7 @@ struct OVCTUDec
                           unsigned int log2_tb_w,
                           unsigned int log2_tb_h,
                           uint8_t cbf_ctx, uint8_t cu_flags,
-                          uint8_t tr_depth);
+                          uint8_t tr_depth, struct TUInfo *const tu_info);
 
     int (*prediction_unit)(struct OVCTUDec *const lc_ctx,
                            const OVPartInfo *const part_ctx,
