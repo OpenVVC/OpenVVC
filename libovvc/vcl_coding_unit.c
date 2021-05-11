@@ -388,6 +388,19 @@ ovcabac_read_ae_ref_idx(OVCABACCtx *const cabac_ctx, uint8_t nb_active_ref)
     return ref_idx;
 }
 
+static uint8_t
+drv_intra_mode_c(VVCCU cu, uint8_t luma_mode)
+{
+    uint8_t cclm_flag = !!(cu.cu_flags & flg_cclm_flag);
+    uint8_t mpm_flag_c = !!(cu.cu_flags & flg_mpm_flag_c);
+    uint8_t mpm_idx = cu.cu_mode_idx_c;
+    uint8_t cclm_idx = cu.cu_mode_idx_c;
+    uint8_t intra_mode = derive_intra_mode_c(cclm_flag, mpm_flag_c, mpm_idx,
+                                             luma_mode, cclm_idx);
+
+    return intra_mode;
+}
+
 int
 coding_unit(OVCTUDec *const ctu_dec,
             const OVPartInfo *const part_ctx,
@@ -410,6 +423,42 @@ coding_unit(OVCTUDec *const ctu_dec,
     cu = ctu_dec->coding_unit(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h);
 
     ctu_dec->dequant_chroma = &ctu_dec->dequant_cb;
+
+    /* FIXME move after TU is read so we can reconstruct with or without
+     * transform trees
+     */
+    if (cu.cu_flags & 0x2) {
+        if (ctu_dec->coding_tree != &dual_tree) {
+            uint8_t luma_mode;
+            luma_mode = drv_intra_cu(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, cu);
+
+            if (ctu_dec->share != 1) {
+                ctu_dec->intra_mode_c = drv_intra_mode_c(cu, luma_mode);
+                vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1);
+            }
+        } else {
+            /* FIXME inter */
+            if (ctu_dec->coding_unit == &coding_unit_intra) {
+                uint8_t luma_mode = drv_intra_cu(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, cu);
+                cu.cu_mode_idx = luma_mode;
+            } else {
+                struct IntraDRVInfo *const i_info = &ctu_dec->drv_ctx.intra_info;
+                uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
+                uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
+                uint8_t nb_pb_w = (1 << log2_cb_w) >> part_ctx->log2_min_cb_s;
+                uint8_t nb_pb_h = (1 << log2_cb_h) >> part_ctx->log2_min_cb_s;
+                uint8_t pu_shift = ctu_dec->part_ctx->log2_min_cb_s - 2;
+                uint8_t luma_mode = i_info->luma_modes[(x_pu + ((y_pu + (nb_pb_h >> 1)) << 5) + (nb_pb_w >> 1))];
+
+                ctu_dec->intra_mode_c = drv_intra_mode_c(cu, luma_mode);
+
+                ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_pu << pu_shift,
+                                            y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+
+                vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0, y0, log2_cb_w, log2_cb_h);
+            }
+        }
+    }
 
     if (!(cu.cu_flags & flg_cu_skip_flag)) {
          /*TODO rename */
@@ -596,6 +645,7 @@ coding_unit_intra_st(OVCTUDec *const ctu_dec,
                      uint8_t log2_cu_w, uint8_t log2_cu_h)
 {
    VVCCU cu = {0};
+   VVCCU cu_c = {0};
 
    /* Force pred_mode_flag to 2 so we know cu was intra */
 
@@ -603,8 +653,11 @@ coding_unit_intra_st(OVCTUDec *const ctu_dec,
 
    /* if not in separable tree */
    if (!ctu_dec->share) {
-       coding_unit_intra_c(ctu_dec, ctu_dec->part_ctx_c, x0 >> 1, y0 >> 1,
-                           log2_cu_w - 1, log2_cu_h - 1);
+       cu_c = coding_unit_intra_c(ctu_dec, ctu_dec->part_ctx_c, x0 >> 1, y0 >> 1,
+                                  log2_cu_w - 1, log2_cu_h - 1);
+
+       cu.cu_flags |= cu_c.cu_flags;
+       cu.cu_mode_idx_c = cu_c.cu_mode_idx_c;
    }
 
    return cu;
@@ -699,11 +752,6 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
         }
     }
 
-    /* FIXME move after TU is read so we can reconstruct with or without
-     * transform trees
-     */
-    cu = drv_intra_cu(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, cu);
-
     return cu;
 }
 
@@ -715,56 +763,33 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
 {
 
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    struct IntraDRVInfo *const i_info = &ctu_dec->drv_ctx.intra_info;
-    /* TODO set mode to default */
-    uint8_t intra_mode;
-    uint8_t mpm_idx = 0, cclm_idx = 1;
-#if 1
-    /* FIXME move to drv */
-    uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
-    uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
-    uint8_t nb_pb_w = (1 << log2_cb_w) >> part_ctx->log2_min_cb_s;
-    uint8_t nb_pb_h = (1 << log2_cb_h) >> part_ctx->log2_min_cb_s;
-    uint8_t luma_mode = i_info->luma_modes[(x_pu + ((y_pu + (nb_pb_h >> 1)) << 5) + (nb_pb_w >> 1))];
-    uint8_t pu_shift = ctu_dec->part_ctx->log2_min_cb_s - 2;
-#endif
-    uint8_t cclm_flag = 0;
-    uint8_t mpm_flag  = 0;
-
     VVCCU cu = {0};
+    uint8_t cclm_flag = 0;
 
+    /* Force intra pred mode in case of separarate or dual tree */
     cu.cu_flags = 2;
 
     /* FIXME CCLM luma partition constraints */
     if (ctu_dec->lm_chroma_enabled && (!ctu_dec->tmp_disable_cclm &&
-        ctu_dec->enable_cclm == 1 || ctu_dec->coding_tree != &dual_tree)) {
+        (ctu_dec->enable_cclm == 1 || ctu_dec->coding_tree != &dual_tree))) {
 
         cclm_flag = ovcabac_read_ae_cclm_flag(cabac_ctx);
+        FLG_STORE(cclm_flag, cu.cu_flags);
 
         if (cclm_flag) {
-            cclm_idx = ovcabac_read_ae_intra_lm_chroma(cabac_ctx);
+            uint8_t cclm_idx = ovcabac_read_ae_intra_lm_chroma(cabac_ctx);
+            cu.cu_mode_idx_c = cclm_idx;
         }
     }
 
     if (!cclm_flag) {
-        mpm_flag = ovcabac_read_ae_intra_chroma_mpm_flag(cabac_ctx);
-        if (mpm_flag) {
-            mpm_idx = ovcabac_read_ae_intra_chroma_mpm_idx(cabac_ctx);
+        uint8_t mpm_flag_c = ovcabac_read_ae_intra_chroma_mpm_flag(cabac_ctx);
+        FLG_STORE(mpm_flag_c, cu.cu_flags);
+        if (mpm_flag_c) {
+            uint8_t mpm_idx = ovcabac_read_ae_intra_chroma_mpm_idx(cabac_ctx);
+            cu.cu_mode_idx_c = mpm_idx;
         }
     }
-
-    //Note this is not required by cabac decoding.
-    intra_mode = derive_intra_mode_c(cclm_flag, mpm_flag, mpm_idx,
-                                     luma_mode, cclm_idx);
-
-
-    /* FIXME move to RCN */
-    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_pu << pu_shift,
-                                y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
-
-
-    ctu_dec->intra_mode_c = intra_mode;
-    vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, intra_mode, x0, y0, log2_cb_w, log2_cb_h);
 
     return cu;
 }

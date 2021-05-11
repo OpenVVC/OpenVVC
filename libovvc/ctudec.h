@@ -216,6 +216,7 @@ struct VVCCU{
 
     uint8_t cu_flags;
     uint8_t cu_mode_idx;
+    uint8_t cu_mode_idx_c;
     uint8_t cu_opaque;
     uint8_t cu_mode_info;
 
