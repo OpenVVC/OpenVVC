@@ -1139,59 +1139,10 @@ transform_unit_c(OVCTUDec *const ctu_dec,
 }
 
 static void
-lfnst_mts()
+lfnst_mts(const OVCTUDec *const ctu_dec, uint8_t log2_tb_w, uint8_t log2_tb_h,
+          uint8_t cu_flags, struct TUInfo *const tu_info)
 {
-}
-
-static int
-transform_tree(OVCTUDec *const ctu_dec,
-               const OVPartInfo *const part_ctx,
-               unsigned int x0, unsigned int y0,
-               unsigned int log2_tb_w, unsigned int log2_tb_h,
-               unsigned int log2_max_tb_s, uint8_t rqt_root_cbf,
-               uint8_t cu_flags, uint8_t tr_depth, struct TUInfo *tu_info)
-{
-    uint8_t split_v = log2_tb_w > log2_max_tb_s;
-    uint8_t split_h = log2_tb_h > log2_max_tb_s;
-    uint8_t cbf_mask = 0;
-
-    if (split_v || split_h) {
-        unsigned int tb_w1 = ((1 << log2_tb_w) >> split_v);
-        unsigned int tb_h1 = ((1 << log2_tb_h) >> split_h);
-
-        unsigned int log2_tb_w1 = log2_tb_w - split_v;
-        unsigned int log2_tb_h1 = log2_tb_h - split_h;
-
-        transform_tree(ctu_dec, part_ctx, x0, y0,
-                       log2_tb_w1, log2_tb_h1,
-                       log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1, &tu_info[0]);
-        if (split_v) {
-            transform_tree(ctu_dec, part_ctx, x0 + tb_w1, y0,
-                           log2_tb_w1, log2_tb_h1,
-                           log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1, &tu_info[1]);
-        }
-
-        if (split_h) {
-            transform_tree(ctu_dec, part_ctx, x0, y0 + tb_h1,
-                           log2_tb_w1, log2_tb_h1,
-                           log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1, &tu_info[2]);
-        }
-
-        if (split_h && split_v) {
-            transform_tree(ctu_dec, part_ctx, x0 + tb_w1, y0 + tb_h1,
-                           log2_tb_w1, log2_tb_h1,
-                           log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1, &tu_info[3]);
-        }
-
-
-    } else {
-
-        cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, rqt_root_cbf, cu_flags, tr_depth, tu_info);
-        tu_info->cbf_mask = cbf_mask;
-
-    }
-
-    if (!tr_depth)
+    uint8_t cbf_mask = tu_info->cbf_mask;
     if (ctu_dec->transform_unit == &transform_unit_st && cbf_mask) {
         if (ctu_dec->enable_lfnst && cu_flags & 0x2) {
             uint8_t can_lfnst = lfnst_check_st(tu_info, log2_tb_w, log2_tb_h,
@@ -1278,6 +1229,57 @@ transform_tree(OVCTUDec *const ctu_dec,
             }
         }
     }
+}
+
+static int
+transform_tree(OVCTUDec *const ctu_dec,
+               const OVPartInfo *const part_ctx,
+               unsigned int x0, unsigned int y0,
+               unsigned int log2_tb_w, unsigned int log2_tb_h,
+               unsigned int log2_max_tb_s, uint8_t rqt_root_cbf,
+               uint8_t cu_flags, uint8_t tr_depth, struct TUInfo *tu_info)
+{
+    uint8_t split_v = log2_tb_w > log2_max_tb_s;
+    uint8_t split_h = log2_tb_h > log2_max_tb_s;
+    uint8_t cbf_mask = 0;
+
+    if (split_v || split_h) {
+        unsigned int tb_w1 = ((1 << log2_tb_w) >> split_v);
+        unsigned int tb_h1 = ((1 << log2_tb_h) >> split_h);
+
+        unsigned int log2_tb_w1 = log2_tb_w - split_v;
+        unsigned int log2_tb_h1 = log2_tb_h - split_h;
+
+        transform_tree(ctu_dec, part_ctx, x0, y0,
+                       log2_tb_w1, log2_tb_h1,
+                       log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1, &tu_info[0]);
+        if (split_v) {
+            transform_tree(ctu_dec, part_ctx, x0 + tb_w1, y0,
+                           log2_tb_w1, log2_tb_h1,
+                           log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1, &tu_info[1]);
+        }
+
+        if (split_h) {
+            transform_tree(ctu_dec, part_ctx, x0, y0 + tb_h1,
+                           log2_tb_w1, log2_tb_h1,
+                           log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1, &tu_info[2]);
+        }
+
+        if (split_h && split_v) {
+            transform_tree(ctu_dec, part_ctx, x0 + tb_w1, y0 + tb_h1,
+                           log2_tb_w1, log2_tb_h1,
+                           log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1, &tu_info[3]);
+        }
+
+
+    } else {
+
+        cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, rqt_root_cbf, cu_flags, tr_depth, tu_info);
+        tu_info->cbf_mask = cbf_mask;
+
+    }
+
+    lfnst_mts(ctu_dec, log2_tb_w, log2_tb_h, cu_flags, tu_info);
 
     if (ctu_dec->transform_unit == &transform_unit_st && cbf_mask) {
         rcn_tu_st(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, cbf_mask, tu_info);
