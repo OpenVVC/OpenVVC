@@ -1231,6 +1231,64 @@ lfnst_mts(const OVCTUDec *const ctu_dec, uint8_t log2_tb_w, uint8_t log2_tb_h,
     }
 }
 
+static void
+rcn_res_wrap(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
+             uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t cu_flags,
+             const struct TUInfo *const tu_info)
+{
+    uint8_t cbf_mask = tu_info->cbf_mask;
+    if (ctu_dec->transform_unit == &transform_unit_st && cbf_mask) {
+        rcn_tu_st(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, cbf_mask, tu_info);
+    } else if (ctu_dec->transform_unit == &transform_unit_l && cbf_mask) {
+        rcn_tu_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, cbf_mask, tu_info);
+    } else if (ctu_dec->transform_unit == &transform_unit_c && cbf_mask) {
+        rcn_tu_c(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, cbf_mask, tu_info);
+    }
+}
+
+static void
+rcn_transform_tree(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
+                   uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t log2_max_tb_s,
+                   uint8_t cu_flags, const struct TUInfo *const tu_info)
+{
+    uint8_t split_v = log2_tb_w > log2_max_tb_s;
+    uint8_t split_h = log2_tb_h > log2_max_tb_s;
+
+    if (split_v || split_h) {
+        unsigned int tb_w1 = ((1 << log2_tb_w) >> split_v);
+        unsigned int tb_h1 = ((1 << log2_tb_h) >> split_h);
+
+        unsigned int log2_tb_w1 = log2_tb_w - split_v;
+        unsigned int log2_tb_h1 = log2_tb_h - split_h;
+
+        rcn_transform_tree(ctu_dec, x0, y0,
+                           log2_tb_w1, log2_tb_h1,
+                           log2_max_tb_s, cu_flags, &tu_info[0]);
+        if (split_v) {
+            rcn_transform_tree(ctu_dec, x0 + tb_w1, y0,
+                               log2_tb_w1, log2_tb_h1,
+                               log2_max_tb_s, cu_flags, &tu_info[1]);
+        }
+
+        if (split_h) {
+            rcn_transform_tree(ctu_dec, x0, y0 + tb_h1,
+                               log2_tb_w1, log2_tb_h1,
+                               log2_max_tb_s, cu_flags, &tu_info[2]);
+        }
+
+        if (split_h && split_v) {
+            rcn_transform_tree(ctu_dec, x0 + tb_w1, y0 + tb_h1,
+                               log2_tb_w1, log2_tb_h1,
+                               log2_max_tb_s, cu_flags, &tu_info[3]);
+        }
+
+
+    } else {
+
+        rcn_res_wrap(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, tu_info);
+    }
+}
+
 static int
 transform_tree(OVCTUDec *const ctu_dec,
                const OVPartInfo *const part_ctx,
@@ -1280,14 +1338,6 @@ transform_tree(OVCTUDec *const ctu_dec,
     }
 
     lfnst_mts(ctu_dec, log2_tb_w, log2_tb_h, cu_flags, tu_info);
-
-    if (ctu_dec->transform_unit == &transform_unit_st && cbf_mask) {
-        rcn_tu_st(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, cbf_mask, tu_info);
-    } else if (ctu_dec->transform_unit == &transform_unit_l && cbf_mask) {
-        rcn_tu_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, cbf_mask, tu_info);
-    } else if (ctu_dec->transform_unit == &transform_unit_c && cbf_mask) {
-        rcn_tu_c(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, cbf_mask, tu_info);
-    }
 
     return 0;
 }
@@ -1689,6 +1739,9 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
             struct TUInfo tu_info[4] = {0};
             transform_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
                            part_ctx->log2_max_tb_s, 0, cu.cu_flags, 0, tu_info);
+
+            rcn_transform_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, part_ctx->log2_max_tb_s,
+                               cu.cu_flags, tu_info);
         } else {
             uint8_t isp_mode = cu.cu_opaque;
             uint8_t intra_mode = cu.cu_mode_idx;
@@ -1719,6 +1772,9 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
         if (rqt_root_cbf) {
             transform_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
                            part_ctx->log2_max_tb_s, 1, cu.cu_flags, 0, tu_info);
+
+            rcn_transform_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, part_ctx->log2_max_tb_s,
+                               cu.cu_flags, tu_info);
         }
     }
     return 0;
