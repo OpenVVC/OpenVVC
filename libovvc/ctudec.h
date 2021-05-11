@@ -387,9 +387,9 @@ struct FiltersDRVCtx
  * it in ctu dec
  */
 struct TrCoeffData{
-    int16_t residual_y[64*64];
-    int16_t residual_cb[64*64];
-    int16_t residual_cr[64*64];
+    int16_t residual_y[128*128];
+    int16_t residual_cb[128*128];
+    int16_t residual_cr[128*128];
     int16_t lfnst_subblock[16*2];
 
 };
@@ -680,9 +680,9 @@ struct OVCTUDec
      *   case of transform tree or ISP tree
      *    -Move to Transform Unit structure
      */
-    DECLARE_ALIGNED(32, int16_t, residual_y)[64*64];
-    DECLARE_ALIGNED(32, int16_t, residual_cb)[64*64];
-    DECLARE_ALIGNED(32, int16_t, residual_cr)[64*64];
+    DECLARE_ALIGNED(32, int16_t, residual_y)[128*128];
+    DECLARE_ALIGNED(32, int16_t, residual_cb)[128*128];
+    DECLARE_ALIGNED(32, int16_t, residual_cr)[128*128];
     int16_t lfnst_subblock[16*2];
     DECLARE_ALIGNED(32, int16_t, transform_buff)[64*64];
 

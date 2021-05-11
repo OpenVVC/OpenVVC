@@ -17,6 +17,7 @@ struct TBInfo {
 
 struct TUInfo {
    uint8_t cbf_mask;
+   uint16_t pos_offset;
    uint8_t tr_skip_mask;
    uint8_t cu_mts_flag;
    uint8_t cu_mts_idx;
@@ -335,7 +336,7 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
     if (cbf_mask & 0x2) {
         uint16_t *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[(x0) + (y0 * RCN_CTB_STRIDE)];
         int16_t scale  = ctu_dec->lmcs_info.lmcs_chroma_scale;
-        int16_t *const coeffs_cb = ctu_dec->residual_cb;
+        int16_t *const coeffs_cb = ctu_dec->residual_cb + tu_info->pos_offset;
 
         if (!(tu_info->tr_skip_mask & 0x2)) {
             const struct TBInfo *const tb_info_cb = &tu_info->tb_info[0];
@@ -354,7 +355,7 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
     if (cbf_mask & 0x1) {
         uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[(x0) + (y0 * RCN_CTB_STRIDE)];
         int16_t scale  = ctu_dec->lmcs_info.lmcs_chroma_scale;
-        int16_t *const coeffs_cr = ctu_dec->residual_cr;
+        int16_t *const coeffs_cr = ctu_dec->residual_cr + tu_info->pos_offset;
 
         if (!(tu_info->tr_skip_mask & 0x1)) {
             const struct TBInfo *const tb_info_cr = &tu_info->tb_info[1];
@@ -380,12 +381,12 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
     uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[x0 + (y0 * RCN_CTB_STRIDE)];
     if (!(tu_info->tr_skip_mask & 0x1)) {
         const struct TBInfo *const tb_info = &tu_info->tb_info[0];
-        int16_t *const coeffs_jcbcr = ctu_dec->residual_cb;
+        int16_t *const coeffs_jcbcr = ctu_dec->residual_cb + tu_info->pos_offset;
         rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_jcbcr,
                        x0, y0, log2_tb_w, log2_tb_h,
                        tb_info->last_pos, lfnst_flag, tu_info->lfnst_idx);
     } else {
-        int16_t *const coeffs_jcbcr = ctu_dec->residual_cb;
+        int16_t *const coeffs_jcbcr = ctu_dec->residual_cb + tu_info->pos_offset;
         memcpy(ctu_dec->transform_buff, coeffs_jcbcr, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
     }
 
@@ -766,7 +767,7 @@ residual_coding_l(OVCTUDec *const ctu_dec,
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t tr_skip_flag = 0;
-    int16_t *const coeffs_y = ctu_dec->residual_y;
+    int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
 
     struct TBInfo *tb_info = &tu_info->tb_info[2];
 
@@ -792,7 +793,7 @@ residual_coding_l(OVCTUDec *const ctu_dec,
 
     } else {
         ctu_dec->dequant_skip = &ctu_dec->dequant_luma_skip;
-        residual_coding_ts(ctu_dec, ctu_dec->residual_y, log2_tb_w, log2_tb_h);
+        residual_coding_ts(ctu_dec, ctu_dec->residual_y + tu_info->pos_offset, log2_tb_w, log2_tb_h);
     }
 
 
@@ -806,8 +807,8 @@ residual_coding_c(OVCTUDec *const ctu_dec,
                   uint8_t cbf_mask, struct TUInfo *tu_info)
 {
 
-    int16_t *const coeffs_cb = ctu_dec->residual_cb;
-    int16_t *const coeffs_cr = ctu_dec->residual_cr;
+    int16_t *const coeffs_cb = ctu_dec->residual_cb + tu_info->pos_offset;
+    int16_t *const coeffs_cr = ctu_dec->residual_cr + tu_info->pos_offset;
     uint16_t last_pos_cb = (1 << (log2_tb_h + log2_tb_w)) - 1;
     uint16_t last_pos_cr = (1 << (log2_tb_h + log2_tb_w)) - 1;
     uint32_t sig_sb_map_cb = 0x1;
@@ -892,7 +893,7 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
     uint16_t last_pos;
-    int16_t *const coeffs_jcbcr = ctu_dec->residual_cb;
+    int16_t *const coeffs_jcbcr = ctu_dec->residual_cb + tu_info->pos_offset;
     uint32_t sig_sb_map = 0x1;
     uint8_t transform_skip_flag = 0;
     struct TBInfo *const tb_info = &tu_info->tb_info[0];
@@ -924,7 +925,7 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
         sig_sb_map = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_jcbcr, log2_tb_w, log2_tb_h,
                                                      last_pos);
     } else {
-        residual_coding_ts(ctu_dec, ctu_dec->residual_cb, log2_tb_w, log2_tb_h);
+        residual_coding_ts(ctu_dec, ctu_dec->residual_cb + tu_info->pos_offset, log2_tb_w, log2_tb_h);
     }
 
     tb_info->sig_sb_map = sig_sb_map;
@@ -949,14 +950,14 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
 
         if (!(tu_info->tr_skip_mask & 0x10)) {
             int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;
-            int16_t *const coeffs_y = ctu_dec->residual_y;
+            int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             uint8_t is_mip = !!(cu_flags & flg_mip_flag);
             rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
                          lim_sb_s, tu_info->cu_mts_flag, tu_info->cu_mts_idx,
                          !tb_info->last_pos, tu_info->lfnst_flag, is_mip, tu_info->lfnst_idx);
 
         } else {
-            int16_t *const coeffs_y = ctu_dec->residual_y;
+            int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             memcpy(ctu_dec->transform_buff, coeffs_y, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
         }
 
@@ -990,14 +991,14 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
     if (cbf_mask) {
         if (!(tu_info->tr_skip_mask & 0x10)) {
             int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;
-            int16_t *const coeffs_y = ctu_dec->residual_y;
+            int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             uint8_t is_mip = !!(cu_flags & flg_mip_flag);
             rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
                          lim_sb_s, tu_info->cu_mts_flag, tu_info->cu_mts_idx,
                          !tb_info->last_pos, tu_info->lfnst_flag, is_mip, tu_info->lfnst_idx);
 
         } else {
-            int16_t *const coeffs_y = ctu_dec->residual_y;
+            int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             memcpy(ctu_dec->transform_buff, coeffs_y, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
         }
 
@@ -1307,23 +1308,34 @@ transform_tree(OVCTUDec *const ctu_dec,
 
         unsigned int log2_tb_w1 = log2_tb_w - split_v;
         unsigned int log2_tb_h1 = log2_tb_h - split_h;
+        int residual_offset = 0;
 
         transform_tree(ctu_dec, part_ctx, x0, y0,
                        log2_tb_w1, log2_tb_h1,
                        log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1, &tu_info[0]);
+
+        residual_offset += 1 << (log2_tb_w1 + log2_tb_h1);
+
         if (split_v) {
+            tu_info[1].pos_offset = residual_offset;
             transform_tree(ctu_dec, part_ctx, x0 + tb_w1, y0,
                            log2_tb_w1, log2_tb_h1,
                            log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1, &tu_info[1]);
+
+            residual_offset += 1 << (log2_tb_w1 + log2_tb_h1);
         }
 
         if (split_h) {
+            tu_info[2].pos_offset = residual_offset;
             transform_tree(ctu_dec, part_ctx, x0, y0 + tb_h1,
                            log2_tb_w1, log2_tb_h1,
                            log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1, &tu_info[2]);
+
+            residual_offset += 1 << (log2_tb_w1 + log2_tb_h1);
         }
 
         if (split_h && split_v) {
+            tu_info[3].pos_offset = residual_offset;
             transform_tree(ctu_dec, part_ctx, x0 + tb_w1, y0 + tb_h1,
                            log2_tb_w1, log2_tb_h1,
                            log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1, &tu_info[3]);
