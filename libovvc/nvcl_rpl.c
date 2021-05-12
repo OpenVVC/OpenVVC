@@ -332,6 +332,12 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
         memcpy(&rpl_h1->rpl_data, rpl1, sizeof(*rpl1));
         rpl_h->rpl1 = &rpl_h1->rpl_data;
 
+    } else if (rpl_h0->rpl_sps_flag && sps->sps_num_ref_pic_lists1 > 0) {
+        /*FIXME check nb_rpl1  + long term poc complement */
+        const struct OVRPL *rpl1 = &sps->rpl_s1[rpl_h0->rpl_idx];
+
+        memcpy(&rpl_h1->rpl_data, rpl1, sizeof(*rpl1));
+        rpl_h->rpl1 = &rpl_h1->rpl_data;
     } else {
         struct OVRPL *rpl1 = &rpl_h1->rpl_data;
 
