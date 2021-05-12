@@ -372,7 +372,7 @@ coding_quadtree_implicit(OVCTUDec *const ctu_dec,
     unsigned int y1 = y0 + (1 << log2_cb_s);
 
     uint8_t allow_qt = log2_cb_s >  part_ctx->log2_min_qt_s;
-    uint8_t allow_bt = log2_cb_s <= part_ctx->log2_max_bt_s;
+    uint8_t allow_bt = log2_cb_s <= part_ctx->log2_max_bt_s && log2_cb_s <= 6;
 
     uint8_t compute_chr_scale = (log2_cb_s == 6 && ctu_dec->lmcs_info.lmcs_enabled_flag) ;
     if (compute_chr_scale){
