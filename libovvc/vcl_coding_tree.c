@@ -789,6 +789,8 @@ multi_type_tree(OVCTUDec *const ctu_dec,
          */
         uint8_t allow_tt = log2_cb_w <= part_ctx->log2_max_tt_s &&
                            log2_cb_h <= part_ctx->log2_max_tt_s;
+
+        allow_tt &= log2_cb_w <= 6 && log2_cb_h <= 6;
         allow_tt &= !(ctu_dec->share == 2 && log2_cb_w + log2_cb_h == 6);
 
         allow_tt_v = allow_tt && ((log2_cb_w - 1) > part_ctx->log2_min_cb_s);
