@@ -21,7 +21,7 @@ ctu_field_set_rect_bitfield(struct CTUBitField *const ctu_map,
     uint8_t pb_pos_shift;
     int i;
 
-    mask = (1 << (nb_pb_w)) - 1;
+    mask = ((uint64_t)1 << (nb_pb_w)) - 1;
     pb_pos_shift = 1 + x_pb;
     mask_map = mask << pb_pos_shift;
 
@@ -29,7 +29,7 @@ ctu_field_set_rect_bitfield(struct CTUBitField *const ctu_map,
         ctu_map->hfield[y_pb + i] |= mask_map;
     }
 
-    mask = (1 << (nb_pb_h)) - 1;
+    mask = ((uint64_t)1 << (nb_pb_h)) - 1;
     pb_pos_shift = 1 + y_pb;
     mask_map = mask << pb_pos_shift;
 
