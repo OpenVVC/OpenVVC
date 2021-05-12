@@ -170,7 +170,7 @@ ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
 
 
 int
-ovdpb_ref_pic(OVPicture *pic, int flags)
+ovdpb_new_ref_pic(OVPicture *pic, int flags)
 {
     int ret;
 
@@ -204,7 +204,6 @@ vvc_clear_refs(OVDPB *dpb)
     // const uint8_t flags = OV_ST_REF_PIC_FLAG | OV_LT_REF_PIC_FLAG;
 
     for (i = 0; i < nb_dpb_pic; i++) {
-        //TODOpar: try to release pictures before this function (16 pics in RA)?
         ovdpb_release_pic(dpb, &dpb->pictures[i]);
     }
 }
@@ -292,11 +291,11 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc)
     #if 0
     if (dpb->ps.ph_data->ph_pic_output_flag) {
     #endif
-        ovdpb_ref_pic(pic, OV_OUTPUT_PIC_FLAG);
-        ovdpb_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
+        ovdpb_new_ref_pic(pic, OV_OUTPUT_PIC_FLAG);
+        ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
     #if 0
     } else {
-        ovdpb_ref_pic(pic, OV_ST_REF_PIC_FLAG);
+        ovdpb_new_ref_pic(pic, OV_ST_REF_PIC_FLAG);
     }
     #endif
 
@@ -376,9 +375,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
                     found = 1;
                     ov_log(NULL, OVLOG_DEBUG, "Mark active reference %d for picture %d\n", ref_poc, dpb->poc);
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
-                    // ref_pic->flags |= flag;
-                    //TODOpar: unref the pictures when reconstruction completed
-                    ovdpb_ref_pic(ref_pic, flag);
+                    ovdpb_new_ref_pic(ref_pic, flag);
                     dst_rpl[i] = ref_pic; 
                 }
             }
@@ -402,7 +399,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
 
             ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
             // ref_pic->flags |= flag;
-            ovdpb_ref_pic(ref_pic, flag);
+            ovdpb_new_ref_pic(ref_pic, flag);
 
             /*FIXME  Set output / corrupt flag ? */
             dst_rpl[i] = ref_pic; 
@@ -424,13 +421,29 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
                 if(ref_pic->frame && ref_pic->frame->data[0]){
                     ov_log(NULL, OVLOG_DEBUG, "Mark non active reference %d for picture %d\n", ref_poc, dpb->poc);
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
-                    // ref_pic->flags |= flag;
-                    ovdpb_ref_pic(ref_pic, flag);
+                    ovdpb_new_ref_pic(ref_pic, flag);
                 }
             }
         }
     }
 
+    return 0;
+}
+
+static int
+vvc_unmark_refs(struct RPLInfo *rpl_info, const OVPicture **dst_rpl)
+{
+    int i;
+    const OVPicture *ref_pic;
+    for (i = 0;  i < rpl_info->nb_refs; ++i){
+        ref_pic = dst_rpl[i];
+        int16_t ref_poc  = rpl_info->ref_info[i].poc;
+        int16_t ref_type = rpl_info->ref_info[i].type;
+        uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
+
+        ov_log(NULL, OVLOG_DEBUG, "Unmark active reference %d\n", ref_poc);
+        ovdpb_unref_pic(ref_pic, flag);
+    }
     return 0;
 }
 
@@ -632,13 +645,38 @@ ovdpb_bump_frame(OVDPB *dpb, uint32_t poc, uint16_t output_cvs_id)
             /* Note if the current pic can be also bumped */
             if (output_flag && is_output_cvs && pic->poc <= min_poc) {
                 pic->flags |= OV_BUMPED_PIC_FLAG;
-                // ovdpb_ref_pic(pic, OV_BUMPED_PIC_FLAG);
+                // ovdpb_new_ref_pic(pic, OV_BUMPED_PIC_FLAG);
             }
         }
         nb_output_pic--;
     }
 }
 
+
+int
+ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVPicture * current_pic)
+{
+    int ret;
+
+    ret = vvc_unmark_refs(&current_pic->rpl_info0, current_pic->rpl0);
+    if (ret < 0) {
+        goto fail;
+    }
+
+    if (slice_type == SLICE_B){
+        ret = vvc_unmark_refs(&current_pic->rpl_info1, current_pic->rpl1);
+        if (ret < 0) {
+            goto fail;
+        }
+    }
+    return 0;
+
+fail:
+    /* FIXME ref_marking failed but we allocated a new ref
+     * to replace the missing one
+     */
+    return 1;
+}
 
 static int
 mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *const rpl0,
@@ -675,12 +713,11 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
         }
     }
 
-    //TODOpar: why ??
     /* Unreference all non marked Picture */
-    // for (i = 0; i < nb_dpb_pic; i++) {
-    //     OVPicture *pic = &dpb->pictures[i];
-    //     ovdpb_unref_pic(pic, 0);
-    // }
+    for (i = 0; i < nb_dpb_pic; i++) {
+        OVPicture *pic = &dpb->pictures[i];
+        ovdpb_release_pic(dpb, pic);
+    }
 
     return 0;
 

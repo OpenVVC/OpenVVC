@@ -128,7 +128,8 @@ thread_main_function(void *opaque)
 
             ov_log(NULL, OVLOG_TRACE, "Decoder with POC %d, finished frame \n", th_info->owner->pic->poc);
             ovdpb_unref_pic(th_info->owner->pic, OV_IN_DECODING_PIC_FLAG);
-            
+            ovdpb_unmark_ref_pic_lists(th_info->owner->slice_type, th_info->owner->pic);
+
             pthread_mutex_lock(&th_info->gnrl_mtx);
             th_info->gnrl_state = 0;
             // pthread_cond_signal(&th_info->gnrl_cnd);
