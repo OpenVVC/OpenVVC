@@ -81,6 +81,95 @@ sps_init_partition_constraint_info_inter_chroma(OVPartInfo *const pinfo, const O
 }
 
 static int
+ph_override_partition_constraint_info_intra(OVPartInfo *const pinfo, const OVPH *const ph, const OVSPS *const sps)
+{
+    uint8_t log2_ctu_s    = sps->sps_log2_ctu_size_minus5 + 5;
+    uint8_t log2_min_cb_s = sps->sps_log2_min_luma_coding_block_size_minus2 + 2;
+    uint8_t log2_min_qt_s = ph->ph_log2_diff_min_qt_min_cb_intra_slice_luma + log2_min_cb_s;
+
+    pinfo->log2_ctu_s    = log2_ctu_s;
+    pinfo->log2_min_cb_s = log2_min_cb_s;
+
+    pinfo->log2_min_qt_s = log2_min_qt_s;
+
+    pinfo->log2_max_bt_s =  log2_min_qt_s + ph->ph_log2_diff_max_bt_min_qt_intra_slice_luma;
+    pinfo->log2_max_tt_s =  log2_min_qt_s + ph->ph_log2_diff_max_tt_min_qt_intra_slice_luma;
+
+    pinfo->max_mtt_depth = ph->ph_max_mtt_hierarchy_depth_intra_slice_luma;
+
+    pinfo->log2_max_tb_s = 5 + sps->sps_max_luma_transform_size_64_flag;
+
+    return 0;
+}
+
+static int
+ph_override_partition_constraint_info_inter(OVPartInfo *const pinfo, const OVPH *const ph, const OVSPS *const sps)
+{
+    uint8_t log2_ctu_s = sps->sps_log2_ctu_size_minus5 + 5;
+    uint8_t log2_min_cb_s = sps->sps_log2_min_luma_coding_block_size_minus2 + 2;
+    uint8_t log2_min_qt_s = ph->ph_log2_diff_min_qt_min_cb_inter_slice + log2_min_cb_s;
+
+    pinfo->log2_ctu_s    = log2_ctu_s;
+    pinfo->log2_min_cb_s = log2_min_cb_s;
+
+    pinfo->log2_min_qt_s = log2_min_qt_s;
+
+    pinfo->log2_max_bt_s =  log2_min_qt_s + ph->ph_log2_diff_max_bt_min_qt_inter_slice;
+    pinfo->log2_max_tt_s =  log2_min_qt_s + ph->ph_log2_diff_max_tt_min_qt_inter_slice;
+
+    pinfo->max_mtt_depth = ph->ph_max_mtt_hierarchy_depth_inter_slice;
+
+    pinfo->log2_max_tb_s = 5 + sps->sps_max_luma_transform_size_64_flag;
+
+    return 0;
+}
+
+static int
+ph_override_partition_constraint_info_inter_chroma(OVPartInfo *const pinfo, const OVPH *const ph, const OVSPS *const sps)
+{
+    uint8_t log2_ctu_s = sps->sps_log2_ctu_size_minus5 + 5;
+    uint8_t log2_min_cb_s = sps->sps_log2_min_luma_coding_block_size_minus2 + 2 - 1;
+    uint8_t log2_min_qt_s = ph->ph_log2_diff_min_qt_min_cb_inter_slice + log2_min_cb_s;
+
+    pinfo->log2_ctu_s    = log2_ctu_s;
+    pinfo->log2_min_cb_s = log2_min_cb_s;
+
+    pinfo->log2_min_qt_s = log2_min_qt_s;
+
+    pinfo->log2_max_bt_s =  log2_min_qt_s + ph->ph_log2_diff_max_bt_min_qt_inter_slice;
+    pinfo->log2_max_tt_s =  log2_min_qt_s + ph->ph_log2_diff_max_tt_min_qt_inter_slice;
+
+    pinfo->max_mtt_depth = ph->ph_max_mtt_hierarchy_depth_inter_slice;
+
+    pinfo->log2_max_tb_s = 5 + sps->sps_max_luma_transform_size_64_flag - 1;
+
+    return 0;
+}
+
+static int
+ph_override_partition_constraint_info_chroma(OVPartInfo *const pinfo, const OVPH *const ph, const OVSPS *const sps)
+{
+
+    pinfo->log2_ctu_s    = sps->sps_log2_ctu_size_minus5 + 5;
+    pinfo->log2_min_cb_s = sps->sps_log2_min_luma_coding_block_size_minus2 + 2 - 1;
+
+
+    pinfo->log2_min_qt_s = ph->ph_log2_diff_min_qt_min_cb_intra_slice_chroma +
+            pinfo->log2_min_cb_s;
+
+    pinfo->log2_max_bt_s = pinfo->log2_min_qt_s +
+            ph->ph_log2_diff_max_bt_min_qt_intra_slice_chroma;
+    pinfo->log2_max_tt_s = pinfo->log2_min_qt_s +
+            ph->ph_log2_diff_max_tt_min_qt_intra_slice_chroma;
+
+    pinfo->max_mtt_depth = ph->ph_max_mtt_hierarchy_depth_intra_slice_chroma;
+
+    pinfo->log2_max_tb_s = 5 + sps->sps_max_luma_transform_size_64_flag - 1;
+
+    return 0;
+}
+
+static int
 sps_init_partition_constraint_info_chroma(OVPartInfo *const pinfo, const OVSPS *const sps)
 {
     /* FIXME we could handle chroma format from here */
@@ -383,8 +472,21 @@ update_pps_info(struct PPSInfo *const pps_info, const OVPPS *const pps,
 }
 
 static int
-update_ph_info(struct PHInfo *const ph_info, const OVPH *const ph)
+update_ph_info(struct SPSInfo *const sps_info, const OVPH *const ph, const OVSPS *const sps)
 {
+    if (ph->ph_partition_constraints_override_flag) {
+        /*FIXME test for dual tree etc. */
+        ph_override_partition_constraint_info_intra(&sps_info->part_info[0], ph, sps);
+        ph_override_partition_constraint_info_inter(&sps_info->part_info[1], ph, sps);
+        ph_override_partition_constraint_info_chroma(&sps_info->part_info[2], ph, sps);
+        ph_override_partition_constraint_info_inter_chroma(&sps_info->part_info[3], ph, sps);
+    } else {
+        sps_init_partition_constraint_info_intra(&sps_info->part_info[0], sps);
+        sps_init_partition_constraint_info_inter(&sps_info->part_info[1], sps);
+        sps_init_partition_constraint_info_chroma(&sps_info->part_info[2], sps);
+        sps_init_partition_constraint_info_inter_chroma(&sps_info->part_info[3], sps);
+    }
+
     return 0;
 }
 
@@ -517,7 +619,8 @@ decinit_update_params(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
     }
 
     if (ps->ph != ph) {
-        ret = update_ph_info(&ps->ph_info, ph);
+        /* FIXME use ph_info instead of sps_info */
+        ret = update_ph_info(&ps->sps_info, ph, sps);
         if (ret < 0) {
             goto failph;
         }
