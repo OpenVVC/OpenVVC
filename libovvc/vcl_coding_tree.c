@@ -823,6 +823,13 @@ multi_type_tree(OVCTUDec *const ctu_dec,
             allow_bt_v = allow_bt_h = 0;
         }
 
+        if (log2_cb_h > 6 && log2_cb_w <= 6) {
+            allow_bt_v = 0;
+        }
+
+        if (log2_cb_w > 6 && log2_cb_h <= 6) {
+            allow_bt_h = 0;
+        }
 
         can_split = allow_bt_v | allow_bt_h | allow_tt_v | allow_tt_h;
     }
