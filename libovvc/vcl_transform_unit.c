@@ -1750,7 +1750,6 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
             transform_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
                            part_ctx->log2_max_tb_s, 0, cu.cu_flags, 0, tu_info);
 
-            if (log2_cb_w <= 6 && log2_cb_h <= 6)
             lfnst_mts(ctu_dec, log2_cb_w, log2_cb_h, cu.cu_flags, tu_info);
 
             rcn_transform_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, part_ctx->log2_max_tb_s,
@@ -1786,7 +1785,6 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
             transform_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
                            part_ctx->log2_max_tb_s, 1, cu.cu_flags, 0, tu_info);
 
-            if (log2_cb_w <= 6 && log2_cb_h <= 6)
             lfnst_mts(ctu_dec, log2_cb_w, log2_cb_h, cu.cu_flags, tu_info);
 
             rcn_transform_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, part_ctx->log2_max_tb_s,
