@@ -230,8 +230,8 @@ struct OVSPS
     uint8_t sps_num_ref_pic_lists0;
     uint8_t sps_num_ref_pic_lists1;
 
-    struct OVRPL rpl_s0[16]; /* max num_ref_pic_list 64*/
-    struct OVRPL rpl_s1[16]; /* max num_ref_pic_list 64*/
+    struct OVRPL rpl_s0[64]; /* max num_ref_pic_list 64*/
+    struct OVRPL rpl_s1[64]; /* max num_ref_pic_list 64*/
 
     uint8_t sps_ref_wraparound_enabled_flag;
 
