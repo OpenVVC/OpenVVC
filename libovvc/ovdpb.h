@@ -171,7 +171,11 @@ int ovdpb_drain_frame(OVDPB *dpb, OVPicture **out, int output_cvs_id);
 
 int16_t tmvp_compute_scale(int32_t dist_current, int32_t dist_colocated);
 
-// int ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id);
 int ovdpb_output_pic(OVDPB *dpb, OVPicture **out, int output_cvs_id);
+
+
+void ovdpb_update_decoded_ctus(OVPicture *const pic, int y_ctu, int xmin_ctu, int xmax_ctu);
+
+void ovdpb_get_lines_decoded_ctus(OVPicture *const pic, int64_t* decoded, int y_start, int y_end );
 
 #endif

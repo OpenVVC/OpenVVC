@@ -964,12 +964,6 @@ fail:
     return ret;
 }
 
-
-    //Map of decoded CTUs
-    int64_t decoded_ctus[32];
-    pthread_mutex_t ref_mtx;
-    pthread_cond_t  ref_cnd;
-
 void
 ovdpb_update_decoded_ctus(OVPicture *const pic, int y_ctu, int xmin_ctu, int xmax_ctu)
 {
@@ -996,18 +990,10 @@ ovdpb_reset_decoded_ctus(OVPicture *const pic)
 }
 
 void
-ovdpb_get_all_decoded_ctus(OVPicture *const pic, int64_t* decoded )
+ovdpb_get_lines_decoded_ctus(OVPicture *const pic, int64_t* decoded, int y_start, int y_end )
 {
     pthread_mutex_lock(&pic->ref_mtx);
-    for(int i = 0; i <= 32; i++)
+    for(int i = y_start; i <= y_end; i++)
         decoded[i] = pic->decoded_ctus[i] ;
-    pthread_mutex_unlock(&pic->ref_mtx);
-}
-
-int64_t
-ovdpb_get_line_decoded_ctus(OVPicture *const pic, int y_ctu)
-{
-    pthread_mutex_lock(&pic->ref_mtx);
-    return pic->decoded_ctus[y_ctu];
     pthread_mutex_unlock(&pic->ref_mtx);
 }

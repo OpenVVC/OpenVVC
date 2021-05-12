@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "ovutils.h"
 #include "ovdefs.h"
@@ -235,7 +236,6 @@ void rcn_sao_first_pix_rows(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y
         // int ctb_x_pic = tile_ctx->ctu_x[tile_x] + ctb_x;
         int ctb_x_pic   = ctb_x;
         int x_pos_ctu = ctu_width * ctb_x_pic;
-        int y_pos_ctu = ctu_width * ctb_y_pic;
         
         //left | right | up | down
         uint8_t is_border = 0; 
