@@ -300,6 +300,9 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
     uint8_t nb_unit_ctb = (1 << log2_ctb_s) >> LOG2_MIN_CU_S;
     uint16_t nb_ctb_w = ctudec->nb_ctb_pic_w;
 
+    const OVPicture* ref_pic = tmvp_ctx->col_ref;
+    ovdpb_wait_ref_decoded_ctus(ref_pic, ctb_x, ctb_y, ctb_x, ctb_y);
+
     uint8_t is_border_pic = nb_ctb_w - 1 == ctb_x;
 
     if (plane0 || plane1) {

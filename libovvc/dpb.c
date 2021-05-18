@@ -1042,3 +1042,30 @@ ovdpb_get_lines_decoded_ctus(OVPicture *const pic, int64_t* decoded, int y_start
         decoded[i] = pic->decoded_ctus[i] ;
     pthread_mutex_unlock(&pic->ref_mtx);
 }
+
+void
+ovdpb_wait_ref_decoded_ctus(OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y, int br_ctu_x, int br_ctu_y)
+{
+    //TODOpar: store previous decoded_ctus of ref_pic in local memory.
+    //Avoid to fetch decoded_ctus variable when not needed.
+    int64_t* decoded = ov_mallocz(32 * sizeof(int64_t));
+
+    int mask_x = 0;
+    for(int ctu_x = tl_ctu_x; ctu_x <= br_ctu_x; ctu_x++ )
+        mask_x |= 1 << ctu_x;
+
+    uint8_t all_ctus_available;
+    do{
+        ovdpb_get_lines_decoded_ctus(ref_pic, decoded, tl_ctu_y, br_ctu_y );
+        all_ctus_available = 1;
+        for(int ctu_y = tl_ctu_y; ctu_y <= br_ctu_y; ctu_y++ ){
+            all_ctus_available = all_ctus_available && ((decoded[ctu_y] & mask_x) == mask_x);
+        }
+        if(!all_ctus_available)
+        {
+            pthread_mutex_lock(&ref_pic->ref_mtx);
+            pthread_cond_wait(&ref_pic->ref_cnd, &ref_pic->ref_mtx);
+            pthread_mutex_unlock(&ref_pic->ref_mtx);
+        }
+    }while(!all_ctus_available);
+}

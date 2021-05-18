@@ -180,4 +180,6 @@ void ovdpb_update_decoded_ctus(OVPicture *const pic, int y_ctu, int xmin_ctu, in
 
 void ovdpb_get_lines_decoded_ctus(OVPicture *const pic, int64_t* decoded, int y_start, int y_end );
 
+void ovdpb_wait_ref_decoded_ctus(OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y, int br_ctu_x, int br_ctu_y);
+
 #endif

@@ -1125,6 +1125,7 @@ tmvp_entry_init(OVCTUDec *ctudec, OVPicture *active_pic)
     struct InterDRVCtx *inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
     const OVPicture *collocated_ref = active_pic->tmvp.collocated_ref;
+    tmvp_ctx->col_ref = collocated_ref;
 
     ctudec->rcn_ctx.ctudec = ctudec;
     tmvp_ctx->ctudec = ctudec;

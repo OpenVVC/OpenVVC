@@ -397,6 +397,8 @@ struct InterDRVCtx
             int8_t ref_idx_rpl1;
         }col_info;
 
+        const OVPicture *col_ref;
+
         /* MV plane storage for collocated reference picture */
         const struct MVPlane *col_plane0;
         const struct MVPlane *col_plane1;
