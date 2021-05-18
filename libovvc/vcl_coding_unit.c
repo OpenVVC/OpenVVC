@@ -17,6 +17,8 @@ enum CUMode {
     OV_INTRA = 2,
     OV_INTER_SKIP = 3,
     OV_MIP = 4,
+    OV_AFFINE = 5,
+    OV_INTER_SKIP_AFFINE = 6,
 };
 
 /* FIXME refactor dequant*/
@@ -43,7 +45,7 @@ ovcabac_read_ae_cu_skip_flag(OVCABACCtx *const cabac_ctx, uint8_t above_pu,
 {
     uint8_t cu_skip_flag;
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    int ctx_offset = (above_pu == OV_INTER_SKIP) + (left_pu == OV_INTER_SKIP);
+    int ctx_offset = (above_pu == OV_INTER_SKIP || above_pu == OV_INTER_SKIP_AFFINE) + (left_pu == OV_INTER_SKIP || left_pu == OV_INTER_SKIP_AFFINE);
     cu_skip_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[SKIP_FLAG_CTX_OFFSET + ctx_offset]);
     return cu_skip_flag;
 }
@@ -67,6 +69,52 @@ ovcabac_read_ae_cu_merge_flag(OVCABACCtx *const cabac_ctx)
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
     merge_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[MERGE_FLAG_CTX_OFFSET]);
     return merge_flag;
+}
+
+static uint8_t
+ovcabac_read_ae_sb_merge_flag(OVCABACCtx *const cabac_ctx, uint8_t lft_affine, uint8_t abv_affine)
+{
+    uint8_t sb_merge_flag;
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    uint8_t ctx_offset = abv_affine + lft_affine;
+    sb_merge_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[SUBBLOCK_MERGE_FLAG_CTX_OFFSET + ctx_offset]);
+    return sb_merge_flag;
+}
+
+
+static uint8_t
+ovcabac_read_ae_cu_affine_flag(OVCABACCtx *const cabac_ctx, uint8_t lft_affine, uint8_t abv_affine)
+{
+    uint8_t affine_flag;
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    uint8_t ctx_offset = abv_affine + lft_affine;
+    affine_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[AFFINE_FLAG_CTX_OFFSET + ctx_offset]);
+    return affine_flag;
+}
+
+static uint8_t
+ovcabac_read_ae_cu_affine_type(OVCABACCtx *const cabac_ctx)
+{
+    uint8_t affine_type;
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    affine_type = ovcabac_ae_read(cabac_ctx, &cabac_state[AFFINE_TYPE_CTX_OFFSET]);
+    return affine_type;
+}
+
+static uint8_t
+ovcabac_read_ae_affine_merge_idx(OVCABACCtx *const cabac_ctx, uint8_t nb_affine_merge_cand_min1)
+{
+    uint8_t merge_idx = 0;
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    if (nb_affine_merge_cand_min1 > 0) {
+        if (ovcabac_ae_read(cabac_ctx, &cabac_state[AFF_MERGE_IDX_CTX_OFFSET])) {
+            do {
+                ++merge_idx;
+            } while (--nb_affine_merge_cand_min1 && ovcabac_bypass_read(cabac_ctx));
+        }
+    }
+
+    return merge_idx;
 }
 
 /* FIXME check of max_nb_mrg_cand in function */
@@ -642,7 +690,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
     uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_pu];
     uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_pu];
     uint8_t cu_skip_flag;
-    uint8_t cu_type;
+    uint8_t cu_type = OV_INTER;
     VVCCU cu = {0};
 
     cu_skip_flag = ovcabac_read_ae_cu_skip_flag(cabac_ctx, cu_type_abv,
@@ -652,9 +700,13 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
         /* FIXME cu_skip_flag activation force merge_flag so we only need to read
            merge_idx */
         uint8_t merge_flag = 1; 
-        ctu_dec->prediction_unit(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, cu_skip_flag, merge_flag);
+        cu_type = ctu_dec->prediction_unit(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, cu_skip_flag, merge_flag);
 
-        cu_type = OV_INTER_SKIP;
+        if (cu_type == OV_AFFINE) {
+            cu_type = OV_INTER_SKIP_AFFINE;
+        } else {
+            cu_type = OV_INTER_SKIP;
+        }
 
         FLG_STORE(cu_skip_flag, cu.cu_flags);
         ctu_dec->intra_mode_c = 0;
@@ -681,9 +733,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
         } else {
             uint8_t merge_flag = ovcabac_read_ae_cu_merge_flag(cabac_ctx);
 
-            ctu_dec->prediction_unit(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, cu_skip_flag, merge_flag);
-
-            cu_type = OV_INTER;
+            cu_type = ctu_dec->prediction_unit(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, cu_skip_flag, merge_flag);
 
             FLG_STORE(merge_flag, cu.cu_flags);
             ctu_dec->intra_mode_c = 0;
@@ -970,6 +1020,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     #endif
     uint8_t ref_idx0 = 0;
     uint8_t ref_idx1 = 0;
+    uint8_t cu_type = OV_INTER;
 
 #if 1
     uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
@@ -986,15 +1037,24 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     if (merge_flag) {
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
-        #if 0
-        if (affine)
-            uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
-        else
-        #endif
         uint8_t sps_ciip_flag = inter_ctx->ciip_flag;
         uint8_t ciip_flag = sps_ciip_flag && !skip_flag && (1 << log2_pb_w) < 128 && (1 << log2_pb_h) < 128
                         && 1 << (log2_pb_w + log2_pb_h) >= 64;
         uint8_t  reg_merge_flag = 1;           
+
+        if (ctu_dec->affine_enabled && log2_pb_w >= 3 && log2_pb_h >= 3) {
+            uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_pu];
+            uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_pu];
+            uint8_t lft_affine = cu_type_lft == OV_AFFINE || cu_type_lft == OV_INTER_SKIP_AFFINE;
+            uint8_t abv_affine = cu_type_abv == OV_AFFINE || cu_type_abv == OV_INTER_SKIP_AFFINE;
+            uint8_t sb_merge_flag = ovcabac_read_ae_sb_merge_flag(cabac_ctx, lft_affine, abv_affine);
+            if (sb_merge_flag) {
+                uint8_t nb_affine_merge_cand_min1 = ctu_dec->affine_nb_merge_cand - 1;
+                uint8_t merge_idx = ovcabac_read_ae_affine_merge_idx(cabac_ctx, nb_affine_merge_cand_min1);
+                cu_type = OV_AFFINE;
+                return cu_type;
+            }
+        }
         if (ciip_flag){
             reg_merge_flag = ovcabac_read_ae_reg_merge_flag(cabac_ctx, skip_flag);
         }
@@ -1035,6 +1095,55 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
         uint8_t inter_dir = ovcabac_read_ae_inter_dir(cabac_ctx, log2_pb_w, log2_pb_h);
 
+        if (ctu_dec->affine_enabled && log2_pb_w > 3 && log2_pb_h > 3) {
+            uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_pu];
+            uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_pu];
+            uint8_t lft_affine = cu_type_lft == OV_AFFINE || cu_type_lft == OV_INTER_SKIP_AFFINE;
+            uint8_t abv_affine = cu_type_abv == OV_AFFINE || cu_type_abv == OV_INTER_SKIP_AFFINE;
+            uint8_t affine_flag = ovcabac_read_ae_cu_affine_flag(cabac_ctx, lft_affine, abv_affine);
+            if (affine_flag) {
+                uint8_t six_affine_type = !!(ctu_dec->affine_status & 0x2);
+                uint8_t affine_type = !six_affine_type ? 0 : ovcabac_read_ae_cu_affine_type(cabac_ctx);
+
+                cu_type = OV_AFFINE;
+
+                if (inter_dir & 0x1) {
+
+                    if (inter_ctx->nb_active_ref0 > 1) {
+                        ref_idx0 = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref0);
+                    }
+
+                    mvd0 = ovcabac_read_ae_mvd(cabac_ctx);
+                    mvd0 = ovcabac_read_ae_mvd(cabac_ctx);
+
+                    if (affine_type) {
+                        mvd0 = ovcabac_read_ae_mvd(cabac_ctx);
+                    }
+
+                    mvp_idx0 = ovcabac_read_ae_mvp_flag(cabac_ctx);
+                }
+
+                if (inter_dir & 0x2) {
+                    if (inter_ctx->nb_active_ref1 > 1) {
+                        ref_idx1 = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref1);
+                    }
+
+                    if (inter_dir & 0x1 && inter_ctx->mvd1_zero_flag) {
+                    } else {
+                        mvd1 = ovcabac_read_ae_mvd(cabac_ctx);
+                        mvd1 = ovcabac_read_ae_mvd(cabac_ctx);
+                        if (affine_type) {
+                            mvd1 = ovcabac_read_ae_mvd(cabac_ctx);
+                        }
+                    }
+
+                    mvp_idx1 = ovcabac_read_ae_mvp_flag(cabac_ctx);
+                }
+
+                return cu_type;
+            }
+        }
+
         if (inter_dir == 3 && !affine && inter_ctx->bi_dir_pred_flag)
             smvd_mode = ovcabac_read_ae_smvd_flag(cabac_ctx);
 
@@ -1045,7 +1154,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             else if (inter_ctx->nb_active_ref0 > 1) {
                 ref_idx0 = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref0);
             }
-            /*FIXME add ref_idx*/
             mvd0 = ovcabac_read_ae_mvd(cabac_ctx);
 
             mvp_idx0 = ovcabac_read_ae_mvp_flag(cabac_ctx);
@@ -1104,5 +1212,5 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                sizeof(uint8_t) * nb_pb_w);
     }
 
-    return merge_flag;
+    return cu_type;
 }

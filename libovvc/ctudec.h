@@ -609,6 +609,9 @@ struct OVCTUDec
     uint8_t max_num_merge_candidates;
     uint8_t dbf_disable;
     uint8_t sbt_enabled;
+    uint8_t affine_enabled;
+    uint8_t affine_status;
+    uint8_t affine_nb_merge_cand;
 
     /**
      * Depths of left and up neighbours during in the decision tree
