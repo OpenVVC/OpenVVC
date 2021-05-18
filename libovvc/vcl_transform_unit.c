@@ -16,6 +16,7 @@ struct TBInfo {
 };
 
 struct TUInfo {
+   uint8_t is_sbt;
    uint8_t cbf_mask;
    uint16_t pos_offset;
    uint8_t tr_skip_mask;
@@ -286,6 +287,37 @@ ovcabac_read_ae_lfnst_idx(OVCABACCtx *const cabac_ctx)
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
     return ovcabac_ae_read(cabac_ctx, &cabac_state[LFNST_IDX_CTX_OFFSET + 2]);
 }
+
+static uint8_t
+ovcabac_read_ae_sbt_flag(OVCABACCtx *const cabac_ctx, uint8_t log2_tb_w, uint8_t log2_tb_h)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    uint8_t ctx_offset = log2_tb_w + log2_tb_h <= 8;
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[SBT_FLAG_CTX_OFFSET + ctx_offset]);
+}
+
+static uint8_t
+ovcabac_read_ae_sbt_quad_flag(OVCABACCtx *const cabac_ctx)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[SBT_QUAD_FLAG_CTX_OFFSET]);
+}
+
+static uint8_t
+ovcabac_read_ae_sbt_hor_flag(OVCABACCtx *const cabac_ctx, uint8_t log2_tb_w, uint8_t log2_tb_h)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    uint8_t ctx_offset = (log2_tb_w == log2_tb_h) ? 0 :  (log2_tb_w < log2_tb_h) ? 1 : 2;
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[SBT_HOR_FLAG_CTX_OFFSET + ctx_offset]);
+}
+
+static uint8_t
+ovcabac_read_ae_sbt_pos_flag(OVCABACCtx *const cabac_ctx)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[SBT_POS_FLAG_CTX_OFFSET]);
+}
+
 
 static uint8_t
 decode_cbf_st(const OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, uint8_t cu_flags)
@@ -775,7 +807,7 @@ residual_coding_l(OVCTUDec *const ctu_dec,
     fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
 
     if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
-        && log2_tb_h <= ctu_dec->max_log2_transform_skip_size && !(cu_flags &flg_isp_flag  )) {
+        && log2_tb_h <= ctu_dec->max_log2_transform_skip_size && !tu_info->is_sbt && !(cu_flags &flg_isp_flag)) {
         tr_skip_flag = ovcabac_read_ae_transform_skip_luma_flag(cabac_ctx);
         tu_info->tr_skip_mask |= tr_skip_flag << 4;
     }
@@ -826,7 +858,7 @@ residual_coding_c(OVCTUDec *const ctu_dec,
 
         /* TODO use max_tr_skip_s = 0 to avoid using enabled test */
         if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
-            && log2_tb_h <= ctu_dec->max_log2_transform_skip_size) {
+            && log2_tb_h <= ctu_dec->max_log2_transform_skip_size && !tu_info->is_sbt) {
             OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
             transform_skip_flag |= ovcabac_read_ae_transform_skip_flag_c(cabac_ctx) << 1;
         }
@@ -854,7 +886,7 @@ residual_coding_c(OVCTUDec *const ctu_dec,
 
         /* TODO use max_tr_skip_s = 0 to avoid using enabled test */
         if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
-            && log2_tb_h <= ctu_dec->max_log2_transform_skip_size) {
+            && log2_tb_h <= ctu_dec->max_log2_transform_skip_size && !tu_info->is_sbt) {
             OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
             transform_skip_flag |= ovcabac_read_ae_transform_skip_flag_c(cabac_ctx);
         }
@@ -899,7 +931,7 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
     struct TBInfo *const tb_info = &tu_info->tb_info[0];
 
     if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
-        && log2_tb_h <= ctu_dec->max_log2_transform_skip_size) {
+        && log2_tb_h <= ctu_dec->max_log2_transform_skip_size && !tu_info->is_sbt) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         transform_skip_flag = ovcabac_read_ae_transform_skip_flag_c(cabac_ctx);
         tu_info->tr_skip_mask |= transform_skip_flag;
@@ -1352,6 +1384,201 @@ transform_tree(OVCTUDec *const ctu_dec,
     return 0;
 }
 
+static int
+sbt_half_ver(OVCTUDec *const ctu_dec,
+             const OVPartInfo *const part_ctx,
+             unsigned int x0, unsigned int y0,
+             unsigned int log2_tb_w, unsigned int log2_tb_h,
+             uint8_t sbt_pos, uint8_t cu_flags, struct TUInfo *tu_info)
+{
+    if (!sbt_pos) {
+        tu_info[0].is_sbt = 1;
+        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w - 1, log2_tb_h,
+                                                   1, cu_flags, 0, tu_info);
+
+        if (log2_tb_w - 1 <= 5 && log2_tb_h <= 5) {
+            tu_info->cu_mts_flag = 1;
+            tu_info->cu_mts_idx = 0x1;
+        }
+        rcn_tu_st(ctu_dec, x0, y0, log2_tb_w - 1, log2_tb_h, cu_flags, cbf_mask, tu_info);
+
+    } else {
+        tu_info[0].is_sbt = 1;
+        uint8_t x1 = x0 + (1 << (log2_tb_w - 1));
+        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w - 1, log2_tb_h,
+                                                   1, cu_flags, 0, tu_info);
+        if (log2_tb_w - 1 <= 5 && log2_tb_h <= 5) {
+            tu_info->cu_mts_flag = 1;
+            tu_info->cu_mts_idx = 0x0;
+        }
+        rcn_tu_st(ctu_dec, x1, y0, log2_tb_w - 1, log2_tb_h, cu_flags, cbf_mask, tu_info);
+    }
+
+    return 0;
+}
+
+static int
+sbt_half_hor(OVCTUDec *const ctu_dec,
+             const OVPartInfo *const part_ctx,
+             unsigned int x0, unsigned int y0,
+             unsigned int log2_tb_w, unsigned int log2_tb_h,
+             uint8_t sbt_pos, uint8_t cu_flags, struct TUInfo *tu_info)
+{
+    if (!sbt_pos) {
+        tu_info[0].is_sbt = 1;
+        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 1,
+                                                   1, cu_flags, 0, tu_info);
+
+        if (log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
+            tu_info->cu_mts_flag = 1;
+            tu_info->cu_mts_idx = 0x2;
+        }
+
+        rcn_tu_st(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 1, cu_flags, cbf_mask, tu_info);
+
+    } else {
+        tu_info[0].is_sbt = 1;
+        uint8_t y1 = y0 + (1 << (log2_tb_h - 1));
+        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 1,
+                                                   1, cu_flags, 0, tu_info);
+
+        if (log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
+            tu_info->cu_mts_flag = 1;
+            tu_info->cu_mts_idx = 0x0;
+        }
+
+        rcn_tu_st(ctu_dec, x0, y1, log2_tb_w, log2_tb_h - 1, cu_flags, cbf_mask, tu_info);
+    }
+    return 0;
+}
+
+static int
+sbt_quad_ver(OVCTUDec *const ctu_dec,
+             const OVPartInfo *const part_ctx,
+             unsigned int x0, unsigned int y0,
+             unsigned int log2_tb_w, unsigned int log2_tb_h,
+             uint8_t sbt_pos, uint8_t cu_flags, struct TUInfo *tu_info)
+{
+    if (!sbt_pos) {
+        tu_info[0].is_sbt = 1;
+        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w - 2, log2_tb_h,
+                                                   1, cu_flags, 0, tu_info);
+
+        if (log2_tb_w - 2 <= 5 && log2_tb_h <= 5) {
+            tu_info->cu_mts_flag = 1;
+            tu_info->cu_mts_idx = 0x1;
+        }
+
+        rcn_tu_st(ctu_dec, x0, y0, log2_tb_w - 2, log2_tb_h, cu_flags, cbf_mask, tu_info);
+
+    } else {
+        tu_info[0].is_sbt = 1;
+        uint8_t x3 = x0 + (3 << (log2_tb_w - 2));
+        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w - 2, log2_tb_h,
+                                                   1, cu_flags, 0, tu_info);
+
+        if (log2_tb_w - 2 <= 5 && log2_tb_h <= 5) {
+            tu_info->cu_mts_flag = 1;
+            tu_info->cu_mts_idx = 0x0;
+        }
+
+        rcn_tu_st(ctu_dec, x3, y0, log2_tb_w - 2, log2_tb_h, cu_flags, cbf_mask, tu_info);
+    }
+        #if 0
+        tu_info[2].is_sbt = 1;
+        tu_info[3].is_sbt = 1;
+    uint8_t x2 = x0 + (2 << (log2_tb_w - 2));
+    uint8_t x3 = x0 + (3 << (log2_tb_w - 2));
+
+    ctu_dec->transform_unit(ctu_dec, x2, y0, log2_tb_w - 2, log2_tb_h,
+                            1, cu_flags, 0, &tu_info[2]);
+
+    ctu_dec->transform_unit(ctu_dec, x3, y0, log2_tb_w - 2, log2_tb_h,
+                            1, cu_flags, 0, &tu_info[3]);
+                            #endif
+    return 0;
+}
+
+static int
+sbt_quad_hor(OVCTUDec *const ctu_dec,
+             const OVPartInfo *const part_ctx,
+             unsigned int x0, unsigned int y0,
+             unsigned int log2_tb_w, unsigned int log2_tb_h,
+             uint8_t sbt_pos, uint8_t cu_flags, struct TUInfo *tu_info)
+{
+    if (!sbt_pos) {
+        tu_info[0].is_sbt = 1;
+        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 2,
+                                                   1, cu_flags, 0, tu_info);
+
+        if (log2_tb_w <= 5 && log2_tb_h - 2 <= 5) {
+            tu_info->cu_mts_flag = 1;
+            tu_info->cu_mts_idx = 0x2;
+        }
+        rcn_tu_st(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 2, cu_flags, cbf_mask, tu_info);
+
+    } else {
+        tu_info[0].is_sbt = 1;
+        uint8_t y3 = y0 + (3 << (log2_tb_h - 2));
+        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 2,
+                                                   1, cu_flags, 0, tu_info);
+
+        if (log2_tb_w <= 5 && log2_tb_h - 2 <= 5) {
+            tu_info->cu_mts_flag = 1;
+            tu_info->cu_mts_idx = 0x0;
+        }
+
+        rcn_tu_st(ctu_dec, x0, y3, log2_tb_w, log2_tb_h - 2, cu_flags, cbf_mask, tu_info);
+    }
+        #if 0
+        tu_info[2].is_sbt = 1;
+        tu_info[3].is_sbt = 1;
+        uint8_t y2 = y0 + (2 << (log2_tb_h - 2));
+        uint8_t y3 = y0 + (3 << (log2_tb_h - 2));
+
+        ctu_dec->transform_unit(ctu_dec, x0, y2, log2_tb_w, log2_tb_h - 2,
+                                1, cu_flags, 0, &tu_info[2]);
+
+        ctu_dec->transform_unit(ctu_dec, x0, y3, log2_tb_w, log2_tb_h - 2,
+                                1, cu_flags, 0, &tu_info[3]);
+                                #endif
+    return 0;
+}
+
+static int
+sbt_tree(OVCTUDec *const ctu_dec,
+         const OVPartInfo *const part_ctx,
+         unsigned int x0, unsigned int y0,
+         unsigned int log2_tb_w, unsigned int log2_tb_h,
+         uint8_t sbt_mode,
+         uint8_t sbt_pos, uint8_t cu_flags, struct TUInfo *tu_info)
+{
+    switch (sbt_mode) {
+    case 0x1:
+         /*sbt_ver*/
+         sbt_half_hor(ctu_dec, part_ctx, x0, y0, log2_tb_w, log2_tb_h,
+                      sbt_pos, cu_flags, tu_info);
+         break;
+    case 0x2:
+         /*sbt_hor*/
+         sbt_half_ver(ctu_dec, part_ctx, x0, y0, log2_tb_w, log2_tb_h,
+                      sbt_pos, cu_flags, tu_info);
+         break;
+    case 0x4:
+         /*sbt_ver/quad*/
+         sbt_quad_hor(ctu_dec, part_ctx, x0, y0, log2_tb_w, log2_tb_h,
+                      sbt_pos, cu_flags, tu_info);
+         break;
+    case 0x8:
+         /*sbt_hor/quad*/
+         sbt_quad_ver(ctu_dec, part_ctx, x0, y0, log2_tb_w, log2_tb_h,
+                      sbt_pos, cu_flags, tu_info);
+         break;
+    }
+
+    return 0;
+}
+
 static uint8_t
 isp_subtree_v(OVCTUDec *const ctu_dec,
               unsigned int x0, unsigned int y0,
@@ -1735,6 +1962,56 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
     return cbf_flags;
 }
 
+static uint8_t
+sbt_allowed(uint8_t log2_tb_w, uint8_t log2_tb_h)
+{
+  uint8_t sbt_status = 0;
+  uint8_t allow_half_v = log2_tb_w >= 3;
+  uint8_t allow_half_h = log2_tb_h >= 3;
+  uint8_t allow_quad_v = log2_tb_w >= 4;
+  uint8_t allow_quad_h = log2_tb_h >= 4;
+
+  if (log2_tb_w > 6 || log2_tb_h > 6) {
+      return 0;
+  }
+
+  sbt_status |= allow_half_h;
+  sbt_status |= allow_half_v << 1;
+  sbt_status |= allow_quad_h << 2;
+  sbt_status |= allow_quad_v << 3;
+
+  return sbt_status;
+}
+
+static uint8_t
+sbt_mode(OVCABACCtx *const cabac_ctx, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t sbt_mask)
+{
+    uint8_t sbt_mode;
+    uint8_t sbt_quad_flag;
+    uint8_t sbt_hor_flag;
+    uint8_t sbt_pos_flag;
+
+    if ((sbt_mask & 0xC) && (sbt_mask & 0x3)) {
+        sbt_quad_flag = ovcabac_read_ae_sbt_quad_flag(cabac_ctx);
+    } else {
+        sbt_quad_flag = 0;
+    }
+
+    if ((sbt_quad_flag && (sbt_mask & 0x4) && (sbt_mask & 0x8)) ||
+        (!sbt_quad_flag && (sbt_mask & 0x1) && (sbt_mask & 0x2))) {
+        sbt_hor_flag = ovcabac_read_ae_sbt_hor_flag(cabac_ctx, log2_tb_w, log2_tb_h);
+    } else {
+        sbt_hor_flag = (sbt_quad_flag && (sbt_mask & 0x4)) || (!sbt_quad_flag && (sbt_mask & 0x1));
+    }
+
+    sbt_pos_flag = ovcabac_read_ae_sbt_pos_flag(cabac_ctx);
+
+    sbt_mode = ((1 << (!sbt_hor_flag)) << (sbt_quad_flag << 1));
+    sbt_mode |= sbt_pos_flag << 7;
+
+    return sbt_mode;
+}
+
 int
 transform_unit_wrap(OVCTUDec *const ctu_dec,
                     const OVPartInfo *const part_ctx,
@@ -1782,8 +2059,28 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
         uint8_t rqt_root_cbf = merge_flag || ovcabac_read_ae_root_cbf(cabac_ctx);
 
         if (rqt_root_cbf) {
-            transform_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                           part_ctx->log2_max_tb_s, 1, cu.cu_flags, 0, tu_info);
+            uint8_t sbt_flag = 0;
+            uint8_t sbt_type = 0;
+            if (ctu_dec->sbt_enabled) {
+                uint8_t sbt_mask = sbt_allowed(log2_cb_w, log2_cb_h);
+                if (sbt_mask) {
+                    sbt_flag = ovcabac_read_ae_sbt_flag(cabac_ctx, log2_cb_w, log2_cb_h);
+                    if (sbt_flag) {
+                        sbt_type = sbt_mode(cabac_ctx, log2_cb_w, log2_cb_h, sbt_mask);
+                    }
+                }
+            }
+
+            if (!sbt_flag) {
+                transform_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
+                               part_ctx->log2_max_tb_s, 1, cu.cu_flags, 0, tu_info);
+            } else {
+                /* SBT tree */
+                uint8_t sbt_pos = !!(sbt_type & 0x80);
+                sbt_type &= 0x7F;
+                sbt_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
+                         sbt_type, !!sbt_pos, cu.cu_flags, tu_info);
+            }
 
             lfnst_mts(ctu_dec, log2_cb_w, log2_cb_h, cu.cu_flags, tu_info);
 

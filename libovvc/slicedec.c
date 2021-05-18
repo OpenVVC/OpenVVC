@@ -1320,6 +1320,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->max_num_merge_candidates = 6 - sps->sps_six_minus_max_num_merge_cand;
 
     ctudec->delta_qp_enabled = pps->pps_cu_qp_delta_enabled_flag;
+    ctudec->sbt_enabled = sps->sps_sbt_enabled_flag;
 
 #if 1
     ctudec->dbf_disable = sh->sh_deblocking_filter_disabled_flag |
