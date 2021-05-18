@@ -199,6 +199,27 @@ decode_last_sig_prefix(OVCABACCtx *const cabac_ctx,
 }
 
 static inline int
+decode_last_sig_prefix_sbt_mts(OVCABACCtx *const cabac_ctx,
+                               unsigned int log2_tb_d, unsigned int log2_tb_red,
+                               unsigned offset_ctx)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    /* FIXME this tab could be adapted by adding some unused ctx to last sig ctx */
+    static const int prefix_ctx[8]  = { 0, 0, 0, 3, 6, 10, 15, 21 };
+    int pos = 0;
+    int ctx_offset, ctx_shift;
+    int max_symbol = OVMIN(log2_tb_red, 5) << 1;
+
+    ctx_offset = prefix_ctx[log2_tb_d];
+    ctx_shift  = (log2_tb_red + 1) >> 2 ;
+
+    while(--max_symbol > 0 && ovcabac_ae_read(cabac_ctx, &cabac_state[offset_ctx + ctx_offset + (pos >> ctx_shift)])){
+        ++pos;
+    }
+    return pos;
+}
+
+static inline int
 decode_last_sig_prefix_c(OVCABACCtx *const cabac_ctx,
                          unsigned int log2_tb_h, unsigned offset_ctx)
 {
@@ -240,6 +261,30 @@ ovcabac_read_ae_last_sig_pos(OVCABACCtx *const cabac_ctx,
     last_x = decode_last_sig_prefix(cabac_ctx, log2_tb_w, LAST_X_CTX_OFFSET);
 
     last_y = decode_last_sig_prefix(cabac_ctx, log2_tb_h, LAST_Y_CTX_OFFSET);
+
+    if (last_x > 3) {
+        last_x = decode_last_sig_suffix(cabac_ctx, last_x);
+    }
+
+    if (last_y > 3) {
+        last_y = decode_last_sig_suffix(cabac_ctx, last_y);
+    }
+
+    return ((uint16_t) last_y << 8) | (last_x & 0xFF);
+}
+
+static uint16_t
+ovcabac_read_ae_last_sig_pos_red(OVCABACCtx *const cabac_ctx,
+                                 uint8_t log2_tb_w, uint8_t log2_tb_h)
+{
+    uint8_t last_x;
+    uint8_t last_y;
+    uint8_t log2_red_w = log2_tb_w == 5 ? 4 : log2_tb_w;
+    uint8_t log2_red_h = log2_tb_h == 5 ? 4 : log2_tb_h;
+
+    last_x = decode_last_sig_prefix_sbt_mts(cabac_ctx, log2_tb_w, log2_red_w, LAST_X_CTX_OFFSET);
+
+    last_y = decode_last_sig_prefix_sbt_mts(cabac_ctx, log2_tb_h, log2_red_h, LAST_Y_CTX_OFFSET);
 
     if (last_x > 3) {
         last_x = decode_last_sig_suffix(cabac_ctx, last_x);
@@ -814,7 +859,12 @@ residual_coding_l(OVCTUDec *const ctu_dec,
 
 
     if (!tr_skip_flag) {
-        uint16_t last_pos = ovcabac_read_ae_last_sig_pos(cabac_ctx, log2_tb_w, log2_tb_h);
+        uint16_t last_pos;
+        if (tu_info->is_sbt && log2_tb_w <= 5 && log2_tb_h <= 5) {
+            last_pos = ovcabac_read_ae_last_sig_pos_red(cabac_ctx, log2_tb_w, log2_tb_h);
+        } else {
+            last_pos = ovcabac_read_ae_last_sig_pos(cabac_ctx, log2_tb_w, log2_tb_h);
+        }
         uint64_t sig_sb_map;
         sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_tb_w, log2_tb_h,
                                               last_pos);
