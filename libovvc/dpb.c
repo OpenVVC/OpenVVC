@@ -162,7 +162,7 @@ ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
     pthread_mutex_lock(&pic->pic_mtx);
     if (! pic->flags && !ref_count) {
         /* Release TMVP  MV maps */
-        ov_log(NULL, OVLOG_DEBUG, "Release picture %d\n", pic->poc);
+        ov_log(NULL, OVLOG_DEBUG, "Release picture with poc %d\n", pic->poc);
         dpbpriv_release_pic(pic);
     }
     pthread_mutex_unlock(&pic->pic_mtx);
@@ -398,7 +398,6 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
             ref_pic->flags  = 0;
 
             ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
-            // ref_pic->flags |= flag;
             ovdpb_new_ref_pic(ref_pic, flag);
 
             /*FIXME  Set output / corrupt flag ? */
@@ -421,7 +420,8 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
                 if(ref_pic->frame && ref_pic->frame->data[0]){
                     ov_log(NULL, OVLOG_DEBUG, "Mark non active reference %d for picture %d\n", ref_poc, dpb->poc);
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
-                    ovdpb_new_ref_pic(ref_pic, flag);
+                    ref_pic->flags |= flag;
+                    // ovdpb_new_ref_pic(ref_pic, flag);
                 }
             }
         }
@@ -434,15 +434,20 @@ static int
 vvc_unmark_refs(struct RPLInfo *rpl_info, const OVPicture **dst_rpl)
 {
     int i;
-    const OVPicture *ref_pic;
+    OVPicture *ref_pic;
     for (i = 0;  i < rpl_info->nb_refs; ++i){
         ref_pic = dst_rpl[i];
         int16_t ref_poc  = rpl_info->ref_info[i].poc;
         int16_t ref_type = rpl_info->ref_info[i].type;
         uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
 
-        ov_log(NULL, OVLOG_DEBUG, "Unmark active reference %d\n", ref_poc);
-        ovdpb_unref_pic(ref_pic, flag);
+        if(ref_pic != 0){
+            ov_log(NULL, OVLOG_DEBUG, "Unmark active reference %d\n", ref_poc);
+            ovdpb_unref_pic(ref_pic, flag);    
+        }
+        else{
+            ov_log(NULL, OVLOG_DEBUG, "Unmark non active reference %d\n", ref_poc);
+        }
     }
     return 0;
 }
@@ -517,7 +522,6 @@ ovdpb_drain_frame(OVDPB *dpb, OVPicture **out, int output_cvs_id)
 int
 ovdpb_output_pic(OVDPB *dpb, OVPicture **out, int output_cvs_id)
 {
-    ov_log(NULL, OVLOG_DEBUG, "Try to output picture\n");
     do {
         const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
         int nb_output = 0;

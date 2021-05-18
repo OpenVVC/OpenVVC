@@ -571,8 +571,8 @@ derive_ref_buf_y(OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
     int64_t* decoded = ov_mallocz(32 * sizeof(int64_t));
     int tl_ctu_y = OVMAX(ref_pos_y, 0) >> log2_ctu_s;
     int tl_ctu_x = OVMAX(ref_pos_x, 0) >> log2_ctu_s;
-    int br_ctu_y = OVMAX(( ref_pos_y + pu_h ), pic_h) >> log2_ctu_s;
-    int br_ctu_x = OVMAX(( ref_pos_x + pu_w ), pic_w) >> log2_ctu_s;
+    int br_ctu_y = OVMIN(( ref_pos_y + pu_h ), pic_h) >> log2_ctu_s;
+    int br_ctu_x = OVMIN(( ref_pos_x + pu_w ), pic_w) >> log2_ctu_s;
 
     int mask_x = 0;
     for(int ctu_x = tl_ctu_x; ctu_x <= br_ctu_x; ctu_x++ )
