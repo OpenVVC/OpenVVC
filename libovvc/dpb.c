@@ -31,6 +31,8 @@ static void tmvp_release_mv_planes(OVPicture *const pic);
 
 static int dpb_init_params(OVDPB *dpb, OVDPBParams const *prm);
 
+static void ovdpb_reset_decoded_ctus(OVPicture *const pic);
+
 int
 ovdpb_init(OVDPB **dpb_p, const OVPS *ps)
 {
@@ -92,6 +94,8 @@ dpbpriv_release_pic(OVPicture *pic)
         pic->rpl_info1.nb_refs = 0;
 
         pic->tmvp.collocated_ref = NULL;
+
+        ovdpb_reset_decoded_ctus(pic);
         /* Do not delete frame the frame will delete itself
          * when all its references are released
          */
@@ -1021,7 +1025,7 @@ ovdpb_update_decoded_ctus(OVPicture *const pic, int y_ctu, int xmin_ctu, int xma
     pthread_mutex_unlock(&pic->ref_mtx);
 }
 
-void
+static void
 ovdpb_reset_decoded_ctus(OVPicture *const pic)
 {
     pthread_mutex_lock(&pic->ref_mtx);
