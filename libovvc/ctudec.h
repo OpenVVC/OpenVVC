@@ -163,7 +163,8 @@ struct ALFInfo
 struct LMCSInfo
 {
     uint16_t lmcs_output_pivot[PIC_CODE_CW_BINS];
-    uint16_t* lmcs_lut_luma;
+    uint16_t* lmcs_lut_inv_luma;
+    uint16_t* lmcs_lut_fwd_luma;
     uint16_t lmcs_chroma_scale;
     int16_t  lmcs_chroma_scaling_offset;
     uint8_t  lmcs_enabled_flag;

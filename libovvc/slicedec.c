@@ -354,8 +354,9 @@ uninit_in_loop_filters(OVCTUDec *const ctudec)
 
     //Uninit LMCS info and output pivots
     struct LMCSInfo* lmcs_info  = &ctudec->lmcs_info;
-    if(lmcs_info->lmcs_lut_luma){
-        ov_free(lmcs_info->lmcs_lut_luma);
+    if(lmcs_info->lmcs_lut_inv_luma){
+        ov_free(lmcs_info->lmcs_lut_inv_luma);
+        ov_free(lmcs_info->lmcs_lut_fwd_luma);
     }
 }
 
@@ -436,10 +437,12 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
     lmcs_info->lmcs_enabled_flag = ph->ph_lmcs_enabled_flag;
     if(ph->ph_lmcs_enabled_flag){
         int bitdepth = 10;
-        if(!lmcs_info->lmcs_lut_luma){
-            lmcs_info->lmcs_lut_luma = ov_malloc(sizeof(uint16_t) * (1<<bitdepth));
+        if(!lmcs_info->lmcs_lut_inv_luma){
+            lmcs_info->lmcs_lut_inv_luma = ov_malloc(sizeof(uint16_t) * (1<<bitdepth));
+            lmcs_info->lmcs_lut_fwd_luma = ov_malloc(sizeof(uint16_t) * (1<<bitdepth));
         } else {
-            memset(lmcs_info->lmcs_lut_luma, 0, sizeof(uint16_t) * (1<<bitdepth));
+            memset(lmcs_info->lmcs_lut_inv_luma, 0, sizeof(uint16_t) * (1<<bitdepth));
+            memset(lmcs_info->lmcs_lut_fwd_luma, 0, sizeof(uint16_t) * (1<<bitdepth));
         }
 
         lmcs_info->lmcs_chroma_scaling_offset = aps_lmcs_data->lmcs_delta_sign_crs_flag ? 
@@ -448,7 +451,8 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
 
         uint16_t *const output_pivot = lmcs_info->lmcs_output_pivot;
         rcn_derive_lmcs_params(lmcs_info, output_pivot, aps_lmcs_data);
-        rcn_lmcs_compute_lut_luma(lmcs_info, lmcs_info->lmcs_lut_luma, lmcs_info->lmcs_output_pivot);
+        rcn_lmcs_compute_lut_luma(lmcs_info, lmcs_info->lmcs_lut_inv_luma, lmcs_info->lmcs_lut_fwd_luma, 
+                                lmcs_info->lmcs_output_pivot);
     }
 
     return 0;
@@ -718,13 +722,11 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
     rcn_ctu_to_intra_line(ctudec, ctb_addr_rs % nb_ctu_w << log2_ctb_s);
 
     if (ctudec->lmcs_info.lmcs_enabled_flag){
-      const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
-      ptrdiff_t stride_out_pic = fbuff->stride;
-      uint16_t *out_pic = fbuff->y;
-      #if 1
-      rcn_lmcs_reshape_luma_blk_lut(out_pic, stride_out_pic,ctudec->lmcs_info.lmcs_lut_luma, 
-                                ctudec->lmcs_info.lmcs_output_pivot, 1 << log2_ctb_s, 1 << log2_ctb_s);
-                                #endif
+        const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
+        ptrdiff_t stride_out_pic = fbuff->stride;
+        uint16_t *out_pic = fbuff->y;
+        rcn_lmcs_reshape_luma_blk_lut(out_pic, stride_out_pic, ctudec->lmcs_info.lmcs_lut_inv_luma, 
+                                1 << log2_ctb_s, 1 << log2_ctb_s);
     }
 
     if (!ctudec->dbf_disable) {
@@ -785,8 +787,7 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
       const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
       ptrdiff_t stride_out_pic = fbuff->stride;
       uint16_t *out_pic = fbuff->y;
-      rcn_lmcs_reshape_luma_blk_lut(out_pic, stride_out_pic,ctudec->lmcs_info.lmcs_lut_luma, 
-                                ctudec->lmcs_info.lmcs_output_pivot, ctu_w, ctu_h);
+      rcn_lmcs_reshape_luma_blk_lut(out_pic, stride_out_pic, ctudec->lmcs_info.lmcs_lut_inv_luma, ctu_w, ctu_h);
     }
 
     if (!ctudec->dbf_disable) {

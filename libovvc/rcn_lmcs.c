@@ -157,8 +157,7 @@ rcn_lmcs_reshape_luma_blk(uint16_t *dst, ptrdiff_t stride_dst,
 }
 
 void 
-rcn_lmcs_reshape_luma_blk_lut(uint16_t *dst, ptrdiff_t stride_dst, uint16_t* lmcs_lut_luma,
-                            uint16_t* lmcs_output_pivot, int width, int height)
+rcn_lmcs_reshape_luma_blk_lut(uint16_t *dst, ptrdiff_t stride_dst, uint16_t* lmcs_lut_luma, int width, int height)
 {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++){ 
@@ -169,24 +168,40 @@ rcn_lmcs_reshape_luma_blk_lut(uint16_t *dst, ptrdiff_t stride_dst, uint16_t* lmc
 }
 
 void 
-rcn_lmcs_compute_lut_luma(struct LMCSInfo *lmcs_info, uint16_t* lmcs_lut_luma, uint16_t* lmcs_output_pivot)
+rcn_lmcs_compute_lut_luma(struct LMCSInfo *lmcs_info, uint16_t* lmcs_lut_inv_luma, uint16_t* lmcs_lut_fwd_luma, 
+                            uint16_t* lmcs_output_pivot)
 {
+    //BITDEPTH: only 10
     int bitdepth = 10;
     uint8_t window_size = (1 << bitdepth) >> 4; 
     uint16_t idx = lmcs_info->min_idx;
+    int idx_fwd;
+        
+    int16_t map_high, map_low;
+    int16_t orig_low, orig_high;
+    int16_t factor_inv, luma_inv_reshaped;
+    int16_t factor_fwd, luma_fwd_reshaped;
+
     for (uint16_t val = 0; val < (1<<bitdepth); val++){
-// int idxYInv = getPWLIdxInv(lumaSample);
-// int invSample = m_inputPivot[idxYInv] + ((m_invScaleCoef[idxYInv] * (lumaSample - m_reshapePivot[idxYInv]) + (1 << (FP_PREC - 1))) >> FP_PREC); 
         if (idx < lmcs_info->max_idx && val >= lmcs_output_pivot[idx+1]){
             idx++;
         }
-        int16_t map_low  = lmcs_output_pivot[idx];
-        int16_t map_high = lmcs_output_pivot[idx+1];
-        int16_t orig_low  = (idx) * window_size;
-        int16_t orig_high = (idx+1) * window_size;
-        int16_t factor    = (idx == 15) ? 0 : (orig_high - orig_low) * (1 << 11) / (map_high - map_low);
-        int16_t luma_inv_reshaped = orig_low + (((val - map_low) * factor + (1 << bitdepth)) >> 11);
-
-        lmcs_lut_luma[val] = ov_clip_uintp2(luma_inv_reshaped, bitdepth);
+        map_low  = lmcs_output_pivot[idx];
+        map_high = lmcs_output_pivot[idx+1];
+        orig_low  = (idx) * window_size;
+        orig_high = (idx+1) * window_size;
+        factor_inv    = (idx == 15) ? 0 : (orig_high - orig_low) * (1 << 11) / (map_high - map_low);
+        luma_inv_reshaped = orig_low + (((val - map_low) * factor_inv + (1 << bitdepth)) >> 11);
+        lmcs_lut_inv_luma[val] = ov_clip_uintp2(luma_inv_reshaped, bitdepth);
+        
+        idx_fwd = val / window_size;
+        map_low  = lmcs_output_pivot[idx_fwd];
+        map_high = lmcs_output_pivot[idx_fwd+1];
+        orig_low  = (idx_fwd) * window_size;
+        orig_high = (idx_fwd+1) * window_size;
+        factor_fwd    = (idx_fwd == 15) ? 0 : (map_high - map_low) * (1 << 11) / (orig_high - orig_low);
+        luma_fwd_reshaped = map_low + (((val - orig_low) * factor_fwd + (1 << bitdepth)) >> 11);
+        lmcs_lut_fwd_luma[val] = ov_clip_uintp2(luma_fwd_reshaped, bitdepth);
     }
+    int a = 1;
 }

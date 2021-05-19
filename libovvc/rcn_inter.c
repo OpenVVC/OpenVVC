@@ -5,6 +5,7 @@
 #include "ovutils.h"
 #include "ctudec.h"
 #include "rcn_structures.h"
+#include "rcn_lmcs.h"
 
 #define MAX_PB_SIZE 128
 
@@ -318,6 +319,11 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec,
     mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride, pu_h, prec_x0, prec_y0, pu_w);
     mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride, tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
 
+    if (ctudec->lmcs_info.lmcs_enabled_flag){
+        rcn_lmcs_reshape_luma_blk_lut(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
+    }
+
+
     const struct OVBuffInfo ref0_c = derive_ref_buf_c(ref0, mv0,
                                                       pos_x >> 1, pos_y >> 1,
                                                       edge_buff0, edge_buff0_1,
@@ -366,6 +372,8 @@ rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_h,
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
 
+    //TODOlmcs: do not allocate here, maybe use already allocated filter buffers ?
+    //Why not use derive_ref_buf_y ?
     uint16_t tmp_buff [RCN_CTB_SIZE];
 
     const OVFrame *const frame0 =  type ? ref1->frame : ref0->frame;
@@ -429,6 +437,11 @@ rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_h,
                                           src_y, src_stride, pu_h,
                                           prec_x, prec_y, pu_w);
 
+    if (ctudec->lmcs_info.lmcs_enabled_flag){
+        rcn_lmcs_reshape_luma_blk_lut(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
+    }
+
+
     emulate_edge = test_for_edge_emulation_c(ref_x >> 1, ref_y >> 1, pic_w >> 1, pic_h >> 1,
                                              pu_w >> 1, pu_h >> 1);;
 
@@ -443,7 +456,6 @@ rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_h,
         src_cb = tmp_buff + buff_off;
         src_stride_c = RCN_CTB_STRIDE;
     }
-
 
     mc_c->unidir[prec_c_mc_type][log2_pu_w - 1](dst.cb, RCN_CTB_STRIDE,
                                                 src_cb, src_stride_c,
@@ -460,7 +472,6 @@ rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_h,
         src_cr = tmp_buff + buff_off;
         src_stride_c = RCN_CTB_STRIDE;
     }
-
     mc_c->unidir[prec_c_mc_type][log2_pu_w - 1](dst.cr, RCN_CTB_STRIDE,
                                                 src_cr, src_stride_c,
                                                 pu_h >> 1, prec_x_c, prec_y_c, pu_w >> 1);
