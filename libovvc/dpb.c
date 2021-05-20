@@ -1101,6 +1101,9 @@ ovdpb_wait_ref_decoded_ctus(OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y
     uint64_t decoded_bis[mask_h][mask_w];
     for(int i = 0; i < mask_h; i++){
         decoded[i] = decoded_bis[i];
+        for(int j = 0; j < mask_w; j++){
+            decoded[i][j] = 0;
+        }
     }
 
     uint64_t wanted_mask[mask_w];

@@ -560,6 +560,8 @@ derive_ref_buf_y(OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
 
     const int pic_w = ref_pic->frame->width[0];
     const int pic_h = ref_pic->frame->height[0];
+    int nb_ctb_pic_w = (pic_w + ((1 << log2_ctu_s) - 1)) >> log2_ctu_s;
+    int nb_ctb_pic_h = (pic_h + ((1 << log2_ctu_s) - 1)) >> log2_ctu_s;
 
     uint8_t emulate_edge = test_for_edge_emulation(ref_pos_x, ref_pos_y, pic_w, pic_h,
                                                    pu_w, pu_h);;
@@ -568,8 +570,8 @@ derive_ref_buf_y(OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
      */
     int tl_ctu_y = OVMAX(ref_pos_y - 2, 0) >> log2_ctu_s;
     int tl_ctu_x = OVMAX(ref_pos_x - 2, 0) >> log2_ctu_s;
-    int br_ctu_y = OVMIN(( ref_pos_y + 3 + pu_h ), pic_h) >> log2_ctu_s;
-    int br_ctu_x = OVMIN(( ref_pos_x + 3 + pu_w ), pic_w) >> log2_ctu_s;
+    int br_ctu_y = OVMIN(( ref_pos_y + 3 + pu_h ) >> log2_ctu_s, nb_ctb_pic_h-1);
+    int br_ctu_x = OVMIN(( ref_pos_x + 3 + pu_w ) >> log2_ctu_s, nb_ctb_pic_w-1);
     ovdpb_wait_ref_decoded_ctus(ref_pic, tl_ctu_x, tl_ctu_y, br_ctu_x, br_ctu_y);
 
     if (emulate_edge){
@@ -921,7 +923,6 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 #define DMVR_SAD_STRIDE  ((2 * DMVR_NUM_ITERATION) + 1)
 #define DMVR_NB_IDX (DMVR_SAD_STRIDE * DMVR_SAD_STRIDE)
 #define DMVR_SB_PXL_LVL 4
-
 
 struct DMVRDelta
 {

@@ -289,6 +289,7 @@ hmvp_update_lut_b(struct HMVPLUT *const hmvp_lut, OVMV mv0, OVMV mv1, uint8_t in
 static void
 load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
 {
+
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct VVCTMVP *const tmvp_ctx = &inter_ctx->tmvp_ctx;
 
@@ -299,9 +300,12 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
 
     uint8_t nb_unit_ctb = (1 << log2_ctb_s) >> LOG2_MIN_CU_S;
     uint16_t nb_ctb_w = ctudec->nb_ctb_pic_w;
+    uint16_t nb_ctb_h = (ctudec->pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
 
     const OVPicture* ref_pic = tmvp_ctx->col_ref;
-    ovdpb_wait_ref_decoded_ctus(ref_pic, ctb_x, ctb_y, ctb_x, ctb_y);
+    int br_ctu_x = OVMIN(ctb_x + 1, nb_ctb_w-1);
+    int br_ctu_y = OVMIN(ctb_y + 1, nb_ctb_h-1);
+    ovdpb_wait_ref_decoded_ctus(ref_pic, ctb_x, ctb_y, br_ctu_x, br_ctu_y);
 
     uint8_t is_border_pic = nb_ctb_w - 1 == ctb_x;
 
