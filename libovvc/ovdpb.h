@@ -61,9 +61,14 @@ struct OVPicture
 
     //Map of decoded CTUs
     //TODOpar: change 32 with n_ctu_w 
-    int64_t decoded_ctus[32];
-    pthread_mutex_t ref_mtx;
-    pthread_cond_t  ref_cnd;
+    struct PicDecodedCtusInfo {
+        uint64_t** mask;
+        int mask_h;
+        int mask_w;
+        pthread_mutex_t ref_mtx;
+        pthread_cond_t  ref_cnd;
+    } decoded_ctus;
+
 
     /* Pointers to ref_pic_list */
     /* FIXME use frame directly ? */
@@ -178,7 +183,7 @@ int ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVPicture * current_pic);
 
 void ovdpb_update_decoded_ctus(OVPicture *const pic, int y_ctu, int xmin_ctu, int xmax_ctu);
 
-void ovdpb_get_lines_decoded_ctus(OVPicture *const pic, int64_t* decoded, int y_start, int y_end );
+void ovdpb_get_lines_decoded_ctus(OVPicture *const pic, uint64_t** decoded, int y_start, int y_end );
 
 void ovdpb_wait_ref_decoded_ctus(OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y, int br_ctu_x, int br_ctu_y);
 

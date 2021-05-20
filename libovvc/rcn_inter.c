@@ -566,10 +566,10 @@ derive_ref_buf_y(OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
 
     /*Frame thread synchronization to ensure data is available
      */
-    int tl_ctu_y = OVMAX(ref_pos_y, 0) >> log2_ctu_s;
-    int tl_ctu_x = OVMAX(ref_pos_x, 0) >> log2_ctu_s;
-    int br_ctu_y = OVMIN(( ref_pos_y + pu_h ), pic_h) >> log2_ctu_s;
-    int br_ctu_x = OVMIN(( ref_pos_x + pu_w ), pic_w) >> log2_ctu_s;
+    int tl_ctu_y = OVMAX(ref_pos_y - 2, 0) >> log2_ctu_s;
+    int tl_ctu_x = OVMAX(ref_pos_x - 2, 0) >> log2_ctu_s;
+    int br_ctu_y = OVMIN(( ref_pos_y + 3 + pu_h ), pic_h) >> log2_ctu_s;
+    int br_ctu_x = OVMIN(( ref_pos_x + 3 + pu_w ), pic_w) >> log2_ctu_s;
     ovdpb_wait_ref_decoded_ctus(ref_pic, tl_ctu_x, tl_ctu_y, br_ctu_x, br_ctu_y);
 
     if (emulate_edge){
@@ -2019,10 +2019,10 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
     /* FIXME
      * Thread synchronization to ensure data is available before usage
      */
-    int tl_ctu_y = OVMAX(ref_y, 0) >> log2_ctb_s;
-    int tl_ctu_x = OVMAX(ref_x, 0) >> log2_ctb_s;
-    int br_ctu_y = OVMIN(( ref_y + pu_h ), pic_h) >> log2_ctb_s;
-    int br_ctu_x = OVMIN(( ref_x + pu_w ), pic_w) >> log2_ctb_s;
+    int tl_ctu_y = OVMAX(ref_y - 2, 0) >> log2_ctb_s;
+    int tl_ctu_x = OVMAX(ref_x - 2, 0) >> log2_ctb_s;
+    int br_ctu_y = OVMIN(( ref_y + pu_h + 3 ), pic_h) >> log2_ctb_s;
+    int br_ctu_x = OVMIN(( ref_x + pu_w + 3), pic_w) >> log2_ctb_s;
     ovdpb_wait_ref_decoded_ctus(ref_pic, tl_ctu_x, tl_ctu_y, br_ctu_x, br_ctu_y);
 
     if (emulate_edge){
