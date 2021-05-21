@@ -1074,6 +1074,76 @@ init_lines(OVCTUDec *ctudec, const OVSliceDec *sldec, const struct RectEntryInfo
 
 }
 
+static void
+slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc)
+{
+    ctudec->drv_ctx.inter_ctx.bi_dir_pred_flag = 0;
+    if (prms->sps->sps_smvd_enabled_flag && !ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc
+        && !ctudec->drv_ctx.inter_ctx.mvd1_zero_flag) 
+    {     
+        int forw_poc = cur_poc;
+        int back_poc = cur_poc;
+        int ref = 0;
+        int ref_idx0 = -1;
+        int ref_idx1 = -1;
+        // search nearest forward POC in List 0
+        for (ref = 0; ref < ctudec->drv_ctx.inter_ctx.nb_active_ref0; ref++) {
+            int ref_poc = ctudec->drv_ctx.inter_ctx.rpl0[ref]->poc;
+            int ref_type = ctudec->drv_ctx.inter_ctx.rpl_info0->ref_info[ref].type;
+            uint8_t is_lterm = (ref_type == LT_REF);
+            if(ref_poc < cur_poc && (ref_poc > forw_poc || ref_idx0 == -1)  && !is_lterm) {
+                forw_poc = ref_poc;
+                ref_idx0 = ref;
+            }
+        }
+        
+        // search nearest backward POC in List 1
+        for (ref = 0; ref < ctudec->drv_ctx.inter_ctx.nb_active_ref1; ref++) {
+            int ref_poc = ctudec->drv_ctx.inter_ctx.rpl1[ref]->poc;
+            int ref_type = ctudec->drv_ctx.inter_ctx.rpl_info1->ref_info[ref].type;
+            uint8_t is_lterm = (ref_type == LT_REF);
+            if(ref_poc > cur_poc && (ref_poc < back_poc || ref_idx1 == -1)  && !is_lterm) {
+                back_poc = ref_poc;
+                ref_idx1 = ref;
+            }
+        }
+
+        if ( !(forw_poc < cur_poc && back_poc > cur_poc) ){
+            forw_poc = cur_poc;
+            back_poc = cur_poc;
+            ref_idx0 = -1;
+            ref_idx1 = -1;
+
+            // search nearest backward POC in List 0
+            for (ref = 0; ref < ctudec->drv_ctx.inter_ctx.nb_active_ref0; ref++) {
+                int ref_poc = ctudec->drv_ctx.inter_ctx.rpl0[ref]->poc;
+                int ref_type = ctudec->drv_ctx.inter_ctx.rpl_info0->ref_info[ref].type;
+                uint8_t is_lterm = (ref_type == LT_REF);
+                if(ref_poc > cur_poc && (ref_poc < back_poc || ref_idx0 == -1)  && !is_lterm) {
+                    back_poc = ref_poc;
+                    ref_idx0 = ref;
+                }
+            }
+
+            // search nearest forward POC in List 1
+            for (ref = 0; ref < ctudec->drv_ctx.inter_ctx.nb_active_ref1; ref++) {
+                int ref_poc = ctudec->drv_ctx.inter_ctx.rpl1[ref]->poc;
+                int ref_type = ctudec->drv_ctx.inter_ctx.rpl_info1->ref_info[ref].type;
+                uint8_t is_lterm = (ref_type == LT_REF);
+                if(ref_poc < cur_poc && (ref_poc > forw_poc || ref_idx1 == -1)  && !is_lterm) {
+                    forw_poc = ref_poc;
+                    ref_idx1 = ref;
+                }
+            }
+        }     
+        if ( forw_poc < cur_poc && back_poc > cur_poc ){
+            ctudec->drv_ctx.inter_ctx.bi_dir_pred_flag = 1;
+            ctudec->drv_ctx.inter_ctx.ref_smvd_idx0 = ref_idx0;
+            ctudec->drv_ctx.inter_ctx.ref_smvd_idx1 = ref_idx1;
+        }
+    }
+}
+
 static int
 slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms,
                            uint16_t entry_idx)
@@ -1121,6 +1191,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     memcpy(ctudec->drv_ctx.inter_ctx.rpl0, sldec->pic->rpl0, sizeof(sldec->pic->rpl0));
     memcpy(ctudec->drv_ctx.inter_ctx.rpl1, sldec->pic->rpl1, sizeof(sldec->pic->rpl1));
 
+    ctudec->drv_ctx.inter_ctx.rpl_info0 = &sldec->pic->rpl_info0;
+    ctudec->drv_ctx.inter_ctx.rpl_info1 = &sldec->pic->rpl_info1;
     ctudec->drv_ctx.inter_ctx.nb_active_ref0 = prms->sh->hrpl.rpl_h0.rpl_data.num_ref_active_entries;
     ctudec->drv_ctx.inter_ctx.nb_active_ref1 = prms->sh->hrpl.rpl_h1.rpl_data.num_ref_active_entries;
 
@@ -1136,6 +1208,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
             ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 0;
         }
     }
+
+    slicedec_smvd_params(ctudec, prms, sldec->pic->poc);
 
     /* FIXME entry might be check before attaching entry to CABAC so there
      * is no need for this check

@@ -275,6 +275,8 @@ struct InterDRVCtx
     OVPicture *rpl1[16];
     uint8_t nb_active_ref0;
     uint8_t nb_active_ref1;
+    struct RPLInfo* rpl_info0;
+    struct RPLInfo* rpl_info1;
 
     /* CTU Local Map Motion Vectors */
     struct OVMVCtx mv_ctx0;
@@ -285,6 +287,13 @@ struct InterDRVCtx
      * Motion Vectors used.
      */
     struct HMVPLUT hmvp_lut;
+
+    /* Symmetric MVD (SMVD) Related
+     * information
+     */
+    uint8_t bi_dir_pred_flag;
+    int ref_smvd_idx0;
+    int ref_smvd_idx1;
 
     /* Temporal Motion Vector Prediction Related
      * information

@@ -192,6 +192,13 @@ ovcabac_read_ae_mvp_flag(OVCABACCtx *const cabac_ctx)
     return ovcabac_ae_read(cabac_ctx, &cabac_state[MVP_IDX_CTX_OFFSET]);
 }
 
+static uint8_t
+ovcabac_read_ae_smvd_flag(OVCABACCtx *const cabac_ctx)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[SMVD_FLAG_CTX_OFFSET]);
+}
+
 /* mip_abv + mip_lft */
 static uint8_t
 ovcabac_read_ae_intra_mip(OVCABACCtx *const cabac_ctx,
@@ -885,6 +892,9 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t nb_pb_h = (1 << log2_pb_h) >> part_ctx->log2_min_cb_s;
 #endif
 
+    //TODOsmvd: use real afine flag
+    uint8_t affine = 0;
+    uint8_t smvd_mode = 0;
     if (merge_flag) {
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
@@ -904,8 +914,14 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
         uint8_t inter_dir = ovcabac_read_ae_inter_dir(cabac_ctx, log2_pb_w, log2_pb_h);
 
+        if (inter_dir == 3 && !affine && inter_ctx->bi_dir_pred_flag)
+            smvd_mode = ovcabac_read_ae_smvd_flag(cabac_ctx);
+
         if (inter_dir & 0x1) {
-            if (inter_ctx->nb_active_ref0 > 1) {
+            if (smvd_mode){
+                ref_idx0 = inter_ctx->ref_smvd_idx0;
+            }
+            else if (inter_ctx->nb_active_ref0 > 1) {
                 ref_idx0 = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref0);
             }
             /*FIXME add ref_idx*/
@@ -915,16 +931,24 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         }
 
         if (inter_dir & 0x2) {
-            if (inter_ctx->nb_active_ref1 > 1) {
-                ref_idx1 = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref1);
+            if (!smvd_mode){
+                if (inter_ctx->nb_active_ref1 > 1) {
+                    ref_idx1 = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref1);
+                }
+                /*FIXME add ref_idx*/
+                if (inter_dir & 0x1 && inter_ctx->mvd1_zero_flag) {
+                } else {
+                    mvd1 = ovcabac_read_ae_mvd(cabac_ctx);
+                }
             }
-            /*FIXME add ref_idx*/
-            if (inter_dir & 0x1 && inter_ctx->mvd1_zero_flag) {
-            } else {
-                mvd1 = ovcabac_read_ae_mvd(cabac_ctx);
-            }
-
             mvp_idx1 = ovcabac_read_ae_mvp_flag(cabac_ctx);
+        }
+
+        if (smvd_mode){
+            mvd1.x       = -mvd0.x;
+            mvd1.y       = -mvd0.y;
+            mvd1.ref_idx = inter_ctx->ref_smvd_idx1;
+            ref_idx1     = inter_ctx->ref_smvd_idx1;
         }
 
         mv_info = drv_mvp_b(inter_ctx, x_pu, y_pu, nb_pb_w, nb_pb_h,
