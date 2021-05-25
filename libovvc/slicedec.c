@@ -1079,8 +1079,8 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
 {
     ctudec->drv_ctx.inter_ctx.bi_dir_pred_flag = 0;
     if (prms->sps->sps_smvd_enabled_flag && !ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc
-        && !ctudec->drv_ctx.inter_ctx.mvd1_zero_flag) 
-    {     
+        && !ctudec->drv_ctx.inter_ctx.mvd1_zero_flag)
+    {
         int forw_poc = cur_poc;
         int back_poc = cur_poc;
         int ref = 0;
@@ -1096,7 +1096,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
                 ref_idx0 = ref;
             }
         }
-        
+
         // search nearest backward POC in List 1
         for (ref = 0; ref < ctudec->drv_ctx.inter_ctx.nb_active_ref1; ref++) {
             int ref_poc = ctudec->drv_ctx.inter_ctx.rpl1[ref]->poc;
@@ -1135,7 +1135,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
                     ref_idx1 = ref;
                 }
             }
-        }     
+        }
         if ( forw_poc < cur_poc && back_poc > cur_poc ){
             ctudec->drv_ctx.inter_ctx.bi_dir_pred_flag = 1;
             ctudec->drv_ctx.inter_ctx.ref_smvd_idx0 = ref_idx0;
@@ -1210,6 +1210,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     }
 
     slicedec_smvd_params(ctudec, prms, sldec->pic->poc);
+
+    ctudec->drv_ctx.inter_ctx.ciip_flag = sldec->active_params->sps->sps_ciip_enabled_flag;
 
     /* FIXME entry might be check before attaching entry to CABAC so there
      * is no need for this check

@@ -499,3 +499,55 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct InterDRVCtx *const inter_ctx,
 
     }
 }
+
+// void
+// rcn_ciip_b(OVCTUDec*const lc_ctx,
+//           const OVMV mv0, const OVMV mv1,
+//           unsigned int x0, unsigned int y0,
+//           unsigned int log2_pb_w, unsigned int log2_pb_h,
+//           uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1)
+// {
+//     struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
+//     const OVPartInfo *const part_ctx = &ctu_dec->drv_ctx.part_ctx;
+//     rcn_mcp_b(lc_ctx, inter_ctx, part_ctx, mv_info.mv0, mv_info.mv1, x0, y0, log2_pb_w, log2_pb_h, 
+//         mv_info.inter_dir, ref_idx0, ref_idx1);
+
+
+//     const struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
+//     const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
+
+//      uint16_t ref_abv[(128<<1) + 128];
+//     uint16_t ref_lft [(128<<1) + 128];
+//     uint16_t *dst = &src[x0 + (y0 * dst_stride)];
+//     uint16_t *ref1 = ref_abv + (1 << log2_pb_h);
+//     uint16_t *ref2 = ref_lft  + (1 << log2_pb_w);
+//     const struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
+//     const struct DCFunctions *dc = &rcn_ctx->rcn_funcs.dc;
+//     const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
+
+//     fill_ref_left_0_mref(src, dst_stride, ref2,
+//                          ctudec->rcn_ctx.progress_field.vfield[x0 >> 2],
+//                          ctudec->rcn_ctx.progress_field.hfield[y0 >> 2],
+//                          mrl_idx, x0, y0,
+//                          log2_pb_w, log2_pb_h);
+
+//     fill_ref_above_0_mref(src, dst_stride, ref1,
+//                           ctudec->rcn_ctx.progress_field.hfield[y0 >> 2],
+//                           ctudec->rcn_ctx.progress_field.vfield[x0 >> 2],
+//                           mrl_idx, x0 , y0,
+//                           log2_pb_w, log2_pb_h);
+
+//     ref1 += mrl_idx;
+//     ref2 += mrl_idx;
+
+//     switch (intra_mode) {
+//     case OVINTRA_PLANAR:
+//         planar->func(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
+//     planar->func(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
+
+//     //Apply: weighted pred
+//     struct OVBuffInfo dst = rcn_ctx->ctu_buff;
+//     dst.y  += x0 + y0 * dst.stride;
+//     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
+//     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
+// }

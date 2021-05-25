@@ -59,13 +59,13 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                         const OVPartInfo *const part_ctx,
                         uint8_t x0, uint8_t y0,
                         uint8_t log2_pb_w, uint8_t log2_pb_h,
-                        uint8_t merge_flag);
+                        uint8_t skip_flag, uint8_t merge_flag);
 int
 prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                         const OVPartInfo *const part_ctx,
                         uint8_t x0, uint8_t y0,
                         uint8_t log2_pb_w, uint8_t log2_pb_h,
-                        uint8_t merge_flag);
+                        uint8_t skip_flag, uint8_t merge_flag);
 
 int coding_quadtree(OVCTUDec *const ctu_dec,
                     const OVPartInfo *const part_ctx,

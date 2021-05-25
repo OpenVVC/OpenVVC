@@ -302,6 +302,11 @@ struct InterDRVCtx
     uint8_t tmvp_enabled;
     uint8_t mvd1_zero_flag;
 
+    /* Combined Inter Intra Pred(CIIP) Related
+     * information
+     */
+    uint8_t ciip_flag;
+
     struct VVCTMVP
     {
         /* FIXME tmp info */
@@ -662,7 +667,7 @@ struct OVCTUDec
                            const OVPartInfo *const part_ctx,
                            uint8_t x0, uint8_t y0,
                            uint8_t log2_pb_w, uint8_t log2_pb_h,
-                           uint8_t cu_skip_flag);
+                           uint8_t skip_flag, uint8_t cu_merge_flag);
 
     int (*residual_coding_isp_h)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
                                  unsigned int log2_tb_w, unsigned int log2_tb_h,

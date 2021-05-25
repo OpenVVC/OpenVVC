@@ -203,5 +203,4 @@ rcn_lmcs_compute_lut_luma(struct LMCSInfo *lmcs_info, uint16_t* lmcs_lut_inv_lum
         luma_fwd_reshaped = map_low + (((val - orig_low) * factor_fwd + (1 << bitdepth)) >> 11);
         lmcs_lut_fwd_luma[val] = ov_clip_uintp2(luma_fwd_reshaped, bitdepth);
     }
-    int a = 1;
 }

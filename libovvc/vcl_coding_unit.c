@@ -90,6 +90,13 @@ ovcabac_read_ae_mvp_merge_idx(OVCABACCtx *const cabac_ctx,
 }
 
 static uint8_t
+ovcabac_read_ae_reg_merge_flag(OVCABACCtx *const cabac_ctx, uint8_t skip_flag){
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    uint8_t offset = skip_flag ? 0 : 1;
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[REGULAR_MERGE_FLAG_CTX_OFFSET + offset]);
+}
+
+static uint8_t
 ovcabac_read_ae_inter_dir(OVCABACCtx *const cabac_ctx,
                           int log2_pb_w, int log2_pb_h)
 {
@@ -601,7 +608,8 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
     if (cu_skip_flag) {
         /* FIXME cu_skip_flag activation force merge_flag so we only need to read
            merge_idx */
-        ctu_dec->prediction_unit(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, 1);
+        uint8_t merge_flag = 1; 
+        ctu_dec->prediction_unit(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, cu_skip_flag, merge_flag);
 
         cu_type = OV_INTER_SKIP;
 
@@ -630,7 +638,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
         } else {
             uint8_t merge_flag = ovcabac_read_ae_cu_merge_flag(cabac_ctx);
 
-            ctu_dec->prediction_unit(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, merge_flag);
+            ctu_dec->prediction_unit(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, cu_skip_flag, merge_flag);
 
             cu_type = OV_INTER;
 
@@ -805,7 +813,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                         const OVPartInfo *const part_ctx,
                         uint8_t x0, uint8_t y0,
                         uint8_t log2_pb_w, uint8_t log2_pb_h,
-                        uint8_t merge_flag)
+                        uint8_t skip_flag, uint8_t merge_flag)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     struct IntraDRVInfo *const i_info = &ctu_dec->drv_ctx.intra_info;
@@ -822,14 +830,43 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
     OVMV mv0;
     if (merge_flag) {
-        uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
+        // uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
+        // uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
+
+        // mv0 = drv_merge_mvp(inter_ctx, mv_ctx0,
+        //                     x_pu, y_pu, nb_pb_w, nb_pb_h,
+        //                     merge_idx, max_nb_cand);
+
+        uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
+        
+        #if 0
+        if (affine)
+            uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
+        else
+        #endif
+        uint8_t sps_ciip_flag = inter_ctx->ciip_flag;
+        uint8_t ciip_flag = sps_ciip_flag && !skip_flag && (1 << log2_pb_w) < 128 && (1 << log2_pb_h) < 128
+                        && 1 << (log2_pb_w + log2_pb_h) >= 64;
+        uint8_t  reg_merge_flag = 1;     
+        if (ciip_flag){
+            reg_merge_flag = ovcabac_read_ae_reg_merge_flag(cabac_ctx, skip_flag);
+        }
+
+        if (reg_merge_flag){
+            //TODO: check MMVD
+            ciip_flag = 0;
+        }
+        else{
+            //TODOciip: where store this info ?
+            // pu.intraDir[0] = PLANAR_IDX;
+            // pu.intraDir[1] = DM_CHROMA_IDX;
+        }
         uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
 
         mv0 = drv_merge_mvp(inter_ctx, mv_ctx0,
                             x_pu, y_pu, nb_pb_w, nb_pb_h,
                             merge_idx, max_nb_cand);
-
     } else {
         /*FIXME add ref_idx*/
         OVMV mvd = ovcabac_read_ae_mvd(cabac_ctx);
@@ -874,7 +911,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                         const OVPartInfo *const part_ctx,
                         uint8_t x0, uint8_t y0,
                         uint8_t log2_pb_w, uint8_t log2_pb_h,
-                        uint8_t merge_flag)
+                        uint8_t skip_flag, uint8_t merge_flag)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     #if 1
@@ -892,12 +929,34 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t nb_pb_h = (1 << log2_pb_h) >> part_ctx->log2_min_cb_s;
 #endif
 
-    //TODOsmvd: use real afine flag
+    //TODO: use real affine flag
     uint8_t affine = 0;
     uint8_t smvd_mode = 0;
     if (merge_flag) {
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
+        #if 0
+        if (affine)
+            uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
+        else
+        #endif
+        uint8_t sps_ciip_flag = inter_ctx->ciip_flag;
+        uint8_t ciip_flag = sps_ciip_flag && !skip_flag && (1 << log2_pb_w) < 128 && (1 << log2_pb_h) < 128
+                        && 1 << (log2_pb_w + log2_pb_h) >= 64;
+        uint8_t  reg_merge_flag = 1;           
+        if (ciip_flag){
+            reg_merge_flag = ovcabac_read_ae_reg_merge_flag(cabac_ctx, skip_flag);
+        }
+
+        if (reg_merge_flag){
+            //TODO: check MMVD
+            ciip_flag = 0;
+        }
+        else{
+            //TODOciip: where store this info ?
+            // pu.intraDir[0] = PLANAR_IDX;
+            // pu.intraDir[1] = DM_CHROMA_IDX;
+        }
         uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
 
         mv_info = drv_merge_mvp_b(inter_ctx, x_pu, y_pu,
