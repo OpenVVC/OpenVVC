@@ -382,7 +382,7 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
         if (!isp_flag) {
             uint8_t mrl_flag = !!(cu.cu_flags & flg_mrl_flag);
             if (!mrl_flag){
-                vvc_intra_pred(&ctudec->rcn_ctx, intra_mode, x0, y0,
+                vvc_intra_pred(&ctudec->rcn_ctx, &ctudec->rcn_ctx.ctu_buff, intra_mode, x0, y0,
                                log2_cb_w, log2_cb_h);
             }
 
@@ -423,11 +423,10 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
 }
 
 void
-vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx,
+vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, struct OVBuffInfo* ctu_buff,
                uint8_t intra_mode, int x0, int y0,
                int log2_pb_width, int log2_pb_height)
 {
-    const struct OVBuffInfo *ctu_buff = &rcn_ctx->ctu_buff;
     const struct DCFunctions *dc = &rcn_ctx->rcn_funcs.dc;
     const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
 
@@ -762,11 +761,10 @@ vvc_intra_chroma_angular(const uint16_t *const src, uint16_t *const dst,
                          int8_t intra_mode);
 
 void
-vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
+vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx, struct OVBuffInfo *ctu_buff,
                       uint8_t intra_mode, int x0, int y0,
                       int log2_pb_w, int log2_pb_h){
 
-    const struct OVBuffInfo *ctu_buff = &rcn_ctx->ctu_buff;
     const struct RCNFunctions *rcn_func = &rcn_ctx->rcn_funcs;
     const struct DCFunctions *dc = &rcn_ctx->rcn_funcs.dc;
     const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;

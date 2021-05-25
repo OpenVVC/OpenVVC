@@ -448,7 +448,7 @@ coding_unit(OVCTUDec *const ctu_dec,
             cu.cu_mode_idx = luma_mode;
 
             ctu_dec->intra_mode_c = drv_intra_mode_c(cu, luma_mode);
-            vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1);
+            vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, &ctu_dec->rcn_ctx.ctu_buff, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1);
         } else {
             /* FIXME inter */
             if (ctu_dec->coding_unit == &coding_unit_intra) {
@@ -468,7 +468,7 @@ coding_unit(OVCTUDec *const ctu_dec,
                 ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_pu << pu_shift,
                                             y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
 
-                vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0, y0, log2_cb_w, log2_cb_h);
+                vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, &ctu_dec->rcn_ctx.ctu_buff, ctu_dec->intra_mode_c, x0, y0, log2_cb_w, log2_cb_h);
             }
         }
     }
@@ -829,15 +829,8 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     uint8_t ref_idx = 0;
 
     OVMV mv0;
+    uint8_t apply_ciip = 0;
     if (merge_flag) {
-        // uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
-
-        // uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
-
-        // mv0 = drv_merge_mvp(inter_ctx, mv_ctx0,
-        //                     x_pu, y_pu, nb_pb_w, nb_pb_h,
-        //                     merge_idx, max_nb_cand);
-
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
         
         #if 0
@@ -855,12 +848,9 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
         if (reg_merge_flag){
             //TODO: check MMVD
-            ciip_flag = 0;
         }
         else{
-            //TODOciip: where store this info ?
-            // pu.intraDir[0] = PLANAR_IDX;
-            // pu.intraDir[1] = DM_CHROMA_IDX;
+            apply_ciip = 1;
         }
         uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
 
@@ -881,7 +871,10 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                           mvp_idx, 1, ref_idx, ref_idx);
     }
 
-    rcn_mcp(ctu_dec, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx);
+    // if(apply_ciip)
+    //     rcn_ciip(ctu_dec, x0, y0, log2_pb_w, log2_pb_h);
+    // else
+        rcn_mcp(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx);
 
     uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
 
@@ -932,6 +925,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     //TODO: use real affine flag
     uint8_t affine = 0;
     uint8_t smvd_mode = 0;
+    uint8_t apply_ciip = 0;
     if (merge_flag) {
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
@@ -950,12 +944,9 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
         if (reg_merge_flag){
             //TODO: check MMVD
-            ciip_flag = 0;
         }
         else{
-            //TODOciip: where store this info ?
-            // pu.intraDir[0] = PLANAR_IDX;
-            // pu.intraDir[1] = DM_CHROMA_IDX;
+            apply_ciip = 1;
         }
         uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
 
@@ -1018,7 +1009,11 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         //mv_info.mv1.ref_idx = inter_dir & 0x2 ? ref_idx1 : 0xFF;
     }
 
-    rcn_mcp_b(ctu_dec, inter_ctx, part_ctx, mv_info.mv0, mv_info.mv1, x0, y0,
+    if(apply_ciip)
+        rcn_ciip_b(ctu_dec, mv_info.mv0, mv_info.mv1, x0, y0,
+              log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
+    else
+        rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx, mv_info.mv0, mv_info.mv1, x0, y0,
               log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
 
     uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;

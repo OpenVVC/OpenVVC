@@ -21,6 +21,7 @@ struct OVRCNCtx;
 struct InterDRVCtx;
 struct RCNFunctions;
 struct DBFInfo;
+struct OVBuffInfo;
 
 void rcn_residual(OVCTUDec *const ctudec,
              int16_t *const dst, int16_t *src,
@@ -51,15 +52,21 @@ void rcn_write_ctu_to_frame(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_c
 void rcn_write_ctu_to_frame_border(const struct OVRCNCtx *const rcn_ctx,
                                    int last_ctu_w, int last_ctu_h);
 
-void rcn_mcp_b(OVCTUDec*const lc_ctx, struct InterDRVCtx *const inter_ctx,
+void rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *const inter_ctx,
                const OVPartInfo *const part_ctx,
                const OVMV mv0, const OVMV mv1,
                unsigned int x0, unsigned int y0,
                unsigned int log2_pb_w, unsigned int log2_pb_h,
                uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1);
 
-void rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_h,
+void rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
              OVMV mv, uint8_t inter_dir, uint8_t ref_idx);
+
+void
+rcn_ciip_b(OVCTUDec*const ctudec, const OVMV mv0, const OVMV mv1,
+           unsigned int x0, unsigned int y0,
+           unsigned int log2_pb_w, unsigned int log2_pb_h,
+           uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1);
 
 /* FIXME check vertical / horizontal */
 void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled, uint8_t sps_chroma_vertical_collocated_flag);

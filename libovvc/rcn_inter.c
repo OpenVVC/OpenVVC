@@ -6,6 +6,7 @@
 #include "ctudec.h"
 #include "rcn_structures.h"
 #include "rcn_lmcs.h"
+#include "drv.h"
 
 #define MAX_PB_SIZE 128
 
@@ -250,7 +251,7 @@ derive_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
 }
 
 static void
-rcn_motion_compensation_b(OVCTUDec *const ctudec,
+rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                           uint8_t x0, uint8_t y0,
                           uint8_t log2_pu_w, uint8_t log2_pu_h,
                           OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1)
@@ -265,8 +266,6 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec,
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
-
-    struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
 
     /* TMP buffers for edge emulation
      * FIXME use tmp buffers in local contexts
@@ -323,7 +322,6 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec,
         rcn_lmcs_reshape_luma_blk_lut(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
     }
 
-
     const struct OVBuffInfo ref0_c = derive_ref_buf_c(ref0, mv0,
                                                       pos_x >> 1, pos_y >> 1,
                                                       edge_buff0, edge_buff0_1,
@@ -354,7 +352,7 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec,
 }
 
 void
-rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_h,
+rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
         OVMV mv, uint8_t type, uint8_t ref_idx)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
@@ -362,8 +360,6 @@ rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_h,
 
     struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
     struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
-
-    struct OVBuffInfo dst = rcn_ctx->ctu_buff;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
@@ -478,7 +474,7 @@ rcn_mcp(OVCTUDec *const ctudec, int x0, int y0, int log2_pu_w, int log2_pu_h,
 }
 
 void
-rcn_mcp_b(OVCTUDec*const lc_ctx, struct InterDRVCtx *const inter_ctx,
+rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *const inter_ctx,
           const OVPartInfo *const part_ctx,
           const OVMV mv0, const OVMV mv1,
           unsigned int x0, unsigned int y0,
@@ -487,67 +483,91 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct InterDRVCtx *const inter_ctx,
 {
     if (inter_dir == 3) {
 
-        rcn_motion_compensation_b(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
+        rcn_motion_compensation_b(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
 
     } else if (inter_dir & 0x2) {
 
-        rcn_mcp(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
+        rcn_mcp(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
 
     } else if (inter_dir & 0x1) {
 
-        rcn_mcp(lc_ctx, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
+        rcn_mcp(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
 
     }
 }
 
-// void
-// rcn_ciip_b(OVCTUDec*const lc_ctx,
-//           const OVMV mv0, const OVMV mv1,
-//           unsigned int x0, unsigned int y0,
-//           unsigned int log2_pb_w, unsigned int log2_pb_h,
-//           uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1)
-// {
-//     struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
-//     const OVPartInfo *const part_ctx = &ctu_dec->drv_ctx.part_ctx;
-//     rcn_mcp_b(lc_ctx, inter_ctx, part_ctx, mv_info.mv0, mv_info.mv1, x0, y0, log2_pb_w, log2_pb_h, 
-//         mv_info.inter_dir, ref_idx0, ref_idx1);
+//TODOciip: do not define here
+#define BIT_DEPTH 10
+#define ov_clip_pixel(a) ov_clip_uintp2(a, BIT_DEPTH)
 
+static void
+put_weighted_ciip_pixels(uint16_t* dst, ptrdiff_t dststride,
+                      const uint16_t* src_intra, const uint16_t* src_inter, ptrdiff_t srcstride,
+                      int width, int height, int wt)
+{   
+    int x, y;
+    int shift = 14 - BIT_DEPTH + 2;
+    int offset = 2 + ( 1 << (shift - 1));
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; ++x) {
+            dst[x] = ov_clip_pixel( (src_intra[x] * wt + ((src_inter[x] * (4 - wt)) << (14 - BIT_DEPTH)) + offset) >> shift );
+        }
+        src_intra += srcstride;
+        src_inter += srcstride;
+        dst += dststride;
+    }
+}
 
-//     const struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
-//     const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
+/*Apply planar intra modes current
+*/
+void
+rcn_ciip_b(OVCTUDec*const ctudec,
+           const OVMV mv0, const OVMV mv1,
+           unsigned int x0, unsigned int y0,
+           unsigned int log2_pb_w, unsigned int log2_pb_h,
+           uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1)
+{
 
-//      uint16_t ref_abv[(128<<1) + 128];
-//     uint16_t ref_lft [(128<<1) + 128];
-//     uint16_t *dst = &src[x0 + (y0 * dst_stride)];
-//     uint16_t *ref1 = ref_abv + (1 << log2_pb_h);
-//     uint16_t *ref2 = ref_lft  + (1 << log2_pb_w);
-//     const struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
-//     const struct DCFunctions *dc = &rcn_ctx->rcn_funcs.dc;
-//     const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
+    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    const OVPartInfo *const part_ctx = ctudec->part_ctx;
+    struct OVBuffInfo tmp_inter;
+    uint16_t tmp_inter_l [RCN_CTB_SIZE], tmp_inter_cb[RCN_CTB_SIZE], tmp_inter_cr[RCN_CTB_SIZE] ;
+    tmp_inter.y  = &tmp_inter_l [0];
+    tmp_inter.cb = &tmp_inter_cb[0];
+    tmp_inter.cr = &tmp_inter_cr[0];
+    tmp_inter.stride   = RCN_CTB_STRIDE;
+    tmp_inter.stride_c = RCN_CTB_STRIDE;
+    rcn_mcp_b(ctudec, tmp_inter, inter_ctx, part_ctx, mv0, mv1, x0, y0, log2_pb_w, log2_pb_h, 
+        inter_dir, ref_idx0, ref_idx1);
 
-//     fill_ref_left_0_mref(src, dst_stride, ref2,
-//                          ctudec->rcn_ctx.progress_field.vfield[x0 >> 2],
-//                          ctudec->rcn_ctx.progress_field.hfield[y0 >> 2],
-//                          mrl_idx, x0, y0,
-//                          log2_pb_w, log2_pb_h);
+    struct OVBuffInfo tmp_intra;
+    uint16_t tmp_intra_l [RCN_CTB_SIZE], tmp_intra_cb[RCN_CTB_SIZE], tmp_intra_cr[RCN_CTB_SIZE] ;
+    tmp_intra.y  = &tmp_intra_l [0];
+    tmp_intra.cb = &tmp_intra_cb[0];
+    tmp_intra.cr = &tmp_intra_cr[0];
+    tmp_intra.stride   = RCN_CTB_STRIDE;
+    tmp_intra.stride_c = RCN_CTB_STRIDE;
+    vvc_intra_pred(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0, y0, log2_pb_w, log2_pb_w);
+    vvc_intra_pred_chroma(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0 >> 1, y0 >> 1, log2_pb_w - 1, log2_pb_w - 1);
 
-//     fill_ref_above_0_mref(src, dst_stride, ref1,
-//                           ctudec->rcn_ctx.progress_field.hfield[y0 >> 2],
-//                           ctudec->rcn_ctx.progress_field.vfield[x0 >> 2],
-//                           mrl_idx, x0 , y0,
-//                           log2_pb_w, log2_pb_h);
+    //TODOciip: chose correct value in function of neighbors
+    int wt = 0;
+    struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
+    dst.y  += x0 + y0 * dst.stride;
+    tmp_intra.y  += x0 + y0 * tmp_intra.stride;
+    tmp_inter.y  += x0 + y0 * tmp_inter.stride;
+    put_weighted_ciip_pixels(dst.y, dst.stride, tmp_intra.y, tmp_inter.y, tmp_inter.stride,
+                       1 << log2_pb_w, 1 << log2_pb_h, wt);
 
-//     ref1 += mrl_idx;
-//     ref2 += mrl_idx;
+    dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
+    tmp_intra.cb += (x0 >> 1) + (y0 >> 1) * tmp_intra.stride_c;
+    tmp_inter.cb += (x0 >> 1) + (y0 >> 1) * tmp_inter.stride_c;
+    put_weighted_ciip_pixels(dst.cb, dst.stride_c, tmp_intra.cb, tmp_inter.cb, tmp_inter.stride_c,
+                       1 << log2_pb_w, 1 << log2_pb_h, wt);
 
-//     switch (intra_mode) {
-//     case OVINTRA_PLANAR:
-//         planar->func(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
-//     planar->func(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
-
-//     //Apply: weighted pred
-//     struct OVBuffInfo dst = rcn_ctx->ctu_buff;
-//     dst.y  += x0 + y0 * dst.stride;
-//     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-//     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-// }
+    dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
+    tmp_intra.cr += (x0 >> 1) + (y0 >> 1) * tmp_intra.stride_c;
+    tmp_inter.cr += (x0 >> 1) + (y0 >> 1) * tmp_inter.stride_c;
+    put_weighted_ciip_pixels(dst.cr, dst.stride_c, tmp_intra.cr, tmp_inter.cr, tmp_inter.stride_c,
+                       1 << (log2_pb_w - 1), 1 << (log2_pb_h - 1), wt);
+}

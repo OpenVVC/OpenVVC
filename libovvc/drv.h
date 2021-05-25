@@ -33,11 +33,11 @@ uint8_t derive_intra_mode_c(uint8_t cclm_flag, uint8_t mpm_flag,
 /* FIXME vvc_intra functions deal with both reconstruction
  * and derivation this has to be clarified
  */
-void vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx,
+void vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, struct OVBuffInfo* ctu_buff,
                     uint8_t intra_mode, int x0, int y0,
                     int log2_pb_width, int log2_pb_height);
 
-void vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
+void vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx, struct OVBuffInfo *ctu_buff,
                            uint8_t intra_mode, int x0, int y0,
                            int log2_pb_w, int log2_pb_h);
 
