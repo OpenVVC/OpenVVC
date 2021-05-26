@@ -871,9 +871,9 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                           mvp_idx, 1, ref_idx, ref_idx);
     }
 
-    // if(apply_ciip)
-    //     rcn_ciip(ctu_dec, x0, y0, log2_pb_w, log2_pb_h);
-    // else
+    if(apply_ciip)
+        rcn_ciip(ctu_dec, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx);
+    else
         rcn_mcp(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx);
 
     uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;

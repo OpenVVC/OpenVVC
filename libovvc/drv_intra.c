@@ -438,7 +438,7 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, struct OVBuffInfo* ctu_buff
 
     ptrdiff_t dst_stride = ctu_buff->stride;
 
-    const uint16_t *src = &ctu_buff->y[0];
+    const uint16_t *src = &rcn_ctx->ctu_buff.y[0];
     uint16_t *dst = &ctu_buff->y[x0 + (y0 * dst_stride)];
 
     uint16_t *ref1 = ref_above + (1 << log2_pb_height);
@@ -773,8 +773,8 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx, struct OVBuffInfo *c
     uint16_t *const dst_cb = &ctu_buff->cb[(x0) + (y0 * RCN_CTB_STRIDE)];
     uint16_t *const dst_cr = &ctu_buff->cr[(x0) + (y0 * RCN_CTB_STRIDE)];
 
-    const uint16_t *const src_cb = &ctu_buff->cb[0];
-    const uint16_t *const src_cr = &ctu_buff->cr[0];
+    const uint16_t *const src_cb = &rcn_ctx->ctu_buff.cb[0];
+    const uint16_t *const src_cr = &rcn_ctx->ctu_buff.cr[0];
 
     ptrdiff_t dst_stride = ctu_buff->stride_c;
 

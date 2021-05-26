@@ -548,7 +548,6 @@ struct OVCTUDec
 
 
     struct OVFilterBuffers{
-        //TODO: use already existing ctu_buff ?
         int16_t* filter_region[3];
         int16_t  filter_region_h[3];
         int16_t  filter_region_w[3];

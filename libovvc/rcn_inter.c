@@ -368,8 +368,6 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
 
-    //TODOlmcs: do not allocate here, maybe use already allocated filter buffers ?
-    //Why not use derive_ref_buf_y ?
     uint16_t tmp_buff [RCN_CTB_SIZE];
 
     const OVFrame *const frame0 =  type ? ref1->frame : ref0->frame;
@@ -499,6 +497,13 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *cons
 //TODOciip: do not define here
 #define BIT_DEPTH 10
 #define ov_clip_pixel(a) ov_clip_uintp2(a, BIT_DEPTH)
+enum CUMode {
+    OV_NA = 0xFF,
+    OV_INTER = 1,
+    OV_INTRA = 2,
+    OV_INTER_SKIP = 3,
+    OV_MIP = 4,
+};
 
 static void
 put_weighted_ciip_pixels(uint16_t* dst, ptrdiff_t dststride,
@@ -506,11 +511,11 @@ put_weighted_ciip_pixels(uint16_t* dst, ptrdiff_t dststride,
                       int width, int height, int wt)
 {   
     int x, y;
-    int shift = 14 - BIT_DEPTH + 2;
-    int offset = 2 + ( 1 << (shift - 1));
+    int shift  = 2;
+    int offset = 2;
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
-            dst[x] = ov_clip_pixel( (src_intra[x] * wt + ((src_inter[x] * (4 - wt)) << (14 - BIT_DEPTH)) + offset) >> shift );
+            dst[x] = ov_clip_pixel( ( ( src_intra[x] * wt + src_inter[x] * (4 - wt)) + offset ) >> shift );
         }
         src_intra += srcstride;
         src_inter += srcstride;
@@ -518,8 +523,49 @@ put_weighted_ciip_pixels(uint16_t* dst, ptrdiff_t dststride,
     }
 }
 
-/*Apply planar intra modes current
-*/
+void rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, struct OVBuffInfo* tmp_inter,
+                            unsigned int x0, unsigned int y0,
+                            unsigned int log2_pb_w, unsigned int log2_pb_h)
+{
+    //Compute weight in function of neighboring coding modes
+    int x_right  = x0 + (1 << log2_pb_w) - 1;
+    int y_bottom = y0 + (1 << log2_pb_h) - 1;
+    int mode_abv = ctudec->part_map.cu_mode_x[x_right  >> ctudec->part_ctx->log2_min_cb_s];
+    int mode_lft = ctudec->part_map.cu_mode_y[y_bottom >> ctudec->part_ctx->log2_min_cb_s];
+    uint8_t cu_intra_abv = mode_abv == OV_INTRA || mode_abv == OV_MIP;
+    uint8_t cu_intra_lft = mode_lft == OV_INTRA || mode_lft == OV_MIP;
+    int wt = 1;
+    wt += (cu_intra_abv + cu_intra_lft) ; 
+
+    //Apply weighted sum to the final CIIP predicted block
+    struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
+    dst.y  += x0 + y0 * dst.stride;
+    tmp_intra->y  += x0 + y0 * tmp_intra->stride;
+    tmp_inter->y  += x0 + y0 * tmp_inter->stride;
+    put_weighted_ciip_pixels(dst.y, dst.stride, tmp_intra->y, tmp_inter->y, tmp_inter->stride,
+                       1 << log2_pb_w, 1 << log2_pb_h, wt);
+
+    dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
+    tmp_intra->cb += (x0 >> 1) + (y0 >> 1) * tmp_intra->stride_c;
+    tmp_inter->cb += (x0 >> 1) + (y0 >> 1) * tmp_inter->stride_c;
+
+    dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
+    tmp_intra->cr += (x0 >> 1) + (y0 >> 1) * tmp_intra->stride_c;
+    tmp_inter->cr += (x0 >> 1) + (y0 >> 1) * tmp_inter->stride_c;
+    
+    struct MCFunctions *mc_c = &ctudec->rcn_ctx.rcn_funcs.mc_c;
+    if (log2_pb_w <= 2){
+        mc_c->unidir[0][0](dst.cb, dst.stride_c, tmp_inter->cb, tmp_inter->stride_c, 1 << (log2_pb_h - 1), 0, 0, 1 << (log2_pb_w - 1));
+        mc_c->unidir[0][0](dst.cr, dst.stride_c, tmp_inter->cr, tmp_inter->stride_c, 1 << (log2_pb_h - 1), 0, 0, 1 << (log2_pb_w - 1));
+    }
+    else{
+        put_weighted_ciip_pixels(dst.cb, dst.stride_c, tmp_intra->cb, tmp_inter->cb, tmp_inter->stride_c,
+                           1 << (log2_pb_w - 1), 1 << (log2_pb_h - 1), wt);
+        put_weighted_ciip_pixels(dst.cr, dst.stride_c, tmp_intra->cr, tmp_inter->cr, tmp_inter->stride_c,
+                           1 << (log2_pb_w - 1), 1 << (log2_pb_h - 1), wt);
+    }
+}
+
 void
 rcn_ciip_b(OVCTUDec*const ctudec,
            const OVMV mv0, const OVMV mv1,
@@ -527,47 +573,60 @@ rcn_ciip_b(OVCTUDec*const ctudec,
            unsigned int log2_pb_w, unsigned int log2_pb_h,
            uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1)
 {
-
+    //Inter merge mode
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     const OVPartInfo *const part_ctx = ctudec->part_ctx;
     struct OVBuffInfo tmp_inter;
     uint16_t tmp_inter_l [RCN_CTB_SIZE], tmp_inter_cb[RCN_CTB_SIZE], tmp_inter_cr[RCN_CTB_SIZE] ;
-    tmp_inter.y  = &tmp_inter_l [0];
-    tmp_inter.cb = &tmp_inter_cb[0];
-    tmp_inter.cr = &tmp_inter_cr[0];
+    tmp_inter.y  = &tmp_inter_l [RCN_CTB_PADDING];
+    tmp_inter.cb = &tmp_inter_cb[RCN_CTB_PADDING];
+    tmp_inter.cr = &tmp_inter_cr[RCN_CTB_PADDING];
     tmp_inter.stride   = RCN_CTB_STRIDE;
     tmp_inter.stride_c = RCN_CTB_STRIDE;
     rcn_mcp_b(ctudec, tmp_inter, inter_ctx, part_ctx, mv0, mv1, x0, y0, log2_pb_w, log2_pb_h, 
         inter_dir, ref_idx0, ref_idx1);
 
+    //Intra Planar mode
     struct OVBuffInfo tmp_intra;
     uint16_t tmp_intra_l [RCN_CTB_SIZE], tmp_intra_cb[RCN_CTB_SIZE], tmp_intra_cr[RCN_CTB_SIZE] ;
-    tmp_intra.y  = &tmp_intra_l [0];
-    tmp_intra.cb = &tmp_intra_cb[0];
-    tmp_intra.cr = &tmp_intra_cr[0];
+    tmp_intra.y  = &tmp_intra_l [RCN_CTB_PADDING];
+    tmp_intra.cb = &tmp_intra_cb[RCN_CTB_PADDING];
+    tmp_intra.cr = &tmp_intra_cr[RCN_CTB_PADDING];
     tmp_intra.stride   = RCN_CTB_STRIDE;
     tmp_intra.stride_c = RCN_CTB_STRIDE;
-    vvc_intra_pred(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0, y0, log2_pb_w, log2_pb_w);
-    vvc_intra_pred_chroma(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0 >> 1, y0 >> 1, log2_pb_w - 1, log2_pb_w - 1);
+    vvc_intra_pred(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0, y0, log2_pb_w, log2_pb_h);
+    vvc_intra_pred_chroma(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0 >> 1, y0 >> 1, log2_pb_w - 1, log2_pb_h - 1);
 
-    //TODOciip: chose correct value in function of neighbors
-    int wt = 0;
-    struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
-    dst.y  += x0 + y0 * dst.stride;
-    tmp_intra.y  += x0 + y0 * tmp_intra.stride;
-    tmp_inter.y  += x0 + y0 * tmp_inter.stride;
-    put_weighted_ciip_pixels(dst.y, dst.stride, tmp_intra.y, tmp_inter.y, tmp_inter.stride,
-                       1 << log2_pb_w, 1 << log2_pb_h, wt);
+    rcn_ciip_weighted_sum(ctudec, &tmp_intra, &tmp_inter, x0, y0, log2_pb_w, log2_pb_h);
+}
 
-    dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-    tmp_intra.cb += (x0 >> 1) + (y0 >> 1) * tmp_intra.stride_c;
-    tmp_inter.cb += (x0 >> 1) + (y0 >> 1) * tmp_inter.stride_c;
-    put_weighted_ciip_pixels(dst.cb, dst.stride_c, tmp_intra.cb, tmp_inter.cb, tmp_inter.stride_c,
-                       1 << log2_pb_w, 1 << log2_pb_h, wt);
 
-    dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-    tmp_intra.cr += (x0 >> 1) + (y0 >> 1) * tmp_intra.stride_c;
-    tmp_inter.cr += (x0 >> 1) + (y0 >> 1) * tmp_inter.stride_c;
-    put_weighted_ciip_pixels(dst.cr, dst.stride_c, tmp_intra.cr, tmp_inter.cr, tmp_inter.stride_c,
-                       1 << (log2_pb_w - 1), 1 << (log2_pb_h - 1), wt);
+void
+rcn_ciip(OVCTUDec *const ctudec, 
+         int x0, int y0, int log2_pb_w, int log2_pb_h,
+         OVMV mv, uint8_t inter_dir, uint8_t ref_idx)
+{
+    //Inter merge mode
+    struct OVBuffInfo tmp_inter;
+    uint16_t tmp_inter_l [RCN_CTB_SIZE], tmp_inter_cb[RCN_CTB_SIZE], tmp_inter_cr[RCN_CTB_SIZE] ;
+    tmp_inter.y  = &tmp_inter_l [RCN_CTB_PADDING];
+    tmp_inter.cb = &tmp_inter_cb[RCN_CTB_PADDING];
+    tmp_inter.cr = &tmp_inter_cr[RCN_CTB_PADDING];
+    tmp_inter.stride   = RCN_CTB_STRIDE;
+    tmp_inter.stride_c = RCN_CTB_STRIDE;
+    rcn_mcp(ctudec, tmp_inter, x0, y0, log2_pb_w, log2_pb_h, mv, 0, ref_idx);
+
+    //Intra Planar mode
+    struct OVBuffInfo tmp_intra;
+    uint16_t tmp_intra_l [RCN_CTB_SIZE], tmp_intra_cb[RCN_CTB_SIZE], tmp_intra_cr[RCN_CTB_SIZE] ;
+    tmp_intra.y  = &tmp_intra_l [RCN_CTB_PADDING];
+    tmp_intra.cb = &tmp_intra_cb[RCN_CTB_PADDING];
+    tmp_intra.cr = &tmp_intra_cr[RCN_CTB_PADDING];
+    tmp_intra.stride   = RCN_CTB_STRIDE;
+    tmp_intra.stride_c = RCN_CTB_STRIDE;
+    vvc_intra_pred(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0, y0, log2_pb_w, log2_pb_h);
+    vvc_intra_pred_chroma(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0 >> 1, y0 >> 1, log2_pb_w - 1, log2_pb_h - 1);
+
+    rcn_ciip_weighted_sum(ctudec, &tmp_intra, &tmp_inter, x0, y0, log2_pb_w, log2_pb_h);
+
 }
