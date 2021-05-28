@@ -94,12 +94,9 @@ ovcabac_read_ae_mmvd_merge_idx(OVCABACCtx *const cabac_ctx,
                               uint8_t max_num_merge_cand)
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    const int MMVD_REFINE_STEP    = 8; ///< max number of distance step
-    const int MMVD_MAX_REFINE_NUM = MMVD_REFINE_STEP * 4; ///< max number of candidate from a base candidate
-
     uint8_t var0 = 0;
     if (max_num_merge_cand  > 1){
-        ovcabac_ae_read(cabac_ctx, &cabac_state[MMVD_MERGE_IDX_CTX_OFFSET]);
+        var0 = ovcabac_ae_read(cabac_ctx, &cabac_state[MMVD_MERGE_IDX_CTX_OFFSET]);
     }
 
     int num_cand_minus1 = MMVD_REFINE_STEP - 1;
@@ -905,14 +902,17 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
         uint8_t merge_idx;
         if (mmvd_mode){
             merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
+            mv0 = drv_mmvd_merge_mvp(inter_ctx, mv_ctx0,
+                            x_pu, y_pu, nb_pb_w, nb_pb_h,
+                            merge_idx, max_nb_cand);        
         }
         else{
             merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
+            mv0 = drv_merge_mvp(inter_ctx, mv_ctx0,
+                                x_pu, y_pu, nb_pb_w, nb_pb_h,
+                                merge_idx, max_nb_cand);
         }
 
-        mv0 = drv_merge_mvp(inter_ctx, mv_ctx0,
-                            x_pu, y_pu, nb_pb_w, nb_pb_h,
-                            merge_idx, max_nb_cand);
     } else {
         /*FIXME add ref_idx*/
         OVMV mvd = ovcabac_read_ae_mvd(cabac_ctx);
@@ -1014,14 +1014,16 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         // if (pu.mmvdMergeFlag || pu.cu->mmvdSkip){
         if (mmvd_mode){
             merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
+            mv_info = drv_mmvd_merge_mvp_b(inter_ctx, x_pu, y_pu,
+                                  nb_pb_w, nb_pb_h, ctu_dec->cur_poc, merge_idx,
+                                  max_nb_cand, log2_pb_w + log2_pb_h <= 5);
         }
         else{
             merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
-        }
-
-        mv_info = drv_merge_mvp_b(inter_ctx, x_pu, y_pu,
+            mv_info = drv_merge_mvp_b(inter_ctx, x_pu, y_pu,
                                   nb_pb_w, nb_pb_h, merge_idx,
                                   max_nb_cand, log2_pb_w + log2_pb_h <= 5);
+        }    
 
         ref_idx0 = mv_info.mv0.ref_idx;
         ref_idx1 = mv_info.mv1.ref_idx;

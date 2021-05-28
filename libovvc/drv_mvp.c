@@ -1675,6 +1675,62 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
     return mv_info;
 }
 
+
+OVMV
+drv_mmvd_merge_mvp(struct InterDRVCtx *const inter_ctx,
+              const struct OVMVCtx *const mv_ctx,
+              uint8_t pb_x, uint8_t pb_y,
+              uint8_t nb_pb_w, uint8_t nb_pb_h,
+              uint8_t merge_idx, uint8_t max_nb_merge_cand)
+{
+    int   f_base_idx = merge_idx / MMVD_MAX_REFINE_NUM;
+    OVMV mv0 = vvc_derive_merge_mvp(inter_ctx, mv_ctx, pb_x, pb_y,
+                                    nb_pb_w, nb_pb_h, f_base_idx + 1,
+                                    max_nb_merge_cand, 0);
+
+    //TODOmmvd: scale here or not ?
+    // const int ref_mvd_cands[8] = { 1 << 2 , 2 << 2 , 4 << 2 , 8 << 2 , 16 << 2 , 32 << 2,  64 << 2 , 128 << 2 };
+    const int ref_mvd_cands[8] = { 1 , 2 , 4 , 8 , 16 , 32,  64 , 128 };
+    int f_pos_group, f_pos_step, idx, f_pos;
+
+    idx = merge_idx;
+    f_pos_group = idx / (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
+    idx = idx - f_pos_group * (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
+    idx = idx - f_base_idx * (MMVD_MAX_REFINE_NUM);
+    f_pos_step = idx / 4;
+    f_pos = idx - f_pos_step * (4);
+    int offset = ref_mvd_cands[f_pos_step];
+
+    // const int refList0 = mmvdBaseMv[f_base_idx][0].refIdx;
+    OVMV mvd;
+    if (mv0.ref_idx >= 0){
+        if (f_pos == 0){
+            mvd.x = offset;
+            mvd.y = 0;
+        }
+        else if (f_pos == 1){
+            mvd.x = -offset;
+            mvd.y = 0;
+        }
+        else if (f_pos == 2){
+            mvd.x = 0;
+            mvd.y = offset;
+        }
+        else{
+            mvd.x = 0;
+            mvd.y = -offset;
+        }
+    }
+    mvd = scale_mvd(mvd);
+    mv0.x += mvd.x;
+    mv0.y += mvd.y;
+
+    update_mv_ctx(inter_ctx, mv0, pb_x, pb_y, nb_pb_w,
+                  nb_pb_h, 1);
+    return mv0;
+}
+
+
 OVMV
 drv_merge_mvp(struct InterDRVCtx *const inter_ctx,
               const struct OVMVCtx *const mv_ctx,
@@ -1690,6 +1746,7 @@ drv_merge_mvp(struct InterDRVCtx *const inter_ctx,
                   nb_pb_h, 1);
     return mv0;
 }
+
 
 OVMV
 drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
@@ -1737,6 +1794,139 @@ drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
                   nb_pb_h, inter_dir);
 
    return mv;
+}
+
+VVCMergeInfo
+drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
+                uint8_t pb_x, uint8_t pb_y,
+                uint8_t nb_pb_w, uint8_t nb_pb_h,
+                int cur_poc, uint8_t merge_idx,
+                uint8_t max_nb_cand, uint8_t is_small)
+{
+
+    VVCMergeInfo mv_info;
+    int f_base_idx = merge_idx / MMVD_MAX_REFINE_NUM;
+    mv_info = vvc_derive_merge_mvp_b(inter_ctx, pb_x, pb_y,
+                                     nb_pb_w, nb_pb_h, f_base_idx,
+                                     max_nb_cand, is_small);
+
+    //TODOmmvd: scale here or not ?
+    const int ref_mvd_cands[8] = { 1 << 2 , 2 << 2 , 4 << 2 , 8 << 2 , 16 << 2 , 32 << 2,  64 << 2 , 128 << 2 };
+    // const int ref_mvd_cands[8] = { 1 , 2 , 4 , 8 , 16 , 32,  64 , 128 };
+    int f_pos_group, f_pos_step, idx, f_pos;
+
+    idx = merge_idx;
+    f_pos_group = idx / (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
+    idx = idx - f_pos_group * (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
+    idx = idx - f_base_idx * (MMVD_MAX_REFINE_NUM);
+    f_pos_step = idx / 4;
+    f_pos = idx - f_pos_step * (4);
+    int offset = ref_mvd_cands[f_pos_step];
+
+    // const int refList0 = mmvdBaseMv[f_base_idx][0].refIdx;
+    OVMV mvd0, mvd1;
+    int ref0 = mv_info.mv0.ref_idx;
+    int ref1 = mv_info.mv1.ref_idx;
+    //TODOmmvd: check if is correct to check like that.
+    if (ref0 >= 0 && ref1 >= 0){
+        int poc0 = inter_ctx->rpl0[ref0]->poc;
+        int ref_type0 = inter_ctx->rpl_info0->ref_info[ref0].type;
+        int poc1 = inter_ctx->rpl1[ref1]->poc;
+        int ref_type1 = inter_ctx->rpl_info1->ref_info[ref1].type;
+                // uint8_t is_lterm = (ref_type == LT_REF);
+        if (f_pos == 0){
+                mvd0.x = offset;
+                mvd0.y = 0;
+            }
+        else if (f_pos == 1){
+            mvd0.x = -offset;
+            mvd0.y = 0;
+        }
+        else if (f_pos == 2){
+            mvd0.x = 0;
+            mvd0.y = offset;
+        }
+        else{
+            mvd0.x = 0;
+            mvd0.y = -offset;
+        }
+        if ((poc0 - cur_poc) == (poc1 - cur_poc)){
+            mvd1.x = mvd0.x;
+            mvd1.y = mvd0.y;
+        }
+        // else if (abs(poc1 - cur_poc) > abs(poc0 - cur_poc))
+        // {
+        //   const int scale = PU::getDistScaleFactor(cur_poc, poc0, cur_poc, poc1);
+        //   tempMv[1] = tempMv[0];
+        //   const bool isL0RefLongTerm = slice.getRefPic(REF_PIC_LIST_0, refList0)->longTerm;
+        //   const bool isL1RefLongTerm = slice.getRefPic(REF_PIC_LIST_1, refList1)->longTerm;
+        //   if (isL0RefLongTerm || isL1RefLongTerm)
+        //   {
+        //     if ((poc1 - cur_poc)*(poc0 - cur_poc) > 0)
+        //     {
+        //       tempMv[0] = tempMv[1];
+        //     }
+        //     else
+        //     {
+        //       tempMv[0].set(-1 * tempMv[1].getHor(), -1 * tempMv[1].getVer());
+        //     }
+        //   }
+        //   else
+        //   tempMv[0] = tempMv[1].scaleMv(scale);
+        // }
+        // else
+        // {
+        //   const int scale = PU::getDistScaleFactor(cur_poc, poc1, cur_poc, poc0);
+        //   const bool isL0RefLongTerm = slice.getRefPic(REF_PIC_LIST_0, refList0)->longTerm;
+        //   const bool isL1RefLongTerm = slice.getRefPic(REF_PIC_LIST_1, refList1)->longTerm;
+        //   if (isL0RefLongTerm || isL1RefLongTerm)
+        //   {
+        //     if ((poc1 - cur_poc)*(poc0 - cur_poc) > 0)
+        //     {
+        //       tempMv[1] = tempMv[0];
+        //     }
+        //     else
+        //     {
+        //       tempMv[1].set(-1 * tempMv[0].getHor(), -1 * tempMv[0].getVer());
+        //     }
+        //   }
+        //   else
+        //   tempMv[1] = tempMv[0].scaleMv(scale);
+        // }
+
+        mv_info.inter_dir = 3;
+    }
+    else if (ref0 >= 0){
+        if (f_pos == 0){
+            mvd0.x = offset;
+            mvd0.y = 0;
+        }
+        else if (f_pos == 1){
+            mvd0.x = -offset;
+            mvd0.y = 0;
+        }
+        else if (f_pos == 2){
+            mvd0.x = 0;
+            mvd0.y = offset;
+        }
+        else{
+            mvd0.x = 0;
+            mvd0.y = -offset;
+        }
+    }
+    // mvd0 = scale_mvd(mvd0);
+    // mvd1 = scale_mvd(mvd1);
+    mv_info.mv0.x += mvd0.x;
+    mv_info.mv0.y += mvd0.y;
+    mv_info.mv1.x += mvd1.x;
+    mv_info.mv1.y += mvd1.y;
+
+    if (is_small && mv_info.inter_dir == 3) {
+        mv_info.inter_dir = 0x1;
+    }
+    update_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, pb_x, pb_y,
+                    nb_pb_w, nb_pb_h, mv_info.inter_dir);
+    return mv_info;
 }
 
 VVCMergeInfo

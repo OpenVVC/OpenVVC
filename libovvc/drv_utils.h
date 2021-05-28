@@ -37,7 +37,11 @@ ctu_field_set_rect_bitfield(struct CTUBitField *const ctu_map,
         ctu_map->vfield[x_pb + i] |= mask_map;
     }
 }
- 
+
+static const int MMVD_REFINE_STEP    = 8; ///< max number of distance step
+static const int MMVD_MAX_REFINE_NUM = 8 * 4; ///< max number of candidate from a base candidate
+static const int MMVD_BASE_MV_NUM    = 2; ///< max number of base candidate
+
 #if 0
 static void
 init_ctu_bitfield(struct OVRCNCtx *const rcn_ctx,
