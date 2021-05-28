@@ -1212,6 +1212,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     slicedec_smvd_params(ctudec, prms, sldec->pic->poc);
 
     ctudec->drv_ctx.inter_ctx.ciip_flag = sldec->active_params->sps->sps_ciip_enabled_flag;
+    ctudec->drv_ctx.inter_ctx.mmvd_flag = sldec->active_params->sps->sps_mmvd_enabled_flag;
 
     /* FIXME entry might be check before attaching entry to CABAC so there
      * is no need for this check

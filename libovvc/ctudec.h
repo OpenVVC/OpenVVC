@@ -307,6 +307,11 @@ struct InterDRVCtx
      */
     uint8_t ciip_flag;
 
+    /* Merge mode with MVD(MMVD) Related
+     * information
+     */
+    uint8_t mmvd_flag;
+
     struct VVCTMVP
     {
         /* FIXME tmp info */

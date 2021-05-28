@@ -89,11 +89,57 @@ ovcabac_read_ae_mvp_merge_idx(OVCABACCtx *const cabac_ctx,
     return merge_idx;
 }
 
+uint8_t
+ovcabac_read_ae_mmvd_merge_idx(OVCABACCtx *const cabac_ctx,
+                              uint8_t max_num_merge_cand)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    const int MMVD_REFINE_STEP    = 8; ///< max number of distance step
+    const int MMVD_MAX_REFINE_NUM = MMVD_REFINE_STEP * 4; ///< max number of candidate from a base candidate
+
+    uint8_t var0 = 0;
+    if (max_num_merge_cand  > 1){
+        ovcabac_ae_read(cabac_ctx, &cabac_state[MMVD_MERGE_IDX_CTX_OFFSET]);
+    }
+
+    int num_cand_minus1 = MMVD_REFINE_STEP - 1;
+    int var1 = 0;
+    if (ovcabac_ae_read(cabac_ctx, &cabac_state[MMVD_STEP_MVP_IDX_CTX_OFFSET])){
+        var1++;
+        for (; var1 < num_cand_minus1; var1++){
+            if (!ovcabac_bypass_read(cabac_ctx)) {
+                break;
+            }
+        }
+    }
+    int var2 = 0;
+    if (ovcabac_bypass_read(cabac_ctx)){
+    var2 += 2;
+        if (ovcabac_bypass_read(cabac_ctx)){
+            var2 += 1;
+        }
+    }
+    else{
+        var2 += 0;
+        if (ovcabac_bypass_read(cabac_ctx)){
+            var2 += 1;
+        }
+    }
+    return (var0 * MMVD_MAX_REFINE_NUM + var1 * 4 + var2);
+}
+
+
 static uint8_t
 ovcabac_read_ae_reg_merge_flag(OVCABACCtx *const cabac_ctx, uint8_t skip_flag){
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
     uint8_t offset = skip_flag ? 0 : 1;
     return ovcabac_ae_read(cabac_ctx, &cabac_state[REGULAR_MERGE_FLAG_CTX_OFFSET + offset]);
+}
+
+static uint8_t
+ovcabac_read_ae_mmvd_flag(OVCABACCtx *const cabac_ctx, uint8_t skip_flag){
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[MMVD_FLAG_CTX_OFFSET]);
 }
 
 static uint8_t
@@ -830,9 +876,9 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
     OVMV mv0;
     uint8_t apply_ciip = 0;
+    uint8_t mmvd_mode  = 0;
     if (merge_flag) {
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
-        
         #if 0
         if (affine)
             uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
@@ -845,14 +891,24 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
         if (ciip_flag){
             reg_merge_flag = ovcabac_read_ae_reg_merge_flag(cabac_ctx, skip_flag);
         }
-
         if (reg_merge_flag){
-            //TODO: check MMVD
+            if (inter_ctx->mmvd_flag){
+                mmvd_mode = ovcabac_read_ae_mmvd_flag(cabac_ctx, skip_flag);
+            }
+            // if (cu.skip){
+            // cu.mmvdSkip = cu.firstPU->mmvdMergeFlag;
+            // }
         }
         else{
             apply_ciip = 1;
         }
-        uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
+        uint8_t merge_idx;
+        if (mmvd_mode){
+            merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
+        }
+        else{
+            merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
+        }
 
         mv0 = drv_merge_mvp(inter_ctx, mv_ctx0,
                             x_pu, y_pu, nb_pb_w, nb_pb_h,
@@ -926,6 +982,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t affine = 0;
     uint8_t smvd_mode = 0;
     uint8_t apply_ciip = 0;
+    uint8_t mmvd_mode = 0;
     if (merge_flag) {
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
@@ -943,12 +1000,24 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         }
 
         if (reg_merge_flag){
-            //TODO: check MMVD
+            if (inter_ctx->mmvd_flag){
+                mmvd_mode = ovcabac_read_ae_mmvd_flag(cabac_ctx, skip_flag);
+            }
+            // if (cu.skip){
+            // cu.mmvdSkip = cu.firstPU->mmvdMergeFlag;
+            // }
         }
         else{
             apply_ciip = 1;
         }
-        uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
+        uint8_t merge_idx;
+        // if (pu.mmvdMergeFlag || pu.cu->mmvdSkip){
+        if (mmvd_mode){
+            merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
+        }
+        else{
+            merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
+        }
 
         mv_info = drv_merge_mvp_b(inter_ctx, x_pu, y_pu,
                                   nb_pb_w, nb_pb_h, merge_idx,
