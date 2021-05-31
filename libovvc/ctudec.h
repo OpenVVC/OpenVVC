@@ -342,6 +342,12 @@ struct InterDRVCtx
      */
     uint8_t mmvd_flag;
 
+    /* Geometric Partition Mode(GPM) Related
+     * information
+     */
+    uint8_t gpm_flag;
+    int max_gpm_cand;
+
     struct VVCTMVP
     {
         /* FIXME tmp info */

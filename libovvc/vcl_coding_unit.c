@@ -182,9 +182,15 @@ ovcabac_read_ae_reg_merge_flag(OVCABACCtx *const cabac_ctx, uint8_t skip_flag){
 }
 
 static uint8_t
-ovcabac_read_ae_mmvd_flag(OVCABACCtx *const cabac_ctx, uint8_t skip_flag){
+ovcabac_read_ae_mmvd_flag(OVCABACCtx *const cabac_ctx){
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
     return ovcabac_ae_read(cabac_ctx, &cabac_state[MMVD_FLAG_CTX_OFFSET]);
+}
+
+static uint8_t
+ovcabac_read_ae_ciip_flag(OVCABACCtx *const cabac_ctx){
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[CIIP_FLAG_CTX_OFFSET]);
 }
 
 static uint8_t
@@ -923,34 +929,32 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
     OVMV mv0;
     uint8_t apply_ciip = 0;
-    uint8_t mmvd_mode  = 0;
+    uint8_t apply_mmvd  = 0;
     if (merge_flag) {
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
+
         /* FIXME missing affine in P */
         uint8_t sps_ciip_flag = inter_ctx->ciip_flag;
         uint8_t ciip_flag = sps_ciip_flag && !skip_flag && (1 << log2_pb_w) < 128
                                                         && (1 << log2_pb_h) < 128
                                                         && 1 << (log2_pb_w + log2_pb_h) >= 64;
         uint8_t  reg_merge_flag = 1;     
-
         if (ciip_flag) {
             reg_merge_flag = ovcabac_read_ae_reg_merge_flag(cabac_ctx, skip_flag);
         }
 
-        if (reg_merge_flag) {
-            if (inter_ctx->mmvd_flag) {
-                mmvd_mode = ovcabac_read_ae_mmvd_flag(cabac_ctx, skip_flag);
+        if (reg_merge_flag){
+            if (inter_ctx->mmvd_flag){
+                apply_mmvd = ovcabac_read_ae_mmvd_flag(cabac_ctx);
             }
-            // if (cu.skip){
-            // cu.mmvdSkip = cu.firstPU->mmvdMergeFlag;
-            // }
-        } else {
-            /* FIXME do not use CIIP if disabled */
+        }
+        else{
             apply_ciip = 1;
         }
 
-        if (mmvd_mode) {
-            uint8_t merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
+        uint8_t merge_idx;
+        if (apply_mmvd){
+            merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
             mv0 = drv_mmvd_merge_mvp(inter_ctx, mv_ctx0,
                             x_pu, y_pu, nb_pb_w, nb_pb_h,
                             merge_idx, max_nb_cand);        
@@ -1047,15 +1051,17 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     //TODO: use real affine flag
     uint8_t smvd_mode = 0;
     uint8_t apply_ciip = 0;
-    uint8_t mmvd_mode = 0;
-
+    uint8_t apply_gpm = 0;
+    uint8_t apply_mmvd = 0;
     if (merge_flag) {
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
-        uint8_t sps_ciip_flag = inter_ctx->ciip_flag;
-        uint8_t ciip_flag = sps_ciip_flag && !skip_flag && (1 << log2_pb_w) < 128 && (1 << log2_pb_h) < 128
+        uint8_t ciip_flag = inter_ctx->ciip_flag && !skip_flag && (1 << log2_pb_w) < 128 && (1 << log2_pb_h) < 128
                         && 1 << (log2_pb_w + log2_pb_h) >= 64;
-        uint8_t  reg_merge_flag = 1;           
+        uint8_t gpm_flag  = inter_ctx->gpm_flag && inter_ctx->max_gpm_cand > 1 
+                && log2_pb_w >= 3 && log2_pb_h >= 3 
+                && log2_pb_w <= 6 && log2_pb_h <= 6 
+                && log2_pb_w < 3 + log2_pb_h && log2_pb_h < 3 + log2_pb_w;
 
         if (ctu_dec->affine_enabled && log2_pb_w >= 3 && log2_pb_h >= 3) {
             uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_pu];
@@ -1092,29 +1098,72 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             }
         }
 
-        if (ciip_flag) {
+        uint8_t  reg_merge_flag = 1;           
+        if (gpm_flag || ciip_flag){
             reg_merge_flag = ovcabac_read_ae_reg_merge_flag(cabac_ctx, skip_flag);
         }
 
-        if (reg_merge_flag) {
-            if (inter_ctx->mmvd_flag) {
-                mmvd_mode = ovcabac_read_ae_mmvd_flag(cabac_ctx, skip_flag);
+        if (reg_merge_flag){
+            if (inter_ctx->mmvd_flag){
+                apply_mmvd = ovcabac_read_ae_mmvd_flag(cabac_ctx);
             }
-            // if (cu.skip){
-            // cu.mmvdSkip = cu.firstPU->mmvdMergeFlag;
-            // }
-        } else {
-            /* FIXME do not use CIIP if disabled */
+        }
+        else{
             apply_ciip = 1;
+            if (gpm_flag && ciip_flag){                
+              apply_ciip = ovcabac_read_ae_ciip_flag(cabac_ctx);
+            }
+            if (!apply_ciip){
+                apply_gpm = 1;
+            }
         }
 
-        if (mmvd_mode) {
-            uint8_t merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
+        uint8_t merge_idx;
+        if (apply_mmvd){
+            merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
             mv_info = drv_mmvd_merge_mvp_b(inter_ctx, x_pu, y_pu,
                                   nb_pb_w, nb_pb_h, ctu_dec->cur_poc, merge_idx,
                                   max_nb_cand, log2_pb_w + log2_pb_h <= 5);
-        } else {
-            uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
+        }
+        else if(apply_gpm){
+            uint64_t *const cabac_state = cabac_ctx->ctx_table;
+            uint32_t split_dir = vvc_get_cabac_truncated(cabac_ctx, GEO_NUM_PARTITION_MODE );
+            // pu.geosplit_dir = split_dir;
+            int num_cand_min2 = inter_ctx->max_gpm_cand  - 2;
+            int merge_idx0    = 0;
+            int merge_idx1    = 0;
+            if (ovcabac_ae_read(cabac_ctx, &cabac_state[MERGE_IDX_CTX_OFFSET])){
+                int max_symbol = num_cand_min2;
+                for(int k = 0; k < max_symbol; k++ ){
+                    if(!ovcabac_bypass_read(cabac_ctx)){
+                        max_symbol = k;
+                        break;
+                    }
+                }
+                merge_idx0 += max_symbol + 1;
+            }
+            if (num_cand_min2 > 0){
+                if (ovcabac_ae_read(cabac_ctx, &cabac_state[MERGE_IDX_CTX_OFFSET])){
+                    int max_symbol = num_cand_min2 - 1;
+                    for(int k = 0; k < max_symbol; k++ ){
+                        if(!ovcabac_bypass_read(cabac_ctx)){
+                            max_symbol = k;
+                            break;
+                        }
+                    }
+                    merge_idx1 += max_symbol + 1;
+                }
+            }
+            merge_idx1 += merge_idx1 >= merge_idx0 ? 1 : 0;
+            merge_idx         = merge_idx0;
+            // pu.geoMergeIdx0 = merge_idx0;
+            // pu.geoMergeIdx1 = merge_idx1;
+            mv_info = drv_merge_mvp_b(inter_ctx, x_pu, y_pu,
+                                  nb_pb_w, nb_pb_h, merge_idx,
+                                  max_nb_cand, log2_pb_w + log2_pb_h <= 5);
+        }
+        else{
+            merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
             mv_info = drv_merge_mvp_b(inter_ctx, x_pu, y_pu,
                                   nb_pb_w, nb_pb_h, merge_idx,
                                   max_nb_cand, log2_pb_w + log2_pb_h <= 5);

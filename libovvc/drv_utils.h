@@ -42,6 +42,10 @@ static const int MMVD_REFINE_STEP    = 8; ///< max number of distance step
 static const int MMVD_MAX_REFINE_NUM = 8 * 4; ///< max number of candidate from a base candidate
 static const int MMVD_BASE_MV_NUM    = 2; ///< max number of base candidate
 
+static const int GEO_NUM_PARTITION_MODE = 64;
+static const int GEO_NUM_ANGLES = 32;
+static const int GEO_NUM_DISTANCES = 4;
+
 #if 0
 static void
 init_ctu_bitfield(struct OVRCNCtx *const rcn_ctx,
