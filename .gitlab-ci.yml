@@ -91,6 +91,17 @@ AllIntra_CTC_gcc_release:
     - ./configure --release --build-dir=release
     - make test
 
+misc_inter_gcc_release:
+  stage: test
+  image: ubuntu
+  dependencies:
+    - build_linux_gcc_release
+  before_script:
+    - apt update && apt install -y build-essential curl
+  script:
+    - ./configure --release --build-dir=release --teststreams-url=http://openvvc.insa-rennes.fr/bitstreams/misc_inter/
+    - make test
+
 build_arm_linux_gcc_release:
   stage: build
   tags:
