@@ -5,6 +5,7 @@
 #include "rcn_fill_ref.h"
 #include "ovutils.h"
 #include "ctudec.h"
+#include "rcn_structures.h"
 
 #if 0
 const struct MIPCtx
@@ -91,6 +92,33 @@ derive_mip_ctx(int log2_pb_w, int log2_pb_h, uint8_t mip_mode)
 }
 
 static inline void
+mip_matmult(int16_t * bndy_line, uint16_t * mip_pred, const int stride_x, const uint8_t *matrix_mip, int16_t input_offset, const int rnd_mip,
+  uint8_t log2_bndy, uint8_t log2_red_w, uint8_t log2_red_h)
+  {
+    int x, y, i;
+    int pos = 0;
+
+    for (y = 0; y < (1 << log2_red_h); y++) {
+        for (x = 0; x < (1 << log2_red_w); x++) {
+            int val;
+            int tmp0 = ((int32_t)bndy_line[0]) * matrix_mip[0];
+            int tmp1 = ((int32_t)bndy_line[1]) * matrix_mip[1];
+            int tmp2 = ((int32_t)bndy_line[2]) * matrix_mip[2];
+            int tmp3 = ((int32_t)bndy_line[3]) * matrix_mip[3];
+            for (i = 4; i < (2 << log2_bndy); i += 4) {
+                tmp0 += ((int32_t)bndy_line[i    ]) * matrix_mip[i    ];
+                tmp1 += ((int32_t)bndy_line[i + 1]) * matrix_mip[i + 1];
+                tmp2 += ((int32_t)bndy_line[i + 2]) * matrix_mip[i + 2];
+                tmp3 += ((int32_t)bndy_line[i + 3]) * matrix_mip[i + 3];
+            }
+            val = (tmp0 + tmp1) + (tmp2 + tmp3);
+            mip_pred[pos++] = ov_clip(((val + rnd_mip) >> MIP_SHIFT) + input_offset, 0, 1023);
+            matrix_mip += stride_x;
+        }
+    }
+}
+
+static inline void
 up_sample(uint16_t *const dst, const int16_t *const src,
           const uint16_t *ref,
           int log2_upsampled_size_src, int log2_opposite_size,
@@ -134,10 +162,13 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
                    int x0, int y0, int log2_pu_w, int log2_pu_h,
                    uint8_t mip_mode)
 {
+    const struct RCNFunctions * rcn_funcs = &rcn_ctx->rcn_funcs;
     const uint16_t *src = &rcn_ctx->ctu_buff.y[0];
 
-    int32_t bndy_line[8];//buffer used to store averaged boundaries use int
-    uint16_t mip_pred[64];//buffer used to store reduced matrix vector results
+    DECLARE_ALIGNED(32, int16_t, bndy_line)[8];//buffer used to store averaged boundaries use int
+    DECLARE_ALIGNED(32, uint16_t, mip_pred)[64];//buffer used to store reduced matrix vector results
+    // int16_t bndy_line[8];//buffer used to store averaged boundaries use int
+    // uint16_t mip_pred[64];//buffer used to store reduced matrix vector results
 
     /* FIXME determine max size of those buffers */
     uint16_t ref_abv[(128<<1) + 128];
@@ -214,28 +245,7 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
     const struct MIPCtx mip_ctx = derive_mip_ctx(log2_pu_w, log2_pu_h, mip_mode);
 
     const uint8_t *matrix_mip = mip_ctx.mip_matrix;
-
-    int x, y;
-    int pos = 0;
-
-    for (y = 0; y < (1 << log2_red_h); y++) {
-        for (x = 0; x < (1 << log2_red_w); x++) {
-            int val;
-            int tmp0 = bndy_line[0] * matrix_mip[0];
-            int tmp1 = bndy_line[1] * matrix_mip[1];
-            int tmp2 = bndy_line[2] * matrix_mip[2];
-            int tmp3 = bndy_line[3] * matrix_mip[3];
-            for (i = 4; i < (2 << log2_bndy); i += 4) {
-                tmp0 += bndy_line[i    ] * matrix_mip[i    ];
-                tmp1 += bndy_line[i + 1] * matrix_mip[i + 1];
-                tmp2 += bndy_line[i + 2] * matrix_mip[i + 2];
-                tmp3 += bndy_line[i + 3] * matrix_mip[i + 3];
-            }
-            val = (tmp0 + tmp1) + (tmp2 + tmp3);
-            mip_pred[pos++] = ov_clip(((val + rnd_mip) >> MIP_SHIFT) + input_offset, 0, 1023);
-            matrix_mip += stride_x;
-        }
-    }
+    (rcn_funcs->mip.matmult)(bndy_line, mip_pred, stride_x, matrix_mip, input_offset, rnd_mip, log2_bndy, log2_red_w, log2_red_h);
 
     // compute up_sampling
     uint8_t log2_scale_x = log2_pu_w - log2_red_w;
@@ -248,7 +258,7 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
         const uint16_t *src;
         if (log2_scale_x) {
             uint16_t *_dst = dst + ((1 << log2_scale_y) - 1) * RCN_CTB_STRIDE;
-            up_sample(_dst, (int16_t *)mip_pred, ref_lft, log2_red_w, log2_red_h,
+            (rcn_funcs->mip.upsample_h[log2_red_w==3][log2_scale_x-1])(_dst, (int16_t *)mip_pred, ref_lft, log2_red_w, log2_red_h,
                        1, (1 << log2_red_w),
                        1, (1 << log2_scale_y) * RCN_CTB_STRIDE,
                        (1 << log2_scale_y), log2_scale_x);
@@ -260,10 +270,12 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
             src_step   = (1 << log2_pu_w);
             src_stride = 1;
         }
-        up_sample(dst, (int16_t *)src, ref_abv, log2_red_h, log2_pu_w,
-                   src_step, src_stride,
-                   RCN_CTB_STRIDE, 1,
-                   1, log2_scale_y);
+        if (log2_scale_y) {
+            (rcn_funcs->mip.upsample_v[log2_red_h==3][log2_scale_y-1])(dst, (int16_t *)src, ref_abv, log2_red_h, log2_pu_w,
+            src_step, src_stride,
+            RCN_CTB_STRIDE, 1,
+            1, log2_scale_y);
+        }
 
     } else {//write to dst
         for (i = 0; i < (1 << log2_red_h); ++i) {
@@ -280,6 +292,7 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
                       int x0, int y0, int log2_pu_w, int log2_pu_h,
                       uint8_t mip_mode)
 {
+    const struct RCNFunctions * rcn_funcs = &rcn_ctx->rcn_funcs;
     uint8_t log2_bndy = 1 << ((log2_pu_w > 2) || (log2_pu_h > 2));
 
     uint8_t log2_red_w;
@@ -289,8 +302,12 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
     int i, j;
     const uint16_t *src = &rcn_ctx->ctu_buff.y[0];
 
-    int32_t bndy_line[8]; //buffer used to store averaged boundaries use int
-    uint16_t mip_pred[64];//buffer used to store reduced matrix vector results
+    DECLARE_ALIGNED(32, int16_t, bndy_line)[8];//buffer used to store averaged boundaries use int
+    DECLARE_ALIGNED(32, uint16_t, mip_pred)[64];//buffer used to store reduced matrix vector results
+    DECLARE_ALIGNED(32, uint16_t, mip_pred2)[64];//buffer used to store reduced matrix vector results
+
+    // int16_t bndy_line[8]; //buffer used to store averaged boundaries use int
+    // uint16_t mip_pred[64];//buffer used to store reduced matrix vector results
 
     uint16_t ref_abv[(128<<1) + 128];
     uint16_t ref_lft[(128<<1) + 128];
@@ -358,29 +375,14 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
     const struct MIPCtx mip_ctx = derive_mip_ctx(log2_pu_w, log2_pu_h, mip_mode);
 
     const uint8_t *matrix_mip = mip_ctx.mip_matrix;
-    int x, y;
-    int pos = 0;
+    (rcn_funcs->mip.matmult)(bndy_line, mip_pred, stride_x, matrix_mip, input_offset, rnd_mip, log2_bndy, log2_red_w, log2_red_h);
 
-    for (y = 0; y < (1 << log2_red_w); y++) {
-        for (x = 0; x < (1 << log2_red_h); x++) {
-            int val;
-            int tmp0 = bndy_line[0] * matrix_mip[0];
-            int tmp1 = bndy_line[1] * matrix_mip[1];
-            int tmp2 = bndy_line[2] * matrix_mip[2];
-            int tmp3 = bndy_line[3] * matrix_mip[3];
-            for (i = 4; i < (2 << log2_bndy); i += 4) {
-                tmp0 += bndy_line[i    ] * matrix_mip[i    ];
-                tmp1 += bndy_line[i + 1] * matrix_mip[i + 1];
-                tmp2 += bndy_line[i + 2] * matrix_mip[i + 2];
-                tmp3 += bndy_line[i + 3] * matrix_mip[i + 3];
-            }
-            val = (tmp0 + tmp1) + (tmp2 + tmp3);
-            mip_pred[pos++] = ov_clip(((val + rnd_mip) >> MIP_SHIFT) + input_offset, 0, 1023);
-            matrix_mip += stride_x;
+    for (i = 0; i < (1 << log2_red_h); ++i) {
+        for (j = 0; j < (1 << log2_red_w); ++j) {
+            mip_pred2 [j + (i << log2_red_w)] = mip_pred[(j << log2_red_h) + i];
         }
     }
 
-    // compute up_sampling
     uint8_t log2_scale_x = log2_pu_w - log2_red_w;
     uint8_t log2_scale_y = log2_pu_h - log2_red_h;
 
@@ -390,23 +392,25 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
             const uint16_t *src;
             if (log2_scale_x) {
                 uint16_t *_dst = dst + ((1 << log2_scale_y) - 1) * RCN_CTB_STRIDE;
-                up_sample(_dst, (int16_t *)mip_pred, ref_lft,
-                           log2_red_w, log2_red_h,
-                           (1 << log2_red_h), 1,
-                           1, (1 << log2_scale_y) * RCN_CTB_STRIDE,
-                           (1 << log2_scale_y), log2_scale_x);
+               (rcn_funcs->mip.upsample_h[log2_red_w==3][log2_scale_x-1])(_dst, (int16_t *)mip_pred2, ref_lft, log2_red_w, log2_red_h,
+                          1, (1 << log2_red_w),
+                          1, (1 << log2_scale_y) * RCN_CTB_STRIDE,
+                          (1 << log2_scale_y), log2_scale_x);
                 src        = _dst;
                 src_step   = (1 << log2_scale_y) * RCN_CTB_STRIDE;
                 src_stride = 1;
             } else { //TODO use mip_pred directly in next ste
-                src        = mip_pred;
-                src_step   = 1;
-                src_stride = 1 << log2_red_h;
+                src        = mip_pred2;
+                src_step   = (1 << log2_pu_w);
+                src_stride = 1;
             }
-            up_sample(dst, (int16_t *)src, ref_abv, log2_red_h, log2_pu_w,
-                       src_step, src_stride,
-                       RCN_CTB_STRIDE, 1,
-                       1, log2_scale_y);
+            if (log2_scale_y) {
+              (rcn_funcs->mip.upsample_v[log2_red_h==3][log2_scale_y-1])(dst, (int16_t *)src, ref_abv, log2_red_h, log2_pu_w,
+              src_step, src_stride,
+              RCN_CTB_STRIDE, 1,
+              1, log2_scale_y);
+            }
+
 
     } else {
         for (i = 0; i < (1 << log2_red_h); ++i) {
@@ -415,5 +419,29 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
             }
         }
     }
+}
+
+void
+rcn_init_mip_functions(struct RCNFunctions *const rcn_funcs)
+{
+    rcn_funcs->mip.upsample_h[0][0]= &up_sample;
+    rcn_funcs->mip.upsample_h[0][1]= &up_sample;
+    rcn_funcs->mip.upsample_h[0][2]= &up_sample;
+    // rcn_funcs->mip.upsample_h[0][3]= &up_sample;
+    rcn_funcs->mip.upsample_h[1][0]= &up_sample;
+    rcn_funcs->mip.upsample_h[1][1]= &up_sample;
+    rcn_funcs->mip.upsample_h[1][2]= &up_sample;
+    // rcn_funcs->mip.upsample_h[1][3]= &up_sample;
+
+    rcn_funcs->mip.upsample_v[0][0]= &up_sample;
+    rcn_funcs->mip.upsample_v[0][1]= &up_sample;
+    rcn_funcs->mip.upsample_v[0][2]= &up_sample;
+    // rcn_funcs->mip.upsample_v[0][3]= &up_sample;
+    rcn_funcs->mip.upsample_v[1][0]= &up_sample;
+    rcn_funcs->mip.upsample_v[1][1]= &up_sample;
+    rcn_funcs->mip.upsample_v[1][2]= &up_sample;
+    // rcn_funcs->mip.upsample_v[1][3]= &up_sample;
+
+    rcn_funcs->mip.matmult= &mip_matmult;
 }
 #endif

@@ -67,11 +67,20 @@ typedef void (*LFNSTFunc)(const int16_t* const src, int16_t* const dst,
                      const int8_t* const lfnst_matrix, int log2_tb_w,
                      int log2_tb_h);
 
+typedef void (*MIPUpSample)(uint16_t *const dst, const int16_t *const src,
+                            const uint16_t *ref,
+                            int log2_upsampled_size_src, int log2_opposite_size,
+                            int src_step, int src_stride,
+                            int dst_step, int dst_stride,
+                            int ref_step, int log2_scale);
+
+typedef void (*MIPMatMult)(int16_t * src, uint16_t *dst, const int stride,
+                           const uint8_t *matrix, int16_t offset, const int rnd,
+                           uint8_t log2_src, uint8_t log2_red_w, uint8_t log2_red_h);
+
 typedef void (*ALFFilterBlkFunc)(struct ALFClassifier **classifier, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
                         struct Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                         const int ctu_height, int virbnd_pos);
-
-
 
 /**
  * The Context put together all functions used by strategies.
@@ -122,6 +131,13 @@ struct LFNSTFunctions
   LFNSTFunc func[2][2];
 };
 
+struct MIPFunctions
+{
+  MIPUpSample upsample_h[2][3];
+  MIPUpSample upsample_v[2][3];
+  MIPMatMult matmult;
+};
+
 struct ALFFunctions{
     ALFFilterBlkFunc luma;
     void (*chroma)(int16_t *const dst, const int16_t *const src,
@@ -155,6 +171,9 @@ struct RCNFunctions
 
     /* Planar Functions */
     struct PlanarFunctions planar;
+
+    /* Planar Functions */
+    struct MIPFunctions mip;
 
     /* Planar Functions */
     struct ALFFunctions alf;

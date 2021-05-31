@@ -9,5 +9,6 @@ void rcn_init_ict_functions_sse(struct RCNFunctions *rcn_func, uint8_t type);
 void rcn_init_alf_functions_sse(struct RCNFunctions *rcn_func);
 void rcn_init_cclm_functions_sse(struct RCNFunctions *rcn_func);
 void rcn_init_lfnst_functions_sse(struct RCNFunctions *rcn_func);
+void rcn_init_mip_functions_sse(struct RCNFunctions *const rcn_funcs);
 
 #endif//RCN_SSE_H

@@ -8,3 +8,4 @@ x86_LIB_SRC:=																														 \
 					rcn_alf_sse.c								          												 \
 					rcn_intra_cclm_sse.c				          												 \
 					rcn_lfnst_sse.c		      		          												 \
+					rcn_intra_mip_sse.c		   		          												 \

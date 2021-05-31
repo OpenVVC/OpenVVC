@@ -1,8 +1,9 @@
 #include <stdint.h>
 
 #include "data_rcn_mip.h"
+#include "ovmem.h"
 
-const uint8_t mip_weight_4x4[16*16*4] =
+DECLARE_ALIGNED(32, const uint8_t, mip_weight_4x4)[16*16*4] =
 {
    32,   30,   90,   28,
    32,   32,   72,   28,
@@ -277,7 +278,7 @@ const uint8_t mip_weight_4x4[16*16*4] =
    48,   21,   29,   90,
 };
 
-const uint8_t mip_weight_8x8[8*16*8] =
+DECLARE_ALIGNED(32, const uint8_t, mip_weight_8x8)[8*16*8] =
 {
     30,   63,   46,   37,   25,   33,   33,   34,
     30,   60,   66,   38,   32,   31,   32,   33,
@@ -416,7 +417,7 @@ const uint8_t mip_weight_8x8[8*16*8] =
     29,   33,   25,  103,   33,   33,   32,   35,
 };
 
-const uint8_t mip_weight_16x16[6*64*8] =
+DECLARE_ALIGNED(32, const uint8_t, mip_weight_16x16)[6*64*8] =
 {
      1,   42,   37,   33,   27,   44,   33,   35,
      1,   71,   39,   34,   24,   36,   35,   36,
