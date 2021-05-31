@@ -1029,7 +1029,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 #endif
 
     //TODO: use real affine flag
-    uint8_t affine = 0;
     uint8_t smvd_mode = 0;
     uint8_t apply_ciip = 0;
     uint8_t mmvd_mode = 0;
@@ -1142,7 +1141,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             }
         }
 
-        if (inter_dir == 3 && !affine && inter_ctx->bi_dir_pred_flag)
+        if (inter_dir == 3 && !ctu_dec->affine_enabled && inter_ctx->bi_dir_pred_flag)
             smvd_mode = ovcabac_read_ae_smvd_flag(cabac_ctx);
 
         if (inter_dir & 0x1) {
