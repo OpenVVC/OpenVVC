@@ -259,6 +259,17 @@ struct OVMVCtx
     OVMV mvs[34*34];
 };
 
+struct AffineControlInfo
+{
+    OVMV lt;
+    OVMV rt;
+    OVMV lb;
+};
+
+struct AffineDRVInfo {
+     struct AffineControlInfo aff_info[2][34*34];
+};
+
 struct HMVPLUT
 {
     OVMV hmv0[5];

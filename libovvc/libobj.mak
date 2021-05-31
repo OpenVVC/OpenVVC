@@ -32,6 +32,7 @@ LIB_SRC:=																																 \
 					pp_film_grain.c                                                 \
 					post_proc.c                                                 \
 					ovthreads.c                                                    \
+					drv_affine_mvp.c                                                    \
 					drv_lines.c                                                    \
 					drv_lfnst.c                                                    \
 					drv_intra.c                                                    \

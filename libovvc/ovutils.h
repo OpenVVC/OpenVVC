@@ -17,6 +17,7 @@
 #define OVABS(a) (((a) < (0)) ? -(a) : (a))
 
 #define ov_clz(x) __builtin_clz(x)
+#define ov_ctz(x) __builtin_ctz(x)
 
 typedef enum
 {
