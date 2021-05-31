@@ -144,4 +144,7 @@ void ovdpb_unref_pic(OVDPB *dpb, OVPicture *pic, int flags);
 int ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id);
 
 int ovdpb_output_frame(OVDPB *dpb, OVFrame **out, int output_cvs_id);
+
+int16_t tmvp_compute_scale(int32_t dist_current, int32_t dist_colocated);
+
 #endif

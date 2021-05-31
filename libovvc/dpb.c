@@ -674,7 +674,7 @@ fail:
     return 1;
 }
 
-static int16_t
+int16_t
 tmvp_compute_scale(int32_t dist_current, int32_t dist_colocated)
 {
     int scale;
