@@ -1051,6 +1051,9 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 uint8_t nb_affine_merge_cand_min1 = ctu_dec->affine_nb_merge_cand - 1;
                 uint8_t merge_idx = ovcabac_read_ae_affine_merge_idx(cabac_ctx, nb_affine_merge_cand_min1);
                 cu_type = OV_AFFINE;
+
+                /* TODO call affine drv merge and rcn functions */
+
                 return cu_type;
             }
         }
@@ -1139,6 +1142,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
                     mvp_idx1 = ovcabac_read_ae_mvp_flag(cabac_ctx);
                 }
+
+                /* TODO call affine drv MVP and rcn functions */
 
                 return cu_type;
             }
