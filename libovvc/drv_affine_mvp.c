@@ -1072,7 +1072,6 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
                        uint8_t log2_cu_w, uint8_t log2_cu_h,
                        const int mrg_idx)
 {
-    const uint32_t max_nb_aff_mrg_cand;
     uint8_t nb_cand = 0;
 
     struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
@@ -1337,7 +1336,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
 
     /* FIXME check if we can return zmv directly */
     /* FIXME check ref_idx increment as in classic merge */
-    while (nb_cand < max_nb_aff_mrg_cand) {
+    while (nb_cand <= mrg_idx) {
         struct AffineControlInfo z_cinfo = {0};
 
         aff_mrg_ctx[0].cinfo[0] = z_cinfo;
