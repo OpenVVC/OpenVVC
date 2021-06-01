@@ -8,6 +8,7 @@
 #include "rcn_lmcs.h"
 #include "drv.h"
 #include "rcn.h"
+#include "drv_utils.h"
 
 #define MAX_PB_SIZE 128
 
@@ -1789,11 +1790,10 @@ rcn_ciip_b(OVCTUDec*const ctudec,
     rcn_ciip_weighted_sum(ctudec, &tmp_intra, &tmp_inter, x0, y0, log2_pb_w, log2_pb_h);
 }
 
-
 void
 rcn_ciip(OVCTUDec *const ctudec,
          int x0, int y0, int log2_pb_w, int log2_pb_h,
-         OVMV mv, uint8_t inter_dir, uint8_t ref_idx)
+         OVMV mv, uint8_t ref_idx)
 {
     //Inter merge mode
     struct OVBuffInfo tmp_inter;
@@ -1818,4 +1818,212 @@ rcn_ciip(OVCTUDec *const ctudec,
 
     rcn_ciip_weighted_sum(ctudec, &tmp_intra, &tmp_inter, x0, y0, log2_pb_w, log2_pb_h);
 
+}
+
+
+int16_t   g_GeoParams[GEO_NUM_PARTITION_MODE][2];
+int16_t   g_globalGeoWeights   [GEO_NUM_PRESTORED_MASK][GEO_WEIGHT_MASK_SIZE * GEO_WEIGHT_MASK_SIZE];
+int16_t   g_globalGeoEncSADmask[GEO_NUM_PRESTORED_MASK][GEO_WEIGHT_MASK_SIZE * GEO_WEIGHT_MASK_SIZE];
+int16_t   g_weightOffset       [GEO_NUM_PARTITION_MODE][GEO_NUM_CU_SIZE][GEO_NUM_CU_SIZE][2];
+int8_t    g_angle2mask[GEO_NUM_ANGLES] = { 0, -1, 1, 2, 3, 4, -1, -1, 5, -1, -1, 4, 3, 2, 1, -1, 0, -1, 1, 2, 3, 4, -1, -1, 5, -1, -1, 4, 3, 2, 1, -1 };
+int8_t    g_Dis[GEO_NUM_ANGLES] = { 8, 8, 8, 8, 4, 4, 2, 1, 0, -1, -2, -4, -4, -8, -8, -8, -8, -8, -8, -8, -4, -4, -2, -1, 0, 1, 2, 4, 4, 8, 8, 8 };
+int8_t    g_angle2mirror[GEO_NUM_ANGLES] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2 };
+
+void rcn_init_gpm_params()
+{
+  // g_GeoParams =  int16_t*[GEO_NUM_PARTITION_MODE];
+  int modeIdx = 0;
+  for( int angleIdx = 0; angleIdx < GEO_NUM_ANGLES; angleIdx++ )
+  {
+    for( int distanceIdx = 0; distanceIdx < GEO_NUM_DISTANCES; distanceIdx++ )
+    {
+      if( (distanceIdx == 0 && angleIdx >= 16)
+        || ((distanceIdx == 2 || distanceIdx == 0) && (g_angle2mask[angleIdx] == 0 || g_angle2mask[angleIdx] == 5))
+        || g_angle2mask[angleIdx] == -1 )
+      {
+        continue;
+      }
+      // g_GeoParams[modeIdx]    = new int16_t[2];
+      g_GeoParams[modeIdx][0] = (int16_t)angleIdx;
+      g_GeoParams[modeIdx][1] = (int16_t)distanceIdx;
+      modeIdx++;
+    }
+  }
+  for (int angleIdx = 0; angleIdx < (GEO_NUM_ANGLES >> 2) + 1; angleIdx++)
+  {
+    if (g_angle2mask[angleIdx] == -1)
+    {
+      continue;
+    }
+    // g_globalGeoWeights[g_angle2mask[angleIdx]] = new int16_t[GEO_WEIGHT_MASK_SIZE * GEO_WEIGHT_MASK_SIZE];
+    // g_globalGeoEncSADmask[g_angle2mask[angleIdx]] = new Pel[GEO_WEIGHT_MASK_SIZE * GEO_WEIGHT_MASK_SIZE];
+
+    int distanceX = angleIdx;
+    int distanceY = (distanceX + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES;
+    int16_t rho = (g_Dis[distanceX] << (GEO_MAX_CU_LOG2+1)) + (g_Dis[distanceY] << (GEO_MAX_CU_LOG2 + 1));
+    static const int16_t maskOffset = (2*GEO_MAX_CU_SIZE - GEO_WEIGHT_MASK_SIZE) >> 1;
+    int index = 0;
+    for( int y = 0; y < GEO_WEIGHT_MASK_SIZE; y++ )
+    {
+      int16_t lookUpY = (((y + maskOffset) << 1) + 1) * g_Dis[distanceY];
+      for( int x = 0; x < GEO_WEIGHT_MASK_SIZE; x++, index++ )
+      {
+        int16_t sx_i = ((x + maskOffset) << 1) + 1;
+        int16_t weightIdx = sx_i * g_Dis[distanceX] + lookUpY - rho;
+        int weightLinearIdx = 32 + weightIdx;
+        g_globalGeoWeights[g_angle2mask[angleIdx]][index] = ov_clip((weightLinearIdx + 4) >> 3, 0, 8);
+        g_globalGeoEncSADmask[g_angle2mask[angleIdx]][index] = weightIdx > 0 ? 1 : 0;
+      }
+    }
+  }
+
+  for( int hIdx = 0; hIdx < GEO_NUM_CU_SIZE; hIdx++ )
+  {
+    int16_t height = 1 << ( hIdx + GEO_MIN_CU_LOG2);
+    for( int wIdx = 0; wIdx < GEO_NUM_CU_SIZE; wIdx++ )
+    {
+      int16_t width = 1 << (wIdx + GEO_MIN_CU_LOG2);
+      for( int splitDir = 0; splitDir < GEO_NUM_PARTITION_MODE; splitDir++ )
+      {
+        int16_t angle         = g_GeoParams[splitDir][0];
+        int16_t distance      = g_GeoParams[splitDir][1];
+        int16_t offsetX       = (GEO_WEIGHT_MASK_SIZE - width) >> 1;
+        int16_t offsetY       = (GEO_WEIGHT_MASK_SIZE - height) >> 1;
+        if( distance > 0 )
+        {
+          if( angle % 16 == 8 || (angle % 16 != 0 && height >= width) )
+          {
+            offsetY += angle < 16 ? ((distance * (int32_t)height) >> 3) : -((distance * (int32_t)height) >> 3);
+          }
+          else
+          {
+            offsetX += angle < 16 ? ((distance * (int32_t)width) >> 3) : -((distance * (int32_t)width) >> 3);
+          }
+        }
+        g_weightOffset[splitDir][hIdx][wIdx][0] = offsetX;
+        g_weightOffset[splitDir][hIdx][wIdx][1] = offsetY;
+      }
+    }
+  }
+}
+
+
+void
+rcn_gpm(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
+         int x0, int y0, int log2_pb_w, int log2_pb_h)
+{
+    //First geometric part reconstruction
+    struct OVBuffInfo tmp_0;
+    uint16_t tmp_0_l [RCN_CTB_SIZE], tmp_0_cb[RCN_CTB_SIZE], tmp_0_cr[RCN_CTB_SIZE] ;
+    tmp_0.y  = &tmp_0_l [RCN_CTB_PADDING];
+    tmp_0.cb = &tmp_0_cb[RCN_CTB_PADDING];
+    tmp_0.cr = &tmp_0_cr[RCN_CTB_PADDING];
+    tmp_0.stride   = RCN_CTB_STRIDE;
+    tmp_0.stride_c = RCN_CTB_STRIDE;
+    rcn_mcp(ctudec, tmp_0, x0, y0, log2_pb_w, log2_pb_h, gpm_ctx->mv0, 0,  gpm_ctx->mv0.ref_idx);
+
+    //Second geometric part reconstruction
+    struct OVBuffInfo tmp_1;
+    uint16_t tmp_1_l [RCN_CTB_SIZE], tmp_1_cb[RCN_CTB_SIZE], tmp_1_cr[RCN_CTB_SIZE] ;
+    tmp_1.y  = &tmp_1_l [RCN_CTB_PADDING];
+    tmp_1.cb = &tmp_1_cb[RCN_CTB_PADDING];
+    tmp_1.cr = &tmp_1_cr[RCN_CTB_PADDING];
+    tmp_1.stride   = RCN_CTB_STRIDE;
+    tmp_1.stride_c = RCN_CTB_STRIDE;
+    rcn_mcp(ctudec, tmp_1, x0, y0, log2_pb_w, log2_pb_h, gpm_ctx->mv1, 0, gpm_ctx->mv1.ref_idx);
+
+    struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
+    dst.y   += x0 + y0 * dst.stride;
+    tmp_0.y += x0 + y0 * tmp_0.stride;
+    tmp_1.y += x0 + y0 * tmp_1.stride;
+  //   Pel*    dst = predDst.get(compIdx).buf;
+  // Pel*    src0 = predSrc0.get(compIdx).buf;
+  // Pel*    src1 = predSrc1.get(compIdx).buf;
+  // int32_t dst.stride = predDst.get(compIdx).stride - width;
+  // int32_t tmp_0.stride = predSrc0.get(compIdx).stride - width;
+  // int32_t tmp_1.stride = predSrc1.get(compIdx).stride - width;
+
+    //BITDEPTH: only 10
+    int bit_depth = 10;
+  const char    log2WeightBase = 3;
+//   #define IF_INTERNAL_PREC 14 ///< Number of bits for internal precision
+// #define IF_FILTER_PREC    6 ///< Log2 of sum of filter taps
+// #define IF_INTERNAL_OFFS (1<<(IF_INTERNAL_PREC-1)) ///< Offset used internally
+// #define IF_INTERNAL_PREC_BILINEAR 10 ///< Number of bits for internal precision
+// #define IF_FILTER_PREC_BILINEAR   4  ///< Bilinear filter coeff precision so that intermediate value will not exceed 16 bit for SIMD - bit exact
+// #define IF_INTERNAL_FRAC_BITS(bd) std::max(2, IF_INTERNAL_PREC - int(bd))
+
+    // const int32_t shiftWeighted = IF_INTERNAL_FRAC_BITS(clipbd) + log2WeightBase;
+  const int32_t shiftWeighted = (14 - bit_depth) + log2WeightBase;
+  const int32_t offsetWeighted = (1 << (shiftWeighted - 1)) + (1 << (13 + log2WeightBase));
+  // const uint32_t scaleX = getComponentScaleX(compIdx, pu.chromaFormat);
+  // const uint32_t scaleY = getComponentScaleY(compIdx, pu.chromaFormat);
+  const uint32_t scaleX = 0;
+  const uint32_t scaleY = 0;
+
+  int split_dir = gpm_ctx->split_dir;
+  int16_t angle = g_GeoParams[split_dir][0];
+  int16_t wIdx = log2_pb_w - GEO_MIN_CU_LOG2;
+  int16_t hIdx = log2_pb_h - GEO_MIN_CU_LOG2;
+  int16_t stepX = 1 << scaleX;
+  int16_t stepY = 0;
+  int16_t* weight;
+  if (g_angle2mirror[angle] == 2)
+  {
+    stepY = -(int)((GEO_WEIGHT_MASK_SIZE << scaleY) + (1 << log2_pb_w));
+    weight = &g_globalGeoWeights[g_angle2mask[angle]][(GEO_WEIGHT_MASK_SIZE - 1 - g_weightOffset[split_dir][hIdx][wIdx][1]) * GEO_WEIGHT_MASK_SIZE + g_weightOffset[split_dir][hIdx][wIdx][0]];
+  }
+  else if (g_angle2mirror[angle] == 1)
+  {
+    stepX = -1 << scaleX;
+    stepY = (GEO_WEIGHT_MASK_SIZE << scaleY) + (1 << log2_pb_w);
+    weight = &g_globalGeoWeights[g_angle2mask[angle]][g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + (GEO_WEIGHT_MASK_SIZE - 1 - g_weightOffset[split_dir][hIdx][wIdx][0])];
+  }
+  else
+  {
+    stepY = (GEO_WEIGHT_MASK_SIZE << scaleY) - (1 << log2_pb_w);
+    weight = &g_globalGeoWeights[g_angle2mask[angle]][g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + g_weightOffset[split_dir][hIdx][wIdx][0]];
+  }
+  for( int y = 0; y < (1 << log2_pb_h); y++ )
+  {
+    for( int x = 0; x < (1 << log2_pb_w); x++ )
+    {
+      dst.y[x]  = ov_clip_uintp2((weight[0]*(tmp_0.y[x]) + ((8 - weight[0]) * (tmp_1.y[x])) + offsetWeighted) >> shiftWeighted, 10);
+      // *dst++  = ClipPel(rightShift((*weight*(*src0++) + ((8 - *weight) * (*src1++)) + offsetWeighted), shiftWeighted), clipRng);
+      weight += stepX;
+    }
+    dst.y     += dst.stride;
+    tmp_0.y   += tmp_0.stride;
+    tmp_1.y   += tmp_1.stride;
+    weight += stepY;
+  }
+
+
+  // const uint8_t splitDir = cu.firstPU->geoSplitDir;
+  // const uint8_t candIdx0 = cu.firstPU->geoMergeIdx0;
+  // const uint8_t candIdx1 = cu.firstPU->geoMergeIdx1;
+  // for( auto &pu : CU::traversePUs( cu ) )
+  // {
+  //   const UnitArea localUnitArea( cu.cs->area.chromaFormat, Area( 0, 0, (1 << log2_pb_w), (1 << log2_pb_h) ) );
+  //   PelUnitBuf tmpGeoBuf0 = m_geoPartBuf[0].getBuf( localUnitArea );
+  //   PelUnitBuf tmpGeoBuf1 = m_geoPartBuf[1].getBuf( localUnitArea );
+  //   PelUnitBuf predBuf    = cu.cs->getPredBuf( pu );
+
+  //   geoMrgCtx.setMergeInfo( pu, candIdx0 );
+  //   PU::spanMotionInfo( pu );
+  //   motionCompensation(pu, tmpGeoBuf0, REF_PIC_LIST_X, true, isChromaEnabled(pu.chromaFormat)); // TODO: check 4:0:0 interaction with weighted prediction.
+  //   if( g_mctsDecCheckEnabled && !MCTSHelper::checkMvBufferForMCTSConstraint( pu, true ) )
+  //   {
+  //     printf( "DECODER_GEO_PU: pu motion vector across tile boundaries (%d,%d,%d,%d)\n", pu.lx(), pu.ly(), (1 << log2_pb_w), (1 << log2_pb_h) );
+  //   }
+
+  //   geoMrgCtx.setMergeInfo( pu, candIdx1 );
+  //   PU::spanMotionInfo( pu );
+  //   motionCompensation(pu, tmpGeoBuf1, REF_PIC_LIST_X, true, isChromaEnabled(pu.chromaFormat)); // TODO: check 4:0:0 interaction with weighted prediction.
+  //   if( g_mctsDecCheckEnabled && !MCTSHelper::checkMvBufferForMCTSConstraint( pu, true ) )
+  //   {
+  //     printf( "DECODER_GEO_PU: pu motion vector across tile boundaries (%d,%d,%d,%d)\n", pu.lx(), pu.ly(), (1 << log2_pb_w), (1 << log2_pb_h) );
+  //   }
+  //   weightedGeoBlk(pu, splitDir, isChromaEnabled(pu.chromaFormat)? MAX_NUM_CHANNEL_TYPE : CHANNEL_TYPE_LUMA, predBuf, tmpGeoBuf0, tmpGeoBuf1);
+  // }
 }

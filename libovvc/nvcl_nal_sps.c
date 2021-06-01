@@ -5,6 +5,9 @@
 #include "nvcl_structures.h"
 #include "nvcl_private.h"
 
+//TODOgpm: do not init here
+#include "rcn.h"
+
 
 static uint8_t
 probe_sps_id(OVNVCLReader *const rdr)
@@ -408,8 +411,12 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
     /*FIXME max_num_merge_cand assumption */
     if (6 - sps->sps_six_minus_max_num_merge_cand >= 2) {
         sps->sps_gpm_enabled_flag = nvcl_read_flag(rdr);
-        if (sps->sps_gpm_enabled_flag && 6 - sps->sps_six_minus_max_num_merge_cand >= 3) {
-            sps->sps_max_num_merge_cand_minus_max_num_gpm_cand = nvcl_read_u_expgolomb(rdr);
+        if (sps->sps_gpm_enabled_flag){
+            //TODOgpm: do not init here
+            rcn_init_gpm_params();
+            if (6 - sps->sps_six_minus_max_num_merge_cand >= 3) {
+                sps->sps_max_num_merge_cand_minus_max_num_gpm_cand = nvcl_read_u_expgolomb(rdr);
+            }
         }
     }
 

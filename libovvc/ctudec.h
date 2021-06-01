@@ -323,15 +323,6 @@ struct InterDRVCtx
     int ref_smvd_idx0;
     int ref_smvd_idx1;
 
-    /* Temporal Motion Vector Prediction Related
-     * information
-     */
-    uint8_t tmvp_avail;
-    uint8_t tmvp_enabled;
-    uint8_t mvd1_zero_flag;
-    uint8_t sbtmvp_enabled;
-    uint8_t prof_enabled;
-
     /* Combined Inter Intra Pred(CIIP) Related
      * information
      */
@@ -347,6 +338,25 @@ struct InterDRVCtx
      */
     uint8_t gpm_flag;
     int max_gpm_cand;
+
+    struct VVCGPM
+    {
+        int split_dir;
+
+        int merge_idx0;
+        int merge_idx1;
+        OVMV mv0;
+        OVMV mv1;
+    } gpm_ctx;
+
+    /* Temporal Motion Vector Prediction Related
+     * information
+     */
+    uint8_t tmvp_avail;
+    uint8_t tmvp_enabled;
+    uint8_t mvd1_zero_flag;
+    uint8_t sbtmvp_enabled;
+    uint8_t prof_enabled;
 
     struct VVCTMVP
     {

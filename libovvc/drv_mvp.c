@@ -1923,6 +1923,83 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     return mv_info;
 }
 
+void 
+drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
+                uint8_t pb_x, uint8_t pb_y,
+                uint8_t nb_pb_w, uint8_t nb_pb_h,
+                int cur_poc, uint8_t max_nb_cand, uint8_t is_small)
+{
+
+  // MergeCtx tmpMergeCtx;
+  // geoMrgCtx.numValidMergeCand = 0;
+  // for (int32_t i = 0; i < GEO_MAX_NUM_UNI_CANDS; i++)
+  // {
+  //   geoMrgCtx.BcwIdx[i] = BCW_DEFAULT;
+  //   geoMrgCtx.interDirNeighbours[i] = 0;
+  //   geoMrgCtx.mrgTypeNeighbours[i] = MRG_TYPE_DEFAULT_N;
+  //   geoMrgCtx.mvFieldNeighbours[(i << 1)].refIdx = NOT_VALID;
+  //   geoMrgCtx.mvFieldNeighbours[(i << 1) + 1].refIdx = NOT_VALID;
+  //   geoMrgCtx.mvFieldNeighbours[(i << 1)].mv = Mv();
+  //   geoMrgCtx.mvFieldNeighbours[(i << 1) + 1].mv = Mv();
+  //   geoMrgCtx.useAltHpelIf[i] = false;
+  // }
+
+    struct VVCGPM* gpm_ctx = &inter_ctx->gpm_ctx;
+    VVCMergeInfo mv_info0, mv_info1;
+    mv_info0 = vvc_derive_merge_mvp_b(inter_ctx, pb_x, pb_y,
+                                     nb_pb_w, nb_pb_h, gpm_ctx->merge_idx0,
+                                     max_nb_cand, is_small);
+
+    if(gpm_ctx->merge_idx0 != gpm_ctx->merge_idx1){ 
+        mv_info1 = vvc_derive_merge_mvp_b(inter_ctx, pb_x, pb_y,
+                                         nb_pb_w, nb_pb_h, gpm_ctx->merge_idx1,
+                                         max_nb_cand, is_small);
+    }
+    else{
+        mv_info1 = mv_info0;
+    }
+
+    uint8_t parity = gpm_ctx->merge_idx0 & 1;
+    gpm_ctx->mv0 = parity ? mv_info0.mv1 : mv_info0.mv0;
+
+    parity = gpm_ctx->merge_idx1 & 1;
+    gpm_ctx->mv1 = parity ? mv_info1.mv1 : mv_info1.mv0;;
+
+  // for (int i = 0; i < max_nb_cand; i++){
+  //   int parity = i & 1;
+  //   if( tmpMergeCtx.interDirNeighbours[i] & (0x01 + parity) )
+  //   {
+  //     geoMrgCtx.interDirNeighbours[geoMrgCtx.numValidMergeCand] = 1 + parity;
+  //     geoMrgCtx.mrgTypeNeighbours[geoMrgCtx.numValidMergeCand] = MRG_TYPE_DEFAULT_N;
+  //     geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + !parity].mv = Mv(0, 0);
+  //     geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + parity].mv = tmpMergeCtx.mvFieldNeighbours[(i << 1) + parity].mv;
+  //     geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + !parity].refIdx = -1;
+  //     geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + parity].refIdx = tmpMergeCtx.mvFieldNeighbours[(i << 1) + parity].refIdx;
+  //     geoMrgCtx.numValidMergeCand++;
+  //     if (geoMrgCtx.numValidMergeCand == GEO_MAX_NUM_UNI_CANDS)
+  //     {
+  //       return;
+  //     }
+  //     continue;
+  //   }
+
+  //   if (tmpMergeCtx.interDirNeighbours[i] & (0x02 - parity))
+  //   {
+  //     geoMrgCtx.interDirNeighbours[geoMrgCtx.numValidMergeCand] = 2 - parity;
+  //     geoMrgCtx.mrgTypeNeighbours[geoMrgCtx.numValidMergeCand] = MRG_TYPE_DEFAULT_N;
+  //     geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + !parity].mv = tmpMergeCtx.mvFieldNeighbours[(i << 1) + !parity].mv;
+  //     geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + parity].mv = Mv(0, 0);
+  //     geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + !parity].refIdx = tmpMergeCtx.mvFieldNeighbours[(i << 1) + !parity].refIdx;
+  //     geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + parity].refIdx = -1;
+  //     geoMrgCtx.numValidMergeCand++;
+  //     if (geoMrgCtx.numValidMergeCand == GEO_MAX_NUM_UNI_CANDS)
+  //     {
+  //       return;
+  //     }
+  //   }
+  // }
+}
+
 VVCMergeInfo
 drv_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                 uint8_t pb_x, uint8_t pb_y,
@@ -1931,7 +2008,6 @@ drv_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                 uint8_t max_nb_cand, uint8_t is_small)
 {
     VVCMergeInfo mv_info;
-
     mv_info = vvc_derive_merge_mvp_b(inter_ctx, pb_x, pb_y,
                                      nb_pb_w, nb_pb_h, merge_idx,
                                      max_nb_cand, is_small);

@@ -38,13 +38,23 @@ ctu_field_set_rect_bitfield(struct CTUBitField *const ctu_map,
     }
 }
 
-static const int MMVD_REFINE_STEP    = 8; ///< max number of distance step
-static const int MMVD_MAX_REFINE_NUM = 8 * 4; ///< max number of candidate from a base candidate
-static const int MMVD_BASE_MV_NUM    = 2; ///< max number of base candidate
+#define GEO_MAX_NUM_UNI_CANDS   6
+#define GEO_MAX_NUM_CANDS       (GEO_MAX_NUM_UNI_CANDS * (GEO_MAX_NUM_UNI_CANDS - 1))
+#define GEO_MIN_CU_LOG2         3
+#define GEO_MAX_CU_LOG2         6
+#define GEO_MIN_CU_SIZE         (1 << GEO_MIN_CU_LOG2)
+#define GEO_MAX_CU_SIZE         (1 << GEO_MAX_CU_LOG2)
+#define GEO_NUM_CU_SIZE         (( GEO_MAX_CU_LOG2 - GEO_MIN_CU_LOG2 ) + 1)
+#define GEO_NUM_PARTITION_MODE  64
+#define GEO_NUM_ANGLES          32
+#define GEO_NUM_DISTANCES       4
+#define GEO_NUM_PRESTORED_MASK  6
+#define GEO_WEIGHT_MASK_SIZE    (3 * (64 >> 3) * 2 + 64)
+#define GEO_MV_MASK_SIZE        (GEO_WEIGHT_MASK_SIZE >> 2)
 
-static const int GEO_NUM_PARTITION_MODE = 64;
-static const int GEO_NUM_ANGLES = 32;
-static const int GEO_NUM_DISTANCES = 4;
+#define MMVD_REFINE_STEP        8 ///< max number of distance step
+#define MMVD_MAX_REFINE_NUM     (MMVD_REFINE_STEP * 4) ///< max number of candidate from a base candidate
+#define MMVD_BASE_MV_NUM        2 ///< max number of base candidate
 
 #if 0
 static void
