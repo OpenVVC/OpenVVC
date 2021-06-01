@@ -617,8 +617,8 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
 
     /* Control points from MVs */
     /* Cand LT */
-    /* FIXME also check is available in this RPL */
-    cand_lt = derive_mvp_cand(inter_ctx, pb_info, inter_dir, B2, ref_idx, ref_opp_idx, &lt_mv_cand);
+    /* FIXME check is available in this RPL */
+    cand_lt = derive_mvp_cand(inter_ctx, pb_info, B2, inter_dir, ref_idx, ref_opp_idx, &lt_mv_cand);
     if (!cand_lt) {
         cand_lt = derive_mvp_cand(inter_ctx, pb_info, B3, inter_dir, ref_idx, ref_opp_idx, &lt_mv_cand);
         if (!cand_lt) {
@@ -629,7 +629,7 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
     cand_mask |= cand_lt;
 
     /* Cand RT */
-    cand_rt = derive_mvp_cand(inter_ctx, pb_info, inter_dir, B1, ref_idx, ref_opp_idx, &rt_mv_cand);
+    cand_rt = derive_mvp_cand(inter_ctx, pb_info, B1, inter_dir, ref_idx, ref_opp_idx, &rt_mv_cand);
     if (!cand_rt) {
         cand_rt = derive_mvp_cand(inter_ctx, pb_info, B0, inter_dir, ref_idx, ref_opp_idx, &rt_mv_cand);
     }
