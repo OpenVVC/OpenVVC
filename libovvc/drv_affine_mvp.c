@@ -1304,7 +1304,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
     }
 
     /* FIXME check if we can return zmv directly */
-
+    /* FIXME check ref_idx increment as in classic merge */
     while (nb_cand < max_nb_aff_mrg_cand) {
         struct AffineControlInfo z_cinfo = {0};
 
