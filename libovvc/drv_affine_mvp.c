@@ -1423,13 +1423,15 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
         /* Broadcast MV computed from PU center */
         int i, j;
         OVMV center_mv;
-        OVMV lt_mv;
 
-        lt_mv.x = cinfo->lt.x << AFFINE_SHIFT;
-        lt_mv.y = cinfo->lt.y << AFFINE_SHIFT;
+        center_mv.x = cinfo->lt.x << AFFINE_SHIFT;
+        center_mv.y = cinfo->lt.y << AFFINE_SHIFT;
 
-        center_mv.x = lt_mv.x + ((delta_mv.h.x << log2_cu_w) >> 1) + ((delta_mv.v.x << log2_cu_h) >> 1);
-        center_mv.y = lt_mv.y + ((delta_mv.h.y << log2_cu_w) >> 1) + ((delta_mv.v.y << log2_cu_h) >> 1);
+        center_mv.x += (delta_mv.h.x << log2_cu_w) >> 1;
+        center_mv.y += (delta_mv.h.y << log2_cu_w) >> 1;
+
+        center_mv.x += (delta_mv.v.x << log2_cu_h) >> 1;
+        center_mv.y += (delta_mv.v.y << log2_cu_h) >> 1;
 
         center_mv = round_affine_mv2(center_mv);
 
