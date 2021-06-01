@@ -1191,9 +1191,22 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
             enum CandName cand_id = cand_mask_to_idx(cand_msk);
             uint16_t pos = derive_cand_position(pb_info, cand_id);
             avail_cp_map |= 0x1;
-            dir[0] = cand_msk & rpl0_cand;
+            dir[0]  =  cand_msk & rpl0_cand;
             dir[0] |= (cand_msk & rpl1_cand) << 1;
-            /* TODO fill mi */
+
+            if (dir[0] & 0x1) {
+                mi.mv0[0] = mv_ctx0->mvs[pos];
+            } else {
+                /* FIXME this is only so  we check for ref_idx < 0 in CPInfo derivation */
+                mi.mv0[0].ref_idx = -1;
+            }
+
+            if (dir[0] & 0x2) {
+                mi.mv1[0] = mv_ctx1->mvs[pos];
+            } else {
+                mi.mv1[0].ref_idx = -1;
+            }
+
         }
 
         if (cand_msk = available_merge_b1_b0(rpl0_cand, rpl1_cand)) {
@@ -1202,7 +1215,20 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
             avail_cp_map |= 0x2;
             dir[1]  = cand_msk & rpl0_cand;
             dir[1] |= (cand_msk & rpl1_cand) << 1;
-            /* TODO fill mi */
+
+            if (dir[1] & 0x1) {
+                mi.mv0[1] = mv_ctx0->mvs[pos];
+            } else {
+                mi.mv0[1].ref_idx = -1;
+            }
+
+
+            if (dir[1] & 0x2) {
+                mi.mv1[1] = mv_ctx1->mvs[pos];
+            } else {
+                mi.mv1[1].ref_idx = -1;
+            }
+
         }
 
         if (cand_msk = available_merge_a1_a0(rpl0_cand, rpl1_cand)) {
@@ -1211,7 +1237,19 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
             avail_cp_map |= 0x4;
             dir[2]  = cand_msk & rpl0_cand;
             dir[2] |= (cand_msk & rpl1_cand) << 1;
-            /* TODO fill mi */
+
+            if (dir[2] & 0x1) {
+                mi.mv0[2] = mv_ctx0->mvs[pos];
+            } else {
+                mi.mv0[2].ref_idx = -1;
+            }
+
+            if (dir[2] & 0x2) {
+                mi.mv1[2] = mv_ctx1->mvs[pos];
+            } else {
+                mi.mv1[2].ref_idx = -1;
+            }
+
         }
 
         /* FIXME test if affine type enabled so we skip TMVP when not needed ? */
