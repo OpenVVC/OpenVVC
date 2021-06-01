@@ -427,47 +427,53 @@ derive_affine_mvp_cand(const struct AffineDRVInfo *const affine_ctx,
                        struct AffineControlInfo *const dst_cp_info,
                        struct PBInfo pb, enum CandName cand_name,
                        uint8_t inter_dir, uint8_t ref_idx, uint8_t ref_opp_idx,
-                       uint8_t rpl_msk0, uint8_t rpl_msk1,
+                       uint8_t rpl_msk0, uint8_t rpl_msk1, uint8_t aff_msk,
                        uint8_t affine_type)
 {
 
     /* Note this is OK since inter_dir cannot be 3 from MVP */
-    enum RPLIndex rpl_idx = inter_dir - 1;
-    enum RPLIndex rpl_opp_idx = opposit_rpl_idx(rpl_idx);
-
-    uint8_t rpl_msk = rpl_idx ? rpl_msk1 : rpl_msk0;
-    uint8_t rpl_opp_msk = rpl_idx ? rpl_msk0 : rpl_msk1;
-
-    uint8_t avail_rpl     = (rpl_msk     & (1 << cand_name));
-    uint8_t avail_rpl_opp = (rpl_opp_msk & (1 << cand_name));
-
+    uint8_t avail_affine  = (aff_msk     & (1 << cand_name));
     struct AffineControlInfo cp_info;
 
-    if (avail_rpl | avail_rpl_opp) {
+    if (avail_affine) {
+        enum RPLIndex rpl_idx = inter_dir - 1;
+        enum RPLIndex rpl_opp_idx = opposit_rpl_idx(rpl_idx);
+
+        uint8_t rpl_msk = rpl_idx ? rpl_msk1 : rpl_msk0;
+        uint8_t rpl_opp_msk = rpl_idx ? rpl_msk0 : rpl_msk1;
+
+        uint8_t avail_rpl     = (rpl_msk     & (1 << cand_name));
+        uint8_t avail_rpl_opp = (rpl_opp_msk & (1 << cand_name));
+
         const int16_t cand_pos = derive_cand_position(pb, cand_name);
-        struct AffineControlInfo ngh_cp_info = affine_ctx->aff_info[rpl_idx][cand_pos];
-        if (avail_rpl && ngh_cp_info.lt.ref_idx == ref_idx) {
 
-            cp_info = derive_cp_from_cand(&ngh_cp_info, affine_type, cand_name);
+        if (avail_rpl) {
+            struct AffineControlInfo ngh_cp_info = affine_ctx->aff_info[rpl_idx][cand_pos];
+            if (ngh_cp_info.lt.ref_idx == ref_idx) {
 
-            goto found;
+                cp_info = derive_cp_from_cand(&ngh_cp_info, affine_type, cand_name);
+
+                goto found;
+            }
         }
 
-        ngh_cp_info = affine_ctx->aff_info[rpl_opp_idx][cand_pos];
+        if (avail_rpl_opp) {
+            struct AffineControlInfo ngh_cp_info = affine_ctx->aff_info[rpl_opp_idx][cand_pos];
 
-        if (avail_rpl_opp && ngh_cp_info.lt.ref_idx == ref_opp_idx) {
+            if (ngh_cp_info.lt.ref_idx == ref_opp_idx) {
 
-            cp_info = derive_cp_from_cand(&ngh_cp_info, affine_type, cand_name);
+                cp_info = derive_cp_from_cand(&ngh_cp_info, affine_type, cand_name);
 
-            /* override ref_idx since it is taken from opposit RPL */
-            cp_info.lt.ref_idx = ref_idx;
-            cp_info.rt.ref_idx = ref_idx;
+                /* override ref_idx since it is taken from opposit RPL */
+                cp_info.lt.ref_idx = ref_idx;
+                cp_info.rt.ref_idx = ref_idx;
 
-            if (affine_type == AFFINE_3CP) {
-                cp_info.lb.ref_idx = ref_idx;
+                if (affine_type == AFFINE_3CP) {
+                    cp_info.lb.ref_idx = ref_idx;
+                }
+
+                goto found;
             }
-
-            goto found;
         }
     }
 
@@ -578,28 +584,34 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
     /* Affine left cand */
     struct AffineControlInfo cp_info[2];
 
+
     /* FIXME check affine */
     cand_aff_lft = derive_affine_mvp_cand(affine_ctx, cp_info, pb_info, A0,
                                           inter_dir, ref_idx, ref_opp_idx,
-                                          rpl0_cand, rpl1_cand, affine_type);
+                                          rpl0_cand, rpl1_cand, aff_cand_list,
+                                          affine_type);
     if (!cand_aff_lft) {
         cand_aff_lft = derive_affine_mvp_cand(affine_ctx, cp_info, pb_info, A1,
                                               inter_dir, ref_idx, ref_opp_idx,
-                                              rpl0_cand, rpl1_cand, affine_type);
+                                              rpl0_cand, rpl1_cand, aff_cand_list,
+                                              affine_type);
     }
 
     /* Affine above cand */
     cand_aff_abv = derive_affine_mvp_cand(affine_ctx, &cp_info[cand_aff_lft], pb_info, B0,
                                           inter_dir, ref_idx, ref_opp_idx,
-                                          rpl0_cand, rpl1_cand, affine_type);
+                                          rpl0_cand, rpl1_cand, aff_cand_list,
+                                          affine_type);
     if (!cand_aff_abv) {
         cand_aff_abv = derive_affine_mvp_cand(affine_ctx, &cp_info[cand_aff_lft], pb_info, B1,
                                               inter_dir, ref_idx, ref_opp_idx,
-                                              rpl0_cand, rpl1_cand, affine_type);
+                                              rpl0_cand, rpl1_cand, aff_cand_list,
+                                              affine_type);
         if (!cand_aff_abv) {
             cand_aff_abv = derive_affine_mvp_cand(affine_ctx, &cp_info[cand_aff_lft], pb_info, B2,
                                                   inter_dir, ref_idx, ref_opp_idx,
-                                                  rpl0_cand, rpl1_cand, affine_type);
+                                                  rpl0_cand, rpl1_cand, aff_cand_list,
+                                                  affine_type);
         }
     }
 
