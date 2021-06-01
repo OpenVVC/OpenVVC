@@ -371,6 +371,7 @@ struct InterDRVCtx
         OVMV mvs1[34*34];
 
     } tmvp_ctx;
+    struct AffineDRVInfo affine_ctx;
 };
 
 

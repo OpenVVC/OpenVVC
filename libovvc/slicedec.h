@@ -76,6 +76,9 @@ struct DRVLines
         uint32_t *dir0;
         uint32_t *dir1;
 
+        /* Bit fields for affine motion */
+        uint32_t *affine;
+
     } inter_lines;
 
     struct DBFLines
