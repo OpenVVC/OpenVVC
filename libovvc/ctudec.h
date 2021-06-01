@@ -266,10 +266,25 @@ struct AffineControlInfo
     OVMV lb;
 };
 
+struct PBInfo
+{
+    uint8_t x_pb;
+    uint8_t y_pb;
+    uint8_t log2_w;
+    uint8_t log2_h;
+    uint8_t nb_pb_w;
+    uint8_t nb_pb_h;
+};
+
+struct AffineInfo {
+    struct AffineControlInfo cps[2];
+    struct PBInfo pb;
+    uint8_t type;
+};
+
 struct AffineDRVInfo {
     struct CTUBitField map;
-    struct AffineControlInfo aff_info[2][34*34];
-    uint8_t type[34*34];
+    struct AffineInfo affine_info[34*34];
 };
 
 struct HMVPLUT
@@ -371,6 +386,7 @@ struct InterDRVCtx
         OVMV mvs1[34*34];
 
     } tmvp_ctx;
+
     struct AffineDRVInfo affine_ctx;
 };
 
