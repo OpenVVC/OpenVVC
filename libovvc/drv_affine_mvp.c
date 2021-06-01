@@ -29,6 +29,8 @@ struct PBInfo
 {
     uint8_t x_pb; 
     uint8_t y_pb; 
+    uint8_t log2_w;
+    uint8_t log2_h;
     uint8_t nb_pb_w; 
     uint8_t nb_pb_h; 
 };
@@ -340,52 +342,49 @@ derive_affine_delta_mvs(const struct AffineControlInfo *const cinfo,
          using delta_mv information directly */
 static struct AffineControlInfo
 derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
+                    struct PBInfo pb_info, struct PBInfo ngh_pb,
                     uint8_t affine_type, enum CandName cand_name)
 {
-    int ngh_x0;
-    int ngh_y0;
-    uint8_t log2_ngh_w;
-    uint8_t log2_ngh_h;
-    uint8_t log2_pb_w;
-    uint8_t log2_pb_h;
-    int x0;
-    int y0;
+    int ngh_x0 = ngh_pb.x_pb << 2;
+    int ngh_y0 = ngh_pb.x_pb << 2;
+    uint8_t log2_ngh_w = ngh_pb.log2_w;
+    uint8_t log2_ngh_h = ngh_pb.log2_h;
+
+    uint8_t log2_pb_w = pb_info.log2_w;
+    uint8_t log2_pb_h = pb_info.log2_h;
+    int x0 = pb_info.x_pb << 2;
+    int y0 = pb_info.y_pb << 2;
 
     struct AffineControlInfo dst_cp;
 
-    /* is_above_cand && y0 == 0 */
+    /* FIXME avoid checking for above candidate here */
     uint8_t is_abv_ctu = y0 == 0 && is_above_cand(cand_name);
+    uint8_t is_lft_ctu = x0 == 0 && (!is_above_cand(cand_name) || cand_name == B2);
 
-    /* FIXME check this is correct */
-    int delta_pos_x = (x0 - ngh_x0);
-    int delta_pos_y = (y0 - ngh_y0);
+    /* FIXME use correct log2_ctu_s */
+    int delta_pos_x = ((is_lft_ctu << 7) + x0 - ngh_x0);
+    int delta_pos_y = is_abv_ctu ? 0 : (y0 - ngh_y0);
 
     if (is_abv_ctu) {
-    #if 0
-        /* if cand is taken from above CTU line use last line for lt and rt derivation and
-         * force type AFFINE_2CP
-         */
-
         /* FIXME How to derive LT if CTU Top Left ? */
-        /* TODO if above is from another ctu we have to force to type AFFINE_2CP
-         * for delta_mvs derivation
-         */
-         /* TODO */
-        ngh_cp.lt;
-        ngh_cp.rt;
-        delta_pos_y = 0;
-    #endif
+        #if 0
+        uint16_t cand_pos = ;
+        ngh_cp.lt = ;
+        ngh_cp.rt = ;
+        #endif
     }
 
     /* FIXME determine clip from merge or mvp cand derivation */
-    /* FIXME would be easier to store deltas directly instead so we do not use 
-     * both neighbours cp and sizes
-     */
-    const struct AffineDeltaMV delta_mv = derive_affine_delta_mvs(ngh_cp, log2_ngh_w,
-                                                                  log2_ngh_h, affine_type,
-                                                                  0);
+    struct AffineDeltaMV delta_mv = derive_affine_delta_mvs(ngh_cp, log2_ngh_w,
+                                                            log2_ngh_h, affine_type,
+                                                            0);
 
     OVMV tmp, lt_mv;
+
+    if (is_abv_ctu) {
+        delta_mv.v.x = -delta_mv.h.y;
+        delta_mv.v.y =  delta_mv.h.x;
+    }
 
     /* Derive LT based on candidate position */
     lt_mv.x = ngh_cp->lt.x << AFFINE_SHIFT;
@@ -448,12 +447,13 @@ derive_affine_mvp_cand(const struct AffineDRVInfo *const affine_ctx,
         uint8_t avail_rpl_opp = (rpl_opp_msk & (1 << cand_name));
 
         const int16_t cand_pos = derive_cand_position(pb, cand_name);
+        struct PBInfo ngh_pb;
 
         if (avail_rpl) {
             struct AffineControlInfo ngh_cp_info = affine_ctx->aff_info[rpl_idx][cand_pos];
             if (ngh_cp_info.lt.ref_idx == ref_idx) {
 
-                cp_info = derive_cp_from_cand(&ngh_cp_info, affine_type, cand_name);
+                cp_info = derive_cp_from_cand(&ngh_cp_info, pb, ngh_pb, affine_type, cand_name);
 
                 goto found;
             }
@@ -464,7 +464,7 @@ derive_affine_mvp_cand(const struct AffineDRVInfo *const affine_ctx,
 
             if (ngh_cp_info.lt.ref_idx == ref_opp_idx) {
 
-                cp_info = derive_cp_from_cand(&ngh_cp_info, affine_type, cand_name);
+                cp_info = derive_cp_from_cand(&ngh_cp_info, pb, ngh_pb, affine_type, cand_name);
 
                 /* override ref_idx since it is taken from opposit RPL */
                 cp_info.lt.ref_idx = ref_idx;
@@ -547,6 +547,7 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
                struct AffineDRVInfo *affine_ctx,
                uint8_t x_pb, uint8_t y_pb,
                uint8_t nb_pb_w, uint8_t nb_pb_h,
+               uint8_t log2_cu_w, uint8_t log2_cu_h,
                uint8_t ref_idx, uint8_t ref_opp_idx, uint8_t mvp_idx,
                uint8_t inter_dir, uint8_t affine_type)
 {
@@ -572,8 +573,11 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
         .x_pb = x_pb, 
         .y_pb = y_pb, 
         .nb_pb_w = nb_pb_w, 
-        .nb_pb_h = nb_pb_h
+        .nb_pb_h = nb_pb_h,
+        .log2_w = log2_cu_w,
+        .log2_h = log2_cu_h
     };
+
     struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
     struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
@@ -1096,7 +1100,9 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
         .x_pb = x_pb, 
         .y_pb = y_pb, 
         .nb_pb_w = nb_pb_w,
-        .nb_pb_h = nb_pb_h 
+        .nb_pb_h = nb_pb_h,
+        .log2_w = log2_cu_w,
+        .log2_h = log2_cu_h
     };
 
     const uint8_t aff_cand_list = check_cand_available(aff_abv_row, aff_lft_col, x_pb, y_pb,
@@ -1124,13 +1130,15 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
 
         if (dir & 0x1) {
             struct AffineControlInfo cand_cp_info0 = affine_ctx->aff_info[RPL_0][cand_pos];
-            cp_info0 = derive_cp_from_cand(&cand_cp_info0, affine_type, cand_name);
+            struct PBInfo ngh_pb;
+            cp_info0 = derive_cp_from_cand(&cand_cp_info0, pb_info, ngh_pb, affine_type, cand_name);
         }
 
         /* Note we do not check for B slice since dir should already be 1 if P slice */
         if (dir & 0x2) {
             struct AffineControlInfo cand_cp_info1 = affine_ctx->aff_info[RPL_1][cand_pos];
-            cp_info1 = derive_cp_from_cand(&cand_cp_info1, affine_type, cand_name);
+            struct PBInfo ngh_pb;
+            cp_info1 = derive_cp_from_cand(&cand_cp_info1, pb_info, ngh_pb, affine_type, cand_name);
         }
 
         aff_mrg_ctx[0].cinfo[0] = cp_info0;
@@ -1159,13 +1167,15 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
 
         if (dir & 0x1) {
             struct AffineControlInfo cand_cp_info0 = affine_ctx->aff_info[RPL_0][cand_pos];
-            cp_info0 = derive_cp_from_cand(&cand_cp_info0, affine_type, cand_name);
+            struct PBInfo ngh_pb;
+            cp_info0 = derive_cp_from_cand(&cand_cp_info0, pb_info, ngh_pb, affine_type, cand_name);
         }
 
         /* Note we do not check for B slice since dir should be 1 if P slice */
         if (dir & 0x2) {
             struct AffineControlInfo cand_cp_info1 = affine_ctx->aff_info[RPL_1][cand_pos];
-            cp_info1 = derive_cp_from_cand(&cand_cp_info1, affine_type, cand_name);
+            struct PBInfo ngh_pb;
+            cp_info1 = derive_cp_from_cand(&cand_cp_info1, pb_info, ngh_pb, affine_type, cand_name);
         }
 
         aff_mrg_ctx[0].cinfo[0] = cp_info0;
