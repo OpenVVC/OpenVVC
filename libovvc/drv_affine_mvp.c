@@ -496,6 +496,7 @@ static uint8_t
 derive_mvp_cand(const struct InterDRVCtx *const inter_ctx,
                 struct PBInfo pb, enum CandName cand_name,
                 uint8_t inter_dir, uint8_t ref_idx, uint8_t ref_opp_idx,
+                uint8_t rpl0_list, uint8_t rpl1_list,
                 OVMV *dst_mv)
 {
     const int16_t cand_pos = derive_cand_position(pb, cand_name);
@@ -507,19 +508,27 @@ derive_mvp_cand(const struct InterDRVCtx *const inter_ctx,
     const OVMV *const mv_ctx     = rpl_idx ? inter_ctx->mv_ctx1.mvs : inter_ctx->mv_ctx0.mvs;
     const OVMV *const mv_ctx_opp = rpl_opp_idx ? inter_ctx->mv_ctx1.mvs : inter_ctx->mv_ctx0.mvs;
 
-    OVMV mv_cand = mv_ctx[cand_pos];
+    uint8_t rpl_list     = rpl_idx ? rpl1_list : rpl0_list;
+    uint8_t rpl_list_opp = rpl_idx ? rpl0_list : rpl1_list;
+    OVMV mv_cand;
 
-    if (mv_cand.ref_idx == ref_idx) {
+    if (rpl_list & (1 << cand_name)) {
+        OVMV mv_cand = mv_ctx[cand_pos];
 
-        goto found;
+        if (mv_cand.ref_idx == ref_idx) {
+
+            goto found;
+        }
     }
 
-    mv_cand = mv_ctx_opp[cand_pos];
+    if (rpl_list_opp & (1 << cand_name)) {
+        mv_cand = mv_ctx_opp[cand_pos];
 
-    if (mv_cand.ref_idx == ref_opp_idx) {
+        if (mv_cand.ref_idx == ref_opp_idx) {
 
-        mv_cand.ref_idx = ref_idx;
-        goto found;
+            mv_cand.ref_idx = ref_idx;
+            goto found;
+        }
     }
 
     return 0;
@@ -629,29 +638,35 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
 
     /* Control points from MVs */
     /* Cand LT */
-    /* FIXME check is available in this RPL */
-    cand_lt = derive_mvp_cand(inter_ctx, pb_info, B2, inter_dir, ref_idx, ref_opp_idx, &lt_mv_cand);
+    cand_lt = derive_mvp_cand(inter_ctx, pb_info, B2, inter_dir, ref_idx, ref_opp_idx,
+                              rpl0_cand, rpl1_cand, &lt_mv_cand);
     if (!cand_lt) {
-        cand_lt = derive_mvp_cand(inter_ctx, pb_info, B3, inter_dir, ref_idx, ref_opp_idx, &lt_mv_cand);
+        cand_lt = derive_mvp_cand(inter_ctx, pb_info, B3, inter_dir, ref_idx, ref_opp_idx,
+                                  rpl0_cand, rpl1_cand, &lt_mv_cand);
         if (!cand_lt) {
-            cand_lt = derive_mvp_cand(inter_ctx, pb_info, A2, inter_dir, ref_idx, ref_opp_idx, &lt_mv_cand);
+            cand_lt = derive_mvp_cand(inter_ctx, pb_info, A2, inter_dir, ref_idx, ref_opp_idx,
+                                      rpl0_cand, rpl1_cand, &lt_mv_cand);
         }
     }
 
     cand_mask |= cand_lt;
 
     /* Cand RT */
-    cand_rt = derive_mvp_cand(inter_ctx, pb_info, B1, inter_dir, ref_idx, ref_opp_idx, &rt_mv_cand);
+    cand_rt = derive_mvp_cand(inter_ctx, pb_info, B1, inter_dir, ref_idx, ref_opp_idx,
+                              rpl0_cand, rpl1_cand, &rt_mv_cand);
     if (!cand_rt) {
-        cand_rt = derive_mvp_cand(inter_ctx, pb_info, B0, inter_dir, ref_idx, ref_opp_idx, &rt_mv_cand);
+        cand_rt = derive_mvp_cand(inter_ctx, pb_info, B0, inter_dir, ref_idx, ref_opp_idx,
+                                  rpl0_cand, rpl1_cand, &rt_mv_cand);
     }
 
     cand_mask |= cand_rt << 1;
 
     /*Cand LB */
-    cand_lb = derive_mvp_cand(inter_ctx, pb_info, A1, inter_dir, ref_idx, ref_opp_idx, &lb_mv_cand);
+    cand_lb = derive_mvp_cand(inter_ctx, pb_info, A1, inter_dir, ref_idx, ref_opp_idx,
+                              rpl0_cand, rpl1_cand, &lb_mv_cand);
     if (!cand_lb) {
-        cand_lb = derive_mvp_cand(inter_ctx, pb_info, A0, inter_dir, ref_idx, ref_opp_idx, &lb_mv_cand);
+        cand_lb = derive_mvp_cand(inter_ctx, pb_info, A0, inter_dir, ref_idx, ref_opp_idx,
+                                  rpl0_cand, rpl1_cand, &lb_mv_cand);
     }
 
     cand_mask |= cand_lb << 2;
