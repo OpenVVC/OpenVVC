@@ -336,9 +336,11 @@ derive_affine_delta_mvs(const struct AffineControlInfo *const cinfo,
     return dmv;
 }
 
-/* FIXME can we derive this without neighbour x/y info */
+/* FIXME can we derive this without neighbour x/y info
+         using delta_mv information directly */
 static struct AffineControlInfo
-derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp, uint8_t affine_type, enum CandName cand_name)
+derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
+                    uint8_t affine_type, enum CandName cand_name)
 {
     int ngh_x0;
     int ngh_y0;
