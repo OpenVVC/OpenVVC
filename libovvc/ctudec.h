@@ -269,6 +269,7 @@ struct AffineControlInfo
 struct AffineDRVInfo {
     struct CTUBitField map;
     struct AffineControlInfo aff_info[2][34*34];
+    uint8_t type[34*34];
 };
 
 struct HMVPLUT

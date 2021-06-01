@@ -1113,6 +1113,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
     if (cand_lft) {
         enum CandName cand_name = cand_mask_to_idx(cand_lft);
         const int16_t cand_pos = derive_cand_position(pb_info, cand_name);
+        const enum AffineType affine_type = affine_ctx->type[cand_pos];
 
         struct AffineControlInfo cp_info0;
         struct AffineControlInfo cp_info1;
@@ -1121,21 +1122,15 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
 
         if (dir & 0x1) {
             struct AffineControlInfo cand_cp_info0 = affine_ctx->aff_info[RPL_0][cand_pos];
-            enum AffineType affine_type;
-            /* FIXME affine type */
             cp_info0 = derive_cp_from_cand(&cand_cp_info0, affine_type, cand_name);
         }
 
         /* Note we do not check for B slice since dir should already be 1 if P slice */
         if (dir & 0x2) {
             struct AffineControlInfo cand_cp_info1 = affine_ctx->aff_info[RPL_1][cand_pos];
-            enum AffineType affine_type;
-            /* FIXME affine type */
             cp_info1 = derive_cp_from_cand(&cand_cp_info1, affine_type, cand_name);
         }
 
-        enum AffineType affine_type;
-        /* FIXME affine type */
         aff_mrg_ctx[0].cinfo[0] = cp_info0;
         aff_mrg_ctx[0].cinfo[1] = cp_info1;
 
@@ -1153,6 +1148,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
     if (cand_abv) {
         enum CandName cand_name = cand_mask_to_idx(cand_abv);
         const int16_t cand_pos = derive_cand_position(pb_info, cand_name);
+        const enum AffineType affine_type = affine_ctx->type[cand_pos];
 
         struct AffineControlInfo cp_info0;
         struct AffineControlInfo cp_info1;
@@ -1161,21 +1157,14 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
 
         if (dir & 0x1) {
             struct AffineControlInfo cand_cp_info0 = affine_ctx->aff_info[RPL_0][cand_pos];
-            enum AffineType affine_type;
-            /* FIXME affine type */
             cp_info0 = derive_cp_from_cand(&cand_cp_info0, affine_type, cand_name);
         }
 
         /* Note we do not check for B slice since dir should be 1 if P slice */
         if (dir & 0x2) {
             struct AffineControlInfo cand_cp_info1 = affine_ctx->aff_info[RPL_1][cand_pos];
-            enum AffineType affine_type;
-            /* FIXME affine type */
             cp_info1 = derive_cp_from_cand(&cand_cp_info1, affine_type, cand_name);
         }
-
-        enum AffineType affine_type;
-        /* FIXME affine type */
 
         aff_mrg_ctx[0].cinfo[0] = cp_info0;
         aff_mrg_ctx[0].cinfo[1] = cp_info1;
