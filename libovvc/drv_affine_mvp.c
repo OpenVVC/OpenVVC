@@ -1191,8 +1191,8 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
             enum CandName cand_id = cand_mask_to_idx(cand_msk);
             uint16_t pos = derive_cand_position(pb_info, cand_id);
             avail_cp_map |= 0x1;
-            dir[0]  =  cand_msk & rpl0_cand;
-            dir[0] |= (cand_msk & rpl1_cand) << 1;
+            dir[0]  = !!(cand_msk & rpl0_cand);
+            dir[0] |= (!!(cand_msk & rpl1_cand)) << 1;
 
             if (dir[0] & 0x1) {
                 mi.mv0[0] = mv_ctx0->mvs[pos];
@@ -1213,8 +1213,8 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
             enum CandName cand_id = cand_mask_to_idx(cand_msk);
             uint16_t pos = derive_cand_position(pb_info, cand_id);
             avail_cp_map |= 0x2;
-            dir[1]  = cand_msk & rpl0_cand;
-            dir[1] |= (cand_msk & rpl1_cand) << 1;
+            dir[1]  = !!(cand_msk & rpl0_cand);
+            dir[1] |= (!!(cand_msk & rpl1_cand)) << 1;
 
             if (dir[1] & 0x1) {
                 mi.mv0[1] = mv_ctx0->mvs[pos];
@@ -1235,8 +1235,8 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
             enum CandName cand_id = cand_mask_to_idx(cand_msk);
             uint16_t pos = derive_cand_position(pb_info, cand_id);
             avail_cp_map |= 0x4;
-            dir[2]  = cand_msk & rpl0_cand;
-            dir[2] |= (cand_msk & rpl1_cand) << 1;
+            dir[2]  = !!(cand_msk & rpl0_cand);
+            dir[2] |= (!!(cand_msk & rpl1_cand)) << 1;
 
             if (dir[2] & 0x1) {
                 mi.mv0[2] = mv_ctx0->mvs[pos];
