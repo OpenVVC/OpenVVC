@@ -1315,11 +1315,11 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
 
         aff_mrg_ctx[0].affine_type = AFFINE_2CP;
 
-        if (nb_cand == mrg_idx) {
+        nb_cand++;
+
+        if (nb_cand - 1 == mrg_idx) {
             return;
         }
-
-        nb_cand++;
     }
 }
 
