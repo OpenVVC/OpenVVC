@@ -1960,44 +1960,24 @@ drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     }
 
     uint8_t parity = gpm_ctx->merge_idx0 & 1;
-    gpm_ctx->mv0 = parity ? mv_info0.mv1 : mv_info0.mv0;
+    gpm_ctx->mv0 = parity ? mv_info0.mv1 : mv_info0.mv0;    
+    if (mv_info0.inter_dir == 2 && !parity)
+        gpm_ctx->mv0 = mv_info0.mv1;
+    else if (mv_info0.inter_dir == 1 && parity)
+        gpm_ctx->mv0 = mv_info0.mv0;       
 
     parity = gpm_ctx->merge_idx1 & 1;
-    gpm_ctx->mv1 = parity ? mv_info1.mv1 : mv_info1.mv0;;
+    gpm_ctx->mv1 = parity ? mv_info1.mv1 : mv_info1.mv0;
+    if (mv_info1.inter_dir == 2 && !parity)
+        gpm_ctx->mv1 = mv_info1.mv1;
+    else if (mv_info1.inter_dir == 1 && parity)
+        gpm_ctx->mv1 = mv_info1.mv0;
+    printf("\n%i %i\n", pb_x*4, pb_y*4);
+    printf("%i %i\n", gpm_ctx->mv0.x, gpm_ctx->mv0.y);
+    printf("%i %i\n", gpm_ctx->mv1.x, gpm_ctx->mv1.y);
 
-  // for (int i = 0; i < max_nb_cand; i++){
-  //   int parity = i & 1;
-  //   if( tmpMergeCtx.interDirNeighbours[i] & (0x01 + parity) )
-  //   {
-  //     geoMrgCtx.interDirNeighbours[geoMrgCtx.numValidMergeCand] = 1 + parity;
-  //     geoMrgCtx.mrgTypeNeighbours[geoMrgCtx.numValidMergeCand] = MRG_TYPE_DEFAULT_N;
-  //     geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + !parity].mv = Mv(0, 0);
-  //     geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + parity].mv = tmpMergeCtx.mvFieldNeighbours[(i << 1) + parity].mv;
-  //     geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + !parity].refIdx = -1;
-  //     geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + parity].refIdx = tmpMergeCtx.mvFieldNeighbours[(i << 1) + parity].refIdx;
-  //     geoMrgCtx.numValidMergeCand++;
-  //     if (geoMrgCtx.numValidMergeCand == GEO_MAX_NUM_UNI_CANDS)
-  //     {
-  //       return;
-  //     }
-  //     continue;
-  //   }
-
-  //   if (tmpMergeCtx.interDirNeighbours[i] & (0x02 - parity))
-  //   {
-  //     geoMrgCtx.interDirNeighbours[geoMrgCtx.numValidMergeCand] = 2 - parity;
-  //     geoMrgCtx.mrgTypeNeighbours[geoMrgCtx.numValidMergeCand] = MRG_TYPE_DEFAULT_N;
-  //     geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + !parity].mv = tmpMergeCtx.mvFieldNeighbours[(i << 1) + !parity].mv;
-  //     geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + parity].mv = Mv(0, 0);
-  //     geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + !parity].refIdx = tmpMergeCtx.mvFieldNeighbours[(i << 1) + !parity].refIdx;
-  //     geoMrgCtx.mvFieldNeighbours[(geoMrgCtx.numValidMergeCand << 1) + parity].refIdx = -1;
-  //     geoMrgCtx.numValidMergeCand++;
-  //     if (geoMrgCtx.numValidMergeCand == GEO_MAX_NUM_UNI_CANDS)
-  //     {
-  //       return;
-  //     }
-  //   }
-  // }
+    update_mv_ctx_b(inter_ctx, gpm_ctx->mv0, gpm_ctx->mv1, pb_x, pb_y,
+                    nb_pb_w, nb_pb_h, 3);
 }
 
 VVCMergeInfo

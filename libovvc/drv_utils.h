@@ -49,7 +49,8 @@ ctu_field_set_rect_bitfield(struct CTUBitField *const ctu_map,
 #define GEO_NUM_ANGLES          32
 #define GEO_NUM_DISTANCES       4
 #define GEO_NUM_PRESTORED_MASK  6
-#define GEO_WEIGHT_MASK_SIZE    (3 * (64 >> 3) * 2 + 64)
+#define GEO_WEIGHT_MASK_SIZE    (3 * (GEO_MAX_CU_SIZE >> 3) * 2 + GEO_MAX_CU_SIZE)
+
 #define GEO_MV_MASK_SIZE        (GEO_WEIGHT_MASK_SIZE >> 2)
 
 #define MMVD_REFINE_STEP        8 ///< max number of distance step

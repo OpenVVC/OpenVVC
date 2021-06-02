@@ -1872,6 +1872,7 @@ void rcn_init_gpm_params()
         int16_t weightIdx = sx_i * g_Dis[distanceX] + lookUpY - rho;
         int weightLinearIdx = 32 + weightIdx;
         g_globalGeoWeights[g_angle2mask[angleIdx]][index] = ov_clip((weightLinearIdx + 4) >> 3, 0, 8);
+        // printf("%i %i %i\n", g_angle2mask[angleIdx], index, g_globalGeoWeights[g_angle2mask[angleIdx]][index]);
         g_globalGeoEncSADmask[g_angle2mask[angleIdx]][index] = weightIdx > 0 ? 1 : 0;
       }
     }
@@ -1946,13 +1947,6 @@ rcn_gpm(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
     //BITDEPTH: only 10
     int bit_depth = 10;
   const char    log2WeightBase = 3;
-//   #define IF_INTERNAL_PREC 14 ///< Number of bits for internal precision
-// #define IF_FILTER_PREC    6 ///< Log2 of sum of filter taps
-// #define IF_INTERNAL_OFFS (1<<(IF_INTERNAL_PREC-1)) ///< Offset used internally
-// #define IF_INTERNAL_PREC_BILINEAR 10 ///< Number of bits for internal precision
-// #define IF_FILTER_PREC_BILINEAR   4  ///< Bilinear filter coeff precision so that intermediate value will not exceed 16 bit for SIMD - bit exact
-// #define IF_INTERNAL_FRAC_BITS(bd) std::max(2, IF_INTERNAL_PREC - int(bd))
-
     // const int32_t shiftWeighted = IF_INTERNAL_FRAC_BITS(clipbd) + log2WeightBase;
   const int32_t shiftWeighted = (14 - bit_depth) + log2WeightBase;
   const int32_t offsetWeighted = (1 << (shiftWeighted - 1)) + (1 << (13 + log2WeightBase));
@@ -1981,6 +1975,7 @@ rcn_gpm(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
   }
   else
   {
+    // printf("%i %i\n",g_angle2mask[angle],  g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + g_weightOffset[split_dir][hIdx][wIdx][0]);
     stepY = (GEO_WEIGHT_MASK_SIZE << scaleY) - (1 << log2_pb_w);
     weight = &g_globalGeoWeights[g_angle2mask[angle]][g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + g_weightOffset[split_dir][hIdx][wIdx][0]];
   }
@@ -1988,7 +1983,10 @@ rcn_gpm(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
   {
     for( int x = 0; x < (1 << log2_pb_w); x++ )
     {
-      dst.y[x]  = ov_clip_uintp2((weight[0]*(tmp_0.y[x]) + ((8 - weight[0]) * (tmp_1.y[x])) + offsetWeighted) >> shiftWeighted, 10);
+        // printf("%i\n", weight[0]);
+      dst.y[x]  = ov_clip_pixel(( weight[0] * (tmp_0.y[x]) + (8 - weight[0]) * (tmp_1.y[x]) + 4) >> log2WeightBase);
+      // dst.y[x]  = ov_clip_pixel(( weight[0] * (tmp_1.y[x]) + (8 - weight[0]) * (tmp_0.y[x]) ) >> log2WeightBase);
+      // dst.y[x]  = ov_clip_pixel((weight[0]*(tmp_0.y[x]) + ((8 - weight[0]) * (tmp_1.y[x])) + offsetWeighted) >> shiftWeighted);
       // *dst++  = ClipPel(rightShift((*weight*(*src0++) + ((8 - *weight) * (*src1++)) + offsetWeighted), shiftWeighted), clipRng);
       weight += stepX;
     }
