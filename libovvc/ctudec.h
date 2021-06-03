@@ -345,6 +345,8 @@ struct InterDRVCtx
 
         int merge_idx0;
         int merge_idx1;
+        int inter_dir0;
+        int inter_dir1;
         OVMV mv0;
         OVMV mv1;
     } gpm_ctx;

@@ -1605,6 +1605,120 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
     hmvp_update_lut(&inter_ctx->hmvp_lut, mv);
 }
 
+static void
+update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
+                const OVMV mv0, const OVMV mv1,
+                VVCMergeInfo mv_info0, VVCMergeInfo mv_info1,
+                uint8_t pb_x, uint8_t  pb_y,
+                uint8_t nb_pb_w, uint8_t nb_pb_h,
+                uint8_t inter_dir0, uint8_t inter_dir1)
+{   
+    VVCMergeInfo mv_info;
+    if( inter_dir0 == 1 && inter_dir1 == 2 )
+    {
+        mv_info.inter_dir  = 3;
+        mv_info.mv0     = mv0;
+        mv_info.mv1     = mv1;
+    // mv_info.refIdx[0] = geoMrgCtx.mvFieldNeighbours[ candIdx0 << 1     ].refIdx;
+    // mv_info.refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
+    }
+    else if( inter_dir0 == 2 && inter_dir1 == 1 )
+    {
+        mv_info.inter_dir  = 3;
+        mv_info.mv0     = mv1;
+        mv_info.mv1     = mv0;
+    // mv_info.refIdx[0] = geoMrgCtx.mvFieldNeighbours[ candIdx1 << 1     ].refIdx;
+    // mv_info.refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].refIdx;
+    }
+    else if( inter_dir0 == 1 && inter_dir1 == 1 )
+    {
+        mv_info.inter_dir = 1;
+        mv_info.mv0 = mv1;
+        // mv_info.mv1.x = 0; mv_info.mv1.y = 0;
+    // mv_info.refIdx[0] = geoMrgCtx.mvFieldNeighbours[candIdx1 << 1].refIdx;
+    // mv_info.refIdx[1] = -1;
+    }
+    else if( inter_dir0 == 2 && inter_dir1 == 2 )
+    {
+        mv_info.inter_dir = 2;
+        // mv_info.mv0.x = 0; mv_info.mv0.y = 0; 
+        mv_info.mv1 = mv1;
+    // mv_info.refIdx[0] = -1;
+    // mv_info.refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
+    }
+
+    int splitDir = inter_ctx->gpm_ctx.split_dir;
+  int16_t angle = g_GeoParams[splitDir][0];
+  int tpmMask = 0;
+  int lookUpY = 0, motionIdx = 0;
+  uint8_t isFlip = angle >= 13 && angle <= 27;
+  int distanceIdx = g_GeoParams[splitDir][1];
+  int distanceX = angle;
+  int distanceY = (distanceX + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES;
+  int offsetX = (-(int)nb_pb_w*4) >> 1;
+  int offsetY = (-(int)nb_pb_h*4) >> 1;
+  if (distanceIdx > 0)
+  {
+    if (angle % 16 == 8 || (angle % 16 != 0 && nb_pb_h*4 >= nb_pb_w*4))
+    {
+      offsetY += angle < 16 ? ((distanceIdx * nb_pb_h*4) >> 3) : -(int)((distanceIdx * nb_pb_h*4) >> 3);
+    }
+    else
+    {
+      offsetX += angle < 16 ? ((distanceIdx * nb_pb_w*4) >> 3) : -(int)((distanceIdx * nb_pb_w*4) >> 3);
+    }
+  }
+  for (int y = 0; y < nb_pb_h; y++)
+  {
+    lookUpY = (((4 * y + offsetY) << 1) + 5) * g_Dis[distanceY];
+    for (int x = 0; x < nb_pb_w; x++)
+    {
+      motionIdx = (((4 * x + offsetX) << 1) + 5) * g_Dis[distanceX] + lookUpY;
+      tpmMask = abs(motionIdx) < 32 ? 2 : (motionIdx <= 0 ? (1 - isFlip) : isFlip);
+      if (tpmMask == 2)
+      {
+        // mb.at(x, y).isInter = true;
+        // mb.at(x, y).interDir = biMv.interDir;
+        // mb.at(x, y).refIdx[0] = biMv.refIdx[0];
+        // mb.at(x, y).refIdx[1] = biMv.refIdx[1];
+        // mb.at(x, y).mv[0] = biMv.mv[0];
+        // mb.at(x, y).mv[1] = biMv.mv[1];
+        // mb.at(x, y).sliceIdx = biMv.sliceIdx;
+
+        update_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, pb_x + x, pb_y + y, 
+                    1, 1, mv_info.inter_dir);
+      }
+      else if (tpmMask == 0)
+      {
+        // mb.at(x, y).isInter = true;
+        // mb.at(x, y).interDir = geoMrgCtx.interDirNeighbours[candIdx0];
+        // mb.at(x, y).refIdx[0] = geoMrgCtx.mvFieldNeighbours[candIdx0 << 1].refIdx;
+        // mb.at(x, y).refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].refIdx;
+        // mb.at(x, y).mv[0] = geoMrgCtx.mvFieldNeighbours[candIdx0 << 1].mv;
+        // mb.at(x, y).mv[1] = geoMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].mv;
+        // mb.at(x, y).sliceIdx = biMv.sliceIdx;
+
+        update_mv_ctx_b(inter_ctx, mv_info0.mv0, mv_info0.mv1, pb_x + x, pb_y + y, 
+                    1, 1, inter_dir0);
+      }
+      else
+      {
+        // mb.at(x, y).isInter = true;
+        // mb.at(x, y).interDir = geoMrgCtx.interDirNeighbours[candIdx1];
+        // mb.at(x, y).refIdx[0] = geoMrgCtx.mvFieldNeighbours[candIdx1 << 1].refIdx;
+        // mb.at(x, y).refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
+        // mb.at(x, y).mv[0] = geoMrgCtx.mvFieldNeighbours[candIdx1 << 1].mv;
+        // mb.at(x, y).mv[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].mv;
+        // mb.at(x, y).sliceIdx = biMv.sliceIdx;
+
+        update_mv_ctx_b(inter_ctx, mv_info1.mv0, mv_info1.mv1, pb_x + x, pb_y + y, 
+                    1, 1, inter_dir1);
+      }
+    }
+  }
+}
+
+
 /* Derive motion vectors and update motion maps */
 VVCMergeInfo
 drv_mvp_b(struct InterDRVCtx *const inter_ctx,
@@ -1929,21 +2043,6 @@ drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                 uint8_t nb_pb_w, uint8_t nb_pb_h,
                 int cur_poc, uint8_t max_nb_cand, uint8_t is_small)
 {
-
-  // MergeCtx tmpMergeCtx;
-  // geoMrgCtx.numValidMergeCand = 0;
-  // for (int32_t i = 0; i < GEO_MAX_NUM_UNI_CANDS; i++)
-  // {
-  //   geoMrgCtx.BcwIdx[i] = BCW_DEFAULT;
-  //   geoMrgCtx.interDirNeighbours[i] = 0;
-  //   geoMrgCtx.mrgTypeNeighbours[i] = MRG_TYPE_DEFAULT_N;
-  //   geoMrgCtx.mvFieldNeighbours[(i << 1)].refIdx = NOT_VALID;
-  //   geoMrgCtx.mvFieldNeighbours[(i << 1) + 1].refIdx = NOT_VALID;
-  //   geoMrgCtx.mvFieldNeighbours[(i << 1)].mv = Mv();
-  //   geoMrgCtx.mvFieldNeighbours[(i << 1) + 1].mv = Mv();
-  //   geoMrgCtx.useAltHpelIf[i] = false;
-  // }
-
     struct VVCGPM* gpm_ctx = &inter_ctx->gpm_ctx;
     VVCMergeInfo mv_info0, mv_info1;
     mv_info0 = vvc_derive_merge_mvp_b(inter_ctx, pb_x, pb_y,
@@ -1959,25 +2058,35 @@ drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
         mv_info1 = mv_info0;
     }
 
-    uint8_t parity = gpm_ctx->merge_idx0 & 1;
-    gpm_ctx->mv0 = parity ? mv_info0.mv1 : mv_info0.mv0;    
-    if (mv_info0.inter_dir == 2 && !parity)
-        gpm_ctx->mv0 = mv_info0.mv1;
-    else if (mv_info0.inter_dir == 1 && parity)
-        gpm_ctx->mv0 = mv_info0.mv0;       
+    uint8_t parity      = gpm_ctx->merge_idx0 & 1;
+    gpm_ctx->mv0        = parity ? mv_info0.mv1 : mv_info0.mv0;    
+    gpm_ctx->inter_dir0 = parity ? 2 : 1;
+    if (mv_info0.inter_dir == 2 && !parity){
+        gpm_ctx->mv0        = mv_info0.mv1;
+        gpm_ctx->inter_dir0 = 2;
+    }
+    else if (mv_info0.inter_dir == 1 && parity){
+        gpm_ctx->mv0        = mv_info0.mv0;       
+        gpm_ctx->inter_dir0 = 1;
+    }
 
-    parity = gpm_ctx->merge_idx1 & 1;
-    gpm_ctx->mv1 = parity ? mv_info1.mv1 : mv_info1.mv0;
-    if (mv_info1.inter_dir == 2 && !parity)
-        gpm_ctx->mv1 = mv_info1.mv1;
-    else if (mv_info1.inter_dir == 1 && parity)
-        gpm_ctx->mv1 = mv_info1.mv0;
-    printf("\n%i %i\n", pb_x*4, pb_y*4);
-    printf("%i %i\n", gpm_ctx->mv0.x, gpm_ctx->mv0.y);
-    printf("%i %i\n", gpm_ctx->mv1.x, gpm_ctx->mv1.y);
+    parity              = gpm_ctx->merge_idx1 & 1;
+    gpm_ctx->mv1        = parity ? mv_info1.mv1 : mv_info1.mv0;
+    gpm_ctx->inter_dir1 = parity ? 2 : 1;
+    if (mv_info1.inter_dir == 2 && !parity){
+        gpm_ctx->mv1        = mv_info1.mv1;
+        gpm_ctx->inter_dir1 = 2;
+    }
+    else if (mv_info1.inter_dir == 1 && parity){
+        gpm_ctx->mv1        = mv_info1.mv0;
+        gpm_ctx->inter_dir1 = 1;
+    }
+    // printf("\n%i %i\n", pb_x*4, pb_y*4);
+    // printf("%i %i\n", gpm_ctx->mv0.x, gpm_ctx->mv0.y);
+    // printf("%i %i\n", gpm_ctx->mv1.x, gpm_ctx->mv1.y);
 
-    update_mv_ctx_b(inter_ctx, gpm_ctx->mv0, gpm_ctx->mv1, pb_x, pb_y,
-                    nb_pb_w, nb_pb_h, 3);
+    update_gpm_mv_ctx(inter_ctx, gpm_ctx->mv0, gpm_ctx->mv1, mv_info0, mv_info1, pb_x, pb_y,
+                    nb_pb_w, nb_pb_h, gpm_ctx->inter_dir0, gpm_ctx->inter_dir1);
 }
 
 VVCMergeInfo

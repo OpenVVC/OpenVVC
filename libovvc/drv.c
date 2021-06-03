@@ -189,5 +189,4 @@ update_mv_ctx_b(VVCLocalContext *const lc_ctx, struct VVCInterCtx *const inter_c
     }
 
     update_hmvp_lut_b(&inter_ctx->hmvp_lut, mv0, mv1, inter_dir);
-
 }
