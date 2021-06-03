@@ -1614,26 +1614,27 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
                 uint8_t inter_dir0, uint8_t inter_dir1)
 {   
     VVCMergeInfo mv_info;
+
     if( inter_dir0 == 1 && inter_dir1 == 2 )
     {
         mv_info.inter_dir  = 3;
-        mv_info.mv0     = mv0;
-        mv_info.mv1     = mv1;
+        mv_info.mv0     = mv_info0.mv0;
+        mv_info.mv1     = mv_info1.mv1;
     // mv_info.refIdx[0] = geoMrgCtx.mvFieldNeighbours[ candIdx0 << 1     ].refIdx;
     // mv_info.refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
     }
     else if( inter_dir0 == 2 && inter_dir1 == 1 )
     {
         mv_info.inter_dir  = 3;
-        mv_info.mv0     = mv1;
-        mv_info.mv1     = mv0;
+        mv_info.mv0     = mv_info1.mv0;
+        mv_info.mv1     = mv_info0.mv1;
     // mv_info.refIdx[0] = geoMrgCtx.mvFieldNeighbours[ candIdx1 << 1     ].refIdx;
     // mv_info.refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].refIdx;
     }
     else if( inter_dir0 == 1 && inter_dir1 == 1 )
     {
         mv_info.inter_dir = 1;
-        mv_info.mv0 = mv1;
+        mv_info.mv0 = mv_info1.mv0;
         // mv_info.mv1.x = 0; mv_info.mv1.y = 0;
     // mv_info.refIdx[0] = geoMrgCtx.mvFieldNeighbours[candIdx1 << 1].refIdx;
     // mv_info.refIdx[1] = -1;
@@ -1642,7 +1643,7 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
     {
         mv_info.inter_dir = 2;
         // mv_info.mv0.x = 0; mv_info.mv0.y = 0; 
-        mv_info.mv1 = mv1;
+        mv_info.mv1 = mv_info1.mv1;
     // mv_info.refIdx[0] = -1;
     // mv_info.refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
     }
@@ -1684,7 +1685,7 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
         // mb.at(x, y).mv[0] = biMv.mv[0];
         // mb.at(x, y).mv[1] = biMv.mv[1];
         // mb.at(x, y).sliceIdx = biMv.sliceIdx;
-
+        // printf("%i %i %i %i %i\n", mv_info.mv0.x, mv_info.mv0.y, mv_info.mv1.x, mv_info.mv1.y, mv_info.inter_dir);
         update_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, pb_x + x, pb_y + y, 
                     1, 1, mv_info.inter_dir);
       }
@@ -1697,7 +1698,7 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
         // mb.at(x, y).mv[0] = geoMrgCtx.mvFieldNeighbours[candIdx0 << 1].mv;
         // mb.at(x, y).mv[1] = geoMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].mv;
         // mb.at(x, y).sliceIdx = biMv.sliceIdx;
-
+        // printf("%i %i %i %i %i\n", mv_info0.mv0.x, mv_info0.mv0.y, mv_info0.mv1.x, mv_info0.mv1.y,inter_dir0);
         update_mv_ctx_b(inter_ctx, mv_info0.mv0, mv_info0.mv1, pb_x + x, pb_y + y, 
                     1, 1, inter_dir0);
       }
@@ -1711,6 +1712,7 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
         // mb.at(x, y).mv[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].mv;
         // mb.at(x, y).sliceIdx = biMv.sliceIdx;
 
+        // printf("%i %i %i %i %i\n", mv_info1.mv0.x, mv_info1.mv0.y, mv_info1.mv1.x, mv_info1.mv1.y, inter_dir1);
         update_mv_ctx_b(inter_ctx, mv_info1.mv0, mv_info1.mv1, pb_x + x, pb_y + y, 
                     1, 1, inter_dir1);
       }
@@ -2041,7 +2043,7 @@ void
 drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                 uint8_t pb_x, uint8_t pb_y,
                 uint8_t nb_pb_w, uint8_t nb_pb_h,
-                int cur_poc, uint8_t max_nb_cand, uint8_t is_small)
+                uint8_t max_nb_cand, uint8_t is_small)
 {
     struct VVCGPM* gpm_ctx = &inter_ctx->gpm_ctx;
     VVCMergeInfo mv_info0, mv_info1;
@@ -2059,28 +2061,56 @@ drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     }
 
     uint8_t parity      = gpm_ctx->merge_idx0 & 1;
-    gpm_ctx->mv0        = parity ? mv_info0.mv1 : mv_info0.mv0;    
-    gpm_ctx->inter_dir0 = parity ? 2 : 1;
-    if (mv_info0.inter_dir == 2 && !parity){
-        gpm_ctx->mv0        = mv_info0.mv1;
-        gpm_ctx->inter_dir0 = 2;
+    // gpm_ctx->mv0        = parity ? mv_info0.mv1 : mv_info0.mv0;    
+    // gpm_ctx->inter_dir0 = parity ? 2 : 1;
+    // if (mv_info0.inter_dir == 2 && !parity){
+    //     gpm_ctx->mv0        = mv_info0.mv1;
+    //     gpm_ctx->inter_dir0 = 2;
+    // }
+    // else if (mv_info0.inter_dir == 1 && parity){
+    //     gpm_ctx->mv0        = mv_info0.mv0;       
+    //     gpm_ctx->inter_dir0 = 1;
+    // }
+
+    if( mv_info0.inter_dir & (0x01 + parity) )
+    {
+        gpm_ctx->inter_dir0 = 1 + parity;
+        gpm_ctx->mv0 = parity ? mv_info0.mv1 : mv_info0.mv0; 
+        //tmpMergeCtx.mvFieldNeighbours[(i << 1) + parity].mv;
     }
-    else if (mv_info0.inter_dir == 1 && parity){
-        gpm_ctx->mv0        = mv_info0.mv0;       
-        gpm_ctx->inter_dir0 = 1;
-    }
+    else if (mv_info0.inter_dir & (0x02 - parity))
+    {
+        gpm_ctx->inter_dir0 = 2 - parity;
+        gpm_ctx->mv0 = parity ? mv_info0.mv0 : mv_info0.mv1; 
+        //tmpMergeCtx.mvFieldNeighbours[(i << 1) + !parity].mv;
+    }   
 
     parity              = gpm_ctx->merge_idx1 & 1;
-    gpm_ctx->mv1        = parity ? mv_info1.mv1 : mv_info1.mv0;
-    gpm_ctx->inter_dir1 = parity ? 2 : 1;
-    if (mv_info1.inter_dir == 2 && !parity){
-        gpm_ctx->mv1        = mv_info1.mv1;
-        gpm_ctx->inter_dir1 = 2;
+    // gpm_ctx->mv1        = parity ? mv_info1.mv1 : mv_info1.mv0;
+    // gpm_ctx->inter_dir1 = parity ? 2 : 1;
+    // if (mv_info1.inter_dir == 2 && !parity){
+    //     gpm_ctx->mv1        = mv_info1.mv1;
+    //     gpm_ctx->inter_dir1 = 2;
+    // }
+    // else if (mv_info1.inter_dir == 1 && parity){
+    //     gpm_ctx->mv1        = mv_info1.mv0;
+    //     gpm_ctx->inter_dir1 = 1;
+    // }
+    if( mv_info1.inter_dir & (0x01 + parity) )
+    {
+        gpm_ctx->inter_dir1 = 1 + parity;
+        gpm_ctx->mv1 = parity ? mv_info1.mv1 : mv_info1.mv0; 
+        //tmpMergeCtx.mvFieldNeighbours[(i << 1) + parity].mv;
     }
-    else if (mv_info1.inter_dir == 1 && parity){
-        gpm_ctx->mv1        = mv_info1.mv0;
-        gpm_ctx->inter_dir1 = 1;
-    }
+    else if (mv_info1.inter_dir & (0x02 - parity))
+    {
+        gpm_ctx->inter_dir1 = 2 - parity;
+        gpm_ctx->mv1 = parity ? mv_info1.mv0 : mv_info1.mv1; 
+        //tmpMergeCtx.mvFieldNeighbours[(i << 1) + !parity].mv;
+    }  
+
+
+
     // printf("\n%i %i\n", pb_x*4, pb_y*4);
     // printf("%i %i\n", gpm_ctx->mv0.x, gpm_ctx->mv0.y);
     // printf("%i %i\n", gpm_ctx->mv1.x, gpm_ctx->mv1.y);

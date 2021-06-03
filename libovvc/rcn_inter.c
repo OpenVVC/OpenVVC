@@ -1921,7 +1921,6 @@ rcn_gpm(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
     tmp_0.cr = &tmp_0_cr[RCN_CTB_PADDING];
     tmp_0.stride   = RCN_CTB_STRIDE;
     tmp_0.stride_c = RCN_CTB_STRIDE;
-    //TODOgpm: change 0 to true list
     int type0 = gpm_ctx->inter_dir0 == 1 ? 0 : 1;
     rcn_mcp(ctudec, tmp_0, x0, y0, log2_pb_w, log2_pb_h, gpm_ctx->mv0, type0,  gpm_ctx->mv0.ref_idx);
 

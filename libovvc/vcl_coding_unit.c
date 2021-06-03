@@ -1163,7 +1163,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         else if(apply_gpm){
             int max_num_gpm_cand = inter_ctx->max_gpm_cand;
             ovcabac_read_ae_gpm_merge_idx(cabac_ctx, &inter_ctx->gpm_ctx, max_num_gpm_cand);
-            drv_gpm_merge_mvp_b(inter_ctx, x_pu, y_pu, nb_pb_w, nb_pb_h, max_num_gpm_cand, 
+            drv_gpm_merge_mvp_b(inter_ctx, x_pu, y_pu, nb_pb_w, nb_pb_h, max_nb_cand, 
                                 log2_pb_w + log2_pb_h <= 5);
         }
         else{

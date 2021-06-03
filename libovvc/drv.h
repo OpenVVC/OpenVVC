@@ -116,6 +116,11 @@ void drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                             uint8_t log2_cu_w, uint8_t log2_cu_h,
                             uint8_t merge_idx);
 
+void drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
+                uint8_t pb_x, uint8_t pb_y,
+                uint8_t nb_pb_w, uint8_t nb_pb_h,
+                uint8_t max_nb_cand, uint8_t is_small);
+
 void process_lfnst(OVCTUDec *const ctudec,
               int16_t *dst, const int16_t *src,
               int log2_tb_w, int log2_tb_h,
