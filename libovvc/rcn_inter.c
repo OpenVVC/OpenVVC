@@ -1829,50 +1829,38 @@ int8_t    g_angle2mask[GEO_NUM_ANGLES] = { 0, -1, 1, 2, 3, 4, -1, -1, 5, -1, -1,
 int8_t    g_Dis[GEO_NUM_ANGLES] = { 8, 8, 8, 8, 4, 4, 2, 1, 0, -1, -2, -4, -4, -8, -8, -8, -8, -8, -8, -8, -4, -4, -2, -1, 0, 1, 2, 4, 4, 8, 8, 8 };
 int8_t    g_angle2mirror[GEO_NUM_ANGLES] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2 };
 
-void rcn_init_gpm_params()
-{
-  // g_GeoParams =  int16_t*[GEO_NUM_PARTITION_MODE];
+void rcn_init_gpm_params(){
   int modeIdx = 0;
-  for( int angleIdx = 0; angleIdx < GEO_NUM_ANGLES; angleIdx++ )
-  {
-    for( int distanceIdx = 0; distanceIdx < GEO_NUM_DISTANCES; distanceIdx++ )
-    {
+  for( int angleIdx = 0; angleIdx < GEO_NUM_ANGLES; angleIdx++ ){
+    for( int distanceIdx = 0; distanceIdx < GEO_NUM_DISTANCES; distanceIdx++ ){
       if( (distanceIdx == 0 && angleIdx >= 16)
         || ((distanceIdx == 2 || distanceIdx == 0) && (g_angle2mask[angleIdx] == 0 || g_angle2mask[angleIdx] == 5))
         || g_angle2mask[angleIdx] == -1 )
       {
         continue;
       }
-      // g_GeoParams[modeIdx]    = new int16_t[2];
       g_GeoParams[modeIdx][0] = (int16_t)angleIdx;
       g_GeoParams[modeIdx][1] = (int16_t)distanceIdx;
       modeIdx++;
     }
   }
-  for (int angleIdx = 0; angleIdx < (GEO_NUM_ANGLES >> 2) + 1; angleIdx++)
-  {
-    if (g_angle2mask[angleIdx] == -1)
-    {
+  for (int angleIdx = 0; angleIdx < (GEO_NUM_ANGLES >> 2) + 1; angleIdx++){
+    if (g_angle2mask[angleIdx] == -1){
       continue;
     }
-    // g_globalGeoWeights[g_angle2mask[angleIdx]] = new int16_t[GEO_WEIGHT_MASK_SIZE * GEO_WEIGHT_MASK_SIZE];
-    // g_globalGeoEncSADmask[g_angle2mask[angleIdx]] = new Pel[GEO_WEIGHT_MASK_SIZE * GEO_WEIGHT_MASK_SIZE];
 
     int distanceX = angleIdx;
     int distanceY = (distanceX + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES;
     int16_t rho = (g_Dis[distanceX] << (GEO_MAX_CU_LOG2+1)) + (g_Dis[distanceY] << (GEO_MAX_CU_LOG2 + 1));
     static const int16_t maskOffset = (2*GEO_MAX_CU_SIZE - GEO_WEIGHT_MASK_SIZE) >> 1;
     int index = 0;
-    for( int y = 0; y < GEO_WEIGHT_MASK_SIZE; y++ )
-    {
+    for( int y = 0; y < GEO_WEIGHT_MASK_SIZE; y++ ){
       int16_t lookUpY = (((y + maskOffset) << 1) + 1) * g_Dis[distanceY];
-      for( int x = 0; x < GEO_WEIGHT_MASK_SIZE; x++, index++ )
-      {
+      for( int x = 0; x < GEO_WEIGHT_MASK_SIZE; x++, index++ ){
         int16_t sx_i = ((x + maskOffset) << 1) + 1;
         int16_t weightIdx = sx_i * g_Dis[distanceX] + lookUpY - rho;
         int weightLinearIdx = 32 + weightIdx;
         g_globalGeoWeights[g_angle2mask[angleIdx]][index] = ov_clip((weightLinearIdx + 4) >> 3, 0, 8);
-        // printf("%i %i %i\n", g_angle2mask[angleIdx], index, g_globalGeoWeights[g_angle2mask[angleIdx]][index]);
         g_globalGeoEncSADmask[g_angle2mask[angleIdx]][index] = weightIdx > 0 ? 1 : 0;
       }
     }
@@ -1881,23 +1869,18 @@ void rcn_init_gpm_params()
   for( int hIdx = 0; hIdx < GEO_NUM_CU_SIZE; hIdx++ )
   {
     int16_t height = 1 << ( hIdx + GEO_MIN_CU_LOG2);
-    for( int wIdx = 0; wIdx < GEO_NUM_CU_SIZE; wIdx++ )
-    {
+    for( int wIdx = 0; wIdx < GEO_NUM_CU_SIZE; wIdx++ ){
       int16_t width = 1 << (wIdx + GEO_MIN_CU_LOG2);
-      for( int splitDir = 0; splitDir < GEO_NUM_PARTITION_MODE; splitDir++ )
-      {
+      for( int splitDir = 0; splitDir < GEO_NUM_PARTITION_MODE; splitDir++ ){
         int16_t angle         = g_GeoParams[splitDir][0];
         int16_t distance      = g_GeoParams[splitDir][1];
         int16_t offsetX       = (GEO_WEIGHT_MASK_SIZE - width) >> 1;
         int16_t offsetY       = (GEO_WEIGHT_MASK_SIZE - height) >> 1;
-        if( distance > 0 )
-        {
-          if( angle % 16 == 8 || (angle % 16 != 0 && height >= width) )
-          {
+        if( distance > 0 ){
+          if( angle % 16 == 8 || (angle % 16 != 0 && height >= width) ){
             offsetY += angle < 16 ? ((distance * (int32_t)height) >> 3) : -((distance * (int32_t)height) >> 3);
           }
-          else
-          {
+          else{
             offsetX += angle < 16 ? ((distance * (int32_t)width) >> 3) : -((distance * (int32_t)width) >> 3);
           }
         }

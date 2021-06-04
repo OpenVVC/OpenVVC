@@ -1575,6 +1575,46 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
 }
 
 static void
+update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
+                const OVMV mv0, const OVMV mv1,
+                uint8_t pb_x, uint8_t  pb_y,
+                uint8_t nb_pb_w, uint8_t nb_pb_h,
+                uint8_t inter_dir)
+{
+    /*FIXME Use specific DBF update function if DBF is disabled */
+    /*FIXME Find a better way to retrieve dbf_info */
+    struct DBFInfo *const dbf_info = &inter_ctx->tmvp_ctx.ctudec->dbf_info;
+    if (inter_dir == 3) {
+        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+        fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+        fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+        fill_dbf_mv_map(dbf_info, mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+        fill_dbf_mv_map(dbf_info, mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+    } else if (inter_dir & 0x2) {
+        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+        fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+        fill_dbf_mv_map_b(dbf_info, mv_ctx1, mv_ctx0, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+    } else if (inter_dir & 0x1) {
+        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+        fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+        fill_dbf_mv_map_b(dbf_info, mv_ctx0, mv_ctx1, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+    }
+}
+
+static void
 update_mv_ctx(struct InterDRVCtx *const inter_ctx,
               const OVMV mv,
               uint8_t pb_x, uint8_t  pb_y,
@@ -1614,110 +1654,86 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
                 uint8_t inter_dir0, uint8_t inter_dir1)
 {   
     VVCMergeInfo mv_info;
-
-    if( inter_dir0 == 1 && inter_dir1 == 2 )
-    {
+    if( inter_dir0 == 1 && inter_dir1 == 2 ){
         mv_info.inter_dir  = 3;
         mv_info.mv0     = mv_info0.mv0;
         mv_info.mv1     = mv_info1.mv1;
-    // mv_info.refIdx[0] = geoMrgCtx.mvFieldNeighbours[ candIdx0 << 1     ].refIdx;
-    // mv_info.refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
     }
-    else if( inter_dir0 == 2 && inter_dir1 == 1 )
-    {
+    else if( inter_dir0 == 2 && inter_dir1 == 1 ){
         mv_info.inter_dir  = 3;
         mv_info.mv0     = mv_info1.mv0;
         mv_info.mv1     = mv_info0.mv1;
-    // mv_info.refIdx[0] = geoMrgCtx.mvFieldNeighbours[ candIdx1 << 1     ].refIdx;
-    // mv_info.refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].refIdx;
     }
-    else if( inter_dir0 == 1 && inter_dir1 == 1 )
-    {
+    else if( inter_dir0 == 1 && inter_dir1 == 1 ){
         mv_info.inter_dir = 1;
         mv_info.mv0 = mv_info1.mv0;
-        // mv_info.mv1.x = 0; mv_info.mv1.y = 0;
-    // mv_info.refIdx[0] = geoMrgCtx.mvFieldNeighbours[candIdx1 << 1].refIdx;
-    // mv_info.refIdx[1] = -1;
+
     }
-    else if( inter_dir0 == 2 && inter_dir1 == 2 )
-    {
+    else if( inter_dir0 == 2 && inter_dir1 == 2 ){
         mv_info.inter_dir = 2;
-        // mv_info.mv0.x = 0; mv_info.mv0.y = 0; 
         mv_info.mv1 = mv_info1.mv1;
-    // mv_info.refIdx[0] = -1;
-    // mv_info.refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
     }
 
-    int splitDir = inter_ctx->gpm_ctx.split_dir;
-  int16_t angle = g_GeoParams[splitDir][0];
-  int tpmMask = 0;
-  int lookUpY = 0, motionIdx = 0;
-  uint8_t isFlip = angle >= 13 && angle <= 27;
-  int distanceIdx = g_GeoParams[splitDir][1];
-  int distanceX = angle;
-  int distanceY = (distanceX + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES;
-  int offsetX = (-(int)nb_pb_w*4) >> 1;
-  int offsetY = (-(int)nb_pb_h*4) >> 1;
-  if (distanceIdx > 0)
-  {
-    if (angle % 16 == 8 || (angle % 16 != 0 && nb_pb_h*4 >= nb_pb_w*4))
-    {
-      offsetY += angle < 16 ? ((distanceIdx * nb_pb_h*4) >> 3) : -(int)((distanceIdx * nb_pb_h*4) >> 3);
+    int split_dir = inter_ctx->gpm_ctx.split_dir;
+    int16_t angle = g_GeoParams[split_dir][0];
+    int tpm_mask = 0;
+    int lookup_y = 0, motion_idx = 0;
+    uint8_t isFlip = angle >= 13 && angle <= 27;
+    int d_idx = g_GeoParams[split_dir][1];
+    int dx = angle;
+    int dy = (dx + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES;
+    int offset_x = (-(int)nb_pb_w*4) >> 1;
+    int offset_y = (-(int)nb_pb_h*4) >> 1;
+    if (d_idx > 0) {
+        if (angle % 16 == 8 || (angle % 16 != 0 && nb_pb_h*4 >= nb_pb_w*4)){
+            offset_y += angle < 16 ? ((d_idx * nb_pb_h*4) >> 3) : -(int)((d_idx * nb_pb_h*4) >> 3);
+        }
+        else{
+            offset_x += angle < 16 ? ((d_idx * nb_pb_w*4) >> 3) : -(int)((d_idx * nb_pb_w*4) >> 3);
+        }
     }
-    else
-    {
-      offsetX += angle < 16 ? ((distanceIdx * nb_pb_w*4) >> 3) : -(int)((distanceIdx * nb_pb_w*4) >> 3);
-    }
-  }
-  for (int y = 0; y < nb_pb_h; y++)
-  {
-    lookUpY = (((4 * y + offsetY) << 1) + 5) * g_Dis[distanceY];
-    for (int x = 0; x < nb_pb_w; x++)
-    {
-      motionIdx = (((4 * x + offsetX) << 1) + 5) * g_Dis[distanceX] + lookUpY;
-      tpmMask = abs(motionIdx) < 32 ? 2 : (motionIdx <= 0 ? (1 - isFlip) : isFlip);
-      if (tpmMask == 2)
-      {
-        // mb.at(x, y).isInter = true;
-        // mb.at(x, y).interDir = biMv.interDir;
-        // mb.at(x, y).refIdx[0] = biMv.refIdx[0];
-        // mb.at(x, y).refIdx[1] = biMv.refIdx[1];
-        // mb.at(x, y).mv[0] = biMv.mv[0];
-        // mb.at(x, y).mv[1] = biMv.mv[1];
-        // mb.at(x, y).sliceIdx = biMv.sliceIdx;
-        // printf("%i %i %i %i %i\n", mv_info.mv0.x, mv_info.mv0.y, mv_info.mv1.x, mv_info.mv1.y, mv_info.inter_dir);
-        update_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, pb_x + x, pb_y + y, 
-                    1, 1, mv_info.inter_dir);
-      }
-      else if (tpmMask == 0)
-      {
-        // mb.at(x, y).isInter = true;
-        // mb.at(x, y).interDir = geoMrgCtx.interDirNeighbours[candIdx0];
-        // mb.at(x, y).refIdx[0] = geoMrgCtx.mvFieldNeighbours[candIdx0 << 1].refIdx;
-        // mb.at(x, y).refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].refIdx;
-        // mb.at(x, y).mv[0] = geoMrgCtx.mvFieldNeighbours[candIdx0 << 1].mv;
-        // mb.at(x, y).mv[1] = geoMrgCtx.mvFieldNeighbours[(candIdx0 << 1) + 1].mv;
-        // mb.at(x, y).sliceIdx = biMv.sliceIdx;
-        // printf("%i %i %i %i %i\n", mv_info0.mv0.x, mv_info0.mv0.y, mv_info0.mv1.x, mv_info0.mv1.y,inter_dir0);
-        update_mv_ctx_b(inter_ctx, mv_info0.mv0, mv_info0.mv1, pb_x + x, pb_y + y, 
-                    1, 1, inter_dir0);
-      }
-      else
-      {
-        // mb.at(x, y).isInter = true;
-        // mb.at(x, y).interDir = geoMrgCtx.interDirNeighbours[candIdx1];
-        // mb.at(x, y).refIdx[0] = geoMrgCtx.mvFieldNeighbours[candIdx1 << 1].refIdx;
-        // mb.at(x, y).refIdx[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].refIdx;
-        // mb.at(x, y).mv[0] = geoMrgCtx.mvFieldNeighbours[candIdx1 << 1].mv;
-        // mb.at(x, y).mv[1] = geoMrgCtx.mvFieldNeighbours[(candIdx1 << 1) + 1].mv;
-        // mb.at(x, y).sliceIdx = biMv.sliceIdx;
+    for (int y = 0; y < nb_pb_h; y++){
+        lookup_y = (((4 * y + offset_y) << 1) + 5) * g_Dis[dy];
 
-        // printf("%i %i %i %i %i\n", mv_info1.mv0.x, mv_info1.mv0.y, mv_info1.mv1.x, mv_info1.mv1.y, inter_dir1);
-        update_mv_ctx_b(inter_ctx, mv_info1.mv0, mv_info1.mv1, pb_x + x, pb_y + y, 
-                    1, 1, inter_dir1);
-      }
+        for (int x = 0; x < nb_pb_w; x++){
+            motion_idx = (((4 * x + offset_x) << 1) + 5) * g_Dis[dx] + lookup_y;
+            tpm_mask = abs(motion_idx) < 32 ? 2 : (motion_idx <= 0 ? (1 - isFlip) : isFlip);
+
+            if (tpm_mask == 2){
+                if (mv_info.inter_dir == 1){
+                    mv_info.mv1.x = mv_info.mv1.y = 0;
+                }
+                else if (mv_info.inter_dir == 2){
+                    mv_info.mv0.x = mv_info.mv0.y = 0;
+                }
+                // printf("%i %i %i %i %i\n", mv_info.mv0.x, mv_info.mv0.y, mv_info.mv1.x, mv_info.mv1.y, mv_info.inter_dir);
+                update_gpm_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, pb_x + x, pb_y + y, 
+                        1, 1, mv_info.inter_dir);
+            }
+            else if (tpm_mask == 0){
+                if (inter_dir0 == 1){
+                    mv_info0.mv1.x = mv_info0.mv1.y = 0;
+                }
+                else if (inter_dir0 == 2){
+                    mv_info0.mv0.x = mv_info0.mv0.y = 0;
+                }
+                // printf("%i %i %i %i %i\n", mv_info0.mv0.x, mv_info0.mv0.y, mv_info0.mv1.x, mv_info0.mv1.y,inter_dir0);
+                update_gpm_mv_ctx_b(inter_ctx, mv_info0.mv0, mv_info0.mv1, pb_x + x, pb_y + y, 
+                        1, 1, inter_dir0);
+            }
+            else{
+                if (inter_dir1 == 1){
+                    mv_info1.mv1.x = mv_info1.mv1.y = 0;
+                }
+                else if (inter_dir1 == 2){
+                    mv_info1.mv0.x = mv_info1.mv0.y = 0;
+                }
+                // printf("%i %i %i %i %i\n", mv_info1.mv0.x, mv_info1.mv0.y, mv_info1.mv1.x, mv_info1.mv1.y, inter_dir1);
+                update_gpm_mv_ctx_b(inter_ctx, mv_info1.mv0, mv_info1.mv1, pb_x + x, pb_y + y, 
+                        1, 1, inter_dir1);
+            }
+        }
     }
-  }
 }
 
 
@@ -2060,60 +2076,25 @@ drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
         mv_info1 = mv_info0;
     }
 
-    uint8_t parity      = gpm_ctx->merge_idx0 & 1;
-    // gpm_ctx->mv0        = parity ? mv_info0.mv1 : mv_info0.mv0;    
-    // gpm_ctx->inter_dir0 = parity ? 2 : 1;
-    // if (mv_info0.inter_dir == 2 && !parity){
-    //     gpm_ctx->mv0        = mv_info0.mv1;
-    //     gpm_ctx->inter_dir0 = 2;
-    // }
-    // else if (mv_info0.inter_dir == 1 && parity){
-    //     gpm_ctx->mv0        = mv_info0.mv0;       
-    //     gpm_ctx->inter_dir0 = 1;
-    // }
-
-    if( mv_info0.inter_dir & (0x01 + parity) )
-    {
+    uint8_t parity = gpm_ctx->merge_idx0 & 1;
+    if( mv_info0.inter_dir & (0x01 + parity) ){
         gpm_ctx->inter_dir0 = 1 + parity;
         gpm_ctx->mv0 = parity ? mv_info0.mv1 : mv_info0.mv0; 
-        //tmpMergeCtx.mvFieldNeighbours[(i << 1) + parity].mv;
     }
-    else if (mv_info0.inter_dir & (0x02 - parity))
-    {
+    else if (mv_info0.inter_dir & (0x02 - parity)){
         gpm_ctx->inter_dir0 = 2 - parity;
         gpm_ctx->mv0 = parity ? mv_info0.mv0 : mv_info0.mv1; 
-        //tmpMergeCtx.mvFieldNeighbours[(i << 1) + !parity].mv;
     }   
 
-    parity              = gpm_ctx->merge_idx1 & 1;
-    // gpm_ctx->mv1        = parity ? mv_info1.mv1 : mv_info1.mv0;
-    // gpm_ctx->inter_dir1 = parity ? 2 : 1;
-    // if (mv_info1.inter_dir == 2 && !parity){
-    //     gpm_ctx->mv1        = mv_info1.mv1;
-    //     gpm_ctx->inter_dir1 = 2;
-    // }
-    // else if (mv_info1.inter_dir == 1 && parity){
-    //     gpm_ctx->mv1        = mv_info1.mv0;
-    //     gpm_ctx->inter_dir1 = 1;
-    // }
-    if( mv_info1.inter_dir & (0x01 + parity) )
-    {
+    parity = gpm_ctx->merge_idx1 & 1;
+    if( mv_info1.inter_dir & (0x01 + parity) ){
         gpm_ctx->inter_dir1 = 1 + parity;
         gpm_ctx->mv1 = parity ? mv_info1.mv1 : mv_info1.mv0; 
-        //tmpMergeCtx.mvFieldNeighbours[(i << 1) + parity].mv;
     }
-    else if (mv_info1.inter_dir & (0x02 - parity))
-    {
+    else if (mv_info1.inter_dir & (0x02 - parity)){
         gpm_ctx->inter_dir1 = 2 - parity;
         gpm_ctx->mv1 = parity ? mv_info1.mv0 : mv_info1.mv1; 
-        //tmpMergeCtx.mvFieldNeighbours[(i << 1) + !parity].mv;
     }  
-
-
-
-    // printf("\n%i %i\n", pb_x*4, pb_y*4);
-    // printf("%i %i\n", gpm_ctx->mv0.x, gpm_ctx->mv0.y);
-    // printf("%i %i\n", gpm_ctx->mv1.x, gpm_ctx->mv1.y);
 
     update_gpm_mv_ctx(inter_ctx, gpm_ctx->mv0, gpm_ctx->mv1, mv_info0, mv_info1, pb_x, pb_y,
                     nb_pb_w, nb_pb_h, gpm_ctx->inter_dir0, gpm_ctx->inter_dir1);
