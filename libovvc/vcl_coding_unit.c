@@ -772,7 +772,6 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
 
         } else {
             uint8_t merge_flag = ovcabac_read_ae_cu_merge_flag(cabac_ctx);
-
             cu_type = ctu_dec->prediction_unit(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, cu_skip_flag, merge_flag);
 
             FLG_STORE(merge_flag, cu.cu_flags);
@@ -1016,7 +1015,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     if(apply_ciip)
         rcn_ciip(ctu_dec, x0, y0, log2_pb_w, log2_pb_h, mv0, ref_idx);
     else
-        rcn_mcp(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx);
+        rcn_mcp(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx, 0);
 
     uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
 

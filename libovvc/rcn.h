@@ -88,7 +88,7 @@ void rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                     OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1);
 
 void rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-             OVMV mv, uint8_t inter_dir, uint8_t ref_idx);
+             OVMV mv, uint8_t inter_dir, uint8_t ref_idx, uint8_t gpm_flag);
 
 void rcn_ciip_b(OVCTUDec*const ctudec, const OVMV mv0, const OVMV mv1,
            unsigned int x0, unsigned int y0,

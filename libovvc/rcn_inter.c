@@ -1218,7 +1218,7 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
 void
 rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-        OVMV mv, uint8_t type, uint8_t ref_idx)
+        OVMV mv, uint8_t type, uint8_t ref_idx, uint8_t gpm_flag)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -1296,7 +1296,7 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
                                           src_y, src_stride, pu_h,
                                           prec_x, prec_y, pu_w);
 
-    if (ctudec->lmcs_info.lmcs_enabled_flag){
+    if (ctudec->lmcs_info.lmcs_enabled_flag && !gpm_flag){
         rcn_lmcs_reshape_luma_blk_lut(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
     }
 
@@ -1600,11 +1600,11 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *cons
 
     } else if (inter_dir & 0x2) {
 
-        rcn_mcp(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
+        rcn_mcp(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1, 0);
 
     } else if (inter_dir & 0x1) {
 
-        rcn_mcp(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
+        rcn_mcp(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0, 0);
 
     }
 }
@@ -1803,7 +1803,7 @@ rcn_ciip(OVCTUDec *const ctudec,
     tmp_inter.cr = &tmp_inter_cr[RCN_CTB_PADDING];
     tmp_inter.stride   = RCN_CTB_STRIDE;
     tmp_inter.stride_c = RCN_CTB_STRIDE;
-    rcn_mcp(ctudec, tmp_inter, x0, y0, log2_pb_w, log2_pb_h, mv, 0, ref_idx);
+    rcn_mcp(ctudec, tmp_inter, x0, y0, log2_pb_w, log2_pb_h, mv, 0, ref_idx, 0);
 
     //Intra Planar mode
     struct OVBuffInfo tmp_intra;
@@ -1891,11 +1891,121 @@ void rcn_init_gpm_params(){
   }
 }
 
+static void
+rcn_gpm_mc_l(OVCTUDec *const ctudec, int16_t* dst, int dst_stride,
+                          uint8_t x0, uint8_t y0,
+                          uint8_t log2_pu_w, uint8_t log2_pu_h, 
+                          //TODO: change to mv without 0
+                          int inter_dir, OVMV mv0)
+{
+    struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
+    const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
+    // struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
+
+    OVPicture *ref0;
+    uint8_t ref_idx_0 = mv0.ref_idx;
+    if (inter_dir == 1)
+        ref0 = inter_ctx->rpl0[ref_idx_0];
+    else
+        ref0= inter_ctx->rpl1[ref_idx_0];
+
+    /* TMP buffers for edge emulation
+     * FIXME use tmp buffers in local contexts
+     */
+    uint16_t edge_buff0[RCN_CTB_SIZE];
+    // uint16_t edge_buff1[RCN_CTB_SIZE];
+    // uint16_t edge_buff0_1[RCN_CTB_SIZE];
+    // uint16_t edge_buff1_1[RCN_CTB_SIZE];
+    // int16_t tmp_buff[RCN_CTB_SIZE];
+
+    /*FIXME we suppose here both refs possess the same size*/
+
+    const int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+
+    /* FIXME we should not need ctb_x/y
+     * it could be retrieved from position in frame buff
+     */
+    int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
+    int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
+
+    mv0 = clip_mv(pos_x, pos_y, ref0->frame->width[0],
+                  ref0->frame->height[0], 1 << log2_pu_w, 1 << log2_pu_h, mv0);
+
+
+    const struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
+
+    const int pu_w = 1 << log2_pu_w;
+    const int pu_h = 1 << log2_pu_h;
+
+    uint8_t prec_x0 = (mv0.x) & 0xF;
+    uint8_t prec_y0 = (mv0.y) & 0xF;
+    uint8_t prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
+    
+    mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](dst, ref0_b.y, ref0_b.stride, pu_h, prec_x0, prec_y0, pu_w);
+}
+
+
+static void
+put_weighted_gpm_pixels(uint16_t* dst, ptrdiff_t dst_stride, struct VVCGPM* gpm_ctx,
+                      const uint16_t* tmp_0_p, const uint16_t* tmp_1_p, ptrdiff_t tmp_stride,
+                      int log2_pb_w_l, int log2_pb_h_l, int cr_scale)
+{   
+
+   //BITDEPTH: only 10
+    int bit_depth = 10;
+  const char    log2WeightBase = 3;
+  const int32_t shiftWeighted = (14 - bit_depth) + log2WeightBase;
+  const int32_t offsetWeighted = (1 << (shiftWeighted - 1)) + (1 << (13 + log2WeightBase));
+
+  int log2_pb_w = log2_pb_w_l - cr_scale;
+  int log2_pb_h = log2_pb_h_l - cr_scale;
+
+  int split_dir = gpm_ctx->split_dir;
+  int16_t angle = g_GeoParams[split_dir][0];
+  int16_t wIdx = log2_pb_w_l - GEO_MIN_CU_LOG2;
+  int16_t hIdx = log2_pb_h_l - GEO_MIN_CU_LOG2;
+  int16_t stepX = 1 << cr_scale;
+  int16_t stepY = 0;
+  int16_t* weight;
+  if (g_angle2mirror[angle] == 2){
+    stepY = -(int)((GEO_WEIGHT_MASK_SIZE << cr_scale) + (1 << log2_pb_w_l));
+    weight = &g_globalGeoWeights[g_angle2mask[angle]][(GEO_WEIGHT_MASK_SIZE - 1 - g_weightOffset[split_dir][hIdx][wIdx][1]) * GEO_WEIGHT_MASK_SIZE + g_weightOffset[split_dir][hIdx][wIdx][0]];
+  }
+  else if (g_angle2mirror[angle] == 1){
+    stepX = -1 << cr_scale;
+    stepY = (GEO_WEIGHT_MASK_SIZE << cr_scale) + (1 << log2_pb_w_l);
+    weight = &g_globalGeoWeights[g_angle2mask[angle]][g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + (GEO_WEIGHT_MASK_SIZE - 1 - g_weightOffset[split_dir][hIdx][wIdx][0])];
+  }
+  else{
+    stepY = (GEO_WEIGHT_MASK_SIZE << cr_scale) - (1 << log2_pb_w_l);
+    weight = &g_globalGeoWeights[g_angle2mask[angle]][g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + g_weightOffset[split_dir][hIdx][wIdx][0]];
+  }
+
+  for( int y = 0; y < (1 << log2_pb_h); y++ ){
+    for( int x = 0; x < (1 << log2_pb_w); x++ ){
+      dst[x]  = ov_clip_pixel(( weight[0] * (tmp_0_p[x]) + (8 - weight[0]) * (tmp_1_p[x]) + 4) >> log2WeightBase);
+      // dst[x]  = ov_clip_pixel((weight[0]*(tmp_0_p[x]) + ((8 - weight[0]) * (tmp_1_p[x])) + offsetWeighted) >> shiftWeighted);
+      // *dst++  = ClipPel(rightShift((*weight*(*src0++) + ((8 - *weight) * (*src1++)) + offsetWeighted), shiftWeighted), clipRng);
+      weight += stepX;
+    }
+    dst       += dst_stride;
+    tmp_0_p   += tmp_stride;
+    tmp_1_p   += tmp_stride;
+    weight    += stepY;
+  }
+}
+
 
 void
 rcn_gpm(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
          int x0, int y0, int log2_pb_w, int log2_pb_h)
-{
+{   
+    #define ORIG 1
+    int gpm_flag = 1;
+
+    #if ORIG
     //First geometric part reconstruction
     struct OVBuffInfo tmp_0;
     uint16_t tmp_0_l [RCN_CTB_SIZE], tmp_0_cb[RCN_CTB_SIZE], tmp_0_cr[RCN_CTB_SIZE] ;
@@ -1905,9 +2015,17 @@ rcn_gpm(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
     tmp_0.stride   = RCN_CTB_STRIDE;
     tmp_0.stride_c = RCN_CTB_STRIDE;
     int type0 = gpm_ctx->inter_dir0 == 1 ? 0 : 1;
-    rcn_mcp(ctudec, tmp_0, x0, y0, log2_pb_w, log2_pb_h, gpm_ctx->mv0, type0,  gpm_ctx->mv0.ref_idx);
+    rcn_mcp(ctudec, tmp_0, x0, y0, log2_pb_w, log2_pb_h, gpm_ctx->mv0, type0,  gpm_ctx->mv0.ref_idx, gpm_flag);
+    #else
+    int16_t tmp_0 [RCN_CTB_SIZE];
+    int tmp_stride = RCN_CTB_STRIDE;
+    int16_t* tmp_0_p = &tmp_0[0] + x0 + y0 * tmp_stride;
+    rcn_gpm_mc_l(ctudec, tmp_0_p, tmp_stride, x0, y0, log2_pb_w, log2_pb_h,
+                          gpm_ctx->inter_dir0, gpm_ctx->mv0);
+    #endif
 
-    //Second geometric part reconstruction
+    #if ORIG
+    // Second geometric part reconstruction
     struct OVBuffInfo tmp_1;
     uint16_t tmp_1_l [RCN_CTB_SIZE], tmp_1_cb[RCN_CTB_SIZE], tmp_1_cr[RCN_CTB_SIZE] ;
     tmp_1.y  = &tmp_1_l [RCN_CTB_PADDING];
@@ -1916,97 +2034,47 @@ rcn_gpm(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
     tmp_1.stride   = RCN_CTB_STRIDE;
     tmp_1.stride_c = RCN_CTB_STRIDE;
     int type1 = gpm_ctx->inter_dir1 == 1 ? 0 : 1;
-    rcn_mcp(ctudec, tmp_1, x0, y0, log2_pb_w, log2_pb_h, gpm_ctx->mv1, type1, gpm_ctx->mv1.ref_idx);
+    rcn_mcp(ctudec, tmp_1, x0, y0, log2_pb_w, log2_pb_h, gpm_ctx->mv1, type1, gpm_ctx->mv1.ref_idx, gpm_flag);
+    
+    #else
+    int16_t tmp_1 [RCN_CTB_SIZE];
+    int16_t* tmp_1_p = &tmp_1[0] + x0 + y0 * tmp_stride;
+    rcn_gpm_mc_l(ctudec, tmp_1_p, tmp_stride, x0, y0, log2_pb_w, log2_pb_h,
+                          gpm_ctx->inter_dir1, gpm_ctx->mv1);
+    #endif
 
     struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
     dst.y   += x0 + y0 * dst.stride;
+    uint16_t* dst_init = dst.y;
+
+    #if ORIG
     tmp_0.y += x0 + y0 * tmp_0.stride;
     tmp_1.y += x0 + y0 * tmp_1.stride;
-  //   Pel*    dst = predDst.get(compIdx).buf;
-  // Pel*    src0 = predSrc0.get(compIdx).buf;
-  // Pel*    src1 = predSrc1.get(compIdx).buf;
-  // int32_t dst.stride = predDst.get(compIdx).stride - width;
-  // int32_t tmp_0.stride = predSrc0.get(compIdx).stride - width;
-  // int32_t tmp_1.stride = predSrc1.get(compIdx).stride - width;
+    put_weighted_gpm_pixels(dst.y, dst.stride, gpm_ctx, tmp_0.y, tmp_1.y, tmp_0.stride,
+                       log2_pb_w, log2_pb_h, 0);
+    
+    #else
+    put_weighted_gpm_pixels(dst.y, dst.stride, gpm_ctx, tmp_0_p, tmp_1_p, tmp_stride,
+                       log2_pb_w, log2_pb_h, 0);
+    #endif
 
-    //BITDEPTH: only 10
-    int bit_depth = 10;
-  const char    log2WeightBase = 3;
-    // const int32_t shiftWeighted = IF_INTERNAL_FRAC_BITS(clipbd) + log2WeightBase;
-  const int32_t shiftWeighted = (14 - bit_depth) + log2WeightBase;
-  const int32_t offsetWeighted = (1 << (shiftWeighted - 1)) + (1 << (13 + log2WeightBase));
-  // const uint32_t scaleX = getComponentScaleX(compIdx, pu.chromaFormat);
-  // const uint32_t scaleY = getComponentScaleY(compIdx, pu.chromaFormat);
-  const uint32_t scaleX = 0;
-  const uint32_t scaleY = 0;
-
-  int split_dir = gpm_ctx->split_dir;
-  int16_t angle = g_GeoParams[split_dir][0];
-  int16_t wIdx = log2_pb_w - GEO_MIN_CU_LOG2;
-  int16_t hIdx = log2_pb_h - GEO_MIN_CU_LOG2;
-  int16_t stepX = 1 << scaleX;
-  int16_t stepY = 0;
-  int16_t* weight;
-  if (g_angle2mirror[angle] == 2)
-  {
-    stepY = -(int)((GEO_WEIGHT_MASK_SIZE << scaleY) + (1 << log2_pb_w));
-    weight = &g_globalGeoWeights[g_angle2mask[angle]][(GEO_WEIGHT_MASK_SIZE - 1 - g_weightOffset[split_dir][hIdx][wIdx][1]) * GEO_WEIGHT_MASK_SIZE + g_weightOffset[split_dir][hIdx][wIdx][0]];
-  }
-  else if (g_angle2mirror[angle] == 1)
-  {
-    stepX = -1 << scaleX;
-    stepY = (GEO_WEIGHT_MASK_SIZE << scaleY) + (1 << log2_pb_w);
-    weight = &g_globalGeoWeights[g_angle2mask[angle]][g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + (GEO_WEIGHT_MASK_SIZE - 1 - g_weightOffset[split_dir][hIdx][wIdx][0])];
-  }
-  else
-  {
-    // printf("%i %i\n",g_angle2mask[angle],  g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + g_weightOffset[split_dir][hIdx][wIdx][0]);
-    stepY = (GEO_WEIGHT_MASK_SIZE << scaleY) - (1 << log2_pb_w);
-    weight = &g_globalGeoWeights[g_angle2mask[angle]][g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + g_weightOffset[split_dir][hIdx][wIdx][0]];
-  }
-  for( int y = 0; y < (1 << log2_pb_h); y++ )
-  {
-    for( int x = 0; x < (1 << log2_pb_w); x++ )
-    {
-        // printf("%i\n", weight[0]);
-      dst.y[x]  = ov_clip_pixel(( weight[0] * (tmp_0.y[x]) + (8 - weight[0]) * (tmp_1.y[x]) + 4) >> log2WeightBase);
-      // dst.y[x]  = ov_clip_pixel(( weight[0] * (tmp_1.y[x]) + (8 - weight[0]) * (tmp_0.y[x]) ) >> log2WeightBase);
-      // dst.y[x]  = ov_clip_pixel((weight[0]*(tmp_0.y[x]) + ((8 - weight[0]) * (tmp_1.y[x])) + offsetWeighted) >> shiftWeighted);
-      // *dst++  = ClipPel(rightShift((*weight*(*src0++) + ((8 - *weight) * (*src1++)) + offsetWeighted), shiftWeighted), clipRng);
-      weight += stepX;
+    if (ctudec->lmcs_info.lmcs_enabled_flag){
+        rcn_lmcs_reshape_luma_blk_lut(dst_init, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, 
+                                    (1 << log2_pb_w), (1 << log2_pb_h));
     }
-    dst.y     += dst.stride;
-    tmp_0.y   += tmp_0.stride;
-    tmp_1.y   += tmp_1.stride;
-    weight += stepY;
-  }
+    
+    #if ORIG
+    int cr_scale = 1;
+    dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
+    tmp_0.cb += (x0 >> 1) + (y0 >> 1) * tmp_0.stride_c;
+    tmp_1.cb += (x0 >> 1) + (y0 >> 1) * tmp_1.stride_c;
+    put_weighted_gpm_pixels(dst.cb, dst.stride_c, gpm_ctx, tmp_0.cb, tmp_1.cb, tmp_0.stride_c,
+                       log2_pb_w, log2_pb_h, cr_scale);
 
-
-  // const uint8_t splitDir = cu.firstPU->geoSplitDir;
-  // const uint8_t candIdx0 = cu.firstPU->geoMergeIdx0;
-  // const uint8_t candIdx1 = cu.firstPU->geoMergeIdx1;
-  // for( auto &pu : CU::traversePUs( cu ) )
-  // {
-  //   const UnitArea localUnitArea( cu.cs->area.chromaFormat, Area( 0, 0, (1 << log2_pb_w), (1 << log2_pb_h) ) );
-  //   PelUnitBuf tmpGeoBuf0 = m_geoPartBuf[0].getBuf( localUnitArea );
-  //   PelUnitBuf tmpGeoBuf1 = m_geoPartBuf[1].getBuf( localUnitArea );
-  //   PelUnitBuf predBuf    = cu.cs->getPredBuf( pu );
-
-  //   geoMrgCtx.setMergeInfo( pu, candIdx0 );
-  //   PU::spanMotionInfo( pu );
-  //   motionCompensation(pu, tmpGeoBuf0, REF_PIC_LIST_X, true, isChromaEnabled(pu.chromaFormat)); // TODO: check 4:0:0 interaction with weighted prediction.
-  //   if( g_mctsDecCheckEnabled && !MCTSHelper::checkMvBufferForMCTSConstraint( pu, true ) )
-  //   {
-  //     printf( "DECODER_GEO_PU: pu motion vector across tile boundaries (%d,%d,%d,%d)\n", pu.lx(), pu.ly(), (1 << log2_pb_w), (1 << log2_pb_h) );
-  //   }
-
-  //   geoMrgCtx.setMergeInfo( pu, candIdx1 );
-  //   PU::spanMotionInfo( pu );
-  //   motionCompensation(pu, tmpGeoBuf1, REF_PIC_LIST_X, true, isChromaEnabled(pu.chromaFormat)); // TODO: check 4:0:0 interaction with weighted prediction.
-  //   if( g_mctsDecCheckEnabled && !MCTSHelper::checkMvBufferForMCTSConstraint( pu, true ) )
-  //   {
-  //     printf( "DECODER_GEO_PU: pu motion vector across tile boundaries (%d,%d,%d,%d)\n", pu.lx(), pu.ly(), (1 << log2_pb_w), (1 << log2_pb_h) );
-  //   }
-  //   weightedGeoBlk(pu, splitDir, isChromaEnabled(pu.chromaFormat)? MAX_NUM_CHANNEL_TYPE : CHANNEL_TYPE_LUMA, predBuf, tmpGeoBuf0, tmpGeoBuf1);
-  // }
+    dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
+    tmp_0.cr += (x0 >> 1) + (y0 >> 1) * tmp_0.stride_c;
+    tmp_1.cr += (x0 >> 1) + (y0 >> 1) * tmp_1.stride_c;
+    put_weighted_gpm_pixels(dst.cr, dst.stride_c, gpm_ctx, tmp_0.cr, tmp_1.cr, tmp_0.stride_c,
+                       log2_pb_w, log2_pb_h, cr_scale);
+    #endif
 }
