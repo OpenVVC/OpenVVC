@@ -289,24 +289,12 @@ derive_cand_position(struct PBInfo pb_info, enum CandName cand_name)
 static struct AffineDeltaMV
 derive_affine_delta_mvs(const struct AffineControlInfo *const cinfo,
                         uint8_t log2_pb_w, uint8_t log2_pb_h,
-                        uint8_t affine_type, uint8_t clip)
+                        uint8_t affine_type)
 {
     struct AffineDeltaMV dmv;
     OVMV delta_mv_h, delta_mv_v;
 
     const uint8_t scale_h = AFFINE_SHIFT - log2_pb_w;
-
-    /* FIXME clip only true for non merge mode after mvd is applied on CPs */
-    /* TODO move this out */
-    #if 0
-    if (clip) {
-        cinfo->lt = mv_clip_periodic(cinfo->lt);
-        cinfo->rt = mv_clip_periodic(cinfo->rt);
-        if (affine_type == AFFINE_3CP) {
-            cinfo->lb = mv_clip_periodic(cinfo->lb);
-        }
-    }
-    #endif
 
     delta_mv_h.x = (cinfo->rt.x - cinfo->lt.x) << scale_h;
     delta_mv_h.y = (cinfo->rt.y - cinfo->lt.y) << scale_h;
@@ -365,9 +353,8 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
     }
 
     /* FIXME determine clip from merge or mvp cand derivation */
-    struct AffineDeltaMV delta_mv = derive_affine_delta_mvs(ngh_cp, log2_ngh_w,
-                                                            log2_ngh_h, affine_type,
-                                                            0);
+    struct AffineDeltaMV delta_mv = derive_affine_delta_mvs(ngh_cp, log2_ngh_w, log2_ngh_h,
+                                                            ngh_affine_type);
 
     OVMV tmp, lt_mv;
 
