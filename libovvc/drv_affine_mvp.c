@@ -519,7 +519,7 @@ found:
     return 1;
 }
 
-void
+struct AffineControlInfo
 drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
                struct AffineDRVInfo *affine_ctx,
                uint8_t x_pb, uint8_t y_pb,
@@ -618,7 +618,7 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
             cp_info[i].rt = round_affine_mv(cp_info[i].rt);
             cp_info[i].lb = round_affine_mv(cp_info[i].lb);
         }
-        return;
+        return cp_info[mvp_idx];
     }
 
     /* Control points from MVs */
@@ -726,6 +726,7 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
         cp_info[i].rt = round_affine_mv(cp_info[i].rt);
         cp_info[i].lb = round_affine_mv(cp_info[i].lb);
     }
+    return cp_info[mvp_idx];
 }
 
 /* Affine merge related functions
