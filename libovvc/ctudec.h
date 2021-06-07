@@ -333,6 +333,12 @@ struct InterDRVCtx
      */
     uint8_t mmvd_flag;
 
+    /* Bi-prediction CU-level Weight (BCW) Related
+     * information
+     */
+    uint8_t bcw_flag;
+    uint8_t bcw_idx;
+
     /* Geometric Partition Mode(GPM) Related
      * information
      */
