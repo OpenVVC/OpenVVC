@@ -321,7 +321,8 @@ derive_affine_delta_mvs(const struct AffineControlInfo *const cinfo,
 static struct AffineControlInfo
 derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
                     struct PBInfo pb_info, struct PBInfo ngh_pb,
-                    uint8_t affine_type, enum CandName cand_name)
+                    uint8_t affine_type, uint8_t ngh_affine_type,
+                    enum CandName cand_name)
 {
     int ngh_x0 = ngh_pb.x_pb << 2;
     int ngh_y0 = ngh_pb.x_pb << 2;
@@ -358,7 +359,7 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
 
     OVMV tmp, lt_mv;
 
-    if (is_abv_ctu) {
+    if (is_abv_ctu || ngh_affine_type == AFFINE_2CP) {
         delta_mv.v.x = -delta_mv.h.y;
         delta_mv.v.y =  delta_mv.h.x;
     }
@@ -431,7 +432,8 @@ derive_affine_mvp_cand(const struct AffineDRVInfo *const affine_ctx,
             struct AffineControlInfo ngh_cp_info = affine_info->cps[rpl_idx];
             if (ngh_cp_info.lt.ref_idx == ref_idx) {
 
-                cp_info = derive_cp_from_cand(&ngh_cp_info, pb, ngh_pb, affine_type, cand_name);
+                cp_info = derive_cp_from_cand(&ngh_cp_info, pb, ngh_pb, affine_type,
+                                              affine_info->type, cand_name);
 
                 goto found;
             }
@@ -442,7 +444,8 @@ derive_affine_mvp_cand(const struct AffineDRVInfo *const affine_ctx,
 
             if (ngh_cp_info.lt.ref_idx == ref_opp_idx) {
 
-                cp_info = derive_cp_from_cand(&ngh_cp_info, pb, ngh_pb, affine_type, cand_name);
+                cp_info = derive_cp_from_cand(&ngh_cp_info, pb, ngh_pb, affine_type,
+                                              affine_info->type, cand_name);
 
                 /* override ref_idx since it is taken from opposit RPL */
                 cp_info.lt.ref_idx = ref_idx;
@@ -1109,14 +1112,16 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
         if (dir & 0x1) {
             struct AffineControlInfo cand_cp_info0 = affine_info->cps[RPL_0];
             struct PBInfo ngh_pb = affine_info->pb;
-            cp_info0 = derive_cp_from_cand(&cand_cp_info0, pb_info, ngh_pb, affine_type, cand_name);
+            cp_info0 = derive_cp_from_cand(&cand_cp_info0, pb_info, ngh_pb, affine_type,
+                                           affine_info->type, cand_name);
         }
 
         /* Note we do not check for B slice since dir should already be 1 if P slice */
         if (dir & 0x2) {
             struct AffineControlInfo cand_cp_info1 = affine_info->cps[RPL_1];
             struct PBInfo ngh_pb = affine_info->pb;
-            cp_info1 = derive_cp_from_cand(&cand_cp_info1, pb_info, ngh_pb, affine_type, cand_name);
+            cp_info1 = derive_cp_from_cand(&cand_cp_info1, pb_info, ngh_pb, affine_type,
+                                           affine_info->type, cand_name);
         }
 
         aff_mrg_ctx[0].cinfo[0] = cp_info0;
@@ -1147,14 +1152,16 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
         if (dir & 0x1) {
             struct AffineControlInfo cand_cp_info0 = affine_info->cps[RPL_0];
             struct PBInfo ngh_pb = affine_info->pb;
-            cp_info0 = derive_cp_from_cand(&cand_cp_info0, pb_info, ngh_pb, affine_type, cand_name);
+            cp_info0 = derive_cp_from_cand(&cand_cp_info0, pb_info, ngh_pb, affine_type,
+                                           affine_info->type, cand_name);
         }
 
         /* Note we do not check for B slice since dir should be 1 if P slice */
         if (dir & 0x2) {
             struct AffineControlInfo cand_cp_info1 = affine_info->cps[RPL_1];
             struct PBInfo ngh_pb = affine_info->pb;
-            cp_info1 = derive_cp_from_cand(&cand_cp_info1, pb_info, ngh_pb, affine_type, cand_name);
+            cp_info1 = derive_cp_from_cand(&cand_cp_info1, pb_info, ngh_pb, affine_type,
+                                           affine_info->type, cand_name);
         }
 
         aff_mrg_ctx[0].cinfo[0] = cp_info0;
@@ -1392,12 +1399,12 @@ broadcast_mv(struct AffineDeltaMV delta_mv, uint8_t inter_dir)
 void
 compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
                      uint8_t log2_cu_w, uint8_t log2_cu_h,
-                     uint8_t inter_dir, uint8_t affine_type, uint8_t clip)
+                     uint8_t inter_dir, uint8_t affine_type)
 {
     /* Compute delta_mv from control points */
     /* TODO call before and give as an argument */
     const struct AffineDeltaMV delta_mv = derive_affine_delta_mvs(cinfo, log2_cu_w, log2_cu_h,
-                                                                  affine_type, clip);
+                                                                  affine_type);
 
     /* FIXME understand this */
     const uint8_t mv_broad = broadcast_mv(delta_mv, inter_dir);
