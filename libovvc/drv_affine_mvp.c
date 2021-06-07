@@ -1139,7 +1139,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
         struct AffineControlInfo cp_info0;
         struct AffineControlInfo cp_info1;
 
-        uint8_t dir = (!!(rpl0_cand & cand_lft)) | ((!!(rpl1_cand & cand_lft)) << 1);
+        uint8_t dir = (!!(rpl0_cand & cand_abv)) | ((!!(rpl1_cand & cand_abv)) << 1);
 
         if (dir & 0x1) {
             struct AffineControlInfo cand_cp_info0 = affine_info->cps[RPL_0];
