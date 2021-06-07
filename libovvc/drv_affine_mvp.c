@@ -198,14 +198,14 @@ is_above_cand(enum CandName cand_name)
 }
 
 static inline uint8_t
-check_cand_available(uint64_t lft_col, uint64_t abv_row, uint8_t pb_x, uint8_t pb_y,
+check_cand_available(uint64_t abv_row, uint64_t lft_col, uint8_t pb_x, uint8_t pb_y,
                      uint8_t nb_pb_w, uint8_t nb_pb_h)
 {
     /* Note A3 and B2 correspond to the same candidate */
     uint64_t a0_pos_msk = POS_MASK(pb_y, nb_pb_h);
     uint64_t a1_pos_msk = POS_MASK(pb_y, nb_pb_h - 1);
-    uint64_t a2_pos_msk = POS_MASK(pb_y - 1, 0);
-    uint64_t a3_pos_msk = POS_MASK(pb_y, 0);
+    uint64_t a2_pos_msk = POS_MASK(pb_y, 0);
+    uint64_t a3_pos_msk = POS_MASK(pb_y - 1, 0);
 
     uint64_t b0_pos_msk = POS_MASK(pb_x, nb_pb_w);
     uint64_t b1_pos_msk = POS_MASK(pb_x, nb_pb_w - 1);
