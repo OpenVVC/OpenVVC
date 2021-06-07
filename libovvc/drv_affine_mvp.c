@@ -145,11 +145,11 @@ round_affine_mv(const OVMV mv)
 {
     OVMV tmp;
 
-    tmp.x = mv.x << 2;
-    tmp.y = mv.y << 2;
+    tmp.x = (mv.x + 1 + (mv.x < 0)) >> 2;
+    tmp.y = (mv.y + 1 + (mv.y < 0)) >> 2;
 
-    tmp.x = (tmp.x + 1 + (tmp.x < 0)) >> 2;
-    tmp.y = (tmp.y + 1 + (tmp.y < 0)) >> 2;
+    tmp.x = tmp.x << 2;
+    tmp.y = tmp.y << 2;
 
     return tmp;
 }
