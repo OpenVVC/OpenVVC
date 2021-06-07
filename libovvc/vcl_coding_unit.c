@@ -1053,7 +1053,25 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 cu_type = OV_AFFINE;
 
                 /* TODO call affine drv merge and rcn functions */
+                drv_affine_merge_mvp_b(inter_ctx, x0, y0, log2_pb_w, log2_pb_h,
+                                       merge_idx);
 
+                uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
+
+                ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_pu << pu_shift,
+                                            y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+                ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x_pu << pu_shift,
+                                            y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+
+                /*FIXME this has to be moved to DRV */
+                /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
+                memset(&i_info->luma_mode_x[x_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_w);
+                memset(&i_info->luma_mode_y[y_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_h);
+
+                for (int i = 0; i < nb_pb_h; i++) {
+                    memset(&i_info->luma_modes[x_pu + (i << 5) + (y_pu << 5)], OVINTRA_PLANAR,
+                           sizeof(uint8_t) * nb_pb_w);
+                }
                 return cu_type;
             }
         }
@@ -1145,7 +1163,27 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 }
 
                 /* TODO call affine drv MVP and rcn functions */
+                drv_affine_mvp_b(inter_ctx, x0, y0, log2_pb_w, log2_pb_h,
+                                 cp_mvd0, cp_mvd1, mvp_idx0, mvp_idx1,
+                                 inter_dir, ref_idx0, ref_idx1,
+                                 affine_type);
 
+                uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
+
+                ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_pu << pu_shift,
+                                            y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+                ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x_pu << pu_shift,
+                                            y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+
+                /*FIXME this has to be moved to DRV */
+                /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
+                memset(&i_info->luma_mode_x[x_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_w);
+                memset(&i_info->luma_mode_y[y_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_h);
+
+                for (int i = 0; i < nb_pb_h; i++) {
+                    memset(&i_info->luma_modes[x_pu + (i << 5) + (y_pu << 5)], OVINTRA_PLANAR,
+                           sizeof(uint8_t) * nb_pb_w);
+                }
                 return cu_type;
             }
         }
