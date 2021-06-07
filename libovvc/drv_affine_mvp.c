@@ -1302,8 +1302,8 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
         }
 
         if (check_avail_cp(avail_cp_map, CP2_MASK0)) {
-            nb_cand += derive_affine_control_point_0(mi, log2_cu_w, log2_cu_h,
-                                                     0, aff_mrg_ctx);
+            nb_cand += derive_affine_control_point_0(mi, 0, log2_cu_w, log2_cu_h,
+                                                     aff_mrg_ctx);
 
             if (nb_cand - 1 == mrg_idx) {
                 return;
@@ -1311,8 +1311,8 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
         }
 
         if (check_avail_cp(avail_cp_map, CP2_MASK1)) {
-            nb_cand += derive_affine_control_point_0(mi, log2_cu_w, log2_cu_h,
-                                                     1, aff_mrg_ctx);
+            nb_cand += derive_affine_control_point_0(mi, 1, log2_cu_w, log2_cu_h,
+                                                     aff_mrg_ctx);
 
             if (nb_cand - 1 == mrg_idx) {
                 return;
