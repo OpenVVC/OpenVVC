@@ -939,11 +939,12 @@ load_first_ctu_inter(const struct DRVLines *const l,
 
     memcpy(&mv_ctx0->mvs[1], &lns->mv0[0], sizeof(OVMV) * nb_ctb_pb);
     memcpy(&mv_ctx1->mvs[1], &lns->mv1[0], sizeof(OVMV) * nb_ctb_pb);
-    memcpy(&aff_info[1], &aff_info[0], sizeof(struct AffineInfo) * nb_ctb_pb);
+
+    memcpy(&aff_info[1], &lns->aff_info[0], sizeof(struct AffineInfo) * nb_ctb_pb);
 
     mv_ctx0->mvs[1 + nb_ctb_pb] = lns->mv0[nb_ctb_pb];
     mv_ctx1->mvs[1 + nb_ctb_pb] = lns->mv1[nb_ctb_pb];
-    aff_info[1 + nb_ctb_pb] = aff_info[nb_ctb_pb];
+    aff_info[1 + nb_ctb_pb] = lns->aff_info[nb_ctb_pb];
 
     for (i = 1; i < nb_ctb_pb + 1; i++) {
         uint64_t top_available0 = !!(above_map0 & (1llu << (i - 1)));
