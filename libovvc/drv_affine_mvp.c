@@ -1,5 +1,7 @@
 #include "ovutils.h"
 #include "ctudec.h"
+#include "drv_utils.h"
+#include "dec_structures.h"
 
 #define NB_TAP 6
 #define NB_TAP_PLUS3 (NB_TAP + 3)
@@ -18,6 +20,8 @@
 #define POS_MASK(x, w) ((uint64_t) 1 << ((((x + 1)) + ((w)))))
 
 #define OFFSET_BUFF(x,y) (35 + x + (y) * 34)
+
+#define PB_POS_IN_BUF(x,y) (35 + (x) + ((y) * 34))
 
 #define MAX_NB_AMVP_CAND 2
 
@@ -1477,9 +1481,325 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
         }
     }
 }
+
+static void
+update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
+                struct AffineMergeInfo mv_info,
+                uint8_t pb_x, uint8_t  pb_y,
+                uint8_t nb_pb_w, uint8_t nb_pb_h,
+                uint8_t log2_cu_w, uint8_t log2_cu_h,
+                uint8_t inter_dir)
+{
+    /*FIXME check for specific DBF application for sub blokc MVs */
+    struct AffineDRVInfo *aff_info = &inter_ctx->affine_ctx;
+
+    uint16_t pos = PB_POS_IN_BUF(pb_x, pb_y);
+
+    ctu_field_set_rect_bitfield(&aff_info->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+    if (inter_dir == 0x3) {
+        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+        ctu_field_set_rect_bitfield(&mv_ctx0->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
+        ctu_field_set_rect_bitfield(&mv_ctx1->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+        compute_subblock_mvs(&mv_info.cinfo[0], &mv_ctx0->mvs[pos], log2_cu_w, log2_cu_h, 0x3, mv_info.affine_type);
+        compute_subblock_mvs(&mv_info.cinfo[1], &mv_ctx1->mvs[pos], log2_cu_w, log2_cu_h, 0x3, mv_info.affine_type);
+
+    } else if (inter_dir & 0x2) {
+        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+        ctu_field_set_rect_bitfield(&mv_ctx1->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+        compute_subblock_mvs(&mv_info.cinfo[1], &mv_ctx1->mvs[pos], log2_cu_w, log2_cu_h, 0x2, mv_info.affine_type);
+
+    } else if (inter_dir & 0x1) {
+        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+
+        ctu_field_set_rect_bitfield(&mv_ctx0->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+        compute_subblock_mvs(&mv_info.cinfo[0], &mv_ctx0->mvs[pos], log2_cu_w, log2_cu_h, 0x1, mv_info.affine_type);
+    }
+}
+
+#if 0
+static void
+update_mv_ctx(struct InterDRVCtx *const inter_ctx,
+              struct AffineMergeInfo mv_info,
+              uint8_t pb_x, uint8_t  pb_y,
+              uint8_t nb_pb_w, uint8_t nb_pb_h,
+              uint8_t log2_cu_w, uint8_t log2_cu_h,
+              uint8_t inter_dir)
+{
+    /*FIXME check for specific DBF application for sub blokc MVs */
+    struct AffineDRVInfo *aff_info = &inter_ctx->affine_ctx;
+
+    ctu_field_set_rect_bitfield(&aff_info->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+    if (inter_dir & 0x2) {
+        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+        ctu_field_set_rect_bitfield(&mv_ctx1->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+        compute_subblock_mvs(&mv_info.cinfo[1], log2_cu_w, log2_cu_h, 0x2, mv_info.affine_type);
+
+
+    } else if (inter_dir & 0x1) {
+        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+
+        ctu_field_set_rect_bitfield(&mv_ctx0->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+        compute_subblock_mvs(&mv_info.cinfo[0], log2_cu_w, log2_cu_h, 0x1, mv_info.affine_type);
+
+    }
+}
+#endif
+
+void
+store_affine_info(struct AffineDRVInfo *const affine_ctx, struct AffineInfo aff_info, uint8_t x_pb, uint8_t y_pb, uint8_t nb_pb_w, uint8_t nb_pb_h)
+{
+    int i, j;
+    uint16_t pos = PB_POS_IN_BUF(x_pb, y_pb);
+    struct AffineInfo *aff_buff = &affine_ctx->affine_info[pos];
+
+    for (i = 0; i < nb_pb_h; ++i) {
+        for (j = 0; j < nb_pb_w; ++j) {
+            aff_buff[j] = aff_info;
+        }
+        aff_buff += 34;
+    }
+}
+
+
+void
+rcn_affine_mcp_b(OVCTUDec *const ctudec,
+                 struct InterDRVCtx *const inter_ctx,
+                 uint8_t x0, uint8_t y0,
+                 uint8_t log2_cu_w, uint8_t log2_cu_h,
+                 uint8_t inter_dir)
+{
+    int i, j;
+    uint8_t nb_sb_w = (1 << log2_cu_w) >> LOG2_MIN_CU_S;
+    uint8_t nb_sb_h = (1 << log2_cu_h) >> LOG2_MIN_CU_S;
+
+    uint16_t pos = PB_POS_IN_BUF(x0 >> 2, y0 >> 2);
+
+    const struct OVMV *mv_buff0 = &inter_ctx->mv_ctx0.mvs[pos];
+    const struct OVMV *mv_buff1 = &inter_ctx->mv_ctx1.mvs[pos];
+    uint8_t ref_idx0 = mv_buff0->ref_idx;
+    uint8_t ref_idx1 = mv_buff1->ref_idx;
+
+
+    for (i = 0; i < nb_sb_h; ++i) {
+        for (j = 0; j < nb_sb_w; ++j) {
+            OVMV mv0 = mv_buff0[j];
+            OVMV mv1 = mv_buff1[j];
+
+            /* FIXME chroma MCP is also processed on 4x4 sub blocks its MVs needs
+             * to be averaged on diagonal subblocks MVs.
+             */
+            rcn_mcp_b(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
+                      mv0, mv1, x0 + 4*j, y0 + 4*i,
+                      2, 2, inter_dir, ref_idx0, ref_idx1);
+        }
+
+        mv_buff0 += 34;
+        mv_buff1 += 34;
+    }
+}
+
+/* TODO P slices functions */
+void
+drv_affine_merge_mvp()
+{
+}
+
+void
+drv_affine_mvp_mvd()
+{
+}
+
+
+/* Derive motion vectors and update motion maps */
+void
+drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
+                 uint8_t x0, uint8_t y0,
+                 uint8_t log2_cu_w, uint8_t log2_cu_h,
+                 struct AffineControlInfo cp_mvd0, struct AffineControlInfo cp_mvd1,
+                 uint8_t mvp_idx0, uint8_t mvp_idx1,
+                 uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
+                 uint8_t affine_type)
+{
+    struct AffineDRVInfo *affine_ctx = &inter_ctx->affine_ctx;
+
+    struct AffineMergeInfo mv_info;
+
+    uint8_t x_pb = x0 >> 2;
+    uint8_t y_pb = y0 >> 2;
+
+    uint8_t nb_pb_w = (1 << log2_cu_w) >> 2;
+    uint8_t nb_pb_h = (1 << log2_cu_h) >> 2;
+
+    uint8_t opp_ref_idx0 = 0xFF;
+    uint8_t opp_ref_idx1 = 0xFF;
+
+    for (int i = 0; i < inter_ctx->nb_active_ref1; i ++) {
+         if (inter_ctx->rpl0[ref_idx0] == inter_ctx->rpl1[i])
+             opp_ref_idx0 = i;
+    }
+
+    for (int i = 0; i < inter_ctx->nb_active_ref0; i ++) {
+         if (inter_ctx->rpl1[ref_idx1] == inter_ctx->rpl0[i])
+             opp_ref_idx1 = i;
+    }
+
+    /* FIXME can we combine mvp derivation for bi pred */
+    if (inter_dir & 0x1) {
+        struct AffineControlInfo *const cp_info = &mv_info.cinfo[0];
+
+        *cp_info = drv_affine_mvp(inter_ctx, affine_ctx, x_pb, y_pb,
+                                  nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
+                                  ref_idx0, opp_ref_idx0, mvp_idx0,
+                                  inter_dir & 0x1, affine_type);
+
+        cp_info->lt.x +=  cp_mvd0.lt.x << 2;
+        cp_info->lt.y +=  cp_mvd0.lt.y << 2;
+
+        cp_info->rt.x +=  cp_mvd0.lt.x << 2;
+        cp_info->rt.y +=  cp_mvd0.lt.y << 2;
+        cp_info->rt.x +=  cp_mvd0.rt.x << 2;
+        cp_info->rt.y +=  cp_mvd0.rt.y << 2;
+        cp_info->lt = mv_clip_periodic(cp_info->lt);
+        cp_info->rt = mv_clip_periodic(cp_info->rt);
+
+        if (affine_type == AFFINE_3CP) {
+            cp_info->lb.x +=  cp_mvd0.lt.x << 2;
+            cp_info->lb.y +=  cp_mvd0.lt.y << 2;
+            cp_info->lb.x +=  cp_mvd0.lb.x << 2;
+            cp_info->lb.y +=  cp_mvd0.lb.y << 2;
+            cp_info->lb = mv_clip_periodic(cp_info->lb);
+        }
+
+        cp_info->lt.ref_idx = ref_idx0;
+        cp_info->rt.ref_idx = ref_idx0;
+
+        if (affine_type == AFFINE_3CP) {
+            cp_info->lb.ref_idx = ref_idx0;
         }
     }
 
-    /* TODO Store CPInfo for later derivation */
-    /* FIXME do this somewhere else ?*/
+    if (inter_dir & 0x2) {
+        struct AffineControlInfo *const cp_info = &mv_info.cinfo[1];
+
+        *cp_info = drv_affine_mvp(inter_ctx, affine_ctx, x_pb, y_pb,
+                                  nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
+                                  ref_idx1, opp_ref_idx1, mvp_idx1,
+                                  inter_dir & 0x2, affine_type);
+
+        cp_info->lt.x +=  cp_mvd1.lt.x << 2;
+        cp_info->lt.y +=  cp_mvd1.lt.y << 2;
+
+        cp_info->rt.x +=  cp_mvd1.lt.x << 2;
+        cp_info->rt.y +=  cp_mvd1.lt.y << 2;
+        cp_info->rt.x +=  cp_mvd1.rt.x << 2;
+        cp_info->rt.y +=  cp_mvd1.rt.y << 2;
+
+        cp_info->lt = mv_clip_periodic(cp_info->lt);
+        cp_info->rt = mv_clip_periodic(cp_info->rt);
+        if (affine_type == AFFINE_3CP) {
+            cp_info->lb.x +=  cp_mvd1.lt.x << 2;
+            cp_info->lb.y +=  cp_mvd1.lt.y << 2;
+            cp_info->lb.x +=  cp_mvd1.lb.x << 2;
+            cp_info->lb.y +=  cp_mvd1.lb.y << 2;
+            cp_info->lb = mv_clip_periodic(cp_info->lb);
+        }
+
+        cp_info->lt.ref_idx = ref_idx1;
+        cp_info->rt.ref_idx = ref_idx1;
+
+        if (affine_type == AFFINE_3CP) {
+            cp_info->lb.ref_idx = ref_idx1;
+        }
+    }
+
+    mv_info.inter_dir = inter_dir;
+    mv_info.affine_type = affine_type;
+
+    /* Update for next pass */
+    update_mv_ctx_b(inter_ctx, mv_info, x_pb, y_pb, nb_pb_w,
+                    nb_pb_h, log2_cu_w, log2_cu_h, inter_dir);
+
+    rcn_affine_mcp_b(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
+                     log2_cu_w, log2_cu_h,
+                     inter_dir);
+
+    struct PBInfo pb = {
+        .x_pb = x_pb,
+        .y_pb = y_pb,
+        .nb_pb_w = nb_pb_w,
+        .nb_pb_h = nb_pb_h,
+        .log2_w = log2_cu_w,
+        .log2_h = log2_cu_h
+    };
+
+    struct AffineInfo aff_info = {
+        .cps[0] = mv_info.cinfo[0],
+        .cps[1] = mv_info.cinfo[1],
+        .pb = pb,
+        .type = affine_type
+    };
+
+    store_affine_info(affine_ctx, aff_info, x_pb, y_pb, nb_pb_w, nb_pb_h);
+}
+
+void
+drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
+                       uint8_t x0, uint8_t y0,
+                       uint8_t log2_cu_w, uint8_t log2_cu_h,
+                       uint8_t merge_idx)
+{
+    struct AffineDRVInfo *affine_ctx = &inter_ctx->affine_ctx;
+    struct AffineMergeInfo mv_info;
+
+    uint8_t x_pb = x0 >> 2;
+    uint8_t y_pb = y0 >> 2;
+
+    uint8_t nb_pb_w = (1 << log2_cu_w) >> 2;
+    uint8_t nb_pb_h = (1 << log2_cu_h) >> 2;
+
+    derive_affine_merge_mv(inter_ctx, affine_ctx, &mv_info,
+                           x_pb, y_pb, nb_pb_w, nb_pb_h,
+                           log2_cu_w, log2_cu_h,
+                           merge_idx);
+
+    /* FIXME can we have small blocks bidir requiring inter_dir
+     * override
+     */
+    update_mv_ctx_b(inter_ctx, mv_info, x_pb, y_pb,
+                    nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
+                    mv_info.inter_dir);
+
+    rcn_affine_mcp_b(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
+                     log2_cu_w, log2_cu_h,
+                     mv_info.inter_dir);
+
+    struct PBInfo pb = {
+        .x_pb = x_pb,
+        .y_pb = y_pb,
+        .nb_pb_w = nb_pb_w,
+        .nb_pb_h = nb_pb_h,
+        .log2_w = log2_cu_w,
+        .log2_h = log2_cu_h
+    };
+
+    struct AffineInfo aff_info = {
+        .cps[0] = mv_info.cinfo[0],
+        .cps[1] = mv_info.cinfo[1],
+        .pb = pb,
+        .type = mv_info.affine_type
+    };
+
+    store_affine_info(affine_ctx, aff_info, x_pb, y_pb, nb_pb_w, nb_pb_h);
+
 }
