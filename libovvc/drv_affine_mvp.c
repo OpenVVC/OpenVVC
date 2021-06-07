@@ -28,7 +28,7 @@
 enum AffineType
 {
     AFFINE_2CP = 0,
-    AFFINE_3CP = 0,
+    AFFINE_3CP = 1
 };
 
 enum ControlPointIdx
