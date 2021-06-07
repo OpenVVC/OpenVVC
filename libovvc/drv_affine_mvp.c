@@ -554,12 +554,12 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
     struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
     struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
-    uint64_t aff_abv_row = affine_ctx->map.vfield[x_pb];
-    uint64_t aff_lft_col = affine_ctx->map.hfield[y_pb];
-    uint64_t rpl0_abv_row = mv_ctx0->map.vfield[x_pb];
-    uint64_t rpl0_lft_col = mv_ctx0->map.hfield[y_pb];
-    uint64_t rpl1_abv_row = mv_ctx1->map.vfield[x_pb];
-    uint64_t rpl1_lft_col = mv_ctx1->map.hfield[y_pb];
+    uint64_t aff_lft_col = affine_ctx->map.vfield[x_pb];
+    uint64_t aff_abv_row = affine_ctx->map.hfield[y_pb];
+    uint64_t rpl0_lft_col = mv_ctx0->map.vfield[x_pb];
+    uint64_t rpl0_abv_row = mv_ctx0->map.hfield[y_pb];
+    uint64_t rpl1_lft_col = mv_ctx1->map.vfield[x_pb];
+    uint64_t rpl1_abv_row = mv_ctx1->map.hfield[y_pb];
 
     const uint8_t aff_cand_list = check_cand_available(aff_abv_row, aff_lft_col, x_pb, y_pb,
                                                        nb_pb_w, nb_pb_h);
@@ -1061,12 +1061,12 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
 
     /* FIXME missing tool SBTMVP */
 
-    uint64_t aff_abv_row = affine_ctx->map.vfield[x_pb];
-    uint64_t aff_lft_col = affine_ctx->map.hfield[y_pb];
-    uint64_t rpl0_abv_row = mv_ctx0->map.vfield[x_pb];
-    uint64_t rpl0_lft_col = mv_ctx0->map.hfield[y_pb];
-    uint64_t rpl1_abv_row = mv_ctx1->map.vfield[x_pb];
-    uint64_t rpl1_lft_col = mv_ctx1->map.hfield[y_pb];
+    uint64_t aff_lft_col = affine_ctx->map.vfield[x_pb];
+    uint64_t aff_abv_row = affine_ctx->map.hfield[y_pb];
+    uint64_t rpl0_lft_col = mv_ctx0->map.vfield[x_pb];
+    uint64_t rpl0_abv_row = mv_ctx0->map.hfield[y_pb];
+    uint64_t rpl1_lft_col = mv_ctx1->map.vfield[x_pb];
+    uint64_t rpl1_abv_row = mv_ctx1->map.hfield[y_pb];
 
     struct PBInfo pb_info = { 
         .x_pb = x_pb, 
