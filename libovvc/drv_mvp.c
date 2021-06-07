@@ -1743,7 +1743,7 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
           uint8_t pb_x, uint8_t pb_y,
           uint8_t nb_pb_w, uint8_t nb_pb_h,
           OVMV mvd0, OVMV mvd1,
-          uint8_t mvp_idx0, uint8_t mvp_idx1,
+          uint8_t mvp_idx0, uint8_t mvp_idx1, uint8_t bcw_idx,
           uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
           uint8_t is_small)
 {
@@ -1775,6 +1775,7 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
 
         mvd0 = scale_mvd(mvd0);
 
+        mv0.bcw_idx = bcw_idx;
         mv0.x += mvd0.x;
         mv0.y += mvd0.y;
         mv0.ref_idx = ref_idx0;
@@ -1792,6 +1793,7 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
 
         mvd1 = scale_mvd(mvd1);
 
+        mv1.bcw_idx = bcw_idx;
         mv1.x += mvd1.x;
         mv1.y += mvd1.y;
         mv1.ref_idx = ref_idx1;

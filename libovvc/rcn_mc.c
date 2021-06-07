@@ -750,6 +750,43 @@ put_vvc_epel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
     }
 }
 
+void
+put_weighted_bi_pixels(uint16_t* dst, ptrdiff_t dststride,
+                      const uint16_t* src_0, const uint16_t* src_1, ptrdiff_t srcstride,
+                      int width, int height, int wt0, int wt1)
+{   
+    int x, y;
+    int shift = 14 - BIT_DEPTH + 1;
+    int offset = 1 << (shift - 1);
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; ++x) {
+            dst[x] = ov_clip_pixel( ( ( src_0[x]  * wt0
+                                        + ((src_1[x] * wt1) << (14 - BIT_DEPTH)) + offset ) >> shift ) );
+        }
+        src_0 += srcstride;
+        src_1 += srcstride;
+        dst += dststride;
+    }
+}
+
+void
+put_weighted_ciip_pixels(uint16_t* dst, ptrdiff_t dststride,
+                      const uint16_t* src_intra, const uint16_t* src_inter, ptrdiff_t srcstride,
+                      int width, int height, int wt)
+{   
+    int x, y;
+    int shift  = 2;
+    int offset = 2;
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; ++x) {
+            dst[x] = ov_clip_pixel( ( ( src_intra[x] * wt + src_inter[x] * (4 - wt)) + offset ) >> shift );
+        }
+        src_intra += srcstride;
+        src_inter += srcstride;
+        dst += dststride;
+    }
+}
+
 
 void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
 {
@@ -775,6 +812,7 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_l->bidir1[1][i] = &put_vvc_qpel_bi_h;
         mc_l->bidir1[2][i] = &put_vvc_qpel_bi_v;
         mc_l->bidir1[3][i] = &put_vvc_qpel_bi_hv;
+        mc_l->bidir1[4][i] = &put_vvc_qpel_bi_hv;
 
         /* Chroma functions */
         mc_c->unidir[0][i] = &put_vvc_pel_uni_pixels;

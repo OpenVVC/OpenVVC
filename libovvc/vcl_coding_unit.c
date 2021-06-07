@@ -21,6 +21,10 @@ enum CUMode {
     OV_INTER_SKIP_AFFINE = 6,
 };
 
+#define BCW_NUM                 5 ///< the number of weight options
+#define BCW_DEFAULT             ((uint8_t)(BCW_NUM >> 1)) ///< Default weighting index representing for w=0.5
+#define BCW_SIZE_CONSTRAINT     256 ///< disabling Bcw if cu size is smaller than 256
+
 /* FIXME refactor dequant*/
 static void
 derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
@@ -227,67 +231,6 @@ ovcabac_read_ae_ciip_flag(OVCABACCtx *const cabac_ctx){
     return ovcabac_ae_read(cabac_ctx, &cabac_state[CIIP_FLAG_CTX_OFFSET]);
 }
 
-
-
-//TODObcw: declare here ?
-#define BCW_NUM                 5 ///< the number of weight options
-#define BCW_DEFAULT             ((uint8_t)(BCW_NUM >> 1)) ///< Default weighting index representing for w=0.5
-#define BCW_SIZE_CONSTRAINT     256 ///< disabling Bcw if cu size is smaller than 256
-
-const int8_t g_BcwLog2WeightBase = 3;
-const int8_t g_BcwWeightBase = (1 << 3);
-const int8_t g_BcwWeights[BCW_NUM] = { -2, 3, 4, 5, 10 };
-const int8_t g_BcwSearchOrder[BCW_NUM] = { BCW_DEFAULT, BCW_DEFAULT - 2, BCW_DEFAULT + 2, BCW_DEFAULT - 1, BCW_DEFAULT + 1 };
-int8_t g_BcwCodingOrder[BCW_NUM];
-int8_t g_BcwParsingOrder[BCW_NUM];
-
-int8_t getBcwWeight(uint8_t bcwIdx, uint8_t uhRefFrmList){
-  // Weghts for the model: P0 + w * (P1 - P0) = (1-w) * P0 + w * P1
-  // Retuning  1-w for P0 or w for P1
-  return (uhRefFrmList == 0 ? g_BcwWeightBase - g_BcwWeights[bcwIdx] : g_BcwWeights[bcwIdx]);
-}
-
-void resetBcwCodingOrder(uint8_t bRunDecoding){
-  // Form parsing order: { BCW_DEFAULT, BCW_DEFAULT+1, BCW_DEFAULT-1, BCW_DEFAULT+2, BCW_DEFAULT-2, ... }
-  g_BcwParsingOrder[0] = BCW_DEFAULT;
-  for (int i = 1; i <= (BCW_NUM >> 1); ++i){
-    g_BcwParsingOrder[2 * i - 1] = BCW_DEFAULT + (int8_t)i;
-    g_BcwParsingOrder[2 * i] = BCW_DEFAULT - (int8_t)i;
-  }
-
-  // Form encoding order
-  if (!bRunDecoding){
-    for (int i = 0; i < BCW_NUM; ++i){
-      g_BcwCodingOrder[(uint32_t)g_BcwParsingOrder[i]] = i;
-    }
-  }
-}
-
-uint32_t deriveWeightIdxBits(uint8_t bcwIdx) {
-  uint32_t numBits = 1;
-  uint8_t  bcwCodingIdx = (uint8_t)g_BcwCodingOrder[bcwIdx];
-
-  if (BCW_NUM > 2 && bcwCodingIdx != 0){
-    uint32_t prefixNumBits = BCW_NUM - 2;
-    uint32_t step = 1;
-    uint8_t  prefixSymbol = bcwCodingIdx;
-
-    // Truncated unary code
-    uint8_t idx = 1;
-    for (int ui = 0; ui < prefixNumBits; ++ui){
-      if (prefixSymbol == idx){
-        ++numBits;
-        break;
-      }
-      else{
-        ++numBits;
-        idx += step;
-      }
-    }
-  }
-  return numBits;
-}
-
 static uint8_t
 ovcabac_read_ae_bcw_flag(OVCABACCtx *const cabac_ctx, uint8_t is_ldc){
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
@@ -307,7 +250,9 @@ ovcabac_read_ae_bcw_flag(OVCABACCtx *const cabac_ctx, uint8_t is_ldc){
             idx += step;
         }
     }
-    return (uint8_t)g_BcwParsingOrder[idx];
+    int parsing_order[BCW_NUM] =  { BCW_DEFAULT, BCW_DEFAULT+1, BCW_DEFAULT-1, 
+                                        BCW_DEFAULT+2, BCW_DEFAULT-2};
+    return (uint8_t)parsing_order[idx];
 }
 
 
@@ -1169,7 +1114,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t apply_ciip = 0;
     uint8_t apply_gpm = 0;
     uint8_t apply_mmvd = 0;
-    inter_ctx->bcw_idx = BCW_DEFAULT; 
     if (merge_flag) {
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
@@ -1378,13 +1322,14 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             ref_idx1     = inter_ctx->ref_smvd_idx1;
         }
 
-        mv_info = drv_mvp_b(inter_ctx, x_pu, y_pu, nb_pb_w, nb_pb_h,
-                            mvd0, mvd1, mvp_idx0, mvp_idx1, inter_dir, ref_idx0, ref_idx1,
-                            log2_pb_w + log2_pb_h <= 5);
+        uint8_t bcw_idx = BCW_DEFAULT;
+       //TODObcw: missing IBC
+        if (inter_ctx->bcw_flag && (1<<(log2_pb_h+log2_pb_w) >= BCW_SIZE_CONSTRAINT) && inter_dir == 3)
+            bcw_idx = ovcabac_read_ae_bcw_flag( cabac_ctx, inter_ctx->tmvp_ctx.ldc);
 
-        //TODObcw: missing IBC
-        if (inter_ctx->bcw_flag && (1<<(log2_pb_h+log2_pb_w) >= BCW_SIZE_CONSTRAINT) && inter_dir == 3 && !skip_flag)
-            inter_ctx->bcw_idx = ovcabac_read_ae_bcw_flag( cabac_ctx, inter_ctx->tmvp_ctx.ldc);//, merge_flag, inter_dir);
+        mv_info = drv_mvp_b(inter_ctx, x_pu, y_pu, nb_pb_w, nb_pb_h,
+                            mvd0, mvd1, mvp_idx0, mvp_idx1, bcw_idx, inter_dir, ref_idx0, ref_idx1,
+                            log2_pb_w + log2_pb_h <= 5);
 
         //mv_info.mv0.ref_idx = inter_dir & 0x1 ? ref_idx0 : 0xFF;
         //mv_info.mv1.ref_idx = inter_dir & 0x2 ? ref_idx1 : 0xFF;

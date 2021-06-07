@@ -235,7 +235,8 @@ struct OVMV
 {
     int32_t x;
     int32_t y;
-    int8_t ref_idx;
+    uint8_t ref_idx;
+    uint8_t bcw_idx;
 };
 
 typedef struct VVCMergeInfo
@@ -337,7 +338,6 @@ struct InterDRVCtx
      * information
      */
     uint8_t bcw_flag;
-    uint8_t bcw_idx;
 
     /* Geometric Partition Mode(GPM) Related
      * information

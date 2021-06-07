@@ -561,8 +561,17 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
 
     mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride, pu_h, prec_x0, prec_y0, pu_w);
-    mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride, tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
-
+    
+    // if( mv0.bcw_idx == 2 ){
+        mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride, tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
+    // }
+    // else{
+    //     int bcw_weights[5] = { -2, 3, 4, 5, 10 };
+    //     int wt0 = bcw_weights[mv0.bcw_idx];
+    //     int wt1 = 8 - wt0;
+    //     put_weighted_bi_pixels(dst.y, RCN_CTB_STRIDE, tmp_buff, ref1_b.y, ref1_b.stride, pu_h, pu_w, wt0, wt1);
+    // }
+    
     if (ctudec->lmcs_info.lmcs_enabled_flag){
         rcn_lmcs_reshape_luma_blk_lut(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
     }
@@ -1694,24 +1703,6 @@ enum CUMode {
     OV_INTER_SKIP = 3,
     OV_MIP = 4,
 };
-
-static void
-put_weighted_ciip_pixels(uint16_t* dst, ptrdiff_t dststride,
-                      const uint16_t* src_intra, const uint16_t* src_inter, ptrdiff_t srcstride,
-                      int width, int height, int wt)
-{
-    int x, y;
-    int shift  = 2;
-    int offset = 2;
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; ++x) {
-            dst[x] = ov_clip_pixel( ( ( src_intra[x] * wt + src_inter[x] * (4 - wt)) + offset ) >> shift );
-        }
-        src_intra += srcstride;
-        src_inter += srcstride;
-        dst += dststride;
-    }
-}
 
 void rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, struct OVBuffInfo* tmp_inter,
                             unsigned int x0, unsigned int y0,
