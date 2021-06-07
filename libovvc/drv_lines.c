@@ -187,6 +187,29 @@ tmvp_store_mv(OVCTUDec *ctudec)
     }
 }
 
+static void
+rotate_affine_cp(struct AffineInfo *const aff_info, struct AffineInfo *const lns, uint64_t msk,
+                 OVMV *mv0, OVMV *mv1, uint16_t nb_pb_ctb)
+{
+    //memcpy(&lns->aff_info[ctb_x * nb_ctb_pb], &aff_info[1 + nb_ctb_pb * 34], sizeof(struct AffineInfo) * nb_ctb_pb);
+    int i = 0;
+    while (msk) {
+        if (msk & 0x1) {
+            int x_pb = aff_info[i].pb.x_pb;
+            int nb_pb_w = aff_info[i].pb.nb_pb_w;
+            lns[i].cps[0].lt = mv0[x_pb + (nb_pb_ctb * 34)+ 1];
+            lns[i].cps[0].rt = mv0[x_pb + (nb_pb_ctb * 34)+ nb_pb_w];
+            lns[i].cps[1].lt = mv1[x_pb + (nb_pb_ctb * 34)+ 1];
+            lns[i].cps[1].rt = mv1[x_pb + (nb_pb_ctb * 34)+ nb_pb_w];
+            lns[i].type = aff_info[i].type;
+            lns[i].pb = aff_info[i].pb;
+        }
+
+        i++;
+        msk >>= 1;
+    }
+}
+
 /* Copy last Motion Vector from CTU to corresponding line in 
  * DRVLine
  */
@@ -277,7 +300,8 @@ store_inter_maps(const struct DRVLines *const l,
     /* Save last CTU MV line to line at ctb_x */
     memcpy(&lns->mv0[ctb_x * nb_ctb_pb], &mv_ctx0->mvs[1 + nb_ctb_pb * 34], sizeof(OVMV) * nb_ctb_pb);
     memcpy(&lns->mv1[ctb_x * nb_ctb_pb], &mv_ctx1->mvs[1 + nb_ctb_pb * 34], sizeof(OVMV) * nb_ctb_pb);
-    memcpy(&lns->aff_info[ctb_x * nb_ctb_pb], &aff_info[1 + nb_ctb_pb * 34], sizeof(struct AffineInfo) * nb_ctb_pb);
+    rotate_affine_cp(&aff_info[1 + nb_ctb_pb * 34], &lns->aff_info[ctb_x * nb_ctb_pb],
+                     lst_row_aff >> 1, mv_ctx0->mvs, mv_ctx1->mvs, nb_ctb_pb);
 
     /* Store last inter dir info onto line */
     lns->dir0[ctb_x] = (uint32_t)(lst_row0 >> 1);
@@ -915,7 +939,7 @@ load_first_ctu_inter(const struct DRVLines *const l,
 
     memcpy(&mv_ctx0->mvs[1], &lns->mv0[0], sizeof(OVMV) * nb_ctb_pb);
     memcpy(&mv_ctx1->mvs[1], &lns->mv1[0], sizeof(OVMV) * nb_ctb_pb);
-    memcpy(&aff_info[1], &aff_info[0], sizeof(OVMV) * nb_ctb_pb);
+    memcpy(&aff_info[1], &aff_info[0], sizeof(struct AffineInfo) * nb_ctb_pb);
 
     mv_ctx0->mvs[1 + nb_ctb_pb] = lns->mv0[nb_ctb_pb];
     mv_ctx1->mvs[1 + nb_ctb_pb] = lns->mv1[nb_ctb_pb];
