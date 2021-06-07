@@ -339,19 +339,11 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
     /* FIXME avoid checking for above candidate here */
     uint8_t is_abv_ctu = y0 == 0 && is_above_cand(cand_name);
     uint8_t is_lft_ctu = x0 == 0 && (!is_above_cand(cand_name) || cand_name == B2);
+    uint8_t is_abv_rgt_ctu = cand_name == B0 && is_abv_ctu && x0 + (1 << log2_pb_w) == 1 << 7;
 
     /* FIXME use correct log2_ctu_s */
-    int delta_pos_x = ((is_lft_ctu << 7) + x0 - ngh_x0);
+    int delta_pos_x = ((is_lft_ctu << 7) + x0 - ((is_abv_rgt_ctu << 7) + ngh_x0));
     int delta_pos_y = is_abv_ctu ? 0 : (y0 - ngh_y0);
-
-    if (is_abv_ctu) {
-        /* FIXME How to derive LT if CTU Top Left ? */
-        #if 0
-        uint16_t cand_pos = ;
-        ngh_cp.lt = ;
-        ngh_cp.rt = ;
-        #endif
-    }
 
     /* FIXME determine clip from merge or mvp cand derivation */
     struct AffineDeltaMV delta_mv = derive_affine_delta_mvs(ngh_cp, log2_ngh_w, log2_ngh_h,
