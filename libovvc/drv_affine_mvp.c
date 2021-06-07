@@ -325,7 +325,7 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
                     enum CandName cand_name)
 {
     int ngh_x0 = ngh_pb.x_pb << 2;
-    int ngh_y0 = ngh_pb.x_pb << 2;
+    int ngh_y0 = ngh_pb.y_pb << 2;
     uint8_t log2_ngh_w = ngh_pb.log2_w;
     uint8_t log2_ngh_h = ngh_pb.log2_h;
 
