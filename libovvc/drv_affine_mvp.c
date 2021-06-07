@@ -335,6 +335,7 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
     int y0 = pb_info.y_pb << 2;
 
     struct AffineControlInfo dst_cp;
+    uint8_t ref_idx = ngh_cp->lt.ref_idx;
 
     /* FIXME avoid checking for above candidate here */
     uint8_t is_abv_ctu = y0 == 0 && is_above_cand(cand_name);
@@ -372,12 +373,14 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
 
     dst_cp.lt = round_affine_mv2(lt_mv);
     dst_cp.lt = clip_mv(dst_cp.lt);
+    dst_cp.lt.ref_idx = ref_idx;
 
     tmp.x = lt_mv.x + (delta_mv.h.x << log2_pb_w);
     tmp.y = lt_mv.y + (delta_mv.h.y << log2_pb_w);
 
     dst_cp.rt = round_affine_mv2(tmp);
     dst_cp.rt = clip_mv(dst_cp.rt);
+    dst_cp.rt.ref_idx = ref_idx;
 
     if (affine_type == AFFINE_3CP) {
         tmp.x = lt_mv.x + (delta_mv.v.x << log2_pb_h);
@@ -385,6 +388,7 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
 
         dst_cp.lb = round_affine_mv2(tmp);
         dst_cp.lb = clip_mv(dst_cp.lb);
+        dst_cp.lb.ref_idx = ref_idx;
     }
 
     return dst_cp;
