@@ -85,6 +85,26 @@ static const int8_t ov_mc_filters[15][8] =
     {   0, 1,  -2,  4, 63,  -3,  1,  0 }
 };
 
+static const int8_t ov_mc_filters_4[15][8] =
+{
+    {  0, 1,  -3, 63,  4,  -2,  1,  0 },
+    {  0, 1,  -5, 62,  8,  -3,  1,  0 },
+    {  0, 2,  -8, 60, 13,  -4,  1,  0 },
+    {  0, 3, -10, 58, 17,  -5,  1,  0 }, //1/4
+    {  0, 3, -11, 52, 26,  -8,  2,  0 },
+    {  0, 2,  -9, 47, 31, -10,  3,  0 },
+    {  0, 3, -11, 45, 34, -10,  3,  0 },
+    {  0, 3, -11, 40, 40, -11,  3,  0 }, //1/2
+    {  0, 3, -10, 34, 45, -11,  3,  0 },
+    {  0, 3, -10, 31, 47,  -9,  2,  0 },
+    {  0, 2,  -8, 26, 52, -11,  3,  0 },
+    {  0, 1,  -5, 17, 58, -10,  3,  0 }, //3/4
+    {  0, 1,  -4, 13, 60,  -8,  2,  0 },
+    {  0, 1,  -3,  8, 62,  -5,  1,  0 },
+    {  0, 1,  -2,  4, 63,  -3,  1,  0 }
+};
+;
+
 static void
 put_vvc_pel_uni_pixels(uint16_t* _dst, ptrdiff_t _dststride,
                        const uint16_t* _src, ptrdiff_t _srcstride, int height,
@@ -162,7 +182,7 @@ put_vvc_qpel_uni_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     ptrdiff_t srcstride = _srcstride;
     uint16_t* dst = (uint16_t*)_dst;
     ptrdiff_t dststride = _dststride;
-    const int8_t* filter = ov_mc_filters[mx - 1];
+    const int8_t* filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
     int shift = 14 - BIT_DEPTH;
     int offset = 1 << (shift - 1);
 
@@ -187,7 +207,7 @@ put_vvc_qpel_uni_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     ptrdiff_t srcstride = _srcstride;
     uint16_t* dst = (uint16_t*)_dst;
     ptrdiff_t dststride = _dststride;
-    const int8_t* filter = ov_mc_filters[my - 1];
+    const int8_t* filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
     int shift = 14 - BIT_DEPTH;
     int offset = 1 << (shift - 1);
 
@@ -219,7 +239,7 @@ put_vvc_qpel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     int offset = 1 << (shift - 1);
 
     src -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ov_mc_filters[mx - 1];
+    filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
     for (y = 0; y < height + QPEL_EXTRA; y++) {
         for (x = 0; x < width; x++) {
             tmp[x] = MCP_FILTER_L(src, 1, filter) >> (BIT_DEPTH - 8);
@@ -229,7 +249,7 @@ put_vvc_qpel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     }
 
     tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ov_mc_filters[my - 1];
+    filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
@@ -254,6 +274,7 @@ put_vvc_qpel_h(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
     ptrdiff_t srcstride = _srcstride;
 
     const int8_t* filter = ov_mc_filters[mx - 1];
+    filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
@@ -276,6 +297,7 @@ put_vvc_qpel_v(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
     ptrdiff_t srcstride = _srcstride;
 
     const int8_t* filter = ov_mc_filters[my - 1];
+    filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
@@ -303,6 +325,7 @@ put_vvc_qpel_hv(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
     int16_t* tmp = tmp_array;
 
     const int8_t* filter = ov_mc_filters[mx - 1];
+    filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
 
     src -= QPEL_EXTRA_BEFORE * srcstride;
 
@@ -316,6 +339,7 @@ put_vvc_qpel_hv(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 
     tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
     filter = ov_mc_filters[my - 1];
+    filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
@@ -341,6 +365,7 @@ put_vvc_qpel_bi_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
     ptrdiff_t dststride = _dststride;
 
     const int8_t* filter = ov_mc_filters[mx - 1];
+    filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
 
     int shift = 14 + 1 - BIT_DEPTH;
     int offset = 1 << (shift - 1);
@@ -372,6 +397,7 @@ put_vvc_qpel_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
     ptrdiff_t dststride = _dststride;
 
     const int8_t* filter = ov_mc_filters[my - 1];
+    filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
 
     int shift = 14 + 1 - BIT_DEPTH;
     int offset = 1 << (shift - 1);
@@ -407,6 +433,7 @@ put_vvc_qpel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
     int16_t* tmp = tmp_array;
 
     const int8_t* filter = ov_mc_filters[mx - 1];
+    filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
 
     int shift = 14 + 1 - BIT_DEPTH;
     int offset = 1 << (shift - 1);
@@ -424,6 +451,7 @@ put_vvc_qpel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
 
     tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
     filter = ov_mc_filters[my - 1];
+    filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
