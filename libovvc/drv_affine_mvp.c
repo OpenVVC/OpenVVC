@@ -1390,6 +1390,7 @@ broadcast_mv(struct AffineDeltaMV delta_mv, uint8_t inter_dir)
 
 void
 compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
+                     OVMV *mv_buff,
                      uint8_t log2_cu_w, uint8_t log2_cu_h,
                      uint8_t inter_dir, uint8_t affine_type)
 {
@@ -1398,26 +1399,28 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
     const struct AffineDeltaMV delta_mv = derive_affine_delta_mvs(cinfo, log2_cu_w, log2_cu_h,
                                                                   affine_type);
 
-    /* FIXME understand this */
     const uint8_t mv_broad = broadcast_mv(delta_mv, inter_dir);
+
+    uint8_t nb_sb_w = (1 << log2_cu_w) >> LOG2_MIN_CU_S;
+    uint8_t nb_sb_h = (1 << log2_cu_h) >> LOG2_MIN_CU_S;
 
     if (!mv_broad) {
         int i, j;
         OVMV accu_mv_v;
+        OVMV mv_dst;
 
         accu_mv_v.x = (cinfo->lt.x << AFFINE_SHIFT) + delta_mv.h.x * HALF_SB_SIZE
                                                     + delta_mv.v.x * HALF_SB_SIZE;
         accu_mv_v.y = (cinfo->lt.y << AFFINE_SHIFT) + delta_mv.h.y * HALF_SB_SIZE
                                                     + delta_mv.v.y * HALF_SB_SIZE;
 
-        for (i = 0; i < ((1 << log2_cu_h) >> LOG2_MIN_CU_S); ++i) {
+        for (i = 0; i < nb_sb_h; ++i) {
             OVMV accu_mv_h;
 
             accu_mv_h.x = accu_mv_v.x;
             accu_mv_h.y = accu_mv_v.y;
 
-            for (j = 0; j < ((1 << log2_cu_w) >> LOG2_MIN_CU_S); ++j) {
-                OVMV mv_dst;
+            for (j = 0; j < nb_sb_w; ++j) {
 
                 mv_dst.x = accu_mv_h.x;
                 mv_dst.y = accu_mv_h.y;
@@ -1426,6 +1429,7 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
                 mv_dst = clip_mv(mv_dst);
 
                 /* TODO Store sub blocks MVs for MCP */
+                mv_buff[j] = mv_dst;
 
                 accu_mv_h.x += SB_SIZE * delta_mv.h.x;
                 accu_mv_h.y += SB_SIZE * delta_mv.h.y;
@@ -1433,6 +1437,7 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
 
             accu_mv_v.x += SB_SIZE * delta_mv.v.x;
             accu_mv_v.y += SB_SIZE * delta_mv.v.y;
+            mv_buff += 34;
         }
 
     } else {
@@ -1454,10 +1459,16 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
 
         center_mv = clip_mv(center_mv);
 
-        for (i = 0; i < ((1 << log2_cu_h) >> LOG2_MIN_CU_S); ++i) {
-            for (j = 0; j < ((1 << log2_cu_w) >> LOG2_MIN_CU_S); ++j) {
-                /* TODO Store sub blocks MVs for MCP */
+        center_mv.ref_idx = ref_idx;
+
+        for (i = 0; i < nb_sb_h; ++i) {
+            for (j = 0; j < nb_sb_w; ++j) {
+                mv_buff[j] = center_mv;
             }
+            mv_buff += 34;
+        }
+    }
+}
         }
     }
 
