@@ -1407,6 +1407,7 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
 
     uint8_t nb_sb_w = (1 << log2_cu_w) >> LOG2_MIN_CU_S;
     uint8_t nb_sb_h = (1 << log2_cu_h) >> LOG2_MIN_CU_S;
+    uint8_t ref_idx = cinfo->lt.ref_idx;
 
     if (!mv_broad) {
         int i, j;
@@ -1431,6 +1432,8 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
 
                 mv_dst = round_affine_mv2(mv_dst);
                 mv_dst = clip_mv(mv_dst);
+
+                mv_dst.ref_idx = ref_idx;
 
                 /* TODO Store sub blocks MVs for MCP */
                 mv_buff[j] = mv_dst;
