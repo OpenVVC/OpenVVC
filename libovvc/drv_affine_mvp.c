@@ -951,6 +951,8 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
 
                 mv0[2] = clip_mv(mv0[2]);
 
+                mv0[2].ref_idx = mi.mv0[CP_LT].ref_idx;
+
                 dir |= 0x1;
             }
 
@@ -965,6 +967,8 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv1[2].y = mv1[0].y - mv1[1].y + mv1[3].y;
 
                 mv1[2] = clip_mv(mv1[2]);
+
+                mv1[2].ref_idx = mi.mv1[CP_LT].ref_idx;
 
                 dir |= 0x2;
             }
@@ -983,6 +987,8 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
 
                 mv0[1] = clip_mv(mv0[1]);
 
+                mv0[1].ref_idx = mi.mv0[CP_LT].ref_idx;
+
                 dir |= 0x1;
             }
 
@@ -997,6 +1003,8 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv1[1].y = mv1[0].y - mv1[2].y + mv1[3].y;
 
                 mv1[1] = clip_mv(mv1[1]);
+
+                mv1[1].ref_idx = mi.mv1[CP_LT].ref_idx;
 
                 dir |= 0x2;
             }
@@ -1015,6 +1023,8 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
 
                 mv0[0] = clip_mv(mv0[0]);
 
+                mv0[0].ref_idx = mi.mv0[CP_RT].ref_idx;
+
                 dir |= 0x1;
             }
 
@@ -1029,6 +1039,8 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv1[0].y = mv1[1].y + mv1[2].y - mv1[3].y;
 
                 mv1[0] = clip_mv(mv1[0]);
+
+                mv1[0].ref_idx = mi.mv1[CP_RT].ref_idx;
 
                 dir |= 0x2;
             }
