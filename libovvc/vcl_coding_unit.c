@@ -1132,6 +1132,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                     }
 
                     if (inter_dir & 0x1 && inter_ctx->mvd1_zero_flag) {
+                        memset(&cp_mvd1, 0, sizeof(cp_mvd1));
                     } else {
                         cp_mvd1.lt = ovcabac_read_ae_mvd(cabac_ctx);
                         cp_mvd1.rt = ovcabac_read_ae_mvd(cabac_ctx);
