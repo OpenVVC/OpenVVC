@@ -2276,16 +2276,46 @@ rcn_affine_mcp_b(OVCTUDec *const ctudec,
             OVMV mv0 = mv_buff0[j];
             OVMV mv1 = mv_buff1[j];
 
-            /* FIXME chroma MCP is also processed on 4x4 sub blocks its MVs needs
-             * to be averaged on diagonal subblocks MVs.
-             */
-            rcn_mcp_b(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
-                      mv0, mv1, x0 + 4*j, y0 + 4*i,
-                      2, 2, inter_dir, ref_idx0, ref_idx1);
+            rcn_mcp_b_l(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
+                        mv0, mv1, x0 + 4*j, y0 + 4*i,
+                        2, 2, inter_dir, ref_idx0, ref_idx1);
         }
 
         mv_buff0 += 34;
         mv_buff1 += 34;
+    }
+
+    mv_buff0 = &inter_ctx->mv_ctx0.mvs[pos];
+    mv_buff1 = &inter_ctx->mv_ctx1.mvs[pos];
+
+    for (i = 0; i < nb_sb_h; i += 2) {
+        for (j = 0; j < nb_sb_w; j += 2) {
+            OVMV mv0 = mv_buff0[j];
+            OVMV mv1 = mv_buff1[j];
+
+            mv0.x += mv_buff0[j + 35].x;
+            mv0.y += mv_buff0[j + 35].y;
+
+            mv0.x += mv0.x < 0;
+            mv0.y += mv0.y < 0;
+            mv0.x >>= 1;
+            mv0.y >>= 1;
+
+            mv1.x += mv_buff1[j + 35].x;
+            mv1.y += mv_buff1[j + 35].y;
+
+            mv1.x += mv1.x < 0;
+            mv1.y += mv1.y < 0;
+            mv1.x >>= 1;
+            mv1.y >>= 1;
+
+            rcn_mcp_b_c(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
+                        mv0, mv1, x0+ 4*j, y0 + 4*i,
+                        3, 3, inter_dir, ref_idx0, ref_idx1);
+        }
+
+        mv_buff0 += 34 * 2;
+        mv_buff1 += 34 * 2;
     }
 }
 
