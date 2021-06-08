@@ -721,13 +721,11 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
     rcn_write_ctu_to_frame(&ctudec->rcn_ctx, log2_ctb_s);
     rcn_ctu_to_intra_line(ctudec, ctb_addr_rs % nb_ctu_w << log2_ctb_s);
 
-    if (ctudec->lmcs_info.lmcs_enabled_flag){
-        const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
-        ptrdiff_t stride_out_pic = fbuff->stride;
-        uint16_t *out_pic = fbuff->y;
-        rcn_lmcs_reshape_luma_blk_lut(out_pic, stride_out_pic, ctudec->lmcs_info.lmcs_lut_inv_luma, 
-                                1 << log2_ctb_s, 1 << log2_ctb_s);
-    }
+    const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
+    ptrdiff_t stride_out_pic = fbuff->stride;
+    uint16_t *out_pic = fbuff->y;
+    ctudec->rcn_ctx.rcn_funcs.lmcs_reshape(out_pic, stride_out_pic, ctudec->lmcs_info.lmcs_lut_inv_luma, 
+                                            1 << log2_ctb_s, 1 << log2_ctb_s);
 
     if (!ctudec->dbf_disable) {
         uint8_t is_last_x = (ctb_addr_rs + 1) % nb_ctu_w == 0;
@@ -783,12 +781,10 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
                                   ctu_w, ctu_h);
     rcn_ctu_to_intra_line(ctudec, ctb_addr_rs % nb_ctu_w << log2_ctb_s);
 
-    if (ctudec->lmcs_info.lmcs_enabled_flag){
-      const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
-      ptrdiff_t stride_out_pic = fbuff->stride;
-      uint16_t *out_pic = fbuff->y;
-      rcn_lmcs_reshape_luma_blk_lut(out_pic, stride_out_pic, ctudec->lmcs_info.lmcs_lut_inv_luma, ctu_w, ctu_h);
-    }
+    const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
+    ptrdiff_t stride_out_pic = fbuff->stride;
+    uint16_t *out_pic = fbuff->y;
+    ctudec->rcn_ctx.rcn_funcs.lmcs_reshape(out_pic, stride_out_pic, ctudec->lmcs_info.lmcs_lut_inv_luma, ctu_w, ctu_h);
 
     if (!ctudec->dbf_disable) {
         uint8_t is_last_x = (ctb_addr_rs + 1) % nb_ctu_w == 0;
@@ -1386,9 +1382,11 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     ctudec->drv_ctx.inter_ctx.tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
     ctudec->drv_ctx.inter_ctx.mvd1_zero_flag = ph->ph_mvd_l1_zero_flag;
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref_l0 = ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag || sh->sh_slice_type == SLICE_P;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref_l0 = ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag 
+                                                    || sh->sh_slice_type == SLICE_P;
 
-    rcn_init_functions(&ctudec->rcn_ctx.rcn_funcs, ict_type(ph), ctudec->lm_chroma_enabled, sps->sps_chroma_vertical_collocated_flag);
+    rcn_init_functions(&ctudec->rcn_ctx.rcn_funcs, ict_type(ph), ctudec->lm_chroma_enabled, 
+                        sps->sps_chroma_vertical_collocated_flag, ph->ph_lmcs_enabled_flag);
 
     return 0;
 }

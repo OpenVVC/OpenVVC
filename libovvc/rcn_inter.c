@@ -5,7 +5,7 @@
 #include "ovutils.h"
 #include "ctudec.h"
 #include "rcn_structures.h"
-#include "rcn_lmcs.h"
+#include "rcn.h"
 #include "drv.h"
 #include "rcn.h"
 #include "drv_utils.h"
@@ -512,6 +512,9 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
 
+    int16_t bcw_weights[5] = { -2, 3, 4, 5, 10 };
+    int16_t wt0, wt1;
+
     /* TMP buffers for edge emulation
      * FIXME use tmp buffers in local contexts
      */
@@ -562,19 +565,16 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride, pu_h, prec_x0, prec_y0, pu_w);
     
-    // if( mv0.bcw_idx == 2 ){
+    if( mv0.bcw_idx_plus1 == 0 || mv0.bcw_idx_plus1 == 3){
         mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride, tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
-    // }
-    // else{
-    //     int bcw_weights[5] = { -2, 3, 4, 5, 10 };
-    //     int wt0 = bcw_weights[mv0.bcw_idx];
-    //     int wt1 = 8 - wt0;
-    //     put_weighted_bi_pixels(dst.y, RCN_CTB_STRIDE, tmp_buff, ref1_b.y, ref1_b.stride, pu_h, pu_w, wt0, wt1);
-    // }
-    
-    if (ctudec->lmcs_info.lmcs_enabled_flag){
-        rcn_lmcs_reshape_luma_blk_lut(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
     }
+    else{
+        wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
+        wt0 = 8 - wt1;
+        put_weighted_bi_pixels(dst.y, RCN_CTB_STRIDE, tmp_buff, ref1_b.y, ref1_b.stride, pu_w, pu_h, wt0, wt1);
+    }
+
+    rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
 
     const struct OVBuffInfo ref0_c = derive_ref_buf_c(ref0, mv0,
                                                       pos_x >> 1, pos_y >> 1,
@@ -600,8 +600,14 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     mc_c->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data0, ref0_c.cb, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
     mc_c->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data1, ref0_c.cr, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
 
-    mc_c->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.cb, RCN_CTB_STRIDE, ref1_c.cb, ref1_c.stride_c, ref_data0, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
-    mc_c->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride_c, ref_data1, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
+    if( mv0.bcw_idx_plus1 == 0 || mv0.bcw_idx_plus1 == 3 ){
+        mc_c->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.cb, RCN_CTB_STRIDE, ref1_c.cb, ref1_c.stride_c, ref_data0, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
+        mc_c->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride_c, ref_data1, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
+    }
+    else{
+        put_weighted_bi_pixels(dst.cb, RCN_CTB_STRIDE, ref_data0, ref1_c.cb, ref1_c.stride_c, pu_w >> 1, pu_h >> 1, wt0, wt1);
+        put_weighted_bi_pixels(dst.cr, RCN_CTB_STRIDE, ref_data1, ref1_c.cr, ref1_c.stride_c, pu_w >> 1, pu_h >> 1, wt0, wt1);
+    }
 
 }
 
@@ -1305,9 +1311,8 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
                                           src_y, src_stride, pu_h,
                                           prec_x, prec_y, pu_w);
 
-    if (ctudec->lmcs_info.lmcs_enabled_flag && !gpm_flag){
-        rcn_lmcs_reshape_luma_blk_lut(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
-    }
+    if(!gpm_flag)
+        rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
 
 
     emulate_edge = test_for_edge_emulation_c(ref_x >> 1, ref_y >> 1, pic_w >> 1, pic_h >> 1,
@@ -2049,10 +2054,8 @@ rcn_gpm(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
                        log2_pb_w, log2_pb_h, 0);
     #endif
 
-    if (ctudec->lmcs_info.lmcs_enabled_flag){
-        rcn_lmcs_reshape_luma_blk_lut(dst_init, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, 
+    ctudec->rcn_ctx.rcn_funcs.lmcs_reshape(dst_init, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, 
                                     (1 << log2_pb_w), (1 << log2_pb_h));
-    }
     
     #if ORIG
     int cr_scale = 1;

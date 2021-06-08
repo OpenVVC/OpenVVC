@@ -1775,7 +1775,7 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
 
         mvd0 = scale_mvd(mvd0);
 
-        mv0.bcw_idx = bcw_idx;
+        mv0.bcw_idx_plus1 = bcw_idx + 1;
         mv0.x += mvd0.x;
         mv0.y += mvd0.y;
         mv0.ref_idx = ref_idx0;
@@ -1793,7 +1793,7 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
 
         mvd1 = scale_mvd(mvd1);
 
-        mv1.bcw_idx = bcw_idx;
+        mv1.bcw_idx_plus1 = bcw_idx + 1;
         mv1.x += mvd1.x;
         mv1.y += mvd1.y;
         mv1.ref_idx = ref_idx1;

@@ -11,6 +11,7 @@
 #include "rcn_structures.h"
 #include "rcn_mc.h"
 #include "rcn.h"
+#include "rcn_lmcs.h"
 #include "ovmem.h"
 #include "ovconfig.h"
 #include "drv.h"
@@ -481,7 +482,8 @@ rcn_residual_c(OVCTUDec *const ctudec,
 }
 
 void
-rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled, uint8_t sps_chroma_vertical_collocated_flag)
+rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled, 
+                    uint8_t sps_chroma_vertical_collocated_flag, uint8_t lmcs_flag)
 {
   rcn_init_mc_functions(rcn_func);
   rcn_init_tr_functions(rcn_func);
@@ -491,6 +493,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
   rcn_init_mip_functions(rcn_func);
   rcn_init_alf_functions(rcn_func);
   rcn_init_sao_functions(rcn_func);
+  rcn_init_lmcs_function(rcn_func, lmcs_flag);
 
   if (lm_chroma_enabled) {
       /* FIXME add support vertical */
@@ -500,6 +503,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
           rcn_init_cclm_functions(rcn_func);
       }
   }
+
   #if ARCH_X86
     #if SSE_ENABLED
       rcn_init_mc_functions_sse(rcn_func);

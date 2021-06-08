@@ -236,7 +236,7 @@ struct OVMV
     int32_t x;
     int32_t y;
     uint8_t ref_idx;
-    uint8_t bcw_idx;
+    uint8_t bcw_idx_plus1;
 };
 
 typedef struct VVCMergeInfo

@@ -751,19 +751,20 @@ put_vvc_epel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
 }
 
 void
-put_weighted_bi_pixels(uint16_t* dst, ptrdiff_t dststride,
-                      const uint16_t* src_0, const uint16_t* src_1, ptrdiff_t srcstride,
+put_weighted_bi_pixels(uint16_t* dst, int dststride,
+                      const int16_t* src_0, const int16_t* src_1, int srcstride,
                       int width, int height, int wt0, int wt1)
 {   
     int x, y;
-    int shift = 14 - BIT_DEPTH + 1;
-    int offset = 1 << (shift - 1);
+    int shift = 14 - BIT_DEPTH + 3;
+    // int offset = (1 << (shift - 1)) + (1 << (14-1+3));
+    int offset = (1 << (shift - 1)) ;
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
-            dst[x] = ov_clip_pixel( ( ( src_0[x]  * wt0
-                                        + ((src_1[x] * wt1) << (14 - BIT_DEPTH)) + offset ) >> shift ) );
+            dst[x] = ov_clip_pixel( ( (src_0[x]  * wt0
+                                        + ((src_1[x] * wt1) << (14 - BIT_DEPTH)) + offset )  >> shift ) );
         }
-        src_0 += srcstride;
+        src_0 += MAX_PB_SIZE;
         src_1 += srcstride;
         dst += dststride;
     }

@@ -10,6 +10,7 @@ struct ALFClassifier;
 struct Area;
 struct CCLMParams;
 struct SAOParamsCtu;
+struct LMCSInfo;
 
 enum DCTType
 {
@@ -102,6 +103,9 @@ typedef void (*SAOEdgeFilterFunc)(uint8_t* _dst, uint8_t* _src,
                                   ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                                   struct SAOParamsCtu* sao, int width,
                                   int height, int c_idx);
+
+typedef void (*LMCSReshapeFunc)(uint16_t *_dst, ptrdiff_t stride_dst, uint16_t* lmcs_lut_luma, int width, int height);
+
 /**
  * The Context put together all functions used by strategies.
  */
@@ -208,6 +212,9 @@ struct RCNFunctions
 
     /* SAO Functions */
     struct SAOFunctions sao;
+
+    /* LMCS Functions */
+    LMCSReshapeFunc lmcs_reshape;
 };
 
 
