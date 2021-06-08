@@ -571,7 +571,8 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     else{
         wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
         wt0 = 8 - wt1;
-        put_weighted_bi_pixels(dst.y, RCN_CTB_STRIDE, tmp_buff, ref1_b.y, ref1_b.stride, pu_w, pu_h, wt0, wt1);
+        mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride, tmp_buff, 
+                                        pu_h, prec_x1, prec_y1, pu_w, wt0, wt1);
     }
 
     rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
@@ -605,8 +606,10 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         mc_c->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride_c, ref_data1, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
     }
     else{
-        put_weighted_bi_pixels(dst.cb, RCN_CTB_STRIDE, ref_data0, ref1_c.cb, ref1_c.stride_c, pu_w >> 1, pu_h >> 1, wt0, wt1);
-        put_weighted_bi_pixels(dst.cr, RCN_CTB_STRIDE, ref_data1, ref1_c.cr, ref1_c.stride_c, pu_w >> 1, pu_h >> 1, wt0, wt1);
+        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 1](dst.cb, RCN_CTB_STRIDE, ref1_c.cb, ref1_c.stride_c, ref_data0, 
+                                                    pu_h >> 1, prec_x1, prec_y1, pu_w >> 1, wt0, wt1);
+        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 1](dst.cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride_c, ref_data1, 
+                                                    pu_h >> 1, prec_x1, prec_y1, pu_w >> 1, wt0, wt1);
     }
 
 }
