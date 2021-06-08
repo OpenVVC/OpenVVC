@@ -102,8 +102,7 @@ void rcn_ciip(OVCTUDec *const ctudec,
 
 void rcn_init_gpm_params();
 
-void rcn_gpm(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
-         int x0, int y0, int log2_pb_w, int log2_pb_h);
+void rcn_gpm_b(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx, int x0, int y0, int log2_pb_w, int log2_pb_h);
 
 /* FIXME check vertical / horizontal */
 void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled, 

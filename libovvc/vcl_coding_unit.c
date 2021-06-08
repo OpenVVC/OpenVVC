@@ -1340,7 +1340,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                    log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
     } 
     else if(apply_gpm){
-        rcn_gpm(ctu_dec, &inter_ctx->gpm_ctx, x0, y0, log2_pb_w, log2_pb_h);
+        rcn_gpm_b(ctu_dec, &inter_ctx->gpm_ctx, x0, y0, log2_pb_w, log2_pb_h);
     }
     else {
         uint8_t bdof_enable = 0;
