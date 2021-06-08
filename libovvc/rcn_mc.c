@@ -103,7 +103,6 @@ static const int8_t ov_mc_filters_4[15][8] =
     {  0, 1,  -3,  8, 62,  -5,  1,  0 },
     {  0, 1,  -2,  4, 63,  -3,  1,  0 }
 };
-;
 
 static void
 put_vvc_pel_uni_pixels(uint16_t* _dst, ptrdiff_t _dststride,
