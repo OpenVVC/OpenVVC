@@ -6,6 +6,7 @@
 #include "ctudec.h"
 #include "rcn_structures.h"
 #include "rcn.h"
+#include "rcn_mc.h"
 #include "drv.h"
 #include "rcn.h"
 #include "drv_utils.h"
@@ -522,7 +523,8 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint16_t edge_buff1[RCN_CTB_SIZE];
     uint16_t edge_buff0_1[RCN_CTB_SIZE];
     uint16_t edge_buff1_1[RCN_CTB_SIZE];
-    int16_t tmp_buff[RCN_CTB_SIZE];
+    int16_t tmp_buff0[RCN_CTB_SIZE];
+    int16_t tmp_buff1[RCN_CTB_SIZE];
 
     /*FIXME we suppose here both refs possess the same size*/
 
@@ -1236,7 +1238,7 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
 void
 rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-        OVMV mv, uint8_t type, uint8_t ref_idx, uint8_t gpm_flag)
+        OVMV mv, uint8_t type, uint8_t ref_idx)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -1313,9 +1315,8 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
     mc_l->unidir[prec_mc_type][log2_pu_w](dst.y, RCN_CTB_STRIDE,
                                           src_y, src_stride, pu_h,
                                           prec_x, prec_y, pu_w);
-    //TODOgpm : get rid of this condition
-    if(!gpm_flag)
-        rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
+
+    rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
 
 
     emulate_edge = test_for_edge_emulation_c(ref_x >> 1, ref_y >> 1, pic_w >> 1, pic_h >> 1,
@@ -1617,11 +1618,11 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *cons
 
     } else if (inter_dir & 0x2) {
 
-        rcn_mcp(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1, 0);
+        rcn_mcp(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
 
     } else if (inter_dir & 0x1) {
 
-        rcn_mcp(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0, 0);
+        rcn_mcp(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
 
     }
 }
@@ -1802,7 +1803,7 @@ rcn_ciip(OVCTUDec *const ctudec,
     tmp_inter.cr = &tmp_inter_cr[RCN_CTB_PADDING];
     tmp_inter.stride   = RCN_CTB_STRIDE;
     tmp_inter.stride_c = RCN_CTB_STRIDE;
-    rcn_mcp(ctudec, tmp_inter, x0, y0, log2_pb_w, log2_pb_h, mv, 0, ref_idx, 0);
+    rcn_mcp(ctudec, tmp_inter, x0, y0, log2_pb_w, log2_pb_h, mv, 0, ref_idx);
 
     //Intra Planar mode
     struct OVBuffInfo tmp_intra;
@@ -1891,8 +1892,7 @@ void rcn_init_gpm_params(){
 }
 
 
-
-void
+static void
 rcn_gpm_weights_and_steps(int split_dir, int log2_pb_w_l, int log2_pb_h_l, int* step_x, int* step_y, 
                             int16_t** weight, int cr_scale)
 {
@@ -1914,79 +1914,6 @@ rcn_gpm_weights_and_steps(int split_dir, int log2_pb_w_l, int log2_pb_h_l, int* 
     *step_y = (GEO_WEIGHT_MASK_SIZE << cr_scale) - (1 << log2_pb_w_l);
     *weight = &g_globalGeoWeights[g_angle2mask[angle]][g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + g_weightOffset[split_dir][hIdx][wIdx][0]];
   }
-}
-
-static void
-put_weighted_gpm_pixels(uint16_t* dst, ptrdiff_t dst_stride, struct VVCGPM* gpm_ctx,
-                      const uint16_t* tmp_0_p, const uint16_t* tmp_1_p, ptrdiff_t tmp_stride,
-                      int log2_pb_w_l, int log2_pb_h_l, int cr_scale)
-{   
-    
-    int16_t* weight;
-    int step_x, step_y;
-    rcn_gpm_weights_and_steps(gpm_ctx->split_dir, log2_pb_w_l, log2_pb_h_l, &step_x, &step_y, &weight, cr_scale);
-   //BITDEPTH: only 10
-    // int bit_depth = 10;
-  const char    log2WeightBase = 3;
-  // const int32_t shiftWeighted = (14 - bit_depth) + log2WeightBase;
-  // // const int32_t offsetWeighted = (1 << (shiftWeighted - 1)) + (1 << (13 + log2WeightBase));
-  // const int32_t offsetWeighted = (1 << (shiftWeighted - 1)) ;
-
-    int log2_pb_w = log2_pb_w_l - cr_scale;
-  int log2_pb_h = log2_pb_h_l - cr_scale;
-  for( int y = 0; y < (1 << log2_pb_h); y++ ){
-    for( int x = 0; x < (1 << log2_pb_w); x++ ){
-      dst[x]  = ov_clip_pixel(( weight[0] * (tmp_0_p[x]) + (8 - weight[0]) * (tmp_1_p[x]) + 4) >> log2WeightBase);
-      // dst[x]  = ov_clip_pixel((weight[0]*(tmp_0_p[x]) + ((8 - weight[0]) * (tmp_1_p[x])) + offsetWeighted) >> shiftWeighted);
-      // *dst++  = ClipPel(rightShift((*weight*(*src0++) + ((8 - *weight) * (*src1++)) + offsetWeighted), shiftWeighted), clipRng);
-      weight += step_x;
-    }
-    dst       += dst_stride;
-    tmp_0_p   += tmp_stride;
-    tmp_1_p   += tmp_stride;
-    weight    += step_y;
-  }
-}
-
-
-void
-put_gpm_pel_bi_pixels(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
-                  ptrdiff_t _srcstride, const int16_t* _src1, int height,
-                  intptr_t mx, intptr_t my, int width, int step_x, int step_y, int16_t* weight)
-{   
-
-    int x, y;
-    const uint16_t* src0 = _src0;
-    const int16_t* src1 = _src1;
-    ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
-    ptrdiff_t dststride = _dststride;
-    int shift = 14 - BIT_DEPTH + 3;
-    // int shift = 3;
-    int offset = (1 << (shift - 1)) ;
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; ++x) {
-            int w1 = weight[0];
-            int w0 = 8 - w1;
-            dst[x] = ov_clip_pixel( ( (src1[x]  * w1
-                                        + (src0[x] << (14 - BIT_DEPTH)) * w0 + offset )  >> shift ) );
-            weight += step_x;
-        }
-        src1 += MAX_PB_SIZE;
-        src0 += srcstride;
-        dst += dststride;
-        weight += step_y;
-    }
-    // for( int y = 0; y < (1 << log2_pb_h); y++ ){
-    //     for( int x = 0; x < (1 << log2_pb_w); x++ ){
-    //         dst[x]  = ov_clip_pixel(( weight[0] * (tmp_0_p[x]) + (8 - weight[0]) * (tmp_1_p[x]) + 4) >> log2WeightBase);
-    //         weight += step_x;
-    //     }
-    //     dst       += dst_stride;
-    //     tmp_0_p   += tmp_stride;
-    //     tmp_1_p   += tmp_stride;
-    //     weight    += step_y;
-    // }
 }
 
 
@@ -2056,16 +1983,17 @@ rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
 
-    mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride, pu_h, prec_x0, prec_y0, pu_w);
-    // mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride, tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
-   
+    mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff0, ref0_b.y, ref0_b.stride, pu_h, prec_x0, prec_y0, pu_w);
+    mc_l->bidir0[prec_1_mc_type][log2_pu_w - 1](tmp_buff1, ref1_b.y, ref1_b.stride, pu_h, prec_x1, prec_y1, pu_w);
+
     int16_t* weight;
     int step_x, step_y;
     rcn_gpm_weights_and_steps(split_dir, log2_pu_w, log2_pu_h, &step_x, &step_y, &weight, 0);
-    put_gpm_pel_bi_pixels(dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride, tmp_buff, pu_h, prec_x1, prec_y1, pu_w,
+    put_gpm_pel_bi_pixels(dst.y, RCN_CTB_STRIDE, tmp_buff1, MAX_PB_SIZE, tmp_buff0, pu_h, prec_x1, prec_y1, pu_w,
                             step_x, step_y, weight);
 
     rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
+
 
     const struct OVBuffInfo ref0_c = derive_ref_buf_c(ref0, mv0,
                                                       pos_x >> 1, pos_y >> 1,
@@ -2085,21 +2013,21 @@ rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
     prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
     prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
 
-    int16_t* ref_data0 = tmp_buff;
-    int16_t* ref_data1 = tmp_buff + MAX_PB_SIZE / 2;
-
+    int16_t* ref_data0 = tmp_buff0;
+    int16_t* ref_data1 = tmp_buff0 + MAX_PB_SIZE / 2;
     mc_c->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data0, ref0_c.cb, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
     mc_c->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data1, ref0_c.cr, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
 
+    int16_t* ref_data01 = tmp_buff1;
+    int16_t* ref_data11 = tmp_buff1 + MAX_PB_SIZE / 2;
+    mc_c->bidir0[prec_1_mc_type][log2_pu_w - 1](ref_data01, ref1_c.cb, ref1_c.stride_c, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
+    mc_c->bidir0[prec_1_mc_type][log2_pu_w - 1](ref_data11, ref1_c.cr, ref1_c.stride_c, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
+
     rcn_gpm_weights_and_steps(split_dir, log2_pu_w, log2_pu_h, &step_x, &step_y, &weight, 1);
-    put_gpm_pel_bi_pixels(dst.cb, RCN_CTB_STRIDE, ref1_c.cb, ref1_c.stride_c, ref_data0, 
+    put_gpm_pel_bi_pixels(dst.cb, RCN_CTB_STRIDE, ref_data01, MAX_PB_SIZE, ref_data0, 
                             pu_h >> 1, prec_x1, prec_y1, pu_w >> 1, step_x, step_y, weight);
-    put_gpm_pel_bi_pixels(dst.cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride_c, ref_data1,
+    put_gpm_pel_bi_pixels(dst.cr, RCN_CTB_STRIDE, ref_data11, MAX_PB_SIZE, ref_data1,
                           pu_h >> 1, prec_x1, prec_y1, pu_w >> 1, step_x, step_y, weight);
-    // mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 1](dst.cb, RCN_CTB_STRIDE, ref1_c.cb, ref1_c.stride_c, ref_data0, 
-    //                                             pu_h >> 1, prec_x1, prec_y1, pu_w >> 1, wt0, wt1);
-    // mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 1](dst.cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride_c, ref_data1,
-    //                                             pu_h >> 1, prec_x1, prec_y1, pu_w >> 1, wt0, wt1);
 }
 
 
@@ -2108,59 +2036,11 @@ rcn_gpm_b(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
             int x0, int y0, int log2_pb_w, int log2_pb_h)
 {   
 
-    // int type0 = gpm_ctx->inter_dir0 ;
-    // int type1 = gpm_ctx->inter_dir1 ;
-    // struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
-
-    // rcn_gpm_mc(ctudec, dst, gpm_ctx->split_dir, x0, y0, log2_pb_w, log2_pb_h, 
-    //                       type0, gpm_ctx->mv0, type1, gpm_ctx->mv1);
-
-
-    int gpm_flag = 1;
-
-    //First geometric part reconstruction
-    struct OVBuffInfo tmp_0;
-    uint16_t tmp_0_l [RCN_CTB_SIZE], tmp_0_cb[RCN_CTB_SIZE], tmp_0_cr[RCN_CTB_SIZE] ;
-    tmp_0.y  = &tmp_0_l [RCN_CTB_PADDING];
-    tmp_0.cb = &tmp_0_cb[RCN_CTB_PADDING];
-    tmp_0.cr = &tmp_0_cr[RCN_CTB_PADDING];
-    tmp_0.stride   = RCN_CTB_STRIDE;
-    tmp_0.stride_c = RCN_CTB_STRIDE;
-
-    // Second geometric part reconstruction
-    struct OVBuffInfo tmp_1;
-    uint16_t tmp_1_l [RCN_CTB_SIZE], tmp_1_cb[RCN_CTB_SIZE], tmp_1_cr[RCN_CTB_SIZE] ;
-    tmp_1.y  = &tmp_1_l [RCN_CTB_PADDING];
-    tmp_1.cb = &tmp_1_cb[RCN_CTB_PADDING];
-    tmp_1.cr = &tmp_1_cr[RCN_CTB_PADDING];
-    tmp_1.stride   = RCN_CTB_STRIDE;
-    tmp_1.stride_c = RCN_CTB_STRIDE;
-    int type1 = gpm_ctx->inter_dir1 == 1 ? 0 : 1;
-    rcn_mcp(ctudec, tmp_1, x0, y0, log2_pb_w, log2_pb_h, gpm_ctx->mv1, type1, gpm_ctx->mv1.ref_idx, gpm_flag);
-    
+    int type0 = gpm_ctx->inter_dir0 ;
+    int type1 = gpm_ctx->inter_dir1 ;
     struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
-    dst.y   += x0 + y0 * dst.stride;
-    uint16_t* dst_init = dst.y;
 
-    tmp_0.y += x0 + y0 * tmp_0.stride;
-    tmp_1.y += x0 + y0 * tmp_1.stride;
-    put_weighted_gpm_pixels(dst.y, dst.stride, gpm_ctx, tmp_0.y, tmp_1.y, tmp_0.stride,
-                       log2_pb_w, log2_pb_h, 0);
+    rcn_gpm_mc(ctudec, dst, gpm_ctx->split_dir, x0, y0, log2_pb_w, log2_pb_h, 
+                          type0, gpm_ctx->mv0, type1, gpm_ctx->mv1);
 
-
-    ctudec->rcn_ctx.rcn_funcs.lmcs_reshape(dst_init, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, 
-                                    (1 << log2_pb_w), (1 << log2_pb_h));
-    
-    int cr_scale = 1;
-    dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-    tmp_0.cb += (x0 >> 1) + (y0 >> 1) * tmp_0.stride_c;
-    tmp_1.cb += (x0 >> 1) + (y0 >> 1) * tmp_1.stride_c;
-    put_weighted_gpm_pixels(dst.cb, dst.stride_c, gpm_ctx, tmp_0.cb, tmp_1.cb, tmp_0.stride_c,
-                       log2_pb_w, log2_pb_h, cr_scale);
-
-    dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-    tmp_0.cr += (x0 >> 1) + (y0 >> 1) * tmp_0.stride_c;
-    tmp_1.cr += (x0 >> 1) + (y0 >> 1) * tmp_1.stride_c;
-    put_weighted_gpm_pixels(dst.cr, dst.stride_c, gpm_ctx, tmp_0.cr, tmp_1.cr, tmp_0.stride_c,
-                       log2_pb_w, log2_pb_h, cr_scale);
 }

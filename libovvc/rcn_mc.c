@@ -1001,8 +1001,8 @@ put_weighted_qpel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _s
 }
 
 void
-put_weighted_ciip_pixels(uint16_t* dst, ptrdiff_t dststride,
-                      const uint16_t* src_intra, const uint16_t* src_inter, ptrdiff_t srcstride,
+put_weighted_ciip_pixels(uint16_t* dst, int dststride,
+                      const uint16_t* src_intra, const uint16_t* src_inter, int srcstride,
                       int width, int height, int wt)
 {   
     int x, y;
@@ -1018,6 +1018,34 @@ put_weighted_ciip_pixels(uint16_t* dst, ptrdiff_t dststride,
     }
 }
 
+
+void
+put_gpm_pel_bi_pixels(uint16_t* _dst, int _dststride, const int16_t* _src0,
+                  int _srcstride, const int16_t* _src1, int height,
+                  intptr_t mx, intptr_t my, int width, int step_x, int step_y, int16_t* weight)
+{   
+    int x, y;
+    const int16_t* src0 = _src0;
+    const int16_t* src1 = _src1;
+    ptrdiff_t srcstride = _srcstride;
+    uint16_t* dst = (uint16_t*)_dst;
+    ptrdiff_t dststride = _dststride;
+    int shift = 14 - BIT_DEPTH + 3;
+    int offset = (1 << (shift - 1)) ;
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; ++x) {
+            int w1 = weight[0];
+            int w0 = 8 - w1;
+            dst[x] = ov_clip_pixel( ( (src1[x]  * w1
+                                        + src0[x] * w0 + offset )  >> shift ) );
+            weight += step_x;
+        }
+        src1 += srcstride;
+        src0 += srcstride;
+        dst += dststride;
+        weight += step_y;
+    }
+}
 
 void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
 {

@@ -89,7 +89,7 @@ void rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                     OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1);
 
 void rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-             OVMV mv, uint8_t inter_dir, uint8_t ref_idx, uint8_t gpm_flag);
+             OVMV mv, uint8_t inter_dir, uint8_t ref_idx);
 
 void rcn_ciip_b(OVCTUDec*const ctudec, const OVMV mv0, const OVMV mv1,
            unsigned int x0, unsigned int y0,
@@ -130,10 +130,6 @@ void rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const db
 void rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
                            uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y,
                            uint8_t ctu_w, uint8_t ctu_h);
-
-void put_weighted_bi_pixels(uint16_t* dst, int dststride,
-                      const int16_t* src_0, const int16_t* src_1, int srcstride,
-                      int width, int height, int wt0, int wt1);
 
 void
 vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
