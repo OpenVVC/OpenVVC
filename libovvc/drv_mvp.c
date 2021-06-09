@@ -1442,7 +1442,11 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         nb_cand++;
     }
     /*FIXME saturation or ridx based on nb_active_ref*/
-    int8_t ridx = OVMIN(merge_idx - nb_cand, OVMIN(inter_ctx->nb_active_ref0 - 1, inter_ctx->nb_active_ref1 - 1));
+    int8_t diff_cand = merge_idx - nb_cand;
+    int8_t num_min_ref = OVMIN(inter_ctx->nb_active_ref0, inter_ctx->nb_active_ref1);
+    int8_t ridx = 0;
+    if (diff_cand <= num_min_ref - 1)
+        ridx = diff_cand;
 
     mv_z.inter_dir = 3;
     mv_z.mv0.ref_idx = ridx;
