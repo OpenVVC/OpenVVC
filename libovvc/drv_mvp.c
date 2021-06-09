@@ -1230,8 +1230,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                         cand[nb_cand].mv1 = tmvp_scale_mv(scale10, c0);
                         cand[nb_cand].mv1.ref_idx = 0;
                     }
-                    cand[nb_cand].mv0.bcw_idx_plus1 = c0.bcw_idx_plus1;
-                    cand[nb_cand].mv1.bcw_idx_plus1 = c0.bcw_idx_plus1;
+                    cand[nb_cand].mv0.bcw_idx_plus1 = 0;
+                    cand[nb_cand].mv1.bcw_idx_plus1 = 0;
                     if (nb_cand++ == merge_idx)
                         return cand[merge_idx];
                 } else {
@@ -1245,8 +1245,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                     cand[nb_cand].mv1 = tmvp_scale_mv(scale11, c0);
                     cand[nb_cand].mv0.ref_idx = 0;
                     cand[nb_cand].mv1.ref_idx = 0;
-                    cand[nb_cand].mv0.bcw_idx_plus1 = c0.bcw_idx_plus1;
-                    cand[nb_cand].mv1.bcw_idx_plus1 = c0.bcw_idx_plus1;                    
+                    cand[nb_cand].mv0.bcw_idx_plus1 = 0;
+                    cand[nb_cand].mv1.bcw_idx_plus1 = 0;
                     if (nb_cand++ == merge_idx)
                         return cand[merge_idx];
                 }
@@ -1274,8 +1274,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                         cand[nb_cand].mv1 = tmvp_scale_mv(scale10, c1);
                         cand[nb_cand].mv1.ref_idx = 0;
                     }
-                    cand[nb_cand].mv0.bcw_idx_plus1 = c1.bcw_idx_plus1;
-                    cand[nb_cand].mv1.bcw_idx_plus1 = c1.bcw_idx_plus1;
+                    cand[nb_cand].mv0.bcw_idx_plus1 = 0;
+                    cand[nb_cand].mv1.bcw_idx_plus1 = 0;
                     if (nb_cand++ == merge_idx)
                         return cand[merge_idx];
                 } else {
@@ -1289,8 +1289,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                     cand[nb_cand].mv1 = tmvp_scale_mv(scale11, c1);
                     cand[nb_cand].mv0.ref_idx = 0;
                     cand[nb_cand].mv1.ref_idx = 0;
-                    cand[nb_cand].mv0.bcw_idx_plus1 = c1.bcw_idx_plus1;
-                    cand[nb_cand].mv1.bcw_idx_plus1 = c1.bcw_idx_plus1;
+                    cand[nb_cand].mv0.bcw_idx_plus1 = 0;
+                    cand[nb_cand].mv1.bcw_idx_plus1 = 0;
                     if (nb_cand++ == merge_idx)
                         return cand[merge_idx];
                 }
@@ -1321,8 +1321,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                         cand[nb_cand].mv0 = tmvp_scale_mv(scale01, c0);
                         cand[nb_cand].mv0.ref_idx = 0;
                     }
-                    cand[nb_cand].mv0.bcw_idx_plus1 = c0.bcw_idx_plus1;
-                    cand[nb_cand].mv1.bcw_idx_plus1 = c0.bcw_idx_plus1;
+                    cand[nb_cand].mv0.bcw_idx_plus1 = 0;
+                    cand[nb_cand].mv1.bcw_idx_plus1 = 0;
                     if (nb_cand++ == merge_idx)
                         return cand[merge_idx];
                 } else {
@@ -1336,8 +1336,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                     cand[nb_cand].mv1 = tmvp_scale_mv(scale10, c0);
                     cand[nb_cand].mv0.ref_idx = 0;
                     cand[nb_cand].mv1.ref_idx = 0;
-                    cand[nb_cand].mv0.bcw_idx_plus1 = c0.bcw_idx_plus1;
-                    cand[nb_cand].mv1.bcw_idx_plus1 = c0.bcw_idx_plus1;
+                    cand[nb_cand].mv0.bcw_idx_plus1 = 0;
+                    cand[nb_cand].mv1.bcw_idx_plus1 = 0;
                     if (nb_cand++ == merge_idx)
                         return cand[merge_idx];
                 }
@@ -1366,8 +1366,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                         cand[nb_cand].mv0 = tmvp_scale_mv(scale01, c1);
                         cand[nb_cand].mv0.ref_idx = 0;
                     }
-                    cand[nb_cand].mv0.bcw_idx_plus1 = c1.bcw_idx_plus1;
-                    cand[nb_cand].mv1.bcw_idx_plus1 = c1.bcw_idx_plus1;
+                    cand[nb_cand].mv0.bcw_idx_plus1 = 0;
+                    cand[nb_cand].mv1.bcw_idx_plus1 = 0;
                     if (nb_cand++ == merge_idx)
                         return cand[merge_idx];
                 } else {
@@ -1381,8 +1381,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                     cand[nb_cand].mv1 = tmvp_scale_mv(scale10, c1);
                     cand[nb_cand].mv0.ref_idx = 0;
                     cand[nb_cand].mv1.ref_idx = 0;
-                    cand[nb_cand].mv0.bcw_idx_plus1 = c1.bcw_idx_plus1;
-                    cand[nb_cand].mv1.bcw_idx_plus1 = c1.bcw_idx_plus1;
+                    cand[nb_cand].mv0.bcw_idx_plus1 = 0;
+                    cand[nb_cand].mv1.bcw_idx_plus1 = 0;
                     if (nb_cand++ == merge_idx)
                         return cand[merge_idx];
                 }
@@ -1436,8 +1436,11 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
             avg_mv.inter_dir |= 2;
         }
 
-        if (nb_cand == merge_idx)
+        if (nb_cand == merge_idx){
+            avg_mv.mv0.bcw_idx_plus1 = 0;
+            avg_mv.mv1.bcw_idx_plus1 = 0;
             return avg_mv;
+        }
 
         nb_cand++;
     }
@@ -1450,7 +1453,9 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
 
     mv_z.inter_dir = 3;
     mv_z.mv0.ref_idx = ridx;
+    mv_z.mv0.bcw_idx_plus1 = 0;
     mv_z.mv1.ref_idx = ridx;
+    mv_z.mv1.bcw_idx_plus1 = 0;
 
     return mv_z;
 }

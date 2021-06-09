@@ -1335,7 +1335,10 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         //mv_info.mv1.ref_idx = inter_dir & 0x2 ? ref_idx1 : 0xFF;
     }
 
-    if (apply_ciip){
+
+    if(apply_ciip){
+        mv_info.mv0.bcw_idx_plus1 = 0;
+        mv_info.mv1.bcw_idx_plus1 = 0;
         rcn_ciip_b(ctu_dec, mv_info.mv0, mv_info.mv1, x0, y0,
                    log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
     } 
