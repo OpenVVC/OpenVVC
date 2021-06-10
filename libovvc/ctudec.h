@@ -345,6 +345,11 @@ struct InterDRVCtx
     uint8_t gpm_flag;
     int max_gpm_cand;
 
+    /* Adaptive MV Refinement(AMVR) Related
+     * information
+     */
+    uint8_t amvr_flag;
+
     struct VVCGPM
     {
         int split_dir;

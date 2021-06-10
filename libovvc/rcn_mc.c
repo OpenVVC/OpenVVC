@@ -687,7 +687,8 @@ put_weighted_epel_bi_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _sr
 
     const int8_t* filter = ov_mcp_filters_c[mx - 1];
 
-    int shift = 14 + 3 - BIT_DEPTH;
+    int log2_sum_weights = floor_log2(wt1 + wt0);
+    int shift = 14 + log2_sum_weights - BIT_DEPTH;
     int offset = 1 << (shift - 1);
 
     for (y = 0; y < height; y++) {
@@ -750,7 +751,8 @@ put_weighted_epel_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _sr
 
     const int8_t* filter = ov_mcp_filters_c[my - 1];
 
-    int shift = 14 + 3 - BIT_DEPTH;
+    int log2_sum_weights = floor_log2(wt1 + wt0);
+    int shift = 14 + log2_sum_weights - BIT_DEPTH;
     int offset = 1 << (shift - 1);
 
     for (y = 0; y < height; y++) {
@@ -833,7 +835,8 @@ put_weighted_epel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _s
 
     const int8_t* filter = ov_mcp_filters_c[mx - 1];
 
-    int shift = 14 + 3 - BIT_DEPTH;
+    int log2_sum_weights = floor_log2(wt1 + wt0);
+    int shift = 14 + log2_sum_weights - BIT_DEPTH;
     int offset = 1 << (shift - 1);
 
     src0 -= EPEL_EXTRA_BEFORE * srcstride;
@@ -902,7 +905,8 @@ put_weighted_qpel_bi_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _sr
 
     const int8_t* filter = ov_mc_filters[mx - 1];
 
-    int shift = 14 + 3 - BIT_DEPTH;
+    int log2_sum_weights = floor_log2(wt1 + wt0);
+    int shift = 14 + log2_sum_weights - BIT_DEPTH;
     int offset = 1 << (shift - 1);
 
     for (y = 0; y < height; y++) {
@@ -934,7 +938,8 @@ put_weighted_qpel_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _sr
 
     const int8_t* filter = ov_mc_filters[my - 1];
 
-    int shift = 14 + 3 - BIT_DEPTH;
+    int log2_sum_weights = floor_log2(wt1 + wt0);
+    int shift = 14 + log2_sum_weights - BIT_DEPTH;
     int offset = 1 << (shift - 1);
 
     for (y = 0; y < height; y++) {
@@ -970,8 +975,8 @@ put_weighted_qpel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _s
 
     const int8_t* filter = ov_mc_filters[mx - 1];
 
-    //TODObcw: change 3 with a parameter log2_sum_weights
-    int shift = 14 + 3 - BIT_DEPTH;
+    int log2_sum_weights = floor_log2(wt1 + wt0);
+    int shift = 14 + log2_sum_weights - BIT_DEPTH;
     int offset = 1 << (shift - 1);
 
     src0 -= QPEL_EXTRA_BEFORE * srcstride;

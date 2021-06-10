@@ -142,7 +142,7 @@ rcn_lmcs_reshape_luma_blk(uint16_t *dst, ptrdiff_t stride_dst,
             while (idx < 16 && dst[x] >= lmcs_output_pivot[idx+1]){
                 idx++;
             }
-            //TODO: rename variables 
+
             int16_t map_low  = lmcs_output_pivot[idx];
             int16_t map_high = lmcs_output_pivot[idx+1];
             int16_t orig_low  = (idx) * window_size;

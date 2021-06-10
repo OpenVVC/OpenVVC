@@ -48,6 +48,17 @@ struct OVDMV {
     int32_t y;
 };
 
+#define BIT_DEPTH 10
+#define ov_clip_pixel(a) ov_clip_uintp2(a, BIT_DEPTH)
+
+enum CUMode {
+    OV_NA = 0xFF,
+    OV_INTER = 1,
+    OV_INTRA = 2,
+    OV_INTER_SKIP = 3,
+    OV_MIP = 4,
+};
+
 static OVMV
 clip_mv(int pos_x, int pos_y, int pic_w, int pic_h, int pb_w, int pb_h, OVMV mv)
 {
@@ -523,8 +534,7 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint16_t edge_buff1[RCN_CTB_SIZE];
     uint16_t edge_buff0_1[RCN_CTB_SIZE];
     uint16_t edge_buff1_1[RCN_CTB_SIZE];
-    int16_t tmp_buff0[RCN_CTB_SIZE];
-    int16_t tmp_buff1[RCN_CTB_SIZE];
+    int16_t tmp_buff[RCN_CTB_SIZE];
 
     /*FIXME we suppose here both refs possess the same size*/
 
@@ -571,6 +581,8 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride, tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
     }
     else{
+        //TODObcw: use 2 bidir0 and a function that apply uniform weights (as for GPM).
+        //It would be less efficient, but easier to implement (only 1 function to optimize with SSE).
         wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
         wt0 = 8 - wt1;
         mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride, tmp_buff, 
@@ -1173,7 +1185,8 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint16_t edge_buff1[RCN_CTB_SIZE];
     uint16_t edge_buff0_1[RCN_CTB_SIZE];
     uint16_t edge_buff1_1[RCN_CTB_SIZE];
-    int16_t tmp_buff[RCN_CTB_SIZE];
+    int16_t tmp_buff0[RCN_CTB_SIZE];
+    int16_t tmp_buff1[RCN_CTB_SIZE];
 
     /*FIXME we suppose here both refs possess the same size*/
 
@@ -1701,17 +1714,6 @@ rcn_mcp_b_c(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
 
     }
 }
-
-//TODOciip: do not define here
-#define BIT_DEPTH 10
-#define ov_clip_pixel(a) ov_clip_uintp2(a, BIT_DEPTH)
-enum CUMode {
-    OV_NA = 0xFF,
-    OV_INTER = 1,
-    OV_INTRA = 2,
-    OV_INTER_SKIP = 3,
-    OV_MIP = 4,
-};
 
 void rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, struct OVBuffInfo* tmp_inter,
                             unsigned int x0, unsigned int y0,

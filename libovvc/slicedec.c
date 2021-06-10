@@ -1168,8 +1168,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     OVCABACCtx cabac_ctx;
     slicedec_init_rect_entry(&einfo, prms, entry_idx);
 
-    //TODO: do not create and free here, find a way to make the sizes
-    //  independent from the rectangular region sizes.
     int margin = 3;
     ctudec_create_filter_buffers(ctudec, sldec->pic->frame, einfo.nb_ctu_w, margin);
     ctudec_create_intra_line_buff(ctudec, einfo.nb_ctu_w + 2);
@@ -1227,6 +1225,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     ctudec->drv_ctx.inter_ctx.max_gpm_cand = ctudec->max_num_merge_candidates 
                             - sldec->active_params->sps->sps_max_num_merge_cand_minus_max_num_gpm_cand;
     ctudec->drv_ctx.inter_ctx.bcw_flag = sldec->active_params->sps->sps_bcw_enabled_flag;
+    ctudec->drv_ctx.inter_ctx.amvr_flag = sldec->active_params->sps->sps_amvr_enabled_flag;
 
     /* FIXME entry might be check before attaching entry to CABAC so there
      * is no need for this check
