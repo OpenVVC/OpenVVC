@@ -552,6 +552,8 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     mv1 = clip_mv(pos_x, pos_y, ref1->frame->width[0],
                   ref1->frame->height[0], 1 << log2_pu_w, 1 << log2_pu_h, mv1);
 
+    // if( mv1.x & 0x3 || mv1.y & 0x3 ||  mv0.x & 0x3 || mv0.y & 0x3 )
+    //     printf("%i %i %i %i\n", mv1.x, mv1.y, mv0.x , mv0.y);
 
     const struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
                                                       log2_pu_w, log2_pu_h, log2_ctb_s);
@@ -1185,8 +1187,7 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint16_t edge_buff1[RCN_CTB_SIZE];
     uint16_t edge_buff0_1[RCN_CTB_SIZE];
     uint16_t edge_buff1_1[RCN_CTB_SIZE];
-    int16_t tmp_buff0[RCN_CTB_SIZE];
-    int16_t tmp_buff1[RCN_CTB_SIZE];
+    int16_t tmp_buff[RCN_CTB_SIZE];
 
     /*FIXME we suppose here both refs possess the same size*/
 

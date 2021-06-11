@@ -61,6 +61,16 @@ extern int8_t    g_Dis[GEO_NUM_ANGLES];
 #define MMVD_MAX_REFINE_NUM     (MMVD_REFINE_STEP * 4) ///< max number of candidate from a base candidate
 #define MMVD_BASE_MV_NUM        2 ///< max number of base candidate
 
+enum MvPrecision
+{
+  MV_PRECISION_4PEL     = 0,      // 4-pel
+  MV_PRECISION_INT      = 2,      // 1-pel, shift 2 bits from 4-pel
+  MV_PRECISION_HALF     = 3,      // 1/2-pel
+  MV_PRECISION_QUARTER  = 4,      // 1/4-pel (the precision of regular MV difference signaling), shift 4 bits from 4-pel
+  MV_PRECISION_SIXTEENTH = 6,     // 1/16-pel (the precision of internal MV), shift 6 bits from 4-pel
+  MV_PRECISION_INTERNAL = MV_PRECISION_SIXTEENTH,
+};
+
 #if 0
 static void
 init_ctu_bitfield(struct OVRCNCtx *const rcn_ctx,

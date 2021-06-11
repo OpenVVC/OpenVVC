@@ -70,6 +70,9 @@ OVMV drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
                  uint8_t mvp_idx, uint8_t inter_dir,
                  uint8_t ref_idx0, uint8_t ref_idx1);
 
+
+void drv_set_merge_precision_amvr(struct InterDRVCtx *inter_ctx, struct VVCMergeInfo mv_info);
+
 OVMV drv_merge_mvp(struct InterDRVCtx *const inter_ctx,
                    const struct OVMVCtx *const mv_ctx,
                    uint8_t pb_x, uint8_t pb_y,
@@ -97,7 +100,7 @@ VVCMergeInfo drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
 VVCMergeInfo drv_mvp_b(struct InterDRVCtx *const inter_ctx,
                        uint8_t pb_x, uint8_t pb_y,
                        uint8_t nb_pb_w, uint8_t nb_pb_h,
-                       OVMV mvd0, OVMV mvd1,
+                       OVMV mvd0, OVMV mvd1, int prec_amvr,
                        uint8_t mvp_idx0, uint8_t mvp_idx1, uint8_t bcw_idx,
                        uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
                        uint8_t is_small);
