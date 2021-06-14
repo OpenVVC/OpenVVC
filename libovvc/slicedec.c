@@ -1301,7 +1301,6 @@ init_affine_status(OVCTUDec *const ctudec, const OVSPS *const sps,
                    const OVPH *const ph)
 {
     ctudec->affine_nb_merge_cand = 5 - sps->sps_five_minus_max_num_subblock_merge_cand;
-    ctudec->affine_nb_merge_cand -= sps->sps_sbtmvp_enabled_flag;
     ctudec->affine_status  = sps->sps_affine_amvr_enabled_flag;
     ctudec->affine_status |= sps->sps_6param_affine_enabled_flag << 1;
     ctudec->affine_status |= sps->sps_affine_prof_enabled_flag << 2;
