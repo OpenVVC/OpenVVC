@@ -801,6 +801,13 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
             /* FIXME idx can be ph */
             int ref_idx = sh->sh_collocated_ref_idx;
             const OVPicture *col_pic = pic->rpl0[ref_idx];
+            tmvp_ctx->col_info.ref_idx_rpl0 = ref_idx;
+            tmvp_ctx->col_info.ref_idx_rpl1 = -1;
+            for (int i = 0; i < 16; ++i){
+                if (pic->rpl1[i] == col_pic){
+                    tmvp_ctx->col_info.ref_idx_rpl1 = i;
+                }
+            }
             tmvp_ctx->collocated_ref = col_pic;
 
             tmvp_set_mv_scales(tmvp_ctx, pic, col_pic);
@@ -810,6 +817,13 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
             /* FIXME idx can be ph */
             int ref_idx = sh->sh_collocated_ref_idx;
             const OVPicture *col_pic = pic->rpl1[ref_idx];
+            tmvp_ctx->col_info.ref_idx_rpl1 = ref_idx;
+            tmvp_ctx->col_info.ref_idx_rpl0 = -1;
+            for (int i = 0; i < 16; ++i){
+                if (pic->rpl0[i] == col_pic){
+                    tmvp_ctx->col_info.ref_idx_rpl0 = i;
+                }
+            }
             tmvp_ctx->collocated_ref = col_pic;
 
             tmvp_set_mv_scales(tmvp_ctx, pic, col_pic);

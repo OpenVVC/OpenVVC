@@ -1036,6 +1036,8 @@ tmvp_entry_init(OVCTUDec *ctudec, OVPicture *active_pic)
     tmvp_ctx->scale10 = active_pic->tmvp.scale10;
     tmvp_ctx->scale01 = active_pic->tmvp.scale01;
     tmvp_ctx->scale11 = active_pic->tmvp.scale11;
+    tmvp_ctx->col_info.ref_idx_rpl0 = active_pic->tmvp.col_info.ref_idx_rpl0;
+    tmvp_ctx->col_info.ref_idx_rpl1 = active_pic->tmvp.col_info.ref_idx_rpl1;
 
     tmvp_ctx->col_plane0 = &collocated_ref->mv_plane0;
     tmvp_ctx->col_plane1 = &collocated_ref->mv_plane1;

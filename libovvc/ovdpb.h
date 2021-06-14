@@ -86,6 +86,11 @@ struct OVPicture
        /* Per CTU Bit fields for available Motion Vectors */
        void *mv_field0;
        void *mv_field1;
+
+        struct ColInfoPic {
+            int8_t ref_idx_rpl0;
+            int8_t ref_idx_rpl1;
+        }col_info;
        /* TODO tmvp scaling */
    } tmvp;
 

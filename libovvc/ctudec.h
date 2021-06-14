@@ -352,6 +352,12 @@ struct InterDRVCtx
         const struct MVPlane *plane0;
         const struct MVPlane *plane1;
 
+        struct ColInfo {
+            int8_t ref_idx_rpl0;
+            int8_t ref_idx_rpl1;
+        }col_info;
+
+
         #if 0
         OVPicture *col_ref;
         #endif
