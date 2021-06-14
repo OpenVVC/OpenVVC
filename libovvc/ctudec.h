@@ -329,6 +329,7 @@ struct InterDRVCtx
     uint8_t tmvp_avail;
     uint8_t tmvp_enabled;
     uint8_t mvd1_zero_flag;
+    uint8_t sbtmvp_enabled;
 
     /* Combined Inter Intra Pred(CIIP) Related
      * information

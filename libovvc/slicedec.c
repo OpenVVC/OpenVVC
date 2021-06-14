@@ -1334,6 +1334,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->delta_qp_enabled = pps->pps_cu_qp_delta_enabled_flag;
     ctudec->sbt_enabled = sps->sps_sbt_enabled_flag;
     ctudec->affine_enabled = sps->sps_affine_enabled_flag;
+    ctudec->drv_ctx.inter_ctx.sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
     if (ctudec->affine_enabled) {
         init_affine_status(ctudec, sps, ph);
     }
