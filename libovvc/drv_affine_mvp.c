@@ -2638,7 +2638,7 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
     }
 }
 
-static void
+static uint8_t
 update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
                 struct AffineMergeInfo mv_info,
                 uint8_t pb_x, uint8_t  pb_y,
@@ -2677,6 +2677,7 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
         compute_subblock_mvs(&cinfo[1], dmv_1, &mv_ctx1->mvs[pos],
                              log2_cu_w, log2_cu_h, mv_broad_1);
 
+        return ((!mv_broad_0) | (!mv_broad_1 << 1));
     } else if (inter_dir & 0x2) {
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
         const struct AffineDeltaMV dmv_1 = derive_affine_delta_mvs(&cinfo[1],
@@ -2690,6 +2691,7 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
         compute_subblock_mvs(&cinfo[1], dmv_1, &mv_ctx1->mvs[pos],
                              log2_cu_w, log2_cu_h, mv_broad_1);
 
+        return (!mv_broad_1 << 1);
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         const struct AffineDeltaMV dmv_0 = derive_affine_delta_mvs(&cinfo[0],
@@ -2702,6 +2704,7 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
 
         compute_subblock_mvs(&cinfo[0], dmv_0, &mv_ctx0->mvs[pos],
                              log2_cu_w, log2_cu_h, mv_broad_0);
+        return (!mv_broad_0);
     }
 }
 
@@ -2799,6 +2802,28 @@ drv_affine_mvp_mvd()
 {
 }
 
+static inline uint8_t
+mv_cmp(const OVMV a, const OVMV b)
+{
+     uint8_t is_eq;
+     is_eq = a.x == b.x;
+     is_eq &= a.y == b.y;
+     return is_eq;
+}
+
+uint8_t check_affine_prof(const struct AffineInfo *const affine_info, uint8_t rpl_idx)
+{
+    uint8_t prof_enabled = 1;
+    const struct AffineControlInfo *const cpinfo = &affine_info->cps[rpl_idx];
+
+    if (affine_info->type == AFFINE_3CP) {
+        prof_enabled &= !mv_cmp(cpinfo->lt, cpinfo->rt) && !mv_cmp(cpinfo->lt, cpinfo->lb);
+    } else {
+        prof_enabled &= !mv_cmp(cpinfo->lt, cpinfo->rt);
+    }
+
+    return prof_enabled;
+}
 
 /* Derive motion vectors and update motion maps */
 void
@@ -2822,6 +2847,7 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
 
     uint8_t opp_ref_idx0 = 0xFF;
     uint8_t opp_ref_idx1 = 0xFF;
+    uint8_t prof_dir = inter_ctx->prof_enabled ? 0x3 : 0;
 
     for (int i = 0; i < inter_ctx->nb_active_ref1; i ++) {
          if (inter_ctx->rpl0[ref_idx0] == inter_ctx->rpl1[i])
@@ -2906,8 +2932,16 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
     mv_info.affine_type = affine_type;
 
     /* Update for next pass */
-    update_mv_ctx_b(inter_ctx, mv_info, x_pb, y_pb, nb_pb_w,
-                    nb_pb_h, log2_cu_w, log2_cu_h, inter_dir);
+    prof_dir &= update_mv_ctx_b(inter_ctx, mv_info, x_pb, y_pb, nb_pb_w,
+                                nb_pb_h, log2_cu_w, log2_cu_h, inter_dir);
+    if (prof_dir) {
+        uint8_t prof_0 = check_affine_prof(&mv_info, RPL_0);
+        uint8_t prof_1 = check_affine_prof(&mv_info, RPL_1);
+
+        prof_dir &= (prof_0) | (prof_1 << 1);
+
+        prof_dir &= inter_dir;
+    }
 
     rcn_affine_mcp_b(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
                      log2_cu_w, log2_cu_h,
@@ -2994,9 +3028,20 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
      * override
      */
     if (!is_sbtmvp) {
-        update_mv_ctx_b(inter_ctx, mv_info, x_pb, y_pb,
-                        nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
-                        mv_info.inter_dir);
+        uint8_t prof_dir = inter_ctx->prof_enabled ? 0x3 : 0;
+
+        prof_dir &= update_mv_ctx_b(inter_ctx, mv_info, x_pb, y_pb,
+                                    nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
+                                    mv_info.inter_dir);
+
+        if (prof_dir) {
+            uint8_t prof_0 = check_affine_prof(&mv_info, RPL_0);
+            uint8_t prof_1 = check_affine_prof(&mv_info, RPL_1);
+
+            prof_dir &= (prof_0) | (prof_1 << 1);
+
+            prof_dir &= mv_info.inter_dir;
+        }
 
         rcn_affine_mcp_b(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
                          log2_cu_w, log2_cu_h,
