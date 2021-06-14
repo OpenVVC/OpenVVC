@@ -424,6 +424,78 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 }
 
 static void
+rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
+                                 uint8_t x0, uint8_t y0,
+                                 uint8_t log2_pu_w, uint8_t log2_pu_h,
+                                 OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1)
+{
+    struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
+    const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
+    /* FIXME derive ref_idx */
+    uint8_t ref_idx_0 = ref_idx0;
+    uint8_t ref_idx_1 = ref_idx1;
+
+    OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
+    OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
+
+    /* TMP buffers for edge emulation
+     * FIXME use tmp buffers in local contexts
+     */
+    uint16_t edge_buff0[RCN_CTB_SIZE];
+    uint16_t edge_buff1[RCN_CTB_SIZE];
+    int16_t tmp_buff[RCN_CTB_SIZE];
+
+    /*FIXME we suppose here both refs possess the same size*/
+
+    const int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+
+    /* FIXME we should not need ctb_x/y
+     * it could be retrieved from position in frame buff
+     */
+    int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
+    int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
+
+    mv0 = clip_mv(pos_x, pos_y, ref0->frame->width[0],
+                  ref0->frame->height[0], 1 << log2_pu_w, 1 << log2_pu_h, mv0);
+
+    mv1 = clip_mv(pos_x, pos_y, ref1->frame->width[0],
+                  ref1->frame->height[0], 1 << log2_pu_w, 1 << log2_pu_h, mv1);
+
+
+    const struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
+
+    const struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1, pos_x, pos_y, edge_buff1,
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
+
+    const int pu_w = 1 << log2_pu_w;
+    const int pu_h = 1 << log2_pu_h;
+
+    uint8_t prec_x0 = (mv0.x) & 0xF;
+    uint8_t prec_y0 = (mv0.y) & 0xF;
+
+    uint8_t prec_x1 = (mv1.x) & 0xF;
+    uint8_t prec_y1 = (mv1.y) & 0xF;
+
+    dst.y  += x0 + y0 * dst.stride;
+
+    uint8_t prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
+    uint8_t prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
+
+    mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride,
+                                                pu_h, prec_x0, prec_y0, pu_w);
+    mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride,
+                                                tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
+
+    if (ctudec->lmcs_info.lmcs_enabled_flag){
+        rcn_lmcs_reshape_luma_blk_lut(dst.y, RCN_CTB_STRIDE,
+                                      ctudec->lmcs_info.lmcs_lut_fwd_luma,
+                                      pu_w, pu_h);
+    }
+}
+
+static void
 rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                             uint8_t x0, uint8_t y0,
                             uint8_t log2_pu_w, uint8_t log2_pu_h,
@@ -704,6 +776,83 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 }
 
 void
+rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
+               int log2_pu_w, int log2_pu_h,
+               OVMV mv, uint8_t type,
+               uint8_t ref_idx,
+               const int32_t *dmv_scale_h, const int32_t *dmv_scale_v)
+{
+    struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
+    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+
+    struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
+
+    OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
+    OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
+
+    dst.y  += x0 + y0 * dst.stride;
+
+    uint16_t tmp_buff [RCN_CTB_SIZE];
+
+    const OVFrame *const frame0 =  type ? ref1->frame : ref0->frame;
+
+    const uint16_t *const ref0_y  = (uint16_t *) frame0->data[0];
+
+    int src_stride   = frame0->linesize[0] >> 1;
+
+    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+    int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
+    int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
+
+    const int pu_w = 1 << log2_pu_w;
+    const int pu_h = 1 << log2_pu_h;
+
+    const int pic_w = frame0->width[0];
+    const int pic_h = frame0->height[0];
+
+    mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv);
+
+    int ref_x = pos_x + (mv.x >> 4);
+    int ref_y = pos_y + (mv.y >> 4);
+
+    uint8_t prec_x   = (mv.x) & 0xF;
+    uint8_t prec_y   = (mv.y) & 0xF;
+
+    int prec_mc_type   = (prec_x  > 0) + ((prec_y > 0)   << 1);
+
+    uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, pic_w, pic_h,
+                                                   pu_w, pu_h);;
+
+    const uint16_t *src_y  = &ref0_y [ ref_x       + ref_y        * src_stride];
+
+    /* FIXME
+     * Thread synchronization to ensure data is available before usage
+     */
+
+    if (emulate_edge){
+        int src_off  = REF_PADDING_L * (src_stride) + (REF_PADDING_L);
+        int buff_off = REF_PADDING_L * (RCN_CTB_STRIDE) + (REF_PADDING_L);
+
+        emulate_block_border(tmp_buff, (src_y - src_off),
+                             RCN_CTB_STRIDE, src_stride,
+                             pu_w + QPEL_EXTRA, pu_h + QPEL_EXTRA,
+                             ref_x - REF_PADDING_L, ref_y - REF_PADDING_L,
+                             pic_w, pic_h);
+
+        src_y = tmp_buff + buff_off;
+        src_stride = RCN_CTB_STRIDE;
+    }
+
+    mc_l->unidir[prec_mc_type][log2_pu_w](dst.y, RCN_CTB_STRIDE,
+                                          src_y, src_stride, pu_h,
+                                          prec_x, prec_y, pu_w);
+
+    if (ctudec->lmcs_info.lmcs_enabled_flag){
+        rcn_lmcs_reshape_luma_blk_lut(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
+    }
+}
+
+void
 rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
           OVMV mv, uint8_t type, uint8_t ref_idx)
 {
@@ -831,6 +980,47 @@ rcn_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
     } else if (inter_dir & 0x1) {
 
         rcn_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
+
+    }
+}
+
+struct PROFInfo
+{
+    int32_t dmv_scale_h_0[16];
+    int32_t dmv_scale_v_0[16];
+    int32_t dmv_scale_h_1[16];
+    int32_t dmv_scale_v_1[16];
+};
+
+void
+rcn_prof_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *const inter_ctx,
+            const OVPartInfo *const part_ctx,
+            const OVMV mv0, const OVMV mv1,
+            unsigned int x0, unsigned int y0,
+            unsigned int log2_pb_w, unsigned int log2_pb_h,
+            uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
+            uint8_t prof_dir, const struct PROFInfo *const prof_info)
+{
+    if (inter_dir == 3) {
+
+        if (prof_dir == inter_dir) {
+            //rcn_prof_motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
+            printf("error\n");
+        } else {
+            rcn_prof_motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
+        }
+
+    } else if (inter_dir & 0x2) {
+
+        rcn_prof_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1,
+                       prof_info->dmv_scale_h_1,
+                       prof_info->dmv_scale_h_1);
+
+    } else if (inter_dir & 0x1) {
+
+        rcn_prof_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0,
+                       prof_info->dmv_scale_h_0,
+                       prof_info->dmv_scale_h_0);
 
     }
 }

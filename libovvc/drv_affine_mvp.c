@@ -2722,14 +2722,93 @@ store_affine_info(struct AffineDRVInfo *const affine_ctx, struct AffineInfo aff_
         aff_buff += 34;
     }
 }
+#define SB_W 4
+#define SB_H 4
 
+#define GRAD_SHIFT 6
 
-void
-rcn_affine_mcp_b(OVCTUDec *const ctudec,
-                 struct InterDRVCtx *const inter_ctx,
-                 uint8_t x0, uint8_t y0,
-                 uint8_t log2_cu_w, uint8_t log2_cu_h,
-                 uint8_t inter_dir)
+/* Link to GRAD SHIFT */
+#define PROF_DMV_MAX ((1 << 5) - 1)
+
+#define PROF_MV_SHIFT 8
+#define PROF_MV_RND (1 << (PROF_MV_SHIFT - 1))
+
+#define BITDEPTH 10
+#define PROF_SMP_SHIFT (14 - BITDEPTH)
+#define PROF_SMP_RND (1 << (14 - 1))
+#define PROF_SMP_OFFSET (1 << (PROF_SMP_SHIFT - 1)) + PROF_SMP_RND
+
+#define PROF_BUFF_PADD_H 1
+#define PROF_BUFF_PADD_W 1
+
+struct OVDMV {
+    int32_t x;
+    int32_t y;
+};
+
+struct OVDMV
+round_prof_dmv_scale(struct OVDMV dmv)
+{
+    dmv.x += (PROF_MV_RND - (dmv.x >= 0)) >> PROF_MV_SHIFT;
+    dmv.y += (PROF_MV_RND - (dmv.y >= 0)) >> PROF_MV_SHIFT;
+    return dmv;
+}
+
+static void
+compute_prof_dmv_scale(struct AffineDeltaMV delta_mv,
+                       int32_t dmv_scale_h[16], int32_t dmv_scale_v[16])
+{
+    int x, y, i;
+    OVMV quad_dmv_h;
+    OVMV quad_dmv_v;
+    int32_t *dmv_scale_h_p = dmv_scale_h;
+    int32_t *dmv_scale_v_p = dmv_scale_v;
+
+    quad_dmv_h.x = delta_mv.h.x << 2;
+    quad_dmv_h.y = delta_mv.h.y << 2;
+    quad_dmv_v.x = delta_mv.v.x << 2;
+    quad_dmv_v.y = delta_mv.v.y << 2;
+
+    dmv_scale_h_p[0] = ((delta_mv.h.x + delta_mv.v.x) << 1) - ((quad_dmv_h.x + quad_dmv_v.x) << 1);
+    dmv_scale_v_p[0] = ((delta_mv.h.y + delta_mv.v.y) << 1) - ((quad_dmv_h.y + quad_dmv_v.y) << 1);
+
+    for (x = 1; x < SB_W; x++) {
+        dmv_scale_h_p[x] = dmv_scale_h_p[x - 1] + quad_dmv_h.x;
+        dmv_scale_v_p[x] = dmv_scale_v_p[x - 1] + quad_dmv_h.y;
+    }
+
+    dmv_scale_h_p += SB_W;
+    dmv_scale_v_p += SB_W;
+
+    for (y = 1; y < SB_H; y++) {
+        for (x = 0; x < SB_W; x++) {
+            dmv_scale_h_p[x] = dmv_scale_h_p[x - SB_W] + quad_dmv_v.x;
+            dmv_scale_v_p[x] = dmv_scale_v_p[x - SB_W] + quad_dmv_v.y;
+        }
+        dmv_scale_h_p += SB_W;
+        dmv_scale_v_p += SB_W;
+    }
+
+    for (i = 0; i < SB_W * SB_H; i++) {
+
+        struct OVDMV dmv = {
+            .x = dmv_scale_h[i],
+            .y = dmv_scale_v[i]
+        };
+
+        dmv = round_prof_dmv_scale(dmv);
+
+        dmv_scale_h[i] = ov_clip(dmv.x, -PROF_DMV_MAX, PROF_DMV_MAX);
+        dmv_scale_v[i] = ov_clip(dmv.y, -PROF_DMV_MAX, PROF_DMV_MAX);
+    }
+}
+
+static void
+rcn_affine_mcp_b_l(OVCTUDec *const ctudec,
+                   struct InterDRVCtx *const inter_ctx,
+                   uint8_t x0, uint8_t y0,
+                   uint8_t log2_cu_w, uint8_t log2_cu_h,
+                   uint8_t inter_dir)
 {
     int i, j;
     uint8_t nb_sb_w = (1 << log2_cu_w) >> LOG2_MIN_CU_S;
@@ -2742,6 +2821,8 @@ rcn_affine_mcp_b(OVCTUDec *const ctudec,
     uint8_t ref_idx0 = mv_buff0->ref_idx;
     uint8_t ref_idx1 = mv_buff1->ref_idx;
 
+    int32_t dmv_scale_h[16];
+    int32_t dmv_scale_v[16];
 
     for (i = 0; i < nb_sb_h; ++i) {
         for (j = 0; j < nb_sb_w; ++j) {
@@ -2756,9 +2837,79 @@ rcn_affine_mcp_b(OVCTUDec *const ctudec,
         mv_buff0 += 34;
         mv_buff1 += 34;
     }
+}
 
-    mv_buff0 = &inter_ctx->mv_ctx0.mvs[pos];
-    mv_buff1 = &inter_ctx->mv_ctx1.mvs[pos];
+struct PROFInfo {
+    int32_t dmv_scale_h_0[16];
+    int32_t dmv_scale_v_0[16];
+    int32_t dmv_scale_h_1[16];
+    int32_t dmv_scale_v_1[16];
+};
+
+static void
+rcn_affine_prof_mcp_b_l(OVCTUDec *const ctudec,
+                        struct InterDRVCtx *const inter_ctx,
+                        uint8_t x0, uint8_t y0,
+                        uint8_t log2_cu_w, uint8_t log2_cu_h,
+                        uint8_t inter_dir, uint8_t prof_dir,
+                        const struct AffineDeltaMV *const dmv_0,
+                        const struct AffineDeltaMV *const dmv_1)
+{
+    int i, j;
+    uint8_t nb_sb_w = (1 << log2_cu_w) >> LOG2_MIN_CU_S;
+    uint8_t nb_sb_h = (1 << log2_cu_h) >> LOG2_MIN_CU_S;
+
+    uint16_t pos = PB_POS_IN_BUF(x0 >> 2, y0 >> 2);
+
+    const struct OVMV *mv_buff0 = &inter_ctx->mv_ctx0.mvs[pos];
+    const struct OVMV *mv_buff1 = &inter_ctx->mv_ctx1.mvs[pos];
+    uint8_t ref_idx0 = mv_buff0->ref_idx;
+    uint8_t ref_idx1 = mv_buff1->ref_idx;
+    struct PROFInfo prof_info;
+
+    if (prof_dir & 0x1) {
+        compute_prof_dmv_scale(*dmv_0, &prof_info.dmv_scale_h_0, &prof_info.dmv_scale_v_0);
+    }
+
+    if (prof_dir & 0x2) {
+        compute_prof_dmv_scale(*dmv_1, &prof_info.dmv_scale_h_1, &prof_info.dmv_scale_v_1);
+    }
+
+    for (i = 0; i < nb_sb_h; ++i) {
+        for (j = 0; j < nb_sb_w; ++j) {
+            OVMV mv0 = mv_buff0[j];
+            OVMV mv1 = mv_buff1[j];
+
+            rcn_prof_mcp_b_l(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
+                             mv0, mv1, x0 + 4*j, y0 + 4*i,
+                             2, 2, inter_dir, ref_idx0, ref_idx1,
+                             prof_dir, prof_info);
+        }
+
+        mv_buff0 += 34;
+        mv_buff1 += 34;
+    }
+}
+
+
+void
+rcn_affine_mcp_b_c(OVCTUDec *const ctudec,
+                   struct InterDRVCtx *const inter_ctx,
+                   uint8_t x0, uint8_t y0,
+                   uint8_t log2_cu_w, uint8_t log2_cu_h,
+                   uint8_t inter_dir)
+{
+    uint8_t nb_sb_w = (1 << log2_cu_w) >> LOG2_MIN_CU_S;
+    uint8_t nb_sb_h = (1 << log2_cu_h) >> LOG2_MIN_CU_S;
+
+    uint16_t pos = PB_POS_IN_BUF(x0 >> 2, y0 >> 2);
+
+    const struct OVMV *mv_buff0 = &inter_ctx->mv_ctx0.mvs[pos];
+    const struct OVMV *mv_buff1 = &inter_ctx->mv_ctx1.mvs[pos];
+    uint8_t ref_idx0 = mv_buff0->ref_idx;
+    uint8_t ref_idx1 = mv_buff1->ref_idx;
+
+    int i, j;
 
     for (i = 0; i < nb_sb_h; i += 2) {
         for (j = 0; j < nb_sb_w; j += 2) {
@@ -2931,6 +3082,15 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
     mv_info.inter_dir = inter_dir;
     mv_info.affine_type = affine_type;
 
+    const struct AffineControlInfo *const cinfo = mv_info.cinfo;
+    const struct AffineDeltaMV dmv_0 = derive_affine_delta_mvs(&cinfo[0],
+                                                               log2_cu_w, log2_cu_h,
+                                                               affine_type);
+
+    const struct AffineDeltaMV dmv_1 = derive_affine_delta_mvs(&cinfo[1],
+                                                               log2_cu_w, log2_cu_h,
+                                                               affine_type);
+
     /* Update for next pass */
     prof_dir &= update_mv_ctx_b(inter_ctx, mv_info, x_pb, y_pb, nb_pb_w,
                                 nb_pb_h, log2_cu_w, log2_cu_h, inter_dir);
@@ -2943,9 +3103,19 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
         prof_dir &= inter_dir;
     }
 
-    rcn_affine_mcp_b(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
-                     log2_cu_w, log2_cu_h,
-                     inter_dir);
+    if (!prof_dir) {
+        rcn_affine_mcp_b_l(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
+                           log2_cu_w, log2_cu_h,
+                           inter_dir);
+    } else {
+        rcn_affine_prof_mcp_b_l(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
+                                log2_cu_w, log2_cu_h,
+                                inter_dir, prof_dir, &dmv_0, &dmv_1);
+    }
+
+    rcn_affine_mcp_b_c(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
+                       log2_cu_w, log2_cu_h,
+                       inter_dir);
 
     struct PBInfo pb = {
         .x_pb = x_pb,
@@ -3030,6 +3200,16 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     if (!is_sbtmvp) {
         uint8_t prof_dir = inter_ctx->prof_enabled ? 0x3 : 0;
 
+        uint8_t affine_type = mv_info.affine_type;
+        const struct AffineControlInfo *const cinfo = mv_info.cinfo;
+
+        const struct AffineDeltaMV dmv_0 = derive_affine_delta_mvs(&cinfo[0],
+                                                                   log2_cu_w, log2_cu_h,
+                                                                   affine_type);
+
+        const struct AffineDeltaMV dmv_1 = derive_affine_delta_mvs(&cinfo[1],
+                                                                   log2_cu_w, log2_cu_h,
+                                                                   affine_type);
         prof_dir &= update_mv_ctx_b(inter_ctx, mv_info, x_pb, y_pb,
                                     nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
                                     mv_info.inter_dir);
@@ -3043,9 +3223,19 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
             prof_dir &= mv_info.inter_dir;
         }
 
-        rcn_affine_mcp_b(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
-                         log2_cu_w, log2_cu_h,
-                         mv_info.inter_dir);
+        if (!prof_dir) {
+            rcn_affine_mcp_b_l(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
+                               log2_cu_w, log2_cu_h,
+                               mv_info.inter_dir);
+        } else {
+            rcn_affine_prof_mcp_b_l(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
+                                    log2_cu_w, log2_cu_h,
+                                    mv_info.inter_dir, prof_dir, &dmv_0, &dmv_1);
+        }
+
+        rcn_affine_mcp_b_c(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
+                           log2_cu_w, log2_cu_h,
+                           mv_info.inter_dir);
 
     }
 
