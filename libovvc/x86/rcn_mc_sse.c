@@ -57,7 +57,7 @@ DECLARE_ALIGNED(16, const int16_t, oh_hevc_epel_filters_sse[31][2][8]) = {
   { { 0, 2, 0, 2, 0, 2, 0, 2 }, { 63, -1, 63, -1, 63, -1, 63, -1 } },
 };
 
-DECLARE_ALIGNED(16, const int16_t, oh_hevc_qpel_filters_sse[15][4][8]) = {
+DECLARE_ALIGNED(16, const int16_t, oh_hevc_qpel_filters_sse[16][4][8]) = {
 #if 0
   { { 0, 0, 0, 0, 0, 0, 0, 0},
   {0, 64, 0, 64, 0, 64, 0, 64},
@@ -123,7 +123,13 @@ DECLARE_ALIGNED(16, const int16_t, oh_hevc_qpel_filters_sse[15][4][8]) = {
   { { 0, 1, 0, 1, 0, 1, 0, 1 },
     { -2, 4, -2, 4, -2, 4, -2, 4 },
     { 63, -3, 63, -3, 63, -3, 63, -3 },
-    { 1, 0, 1, 0, 1, 0, 1, 0 } }
+    { 1, 0, 1, 0, 1, 0, 1, 0 } },
+
+    //Hpel for amvr
+    { { 0, 3, 0, 3, 0, 3, 0, 3 },
+    { 9, 20, 9, 20, 9, 20, 9, 20 },
+    { 20, 9, 20, 9, 20, 9, 20, 9 },
+    { 3, 0, 3, 0, 3, 0, 3, 0 } }
 };
 
 DECLARE_ALIGNED(16, static const int16_t, ov_mc_filters_4_sse[15][4][8]) =

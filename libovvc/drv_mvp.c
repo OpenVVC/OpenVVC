@@ -419,7 +419,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                         uint8_t nb_pb_w, uint8_t nb_pb_h,
                         uint8_t mvp_idx, uint8_t inter_dir,
                         const struct OVMVCtx *const mv_ctx_opp, uint8_t opp_ref_idx,
-                        uint8_t is_small)
+                        uint8_t prec_amvr, uint8_t is_small)
 {
     const OVMV *const mv_buff = mv_ctx->mvs;
     const OVMV *const mv_buff_opp = mv_ctx_opp->mvs;
@@ -516,6 +516,8 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
 
     // cand[1].x <<= 2;
     // cand[1].y <<= 2;
+    cand[0]  = drv_round_to_precision_mv(cand[0], MV_PRECISION_INTERNAL, prec_amvr);
+    cand[1]  = drv_round_to_precision_mv(cand[1], MV_PRECISION_INTERNAL, prec_amvr);
 
 
     /* Remove on candidates if duplicated */
@@ -576,8 +578,10 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 c0.x = tmvp_round_mv(c0.x);
                 c0.y = tmvp_round_mv(c0.y);
                 c0 = tmvp_scale_mv(scale0, c0);
-                c0.x = ((c0.x + 2 - (c0.x >= 0)) >> 2) << 2;
-                c0.y = ((c0.y + 2 - (c0.y >= 0)) >> 2) << 2;
+                //c0.x = ((c0.x + 2 - (c0.x >= 0)) >> 2) << 2;
+                //c0.y = ((c0.y + 2 - (c0.y >= 0)) >> 2) << 2;
+                c0 = drv_round_to_precision_mv(c0, MV_PRECISION_INTERNAL, prec_amvr);
+
                 c0.ref_idx = ref_idx;
                 cand[nb_cand++] = c0;
             } else if (cand_c01) {
@@ -589,8 +593,9 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 c0.x = tmvp_round_mv(c0.x);
                 c0.y = tmvp_round_mv(c0.y);
                 c0 = tmvp_scale_mv(scale1, c0);
-                c0.x = ((c0.x + 2 - (c0.x >= 0)) >> 2) << 2;
-                c0.y = ((c0.y + 2 - (c0.y >= 0)) >> 2) << 2;
+                //c0.x = ((c0.x + 2 - (c0.x >= 0)) >> 2) << 2;
+                //c0.y = ((c0.y + 2 - (c0.y >= 0)) >> 2) << 2;
+                c0 = drv_round_to_precision_mv(c0, MV_PRECISION_INTERNAL, prec_amvr);
                 c0.ref_idx = ref_idx;
                 cand[nb_cand++] = c0;
             } else if (cand_c1) {
@@ -602,8 +607,9 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 c1.x = tmvp_round_mv(c1.x);
                 c1.y = tmvp_round_mv(c1.y);
                 c1 = tmvp_scale_mv(scale0, c1);
-                c1.x = ((c1.x + 2 - (c1.x >= 0)) >> 2) << 2;
-                c1.y = ((c1.y + 2 - (c1.y >= 0)) >> 2) << 2;
+                //c1.x = ((c1.x + 2 - (c1.x >= 0)) >> 2) << 2;
+                //c1.y = ((c1.y + 2 - (c1.y >= 0)) >> 2) << 2;
+                c1 = drv_round_to_precision_mv(c1, MV_PRECISION_INTERNAL, prec_amvr);
                 c1.ref_idx = ref_idx;
                 cand[nb_cand++] = c1;
             } else if (cand_c11) {
@@ -615,8 +621,9 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 c1.x = tmvp_round_mv(c1.x);
                 c1.y = tmvp_round_mv(c1.y);
                 c1 = tmvp_scale_mv(scale1, c1);
-                c1.x = ((c1.x + 2 - (c1.x >= 0)) >> 2) << 2;
-                c1.y = ((c1.y + 2 - (c1.y >= 0)) >> 2) << 2;
+                //c1.x = ((c1.x + 2 - (c1.x >= 0)) >> 2) << 2;
+                //c1.y = ((c1.y + 2 - (c1.y >= 0)) >> 2) << 2;
+                c1 = drv_round_to_precision_mv(c1, MV_PRECISION_INTERNAL, prec_amvr);
                 c1.ref_idx = ref_idx;
                 cand[nb_cand++] = c1;
             }
@@ -630,8 +637,9 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 c0.x = tmvp_round_mv(c0.x);
                 c0.y = tmvp_round_mv(c0.y);
                 c0 = tmvp_scale_mv(scale1, c0);
-                c0.x = ((c0.x + 2 - (c0.x >= 0)) >> 2) << 2;
-                c0.y = ((c0.y + 2 - (c0.y >= 0)) >> 2) << 2;
+                //c0.x = ((c0.x + 2 - (c0.x >= 0)) >> 2) << 2;
+                //c0.y = ((c0.y + 2 - (c0.y >= 0)) >> 2) << 2;
+                c0 = drv_round_to_precision_mv(c0, MV_PRECISION_INTERNAL, prec_amvr);
                 c0.ref_idx = ref_idx;
                 cand[nb_cand++] = c0;
             } else if (cand_c0) {
@@ -643,8 +651,9 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 c0.x = tmvp_round_mv(c0.x);
                 c0.y = tmvp_round_mv(c0.y);
                 c0 = tmvp_scale_mv(scale0, c0);
-                c0.x = ((c0.x + 2 - (c0.x >= 0)) >> 2) << 2;
-                c0.y = ((c0.y + 2 - (c0.y >= 0)) >> 2) << 2;
+                //c0.x = ((c0.x + 2 - (c0.x >= 0)) >> 2) << 2;
+                //c0.y = ((c0.y + 2 - (c0.y >= 0)) >> 2) << 2;
+                c0 = drv_round_to_precision_mv(c0, MV_PRECISION_INTERNAL, prec_amvr);
                 c0.ref_idx = ref_idx;
                 cand[nb_cand++] = c0;
             } else if (cand_c11) {
@@ -656,8 +665,9 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 c1.x = tmvp_round_mv(c1.x);
                 c1.y = tmvp_round_mv(c1.y);
                 c1 = tmvp_scale_mv(scale1, c1);
-                c1.x = ((c1.x + 2 - (c1.x >= 0)) >> 2) << 2;
-                c1.y = ((c1.y + 2 - (c1.y >= 0)) >> 2) << 2;
+                //c1.x = ((c1.x + 2 - (c1.x >= 0)) >> 2) << 2;
+                //c1.y = ((c1.y + 2 - (c1.y >= 0)) >> 2) << 2;
+                c1 = drv_round_to_precision_mv(c1, MV_PRECISION_INTERNAL, prec_amvr);
                 c1.ref_idx = ref_idx;
                 cand[nb_cand++] = c1;
             } else if (cand_c1) {
@@ -669,8 +679,9 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 c1.x = tmvp_round_mv(c1.x);
                 c1.y = tmvp_round_mv(c1.y);
                 c1 = tmvp_scale_mv(scale0, c1);
-                c1.x = ((c1.x + 2 - (c1.x >= 0)) >> 2) << 2;
-                c1.y = ((c1.y + 2 - (c1.y >= 0)) >> 2) << 2;
+                //c1.x = ((c1.x + 2 - (c1.x >= 0)) >> 2) << 2;
+                //c1.y = ((c1.y + 2 - (c1.y >= 0)) >> 2) << 2;
+                c1 = drv_round_to_precision_mv(c1, MV_PRECISION_INTERNAL, prec_amvr);
                 c1.ref_idx = ref_idx;
                 cand[nb_cand++] = c1;
             }
@@ -700,6 +711,8 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
     // cand[0].y <<= 2;
     // cand[1].x <<= 2;
     // cand[1].y <<= 2;
+    cand[0]  = drv_round_to_precision_mv(cand[0], MV_PRECISION_INTERNAL, prec_amvr);
+    cand[1]  = drv_round_to_precision_mv(cand[1], MV_PRECISION_INTERNAL, prec_amvr);
 
     return cand[mvp_idx];
 }
@@ -1469,8 +1482,6 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         VVCMergeInfo avg_mv = cand[0];
 
         avg_mv.inter_dir = cand[0].inter_dir & cand[1].inter_dir;
-        avg_mv.mv0.prec_amvr = (cand[0].mv0.prec_amvr == cand[1].mv0.prec_amvr) ?
-                                cand[0].mv0.prec_amvr : 0 ;
 
         if (avg_mv.inter_dir & 0x1) {
             avg_mv.mv0.x += cand[1].mv0.x;
@@ -1505,6 +1516,10 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         if (nb_cand == merge_idx){
             avg_mv.mv0.bcw_idx_plus1 = 0;
             avg_mv.mv1.bcw_idx_plus1 = 0;
+            uint8_t prec_amvr0 = cand[0].inter_dir & 0x1 ? cand[0].mv0.prec_amvr : cand[0].mv1.prec_amvr;
+            uint8_t prec_amvr1 = cand[1].inter_dir & 0x1 ? cand[1].mv0.prec_amvr : cand[1].mv1.prec_amvr;
+            avg_mv.mv0.prec_amvr = (prec_amvr0 == prec_amvr1) ? prec_amvr0 : 0 ;
+            avg_mv.mv1.prec_amvr = avg_mv.mv0.prec_amvr ;
             return avg_mv;
         }
 
@@ -1860,11 +1875,10 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
         mv0 = derive_mvp_candidates_1(inter_ctx, mv_ctx0, ref_idx0,
                                       pb_x, pb_y, nb_pb_w, nb_pb_h,
                                       mvp_idx0, inter_dir & 0x1, mv_ctx1, opp_ref_idx0,
-                                      is_small);
+                                      prec_amvr, is_small);
 
         // mvd0 = scale_mvd(mvd0);
         mvd0 = drv_change_precision_mv(mvd0, prec_amvr, MV_PRECISION_INTERNAL);
-        mv0  = drv_round_to_precision_mv(mv0, MV_PRECISION_INTERNAL, prec_amvr);
 
         mv0.bcw_idx_plus1 = bcw_idx + 1;
         mv0.prec_amvr = prec_amvr;
@@ -1881,7 +1895,7 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
                                       pb_x, pb_y,
                                       nb_pb_w, nb_pb_h,
                                       mvp_idx1, inter_dir & 0x2, mv_ctx0, opp_ref_idx1,
-                                      is_small);
+                                      prec_amvr, is_small);
 
         // mvd1 = scale_mvd(mvd1);
         mvd1 = drv_change_precision_mv(mvd1, prec_amvr, MV_PRECISION_INTERNAL);
@@ -1976,7 +1990,7 @@ drv_merge_mvp(struct InterDRVCtx *const inter_ctx,
 OVMV
 drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
             const struct OVMVCtx *const mv_ctx,
-            OVMV mvd, //int prec_amvr,
+            OVMV mvd, int prec_amvr,
             uint8_t pb_x, uint8_t pb_y,
             uint8_t nb_pb_w, uint8_t nb_pb_h,
             uint8_t mvp_idx, uint8_t inter_dir,
@@ -2006,12 +2020,12 @@ drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
 
     mv = derive_mvp_candidates_1(inter_ctx, mv_ctx, ref_idx,
                                  pb_x, pb_y, nb_pb_w, nb_pb_h,
-                                 mvp_idx, 1, mv_ctx_opp, ref_idx_opp, 0);
+                                 mvp_idx, 1, mv_ctx_opp, ref_idx_opp, prec_amvr, 0);
 
     mv.ref_idx = ref_idx;
 
     mvd = scale_mvd(mvd);
-    // mvd = drv_change_precision_mv(mvd, prec_amvr, MV_PRECISION_INTERNAL, prec_amvr);
+    mvd = drv_change_precision_mv(mvd, MV_PRECISION_INTERNAL, prec_amvr);
     // mv  = drv_round_to_precision_mv(mv, MV_PRECISION_INTERNAL, prec_amvr);
 
     mv.x += mvd.x;
@@ -2174,6 +2188,10 @@ drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     else{
         mv_info1 = mv_info0;
     }
+    mv_info0.mv0.bcw_idx_plus1 = 0;
+    mv_info0.mv1.bcw_idx_plus1 = 0;
+    mv_info1.mv0.bcw_idx_plus1 = 0;
+    mv_info1.mv1.bcw_idx_plus1 = 0;
     mv_info0.mv0.prec_amvr = 0;
     mv_info0.mv1.prec_amvr = 0;
     mv_info1.mv0.prec_amvr = 0;

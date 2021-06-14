@@ -24,8 +24,6 @@ struct DBFInfo;
 struct OVBuffInfo;
 struct VVCGPM;
 
-extern int8_t ov_mc_filters[15][8];
-
 void rcn_residual(OVCTUDec *const ctudec,
              int16_t *const dst, int16_t *src,
              uint8_t x0, uint8_t y0,

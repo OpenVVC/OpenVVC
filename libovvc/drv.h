@@ -64,7 +64,7 @@ uint8_t drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
 
 OVMV drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
                  const struct OVMVCtx *const mv_ctx,
-                 OVMV mvd,
+                 OVMV mvd, uint8_t prec_amvr,
                  uint8_t pb_x, uint8_t pb_y,
                  uint8_t nb_pb_w, uint8_t nb_pb_h,
                  uint8_t mvp_idx, uint8_t inter_dir,

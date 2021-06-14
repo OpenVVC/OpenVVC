@@ -281,12 +281,6 @@ ovcabac_read_ae_amvr_precision(OVCABACCtx *const cabac_ctx, uint8_t ibc_flag)
 
     int amvr_precision[4] = { MV_PRECISION_QUARTER, MV_PRECISION_INT, MV_PRECISION_4PEL, MV_PRECISION_HALF };
 
-    if(amvr_precision[prec_idx] == MV_PRECISION_HALF){
-        int8_t to_copy[8] = {  0, 3, 9, 20, 20, 9, 3, 0 };
-        for(int i = 0; i < 8; i++)
-            ov_mc_filters[8-1][i] = to_copy[i];
-    }
-
     return amvr_precision[prec_idx];
 }
 
@@ -1070,7 +1064,9 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
         uint8_t mvp_idx = ovcabac_read_ae_mvp_flag(cabac_ctx);
 
-        mv0 = drv_mvp_mvd(inter_ctx, mv_ctx0, mvd,
+        //TODOamvr: put real value
+        uint8_t prec_amvr = MV_PRECISION_QUARTER;
+        mv0 = drv_mvp_mvd(inter_ctx, mv_ctx0, mvd, prec_amvr,
                           x_pu, y_pu, nb_pb_w, nb_pb_h,
                           mvp_idx, 1, ref_idx, ref_idx);
     }
@@ -1151,6 +1147,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t apply_ciip = 0;
     uint8_t apply_gpm = 0;
     uint8_t apply_mmvd = 0;
+    uint8_t prec_amvr = MV_PRECISION_QUARTER;
     if (merge_flag) {
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
@@ -1363,7 +1360,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             ref_idx1     = inter_ctx->ref_smvd_idx1;
         }
 
-        uint8_t prec_amvr = MV_PRECISION_QUARTER;
         if( inter_ctx->amvr_flag && mvd_not_zero && !affine){
             prec_amvr = ovcabac_read_ae_amvr_precision(cabac_ctx, ibc_flag);
         }
@@ -1381,11 +1377,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         //mv_info.mv1.ref_idx = inter_dir & 0x2 ? ref_idx1 : 0xFF;
     }
 
-    if(mv_info.mv0.prec_amvr == MV_PRECISION_HALF){
-        int8_t to_copy[8] = {  0, 3, 9, 20, 20, 9, 3, 0 };
-        for(int i = 0; i < 8; i++)
-            ov_mc_filters[8-1][i] = to_copy[i];
-    }
+    inter_ctx->prec_amvr = mv_info.inter_dir & 0x1 ? mv_info.mv0.prec_amvr : mv_info.mv1.prec_amvr;
     if(apply_ciip){
         mv_info.mv0.bcw_idx_plus1 = 0;
         mv_info.mv1.bcw_idx_plus1 = 0;
@@ -1394,7 +1386,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     } 
     else if(apply_gpm){
         rcn_gpm_b(ctu_dec, &inter_ctx->gpm_ctx, x0, y0, log2_pb_w, log2_pb_h);
-<<<<<<< HEAD
     }
     else {
         uint8_t bdof_enable = 0;

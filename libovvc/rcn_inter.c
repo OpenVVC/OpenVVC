@@ -552,9 +552,6 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     mv1 = clip_mv(pos_x, pos_y, ref1->frame->width[0],
                   ref1->frame->height[0], 1 << log2_pu_w, 1 << log2_pu_h, mv1);
 
-    // if( mv1.x & 0x3 || mv1.y & 0x3 ||  mv0.x & 0x3 || mv0.y & 0x3 )
-    //     printf("%i %i %i %i\n", mv1.x, mv1.y, mv0.x , mv0.y);
-
     const struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
                                                       log2_pu_w, log2_pu_h, log2_ctb_s);
 
@@ -569,6 +566,13 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     uint8_t prec_x1 = (mv1.x) & 0xF;
     uint8_t prec_y1 = (mv1.y) & 0xF;
+
+    if(inter_ctx->prec_amvr == 3){
+        prec_x0 += (prec_x0 == 8) ? 8 : 0;
+        prec_y0 += (prec_y0 == 8) ? 8 : 0;
+        prec_x1 += (prec_x1 == 8) ? 8 : 0;
+        prec_y1 += (prec_y1 == 8) ? 8 : 0;
+    }
 
     uint8_t prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
     uint8_t prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
@@ -1295,6 +1299,11 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
 
     uint8_t prec_x   = (mv.x) & 0xF;
     uint8_t prec_y   = (mv.y) & 0xF;
+    if(inter_ctx->prec_amvr == 3){
+        prec_x += (prec_x == 8) ? 8 : 0;
+        prec_y += (prec_y == 8) ? 8 : 0;
+    }
+
     uint8_t prec_x_c = (mv.x) & 0x1F;
     uint8_t prec_y_c = (mv.y) & 0x1F;
 
