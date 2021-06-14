@@ -2559,16 +2559,13 @@ broadcast_mv(struct AffineDeltaMV delta_mv, uint8_t inter_dir)
 
 void
 compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
+                     const struct AffineDeltaMV delta_mv,
                      OVMV *mv_buff,
                      uint8_t log2_cu_w, uint8_t log2_cu_h,
-                     uint8_t inter_dir, uint8_t affine_type)
+                     uint8_t mv_broad)
 {
     /* Compute delta_mv from control points */
     /* TODO call before and give as an argument */
-    const struct AffineDeltaMV delta_mv = derive_affine_delta_mvs(cinfo, log2_cu_w, log2_cu_h,
-                                                                  affine_type);
-
-    const uint8_t mv_broad = broadcast_mv(delta_mv, inter_dir);
 
     uint8_t nb_sb_w = (1 << log2_cu_w) >> LOG2_MIN_CU_S;
     uint8_t nb_sb_h = (1 << log2_cu_h) >> LOG2_MIN_CU_S;
@@ -2600,7 +2597,6 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
 
                 mv_dst.ref_idx = ref_idx;
 
-                /* TODO Store sub blocks MVs for MCP */
                 mv_buff[j] = mv_dst;
 
                 accu_mv_h.x += SB_SIZE * delta_mv.h.x;
@@ -2652,6 +2648,8 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
 {
     /*FIXME check for specific DBF application for sub blokc MVs */
     struct AffineDRVInfo *aff_info = &inter_ctx->affine_ctx;
+    const struct AffineControlInfo *const cinfo = mv_info.cinfo;
+    uint8_t affine_type = mv_info.affine_type;
 
     uint16_t pos = PB_POS_IN_BUF(pb_x, pb_y);
 
@@ -2660,61 +2658,52 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     if (inter_dir == 0x3) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+        const struct AffineDeltaMV dmv_0 = derive_affine_delta_mvs(&cinfo[0],
+                                                                   log2_cu_w, log2_cu_h,
+                                                                   affine_type);
+
+        const struct AffineDeltaMV dmv_1 = derive_affine_delta_mvs(&cinfo[1],
+                                                                   log2_cu_w, log2_cu_h,
+                                                                   affine_type);
+
+        const uint8_t mv_broad_0 = broadcast_mv(dmv_0, 0x3);
+        const uint8_t mv_broad_1 = broadcast_mv(dmv_1, 0x3);
 
         ctu_field_set_rect_bitfield(&mv_ctx0->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
         ctu_field_set_rect_bitfield(&mv_ctx1->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
-        compute_subblock_mvs(&mv_info.cinfo[0], &mv_ctx0->mvs[pos], log2_cu_w, log2_cu_h, 0x3, mv_info.affine_type);
-        compute_subblock_mvs(&mv_info.cinfo[1], &mv_ctx1->mvs[pos], log2_cu_w, log2_cu_h, 0x3, mv_info.affine_type);
+        compute_subblock_mvs(&cinfo[0], dmv_0, &mv_ctx0->mvs[pos],
+                             log2_cu_w, log2_cu_h, mv_broad_0);
+        compute_subblock_mvs(&cinfo[1], dmv_1, &mv_ctx1->mvs[pos],
+                             log2_cu_w, log2_cu_h, mv_broad_1);
 
     } else if (inter_dir & 0x2) {
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+        const struct AffineDeltaMV dmv_1 = derive_affine_delta_mvs(&cinfo[1],
+                                                                   log2_cu_w, log2_cu_h,
+                                                                   affine_type);
+
+        const uint8_t mv_broad_1 = broadcast_mv(dmv_1, 0x2);
 
         ctu_field_set_rect_bitfield(&mv_ctx1->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
-        compute_subblock_mvs(&mv_info.cinfo[1], &mv_ctx1->mvs[pos], log2_cu_w, log2_cu_h, 0x2, mv_info.affine_type);
+        compute_subblock_mvs(&cinfo[1], dmv_1, &mv_ctx1->mvs[pos],
+                             log2_cu_w, log2_cu_h, mv_broad_1);
 
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+        const struct AffineDeltaMV dmv_0 = derive_affine_delta_mvs(&cinfo[0],
+                                                                   log2_cu_w, log2_cu_h,
+                                                                   affine_type);
+
+        const uint8_t mv_broad_0 = broadcast_mv(dmv_0, 0x1);
 
         ctu_field_set_rect_bitfield(&mv_ctx0->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
-        compute_subblock_mvs(&mv_info.cinfo[0], &mv_ctx0->mvs[pos], log2_cu_w, log2_cu_h, 0x1, mv_info.affine_type);
+        compute_subblock_mvs(&cinfo[0], dmv_0, &mv_ctx0->mvs[pos],
+                             log2_cu_w, log2_cu_h, mv_broad_0);
     }
 }
-
-#if 0
-static void
-update_mv_ctx(struct InterDRVCtx *const inter_ctx,
-              struct AffineMergeInfo mv_info,
-              uint8_t pb_x, uint8_t  pb_y,
-              uint8_t nb_pb_w, uint8_t nb_pb_h,
-              uint8_t log2_cu_w, uint8_t log2_cu_h,
-              uint8_t inter_dir)
-{
-    /*FIXME check for specific DBF application for sub blokc MVs */
-    struct AffineDRVInfo *aff_info = &inter_ctx->affine_ctx;
-
-    ctu_field_set_rect_bitfield(&aff_info->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
-
-    if (inter_dir & 0x2) {
-        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-
-        ctu_field_set_rect_bitfield(&mv_ctx1->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
-
-        compute_subblock_mvs(&mv_info.cinfo[1], log2_cu_w, log2_cu_h, 0x2, mv_info.affine_type);
-
-
-    } else if (inter_dir & 0x1) {
-        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-
-        ctu_field_set_rect_bitfield(&mv_ctx0->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
-
-        compute_subblock_mvs(&mv_info.cinfo[0], log2_cu_w, log2_cu_h, 0x1, mv_info.affine_type);
-
-    }
-}
-#endif
 
 void
 store_affine_info(struct AffineDRVInfo *const affine_ctx, struct AffineInfo aff_info, uint8_t x_pb, uint8_t y_pb, uint8_t nb_pb_w, uint8_t nb_pb_h)
@@ -3014,6 +3003,7 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                          mv_info.inter_dir);
 
     }
+
     struct PBInfo pb = {
         .x_pb = x_pb,
         .y_pb = y_pb,
