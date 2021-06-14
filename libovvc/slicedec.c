@@ -816,6 +816,9 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     /* FIXME not really required ?*/
     uint8_t backup_qp = ctudec->drv_ctx.qp_map_x[0];
 
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctu_w = 1 << log2_ctb_s;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctu_h = 1 << log2_ctb_s;
+
     /* Do not copy on first line */
     if (ctb_addr_rs >= nb_ctu_w) {
         // rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
@@ -883,6 +886,8 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
          * in decode_ctu_last_line otherwise
          */
         int ctu_h = 1 << log2_ctb_s;
+        ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctu_w = einfo->last_ctu_w;
+        ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctu_h = ctu_h;
 
         ret = decode_truncated_ctu(ctudec, einfo, ctb_addr_rs,
                                    ctu_w, ctu_h);
@@ -937,6 +942,9 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     // rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
     rcn_intra_line_to_ctu(&ctudec->rcn_ctx, 0, log2_ctb_s);
 
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctu_w = 1 << log2_ctb_s;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctu_h = ctu_h;
+
     while (ctb_x < nb_ctu_w - 1) {
         uint8_t ctu_w = 1 << log2_ctb_s;
 
@@ -969,6 +977,9 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     }
 
     ctudec->ctb_x = einfo->ctb_x + ctb_x;
+
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctu_w = einfo->last_ctu_w;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctu_h = ctu_h;
 
     ret = decode_truncated_ctu(ctudec, einfo, ctb_addr_rs,
                                einfo->last_ctu_w, ctu_h);
