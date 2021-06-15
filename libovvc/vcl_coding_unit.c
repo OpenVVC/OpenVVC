@@ -1139,8 +1139,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t nb_pb_h = (1 << log2_pb_h) >> part_ctx->log2_min_cb_s;
 #endif
 
-    //TODO: use real affine flag
-    uint8_t affine = 0;
     //TODO: use real ibc flag
     uint8_t ibc_flag = 0;
     uint8_t smvd_mode = 0;
@@ -1247,12 +1245,13 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
         uint8_t inter_dir = ovcabac_read_ae_inter_dir(cabac_ctx, log2_pb_w, log2_pb_h);
 
+        uint8_t affine_flag = 0;
         if (ctu_dec->affine_enabled && log2_pb_w > 3 && log2_pb_h > 3) {
             uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_pu];
             uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_pu];
             uint8_t lft_affine = cu_type_lft == OV_AFFINE || cu_type_lft == OV_INTER_SKIP_AFFINE;
             uint8_t abv_affine = cu_type_abv == OV_AFFINE || cu_type_abv == OV_INTER_SKIP_AFFINE;
-            uint8_t affine_flag = ovcabac_read_ae_cu_affine_flag(cabac_ctx, lft_affine, abv_affine);
+            affine_flag = ovcabac_read_ae_cu_affine_flag(cabac_ctx, lft_affine, abv_affine);
             if (affine_flag) {
                 uint8_t six_affine_type = !!(ctu_dec->affine_status & 0x2);
                 uint8_t affine_type = !six_affine_type ? 0 : ovcabac_read_ae_cu_affine_type(cabac_ctx);
@@ -1321,7 +1320,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             }
         }
 
-        if (inter_dir == 3 && !ctu_dec->affine_enabled && inter_ctx->bi_dir_pred_flag) {
+
+        if (inter_dir == 3 && !affine_flag && inter_ctx->bi_dir_pred_flag) {
             smvd_mode = ovcabac_read_ae_smvd_flag(cabac_ctx);
         }
 
@@ -1360,7 +1360,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             ref_idx1     = inter_ctx->ref_smvd_idx1;
         }
 
-        if( inter_ctx->amvr_flag && mvd_not_zero && !affine){
+        if( inter_ctx->amvr_flag && mvd_not_zero && !affine_flag){
             prec_amvr = ovcabac_read_ae_amvr_precision(cabac_ctx, ibc_flag);
         }
 
