@@ -699,11 +699,9 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride,
                                                 tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
 
-    if (ctudec->lmcs_info.lmcs_enabled_flag){
-        rcn_lmcs_reshape_luma_blk_lut(dst.y, RCN_CTB_STRIDE,
-                                      ctudec->lmcs_info.lmcs_lut_fwd_luma,
-                                      pu_w, pu_h);
-    }
+    rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE,
+                                  ctudec->lmcs_info.lmcs_lut_fwd_luma,
+                                  pu_w, pu_h);
 }
 
 struct PROFInfo
@@ -1446,9 +1444,7 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
                                           src_y, src_stride, pu_h,
                                           prec_x, prec_y, pu_w);
 
-    if (ctudec->lmcs_info.lmcs_enabled_flag){
-        rcn_lmcs_reshape_luma_blk_lut(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
-    }
+    rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
 }
 
 void

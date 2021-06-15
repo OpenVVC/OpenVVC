@@ -1228,8 +1228,14 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
         /* FIXME is rounding needed since done in cand derivation */
         for (int i = 0; i < nb_cand; i++) {
             cp_info[i].lt = round_affine_mv(cp_info[i].lt);
+            cp_info[i].lt.bcw_idx_plus1 = 0; 
+            cp_info[i].lt.prec_amvr = 0;
             cp_info[i].rt = round_affine_mv(cp_info[i].rt);
+            cp_info[i].rt.bcw_idx_plus1 = 0; 
+            cp_info[i].rt.prec_amvr = 0; 
             cp_info[i].lb = round_affine_mv(cp_info[i].lb);
+            cp_info[i].lb.bcw_idx_plus1 = 0; 
+            cp_info[i].lb.prec_amvr = 0; 
         }
         return cp_info[mvp_idx];
     }
@@ -1365,8 +1371,14 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
     /* Round control points */
     for (int i = 0; i < nb_cand; i++) {
         cp_info[i].lt = round_affine_mv(cp_info[i].lt);
-        cp_info[i].rt = round_affine_mv(cp_info[i].rt);
-        cp_info[i].lb = round_affine_mv(cp_info[i].lb);
+            cp_info[i].lt.bcw_idx_plus1 = 0; 
+            cp_info[i].lt.prec_amvr = 0;
+            cp_info[i].rt = round_affine_mv(cp_info[i].rt);
+            cp_info[i].rt.bcw_idx_plus1 = 0; 
+            cp_info[i].rt.prec_amvr = 0; 
+            cp_info[i].lb = round_affine_mv(cp_info[i].lb);
+            cp_info[i].lb.bcw_idx_plus1 = 0; 
+            cp_info[i].lb.prec_amvr = 0; 
     }
     return cp_info[mvp_idx];
 }
@@ -2597,6 +2609,8 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
                 mv_dst = clip_mv(mv_dst);
 
                 mv_dst.ref_idx = ref_idx;
+                mv_dst.bcw_idx_plus1 = 0;
+                mv_dst.prec_amvr = 0;
 
                 mv_buff[j] = mv_dst;
 
@@ -2629,7 +2643,8 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
         center_mv = clip_mv(center_mv);
 
         center_mv.ref_idx = ref_idx;
-
+        center_mv.bcw_idx_plus1 = 0;
+        center_mv.prec_amvr = 0;
         for (i = 0; i < nb_sb_h; ++i) {
             for (j = 0; j < nb_sb_w; ++j) {
                 mv_buff[j] = center_mv;
