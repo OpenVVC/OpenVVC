@@ -699,10 +699,10 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride,
                                                 pu_h, prec_x0, prec_y0, pu_w);
-    // mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride,
-    //                                             tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
+
     if( mv0.bcw_idx_plus1 == 0 || mv0.bcw_idx_plus1 == 3){
-        mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride, tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
+        mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride, 
+                                                    tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
     }
     else{
         wt1 = bcw_weights[mv0.bcw_idx_plus1-1];

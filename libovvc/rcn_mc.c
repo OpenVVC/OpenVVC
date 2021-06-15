@@ -275,7 +275,7 @@ put_vvc_qpel_h(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 
     ptrdiff_t srcstride = _srcstride;
 
-    const int8_t* filter = ov_mc_filters[mx - 1];
+    const int8_t* filter;
     filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
 
     for (y = 0; y < height; y++) {
@@ -906,7 +906,8 @@ put_weighted_qpel_bi_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _sr
     ptrdiff_t srcstride = _srcstride;
     ptrdiff_t dststride = _dststride;
 
-    const int8_t* filter = ov_mc_filters[mx - 1];
+    const int8_t* filter;
+    filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
 
     int log2_sum_weights = floor_log2(wt1 + wt0);
     int shift = 14 + log2_sum_weights - BIT_DEPTH;
@@ -939,7 +940,8 @@ put_weighted_qpel_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _sr
     ptrdiff_t srcstride = _srcstride;
     ptrdiff_t dststride = _dststride;
 
-    const int8_t* filter = ov_mc_filters[my - 1];
+    const int8_t* filter;
+    filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
 
     int log2_sum_weights = floor_log2(wt1 + wt0);
     int shift = 14 + log2_sum_weights - BIT_DEPTH;
@@ -976,7 +978,8 @@ put_weighted_qpel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _s
     int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
 
-    const int8_t* filter = ov_mc_filters[mx - 1];
+    const int8_t* filter;
+    filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
 
     int log2_sum_weights = floor_log2(wt1 + wt0);
     int shift = 14 + log2_sum_weights - BIT_DEPTH;
@@ -994,7 +997,7 @@ put_weighted_qpel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _s
     }
 
     tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ov_mc_filters[my - 1];
+    filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
