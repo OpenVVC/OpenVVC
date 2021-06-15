@@ -110,7 +110,7 @@ void drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
                       uint8_t log2_cu_w, uint8_t log2_cu_h,
                       const struct AffineControlInfo *const cp_mvd0,
                       const struct AffineControlInfo *const cp_mvd1,
-                      uint8_t mvp_idx0, uint8_t mvp_idx1,
+                      uint8_t mvp_idx0, uint8_t mvp_idx1, uint8_t bcw_idx,
                       uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
                       uint8_t affine_type);
 

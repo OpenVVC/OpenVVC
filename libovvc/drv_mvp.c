@@ -1653,6 +1653,8 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
+        if (mv0.bcw_idx_plus1 > 6 || mv1.bcw_idx_plus1 > 6)
+            printf("normal inter 3 \n");
         fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1664,7 +1666,8 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     } else if (inter_dir & 0x2) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-
+        if (mv1.bcw_idx_plus1 > 6)
+            printf("normal inter 2 \n");
         fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_dbf_mv_map_b(dbf_info, mv_ctx1, mv_ctx0, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1672,7 +1675,8 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-
+        if (mv0.bcw_idx_plus1 > 6)
+            printf("normal inter 1 \n");
         fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_dbf_mv_map_b(dbf_info, mv_ctx0, mv_ctx1, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1694,7 +1698,8 @@ update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     if (inter_dir == 3) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-
+        if (mv0.bcw_idx_plus1 > 6 || mv1.bcw_idx_plus1 > 6)
+            printf("gpm inter 3 \n");
         fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1706,7 +1711,8 @@ update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     } else if (inter_dir & 0x2) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-
+        if (mv1.bcw_idx_plus1 > 6)
+            printf("gpm inter 2 \n");
         fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_dbf_mv_map_b(dbf_info, mv_ctx1, mv_ctx0, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1714,7 +1720,8 @@ update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-
+        if (mv0.bcw_idx_plus1 > 6)
+            printf("gpm inter 1 \n");
         fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_dbf_mv_map_b(dbf_info, mv_ctx0, mv_ctx1, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);

@@ -1294,9 +1294,14 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                     mvp_idx1 = ovcabac_read_ae_mvp_flag(cabac_ctx);
                 }
 
+                uint8_t bcw_idx = BCW_DEFAULT;
+                if (inter_ctx->bcw_flag && !ibc_flag && (1<<(log2_pb_h+log2_pb_w) >= BCW_SIZE_CONSTRAINT) && inter_dir == 3){
+                    bcw_idx = ovcabac_read_ae_bcw_flag( cabac_ctx, inter_ctx->tmvp_ctx.ldc);
+                }
+
                 /* TODO call affine drv MVP and rcn functions */
                 drv_affine_mvp_b(inter_ctx, x0, y0, log2_pb_w, log2_pb_h,
-                                 &cp_mvd0, &cp_mvd1, mvp_idx0, mvp_idx1,
+                                 &cp_mvd0, &cp_mvd1, mvp_idx0, mvp_idx1, bcw_idx,
                                  inter_dir, ref_idx0, ref_idx1,
                                  affine_type);
 
