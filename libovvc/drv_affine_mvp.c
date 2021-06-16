@@ -2885,7 +2885,7 @@ rcn_affine_prof_mcp_b_l(OVCTUDec *const ctudec,
             rcn_prof_mcp_b_l(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
                              mv0, mv1, x0 + 4*j, y0 + 4*i,
                              2, 2, inter_dir, ref_idx0, ref_idx1,
-                             prof_dir, prof_info);
+                             prof_dir, &prof_info);
         }
 
         mv_buff0 += 34;
@@ -2943,6 +2943,7 @@ rcn_affine_mcp_b_c(OVCTUDec *const ctudec,
         mv_buff1 += 34 * 2;
     }
 }
+
 
 /* TODO P slices functions */
 void
