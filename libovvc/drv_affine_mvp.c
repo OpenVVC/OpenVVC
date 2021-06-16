@@ -2964,13 +2964,13 @@ mv_cmp(const OVMV a, const OVMV b)
      return is_eq;
 }
 
-uint8_t check_affine_prof(const struct AffineInfo *const affine_info, uint8_t rpl_idx)
+uint8_t check_affine_prof(const struct AffineMergeInfo *const affine_info, uint8_t rpl_idx)
 {
     uint8_t prof_enabled = 1;
-    const struct AffineControlInfo *const cpinfo = &affine_info->cps[rpl_idx];
+    const struct AffineControlInfo *const cpinfo = &affine_info->cinfo[rpl_idx];
 
-    if (affine_info->type == AFFINE_3CP) {
-        prof_enabled &= !mv_cmp(cpinfo->lt, cpinfo->rt) && !mv_cmp(cpinfo->lt, cpinfo->lb);
+    if (affine_info->affine_type == AFFINE_3CP) {
+        prof_enabled &= !(mv_cmp(cpinfo->lt, cpinfo->rt) && mv_cmp(cpinfo->lt, cpinfo->lb));
     } else {
         prof_enabled &= !mv_cmp(cpinfo->lt, cpinfo->rt);
     }
