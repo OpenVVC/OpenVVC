@@ -1289,7 +1289,7 @@ static void
 put_weighted_ciip_pixels(uint16_t* dst, ptrdiff_t dststride,
                       const uint16_t* src_intra, const uint16_t* src_inter, ptrdiff_t srcstride,
                       int width, int height, int wt)
-{   
+{
     int x, y;
     int shift  = 2;
     int offset = 2;
@@ -1315,7 +1315,7 @@ void rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, 
     uint8_t cu_intra_abv = mode_abv == OV_INTRA || mode_abv == OV_MIP;
     uint8_t cu_intra_lft = mode_lft == OV_INTRA || mode_lft == OV_MIP;
     int wt = 1;
-    wt += (cu_intra_abv + cu_intra_lft) ; 
+    wt += (cu_intra_abv + cu_intra_lft) ;
 
     //Apply weighted sum to the final CIIP predicted block
     struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
@@ -1332,7 +1332,7 @@ void rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, 
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     tmp_intra->cr += (x0 >> 1) + (y0 >> 1) * tmp_intra->stride_c;
     tmp_inter->cr += (x0 >> 1) + (y0 >> 1) * tmp_inter->stride_c;
-    
+
     struct MCFunctions *mc_c = &ctudec->rcn_ctx.rcn_funcs.mc_c;
     if (log2_pb_w <= 2){
         mc_c->unidir[0][0](dst.cb, dst.stride_c, tmp_inter->cb, tmp_inter->stride_c, 1 << (log2_pb_h - 1), 0, 0, 1 << (log2_pb_w - 1));
@@ -1363,7 +1363,7 @@ rcn_ciip_b(OVCTUDec*const ctudec,
     tmp_inter.cr = &tmp_inter_cr[RCN_CTB_PADDING];
     tmp_inter.stride   = RCN_CTB_STRIDE;
     tmp_inter.stride_c = RCN_CTB_STRIDE;
-    rcn_mcp_b(ctudec, tmp_inter, inter_ctx, part_ctx, mv0, mv1, x0, y0, log2_pb_w, log2_pb_h, 
+    rcn_mcp_b(ctudec, tmp_inter, inter_ctx, part_ctx, mv0, mv1, x0, y0, log2_pb_w, log2_pb_h,
         inter_dir, ref_idx0, ref_idx1);
 
     //Intra Planar mode
@@ -1382,7 +1382,7 @@ rcn_ciip_b(OVCTUDec*const ctudec,
 
 
 void
-rcn_ciip(OVCTUDec *const ctudec, 
+rcn_ciip(OVCTUDec *const ctudec,
          int x0, int y0, int log2_pb_w, int log2_pb_h,
          OVMV mv, uint8_t inter_dir, uint8_t ref_idx)
 {
