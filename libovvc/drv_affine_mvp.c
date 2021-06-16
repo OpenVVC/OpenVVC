@@ -2638,6 +2638,7 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
     }
 }
 
+/* FIXME avoid duplicated dmv derivation */
 static uint8_t
 update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
                 struct AffineMergeInfo mv_info,
