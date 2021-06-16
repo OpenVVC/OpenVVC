@@ -1690,10 +1690,18 @@ oh_hevc_put_hevc_bi0_qpel_h4_10_sse(int16_t* dst,
   __m128i x1, x2, x3, x4, r1, r3, c1, c2, c3, c4;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
-  c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][1]);
-  c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][2]);
-  c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][3]);
+  if ((height==11 && width == 4)|| (height == 4 && width == 4)) {
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][3]);
+  }
+  else {
+    c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
+    c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][1]);
+    c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][2]);
+    c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][3]);
+  }
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadl_epi64((__m128i*)&src[x - 3 * 1]);
@@ -1744,10 +1752,18 @@ oh_hevc_put_hevc_bi1_qpel_h4_10_sse(uint16_t* _dst,
   const __m128i offset = _mm_set1_epi16(1 << 10);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
-  c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
-  c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][1]);
-  c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][2]);
-  c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][3]);
+  if (width == 4 && height == 4) {
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][3]);
+  }
+  else {
+    c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
+    c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][1]);
+    c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][2]);
+    c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][3]);
+  }
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       __m128i r5;
@@ -1804,10 +1820,18 @@ oh_hevc_put_hevc_uni_qpel_h4_10_sse(uint16_t* _dst,
   const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
-  c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
-  c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][1]);
-  c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][2]);
-  c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][3]);
+  if (width == 4 && height == 4) {
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][3]);
+  }
+  else {
+    c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
+    c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][1]);
+    c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][2]);
+    c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][3]);
+  }
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadl_epi64((__m128i*)&src[x - 3 * 1]);
@@ -2054,10 +2078,18 @@ oh_hevc_put_hevc_bi0_qpel_v4_10_sse(int16_t* dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
-  c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
-  c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
-  c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  if (width == 4 && height == 4) {
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][3]);
+  }
+  else {
+    c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  }
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadu_si128((__m128i*)&src[x - 3 * srcstride]);
@@ -2107,10 +2139,18 @@ oh_hevc_put_hevc_bi1_qpel_v4_10_sse(uint16_t* _dst,
   const __m128i offset = _mm_set1_epi16(1 << 10);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
-  c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
-  c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
-  c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
-  c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  if (width == 4 && height == 4) {
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][3]);
+  }
+  else {
+    c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  }
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       __m128i r5;
@@ -2166,10 +2206,18 @@ oh_hevc_put_hevc_uni_qpel_v4_10_sse(uint16_t* _dst,
   const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
-  c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
-  c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
-  c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
-  c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  if (width == 4 && height == 4) {
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][3]);
+  }
+  else {
+    c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  }
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadu_si128((__m128i*)&src[x - 3 * srcstride]);
@@ -2425,10 +2473,18 @@ oh_hevc_put_hevc_bi0_qpel_v4_14_sse(int16_t* dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
-  c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
-  c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
-  c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  if (width == 4 && height == 4) {
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][3]);
+  }
+  else {
+    c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  }
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadu_si128((__m128i*)&src[x - 3 * srcstride]);
@@ -2478,10 +2534,18 @@ oh_hevc_put_hevc_bi1_qpel_v4_14_10_sse(uint16_t* _dst,
   const __m128i offset = _mm_set1_epi16(1 << 10);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
-  c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
-  c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
-  c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
-  c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  if (width == 4 && height == 4) {
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][3]);
+  }
+  else {
+    c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  }
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       __m128i r5;
@@ -2537,10 +2601,18 @@ oh_hevc_put_hevc_uni_qpel_v4_14_10_sse(uint16_t* _dst,
   const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
-  c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
-  c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
-  c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
-  c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  if ((height==11 && width == 4)|| (height == 4 && width == 4)) {
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][3]);
+  }
+  else {
+    c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  }
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadu_si128((__m128i*)&src[x - 3 * srcstride]);
