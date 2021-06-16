@@ -2749,8 +2749,10 @@ struct OVDMV {
 struct OVDMV
 round_prof_dmv_scale(struct OVDMV dmv)
 {
-    dmv.x += (PROF_MV_RND - (dmv.x >= 0)) >> PROF_MV_SHIFT;
-    dmv.y += (PROF_MV_RND - (dmv.y >= 0)) >> PROF_MV_SHIFT;
+    dmv.x += PROF_MV_RND - (dmv.x >= 0);
+    dmv.y += PROF_MV_RND - (dmv.y >= 0);
+    dmv.x >>= PROF_MV_SHIFT;
+    dmv.y >>= PROF_MV_SHIFT;
     return dmv;
 }
 
