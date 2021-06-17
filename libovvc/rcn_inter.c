@@ -692,6 +692,13 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint8_t prec_x1 = (mv1.x) & 0xF;
     uint8_t prec_y1 = (mv1.y) & 0xF;
 
+    if(inter_ctx->prec_amvr == 3){
+        prec_x0 += (prec_x0 == 8) ? 8 : 0;
+        prec_y0 += (prec_y0 == 8) ? 8 : 0;
+        prec_x1 += (prec_x1 == 8) ? 8 : 0;
+        prec_y1 += (prec_y1 == 8) ? 8 : 0;
+    }
+    
     dst.y  += x0 + y0 * dst.stride;
 
     uint8_t prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
@@ -1226,15 +1233,6 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
 
-    uint8_t prec_x0 = (mv0.x) & 0xF;
-    uint8_t prec_y0 = (mv0.y) & 0xF;
-
-    uint8_t prec_x1 = (mv1.x) & 0xF;
-    uint8_t prec_y1 = (mv1.y) & 0xF;
-
-    uint8_t prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
-    uint8_t prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
-
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
 
@@ -1247,14 +1245,14 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                                                       pos_x >> 1, pos_y >> 1,
                                                       edge_buff1, edge_buff1_1,
                                                       log2_pu_w, log2_pu_h, log2_ctb_s);
-    prec_x0 = (mv0.x) & 0x1F;
-    prec_y0 = (mv0.y) & 0x1F;
+    uint8_t prec_x0 = (mv0.x) & 0x1F;
+    uint8_t prec_y0 = (mv0.y) & 0x1F;
 
-    prec_x1 = (mv1.x) & 0x1F;
-    prec_y1 = (mv1.y) & 0x1F;
+    uint8_t prec_x1 = (mv1.x) & 0x1F;
+    uint8_t prec_y1 = (mv1.y) & 0x1F;
 
-    prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
-    prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
+    uint8_t prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
+    uint8_t prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
 
     int16_t* ref_data0 = tmp_buff;
     int16_t* ref_data1 = tmp_buff + MAX_PB_SIZE / 2;
@@ -2007,6 +2005,13 @@ rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
 
     uint8_t prec_x1 = (mv1.x) & 0xF;
     uint8_t prec_y1 = (mv1.y) & 0xF;
+
+    if(inter_ctx->prec_amvr == 3){
+        prec_x0 += (prec_x0 == 8) ? 8 : 0;
+        prec_y0 += (prec_y0 == 8) ? 8 : 0;
+        prec_x1 += (prec_x1 == 8) ? 8 : 0;
+        prec_y1 += (prec_y1 == 8) ? 8 : 0;
+    }
 
     uint8_t prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
     uint8_t prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);

@@ -30,6 +30,8 @@ uint8_t derive_intra_mode_c(uint8_t cclm_flag, uint8_t mpm_flag,
                             uint8_t mpm_idx, uint8_t luma_mode,
                             uint8_t cclm_idx);
 
+extern g_prec_amvr;
+
 /* FIXME vvc_intra functions deal with both reconstruction
  * and derivation this has to be clarified
  */
@@ -106,11 +108,11 @@ VVCMergeInfo drv_mvp_b(struct InterDRVCtx *const inter_ctx,
 void drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
                       uint8_t x0, uint8_t y0,
                       uint8_t log2_cu_w, uint8_t log2_cu_h,
-                      const struct AffineControlInfo *const cp_mvd0,
-                      const struct AffineControlInfo *const cp_mvd1,
+                      struct AffineControlInfo * cp_mvd0,
+                      struct AffineControlInfo * cp_mvd1,
                       uint8_t mvp_idx0, uint8_t mvp_idx1, uint8_t bcw_idx,
                       uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
-                      uint8_t prec_amvr, uint8_t affine_type);
+                      uint8_t affine_type);
 
 void drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                             uint8_t x0, uint8_t y0,
