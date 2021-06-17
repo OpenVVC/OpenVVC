@@ -1236,14 +1236,8 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
         /* FIXME is rounding needed since done in cand derivation */
         for (int i = 0; i < nb_cand; i++) {
             cp_info[i].lt = round_affine_mv(cp_info[i].lt);
-            // cp_info[i].lt.bcw_idx_plus1 = 0; 
-            cp_info[i].lt.prec_amvr = 0;
             cp_info[i].rt = round_affine_mv(cp_info[i].rt);
-            // cp_info[i].rt.bcw_idx_plus1 = 0; 
-            cp_info[i].rt.prec_amvr = 0; 
             cp_info[i].lb = round_affine_mv(cp_info[i].lb);
-            // cp_info[i].lb.bcw_idx_plus1 = 0; 
-            cp_info[i].lb.prec_amvr = 0; 
         }
         return cp_info[mvp_idx];
     }
@@ -1379,14 +1373,8 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
     /* Round control points */
     for (int i = 0; i < nb_cand; i++) {
         cp_info[i].lt = round_affine_mv(cp_info[i].lt);
-        // cp_info[i].lt.bcw_idx_plus1 = 0; 
-        cp_info[i].lt.prec_amvr = 0;
         cp_info[i].rt = round_affine_mv(cp_info[i].rt);
-        // cp_info[i].rt.bcw_idx_plus1 = 0; 
-        cp_info[i].rt.prec_amvr = 0; 
         cp_info[i].lb = round_affine_mv(cp_info[i].lb);
-        // cp_info[i].lb.bcw_idx_plus1 = 0; 
-        cp_info[i].lb.prec_amvr = 0; 
     }
     return cp_info[mvp_idx];
 }
@@ -2170,8 +2158,8 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv0[0] = clip_mv(mv0[0]);
 
                 mv0[0].ref_idx = mi.mv0[CP_RT].ref_idx;
-                mv0[0].bcw_idx_plus1 = mi.mv0[CP_LT].bcw_idx_plus1;
-                mv0[0].prec_amvr = mi.mv0[CP_LT].prec_amvr;
+                mv0[0].bcw_idx_plus1 = mi.mv0[CP_RT].bcw_idx_plus1;
+                mv0[0].prec_amvr = mi.mv0[CP_RT].prec_amvr;
 
                 dir |= 0x1;
             }
@@ -2189,8 +2177,8 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv1[0] = clip_mv(mv1[0]);
 
                 mv1[0].ref_idx = mi.mv1[CP_RT].ref_idx;
-                mv1[0].bcw_idx_plus1 = mi.mv1[CP_LT].bcw_idx_plus1;
-                mv1[0].prec_amvr = mi.mv1[CP_LT].prec_amvr;
+                mv1[0].bcw_idx_plus1 = mi.mv1[CP_RT].bcw_idx_plus1;
+                mv1[0].prec_amvr = mi.mv1[CP_RT].prec_amvr;
 
                 dir |= 0x2;
             }
@@ -2630,8 +2618,7 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
 
                 mv_dst.ref_idx = ref_idx;
                 mv_dst.bcw_idx_plus1 = cinfo->lt.bcw_idx_plus1;
-                // mv_dst.bcw_idx_plus1 = 0;
-                mv_dst.prec_amvr = 0;
+                mv_dst.prec_amvr = cinfo->lt.prec_amvr;;
 
                 mv_buff[j] = mv_dst;
 
@@ -2665,8 +2652,8 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
 
         center_mv.ref_idx = ref_idx;
         center_mv.bcw_idx_plus1 = cinfo->lt.bcw_idx_plus1;
-        // center_mv.bcw_idx_plus1 = 0;
-        center_mv.prec_amvr = 0;
+        center_mv.prec_amvr = cinfo->lt.prec_amvr;
+
         for (i = 0; i < nb_sb_h; ++i) {
             for (j = 0; j < nb_sb_w; ++j) {
                 mv_buff[j] = center_mv;

@@ -1646,6 +1646,10 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
                 uint8_t nb_pb_w, uint8_t nb_pb_h,
                 uint8_t inter_dir)
 {
+    if (mv0.x == -338 && mv0.y == -19)
+        printf("mv0 %i %i\n", mv0.x, mv0.y);
+    if (mv1.x == -338 && mv1.y == -19)
+        printf("mv1 %i %i\n", mv1.x, mv1.y);
     /*FIXME Use specific DBF update function if DBF is disabled */
     /*FIXME Find a better way to retrieve dbf_info */
     struct DBFInfo *const dbf_info = &inter_ctx->tmvp_ctx.ctudec->dbf_info;
@@ -1664,6 +1668,7 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     } else if (inter_dir & 0x2) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
         fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_dbf_mv_map_b(dbf_info, mv_ctx1, mv_ctx0, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1686,13 +1691,16 @@ update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
                 uint8_t nb_pb_w, uint8_t nb_pb_h,
                 uint8_t inter_dir)
 {
+    if (mv0.x == -338 && mv0.y == -19)
+        printf("mv0 %i %i\n", mv0.x, mv0.y);
+    if (mv1.x == -338 && mv1.y == -19)
+        printf("mv1 %i %i\n", mv1.x, mv1.y);
     /*FIXME Use specific DBF update function if DBF is disabled */
     /*FIXME Find a better way to retrieve dbf_info */
     struct DBFInfo *const dbf_info = &inter_ctx->tmvp_ctx.ctudec->dbf_info;
     if (inter_dir == 3) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-
         fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1704,7 +1712,6 @@ update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     } else if (inter_dir & 0x2) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-
         fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_dbf_mv_map_b(dbf_info, mv_ctx1, mv_ctx0, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1712,7 +1719,6 @@ update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-
         fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_dbf_mv_map_b(dbf_info, mv_ctx0, mv_ctx1, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
