@@ -71,8 +71,6 @@ OVMV drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
                  uint8_t ref_idx0, uint8_t ref_idx1);
 
 
-void drv_set_merge_precision_amvr(struct InterDRVCtx *inter_ctx, struct VVCMergeInfo mv_info);
-
 OVMV drv_merge_mvp(struct InterDRVCtx *const inter_ctx,
                    const struct OVMVCtx *const mv_ctx,
                    uint8_t pb_x, uint8_t pb_y,
@@ -112,7 +110,7 @@ void drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
                       const struct AffineControlInfo *const cp_mvd1,
                       uint8_t mvp_idx0, uint8_t mvp_idx1, uint8_t bcw_idx,
                       uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
-                      uint8_t affine_type);
+                      uint8_t prec_amvr, uint8_t affine_type);
 
 void drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                             uint8_t x0, uint8_t y0,
@@ -123,6 +121,10 @@ void drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                 uint8_t pb_x, uint8_t pb_y,
                 uint8_t nb_pb_w, uint8_t nb_pb_h,
                 uint8_t max_nb_cand, uint8_t is_small);
+
+OVMV drv_change_precision_mv(OVMV mv, int src, int dst);
+
+OVMV drv_round_to_precision_mv(OVMV mv, int src, int dst);
 
 void process_lfnst(OVCTUDec *const ctudec,
               int16_t *dst, const int16_t *src,

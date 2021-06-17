@@ -285,6 +285,24 @@ ovcabac_read_ae_amvr_precision(OVCABACCtx *const cabac_ctx, uint8_t ibc_flag)
 }
 
 static uint8_t
+ovcabac_read_ae_affine_amvr_precision(OVCABACCtx *const cabac_ctx, uint8_t ibc_flag)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    uint8_t value = 0;
+    uint8_t prec_idx = 0;
+
+    value = ovcabac_ae_read(cabac_ctx, &cabac_state[IMV_FLAG_CTX_OFFSET + 2]);
+    if( value ){
+        value = ovcabac_ae_read(cabac_ctx, &cabac_state[IMV_FLAG_CTX_OFFSET + 3]);
+        prec_idx = value + 1;
+    }
+
+    int aff_amvr_precision[4] = { MV_PRECISION_QUARTER, MV_PRECISION_SIXTEENTH, MV_PRECISION_INT };
+    return aff_amvr_precision[prec_idx];
+}
+
+
+static uint8_t
 ovcabac_read_ae_inter_dir(OVCABACCtx *const cabac_ctx,
                           int log2_pb_w, int log2_pb_h)
 {
@@ -1259,7 +1277,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 struct AffineControlInfo cp_mvd1;
 
                 cu_type = OV_AFFINE;
-
+                int32_t mvd_not_zero = 0;
                 if (inter_dir & 0x1) {
 
                     if (inter_ctx->nb_active_ref0 > 1) {
@@ -1271,8 +1289,10 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
                     if (affine_type) {
                         cp_mvd0.lb = ovcabac_read_ae_mvd(cabac_ctx);
+                        mvd_not_zero |= (cp_mvd0.lb.x | cp_mvd0.lb.y);
                     }
-
+                    mvd_not_zero |= (cp_mvd0.lt.x | cp_mvd0.lt.y);
+                    mvd_not_zero |= (cp_mvd0.rt.x | cp_mvd0.rt.y);
                     mvp_idx0 = ovcabac_read_ae_mvp_flag(cabac_ctx);
                 }
 
@@ -1288,10 +1308,16 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                         cp_mvd1.rt = ovcabac_read_ae_mvd(cabac_ctx);
                         if (affine_type) {
                             cp_mvd1.lb = ovcabac_read_ae_mvd(cabac_ctx);
+                            mvd_not_zero |= (cp_mvd1.lb.x | cp_mvd1.lb.y);
                         }
                     }
-
+                    mvd_not_zero |= (cp_mvd1.lt.x | cp_mvd1.lt.y);
+                    mvd_not_zero |= (cp_mvd1.rt.x | cp_mvd1.rt.y);
                     mvp_idx1 = ovcabac_read_ae_mvp_flag(cabac_ctx);
+                }
+
+                if( inter_ctx->affine_amvr_flag && mvd_not_zero && affine_flag){
+                    prec_amvr = ovcabac_read_ae_affine_amvr_precision(cabac_ctx, ibc_flag);
                 }
 
                 uint8_t bcw_idx = BCW_DEFAULT;
@@ -1303,7 +1329,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 drv_affine_mvp_b(inter_ctx, x0, y0, log2_pb_w, log2_pb_h,
                                  &cp_mvd0, &cp_mvd1, mvp_idx0, mvp_idx1, bcw_idx,
                                  inter_dir, ref_idx0, ref_idx1,
-                                 affine_type);
+                                 prec_amvr, affine_type);
 
                 uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
 

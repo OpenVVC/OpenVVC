@@ -350,6 +350,7 @@ struct InterDRVCtx
      * information
      */
     uint8_t amvr_flag;
+    uint8_t affine_amvr_flag;
     uint8_t prec_amvr;
 
     struct VVCGPM

@@ -1226,6 +1226,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
                             - sldec->active_params->sps->sps_max_num_merge_cand_minus_max_num_gpm_cand;
     ctudec->drv_ctx.inter_ctx.bcw_flag = sldec->active_params->sps->sps_bcw_enabled_flag;
     ctudec->drv_ctx.inter_ctx.amvr_flag = sldec->active_params->sps->sps_amvr_enabled_flag;
+    ctudec->drv_ctx.inter_ctx.affine_amvr_flag = sldec->active_params->sps->sps_affine_amvr_enabled_flag;
 
     /* FIXME entry might be check before attaching entry to CABAC so there
      * is no need for this check
