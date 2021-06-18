@@ -1132,7 +1132,7 @@ found:
     return 1;
 }
 
-struct AffineControlInfo
+static struct AffineControlInfo
 drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
                struct AffineDRVInfo *affine_ctx,
                uint8_t x_pb, uint8_t y_pb,
