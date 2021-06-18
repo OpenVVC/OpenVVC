@@ -2316,7 +2316,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
 
         struct ControlPointMVCand mi;
 
-        if (cand_msk = available_merge_b2_b3_a2(rpl0_cand, rpl1_cand)) {
+        if ((cand_msk = available_merge_b2_b3_a2(rpl0_cand, rpl1_cand))) {
             enum CandName cand_id = cand_mask_to_idx(cand_msk);
             uint16_t pos = derive_cand_position(pb_info, cand_id);
             avail_cp_map |= 0x1;
@@ -2338,7 +2338,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
 
         }
 
-        if (cand_msk = available_merge_b1_b0(rpl0_cand, rpl1_cand)) {
+        if ((cand_msk = available_merge_b1_b0(rpl0_cand, rpl1_cand))) {
             enum CandName cand_id = cand_mask_to_idx(cand_msk);
             uint16_t pos = derive_cand_position(pb_info, cand_id);
             avail_cp_map |= 0x2;
@@ -2360,7 +2360,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
 
         }
 
-        if (cand_msk = available_merge_a1_a0(rpl0_cand, rpl1_cand)) {
+        if ((cand_msk = available_merge_a1_a0(rpl0_cand, rpl1_cand))) {
             enum CandName cand_id = cand_mask_to_idx(cand_msk);
             uint16_t pos = derive_cand_position(pb_info, cand_id);
             avail_cp_map |= 0x4;
