@@ -2825,9 +2825,6 @@ rcn_affine_mcp_b_l(OVCTUDec *const ctudec,
     uint8_t ref_idx0 = mv_buff0->ref_idx;
     uint8_t ref_idx1 = mv_buff1->ref_idx;
 
-    int32_t dmv_scale_h[16];
-    int32_t dmv_scale_v[16];
-
     for (i = 0; i < nb_sb_h; ++i) {
         for (j = 0; j < nb_sb_w; ++j) {
             OVMV mv0 = mv_buff0[j];
