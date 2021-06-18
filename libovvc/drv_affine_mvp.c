@@ -350,7 +350,8 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
     const struct MVPlane *plane1 = tmvp_ctx->col_plane1;
 
     if (is_border_pic) {
-        memset(tmvp_ctx->dir_map_v1, 0, sizeof(uint64_t) * 33);
+        memset(tmvp_ctx->dir_map_v0, 0, sizeof(uint64_t) * 34);
+        memset(tmvp_ctx->dir_map_v1, 0, sizeof(uint64_t) * 34);
     }
 
     if (plane0)
@@ -1345,12 +1346,7 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
             }
 
             if (avail) {
-                //TODOamvr
-                col_mv.x = ((dst.x + 2 - (dst.x >= 0)) >> 2) << 2;
-                col_mv.y = ((dst.y + 2 - (dst.y >= 0)) >> 2) << 2;
-
-                col_mv = round_affine_mv(col_mv, prec_amvr);
-
+                col_mv = round_affine_mv(dst, prec_amvr);
                 col_mv.ref_idx = ref_idx;
 
                 cp_info[nb_cand].lt = col_mv;

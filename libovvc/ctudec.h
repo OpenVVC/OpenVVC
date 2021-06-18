@@ -419,8 +419,8 @@ struct InterDRVCtx
 
         /* FIXME do not start from 1 */
         /* Vertical bit map of motions available in collocated MV CTU */
-        uint64_t dir_map_v0[33];
-        uint64_t dir_map_v1[33];
+        uint64_t dir_map_v0[34];
+        uint64_t dir_map_v1[34];
 
         OVMV mvs0[34*34];
         OVMV mvs1[34*34];
