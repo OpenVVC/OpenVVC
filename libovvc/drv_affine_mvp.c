@@ -43,8 +43,6 @@
 #define MV_MANTISSA_UPPER_LIMIT ((1 << (MV_MANTISSA_BITCOUNT - 1)) - 1)
 #define MV_MANTISSA_LIMIT (1 << (MV_MANTISSA_BITCOUNT - 1))
 
-g_prec_amvr = 0;
-
 
 enum AffineType
 {
@@ -2624,7 +2622,7 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
 
                 mv_dst.ref_idx = ref_idx;
                 mv_dst.bcw_idx_plus1 = cinfo->lt.bcw_idx_plus1;
-                mv_dst.prec_amvr = cinfo->lt.prec_amvr;;
+                mv_dst.prec_amvr = cinfo->lt.prec_amvr;
 
                 mv_buff[j] = mv_dst;
 
@@ -2906,6 +2904,7 @@ rcn_affine_prof_mcp_b_l(OVCTUDec *const ctudec,
         compute_prof_dmv_scale(*dmv_1, prof_info.dmv_scale_h_1, prof_info.dmv_scale_v_1);
     }
 
+    // inter_ctx->prec_amvr = inter_dir & 0x1 ? mv_buff0[0].prec_amvr : mv1.prec_amvr;
     for (i = 0; i < nb_sb_h; ++i) {
         for (j = 0; j < nb_sb_w; ++j) {
             OVMV mv0 = mv_buff0[j];
@@ -2967,7 +2966,6 @@ rcn_affine_mcp_b_c(OVCTUDec *const ctudec,
             mv1.x >>= 1;
             mv1.y >>= 1;
             
-            inter_ctx->prec_amvr = inter_dir & 0x1 ? mv0.prec_amvr : mv1.prec_amvr;
             rcn_mcp_b_c(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
                         mv0, mv1, x0+ 4*j, y0 + 4*i,
                         3, 3, inter_dir, ref_idx0, ref_idx1);
@@ -3252,6 +3250,12 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                                merge_idx);
     }
 
+    mv_info.cinfo[0].lt.prec_amvr = 0;
+    mv_info.cinfo[0].rt.prec_amvr = 0;
+    mv_info.cinfo[0].lb.prec_amvr = 0;
+    mv_info.cinfo[1].lt.prec_amvr = 0;
+    mv_info.cinfo[1].rt.prec_amvr = 0;
+    mv_info.cinfo[1].lb.prec_amvr = 0;
     /* FIXME can we have small blocks bidir requiring inter_dir
      * override
      */

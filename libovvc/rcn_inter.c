@@ -1436,7 +1436,11 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
     uint8_t prec_x   = (mv.x) & 0xF;
     uint8_t prec_y   = (mv.y) & 0xF;
-
+    if(inter_ctx->prec_amvr == 3){
+        prec_x += (prec_x == 8) ? 8 : 0;
+        prec_y += (prec_y == 8) ? 8 : 0;
+    }
+    
     int prec_mc_type   = (prec_x  > 0) + ((prec_y > 0)   << 1);
 
     uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, pic_w, pic_h,

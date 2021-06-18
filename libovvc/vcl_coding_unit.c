@@ -1164,7 +1164,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t apply_gpm = 0;
     uint8_t apply_mmvd = 0;
     inter_ctx->prec_amvr = MV_PRECISION_QUARTER;
-    g_prec_amvr = inter_ctx->prec_amvr;
     if (merge_flag) {
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
@@ -1328,7 +1327,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 }
 
                 /* TODO call affine drv MVP and rcn functions */
-                g_prec_amvr = inter_ctx->prec_amvr;
                 drv_affine_mvp_b(inter_ctx, x0, y0, log2_pb_w, log2_pb_h,
                                  &cp_mvd0, &cp_mvd1, mvp_idx0, mvp_idx1, bcw_idx,
                                  inter_dir, ref_idx0, ref_idx1,

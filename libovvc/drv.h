@@ -30,8 +30,6 @@ uint8_t derive_intra_mode_c(uint8_t cclm_flag, uint8_t mpm_flag,
                             uint8_t mpm_idx, uint8_t luma_mode,
                             uint8_t cclm_idx);
 
-extern g_prec_amvr;
-
 /* FIXME vvc_intra functions deal with both reconstruction
  * and derivation this has to be clarified
  */
