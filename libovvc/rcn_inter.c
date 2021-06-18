@@ -7,6 +7,7 @@
 #include "rcn_structures.h"
 #include "rcn_lmcs.h"
 #include "drv.h"
+#include "rcn.h"
 
 #define MAX_PB_SIZE 128
 

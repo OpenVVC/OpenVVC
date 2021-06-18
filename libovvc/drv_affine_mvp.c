@@ -5,6 +5,7 @@
 #include "drv_utils.h"
 #include "dec_structures.h"
 #include "ovdpb.h"
+#include "rcn.h"
 
 #define NB_TAP 6
 #define NB_TAP_PLUS3 (NB_TAP + 3)
