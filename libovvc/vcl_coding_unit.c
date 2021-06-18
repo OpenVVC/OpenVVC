@@ -1180,7 +1180,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
                 /* TODO call affine drv MVP and rcn functions */
                 drv_affine_mvp_b(inter_ctx, x0, y0, log2_pb_w, log2_pb_h,
-                                 cp_mvd0, cp_mvd1, mvp_idx0, mvp_idx1,
+                                 &cp_mvd0, &cp_mvd1, mvp_idx0, mvp_idx1,
                                  inter_dir, ref_idx0, ref_idx1,
                                  affine_type);
 
