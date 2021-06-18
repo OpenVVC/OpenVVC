@@ -276,11 +276,11 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
         if (!pps->pps_rpl_info_in_ph_flag) {
 
             ph->ph_mvd_l1_zero_flag = nvcl_read_flag(rdr);
-            if (sps->sps_bdof_control_present_in_ph_flag && num_ref_entries1 > 0) {
+            if (sps->sps_bdof_control_present_in_ph_flag || num_ref_entries1 > 0) {
                 ph->ph_bdof_disabled_flag = nvcl_read_flag(rdr);
             }
 
-            if (sps->sps_dmvr_control_present_in_ph_flag && num_ref_entries1 > 0) {
+            if (sps->sps_dmvr_control_present_in_ph_flag || num_ref_entries1 > 0) {
                 ph->ph_dmvr_disabled_flag = nvcl_read_flag(rdr);
             }
 
@@ -291,7 +291,7 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
             if (num_ref_entries1 > 0) {
             #endif
                 ph->ph_mvd_l1_zero_flag = nvcl_read_flag(rdr);
-                if (sps->sps_bdof_control_present_in_ph_flag) {
+                if (sps->sps_bdof_control_present_in_ph_flag || num_ref_entries1 > 0) {
                     ph->ph_bdof_disabled_flag = nvcl_read_flag(rdr);
                 }
 

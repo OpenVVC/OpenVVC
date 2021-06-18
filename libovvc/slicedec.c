@@ -1363,6 +1363,9 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     ctudec->lm_chroma_enabled = sps->sps_cclm_enabled_flag;
 
+    ctudec->bdof_enabled = sps->sps_bdof_enabled_flag && (!ph->ph_bdof_disabled_flag);
+    ctudec->bdof_enabled &= sh->sh_slice_type == SLICE_B;
+
     slice_init_qp_ctx(ctudec, prms);
 
     derive_dequant_ctx(ctudec, &ctudec->qp_ctx, 0);

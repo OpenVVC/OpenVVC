@@ -1004,6 +1004,22 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     return merge_flag;
 }
 
+static inline uint8_t
+check_bdof(uint8_t log2_pu_w, uint8_t log2_pu_h, uint8_t ciip_flag, uint8_t smvd_flag, uint8_t bcw_flag)
+{
+    uint8_t bdof_enabled = (log2_pu_h >= 3) && (log2_pu_w >= 3) && ((log2_pu_w + log2_pu_h) >= 7);
+    bdof_enabled &= !ciip_flag;
+    bdof_enabled &= !smvd_flag;
+    bdof_enabled &= !bcw_flag;
+    return bdof_enabled;
+}
+
+static inline uint8_t
+check_bdof_ref(struct InterDRVCtx *const inter_ctx, uint8_t ref_idx0, uint8_t ref_idx1)
+{
+    return inter_ctx->tmvp_ctx.dist_ref_0[ref_idx0] == -inter_ctx->tmvp_ctx.dist_ref_1[ref_idx1];
+}
+
 int
 prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                         const OVPartInfo *const part_ctx,
@@ -1237,9 +1253,37 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         rcn_ciip_b(ctu_dec, mv_info.mv0, mv_info.mv1, x0, y0,
                    log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
     } else {
-        rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
-                  mv_info.mv0, mv_info.mv1, x0, y0,
-                  log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
+        uint8_t bdof_enable = 0;
+        if (ctu_dec->bdof_enabled && mv_info.inter_dir == 0x3) {
+            /*TODO check flags */
+            bdof_enable = check_bdof(log2_pb_w, log2_pb_h, 0, 0, 0);
+
+            bdof_enable = bdof_enable && check_bdof_ref(inter_ctx, ref_idx0, ref_idx1);
+        }
+
+        if (!bdof_enable) {
+            rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
+                      mv_info.mv0, mv_info.mv1, x0, y0,
+                      log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
+        } else {
+            uint8_t log2_w = OVMIN(log2_pb_w, 4);
+            uint8_t log2_h = OVMIN(log2_pb_h, 4);
+            uint8_t nb_sb_w = (1 << log2_pb_w) >> log2_w;
+            uint8_t nb_sb_h = (1 << log2_pb_h) >> log2_h;
+            int i, j;
+
+            for (i = 0; i < nb_sb_h; ++i) {
+                for (j = 0; j < nb_sb_w; ++j) {
+                    rcn_bdof_mcp_l(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
+                                   x0 + j * 16, y0 + i * 16, log2_w, log2_h,
+                                   mv_info.mv0, mv_info.mv1, ref_idx0, ref_idx1);
+                }
+            }
+            rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
+                        mv_info.mv0, mv_info.mv1, x0, y0,
+                        log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
+
+        }
     }
 
     uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;

@@ -36,6 +36,10 @@
 #define SB_H 4
 #define SB_W 4
 
+#define BDOF_WGT_LIMIT ((1 << 4) - 1)
+#define BDOF_SHIFT   (14 + 1 - BITDEPTH)
+#define BDOF_OFFSET  ((1 << (BDOF_SHIFT - 1)))
+
 struct OVDMV {
     int32_t x;
     int32_t y;
@@ -60,8 +64,8 @@ compute_prof_grad(const uint16_t* src, int src_stride, int sb_w, int sb_h,
                   int grad_stride, int16_t* grad_x, int16_t* grad_y)
 {
     int y, x;
-    const int nb_smp_h = (SB_H);
-    const int nb_smp_w = (SB_W);
+    const int nb_smp_h = sb_h;
+    const int nb_smp_w = sb_w;
 
     src += src_stride + 1;
 
@@ -120,6 +124,62 @@ rcn_prof(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
 /* FIXME check edge_emulation OK */
 
 static void
+extend_bdof_buff(const uint16_t *const src, uint16_t *dst_prof,
+                 int16_t ref_stride, int16_t pb_w, int16_t pb_h,
+                 uint8_t ext_x, uint8_t ext_y)
+{
+    int16_t tmp_prof_stride = 128;
+    const uint16_t *ref = src  - ref_stride  - 1;
+
+    uint16_t     *dst = dst_prof;
+    uint16_t *dst_lst = dst_prof + (pb_h + 1) * tmp_prof_stride;
+    int i, j;
+
+    /* Position ref according to precision */
+    if (ext_x) {
+        ref += 1;
+    }
+
+    if (ext_y) {
+        ref += ref_stride;
+    }
+
+    const uint16_t *ref_lst = ref + (pb_h + 1) * ref_stride;
+
+    /* Copy or extend upper and lower ref_line */
+    for (i = 0; i < pb_w + 2; ++i) {
+        dst[i]     = (ref[i]     << PROF_SMP_SHIFT);
+        dst_lst[i] = (ref_lst[i] << PROF_SMP_SHIFT);
+    }
+
+    dst += tmp_prof_stride;
+    dst_lst = dst + pb_w + 1;
+
+    ref = src - 1;
+
+    if (ext_x) {
+        ref += 1;
+    }
+
+    if (ext_y) {
+        ref += ref_stride;
+    }
+
+    ref_lst = ref + pb_w + 1;
+
+    /* Copy or extend left and right column*/
+    for (j = 0; j < pb_h; ++j) {
+        dst[0]     = (ref[0]     << PROF_SMP_SHIFT);
+        dst_lst[0] = (ref_lst[0] << PROF_SMP_SHIFT);
+
+        ref     += ref_stride;
+        ref_lst += ref_stride;
+        dst     += tmp_prof_stride;
+        dst_lst += tmp_prof_stride;
+    }
+}
+
+static void
 extend_prof_buff(const uint16_t *const src, uint16_t *dst_prof, int16_t ref_stride, uint8_t ext_x, uint8_t ext_y)
 {
     int16_t tmp_prof_stride = (128);
@@ -175,6 +235,44 @@ extend_prof_buff(const uint16_t *const src, uint16_t *dst_prof, int16_t ref_stri
         dst += tmp_prof_stride;
         dst_lst += tmp_prof_stride;
     }
+}
+
+static void
+extend_bdof_grad(uint16_t *dst_grad, int16_t grad_stride, int16_t pb_w, int16_t pb_h)
+{
+    uint16_t       *dst = dst_grad + grad_stride;
+    const uint16_t *ref = dst + 1;
+
+    uint16_t       *dst_lst = (uint16_t*)ref + pb_w;
+    const uint16_t *ref_lst = dst_lst - 1;
+
+    int j;
+
+    /* Copy or extend left and right column*/
+    for (j = 0; j < pb_h; ++j) {
+        #if 1
+        dst[0]     = ref[0];
+        dst_lst[0] = ref_lst[0];
+        #else
+        //dst[0] = 0;
+        dst[0]     = ref[0];
+        dst_lst[0] = 0;
+        #endif
+
+        ref += grad_stride;
+        dst += grad_stride;
+        ref_lst += grad_stride;
+        dst_lst += grad_stride;
+    }
+
+    /* Copy or extend upper and lower ref_line */
+    dst = dst_grad;
+    ref = dst + grad_stride;
+    ref_lst = dst + (pb_h) * grad_stride;
+    dst_lst = (uint16_t*)ref_lst + grad_stride;
+
+    memcpy(dst,     ref    , sizeof(*ref) * (pb_w + 2));
+    memcpy(dst_lst, ref_lst, sizeof(*ref) * (pb_w + 2));
 }
 
 static void
@@ -601,6 +699,316 @@ tmp_mrg(uint16_t* _dst, ptrdiff_t _dststride,
         dst += dststride;
     }
 }
+
+static void
+rcn_apply_bdof_subblock(const int16_t* src0, int src0_stride,
+                        const int16_t* src1, int src1_stride,
+                        int16_t *dst, int dst_stride,
+                        const int16_t *gradX0, const int16_t *gradX1,
+                        const int16_t *gradY0, const int16_t *gradY1, int grad_stride,
+                        int wgt_x, int wgt_y)
+{
+    int i/*, j*/;
+
+    for (i = 0; i < SB_H; i++) {
+        #if 0
+        for (j = 0; j < SB_W; j += 4) {
+        #endif
+            int32_t b0, b1, b2, b3;
+            int16_t val0, val1, val2, val3;
+
+            b0 = wgt_x * (gradX0[0] - gradX1[0]) + wgt_y * (gradY0[0] - gradY1[0]);
+            b1 = wgt_x * (gradX0[1] - gradX1[1]) + wgt_y * (gradY0[1] - gradY1[1]);
+            b2 = wgt_x * (gradX0[2] - gradX1[2]) + wgt_y * (gradY0[2] - gradY1[2]);
+            b3 = wgt_x * (gradX0[3] - gradX1[3]) + wgt_y * (gradY0[3] - gradY1[3]);
+
+            val0 = (int16_t)((src0[0] + src1[0] + b0 + BDOF_OFFSET) >> BDOF_SHIFT);
+            val1 = (int16_t)((src0[1] + src1[1] + b1 + BDOF_OFFSET) >> BDOF_SHIFT);
+            val2 = (int16_t)((src0[2] + src1[2] + b2 + BDOF_OFFSET) >> BDOF_SHIFT);
+            val3 = (int16_t)((src0[3] + src1[3] + b3 + BDOF_OFFSET) >> BDOF_SHIFT);
+
+            dst[0] = ov_clip(val0, 0, 1023);
+            dst[1] = ov_clip(val1, 0, 1023);
+            dst[2] = ov_clip(val2, 0, 1023);
+            dst[3] = ov_clip(val3, 0, 1023);
+        #if 0
+        }
+        #endif
+
+        dst += dst_stride;
+
+        src0 += src0_stride;
+        src1 += src1_stride;
+
+        gradX0 += grad_stride;
+        gradX1 += grad_stride;
+
+        gradY0 += grad_stride;
+        gradY1 += grad_stride;
+    }
+}
+
+static void
+derive_bdof_weights(const int16_t* ref0, const int16_t* ref1,
+                    const int16_t* grad_x0, const int16_t* grad_x1,
+                    const int16_t* grad_y0, const int16_t* grad_y1,
+                    const int src0_stride, const int src1_stride,
+                    const int grad_stride,
+                    int *weight_x, int *weight_y)
+{
+    int sum_avg_x = 0;
+    int sum_avg_y = 0;
+
+    int sum_delta_x = 0;
+    int sum_delta_y = 0;
+    int wgt_x = 0;
+    int wgt_y = 0;
+
+    /* FIXME understand this part */
+    /* sum / substract avg_grad_x based on avg_grad_y signs*/
+    int sum_avg_x_y_signs = 0;
+
+    int i, j;
+
+    for (i = 0; i < 6; i++) {
+        for (j = 0; j < 6; j++) {
+            int32_t avg_grad_x = (grad_x0[j] + grad_x1[j]) >> 1;
+            int32_t avg_grad_y = (grad_y0[j] + grad_y1[j]) >> 1;
+
+            int32_t delta_ref = ((ref1[j] -(1<<13)) >> 4) - ((ref0[j] -(1<<13)) >> 4);
+
+            sum_avg_x += abs(avg_grad_x);
+            sum_avg_y += abs(avg_grad_y);
+
+            sum_avg_x_y_signs += (avg_grad_y < 0 ? -avg_grad_x : (avg_grad_y == 0 ? 0 : avg_grad_x));
+
+            sum_delta_x += (avg_grad_x < 0 ? -delta_ref : (avg_grad_x == 0 ? 0 : delta_ref));
+            sum_delta_y += (avg_grad_y < 0 ? -delta_ref : (avg_grad_y == 0 ? 0 : delta_ref));
+        }
+
+        ref1 += src1_stride;
+        ref0 += src0_stride;
+
+        grad_x0 += grad_stride;
+        grad_x1 += grad_stride;
+
+        grad_y0 += grad_stride;
+        grad_y1 += grad_stride;
+    }
+
+    if (sum_avg_x) {
+        int log2_renorm_x = floor_log2(sum_avg_x);
+
+        wgt_x = (sum_delta_x << 2) >> log2_renorm_x;
+        wgt_x = ov_clip(wgt_x, -BDOF_WGT_LIMIT, BDOF_WGT_LIMIT);
+        *weight_x = wgt_x;
+    }
+
+    if (sum_avg_y) {
+        int log2_renorm_y = floor_log2(sum_avg_y);
+        int x_offset = 0;
+
+        if (wgt_x) {
+            /* FIXME understand this part */
+            int high = sum_avg_x_y_signs >> 12;
+            int low  = sum_avg_x_y_signs & ((1 << 12) - 1);
+            x_offset = (((wgt_x * high) << 12) + (wgt_x * low)) >> 1;
+        }
+
+        wgt_y = ((sum_delta_y << 2) - x_offset) >> log2_renorm_y;
+        wgt_y = ov_clip(wgt_y, -BDOF_WGT_LIMIT, BDOF_WGT_LIMIT);
+        *weight_y = wgt_y;
+    }
+}
+
+static void
+rcn_bdof(int16_t *dst, int dst_stride,
+         const int16_t *ref_bdof0, const int16_t *ref_bdof1, int ref_stride,
+         const int16_t *grad_x0, const int16_t *grad_y0,
+         const int16_t *grad_x1, const int16_t *grad_y1,
+         int grad_stride, uint8_t pb_w, uint8_t pb_h)
+{
+    int nb_sb_w = (pb_w >> 2);
+    int nb_sb_h = (pb_h >> 2);
+
+    const int16_t *grad_x0_ln = grad_x0;
+    const int16_t *grad_y0_ln = grad_y0;
+    const int16_t *grad_x1_ln = grad_x1;
+    const int16_t *grad_y1_ln = grad_y1;
+
+    const int16_t *ref0_ln = ref_bdof0 - 128 - 1;
+    const int16_t *ref1_ln = ref_bdof1 - 128 - 1;
+    int16_t *dst_ln = dst;
+
+    int i, j;
+
+    for (i = 0; i < nb_sb_h; i++) {
+        const int16_t *ref0_tmp = ref0_ln;
+        const int16_t *ref1_tmp = ref1_ln;
+
+        grad_x0 = grad_x0_ln;
+        grad_y0 = grad_y0_ln;
+        grad_x1 = grad_x1_ln;
+        grad_y1 = grad_y1_ln;
+
+        dst = dst_ln;
+
+        for (j = 0; j < nb_sb_w; j++) {
+            int wgt_x = 0;
+            int wgt_y = 0;
+
+            derive_bdof_weights(ref0_tmp, ref1_tmp,
+                                grad_x0, grad_x1, grad_y0, grad_y1,
+                                ref_stride, ref_stride,
+                                grad_stride,
+                                &wgt_x, &wgt_y);
+
+            rcn_apply_bdof_subblock(ref0_tmp + ref_stride + 1, ref_stride,
+                                    ref1_tmp + ref_stride + 1, ref_stride,
+                                    dst, dst_stride,
+                                    grad_x0 + grad_stride + 1, grad_x1 + grad_stride + 1,
+                                    grad_y0 + grad_stride + 1, grad_y1 + grad_stride + 1,
+                                    grad_stride,
+                                    wgt_x, wgt_y);
+
+            grad_x0 += 1 << 2;
+            grad_x1 += 1 << 2;
+            grad_y0 += 1 << 2;
+            grad_y1 += 1 << 2;
+            ref0_tmp += 1 << 2;
+            ref1_tmp += 1 << 2;
+            dst    += 1 << 2;
+        }
+
+        grad_x0_ln += grad_stride << 2;
+        grad_y0_ln += grad_stride << 2;
+        grad_x1_ln += grad_stride << 2;
+        grad_y1_ln += grad_stride << 2;
+
+        ref0_ln += ref_stride << 2;
+        ref1_ln += ref_stride << 2;
+
+        dst_ln += dst_stride << 2;
+    }
+}
+
+void
+rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
+               uint8_t x0, uint8_t y0,
+               uint8_t log2_pu_w, uint8_t log2_pu_h,
+               OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1)
+{
+    struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
+    const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
+    /* FIXME derive ref_idx */
+    uint8_t ref_idx_0 = ref_idx0;
+    uint8_t ref_idx_1 = ref_idx1;
+
+    OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
+    OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
+
+    /* TMP buffers for edge emulation
+     * FIXME use tmp buffers in local contexts
+     */
+    uint16_t edge_buff0[RCN_CTB_SIZE];
+    uint16_t edge_buff1[RCN_CTB_SIZE];
+    int16_t tmp_buff[RCN_CTB_SIZE];
+    int16_t tmp_buff1[RCN_CTB_SIZE];
+
+    /*FIXME we suppose here both refs possess the same size*/
+
+    const int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+
+    /* FIXME we should not need ctb_x/y
+     * it could be retrieved from position in frame buff
+     */
+    int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
+    int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
+
+    mv0 = clip_mv(pos_x, pos_y, ref0->frame->width[0],
+                  ref0->frame->height[0], 1 << log2_pu_w, 1 << log2_pu_h, mv0);
+
+    mv1 = clip_mv(pos_x, pos_y, ref1->frame->width[0],
+                  ref1->frame->height[0], 1 << log2_pu_w, 1 << log2_pu_h, mv1);
+
+
+    const struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
+
+    const struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1, pos_x, pos_y, edge_buff1,
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
+
+    const int pu_w = 1 << log2_pu_w;
+    const int pu_h = 1 << log2_pu_h;
+
+    uint8_t prec_x0 = (mv0.x) & 0xF;
+    uint8_t prec_y0 = (mv0.y) & 0xF;
+
+    uint8_t prec_x1 = (mv1.x) & 0xF;
+    uint8_t prec_y1 = (mv1.y) & 0xF;
+
+    uint8_t prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
+    uint8_t prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
+
+    /*FIXME permit smaller stride to reduce tables */
+    int16_t ref_bdof0[(16 + 2 * PROF_BUFF_PADD_H) * (128 + 2 * PROF_BUFF_PADD_W)] = {0};
+    int16_t ref_bdof1[(16 + 2 * PROF_BUFF_PADD_H) * (128 + 2 * PROF_BUFF_PADD_W)] = {0};
+
+    /* FIXME tab dim */
+    int16_t grad_x0[(16 + 2) * (16 + 2)];
+    int16_t grad_y0[(16 + 2) * (16 + 2)];
+    int16_t grad_x1[(16 + 2) * (16 + 2)];
+    int16_t grad_y1[(16 + 2) * (16 + 2)];
+
+    int16_t ref_stride = 128;
+    int16_t grad_stride = pu_w + 2;
+
+    int pb_w = 1 << log2_pu_w;
+    int pb_h = 1 << log2_pu_h;
+
+    mc_l->bidir0[prec_0_mc_type][log2_pu_w](ref_bdof0 + 128 + 1,
+                                            ref0_b.y, ref0_b.stride, pu_h,
+                                            prec_x0, prec_y0, pu_w);
+
+    mc_l->bidir0[prec_1_mc_type][log2_pu_w](ref_bdof1 + 128 + 1,
+                                            ref1_b.y, ref1_b.stride, pu_h,
+                                            prec_x1, prec_y1, pu_w);
+
+    /* Padding for grad derivation */
+    extend_bdof_buff(ref0_b.y, ref_bdof0, ref0_b.stride, pb_w, pb_h, prec_x0 >> 3, prec_y0 >> 3);
+    extend_bdof_buff(ref1_b.y, ref_bdof1, ref1_b.stride, pb_w, pb_h, prec_x1 >> 3, prec_y1 >> 3);
+
+    compute_prof_grad(ref_bdof0, ref_stride, pb_w, pb_h, grad_stride,
+                      grad_x0 + grad_stride + 1, grad_y0 + grad_stride + 1);
+
+    compute_prof_grad(ref_bdof1, ref_stride, pb_w, pb_h, grad_stride,
+                      grad_x1 + grad_stride + 1, grad_y1 + grad_stride + 1);
+
+    /* Grad padding */
+    extend_bdof_grad(grad_x0, grad_stride, pb_w, pb_h);
+    extend_bdof_grad(grad_y0, grad_stride, pb_w, pb_h);
+    extend_bdof_grad(grad_x1, grad_stride, pb_w, pb_h);
+    extend_bdof_grad(grad_y1, grad_stride, pb_w, pb_h);
+
+    /* Reference padding overwrite for weights derivation */
+    extend_bdof_grad(ref_bdof0, ref_stride, pb_w, pb_h);
+    extend_bdof_grad(ref_bdof1, ref_stride, pb_w, pb_h);
+    dst.y += x0;
+    dst.y += y0 * RCN_CTB_STRIDE;
+
+    /* Split into 4x4 subblocks for BDOF computation */
+    rcn_bdof(dst.y, dst.stride, ref_bdof0 + 128 + 1, ref_bdof1 + 128 + 1,
+             ref_stride, grad_x0, grad_y0, grad_x1, grad_y1,
+             grad_stride, pb_w, pb_h);
+
+    if (ctudec->lmcs_info.lmcs_enabled_flag){
+        rcn_lmcs_reshape_luma_blk_lut(dst.y, RCN_CTB_STRIDE,
+                                      ctudec->lmcs_info.lmcs_lut_fwd_luma,
+                                      pu_w, pu_h);
+    }
+}
+
 
 static void
 rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,

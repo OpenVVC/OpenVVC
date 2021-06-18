@@ -653,6 +653,7 @@ struct OVCTUDec
     uint8_t affine_enabled;
     uint8_t affine_status;
     uint8_t affine_nb_merge_cand;
+    uint8_t bdof_enabled;
 
     /**
      * Depths of left and up neighbours during in the decision tree
