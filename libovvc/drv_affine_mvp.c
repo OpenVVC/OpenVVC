@@ -2983,14 +2983,15 @@ void
 drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
                  uint8_t x0, uint8_t y0,
                  uint8_t log2_cu_w, uint8_t log2_cu_h,
-                 struct AffineControlInfo cp_mvd0, struct AffineControlInfo cp_mvd1,
+                 const struct AffineControlInfo *const cp_mvd0,
+                 const struct AffineControlInfo *const cp_mvd1,
                  uint8_t mvp_idx0, uint8_t mvp_idx1,
                  uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
                  uint8_t affine_type)
 {
     struct AffineDRVInfo *affine_ctx = &inter_ctx->affine_ctx;
 
-    struct AffineMergeInfo mv_info;
+    struct AffineMergeInfo mv_info ={0};
 
     uint8_t x_pb = x0 >> 2;
     uint8_t y_pb = y0 >> 2;
@@ -3021,21 +3022,21 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
                                   ref_idx0, opp_ref_idx0, mvp_idx0,
                                   inter_dir & 0x1, affine_type);
 
-        cp_info->lt.x +=  cp_mvd0.lt.x << 2;
-        cp_info->lt.y +=  cp_mvd0.lt.y << 2;
+        cp_info->lt.x +=  cp_mvd0->lt.x << 2;
+        cp_info->lt.y +=  cp_mvd0->lt.y << 2;
 
-        cp_info->rt.x +=  cp_mvd0.lt.x << 2;
-        cp_info->rt.y +=  cp_mvd0.lt.y << 2;
-        cp_info->rt.x +=  cp_mvd0.rt.x << 2;
-        cp_info->rt.y +=  cp_mvd0.rt.y << 2;
+        cp_info->rt.x +=  cp_mvd0->lt.x << 2;
+        cp_info->rt.y +=  cp_mvd0->lt.y << 2;
+        cp_info->rt.x +=  cp_mvd0->rt.x << 2;
+        cp_info->rt.y +=  cp_mvd0->rt.y << 2;
         cp_info->lt = mv_clip_periodic(cp_info->lt);
         cp_info->rt = mv_clip_periodic(cp_info->rt);
 
         if (affine_type == AFFINE_3CP) {
-            cp_info->lb.x +=  cp_mvd0.lt.x << 2;
-            cp_info->lb.y +=  cp_mvd0.lt.y << 2;
-            cp_info->lb.x +=  cp_mvd0.lb.x << 2;
-            cp_info->lb.y +=  cp_mvd0.lb.y << 2;
+            cp_info->lb.x +=  cp_mvd0->lt.x << 2;
+            cp_info->lb.y +=  cp_mvd0->lt.y << 2;
+            cp_info->lb.x +=  cp_mvd0->lb.x << 2;
+            cp_info->lb.y +=  cp_mvd0->lb.y << 2;
             cp_info->lb = mv_clip_periodic(cp_info->lb);
         }
 
@@ -3055,21 +3056,21 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
                                   ref_idx1, opp_ref_idx1, mvp_idx1,
                                   inter_dir & 0x2, affine_type);
 
-        cp_info->lt.x +=  cp_mvd1.lt.x << 2;
-        cp_info->lt.y +=  cp_mvd1.lt.y << 2;
+        cp_info->lt.x +=  cp_mvd1->lt.x << 2;
+        cp_info->lt.y +=  cp_mvd1->lt.y << 2;
 
-        cp_info->rt.x +=  cp_mvd1.lt.x << 2;
-        cp_info->rt.y +=  cp_mvd1.lt.y << 2;
-        cp_info->rt.x +=  cp_mvd1.rt.x << 2;
-        cp_info->rt.y +=  cp_mvd1.rt.y << 2;
+        cp_info->rt.x +=  cp_mvd1->lt.x << 2;
+        cp_info->rt.y +=  cp_mvd1->lt.y << 2;
+        cp_info->rt.x +=  cp_mvd1->rt.x << 2;
+        cp_info->rt.y +=  cp_mvd1->rt.y << 2;
 
         cp_info->lt = mv_clip_periodic(cp_info->lt);
         cp_info->rt = mv_clip_periodic(cp_info->rt);
         if (affine_type == AFFINE_3CP) {
-            cp_info->lb.x +=  cp_mvd1.lt.x << 2;
-            cp_info->lb.y +=  cp_mvd1.lt.y << 2;
-            cp_info->lb.x +=  cp_mvd1.lb.x << 2;
-            cp_info->lb.y +=  cp_mvd1.lb.y << 2;
+            cp_info->lb.x +=  cp_mvd1->lt.x << 2;
+            cp_info->lb.y +=  cp_mvd1->lt.y << 2;
+            cp_info->lb.x +=  cp_mvd1->lb.x << 2;
+            cp_info->lb.y +=  cp_mvd1->lb.y << 2;
             cp_info->lb = mv_clip_periodic(cp_info->lb);
         }
 
