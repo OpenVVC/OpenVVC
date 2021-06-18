@@ -2869,11 +2869,11 @@ rcn_affine_prof_mcp_b_l(OVCTUDec *const ctudec,
     struct PROFInfo prof_info;
 
     if (prof_dir & 0x1) {
-        compute_prof_dmv_scale(*dmv_0, &prof_info.dmv_scale_h_0, &prof_info.dmv_scale_v_0);
+        compute_prof_dmv_scale(*dmv_0, prof_info.dmv_scale_h_0, prof_info.dmv_scale_v_0);
     }
 
     if (prof_dir & 0x2) {
-        compute_prof_dmv_scale(*dmv_1, &prof_info.dmv_scale_h_1, &prof_info.dmv_scale_v_1);
+        compute_prof_dmv_scale(*dmv_1, prof_info.dmv_scale_h_1, prof_info.dmv_scale_v_1);
     }
 
     for (i = 0; i < nb_sb_h; ++i) {
