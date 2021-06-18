@@ -9,6 +9,7 @@
 struct ALFClassifier;
 struct Area;
 struct CCLMParams;
+struct SAOParamsCtu;
 
 enum DCTType
 {
@@ -92,6 +93,15 @@ typedef void (*ALFFilterBlkFunc)(struct ALFClassifier **classifier, int16_t *con
                         struct Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                         const int ctu_height, int virbnd_pos);
 
+typedef void (*SAOBandFilterFunc)(uint8_t* _dst, uint8_t* _src,
+                                  ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
+                                  struct SAOParamsCtu* sao, int width,
+                                  int height, int c_idx);
+
+typedef void (*SAOEdgeFilterFunc)(uint8_t* _dst, uint8_t* _src,
+                                  ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
+                                  struct SAOParamsCtu* sao, int width,
+                                  int height, int c_idx);
 /**
  * The Context put together all functions used by strategies.
  */
@@ -160,6 +170,11 @@ struct ALFFunctions{
                    const int ctu_height, int virbnd_pos);
 };
 
+struct SAOFunctions{
+    SAOBandFilterFunc band;
+    SAOEdgeFilterFunc edge[2];
+};
+
 struct RCNFunctions
 {
     /* Motion Compensation Luma */
@@ -185,11 +200,14 @@ struct RCNFunctions
     /* Planar Functions */
     struct PlanarFunctions planar;
 
-    /* Planar Functions */
+    /* MIP Functions */
     struct MIPFunctions mip;
 
-    /* Planar Functions */
+    /* ALF Functions */
     struct ALFFunctions alf;
+
+    /* SAO Functions */
+    struct SAOFunctions sao;
 };
 
 
