@@ -67,7 +67,7 @@ void rcn_ciip_b(OVCTUDec*const ctudec, const OVMV mv0, const OVMV mv1,
            unsigned int log2_pb_w, unsigned int log2_pb_h,
            uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1);
 
-void rcn_ciip(OVCTUDec *const ctudec, 
+void rcn_ciip(OVCTUDec *const ctudec,
          int x0, int y0, int log2_pb_w, int log2_pb_h,
          OVMV mv, uint8_t inter_dir, uint8_t ref_idx);
 
