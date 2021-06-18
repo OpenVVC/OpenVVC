@@ -1105,7 +1105,7 @@ derive_mvp_cand(const struct InterDRVCtx *const inter_ctx,
     OVMV mv_cand;
 
     if (rpl_list & (1 << cand_name)) {
-        OVMV mv_cand = mv_ctx[cand_pos];
+        mv_cand = mv_ctx[cand_pos];
 
         if (mv_cand.ref_idx == ref_idx) {
 
