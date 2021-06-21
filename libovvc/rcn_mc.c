@@ -1083,10 +1083,10 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_l->bidir1[2][i] = &put_vvc_qpel_bi_v;
         mc_l->bidir1[3][i] = &put_vvc_qpel_bi_hv;
 
-        mc_l->bidir_w[0][i] = &put_weighted_pel_bi_pixels;
-        mc_l->bidir_w[1][i] = &put_weighted_qpel_bi_h;
-        mc_l->bidir_w[2][i] = &put_weighted_qpel_bi_v;
-        mc_l->bidir_w[3][i] = &put_weighted_qpel_bi_hv;
+        mc_l->bidir_w2[0][i] = &put_weighted_pel_bi_pixels;
+        mc_l->bidir_w2[1][i] = &put_weighted_qpel_bi_h;
+        mc_l->bidir_w2[2][i] = &put_weighted_qpel_bi_v;
+        mc_l->bidir_w2[3][i] = &put_weighted_qpel_bi_hv;
 
         /* Chroma functions */
         mc_c->unidir[0][i] = &put_vvc_pel_uni_pixels;
@@ -1104,9 +1104,9 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_c->bidir1[2][i] = &put_vvc_epel_bi_v;
         mc_c->bidir1[3][i] = &put_vvc_epel_bi_hv;
 
-        mc_c->bidir_w[0][i] = &put_weighted_pel_bi_pixels;
-        mc_c->bidir_w[1][i] = &put_weighted_epel_bi_h;
-        mc_c->bidir_w[2][i] = &put_weighted_epel_bi_v;
-        mc_c->bidir_w[3][i] = &put_weighted_epel_bi_hv;
+        mc_c->bidir_w2[0][i] = &put_weighted_pel_bi_pixels;
+        mc_c->bidir_w2[1][i] = &put_weighted_epel_bi_h;
+        mc_c->bidir_w2[2][i] = &put_weighted_epel_bi_v;
+        mc_c->bidir_w2[3][i] = &put_weighted_epel_bi_hv;
     }
 }

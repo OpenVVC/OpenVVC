@@ -122,9 +122,9 @@ struct MCFunctions{
     MCBiDir1Func bidir1[4][8];
 
     MCUniDirWFunc unidir_w[4][8];
-    MCBiDirWFunc bidir_w2[4][8];
+    MCBiDirWFunc bidir_w[4][8];
 
-    MCBiDirWeightedFunc bidir_w[4][8];
+    MCBiDirWeightedFunc bidir_w2[4][8];
 };
 
 struct CCLMFunctions
