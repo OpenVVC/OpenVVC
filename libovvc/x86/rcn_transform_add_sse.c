@@ -10,7 +10,7 @@
 #include "ovutils.h"
 
 #define CLIP_10 ((1 << 10) - 1)
-#define SIGN_16 (int8_t)(1 << 15)
+#define SIGN_16 (int16_t)(1 << 15)
 
 static inline void
 ovvc_transform_add_sse_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
