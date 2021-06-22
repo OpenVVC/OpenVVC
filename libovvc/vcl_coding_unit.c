@@ -1164,6 +1164,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t apply_gpm = 0;
     uint8_t apply_mmvd = 0;
     inter_ctx->prec_amvr = MV_PRECISION_QUARTER;
+    uint8_t bcw_idx = BCW_DEFAULT;
     if (merge_flag) {
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
@@ -1237,7 +1238,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             mv_info = drv_mmvd_merge_mvp_b(inter_ctx, x_pu, y_pu,
                                   nb_pb_w, nb_pb_h, ctu_dec->cur_poc, merge_idx,
                                   max_nb_cand, log2_pb_w + log2_pb_h <= 5);
-            // drv_set_merge_precision_amvr(inter_ctx, mv_info);
         }
         else if(apply_gpm){
             int max_num_gpm_cand = inter_ctx->max_gpm_cand;
@@ -1320,7 +1320,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                     inter_ctx->prec_amvr = ovcabac_read_ae_affine_amvr_precision(cabac_ctx, ibc_flag);
                 }
 
-                uint8_t bcw_idx = BCW_DEFAULT;
                 if (inter_ctx->bcw_flag && !ibc_flag && (1<<(log2_pb_h+log2_pb_w) >= BCW_SIZE_CONSTRAINT) 
                     && !skip_flag && inter_dir == 3){
                     bcw_idx = ovcabac_read_ae_bcw_flag( cabac_ctx, inter_ctx->tmvp_ctx.ldc);
@@ -1396,7 +1395,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             inter_ctx->prec_amvr = ovcabac_read_ae_amvr_precision(cabac_ctx, ibc_flag);
         }
 
-        uint8_t bcw_idx = BCW_DEFAULT;
         if (inter_ctx->bcw_flag && !ibc_flag && (1<<(log2_pb_h+log2_pb_w) >= BCW_SIZE_CONSTRAINT) 
                 && !skip_flag && inter_dir == 3){
             bcw_idx = ovcabac_read_ae_bcw_flag( cabac_ctx, inter_ctx->tmvp_ctx.ldc);
@@ -1422,8 +1420,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     else {
         uint8_t bdof_enable = 0;
         if (ctu_dec->bdof_enabled && mv_info.inter_dir == 0x3) {
-            /*TODO check flags */
-            bdof_enable = check_bdof(log2_pb_w, log2_pb_h, 0, 0, 0);
+            uint8_t bcw_flag = (mv_info.mv0.bcw_idx_plus1 != 0 && mv_info.mv0.bcw_idx_plus1 != 3);
+            bdof_enable = check_bdof(log2_pb_w, log2_pb_h, apply_ciip, bcw_flag, smvd_mode);
 
             bdof_enable = bdof_enable && check_bdof_ref(inter_ctx, ref_idx0, ref_idx1);
         }
