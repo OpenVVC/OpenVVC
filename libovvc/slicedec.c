@@ -1365,6 +1365,8 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     ctudec->bdof_enabled = sps->sps_bdof_enabled_flag && (!ph->ph_bdof_disabled_flag);
     ctudec->bdof_enabled &= sh->sh_slice_type == SLICE_B;
+    ctudec->dmvr_enabled = sps->sps_dmvr_enabled_flag && (!ph->ph_dmvr_disabled_flag);
+    ctudec->dmvr_enabled &= sh->sh_slice_type == SLICE_B;
 
     slice_init_qp_ctx(ctudec, prms);
 

@@ -429,6 +429,9 @@ struct InterDRVCtx
         uint8_t ctu_h;
 
     } tmvp_ctx;
+    int8_t dmvr_idx;
+    int8_t dmvr_idx0;
+    int8_t dmvr_idx1;
 
     struct AffineDRVInfo affine_ctx;
 };
@@ -686,6 +689,7 @@ struct OVCTUDec
     uint8_t affine_status;
     uint8_t affine_nb_merge_cand;
     uint8_t bdof_enabled;
+    uint8_t dmvr_enabled;
 
     /**
      * Depths of left and up neighbours during in the decision tree

@@ -28,6 +28,9 @@
 #define MCP_FILTER_C(src, stride, filter)                                      \
         (filter[0] * src[x - stride] + filter[1] * src[x] +                    \
          filter[2] * src[x + stride] + filter[3] * src[x + 2 * stride])
+ 
+#define BLN_FILTER_L(src, stride, filter)                                      \
+        (filter[0] * src[x - 1 * stride] + filter[1] * src[x - 0 * stride])
 
 static const int8_t ov_mcp_filters_c[31][4] =
 {
@@ -105,6 +108,26 @@ static const int8_t ov_mc_filters_4[15][8] =
     {  0, 1,  -4, 13, 60,  -8,  2,  0 },
     {  0, 1,  -3,  8, 62,  -5,  1,  0 },
     {  0, 1,  -2,  4, 63,  -3,  1,  0 }
+};
+
+static const int8_t ov_bilinear_filters_4[15][2] =
+{
+  /*{ 16,  0, },*/
+  { 15,  1, },
+  { 14,  2, },
+  { 13, 3, },
+  { 12, 4, },
+  { 11, 5, },
+  { 10, 6, },
+  { 9, 7, },
+  { 8, 8, },
+  { 7, 9, },
+  { 6, 10, },
+  { 5, 11, },
+  { 4, 12, },
+  { 3, 13, },
+  { 2, 14, },
+  { 1, 15, }
 };
 
 static void
@@ -257,6 +280,114 @@ put_vvc_qpel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
         for (x = 0; x < width; x++) {
             dst[x] = ov_clip_pixel(
                                    ((MCP_FILTER_L(tmp, MAX_PB_SIZE, filter) >> 6) +
+                                    offset) >> shift);
+        }
+        tmp += MAX_PB_SIZE;
+        dst += dststride;
+    }
+}
+
+static void
+put_vvc_pel_bilinear_pixels(uint16_t* _dst, ptrdiff_t _dststride,
+                            const uint16_t* _src, ptrdiff_t _srcstride, int height,
+                            intptr_t mx, intptr_t my, int width)
+{
+    int y;
+    const uint16_t* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    uint16_t* dst = (uint16_t*)_dst;
+    ptrdiff_t dststride = _dststride;
+
+    for (y = 0; y < height; y++) {
+        memcpy(dst, src, width * sizeof(uint16_t));
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
+static void
+put_vvc_qpel_bilinear_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                        ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                        int width)
+{
+    int x, y;
+    const uint16_t* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    uint16_t* dst = (uint16_t*)_dst;
+    ptrdiff_t dststride = _dststride;
+    const int8_t* filter = ov_bilinear_filters_4[mx - 1];
+    int shift = 14 - BIT_DEPTH;
+    int offset = 1 << (shift - 1);
+
+    src += 1;
+    for (y = 0; y < height + 1; y++) {
+        for (x = 0; x < width + 1; x++) {
+            dst[x] = ov_clip_pixel((BLN_FILTER_L(src, 1, filter) +
+                                    offset) >> shift);
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
+static void
+put_vvc_qpel_bilinear_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                        ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                        int width)
+{
+    int x, y;
+    const uint16_t* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    uint16_t* dst = (uint16_t*)_dst;
+    ptrdiff_t dststride = _dststride;
+    const int8_t* filter = ov_bilinear_filters_4[my - 1];
+    int shift = 14 - BIT_DEPTH;
+    int offset = 1 << (shift - 1);
+
+    src += srcstride;
+    for (y = 0; y < height + 1; y++) {
+        for (x = 0; x < width + 1; x++) {
+            dst[x] = ov_clip_pixel((BLN_FILTER_L(src, srcstride, filter)
+                                    + offset) >> shift);
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
+static void
+put_vvc_qpel_bilinear_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                         ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                         int width)
+{
+    int x, y;
+    const int8_t* filter;
+    const uint16_t* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    uint16_t* dst = (uint16_t*)_dst;
+    ptrdiff_t dststride = _dststride;
+    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
+    int16_t* tmp = tmp_array;
+
+    int shift = 14 - BIT_DEPTH;
+    int offset = 1 << (shift - 1);
+
+    filter = ov_bilinear_filters_4[mx - 1];
+
+    for (y = 0; y < height + 1; y++) {
+        for (x = 0; x < width + 1; x++) {
+            tmp[x] = (BLN_FILTER_L(src, 1, filter) + offset) >> shift;
+        }
+        src += srcstride;
+        tmp += MAX_PB_SIZE;
+    }
+
+    tmp = tmp_array + MAX_PB_SIZE + 1;
+    filter = ov_bilinear_filters_4[my - 1];
+
+    for (y = 0; y < height + 1; y++) {
+        for (x = 0; x < width + 1; x++) {
+            dst[x] = ov_clip_pixel((BLN_FILTER_L(tmp, MAX_PB_SIZE, filter) +
                                     offset) >> shift);
         }
         tmp += MAX_PB_SIZE;
@@ -1109,4 +1240,10 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_c->bidir_w2[2][i] = &put_weighted_epel_bi_v;
         mc_c->bidir_w2[3][i] = &put_weighted_epel_bi_hv;
     }
+
+    mc_l->bilinear[0] = &put_vvc_pel_bilinear_pixels;
+    mc_l->bilinear[1] = &put_vvc_qpel_bilinear_h;
+    mc_l->bilinear[2] = &put_vvc_qpel_bilinear_v;
+    mc_l->bilinear[3] = &put_vvc_qpel_bilinear_hv;
+
 }

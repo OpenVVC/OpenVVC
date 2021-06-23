@@ -1419,6 +1419,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     }
     else {
         uint8_t bdof_enable = 0;
+        uint8_t dmvr_enable = 0;
         if (ctu_dec->bdof_enabled && mv_info.inter_dir == 0x3) {
             uint8_t bcw_flag = (mv_info.mv0.bcw_idx_plus1 != 0 && mv_info.mv0.bcw_idx_plus1 != 3);
             bdof_enable = check_bdof(log2_pb_w, log2_pb_h, apply_ciip, bcw_flag, smvd_mode);
@@ -1426,7 +1427,17 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             bdof_enable = bdof_enable && check_bdof_ref(inter_ctx, ref_idx0, ref_idx1);
         }
 
-        if (!bdof_enable) {
+        if (merge_flag && ctu_dec->dmvr_enabled && mv_info.inter_dir == 0x3) {
+            dmvr_enable = check_bdof(log2_pb_w, log2_pb_h, 0, 0, 0);
+
+            dmvr_enable = dmvr_enable && check_bdof_ref(inter_ctx, ref_idx0, ref_idx1);
+        
+        }
+
+        if (!bdof_enable && !dmvr_enable) {
+            inter_ctx->dmvr_idx = -1;
+            inter_ctx->dmvr_idx0 = -1;
+            inter_ctx->dmvr_idx1 = -1;
             rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
                       mv_info.mv0, mv_info.mv1, x0, y0,
                       log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
@@ -1437,16 +1448,72 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             uint8_t nb_sb_h = (1 << log2_pb_h) >> log2_h;
             int i, j;
 
+            uint8_t disable_bdof = 0;
+            OVMV mv0 = mv_info.mv0;
+            OVMV mv1 = mv_info.mv1;
             for (i = 0; i < nb_sb_h; ++i) {
                 for (j = 0; j < nb_sb_w; ++j) {
-                    rcn_bdof_mcp_l(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
-                                   x0 + j * 16, y0 + i * 16, log2_w, log2_h,
-                                   mv_info.mv0, mv_info.mv1, ref_idx0, ref_idx1);
+                    inter_ctx->dmvr_idx = -1;
+                    inter_ctx->dmvr_idx0 = -1;
+                    inter_ctx->dmvr_idx1 = -1;
+                    if (dmvr_enable) {
+                        disable_bdof = rcn_dmvr_mv_refine(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
+                                                          x0 + j * 16, y0 + i * 16,
+                                                          log2_w, log2_h,
+                                                          &mv0, &mv1,
+                                                          ref_idx0, ref_idx1, bdof_enable);
+
+                        /* FIXME temporary hack to override MVs on 8x8 grid for TMVP */
+                        /* FIXME find an alternative in case x0 % 8  is != 0 */
+                        inter_ctx->mv_ctx0.mvs[35 + ((x0 + j * 16) >> 2) + ((y0 + i * 16) >> 2) * 34] = mv0;
+                        inter_ctx->mv_ctx1.mvs[35 + ((x0 + j * 16) >> 2) + ((y0 + i * 16) >> 2) * 34] = mv1;
+
+                        if (log2_w > 3) {
+                            inter_ctx->mv_ctx0.mvs[35 + ((x0 + j * 16) >> 2) + ((y0 + i * 16) >> 2) * 34 + 2] = mv0;
+                            inter_ctx->mv_ctx1.mvs[35 + ((x0 + j * 16) >> 2) + ((y0 + i * 16) >> 2) * 34 + 2] = mv1;
+                        }
+
+                        if (log2_h > 3) {
+                            inter_ctx->mv_ctx0.mvs[35 + ((x0 + j * 16) >> 2) + ((y0 + i * 16) >> 2) * 34 + 34 * 2] = mv0;
+                            inter_ctx->mv_ctx1.mvs[35 + ((x0 + j * 16) >> 2) + ((y0 + i * 16) >> 2) * 34 + 34 * 2] = mv1;
+
+                            if (log2_w > 3) {
+                                inter_ctx->mv_ctx0.mvs[35 + ((x0 + j * 16) >> 2) + ((y0 + i * 16) >> 2) * 34 + 34 * 2 + 2] = mv0;
+                                inter_ctx->mv_ctx1.mvs[35 + ((x0 + j * 16) >> 2) + ((y0 + i * 16) >> 2) * 34 + 34 * 2 + 2] = mv1;
+                            }
+                        }
+                    }
+
+                    if (bdof_enable && !disable_bdof) {
+                        if (!dmvr_enable) {
+                            rcn_bdof_mcp_l(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
+                                           x0 + j * 16, y0 + i * 16, log2_w, log2_h,
+                                           mv0, mv1, ref_idx0, ref_idx1);
+                            rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
+                                        mv0, mv1, x0 + j * 16, y0 + i * 16,
+                                        log2_w, log2_h, mv_info.inter_dir, ref_idx0, ref_idx1);
+                        }
+                    } else {
+                        if (!dmvr_enable) {
+                            rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
+                                      mv0, mv1, x0 + j * 16, y0 + i * 16,
+                                      log2_w, log2_h, mv_info.inter_dir, ref_idx0, ref_idx1);
+                        }
+                    }
+                    mv0 = mv_info.mv0;
+                    mv1 = mv_info.mv1;
                 }
             }
-            rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
-                        mv_info.mv0, mv_info.mv1, x0, y0,
-                        log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
+            #if 0
+            if (!disable_bdof) {
+                rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
+                            mv_info.mv0, mv_info.mv1, x0, y0,
+                            log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
+            }
+            #endif
+                    inter_ctx->dmvr_idx = -1;
+                    inter_ctx->dmvr_idx0 = -1;
+                    inter_ctx->dmvr_idx1 = -1;
 
         }
     }

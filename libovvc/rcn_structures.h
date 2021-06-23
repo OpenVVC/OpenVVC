@@ -140,6 +140,7 @@ struct MCFunctions{
     MCBiDirWFunc bidir_w[4][8];
 
     MCBiDirWeightedFunc bidir_w2[4][8];
+    MCUniDirFunc bilinear[4];
 };
 
 struct CCLMFunctions
