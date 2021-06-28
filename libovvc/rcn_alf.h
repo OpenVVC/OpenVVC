@@ -31,12 +31,6 @@ struct RCNFunctions;
 #define CCALF_BITS_PER_COEFF_LEVEL                     3
 
 
-typedef struct ALFClassifier
-{
-  uint8_t class_idx;
-  uint8_t transpose_idx;
-}ALFClassifier;
-
 typedef struct Area
 {
   int x,y;
@@ -74,7 +68,8 @@ typedef struct
   int16_t           filter_coeff_dec[NUM_FIXED_FILTER_SETS+ALF_CTB_MAX_NUM_APS][ALF_CTB_MAX_NUM_TRANSPOSE*MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
   int16_t           filter_clip_dec[NUM_FIXED_FILTER_SETS+ALF_CTB_MAX_NUM_APS][ALF_CTB_MAX_NUM_TRANSPOSE*MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
   uint8_t           created;
-  ALFClassifier**   classifier;
+  uint8_t           class_idx[CLASSIFICATION_BLK_SIZE*CLASSIFICATION_BLK_SIZE];
+  uint8_t           transpose_idx[CLASSIFICATION_BLK_SIZE*CLASSIFICATION_BLK_SIZE];
   int16_t           coeff_final[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
   int16_t           clip_final[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
   int16_t           chroma_coeff_final[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF];
