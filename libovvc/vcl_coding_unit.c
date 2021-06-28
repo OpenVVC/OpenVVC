@@ -1484,7 +1484,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                         }
                     }
 
-                    if (bdof_enable && !disable_bdof) {
+                    if (bdof_enable) {
                         if (!dmvr_enable) {
                             rcn_bdof_mcp_l(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
                                            x0 + j * 16, y0 + i * 16, log2_w, log2_h,

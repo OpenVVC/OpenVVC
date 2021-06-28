@@ -492,7 +492,7 @@ derive_ref_buf_c(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
 static void
 padd_dmvr(int16_t *const _ref, int16_t stride, uint8_t pu_w, uint8_t pu_h)
 {
-    int i, j;
+    int i;
 
     int16_t *ref = _ref;
     ref -= QPEL_EXTRA_BEFORE + QPEL_EXTRA_BEFORE * stride;
@@ -1167,9 +1167,6 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                                    ref1_b.y -2 -2 * ref1_b.stride, ref1_b.stride, pu_h + 4,
                                    prec_x1, prec_y1, pu_w + 4);
 
-    int16_t off0 = 0;
-    int16_t off1 = 0;
-
     /* Compute SAD on center part */
     dmvr_sad = rcn_dmvr_sad(ref_dmvr0 + 2 + 2 * dmvr_stride,
                             ref_dmvr1 + 2 + 2 * dmvr_stride,
@@ -1247,7 +1244,6 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     padd_dmvr(ref0_b.y, ref0_b.stride, pu_w, pu_h);
     padd_dmvr(ref1_b.y, ref1_b.stride, pu_w, pu_h);
 
-
     prec_x0 = (mv0->x) & 0xF;
     prec_y0 = (mv0->y) & 0xF;
 
@@ -1268,26 +1264,31 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     ref0_b.y += delta_h2 + (int16_t)ref0_b.stride * delta_v2;
     ref1_b.y += delta_h3 + (int16_t)ref1_b.stride * delta_v3;
 
-    uint8_t disable_bdof = apply_bdof ? min_cost < 2 * (pu_w * pu_h) : 0;
+    uint8_t disable_bdof = apply_bdof ? min_cost < 2 * (pu_w * pu_h) : 1;
+    #if 1
     if (disable_bdof) {
-    mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride,
-                                                pu_h, prec_x0, prec_y0, pu_w);
-    mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride,
-                                                tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
+    #endif
+        mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride,
+                                                    pu_h, prec_x0, prec_y0, pu_w);
+        mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride,
+                                                    tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
+    #if 1
     } else {
         int16_t grad_x0[(16 + 2) * (16 + 2)];
         int16_t grad_y0[(16 + 2) * (16 + 2)];
         int16_t grad_x1[(16 + 2) * (16 + 2)];
         int16_t grad_y1[(16 + 2) * (16 + 2)];
+
         int16_t tmp_buff1[RCN_CTB_SIZE];
 
         int16_t ref_stride = 128;
         int16_t grad_stride = pu_w + 2;
-        mc_l->bidir0[prec_0_mc_type][log2_pu_w](tmp_buff + 128 + 1,
+
+        mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff + 128 + 1,
                                                 ref0_b.y, ref0_b.stride, pu_h,
                                                 prec_x0, prec_y0, pu_w);
 
-        mc_l->bidir0[prec_1_mc_type][log2_pu_w](tmp_buff1 + 128 + 1,
+        mc_l->bidir0[prec_1_mc_type][log2_pu_w - 1](tmp_buff1 + 128 + 1,
                                                 ref1_b.y, ref1_b.stride, pu_h,
                                                 prec_x1, prec_y1, pu_w);
 
@@ -1310,8 +1311,9 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         /* Reference padding overwrite for weights derivation */
         extend_bdof_grad(tmp_buff, ref_stride, pu_w, pu_h);
         extend_bdof_grad(tmp_buff1, ref_stride, pu_w, pu_h);
-        dst.y += x0;
-        dst.y += y0 * RCN_CTB_STRIDE;
+
+        //dst.y += x0;
+        //dst.y += y0 * RCN_CTB_STRIDE;
 
         /* Split into 4x4 subblocks for BDOF computation */
         rcn_bdof(dst.y, dst.stride, tmp_buff + 128 + 1, tmp_buff1 + 128 + 1,
@@ -1325,8 +1327,8 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         }
 
     }
+    #endif
 #endif
-
 
     return disable_bdof;
 }
@@ -1604,8 +1606,6 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
      */
     uint16_t edge_buff0[RCN_CTB_SIZE];
     uint16_t edge_buff1[RCN_CTB_SIZE];
-    int16_t tmp_buff[RCN_CTB_SIZE];
-    int16_t tmp_buff1[RCN_CTB_SIZE];
 
     /*FIXME we suppose here both refs possess the same size*/
 
