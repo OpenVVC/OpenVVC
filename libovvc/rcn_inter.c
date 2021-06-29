@@ -490,6 +490,33 @@ derive_ref_buf_c(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
 }
 
 static void
+padd_dmvr_c(int16_t *const _ref, int16_t stride, uint8_t pu_w, uint8_t pu_h)
+{
+    int i;
+
+    int16_t *ref = _ref;
+    ref -= REF_PADDING_C + REF_PADDING_C * stride;
+
+    for (i = 0; i < pu_h + EPEL_EXTRA; ++i) {
+        ref[-1] = ref[0];
+        ref[-2] = ref[0];
+        ref[pu_w + EPEL_EXTRA    ] = ref[pu_w + EPEL_EXTRA - 1];
+        ref[pu_w + EPEL_EXTRA + 1] = ref[pu_w + EPEL_EXTRA - 1];
+        ref += stride;
+    }
+
+    ref  = _ref;
+    ref -= REF_PADDING_C + REF_PADDING_C * stride + 2;
+    memcpy(ref -     stride, ref, sizeof(*ref) * (pu_w + EPEL_EXTRA + 4));
+    memcpy(ref - 2 * stride, ref, sizeof(*ref) * (pu_w + EPEL_EXTRA + 4));
+
+    ref += stride * (pu_h + EPEL_EXTRA - 1);
+
+    memcpy(ref + 1 * stride, ref, sizeof(*ref) * (pu_w + EPEL_EXTRA + 4));
+    memcpy(ref + 2 * stride, ref, sizeof(*ref) * (pu_w + EPEL_EXTRA + 4));
+}
+
+static void
 padd_dmvr(int16_t *const _ref, int16_t stride, uint8_t pu_w, uint8_t pu_h)
 {
     int i;
@@ -610,6 +637,54 @@ derive_dmvr_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int po
 
     ref_buff.y  = edge_buff + buff_off + 2 * RCN_CTB_STRIDE + 2;
     ref_buff.stride = RCN_CTB_STRIDE;
+    //padd_dmvr(edge_buff + buff_off + 2 * RCN_CTB_STRIDE + 2, ref_buff.stride, pu_w, pu_h);
+
+    return ref_buff;
+}
+
+static struct OVBuffInfo
+derive_dmvr_ref_buf_c(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
+                      uint16_t *edge_buff0, uint16_t *edge_buff1, int pu_w, int pu_h)
+{
+    struct OVBuffInfo ref_buff;
+    uint16_t *const ref_cb  = (uint16_t *) ref_pic->frame->data[1];
+    uint16_t *const ref_cr  = (uint16_t *) ref_pic->frame->data[2];
+
+    const int pic_w = ref_pic->frame->width[1];
+    const int pic_h = ref_pic->frame->height[1];
+
+    int src_stride = ref_pic->frame->linesize[1] >> 1;
+
+    OVMV mv_clipped = clip_mv(pos_x << 1, pos_y << 1, pic_w << 1, pic_h << 1, pu_w << 1, pu_h << 1, mv);
+
+    int ref_pos_x = pos_x + (mv_clipped.x >> 5);
+    int ref_pos_y = pos_y + (mv_clipped.y >> 5);
+
+    const uint16_t *src_cb = &ref_cb[ref_pos_x + ref_pos_y * src_stride];
+    const uint16_t *src_cr = &ref_cr[ref_pos_x + ref_pos_y * src_stride];
+
+    int src_off  = (REF_PADDING_C * src_stride) + (REF_PADDING_C);
+    int buff_off = (REF_PADDING_C * RCN_CTB_STRIDE) + (REF_PADDING_C);
+
+    int cpy_w = pu_w + EPEL_EXTRA;
+    int cpy_h = pu_h + EPEL_EXTRA;
+
+    int start_pos_x = ref_pos_x - REF_PADDING_C;
+    int start_pos_y = ref_pos_y - REF_PADDING_C;
+
+    emulate_block_border(edge_buff0 + 2 * RCN_CTB_STRIDE + 2, (src_cb - src_off),
+                         RCN_CTB_STRIDE, src_stride,
+                         cpy_w, cpy_h, start_pos_x, start_pos_y,
+                         pic_w, pic_h);
+
+    emulate_block_border(edge_buff1 + 2 * RCN_CTB_STRIDE + 2, (src_cr - src_off),
+                         RCN_CTB_STRIDE, src_stride,
+                         cpy_w, cpy_h, start_pos_x, start_pos_y,
+                         pic_w, pic_h);
+
+    ref_buff.cb  = edge_buff0 + buff_off + 2 * RCN_CTB_STRIDE + 2;
+    ref_buff.cr  = edge_buff1 + buff_off + 2 * RCN_CTB_STRIDE + 2;
+    ref_buff.stride_c = RCN_CTB_STRIDE;
     //padd_dmvr(edge_buff + buff_off + 2 * RCN_CTB_STRIDE + 2, ref_buff.stride, pu_w, pu_h);
 
     return ref_buff;
@@ -1320,13 +1395,73 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                  ref_stride, grad_x0, grad_y0, grad_x1, grad_y1,
                  grad_stride, pu_w, pu_h);
 
-        if (ctudec->lmcs_info.lmcs_enabled_flag){
-            rcn_lmcs_reshape_luma_blk_lut(dst.y, RCN_CTB_STRIDE,
-                                          ctudec->lmcs_info.lmcs_lut_fwd_luma,
-                                          pu_w, pu_h);
-        }
-
     }
+
+    if (ctudec->lmcs_info.lmcs_enabled_flag){
+        rcn_lmcs_reshape_luma_blk_lut(dst.y, RCN_CTB_STRIDE,
+                                      ctudec->lmcs_info.lmcs_lut_fwd_luma,
+                                      pu_w, pu_h);
+    }
+
+    dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
+    dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
+
+    struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
+    //uint16_t *edge_buff0_1 = edge_buff0 + 24 * RCN_CTB_STRIDE;
+    //uint16_t *edge_buff1_1 = edge_buff1 + 24 * RCN_CTB_STRIDE;
+    uint16_t edge_buff0_1[RCN_CTB_SIZE];
+    uint16_t edge_buff1_1[RCN_CTB_SIZE];
+
+
+
+    struct OVBuffInfo ref0_c = derive_dmvr_ref_buf_c(ref0, tmp0,
+                                                     pos_x >> 1, pos_y >> 1,
+                                                     edge_buff0, edge_buff0_1,
+                                                     pu_w >> 1, pu_h >> 1);
+
+    struct OVBuffInfo ref1_c = derive_dmvr_ref_buf_c(ref1, tmp1,
+                                                     pos_x >> 1, pos_y >> 1,
+                                                     edge_buff1, edge_buff1_1,
+                                                     pu_w >> 1, pu_h >> 1);
+
+    padd_dmvr_c(ref0_c.cb, ref0_c.stride_c, pu_w >> 1, pu_h >> 1);
+    padd_dmvr_c(ref0_c.cr, ref0_c.stride_c, pu_w >> 1, pu_h >> 1);
+
+    padd_dmvr_c(ref1_c.cb, ref1_c.stride_c, pu_w >> 1, pu_h >> 1);
+    padd_dmvr_c(ref1_c.cr, ref1_c.stride_c, pu_w >> 1, pu_h >> 1);
+
+    prec_x0 = (mv0->x) & 0x1F;
+    prec_y0 = (mv0->y) & 0x1F;
+
+    prec_x1 = (mv1->x) & 0x1F;
+    prec_y1 = (mv1->y) & 0x1F;
+
+    prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
+    prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
+
+    int16_t* ref_data0 = tmp_buff;
+    int16_t* ref_data1 = tmp_buff + MAX_PB_SIZE / 2;
+
+    delta_h2 = (mv0->x >> 5) - (tmp0.x >> 5);
+    delta_v2 = (mv0->y >> 5) - (tmp0.y >> 5);
+
+    delta_h3 = (mv1->x >> 5) - (tmp1.x >> 5);
+    delta_v3 = (mv1->y >> 5) - (tmp1.y >> 5);
+
+    ref0_c.cb += (delta_h2) + ((int16_t)ref0_c.stride_c * (delta_v2));
+    ref1_c.cb += (delta_h3) + ((int16_t)ref1_c.stride_c * (delta_v3));
+
+    ref0_c.cr += (delta_h2) + ((int16_t)ref0_c.stride_c * (delta_v2));
+    ref1_c.cr += (delta_h3) + ((int16_t)ref1_c.stride_c * (delta_v3));
+
+    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 2](ref_data0, ref0_c.cb, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
+    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 2](ref_data1, ref0_c.cr, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
+
+    mc_c->bidir1[prec_1_mc_type][log2_pu_w - 2](dst.cb, RCN_CTB_STRIDE, ref1_c.cb, ref1_c.stride_c, ref_data0, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
+    mc_c->bidir1[prec_1_mc_type][log2_pu_w - 2](dst.cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride_c, ref_data1, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
+
+
+
     #endif
 #endif
 
