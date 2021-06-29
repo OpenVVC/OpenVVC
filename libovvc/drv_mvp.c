@@ -19,6 +19,7 @@
 #define MV_CMP(mv0,mv1) ((mv0.x == mv1.x) && (mv0.y == mv1.y))
 
 #define PB_POS_IN_BUF(x,y) (35 + (x) + ((y) * 34))
+#define TMVP_POS_IN_BUF(x,y) (35 + (x) + ((y) * 34))
 
 #define MV_MANTISSA_BITCOUNT 6
 #define MV_MANTISSA_UPPER_LIMIT ((1 << (MV_MANTISSA_BITCOUNT - 1)) - 1)
@@ -534,7 +535,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
         if ((!col_ref_l0 && !tmvp->ldc) || (tmvp->ldc && mv_ctx == &inter_ctx->mv_ctx0)) {
             if (cand_c0) {
                 /* Candidate 0 in collocated picture 0 */
-                int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+                int pos_in_buff = TMVP_POS_IN_BUF(c0_x, c0_y);
                 OVMV c0 = tmvp->mvs0[pos_in_buff];
                 int16_t col_ref_idx = c0.ref_idx;
                 int16_t scale0 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_0[col_ref_idx]);
@@ -547,7 +548,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 cand[nb_cand++] = c0;
             } else if (cand_c01) {
                 /* Candidate 0 in collocated picture 1 */
-                int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+                int pos_in_buff = TMVP_POS_IN_BUF(c0_x, c0_y);
                 OVMV c0 = tmvp->mvs1[pos_in_buff];
                 int16_t col_ref_idx = c0.ref_idx;
                 int16_t scale1 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_1[col_ref_idx]);
@@ -559,7 +560,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 cand[nb_cand++] = c0;
             } else if (cand_c1) {
                 /* Candidate 1 in collocated picture 0 */
-                int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+                int pos_in_buff = TMVP_POS_IN_BUF(c1_x, c1_y);
                 OVMV c1 = tmvp->mvs0[pos_in_buff];
                 int16_t col_ref_idx = c1.ref_idx;
                 int16_t scale0 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_0[col_ref_idx]);
@@ -571,7 +572,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 cand[nb_cand++] = c1;
             } else if (cand_c11) {
                 /* Candidate 1 in collocated picture 1 */
-                int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+                int pos_in_buff = TMVP_POS_IN_BUF(c1_x, c1_y);
                 OVMV c1 = tmvp->mvs1[pos_in_buff];
                 int16_t col_ref_idx = c1.ref_idx;
                 int16_t scale1 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_1[col_ref_idx]);
@@ -585,7 +586,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
         } else {
             if (cand_c01) {
                 /* Candidate 0 in collocated picture 1 */
-                int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+                int pos_in_buff = TMVP_POS_IN_BUF(c0_x, c0_y);
                 OVMV c0 = tmvp->mvs1[pos_in_buff];
                 int16_t col_ref_idx = c0.ref_idx;
                 int16_t scale1 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_1[col_ref_idx]);
@@ -597,7 +598,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 cand[nb_cand++] = c0;
             } else if (cand_c0) {
                 /* Candidate 0 in collocated picture 0 */
-                int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+                int pos_in_buff = TMVP_POS_IN_BUF(c0_x, c0_y);
                 OVMV c0 = tmvp->mvs0[pos_in_buff];
                 int16_t col_ref_idx = c0.ref_idx;
                 int16_t scale0 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_0[col_ref_idx]);
@@ -609,7 +610,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 cand[nb_cand++] = c0;
             } else if (cand_c11) {
                 /* Candidate 1 in collocated picture 1 */
-                int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+                int pos_in_buff = TMVP_POS_IN_BUF(c1_x, c1_y);
                 OVMV c1 = tmvp->mvs1[pos_in_buff];
                 int16_t col_ref_idx = c1.ref_idx;
                 int16_t scale1 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_1[col_ref_idx]);
@@ -621,7 +622,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 cand[nb_cand++] = c1;
             } else if (cand_c1) {
                 /* Candidate 1 in collocated picture 0 */
-                int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+                int pos_in_buff = TMVP_POS_IN_BUF(c1_x, c1_y);
                 OVMV c1 = tmvp->mvs0[pos_in_buff];
                 int16_t col_ref_idx = c1.ref_idx;
                 int16_t scale0 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_0[col_ref_idx]);
@@ -772,7 +773,7 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
 
         if (cand_c0) {
             /* Candidate 0 in collocated picture 0 */
-            int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+            int pos_in_buff = TMVP_POS_IN_BUF(c0_x, c0_y);
             OVMV c0 = tmvp->mvs0[pos_in_buff];
             c0.x = tmvp_round_mv(c0.x);
             c0.y = tmvp_round_mv(c0.y);
@@ -782,7 +783,7 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
             cand[nb_cand++] = c0;
         } else if (cand_c01) {
             /* Candidate 0 in collocated picture 1 */
-            int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+            int pos_in_buff = TMVP_POS_IN_BUF(c0_x, c0_y);
             OVMV c0 = tmvp->mvs1[pos_in_buff];
             c0.x = tmvp_round_mv(c0.x);
             c0.y = tmvp_round_mv(c0.y);
@@ -792,7 +793,7 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
             cand[nb_cand++] = c0;
         } else if (cand_c1) {
             /* Candidate 1 in collocated picture 0 */
-            int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+            int pos_in_buff = TMVP_POS_IN_BUF(c1_x, c1_y);
             OVMV c1 = tmvp->mvs0[pos_in_buff];
             c1.x = tmvp_round_mv(c1.x);
             c1.y = tmvp_round_mv(c1.y);
@@ -802,7 +803,7 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
             cand[nb_cand++] = c1;
         } else if (cand_c11) {
             /* Candidate 1 in collocated picture 1 */
-            int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+            int pos_in_buff = TMVP_POS_IN_BUF(c1_x, c1_y);
             OVMV c1 = tmvp->mvs1[pos_in_buff];
             c1.x = tmvp_round_mv(c1.x);
             c1.y = tmvp_round_mv(c1.y);
@@ -963,7 +964,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
         cand_c11 = !!(c1_col1 & TMVP_POS_MASK(c1_y));
 
         if (cand_c0) {
-            int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+            int pos_in_buff = TMVP_POS_IN_BUF(c0_x, c0_y);
             int scale = tmvp->scale00;
             OVMV c0 = tmvp->mvs0[pos_in_buff];
             c0.x = tmvp_round_mv(c0.x);
@@ -974,7 +975,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
                 return c0;
 
         } else if (cand_c01) {
-            int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+            int pos_in_buff = TMVP_POS_IN_BUF(c0_x, c0_y);
             int scale = tmvp->scale01;
             OVMV c0 = tmvp->mvs1[pos_in_buff];
             c0.x = tmvp_round_mv(c0.x);
@@ -984,7 +985,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
             if (nb_cand++ == merge_idx)
                 return c0;
         } else if (cand_c1) {
-            int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+            int pos_in_buff = TMVP_POS_IN_BUF(c1_x, c1_y);
             int scale = tmvp->scale00;
             OVMV c1 = tmvp->mvs0[pos_in_buff];
             c1.x = tmvp_round_mv(c1.x);
@@ -994,7 +995,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
             if (nb_cand++ == merge_idx)
                 return c1;
         } else if (cand_c11) {
-            int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+            int pos_in_buff = TMVP_POS_IN_BUF(c1_x, c1_y);
             int scale = tmvp->scale01;
             OVMV c1 = tmvp->mvs1[pos_in_buff];
             c1.x = tmvp_round_mv(c1.x);
@@ -1203,7 +1204,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         if ((!tmvp->col_ref_l0)/* && !tmvp->ldc) || tmvp->ldc*/) {
 
             if (cand_c0 | cand_c01) {
-                int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+                int pos_in_buff = TMVP_POS_IN_BUF(c0_x, c0_y);
                 cand[nb_cand].inter_dir = 3;
                 if (cand_c0) {
                     OVMV c0  = tmvp->mvs0[pos_in_buff];
@@ -1251,7 +1252,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                         return cand[merge_idx];
                 }
             } else if (cand_c1 | cand_c11) {
-                int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+                int pos_in_buff = TMVP_POS_IN_BUF(c1_x, c1_y);
                 cand[nb_cand].inter_dir = 3;
                 if (cand_c1) {
                     OVMV c1  = tmvp->mvs0[pos_in_buff];
@@ -1301,7 +1302,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
             }
         } else {
             if (cand_c0 | cand_c01) {
-                int pos_in_buff = PB_POS_IN_BUF(c0_x, c0_y);
+                int pos_in_buff = TMVP_POS_IN_BUF(c0_x, c0_y);
                 cand[nb_cand].inter_dir = 3;
                 if (cand_c01) {
                     OVMV c0  = tmvp->mvs1[pos_in_buff];
@@ -1350,7 +1351,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                         return cand[merge_idx];
                 }
             } else if (cand_c1 | cand_c11) {
-                int pos_in_buff = PB_POS_IN_BUF(c1_x, c1_y);
+                int pos_in_buff = TMVP_POS_IN_BUF(c1_x, c1_y);
                 cand[nb_cand].inter_dir = 3;
                 if (cand_c11) {
                     OVMV c1  = tmvp->mvs1[pos_in_buff];

@@ -27,6 +27,7 @@
 #define OFFSET_BUFF(x,y) (35 + x + (y) * 34)
 
 #define PB_POS_IN_BUF(x,y) (35 + (x) + ((y) * 34))
+#define TMVP_POS_IN_BUF(x,y) (35 + (x) + ((y) * 34))
 
 #define MAX_NB_AMVP_CAND 2
 
@@ -492,7 +493,7 @@ tmvp_from_l0(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
     int16_t scale;
 
     if (cand_c0 | cand_c01) {
-        int16_t c0_pos = PB_POS_IN_BUF(pos.c0_x, pos.c0_y);
+        int16_t c0_pos = TMVP_POS_IN_BUF(pos.c0_x, pos.c0_y);
 
         const OVMV *mvs    = cand_c0 ? tmvp->mvs0
                                      : tmvp->mvs1;
@@ -506,7 +507,7 @@ tmvp_from_l0(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
         goto found;
 
     } else if (cand_c1 | cand_c11) {
-        int16_t c1_pos = PB_POS_IN_BUF(pos.c1_x, pos.c1_y);
+        int16_t c1_pos = TMVP_POS_IN_BUF(pos.c1_x, pos.c1_y);
 
         const OVMV *mvs    = cand_c1 ? tmvp->mvs0
                                      : tmvp->mvs1;
@@ -554,7 +555,7 @@ tmvp_from_l1(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
     int16_t scale;
 
     if (cand_c0 | cand_c01) {
-        int16_t c0_pos = PB_POS_IN_BUF(pos.c0_x, pos.c0_y);
+        int16_t c0_pos = TMVP_POS_IN_BUF(pos.c0_x, pos.c0_y);
 
         const OVMV *mvs    = cand_c01 ? tmvp->mvs1
                                       : tmvp->mvs0;
@@ -568,7 +569,7 @@ tmvp_from_l1(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
         goto found;
 
     } else if (cand_c1 | cand_c11) {
-        int16_t c1_pos = PB_POS_IN_BUF(pos.c1_x, pos.c1_y);
+        int16_t c1_pos = TMVP_POS_IN_BUF(pos.c1_x, pos.c1_y);
 
         const OVMV *mvs    = cand_c11 ? tmvp->mvs1
                                       : tmvp->mvs0;
@@ -615,7 +616,7 @@ merge_tmvp_from_ldc(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
     int16_t scale;
 
     if (cand_c0 | cand_c01) {
-        int16_t c0_pos = PB_POS_IN_BUF(pos.c0_x, pos.c0_y);
+        int16_t c0_pos = TMVP_POS_IN_BUF(pos.c0_x, pos.c0_y);
         uint8_t dir = 0;
 
         if (cand_c0 && cand_c01 && !tmvp->col_ref_l0) {
@@ -753,7 +754,7 @@ merge_tmvp_from_l0(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
     int16_t scale;
 
     if (cand_c0 | cand_c01) {
-        int16_t c0_pos = PB_POS_IN_BUF(pos.c0_x, pos.c0_y);
+        int16_t c0_pos = TMVP_POS_IN_BUF(pos.c0_x, pos.c0_y);
         uint8_t dir = 0;
 
         if (cand_c0) {
@@ -838,7 +839,7 @@ merge_tmvp_from_l1(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
     int16_t scale;
 
     if (cand_c0 | cand_c01) {
-        int16_t c0_pos = PB_POS_IN_BUF(pos.c0_x, pos.c0_y);
+        int16_t c0_pos = TMVP_POS_IN_BUF(pos.c0_x, pos.c0_y);
         uint8_t dir = 0;
 
         if (cand_c01) {
@@ -1502,7 +1503,7 @@ sbtmvp_from_ldc(const struct VVCTMVP *const tmvp, struct OVPos pos,
     int16_t scale;
 
     if (cand_c0 | cand_c01) {
-        int16_t c0_pos = PB_POS_IN_BUF((pos.x >> 2), (pos.y >> 2));
+        int16_t c0_pos = TMVP_POS_IN_BUF((pos.x >> 2), (pos.y >> 2));
         uint8_t dir = 0;
 
         if (cand_c0 && cand_c01 && !tmvp->col_ref_l0) {
@@ -1652,7 +1653,7 @@ sbtmvp_from_same_rpl(const struct VVCTMVP *const tmvp, struct OVPos pos,
     }
 
     if (avail) {
-        int16_t c0_pos = PB_POS_IN_BUF((pos.x >> 2), (pos.y >> 2));
+        int16_t c0_pos = TMVP_POS_IN_BUF((pos.x >> 2), (pos.y >> 2));
 
         mv       = mvs[c0_pos];
         dist_col = dist_cols[mv.ref_idx];
