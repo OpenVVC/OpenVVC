@@ -422,8 +422,8 @@ struct InterDRVCtx
         uint64_t dir_map_v0[34];
         uint64_t dir_map_v1[34];
 
-        OVMV mvs0[34*34];
-        OVMV mvs1[34*34];
+        OVMV mvs0[16*17];
+        OVMV mvs1[16*17];
 
         uint8_t ctu_w;
         uint8_t ctu_h;
