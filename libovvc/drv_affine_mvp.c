@@ -359,17 +359,20 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
     if (plane0 && plane0->dirs) {
         uint64_t *src_dirs = plane0->dirs + ctb_addr_rs * nb_pb_ctb_w;
 
-        OVMV *src_mv = plane0->mvs + ctb_x * nb_pb_ctb_w + (ctb_y * nb_pb_ctb_w *nb_pb_ctb_w) * nb_ctb_w;
+        int32_t nb_tmvp_unit = nb_pb_ctb_w >> 1;
+        int32_t pln_stride = nb_tmvp_unit * nb_ctb_w;
+        int32_t ctb_offset = ctb_x * nb_tmvp_unit + (ctb_y * nb_tmvp_unit * pln_stride);
+        OVMV *src_mv = plane0->mvs + ctb_offset;
         OVMV *mvs = tmvp_ctx->mvs0;
         int i, j;
 
         memcpy(&tmvp_ctx->dir_map_v0[1], src_dirs, sizeof(uint64_t) * (nb_pb_ctb_w + !is_border_pic));
         for (i = 0; i < nb_pb_ctb_w; i += 2) {
             for (j = 0; j < nb_pb_ctb_w + !is_border_pic; j += 2) {
-                mvs[j >> 1] = src_mv[j];
+                mvs[j >> 1] = src_mv[j >> 1];
             }
             mvs += TMVP_BUFF_STRIDE;
-            src_mv += nb_pb_ctb_w * nb_ctb_w;
+            src_mv += pln_stride;
         }
     }
 
@@ -378,16 +381,19 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
         uint64_t *src_dirs = plane1->dirs + ctb_addr_rs * nb_pb_ctb_w;
         int i, j;
 
-        OVMV *src_mv = plane1->mvs + ctb_x * nb_pb_ctb_w + (ctb_y * nb_pb_ctb_w *nb_pb_ctb_w) * nb_ctb_w;
+        int32_t nb_tmvp_unit = nb_pb_ctb_w >> 1;
+        int32_t pln_stride = nb_tmvp_unit * nb_ctb_w;
+        int32_t ctb_offset = ctb_x * nb_tmvp_unit + (ctb_y * nb_tmvp_unit * pln_stride);
+        OVMV *src_mv = plane1->mvs + ctb_offset;
 
         /*FIXME memory could be spared with smaller map size when possible */
         memcpy(&tmvp_ctx->dir_map_v1[1], src_dirs, sizeof(uint64_t) * (nb_pb_ctb_w + !is_border_pic));
         for (i = 0; i < nb_pb_ctb_w; i += 2) {
             for (j = 0; j < nb_pb_ctb_w + !is_border_pic; j += 2) {
-                mvs[j >> 1] = src_mv[j];
+                mvs[j >> 1] = src_mv[j >> 1];
             }
             mvs += TMVP_BUFF_STRIDE;
-            src_mv += nb_pb_ctb_w * nb_ctb_w;
+            src_mv += pln_stride;
         }
     }
 
