@@ -27,7 +27,7 @@
 #define OFFSET_BUFF(x,y) (35 + x + (y) * 34)
 
 #define PB_POS_IN_BUF(x,y) (35 + (x) + ((y) * 34))
-#define TMVP_POS_IN_BUF(x,y) (35 + (x) + ((y) * 34))
+#define TMVP_POS_IN_BUF(x,y) ((x) + ((y) * 34))
 
 #define MAX_NB_AMVP_CAND 2
 
@@ -365,7 +365,7 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
         memcpy(&tmvp_ctx->dir_map_v0[1], src_dirs, sizeof(uint64_t) * (nb_pb_ctb_w + !is_border_pic));
         for (i = 0; i < nb_pb_ctb_w; i += 2) {
             for (j = 0; j < nb_pb_ctb_w + !is_border_pic; j += 2) {
-                mvs[35 + 34 * i + j] = src_mv[j];
+                mvs[34 * i + j] = src_mv[j];
             }
             src_mv += nb_pb_ctb_w * nb_ctb_w;
         }
@@ -382,7 +382,7 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
         memcpy(&tmvp_ctx->dir_map_v1[1], src_dirs, sizeof(uint64_t) * (nb_pb_ctb_w + !is_border_pic));
         for (i = 0; i < nb_pb_ctb_w; i += 2) {
             for (j = 0; j < nb_pb_ctb_w + !is_border_pic; j += 2) {
-                mvs[35 + 34 * i + j] = src_mv[j];
+                mvs[34 * i + j] = src_mv[j];
             }
             src_mv += nb_pb_ctb_w * nb_ctb_w;
         }
