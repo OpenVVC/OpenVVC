@@ -326,33 +326,35 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
         memset(tmvp_ctx->dir_map_v1, 0, sizeof(uint64_t) * 34);
     }
 
-    if (plane0)
-    if (plane0->dirs) {
+    if (plane0 && plane0->dirs) {
         uint64_t *src_dirs = plane0->dirs + ctb_addr_rs * nb_pb_ctb_w;
 
         OVMV *src_mv = plane0->mvs + ctb_x * nb_pb_ctb_w + (ctb_y * nb_pb_ctb_w *nb_pb_ctb_w) * nb_ctb_w;
         OVMV *mvs = tmvp_ctx->mvs0;
-        int i;
+        int i, j;
 
         memcpy(&tmvp_ctx->dir_map_v0[1], src_dirs, sizeof(uint64_t) * (nb_pb_ctb_w + !is_border_pic));
-        for (i = 0; i < nb_pb_ctb_w; ++i) {
-            memcpy(&mvs[1 + 34 * (i + 1)], src_mv, sizeof(*src_mv) * (nb_pb_ctb_w + !is_border_pic));
+        for (i = 0; i < nb_pb_ctb_w; i += 2) {
+            for (j = 0; j < nb_pb_ctb_w + !is_border_pic; j += 2) {
+                mvs[35 + 34 * i + j] = src_mv[j];
+            }
             src_mv += nb_pb_ctb_w * nb_ctb_w;
         }
     }
 
-    if (plane1)
-    if (plane1->dirs) {
+    if (plane1 && plane1->dirs) {
         OVMV *mvs = tmvp_ctx->mvs1;
         uint64_t *src_dirs = plane1->dirs + ctb_addr_rs * nb_pb_ctb_w;
-        int i;
+        int i, j;
 
         OVMV *src_mv = plane1->mvs + ctb_x * nb_pb_ctb_w + (ctb_y * nb_pb_ctb_w *nb_pb_ctb_w) * nb_ctb_w;
 
         /*FIXME memory could be spared with smaller map size when possible */
         memcpy(&tmvp_ctx->dir_map_v1[1], src_dirs, sizeof(uint64_t) * (nb_pb_ctb_w + !is_border_pic));
-        for (i = 0; i < nb_pb_ctb_w; ++i) {
-            memcpy(&mvs[1 + 34 * (i + 1)], src_mv, sizeof(*src_mv) * (nb_pb_ctb_w + !is_border_pic));
+        for (i = 0; i < nb_pb_ctb_w; i += 2) {
+            for (j = 0; j < nb_pb_ctb_w + !is_border_pic; j += 2) {
+                mvs[35 + 34 * i + j] = src_mv[j];
+            }
             src_mv += nb_pb_ctb_w * nb_ctb_w;
         }
     }
