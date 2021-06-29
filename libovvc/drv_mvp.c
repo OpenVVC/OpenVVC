@@ -340,9 +340,7 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
 
         memcpy(&tmvp_ctx->dir_map_v0[1], src_dirs, sizeof(uint64_t) * (nb_pb_ctb_w + !is_border_pic));
         for (i = 0; i < nb_pb_ctb_w; i += 2) {
-            for (j = 0; j < nb_pb_ctb_w + !is_border_pic; j += 2) {
-                mvs[j >> 1] = src_mv[j >> 1];
-            }
+            memcpy(mvs, src_mv, sizeof(*mvs) * (nb_tmvp_unit + !is_border_pic));
             mvs += TMVP_BUFF_STRIDE;
             src_mv += pln_stride;
         }
@@ -351,19 +349,17 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
     if (plane1 && plane1->dirs) {
         OVMV *mvs = tmvp_ctx->mvs1;
         uint64_t *src_dirs = plane1->dirs + ctb_addr_rs * nb_pb_ctb_w;
-        int i, j;
         int32_t nb_tmvp_unit = nb_pb_ctb_w >> 1;
         int32_t pln_stride = (nb_pb_ctb_w >> 1) * nb_ctb_w;
         int32_t ctb_offset = ctb_x * nb_tmvp_unit + (ctb_y * nb_tmvp_unit * pln_stride);
+        int i, j;
 
         OVMV *src_mv = plane1->mvs + ctb_offset;
 
         /*FIXME memory could be spared with smaller map size when possible */
         memcpy(&tmvp_ctx->dir_map_v1[1], src_dirs, sizeof(uint64_t) * (nb_pb_ctb_w + !is_border_pic));
         for (i = 0; i < nb_pb_ctb_w; i += 2) {
-            for (j = 0; j < nb_pb_ctb_w + !is_border_pic; j += 2) {
-                mvs[j >> 1] = src_mv[j >> 1];
-            }
+            memcpy(mvs, src_mv, sizeof(*mvs) * (nb_tmvp_unit + !is_border_pic));
             mvs += TMVP_BUFF_STRIDE;
             src_mv += pln_stride;
         }
