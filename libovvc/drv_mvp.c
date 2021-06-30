@@ -1918,36 +1918,34 @@ drv_mmvd_merge_mvp(struct InterDRVCtx *const inter_ctx,
                                     nb_pb_w, nb_pb_h, f_base_idx,
                                     max_nb_merge_cand, 0);
 
-    const int ref_mvd_cands[8] = { 1 << 2 , 2 << 2 , 4 << 2 , 8 << 2 , 16 << 2 , 32 << 2,  64 << 2 , 128 << 2 };
+    static const uint8_t ref_mvd_cands[8] = { 1, 2, 4, 8, 16, 32, 64, 128};
     int f_pos_group, f_pos_step, idx, f_pos;
 
-    idx = merge_idx;
-    f_pos_group = idx / (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
-    idx = idx - f_pos_group * (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
-    idx = idx - f_base_idx * (MMVD_MAX_REFINE_NUM);
-    f_pos_step = idx / 4;
-    f_pos = idx - f_pos_step * (4);
-    int offset = ref_mvd_cands[f_pos_step];
+    f_pos_group = merge_idx / (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
+    idx  = merge_idx - f_pos_group * (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
+    idx -= f_base_idx * (MMVD_MAX_REFINE_NUM);
+    f_pos_step = idx >> 2;
+    f_pos = idx - (f_pos_step << 2);
+    int offset = (int32_t)ref_mvd_cands[f_pos_step] << 2;
 
     OVMV mvd;
-    if (mv0.ref_idx >= 0){
-        if (f_pos == 0){
+
+    if (mv0.ref_idx >= 0) {
+        if (f_pos == 0) {
             mvd.x = offset;
             mvd.y = 0;
-        }
-        else if (f_pos == 1){
+        } else if (f_pos == 1) {
             mvd.x = -offset;
             mvd.y = 0;
-        }
-        else if (f_pos == 2){
+        } else if (f_pos == 2) {
             mvd.x = 0;
             mvd.y = offset;
-        }
-        else{
+        } else {
             mvd.x = 0;
             mvd.y = -offset;
         }
     }
+
     mv0.x += mvd.x;
     mv0.y += mvd.y;
 
