@@ -1499,6 +1499,44 @@ fill_mvp_map(struct OVMVCtx *const mv_ctx, OVMV mv,
     }
 }
 
+static void
+fill_tmvp_map(struct OVMV *const tmvp_mv, OVMV mv,
+              int pb_x, int pb_y, int nb_pb_w, int nb_pb_h)
+{
+    /* Align MVs on 8x8 grid */
+    int odd_x = pb_x & 0x1;
+    int odd_y = pb_y & 0x1;
+    int i, j;
+
+    #if 0
+    OVMV *dst_mv = tmvp_mv + (pb_x + 1 >> 1) + (pb_y + 1 >> 1) * 16;
+    //dst_mv += 16 * odd_y + odd_x;
+
+    for (j = 0; j < (nb_pb_h + 1 >> 1) - odd_y; ++j) {
+        for (i = 0; i < (nb_pb_w + 1 >> 1) - odd_x; ++i) {
+            dst_mv[i] = mv;
+        }
+        dst_mv += 16;
+    }
+    #else
+    int x0 = pb_x << 2;
+    int y0 = pb_y << 2;
+    int pb_w = nb_pb_w << 2;
+    int pb_h = nb_pb_h << 2;
+
+    OVMV *dst_mv = tmvp_mv;;
+    //dst_mv += 16 * odd_y + odd_x;
+
+    for (j = 0; j < pb_h; j += 4) {
+        for (i = 0; i < pb_w; i += 4) {
+            if (!((x0 + i) & 0x7) && !((y0 + j) & 0x7))
+                dst_mv[((x0 + i) >> 3) + ((y0 + j) >> 3) * 16] = mv;
+        }
+        //dst_mv += 16;
+    }
+    #endif
+}
+
 /* FIXME DBF MV related */
 
 #define LF_MV_THRESHOLD 8
@@ -1598,6 +1636,10 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
+        /*FIXME test_tmvp */
+        fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+        fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
         fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1610,6 +1652,8 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
+        fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
         fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_dbf_mv_map_b(dbf_info, mv_ctx1, mv_ctx0, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1617,6 +1661,9 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+        fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
         fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_dbf_mv_map_b(dbf_info, mv_ctx0, mv_ctx1, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1642,6 +1689,10 @@ update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     if (inter_dir == 3) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+        fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+        fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
         fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1653,6 +1704,9 @@ update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     } else if (inter_dir & 0x2) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+        fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
         fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_dbf_mv_map_b(dbf_info, mv_ctx1, mv_ctx0, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1660,6 +1714,9 @@ update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+        fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
         fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_dbf_mv_map_b(dbf_info, mv_ctx0, mv_ctx1, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1680,6 +1737,8 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
+        fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, mv, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
         fill_mvp_map(mv_ctx1, mv, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_dbf_mv_map_b(dbf_info, mv_ctx1, mv_ctx0, mv, pb_x, pb_y, nb_pb_w, nb_pb_h);
@@ -1687,6 +1746,8 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+        fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, mv, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_mvp_map(mv_ctx0, mv, pb_x, pb_y, nb_pb_w, nb_pb_h);
 

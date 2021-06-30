@@ -165,22 +165,30 @@ tmvp_store_mv(OVCTUDec *ctudec)
         int32_t ctb_offset = ctb_x * nb_tmvp_unit + (ctb_y * nb_tmvp_unit * pln_stride);
         OVMV *dst_mv = plane0->mvs + ctb_offset;
         struct OVMVCtx *mv_ctx = &inter_ctx->mv_ctx0;
-        const OVMV *src = mv_ctx->mvs + 35;
+        const OVMV *src2 = mv_ctx->mvs + 35;
+        const OVMV *src = inter_ctx->tmvp_mv[0].mvs;
         int i, j;
 
         memcpy(dst_dirs, &mv_ctx->map.vfield[1], sizeof(uint64_t) * nb_pb_ctb_w);
         for (i = 0; i < nb_pb_ctb_w; i += 2) {
             for (j = 0; j < nb_pb_ctb_w; j += 2) {
-                dst_mv[j >> 1] = src[j];
+                dst_mv[j >> 1] = src[j >> 1];
+                if (src2[j].x != src[j >> 1].x || src2[j].y != src[j >> 1].y){
+                    //printf ("error\n");
+                    int var = 1;
+                }
             }
-            src += 34 << 1;
+            src2 += 34 * 2;
+            src += 16;
             dst_mv += pln_stride;
         }
     }
 
     if (plane1->dirs) {
         struct OVMVCtx *mv_ctx = &inter_ctx->mv_ctx1;
-        const OVMV *src = mv_ctx->mvs + 35;
+        //const OVMV *src = mv_ctx->mvs + 35;
+        const OVMV *src2 = mv_ctx->mvs + 35;
+        const OVMV *src = inter_ctx->tmvp_mv[1].mvs;
         uint64_t *dst_dirs = plane1->dirs + ctb_addr_rs * nb_pb_ctb_w;
         int i, j;
         int32_t nb_tmvp_unit = nb_pb_ctb_w >> 1;
@@ -192,9 +200,10 @@ tmvp_store_mv(OVCTUDec *ctudec)
         memcpy(dst_dirs, &mv_ctx->map.vfield[1], sizeof(uint64_t) * nb_pb_ctb_w);
         for (i = 0; i < nb_pb_ctb_w; i += 2) {
             for (j = 0; j < nb_pb_ctb_w; j += 2) {
-                dst_mv[j >> 1] = src[j];
+                dst_mv[j >> 1] = src[j >> 1];
             }
-            src += 34 << 1;
+            src2 += 34 * 2;
+            src += 16;
             dst_mv += pln_stride;
         }
     }

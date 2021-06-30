@@ -1457,6 +1457,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                     inter_ctx->dmvr_idx0 = -1;
                     inter_ctx->dmvr_idx1 = -1;
                     if (dmvr_enable) {
+                        OVMV *tmvp_mv0 = inter_ctx->tmvp_mv[0].mvs;
+                        OVMV *tmvp_mv1 = inter_ctx->tmvp_mv[1].mvs;
                         disable_bdof = rcn_dmvr_mv_refine(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
                                                           x0 + j * 16, y0 + i * 16,
                                                           log2_w, log2_h,
@@ -1465,21 +1467,21 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
                         /* FIXME temporary hack to override MVs on 8x8 grid for TMVP */
                         /* FIXME find an alternative in case x0 % 8  is != 0 */
-                        inter_ctx->mv_ctx0.mvs[35 + ((x0 + j * 16) >> 2) + ((y0 + i * 16) >> 2) * 34] = mv0;
-                        inter_ctx->mv_ctx1.mvs[35 + ((x0 + j * 16) >> 2) + ((y0 + i * 16) >> 2) * 34] = mv1;
+                        tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16] = mv0;
+                        tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16] = mv1;
 
                         if (log2_w > 3) {
-                            inter_ctx->mv_ctx0.mvs[35 + ((x0 + j * 16) >> 2) + ((y0 + i * 16) >> 2) * 34 + 2] = mv0;
-                            inter_ctx->mv_ctx1.mvs[35 + ((x0 + j * 16) >> 2) + ((y0 + i * 16) >> 2) * 34 + 2] = mv1;
+                            tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 1] = mv0;
+                            tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 1] = mv1;
                         }
 
                         if (log2_h > 3) {
-                            inter_ctx->mv_ctx0.mvs[35 + ((x0 + j * 16) >> 2) + ((y0 + i * 16) >> 2) * 34 + 34 * 2] = mv0;
-                            inter_ctx->mv_ctx1.mvs[35 + ((x0 + j * 16) >> 2) + ((y0 + i * 16) >> 2) * 34 + 34 * 2] = mv1;
+                            tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16] = mv0;
+                            tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16] = mv1;
 
                             if (log2_w > 3) {
-                                inter_ctx->mv_ctx0.mvs[35 + ((x0 + j * 16) >> 2) + ((y0 + i * 16) >> 2) * 34 + 34 * 2 + 2] = mv0;
-                                inter_ctx->mv_ctx1.mvs[35 + ((x0 + j * 16) >> 2) + ((y0 + i * 16) >> 2) * 34 + 34 * 2 + 2] = mv1;
+                                tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16+ 1] = mv0;
+                                tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16+ 1] = mv1;
                             }
                         }
                     }

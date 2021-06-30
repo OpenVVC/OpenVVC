@@ -1776,6 +1776,8 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
 
     OVMV *mv_buff0 = &inter_ctx->mv_ctx0.mvs[35 + (x0 >> 2) + (y0 >> 2) * 34];
     OVMV *mv_buff1 = &inter_ctx->mv_ctx1.mvs[35 + (x0 >> 2) + (y0 >> 2) * 34];
+    OVMV *tmvp_mv0 = &inter_ctx->tmvp_mv[0].mvs[(x0 + 7 >> 3) + ((y0 + 7 >> 3) << 4)];
+    OVMV *tmvp_mv1 = &inter_ctx->tmvp_mv[1].mvs[(x0 + 7 >> 3) + ((y0 + 7 >> 3) << 4)];
 
     /* FIXME check start_x , start_y */
     int start_x = x0 + (sb_w >> 1) + mv_offset.x;
@@ -1836,6 +1838,7 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
                                             x_pb + 2 * j, y_pb + 2 * i,
                                             2, 2);
                 mv0.ref_idx = 0;
+                tmvp_mv0[j] = mv0;
 
                 mv_buff0[j * 2]     = mv0;
                 mv_buff0[j * 2 + 1] = mv0;
@@ -1848,6 +1851,8 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
                                             x_pb + 2 * j, y_pb + 2 * i,
                                             2, 2);
                 mv1.ref_idx = 0;
+
+                tmvp_mv1[j] = mv1;
 
                 mv_buff1[j * 2]     = mv1;
                 mv_buff1[j * 2 + 1] = mv1;
@@ -1864,6 +1869,8 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
         }
         mv_buff0 += 34 * 2;
         mv_buff1 += 34 * 2;
+        tmvp_mv0 += 16;
+        tmvp_mv1 += 16;
     }
 }
 
@@ -2857,15 +2864,38 @@ rcn_affine_mcp_b_l(OVCTUDec *const ctudec,
     uint8_t ref_idx0 = mv_buff0->ref_idx;
     uint8_t ref_idx1 = mv_buff1->ref_idx;
 
+    int start_x = (x0 >> 2) & 0x1;
+    int start_y = (y0 >> 2) & 0x1;
+
+    OVMV *tmvp_mv0 = &inter_ctx->tmvp_mv[0].mvs[0];
+    OVMV *tmvp_mv1 = &inter_ctx->tmvp_mv[1].mvs[0];
+
     for (i = 0; i < nb_sb_h; ++i) {
         for (j = 0; j < nb_sb_w; ++j) {
             OVMV mv0 = mv_buff0[j];
             OVMV mv1 = mv_buff1[j];
 
+            #if 0
+            if (!((j + start_x) & 0x1) && !((i + start_y) & 0x1)) {
+            #else
+
+               if (!(((x0+4*j)>>2)& 0x1) && !((((y0+4*i)>>2)& 0x1))) {
+            #endif
+               tmvp_mv0[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv0;
+               tmvp_mv1[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv1;
+            }
+
             rcn_mcp_b_l(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
                         mv0, mv1, x0 + 4*j, y0 + 4*i,
                         2, 2, inter_dir, ref_idx0, ref_idx1);
         }
+
+        #if 0
+        if (((i + start_y) & 0x1)) {
+            tmvp_mv0 += 16;
+            tmvp_mv1 += 16;
+        }
+        #endif
 
         mv_buff0 += 34;
         mv_buff1 += 34;
@@ -2908,11 +2938,21 @@ rcn_affine_prof_mcp_b_l(OVCTUDec *const ctudec,
         compute_prof_dmv_scale(*dmv_1, prof_info.dmv_scale_h_1, prof_info.dmv_scale_v_1);
     }
 
+    int start_x = (x0 >> 2) & 0x1;
+    int start_y = (y0 >> 2) & 0x1;
+    OVMV *tmvp_mv0 = &inter_ctx->tmvp_mv[0].mvs[0];
+    OVMV *tmvp_mv1 = &inter_ctx->tmvp_mv[1].mvs[0];
+
     // inter_ctx->prec_amvr = inter_dir & 0x1 ? mv_buff0[0].prec_amvr : mv1.prec_amvr;
     for (i = 0; i < nb_sb_h; ++i) {
         for (j = 0; j < nb_sb_w; ++j) {
             OVMV mv0 = mv_buff0[j];
             OVMV mv1 = mv_buff1[j];
+
+            if (!(((x0+4*j)>>2)& 0x1) && !((((y0+4*i)>>2)& 0x1))) {
+               tmvp_mv0[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv0;
+               tmvp_mv1[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv1;
+            }
 
             //TODOrebase: take into account amvr and bcw
             rcn_prof_mcp_b_l(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
@@ -2923,6 +2963,12 @@ rcn_affine_prof_mcp_b_l(OVCTUDec *const ctudec,
             //             mv0, mv1, x0 + 4*j, y0 + 4*i,
             //             2, 2, inter_dir, ref_idx0, ref_idx1);
         }
+        #if 0
+        if (((i + start_y) & 0x1)) {
+            tmvp_mv0 += 16;
+            tmvp_mv1 += 16;
+        }
+        #endif
 
         mv_buff0 += 34;
         mv_buff1 += 34;

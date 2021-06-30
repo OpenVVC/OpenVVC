@@ -298,6 +298,10 @@ struct HMVPLUT
 };
 struct MVPlane;
 
+struct MVCTU {
+    OVMV mvs[16*16];
+};
+
 struct InterDRVCtx
 {
     /* References Pictures Lists */
@@ -311,6 +315,7 @@ struct InterDRVCtx
     /* CTU Local Map Motion Vectors */
     struct OVMVCtx mv_ctx0;
     struct OVMVCtx mv_ctx1;
+    struct MVCTU tmvp_mv[2];
 
     /* History based Motion Vector Predicition
      * Look-Up table containing the five last
