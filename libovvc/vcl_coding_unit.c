@@ -1081,17 +1081,18 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
         uint8_t mvp_idx = ovcabac_read_ae_mvp_flag(cabac_ctx);
 
-        //TODOamvr: put real value
         uint8_t prec_amvr = MV_PRECISION_QUARTER;
         mv0 = drv_mvp_mvd(inter_ctx, mv_ctx0, mvd, prec_amvr,
                           x_pu, y_pu, nb_pb_w, nb_pb_h,
                           mvp_idx, 1, ref_idx, ref_idx);
     }
 
-    if(apply_ciip)
+    if(apply_ciip) {
         rcn_ciip(ctu_dec, x0, y0, log2_pb_w, log2_pb_h, mv0, ref_idx);
-    else
-        rcn_mcp(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx);
+    } else {
+        rcn_mcp(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, x0, y0,
+                log2_pb_w, log2_pb_h, mv0, 0, ref_idx);
+    }
 
     uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
 
@@ -1160,12 +1161,13 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     //TODO: use real ibc flag
     uint8_t ibc_flag = 0;
     uint8_t smvd_flag = 0;
-    uint8_t apply_ciip = 0;
-    uint8_t apply_gpm = 0;
     inter_ctx->prec_amvr = MV_PRECISION_QUARTER;
     uint8_t bcw_idx = BCW_DEFAULT;
+
     if (merge_flag) {
+        uint8_t apply_ciip = 0;
         uint8_t mmvd_flag = 0;
+        uint8_t apply_gpm = 0;
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
         uint8_t ciip_flag = inter_ctx->ciip_flag && !skip_flag &&  log2_pb_w < 7
@@ -1216,6 +1218,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             if (!apply_ciip) {
                 apply_gpm = 1;
             }
+
         }
 
         if (mmvd_flag) {
@@ -1225,9 +1228,17 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                                   max_nb_cand, log2_pb_w + log2_pb_h <= 5);
         } else if (apply_gpm) {
             int max_num_gpm_cand = inter_ctx->max_gpm_cand;
+
+            /* FIXME transmit merge_idx */
             ovcabac_read_ae_gpm_merge_idx(cabac_ctx, &inter_ctx->gpm_ctx, max_num_gpm_cand);
+
             drv_gpm_merge_mvp_b(inter_ctx, x_pu, y_pu, nb_pb_w, nb_pb_h, max_nb_cand,
                                 log2_pb_w + log2_pb_h <= 5);
+
+            rcn_gpm_b(ctu_dec, &inter_ctx->gpm_ctx, x0, y0, log2_pb_w, log2_pb_h);
+
+            goto end;
+
         } else {
             uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
             mv_info = drv_merge_mvp_b(inter_ctx, x_pu, y_pu,
@@ -1239,6 +1250,14 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                                                        : mv_info.mv1.prec_amvr;
         ref_idx0 = mv_info.mv0.ref_idx;
         ref_idx1 = mv_info.mv1.ref_idx;
+
+        if (apply_ciip) {
+            mv_info.mv0.bcw_idx_plus1 = 0;
+            mv_info.mv1.bcw_idx_plus1 = 0;
+            rcn_ciip_b(ctu_dec, mv_info.mv0, mv_info.mv1, x0, y0,
+                       log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
+            goto end;
+        }
 
     } else {
         OVMV mvd0, mvd1 = {0};
@@ -1381,23 +1400,19 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     }
 
     /* FIXME move all this to derivation */
-    if(apply_ciip) {
-        mv_info.mv0.bcw_idx_plus1 = 0;
-        mv_info.mv1.bcw_idx_plus1 = 0;
-        rcn_ciip_b(ctu_dec, mv_info.mv0, mv_info.mv1, x0, y0,
-                   log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
-    } else if(apply_gpm) {
-        rcn_gpm_b(ctu_dec, &inter_ctx->gpm_ctx, x0, y0, log2_pb_w, log2_pb_h);
-    } else {
+    {
         uint8_t bdof_enable = 0;
         uint8_t dmvr_enable = 0;
         if (ctu_dec->bdof_enabled && mv_info.inter_dir == 0x3) {
+            /* Note ciip_flag is zero in this function */
+            uint8_t apply_ciip = 0;
             uint8_t bcw_flag = (mv_info.mv0.bcw_idx_plus1 != 0 && mv_info.mv0.bcw_idx_plus1 != 3);
             bdof_enable = check_bdof(log2_pb_w, log2_pb_h, apply_ciip, bcw_flag, smvd_flag);
 
             bdof_enable = bdof_enable && check_bdof_ref(inter_ctx, ref_idx0, ref_idx1);
         }
 
+        /* FIXME DMVR only enablewhen merge_flag is set */
         if (merge_flag && ctu_dec->dmvr_enabled && mv_info.inter_dir == 0x3) {
             dmvr_enable = check_bdof(log2_pb_w, log2_pb_h, 0, 0, 0);
 
