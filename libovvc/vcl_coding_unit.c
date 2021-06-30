@@ -1271,6 +1271,9 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
     } else {
         OVMV mvd0, mvd1 = {0};
+
+        uint8_t bcw_idx = BCW_DEFAULT;
+
         uint8_t mvp_idx0 = 0;
         uint8_t mvp_idx1 = 0;
 
