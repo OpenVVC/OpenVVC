@@ -1037,8 +1037,8 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
     OVMV mv0;
     uint8_t apply_ciip = 0;
-    uint8_t apply_mmvd  = 0;
     if (merge_flag) {
+        uint8_t mmvd_flag  = 0;
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
         /* FIXME missing affine in P */
@@ -1053,15 +1053,14 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
         if (reg_merge_flag){
             if (inter_ctx->mmvd_flag){
-                apply_mmvd = ovcabac_read_ae_mmvd_flag(cabac_ctx);
+                mmvd_flag = ovcabac_read_ae_mmvd_flag(cabac_ctx);
             }
-        }
-        else{
+        } else {
             apply_ciip = 1;
         }
 
         uint8_t merge_idx;
-        if (apply_mmvd){
+        if (mmvd_flag){
             merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
             mv0 = drv_mmvd_merge_mvp(inter_ctx, mv_ctx0,
                             x_pu, y_pu, nb_pb_w, nb_pb_h,
@@ -1163,10 +1162,10 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t smvd_flag = 0;
     uint8_t apply_ciip = 0;
     uint8_t apply_gpm = 0;
-    uint8_t apply_mmvd = 0;
     inter_ctx->prec_amvr = MV_PRECISION_QUARTER;
     uint8_t bcw_idx = BCW_DEFAULT;
     if (merge_flag) {
+        uint8_t mmvd_flag = 0;
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
         uint8_t ciip_flag = inter_ctx->ciip_flag && !skip_flag &&  log2_pb_w < 7
@@ -1205,7 +1204,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
         if (reg_merge_flag) {
             if (inter_ctx->mmvd_flag) {
-                apply_mmvd = ovcabac_read_ae_mmvd_flag(cabac_ctx);
+                mmvd_flag = ovcabac_read_ae_mmvd_flag(cabac_ctx);
             }
         } else {
             if (gpm_flag && ciip_flag) {
@@ -1219,10 +1218,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             }
         }
 
-        uint8_t merge_idx;
-
-        if (apply_mmvd) {
-            merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
+        if (mmvd_flag) {
+            uint8_t merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
             mv_info = drv_mmvd_merge_mvp_b(inter_ctx, x_pu, y_pu,
                                   nb_pb_w, nb_pb_h, ctu_dec->cur_poc, merge_idx,
                                   max_nb_cand, log2_pb_w + log2_pb_h <= 5);
@@ -1232,7 +1229,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             drv_gpm_merge_mvp_b(inter_ctx, x_pu, y_pu, nb_pb_w, nb_pb_h, max_nb_cand,
                                 log2_pb_w + log2_pb_h <= 5);
         } else {
-            merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
+            uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
             mv_info = drv_merge_mvp_b(inter_ctx, x_pu, y_pu,
                                   nb_pb_w, nb_pb_h, merge_idx,
                                   max_nb_cand, log2_pb_w + log2_pb_h <= 5);
