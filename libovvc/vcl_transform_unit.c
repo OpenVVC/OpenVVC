@@ -1348,18 +1348,30 @@ rcn_transform_tree(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
                            log2_tb_w1, log2_tb_h1,
                            log2_max_tb_s, cu_flags, &tu_info[0]);
         if (split_v) {
+            uint8_t compute_chr_scale = (log2_tb_w == 7 && ctu_dec->lmcs_info.lmcs_enabled_flag);
+            if (compute_chr_scale){
+                rcn_lmcs_compute_chroma_scale(ctu_dec, x0, y0);
+            }
             rcn_transform_tree(ctu_dec, x0 + tb_w1, y0,
                                log2_tb_w1, log2_tb_h1,
                                log2_max_tb_s, cu_flags, &tu_info[1]);
         }
 
         if (split_h) {
+            uint8_t compute_chr_scale = (log2_tb_h == 7 && ctu_dec->lmcs_info.lmcs_enabled_flag);
+            if (compute_chr_scale){
+                rcn_lmcs_compute_chroma_scale(ctu_dec, x0, y0);
+            }
             rcn_transform_tree(ctu_dec, x0, y0 + tb_h1,
                                log2_tb_w1, log2_tb_h1,
                                log2_max_tb_s, cu_flags, &tu_info[2]);
         }
 
         if (split_h && split_v) {
+            uint8_t compute_chr_scale = ((log2_tb_h == 7 || log2_tb_w == 7) && ctu_dec->lmcs_info.lmcs_enabled_flag) ;
+            if (compute_chr_scale){
+                rcn_lmcs_compute_chroma_scale(ctu_dec, x0, y0);
+            }
             rcn_transform_tree(ctu_dec, x0 + tb_w1, y0 + tb_h1,
                                log2_tb_w1, log2_tb_h1,
                                log2_max_tb_s, cu_flags, &tu_info[3]);
