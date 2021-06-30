@@ -1625,10 +1625,6 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
                 uint8_t nb_pb_w, uint8_t nb_pb_h,
                 uint8_t inter_dir)
 {
-    if (mv0.x == -338 && mv0.y == -19)
-        printf("mv0 %i %i\n", mv0.x, mv0.y);
-    if (mv1.x == -338 && mv1.y == -19)
-        printf("mv1 %i %i\n", mv1.x, mv1.y);
     /*FIXME Use specific DBF update function if DBF is disabled */
     /*FIXME Find a better way to retrieve dbf_info */
     struct DBFInfo *const dbf_info = &inter_ctx->tmvp_ctx.ctudec->dbf_info;
@@ -1679,10 +1675,6 @@ update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
                 uint8_t nb_pb_w, uint8_t nb_pb_h,
                 uint8_t inter_dir)
 {
-    if (mv0.x == -338 && mv0.y == -19)
-        printf("mv0 %i %i\n", mv0.x, mv0.y);
-    if (mv1.x == -338 && mv1.y == -19)
-        printf("mv1 %i %i\n", mv1.x, mv1.y);
     /*FIXME Use specific DBF update function if DBF is disabled */
     /*FIXME Find a better way to retrieve dbf_info */
     struct DBFInfo *const dbf_info = &inter_ctx->tmvp_ctx.ctudec->dbf_info;
