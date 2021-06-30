@@ -1435,9 +1435,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         }
 
         if (!bdof_enable && !dmvr_enable) {
-            inter_ctx->dmvr_idx = -1;
-            inter_ctx->dmvr_idx0 = -1;
-            inter_ctx->dmvr_idx1 = -1;
             rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
                       mv_info.mv0, mv_info.mv1, x0, y0,
                       log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
@@ -1453,9 +1450,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             OVMV mv1 = mv_info.mv1;
             for (i = 0; i < nb_sb_h; ++i) {
                 for (j = 0; j < nb_sb_w; ++j) {
-                    inter_ctx->dmvr_idx = -1;
-                    inter_ctx->dmvr_idx0 = -1;
-                    inter_ctx->dmvr_idx1 = -1;
                     if (dmvr_enable) {
                         OVMV *tmvp_mv0 = inter_ctx->tmvp_mv[0].mvs;
                         OVMV *tmvp_mv1 = inter_ctx->tmvp_mv[1].mvs;
@@ -1513,9 +1507,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                             log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
             }
             #endif
-                    inter_ctx->dmvr_idx = -1;
-                    inter_ctx->dmvr_idx0 = -1;
-                    inter_ctx->dmvr_idx1 = -1;
 
         }
     }

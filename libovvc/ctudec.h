@@ -434,9 +434,6 @@ struct InterDRVCtx
         uint8_t ctu_h;
 
     } tmvp_ctx;
-    int8_t dmvr_idx;
-    int8_t dmvr_idx0;
-    int8_t dmvr_idx1;
 
     struct AffineDRVInfo affine_ctx;
 };

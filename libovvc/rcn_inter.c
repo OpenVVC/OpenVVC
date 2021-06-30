@@ -545,8 +545,7 @@ padd_dmvr(int16_t *const _ref, int16_t stride, uint8_t pu_w, uint8_t pu_h)
 
 static struct OVBuffInfo
 derive_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
-                uint16_t *edge_buff, int log2_pu_w, int log2_pu_h, int log2_ctu_s,
-                int8_t dmvr_idx)
+                uint16_t *edge_buff, int log2_pu_w, int log2_pu_h, int log2_ctu_s)
 {
     struct OVBuffInfo ref_buff;
     uint16_t *const ref_y  = (uint16_t *) ref_pic->frame->data[0];
@@ -565,13 +564,10 @@ derive_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
     uint8_t emulate_edge = test_for_edge_emulation(ref_pos_x, ref_pos_y, pic_w, pic_h,
                                                    pu_w, pu_h);;
 
-    if (dmvr_idx > 0 && dmvr_idx != 12) {
-        emulate_edge = 1;
-    }
     /* FIXME Frame thread synchronization here to ensure data is available
      */
 
-    if (dmvr_idx > 0 && dmvr_idx != 12 || emulate_edge){
+    if (emulate_edge){
         const uint16_t *src_y  = &ref_y[ref_pos_x + ref_pos_y * src_stride];
         int src_off  = REF_PADDING_L * (src_stride) + (REF_PADDING_L);
         int buff_off = REF_PADDING_L * (RCN_CTB_STRIDE) + (REF_PADDING_L);
@@ -588,11 +584,6 @@ derive_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
                              pic_w, pic_h);
         ref_buff.y  = edge_buff + buff_off + 2 * RCN_CTB_STRIDE + 2;
         ref_buff.stride = RCN_CTB_STRIDE;
-
-        if (dmvr_idx > 0 && dmvr_idx != 12) {
-            padd_dmvr(edge_buff + buff_off + 2 * RCN_CTB_STRIDE + 2, ref_buff.stride, pu_w, pu_h);
-
-        }
 
     } else {
 
@@ -637,7 +628,6 @@ derive_dmvr_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int po
 
     ref_buff.y  = edge_buff + buff_off + 2 * RCN_CTB_STRIDE + 2;
     ref_buff.stride = RCN_CTB_STRIDE;
-    //padd_dmvr(edge_buff + buff_off + 2 * RCN_CTB_STRIDE + 2, ref_buff.stride, pu_w, pu_h);
 
     return ref_buff;
 }
@@ -729,75 +719,17 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
-    if (inter_ctx->dmvr_idx > 0 && inter_ctx->dmvr_idx != 12) {
-        int8_t delta_h = dmvr_mv_x[inter_ctx->dmvr_idx0];
-        int8_t delta_v = dmvr_mv_y[inter_ctx->dmvr_idx0];
-        pos_x -= delta_h;
-        pos_y -= delta_v;
-    }
-
     mv0 = clip_mv(pos_x, pos_y, ref0->frame->width[0],
                   ref0->frame->height[0], 1 << log2_pu_w, 1 << log2_pu_h, mv0);
 
-    if (inter_ctx->dmvr_idx > 0 && inter_ctx->dmvr_idx != 12) {
-        int8_t delta_h = dmvr_mv_x[inter_ctx->dmvr_idx0];
-        int8_t delta_v = dmvr_mv_y[inter_ctx->dmvr_idx0];
-        pos_x += delta_h;
-        pos_y += delta_v;
-    }
-
-    if (inter_ctx->dmvr_idx > 0 && inter_ctx->dmvr_idx != 12) {
-        int8_t delta_h = dmvr_mv_x[inter_ctx->dmvr_idx1];
-        int8_t delta_v = dmvr_mv_y[inter_ctx->dmvr_idx1];
-        pos_x -= delta_h;
-        pos_y -= delta_v;
-    }
     mv1 = clip_mv(pos_x, pos_y, ref1->frame->width[0],
                   ref1->frame->height[0], 1 << log2_pu_w, 1 << log2_pu_h, mv1);
 
-    if (inter_ctx->dmvr_idx > 0 && inter_ctx->dmvr_idx != 12) {
-        int8_t delta_h = dmvr_mv_x[inter_ctx->dmvr_idx1];
-        int8_t delta_v = dmvr_mv_y[inter_ctx->dmvr_idx1];
-        pos_x += delta_h;
-        pos_y += delta_v;
-    }
-
-    if (inter_ctx->dmvr_idx > 0 && inter_ctx->dmvr_idx != 12) {
-        int8_t delta_h = dmvr_mv_x[inter_ctx->dmvr_idx0];
-        int8_t delta_v = dmvr_mv_y[inter_ctx->dmvr_idx0];
-        pos_x -= delta_h;
-        pos_y -= delta_v;
-    }
     struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s,
-                                                      inter_ctx->dmvr_idx0);
-
-    if (inter_ctx->dmvr_idx > 0 && inter_ctx->dmvr_idx != 12) {
-        int delta_h = dmvr_mv_x[inter_ctx->dmvr_idx0];
-        int delta_v = dmvr_mv_y[inter_ctx->dmvr_idx0];
-        pos_x += delta_h;
-        pos_y += delta_v;
-        ref0_b.y +=  delta_h + delta_v *(int16_t) ref0_b.stride;
-    }
-
-    if (inter_ctx->dmvr_idx > 0 && inter_ctx->dmvr_idx != 12) {
-        int8_t delta_h = dmvr_mv_x[inter_ctx->dmvr_idx1];
-        int8_t delta_v = dmvr_mv_y[inter_ctx->dmvr_idx1];
-        pos_x -= delta_h;
-        pos_y -= delta_v;
-    }
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
 
     struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1, pos_x, pos_y, edge_buff1,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s,
-                                                      inter_ctx->dmvr_idx1);
-
-    if (inter_ctx->dmvr_idx > 0 && inter_ctx->dmvr_idx != 12) {
-        int delta_h = dmvr_mv_x[inter_ctx->dmvr_idx1];
-        int delta_v = dmvr_mv_y[inter_ctx->dmvr_idx1];
-        pos_x += delta_h;
-        pos_y += delta_v;
-        ref1_b.y +=  delta_h + delta_v *(int16_t) ref1_b.stride;
-    }
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
 
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
@@ -819,23 +751,6 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     dst.y  += x0 + y0 * dst.stride;
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-
-    #if 0
-    if (inter_ctx->dmvr_idx > 0 && inter_ctx->dmvr_idx != 12) {
-        if (prec_0_mc_type == 2) {
-            ref0_b.y += ref0_b.stride;
-        }
-        if (prec_1_mc_type == 2) {
-            ref1_b.y += ref1_b.stride;
-        }
-        if (prec_0_mc_type == 1) {
-            ref0_b.y += 1;
-        }
-        if (prec_1_mc_type == 1) {
-            ref1_b.y += 1;
-        }
-    }
-    #endif
 
 
     mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride, pu_h, prec_x0, prec_y0, pu_w);
@@ -953,12 +868,10 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
 
     struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
-                                                log2_pu_w, log2_pu_h, log2_ctb_s,
-                                                inter_ctx->dmvr_idx0);
+                                                log2_pu_w, log2_pu_h, log2_ctb_s);
 
     struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1, pos_x, pos_y, edge_buff1,
-                                                log2_pu_w, log2_pu_h, log2_ctb_s,
-                                                inter_ctx->dmvr_idx1);
+                                                log2_pu_w, log2_pu_h, log2_ctb_s);
 
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
@@ -1280,41 +1193,9 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
         mv1->x = ov_clip(mv1->x, MV_MIN, MV_MAX);
         mv1->y = ov_clip(mv1->y, MV_MIN, MV_MAX);
-
-        #if 1
-        int delta_h2 = (mv0->x >> 4) - (tmp0.x >> 4);
-        int delta_v2 = (mv0->y >> 4) - (tmp0.y >> 4);
-        int8_t tmp_dmvr_idx = dmvr_idx;
-
-        if (delta_h2 != dmvr_mv_x[tmp_dmvr_idx]) {
-            tmp_dmvr_idx += dmvr_mv_x[tmp_dmvr_idx] - delta_h2;
-        }
-        if (delta_v2 != dmvr_mv_y[tmp_dmvr_idx]) {
-            tmp_dmvr_idx += (dmvr_mv_y[tmp_dmvr_idx] - delta_v2) * 5;
-        }
-
-        inter_ctx->dmvr_idx  = dmvr_idx;
-        inter_ctx->dmvr_idx0 = tmp_dmvr_idx;
-
-        int delta_h3 = (mv1->x >> 4) - (tmp1.x >> 4);
-        int delta_v3 = (mv1->y >> 4) - (tmp1.y >> 4);
-
-        tmp_dmvr_idx = dmvr_idx + 25;
-
-        if (delta_h3 != dmvr_mv_x[tmp_dmvr_idx]) {
-            tmp_dmvr_idx += dmvr_mv_x[tmp_dmvr_idx] - delta_h3;
-        }
-
-        if (delta_v3 != dmvr_mv_y[tmp_dmvr_idx]) {
-            tmp_dmvr_idx += (dmvr_mv_y[tmp_dmvr_idx] - delta_v3) * 5;
-        }
-
-        inter_ctx->dmvr_idx1 = tmp_dmvr_idx;
-        #endif
     }
 
     /* TODO Call classic reconstruction */
-#if 1
 
     padd_dmvr(ref0_b.y, ref0_b.stride, pu_w, pu_h);
     padd_dmvr(ref1_b.y, ref1_b.stride, pu_w, pu_h);
@@ -1340,14 +1221,11 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     ref1_b.y += delta_h3 + (int16_t)ref1_b.stride * delta_v3;
 
     uint8_t disable_bdof = apply_bdof ? min_cost < 2 * (pu_w * pu_h) : 1;
-    #if 1
     if (disable_bdof) {
-    #endif
         mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride,
                                                     pu_h, prec_x0, prec_y0, pu_w);
         mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride,
                                                     tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
-    #if 1
     } else {
         int16_t grad_x0[(16 + 2) * (16 + 2)];
         int16_t grad_y0[(16 + 2) * (16 + 2)];
@@ -1386,9 +1264,6 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         /* Reference padding overwrite for weights derivation */
         extend_bdof_grad(tmp_buff, ref_stride, pu_w, pu_h);
         extend_bdof_grad(tmp_buff1, ref_stride, pu_w, pu_h);
-
-        //dst.y += x0;
-        //dst.y += y0 * RCN_CTB_STRIDE;
 
         /* Split into 4x4 subblocks for BDOF computation */
         rcn_bdof(dst.y, dst.stride, tmp_buff + 128 + 1, tmp_buff1 + 128 + 1,
@@ -1459,11 +1334,6 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     mc_c->bidir1[prec_1_mc_type][log2_pu_w - 2](dst.cb, RCN_CTB_STRIDE, ref1_c.cb, ref1_c.stride_c, ref_data0, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
     mc_c->bidir1[prec_1_mc_type][log2_pu_w - 2](dst.cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride_c, ref_data1, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
-
-
-
-    #endif
-#endif
 
     return disable_bdof;
 }
@@ -1760,12 +1630,10 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
 
     struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s,
-                                                      inter_ctx->dmvr_idx0);
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
 
     struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1, pos_x, pos_y, edge_buff1,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s,
-                                                      inter_ctx->dmvr_idx1);
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
 
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
@@ -1886,10 +1754,10 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
 
     const struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s, -1);
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
 
     const struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1, pos_x, pos_y, edge_buff1,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s, -1);
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
 
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
@@ -2792,10 +2660,10 @@ rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
 
 
     const struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s, -1);
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
 
     const struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1, pos_x, pos_y, edge_buff1,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s, -1);
+                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
 
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
