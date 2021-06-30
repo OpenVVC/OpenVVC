@@ -1759,22 +1759,18 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
                 uint8_t inter_dir0, uint8_t inter_dir1)
 {   
     VVCMergeInfo mv_info;
-    if( inter_dir0 == 1 && inter_dir1 == 2 ){
+    if (inter_dir0 == 1 && inter_dir1 == 2 ) {
         mv_info.inter_dir  = 3;
         mv_info.mv0     = mv_info0.mv0;
         mv_info.mv1     = mv_info1.mv1;
-    }
-    else if( inter_dir0 == 2 && inter_dir1 == 1 ){
+    } else if (inter_dir0 == 2 && inter_dir1 == 1) {
         mv_info.inter_dir  = 3;
         mv_info.mv0     = mv_info1.mv0;
         mv_info.mv1     = mv_info0.mv1;
-    }
-    else if( inter_dir0 == 1 && inter_dir1 == 1 ){
+    } else if (inter_dir0 == 1 && inter_dir1 == 1) {
         mv_info.inter_dir = 1;
         mv_info.mv0 = mv_info1.mv0;
-
-    }
-    else if( inter_dir0 == 2 && inter_dir1 == 2 ){
+    } else if (inter_dir0 == 2 && inter_dir1 == 2) {
         mv_info.inter_dir = 2;
         mv_info.mv1 = mv_info1.mv1;
     }
@@ -1789,50 +1785,46 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
     int dy = (dx + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES;
     int offset_x = (-(int)nb_pb_w*4) >> 1;
     int offset_y = (-(int)nb_pb_h*4) >> 1;
+
     if (d_idx > 0) {
-        if (angle % 16 == 8 || (angle % 16 != 0 && nb_pb_h*4 >= nb_pb_w*4)){
+        if (angle % 16 == 8 || (angle % 16 != 0 && nb_pb_h*4 >= nb_pb_w*4)) {
             offset_y += angle < 16 ? ((d_idx * nb_pb_h*4) >> 3) : -(int)((d_idx * nb_pb_h*4) >> 3);
-        }
-        else{
+        } else {
             offset_x += angle < 16 ? ((d_idx * nb_pb_w*4) >> 3) : -(int)((d_idx * nb_pb_w*4) >> 3);
         }
     }
-    for (int y = 0; y < nb_pb_h; y++){
+
+    for (int y = 0; y < nb_pb_h; y++) {
         lookup_y = (((4 * y + offset_y) << 1) + 5) * g_Dis[dy];
 
-        for (int x = 0; x < nb_pb_w; x++){
+        for (int x = 0; x < nb_pb_w; x++) {
             motion_idx = (((4 * x + offset_x) << 1) + 5) * g_Dis[dx] + lookup_y;
             tpm_mask = abs(motion_idx) < 32 ? 2 : (motion_idx <= 0 ? (1 - isFlip) : isFlip);
 
-            if (tpm_mask == 2){
-                if (mv_info.inter_dir == 1){
+            if (tpm_mask == 2) {
+                if (mv_info.inter_dir == 1) {
                     mv_info.mv1.x = mv_info.mv1.y = 0;
-                }
-                else if (mv_info.inter_dir == 2){
+                } else if (mv_info.inter_dir == 2) {
                     mv_info.mv0.x = mv_info.mv0.y = 0;
                 }
                 update_gpm_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, pb_x + x, pb_y + y, 
-                        1, 1, mv_info.inter_dir);
-            }
-            else if (tpm_mask == 0){
-                if (inter_dir0 == 1){
+                                    1, 1, mv_info.inter_dir);
+            } else if (tpm_mask == 0) {
+                if (inter_dir0 == 1) {
                     mv_info0.mv1.x = mv_info0.mv1.y = 0;
-                }
-                else if (inter_dir0 == 2){
+                } else if (inter_dir0 == 2) {
                     mv_info0.mv0.x = mv_info0.mv0.y = 0;
                 }
                 update_gpm_mv_ctx_b(inter_ctx, mv_info0.mv0, mv_info0.mv1, pb_x + x, pb_y + y, 
-                        1, 1, inter_dir0);
-            }
-            else{
-                if (inter_dir1 == 1){
+                                    1, 1, inter_dir0);
+            } else{
+                if (inter_dir1 == 1) {
                     mv_info1.mv1.x = mv_info1.mv1.y = 0;
-                }
-                else if (inter_dir1 == 2){
+                } else if (inter_dir1 == 2){
                     mv_info1.mv0.x = mv_info1.mv0.y = 0;
                 }
                 update_gpm_mv_ctx_b(inter_ctx, mv_info1.mv0, mv_info1.mv1, pb_x + x, pb_y + y, 
-                        1, 1, inter_dir1);
+                                    1, 1, inter_dir1);
             }
         }
     }
