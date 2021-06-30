@@ -1412,20 +1412,25 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                             inter_dir, ref_idx0, ref_idx1, log2_pb_w + log2_pb_h <= 5);
     }
 
-    /* FIXME move all this to derivation */
+    /* FIXME move all this to derivation
+     * => nothing to read passed this line
+     */
     {
         uint8_t bdof_enable = 0;
         uint8_t dmvr_enable = 0;
         if (ctu_dec->bdof_enabled && mv_info.inter_dir == 0x3) {
             /* Note ciip_flag is zero in this function */
-            uint8_t apply_ciip = 0;
+            uint8_t ciip_flag = 0;
             uint8_t bcw_flag = (mv_info.mv0.bcw_idx_plus1 != 0 && mv_info.mv0.bcw_idx_plus1 != 3);
-            bdof_enable = check_bdof(log2_pb_w, log2_pb_h, apply_ciip, bcw_flag, smvd_flag);
+            bdof_enable = check_bdof(log2_pb_w, log2_pb_h, ciip_flag, bcw_flag, smvd_flag);
 
             bdof_enable = bdof_enable && check_bdof_ref(inter_ctx, ref_idx0, ref_idx1);
         }
 
-        /* FIXME DMVR only enablewhen merge_flag is set */
+        /* FIXME DMVR only enable when merge_flag is set
+         * bcw_idx == default
+         *
+         */
         if (merge_flag && ctu_dec->dmvr_enabled && mv_info.inter_dir == 0x3) {
             dmvr_enable = check_bdof(log2_pb_w, log2_pb_h, 0, 0, 0);
 
