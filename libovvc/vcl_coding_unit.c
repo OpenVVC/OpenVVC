@@ -1162,7 +1162,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t ibc_flag = 0;
     uint8_t smvd_flag = 0;
     inter_ctx->prec_amvr = MV_PRECISION_QUARTER;
-    uint8_t bcw_idx = BCW_DEFAULT;
 
     if (merge_flag) {
         uint8_t mmvd_flag = 0;
