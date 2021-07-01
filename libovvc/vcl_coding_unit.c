@@ -1167,8 +1167,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     inter_ctx->prec_amvr = MV_PRECISION_QUARTER;
 
     if (merge_flag) {
-        uint8_t mmvd_flag = 0;
-        uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
 
         uint8_t ciip_enabled = inter_ctx->ciip_flag && !skip_flag &&  log2_pb_w < 7
                                                                   &&  log2_pb_h < 7
@@ -1201,69 +1199,74 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             }
         }
 
-        uint8_t  reg_merge_flag = 1;
+        uint8_t reg_merge_flag = 1;
         if (gpm_enabled || ciip_enabled) {
             reg_merge_flag = ovcabac_read_ae_reg_merge_flag(cabac_ctx, skip_flag);
-            if (!reg_merge_flag) {
-                uint8_t ciip_flag = ciip_enabled;
-                if (gpm_enabled && ciip_enabled) {
-                    ciip_flag = ovcabac_read_ae_ciip_flag(cabac_ctx);
-                }
-
-                if (ciip_flag) {
-                    uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
-
-                    mv_info = drv_merge_mvp_b(inter_ctx, x_pu, y_pu,
-                                              nb_pb_w, nb_pb_h, merge_idx,
-                                              max_nb_cand, log2_pb_w + log2_pb_h <= 5);
-
-                    inter_ctx->prec_amvr = mv_info.inter_dir & 0x1 ? mv_info.mv0.prec_amvr
-                                                                   : mv_info.mv1.prec_amvr;
-
-                    ref_idx0 = mv_info.mv0.ref_idx;
-                    ref_idx1 = mv_info.mv1.ref_idx;
-
-                    mv_info.mv0.bcw_idx_plus1 = 0;
-                    mv_info.mv1.bcw_idx_plus1 = 0;
-
-                    rcn_ciip_b(ctu_dec, mv_info.mv0, mv_info.mv1, x0, y0,
-                               log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
-
-                    goto end;
-
-                } else {
-                    int max_num_gpm_cand = inter_ctx->max_gpm_cand;
-
-                    ovcabac_read_ae_gpm_merge_idx(cabac_ctx, &inter_ctx->gpm_ctx, max_num_gpm_cand);
-
-                    drv_gpm_merge_mvp_b(inter_ctx, x_pu, y_pu, nb_pb_w, nb_pb_h, max_nb_cand,
-                                        log2_pb_w + log2_pb_h <= 5);
-
-                    rcn_gpm_b(ctu_dec, &inter_ctx->gpm_ctx, x0, y0, log2_pb_w, log2_pb_h);
-
-                    goto end;
-                }
-            }
         }
 
-        if (reg_merge_flag) {
+        if (!reg_merge_flag) {
+            uint8_t ciip_flag = ciip_enabled;
+            if (gpm_enabled && ciip_enabled) {
+                ciip_flag = ovcabac_read_ae_ciip_flag(cabac_ctx);
+            }
+
+            if (ciip_flag) {
+                uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
+                uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
+
+                mv_info = drv_merge_mvp_b(inter_ctx, x_pu, y_pu,
+                                          nb_pb_w, nb_pb_h, merge_idx,
+                                          max_nb_cand, log2_pb_w + log2_pb_h <= 5);
+
+                inter_ctx->prec_amvr = mv_info.inter_dir & 0x1 ? mv_info.mv0.prec_amvr
+                                                               : mv_info.mv1.prec_amvr;
+
+                ref_idx0 = mv_info.mv0.ref_idx;
+                ref_idx1 = mv_info.mv1.ref_idx;
+
+                mv_info.mv0.bcw_idx_plus1 = 0;
+                mv_info.mv1.bcw_idx_plus1 = 0;
+
+                rcn_ciip_b(ctu_dec, mv_info.mv0, mv_info.mv1, x0, y0,
+                           log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
+
+                goto end;
+
+            } else {
+                int max_num_gpm_cand = inter_ctx->max_gpm_cand;
+                uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
+
+                ovcabac_read_ae_gpm_merge_idx(cabac_ctx, &inter_ctx->gpm_ctx, max_num_gpm_cand);
+
+                drv_gpm_merge_mvp_b(inter_ctx, x_pu, y_pu, nb_pb_w, nb_pb_h, max_nb_cand,
+                                    log2_pb_w + log2_pb_h <= 5);
+                /* FIXME amvr? */
+
+                rcn_gpm_b(ctu_dec, &inter_ctx->gpm_ctx, x0, y0, log2_pb_w, log2_pb_h);
+
+                goto end;
+            }
+        } else {
+            uint8_t mmvd_flag = 0;
             if (inter_ctx->mmvd_flag) {
                 mmvd_flag = ovcabac_read_ae_mmvd_flag(cabac_ctx);
-                if (mmvd_flag) {
-                    uint8_t merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
-
-                    mv_info = drv_mmvd_merge_mvp_b(inter_ctx, x_pu, y_pu,
-                                                   nb_pb_w, nb_pb_h, ctu_dec->cur_poc, merge_idx,
-                                                   max_nb_cand, log2_pb_w + log2_pb_h <= 5);
-                }
             }
-        }
 
-        if (!mmvd_flag) {
-            uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
-            mv_info = drv_merge_mvp_b(inter_ctx, x_pu, y_pu,
-                                  nb_pb_w, nb_pb_h, merge_idx,
-                                  max_nb_cand, log2_pb_w + log2_pb_h <= 5);
+            if (mmvd_flag) {
+                uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
+                uint8_t merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
+
+                mv_info = drv_mmvd_merge_mvp_b(inter_ctx, x_pu, y_pu,
+                                               nb_pb_w, nb_pb_h, ctu_dec->cur_poc, merge_idx,
+                                               max_nb_cand, log2_pb_w + log2_pb_h <= 5);
+            } else {
+                uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
+                uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
+
+                mv_info = drv_merge_mvp_b(inter_ctx, x_pu, y_pu,
+                                          nb_pb_w, nb_pb_h, merge_idx,
+                                          max_nb_cand, log2_pb_w + log2_pb_h <= 5);
+            }
         }
 
         inter_ctx->prec_amvr = mv_info.inter_dir & 0x1 ? mv_info.mv0.prec_amvr
