@@ -1213,6 +1213,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
     /* FIXME Move AMVR precision outside of inter_ctx */
     inter_ctx->prec_amvr = MV_PRECISION_QUARTER;
+    ctu_dec->tmp_ciip = 0;
 
     if (merge_flag) {
 
@@ -1304,6 +1305,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 rcn_ciip_b(ctu_dec, mv_info.mv0, mv_info.mv1, x0, y0,
                            log2_pb_w, log2_pb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
 
+                ctu_dec->tmp_ciip = 1;
                 goto end;
 
             } else {

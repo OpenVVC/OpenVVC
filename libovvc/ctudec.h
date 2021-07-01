@@ -814,6 +814,7 @@ struct OVCTUDec
     uint16_t pic_w;
     uint16_t cur_poc;
     uint8_t intra_mode_c;
+    uint8_t tmp_ciip;
 };
 
 int ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec);
