@@ -1160,9 +1160,9 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
 #endif
 
-    //TODO: use real ibc flag
-    uint8_t ibc_flag = 0;
     uint8_t smvd_flag = 0;
+
+    /* FIXME Move AMVR precision outside of inter_ctx */
     inter_ctx->prec_amvr = MV_PRECISION_QUARTER;
 
     if (merge_flag) {
@@ -1198,10 +1198,9 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             }
         }
 
-        uint8_t reg_merge_flag = 1;
-        if (gpm_enabled || ciip_enabled) {
-            reg_merge_flag = ovcabac_read_ae_reg_merge_flag(cabac_ctx, skip_flag);
-        }
+        uint8_t reg_merge_flag = !(gpm_enabled || ciip_enabled);
+
+        reg_merge_flag = reg_merge_flag || ovcabac_read_ae_reg_merge_flag(cabac_ctx, skip_flag);
 
         if (!reg_merge_flag) {
             uint8_t ciip_flag = ciip_enabled;
@@ -1276,6 +1275,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     } else {
         OVMV mvd0, mvd1 = {0};
 
+        //TODO: use real ibc flag
+        uint8_t ibc_flag = 0;
         uint8_t bcw_idx = BCW_DEFAULT;
 
         uint8_t mvp_idx0 = 0;
@@ -1410,6 +1411,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             ref_idx1     = inter_ctx->ref_smvd_idx1;
             mvd1.x       = -mvd0.x;
             mvd1.y       = -mvd0.y;
+            /* FIXME check if necessary */
             mvd1.ref_idx = inter_ctx->ref_smvd_idx1;
         }
 
