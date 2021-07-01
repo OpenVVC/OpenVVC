@@ -1283,7 +1283,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
         uint8_t inter_dir = ovcabac_read_ae_inter_dir(cabac_ctx, log2_pb_w, log2_pb_h);
 
-        uint8_t affine_flag = 0;
         if (ctu_dec->affine_enabled && log2_pb_w > 3 && log2_pb_h > 3) {
             uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_pu];
             uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_pu];
@@ -1291,10 +1290,10 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             uint8_t lft_affine = cu_type_lft == OV_AFFINE || cu_type_lft == OV_INTER_SKIP_AFFINE;
             uint8_t abv_affine = cu_type_abv == OV_AFFINE || cu_type_abv == OV_INTER_SKIP_AFFINE;
 
-            affine_flag = ovcabac_read_ae_cu_affine_flag(cabac_ctx, lft_affine, abv_affine);
+            uint8_t affine_flag = ovcabac_read_ae_cu_affine_flag(cabac_ctx, lft_affine, abv_affine);
             if (affine_flag) {
                 uint8_t six_affine_type = !!(ctu_dec->affine_status & 0x2);
-                uint8_t affine_type = !six_affine_type ? 0 : ovcabac_read_ae_cu_affine_type(cabac_ctx);
+                uint8_t affine_type = six_affine_type && ovcabac_read_ae_cu_affine_type(cabac_ctx);
                 struct AffineControlInfo cp_mvd0;
                 struct AffineControlInfo cp_mvd1;
 
@@ -1342,12 +1341,15 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                     mvd_not_zero |= (cp_mvd1.rt.x | cp_mvd1.rt.y);
                 }
 
-                if (inter_ctx->affine_amvr_flag && mvd_not_zero && affine_flag && !skip_flag) {
+                /* Note affine is always be 1 here  skip_flag always 0 */
+                if (inter_ctx->affine_amvr_flag && mvd_not_zero) {
                     inter_ctx->prec_amvr = ovcabac_read_ae_affine_amvr_precision(cabac_ctx, ibc_flag);
                 }
 
-                if (inter_ctx->bcw_flag && !ibc_flag && (1 << (log2_pb_h + log2_pb_w) >= BCW_SIZE_CONSTRAINT)
-                                                     && !skip_flag && inter_dir == 3) {
+                if (inter_ctx->bcw_flag && !ibc_flag
+                                        && (1 << (log2_pb_h + log2_pb_w) >= BCW_SIZE_CONSTRAINT)
+                                        && inter_dir == 3) {
+
                     bcw_idx = ovcabac_read_ae_bcw_flag(cabac_ctx, inter_ctx->tmvp_ctx.ldc);
                 }
 
@@ -1361,16 +1363,13 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             }
         }
 
-
-        if (inter_dir == 3 && !affine_flag && inter_ctx->bi_dir_pred_flag) {
+        if (inter_dir == 3 && inter_ctx->bi_dir_pred_flag) {
             smvd_flag = ovcabac_read_ae_smvd_flag(cabac_ctx);
         }
 
         int32_t mvd_not_zero = 0;
         if (inter_dir & 0x1) {
-            if (smvd_flag) {
-                ref_idx0 = inter_ctx->ref_smvd_idx0;
-            } else if (inter_ctx->nb_active_ref0 > 1) {
+            if (!smvd_flag && inter_ctx->nb_active_ref0 > 1) {
                 ref_idx0 = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref0);
             }
 
@@ -1386,8 +1385,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                     ref_idx1 = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref1);
                 }
 
-                if (inter_dir & 0x1 && inter_ctx->mvd1_zero_flag) {
-                } else {
+                if (!(inter_dir & 0x1) || !inter_ctx->mvd1_zero_flag) {
                     mvd1 = ovcabac_read_ae_mvd(cabac_ctx);
                     mvd_not_zero |= (mvd1.x | mvd1.y);
                 }
@@ -1395,20 +1393,24 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             mvp_idx1 = ovcabac_read_ae_mvp_flag(cabac_ctx);
         }
 
-        if (inter_ctx->amvr_flag && mvd_not_zero && !affine_flag && !skip_flag) {
+        /* Note affine_flag is always 0 here */
+        /* Note skip_flag is always 0 here since merge_flag would default to 1 */
+        if (inter_ctx->amvr_flag && mvd_not_zero) {
             inter_ctx->prec_amvr = ovcabac_read_ae_amvr_precision(cabac_ctx, ibc_flag);
         }
 
-        if (inter_ctx->bcw_flag && !ibc_flag && (1<<(log2_pb_h+log2_pb_w) >= BCW_SIZE_CONSTRAINT)
-                && !skip_flag && inter_dir == 3) {
-            bcw_idx = ovcabac_read_ae_bcw_flag( cabac_ctx, inter_ctx->tmvp_ctx.ldc);
+        if (inter_ctx->bcw_flag && !ibc_flag
+                                && (1 << (log2_pb_h + log2_pb_w) >= BCW_SIZE_CONSTRAINT)
+                                && inter_dir == 3) {
+            bcw_idx = ovcabac_read_ae_bcw_flag(cabac_ctx, inter_ctx->tmvp_ctx.ldc);
         }
 
         if (smvd_flag) {
+            ref_idx0     = inter_ctx->ref_smvd_idx0;
+            ref_idx1     = inter_ctx->ref_smvd_idx1;
             mvd1.x       = -mvd0.x;
             mvd1.y       = -mvd0.y;
             mvd1.ref_idx = inter_ctx->ref_smvd_idx1;
-            ref_idx1     = inter_ctx->ref_smvd_idx1;
         }
 
         mv_info = drv_mvp_b(inter_ctx, x_pu, y_pu, nb_pb_w, nb_pb_h,
