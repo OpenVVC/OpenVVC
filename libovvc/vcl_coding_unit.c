@@ -231,28 +231,31 @@ ovcabac_read_ae_ciip_flag(OVCABACCtx *const cabac_ctx){
     return ovcabac_ae_read(cabac_ctx, &cabac_state[CIIP_FLAG_CTX_OFFSET]);
 }
 
+/* FIXME separate flag and idx */
 static uint8_t
 ovcabac_read_ae_bcw_flag(OVCABACCtx *const cabac_ctx, uint8_t is_ldc){
+    static const int8_t parsing_order[BCW_NUM] = { 
+        BCW_DEFAULT, BCW_DEFAULT + 1, BCW_DEFAULT - 1, BCW_DEFAULT + 2, BCW_DEFAULT - 2
+    };
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    uint32_t idx = 0;
-    uint32_t symbol = ovcabac_ae_read(cabac_ctx, &cabac_state[BCW_IDX_CTX_OFFSET]);
+    uint32_t bcw_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[BCW_IDX_CTX_OFFSET]);
 
-    int32_t numBcw = is_ldc ? 5 : 3;
-    if(symbol == 1){
-        uint32_t prefixNumBits = numBcw - 2;
-        uint32_t step = 1;
+    if (bcw_flag) {
+        /* FIXME pass as argument directly */
+        int32_t nb_bcw_cand = is_ldc ? 5 : 3;
+        uint32_t nb_idx_bits = nb_bcw_cand - 2;
+        uint8_t bcw_idx = 1;
+        int i;
 
-        idx = 1;
-        for(int ui = 0; ui < prefixNumBits; ++ui){
+        for (i = 0; i < nb_idx_bits; ++i) {
             if(!ovcabac_bypass_read(cabac_ctx)){
                 break;
             }
-            idx += step;
+            ++bcw_idx;
         }
+        return parsing_order[bcw_idx];
     }
-    int parsing_order[BCW_NUM] =  { BCW_DEFAULT, BCW_DEFAULT+1, BCW_DEFAULT-1,
-                                        BCW_DEFAULT+2, BCW_DEFAULT-2};
-    return (uint8_t)parsing_order[idx];
+    return BCW_DEFAULT;
 }
 
 static uint8_t
