@@ -233,29 +233,30 @@ ovcabac_read_ae_ciip_flag(OVCABACCtx *const cabac_ctx){
 
 /* FIXME separate flag and idx */
 static uint8_t
-ovcabac_read_ae_bcw_flag(OVCABACCtx *const cabac_ctx, uint8_t is_ldc){
+ovcabac_read_ae_bcw_flag(OVCABACCtx *const cabac_ctx)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+    uint8_t bcw_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[BCW_IDX_CTX_OFFSET]);
+}
+
+static uint8_t
+ovcabac_read_ae_bcw_idx(OVCABACCtx *const cabac_ctx, uint8_t is_ldc){
     static const int8_t parsing_order[BCW_NUM] = { 
         BCW_DEFAULT, BCW_DEFAULT + 1, BCW_DEFAULT - 1, BCW_DEFAULT + 2, BCW_DEFAULT - 2
     };
-    uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    uint32_t bcw_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[BCW_IDX_CTX_OFFSET]);
 
-    if (bcw_flag) {
-        /* FIXME pass as argument directly */
-        int32_t nb_bcw_cand = is_ldc ? 5 : 3;
-        uint32_t nb_idx_bits = nb_bcw_cand - 2;
-        uint8_t bcw_idx = 1;
-        int i;
+    int32_t nb_bcw_cand = is_ldc ? 5 : 3;
+    uint32_t nb_idx_bits = nb_bcw_cand - 2;
+    uint8_t bcw_idx = 1;
+    int i;
 
-        for (i = 0; i < nb_idx_bits; ++i) {
-            if(!ovcabac_bypass_read(cabac_ctx)){
-                break;
-            }
-            ++bcw_idx;
+    for (i = 0; i < nb_idx_bits; ++i) {
+        if(!ovcabac_bypass_read(cabac_ctx)){
+            break;
         }
-        return parsing_order[bcw_idx];
+        ++bcw_idx;
     }
-    return BCW_DEFAULT;
+    return parsing_order[bcw_idx];
 }
 
 static uint8_t
@@ -1352,7 +1353,10 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                                         && (1 << (log2_pb_h + log2_pb_w) >= BCW_SIZE_CONSTRAINT)
                                         && inter_dir == 3) {
 
-                    bcw_idx = ovcabac_read_ae_bcw_flag(cabac_ctx, inter_ctx->tmvp_ctx.ldc);
+                    uint8_t bcw_flag = ovcabac_read_ae_bcw_flag(cabac_ctx);
+                    if (bcw_flag) {
+                        bcw_idx = ovcabac_read_ae_bcw_idx(cabac_ctx, inter_ctx->tmvp_ctx.ldc);
+                    }
                 }
 
                 /* TODO call affine drv MVP and rcn functions */
@@ -1404,7 +1408,10 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         if (inter_ctx->bcw_flag && !ibc_flag
                                 && (1 << (log2_pb_h + log2_pb_w) >= BCW_SIZE_CONSTRAINT)
                                 && inter_dir == 3) {
-            bcw_idx = ovcabac_read_ae_bcw_flag(cabac_ctx, inter_ctx->tmvp_ctx.ldc);
+            uint8_t bcw_flag = ovcabac_read_ae_bcw_flag(cabac_ctx);
+            if (bcw_flag) {
+                bcw_idx = ovcabac_read_ae_bcw_idx(cabac_ctx, inter_ctx->tmvp_ctx.ldc);
+            }
         }
 
         if (smvd_flag) {
