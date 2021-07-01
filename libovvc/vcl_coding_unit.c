@@ -261,46 +261,45 @@ ovcabac_read_ae_bcw_flag(OVCABACCtx *const cabac_ctx, uint8_t is_ldc){
 static uint8_t
 ovcabac_read_ae_amvr_precision(OVCABACCtx *const cabac_ctx, uint8_t ibc_flag)
 {
+    static const uint8_t amvr_precision[4] = {
+        MV_PRECISION_QUARTER, MV_PRECISION_INT, MV_PRECISION_4PEL, MV_PRECISION_HALF
+    };
+
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    uint8_t value = 0;
-    uint8_t prec_idx = 0;
     if (ibc_flag){
-        value = 1;
-    }
-    else{
-        value = ovcabac_ae_read(cabac_ctx, &cabac_state[IMV_FLAG_CTX_OFFSET]);
-    }
+        uint8_t value = ovcabac_ae_read(cabac_ctx, &cabac_state[IMV_FLAG_CTX_OFFSET + 1]);
+        uint8_t prec_idx = value + 1;
+        return amvr_precision[prec_idx];
+    } else {
+        uint8_t amvr_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[IMV_FLAG_CTX_OFFSET]);
+        if (amvr_flag) {
+            uint8_t prec_idx = 3;
+            uint8_t value = ovcabac_ae_read(cabac_ctx, &cabac_state[IMV_FLAG_CTX_OFFSET + 4]);
 
-    if( value ){
-        if (!ibc_flag){
-            value = ovcabac_ae_read(cabac_ctx, &cabac_state[IMV_FLAG_CTX_OFFSET + 4]);
-            prec_idx = value ? 1 : 3;
+            if (value) {
+                value = ovcabac_ae_read(cabac_ctx, &cabac_state[IMV_FLAG_CTX_OFFSET + 1]);
+                prec_idx = value + 1;
+            }
+            return amvr_precision[prec_idx];
         }
-        if (value){
-            value = ovcabac_ae_read(cabac_ctx, &cabac_state[IMV_FLAG_CTX_OFFSET + 1]);
-            prec_idx = value + 1;
-        }
     }
 
-    int amvr_precision[4] = { MV_PRECISION_QUARTER, MV_PRECISION_INT, MV_PRECISION_4PEL, MV_PRECISION_HALF };
-
-    return amvr_precision[prec_idx];
+    return amvr_precision[0];
 }
 
 static uint8_t
 ovcabac_read_ae_affine_amvr_precision(OVCABACCtx *const cabac_ctx, uint8_t ibc_flag)
 {
+    static const uint8_t aff_amvr_precision[4] = {
+        MV_PRECISION_QUARTER, MV_PRECISION_SIXTEENTH, MV_PRECISION_INT
+    };
+
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    uint8_t value = 0;
-    uint8_t prec_idx = 0;
 
-    value = ovcabac_ae_read(cabac_ctx, &cabac_state[IMV_FLAG_CTX_OFFSET + 2]);
-    if( value ){
-        value = ovcabac_ae_read(cabac_ctx, &cabac_state[IMV_FLAG_CTX_OFFSET + 3]);
-        prec_idx = value + 1;
-    }
+    uint8_t prec_idx = ovcabac_ae_read(cabac_ctx, &cabac_state[IMV_FLAG_CTX_OFFSET + 2]);
 
-    int aff_amvr_precision[4] = { MV_PRECISION_QUARTER, MV_PRECISION_SIXTEENTH, MV_PRECISION_INT };
+    prec_idx += prec_idx && ovcabac_ae_read(cabac_ctx, &cabac_state[IMV_FLAG_CTX_OFFSET + 3]);
+
     return aff_amvr_precision[prec_idx];
 }
 
