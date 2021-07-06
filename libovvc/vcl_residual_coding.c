@@ -349,7 +349,8 @@ decode_bypassed_coeff_core(OVCABACCtx *const cabac_ctx,
     const uint8_t x_mask = (1 << log2_sb_w) - 1;
 
     const uint16_t state_trans_tab = dep_quant->state_trans_table;
-    uint8_t pos_shift = ((15 - (last_scan_pos & 0xF)) << 2);
+    int max_start = (1 << (scan_ctx->log2_sb_w + scan_ctx->log2_sb_h)) - 1;
+    uint8_t pos_shift = ((max_start - (last_scan_pos & 0xF)) << 2);
     uint64_t scan_map = inv_diag_map >> pos_shift;
 
     for(scan_pos = last_scan_pos; scan_pos >= 0; --scan_pos){
@@ -451,7 +452,8 @@ residual_coding_first_subblock_4x4(OVCABACCtx *const cabac_ctx,
 
     // Implicit first coeff
     int scan_pos = start_pos;
-    uint8_t pos_shift = ((15 - (scan_pos & 0xF)) << 2);
+    int max_start = (1 << (scan_ctx->log2_sb_w + scan_ctx->log2_sb_h)) - 1;
+    uint8_t pos_shift = ((max_start - (scan_pos & 0xF)) << 2);
     uint64_t scan_map = inv_diag_map        >> pos_shift;
     uint64_t par_map  = par_flag_offset_map >> pos_shift;
     uint64_t sig_map  = sig_flag_offset_map >> pos_shift;
@@ -775,7 +777,7 @@ residual_coding_subblock_dc(OVCABACCtx *const cabac_ctx,
     int num_rem_bins = c_coding_ctx->num_remaining_bins;
     int prev_state  = *state;
 
-    int scan_pos = 15;
+    int scan_pos = start_pos;
     uint64_t scan_map = inv_diag_map;
     uint64_t par_map  = par_flag_offset_map;
     uint64_t sig_map  = sig_flag_offset_map;
@@ -1762,7 +1764,8 @@ decode_bypassed_coeff_sdh(OVCABACCtx *const cabac_ctx,
     const uint8_t log2_sb_w     = scan_ctx->log2_sb_w;
     const uint8_t x_mask = (1 << log2_sb_w) - 1;
 
-    uint8_t pos_shift = ((15 - (last_scan_pos & 0xF)) << 2);
+    int max_start = (1 << (scan_ctx->log2_sb_w + scan_ctx->log2_sb_h)) - 1;
+    uint8_t pos_shift = ((max_start - (last_scan_pos & 0xF)) << 2);
     uint64_t scan_map = inv_diag_map >> pos_shift;
 
     for(scan_pos = last_scan_pos; scan_pos >= 0; --scan_pos){
@@ -1860,7 +1863,8 @@ residual_coding_first_subblock_sdh(OVCABACCtx *const cabac_ctx,
 
     // Implicit first coeff
     int scan_pos = start_pos;
-    uint8_t pos_shift = ((15 - (scan_pos & 0xF)) << 2);
+    int max_start = (1 << (scan_ctx->log2_sb_w + scan_ctx->log2_sb_h)) - 1;
+    uint8_t pos_shift = ((max_start - (scan_pos & 0xF)) << 2);
     uint64_t scan_map = inv_diag_map        >> pos_shift;
     uint64_t par_map  = par_flag_offset_map >> pos_shift;
     uint64_t sig_map  = sig_flag_offset_map >> pos_shift;
@@ -1955,8 +1959,9 @@ residual_coding_first_subblock_sdh(OVCABACCtx *const cabac_ctx,
     }
 
     if (num_sig_c){
-        uint8_t first_nz = (scan_ctx->scan_idx_map >> ((15 - (sig_idx_map[0])) << 2)) & 0XF;
-        uint8_t last_nz  = (scan_ctx->scan_idx_map >> ((15 - (sig_idx_map[num_sig_c - 1])) << 2)) & 0XF;
+        int max_start = (1 << (scan_ctx->log2_sb_w + scan_ctx->log2_sb_h)) - 1;
+        uint8_t first_nz = (scan_ctx->scan_idx_map >> ((max_start - (sig_idx_map[0])) << 2)) & 0XF;
+        uint8_t last_nz  = (scan_ctx->scan_idx_map >> ((max_start - (sig_idx_map[num_sig_c - 1])) << 2)) & 0XF;
         uint8_t use_sdh =  c_coding_ctx->enable_sdh && (first_nz - last_nz) >= 4;
         decode_signs_sdh(cabac_ctx, coeffs, sig_idx_map, num_sig_c, use_sdh);
     }
@@ -1997,7 +2002,8 @@ residual_coding_subblock_sdh(OVCABACCtx *const cabac_ctx,
 
     int num_rem_bins = c_coding_ctx->num_remaining_bins;
 
-    int scan_pos = 15;
+    int max_start = (1 << (scan_ctx->log2_sb_w + scan_ctx->log2_sb_h)) - 1;
+    int scan_pos = max_start;
     uint64_t scan_map = inv_diag_map;
     uint64_t par_map  = par_flag_offset_map;
     uint64_t sig_map  = sig_flag_offset_map;
@@ -2116,8 +2122,9 @@ residual_coding_subblock_sdh(OVCABACCtx *const cabac_ctx,
     }
 
     if (num_sig_c){
-        uint8_t first_nz = (scan_ctx->scan_idx_map >> ((15 - (sig_idx_map[0])) << 2)) & 0XF;
-        uint8_t last_nz  = (scan_ctx->scan_idx_map >> ((15 - (sig_idx_map[num_sig_c - 1])) << 2)) & 0XF;
+        int max_start = (1 << (scan_ctx->log2_sb_w + scan_ctx->log2_sb_h)) - 1;
+        uint8_t first_nz = (scan_ctx->scan_idx_map >> ((max_start - (sig_idx_map[0])) << 2)) & 0XF;
+        uint8_t last_nz  = (scan_ctx->scan_idx_map >> ((max_start - (sig_idx_map[num_sig_c - 1])) << 2)) & 0XF;
         uint8_t use_sdh =  c_coding_ctx->enable_sdh && (first_nz - last_nz) >= 4;
         decode_signs_sdh(cabac_ctx, coeffs, sig_idx_map, num_sig_c, use_sdh);
     }
@@ -2158,7 +2165,8 @@ residual_coding_subblock_dc_sdh(OVCABACCtx *const cabac_ctx,
 
     int num_rem_bins = c_coding_ctx->num_remaining_bins;
 
-    int scan_pos = 15;
+    int max_start = (1 << (scan_ctx->log2_sb_w + scan_ctx->log2_sb_h)) - 1;
+    int scan_pos = max_start;
     uint64_t scan_map = inv_diag_map;
     uint64_t par_map  = par_flag_offset_map;
     uint64_t sig_map  = sig_flag_offset_map;
@@ -2275,8 +2283,9 @@ residual_coding_subblock_dc_sdh(OVCABACCtx *const cabac_ctx,
     }
 
     if (num_sig_c){
-        uint8_t first_nz = (scan_ctx->scan_idx_map >> ((15 - (sig_idx_map[0])) << 2)) & 0XF;
-        uint8_t last_nz  = (scan_ctx->scan_idx_map >> ((15 - (sig_idx_map[num_sig_c - 1])) << 2)) & 0XF;
+        int max_start = (1 << (scan_ctx->log2_sb_w + scan_ctx->log2_sb_h)) - 1;
+        uint8_t first_nz = (scan_ctx->scan_idx_map >> ((max_start - (sig_idx_map[0])) << 2)) & 0XF;
+        uint8_t last_nz  = (scan_ctx->scan_idx_map >> ((max_start - (sig_idx_map[num_sig_c - 1])) << 2)) & 0XF;
         uint8_t use_sdh =  c_coding_ctx->enable_sdh && (first_nz - last_nz) >= 4;
         decode_signs_sdh(cabac_ctx, coeffs, sig_idx_map, num_sig_c, use_sdh);
     }
