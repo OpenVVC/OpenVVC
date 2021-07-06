@@ -84,77 +84,123 @@ static const uint64_t inv_diag_map_8x2 = 0x08192A3B4C5D6E7F;
 static const uint64_t diag_map_4X4 = 0xFBE7AD369C258140;
 static const uint64_t diag_map_2x8 = 0xFDEBC9A785634120;
 static const uint64_t diag_map_8x2 = 0xF7E6D5C4B3A29180;
+static const uint64_t diag_map_2x2 = 0x0000000000003120;
 
 
-static const VVCSBScanContext inv_diag_4x4_scan = {
+static const VVCSBScanContext inv_diag_4x4_scan =
+{
      0x041852C963DA7EBF,
      0x0259148C37BE6ADF,
      2,
      2,
 };
 
-static const VVCSBScanContext inv_diag_2x8_scan = {
+static const VVCSBScanContext inv_diag_2x8_scan =
+{
      0x021436587A9CBEDF,
      0x021436587A9CBEDF,
      1,
      3,
 };
 
-static const VVCSBScanContext inv_diag_8x2_scan = {
+static const VVCSBScanContext inv_diag_8x2_scan =
+{
      0x08192A3B4C5D6E7F,
      0x02468ACE13579BDF,
      3,
      1,
 };
 
-static const VVCSBScanContext inv_diag_2x4_scan = {
+static const VVCSBScanContext inv_diag_2x4_scan =
+{
      0x0213465700000000,
      0x0213465700000000,
      1,
      3,
 };
 
-static const VVCSBScanContext inv_diag_2x2_scan = {
-     0x0213,
-     0x0213,
-     1,
-     1,
-};
-
-static const VVCSBScanContext inv_diag_4x2_scan = {
+static const VVCSBScanContext inv_diag_4x2_scan =
+{
      0x08192A3B4C5D6E7F,
      0x02468ACE13579BDF,
      3,
      1,
 };
 
-static const VVCSBScanContext inv_diag_1x16_scan = {
+static const VVCSBScanContext inv_diag_2x2_scan =
+{
+     0x0213,
+     0x0213,
+     1,
+     1,
+};
+
+static const VVCSBScanContext inv_diag_1x16_scan =
+{
      0x0123456789ABCDEF,
      0x0123456789ABCDEF,
      4,
      0,
 };
 
-static const uint64_t parity_flag_offset_map[3] ={
+/* Transform skip scan_ctx */
+static const VVCSBScanContext diag_4x4_scan =
+{
+     0xFBE7AD369C258140,
+     0x0,
+     2,
+     2,
+};
+
+static const VVCSBScanContext diag_2x8_scan =
+{
+     0xFDEBC9A785634120,
+     0x0,
+     1,
+     3,
+};
+
+static const VVCSBScanContext diag_8x2_scan =
+{
+     0xF7E6D5C4B3A29180,
+     0x0,
+     3,
+     1,
+};
+
+static const VVCSBScanContext diag_2x2_scan =
+{
+     0x3120,
+     0x0,
+     1,
+     1,
+};
+
+
+static const uint64_t parity_flag_offset_map[3] =
+{
     0xFAAAAA5555555555,
     0x5555555555555550,
     0x5550000000000000
 };
 
-static const uint64_t sig_flag_offset_map[3] ={
+static const uint64_t sig_flag_offset_map[3] =
+{
     0x8884444444444000,
     0x4000000000000000,
     0x0000000000000000
 };
 
-static const VVCSBStates luma_ctx_offsets = {
+static const VVCSBStates luma_ctx_offsets =
+{
     SIG_FLAG_CTX_OFFSET,
     GT0_FLAG_CTX_OFFSET,
     PAR_FLAG_CTX_OFFSET,
     GT1_FLAG_CTX_OFFSET,
 };
 
-static const VVCSBStates chroma_ctx_offsets = {
+static const VVCSBStates chroma_ctx_offsets =
+{
     SIG_FLAG_C_CTX_OFFSET,
     GT0_FLAG_C_CTX_OFFSET,
     PAR_FLAG_C_CTX_OFFSET,
@@ -1571,12 +1617,14 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
                            int16_t  *const coeffs,
                            const TSCoeffCodingCtx *cctx,
                            int16_t *const num_remaining_bins,
-                           uint8_t log2_sb_w,
-                           uint64_t scan_map)
+                           const VVCSBScanContext *const scan_ctx)
 {
     uint64_t *const ctx_table = cabac_ctx->ctx_table;
+    const uint8_t log2_sb_w = scan_ctx->log2_sb_w;
+    uint64_t scan_map = scan_ctx->scan_map;
 
     const int x_mask = (1 << log2_sb_w) - 1;
+    const uint8_t max_scan_pos = (1 << (log2_sb_w + scan_ctx->log2_sb_h)) - 1;
     
     uint8_t sig_c_idx_map[16];
     uint8_t pass2_idx_map[16];
@@ -1592,7 +1640,7 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
 
     int coeff_idx;
 
-    for (coeff_idx = 0; coeff_idx < 16 - 1 && *num_remaining_bins >= 4; ++coeff_idx) {
+    for (coeff_idx = 0; coeff_idx < max_scan_pos && *num_remaining_bins >= 4; ++coeff_idx) {
 
         int idx = scan_map & 0xF;
 
@@ -1664,7 +1712,7 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
 
             sign_map |= ts_sign_flag << nb_sig_c;
 
-            sig_c_idx_map[nb_sig_c++] = 15;
+            sig_c_idx_map[nb_sig_c++] = max_scan_pos;
 
             --(*num_remaining_bins);
             --(*num_remaining_bins);
@@ -1672,14 +1720,14 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
             if (ts_gt1_flag) {
                 uint8_t ts_parity_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_PAR_FLAG_CTX_OFFSET]);
                 value += 1 + ts_parity_flag;
-                pass2_idx_map[nb_pass2++] = 15;
+                pass2_idx_map[nb_pass2++] = max_scan_pos;
                 --(*num_remaining_bins);
             }
 
             update_ts_neighbourhood_first_pass(cctx->nb_sig_ngh, cctx->sign_map, cctx->abs_coeffs,
                                                x, y, value, ts_sign_flag);
 
-            coeffs[15] = value;
+            coeffs[max_scan_pos] = value;
         }
         ++coeff_idx;
         scan_map >>= 4;
@@ -1735,7 +1783,7 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
     }
 
     /* Bypass coded coefficients from pass 1 */
-    for (int scan_idx = coeff_idx; scan_idx <= 15; scan_idx++) {
+    for (int scan_idx = coeff_idx; scan_idx <= max_scan_pos; scan_idx++) {
         int idx = scan_map & 0xF;
         coeffs[idx] = decode_truncated_rice(cabac_ctx, 1) >> 1;
 
@@ -1765,12 +1813,11 @@ ovcabac_read_ae_sb_ts_4x4(OVCABACCtx *const cabac_ctx,
                           int16_t *const num_remaining_bins)
 {
     int ret;
-    uint64_t scan_map = diag_map_4X4;
 
     ret = ovcabac_read_ae_sb_ts_core(cabac_ctx, coeffs,
                                      cctx,
                                      num_remaining_bins,
-                                     2, scan_map);
+                                     &diag_4x4_scan);
     return ret;
 }
 
@@ -1781,28 +1828,11 @@ ovcabac_read_ae_sb_ts_2x8(OVCABACCtx *const cabac_ctx,
                           int16_t *const num_remaining_bins)
 {
     int ret;
-    uint64_t scan_map = diag_map_2x8;
 
     ret = ovcabac_read_ae_sb_ts_core(cabac_ctx, coeffs,
                                      cctx,
                                      num_remaining_bins,
-                                     1, scan_map);
-    return ret;
-}
-
-static int
-ovcabac_read_ae_sb_ts_2x2(OVCABACCtx *const cabac_ctx,
-                          int16_t  *const coeffs,
-                          const TSCoeffCodingCtx *const cctx,
-                          int16_t *const num_remaining_bins)
-{
-    int ret;
-    uint64_t scan_map = diag_map_2x2;
-
-    ret = ovcabac_read_ae_sb_ts_core(cabac_ctx, coeffs,
-                                     cctx,
-                                     num_remaining_bins,
-                                     1, scan_map);
+                                     &diag_2x8_scan);
     return ret;
 }
 
@@ -1813,12 +1843,27 @@ ovcabac_read_ae_sb_ts_8x2(OVCABACCtx *const cabac_ctx,
                           int16_t *const num_remaining_bins)
 {
     int ret;
-    uint64_t scan_map = diag_map_8x2;
 
     ret = ovcabac_read_ae_sb_ts_core(cabac_ctx, coeffs,
                                      cctx,
                                      num_remaining_bins,
-                                     3, scan_map);
+                                     &diag_8x2_scan);
+    return ret;
+}
+
+
+static int
+ovcabac_read_ae_sb_ts_2x2(OVCABACCtx *const cabac_ctx,
+                          int16_t  *const coeffs,
+                          const TSCoeffCodingCtx *const cctx,
+                          int16_t *const num_remaining_bins)
+{
+    int ret;
+
+    ret = ovcabac_read_ae_sb_ts_core(cabac_ctx, coeffs,
+                                     cctx,
+                                     num_remaining_bins,
+                                     &diag_2x2_scan);
     return ret;
 }
 
@@ -4288,7 +4333,6 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
-    /* FIXME usefull return ?? */
     int nb_sig_c = 0;
 
     uint8_t log2_tb_s = log2_tb_h + log2_tb_w;
