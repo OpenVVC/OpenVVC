@@ -48,6 +48,7 @@ typedef struct VVCSBScanContext{
    const uint64_t scan_map;
    const uint64_t scan_idx_map;
    const uint8_t log2_sb_w;
+   const uint8_t log2_sb_h;
 }VVCSBScanContext;
 
 typedef struct VVCSBContext{
@@ -82,25 +83,49 @@ static const VVCSBScanContext inv_diag_4x4_scan = {
      0x041852C963DA7EBF,
      0x0259148C37BE6ADF,
      2,
+     2,
 };
 
 static const VVCSBScanContext inv_diag_2x8_scan = {
      0x021436587A9CBEDF,
      0x021436587A9CBEDF,
      1,
+     3,
 };
 
 static const VVCSBScanContext inv_diag_8x2_scan = {
      0x08192A3B4C5D6E7F,
      0x02468ACE13579BDF,
      3,
+     1,
 };
 
+static const VVCSBScanContext inv_diag_2x4_scan = {
+     0x0213465700000000,
+     0x0213465700000000,
+     1,
+     3,
+};
+
+static const VVCSBScanContext inv_diag_2x2_scan = {
+     0x0213,
+     0x0213,
+     1,
+     1,
+};
+
+static const VVCSBScanContext inv_diag_4x2_scan = {
+     0x08192A3B4C5D6E7F,
+     0x02468ACE13579BDF,
+     3,
+     1,
+};
 
 static const VVCSBScanContext inv_diag_1x16_scan = {
      0x0123456789ABCDEF,
      0x0123456789ABCDEF,
      4,
+     0,
 };
 
 static const uint64_t parity_flag_offset_map[3] ={
