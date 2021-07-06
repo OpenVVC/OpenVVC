@@ -1086,8 +1086,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
 {
     ctudec->drv_ctx.inter_ctx.bi_dir_pred_flag = 0;
     if (prms->sps->sps_smvd_enabled_flag && !ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc
-        && !ctudec->drv_ctx.inter_ctx.mvd1_zero_flag)
-    {
+        && !ctudec->drv_ctx.inter_ctx.mvd1_zero_flag) {
         int forw_poc = cur_poc;
         int back_poc = cur_poc;
         int ref = 0;
