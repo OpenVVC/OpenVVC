@@ -951,6 +951,8 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
             if (isp_split_status) {
                 isp_split_status  = (log2_cb_w <=  part_ctx->log2_max_tb_s) << 1;
                 isp_split_status |= log2_cb_h <=  part_ctx->log2_max_tb_s;
+                if (log2_cb_w > part_ctx->log2_max_tb_s || log2_cb_h > part_ctx->log2_max_tb_s)
+                    isp_split_status = 0;
             }
 
             isp_mode = ovcabac_read_ae_intra_subpartition_flag(cabac_ctx, isp_split_status);
