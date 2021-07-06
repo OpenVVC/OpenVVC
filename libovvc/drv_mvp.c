@@ -327,6 +327,8 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
         memset(tmvp_ctx->dir_map_v0, 0, sizeof(uint64_t) * 34);
         memset(tmvp_ctx->dir_map_v1, 0, sizeof(uint64_t) * 34);
     }
+        memset(tmvp_ctx->mvs0, 0, sizeof(tmvp_ctx->mvs0));
+        memset(tmvp_ctx->mvs1, 0, sizeof(tmvp_ctx->mvs1));
 
     if (plane0 && plane0->dirs) {
         uint64_t *src_dirs = plane0->dirs + ctb_addr_rs * nb_pb_ctb_w;

@@ -355,6 +355,8 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
         memset(tmvp_ctx->dir_map_v0, 0, sizeof(uint64_t) * 34);
         memset(tmvp_ctx->dir_map_v1, 0, sizeof(uint64_t) * 34);
     }
+        memset(tmvp_ctx->mvs0, 0, sizeof(tmvp_ctx->mvs0));
+        memset(tmvp_ctx->mvs1, 0, sizeof(tmvp_ctx->mvs1));
 
     if (plane0 && plane0->dirs) {
         uint64_t *src_dirs = plane0->dirs + ctb_addr_rs * nb_pb_ctb_w;
@@ -971,7 +973,7 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
     int x0 = pb_info.x_pb << 2;
     int y0 = pb_info.y_pb << 2;
 
-    struct AffineControlInfo dst_cp;
+    struct AffineControlInfo dst_cp = {0};
     uint8_t ref_idx = ngh_cp->lt.ref_idx;
     uint8_t bcw_idx_plus1 = ngh_cp->lt.bcw_idx_plus1;
     uint8_t prec_amvr = ngh_cp->lt.prec_amvr;
@@ -989,7 +991,7 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
     struct AffineDeltaMV delta_mv = derive_affine_delta_mvs(ngh_cp, log2_ngh_w, log2_ngh_h,
                                                             ngh_affine_type);
 
-    OVMV tmp, lt_mv;
+    OVMV tmp = {0}, lt_mv = {0};
 
     if (is_abv_ctu || ngh_affine_type == AFFINE_2CP) {
         delta_mv.v.x = -delta_mv.h.y;
@@ -1185,9 +1187,9 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
 
     int cand_mask = 0;
     uint8_t prec_amvr = inter_ctx->prec_amvr;
-    OVMV lt_mv_cand;
-    OVMV rt_mv_cand;
-    OVMV lb_mv_cand;
+    OVMV lt_mv_cand = {0};
+    OVMV rt_mv_cand = {0};
+    OVMV lb_mv_cand = {0};
 
     OVMV mv_aff[3];
 
@@ -1394,6 +1396,7 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
     for (int i = 0; i < nb_cand; i++) {
         cp_info[i].lt = round_affine_mv(cp_info[i].lt, prec_amvr);
         cp_info[i].rt = round_affine_mv(cp_info[i].rt, prec_amvr);
+        if (affine_type)
         cp_info[i].lb = round_affine_mv(cp_info[i].lb, prec_amvr);
     }
     return cp_info[mvp_idx];
@@ -2080,8 +2083,8 @@ static uint8_t
 derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                               struct AffineMergeInfo *const aff_mrg_ctx)
 {
-    OVMV mv0[4];
-    OVMV mv1[4];
+    OVMV mv0[4] = {0};
+    OVMV mv1[4] = {0};
 
     uint8_t dir = 0;
 
@@ -2095,6 +2098,16 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv0[1] = mi.mv0[1];
                 mv0[2] = mi.mv0[2];
 
+                mv0[1].ref_idx = mi.mv0[0].ref_idx;
+                mv0[2].ref_idx = mi.mv0[0].ref_idx;
+
+                mv0[2].bcw_idx_plus1 = mi.mv0[CP_LT].bcw_idx_plus1;
+                mv0[2].prec_amvr = mi.mv0[CP_LT].prec_amvr;
+                mv0[0].bcw_idx_plus1 = mi.mv0[CP_LT].bcw_idx_plus1;
+                mv0[0].prec_amvr = mi.mv0[CP_LT].prec_amvr;
+                mv0[1].bcw_idx_plus1 = mi.mv0[CP_LT].bcw_idx_plus1;
+                mv0[1].prec_amvr = mi.mv0[CP_LT].prec_amvr;
+
                 dir |= 0x1;
             }
 
@@ -2104,6 +2117,15 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv1[0] = mi.mv1[0];
                 mv1[1] = mi.mv1[1];
                 mv1[2] = mi.mv1[2];
+                mv1[1].ref_idx = mi.mv1[0].ref_idx;
+                mv1[2].ref_idx = mi.mv1[0].ref_idx;
+
+                mv1[2].bcw_idx_plus1 = mi.mv1[CP_LT].bcw_idx_plus1;
+                mv1[2].prec_amvr = mi.mv1[CP_LT].prec_amvr;
+                mv1[0].bcw_idx_plus1 = mi.mv1[CP_LT].bcw_idx_plus1;
+                mv1[0].prec_amvr = mi.mv1[CP_LT].prec_amvr;
+                mv1[1].bcw_idx_plus1 = mi.mv1[CP_LT].bcw_idx_plus1;
+                mv1[1].prec_amvr = mi.mv1[CP_LT].prec_amvr;
 
                 dir |= 0x2;
             }
@@ -2125,6 +2147,10 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv0[2].ref_idx = mi.mv0[CP_LT].ref_idx;
                 mv0[2].bcw_idx_plus1 = mi.mv0[CP_LT].bcw_idx_plus1;
                 mv0[2].prec_amvr = mi.mv0[CP_LT].prec_amvr;
+                mv0[0].bcw_idx_plus1 = mi.mv0[CP_LT].bcw_idx_plus1;
+                mv0[0].prec_amvr = mi.mv0[CP_LT].prec_amvr;
+                mv0[1].bcw_idx_plus1 = mi.mv0[CP_LT].bcw_idx_plus1;
+                mv0[1].prec_amvr = mi.mv0[CP_LT].prec_amvr;
 
                 dir |= 0x1;
             }
@@ -2144,6 +2170,10 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv1[2].ref_idx = mi.mv1[CP_LT].ref_idx;
                 mv1[2].bcw_idx_plus1 = mi.mv1[CP_LT].bcw_idx_plus1;
                 mv1[2].prec_amvr = mi.mv1[CP_LT].prec_amvr;
+                mv1[0].bcw_idx_plus1 = mi.mv1[CP_LT].bcw_idx_plus1;
+                mv1[0].prec_amvr = mi.mv1[CP_LT].prec_amvr;
+                mv1[1].bcw_idx_plus1 = mi.mv1[CP_LT].bcw_idx_plus1;
+                mv1[1].prec_amvr = mi.mv1[CP_LT].prec_amvr;
 
                 dir |= 0x2;
             }
@@ -2165,6 +2195,10 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv0[1].ref_idx = mi.mv0[CP_LT].ref_idx;
                 mv0[1].bcw_idx_plus1 = mi.mv0[CP_LT].bcw_idx_plus1;
                 mv0[1].prec_amvr = mi.mv0[CP_LT].prec_amvr;
+                mv0[0].bcw_idx_plus1 = mi.mv0[CP_LT].bcw_idx_plus1;
+                mv0[0].prec_amvr = mi.mv0[CP_LT].prec_amvr;
+                mv0[2].bcw_idx_plus1 = mi.mv0[CP_LT].bcw_idx_plus1;
+                mv0[2].prec_amvr = mi.mv0[CP_LT].prec_amvr;
 
                 dir |= 0x1;
             }
@@ -2184,6 +2218,10 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv1[1].ref_idx = mi.mv1[CP_LT].ref_idx;
                 mv1[1].bcw_idx_plus1 = mi.mv1[CP_LT].bcw_idx_plus1;
                 mv1[1].prec_amvr = mi.mv1[CP_LT].prec_amvr;
+                mv1[0].bcw_idx_plus1 = mi.mv1[CP_LT].bcw_idx_plus1;
+                mv1[0].prec_amvr = mi.mv1[CP_LT].prec_amvr;
+                mv1[2].bcw_idx_plus1 = mi.mv1[CP_LT].bcw_idx_plus1;
+                mv1[2].prec_amvr = mi.mv1[CP_LT].prec_amvr;
 
                 dir |= 0x2;
             }
@@ -2205,6 +2243,10 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv0[0].ref_idx = mi.mv0[CP_RT].ref_idx;
                 mv0[0].bcw_idx_plus1 = mi.mv0[CP_RT].bcw_idx_plus1;
                 mv0[0].prec_amvr = mi.mv0[CP_RT].prec_amvr;
+                mv0[1].bcw_idx_plus1 = mi.mv0[CP_RT].bcw_idx_plus1;
+                mv0[1].prec_amvr = mi.mv0[CP_RT].prec_amvr;
+                mv0[2].bcw_idx_plus1 = mi.mv0[CP_RT].bcw_idx_plus1;
+                mv0[2].prec_amvr = mi.mv0[CP_RT].prec_amvr;
 
                 dir |= 0x1;
             }
@@ -2224,6 +2266,10 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
                 mv1[0].ref_idx = mi.mv1[CP_RT].ref_idx;
                 mv1[0].bcw_idx_plus1 = mi.mv1[CP_RT].bcw_idx_plus1;
                 mv1[0].prec_amvr = mi.mv1[CP_RT].prec_amvr;
+                mv1[1].bcw_idx_plus1 = mi.mv1[CP_RT].bcw_idx_plus1;
+                mv1[1].prec_amvr = mi.mv1[CP_RT].prec_amvr;
+                mv1[2].bcw_idx_plus1 = mi.mv1[CP_RT].bcw_idx_plus1;
+                mv1[2].prec_amvr = mi.mv1[CP_RT].prec_amvr;
 
                 dir |= 0x2;
             }
@@ -2300,8 +2346,8 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
         const struct AffineInfo *const affine_info = &affine_ctx->affine_info[cand_pos];
         const enum AffineType affine_type = affine_info->type;
 
-        struct AffineControlInfo cp_info0;
-        struct AffineControlInfo cp_info1;
+        struct AffineControlInfo cp_info0 = {0};
+        struct AffineControlInfo cp_info1 = {0};
 
         uint8_t dir = (!!(rpl0_cand & cand_lft)) | ((!!(rpl1_cand & cand_lft)) << 1);
 
@@ -2340,8 +2386,8 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
         const struct AffineInfo *const affine_info = &affine_ctx->affine_info[cand_pos];
         const enum AffineType affine_type = affine_info->type;
 
-        struct AffineControlInfo cp_info0;
-        struct AffineControlInfo cp_info1;
+        struct AffineControlInfo cp_info0 = {0};
+        struct AffineControlInfo cp_info1 = {0};
 
         uint8_t dir = (!!(rpl0_cand & cand_abv)) | ((!!(rpl1_cand & cand_abv)) << 1);
 

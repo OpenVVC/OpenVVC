@@ -320,8 +320,8 @@ put_vvc_qpel_bilinear_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _s
     int offset = 1 << (shift - 1);
 
     src += 1;
-    for (y = 0; y < height + 1; y++) {
-        for (x = 0; x < width + 1; x++) {
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
             dst[x] = ov_clip_pixel((BLN_FILTER_L(src, 1, filter) +
                                     offset) >> shift);
         }
@@ -345,8 +345,8 @@ put_vvc_qpel_bilinear_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _s
     int offset = 1 << (shift - 1);
 
     src += srcstride;
-    for (y = 0; y < height + 1; y++) {
-        for (x = 0; x < width + 1; x++) {
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
             dst[x] = ov_clip_pixel((BLN_FILTER_L(src, srcstride, filter)
                                     + offset) >> shift);
         }
@@ -374,8 +374,8 @@ put_vvc_qpel_bilinear_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _
 
     filter = ov_bilinear_filters_4[mx - 1];
 
-    for (y = 0; y < height + 1; y++) {
-        for (x = 0; x < width + 1; x++) {
+    for (y = 0; y < height + 2; y++) {
+        for (x = 0; x < width + 2; x++) {
             tmp[x] = (BLN_FILTER_L(src, 1, filter) + offset) >> shift;
         }
         src += srcstride;
@@ -385,8 +385,8 @@ put_vvc_qpel_bilinear_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _
     tmp = tmp_array + MAX_PB_SIZE + 1;
     filter = ov_bilinear_filters_4[my - 1];
 
-    for (y = 0; y < height + 1; y++) {
-        for (x = 0; x < width + 1; x++) {
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
             dst[x] = ov_clip_pixel((BLN_FILTER_L(tmp, MAX_PB_SIZE, filter) +
                                     offset) >> shift);
         }
