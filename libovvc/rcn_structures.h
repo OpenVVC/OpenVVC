@@ -98,6 +98,17 @@ typedef void (*ALFFilterBlkFunc)(uint8_t * class_idx_arr, uint8_t * transpose_id
                         struct Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                         const int ctu_height, int virbnd_pos);
 
+
+typedef void (*ALFChromaFilterBlkFunc)(int16_t *const dst, const int16_t *const src,
+                                       const int dstStride, const int srcStride,
+                                       struct Area blk_dst,
+                                       const int16_t *const filter_set, const int16_t *const clip_set,
+                                       const int ctu_height, int virbnd_pos);
+
+typedef void (*CCALFFilterBlkFunc)(int16_t * chroma_dst, int16_t * luma_src, const int chr_stride, const int luma_stride,
+                        const struct Area blk_dst, const uint8_t c_id, const int16_t *filt_coeff,
+                        const int vbCTUHeight, int vbPos);
+
 typedef void (*SAOBandFilterFunc)(uint8_t* _dst, uint8_t* _src,
                                   ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                                   struct SAOParamsCtu* sao, int width,
@@ -173,11 +184,8 @@ struct MIPFunctions
 
 struct ALFFunctions{
   ALFFilterBlkFunc luma[2];
-    void (*chroma)(int16_t *const dst, const int16_t *const src,
-                   const int dstStride, const int srcStride,
-                   struct Area blk_dst,
-                   const int16_t *const filter_set, const int16_t *const clip_set,
-                   const int ctu_height, int virbnd_pos);
+  ALFChromaFilterBlkFunc chroma[2];
+  CCALFFilterBlkFunc ccalf[2];
 };
 
 struct SAOFunctions{
@@ -193,7 +201,6 @@ struct RCNFunctions
     /* Motion Compensation Chroma */
     struct MCFunctions mc_c;
 
-    /* Motion Compensation Chroma */
     struct CCLMFunctions cclm;
 
     struct ICTFunctions ict;

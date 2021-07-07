@@ -343,7 +343,6 @@ uninit_in_loop_filters(OVCTUDec *const ctudec)
     struct ALFInfo* alf_info  = &ctudec->alf_info;
     if(alf_info->ctb_alf_params){
         ov_free(alf_info->ctb_alf_params);
-        rcn_alf_destroy(&alf_info->rcn_alf, 128);
     }
 
     //Uninit CC ALF ctu params
@@ -362,8 +361,8 @@ uninit_in_loop_filters(OVCTUDec *const ctudec)
 
 
 int
-init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms) 
-{   
+init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
+{
     const OVSPS *const sps = prms->sps;
     const OVSH *const sh = prms->sh;
     const OVPH *const ph = prms->ph;
@@ -374,7 +373,7 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
     uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
     int nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
     int nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
-    
+
     //Init SAO info and ctu params
     struct SAOInfo* sao_info  = &ctudec->sao_info;
     sao_info->sao_luma_flag   =  sh->sh_sao_luma_used_flag;
@@ -408,7 +407,7 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
         }
 
         //create the structures for ALF reconstruction
-        rcn_alf_create(ctudec, &alf_info->rcn_alf);
+        rcn_alf_create(&alf_info->rcn_alf);
 
         //Initialization of ALF reconstruction structures
         RCNALF* alf = &alf_info->rcn_alf;
@@ -445,13 +444,13 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
             memset(lmcs_info->lmcs_lut_fwd_luma, 0, sizeof(uint16_t) * (1<<bitdepth));
         }
 
-        lmcs_info->lmcs_chroma_scaling_offset = aps_lmcs_data->lmcs_delta_sign_crs_flag ? 
-                                                -aps_lmcs_data->lmcs_delta_abs_crs 
+        lmcs_info->lmcs_chroma_scaling_offset = aps_lmcs_data->lmcs_delta_sign_crs_flag ?
+                                                -aps_lmcs_data->lmcs_delta_abs_crs
                                                 : aps_lmcs_data->lmcs_delta_abs_crs;
 
         uint16_t *const output_pivot = lmcs_info->lmcs_output_pivot;
         rcn_derive_lmcs_params(lmcs_info, output_pivot, aps_lmcs_data);
-        rcn_lmcs_compute_lut_luma(lmcs_info, lmcs_info->lmcs_lut_inv_luma, lmcs_info->lmcs_lut_fwd_luma, 
+        rcn_lmcs_compute_lut_luma(lmcs_info, lmcs_info->lmcs_lut_inv_luma, lmcs_info->lmcs_lut_fwd_luma,
                                 lmcs_info->lmcs_output_pivot);
     }
 
@@ -461,7 +460,7 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
 int
 init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
 {
-    uint8_t slice_type = sldec->slice_type; 
+    uint8_t slice_type = sldec->slice_type;
     const OVPartInfo *const pinfo = slice_type == SLICE_I ? &prms->sps_info.part_info[0]
                                                           : &prms->sps_info.part_info[1];
      const OVSPS *const sps = prms->sps;
@@ -724,7 +723,7 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
     const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
     ptrdiff_t stride_out_pic = fbuff->stride;
     uint16_t *out_pic = fbuff->y;
-    ctudec->rcn_ctx.rcn_funcs.lmcs_reshape(out_pic, stride_out_pic, ctudec->lmcs_info.lmcs_lut_inv_luma, 
+    ctudec->rcn_ctx.rcn_funcs.lmcs_reshape(out_pic, stride_out_pic, ctudec->lmcs_info.lmcs_lut_inv_luma,
                                             1 << log2_ctb_s, 1 << log2_ctb_s);
 
     if (!ctudec->dbf_disable) {
@@ -1222,7 +1221,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     ctudec->drv_ctx.inter_ctx.mmvd_flag = sldec->active_params->sps->sps_mmvd_enabled_flag;
 
     ctudec->drv_ctx.inter_ctx.gpm_flag  = sldec->active_params->sps->sps_gpm_enabled_flag;
-    ctudec->drv_ctx.inter_ctx.max_gpm_cand = ctudec->max_num_merge_candidates 
+    ctudec->drv_ctx.inter_ctx.max_gpm_cand = ctudec->max_num_merge_candidates
                             - sldec->active_params->sps->sps_max_num_merge_cand_minus_max_num_gpm_cand;
     ctudec->drv_ctx.inter_ctx.bcw_flag = sldec->active_params->sps->sps_bcw_enabled_flag;
     ctudec->drv_ctx.inter_ctx.amvr_flag = sldec->active_params->sps->sps_amvr_enabled_flag;
@@ -1293,7 +1292,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         rcn_alf_filter_line(ctudec, einfo.nb_ctb_pic_w, ctb_y);
         ctb_y++;
     }
-    
+
     ctudec_free_filter_buffers(ctudec);
     ctudec_free_intra_line_buff(ctudec);
 
@@ -1382,10 +1381,10 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     ctudec->drv_ctx.inter_ctx.tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
     ctudec->drv_ctx.inter_ctx.mvd1_zero_flag = ph->ph_mvd_l1_zero_flag;
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref_l0 = ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag 
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref_l0 = ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag
                                                     || sh->sh_slice_type == SLICE_P;
 
-    rcn_init_functions(&ctudec->rcn_ctx.rcn_funcs, ict_type(ph), ctudec->lm_chroma_enabled, 
+    rcn_init_functions(&ctudec->rcn_ctx.rcn_funcs, ict_type(ph), ctudec->lm_chroma_enabled,
                         sps->sps_chroma_vertical_collocated_flag, ph->ph_lmcs_enabled_flag);
 
     return 0;

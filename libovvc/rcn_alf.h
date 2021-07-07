@@ -77,9 +77,7 @@ typedef struct
   int16_t           alf_clipping_values[MAX_NUM_CHANNEL_TYPE][MAX_ALF_NUM_CLIP_VAL];
 }RCNALF;
 
-void rcn_alf_create(struct OVCTUDec *const ctudec, RCNALF* alf);
-
-void rcn_alf_destroy(RCNALF* alf, int16_t ctu_width);
+void rcn_alf_create(RCNALF* alf);
 
 void rcn_alf_filter_line(struct OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pic);
 
