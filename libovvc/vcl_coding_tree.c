@@ -831,6 +831,10 @@ multi_type_tree(OVCTUDec *const ctu_dec,
             allow_bt_h = 0;
         }
 
+        if (log2_cb_w > part_ctx->log2_max_bt_s || log2_cb_h > part_ctx->log2_max_bt_s) {
+            allow_bt_v = allow_bt_h = 0;
+        }
+
         can_split = allow_bt_v | allow_bt_h | allow_tt_v | allow_tt_h;
     }
 
