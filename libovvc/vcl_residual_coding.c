@@ -4409,18 +4409,18 @@ uint8_t log2_sb_w, uint8_t log2_tb_h)
 }
 
 static const uint8_t *const
-select_sb_scan_map_x(int8_t log2_tb_w, int8_t log2_tb_h)
+select_sb_scan_map_x(int8_t log2_tb_w, int8_t log2_tb_h, int8_t log2_sb_w, int8_t log2_sb_h)
 {
-    uint8_t idx_w = OVMAX(0, log2_tb_w - 2);
-    uint8_t idx_h = OVMAX(0, log2_tb_h - 2);
+    uint8_t idx_w = OVMAX(0, log2_tb_w - log2_sb_w);
+    uint8_t idx_h = OVMAX(0, log2_tb_h - log2_sb_h);
     return ff_vvc_scan_x[idx_w][idx_h];
 }
 
 static const uint8_t *const
-select_sb_scan_map_y(int8_t log2_tb_w, int8_t log2_tb_h)
+select_sb_scan_map_y(int8_t log2_tb_w, int8_t log2_tb_h, int8_t log2_sb_w, int8_t log2_sb_h)
 {
-    uint8_t idx_w = OVMAX(0, log2_tb_w - 2);
-    uint8_t idx_h = OVMAX(0, log2_tb_h - 2);
+    uint8_t idx_w = OVMAX(0, log2_tb_w - log2_sb_w);
+    uint8_t idx_h = OVMAX(0, log2_tb_h - log2_sb_h);
 
     return ff_vvc_scan_y[idx_w][idx_h];
 }
@@ -4478,8 +4478,12 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
         return 0xFFFF;
 
     } else {
-        const uint8_t *const scan_cg_x = select_sb_scan_map_x(log2_tb_w, log2_tb_h);
-        const uint8_t *const scan_cg_y = select_sb_scan_map_y(log2_tb_w, log2_tb_h);
+        const uint8_t *const scan_cg_x = select_sb_scan_map_x(log2_tb_w, log2_tb_h,
+                                                              scan_ctx->log2_sb_w,
+                                                              scan_ctx->log2_sb_h);
+        const uint8_t *const scan_cg_y = select_sb_scan_map_y(log2_tb_w, log2_tb_h,
+                                                              scan_ctx->log2_sb_w,
+                                                              scan_ctx->log2_sb_h);
 
         uint64_t sig_sb_map = 0;
         uint8_t  sig_sb_flg = 0;
