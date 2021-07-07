@@ -860,13 +860,18 @@ residual_coding_l(OVCTUDec *const ctu_dec,
 
     if (!tr_skip_flag) {
         uint16_t last_pos;
-        if (tu_info->is_sbt && log2_tb_w <= 5 && log2_tb_h <= 5) {
+        uint8_t log2_red_w = log2_tb_w;
+        uint8_t log2_red_h = log2_tb_h;
+        if (tu_info->is_sbt && tu_info->cu_mts_flag && log2_tb_w <= 5 && log2_tb_h <= 5) {
             last_pos = ovcabac_read_ae_last_sig_pos_red(cabac_ctx, log2_tb_w, log2_tb_h);
+            log2_red_w = log2_tb_w == 5 ? 4 : log2_tb_w;
+            log2_red_h = log2_tb_h == 5 ? 4 : log2_tb_h;
+
         } else {
             last_pos = ovcabac_read_ae_last_sig_pos(cabac_ctx, log2_tb_w, log2_tb_h);
         }
         uint64_t sig_sb_map;
-        sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_tb_w, log2_tb_h,
+        sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_red_w, log2_red_h,
                                               last_pos);
 
         tb_info->sig_sb_map = sig_sb_map;
@@ -1455,24 +1460,24 @@ sbt_half_ver(OVCTUDec *const ctu_dec,
 {
     if (!sbt_pos) {
         tu_info[0].is_sbt = 1;
-        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w - 1, log2_tb_h,
-                                                   1, cu_flags, 0, tu_info);
-
         if (log2_tb_w - 1 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x1;
         }
+        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w - 1, log2_tb_h,
+                                                   1, cu_flags, 0, tu_info);
+
         rcn_tu_st(ctu_dec, x0, y0, log2_tb_w - 1, log2_tb_h, cu_flags, cbf_mask, tu_info);
 
     } else {
         tu_info[0].is_sbt = 1;
-        uint8_t x1 = x0 + (1 << (log2_tb_w - 1));
-        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w - 1, log2_tb_h,
-                                                   1, cu_flags, 0, tu_info);
         if (log2_tb_w - 1 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x0;
         }
+        uint8_t x1 = x0 + (1 << (log2_tb_w - 1));
+        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w - 1, log2_tb_h,
+                                                   1, cu_flags, 0, tu_info);
         rcn_tu_st(ctu_dec, x1, y0, log2_tb_w - 1, log2_tb_h, cu_flags, cbf_mask, tu_info);
     }
 
@@ -1488,26 +1493,26 @@ sbt_half_hor(OVCTUDec *const ctu_dec,
 {
     if (!sbt_pos) {
         tu_info[0].is_sbt = 1;
-        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 1,
-                                                   1, cu_flags, 0, tu_info);
-
         if (log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x2;
         }
+
+        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 1,
+                                                   1, cu_flags, 0, tu_info);
 
         rcn_tu_st(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 1, cu_flags, cbf_mask, tu_info);
 
     } else {
         tu_info[0].is_sbt = 1;
         uint8_t y1 = y0 + (1 << (log2_tb_h - 1));
-        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 1,
-                                                   1, cu_flags, 0, tu_info);
-
         if (log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x0;
         }
+        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 1,
+                                                   1, cu_flags, 0, tu_info);
+
 
         rcn_tu_st(ctu_dec, x0, y1, log2_tb_w, log2_tb_h - 1, cu_flags, cbf_mask, tu_info);
     }
@@ -1523,26 +1528,29 @@ sbt_quad_ver(OVCTUDec *const ctu_dec,
 {
     if (!sbt_pos) {
         tu_info[0].is_sbt = 1;
-        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w - 2, log2_tb_h,
-                                                   1, cu_flags, 0, tu_info);
 
         if (log2_tb_w - 2 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x1;
         }
 
+        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w - 2, log2_tb_h,
+                                                   1, cu_flags, 0, tu_info);
+
+
         rcn_tu_st(ctu_dec, x0, y0, log2_tb_w - 2, log2_tb_h, cu_flags, cbf_mask, tu_info);
 
     } else {
         tu_info[0].is_sbt = 1;
         uint8_t x3 = x0 + (3 << (log2_tb_w - 2));
-        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w - 2, log2_tb_h,
-                                                   1, cu_flags, 0, tu_info);
 
         if (log2_tb_w - 2 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x0;
         }
+
+        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w - 2, log2_tb_h,
+                                                   1, cu_flags, 0, tu_info);
 
         rcn_tu_st(ctu_dec, x3, y0, log2_tb_w - 2, log2_tb_h, cu_flags, cbf_mask, tu_info);
     }
@@ -1570,25 +1578,29 @@ sbt_quad_hor(OVCTUDec *const ctu_dec,
 {
     if (!sbt_pos) {
         tu_info[0].is_sbt = 1;
-        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 2,
-                                                   1, cu_flags, 0, tu_info);
 
         if (log2_tb_w <= 5 && log2_tb_h - 2 <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x2;
         }
+
+        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 2,
+                                                   1, cu_flags, 0, tu_info);
+
         rcn_tu_st(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 2, cu_flags, cbf_mask, tu_info);
 
     } else {
         tu_info[0].is_sbt = 1;
         uint8_t y3 = y0 + (3 << (log2_tb_h - 2));
-        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 2,
-                                                   1, cu_flags, 0, tu_info);
 
         if (log2_tb_w <= 5 && log2_tb_h - 2 <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x0;
         }
+
+        uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 2,
+                                                   1, cu_flags, 0, tu_info);
+
 
         rcn_tu_st(ctu_dec, x0, y3, log2_tb_w, log2_tb_h - 2, cu_flags, cbf_mask, tu_info);
     }
