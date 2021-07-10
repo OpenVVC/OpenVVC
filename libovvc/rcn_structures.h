@@ -94,6 +94,10 @@ typedef void (*MIPMatMult)(int16_t * src, uint16_t *dst, const int stride,
                            const uint8_t *matrix, int16_t offset, const int rnd,
                            uint8_t log2_src, uint8_t log2_red_w, uint8_t log2_red_h);
 
+typedef void (*ALFClassifBlkFunc)(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr,
+                                  int16_t *const src, const int stride, const struct Area blk,
+                                  const int shift, const int ctu_height, int virbnd_pos);
+
 typedef void (*ALFFilterBlkFunc)(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
                         struct Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                         const int ctu_height, int virbnd_pos);
@@ -183,6 +187,7 @@ struct MIPFunctions
 };
 
 struct ALFFunctions{
+  ALFClassifBlkFunc classif;
   ALFFilterBlkFunc luma[2];
   ALFChromaFilterBlkFunc chroma[2];
   CCALFFilterBlkFunc ccalf[2];

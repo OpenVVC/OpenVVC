@@ -275,17 +275,17 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
     int width  = blk.width + fl2;
 
     for( int i = 0; i < height; i += 2 ) {
-        int yoffset = ( i + 1 - flP1 ) * stride - flP1;
-        const int16_t *src0 = &src[yoffset - stride];
-        const int16_t *src1 = &src[yoffset];
-        const int16_t *src2 = &src[yoffset + stride];
-        const int16_t *src3 = &src[yoffset + stride * 2];
+        int yoffset = ( i - flP1 ) * stride - flP1;
+        const int16_t *src0 = &src[yoffset];
+        const int16_t *src1 = &src[yoffset + stride];
+        const int16_t *src2 = &src[yoffset + stride * 2];
+        const int16_t *src3 = &src[yoffset + stride * 3];
 
         const int y = blk.y - 2 + i;
         if (y > 0 && (y & (ctu_height - 1)) == virbnd_pos - 2) {
-            src3 = &src[yoffset + stride];
+            src3 = src2;
         } else if (y > 0 && (y & (ctu_height - 1)) == virbnd_pos) {
-            src0 = &src[yoffset];
+            src0 = src1;
         }
 
         int* pYver = laplacian[VER][i];
@@ -311,15 +311,11 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
             pYdig1[j] = abs(y0 - pYup[-1]   - pYdown[1]) + abs(yup1 - pYup2[0] - pY[2]);
         }
 
-        for( int j = 6; j < width; j += 4 ) {
-            int jM6 = j - 6;
-            int jM4 = j - 4;
-            int jM2 = j - 2;
-
-            pYver[jM6]  += pYver[jM4]  + pYver[jM2]  + pYver[j];
-            pYhor[jM6]  += pYhor[jM4]  + pYhor[jM2]  + pYhor[j];
-            pYdig0[jM6] += pYdig0[jM4] + pYdig0[jM2] + pYdig0[j];
-            pYdig1[jM6] += pYdig1[jM4] + pYdig1[jM2] + pYdig1[j];
+        for( int j = 0; j < width - 6; j += 4 ) {
+            pYver[j]  += pYver[j+2]  + pYver[j+4]  + pYver[j+6];
+            pYhor[j]  += pYhor[j+2]  + pYhor[j+4]  + pYhor[j+6];
+            pYdig0[j] += pYdig0[j+2] + pYdig0[j+4] + pYdig0[j+6];
+            pYdig1[j] += pYdig1[j+2] + pYdig1[j+4] + pYdig1[j+6];
         }
     }
 
@@ -442,7 +438,7 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
 }
 
 
-void rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const int stride, Area blk, int ctu_width, int pic_h )
+void rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const int stride, Area blk, int ctu_width, int pic_h, ALFClassifBlkFunc classif_func)
 {
     int height = blk.y + blk.height;
     int width = blk.x + blk.width;
@@ -463,10 +459,9 @@ void rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const in
             blk_class.height = nHeight;
 
             int16_t* rcn_img_class = rcn_img + (i - blk.y) * stride + (j - blk.x);
-
-            rcn_alf_derive_classificationBlk(alf->class_idx, alf->transpose_idx, rcn_img_class, stride, blk_class,
-                                             bit_depth + 4, ctu_width,
-                                             (blk.height<ctu_width) ? pic_h : blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA);
+            classif_func(alf->class_idx, alf->transpose_idx, rcn_img_class, stride, blk_class,
+                         bit_depth + 4, ctu_width,
+                         (blk.height<ctu_width) ? pic_h : blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA);
         }
     }
 }
@@ -480,7 +475,6 @@ void cc_alf_filterBlk(int16_t * chroma_dst, int16_t * luma_src, const int chr_st
   //ATTENTION: scaleX et Y fixed to 1 (en 4 2 0)
   const int scaleX             = 1;
   const int scaleY             = 1;
-
   for( int i = 0; i < blk_dst.height; i += clsSizeY )
   {
     for( int j = 0; j < blk_dst.width; j += clsSizeX )
@@ -497,6 +491,19 @@ void cc_alf_filterBlk(int16_t * chroma_dst, int16_t * luma_src, const int chr_st
         row <<= scaleY;
         col <<= scaleX;
         const int16_t *srcCross = luma_src + col + row * luma_stride;
+
+        int pos = ((blk_dst.y + i + ii) << scaleY) & (vbCTUHeight - 1);
+
+          if (pos == (vbPos - 2) || pos == (vbPos + 1))
+          {
+            offset3 = offset1;
+          }
+          else if (pos == (vbPos - 1) || pos == vbPos)
+          {
+            offset1 = 0;
+            offset2 = 0;
+            offset3 = 0;
+          }
 
         for (int jj = 0; jj < clsSizeX; jj++)
         {
@@ -830,7 +837,6 @@ static void alf_filterBlkLuma(uint8_t * class_idx_arr, uint8_t * transpose_idx_a
     {
       transpose_idx = transpose_idx_arr[(i>>2) * CLASSIFICATION_BLK_SIZE + (j>>2)];
       class_idx = class_idx_arr[(i>>2) * CLASSIFICATION_BLK_SIZE + (j>>2)];
-
       const int16_t *filt_coeff = filter_set + transpose_idx * MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF + class_idx * MAX_NUM_ALF_LUMA_COEFF;
       const int16_t *filt_clip = clip_set + transpose_idx * MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF + class_idx * MAX_NUM_ALF_LUMA_COEFF;
 
@@ -1057,7 +1063,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
             int stride_dst = frame->linesize[c_idx]/2;
             int16_t*  dst_luma = (int16_t*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
 
-            rcn_alf_derive_classification(alf, src_luma, stride_src, blk_dst, ctu_width, ctudec->pic_h);
+            rcn_alf_derive_classification(alf, src_luma, stride_src, blk_dst, ctu_width, ctudec->pic_h, ctudec->rcn_ctx.rcn_funcs.alf.classif);
 
             int16_t filter_idx = alf_params_ctu.ctb_alf_idx;
             int16_t *coeff = alf->filter_coeff_dec[filter_idx];
@@ -1131,14 +1137,16 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
                     // const int16_t *filt_coeff = alf_data.alf_cc_mapped_coeff[c_idx - 1][filt_idx];
                     const int16_t *filt_coeff = alf_data->alf_cc_mapped_coeff[c_idx - 1][filt_idx - 1];
 
+                    // FIXME: CC ALF seems to be applied only on border block
                     int virbnd_pos = (( yPos + ctu_width >= ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_width - ALF_VB_POS_ABOVE_CTUROW_LUMA));
-                    int yVb = (blk_dst.y + blk_dst.height - 1);// & (ctu_width - 1);
-                    yVb = yVb & (ctu_width - 1);
+                    // int yVb = (blk_dst.y);// & (ctu_width - 1);
+                    // yVb = yVb & (ctu_width - 1);
 
-                    uint8_t isVB = (!(yVb == virbnd_pos || yVb == virbnd_pos + 1)) || ((yVb == (virbnd_pos - 2) || yVb == (virbnd_pos + 1)) || (yVb == (virbnd_pos - 1) || yVb == virbnd_pos));
+                    uint8_t isVB = 1;
 
                     ctudec->rcn_ctx.rcn_funcs.alf.ccalf[isVB](dst_chroma, src_chroma, stride_dst, stride_src, blk_dst, c_idx, filt_coeff,
                     ctu_width, virbnd_pos);
+
                 }
             }
 
@@ -1150,6 +1158,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pi
 
 
 void rcn_init_alf_functions(struct RCNFunctions *rcn_func){
+  rcn_func->alf.classif=&rcn_alf_derive_classificationBlk;
   rcn_func->alf.luma[0]=&alf_filterBlkLuma;
   rcn_func->alf.luma[1]=&alf_filterBlkLumaVB;
   rcn_func->alf.chroma[0]=&alf_filter_c;

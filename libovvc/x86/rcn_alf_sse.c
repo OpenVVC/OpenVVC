@@ -8,27 +8,6 @@
 #include "rcn_alf.h"
 #include "rcn_structures.h"
 
-// #define sh(x) (0x0202 * (x & 7) + 0x0100 + 0x1010 * (x & 8))
-//
-// static const uint16_t shuffleTab[4][2][8] = {
-//         {
-//                 { sh(0), sh(1), sh(2), sh(3), sh(4), sh(5), sh(6), sh(7) },
-//                 { sh(8), sh(9), sh(10), sh(11), sh(12), sh(13), sh(14), sh(15) },
-//         },
-//         {
-//                 { sh(9), sh(4), sh(10), sh(8), sh(1), sh(5), sh(11), sh(7) },
-//                 { sh(3), sh(0), sh(2), sh(6), sh(12), sh(13), sh(14), sh(15) },
-//         },
-//         {
-//                 { sh(0), sh(3), sh(2), sh(1), sh(8), sh(7), sh(6), sh(5) },
-//                 { sh(4), sh(9), sh(10), sh(11), sh(12), sh(13), sh(14), sh(15) },
-//         },
-//         {
-//                 { sh(9), sh(8), sh(10), sh(4), sh(3), sh(7), sh(11), sh(5) },
-//                 { sh(1), sh(0), sh(2), sh(6), sh(12), sh(13), sh(14), sh(15) },
-//         },
-// };
-
 #define process2coeffs5x5(i, ptr0, ptr1, ptr2, ptr3) { \
                     const __m128i val00 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) (ptr0)), cur);\
                     const __m128i val10 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) (ptr2)), cur);\
@@ -117,7 +96,7 @@ simdFilter5x5Blk(int16_t *const dst, const int16_t *const src,
     const int clpMin = 0;
     const int clpMax = (1<<10) - 1;
 
-    int16_t * _src = src;
+    int16_t * _src = (int16_t *) src;
     int16_t * _dst = dst;
 
     const __m128i mmOffset = _mm_set1_epi32(ROUND);
@@ -163,13 +142,7 @@ simdFilter5x5Blk(int16_t *const dst, const int16_t *const src,
                 accumA = _mm_add_epi16(accumA, cur);
                 accumA = _mm_min_epi16(mmMax, _mm_max_epi16(accumA, mmMin));
 
-                // if (j + STEP_X <= blk_dst.width) {
-                    // if (j>=x0 && i+ii>=y0 && j<=w_max && i+ii<=h_max)
-                        _mm_storeu_si128((__m128i *) (_dst + ii * dstStride + j), accumA);
-                // } else {
-                //     // if (j>=x0 && i+ii>=y0 && j<=w_max && i+ii<=h_max)
-                //         _mm_storel_epi64((__m128i *) (_dst + ii * dstStride + j), accumA);
-                // }
+                _mm_storeu_si128((__m128i *) (_dst + ii * dstStride + j), accumA);
             }
         }
 
@@ -194,7 +167,7 @@ simdFilter5x5BlkVB(int16_t *const dst, const int16_t *const src,
     const int clpMin = 0;
     const int clpMax = (1<<10) - 1;
 
-    int16_t * _src = src;
+    int16_t * _src = (int16_t *) src;
     int16_t * _dst = dst;
 
     const __m128i mmOffset = _mm_set1_epi32(ROUND);
@@ -275,11 +248,9 @@ simdFilter5x5BlkVB(int16_t *const dst, const int16_t *const src,
                 accumA = _mm_min_epi16(mmMax, _mm_max_epi16(accumA, mmMin));
 
                 if (j + STEP_X <= blk_dst.width) {
-                    // if (j>=x0 && i+ii>=y0 && j<=w_max && i+ii<=h_max)
-                        _mm_storeu_si128((__m128i *) (_dst + ii * dstStride + j), accumA);
+                  _mm_storeu_si128((__m128i *) (_dst + ii * dstStride + j), accumA);
                 } else {
-                    // if (j>=x0 && i+ii>=y0 && j<=w_max && i+ii<=h_max)
-                        _mm_storel_epi64((__m128i *) (_dst + ii * dstStride + j), accumA);
+                  _mm_storel_epi64((__m128i *) (_dst + ii * dstStride + j), accumA);
                 }
             }
         }
@@ -374,7 +345,6 @@ simdFilter7x7Blk(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t *
                 accumA = _mm_add_epi16(accumA, cur);
                 accumA = _mm_min_epi16(mmMax, _mm_max_epi16(accumA, mmMin));
 
-                // if (j>=x0 && i+ii>=y0 && j<=w_max && i+ii<=h_max)
                 _mm_storeu_si128((__m128i *) (_dst + ii * dstStride + j), accumA);
             }
         }
@@ -525,7 +495,203 @@ simdFilter7x7BlkVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t
     }
 }
 
+static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr,
+                                        int16_t *const src, const int stride, const Area blk,
+                                        const int shift, const int ctu_height, int virbnd_pos)
+{
+  int fl = 2;
+  int flP1 = fl + 1;
+  int fl2 = 2 * fl;
+
+  int height = blk.height + fl2;
+  int width  = blk.width + fl2;
+
+  uint16_t colSums[18][40];
+
+
+  for (int i = 0; i < height; i += 2)
+  {
+    int yoffset = ( i - flP1 ) * stride - flP1;
+    const int16_t *src0 = &src[yoffset];
+    const int16_t *src1 = &src[yoffset + stride];
+    const int16_t *src2 = &src[yoffset + stride * 2];
+    const int16_t *src3 = &src[yoffset + stride * 3];
+
+    const int y = blk.y - 2 + i;
+    if (y > 0 && (y & (ctu_height - 1)) == virbnd_pos - 2) {
+        src3 = src2;
+    } else if (y > 0 && (y & (ctu_height - 1)) == virbnd_pos) {
+        src0 = src1;
+    }
+
+    __m128i prev = _mm_setzero_si128();
+
+    for (int j = 0; j < width; j += 8)
+    {
+      const __m128i x0 = _mm_loadu_si128((const __m128i *) (src0 + j));
+      const __m128i x1 = _mm_loadu_si128((const __m128i *) (src1 + j));
+      const __m128i x2 = _mm_loadu_si128((const __m128i *) (src2 + j));
+      const __m128i x3 = _mm_loadu_si128((const __m128i *) (src3 + j));
+
+      const __m128i x4 = _mm_loadu_si128((const __m128i *) (src0 + j + 2));
+      const __m128i x5 = _mm_loadu_si128((const __m128i *) (src1 + j + 2));
+      const __m128i x6 = _mm_loadu_si128((const __m128i *) (src2 + j + 2));
+      const __m128i x7 = _mm_loadu_si128((const __m128i *) (src3 + j + 2));
+
+      const __m128i nw = _mm_blend_epi16(x0, x1, 0xaa);
+      const __m128i n  = _mm_blend_epi16(x0, x5, 0x55);
+      const __m128i ne = _mm_blend_epi16(x4, x5, 0xaa);
+      const __m128i w  = _mm_blend_epi16(x1, x2, 0xaa);
+      const __m128i e  = _mm_blend_epi16(x5, x6, 0xaa);
+      const __m128i sw = _mm_blend_epi16(x2, x3, 0xaa);
+      const __m128i s  = _mm_blend_epi16(x2, x7, 0x55);
+      const __m128i se = _mm_blend_epi16(x6, x7, 0xaa);
+
+      __m128i c = _mm_blend_epi16(x1, x6, 0x55);
+      c         = _mm_add_epi16(c, c);
+      __m128i d = _mm_shuffle_epi8(c, _mm_setr_epi8(2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13));
+
+      const __m128i ver = _mm_abs_epi16(_mm_sub_epi16(c, _mm_add_epi16(n, s)));
+      const __m128i hor = _mm_abs_epi16(_mm_sub_epi16(d, _mm_add_epi16(w, e)));
+      const __m128i di0 = _mm_abs_epi16(_mm_sub_epi16(d, _mm_add_epi16(nw, se)));
+      const __m128i di1 = _mm_abs_epi16(_mm_sub_epi16(d, _mm_add_epi16(ne, sw)));
+
+      const __m128i hv  = _mm_hadd_epi16(ver, hor);
+      const __m128i di  = _mm_hadd_epi16(di0, di1);
+      const __m128i all = _mm_hadd_epi16(hv, di);
+
+      const __m128i t = _mm_blend_epi16(all, prev, 0xaa);
+      _mm_storeu_si128((__m128i *) &colSums[i >> 1][j], _mm_hadd_epi16(t, all));
+      prev = all;
+    }
+  }
+  for (int i = 0; i < (blk.height>>1); i += 4)
+  {
+    __m128i class_idx[4], transpose_idx[4];
+    for (size_t k = 0; k < 4; k++)
+    {
+      __m128i x0, x1, x2, x3, x4, x5, x6, x7;
+
+      const uint32_t z = (2 * i + blk.y) & (ctu_height - 1);
+      const uint32_t z2 = (2 * i + 4 + blk.y) & (ctu_height - 1);
+
+      x0 = (z == virbnd_pos) ? _mm_setzero_si128() : _mm_loadu_si128((__m128i *) &colSums[i + 0][(k*8) + 4]);
+      x1 = _mm_loadu_si128((__m128i *) &colSums[i + 1][(k*8) + 4]);
+      x2 = _mm_loadu_si128((__m128i *) &colSums[i + 2][(k*8) + 4]);
+      x3 = (z == virbnd_pos - 4) ? _mm_setzero_si128() : _mm_loadu_si128((__m128i *) &colSums[i + 3][(k*8) + 4]);
+
+      x4 = (z2 == virbnd_pos) ? _mm_setzero_si128() : _mm_loadu_si128((__m128i *) &colSums[i + 2][(k*8) + 4]);
+      x5 = _mm_loadu_si128((__m128i *) &colSums[i + 3][(k*8) + 4]);
+      x6 = _mm_loadu_si128((__m128i *) &colSums[i + 4][(k*8) + 4]);
+      x7 = (z2 == virbnd_pos - 4) ? _mm_setzero_si128() : _mm_loadu_si128((__m128i *) &colSums[i + 5][(k*8) + 4]);
+
+      __m128i x0l = _mm_cvtepu16_epi32(x0);
+      __m128i x0h = _mm_unpackhi_epi16(x0, _mm_setzero_si128());
+      __m128i x1l = _mm_cvtepu16_epi32(x1);
+      __m128i x1h = _mm_unpackhi_epi16(x1, _mm_setzero_si128());
+      __m128i x2l = _mm_cvtepu16_epi32(x2);
+      __m128i x2h = _mm_unpackhi_epi16(x2, _mm_setzero_si128());
+      __m128i x3l = _mm_cvtepu16_epi32(x3);
+      __m128i x3h = _mm_unpackhi_epi16(x3, _mm_setzero_si128());
+      __m128i x4l = _mm_cvtepu16_epi32(x4);
+      __m128i x4h = _mm_unpackhi_epi16(x4, _mm_setzero_si128());
+      __m128i x5l = _mm_cvtepu16_epi32(x5);
+      __m128i x5h = _mm_unpackhi_epi16(x5, _mm_setzero_si128());
+      __m128i x6l = _mm_cvtepu16_epi32(x6);
+      __m128i x6h = _mm_unpackhi_epi16(x6, _mm_setzero_si128());
+      __m128i x7l = _mm_cvtepu16_epi32(x7);
+      __m128i x7h = _mm_unpackhi_epi16(x7, _mm_setzero_si128());
+
+      x0l = _mm_add_epi32(x0l, x1l);
+      x2l = _mm_add_epi32(x2l, x3l);
+      x4l = _mm_add_epi32(x4l, x5l);
+      x6l = _mm_add_epi32(x6l, x7l);
+      x0h = _mm_add_epi32(x0h, x1h);
+      x2h = _mm_add_epi32(x2h, x3h);
+      x4h = _mm_add_epi32(x4h, x5h);
+      x6h = _mm_add_epi32(x6h, x7h);
+
+      x0l = _mm_add_epi32(x0l, x2l);
+      x4l = _mm_add_epi32(x4l, x6l);
+      x0h = _mm_add_epi32(x0h, x2h);
+      x4h = _mm_add_epi32(x4h, x6h);
+
+      x2l = _mm_unpacklo_epi32(x0l, x4l);
+      x2h = _mm_unpackhi_epi32(x0l, x4l);
+      x6l = _mm_unpacklo_epi32(x0h, x4h);
+      x6h = _mm_unpackhi_epi32(x0h, x4h);
+
+      __m128i sumV  = _mm_unpacklo_epi32(x2l, x6l);
+      __m128i sumH  = _mm_unpackhi_epi32(x2l, x6l);
+      __m128i sumD0 = _mm_unpacklo_epi32(x2h, x6h);
+      __m128i sumD1 = _mm_unpackhi_epi32(x2h, x6h);
+
+      __m128i tempAct = _mm_add_epi32(sumV, sumH);
+
+      const uint32_t scale  = (z == virbnd_pos - 4 || z == virbnd_pos) ? 96 : 64;
+      const uint32_t scale2 = (z2 == virbnd_pos - 4 || z2 == virbnd_pos) ? 96 : 64;
+      __m128i activity = _mm_mullo_epi32(tempAct, _mm_unpacklo_epi64(_mm_set1_epi32(scale), _mm_set1_epi32(scale2)));
+      activity         = _mm_srl_epi32(activity, _mm_cvtsi32_si128(shift));
+      activity         = _mm_min_epi32(activity, _mm_set1_epi32(15));
+      __m128i classIdx = _mm_shuffle_epi8(_mm_setr_epi8(0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4), activity);
+
+      __m128i dirTempHVMinus1 = _mm_cmpgt_epi32(sumV, sumH);
+      __m128i hv1             = _mm_max_epi32(sumV, sumH);
+      __m128i hv0             = _mm_min_epi32(sumV, sumH);
+
+      __m128i dirTempDMinus1 = _mm_cmpgt_epi32(sumD0, sumD1);
+      __m128i d1             = _mm_max_epi32(sumD0, sumD1);
+      __m128i d0             = _mm_min_epi32(sumD0, sumD1);
+
+      __m128i a      = _mm_xor_si128(_mm_mullo_epi32(d1, hv0), _mm_set1_epi32(0x80000000));
+      __m128i b      = _mm_xor_si128(_mm_mullo_epi32(hv1, d0), _mm_set1_epi32(0x80000000));
+      __m128i dirIdx = _mm_cmpgt_epi32(a, b);
+      __m128i hvd1   = _mm_blendv_epi8(hv1, d1, dirIdx);
+      __m128i hvd0   = _mm_blendv_epi8(hv0, d0, dirIdx);
+
+      __m128i strength1 = _mm_cmpgt_epi32(hvd1, _mm_add_epi32(hvd0, hvd0));
+      __m128i strength2 = _mm_cmpgt_epi32(_mm_add_epi32(hvd1, hvd1), _mm_add_epi32(hvd0, _mm_slli_epi32(hvd0, 3)));
+      __m128i offset    = _mm_and_si128(strength1, _mm_set1_epi32(5));
+      classIdx          = _mm_add_epi32(classIdx, offset);
+      classIdx          = _mm_add_epi32(classIdx, _mm_and_si128(strength2, _mm_set1_epi32(5)));
+      offset            = _mm_andnot_si128(dirIdx, offset);
+      offset            = _mm_add_epi32(offset, offset);
+      classIdx          = _mm_add_epi32(classIdx, offset);
+
+      __m128i transposeIdx = _mm_set1_epi32(3);
+      transposeIdx         = _mm_add_epi32(transposeIdx, dirTempHVMinus1);
+      transposeIdx         = _mm_add_epi32(transposeIdx, dirTempDMinus1);
+      transposeIdx         = _mm_add_epi32(transposeIdx, dirTempDMinus1);
+
+      class_idx[k] = _mm_shuffle_epi8(classIdx, _mm_setr_epi8(0, 4, 8, 12, 0, 4, 8, 12, 0, 4, 8, 12, 0, 4, 8, 12));
+      transpose_idx[k] = _mm_shuffle_epi8(transposeIdx, _mm_setr_epi8(0, 4, 8, 12, 0, 4, 8, 12, 0, 4, 8, 12, 0, 4, 8, 12));
+      }
+
+
+    __m128i c1, c2, t1, t2;
+
+    c1 = _mm_unpacklo_epi16(class_idx[0], class_idx[1]);
+    c2 = _mm_unpacklo_epi16(class_idx[2], class_idx[3]);
+    c1 = _mm_unpacklo_epi32(c1, c2);
+
+    t1 = _mm_unpacklo_epi16(transpose_idx[0], transpose_idx[1]);
+    t2 = _mm_unpacklo_epi16(transpose_idx[2], transpose_idx[3]);
+    t1 = _mm_unpacklo_epi32(t1, t2);
+
+
+    int yOffset = (2*i + blk.y) % ctu_height;
+    int xOffset = (blk.x) % ctu_height;
+    _mm_storel_epi64((__m128i *) (class_idx_arr + (yOffset>>2) * CLASSIFICATION_BLK_SIZE + (xOffset>>2)), c1);
+    _mm_storel_epi64((__m128i *) (class_idx_arr + ((yOffset>>2)+1) * CLASSIFICATION_BLK_SIZE + (xOffset>>2)), _mm_bsrli_si128(c1, 8));
+
+
+    _mm_storel_epi64((__m128i *) (transpose_idx_arr + (yOffset>>2) * CLASSIFICATION_BLK_SIZE + (xOffset>>2)), t1);
+    _mm_storel_epi64((__m128i *) (transpose_idx_arr + ((yOffset>>2)+1) * CLASSIFICATION_BLK_SIZE + (xOffset>>2)), _mm_bsrli_si128(t1, 8));
+  }
+}
+
 void rcn_init_alf_functions_sse(struct RCNFunctions *rcn_func){
+  rcn_func->alf.classif=&simdDeriveClassificationBlk;
   rcn_func->alf.luma[0]=&simdFilter7x7Blk;
   rcn_func->alf.luma[1]=&simdFilter7x7BlkVB;
   rcn_func->alf.chroma[0]=&simdFilter5x5Blk;
