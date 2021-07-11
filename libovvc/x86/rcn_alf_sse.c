@@ -495,6 +495,183 @@ simdFilter7x7BlkVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t
     }
 }
 
+#define selectEvenValues(dest, src0, src1) {\
+  __m128i a0 = _mm_shufflelo_epi16(src0, 0xD8);\
+  __m128i a1 = _mm_shufflelo_epi16(src1, 0xD8);\
+  a0 = _mm_shufflehi_epi16(a0, 0xD8);\
+  a1 = _mm_shufflehi_epi16(a1, 0xD8);\
+  __m128i b0 = _mm_unpacklo_epi32(a0, a1);\
+  __m128i b1 = _mm_unpackhi_epi32(a0, a1);\
+  dest = _mm_unpacklo_epi32(b0, b1);\
+}
+
+#define selectOddValues(dest, src0, src1) {\
+  __m128i a0 = _mm_shufflelo_epi16(src0, 0xD8);\
+  __m128i a1 = _mm_shufflelo_epi16(src1, 0xD8);\
+  a0 = _mm_shufflehi_epi16(a0, 0xD8);\
+  a1 = _mm_shufflehi_epi16(a1, 0xD8);\
+  afficherVecteur8SSE128(a0);\
+  afficherVecteur8SSE128(a1);\
+  printf("\n");\
+  __m128i b0 = _mm_unpacklo_epi32(a0, a1);\
+  __m128i b1 = _mm_unpackhi_epi32(a0, a1);\
+  dest = _mm_unpackhi_epi32(b0, b1);\
+}
+
+#define selectEvenOddValues(even, odd, src0, src1) {\
+  __m128i a0 = _mm_shufflelo_epi16(src0, 0xD8);\
+  __m128i a1 = _mm_shufflelo_epi16(src1, 0xD8);\
+  a0 = _mm_shufflehi_epi16(a0, 0xD8);\
+  a1 = _mm_shufflehi_epi16(a1, 0xD8);\
+  __m128i b0 = _mm_unpacklo_epi32(a0, a1);\
+  __m128i b1 = _mm_unpackhi_epi32(a0, a1);\
+  even = _mm_unpacklo_epi32(b0, b1);\
+  odd = _mm_unpackhi_epi32(b0, b1);\
+}
+
+void cc_alf_filterBlkVB_sse(int16_t * chroma_dst, int16_t * luma_src, const int chr_stride, const int luma_stride,
+                            const Area blk_dst, const uint8_t c_id, const int16_t *filt_coeff,
+                            const int vbCTUHeight, int vbPos)
+{
+  const size_t STEP_X = 8;
+  const size_t STEP_Y = 4;
+
+  //ATTENTION: scaleX et Y fixed to 1 (en 4 2 0)
+  const int scaleX             = 1;
+  const int scaleY             = 1;
+
+  __m128i filter01 = _mm_set1_epi32((filt_coeff[0] & 0xFFFF) | ((filt_coeff[1] & 0xFFFF)<<16));
+  __m128i filter23 = _mm_set1_epi32((filt_coeff[2] & 0xFFFF) | ((filt_coeff[3] & 0xFFFF)<<16));
+  __m128i filter45 = _mm_set1_epi32((filt_coeff[4] & 0xFFFF) | ((filt_coeff[5] & 0xFFFF)<<16));
+  __m128i filter6  = _mm_set1_epi16(filt_coeff[6]);
+
+  const int scale_bits = 7;
+  __m128i scale_offset = _mm_set1_epi32((1 << scale_bits ) >> 1);
+
+  //BITDEPTH: uniquement pour bitdepth 10
+  const int bit_depth = 10;
+  __m128i offset = _mm_set1_epi16((1 << bit_depth) >> 1);
+  __m128i offset32 = _mm_set1_epi32((1 << bit_depth) >> 1);
+
+  __m128i clip_h = _mm_set1_epi16((1<<bit_depth) - 1 );
+  __m128i clip_h32 = _mm_set1_epi32((1<<bit_depth) - 1 );
+  __m128i clip_l = _mm_setzero_si128();
+
+  for( int i = 0; i < blk_dst.height; i += STEP_Y )
+  {
+    for( int j = 0; j < blk_dst.width; j += STEP_X )
+    {
+      for( int ii = 0; ii < STEP_Y; ii++ )
+      {
+        int row       = ii;
+        int col       = j;
+        int16_t *srcSelf  = chroma_dst + col + row * chr_stride;
+
+        int offset1 = luma_stride;
+        int offset2 = -luma_stride;
+        int offset3 = 2 * luma_stride;
+        row <<= scaleY;
+        col <<= scaleX;
+        const int16_t *srcCross = luma_src + col + row * luma_stride;
+
+        int pos = ((blk_dst.y + i + ii) << scaleY) & (vbCTUHeight - 1);
+        if (!(scaleY == 0 && (pos == vbPos || pos == vbPos + 1)))
+        {
+          if (pos == (vbPos - 2) || pos == (vbPos + 1))
+          {
+            offset3 = offset1;
+          }
+          else if (pos == (vbPos - 1) || pos == vbPos)
+          {
+            offset1 = 0;
+            offset2 = 0;
+            offset3 = 0;
+          }
+          __m128i val0, val1, val2, val3, val4, val5, val6;
+          __m128i curr;
+
+          __m128i self = _mm_loadu_si128((const __m128i *) (srcSelf));
+          __m128i x00 = _mm_loadu_si128((const __m128i *) (srcCross + offset2));
+          __m128i x01 = _mm_loadu_si128((const __m128i *) (srcCross + offset2 + 8));
+          __m128i x10 = _mm_loadu_si128((const __m128i *) (srcCross));
+          __m128i x11 = _mm_loadu_si128((const __m128i *) (srcCross + 8));
+          __m128i x20 = _mm_loadu_si128((const __m128i *) (srcCross + offset1));
+          __m128i x21 = _mm_loadu_si128((const __m128i *) (srcCross + offset1 + 8));
+          __m128i x30 = _mm_loadu_si128((const __m128i *) (srcCross + offset3));
+          __m128i x31 = _mm_loadu_si128((const __m128i *) (srcCross + offset3 + 8));
+
+          selectEvenValues(val0, x00, x01);
+          selectEvenOddValues(curr, val2, x10, x11);
+          selectEvenOddValues(val4, val5, x20, x21);
+          selectEvenValues(val6, x30, x31);
+
+          val1 = _mm_setr_epi16(srcCross[-1], 0, 0, 0, 0, 0, 0, 0);
+          val3 = _mm_setr_epi16(srcCross[offset1 -1], 0, 0, 0, 0, 0, 0, 0);
+
+          val1 = _mm_add_epi16(val1, _mm_bslli_si128(val2, 2));
+          val3 = _mm_add_epi16(val3, _mm_bslli_si128(val5, 2));
+
+          val0 = _mm_sub_epi16(val0, curr);
+          val1 = _mm_sub_epi16(val1, curr);
+          val2 = _mm_sub_epi16(val2, curr);
+          val3 = _mm_sub_epi16(val3, curr);
+          val4 = _mm_sub_epi16(val4, curr);
+          val5 = _mm_sub_epi16(val5, curr);
+          val6 = _mm_sub_epi16(val6, curr);
+
+          __m128i val01l = _mm_unpacklo_epi16(val0, val1);
+          __m128i val01h = _mm_unpackhi_epi16(val0, val1);
+          __m128i val23l = _mm_unpacklo_epi16(val2, val3);
+          __m128i val23h = _mm_unpackhi_epi16(val2, val3);
+          __m128i val45l = _mm_unpacklo_epi16(val4, val5);
+          __m128i val45h = _mm_unpackhi_epi16(val4, val5);
+
+          val01l = _mm_madd_epi16(val01l, filter01);
+          val01h = _mm_madd_epi16(val01h, filter01);
+          val23l = _mm_madd_epi16(val23l, filter23);
+          val23h = _mm_madd_epi16(val23h, filter23);
+          val45l = _mm_madd_epi16(val45l, filter45);
+          val45h = _mm_madd_epi16(val45h, filter45);
+          __m128i val6lo = _mm_mullo_epi16(val6, filter6);
+          __m128i val6hi = _mm_mulhi_epi16(val6, filter6);
+          __m128i val6l = _mm_unpacklo_epi16(val6lo, val6hi);
+          __m128i val6h = _mm_unpackhi_epi16(val6lo, val6hi);
+
+          __m128i a0 = _mm_add_epi32(val01l, val23l);
+          __m128i a1 = _mm_add_epi32(val45l, val6l);
+          __m128i a2 = _mm_add_epi32(val01h, val23h);
+          __m128i a3 = _mm_add_epi32(val45h, val6h);
+
+          a0 = _mm_add_epi32(a0, a1);
+          a1 = _mm_add_epi32(a2, a3);
+
+          a0 = _mm_add_epi32(a0, scale_offset);
+          a0 = _mm_srai_epi32(a0, scale_bits);
+
+          a1 = _mm_add_epi32(a1, scale_offset);
+          a1 = _mm_srai_epi32(a1, scale_bits);
+
+          a0 = _mm_packs_epi32(a0, a1);
+          a0 = _mm_add_epi16(a0, offset);
+
+          a0 = _mm_min_epi16(a0, clip_h);
+          a0 = _mm_max_epi16(a0, clip_l);
+
+          a0 = _mm_sub_epi16(a0, offset);
+          a0 = _mm_add_epi16(a0, self);
+
+          a0 = _mm_min_epi16(a0, clip_h);
+          a0 = _mm_max_epi16(a0, clip_l);
+
+          _mm_storeu_si128((__m128i *) (srcSelf), a0);
+        }
+      }
+    }
+    chroma_dst += chr_stride * STEP_Y;
+    luma_src += luma_stride * STEP_Y << scaleY;
+  }
+}
+
 static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr,
                                         int16_t *const src, const int stride, const Area blk,
                                         const int shift, const int ctu_height, int virbnd_pos)
@@ -696,6 +873,6 @@ void rcn_init_alf_functions_sse(struct RCNFunctions *rcn_func){
   rcn_func->alf.luma[1]=&simdFilter7x7BlkVB;
   rcn_func->alf.chroma[0]=&simdFilter5x5Blk;
   rcn_func->alf.chroma[1]=&simdFilter5x5BlkVB;
-  // rcn_func->alf.ccalf[0]=&cc_alf_filterBlk;
-  // rcn_func->alf.ccalf[1]=&cc_alf_filterBlkVB;
+  rcn_func->alf.ccalf[0]=&cc_alf_filterBlkVB_sse;
+  rcn_func->alf.ccalf[1]=&cc_alf_filterBlkVB_sse;
 }
