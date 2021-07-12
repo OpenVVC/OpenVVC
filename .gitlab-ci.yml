@@ -4,6 +4,8 @@ stages:
 # Linux builds
 build_linux_gcc_debug:
   stage: build
+  tags:
+    - x86
   image: gcc:10.3
   script:
     - gcc --version
@@ -18,6 +20,8 @@ build_linux_gcc_debug:
 
 non_reg_gcc_debug:
   stage: test
+  tags:
+    - x86
   image: ubuntu
   dependencies:
     - build_linux_gcc_debug
@@ -29,6 +33,8 @@ non_reg_gcc_debug:
 
 build_linux_clang_debug:
   stage: build
+  tags:
+    - x86
   image: ubuntu
   before_script:
     - apt update && apt install -y build-essential clang
@@ -45,6 +51,8 @@ build_linux_clang_debug:
 
 non_reg_clang_debug:
   stage: test
+  tags:
+    - x86
   image: ubuntu
   dependencies:
     - build_linux_clang_debug
@@ -56,6 +64,8 @@ non_reg_clang_debug:
 
 build_linux_gcc_release:
   stage: build
+  tags:
+    - x86
   image: gcc:10.3
   allow_failure: true
   script:
@@ -71,6 +81,8 @@ build_linux_gcc_release:
 
 AllIntra_CTC_gcc_debug:
   stage: test
+  tags:
+    - x86
   image: ubuntu
   dependencies:
     - build_linux_gcc_debug
@@ -82,6 +94,8 @@ AllIntra_CTC_gcc_debug:
 
 AllIntra_CTC_gcc_release:
   stage: test
+  tags:
+    - x86
   image: ubuntu
   dependencies:
     - build_linux_gcc_release
@@ -93,6 +107,8 @@ AllIntra_CTC_gcc_release:
 
 misc_inter_gcc_release:
   stage: test
+  tags:
+    - x86
   image: ubuntu
   dependencies:
     - build_linux_gcc_release
