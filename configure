@@ -110,7 +110,7 @@ fi
 is_arm="0"
 is_x86="0"
 case "$arch" in
-    arm*)
+    arm*|aarch*)
         arch="arm"
         is_arm="1"
     ;;
