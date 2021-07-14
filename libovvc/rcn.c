@@ -16,8 +16,22 @@
 #include "ovconfig.h"
 #include "drv.h"
 
-#if SSE_ENABLED
-#include "x86/rcn_sse.h"
+#if ARCH_X86
+  #if SSE_ENABLED
+    #include "x86/rcn_sse.h"
+  #elif AVX_ENABLED
+    //Link AVX optims
+  #else
+    //Failover x86
+  #endif
+#elif ARCH_ARM
+  #if NEON_ENABLED
+    #include "arm/rcn_neon.h"
+  #else
+    //Failover ARM
+  #endif
+#else
+  //Failover other arch
 #endif
 
 static int
@@ -482,7 +496,7 @@ rcn_residual_c(OVCTUDec *const ctudec,
 }
 
 void
-rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled, 
+rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled,
                     uint8_t sps_chroma_vertical_collocated_flag, uint8_t lmcs_flag)
 {
   rcn_init_mc_functions(rcn_func);
@@ -526,7 +540,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
     #endif
   #elif ARCH_ARM
     #if NEON_ENABLED
-      //Link NEON optims
+      rcn_init_sao_functions_neon(rcn_func);
     #else
       //Failover ARM
     #endif

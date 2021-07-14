@@ -7,7 +7,7 @@
 #include "dec_structures.h"
 #include "rcn_structures.h"
 
-void
+static void
 sao_band_filter_0_10_sse(uint8_t* _dst,
                                 uint8_t* _src,
                                 ptrdiff_t _stride_dst,
@@ -60,7 +60,7 @@ sao_band_filter_0_10_sse(uint8_t* _dst,
   }
 }
 
-void
+static void
 sao_edge_filter_10_sse(uint8_t* _dst,
                               uint8_t* _src,
                               ptrdiff_t _stride_dst,
@@ -133,7 +133,7 @@ sao_edge_filter_10_sse(uint8_t* _dst,
   }
 }
 
-void
+static void
 sao_edge_filter_7_10_sse(uint8_t* _dst,
                               uint8_t* _src,
                               ptrdiff_t _stride_dst,

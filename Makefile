@@ -21,7 +21,7 @@ AT_0 = @
 AT_1 =
 AT = $(AT_$(VERBOSITY))
 
-# Quick hack to avoid missing / in builddir 
+# Quick hack to avoid missing / in builddir
 BUILDDIR:=$(BUILDDIR)/
 
 # Find Sources
@@ -81,6 +81,10 @@ $(BUILDDIR)$(LIB_NAME)$(SHARED_LIBSUFF): $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
 $(BUILDDIR_TYPE_ARCH)%_sse.o: $($(ARCH)_SRC_FOLDER)%_sse.c
 	$(AT)mkdir -p $(@D)
 	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) $(SSE_CFLAGS) -I$(SRC_FOLDER)
+
+$(BUILDDIR_TYPE_ARCH)%_neon.o: $($(ARCH)_SRC_FOLDER)%_neon.c
+	$(AT)mkdir -p $(@D)
+	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) $(NEON_CFLAGS) -I$(SRC_FOLDER)
 
 $(BUILDDIR)%.o: %.c
 	$(AT)mkdir -p $(@D)

@@ -17,6 +17,7 @@ cflags_error=
 cflags_default="${cflags_warnings} ${cflags_olevel}"
 
 sse_enabled="1"
+neon_enabled="1"
 posix_memalign="0"
 aligned_malloc="0"
 log_enabled="1"
@@ -39,6 +40,7 @@ Options:
 
   --disable-log            disable log reportings [no]
   --disable-sse            disable sse optimizations [no]
+  --disable-neon           disable neon optimizations [no]
   --disable-static         do not build static libraries [no]
   --enable-shared          build shared libraries [no]
 
@@ -89,6 +91,9 @@ for opt do
         ;;
         --disable-sse)
             sse_enabled="0"
+        ;;
+        --disable-neon)
+            neon_enabled="0"
         ;;
         --disable-log)
             log_enabled="0"
@@ -182,7 +187,7 @@ cat > libovvc/ovconfig.h <<EOF
 #define SSE_ENABLED $sse_enabled
 #define AVX_ENABLED 0
 #define ARCH_ARM $is_arm
-#define NEON_ENABLED 0
+#define NEON_ENABLED $neon_enabled
 
 #define HAVE_POSIX_MEMALIGN $posix_memalign
 #define HAVE_ALIGNED_MALLOC $aligned_malloc
