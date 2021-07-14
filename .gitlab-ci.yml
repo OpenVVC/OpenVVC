@@ -149,6 +149,18 @@ build_arm_linux_gcc_debug:
       - debug/libovvc.so
       - debug/examples/dectest
 
+AllIntra_CTC_arm_non_reg_gcc_release:
+  stage: test
+  tags:
+    - ARM
+  dependencies:
+    - build_arm_linux_gcc_release
+  before_script:
+    - apt update && apt install -y curl
+  script:
+    - ./configure --cc=gcc --release --build-dir=release
+    - make test
+
 arm_non_reg_gcc_debug:
   stage: test
   tags:
