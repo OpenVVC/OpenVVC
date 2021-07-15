@@ -4405,6 +4405,32 @@ uint8_t log2_sb_w, uint8_t log2_tb_h)
         sb_coeffs += src_stride;
 
         memcpy(dst, sb_coeffs,  cpy_s);
+
+        if (log2_tb_h == 3) {
+            dst       += dst_stride;
+            sb_coeffs += src_stride;
+            memcpy(dst, sb_coeffs,  cpy_s);
+
+            dst       += dst_stride;
+            sb_coeffs += src_stride;
+            memcpy(dst, sb_coeffs,  cpy_s);
+
+            dst       += dst_stride;
+            sb_coeffs += src_stride;
+            memcpy(dst, sb_coeffs,  cpy_s);
+
+            dst       += dst_stride;
+            sb_coeffs += src_stride;
+            memcpy(dst, sb_coeffs,  cpy_s);
+
+            dst       += dst_stride;
+            sb_coeffs += src_stride;
+            memcpy(dst, sb_coeffs,  cpy_s);
+
+            dst       += dst_stride;
+            sb_coeffs += src_stride;
+            memcpy(dst, sb_coeffs,  cpy_s);
+        }
     }
 }
 
