@@ -1434,7 +1434,7 @@ clip_sb_pos_to_col_ctu(struct OVPos pos, int16_t ctu_w, int16_t ctu_h)
 {
   struct OVPos sb_pos;
 
-  sb_pos.x = ov_clip(pos.x, 0, ctu_w + 3);
+  sb_pos.x = ov_clip(pos.x, 0, ctu_w + 3 - ((ctu_w == 64) << 2));
   sb_pos.y = ov_clip(pos.y, 0, ctu_h - 1);
 
   sb_pos.x &= TMVP_POS_MSK;
@@ -1806,8 +1806,8 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
 
     OVMV *mv_buff0 = &inter_ctx->mv_ctx0.mvs[35 + (x0 >> 2) + (y0 >> 2) * 34];
     OVMV *mv_buff1 = &inter_ctx->mv_ctx1.mvs[35 + (x0 >> 2) + (y0 >> 2) * 34];
-    OVMV *tmvp_mv0 = &inter_ctx->tmvp_mv[0].mvs[(x0 + 7 >> 3) + ((y0 + 7 >> 3) << 4)];
-    OVMV *tmvp_mv1 = &inter_ctx->tmvp_mv[1].mvs[(x0 + 7 >> 3) + ((y0 + 7 >> 3) << 4)];
+    OVMV *tmvp_mv0 = &inter_ctx->tmvp_mv[0].mvs[((x0 + 4) >> 3) + (((y0 + 4) >> 3) << 4)];
+    OVMV *tmvp_mv1 = &inter_ctx->tmvp_mv[1].mvs[((x0 + 4) >> 3) + (((y0 + 4) >> 3) << 4)];
 
     /* FIXME check start_x , start_y */
     int start_x = x0 + (sb_w >> 1) + mv_offset.x;
