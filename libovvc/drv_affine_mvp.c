@@ -3259,6 +3259,7 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
 
     mv_info.inter_dir = inter_dir;
     mv_info.affine_type = affine_type;
+    inter_ctx->prec_amvr = 0;
 
     const struct AffineControlInfo *const cinfo = mv_info.cinfo;
     const struct AffineDeltaMV dmv_0 = derive_affine_delta_mvs(&cinfo[0],

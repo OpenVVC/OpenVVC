@@ -1206,6 +1206,13 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     prec_x1 = (mv1->x) & 0xF;
     prec_y1 = (mv1->y) & 0xF;
 
+    if(inter_ctx->prec_amvr == 3){
+        prec_x0 += (prec_x0 == 8) ? 8 : 0;
+        prec_y0 += (prec_y0 == 8) ? 8 : 0;
+        prec_x1 += (prec_x1 == 8) ? 8 : 0;
+        prec_y1 += (prec_y1 == 8) ? 8 : 0;
+    }
+
     dst.y  += x0 + y0 * dst.stride;
 
     prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
