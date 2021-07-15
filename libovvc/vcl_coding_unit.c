@@ -1212,6 +1212,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 #endif
 
     uint8_t smvd_flag = 0;
+    uint8_t mmvd_flag = 0;
 
     /* FIXME Move AMVR precision outside of inter_ctx */
     inter_ctx->prec_amvr = MV_PRECISION_QUARTER;
@@ -1255,7 +1256,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         reg_merge_flag = reg_merge_flag || ovcabac_read_ae_reg_merge_flag(cabac_ctx, skip_flag);
 
         if (reg_merge_flag) {
-            uint8_t mmvd_flag = 0;
             if (inter_ctx->mmvd_flag) {
                 mmvd_flag = ovcabac_read_ae_mmvd_flag(cabac_ctx);
             }
@@ -1497,7 +1497,9 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
          *
          */
         if (merge_flag && ctu_dec->dmvr_enabled && mv_info.inter_dir == 0x3) {
-            dmvr_enable = check_bdof(log2_pb_w, log2_pb_h, 0, 0, 0);
+            /*FIXME check both mv in bir dir ?*/
+            uint8_t bcw_flag = (mv_info.mv0.bcw_idx_plus1 != 0 && mv_info.mv0.bcw_idx_plus1 != 3);
+            dmvr_enable = check_bdof(log2_pb_w, log2_pb_h, 0, mmvd_flag, bcw_flag);
 
             dmvr_enable = dmvr_enable && check_bdof_ref(inter_ctx, ref_idx0, ref_idx1);
         }
