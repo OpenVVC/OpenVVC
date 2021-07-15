@@ -1273,9 +1273,9 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     }
 
     if (ctudec->lmcs_info.lmcs_enabled_flag){
-        rcn_lmcs_reshape_luma_blk_lut(dst.y, RCN_CTB_STRIDE,
-                                      ctudec->lmcs_info.lmcs_lut_fwd_luma,
-                                      pu_w, pu_h);
+        rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE,
+                                        ctudec->lmcs_info.lmcs_lut_fwd_luma,
+                                        pu_w, pu_h);
     }
 
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
