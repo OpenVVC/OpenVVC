@@ -1650,6 +1650,7 @@ sbt_tree(OVCTUDec *const ctu_dec,
          uint8_t sbt_mode,
          uint8_t sbt_pos, uint8_t cu_flags, struct TUInfo *tu_info)
 {
+    /* FIXME remove this if zeroing is done by transform */
     switch (sbt_mode) {
     case 0x1:
          /*sbt_ver*/
