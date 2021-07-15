@@ -4562,8 +4562,8 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
         if (sig_sb_map) {
             int x_cg = scan_cg_x[i];
             int y_cg = scan_cg_y[i];
-            uint8_t sig_sb_abv = (((sig_sb_map >> ((y_cg - 1) << 3)) & 0xFF) >> x_cg) & 0x1;
-            uint8_t sig_sb_lft = (((sig_sb_map >> ( y_cg      << 3)) & 0xFF) >> (x_cg - 1)) & 0x1;
+            uint8_t sig_sb_abv = (((sig_sb_map >> ((uint8_t)(y_cg - 1) << 3)) & 0xFF) >> x_cg) & 0x1;
+            uint8_t sig_sb_lft = (((sig_sb_map >> ( y_cg      << 3)) & 0xFF) >> (uint8_t)(x_cg - 1)) & 0x1;
             int sig_sb_offset = !!sig_sb_abv + !!sig_sb_lft;
 
             sig_sb_flg = ovcabac_read_ae_significant_ts_cg_flag(cabac_ctx, sig_sb_offset);
@@ -4732,8 +4732,8 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         int y_cg = scan_cg_y[num_cg];
 
         uint8_t sig_sb_flg;
-        uint8_t sig_sb_blw = !!(((sig_sb_map >> ((y_cg + 1) << 3)) & 0xFF) & (1 << x_cg));
-        uint8_t sig_sb_rgt = !!(((sig_sb_map >> ( y_cg      << 3)) & 0xFF) & (1 << (x_cg + 1)));
+        uint8_t sig_sb_blw = ((uint8_t)((sig_sb_map >> ((y_cg + 1) << 3)) & 0xFF) >> x_cg) & 0x1;
+        uint8_t sig_sb_rgt = ((uint8_t)((sig_sb_map >> ( y_cg      << 3)) & 0xFF) >> (x_cg + 1)) & 0x1;
 
         sig_sb_flg = ovcabac_read_ae_significant_cg_flag(cabac_ctx, (sig_sb_rgt | sig_sb_blw));
 
@@ -4905,8 +4905,8 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         for(int i = num_cg; i > 0; --i){
             int x_cg = scan_cg_x[i];
             int y_cg = scan_cg_y[i];
-            uint8_t sig_sb_blw = !!(((sig_sb_map >> ((y_cg + 1) << 3)) & 0xFF) & (1 << x_cg));
-            uint8_t sig_sb_rgt = !!(((sig_sb_map >> ( y_cg      << 3)) & 0xFF) & (1 << (x_cg + 1)));
+        uint8_t sig_sb_blw = (((sig_sb_map >> ((y_cg + 1) << 3)) & 0xFF) >> x_cg) & 0x1;
+        uint8_t sig_sb_rgt = (((sig_sb_map >> ( y_cg      << 3)) & 0xFF) >> (x_cg + 1)) & 0x1;
 
             uint8_t sig_sb_flg = ovcabac_read_ae_significant_cg_flag_chroma(cabac_ctx, !!(sig_sb_rgt | sig_sb_blw));
 
