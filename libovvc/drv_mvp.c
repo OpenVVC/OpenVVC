@@ -1526,6 +1526,8 @@ fill_tmvp_map(struct OVMV *const tmvp_mv, OVMV mv,
 
     OVMV *dst_mv = tmvp_mv;;
     //dst_mv += 16 * odd_y + odd_x;
+    mv.bcw_idx_plus1 = 0;
+    mv.prec_amvr = 0;
 
     for (j = 0; j < pb_h; j += 4) {
         for (i = 0; i < pb_w; i += 4) {

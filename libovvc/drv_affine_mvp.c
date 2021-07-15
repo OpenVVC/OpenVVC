@@ -535,6 +535,8 @@ found :
     mv = tmvp_rescale(mv, scale);
 
     mv.ref_idx = ref_idx;
+    mv.bcw_idx_plus1 = 0;
+    mv.prec_amvr = 0;
 
     *dst = mv;
 
@@ -596,6 +598,8 @@ found :
     mv = tmvp_rescale(mv, scale);
 
     mv.ref_idx = ref_idx;
+    mv.bcw_idx_plus1 = 0;
+    mv.prec_amvr = 0;
 
     *dst = mv;
 
@@ -649,6 +653,8 @@ merge_tmvp_from_ldc(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
             mv = tmvp_rescale(mv, scale);
 
             mv.ref_idx = ref_idx;
+            mv.bcw_idx_plus1 = 0;
+            mv.prec_amvr = 0;
 
             dst[1] = mv;
         } else if (cand_c0 && cand_c01) {
@@ -674,6 +680,8 @@ merge_tmvp_from_ldc(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             mv = tmvp_rescale(mv, scale);
+            mv.bcw_idx_plus1 = 0;
+            mv.prec_amvr = 0;
 
             mv.ref_idx = ref_idx;
 
@@ -702,6 +710,8 @@ merge_tmvp_from_ldc(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
             mv = tmvp_rescale(mv, scale);
 
             mv.ref_idx = ref_idx;
+            mv.bcw_idx_plus1 = 0;
+            mv.prec_amvr = 0;
 
             dst[1] = mv;
 
@@ -730,6 +740,8 @@ merge_tmvp_from_ldc(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
             mv = tmvp_rescale(mv, scale);
 
             mv.ref_idx = ref_idx;
+            mv.bcw_idx_plus1 = 0;
+            mv.prec_amvr = 0;
 
             dst[1] = mv;
         }
@@ -1523,6 +1535,8 @@ sbtmvp_from_ldc(const struct VVCTMVP *const tmvp, struct OVPos pos,
             mv = tmvp_rescale(mv, scale);
 
             mv.ref_idx = ref_idx;
+            mv.bcw_idx_plus1 = 0;
+            mv.prec_amvr = 0;
 
             dst[0] = mv;
 
@@ -1534,6 +1548,8 @@ sbtmvp_from_ldc(const struct VVCTMVP *const tmvp, struct OVPos pos,
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             mv = tmvp_rescale(mv, scale);
+            mv.bcw_idx_plus1 = 0;
+            mv.prec_amvr = 0;
 
             mv.ref_idx = ref_idx;
 
@@ -1550,6 +1566,8 @@ sbtmvp_from_ldc(const struct VVCTMVP *const tmvp, struct OVPos pos,
             mv = tmvp_rescale(mv, scale);
 
             mv.ref_idx = ref_idx;
+            mv.bcw_idx_plus1 = 0;
+            mv.prec_amvr = 0;
 
             dst[0] = mv;
 
@@ -1561,6 +1579,8 @@ sbtmvp_from_ldc(const struct VVCTMVP *const tmvp, struct OVPos pos,
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             mv = tmvp_rescale(mv, scale);
+            mv.bcw_idx_plus1 = 0;
+            mv.prec_amvr = 0;
 
             mv.ref_idx = ref_idx;
 
@@ -1577,6 +1597,8 @@ sbtmvp_from_ldc(const struct VVCTMVP *const tmvp, struct OVPos pos,
             mv = tmvp_rescale(mv, scale);
 
             mv.ref_idx = ref_idx;
+            mv.bcw_idx_plus1 = 0;
+            mv.prec_amvr = 0;
 
             dst[0] = mv;
 
@@ -1587,6 +1609,8 @@ sbtmvp_from_ldc(const struct VVCTMVP *const tmvp, struct OVPos pos,
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             mv = tmvp_rescale(mv, scale);
+            mv.bcw_idx_plus1 = 0;
+            mv.prec_amvr = 0;
 
             mv.ref_idx = ref_idx;
 
@@ -1605,6 +1629,8 @@ sbtmvp_from_ldc(const struct VVCTMVP *const tmvp, struct OVPos pos,
             mv = tmvp_rescale(mv, scale);
 
             mv.ref_idx = ref_idx;
+            mv.bcw_idx_plus1 = 0;
+            mv.prec_amvr = 0;
 
             dst[0] = mv;
 
@@ -1615,6 +1641,8 @@ sbtmvp_from_ldc(const struct VVCTMVP *const tmvp, struct OVPos pos,
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             mv = tmvp_rescale(mv, scale);
+            mv.bcw_idx_plus1 = 0;
+            mv.prec_amvr = 0;
 
             mv.ref_idx = ref_idx;
 
@@ -1674,6 +1702,8 @@ found :
     mv = tmvp_rescale(mv, scale);
 
     mv.ref_idx = ref_idx;
+    mv.bcw_idx_plus1 = 0;
+    mv.prec_amvr = 0;
 
     *dst = mv;
 
