@@ -4965,7 +4965,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         if (!last_cg_x) {
             int last_coeff_idx = last_x + (last_y << 3) ;
             int num_coeffs = ff_vvc_diag_scan_8x2_num_cg [last_coeff_idx];
-            if (log2_tb_w == 2) {
+            if (log2_tb_w <= 2) {
                 if (last_x >= 2) {
 
                     cg_offset = 2;
@@ -4987,32 +4987,46 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
                                                              &state, num_coeffs,
                                                              &c_coding_ctx);
 
+                    deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
+
+                    store_sb_coeff(_dst + 2, cg_coeffs, log2_tb_w, 1, 1);
+
                     c_coding_ctx.sum_abs_lvl  = &sum_abs_level[VVC_TR_CTX_OFFSET];
                     c_coding_ctx.sum_abs_lvl2 = &sum_abs_level2[VVC_TR_CTX_OFFSET];
                     c_coding_ctx.sum_sig_nbs  = &num_significant[VVC_TR_CTX_OFFSET];
 
 
-                    num_sig_c = ovcabac_read_ae_sb_2x2_dc_c_dpq(cabac_ctx, cg_coeffs,
+                    num_sig_c = ovcabac_read_ae_sb_2x2_dc_c_dpq(cabac_ctx, cg_coeffs + 4,
                                                                 &state, 4,
                                                                 &c_coding_ctx);
+
+                    deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
+
+                    store_sb_coeff(_dst, cg_coeffs + 4, log2_tb_w, 1, 1);
 
                 } else {
                     num_sig_c = ovcabac_read_ae_sb_4x2_dc_c_dpq(cabac_ctx, cg_coeffs,
                                                                 &state, num_coeffs,
                                                                 &c_coding_ctx);
+
+                    deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
+
+                    memcpy(&_dst[0        ]     , &cg_coeffs[0], sizeof(int16_t) * 2);
+                    memcpy(&_dst[1 << log2_tb_w], &cg_coeffs[8], sizeof(int16_t) * 2);
                 }
             } else {
                 num_sig_c = ovcabac_read_ae_sb_8x2_dc_c_dpq(cabac_ctx, cg_coeffs,
                                                             &state, num_coeffs,
                                                             &c_coding_ctx);
-            }
-            deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
-            memcpy(&_dst[0        ]     , &cg_coeffs[0], sizeof(int16_t) * 8);
-            memcpy(&_dst[1 << log2_tb_w], &cg_coeffs[8], sizeof(int16_t) * 8);
+                deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
+
+                memcpy(&_dst[0        ]     , &cg_coeffs[0], sizeof(int16_t) * 8);
+                memcpy(&_dst[1 << log2_tb_w], &cg_coeffs[8], sizeof(int16_t) * 8);
+            }
             /*FIXME determine whether or not we should read lfnst*/
 
-            return 0x1;
+            return 0xFFFF;
         }
 
         x = last_x - (last_cg_x << 3);
@@ -5091,7 +5105,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         if(!last_cg_y){
             int last_coeff_idx = last_x + (last_y << 1);
             int num_coeffs = ff_vvc_diag_scan_2x8_num_cg [last_coeff_idx];
-            if (log2_tb_h == 2) {
+            if (log2_tb_h <= 2) {
                 static const uint8_t tmp_lut[4] = {
                     0, 2, 1, 3
                 };
@@ -5116,26 +5130,41 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
                     c_coding_ctx.sum_sig_nbs  = &num_significant[VVC_TR_CTX_OFFSET];
 
 
-                    num_sig_c = ovcabac_read_ae_sb_2x2_dc_c_dpq(cabac_ctx, cg_coeffs,
+                    deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
+
+                    store_sb_coeff(_dst + (2 << log2_tb_w), cg_coeffs, log2_tb_w, 1, 1);
+
+                    num_sig_c = ovcabac_read_ae_sb_2x2_dc_c_dpq(cabac_ctx, cg_coeffs + 4,
                                                                 &state, 4,
                                                                 &c_coding_ctx);
+
+                    deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
+
+                    store_sb_coeff(_dst, cg_coeffs + 4, log2_tb_w, 1, 1);
 
                 } else {
                     num_coeffs = tmp_lut[last_coeff_idx];
                     num_sig_c = ovcabac_read_ae_sb_2x4_dc_c_dpq(cabac_ctx, cg_coeffs,
                                                                 &state, num_coeffs,
                                                                 &c_coding_ctx);
+
+                    deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
+
+                    memcpy(&_dst[0], &cg_coeffs[0],  sizeof(int16_t) * 2);
+                    memcpy(&_dst[1<<log2_tb_w], &cg_coeffs[2],  sizeof(int16_t) * 2);
+                    memcpy(&_dst[2<<log2_tb_w], &cg_coeffs[4],  sizeof(int16_t) * 2);
+                    memcpy(&_dst[3<<log2_tb_w], &cg_coeffs[6],  sizeof(int16_t) * 2);
                 }
             } else {
                 num_sig_c = ovcabac_read_ae_sb_2x8_dc_c_dpq(cabac_ctx, cg_coeffs,
                                                             &state, num_coeffs,
                                                             &c_coding_ctx);
+                deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
+
+                memcpy(&_dst[0], &cg_coeffs[0],  sizeof(int16_t) * 16);
             }
-            deq_prms.dequant_sb(cg_coeffs, deq_prms.scale, deq_prms.shift);
 
-            memcpy(&_dst[0], &cg_coeffs[0],  sizeof(int16_t) * 16);
             /*FIXME determine whether or not we should read lfnst*/
-
             return 0xFFFF;
         }
 
