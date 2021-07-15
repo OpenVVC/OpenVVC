@@ -866,14 +866,18 @@ residual_coding_l(OVCTUDec *const ctu_dec,
             last_pos = ovcabac_read_ae_last_sig_pos_red(cabac_ctx, log2_tb_w, log2_tb_h);
             log2_red_w = log2_tb_w == 5 ? 4 : log2_tb_w;
             log2_red_h = log2_tb_h == 5 ? 4 : log2_tb_h;
+            ctu_dec->tmp_red  = log2_tb_w - log2_red_w;
+            ctu_dec->tmp_red |= (log2_tb_h - log2_red_h) << 1;
 
+            memset(coeffs_y, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
         } else {
             last_pos = ovcabac_read_ae_last_sig_pos(cabac_ctx, log2_tb_w, log2_tb_h);
         }
         uint64_t sig_sb_map;
-        sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_red_w, log2_red_h,
+        sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_tb_w, log2_tb_h,
                                               last_pos);
 
+        ctu_dec->tmp_red  = 0;
         tb_info->sig_sb_map = sig_sb_map;
         tb_info->last_pos   = last_pos;
 
@@ -1041,7 +1045,7 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
             uint8_t is_mip = !!(cu_flags & flg_mip_flag);
             rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
                          lim_sb_s, tu_info->cu_mts_flag, tu_info->cu_mts_idx,
-                         !tb_info->last_pos, tu_info->lfnst_flag, is_mip, tu_info->lfnst_idx);
+                         !tb_info->last_pos, tu_info->lfnst_flag, is_mip, tu_info->lfnst_idx, tu_info->is_sbt);
 
         } else {
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
@@ -1082,7 +1086,7 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
             uint8_t is_mip = !!(cu_flags & flg_mip_flag);
             rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
                          lim_sb_s, tu_info->cu_mts_flag, tu_info->cu_mts_idx,
-                         !tb_info->last_pos, tu_info->lfnst_flag, is_mip, tu_info->lfnst_idx);
+                         !tb_info->last_pos, tu_info->lfnst_flag, is_mip, tu_info->lfnst_idx, tu_info->is_sbt);
 
         } else {
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;

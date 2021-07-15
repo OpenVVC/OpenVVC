@@ -814,7 +814,9 @@ struct OVCTUDec
     uint16_t pic_w;
     uint16_t cur_poc;
     uint8_t intra_mode_c;
+    /* FIXME to be removed */
     uint8_t tmp_ciip;
+    uint8_t tmp_red;
 };
 
 int ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec);
