@@ -1053,9 +1053,8 @@ tmvp_entry_init(OVCTUDec *ctudec, OVPicture *active_pic)
     memcpy(tmvp_ctx->dist_col_0, active_pic->tmvp.dist_col_0, sizeof(tmvp_ctx->dist_col_0));
     memcpy(tmvp_ctx->dist_col_1, active_pic->tmvp.dist_col_1, sizeof(tmvp_ctx->dist_col_1));
 
-
-    memset(tmvp_ctx->dir_map_v0, 0, 33 * sizeof(uint64_t));
-    memset(tmvp_ctx->dir_map_v1, 0, 33 * sizeof(uint64_t));
+    memset(tmvp_ctx->dir_map_v0, 0, 34 * sizeof(uint64_t));
+    memset(tmvp_ctx->dir_map_v1, 0, 34 * sizeof(uint64_t));
 }
 
 static void
