@@ -162,6 +162,7 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
                    int x0, int y0, int log2_pu_w, int log2_pu_h,
                    uint8_t mip_mode)
 {
+    if(log2_pu_w == 7 || log2_pu_h == 7) return;
     const struct RCNFunctions * rcn_funcs = &rcn_ctx->rcn_funcs;
     const uint16_t *src = &rcn_ctx->ctu_buff.y[0];
 
@@ -292,6 +293,7 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
                       int x0, int y0, int log2_pu_w, int log2_pu_h,
                       uint8_t mip_mode)
 {
+    if(log2_pu_w == 7 || log2_pu_h == 7) return;
     const struct RCNFunctions * rcn_funcs = &rcn_ctx->rcn_funcs;
     uint8_t log2_bndy = 1 << ((log2_pu_w > 2) || (log2_pu_h > 2));
 
