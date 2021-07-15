@@ -58,13 +58,6 @@ typedef struct VVCSBScanContext{
    const uint8_t log2_sb_h;
 }VVCSBScanContext;
 
-typedef struct VVCSBContext{
-    VVCSBScanContext scan_ctx;
-    VVCSBStates ctx_offsets;
-    int num_rem_bins;
-}VVCSBContext;
-
-
 static const VVCDepQuantCtx luma_dep_quant_ctx = {
     0x7D28,
     12
