@@ -16,7 +16,8 @@ struct OVNVCLCtx
      */
     OVSPS *sps_list[OV_MAX_NUM_SPS];
     OVPPS *pps_list[OV_MAX_NUM_PPS];
-    OVAPS *aps_list[OV_MAX_NUM_APS];
+    OVAPS *lmcs_aps_list[OV_MAX_NUM_APS];
+    OVAPS *alf_aps_list[OV_MAX_NUM_APS];
     OVPH *ph;
     OVSH *sh;
     OVSEI *sei;

@@ -502,7 +502,7 @@ retrieve_aps_alf(const OVNVCLCtx *const nvcl_ctx, uint8_t aps_id)
 {
     const OVAPS *aps = NULL;
     if (aps_id < 16) {
-        aps = nvcl_ctx->aps_list[aps_id];
+        aps = nvcl_ctx->alf_aps_list[aps_id];
     } else {
         ov_log(NULL, 3, "Invalid APS ID  %d\n", aps_id);
     }
@@ -516,7 +516,7 @@ retrieve_aps_lmcs(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
     uint8_t aps_id = ph->ph_lmcs_aps_id;
     const OVAPS *aps = NULL;
     if (aps_id < 16) {
-        aps = nvcl_ctx->aps_list[aps_id];
+        aps = nvcl_ctx->lmcs_aps_list[aps_id];
     } else {
         ov_log(NULL, 3, "Invalid APS ID  %d\n", aps_id);
     }

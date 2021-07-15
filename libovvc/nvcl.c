@@ -48,10 +48,17 @@ nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
         }
     }
 
-    nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->aps_list);
+    nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->alf_aps_list);
     for (i = 0; i < nb_elems; ++i) {
-        if (nvcl_ctx->aps_list[i]) {
-            ov_freep(&nvcl_ctx->aps_list[i]);
+        if (nvcl_ctx->alf_aps_list[i]) {
+            ov_freep(&nvcl_ctx->alf_aps_list[i]);
+        }
+    }
+
+    nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->lmcs_aps_list);
+    for (i = 0; i < nb_elems; ++i) {
+        if (nvcl_ctx->lmcs_aps_list[i]) {
+            ov_freep(&nvcl_ctx->lmcs_aps_list[i]);
         }
     }
 

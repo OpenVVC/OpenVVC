@@ -203,8 +203,13 @@ nvcl_decode_nalu_aps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
     }
 
     uint8_t aps_id = aps->aps_adaptation_parameter_set_id;
-    ov_free(nvcl_ctx->aps_list[aps_id]);
-    nvcl_ctx->aps_list[aps_id] = aps;
+    if (aps->aps_params_type == 0) {
+        ov_free(nvcl_ctx->alf_aps_list[aps_id]);
+        nvcl_ctx->alf_aps_list[aps_id] = aps;
+    } else if (aps->aps_params_type == 1) {
+        ov_free(nvcl_ctx->lmcs_aps_list[aps_id]);
+        nvcl_ctx->lmcs_aps_list[aps_id] = aps;
+    }
     // av_log(avctx, AV_LOG_DEBUG, "Success decoding APS:%d \n",aps_id);
     return aps_id;
 
