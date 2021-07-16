@@ -667,11 +667,6 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
      */
     const uint8_t nb_vedge = (nb_unit_w >> 2);
 
-    /* FIXME Finish vertical edge of upper CTU ?
-     * Note: since horizontal edge cannot be large on CTU border there exists
-     * only one block to filter
-     */
-
     src_cb -= blk_stride;
     src_cr -= blk_stride;
 
