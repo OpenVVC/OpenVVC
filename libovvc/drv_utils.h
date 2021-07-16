@@ -53,8 +53,7 @@ ctu_field_set_rect_bitfield(struct CTUBitField *const ctu_map,
 #define GEO_MV_MASK_SIZE        (GEO_WEIGHT_MASK_SIZE >> 2)
 
 extern int16_t   g_GeoParams[GEO_NUM_PARTITION_MODE][2];
-extern int8_t    g_Dis[GEO_NUM_ANGLES];
-// extern int8_t    g_Dis[GEO_NUM_ANGLES] = { 8, 8, 8, 8, 4, 4, 2, 1, 0, -1, -2, -4, -4, -8, -8, -8, -8, -8, -8, -8, -4, -4, -2, -1, 0, 1, 2, 4, 4, 8, 8, 8 };
+extern const int8_t    g_Dis[GEO_NUM_ANGLES];
 
 
 #define MMVD_REFINE_STEP        8 ///< max number of distance step
