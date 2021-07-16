@@ -6637,7 +6637,7 @@ put_vvc_bi_w_pel_pixels16_10_sse(uint8_t* dst,
                                            mx,
                                            my,
                                            width);
-};
+}
 
 static void
 put_vvc_uni_w_pel_pixels32_10_sse(uint8_t* dst,
@@ -6687,7 +6687,7 @@ put_vvc_bi_w_pel_pixels32_10_sse(uint8_t* dst,
                                            mx,
                                            my,
                                            width);
-};
+}
 
 static void
 put_vvc_uni_w_pel_pixels64_10_sse(uint8_t* dst,
@@ -6737,7 +6737,7 @@ put_vvc_bi_w_pel_pixels64_10_sse(uint8_t* dst,
                                            mx,
                                            my,
                                            width);
-};
+}
 static void
 put_vvc_uni_w_qpel_h16_10_sse(uint8_t* dst,
                                        ptrdiff_t dststride,
@@ -6786,7 +6786,7 @@ put_vvc_bi_w_qpel_h16_10_sse(uint8_t* dst,
                                        mx,
                                        my,
                                        width);
-};
+}
 
 static void
 put_vvc_uni_w_qpel_h32_10_sse(uint8_t* dst,
@@ -6836,7 +6836,7 @@ put_vvc_bi_w_qpel_h32_10_sse(uint8_t* dst,
                                        mx,
                                        my,
                                        width);
-};
+}
 
 static void
 put_vvc_uni_w_qpel_h64_10_sse(uint8_t* dst,
@@ -6886,7 +6886,7 @@ put_vvc_bi_w_qpel_h64_10_sse(uint8_t* dst,
                                        mx,
                                        my,
                                        width);
-};
+}
 static void
 put_vvc_uni_w_qpel_v16_10_sse(uint8_t* dst,
                                        ptrdiff_t dststride,
@@ -6935,7 +6935,7 @@ put_vvc_bi_w_qpel_v16_10_sse(uint8_t* dst,
                                        mx,
                                        my,
                                        width);
-};
+}
 
 static void
 put_vvc_uni_w_qpel_v32_10_sse(uint8_t* dst,
@@ -6985,7 +6985,7 @@ put_vvc_bi_w_qpel_v32_10_sse(uint8_t* dst,
                                        mx,
                                        my,
                                        width);
-};
+}
 
 static void
 put_vvc_uni_w_qpel_v64_10_sse(uint8_t* dst,
@@ -7035,7 +7035,7 @@ put_vvc_bi_w_qpel_v64_10_sse(uint8_t* dst,
                                        mx,
                                        my,
                                        width);
-};
+}
 static void
 put_vvc_uni_w_qpel_hv16_10_sse(uint8_t* dst,
                                         ptrdiff_t dststride,
@@ -7084,7 +7084,7 @@ put_vvc_bi_w_qpel_hv16_10_sse(uint8_t* dst,
                                         mx,
                                         my,
                                         width);
-};
+}
 
 static void
 put_vvc_uni_w_qpel_hv32_10_sse(uint8_t* dst,
@@ -7134,7 +7134,7 @@ put_vvc_bi_w_qpel_hv32_10_sse(uint8_t* dst,
                                         mx,
                                         my,
                                         width);
-};
+}
 
 static void
 put_vvc_uni_w_qpel_hv64_10_sse(uint8_t* dst,
@@ -7184,7 +7184,7 @@ put_vvc_bi_w_qpel_hv64_10_sse(uint8_t* dst,
                                         mx,
                                         my,
                                         width);
-};
+}
 static void
 put_vvc_uni_w_epel_h16_10_sse(uint8_t* dst,
                                        ptrdiff_t dststride,
@@ -7233,7 +7233,7 @@ put_vvc_bi_w_epel_h16_10_sse(uint8_t* dst,
                                        mx,
                                        my,
                                        width);
-};
+}
 
 static void
 put_vvc_uni_w_epel_h32_10_sse(uint8_t* dst,
@@ -7283,7 +7283,7 @@ put_vvc_bi_w_epel_h32_10_sse(uint8_t* dst,
                                        mx,
                                        my,
                                        width);
-};
+}
 
 static void
 put_vvc_uni_w_epel_h64_10_sse(uint8_t* dst,
@@ -7333,7 +7333,7 @@ put_vvc_bi_w_epel_h64_10_sse(uint8_t* dst,
                                        mx,
                                        my,
                                        width);
-};
+}
 static void
 put_vvc_uni_w_epel_v16_10_sse(uint8_t* dst,
                                        ptrdiff_t dststride,
@@ -7382,7 +7382,7 @@ put_vvc_bi_w_epel_v16_10_sse(uint8_t* dst,
                                        mx,
                                        my,
                                        width);
-};
+}
 
 static void
 put_vvc_uni_w_epel_v32_10_sse(uint8_t* dst,
@@ -7432,7 +7432,7 @@ put_vvc_bi_w_epel_v32_10_sse(uint8_t* dst,
                                        mx,
                                        my,
                                        width);
-};
+}
 
 static void
 put_vvc_uni_w_epel_v64_10_sse(uint8_t* dst,
@@ -7482,7 +7482,7 @@ put_vvc_bi_w_epel_v64_10_sse(uint8_t* dst,
                                        mx,
                                        my,
                                        width);
-};
+}
 static void
 put_vvc_uni_w_epel_hv16_10_sse(uint8_t* dst,
                                         ptrdiff_t dststride,
@@ -7531,7 +7531,7 @@ put_vvc_bi_w_epel_hv16_10_sse(uint8_t* dst,
                                         mx,
                                         my,
                                         width);
-};
+}
 
 static void
 put_vvc_uni_w_epel_hv32_10_sse(uint8_t* dst,
@@ -7581,7 +7581,7 @@ put_vvc_bi_w_epel_hv32_10_sse(uint8_t* dst,
                                         mx,
                                         my,
                                         width);
-};
+}
 
 static void
 put_vvc_uni_w_epel_hv64_10_sse(uint8_t* dst,
@@ -7631,7 +7631,7 @@ put_vvc_bi_w_epel_hv64_10_sse(uint8_t* dst,
                                         mx,
                                         my,
                                         width);
-};
+}
 
 #define WEIGHTED 0
 void
