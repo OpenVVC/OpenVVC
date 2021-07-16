@@ -237,6 +237,7 @@ ovcabac_read_ae_bcw_flag(OVCABACCtx *const cabac_ctx)
 {
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
     uint8_t bcw_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[BCW_IDX_CTX_OFFSET]);
+    return bcw_flag;
 }
 
 static uint8_t
