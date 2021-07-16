@@ -602,9 +602,9 @@ filter_veritcal_edge_c(const struct DBFInfo *const dbf_info, uint16_t *src, ptrd
     const uint8_t is_large = large_map_q & 0x1;
     const uint8_t is_bs2   = bs2_map     & 0x1;
 
-    /* Note there should not be any need to check for boundary strength equal to one
-     * along with is large condition since an edge is present if it is not bs == 2
-     * boundary strength is 1
+    /* Note there should not be any need to check anything here since condition
+     * is already checked in edge_map
+     * FIXME check on inter when bs1 is enabled
      */
     if (is_large || is_bs2) {
         uint16_t *src0 = src;
@@ -661,10 +661,13 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
     const uint64_t vedge_mask = (((uint64_t)1 << (nb_unit_h + 1)) - 1) | (uint64_t)-(!!is_last_h);
     int i;
 
-    /* FIXME recheck when to stop */
+    /* The number of edges to process (should be ((1 << log2_ctu_s) >> 4) since we start
+     * finish from CTU left border to the last edge before the right CTU border
+     * (Note we know the CTU right border is an implicit edge so we can set it to 0xFF)
+     */
     const uint8_t nb_vedge = (nb_unit_w >> 2);
 
-    /* Finish vertical edge of upper CTU
+    /* FIXME Finish vertical edge of upper CTU ?
      * Note: since horizontal edge cannot be large on CTU border there exists
      * only one block to filter
      */
@@ -686,15 +689,19 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
 
         uint64_t edge_map = dbf_info->edge_map_ver_c[edge_idx];
 
-        /* Discard first edge ? */
+        /* FIXME Use directly CTU start and modify maps storage and rotation
+         */
+        /* Discard first edge corresponding to upper CTU and mask 
+         * out of picture edge
+         */
         edge_map &= vedge_mask & ~0x1;
 
         /* Discard non filtered edges from edge_map */
         edge_map &= bs2_map | (bs1_map & large_map_q);
         uint16_t *src = src_cb;
 
-        /* FIXME we could use ctz in order to directly skip non filtered edges */
         while (edge_map){
+            /* Skip non filtered edges */
             uint8_t nb_skipped_blk = ov_ctz64(edge_map);
 
             edge_map    >>= nb_skipped_blk;
