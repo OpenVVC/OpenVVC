@@ -19,6 +19,9 @@
 #define ov_clz(x) __builtin_clz(x)
 #define ov_ctz(x) __builtin_ctz(x)
 
+#define ov_clz64(x) __builtin_clzl(x)
+#define ov_ctz64(x) __builtin_ctzl(x)
+
 typedef enum
 {
     OVLOG_ERROR,

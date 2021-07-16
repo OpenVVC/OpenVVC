@@ -695,17 +695,22 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
 
         /* FIXME we could use ctz in order to directly skip non filtered edges */
         while (edge_map){
-            if (edge_map & 0x1) {
-                filter_veritcal_edge_c(dbf_info, src, stride, qp_col, bs2_map, large_map_q);
-            }
+            uint8_t nb_skipped_blk = ov_ctz64(edge_map);
 
+            edge_map    >>= nb_skipped_blk;
+            large_map_q >>= nb_skipped_blk;
+            bs2_map     >>= nb_skipped_blk;
+
+            qp_col       += nb_skipped_blk;
+            src          += nb_skipped_blk * blk_stride;
+
+            filter_veritcal_edge_c(dbf_info, src, stride, qp_col, bs2_map, large_map_q);
+
+            edge_map    >>= 1;
             large_map_q >>= 1;
-
-            bs2_map  >>= 1;
-            edge_map >>= 1;
+            bs2_map     >>= 1;
 
             src += blk_stride;
-
             qp_col++;
         }
         src_cb += 1 << 3;
