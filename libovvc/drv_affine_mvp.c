@@ -277,7 +277,7 @@ cand_mask_to_idx(enum CandListMask cand_msk)
 static inline int16_t
 derive_cand_position(struct PBInfo pb_info, enum CandName cand_name)
 {
-    int16_t pos;
+    int16_t pos = 0;
 
     int16_t pb_x = pb_info.x_pb;
     int16_t pb_y = pb_info.y_pb;
@@ -932,6 +932,8 @@ derive_affine_delta_mvs(const struct AffineControlInfo *const cinfo,
 {
     struct AffineDeltaMV dmv;
     OVMV delta_mv_h, delta_mv_v;
+    delta_mv_h = cinfo->lt;
+    delta_mv_v = cinfo->lt;
 
     const uint8_t scale_h = AFFINE_SHIFT - log2_pb_w;
 
@@ -2823,6 +2825,7 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
                              log2_cu_w, log2_cu_h, mv_broad_0);
         return (!mv_broad_0);
     }
+    return 0;
 }
 
 void

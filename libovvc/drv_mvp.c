@@ -1779,6 +1779,8 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
     } else if (inter_dir0 == 2 && inter_dir1 == 2) {
         mv_info.inter_dir = 2;
         mv_info.mv1 = mv_info1.mv1;
+    } else {
+        memset(&mv_info, 0, sizeof(VVCMergeInfo));
     }
 
     int split_dir = inter_ctx->gpm_ctx.split_dir;
@@ -1934,7 +1936,7 @@ drv_mmvd_merge_mvp(struct InterDRVCtx *const inter_ctx,
     f_pos = idx - (f_pos_step << 2);
     int offset = (int32_t)ref_mvd_cands[f_pos_step] << 2;
 
-    OVMV mvd;
+    OVMV mvd = {0};
 
     if (mv0.ref_idx >= 0) {
         if (f_pos == 0) {
