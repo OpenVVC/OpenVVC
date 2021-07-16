@@ -2894,8 +2894,6 @@ rcn_affine_mcp_b_l(OVCTUDec *const ctudec,
     uint8_t ref_idx0 = mv_buff0->ref_idx;
     uint8_t ref_idx1 = mv_buff1->ref_idx;
 
-    int start_x = (x0 >> 2) & 0x1;
-    int start_y = (y0 >> 2) & 0x1;
 
     OVMV *tmvp_mv0 = &inter_ctx->tmvp_mv[0].mvs[0];
     OVMV *tmvp_mv1 = &inter_ctx->tmvp_mv[1].mvs[0];
@@ -2968,8 +2966,6 @@ rcn_affine_prof_mcp_b_l(OVCTUDec *const ctudec,
         compute_prof_dmv_scale(*dmv_1, prof_info.dmv_scale_h_1, prof_info.dmv_scale_v_1);
     }
 
-    int start_x = (x0 >> 2) & 0x1;
-    int start_y = (y0 >> 2) & 0x1;
     OVMV *tmvp_mv0 = &inter_ctx->tmvp_mv[0].mvs[0];
     OVMV *tmvp_mv1 = &inter_ctx->tmvp_mv[1].mvs[0];
 

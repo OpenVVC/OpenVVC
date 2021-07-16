@@ -173,10 +173,6 @@ tmvp_store_mv(OVCTUDec *ctudec)
         for (i = 0; i < nb_pb_ctb_w; i += 2) {
             for (j = 0; j < nb_pb_ctb_w; j += 2) {
                 dst_mv[j >> 1] = src[j >> 1];
-                if (src2[j].x != src[j >> 1].x || src2[j].y != src[j >> 1].y){
-                    //printf ("error\n");
-                    int var = 1;
-                }
             }
             src2 += 34 * 2;
             src += 16;

@@ -1504,8 +1504,6 @@ fill_tmvp_map(struct OVMV *const tmvp_mv, OVMV mv,
               int pb_x, int pb_y, int nb_pb_w, int nb_pb_h)
 {
     /* Align MVs on 8x8 grid */
-    int odd_x = pb_x & 0x1;
-    int odd_y = pb_y & 0x1;
     int i, j;
 
     #if 0
