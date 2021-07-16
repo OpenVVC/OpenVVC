@@ -573,6 +573,27 @@ filter_chroma_weak(uint16_t* src, const int stride, const int tc)
     src[0]       = ov_clip(m4 - delta, 0, 1023);
 }
 
+static uint64_t
+derive_large_map_from_ngh(const uint64_t *src_map, uint8_t edge_idx)
+{
+    int offset = 8 + edge_idx;
+    const uint64_t *fwd = src_map + offset + 1;
+    const uint64_t *bwd = src_map + offset - 1;
+    uint64_t dst_map = 0;
+
+    /* If an edge is detected on either of those maps
+     * the corresponding bit in dst_map is set to one
+     */
+    dst_map |= bwd[ 0] | fwd[0];
+    dst_map |= bwd[-1] | fwd[1];
+    dst_map |= bwd[-2] | fwd[2];
+
+    /* Revert the bits on the map so the that output
+     * bits set to one correspond to large blocks edges
+     */
+    return ~dst_map;
+}
+
 /* Filter vertical edges */
 static void
 vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
@@ -612,31 +633,24 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
         const uint8_t *qp_col = &dbf_info->qp_map_cb.ver[34 * edge_idx];
 
         /* Check if filter is 3 or 1 sample large based on other left edges */
-        uint64_t large_map_q = dbf_info->ctb_bound_ver_c[8 + edge_idx + 1];
-
-        large_map_q |= dbf_info->ctb_bound_ver_c[8 + edge_idx - 3];
-        large_map_q |= dbf_info->ctb_bound_ver_c[8 + edge_idx - 2];
-        large_map_q |= dbf_info->ctb_bound_ver_c[8 + edge_idx - 1];
-        large_map_q |= dbf_info->ctb_bound_ver_c[8 + edge_idx + 2];
-        large_map_q |= dbf_info->ctb_bound_ver_c[8 + edge_idx + 3];
+        uint64_t large_map_q = derive_large_map_from_ngh(dbf_info->ctb_bound_ver_c, edge_idx);
 
         /* Discard first edge ? */
         edge_map &= vedge_mask & ~0x1;
         edge_map &= bs2_map | bs1_map;
-        large_map_q = ~large_map_q;
 
         while (edge_map){
             if (edge_map & 0x1) {
-                const int is_large = large_map_q & 0x1;
-                uint8_t bs_cb = 1 + (bs2_map & 0x1);
+                const uint8_t is_large = large_map_q & 0x1;
+                const uint8_t is_bs2   = bs2_map     & 0x1;
 
                 /* Note there should not be any need to check for boundary strength equal to one
                  * along with is large condition since an edge is present if it is not bs == 2
                  * boundary strength is 1
                  */
-                if ((bs_cb == 2) || (is_large && (bs_cb == 1))) {
-                    const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_col, bs_cb);
+                if (is_large || is_bs2) {
 
+                    const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_col, 1 + is_bs2);
                     uint8_t is_strong = 0;
 
                     if (is_large) {
