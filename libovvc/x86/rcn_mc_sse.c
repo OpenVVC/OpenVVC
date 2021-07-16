@@ -3885,6 +3885,8 @@ oh_hevc_put_hevc_uni_epel_hv64_10_sse(uint16_t* dst,
     dst, dststride, _src, _srcstride, height, mx, my, width);
 }
 
+#define WEIGHTED 0
+#if WEIGHTED
 static __m128i
 _MM_PACKUS_EPI32(__m128i a, __m128i b)
 {
@@ -7632,8 +7634,8 @@ put_vvc_bi_w_epel_hv64_10_sse(uint8_t* dst,
                                         my,
                                         width);
 }
+#endif
 
-#define WEIGHTED 0
 void
 rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
 {
