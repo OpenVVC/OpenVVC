@@ -573,52 +573,73 @@ filter_chroma_weak(uint16_t* src, const int stride, const int tc)
     src[0]       = ov_clip(m4 - delta, 0, 1023);
 }
 
+/* Filter vertical edges */
 static void
 vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
                    const struct DBFInfo *const dbf_info,
                    uint8_t nb_unit_h, int is_last_h, uint8_t nb_unit_w)
 {
 
-    #if 0
-    const int nb_unit_h = (1 << part_size->log2_ctu_s) >> 2;
-    #endif
     const int blk_stride = stride << 1;
-    const uint64_t last_pb_mask = (((uint64_t)1 << (nb_unit_h + 1)) - 1) | (uint64_t)-(!!is_last_h);
+    /* Mask applied to edge_mask based on CTU height */
+    const uint64_t vedge_mask = (((uint64_t)1 << (nb_unit_h + 1)) - 1) | (uint64_t)-(!!is_last_h);
     int i;
+
+    /* FIXME recheck when to stop */
+    const uint8_t nb_vedge = (nb_unit_w >> 2);
+
+    /* Finish vertical edge of upper CTU
+     * Note: since horizontal edge cannot be large on CTU border there exists
+     * only one block to filter
+     */
 
     src_cb -= blk_stride;
     src_cr -= blk_stride;
 
-    for (i = 0; i < (nb_unit_w >> 2); i++) {
+    for (i = 0; i < nb_vedge; i++) {
+        /* FIXME chroma_edges could be stored on a smaller grid */
+        uint8_t edge_idx = i << 2;
+
         uint16_t *src0 = src_cb;
         uint16_t *src1 = src_cb + stride;
 
-        uint64_t edge_map = dbf_info->edge_map_ver_c[(i << 2) + 0];
-        uint64_t bs2_map = dbf_info->bs2_map_c.ver[i << 2];
-        uint64_t bs1_map = dbf_info->bs1_map_cb.ver[i << 2];
-        uint64_t large_map_q = dbf_info->ctb_bound_ver_c[(i << 2) + 1 + 8];
-        const uint8_t *qp_col = &dbf_info->qp_map_cb.ver[34 * (i << 2)];
+        uint64_t edge_map = dbf_info->edge_map_ver_c[edge_idx];
 
-        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) - 3 + 8];
-        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) - 2 + 8];
-        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) - 1 + 8];
-        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) + 2 + 8];
-        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) + 3 + 8];
+        uint64_t bs2_map = dbf_info->bs2_map_c.ver  [edge_idx];
+        uint64_t bs1_map = dbf_info->bs1_map_cb.ver [edge_idx];
 
-        edge_map &= last_pb_mask & ~0x1;
+        /* FIXME use absolute QP maps */
+        const uint8_t *qp_col = &dbf_info->qp_map_cb.ver[34 * edge_idx];
+
+        /* Check if filter is 3 or 1 sample large based on other left edges */
+        uint64_t large_map_q = dbf_info->ctb_bound_ver_c[8 + edge_idx + 1];
+
+        large_map_q |= dbf_info->ctb_bound_ver_c[8 + edge_idx - 3];
+        large_map_q |= dbf_info->ctb_bound_ver_c[8 + edge_idx - 2];
+        large_map_q |= dbf_info->ctb_bound_ver_c[8 + edge_idx - 1];
+        large_map_q |= dbf_info->ctb_bound_ver_c[8 + edge_idx + 2];
+        large_map_q |= dbf_info->ctb_bound_ver_c[8 + edge_idx + 3];
+
+        /* Discard first edge ? */
+        edge_map &= vedge_mask & ~0x1;
         edge_map &= bs2_map | bs1_map;
+        large_map_q = ~large_map_q;
 
         while (edge_map){
             if (edge_map & 0x1) {
-                const int max_l = (large_map_q & 0x1) ? 1 : 3;
+                const int is_large = large_map_q & 0x1;
                 uint8_t bs_cb = 1 + (bs2_map & 0x1);
 
-                if ((bs_cb == 2) || ((max_l >= 3) && (bs_cb == 1))) {
+                /* Note there should not be any need to check for boundary strength equal to one
+                 * along with is large condition since an edge is present if it is not bs == 2
+                 * boundary strength is 1
+                 */
+                if ((bs_cb == 2) || (is_large && (bs_cb == 1))) {
                     const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_col, bs_cb);
 
                     uint8_t is_strong = 0;
 
-                    if (max_l >= 3) {
+                    if (is_large) {
                         const int dp0 = compute_dp((int16_t *)src0, 1);
                         const int dq0 = compute_dq((int16_t *)src0, 1);
                         const int dp3 = compute_dp((int16_t *)src1, 1);
@@ -653,11 +674,15 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
                     }
                 }
             }
+
             large_map_q >>= 1;
+
             edge_map >>= 1;
-            bs2_map >>= 1;
+            bs2_map  >>= 1;
+
             src0 += blk_stride;
             src1 += blk_stride;
+
             qp_col++;
         }
         src_cb += 1 << 3;
@@ -680,7 +705,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
         large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) + 2 + 8];
         large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) + 3 + 8];
 
-        edge_map &= last_pb_mask & ~0x1;
+        edge_map &= vedge_mask & ~0x1;
         edge_map &= bs2_map | bs1_map;
 
         while (edge_map){
@@ -774,18 +799,19 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
         edge_map &= last_pb_mask;
         edge_map &= bs2_map | bs1_map;
 
+        large_map_q = ~large_map_q;
+
         while(edge_map) {
             if (edge_map & 0x1) {
-                const int max_l = (large_map_q & 0x1) ? 1 : 3;
+                const uint8_t is_large = large_map_q & 0x1;
                 uint8_t bs_cb = 1 + (bs2_map & 0x1);
-                /*FIXME ctb_boundary */
 
-                if ((bs_cb == 2) || ((max_l >= 3) && (bs_cb == 1))) {
+                if ((bs_cb == 2) || (is_large && (bs_cb == 1))) {
                     const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_row, bs_cb);
 
                     uint8_t is_strong = 0;
 
-                    if (max_l >= 3) {
+                    if (is_large) {
                         const int dp0 = compute_dp_c((int16_t *)src0, stride, is_ctb_b);
                         const int dq0 = compute_dq((int16_t *)src0, stride);
                         const int dp3 = compute_dp_c((int16_t *)src1, stride, is_ctb_b);
