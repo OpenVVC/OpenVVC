@@ -573,6 +573,7 @@ filter_chroma_weak(uint16_t* src, const int stride, const int tc)
     src[0]       = ov_clip(m4 - delta, 0, 1023);
 }
 
+/* Check if filter is 3 or 1 sample large based on other left edges */
 static uint64_t
 derive_large_map_from_ngh(const uint64_t *src_map, uint8_t edge_idx)
 {
@@ -592,6 +593,60 @@ derive_large_map_from_ngh(const uint64_t *src_map, uint8_t edge_idx)
      * bits set to one correspond to large blocks edges
      */
     return ~dst_map;
+}
+
+static void
+filter_veritcal_edge_c(const struct DBFInfo *const dbf_info, uint16_t *src, ptrdiff_t stride,
+                       const uint8_t *qp_col, uint64_t bs2_map, uint64_t large_map_q)
+{
+    const uint8_t is_large = large_map_q & 0x1;
+    const uint8_t is_bs2   = bs2_map     & 0x1;
+
+    /* Note there should not be any need to check for boundary strength equal to one
+     * along with is large condition since an edge is present if it is not bs == 2
+     * boundary strength is 1
+     */
+    if (is_large || is_bs2) {
+        uint16_t *src0 = src;
+        uint16_t *src1 = src + stride;
+
+        const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_col, 1 + is_bs2);
+        uint8_t is_strong = 0;
+
+        if (is_large) {
+            const int dp0 = compute_dp((int16_t *)src0, 1);
+            const int dq0 = compute_dq((int16_t *)src0, 1);
+            const int dp3 = compute_dp((int16_t *)src1, 1);
+            const int dq3 = compute_dq((int16_t *)src1, 1);
+
+            const int d0 = dp0 + dq0;
+            const int d3 = dp3 + dq3;
+
+            const int d = d0 + d3;
+
+            is_strong = (d < dbf_params.beta) &&
+                        (2 * d0 < (dbf_params.beta >> 2)) &&
+                        (2 * d3 < (dbf_params.beta >> 2)) &&
+                        use_strong_filter_c(src0, 1, dbf_params.beta, dbf_params.tc) &&
+                        use_strong_filter_c(src1, 1, dbf_params.beta, dbf_params.tc);
+
+            if (is_strong) {
+                int j;
+                for (j = 0; j < 2; ++j) {
+                    filter_chroma_strong(src, 1, dbf_params.tc);
+                    src += stride;
+                }
+            }
+        }
+
+        if (!is_strong) {
+            int j;
+            for (j = 0; j < 2; ++j) {
+                filter_chroma_weak(src, 1, dbf_params.tc);
+                src += stride;
+            }
+        }
+    }
 }
 
 /* Filter vertical edges */
@@ -621,81 +676,35 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
         /* FIXME chroma_edges could be stored on a smaller grid */
         uint8_t edge_idx = i << 2;
 
-        uint16_t *src0 = src_cb;
-        uint16_t *src1 = src_cb + stride;
-
-        uint64_t edge_map = dbf_info->edge_map_ver_c[edge_idx];
-
         uint64_t bs2_map = dbf_info->bs2_map_c.ver  [edge_idx];
         uint64_t bs1_map = dbf_info->bs1_map_cb.ver [edge_idx];
+
+        uint64_t large_map_q = derive_large_map_from_ngh(dbf_info->ctb_bound_ver_c, edge_idx);
 
         /* FIXME use absolute QP maps */
         const uint8_t *qp_col = &dbf_info->qp_map_cb.ver[34 * edge_idx];
 
-        /* Check if filter is 3 or 1 sample large based on other left edges */
-        uint64_t large_map_q = derive_large_map_from_ngh(dbf_info->ctb_bound_ver_c, edge_idx);
+        uint64_t edge_map = dbf_info->edge_map_ver_c[edge_idx];
 
         /* Discard first edge ? */
         edge_map &= vedge_mask & ~0x1;
-        edge_map &= bs2_map | bs1_map;
 
+        /* Discard non filtered edges from edge_map */
+        edge_map &= bs2_map | (bs1_map & large_map_q);
+        uint16_t *src = src_cb;
+
+        /* FIXME we could use ctz in order to directly skip non filtered edges */
         while (edge_map){
             if (edge_map & 0x1) {
-                const uint8_t is_large = large_map_q & 0x1;
-                const uint8_t is_bs2   = bs2_map     & 0x1;
-
-                /* Note there should not be any need to check for boundary strength equal to one
-                 * along with is large condition since an edge is present if it is not bs == 2
-                 * boundary strength is 1
-                 */
-                if (is_large || is_bs2) {
-
-                    const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_col, 1 + is_bs2);
-                    uint8_t is_strong = 0;
-
-                    if (is_large) {
-                        const int dp0 = compute_dp((int16_t *)src0, 1);
-                        const int dq0 = compute_dq((int16_t *)src0, 1);
-                        const int dp3 = compute_dp((int16_t *)src1, 1);
-                        const int dq3 = compute_dq((int16_t *)src1, 1);
-
-                        const int d0 = dp0 + dq0;
-                        const int d3 = dp3 + dq3;
-
-                        const int d = d0 + d3;
-
-                        is_strong = (d < dbf_params.beta) &&
-                                    (2 * d0 < (dbf_params.beta >> 2)) &&
-                                    (2 * d3 < (dbf_params.beta >> 2)) && 
-                                    use_strong_filter_c(src0, 1, dbf_params.beta, dbf_params.tc) &&
-                                    use_strong_filter_c(src1, 1, dbf_params.beta, dbf_params.tc);
-                    }
-
-                    if (!is_strong) {
-                        int j;
-                        uint16_t *src = src0;
-                        for (j = 0; j < 2; ++j) {
-                            filter_chroma_weak(src, 1, dbf_params.tc);
-                            src += stride;
-                        }
-                    } else {
-                        int j;
-                        uint16_t *src = src0;
-                        for (j = 0; j < 2; ++j) {
-                            filter_chroma_strong(src, 1, dbf_params.tc);
-                            src += stride;
-                        }
-                    }
-                }
+                filter_veritcal_edge_c(dbf_info, src, stride, qp_col, bs2_map, large_map_q);
             }
 
             large_map_q >>= 1;
 
-            edge_map >>= 1;
             bs2_map  >>= 1;
+            edge_map >>= 1;
 
-            src0 += blk_stride;
-            src1 += blk_stride;
+            src += blk_stride;
 
             qp_col++;
         }
