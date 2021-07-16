@@ -134,6 +134,7 @@ hmvp_add_cand_1(const struct HMVPLUT *const hmvp_lut,
     }
 }
 
+#if 0
 static void
 hmvp_add_cand(const struct HMVPLUT *const hmvp_lut,
               OVMV *const cand_list,
@@ -148,6 +149,7 @@ hmvp_add_cand(const struct HMVPLUT *const hmvp_lut,
         }
     }
 }
+#endif
 
 static uint8_t
 hmvp_add_merge_cand(const struct HMVPLUT *const hmvp_lut,
@@ -660,6 +662,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
     return cand[mvp_idx];
 }
 
+#if 0
 static OVMV
 derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
                       const struct OVMVCtx *const mv_ctx,
@@ -846,6 +849,7 @@ derive_mvp_candidates(struct InterDRVCtx *const inter_ctx,
 
     return cand[mvp_idx];
 }
+#endif
 
 static OVMV
 vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
