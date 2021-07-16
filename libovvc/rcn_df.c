@@ -701,19 +701,17 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
         uint16_t *src = src_cb;
 
         while (edge_map){
-            /* Skip non filtered edges */
             uint8_t nb_skipped_blk = ov_ctz64(edge_map);
 
-            edge_map    >>= nb_skipped_blk;
+            /* Skip non filtered edges */
             large_map_q >>= nb_skipped_blk;
             bs2_map     >>= nb_skipped_blk;
-
             qp_col       += nb_skipped_blk;
             src          += nb_skipped_blk * blk_stride;
 
             filter_veritcal_edge_c(dbf_info, src, stride, qp_col, bs2_map, large_map_q);
 
-            edge_map    >>= 1;
+            edge_map    >>= nb_skipped_blk + 1;
             large_map_q >>= 1;
             bs2_map     >>= 1;
 
@@ -723,80 +721,44 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
         src_cb += 1 << 3;
     }
 
+    for (i = 0; i < nb_vedge; i++) {
+        uint8_t edge_idx = i << 2;
 
-    for (i = 0; i < (nb_unit_w >> 2); i++) {
-        uint16_t *src0 = src_cr;
-        uint16_t *src1 = src_cr + stride;
+        uint64_t bs2_map = dbf_info->bs2_map_c.ver  [edge_idx];
+        uint64_t bs1_map = dbf_info->bs1_map_cr.ver [edge_idx];
 
-        uint64_t edge_map = dbf_info->edge_map_ver_c[(i << 2) + 0];
-        uint64_t bs2_map = dbf_info->bs2_map_c.ver[i << 2];
-        uint64_t bs1_map = dbf_info->bs1_map_cr.ver[i << 2];
-        uint64_t large_map_q = dbf_info->ctb_bound_ver_c[(i << 2) + 1 + 8];
-        const uint8_t *qp_col = &dbf_info->qp_map_cr.ver[34 * (i << 2)];
+        uint64_t large_map_q = derive_large_map_from_ngh(dbf_info->ctb_bound_ver_c, edge_idx);
 
-        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) - 3 + 8];
-        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) - 2 + 8];
-        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) - 1 + 8];
-        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) + 2 + 8];
-        large_map_q |= dbf_info->ctb_bound_ver_c[(i << 2) + 3 + 8];
+        const uint8_t *qp_col = &dbf_info->qp_map_cr.ver[34 * edge_idx];
+
+        uint16_t *src = src_cr;
+
+        uint64_t edge_map = dbf_info->edge_map_ver_c[edge_idx];
 
         edge_map &= vedge_mask & ~0x1;
-        edge_map &= bs2_map | bs1_map;
+        edge_map &= bs2_map | (bs1_map & large_map_q);
 
         while (edge_map){
-            if (edge_map & 0x1) {
-                const int max_l = (large_map_q & 0x1) ? 1 : 3;
-                uint8_t bs_cr = 1 + (bs2_map & 0x1);
+            uint8_t nb_skipped_blk = ov_ctz64(edge_map);
 
-                if ((bs_cr == 2) || ((max_l >= 3) && (bs_cr == 1))) {
-                    const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_col, bs_cr);
+            /* Skip non filtered edges */
+            large_map_q >>= nb_skipped_blk;
+            bs2_map     >>= nb_skipped_blk;
+            qp_col       += nb_skipped_blk;
+            src          += nb_skipped_blk * blk_stride;
 
-                    uint8_t is_strong = 0;
+            filter_veritcal_edge_c(dbf_info, src, stride, qp_col, bs2_map, large_map_q);
 
-                    if (max_l >= 3) {
-
-                        const int dp0 = compute_dp((int16_t *)src0, 1);
-                        const int dq0 = compute_dq((int16_t *)src0, 1);
-                        const int dp3 = compute_dp((int16_t *)src1, 1);
-                        const int dq3 = compute_dq((int16_t *)src1, 1);
-
-                        const int d0 = dp0 + dq0;
-                        const int d3 = dp3 + dq3;
-                        const int d = d0 + d3;
-
-                        is_strong = (d < dbf_params.beta) &&
-                                    (2 * d0 < (dbf_params.beta >> 2)) &&
-                                    (2 * d3 < (dbf_params.beta >> 2)) && 
-                                    use_strong_filter_c(src0, 1, dbf_params.beta, dbf_params.tc) &&
-                                    use_strong_filter_c(src1, 1, dbf_params.beta, dbf_params.tc);
-                    }
-
-                    if (!is_strong) {
-                        int j;
-                        uint16_t *src = src0;
-                        for (j = 0; j < 2; ++j) {
-                            filter_chroma_weak(src, 1, dbf_params.tc);
-                            src += stride;
-                        }
-                    } else {
-                        int j;
-                        uint16_t *src = src0;
-                        for (j = 0; j < 2; ++j) {
-                            filter_chroma_strong(src, 1, dbf_params.tc);
-                            src += stride;
-                        }
-                    }
-                }
-            }
+            edge_map    >>= nb_skipped_blk + 1;
             large_map_q >>= 1;
-            edge_map >>= 1;
-            bs2_map >>= 1;
-            src0 += blk_stride;
-            src1 += blk_stride;
+            bs2_map     >>= 1;
+
+            src += blk_stride;
             qp_col++;
         }
         src_cr += 1 << 3;
     }
+
 }
 
 static void
