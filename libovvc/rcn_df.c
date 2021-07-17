@@ -933,6 +933,10 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
             if (edge_map & 0x1) {
                 int max_l_p = small_map & 0x1 ? 1 : (large_p_map & 0x1) ? 7 : 3;
                 int max_l_q = small_map & 0x1 ? 1 : (large_q_map & 0x1) ? 7 : 3;
+                /*FIXME check if small and large can be both true */
+                uint8_t is_large_p = large_p_map & 0x1;
+                uint8_t is_large_q = large_q_map & 0x1;
+
                 uint8_t bs = 1 + (bs2_map & 0x1);
                 /*FIXME subblock handling */
 
@@ -944,20 +948,20 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                 const int dq3 = compute_dq((int16_t *)src3, 1);
 
                 uint8_t use_strong_large = 0;
-                if (max_l_p > 3 || max_l_q > 3) {
+                if (is_large_p || is_large_q) {
                     int dp0L = dp0;
                     int dq0L = dq0;
                     int dp3L = dp3;
                     int dq3L = dq3;
 
-                    if (max_l_p > 3) {
+                    if (is_large_p) {
                         dp0L += compute_dp((int16_t *)src0 - 3, 1) + 1;
                         dp3L += compute_dp((int16_t *)src3 - 3, 1) + 1;
                         dp0L >>= 1;
                         dp3L >>= 1;
                     }
 
-                    if (max_l_q > 3) {
+                    if (is_large_q) {
                         dq0L += compute_dq((int16_t *)src0 + 3, 1) + 1;
                         dq3L += compute_dq((int16_t *)src3 + 3, 1) + 1;
                         dq0L >>= 1;
@@ -978,8 +982,8 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
                 if (use_strong_large) {
                     int16_t *_src = (int16_t *)src0;
-                    max_l_p = max_l_p > 3 ? max_l_p : 3; 
-                    max_l_q = max_l_q > 3 ? max_l_q : 3; 
+                    max_l_p = is_large_p ? max_l_p : 3;
+                    max_l_q = is_large_q ? max_l_q : 3;
                     for (int i = 0; i < 4; i++) {
                         filter_luma_strong_large(_src, 1, dbf_params.tc, max_l_p, max_l_q);
                         _src += stride;
@@ -990,7 +994,8 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                     const int d  = d0  + d3;
 
                     if (d < dbf_params.beta) {
-                        uint8_t sw = (max_l_p >= 3 && max_l_q >= 3);
+                        uint8_t is_not_small = !(small_map & 0x1);
+                        uint8_t sw = is_not_small;
 
                         sw = sw && ((d0 << 1) < (dbf_params.beta >> 2))
                                 && ((d3 << 1) < (dbf_params.beta >> 2))
@@ -1008,8 +1013,8 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                             const int dq = dq0 + dq3;
                             const int side_thd = (dbf_params.beta + (dbf_params.beta >> 1)) >> 3;
                             const int th_cut  = dbf_params.tc * 10;
-                            uint8_t extend_p = (max_l_p > 1 && max_l_q > 1) && (dp < side_thd);
-                            uint8_t extend_q = (max_l_p > 1 && max_l_q > 1) && (dq < side_thd);
+                            uint8_t extend_p = is_not_small && (dp < side_thd);
+                            uint8_t extend_q = is_not_small && (dq < side_thd);
                             int16_t *_src = (int16_t *)src0;
                             for (int i = 0; i < 4; i++) {
                                 filter_luma_weak(_src, 1, dbf_params.tc, th_cut, extend_p, extend_q);
