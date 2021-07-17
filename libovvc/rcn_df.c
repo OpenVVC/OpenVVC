@@ -1037,15 +1037,26 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
         edge_map &= bs2_map | bs1_map;
 
         while (edge_map){
-            if (edge_map & 0x1) {
-                filter_veritcal_edge(dbf_info, src_tmp, stride, qp_col, bs2_map, large_p_map,
-                                     large_q_map, small_map);
-            }
-            edge_map >>= 1;
-            small_map >>= 1;
+            uint8_t nb_skipped_blk = ov_ctz64(edge_map);
+
+            /* Skip non filtered edges */
+            large_p_map >>= nb_skipped_blk;
+            large_q_map >>= nb_skipped_blk;
+            small_map   >>= nb_skipped_blk;
+            bs2_map     >>= nb_skipped_blk;
+            qp_col       += nb_skipped_blk;
+            src_tmp      += nb_skipped_blk * blk_stride;
+
+            filter_veritcal_edge(dbf_info, src_tmp, stride, qp_col, bs2_map, large_p_map,
+                                 large_q_map, small_map);
+
+            edge_map  >>= nb_skipped_blk + 1;
+            bs2_map   >>= 1;
+
+            small_map   >>= 1;
             large_p_map >>= 1;
             large_q_map >>= 1;
-            bs2_map >>= 1;
+
             src_tmp += blk_stride;
             qp_col++;
         }
