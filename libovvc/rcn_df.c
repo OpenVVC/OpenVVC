@@ -908,7 +908,7 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
     const int nb_unit_h = (1 << part_size->log2_ctu_s) >> 2;
     #endif
     const int blk_stride = stride << 2; 
-    const uint64_t last_pb_mask = (((uint64_t)1 << (nb_unit_h + 1)) - 1) | ((uint64_t)-(!!is_last_h));
+    const uint64_t vedge_mask = (((uint64_t)1 << (nb_unit_h + 1)) - 1) | ((uint64_t)-(!!is_last_h));
     int i;
 
     const uint64_t *edge_map_p2 = &dbf_info->ctb_bound_ver[8];
@@ -926,7 +926,7 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
         uint64_t small_map = edge_map_p2[-1] | edge_map_p2[1];
         const uint8_t *qp_col = &dbf_info->qp_map_y.ver[34 * i];
 
-        edge_map &= last_pb_mask & ~0x1;
+        edge_map &= vedge_mask & ~0x1;
         edge_map &= bs2_map | bs1_map;
 
         while (edge_map){
