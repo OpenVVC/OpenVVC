@@ -817,12 +817,13 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
 {
     const int blk_stride = 1 << 1;
     const uint64_t hedge_mask = (((uint64_t)1 << (nb_unit_w)) - 1) | (uint64_t)(-(!!is_last_w));
+    const uint8_t nb_hedge = ((nb_unit_h) >> 2) + !!is_last_h;
     int i;
 
     src_cb -= blk_stride << 1;
     src_cr -= blk_stride << 1;
 
-    for (i = 0; i < ((nb_unit_h) >> 2) + !!is_last_h; i++) {
+    for (i = 0; i < nb_hedge; i++) {
         uint8_t edge_idx = i << 2;
         uint16_t *src = src_cb;
         uint8_t is_ctb_b = i == 0;
@@ -860,7 +861,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
         src_cb += stride << 3;
     }
 
-    for (i = 0; i < ((nb_unit_h) >> 2) + !!is_last_h; i++) {
+    for (i = 0; i < nb_hedge; i++) {
         uint8_t edge_idx = i << 2;
         uint16_t *src = src_cr;
         uint8_t is_ctb_b = i == 0;
