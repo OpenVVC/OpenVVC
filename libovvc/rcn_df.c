@@ -757,6 +757,60 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
 }
 
 static void
+filter_horizontal_edge_c(const struct DBFInfo *const dbf_info, uint16_t *src, ptrdiff_t stride,
+                       const uint8_t *qp_col, uint64_t bs2_map, uint64_t large_map_q, uint8_t is_ctb_b)
+{
+    const uint8_t is_large = large_map_q & 0x1;
+    const uint8_t is_bs2   = bs2_map     & 0x1;
+
+    /* Note there should not be any need to check anything here since condition
+     * is already checked in edge_map
+     * FIXME check on inter when bs1 is enabled
+     */
+    if (is_large || is_bs2) {
+        uint16_t *src0 = src;
+        uint16_t *src1 = src + 1;
+
+        const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_col, 1 + is_bs2);
+        uint8_t is_strong = 0;
+
+        if (is_large) {
+            const int dp0 = compute_dp_c((int16_t *)src0, stride, is_ctb_b);
+            const int dq0 = compute_dq((int16_t *)src0, stride);
+            const int dp3 = compute_dp_c((int16_t *)src1, stride, is_ctb_b);
+            const int dq3 = compute_dq((int16_t *)src1, stride);
+
+            const int d0 = dp0 + dq0;
+            const int d3 = dp3 + dq3;
+
+            const int d = d0 + d3;
+
+            is_strong = (d < dbf_params.beta) &&
+                        (2 * d0 < (dbf_params.beta >> 2)) &&
+                        (2 * d3 < (dbf_params.beta >> 2)) &&
+                        use_strong_filter_c2(src0, stride, dbf_params.beta, dbf_params.tc, is_ctb_b) &&
+                        use_strong_filter_c2(src1, stride, dbf_params.beta, dbf_params.tc, is_ctb_b);
+
+            if (is_strong) {
+                int j;
+                for (j = 0; j < 2; ++j) {
+                    filter_chroma_strong_c(src, stride, dbf_params.tc, is_ctb_b);
+                    src++;
+                }
+            }
+        }
+
+        if (!is_strong) {
+            int j;
+            for (j = 0; j < 2; ++j) {
+                filter_chroma_weak(src, stride, dbf_params.tc);
+                src++;
+            }
+        }
+    }
+}
+
+static void
 vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
                    const struct DBFInfo *const dbf_info,
                    uint8_t nb_unit_w, int is_last_w, uint8_t nb_unit_h, uint8_t is_last_h)
@@ -770,8 +824,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
 
     for (i = 0; i < ((nb_unit_h) >> 2) + !!is_last_h; i++) {
         uint8_t edge_idx = i << 2;
-        uint16_t *src0 = src_cb;
-        uint16_t *src1 = src_cb + 1;
+        uint16_t *src = src_cb;
         uint8_t is_ctb_b = i == 0;
 
         uint64_t edge_map = dbf_info->edge_map_hor_c[edge_idx];
@@ -781,68 +834,27 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
 
         const uint8_t *qp_row = &dbf_info->qp_map_cb.hor[edge_idx * 34];
 
-        uint64_t large_map_q = dbf_info->ctb_bound_hor_c[edge_idx + 1 + 8];
-
-        large_map_q |= dbf_info->ctb_bound_hor_c[edge_idx - 3 + 8];
-        large_map_q |= dbf_info->ctb_bound_hor_c[edge_idx - 2 + 8];
-        large_map_q |= dbf_info->ctb_bound_hor_c[edge_idx - 1 + 8];
-        large_map_q |= dbf_info->ctb_bound_hor_c[edge_idx + 2 + 8];
-        large_map_q |= dbf_info->ctb_bound_hor_c[edge_idx + 3 + 8];
+        uint64_t large_map_q = derive_large_map_from_ngh(dbf_info->ctb_bound_hor_c, edge_idx);
 
         edge_map &= hedge_mask;
-        edge_map &= bs2_map | bs1_map;
-
-        large_map_q = ~large_map_q;
+        edge_map &= bs2_map | (bs1_map & large_map_q);
 
         while(edge_map) {
-            if (edge_map & 0x1) {
-                const uint8_t is_large = large_map_q & 0x1;
-                uint8_t bs_cb = 1 + (bs2_map & 0x1);
+            uint8_t nb_skipped_blk = ov_ctz64(edge_map);
 
-                if ((bs_cb == 2) || (is_large && (bs_cb == 1))) {
-                    const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_row, bs_cb);
+            /* Skip non filtered edges */
+            large_map_q >>= nb_skipped_blk;
+            bs2_map     >>= nb_skipped_blk;
+            qp_row       += nb_skipped_blk;
+            src          += nb_skipped_blk * blk_stride;
 
-                    uint8_t is_strong = 0;
+            filter_horizontal_edge_c(dbf_info, src, stride, qp_row, bs2_map, large_map_q, is_ctb_b);
 
-                    if (is_large) {
-                        const int dp0 = compute_dp_c((int16_t *)src0, stride, is_ctb_b);
-                        const int dq0 = compute_dq((int16_t *)src0, stride);
-                        const int dp3 = compute_dp_c((int16_t *)src1, stride, is_ctb_b);
-                        const int dq3 = compute_dq((int16_t *)src1, stride);
-
-                        const int d0 = dp0 + dq0;
-                        const int d3 = dp3 + dq3;
-                        const int d  = d0 + d3;
-
-                        is_strong = (d < dbf_params.beta) &&
-                                    (2 * d0 < (dbf_params.beta >> 2)) &&
-                                    (2 * d3 < (dbf_params.beta >> 2)) && 
-                                    use_strong_filter_c2(src0, stride, dbf_params.beta, dbf_params.tc, is_ctb_b) &&
-                                    use_strong_filter_c2(src1, stride, dbf_params.beta, dbf_params.tc, is_ctb_b);
-                    }
-
-                    if (!is_strong) {
-                        int j;
-                        uint16_t *src = src0;
-                        for (j = 0; j < 2; j++) {
-                            filter_chroma_weak(src, stride, dbf_params.tc);
-                            ++src;
-                        }
-                    } else {
-                        int j;
-                        uint16_t *src = src0;
-                        for (j = 0; j < 2; j++) {
-                            filter_chroma_strong_c(src, stride, dbf_params.tc, is_ctb_b);
-                           ++src;
-                        }
-                    }
-                }
-            }
+            edge_map    >>= nb_skipped_blk + 1;
             large_map_q >>= 1;
-            edge_map >>= 1;
-            bs2_map >>= 1;
-            src0 += blk_stride;
-            src1 += blk_stride;
+            bs2_map     >>= 1;
+
+            src += blk_stride;
             qp_row++;
         }
         src_cb += stride << 3;
@@ -857,18 +869,13 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
         uint64_t edge_map = dbf_info->edge_map_hor_c[(i << 2) + 0];
         uint64_t bs2_map = dbf_info->bs2_map_c.hor[i << 2];
         uint64_t bs1_map = dbf_info->bs1_map_cr.hor[i << 2];
-        uint64_t large_map_q = dbf_info->ctb_bound_hor_c[(i << 2) + 1 + 8];
         const uint8_t *qp_row = &dbf_info->qp_map_cr.hor[34 * (i << 2)];
 
-        large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) - 3 + 8];
-        large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) - 2 + 8];
-        large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) - 1 + 8];
-
-        large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) + 2 + 8];
-        large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) + 3 + 8];
+        uint64_t large_map_q = derive_large_map_from_ngh(dbf_info->ctb_bound_hor_c, (i<<2));
 
         edge_map &= hedge_mask;
-        edge_map &= bs2_map | bs1_map;
+        edge_map &= bs2_map | (bs1_map & large_map_q);
+        large_map_q = ~large_map_q;
 
         while(edge_map){
             if (edge_map & 0x1) {
