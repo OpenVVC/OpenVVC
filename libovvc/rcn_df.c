@@ -978,17 +978,18 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                                       ((d3L << 1) < (dbf_params.beta >> 4)) &&
                                       use_strong_filter_l0((int16_t *)src0, 1, dbf_params.beta, dbf_params.tc, max_l_p, max_l_q) &&
                                       use_strong_filter_l0((int16_t *)src3, 1, dbf_params.beta, dbf_params.tc, max_l_p, max_l_q);
+                    if (use_strong_large) {
+                        int16_t *_src = (int16_t *)src0;
+                        max_l_p = is_large_p ? max_l_p : 3;
+                        max_l_q = is_large_q ? max_l_q : 3;
+                        for (int i = 0; i < 4; i++) {
+                            filter_luma_strong_large(_src, 1, dbf_params.tc, max_l_p, max_l_q);
+                            _src += stride;
+                        }
+                    }
                 }
 
-                if (use_strong_large) {
-                    int16_t *_src = (int16_t *)src0;
-                    max_l_p = is_large_p ? max_l_p : 3;
-                    max_l_q = is_large_q ? max_l_q : 3;
-                    for (int i = 0; i < 4; i++) {
-                        filter_luma_strong_large(_src, 1, dbf_params.tc, max_l_p, max_l_q);
-                        _src += stride;
-                    }
-                } else {
+                if (!use_strong_large) {
                     const int d0 = dp0 + dq0;
                     const int d3 = dp3 + dq3;
                     const int d  = d0  + d3;
