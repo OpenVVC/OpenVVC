@@ -901,6 +901,109 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
 }
 
 static void
+filter_veritcal_edge(const struct DBFInfo *const dbf_info, uint16_t *src, ptrdiff_t stride,
+                     const uint8_t *qp_col, uint64_t bs2_map, uint64_t large_p_map,
+                     uint64_t large_q_map, uint64_t small_map)
+{
+    int max_l_p = small_map & 0x1 ? 1 : (large_p_map & 0x1) ? 7 : 3;
+    int max_l_q = small_map & 0x1 ? 1 : (large_q_map & 0x1) ? 7 : 3;
+    /*FIXME check if small and large can be both true */
+    uint8_t is_large_p = large_p_map & 0x1 & !(small_map & 0x1);
+    uint8_t is_large_q = large_q_map & 0x1 & !(small_map & 0x1);
+
+    uint8_t bs = 1 + (bs2_map & 0x1);
+    /*FIXME subblock handling */
+
+    const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_col, bs);
+    uint16_t* src0 = src;
+    uint16_t* src3 = src + stride * 3;
+
+    const int dp0 = compute_dp((int16_t *)src0, 1);
+    const int dq0 = compute_dq((int16_t *)src0, 1);
+    const int dp3 = compute_dp((int16_t *)src3, 1);
+    const int dq3 = compute_dq((int16_t *)src3, 1);
+
+    uint8_t use_strong_large = 0;
+    if (is_large_p || is_large_q) {
+        int dp0L = dp0;
+        int dq0L = dq0;
+        int dp3L = dp3;
+        int dq3L = dq3;
+
+        if (is_large_p) {
+            dp0L += compute_dp((int16_t *)src0 - 3, 1) + 1;
+            dp3L += compute_dp((int16_t *)src3 - 3, 1) + 1;
+            dp0L >>= 1;
+            dp3L >>= 1;
+        }
+
+        if (is_large_q) {
+            dq0L += compute_dq((int16_t *)src0 + 3, 1) + 1;
+            dq3L += compute_dq((int16_t *)src3 + 3, 1) + 1;
+            dq0L >>= 1;
+            dq3L >>= 1;
+        }
+
+        int d0L = dp0L + dq0L;
+        int d3L = dp3L + dq3L;
+
+        int dL = d0L + d3L;
+
+        use_strong_large = (dL < dbf_params.beta) &&
+            ((d0L << 1) < (dbf_params.beta >> 4)) &&
+            ((d3L << 1) < (dbf_params.beta >> 4)) &&
+            use_strong_filter_l0((int16_t *)src0, 1, dbf_params.beta, dbf_params.tc, max_l_p, max_l_q) &&
+            use_strong_filter_l0((int16_t *)src3, 1, dbf_params.beta, dbf_params.tc, max_l_p, max_l_q);
+        if (use_strong_large) {
+            int16_t *_src = (int16_t *)src0;
+            /* FIXME should already be 3 or higher since we would be small otherwise */
+            max_l_p = is_large_p ? max_l_p : 3;
+            max_l_q = is_large_q ? max_l_q : 3;
+            for (int i = 0; i < 4; i++) {
+                filter_luma_strong_large(_src, 1, dbf_params.tc, max_l_p, max_l_q);
+                _src += stride;
+            }
+        }
+    }
+
+    if (!use_strong_large) {
+        const int d0 = dp0 + dq0;
+        const int d3 = dp3 + dq3;
+        const int d  = d0  + d3;
+
+        if (d < dbf_params.beta) {
+            uint8_t is_not_small = !(small_map & 0x1);
+            uint8_t sw = is_not_small;
+
+            sw = sw && ((d0 << 1) < (dbf_params.beta >> 2))
+                && ((d3 << 1) < (dbf_params.beta >> 2))
+                && use_strong_filter_l1((int16_t *)src0, 1, dbf_params.beta, dbf_params.tc)
+                && use_strong_filter_l1((int16_t *)src3, 1, dbf_params.beta, dbf_params.tc);
+
+            if (sw){
+                int16_t *_src = (int16_t *)src0;
+                for (int i = 0; i < 4; i++) {
+                    filter_luma_strong_small(_src, 1, dbf_params.tc);
+                    _src += stride;
+                }
+            } else {
+                const int dp = dp0 + dp3;
+                const int dq = dq0 + dq3;
+                const int side_thd = (dbf_params.beta + (dbf_params.beta >> 1)) >> 3;
+                const int th_cut  = dbf_params.tc * 10;
+                uint8_t extend_p = is_not_small && (dp < side_thd);
+                uint8_t extend_q = is_not_small && (dq < side_thd);
+                int16_t *_src = (int16_t *)src0;
+                for (int i = 0; i < 4; i++) {
+                    filter_luma_weak(_src, 1, dbf_params.tc, th_cut, extend_p, extend_q);
+                    _src += stride;
+                }
+            }
+        }
+    }
+}
+
+static void
 vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                 uint8_t nb_unit_h, int is_last_h)
 {
@@ -916,14 +1019,18 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
     src -= blk_stride;
 
     for (i = 0; i < nb_unit_h; ++i) {
-        uint16_t* src0 = src;
-        uint16_t* src3 = src + stride * 3;
+        uint16_t* src_tmp = src;
+
         uint64_t edge_map = dbf_info->edge_map_ver[i];
         uint64_t bs1_map  = dbf_info->bs1_map.ver[i];
         uint64_t bs2_map  = dbf_info->bs2_map.ver[i];
+
+        /* FIXME skip filter size derivation when no edge */
         uint64_t large_p_map = derive_size_3_map(edge_map_p2 - 7);
         uint64_t large_q_map = derive_size_3_map(edge_map_p2 + 1);
+
         uint64_t small_map = edge_map_p2[-1] | edge_map_p2[1];
+
         const uint8_t *qp_col = &dbf_info->qp_map_y.ver[34 * i];
 
         edge_map &= vedge_mask & ~0x1;
@@ -931,107 +1038,15 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
         while (edge_map){
             if (edge_map & 0x1) {
-                int max_l_p = small_map & 0x1 ? 1 : (large_p_map & 0x1) ? 7 : 3;
-                int max_l_q = small_map & 0x1 ? 1 : (large_q_map & 0x1) ? 7 : 3;
-                /*FIXME check if small and large can be both true */
-                uint8_t is_large_p = large_p_map & 0x1;
-                uint8_t is_large_q = large_q_map & 0x1;
-
-                uint8_t bs = 1 + (bs2_map & 0x1);
-                /*FIXME subblock handling */
-
-                const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_col, bs);
-
-                const int dp0 = compute_dp((int16_t *)src0, 1);
-                const int dq0 = compute_dq((int16_t *)src0, 1);
-                const int dp3 = compute_dp((int16_t *)src3, 1);
-                const int dq3 = compute_dq((int16_t *)src3, 1);
-
-                uint8_t use_strong_large = 0;
-                if (is_large_p || is_large_q) {
-                    int dp0L = dp0;
-                    int dq0L = dq0;
-                    int dp3L = dp3;
-                    int dq3L = dq3;
-
-                    if (is_large_p) {
-                        dp0L += compute_dp((int16_t *)src0 - 3, 1) + 1;
-                        dp3L += compute_dp((int16_t *)src3 - 3, 1) + 1;
-                        dp0L >>= 1;
-                        dp3L >>= 1;
-                    }
-
-                    if (is_large_q) {
-                        dq0L += compute_dq((int16_t *)src0 + 3, 1) + 1;
-                        dq3L += compute_dq((int16_t *)src3 + 3, 1) + 1;
-                        dq0L >>= 1;
-                        dq3L >>= 1;
-                    }
-
-                    int d0L = dp0L + dq0L;
-                    int d3L = dp3L + dq3L;
-
-                    int dL = d0L + d3L;
-
-                    use_strong_large = (dL < dbf_params.beta) &&
-                                      ((d0L << 1) < (dbf_params.beta >> 4)) &&
-                                      ((d3L << 1) < (dbf_params.beta >> 4)) &&
-                                      use_strong_filter_l0((int16_t *)src0, 1, dbf_params.beta, dbf_params.tc, max_l_p, max_l_q) &&
-                                      use_strong_filter_l0((int16_t *)src3, 1, dbf_params.beta, dbf_params.tc, max_l_p, max_l_q);
-                    if (use_strong_large) {
-                        int16_t *_src = (int16_t *)src0;
-                        max_l_p = is_large_p ? max_l_p : 3;
-                        max_l_q = is_large_q ? max_l_q : 3;
-                        for (int i = 0; i < 4; i++) {
-                            filter_luma_strong_large(_src, 1, dbf_params.tc, max_l_p, max_l_q);
-                            _src += stride;
-                        }
-                    }
-                }
-
-                if (!use_strong_large) {
-                    const int d0 = dp0 + dq0;
-                    const int d3 = dp3 + dq3;
-                    const int d  = d0  + d3;
-
-                    if (d < dbf_params.beta) {
-                        uint8_t is_not_small = !(small_map & 0x1);
-                        uint8_t sw = is_not_small;
-
-                        sw = sw && ((d0 << 1) < (dbf_params.beta >> 2))
-                                && ((d3 << 1) < (dbf_params.beta >> 2))
-                                && use_strong_filter_l1((int16_t *)src0, 1, dbf_params.beta, dbf_params.tc)
-                                && use_strong_filter_l1((int16_t *)src3, 1, dbf_params.beta, dbf_params.tc);
-
-                        if (sw){
-                            int16_t *_src = (int16_t *)src0;
-                            for (int i = 0; i < 4; i++) {
-                                filter_luma_strong_small(_src, 1, dbf_params.tc);
-                                _src += stride;
-                            }
-                        } else {
-                            const int dp = dp0 + dp3;
-                            const int dq = dq0 + dq3;
-                            const int side_thd = (dbf_params.beta + (dbf_params.beta >> 1)) >> 3;
-                            const int th_cut  = dbf_params.tc * 10;
-                            uint8_t extend_p = is_not_small && (dp < side_thd);
-                            uint8_t extend_q = is_not_small && (dq < side_thd);
-                            int16_t *_src = (int16_t *)src0;
-                            for (int i = 0; i < 4; i++) {
-                                filter_luma_weak(_src, 1, dbf_params.tc, th_cut, extend_p, extend_q);
-                                _src += stride;
-                            }
-                        }
-                    }
-                }
+                filter_veritcal_edge(dbf_info, src_tmp, stride, qp_col, bs2_map, large_p_map,
+                                     large_q_map, small_map);
             }
             edge_map >>= 1;
             small_map >>= 1;
             large_p_map >>= 1;
             large_q_map >>= 1;
             bs2_map >>= 1;
-            src0 += blk_stride;
-            src3 += blk_stride;
+            src_tmp += blk_stride;
             qp_col++;
         }
         ++edge_map_p2;
