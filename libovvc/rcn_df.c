@@ -761,34 +761,35 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
                    const struct DBFInfo *const dbf_info,
                    uint8_t nb_unit_w, int is_last_w, uint8_t nb_unit_h, uint8_t is_last_h)
 {
-    #if 0
-    const int nb_unit_w = (1 << part_size->log2_ctu_s) >> 2;
-    #endif
     const int blk_stride = 1 << 1;
-    const uint64_t last_pb_mask = (((uint64_t)1 << (nb_unit_w)) - 1) | (uint64_t)(-(!!is_last_w));
+    const uint64_t hedge_mask = (((uint64_t)1 << (nb_unit_w)) - 1) | (uint64_t)(-(!!is_last_w));
     int i;
 
     src_cb -= blk_stride << 1;
     src_cr -= blk_stride << 1;
 
     for (i = 0; i < ((nb_unit_h) >> 2) + !!is_last_h; i++) {
+        uint8_t edge_idx = i << 2;
         uint16_t *src0 = src_cb;
         uint16_t *src1 = src_cb + 1;
         uint8_t is_ctb_b = i == 0;
 
-        uint64_t edge_map = dbf_info->edge_map_hor_c[(i << 2) + 0];
-        uint64_t bs2_map  = dbf_info->bs2_map_c.hor[i << 2];
-        uint64_t bs1_map  = dbf_info->bs1_map_cb.hor[i << 2];
-        uint64_t large_map_q = dbf_info->ctb_bound_hor_c[(i << 2) + 1 + 8];
-        const uint8_t *qp_row = &dbf_info->qp_map_cb.hor[34 * (i << 2)];
+        uint64_t edge_map = dbf_info->edge_map_hor_c[edge_idx];
 
-        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[(i << 2) - 3 + 8];
-        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[(i << 2) - 2 + 8];
-        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[(i << 2) - 1 + 8];
-        large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) + 2 + 8];
-        large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) + 3 + 8];
+        uint64_t bs2_map  = dbf_info->bs2_map_c.hor[edge_idx];
+        uint64_t bs1_map  = dbf_info->bs1_map_cb.hor[edge_idx];
 
-        edge_map &= last_pb_mask;
+        const uint8_t *qp_row = &dbf_info->qp_map_cb.hor[edge_idx * 34];
+
+        uint64_t large_map_q = dbf_info->ctb_bound_hor_c[edge_idx + 1 + 8];
+
+        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[edge_idx - 3 + 8];
+        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[edge_idx - 2 + 8];
+        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[edge_idx - 1 + 8];
+        large_map_q |= dbf_info->ctb_bound_hor_c[edge_idx + 2 + 8];
+        large_map_q |= dbf_info->ctb_bound_hor_c[edge_idx + 3 + 8];
+
+        edge_map &= hedge_mask;
         edge_map &= bs2_map | bs1_map;
 
         large_map_q = ~large_map_q;
@@ -866,7 +867,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
         large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) + 2 + 8];
         large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) + 3 + 8];
 
-        edge_map &= last_pb_mask;
+        edge_map &= hedge_mask;
         edge_map &= bs2_map | bs1_map;
 
         while(edge_map){
