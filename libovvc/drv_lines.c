@@ -691,7 +691,10 @@ dbf_load_bs_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
     /* FIXME check cast */
     uint64_t ctb_lft_msk = -(!!ctb_x);
 
-    dbf_info->large_map_c = l->large_map_c[ctb_x];
+    dbf_info->ctb_bound_hor_c[8 - 1] = l->large_map_c[ctb_x];
+    /* FIXME this should not be necessary check for overflow in DF buffs*/
+    dbf_info->ctb_bound_hor_c[8 - 2] = 0;
+    dbf_info->ctb_bound_hor_c[8 - 3] = 0;
 
     bs2_map->ver[0] = ctb_lft_msk & bs2_map->ver[nb_pb_s];
     bs2_map_c->ver[0] = ctb_lft_msk & bs2_map_c->ver[nb_pb_s];

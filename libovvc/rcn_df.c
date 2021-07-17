@@ -783,9 +783,9 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
 
         uint64_t large_map_q = dbf_info->ctb_bound_hor_c[edge_idx + 1 + 8];
 
-        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[edge_idx - 3 + 8];
-        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[edge_idx - 2 + 8];
-        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[edge_idx - 1 + 8];
+        large_map_q |= dbf_info->ctb_bound_hor_c[edge_idx - 3 + 8];
+        large_map_q |= dbf_info->ctb_bound_hor_c[edge_idx - 2 + 8];
+        large_map_q |= dbf_info->ctb_bound_hor_c[edge_idx - 1 + 8];
         large_map_q |= dbf_info->ctb_bound_hor_c[edge_idx + 2 + 8];
         large_map_q |= dbf_info->ctb_bound_hor_c[edge_idx + 3 + 8];
 
@@ -860,9 +860,9 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
         uint64_t large_map_q = dbf_info->ctb_bound_hor_c[(i << 2) + 1 + 8];
         const uint8_t *qp_row = &dbf_info->qp_map_cr.hor[34 * (i << 2)];
 
-        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[(i << 2) - 3 + 8];
-        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[(i << 2) - 2 + 8];
-        large_map_q |= i == 0 ? dbf_info->large_map_c : dbf_info->ctb_bound_hor_c[(i << 2) - 1 + 8];
+        large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) - 3 + 8];
+        large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) - 2 + 8];
+        large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) - 1 + 8];
 
         large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) + 2 + 8];
         large_map_q |= dbf_info->ctb_bound_hor_c[(i << 2) + 3 + 8];
