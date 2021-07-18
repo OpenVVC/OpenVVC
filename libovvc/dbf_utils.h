@@ -32,18 +32,6 @@ dbf_fill_qp_map(struct DBFQPMap *qp_map, int x0, int y0,
     }
 }
 
-
-/* Set nb_unit_w/h bits to 1 onto right/bottom part of a CB in edge_map  */
-static inline void
-fill_edge_map(struct DBFInfo *const dbf_info, int x0, int y0, int log2_cu_w, int log2_cu_h)
-{
-    const uint64_t mask_ver = (1 << ((1 << log2_cu_h) >> 2)) - 1;
-    const uint64_t mask_hor = (1 << ((1 << log2_cu_w) >> 2)) - 1;
-
-    dbf_info->edge_map_ver[(x0 + (1 << log2_cu_w)) >> 2] |= mask_ver << (1 + (y0 >> 2));
-    dbf_info->edge_map_hor[(y0 + (1 << log2_cu_h)) >> 2] |= mask_hor << (2 + (x0 >> 2));
-}
-
 /* Set nb_unit_w/h bits to 1 onto left/above and right/bottom parts of a CB in BS maps*/
 static inline void
 fill_bs_map(struct DBFMap *const dbf_map, int x0, int y0, int log2_cu_w, int log2_cu_h)
@@ -58,7 +46,7 @@ fill_bs_map(struct DBFMap *const dbf_map, int x0, int y0, int log2_cu_w, int log
     dbf_map->hor[y0 >> 2] |= mask_hor << (2 + (x0 >> 2));
 }
 
-/* Same as fill_edge_map but with an offset of 8 (for left CTU information) */
+/* Set nb_unit_w/h bits to 1 onto right/bottom part of a CB in edge_map  */
 static inline void
 fill_ctb_bound(struct DBFInfo *const dbf_info, int x0, int y0, int log2_cu_w, int log2_cu_h)
 {

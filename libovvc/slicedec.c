@@ -730,9 +730,6 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
         uint8_t is_last_x = (ctb_addr_rs + 1) % nb_ctu_w == 0;
         uint8_t is_last_y = einfo->nb_ctu_h == (ctb_addr_rs / nb_ctu_w) + 1;
         #if 1
-        if (!ctb_addr_rs % nb_ctu_w) {
-             ctudec->dbf_info.edge_map_ver[0] = 0;
-        }
 
         rcn_dbf_ctu(&ctudec->rcn_ctx, &ctudec->dbf_info, log2_ctb_s,
                     is_last_x, is_last_y);
@@ -1183,8 +1180,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     tmvp_entry_init(ctudec, sldec->pic);
 
     /* FIXME tmp Reset DBF */
-    memset(&ctudec->dbf_info.edge_map_ver, 0, sizeof(ctudec->dbf_info.edge_map_ver));
-    memset(&ctudec->dbf_info.edge_map_hor, 0, sizeof(ctudec->dbf_info.edge_map_hor));
     memcpy(ctudec->drv_ctx.inter_ctx.rpl0, sldec->pic->rpl0, sizeof(sldec->pic->rpl0));
     memcpy(ctudec->drv_ctx.inter_ctx.rpl1, sldec->pic->rpl1, sizeof(sldec->pic->rpl1));
 

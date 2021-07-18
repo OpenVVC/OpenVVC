@@ -556,12 +556,10 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
         #if 1
         if (!(offset_x & 0x3) ) {
             dbf_fill_qp_map(&ctudec->dbf_info.qp_map_y, x0, y0,  log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h, ctudec->qp_ctx.current_qp);
-            fill_edge_map(&ctudec->dbf_info, x0 & ~0x3, y0, log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h);
             fill_ctb_bound(&ctudec->dbf_info, x0 & ~0x3, y0, log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h);
             fill_bs_map(&ctudec->dbf_info.bs2_map, x0 & ~0x3, y0, log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h);
         }
         //fill_ctb_bound(&ctudec->dbf_info, x0 & ~0x3, y0, log2_pb_w, log2_cb_h);
-        //fill_edge_map(&ctudec->dbf_info, x0 & ~0x3, y0, log2_pb_w, log2_cb_h);
         #endif
 
         if (cbf) {
@@ -652,12 +650,10 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
         #if 1
         if (!(offset_y & 0x3) ) {
             dbf_fill_qp_map(&ctudec->dbf_info.qp_map_y, x0, y0, log2_cb_w, log2_pb_h >=2 ? log2_pb_h : 2, ctudec->qp_ctx.current_qp);
-            fill_edge_map(&ctudec->dbf_info, x0, y0, log2_cb_w, log2_pb_h >=2 ? log2_pb_h : 2);
             fill_ctb_bound(&ctudec->dbf_info, x0, y0, log2_cb_w, log2_pb_h >=2 ? log2_pb_h : 2);
             fill_bs_map(&ctudec->dbf_info.bs2_map, x0, y0, log2_cb_w, log2_pb_h >=2 ? log2_pb_h : 2);
         }
         //fill_ctb_bound(&ctudec->dbf_info, x0, y0, log2_cb_w, log2_pb_h);
-        //fill_edge_map(&ctudec->dbf_info, x0, y0, log2_cb_w, log2_pb_h);
         #endif
 
         vvc_intra_pred_isp(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],

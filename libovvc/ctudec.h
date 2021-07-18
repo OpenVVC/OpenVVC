@@ -77,13 +77,7 @@ struct DBFQPMap
 
 struct DBFInfo
 {
-    /* FIXME in case of dual/separate tree we need another map for
-     * chroma component
-     */
     /*FIXME replace with DBFMap structure */
-    uint64_t edge_map_ver[33]; /* Column map of vertical edges */
-    uint64_t edge_map_hor[33]; /* Row map of horizontal edges */
-
     /* FIXME this overlap with edge maps */
     uint64_t ctb_bound_ver[16 + 33]; /* Column map of vertical edges */
     uint64_t ctb_bound_hor[16 + 33]; /* Row map of horizontal edges */

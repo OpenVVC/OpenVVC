@@ -335,8 +335,6 @@ free_dbf_lines(struct DBFLines *const l)
     ov_freep(&l->qp_x_map_cb);
     ov_freep(&l->qp_x_map_cr);
 
-    ov_freep(&l->dbf_edge_hor);
-
     ov_freep(&l->large_map_c);
     ov_freep(&l->small_map);
 
@@ -358,8 +356,6 @@ init_dbf_lines(struct DBFLines *const l, int nb_ctu_line, int nb_pu_line)
     l->qp_x_map_cb    = ov_mallocz((nb_pu_line + 1) * sizeof(int8_t));
     l->qp_x_map_cr    = ov_mallocz((nb_pu_line + 1) * sizeof(int8_t));
 
-    l->dbf_edge_hor   = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
-
     l->small_map      = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
     l->large_map_c    = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
 
@@ -374,9 +370,8 @@ init_dbf_lines(struct DBFLines *const l, int nb_ctu_line, int nb_pu_line)
     malloc_chk |= l->qp_x_map_cb    == NULL;
     malloc_chk |= l->qp_x_map_cr    == NULL;
 
-    malloc_chk |= l->dbf_edge_hor   == NULL;
-
     malloc_chk |= l->large_map_c    == NULL;
+    malloc_chk |= l->small_map    == NULL;
 
     malloc_chk |= l->dbf_bs1_hor    == NULL;
     malloc_chk |= l->dbf_bs1_hor_cb == NULL;
@@ -404,8 +399,6 @@ offset_dbf_lines(struct DBFLines *const l, int ctb_offset,
     l->qp_x_map_cb    += pb_offset;
     l->qp_x_map_cr    += pb_offset;
 
-    l->dbf_edge_hor   += ctb_offset;
-
     l->large_map_c    += ctb_offset;
     l->small_map      += ctb_offset;
 
@@ -424,8 +417,6 @@ dbf_clear_lines(const struct DBFLines *const l, int nb_ctu_line, int nb_pu_line)
     memset(l->qp_x_map,    0, (nb_pu_line + 1) * sizeof(int8_t));
     memset(l->qp_x_map_cb, 0, (nb_pu_line + 1) * sizeof(int8_t));
     memset(l->qp_x_map_cr, 0, (nb_pu_line + 1) * sizeof(int8_t));
-
-    memset(l->dbf_edge_hor,   0, (nb_ctu_line + 1) * sizeof(uint64_t));
 
     memset(l->small_map,   0, (nb_ctu_line + 1) * sizeof(uint64_t));
     memset(l->large_map_c, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
@@ -497,9 +488,7 @@ dbf_load_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l
     }
 
     for (int i = 0; i < nb_pb_s; ++i) {
-        dbf_info->edge_map_hor[i] = ctb_lft_msk & (dbf_info->edge_map_hor[i] >> (nb_pb_s)) & 0x3;
         dbf_info->ctb_bound_hor[i + 8] = ctb_lft_msk & (dbf_info->ctb_bound_hor[i + 8] >> (nb_pb_s)) & 0x3;
-        dbf_info->edge_map_ver[i] = 0;
         dbf_info->ctb_bound_ver[i + 8] = 0;
     }
 
@@ -516,10 +505,6 @@ dbf_load_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l
      */
     dbf_info->ctb_bound_hor[8]           = 0x3;
     dbf_info->ctb_bound_hor[8 + nb_pb_s] = 0x3;
-
-    dbf_info->edge_map_hor  [0] |= l->dbf_edge_hor[ctb_x];
-    /* FIXME try to remove this */
-    dbf_info->edge_map_ver[0]    = ctb_lft_msk & dbf_info->edge_map_ver[nb_pb_s];
 }
 
 static void
@@ -529,7 +514,6 @@ dbf_store_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const 
     int nb_pb_s = (1 << log2_ctu_s) >> 2;
 
     /* Store last edge line info and reset first column */
-    l->dbf_edge_hor[ctb_x]   = dbf_info->edge_map_hor[nb_pb_s];
 
     /* Use last horizontal edges to determine if last CUs were large
      * if there were no edges large in the last three lines will be 0 
@@ -538,7 +522,7 @@ dbf_store_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const 
     l->large_map_c[ctb_x] |= dbf_info->ctb_bound_hor_c[8 + nb_pb_s - 2];
     l->large_map_c[ctb_x] |= dbf_info->ctb_bound_hor_c[8 + nb_pb_s - 3];
 
-    l->small_map[ctb_x] = dbf_info->edge_map_hor[nb_pb_s - 1];
+    l->small_map[ctb_x] = dbf_info->ctb_bound_hor[8 + nb_pb_s - 1];
 }
 
 static void

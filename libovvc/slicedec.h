@@ -93,8 +93,6 @@ struct DRVLines
         /* Maps information */
         uint64_t *small_map;
 
-        uint64_t *dbf_edge_hor;
-
         uint64_t *dbf_bs2_hor;
         uint64_t *dbf_bs2_hor_c;
 
