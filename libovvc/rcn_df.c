@@ -1029,14 +1029,12 @@ static void
 vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                 uint8_t nb_unit_h, int is_last_h, uint8_t nb_unit_w)
 {
-    #if 0
-    const int nb_unit_h = (1 << part_size->log2_ctu_s) >> 2;
-    #endif
     const int blk_stride = stride << 2; 
-    int i;
     const uint64_t vedge_mask = ((uint64_t)1 << (nb_unit_h + 1)) - 1;
 
     const uint64_t *edge_map_p2 = &dbf_info->ctb_bound_ver[8];
+
+    int i;
 
     src -= blk_stride;
 
@@ -1181,9 +1179,6 @@ static void
 vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                 uint8_t nb_unit_w, int is_last_w, uint8_t nb_unit_h)
 {
-    #if 0
-    const int nb_unit_w = (1 << part_size->log2_ctu_s) >> 2;
-    #endif
     const int blk_stride = 1 << 2;
     const uint64_t hedge_mask = ((uint64_t)1 << (nb_unit_w + (!!is_last_w << 1))) - 1;
     int i;
@@ -1247,11 +1242,6 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_inf
 
     uint8_t nb_unit = (1 << log2_ctu_s) >> 2;
 
-    dbf_info->edge_map_ver[nb_unit] &= -!last_x;
-    dbf_info->edge_map_hor[nb_unit] &= -!last_y;
-
-    dbf_info->edge_map_ver_c[nb_unit] &= -!last_x;
-    dbf_info->edge_map_hor_c[nb_unit] &= -!last_y;
     #if 1
     vvc_dbf_ctu_hor(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_y, nb_unit);
     vvc_dbf_ctu_ver(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_x, nb_unit);
@@ -1271,16 +1261,8 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *con
 {
     const struct OVBuffInfo *const fbuff = &rcn_ctx->frame_buff;
 
-    uint8_t nb_unit = (1 << log2_ctu_s) >> 2;
-
     uint8_t nb_unit_w = (ctu_w) >> 2;
     uint8_t nb_unit_h = (ctu_h) >> 2;
-
-    dbf_info->edge_map_ver[nb_unit_w] &= -!last_x;
-    dbf_info->edge_map_hor[nb_unit_h] &= -!last_y;
-
-    dbf_info->edge_map_ver_c[nb_unit_w] &= -!last_x;
-    dbf_info->edge_map_hor_c[nb_unit_h] &= -!last_y;
 
     #if 1
     vvc_dbf_ctu_hor(fbuff->y, fbuff->stride, dbf_info, nb_unit_h, !!last_y, nb_unit_w);

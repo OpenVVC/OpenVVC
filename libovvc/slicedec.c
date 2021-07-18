@@ -730,13 +730,9 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
         uint8_t is_last_x = (ctb_addr_rs + 1) % nb_ctu_w == 0;
         uint8_t is_last_y = einfo->nb_ctu_h == (ctb_addr_rs / nb_ctu_w) + 1;
         #if 1
-        //if (ctb_addr_rs <= nb_ctu_w)
         if (!ctb_addr_rs % nb_ctu_w) {
              ctudec->dbf_info.edge_map_ver[0] = 0;
              ctudec->dbf_info.edge_map_ver_c[0] = 0;
-        } else if (ctb_addr_rs / nb_ctu_w == einfo->nb_ctu_h){
-             //ctudec->dbf_info.edge_map_hor[8] = 0;
-             //ctudec->dbf_info.edge_map_hor_c[10] = 0;
         }
 
         rcn_dbf_ctu(&ctudec->rcn_ctx, &ctudec->dbf_info, log2_ctb_s,
