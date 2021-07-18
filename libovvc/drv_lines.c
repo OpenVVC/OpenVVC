@@ -511,18 +511,12 @@ dbf_load_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l
         dbf_info->ctb_bound_ver_c[i + 8] = 0;
     }
 
-    dbf_info->ctb_bound_ver[8 + nb_pb_s] = (uint64_t) - 1ll;
-    dbf_info->ctb_bound_ver_c[8 + nb_pb_s] = (uint64_t) - 1ll;
-    dbf_info->ctb_bound_ver[8] = (uint64_t) - 1ll;
-    dbf_info->ctb_bound_ver_c[8] = (uint64_t) - 1ll;
-
-    dbf_info->ctb_bound_hor[8 + nb_pb_s] = (uint64_t) - 1ll;
-    dbf_info->ctb_bound_hor[8] = (uint64_t) - 1ll;
+    /* Note 6 could be done at slice init and 8 & 8 + nb_pb_s while filling maps
+     */
     dbf_info->ctb_bound_hor[6] = (uint64_t) - 1ll;
     dbf_info->ctb_bound_hor[7] = l->small_map[ctb_x];
-
-    dbf_info->ctb_bound_hor_c[8 + nb_pb_s] = (uint64_t) - 1ll;
-    dbf_info->ctb_bound_hor_c[8] = (uint64_t) - 1ll;
+    dbf_info->ctb_bound_hor[8] = (uint64_t) - 1ll;
+    dbf_info->ctb_bound_hor[8 + nb_pb_s] = (uint64_t) - 1ll;
 
     dbf_info->edge_map_ver[0]  = ctb_lft_msk & dbf_info->edge_map_ver[nb_pb_s];
     dbf_info->edge_map_hor[0]  = ctb_lft_msk & (dbf_info->edge_map_hor[0] >> (nb_pb_s)) & 0x3;
@@ -541,9 +535,6 @@ dbf_load_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l
         dbf_info->edge_map_hor_c[i] = ctb_lft_msk & (dbf_info->edge_map_hor_c[i] >> (nb_pb_s)) & 0x3;
         dbf_info->edge_map_ver_c[i] = 0;
     }
-
-    /* FIXME understand this */
-    if (!ctb_x) dbf_info->edge_map_ver[1]=0;
 }
 
 static void
