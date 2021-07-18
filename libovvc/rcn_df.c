@@ -1037,37 +1037,39 @@ filter_veritcal_edge(const struct DBFInfo *const dbf_info, uint16_t *src, ptrdif
 
 static void
 vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
-                uint8_t nb_unit_h, int is_last_h, uint8_t nb_unit_w)
+                uint8_t nb_unit_h, int is_last_h, uint8_t nb_unit_w, uint8_t ctu_lft)
 {
     const int blk_stride = stride << 2; 
     const uint64_t vedge_mask = ((uint64_t)1 << (nb_unit_h + 1)) - 1;
 
-    const uint64_t *edge_map_p2 = &dbf_info->ctb_bound_ver[8];
+    const uint64_t *edg_map = &dbf_info->ctb_bound_ver[8];
+    const uint8_t skip_first = !ctu_lft;
 
     int i;
 
     src -= blk_stride;
+    src += skip_first << 2;
 
-    for (i = 0; i < nb_unit_w; ++i) {
+    for (i = skip_first; i < nb_unit_w; ++i) {
         uint16_t* src_tmp = src;
 
-        uint64_t edge_map = dbf_info->edge_map_ver[i];
+        uint64_t edg_msk = edg_map[i];
         uint64_t bs1_map  = dbf_info->bs1_map.ver[i];
         uint64_t bs2_map  = dbf_info->bs2_map.ver[i];
 
-        edge_map &= vedge_mask & ~0x1;
-        edge_map &= bs2_map | bs1_map;
+        edg_msk &= vedge_mask & ~0x1;
+        edg_msk &= bs2_map | bs1_map;
 
-        if (edge_map) {
-            uint64_t large_p_map = derive_size_3_map(edge_map_p2 - 7);
-            uint64_t large_q_map = derive_size_3_map(edge_map_p2 + 1);
+        if (edg_msk) {
+            uint64_t large_p_map = derive_size_3_map(&edg_map[i - 7]);
+            uint64_t large_q_map = derive_size_3_map(&edg_map[i + 1]);
 
-            uint64_t small_map = edge_map_p2[-1] | edge_map_p2[1];
+            uint64_t small_map = edg_map[i - 1] | edg_map[i + 1];
 
             const uint8_t *qp_col = &dbf_info->qp_map_y.ver[34 * i];
 
             do {
-                uint8_t nb_skipped_blk = ov_ctz64(edge_map);
+                uint8_t nb_skipped_blk = ov_ctz64(edg_msk);
 
                 /* Skip non filtered edges */
                 large_p_map >>= nb_skipped_blk;
@@ -1080,7 +1082,7 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                 filter_veritcal_edge(dbf_info, src_tmp, stride, qp_col, bs2_map, large_p_map,
                                      large_q_map, small_map);
 
-                edge_map  >>= nb_skipped_blk + 1;
+                edg_msk  >>= nb_skipped_blk + 1;
                 bs2_map   >>= 1;
 
                 small_map   >>= 1;
@@ -1089,9 +1091,8 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
                 src_tmp += blk_stride;
                 qp_col++;
-            } while (edge_map);
+            } while (edg_msk);
         }
-        ++edge_map_p2;
         src += 1 << 2;
     }
 }
@@ -1187,13 +1188,14 @@ filter_horizontal_edge(const struct DBFInfo *const dbf_info, uint16_t *src, ptrd
 
 static void
 vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
-                uint8_t nb_unit_w, int is_last_w, uint8_t nb_unit_h)
+                uint8_t nb_unit_w, int is_last_w, uint8_t nb_unit_h, uint8_t ctu_abv)
 {
     const int blk_stride = 1 << 2;
     const uint64_t hedge_mask = ((uint64_t)1 << (nb_unit_w + (!!is_last_w << 1))) - 1;
     int i;
 
-    const uint64_t *edge_map_p2 = &dbf_info->ctb_bound_hor[8];
+    const uint64_t *edg_map = &dbf_info->ctb_bound_hor[8];
+    uint8_t skip_first = !ctu_abv;
 
     /* Filtering vertical edges on the whole would overlap with next CTU first
      * vertical edge.
@@ -1202,25 +1204,26 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
      * the horizontal edges of previous CTU.
      */
     src -= blk_stride << 1;
+    src += (skip_first * stride) << 2;
 
-    for (i = 0; i < nb_unit_h; ++i) {
+    for (i = skip_first; i < nb_unit_h; ++i) {
         uint16_t *src_tmp = src;
 
-        uint64_t edge_map = dbf_info->edge_map_hor[i];
+        uint64_t edg_msk = edg_map[i];
         uint64_t bs2_map = dbf_info->bs2_map.hor[i];
         uint64_t bs1_map = dbf_info->bs1_map.hor[i];
 
-        edge_map &= hedge_mask;
-        edge_map &= bs2_map | bs1_map;
+        edg_msk &= hedge_mask;
+        edg_msk &= bs2_map | bs1_map;
 
-        if (edge_map) {
-            uint64_t large_p_map = derive_size_3_map(&edge_map_p2[i - 7]);
-            uint64_t large_q_map = derive_size_3_map(&edge_map_p2[i + 1]);
-            uint64_t small_map = edge_map_p2[i - 1] | edge_map_p2[i + 1];
+        if (edg_msk) {
+            uint64_t large_p_map = derive_size_3_map(&edg_map[i - 7]);
+            uint64_t large_q_map = derive_size_3_map(&edg_map[i + 1]);
+            uint64_t small_map = edg_map[i - 1] | edg_map[i + 1];
             const uint8_t *qp_row = &dbf_info->qp_map_y.hor[34 * i];
 
             do {
-                uint8_t nb_skipped_blk = ov_ctz64(edge_map);
+                uint8_t nb_skipped_blk = ov_ctz64(edg_msk);
 
                 /* Skip non filtered edges */
                 large_p_map >>= nb_skipped_blk;
@@ -1233,7 +1236,7 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                 filter_horizontal_edge(dbf_info, src_tmp, stride, qp_row, bs2_map,
                                        large_p_map, large_q_map, small_map);
 
-                edge_map  >>= nb_skipped_blk + 1;
+                edg_msk  >>= nb_skipped_blk + 1;
                 bs2_map   >>= 1;
 
                 small_map   >>= 1;
@@ -1242,7 +1245,7 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
                 src_tmp += blk_stride;
                 qp_row++;
-            } while(edge_map);
+            } while(edg_msk);
         }
 
         src += stride << 2;
@@ -1262,8 +1265,8 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_inf
     uint8_t ctu_abv = rcn_ctx->ctudec->ctu_ngh_flags & CTU_UP_FLG;
 
     #if 1
-    vvc_dbf_ctu_hor(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_y, nb_unit);
-    vvc_dbf_ctu_ver(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_x, nb_unit);
+    vvc_dbf_ctu_hor(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_y, nb_unit, ctu_lft);
+    vvc_dbf_ctu_ver(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_x, nb_unit, ctu_abv);
 
     vvc_dbf_chroma_hor(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
                        nb_unit, !!last_y, nb_unit, ctu_lft);
@@ -1287,8 +1290,8 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *con
     uint8_t ctu_abv = rcn_ctx->ctudec->ctu_ngh_flags & CTU_UP_FLG;
 
     #if 1
-    vvc_dbf_ctu_hor(fbuff->y, fbuff->stride, dbf_info, nb_unit_h, !!last_y, nb_unit_w);
-    vvc_dbf_ctu_ver(fbuff->y, fbuff->stride, dbf_info, nb_unit_w, !!last_x, nb_unit_h);
+    vvc_dbf_ctu_hor(fbuff->y, fbuff->stride, dbf_info, nb_unit_h, !!last_y, nb_unit_w, ctu_lft);
+    vvc_dbf_ctu_ver(fbuff->y, fbuff->stride, dbf_info, nb_unit_w, !!last_x, nb_unit_h, ctu_abv);
 
     vvc_dbf_chroma_hor(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
                        nb_unit_h, !!last_y, nb_unit_w, ctu_lft);
