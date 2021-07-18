@@ -44,16 +44,6 @@ fill_edge_map(struct DBFInfo *const dbf_info, int x0, int y0, int log2_cu_w, int
     dbf_info->edge_map_hor[(y0 + (1 << log2_cu_h)) >> 2] |= mask_hor << (2 + (x0 >> 2));
 }
 
-static inline void
-fill_edge_map_c(struct DBFInfo *const dbf_info, int x0, int y0, int log2_cu_w, int log2_cu_h)
-{
-    const uint64_t mask_ver = (1 << ((1 << log2_cu_h) >> 2)) - 1;
-    const uint64_t mask_hor = (1 << ((1 << log2_cu_w) >> 2)) - 1;
-
-    dbf_info->edge_map_ver_c[(x0 + (1 << log2_cu_w)) >> 2] |= mask_ver << (1 + (y0 >> 2));
-    dbf_info->edge_map_hor_c[(y0 + (1 << log2_cu_h)) >> 2] |= mask_hor << (2 + (x0 >> 2));
-}
-
 /* Set nb_unit_w/h bits to 1 onto left/above and right/bottom parts of a CB in BS maps*/
 static inline void
 fill_bs_map(struct DBFMap *const dbf_map, int x0, int y0, int log2_cu_w, int log2_cu_h)
