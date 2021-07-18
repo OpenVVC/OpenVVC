@@ -1185,6 +1185,12 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
     const uint64_t *edge_map_p2 = &dbf_info->ctb_bound_hor[8];
 
+    /* Filtering vertical edges on the whole would overlap with next CTU first
+     * vertical edge.
+     * Since max filter length is 7 we stop the horizontal process 2 units before
+     * current CTU end and process the two previous units in order to finish filtering
+     * the horizontal edges of previous CTU.
+     */
     src -= blk_stride << 1;
 
     for (i = 0; i < nb_unit_h; ++i) {
