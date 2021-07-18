@@ -653,7 +653,8 @@ filter_veritcal_edge_c(const struct DBFInfo *const dbf_info, uint16_t *src, ptrd
 static void
 vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
                    const struct DBFInfo *const dbf_info,
-                   uint8_t nb_unit_h, int is_last_h, uint8_t nb_unit_w)
+                   uint8_t nb_unit_h, int is_last_h, uint8_t nb_unit_w,
+                   uint8_t ctu_lft)
 {
 
     const int blk_stride = stride << 1;
@@ -666,11 +667,15 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
      * (Note we know the CTU right border is an implicit edge so we can set it to 0xFF)
      */
     const uint8_t nb_vedge = ((nb_unit_w + 3) >> 2);
+    const uint8_t skip_first = !ctu_lft;
 
     src_cb -= blk_stride;
     src_cr -= blk_stride;
 
-    for (i = 0; i < nb_vedge; i++) {
+    src_cb += skip_first << 3;
+    src_cr += skip_first << 3;
+
+    for (i = skip_first; i < nb_vedge; i++) {
         /* FIXME chroma_edges could be stored on a smaller grid */
         uint8_t edge_idx = i << 2;
 
@@ -724,7 +729,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
         src_cb += 1 << 3;
     }
 
-    for (i = 0; i < nb_vedge; i++) {
+    for (i = skip_first; i < nb_vedge; i++) {
         uint8_t edge_idx = i << 2;
 
         uint64_t bs2_map = dbf_info->bs2_map_c.ver  [edge_idx];
@@ -765,7 +770,6 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
         }
         src_cr += 1 << 3;
     }
-
 }
 
 static void
@@ -825,17 +829,22 @@ filter_horizontal_edge_c(const struct DBFInfo *const dbf_info, uint16_t *src, pt
 static void
 vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
                    const struct DBFInfo *const dbf_info,
-                   uint8_t nb_unit_w, int is_last_w, uint8_t nb_unit_h, uint8_t is_last_h)
+                   uint8_t nb_unit_w, int is_last_w, uint8_t nb_unit_h, uint8_t is_last_h,
+                   uint8_t ctu_abv)
 {
     const int blk_stride = 1 << 1;
     const uint64_t hedge_mask = (((uint64_t)1 << (nb_unit_w + (!!is_last_w << 1))) - 1);
     const uint8_t nb_hedge = ((nb_unit_h + 3) >> 2);
+    const uint8_t skip_first = !ctu_abv;
     int i;
 
     src_cb -= blk_stride << 1;
     src_cr -= blk_stride << 1;
 
-    for (i = 0; i < nb_hedge; i++) {
+    src_cb += (skip_first * stride) << 3;
+    src_cr += (skip_first * stride) << 3;
+
+    for (i = skip_first; i < nb_hedge; i++) {
         uint8_t edge_idx = i << 2;
 
         uint64_t edge_map = dbf_info->edge_map_hor_c[edge_idx];
@@ -879,7 +888,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
         src_cb += stride << 3;
     }
 
-    for (i = 0; i < nb_hedge; i++) {
+    for (i = skip_first; i < nb_hedge; i++) {
         uint8_t edge_idx = i << 2;
 
         uint64_t edge_map = dbf_info->edge_map_hor_c[edge_idx];
@@ -1247,16 +1256,19 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_inf
     const struct OVBuffInfo *const fbuff = &rcn_ctx->frame_buff;
 
     uint8_t nb_unit = (1 << log2_ctu_s) >> 2;
+    /* FIXME give as argument */
+    uint8_t ctu_lft = rcn_ctx->ctudec->ctu_ngh_flags & CTU_LFT_FLG;
+    uint8_t ctu_abv = rcn_ctx->ctudec->ctu_ngh_flags & CTU_UP_FLG;
 
     #if 1
     vvc_dbf_ctu_hor(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_y, nb_unit);
     vvc_dbf_ctu_ver(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_x, nb_unit);
 
     vvc_dbf_chroma_hor(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
-                       nb_unit, !!last_y, nb_unit);
+                       nb_unit, !!last_y, nb_unit, ctu_lft);
 
     vvc_dbf_chroma_ver(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
-                       nb_unit, !!last_x, nb_unit, !!last_y);
+                       nb_unit, !!last_x, nb_unit, !!last_y, ctu_abv);
                        #endif
 
 }
@@ -1269,16 +1281,19 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *con
 
     uint8_t nb_unit_w = (ctu_w) >> 2;
     uint8_t nb_unit_h = (ctu_h) >> 2;
+    /* FIXME give as argument */
+    uint8_t ctu_lft = rcn_ctx->ctudec->ctu_ngh_flags & CTU_LFT_FLG;
+    uint8_t ctu_abv = rcn_ctx->ctudec->ctu_ngh_flags & CTU_UP_FLG;
 
     #if 1
     vvc_dbf_ctu_hor(fbuff->y, fbuff->stride, dbf_info, nb_unit_h, !!last_y, nb_unit_w);
     vvc_dbf_ctu_ver(fbuff->y, fbuff->stride, dbf_info, nb_unit_w, !!last_x, nb_unit_h);
 
     vvc_dbf_chroma_hor(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
-                       nb_unit_h, !!last_y, nb_unit_w);
+                       nb_unit_h, !!last_y, nb_unit_w, ctu_lft);
 
     vvc_dbf_chroma_ver(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
-                       nb_unit_w, !!last_x, nb_unit_h, !!last_y);
+                       nb_unit_w, !!last_x, nb_unit_h, !!last_y, ctu_abv);
                        #endif
 
 }
