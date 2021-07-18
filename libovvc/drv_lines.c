@@ -488,7 +488,7 @@ dbf_store_qp_map(const struct DBFInfo *const dbf_info,
 
 static void
 dbf_load_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
-              uint8_t log2_ctu_s, int ctb_x)
+                  uint8_t log2_ctu_s, int ctb_x)
 {
     int nb_pb_s = (1 << log2_ctu_s) >> 2;
     uint64_t ctb_lft_msk = (uint64_t)-(!!ctb_x);
@@ -498,43 +498,37 @@ dbf_load_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l
         uint64_t *ctb_bnd = dbf_info->ctb_bound_ver;
         uint64_t *ctb_bnd_c = dbf_info->ctb_bound_ver_c;
         memcpy(ctb_bnd, &ctb_bnd[nb_pb_s], 8 * sizeof(uint64_t));
-        memcpy(ctb_bnd_c, &ctb_bnd_c[nb_pb_s], 8 * sizeof(uint64_t));
+        memcpy(ctb_bnd_c + 8 - 3, &ctb_bnd_c[nb_pb_s + 8 - 3], 3 * sizeof(uint64_t));
     }
 
-    for (int i = 1; i < nb_pb_s; ++i) {
+    for (int i = 0; i < nb_pb_s; ++i) {
+        dbf_info->edge_map_hor[i] = ctb_lft_msk & (dbf_info->edge_map_hor[i] >> (nb_pb_s)) & 0x3;
         dbf_info->ctb_bound_hor[i + 8] = ctb_lft_msk & (dbf_info->ctb_bound_hor[i + 8] >> (nb_pb_s)) & 0x3;
+        dbf_info->edge_map_ver[i] = 0;
         dbf_info->ctb_bound_ver[i + 8] = 0;
     }
 
-    for (int i = 1; i < nb_pb_s; ++i) {
+    for (int i = 0; i < nb_pb_s; ++i) {
+        dbf_info->edge_map_hor_c[i] = ctb_lft_msk & (dbf_info->edge_map_hor_c[i] >> (nb_pb_s)) & 0x3;
         dbf_info->ctb_bound_hor_c[i + 8] = ctb_lft_msk & (dbf_info->ctb_bound_hor_c[i + 8] >> (nb_pb_s)) & 0x3;
+        dbf_info->edge_map_ver_c[i] = 0;
         dbf_info->ctb_bound_ver_c[i + 8] = 0;
     }
 
-    /* Note 6 could be done at slice init and 8 & 8 + nb_pb_s while filling maps
-     */
-    dbf_info->ctb_bound_hor[6] = (uint64_t) - 1ll;
     dbf_info->ctb_bound_hor[7] = l->small_map[ctb_x];
-    dbf_info->ctb_bound_hor[8] = (uint64_t) - 1ll;
-    dbf_info->ctb_bound_hor[8 + nb_pb_s] = (uint64_t) - 1ll;
+    /* FIXME move at decoder intialisation */
+    dbf_info->ctb_bound_hor[6] = (uint64_t) - 1ll;
+    /* ctb_bound_hor requires its two first bits set to one since we need 2 last units
+     * from left CTU.
+     */
+    dbf_info->ctb_bound_hor[8]           = 0x3;
+    dbf_info->ctb_bound_hor[8 + nb_pb_s] = 0x3;
 
-    dbf_info->edge_map_ver[0]  = ctb_lft_msk & dbf_info->edge_map_ver[nb_pb_s];
-    dbf_info->edge_map_hor[0]  = ctb_lft_msk & (dbf_info->edge_map_hor[0] >> (nb_pb_s)) & 0x3;
-    dbf_info->edge_map_hor[0] |= l->dbf_edge_hor[ctb_x];
-
-    dbf_info->edge_map_ver_c[0]  = ctb_lft_msk & dbf_info->edge_map_ver_c[nb_pb_s];
-    dbf_info->edge_map_hor_c[0]  = ctb_lft_msk & (dbf_info->edge_map_hor_c[0] >> (nb_pb_s)) & 0x3;
+    dbf_info->edge_map_hor  [0] |= l->dbf_edge_hor[ctb_x];
     dbf_info->edge_map_hor_c[0] |= l->dbf_edge_hor_c[ctb_x];
-
-    for (int i = 1; i < nb_pb_s; ++i) {
-        dbf_info->edge_map_hor[i] = ctb_lft_msk & (dbf_info->edge_map_hor[i] >> (nb_pb_s)) & 0x3;
-        dbf_info->edge_map_ver[i] = 0;
-    }
-
-    for (int i = 1; i < nb_pb_s; ++i) {
-        dbf_info->edge_map_hor_c[i] = ctb_lft_msk & (dbf_info->edge_map_hor_c[i] >> (nb_pb_s)) & 0x3;
-        dbf_info->edge_map_ver_c[i] = 0;
-    }
+    /* FIXME try to remove this */
+    dbf_info->edge_map_ver[0]    = ctb_lft_msk & dbf_info->edge_map_ver[nb_pb_s];
+    dbf_info->edge_map_ver_c[0]  = ctb_lft_msk & dbf_info->edge_map_ver_c[nb_pb_s];
 }
 
 static void
