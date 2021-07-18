@@ -575,11 +575,10 @@ filter_chroma_weak(uint16_t* src, const int stride, const int tc)
 
 /* Check if filter is 3 or 1 sample large based on other left edges */
 static uint64_t
-derive_large_map_from_ngh(const uint64_t *src_map, uint8_t edge_idx)
+derive_large_map_from_ngh(const uint64_t *src_map)
 {
-    int offset = 8 + edge_idx;
-    const uint64_t *fwd = src_map + offset + 1;
-    const uint64_t *bwd = src_map + offset - 1;
+    const uint64_t *fwd = src_map + 1;
+    const uint64_t *bwd = src_map - 1;
     uint64_t dst_map = 0;
 
     /* If an edge is detected on either of those maps
@@ -660,6 +659,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
     const int blk_stride = stride << 1;
     /* Mask applied to edge_mask based on CTU height */
     const uint64_t vedge_mask = ((uint64_t)1 << (nb_unit_h + 1)) - 1;
+    const uint64_t *const edg_map_tab = &dbf_info->ctb_bound_ver_c[8];
     int i;
 
     /* The number of edges to process (should be ((1 << log2_ctu_s) >> 4) since we start
@@ -682,7 +682,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
         uint64_t bs2_map = dbf_info->bs2_map_c.ver  [edge_idx];
         uint64_t bs1_map = dbf_info->bs1_map_cb.ver [edge_idx];
 
-        uint64_t edge_map = dbf_info->edge_map_ver_c[edge_idx];
+        uint64_t edge_map = edg_map_tab[edge_idx];
 
         /* FIXME Use directly CTU start and modify maps storage and rotation
          */
@@ -695,7 +695,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
         edge_map &= bs2_map | bs1_map;
 
         if (edge_map) {
-            uint64_t large_map_q = derive_large_map_from_ngh(dbf_info->ctb_bound_ver_c, edge_idx);
+            uint64_t large_map_q = derive_large_map_from_ngh(&edg_map_tab[edge_idx]);
 
             /* FIXME use absolute QP maps */
             const uint8_t *qp_col = &dbf_info->qp_map_cb.ver[34 * edge_idx];
@@ -735,13 +735,13 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
         uint64_t bs2_map = dbf_info->bs2_map_c.ver  [edge_idx];
         uint64_t bs1_map = dbf_info->bs1_map_cr.ver [edge_idx];
 
-        uint64_t edge_map = dbf_info->edge_map_ver_c[edge_idx];
+        uint64_t edge_map = edg_map_tab[edge_idx];
 
         edge_map &= vedge_mask & ~0x1;
         edge_map &= bs2_map | bs1_map;
 
         if (edge_map) {
-            uint64_t large_map_q = derive_large_map_from_ngh(dbf_info->ctb_bound_ver_c, edge_idx);
+            uint64_t large_map_q = derive_large_map_from_ngh(&edg_map_tab[edge_idx]);
 
             const uint8_t *qp_col = &dbf_info->qp_map_cr.ver[34 * edge_idx];
 
@@ -836,6 +836,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
     const uint64_t hedge_mask = (((uint64_t)1 << (nb_unit_w + (!!is_last_w << 1))) - 1);
     const uint8_t nb_hedge = ((nb_unit_h + 3) >> 2);
     const uint8_t skip_first = !ctu_abv;
+    const uint64_t *const edg_map_tab = &dbf_info->ctb_bound_hor_c[8];
     int i;
 
     src_cb -= blk_stride << 1;
@@ -847,7 +848,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
     for (i = skip_first; i < nb_hedge; i++) {
         uint8_t edge_idx = i << 2;
 
-        uint64_t edge_map = dbf_info->edge_map_hor_c[edge_idx];
+        uint64_t edge_map = edg_map_tab[edge_idx];
 
         uint64_t bs2_map  = dbf_info->bs2_map_c.hor[edge_idx];
         uint64_t bs1_map  = dbf_info->bs1_map_cb.hor[edge_idx];
@@ -858,7 +859,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
         if (edge_map) {
             const uint8_t *qp_row = &dbf_info->qp_map_cb.hor[edge_idx * 34];
 
-            uint64_t large_map_q = derive_large_map_from_ngh(dbf_info->ctb_bound_hor_c, edge_idx);
+            uint64_t large_map_q = derive_large_map_from_ngh(&edg_map_tab[edge_idx]);
 
             uint8_t is_ctb_b = i == 0;
             uint16_t *src = src_cb;
@@ -891,7 +892,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
     for (i = skip_first; i < nb_hedge; i++) {
         uint8_t edge_idx = i << 2;
 
-        uint64_t edge_map = dbf_info->edge_map_hor_c[edge_idx];
+        uint64_t edge_map = edg_map_tab[edge_idx];
 
         uint64_t bs2_map  = dbf_info->bs2_map_c.hor[edge_idx];
         uint64_t bs1_map  = dbf_info->bs1_map_cr.hor[edge_idx];
@@ -900,7 +901,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
         edge_map &= bs2_map | bs1_map;
 
         if (edge_map) {
-            uint64_t large_map_q = derive_large_map_from_ngh(dbf_info->ctb_bound_hor_c, edge_idx);
+            uint64_t large_map_q = derive_large_map_from_ngh(&edg_map_tab[edge_idx]);
             const uint8_t *qp_row = &dbf_info->qp_map_cr.hor[edge_idx * 34];
             uint16_t *src = src_cr;
             uint8_t is_ctb_b = i == 0;
