@@ -658,7 +658,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
 
     const int blk_stride = stride << 1;
     /* Mask applied to edge_mask based on CTU height */
-    const uint64_t vedge_mask = ((uint64_t)1 << (nb_unit_h + 1)) - 1;
+    const uint64_t vedge_mask = ((uint64_t)1 << nb_unit_h) - 1;
     const uint64_t *const edg_map_tab = &dbf_info->ctb_bound_ver_c[8];
     int i;
 
@@ -668,9 +668,6 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
      */
     const uint8_t nb_vedge = ((nb_unit_w + 3) >> 2);
     const uint8_t skip_first = !ctu_lft;
-
-    src_cb -= blk_stride;
-    src_cr -= blk_stride;
 
     src_cb += skip_first << 3;
     src_cr += skip_first << 3;
@@ -689,7 +686,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
         /* Discard first edge corresponding to upper CTU and mask 
          * out of picture edge
          */
-        edge_map &= vedge_mask & ~0x1;
+        edge_map &= vedge_mask;
 
         /* Discard non filtered edges from edge_map */
         edge_map &= bs2_map | bs1_map;
@@ -737,7 +734,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
 
         uint64_t edge_map = edg_map_tab[edge_idx];
 
-        edge_map &= vedge_mask & ~0x1;
+        edge_map &= vedge_mask;
         edge_map &= bs2_map | bs1_map;
 
         if (edge_map) {
@@ -1040,14 +1037,13 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                 uint8_t nb_unit_h, int is_last_h, uint8_t nb_unit_w, uint8_t ctu_lft)
 {
     const int blk_stride = stride << 2; 
-    const uint64_t vedge_mask = ((uint64_t)1 << (nb_unit_h + 1)) - 1;
+    const uint64_t vedge_mask = ((uint64_t)1 << nb_unit_h) - 1;
 
     const uint64_t *edg_map = &dbf_info->ctb_bound_ver[8];
     const uint8_t skip_first = !ctu_lft;
 
     int i;
 
-    src -= blk_stride;
     src += skip_first << 2;
 
     for (i = skip_first; i < nb_unit_w; ++i) {
@@ -1057,7 +1053,7 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
         uint64_t bs1_map  = dbf_info->bs1_map.ver[i];
         uint64_t bs2_map  = dbf_info->bs2_map.ver[i];
 
-        edg_msk &= vedge_mask & ~0x1;
+        edg_msk &= vedge_mask;
         edg_msk &= bs2_map | bs1_map;
 
         if (edg_msk) {
