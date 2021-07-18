@@ -481,18 +481,18 @@ dbf_load_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l
 
     if (ctb_x) {
         /* copy previous 8 vertical edges used for filter length derivation */
-        uint64_t *ctb_bnd = dbf_info->ctb_bound_ver;
+        uint64_t *ctb_bnd   = dbf_info->ctb_bound_ver;
         uint64_t *ctb_bnd_c = dbf_info->ctb_bound_ver_c;
         memcpy(ctb_bnd, &ctb_bnd[nb_pb_s], 8 * sizeof(uint64_t));
         memcpy(ctb_bnd_c + 8 - 3, &ctb_bnd_c[nb_pb_s + 8 - 3], 3 * sizeof(uint64_t));
     }
 
-    for (int i = 0; i < nb_pb_s; ++i) {
+    for (int i = 0; i < nb_pb_s + 1; ++i) {
         dbf_info->ctb_bound_hor[i + 8] = ctb_lft_msk & (dbf_info->ctb_bound_hor[i + 8] >> (nb_pb_s)) & 0x3;
         dbf_info->ctb_bound_ver[i + 8] = 0;
     }
 
-    for (int i = 0; i < nb_pb_s; ++i) {
+    for (int i = 0; i < nb_pb_s + 1; ++i) {
         dbf_info->ctb_bound_hor_c[i + 8] = ctb_lft_msk & (dbf_info->ctb_bound_hor_c[i + 8] >> (nb_pb_s)) & 0x3;
         dbf_info->ctb_bound_ver_c[i + 8] = 0;
     }
@@ -500,11 +500,6 @@ dbf_load_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l
     dbf_info->ctb_bound_hor[7] = l->small_map[ctb_x];
     /* FIXME move at decoder intialisation */
     dbf_info->ctb_bound_hor[6] = (uint64_t) - 1ll;
-    /* ctb_bound_hor requires its two first bits set to one since we need 2 last units
-     * from left CTU.
-     */
-    dbf_info->ctb_bound_hor[8]           = 0x3;
-    dbf_info->ctb_bound_hor[8 + nb_pb_s] = 0x3;
 }
 
 static void
