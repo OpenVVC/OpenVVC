@@ -665,7 +665,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
      * finish from CTU left border to the last edge before the right CTU border
      * (Note we know the CTU right border is an implicit edge so we can set it to 0xFF)
      */
-    const uint8_t nb_vedge = (nb_unit_w >> 2);
+    const uint8_t nb_vedge = ((nb_unit_w + 3) >> 2);
 
     src_cb -= blk_stride;
     src_cr -= blk_stride;
@@ -828,8 +828,8 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
                    uint8_t nb_unit_w, int is_last_w, uint8_t nb_unit_h, uint8_t is_last_h)
 {
     const int blk_stride = 1 << 1;
-    const uint8_t nb_hedge = ((nb_unit_h) >> 2) + !!is_last_h;
     const uint64_t hedge_mask = (((uint64_t)1 << (nb_unit_w + (!!is_last_w << 1))) - 1);
+    const uint8_t nb_hedge = ((nb_unit_h + 3) >> 2);
     int i;
 
     src_cb -= blk_stride << 1;
