@@ -677,6 +677,16 @@ init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
      return 0;
 }
 
+static void
+reset_inter_lines(const struct InterLines *const inter_lns, uint16_t nb_ctu_w,
+                  uint8_t log2_ctb_s)
+{
+    uint16_t nb_rst_units = (nb_ctu_w << log2_ctb_s) >> LOG2_UNIT_S;
+    memset(inter_lns->dir0,   0, sizeof(*inter_lns->dir0)   * nb_rst_units);
+    memset(inter_lns->dir1,   0, sizeof(*inter_lns->dir1)   * nb_rst_units);
+    memset(inter_lns->affine, 0, sizeof(*inter_lns->affine) * nb_rst_units);
+}
+
 void
 reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
 {
@@ -701,13 +711,7 @@ reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
 
     uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
 
-    struct InterLines *const i_lns = &lns->inter_lines;
-
-    /*FIXME check 32 */
-    memset(i_lns->dir0, 0, (sizeof(*i_lns->dir0) * 32*(nb_ctb_pic_w + 1)));
-    memset(i_lns->dir1, 0, (sizeof(*i_lns->dir1) * 32*(nb_ctb_pic_w + 1)));
-    memset(i_lns->affine, 0, (sizeof(*i_lns->affine) * 32*(nb_ctb_pic_w + 1)));
-
+    reset_inter_lines(&lns->inter_lines, nb_ctb_pic_w, log2_ctb_s);
     /* PLANAR  = 0 value is used if absent so we use it as reset value
     */
     memset(lns->intra_luma_x,     0,  sizeof(*lns->intra_luma_x) * nb_pb_pic_w);
