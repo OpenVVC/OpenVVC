@@ -717,11 +717,10 @@ reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
 
 static void
 load_first_ctu_inter(const struct DRVLines *const l,
-                 OVCTUDec *const ctudec,
-                 unsigned int ctb_x)
+                     OVCTUDec *const ctudec,
+                     unsigned int ctb_x)
 {
-    uint8_t nb_ctb_pb =  (1 << ((ctudec->part_ctx->log2_ctu_s) & 7)) >> ctudec->part_ctx->log2_min_cb_s;
-
+    uint8_t nb_unit_ctb =  (1 << ((ctudec->part_ctx->log2_ctu_s) & 7)) >> LOG2_UNIT_S;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct AffineDRVInfo *const aff_ctx = &inter_ctx->affine_ctx;
     const struct InterLines *const lns = &l->inter_lines;
@@ -730,58 +729,56 @@ load_first_ctu_inter(const struct DRVLines *const l,
     struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
     struct AffineInfo *const aff_info = aff_ctx->affine_info;
 
-    uint64_t *const rows_map0 = mv_ctx0->map.hfield;
-    uint64_t *const cols_map0 = mv_ctx0->map.vfield;
+    uint64_t above_map0 = lns->dir0[0];
+    uint64_t above_map1 = lns->dir1[0];
+    uint64_t affine_map = lns->affine[0];
 
-    uint64_t *const rows_map1 = mv_ctx1->map.hfield;
-    uint64_t *const cols_map1 = mv_ctx1->map.vfield;
-
-    uint64_t *const rows_affn = aff_ctx->map.hfield;
-    uint64_t *const cols_affn = aff_ctx->map.vfield;
+    above_map0 |= (uint64_t)lns->dir0[1] << nb_unit_ctb;
+    above_map1 |= (uint64_t)lns->dir1[1] << nb_unit_ctb;
+    affine_map |= (uint64_t)lns->affine[1] << nb_unit_ctb;
 
     int i;
 
-    uint64_t above_map0 = (uint64_t)lns->dir0[0] | ((uint64_t)lns->dir0[1] << nb_ctb_pb);
-    uint64_t above_map1 = (uint64_t)lns->dir1[0] | ((uint64_t)lns->dir1[1] << nb_ctb_pb);
-    uint64_t affine_map = (uint64_t)lns->affine[0] | ((uint64_t)lns->affine[1] << nb_ctb_pb);
+    uint64_t *const rows_map0 = mv_ctx0->map.hfield;
+    uint64_t *const rows_map1 = mv_ctx1->map.hfield;
+    uint64_t *const rows_affn = aff_ctx->map.hfield;
 
-    for (i = 0; i < nb_ctb_pb + 1; i++) {
-        #if 0
-        uint64_t left_available0 = !!(cols_map0[nb_ctb_pb] & (1llu << i));
-        uint64_t left_available1 = !!(cols_map1[nb_ctb_pb] & (1llu << i));
-        #endif
+    rows_map0[0] = above_map0 << 1;
+    rows_map1[0] = above_map1 << 1;
+    rows_affn[0] = affine_map << 1;
+
+    for (i = 1; i < nb_unit_ctb + 1; i++) {
         rows_map0[i] = 0;
         rows_map1[i] = 0;
         rows_affn[i] = 0;
-        #if 0
-        mv_ctx0->mvs[i * 34] = mv_ctx0->mvs[i* 34 + nb_ctb_pb];
-        mv_ctx1->mvs[i * 34] = mv_ctx1->mvs[i* 34 + nb_ctb_pb];
-        #endif
     }
+
+    uint64_t *const cols_map0 = mv_ctx0->map.vfield;
+    uint64_t *const cols_map1 = mv_ctx1->map.vfield;
+    uint64_t *const cols_affn = aff_ctx->map.vfield;
+
+    /* Reset first col */
     cols_map0[0] = 0;
     cols_map1[0] = 0;
     cols_affn[0] = 0;
 
-    memcpy(&mv_ctx0->mvs[1], &lns->mv0[0], sizeof(OVMV) * nb_ctb_pb);
-    memcpy(&mv_ctx1->mvs[1], &lns->mv1[0], sizeof(OVMV) * nb_ctb_pb);
-
-    memcpy(&aff_info[1], &lns->aff_info[0], sizeof(struct AffineInfo) * nb_ctb_pb);
-
-    mv_ctx0->mvs[1 + nb_ctb_pb] = lns->mv0[nb_ctb_pb];
-    mv_ctx1->mvs[1 + nb_ctb_pb] = lns->mv1[nb_ctb_pb];
-    aff_info[1 + nb_ctb_pb] = lns->aff_info[nb_ctb_pb];
-
-    for (i = 1; i < nb_ctb_pb + 1; i++) {
-        uint64_t top_available0 = !!(above_map0 & (1llu << (i - 1)));
-        uint64_t top_available1 = !!(above_map1 & (1llu << (i - 1)));
-        uint64_t abv_affine = !!(affine_map & (1llu << (i - 1)));
-        cols_map0[i] = top_available0;
-        cols_map1[i] = top_available1;
-        cols_affn[i] = abv_affine;
+    /* Init columns first field from above map */
+    uint64_t tmp_abv0 = above_map0;
+    uint64_t tmp_abv1 = above_map1;
+    uint64_t tmp_affn = affine_map;
+    for (i = 1; i < nb_unit_ctb + 1; i++) {
+        cols_map0[i] = tmp_abv0 & 0x1;
+        cols_map1[i] = tmp_abv1 & 0x1;
+        cols_affn[i] = tmp_affn & 0x1;
+        tmp_abv0 >>= 1;
+        tmp_abv1 >>= 1;
+        tmp_affn >>= 1;
     }
-    rows_map0[0] |= above_map0 << 1;
-    rows_map1[0] |= above_map1 << 1;
-    rows_affn[0] |= affine_map << 1;
+
+    /* Copy upper MVs from line buffer */
+    memcpy(&mv_ctx0->mvs[1], &lns->mv0[0], sizeof(OVMV) * (nb_unit_ctb + 1));
+    memcpy(&mv_ctx1->mvs[1], &lns->mv1[0], sizeof(OVMV) * (nb_unit_ctb + 1));
+    memcpy(&aff_info[1], &lns->aff_info[0], sizeof(struct AffineInfo) * (nb_unit_ctb + 1));
 
     /* Reset HMVP Look Up table */
     inter_ctx->hmvp_lut.nb_mv = 0;
