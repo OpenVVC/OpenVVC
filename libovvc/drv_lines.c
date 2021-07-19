@@ -142,65 +142,65 @@ fill_inter_map(OVCTUDec *const ctudec, uint64_t above_map, uint64_t tr_map)
 static void
 tmvp_store_mv(OVCTUDec *ctudec)
 {
-    uint16_t ctb_x = ctudec->ctb_x;
-    uint16_t ctb_y = ctudec->ctb_y;
-
-    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-    uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
-
-    int nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
     const struct MVPlane *plane0 = inter_ctx->tmvp_ctx.plane0;
     const struct MVPlane *plane1 = inter_ctx->tmvp_ctx.plane1;
 
-    int nb_ctb_w = ctudec->nb_ctb_pic_w;
-    uint16_t ctb_addr_rs = ctb_x + ctb_y * nb_ctb_w;
+    if (plane0->dirs || plane1->dirs) {
+        uint16_t ctb_x = ctudec->ctb_x;
+        uint16_t ctb_y = ctudec->ctb_y;
 
-    if (plane0->dirs) {
-        uint64_t *dst_dirs = plane0->dirs + ctb_addr_rs * nb_pb_ctb_w;
-        int32_t nb_tmvp_unit = nb_pb_ctb_w >> 1;
+        /* FIXME define constant */
+        uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+        uint8_t log2_unit_s = 2;
+
+        const int nb_unit_ctb = (1 << log2_ctb_s) >> log2_unit_s;
+        const int nb_ctb_w = ctudec->nb_ctb_pic_w;
+
+        uint16_t ctb_addr_rs = ctb_x + ctb_y * nb_ctb_w;
+        int32_t nb_tmvp_unit = nb_unit_ctb >> 1;
 
         int32_t pln_stride = nb_tmvp_unit * nb_ctb_w;
-        int32_t ctb_offset = ctb_x * nb_tmvp_unit + (ctb_y * nb_tmvp_unit * pln_stride);
-        OVMV *dst_mv = plane0->mvs + ctb_offset;
-        struct OVMVCtx *mv_ctx = &inter_ctx->mv_ctx0;
-        const OVMV *src2 = mv_ctx->mvs + 35;
-        const OVMV *src = inter_ctx->tmvp_mv[0].mvs;
-        int i, j;
 
-        memcpy(dst_dirs, &mv_ctx->map.vfield[1], sizeof(uint64_t) * nb_pb_ctb_w);
-        for (i = 0; i < nb_pb_ctb_w; i += 2) {
-            for (j = 0; j < nb_pb_ctb_w; j += 2) {
-                dst_mv[j >> 1] = src[j >> 1];
+        int32_t ctb_offset = (ctb_x + ctb_y * pln_stride) * nb_tmvp_unit;
+
+        if (plane0->dirs) {
+            struct OVMVCtx *mv_ctx = &inter_ctx->mv_ctx0;
+
+            uint64_t *src_map = &mv_ctx->map.vfield[1];
+            uint64_t *dst_map = plane0->dirs + ctb_addr_rs * nb_unit_ctb;
+
+            const OVMV *src_mv = inter_ctx->tmvp_mv[0].mvs;
+                  OVMV *dst_mv = plane0->mvs + ctb_offset;
+            int i;
+
+            memcpy(dst_map, src_map, sizeof(uint64_t) * nb_unit_ctb);
+
+            for (i = 0; i < nb_tmvp_unit; ++i) {
+                memcpy(dst_mv, src_mv, sizeof(OVMV) * nb_tmvp_unit);
+                src_mv += 16;
+                dst_mv += pln_stride;
             }
-            src2 += 34 * 2;
-            src += 16;
-            dst_mv += pln_stride;
         }
-    }
 
-    if (plane1->dirs) {
-        struct OVMVCtx *mv_ctx = &inter_ctx->mv_ctx1;
-        //const OVMV *src = mv_ctx->mvs + 35;
-        const OVMV *src2 = mv_ctx->mvs + 35;
-        const OVMV *src = inter_ctx->tmvp_mv[1].mvs;
-        uint64_t *dst_dirs = plane1->dirs + ctb_addr_rs * nb_pb_ctb_w;
-        int i, j;
-        int32_t nb_tmvp_unit = nb_pb_ctb_w >> 1;
-        int32_t pln_stride = nb_tmvp_unit * nb_ctb_w;
-        int32_t ctb_offset = ctb_x * nb_tmvp_unit + (ctb_y * nb_tmvp_unit * pln_stride);
-        OVMV *dst_mv = plane1->mvs + ctb_offset;
+        if (plane1->dirs) {
+            struct OVMVCtx *mv_ctx = &inter_ctx->mv_ctx1;
 
-        /*FIXME memory could be spared with smaller map size when possible */
-        memcpy(dst_dirs, &mv_ctx->map.vfield[1], sizeof(uint64_t) * nb_pb_ctb_w);
-        for (i = 0; i < nb_pb_ctb_w; i += 2) {
-            for (j = 0; j < nb_pb_ctb_w; j += 2) {
-                dst_mv[j >> 1] = src[j >> 1];
+            uint64_t *src_map = &mv_ctx->map.vfield[1];
+            uint64_t *dst_map = plane1->dirs + ctb_addr_rs * nb_unit_ctb;
+
+            const OVMV *src_mv = inter_ctx->tmvp_mv[1].mvs;
+                  OVMV *dst_mv = plane1->mvs + ctb_offset;
+            int i;
+
+            memcpy(dst_map, src_map, sizeof(uint64_t) * nb_unit_ctb);
+
+            for (i = 0; i < nb_tmvp_unit; ++i) {
+                memcpy(dst_mv, src_mv, sizeof(OVMV) * nb_tmvp_unit);
+                src_mv += 16;
+                dst_mv += pln_stride;
             }
-            src2 += 34 * 2;
-            src += 16;
-            dst_mv += pln_stride;
         }
     }
 }
