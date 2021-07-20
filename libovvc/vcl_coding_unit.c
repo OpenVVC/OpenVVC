@@ -632,11 +632,12 @@ coding_unit(OVCTUDec *const ctu_dec,
             uint8_t x0, uint8_t y0,
             uint8_t log2_cb_w, uint8_t log2_cb_h)
 {
-    unsigned int nb_cb_w = 1 << log2_cb_w >> part_ctx->log2_min_cb_s;
-    unsigned int nb_cb_h = 1 << log2_cb_h >> part_ctx->log2_min_cb_s;
+    uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
+    unsigned int nb_cb_w = 1 << log2_cb_w >> log2_min_cb_s;
+    unsigned int nb_cb_h = 1 << log2_cb_h >> log2_min_cb_s;
 
-    int x_cb = x0 >> part_ctx->log2_min_cb_s;
-    int y_cb = y0 >> part_ctx->log2_min_cb_s;
+    int x_cb = x0 >> log2_min_cb_s;
+    int y_cb = y0 >> log2_min_cb_s;
 
     VVCCU cu;
 
@@ -667,10 +668,10 @@ coding_unit(OVCTUDec *const ctu_dec,
                 cu.cu_mode_idx = luma_mode;
             } else {
                 struct IntraDRVInfo *const i_info = &ctu_dec->drv_ctx.intra_info;
-                uint8_t y_cb = y0 >> part_ctx->log2_min_cb_s;
-                uint8_t x_cb = x0 >> part_ctx->log2_min_cb_s;
-                uint8_t nb_pb_w = (1 << log2_cb_w) >> part_ctx->log2_min_cb_s;
-                uint8_t nb_pb_h = (1 << log2_cb_h) >> part_ctx->log2_min_cb_s;
+                uint8_t y_cb = y0 >> log2_min_cb_s;
+                uint8_t x_cb = x0 >> log2_min_cb_s;
+                uint8_t nb_pb_w = (1 << log2_cb_w) >> log2_min_cb_s;
+                uint8_t nb_pb_h = (1 << log2_cb_h) >> log2_min_cb_s;
                 uint8_t pu_shift = ctu_dec->part_ctx->log2_min_cb_s - LOG2_MIN_CU_S;
                 uint8_t luma_mode = i_info->luma_modes[(x_cb + ((y_cb + (nb_pb_h >> 1)) << 5) + (nb_pb_w >> 1))];
 
@@ -780,10 +781,11 @@ updt_cu_maps(OVCTUDec *const ctudec,
 
     struct PartMap *const part_map = &ctudec->part_map;
 
-    uint8_t x_cb = x0 >> part_ctx->log2_min_cb_s;
-    uint8_t y_cb = y0 >> part_ctx->log2_min_cb_s;
-    uint8_t nb_pb_w = (1 << log2_cu_w) >> part_ctx->log2_min_cb_s;
-    uint8_t nb_pb_h = (1 << log2_cu_h) >> part_ctx->log2_min_cb_s;
+    uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
+    uint8_t x_cb = x0 >> log2_min_cb_s;
+    uint8_t y_cb = y0 >> log2_min_cb_s;
+    uint8_t nb_pb_w = (1 << log2_cu_w) >> log2_min_cb_s;
+    uint8_t nb_pb_h = (1 << log2_cu_h) >> log2_min_cb_s;
 
     memset(&part_map->cu_mode_x[x_cb], (uint8_t)cu_mode, sizeof(uint8_t) * nb_pb_w);
     memset(&part_map->cu_mode_y[y_cb], (uint8_t)cu_mode, sizeof(uint8_t) * nb_pb_h);
@@ -796,8 +798,9 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
                      uint8_t log2_cu_w, uint8_t log2_cu_h)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    uint8_t y_cb = y0 >> part_ctx->log2_min_cb_s;
-    uint8_t x_cb = x0 >> part_ctx->log2_min_cb_s;
+    uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
+    uint8_t y_cb = y0 >> log2_min_cb_s;
+    uint8_t x_cb = x0 >> log2_min_cb_s;
     #if 0
     VVCCTUPredContext *const pred_ctx = &ctu_dec->pred_ctx;
     #endif
@@ -898,10 +901,11 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
 
     if (ctu_dec->enabled_mip) {
         struct PartMap *part_map = &ctu_dec->part_map;
-        uint8_t x_cb = x0 >> part_ctx->log2_min_cb_s;
-        uint8_t y_cb = y0 >> part_ctx->log2_min_cb_s;
-        uint8_t nb_pb_w = (1 << log2_cb_w) >> part_ctx->log2_min_cb_s;
-        uint8_t nb_pb_h = (1 << log2_cb_h) >> part_ctx->log2_min_cb_s;
+        uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
+        uint8_t x_cb = x0 >> log2_min_cb_s;
+        uint8_t y_cb = y0 >> log2_min_cb_s;
+        uint8_t nb_pb_w = (1 << log2_cb_w) >> log2_min_cb_s;
+        uint8_t nb_pb_h = (1 << log2_cb_h) >> log2_min_cb_s;
         uint8_t mip_abv = part_map->cu_mode_x[x_cb];
         uint8_t mip_lft = part_map->cu_mode_y[y_cb];
 
@@ -1031,10 +1035,11 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
 
 #endif
-    uint8_t y_cb = y0 >> part_ctx->log2_min_cb_s;
-    uint8_t x_cb = x0 >> part_ctx->log2_min_cb_s;
-    uint8_t nb_pb_w = (1 << log2_pb_w) >> part_ctx->log2_min_cb_s;
-    uint8_t nb_pb_h = (1 << log2_pb_h) >> part_ctx->log2_min_cb_s;
+    uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
+    uint8_t y_cb = y0 >> log2_min_cb_s;
+    uint8_t x_cb = x0 >> log2_min_cb_s;
+    uint8_t nb_pb_w = (1 << log2_pb_w) >> log2_min_cb_s;
+    uint8_t nb_pb_h = (1 << log2_pb_h) >> log2_min_cb_s;
     uint8_t ref_idx = 0;
 
     OVMV mv0;
@@ -1096,7 +1101,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                 log2_pb_w, log2_pb_h, mv0, 0, ref_idx);
     }
 
-    uint8_t pu_shift = part_ctx->log2_min_cb_s - LOG2_MIN_CU_S;
+    uint8_t pu_shift = log2_min_cb_s - LOG2_MIN_CU_S;
 
     ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x_cb << pu_shift,
                                 y_cb << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
@@ -1198,11 +1203,12 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t cu_type = OV_INTER;
 
 #if 1
-    uint8_t y_cb = y0 >> part_ctx->log2_min_cb_s;
-    uint8_t x_cb = x0 >> part_ctx->log2_min_cb_s;
-    uint8_t nb_pb_w = (1 << log2_pb_w) >> part_ctx->log2_min_cb_s;
-    uint8_t nb_pb_h = (1 << log2_pb_h) >> part_ctx->log2_min_cb_s;
-    uint8_t pu_shift = part_ctx->log2_min_cb_s - LOG2_MIN_CU_S;
+    uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
+    uint8_t y_cb = y0 >> log2_min_cb_s;
+    uint8_t x_cb = x0 >> log2_min_cb_s;
+    uint8_t nb_pb_w = (1 << log2_pb_w) >> log2_min_cb_s;
+    uint8_t nb_pb_h = (1 << log2_pb_h) >> log2_min_cb_s;
+    uint8_t pu_shift = log2_min_cb_s - LOG2_MIN_CU_S;
 #endif
 
     uint8_t smvd_flag = 0;
