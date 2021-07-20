@@ -343,6 +343,7 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
     uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
     uint8_t nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
     uint16_t nb_ctb_w = ctudec->nb_ctb_pic_w;
+    uint16_t nb_ctb_h = (ctudec->pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
     uint16_t ctb_addr_rs = ctb_x + ctb_y * nb_ctb_w;
     uint8_t is_border_pic = nb_ctb_w - 1 == ctb_x;
 
@@ -356,8 +357,13 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
         memset(tmvp_ctx->dir_map_v0, 0, sizeof(uint64_t) * 34);
         memset(tmvp_ctx->dir_map_v1, 0, sizeof(uint64_t) * 34);
     }
-        memset(tmvp_ctx->mvs0, 0, sizeof(tmvp_ctx->mvs0));
-        memset(tmvp_ctx->mvs1, 0, sizeof(tmvp_ctx->mvs1));
+    memset(tmvp_ctx->mvs0, 0, sizeof(tmvp_ctx->mvs0));
+    memset(tmvp_ctx->mvs1, 0, sizeof(tmvp_ctx->mvs1));
+
+    const OVPicture* ref_pic = tmvp_ctx->col_ref;
+    int br_ctu_x = OVMIN(ctb_x + 1, nb_ctb_w-1);
+    int br_ctu_y = OVMIN(ctb_y + 1, nb_ctb_h-1);
+    ovdpb_wait_ref_decoded_ctus(ref_pic, ctb_x, ctb_y, br_ctu_x, br_ctu_y);
 
     if (plane0 && plane0->dirs) {
         uint64_t *src_dirs = plane0->dirs + ctb_addr_rs * nb_pb_ctb_w;

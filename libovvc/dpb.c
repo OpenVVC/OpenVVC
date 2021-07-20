@@ -27,6 +27,8 @@ enum SliceType
    SLICE_I = 2,
 };
 
+const SIZE_INT64 = 6;
+
 static void tmvp_release_mv_planes(OVPicture *const pic);
 
 static int dpb_init_params(OVDPB *dpb, OVDPBParams const *prm);
@@ -1021,7 +1023,7 @@ ovdpb_init_decoded_ctus(OVPicture *const pic, const OVPS *const ps)
     struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
     if(!decoded_ctus->mask){
         decoded_ctus->mask_h = ps->pic_info.nb_ctb_h;
-        decoded_ctus->mask_w = (ps->pic_info.nb_ctb_w >> 6) + 1;
+        decoded_ctus->mask_w = (ps->pic_info.nb_ctb_w >> SIZE_INT64) + 1;
         decoded_ctus->mask = ov_mallocz(decoded_ctus->mask_h * sizeof(uint64_t*));
         for(int i = 0; i < decoded_ctus->mask_h; i++)
             decoded_ctus->mask[i] = ov_mallocz(decoded_ctus->mask_w * sizeof(uint64_t));
@@ -1042,11 +1044,11 @@ ovdpb_uninit_decoded_ctus(OVPicture *const pic)
 void xctu_to_mask(uint64_t* mask, int mask_w, int xmin_ctu, int xmax_ctu)
 {
     int sub_xmin_ctu, sub_xmax_ctu;
-    for(int i = (xmin_ctu >> 6); i <= (xmax_ctu >> 6); i++)
+    for(int i = (xmin_ctu >> SIZE_INT64); i <= (xmax_ctu >> SIZE_INT64); i++)
     {
         mask[i] = 0;
-        sub_xmin_ctu = xmin_ctu > (i<<6)     ? xmin_ctu % (1<<6) : 0;
-        sub_xmax_ctu = xmax_ctu < ((i+1)<<6) ? xmax_ctu % (1<<6) : (1<<6)-1;
+        sub_xmin_ctu = xmin_ctu > (i<<SIZE_INT64)     ? xmin_ctu % (1<<SIZE_INT64) : 0;
+        sub_xmax_ctu = xmax_ctu < ((i+1)<<SIZE_INT64) ? xmax_ctu % (1<<SIZE_INT64) : (1<<SIZE_INT64)-1;
         for(int ii = sub_xmin_ctu; ii <= sub_xmax_ctu; ii++)
             mask[i] |= 1 << ii;
     }

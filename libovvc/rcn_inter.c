@@ -1992,7 +1992,8 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
 
     const int pic_w = frame0->width[0];
     const int pic_h = frame0->height[0];
-
+    int nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+    int nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
     mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv);
 
     int ref_x = pos_x + (mv.x >> 4);
@@ -2022,8 +2023,8 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
      */
     int tl_ctu_y = OVMAX(ref_y - 2, 0) >> log2_ctb_s;
     int tl_ctu_x = OVMAX(ref_x - 2, 0) >> log2_ctb_s;
-    int br_ctu_y = OVMIN(( ref_y + pu_h + 3 ), pic_h) >> log2_ctb_s;
-    int br_ctu_x = OVMIN(( ref_x + pu_w + 3), pic_w) >> log2_ctb_s;
+    int br_ctu_y = OVMIN(( ref_y + 3 + pu_h ) >> log2_ctb_s, nb_ctb_pic_h-1);
+    int br_ctu_x = OVMIN(( ref_x + 3 + pu_w ) >> log2_ctb_s, nb_ctb_pic_w-1);
     ovdpb_wait_ref_decoded_ctus(ref_pic, tl_ctu_x, tl_ctu_y, br_ctu_x, br_ctu_y);
 
     if (emulate_edge){
