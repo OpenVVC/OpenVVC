@@ -677,7 +677,6 @@ coding_unit(OVCTUDec *const ctu_dec,
 
                 ctu_dec->intra_mode_c = drv_intra_mode_c(cu, luma_mode);
 
-                uint8_t pu_shift = ctu_dec->part_ctx->log2_min_cb_s - LOG2_MIN_CU_S;
                 ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x0_unit,
                                             y0_unit, nb_unit_w, nb_unit_h);
 
@@ -785,11 +784,11 @@ updt_cu_maps(OVCTUDec *const ctudec,
     uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
     uint8_t x_cb = x0 >> log2_min_cb_s;
     uint8_t y_cb = y0 >> log2_min_cb_s;
-    uint8_t nb_pb_w = (1 << log2_cu_w) >> log2_min_cb_s;
-    uint8_t nb_pb_h = (1 << log2_cu_h) >> log2_min_cb_s;
+    uint8_t nb_cb_w = (1 << log2_cu_w) >> log2_min_cb_s;
+    uint8_t nb_cb_h = (1 << log2_cu_h) >> log2_min_cb_s;
 
-    memset(&part_map->cu_mode_x[x_cb], (uint8_t)cu_mode, sizeof(uint8_t) * nb_pb_w);
-    memset(&part_map->cu_mode_y[y_cb], (uint8_t)cu_mode, sizeof(uint8_t) * nb_pb_h);
+    memset(&part_map->cu_mode_x[x_cb], (uint8_t)cu_mode, sizeof(uint8_t) * nb_cb_w);
+    memset(&part_map->cu_mode_y[y_cb], (uint8_t)cu_mode, sizeof(uint8_t) * nb_cb_h);
 }
 
 VVCCU
@@ -905,8 +904,8 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
         uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
         uint8_t x_cb = x0 >> log2_min_cb_s;
         uint8_t y_cb = y0 >> log2_min_cb_s;
-        uint8_t nb_pb_w = (1 << log2_cb_w) >> log2_min_cb_s;
-        uint8_t nb_pb_h = (1 << log2_cb_h) >> log2_min_cb_s;
+        uint8_t nb_cb_w = (1 << log2_cb_w) >> log2_min_cb_s;
+        uint8_t nb_cb_h = (1 << log2_cb_h) >> log2_min_cb_s;
         uint8_t mip_abv = part_map->cu_mode_x[x_cb];
         uint8_t mip_lft = part_map->cu_mode_y[y_cb];
 
@@ -924,13 +923,13 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
             cu.cu_opaque  = transpose_flag << 7;
             cu.cu_opaque |= mip_mode;
 
-            memset(&part_map->cu_mode_x[x_cb], OV_MIP, sizeof(uint8_t) * nb_pb_w);
-            memset(&part_map->cu_mode_y[y_cb], OV_MIP, sizeof(uint8_t) * nb_pb_h);
+            memset(&part_map->cu_mode_x[x_cb], OV_MIP, sizeof(uint8_t) * nb_cb_w);
+            memset(&part_map->cu_mode_y[y_cb], OV_MIP, sizeof(uint8_t) * nb_cb_h);
 
         } else {
 
-            memset(&part_map->cu_mode_x[x_cb], OV_INTRA, sizeof(uint8_t) * nb_pb_w);
-            memset(&part_map->cu_mode_y[y_cb], OV_INTRA, sizeof(uint8_t) * nb_pb_h);
+            memset(&part_map->cu_mode_x[x_cb], OV_INTRA, sizeof(uint8_t) * nb_cb_w);
+            memset(&part_map->cu_mode_y[y_cb], OV_INTRA, sizeof(uint8_t) * nb_cb_h);
         }
     }
 
@@ -1022,6 +1021,38 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
     return cu;
 }
 
+static void
+reset_intra_map(OVCTUDec *const ctudec, struct IntraDRVInfo *const intra_ctx,
+                uint8_t x0, uint8_t y0,
+                uint8_t log2_cb_w, uint8_t log2_cb_h,
+                uint8_t log2_min_cb_s)
+{
+    uint8_t x0_unit = x0 >> LOG2_MIN_CU_S;
+    uint8_t y0_unit = y0 >> LOG2_MIN_CU_S;
+    uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
+    uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
+
+    ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field,
+                                x0_unit, y0_unit, nb_unit_w, nb_unit_h);
+
+    ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field_c,
+                                x0_unit, y0_unit, nb_unit_w, nb_unit_h);
+
+    uint8_t y_cb = y0 >> log2_min_cb_s;
+    uint8_t x_cb = x0 >> log2_min_cb_s;
+    uint8_t nb_cb_w = (1 << log2_cb_w) >> log2_min_cb_s;
+    uint8_t nb_cb_h = (1 << log2_cb_h) >> log2_min_cb_s;
+    /*FIXME this have to be moved to DRV */
+    /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
+    memset(&intra_ctx->luma_mode_x[x_cb], OVINTRA_PLANAR, sizeof(uint8_t) * nb_cb_w);
+    memset(&intra_ctx->luma_mode_y[y_cb], OVINTRA_PLANAR, sizeof(uint8_t) * nb_cb_h);
+
+    for (int i = 0; i < nb_cb_h; i++) {
+        memset(&intra_ctx->luma_modes[x_cb + (i << 5) + (y_cb << 5)], OVINTRA_PLANAR,
+               sizeof(uint8_t) * nb_cb_w);
+    }
+}
+
 int
 prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                         const OVPartInfo *const part_ctx,
@@ -1039,8 +1070,8 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
     uint8_t y_cb = y0 >> log2_min_cb_s;
     uint8_t x_cb = x0 >> log2_min_cb_s;
-    uint8_t nb_pb_w = (1 << log2_cb_w) >> log2_min_cb_s;
-    uint8_t nb_pb_h = (1 << log2_cb_h) >> log2_min_cb_s;
+    uint8_t nb_cb_w = (1 << log2_cb_w) >> log2_min_cb_s;
+    uint8_t nb_cb_h = (1 << log2_cb_h) >> log2_min_cb_s;
     uint8_t ref_idx = 0;
 
     OVMV mv0;
@@ -1071,12 +1102,12 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
         if (mmvd_flag){
             merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
             mv0 = drv_mmvd_merge_mvp(inter_ctx, mv_ctx0,
-                            x_cb, y_cb, nb_pb_w, nb_pb_h,
+                            x_cb, y_cb, nb_cb_w, nb_cb_h,
                             merge_idx, max_nb_cand);
         } else {
             uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
             mv0 = drv_merge_mvp(inter_ctx, mv_ctx0,
-                                x_cb, y_cb, nb_pb_w, nb_pb_h,
+                                x_cb, y_cb, nb_cb_w, nb_cb_h,
                                 merge_idx, max_nb_cand);
         }
 
@@ -1091,7 +1122,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
         uint8_t prec_amvr = MV_PRECISION_QUARTER;
         mv0 = drv_mvp_mvd(inter_ctx, mv_ctx0, mvd, prec_amvr,
-                          x_cb, y_cb, nb_pb_w, nb_pb_h,
+                          x_cb, y_cb, nb_cb_w, nb_cb_h,
                           mvp_idx, 1, ref_idx, ref_idx);
     }
 
@@ -1102,25 +1133,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                 log2_cb_w, log2_cb_h, mv0, 0, ref_idx);
     }
 
-    uint8_t x0_unit = x0 >> LOG2_MIN_CU_S;
-    uint8_t y0_unit = y0 >> LOG2_MIN_CU_S;
-    uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
-    uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
-
-    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x0_unit,
-                                y0_unit, nb_unit_w, nb_unit_h);
-    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x0_unit,
-                                y0_unit, nb_unit_w, nb_unit_h);
-
-    /*FIXME this have to be moved to DRV */
-    /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
-    memset(&i_info->luma_mode_x[x_cb], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_w);
-    memset(&i_info->luma_mode_y[y_cb], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_h);
-
-    for (int i = 0; i < nb_pb_h; i++) {
-        memset(&i_info->luma_modes[x_cb + (i << 5) + (y_cb << 5)], OVINTRA_PLANAR,
-               sizeof(uint8_t) * nb_pb_w);
-    }
+    reset_intra_map(ctu_dec, i_info, x0, y0, log2_cb_w, log2_cb_h, log2_min_cb_s);
 
     return merge_flag;
 }
@@ -1210,13 +1223,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
     uint8_t y_cb = y0 >> log2_min_cb_s;
     uint8_t x_cb = x0 >> log2_min_cb_s;
-    uint8_t nb_pb_w = (1 << log2_cb_w) >> log2_min_cb_s;
-    uint8_t nb_pb_h = (1 << log2_cb_h) >> log2_min_cb_s;
-    uint8_t x0_unit = x0 >> LOG2_MIN_CU_S;
-    uint8_t y0_unit = y0 >> LOG2_MIN_CU_S;
-    uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
-    uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
-
+    uint8_t nb_cb_w = (1 << log2_cb_w) >> log2_min_cb_s;
+    uint8_t nb_cb_h = (1 << log2_cb_h) >> log2_min_cb_s;
 #endif
 
     uint8_t smvd_flag = 0;
@@ -1273,14 +1281,14 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 uint8_t merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
 
                 mv_info = drv_mmvd_merge_mvp_b(inter_ctx, x_cb, y_cb,
-                                               nb_pb_w, nb_pb_h, ctu_dec->cur_poc, merge_idx,
+                                               nb_cb_w, nb_cb_h, ctu_dec->cur_poc, merge_idx,
                                                max_nb_cand, log2_cb_w + log2_cb_h <= 5);
             } else {
                 uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
                 uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
 
                 mv_info = drv_merge_mvp_b(inter_ctx, x_cb, y_cb,
-                                          nb_pb_w, nb_pb_h, merge_idx,
+                                          nb_cb_w, nb_cb_h, merge_idx,
                                           max_nb_cand, log2_cb_w + log2_cb_h <= 5);
             }
 
@@ -1300,7 +1308,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
 
                 mv_info = drv_merge_mvp_b(inter_ctx, x_cb, y_cb,
-                                          nb_pb_w, nb_pb_h, merge_idx,
+                                          nb_cb_w, nb_cb_h, merge_idx,
                                           max_nb_cand, log2_cb_w + log2_cb_h <= 5);
 
                 inter_ctx->prec_amvr = mv_info.inter_dir & 0x1 ? mv_info.mv0.prec_amvr
@@ -1324,7 +1332,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
                 ovcabac_read_ae_gpm_merge_idx(cabac_ctx, &inter_ctx->gpm_ctx, max_num_gpm_cand);
 
-                drv_gpm_merge_mvp_b(inter_ctx, x_cb, y_cb, nb_pb_w, nb_pb_h, max_nb_cand,
+                drv_gpm_merge_mvp_b(inter_ctx, x_cb, y_cb, nb_cb_w, nb_cb_h, max_nb_cand,
                                     log2_cb_w + log2_cb_h <= 5);
                 /* FIXME amvr? */
 
@@ -1480,7 +1488,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             mvd1.ref_idx = inter_ctx->ref_smvd_idx1;
         }
 
-        mv_info = drv_mvp_b(inter_ctx, x_cb, y_cb, nb_pb_w, nb_pb_h,
+        mv_info = drv_mvp_b(inter_ctx, x_cb, y_cb, nb_cb_w, nb_cb_h,
                             mvd0, mvd1, inter_ctx->prec_amvr, mvp_idx0, mvp_idx1, bcw_idx,
                             inter_dir, ref_idx0, ref_idx1, log2_cb_w + log2_cb_h <= 5);
     }
@@ -1591,21 +1599,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
 end:
 
-    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x0_unit, y0_unit,
-                                nb_unit_w, nb_unit_h);
-
-    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x0_unit, y0_unit,
-                                nb_unit_w, nb_unit_h);
-
-    /*FIXME this has to be moved to DRV */
-    /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
-    memset(&i_info->luma_mode_x[x_cb], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_w);
-    memset(&i_info->luma_mode_y[y_cb], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_h);
-
-    for (int i = 0; i < nb_pb_h; i++) {
-        memset(&i_info->luma_modes[x_cb + (i << 5) + (y_cb << 5)], OVINTRA_PLANAR,
-               sizeof(uint8_t) * nb_pb_w);
-    }
+    reset_intra_map(ctu_dec, i_info, x0, y0, log2_cb_w, log2_cb_h, log2_min_cb_s);
 
     return cu_type;
 }
