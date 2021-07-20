@@ -258,8 +258,6 @@ store_inter_maps(const struct DRVLines *const l,
     uint8_t nb_units_ctb =  (1 << (log2_ctu_s & 7)) >> LOG2_UNIT_S;
     int i;
 
-    const uint64_t lst_row0    = rows_map0[nb_units_ctb];
-    const uint64_t lst_row1    = rows_map1[nb_units_ctb];
     const uint64_t lst_row_aff = rows_affn[nb_units_ctb];
 
     /* Load next CTU above context from line buffer */
