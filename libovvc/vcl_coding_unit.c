@@ -10,6 +10,7 @@
 #include "rcn.h"
 #include "dbf_utils.h"
 
+#define LOG2_MIN_CU_S 2
 /*FIXME find a more global location for these defintions */
 enum CUMode {
     OV_NA = 0xFF,
@@ -666,17 +667,17 @@ coding_unit(OVCTUDec *const ctu_dec,
                 cu.cu_mode_idx = luma_mode;
             } else {
                 struct IntraDRVInfo *const i_info = &ctu_dec->drv_ctx.intra_info;
-                uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
-                uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
+                uint8_t y_cb = y0 >> part_ctx->log2_min_cb_s;
+                uint8_t x_cb = x0 >> part_ctx->log2_min_cb_s;
                 uint8_t nb_pb_w = (1 << log2_cb_w) >> part_ctx->log2_min_cb_s;
                 uint8_t nb_pb_h = (1 << log2_cb_h) >> part_ctx->log2_min_cb_s;
                 uint8_t pu_shift = ctu_dec->part_ctx->log2_min_cb_s - LOG2_MIN_CU_S;
-                uint8_t luma_mode = i_info->luma_modes[(x_pu + ((y_pu + (nb_pb_h >> 1)) << 5) + (nb_pb_w >> 1))];
+                uint8_t luma_mode = i_info->luma_modes[(x_cb + ((y_cb + (nb_pb_h >> 1)) << 5) + (nb_pb_w >> 1))];
 
                 ctu_dec->intra_mode_c = drv_intra_mode_c(cu, luma_mode);
 
-                ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_pu << pu_shift,
-                                            y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+                ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_cb << pu_shift,
+                                            y_cb << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
 
                 vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, &ctu_dec->rcn_ctx.ctu_buff, ctu_dec->intra_mode_c, x0, y0, log2_cb_w, log2_cb_h);
             }
@@ -779,13 +780,13 @@ updt_cu_maps(OVCTUDec *const ctudec,
 
     struct PartMap *const part_map = &ctudec->part_map;
 
-    uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
-    uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
+    uint8_t x_cb = x0 >> part_ctx->log2_min_cb_s;
+    uint8_t y_cb = y0 >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_w = (1 << log2_cu_w) >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_h = (1 << log2_cu_h) >> part_ctx->log2_min_cb_s;
 
-    memset(&part_map->cu_mode_x[x_pu], (uint8_t)cu_mode, sizeof(uint8_t) * nb_pb_w);
-    memset(&part_map->cu_mode_y[y_pu], (uint8_t)cu_mode, sizeof(uint8_t) * nb_pb_h);
+    memset(&part_map->cu_mode_x[x_cb], (uint8_t)cu_mode, sizeof(uint8_t) * nb_pb_w);
+    memset(&part_map->cu_mode_y[y_cb], (uint8_t)cu_mode, sizeof(uint8_t) * nb_pb_h);
 }
 
 VVCCU
@@ -795,14 +796,14 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
                      uint8_t log2_cu_w, uint8_t log2_cu_h)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
-    uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
+    uint8_t y_cb = y0 >> part_ctx->log2_min_cb_s;
+    uint8_t x_cb = x0 >> part_ctx->log2_min_cb_s;
     #if 0
     VVCCTUPredContext *const pred_ctx = &ctu_dec->pred_ctx;
     #endif
     /*TODO fill */
-    uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_pu];
-    uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_pu];
+    uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_cb];
+    uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_cb];
     uint8_t cu_skip_flag;
     uint8_t cu_type = OV_INTER;
     VVCCU cu = {0};
@@ -897,12 +898,12 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
 
     if (ctu_dec->enabled_mip) {
         struct PartMap *part_map = &ctu_dec->part_map;
-        uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
-        uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
+        uint8_t x_cb = x0 >> part_ctx->log2_min_cb_s;
+        uint8_t y_cb = y0 >> part_ctx->log2_min_cb_s;
         uint8_t nb_pb_w = (1 << log2_cb_w) >> part_ctx->log2_min_cb_s;
         uint8_t nb_pb_h = (1 << log2_cb_h) >> part_ctx->log2_min_cb_s;
-        uint8_t mip_abv = part_map->cu_mode_x[x_pu];
-        uint8_t mip_lft = part_map->cu_mode_y[y_pu];
+        uint8_t mip_abv = part_map->cu_mode_x[x_cb];
+        uint8_t mip_lft = part_map->cu_mode_y[y_cb];
 
         mip_flag = ovcabac_read_ae_intra_mip(cabac_ctx, log2_cb_w, log2_cb_h,
                                              mip_abv, mip_lft);
@@ -918,13 +919,13 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
             cu.cu_opaque  = transpose_flag << 7;
             cu.cu_opaque |= mip_mode;
 
-            memset(&part_map->cu_mode_x[x_pu], OV_MIP, sizeof(uint8_t) * nb_pb_w);
-            memset(&part_map->cu_mode_y[y_pu], OV_MIP, sizeof(uint8_t) * nb_pb_h);
+            memset(&part_map->cu_mode_x[x_cb], OV_MIP, sizeof(uint8_t) * nb_pb_w);
+            memset(&part_map->cu_mode_y[y_cb], OV_MIP, sizeof(uint8_t) * nb_pb_h);
 
         } else {
 
-            memset(&part_map->cu_mode_x[x_pu], OV_INTRA, sizeof(uint8_t) * nb_pb_w);
-            memset(&part_map->cu_mode_y[y_pu], OV_INTRA, sizeof(uint8_t) * nb_pb_h);
+            memset(&part_map->cu_mode_x[x_cb], OV_INTRA, sizeof(uint8_t) * nb_pb_w);
+            memset(&part_map->cu_mode_y[y_cb], OV_INTRA, sizeof(uint8_t) * nb_pb_h);
         }
     }
 
@@ -1030,8 +1031,8 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
 
 #endif
-    uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
-    uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
+    uint8_t y_cb = y0 >> part_ctx->log2_min_cb_s;
+    uint8_t x_cb = x0 >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_w = (1 << log2_pb_w) >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_h = (1 << log2_pb_h) >> part_ctx->log2_min_cb_s;
     uint8_t ref_idx = 0;
@@ -1064,12 +1065,12 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
         if (mmvd_flag){
             merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
             mv0 = drv_mmvd_merge_mvp(inter_ctx, mv_ctx0,
-                            x_pu, y_pu, nb_pb_w, nb_pb_h,
+                            x_cb, y_cb, nb_pb_w, nb_pb_h,
                             merge_idx, max_nb_cand);
         } else {
             uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
             mv0 = drv_merge_mvp(inter_ctx, mv_ctx0,
-                                x_pu, y_pu, nb_pb_w, nb_pb_h,
+                                x_cb, y_cb, nb_pb_w, nb_pb_h,
                                 merge_idx, max_nb_cand);
         }
 
@@ -1084,7 +1085,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
         uint8_t prec_amvr = MV_PRECISION_QUARTER;
         mv0 = drv_mvp_mvd(inter_ctx, mv_ctx0, mvd, prec_amvr,
-                          x_pu, y_pu, nb_pb_w, nb_pb_h,
+                          x_cb, y_cb, nb_pb_w, nb_pb_h,
                           mvp_idx, 1, ref_idx, ref_idx);
     }
 
@@ -1097,18 +1098,18 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
     uint8_t pu_shift = part_ctx->log2_min_cb_s - LOG2_MIN_CU_S;
 
-    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x_pu << pu_shift,
-                                y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
-    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_pu << pu_shift,
-                                y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x_cb << pu_shift,
+                                y_cb << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_cb << pu_shift,
+                                y_cb << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
 
     /*FIXME this have to be moved to DRV */
     /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
-    memset(&i_info->luma_mode_x[x_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_w);
-    memset(&i_info->luma_mode_y[y_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_h);
+    memset(&i_info->luma_mode_x[x_cb], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_w);
+    memset(&i_info->luma_mode_y[y_cb], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_h);
 
     for (int i = 0; i < nb_pb_h; i++) {
-        memset(&i_info->luma_modes[x_pu + (i << 5) + (y_pu << 5)], OVINTRA_PLANAR,
+        memset(&i_info->luma_modes[x_cb + (i << 5) + (y_cb << 5)], OVINTRA_PLANAR,
                sizeof(uint8_t) * nb_pb_w);
     }
 
@@ -1197,8 +1198,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t cu_type = OV_INTER;
 
 #if 1
-    uint8_t y_pu = y0 >> part_ctx->log2_min_cb_s;
-    uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
+    uint8_t y_cb = y0 >> part_ctx->log2_min_cb_s;
+    uint8_t x_cb = x0 >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_w = (1 << log2_pb_w) >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_h = (1 << log2_pb_h) >> part_ctx->log2_min_cb_s;
     uint8_t pu_shift = part_ctx->log2_min_cb_s - LOG2_MIN_CU_S;
@@ -1224,8 +1225,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                                                    && log2_pb_h < 3 + log2_pb_w;
 
         if (ctu_dec->affine_enabled && log2_pb_w >= 3 && log2_pb_h >= 3) {
-            uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_pu];
-            uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_pu];
+            uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_cb];
+            uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_cb];
 
             uint8_t lft_affine = cu_type_lft == OV_AFFINE || cu_type_lft == OV_INTER_SKIP_AFFINE;
             uint8_t abv_affine = cu_type_abv == OV_AFFINE || cu_type_abv == OV_INTER_SKIP_AFFINE;
@@ -1257,14 +1258,14 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
                 uint8_t merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
 
-                mv_info = drv_mmvd_merge_mvp_b(inter_ctx, x_pu, y_pu,
+                mv_info = drv_mmvd_merge_mvp_b(inter_ctx, x_cb, y_cb,
                                                nb_pb_w, nb_pb_h, ctu_dec->cur_poc, merge_idx,
                                                max_nb_cand, log2_pb_w + log2_pb_h <= 5);
             } else {
                 uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
                 uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
 
-                mv_info = drv_merge_mvp_b(inter_ctx, x_pu, y_pu,
+                mv_info = drv_merge_mvp_b(inter_ctx, x_cb, y_cb,
                                           nb_pb_w, nb_pb_h, merge_idx,
                                           max_nb_cand, log2_pb_w + log2_pb_h <= 5);
             }
@@ -1284,7 +1285,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
                 uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
 
-                mv_info = drv_merge_mvp_b(inter_ctx, x_pu, y_pu,
+                mv_info = drv_merge_mvp_b(inter_ctx, x_cb, y_cb,
                                           nb_pb_w, nb_pb_h, merge_idx,
                                           max_nb_cand, log2_pb_w + log2_pb_h <= 5);
 
@@ -1309,7 +1310,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
                 ovcabac_read_ae_gpm_merge_idx(cabac_ctx, &inter_ctx->gpm_ctx, max_num_gpm_cand);
 
-                drv_gpm_merge_mvp_b(inter_ctx, x_pu, y_pu, nb_pb_w, nb_pb_h, max_nb_cand,
+                drv_gpm_merge_mvp_b(inter_ctx, x_cb, y_cb, nb_pb_w, nb_pb_h, max_nb_cand,
                                     log2_pb_w + log2_pb_h <= 5);
                 /* FIXME amvr? */
 
@@ -1332,8 +1333,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         uint8_t inter_dir = ovcabac_read_ae_inter_dir(cabac_ctx, log2_pb_w, log2_pb_h);
 
         if (ctu_dec->affine_enabled && log2_pb_w > 3 && log2_pb_h > 3) {
-            uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_pu];
-            uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_pu];
+            uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_cb];
+            uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_cb];
 
             uint8_t lft_affine = cu_type_lft == OV_AFFINE || cu_type_lft == OV_INTER_SKIP_AFFINE;
             uint8_t abv_affine = cu_type_abv == OV_AFFINE || cu_type_abv == OV_INTER_SKIP_AFFINE;
@@ -1465,7 +1466,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             mvd1.ref_idx = inter_ctx->ref_smvd_idx1;
         }
 
-        mv_info = drv_mvp_b(inter_ctx, x_pu, y_pu, nb_pb_w, nb_pb_h,
+        mv_info = drv_mvp_b(inter_ctx, x_cb, y_cb, nb_pb_w, nb_pb_h,
                             mvd0, mvd1, inter_ctx->prec_amvr, mvp_idx0, mvp_idx1, bcw_idx,
                             inter_dir, ref_idx0, ref_idx1, log2_pb_w + log2_pb_h <= 5);
     }
@@ -1576,18 +1577,18 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
 end:
 
-    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_pu << pu_shift,
-                                y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
-    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x_pu << pu_shift,
-                                y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_cb << pu_shift,
+                                y_cb << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x_cb << pu_shift,
+                                y_cb << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
 
     /*FIXME this has to be moved to DRV */
     /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
-    memset(&i_info->luma_mode_x[x_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_w);
-    memset(&i_info->luma_mode_y[y_pu], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_h);
+    memset(&i_info->luma_mode_x[x_cb], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_w);
+    memset(&i_info->luma_mode_y[y_cb], OVINTRA_PLANAR, sizeof(uint8_t) * nb_pb_h);
 
     for (int i = 0; i < nb_pb_h; i++) {
-        memset(&i_info->luma_modes[x_pu + (i << 5) + (y_pu << 5)], OVINTRA_PLANAR,
+        memset(&i_info->luma_modes[x_cb + (i << 5) + (y_cb << 5)], OVINTRA_PLANAR,
                sizeof(uint8_t) * nb_pb_w);
     }
 
