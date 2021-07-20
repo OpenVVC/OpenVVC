@@ -670,7 +670,7 @@ coding_unit(OVCTUDec *const ctu_dec,
                 uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
                 uint8_t nb_pb_w = (1 << log2_cb_w) >> part_ctx->log2_min_cb_s;
                 uint8_t nb_pb_h = (1 << log2_cb_h) >> part_ctx->log2_min_cb_s;
-                uint8_t pu_shift = ctu_dec->part_ctx->log2_min_cb_s - 2;
+                uint8_t pu_shift = ctu_dec->part_ctx->log2_min_cb_s - LOG2_MIN_CU_S;
                 uint8_t luma_mode = i_info->luma_modes[(x_pu + ((y_pu + (nb_pb_h >> 1)) << 5) + (nb_pb_w >> 1))];
 
                 ctu_dec->intra_mode_c = drv_intra_mode_c(cu, luma_mode);
@@ -1095,15 +1095,12 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                 log2_pb_w, log2_pb_h, mv0, 0, ref_idx);
     }
 
-    uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
+    uint8_t pu_shift = part_ctx->log2_min_cb_s - LOG2_MIN_CU_S;
 
-    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_pu << pu_shift,
-                                y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
     ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x_pu << pu_shift,
                                 y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
-#if 0
-    fill_dbf_mv_map(&ctu_dec->dbf_info, mv_ctx0, mv0, x_pu, y_pu, nb_pb_w, nb_pb_h);
-#endif
+    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_pu << pu_shift,
+                                y_pu << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
 
     /*FIXME this have to be moved to DRV */
     /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
@@ -1204,7 +1201,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t x_pu = x0 >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_w = (1 << log2_pb_w) >> part_ctx->log2_min_cb_s;
     uint8_t nb_pb_h = (1 << log2_pb_h) >> part_ctx->log2_min_cb_s;
-    uint8_t pu_shift = part_ctx->log2_min_cb_s - 2;
+    uint8_t pu_shift = part_ctx->log2_min_cb_s - LOG2_MIN_CU_S;
 #endif
 
     uint8_t smvd_flag = 0;
