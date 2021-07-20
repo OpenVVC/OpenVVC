@@ -668,17 +668,18 @@ coding_unit(OVCTUDec *const ctu_dec,
                 cu.cu_mode_idx = luma_mode;
             } else {
                 struct IntraDRVInfo *const i_info = &ctu_dec->drv_ctx.intra_info;
-                uint8_t y_cb = y0 >> log2_min_cb_s;
-                uint8_t x_cb = x0 >> log2_min_cb_s;
-                uint8_t nb_pb_w = (1 << log2_cb_w) >> log2_min_cb_s;
-                uint8_t nb_pb_h = (1 << log2_cb_h) >> log2_min_cb_s;
-                uint8_t pu_shift = ctu_dec->part_ctx->log2_min_cb_s - LOG2_MIN_CU_S;
-                uint8_t luma_mode = i_info->luma_modes[(x_cb + ((y_cb + (nb_pb_h >> 1)) << 5) + (nb_pb_w >> 1))];
+                uint8_t x0_unit = (x0 << 1) >> LOG2_MIN_CU_S;
+                uint8_t y0_unit = (y0 << 1) >> LOG2_MIN_CU_S;
+                uint8_t nb_unit_w = (2 << log2_cb_w) >> LOG2_MIN_CU_S;
+                uint8_t nb_unit_h = (2 << log2_cb_h) >> LOG2_MIN_CU_S;
+
+                uint8_t luma_mode = i_info->luma_modes[(x_cb + ((y_cb + (nb_cb_h >> 1)) << 5) + (nb_cb_w >> 1))];
 
                 ctu_dec->intra_mode_c = drv_intra_mode_c(cu, luma_mode);
 
-                ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_cb << pu_shift,
-                                            y_cb << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+                uint8_t pu_shift = ctu_dec->part_ctx->log2_min_cb_s - LOG2_MIN_CU_S;
+                ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x0_unit,
+                                            y0_unit, nb_unit_w, nb_unit_h);
 
                 vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, &ctu_dec->rcn_ctx.ctu_buff, ctu_dec->intra_mode_c, x0, y0, log2_cb_w, log2_cb_h);
             }
@@ -1101,12 +1102,15 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                 log2_cb_w, log2_cb_h, mv0, 0, ref_idx);
     }
 
-    uint8_t pu_shift = log2_min_cb_s - LOG2_MIN_CU_S;
+    uint8_t x0_unit = x0 >> LOG2_MIN_CU_S;
+    uint8_t y0_unit = y0 >> LOG2_MIN_CU_S;
+    uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
+    uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
 
-    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x_cb << pu_shift,
-                                y_cb << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
-    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_cb << pu_shift,
-                                y_cb << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x0_unit,
+                                y0_unit, nb_unit_w, nb_unit_h);
+    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x0_unit,
+                                y0_unit, nb_unit_w, nb_unit_h);
 
     /*FIXME this have to be moved to DRV */
     /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
@@ -1208,7 +1212,11 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t x_cb = x0 >> log2_min_cb_s;
     uint8_t nb_pb_w = (1 << log2_cb_w) >> log2_min_cb_s;
     uint8_t nb_pb_h = (1 << log2_cb_h) >> log2_min_cb_s;
-    uint8_t pu_shift = log2_min_cb_s - LOG2_MIN_CU_S;
+    uint8_t x0_unit = x0 >> LOG2_MIN_CU_S;
+    uint8_t y0_unit = y0 >> LOG2_MIN_CU_S;
+    uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
+    uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
+
 #endif
 
     uint8_t smvd_flag = 0;
@@ -1583,10 +1591,11 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
 end:
 
-    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x_cb << pu_shift,
-                                y_cb << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
-    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x_cb << pu_shift,
-                                y_cb << pu_shift, nb_pb_w << pu_shift, nb_pb_h << pu_shift);
+    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field, x0_unit, y0_unit,
+                                nb_unit_w, nb_unit_h);
+
+    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x0_unit, y0_unit,
+                                nb_unit_w, nb_unit_h);
 
     /*FIXME this has to be moved to DRV */
     /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
