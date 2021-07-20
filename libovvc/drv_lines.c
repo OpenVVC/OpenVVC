@@ -9,6 +9,7 @@
 #include "overror.h"
 #include "ovdec_internal.h"
 
+#define LOG2_MIN_CU_S 2
 /* TODO define in a header */
 enum SliceType {
      SLICE_B = 0,
@@ -403,7 +404,7 @@ static void
 offset_dbf_lines(struct DBFLines *const l, int ctb_offset,
                  uint8_t log2_ctb_s, uint8_t log2_min_cb_s)
 {
-    int pb_offset = (ctb_offset << log2_ctb_s) >> log2_min_cb_s;
+    int pb_offset = (ctb_offset << log2_ctb_s) >> LOG2_UNIT_S;
     pb_offset <<= 5;
 
     l->qp_x_map       += pb_offset;
@@ -657,13 +658,15 @@ init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
      nb_ctb_pic_w += tinfo->nb_tile_cols * 2;
      nb_ctb_pic_w *= tinfo->nb_tile_rows;
 
-     uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
-     uint8_t nb_pb_ctb = (1 << log2_ctb_s) >> log2_min_cb_s;
+     uint16_t nb_pb_pic_w = (nb_ctb_pic_w << log2_ctb_s) >> log2_min_cb_s;
 
-     ret = init_inter_drv_lines(lns, nb_pb_ctb, 32*nb_ctb_pic_w);
+     uint16_t nb_pb_pic_w2 = (nb_ctb_pic_w << log2_ctb_s) >> LOG2_MIN_CU_S;
+     uint8_t nb_pb_ctb2 = (1 << log2_ctb_s) >> LOG2_MIN_CU_S;
+
+     ret = init_inter_drv_lines(lns, nb_pb_ctb2, 32*nb_ctb_pic_w);
 
      /* FIXME return */
-     ret = init_dbf_lines(&lns->dbf_lines, nb_ctb_pic_w, 32 * nb_pb_pic_w);
+     ret = init_dbf_lines(&lns->dbf_lines, nb_ctb_pic_w, 32 * nb_pb_pic_w2);
 
      lns->intra_luma_x  = ov_mallocz(sizeof(*lns->intra_luma_x) * nb_pb_pic_w);
 
@@ -707,14 +710,15 @@ reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
      nb_ctb_pic_w += tinfo->nb_tile_cols;
      nb_ctb_pic_w *= tinfo->nb_tile_rows;
 
-    uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
+    uint16_t nb_pb_pic_w = (nb_ctb_pic_w << log2_ctb_s) >> log2_min_cb_s;
+    uint16_t nb_pb_pic_w2 = (nb_ctb_pic_w << log2_ctb_s) >> LOG2_MIN_CU_S;
 
     reset_inter_lines(&lns->inter_lines, nb_ctb_pic_w, log2_ctb_s);
     /* PLANAR  = 0 value is used if absent so we use it as reset value
     */
     memset(lns->intra_luma_x,     0,  sizeof(*lns->intra_luma_x) * nb_pb_pic_w);
 
-    dbf_clear_lines(&lns->dbf_lines, nb_ctb_pic_w,  32*nb_pb_pic_w);
+    dbf_clear_lines(&lns->dbf_lines, nb_ctb_pic_w,  32*nb_pb_pic_w2);
 }
 
 static void
@@ -815,7 +819,6 @@ drv_line_next_line(OVCTUDec *const ctudec, const struct DRVLines *const lns)
     load_first_ctu_inter(lns, ctudec, 0);
 
     memset(intra_info->luma_mode_y, 0, sizeof(*intra_info->luma_mode_y) * nb_pb_ctb_w);
-
     memset(drv_ctx->qp_map_x, qp_val, sizeof(*drv_ctx->qp_map_x) * nb_pb_ctb_w);
     memset(drv_ctx->qp_map_y, qp_val, sizeof(*drv_ctx->qp_map_y) * nb_pb_ctb_w);
 
@@ -872,12 +875,12 @@ offset_drv_lines(struct DRVLines *const lns, uint8_t tile_x, uint8_t tile_y,
      ctb_offset += tile_x;
      ctb_offset += ctb_x;
 
-     offset_inter_drv_lines(lns, (ctb_offset << log2_ctb_s) >> log2_min_cb_s, log2_ctb_s, log2_min_cb_s);
+     offset_inter_drv_lines(lns, (ctb_offset << log2_ctb_s) >> LOG2_UNIT_S, log2_ctb_s, LOG2_UNIT_S);
 
      ctb_offset -= tile_x;
      ctb_offset -= tile_y * nb_tile_cols;
      /* FIXME return */
-     offset_dbf_lines(&lns->dbf_lines, ctb_offset, log2_ctb_s, log2_min_cb_s);
+     offset_dbf_lines(&lns->dbf_lines, ctb_offset, log2_ctb_s, LOG2_UNIT_S);
 }
 
 void
