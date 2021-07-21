@@ -596,7 +596,7 @@ derive_large_map_from_ngh(const uint64_t *src_map)
 
 static void
 filter_veritcal_edge_c(const struct DBFInfo *const dbf_info, uint16_t *src, ptrdiff_t stride,
-                       const uint8_t *qp_col, uint64_t bs2_map, uint64_t large_map_q)
+                       uint8_t qp, uint64_t bs2_map, uint64_t large_map_q)
 {
     const uint8_t is_large = large_map_q & 0x1;
     const uint8_t is_bs2   = bs2_map     & 0x1;
@@ -609,7 +609,7 @@ filter_veritcal_edge_c(const struct DBFInfo *const dbf_info, uint16_t *src, ptrd
         uint16_t *src0 = src;
         uint16_t *src1 = src + stride;
 
-        const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_col, 1 + is_bs2);
+        const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, qp, 1 + is_bs2);
         uint8_t is_strong = 0;
 
         if (is_large) {
@@ -713,7 +713,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
                 qp_col       += nb_skipped_blk;
                 src          += nb_skipped_blk * blk_stride;
 
-                filter_veritcal_edge_c(dbf_info, src, stride, qp_col, bs2_map, large_map_q);
+                filter_veritcal_edge_c(dbf_info, src, stride, *qp_col, bs2_map, large_map_q);
 
                 edge_map    >>= nb_skipped_blk + 1;
                 large_map_q >>= 1;
@@ -755,7 +755,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
                 qp_col       += nb_skipped_blk;
                 src          += nb_skipped_blk * blk_stride;
 
-                filter_veritcal_edge_c(dbf_info, src, stride, qp_col, bs2_map, large_map_q);
+                filter_veritcal_edge_c(dbf_info, src, stride, *qp_col, bs2_map, large_map_q);
 
                 edge_map    >>= nb_skipped_blk + 1;
                 large_map_q >>= 1;
@@ -771,7 +771,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
 
 static void
 filter_horizontal_edge_c(const struct DBFInfo *const dbf_info, uint16_t *src, ptrdiff_t stride,
-                       const uint8_t *qp_col, uint64_t bs2_map, uint64_t large_map_q, uint8_t is_ctb_b)
+                         uint8_t qp, uint64_t bs2_map, uint64_t large_map_q, uint8_t is_ctb_b)
 {
     const uint8_t is_large = large_map_q & 0x1;
     const uint8_t is_bs2   = bs2_map     & 0x1;
@@ -784,7 +784,7 @@ filter_horizontal_edge_c(const struct DBFInfo *const dbf_info, uint16_t *src, pt
         uint16_t *src0 = src;
         uint16_t *src1 = src + 1;
 
-        const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_col, 1 + is_bs2);
+        const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, qp, 1 + is_bs2);
         uint8_t is_strong = 0;
 
         if (is_large) {
@@ -872,7 +872,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
                 qp_row       += nb_skipped_blk;
                 src          += nb_skipped_blk * blk_stride;
 
-                filter_horizontal_edge_c(dbf_info, src, stride, qp_row, bs2_map,
+                filter_horizontal_edge_c(dbf_info, src, stride, *qp_row, bs2_map,
                                          large_map_q, is_ctb_b);
 
                 edge_map    >>= nb_skipped_blk + 1;
@@ -914,7 +914,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
                 qp_row       += nb_skipped_blk;
                 src          += nb_skipped_blk * blk_stride;
 
-                filter_horizontal_edge_c(dbf_info, src, stride, qp_row, bs2_map,
+                filter_horizontal_edge_c(dbf_info, src, stride, *qp_row, bs2_map,
                                          large_map_q, is_ctb_b);
 
                 edge_map    >>= nb_skipped_blk + 1;
@@ -931,7 +931,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
 
 static void
 filter_veritcal_edge(const struct DBFInfo *const dbf_info, uint16_t *src, ptrdiff_t stride,
-                     const uint8_t *qp_col, uint64_t bs2_map, uint64_t large_p_map,
+                     uint8_t qp, uint64_t bs2_map, uint64_t large_p_map,
                      uint64_t large_q_map, uint64_t small_map)
 {
     int max_l_p = small_map & 0x1 ? 1 : (large_p_map & 0x1) ? 7 : 3;
@@ -943,7 +943,7 @@ filter_veritcal_edge(const struct DBFInfo *const dbf_info, uint16_t *src, ptrdif
     uint8_t bs = 1 + (bs2_map & 0x1);
     /*FIXME subblock handling */
 
-    const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_col, bs);
+    const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, qp, bs);
     uint16_t* src0 = src;
     uint16_t* src3 = src + stride * 3;
 
@@ -1075,7 +1075,7 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                 qp_col       += nb_skipped_blk;
                 src_tmp      += nb_skipped_blk * blk_stride;
 
-                filter_veritcal_edge(dbf_info, src_tmp, stride, qp_col, bs2_map, large_p_map,
+                filter_veritcal_edge(dbf_info, src_tmp, stride, *qp_col, bs2_map, large_p_map,
                                      large_q_map, small_map);
 
                 edg_msk  >>= nb_skipped_blk + 1;
@@ -1095,7 +1095,7 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
 static void
 filter_horizontal_edge(const struct DBFInfo *const dbf_info, uint16_t *src, ptrdiff_t stride,
-                       const uint8_t *qp_row, uint64_t bs2_map, uint64_t large_p_map,
+                       uint8_t qp, uint64_t bs2_map, uint64_t large_p_map,
                        uint64_t large_q_map, uint64_t small_map)
 {
     int max_l_p = small_map & 0x1 ? 1 : (large_p_map & 0x1) ? 7 : 3;
@@ -1104,7 +1104,7 @@ filter_horizontal_edge(const struct DBFInfo *const dbf_info, uint16_t *src, ptrd
 
     /*FIXME subblock handling */
 
-    const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, *qp_row, bs);
+    const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, qp, bs);
 
     int16_t *src0 = (int16_t *)src;
     int16_t *src3 = (int16_t *)src + 3;
@@ -1229,7 +1229,7 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                 qp_row       += nb_skipped_blk;
                 src_tmp      += nb_skipped_blk * blk_stride;
 
-                filter_horizontal_edge(dbf_info, src_tmp, stride, qp_row, bs2_map,
+                filter_horizontal_edge(dbf_info, src_tmp, stride, *qp_row, bs2_map,
                                        large_p_map, large_q_map, small_map);
 
                 edg_msk  >>= nb_skipped_blk + 1;
