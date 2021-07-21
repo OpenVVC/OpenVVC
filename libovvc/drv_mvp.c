@@ -1319,46 +1319,60 @@ fill_tmvp_map(struct OVMV *const tmvp_mv, OVMV mv,
     }
 }
 
-/* FIXME DBF MV related */
-
 #define LF_MV_THRESHOLD 8
+
+/* FIXME DBF MV related could be done at start of DBF processing on CTU
+ * when slice is inter
+ */
+
 static void
 fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx,
                   struct OVMVCtx *const mv_ctx1, OVMV mv,
-                  int pb_x, int pb_y, int nb_unit_w, int nb_unit_h)
+                  int x0_unit, int y0_unit, int nb_unit_w, int nb_unit_h)
 {
-    uint64_t bs1_map_h = dbf_info->bs1_map.hor[pb_y];
-    uint64_t bs1_map_v = dbf_info->bs1_map.ver[pb_x];
-    uint64_t hor_msk = (uint64_t)1 << (2 + pb_x);
-    uint64_t ver_msk = (uint64_t)1 << pb_y;
+    uint64_t hor_msk = (uint64_t)1 << (2 + x0_unit);
+    uint64_t ver_msk = (uint64_t)1 << y0_unit;
+
+    uint64_t bs1_map_h = dbf_info->bs1_map.hor[y0_unit];
+    uint64_t bs1_map_v = dbf_info->bs1_map.ver[x0_unit];
+
+    uint64_t dir_msk_abv = mv_ctx->map.hfield[y0_unit] & (~mv_ctx1->map.hfield[y0_unit]);
+    uint64_t dir_msk_lft = mv_ctx->map.vfield[x0_unit] & (~mv_ctx1->map.vfield[x0_unit]);
 
     int i, j;
 
+    /* TODO check abv dir outside of loop and test remaining MV condition
+     * only when required i.e. not bs2, not already bs1
+     * due to luma cbf flags and not inter_dir
+     */
+
     for (j = 0; j < nb_unit_w; ++j) {
-        OVMV mv_above = mv_ctx->mvs[PB_POS_IN_BUF(pb_x + j, pb_y - 1)];
+        OVMV mv_abv = mv_ctx->mvs[PB_POS_IN_BUF(x0_unit + j, y0_unit - 1)];
 
-        int64_t above_avail = -((!!(mv_ctx->map.hfield[pb_y]  & POS_MASK(pb_x + j, 0))
-                                & !(mv_ctx1->map.hfield[pb_y] & POS_MASK(pb_x + j, 0))));
-        int64_t abv_th = -((abs(mv_above.x - mv.x) >= LF_MV_THRESHOLD) |
-                           (abs(mv_above.y - mv.y) >= LF_MV_THRESHOLD));
+        int64_t abv_dir = -(!!(dir_msk_abv & POS_MASK(x0_unit + j, 0)));
 
-        bs1_map_h |= (hor_msk & abv_th & above_avail) | (hor_msk & (-(!above_avail)));
+        int64_t abv_th = -((abs(mv_abv.x - mv.x) >= LF_MV_THRESHOLD) |
+                           (abs(mv_abv.y - mv.y) >= LF_MV_THRESHOLD));
 
+        bs1_map_h |= hor_msk & ((abv_th & abv_dir) | (-(!abv_dir)));
         hor_msk  <<= 1;
     }
 
-    dbf_info->bs1_map.hor[pb_y] |= bs1_map_h;
 
     for (i = 0; i < nb_unit_h; ++i) {
-        OVMV mv_left = mv_ctx->mvs[PB_POS_IN_BUF(pb_x - 1, pb_y + i)];
-        int64_t left_avail = -(!!(mv_ctx->map.vfield[pb_x]  & POS_MASK(pb_y + i, 0))
-                              & !(mv_ctx1->map.vfield[pb_x] & POS_MASK(pb_y + i, 0)));
-        int64_t abv_th = -((abs(mv_left.x - mv.x) >= LF_MV_THRESHOLD) |
-                           (abs(mv_left.y - mv.y) >= LF_MV_THRESHOLD));
-        bs1_map_v |= (ver_msk & abv_th & left_avail) | (ver_msk & (-(!left_avail)));
+        OVMV mv_lft = mv_ctx->mvs[PB_POS_IN_BUF(x0_unit - 1, y0_unit + i)];
+
+        int64_t lft_dir = -(!!(dir_msk_lft & POS_MASK(y0_unit + i, 0)));
+
+        int64_t lft_th = -((abs(mv_lft.x - mv.x) >= LF_MV_THRESHOLD) |
+                           (abs(mv_lft.y - mv.y) >= LF_MV_THRESHOLD));
+
+        bs1_map_v |= ver_msk & ((lft_th & lft_dir)| (-(!lft_dir)));
         ver_msk <<= 1;
     }
-    dbf_info->bs1_map.ver[pb_x] |= bs1_map_v;
+
+    dbf_info->bs1_map.hor[y0_unit] |= bs1_map_h;
+    dbf_info->bs1_map.ver[x0_unit] |= bs1_map_v;
 }
 
 static void
