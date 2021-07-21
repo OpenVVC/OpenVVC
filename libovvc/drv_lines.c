@@ -563,16 +563,8 @@ dbf_load_bs_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
     memset(bs1_map_cb->ver + 1, 0, sizeof(*bs1_map_cb->ver) * nb_pb_s);
     memset(bs1_map_cr->ver + 1, 0, sizeof(*bs1_map_cr->ver) * nb_pb_s);
 
-    /* LOAD current line */
-    bs2_map->hor[0]   = l->dbf_bs2_hor[ctb_x];
-    bs2_map_c->hor[0] = l->dbf_bs2_hor_c[ctb_x];
-
-    bs1_map->hor[0]    = l->dbf_bs1_hor[ctb_x];
-    bs1_map_cb->hor[0] = l->dbf_bs1_hor_cb[ctb_x];
-    bs1_map_cr->hor[0] = l->dbf_bs1_hor_cr[ctb_x];
-
     /* Reset inner part */
-    for (i = 1; i < nb_pb_s + 1; ++i) {
+    for (i = 0; i < nb_pb_s + 1; ++i) {
         bs2_map->hor[i] = ctb_lft_msk & (bs2_map->hor[i] >> nb_pb_s) & 0x3;
         bs2_map_c->hor[i] = ctb_lft_msk & (bs2_map_c->hor[i] >> nb_pb_s) & 0x3;
 
@@ -580,6 +572,15 @@ dbf_load_bs_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
         bs1_map_cb->hor[i] = ctb_lft_msk & (bs1_map_cb->hor[i] >> nb_pb_s) & 0x3;
         bs1_map_cr->hor[i] = ctb_lft_msk & (bs1_map_cr->hor[i] >> nb_pb_s) & 0x3;
     }
+
+    /* LOAD current line */
+    bs2_map->hor[0]   |= l->dbf_bs2_hor[ctb_x] << 2;
+    bs2_map_c->hor[0] |= l->dbf_bs2_hor_c[ctb_x] << 2;
+
+    bs1_map->hor[0]    |= l->dbf_bs1_hor[ctb_x] << 2;
+    bs1_map_cb->hor[0] |= l->dbf_bs1_hor_cb[ctb_x] << 2;
+    bs1_map_cr->hor[0] |= l->dbf_bs1_hor_cr[ctb_x] << 2;
+
 
 }
 
@@ -597,12 +598,12 @@ dbf_store_bs_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
     struct DBFMap *const bs1_map_cr = &dbf_info->bs1_map_cr;
 
     /* STORE for next line */
-    l->dbf_bs2_hor[ctb_x]   =  bs2_map->hor[nb_pb_s];
-    l->dbf_bs2_hor_c[ctb_x] =  bs2_map_c->hor[nb_pb_s];
+    l->dbf_bs2_hor[ctb_x]   =  bs2_map->hor[nb_pb_s] >> 2;
+    l->dbf_bs2_hor_c[ctb_x] =  bs2_map_c->hor[nb_pb_s] >> 2;
 
-    l->dbf_bs1_hor[ctb_x]    =  bs1_map->hor[nb_pb_s];
-    l->dbf_bs1_hor_cb[ctb_x] =  bs1_map_cb->hor[nb_pb_s];
-    l->dbf_bs1_hor_cr[ctb_x] =  bs1_map_cr->hor[nb_pb_s];
+    l->dbf_bs1_hor[ctb_x]    =  bs1_map->hor[nb_pb_s] >> 2;
+    l->dbf_bs1_hor_cb[ctb_x] =  bs1_map_cb->hor[nb_pb_s] >> 2;
+    l->dbf_bs1_hor_cr[ctb_x] =  bs1_map_cr->hor[nb_pb_s] >> 2;
 
 }
 
