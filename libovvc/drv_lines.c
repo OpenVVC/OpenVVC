@@ -447,7 +447,8 @@ dbf_load_qp_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
     uint8_t nb_units_ctb = 1 << (log2_ctu_s & 7) >> 2;
     int i;
 
-    for (i = 0; i < nb_units_ctb + 1; ++i) {
+    /* Note no need to process last horizontal top right since it is not processed */
+    for (i = 0; i < nb_units_ctb; ++i) {
         dbf_info->qp_map_y.hor [i * 34] = dbf_info->qp_map_y.hor [i * 34 + nb_units_ctb];
         dbf_info->qp_map_cb.hor[i * 34] = dbf_info->qp_map_cb.hor[i * 34 + nb_units_ctb];
         dbf_info->qp_map_cr.hor[i * 34] = dbf_info->qp_map_cr.hor[i * 34 + nb_units_ctb];
@@ -455,7 +456,9 @@ dbf_load_qp_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
         dbf_info->qp_map_y.hor [1 + i * 34] = dbf_info->qp_map_y.hor [i * 34 + nb_units_ctb + 1];
         dbf_info->qp_map_cb.hor[1 + i * 34] = dbf_info->qp_map_cb.hor[i * 34 + nb_units_ctb + 1];
         dbf_info->qp_map_cr.hor[1 + i * 34] = dbf_info->qp_map_cr.hor[i * 34 + nb_units_ctb + 1];
+    }
 
+    for (i = 0; i < nb_units_ctb; ++i) {
         dbf_info->qp_map_y.ver [i] = dbf_info->qp_map_y.ver [i + 34 * nb_units_ctb];
         dbf_info->qp_map_cb.ver[i] = dbf_info->qp_map_cb.ver[i + 34 * nb_units_ctb];
         dbf_info->qp_map_cr.ver[i] = dbf_info->qp_map_cr.ver[i + 34 * nb_units_ctb];
@@ -580,8 +583,6 @@ dbf_load_bs_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
     bs1_map->hor[0]    |= l->dbf_bs1_hor[ctb_x] << 2;
     bs1_map_cb->hor[0] |= l->dbf_bs1_hor_cb[ctb_x] << 2;
     bs1_map_cr->hor[0] |= l->dbf_bs1_hor_cr[ctb_x] << 2;
-
-
 }
 
 static void
