@@ -169,7 +169,7 @@ tmvp_store_mv(OVCTUDec *ctudec)
         if (plane0->dirs) {
             struct OVMVCtx *mv_ctx = &inter_ctx->mv_ctx0;
 
-            uint64_t *src_map = &mv_ctx->map.vfield[1];
+            uint64_t *src_map = mv_ctx->map.vfield + 1;
             uint64_t *dst_map = plane0->dirs + ctb_addr_rs * nb_unit_ctb;
 
             const OVMV *src_mv = inter_ctx->tmvp_mv[0].mvs;
@@ -188,7 +188,7 @@ tmvp_store_mv(OVCTUDec *ctudec)
         if (plane1->dirs) {
             struct OVMVCtx *mv_ctx = &inter_ctx->mv_ctx1;
 
-            uint64_t *src_map = &mv_ctx->map.vfield[1];
+            uint64_t *src_map = mv_ctx->map.vfield + 1;
             uint64_t *dst_map = plane1->dirs + ctb_addr_rs * nb_unit_ctb;
 
             const OVMV *src_mv = inter_ctx->tmvp_mv[1].mvs;
