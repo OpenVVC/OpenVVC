@@ -1107,7 +1107,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
         } else {
             uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
             mv0 = drv_merge_mvp(inter_ctx, mv_ctx0,
-                                x_cb, y_cb, nb_cb_w, nb_cb_h,
+                                x0, y0, log2_cb_w, log2_cb_h,
                                 merge_idx, max_nb_cand);
         }
 
@@ -1122,7 +1122,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
         uint8_t prec_amvr = MV_PRECISION_QUARTER;
         mv0 = drv_mvp_mvd(inter_ctx, mv_ctx0, mvd, prec_amvr,
-                          x_cb, y_cb, nb_cb_w, nb_cb_h,
+                          x0, y0, log2_cb_w, log2_cb_h,
                           mvp_idx, 1, ref_idx, ref_idx);
     }
 
@@ -1287,8 +1287,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
                 uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
 
-                mv_info = drv_merge_mvp_b(inter_ctx, x_cb, y_cb,
-                                          nb_cb_w, nb_cb_h, merge_idx,
+                mv_info = drv_merge_mvp_b(inter_ctx, x0, y0,
+                                          log2_cb_w, log2_cb_h, merge_idx,
                                           max_nb_cand, log2_cb_w + log2_cb_h <= 5);
             }
 
@@ -1307,8 +1307,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
                 uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
 
-                mv_info = drv_merge_mvp_b(inter_ctx, x_cb, y_cb,
-                                          nb_cb_w, nb_cb_h, merge_idx,
+                mv_info = drv_merge_mvp_b(inter_ctx, x0, y0,
+                                          log2_cb_w, log2_cb_h, merge_idx,
                                           max_nb_cand, log2_cb_w + log2_cb_h <= 5);
 
                 inter_ctx->prec_amvr = mv_info.inter_dir & 0x1 ? mv_info.mv0.prec_amvr
@@ -1488,7 +1488,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             mvd1.ref_idx = inter_ctx->ref_smvd_idx1;
         }
 
-        mv_info = drv_mvp_b(inter_ctx, x_cb, y_cb, nb_cb_w, nb_cb_h,
+        mv_info = drv_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
                             mvd0, mvd1, inter_ctx->prec_amvr, mvp_idx0, mvp_idx1, bcw_idx,
                             inter_dir, ref_idx0, ref_idx1, log2_cb_w + log2_cb_h <= 5);
     }
