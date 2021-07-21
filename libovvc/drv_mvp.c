@@ -32,14 +32,6 @@
 
 #define LOG2_MIN_CU_S 2
 
-static inline OVMV
-scale_mvd(OVMV mv)
-{
-    mv.x <<= 2;
-    mv.y <<= 2;
-    return mv;
-}
-
 OVMV
 drv_change_precision_mv(OVMV mv, int src, int dst)
 {
@@ -1801,8 +1793,7 @@ drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
 
     mv.ref_idx = ref_idx;
 
-    mvd = scale_mvd(mvd);
-    mvd = drv_change_precision_mv(mvd, MV_PRECISION_INTERNAL, prec_amvr);
+    mvd = drv_change_precision_mv(mvd, prec_amvr, MV_PRECISION_INTERNAL);
 
     mv.x += mvd.x;
     mv.y += mvd.y;
