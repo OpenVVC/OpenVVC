@@ -152,15 +152,14 @@ tmvp_store_mv(OVCTUDec *ctudec)
         uint16_t ctb_x = ctudec->ctb_x;
         uint16_t ctb_y = ctudec->ctb_y;
 
-        /* FIXME define constant */
-        uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-        uint8_t log2_unit_s = 2;
+        uint8_t log2_ctb_s    = ctudec->part_ctx->log2_ctu_s;
+        uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
 
-        const int nb_unit_ctb = (1 << log2_ctb_s) >> log2_unit_s;
+        const int nb_unit_ctb = (1 << log2_ctb_s) >> LOG2_MIN_CU_S;
         const int nb_ctb_w = ctudec->nb_ctb_pic_w;
 
         uint16_t ctb_addr_rs = ctb_x + ctb_y * nb_ctb_w;
-        int32_t nb_tmvp_unit = nb_unit_ctb >> 1;
+        int32_t nb_tmvp_unit = (1 << log2_ctb_s) >> 3;
 
         int32_t pln_stride = nb_tmvp_unit * nb_ctb_w;
 
