@@ -13,23 +13,11 @@ dbf_fill_qp_map(struct DBFQPMap *qp_map, int x0, int y0,
     int nb_cb_w = (1 << log2_cb_w) >> 2;
     int nb_cb_h = (1 << log2_cb_h) >> 2;
 
-    int first_pos_hor = 2 + x0_u + y0_u * 34;
-    int first_pos_ver = y0_u + x0_u * 34;
+    int first_pos_hor = 34 + 2 + x0_u + y0_u * 34;
     int i;
 
-    for (i = 0; i < nb_cb_w; i++) {
-        qp_map->hor[first_pos_hor + i] += qp + 1;
-        qp_map->hor[first_pos_hor + i] >>= 1;
-        qp_map->hor[first_pos_hor + i + 34 * nb_cb_h] = qp;
-    }
-
-    /* we actually need 2 maps because conflict between vertical
-     * and horizontal average QP could occur in map corners.
-     */
     for (i = 0; i < nb_cb_h; i++) {
-        qp_map->ver[first_pos_ver + i] += qp + 1;
-        qp_map->ver[first_pos_ver + i] >>= 1;
-        qp_map->ver[first_pos_ver + i + 34 * nb_cb_w] = qp;
+        memset(&qp_map->hor[first_pos_hor + 34 * i], qp, sizeof(uint8_t) * nb_cb_w);
     }
 }
 

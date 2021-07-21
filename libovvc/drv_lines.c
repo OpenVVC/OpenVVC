@@ -448,7 +448,7 @@ dbf_load_qp_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
     int i;
 
     /* Note no need to process last horizontal top right since it is not processed */
-    for (i = 0; i < nb_units_ctb; ++i) {
+    for (i = 0; i < nb_units_ctb + 1; ++i) {
         dbf_info->qp_map_y.hor [i * 34] = dbf_info->qp_map_y.hor [i * 34 + nb_units_ctb];
         dbf_info->qp_map_cb.hor[i * 34] = dbf_info->qp_map_cb.hor[i * 34 + nb_units_ctb];
         dbf_info->qp_map_cr.hor[i * 34] = dbf_info->qp_map_cr.hor[i * 34 + nb_units_ctb];
@@ -456,12 +456,6 @@ dbf_load_qp_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
         dbf_info->qp_map_y.hor [1 + i * 34] = dbf_info->qp_map_y.hor [i * 34 + nb_units_ctb + 1];
         dbf_info->qp_map_cb.hor[1 + i * 34] = dbf_info->qp_map_cb.hor[i * 34 + nb_units_ctb + 1];
         dbf_info->qp_map_cr.hor[1 + i * 34] = dbf_info->qp_map_cr.hor[i * 34 + nb_units_ctb + 1];
-    }
-
-    for (i = 0; i < nb_units_ctb; ++i) {
-        dbf_info->qp_map_y.ver [i] = dbf_info->qp_map_y.ver [i + 34 * nb_units_ctb];
-        dbf_info->qp_map_cb.ver[i] = dbf_info->qp_map_cb.ver[i + 34 * nb_units_ctb];
-        dbf_info->qp_map_cr.ver[i] = dbf_info->qp_map_cr.ver[i + 34 * nb_units_ctb];
     }
 
     for (i = 0; i < nb_units_ctb; ++i) {

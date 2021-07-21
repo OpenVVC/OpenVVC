@@ -72,7 +72,6 @@ struct DBFMap
 struct DBFQPMap
 {
     uint8_t hor[34*33];
-    uint8_t ver[34*33];
 };
 
 struct DBFInfo

@@ -695,7 +695,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
             uint64_t large_map_q = derive_large_map_from_ngh(&edg_map_tab[edge_idx]);
 
             /* FIXME use absolute QP maps */
-            const uint8_t *qp_col = &dbf_info->qp_map_cb.ver[34 * edge_idx];
+            const uint8_t *qp_col = &dbf_info->qp_map_cb.hor[36 + edge_idx];
             uint16_t *src = src_cb;
 
             /* Discard non filtered edges from edge_map */
@@ -706,21 +706,24 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
              */
             while (edge_map) {
                 uint8_t nb_skipped_blk = ov_ctz64(edge_map);
+                uint8_t qp;
 
                 /* Skip non filtered edges */
                 large_map_q >>= nb_skipped_blk;
                 bs2_map     >>= nb_skipped_blk;
-                qp_col       += nb_skipped_blk;
+                qp_col       += nb_skipped_blk * 34;
                 src          += nb_skipped_blk * blk_stride;
 
-                filter_veritcal_edge_c(dbf_info, src, stride, *qp_col, bs2_map, large_map_q);
+                qp = (qp_col[-1] + qp_col[0] + 1) >> 1;
+
+                filter_veritcal_edge_c(dbf_info, src, stride, qp, bs2_map, large_map_q);
 
                 edge_map    >>= nb_skipped_blk + 1;
                 large_map_q >>= 1;
                 bs2_map     >>= 1;
 
                 src += blk_stride;
-                qp_col++;
+                qp_col += 34;
             }
         }
         src_cb += 1 << 3;
@@ -740,7 +743,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
         if (edge_map) {
             uint64_t large_map_q = derive_large_map_from_ngh(&edg_map_tab[edge_idx]);
 
-            const uint8_t *qp_col = &dbf_info->qp_map_cr.ver[34 * edge_idx];
+            const uint8_t *qp_col = &dbf_info->qp_map_cr.hor[36 + edge_idx];
 
             uint16_t *src = src_cr;
 
@@ -748,21 +751,24 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
 
              while (edge_map) {
                 uint8_t nb_skipped_blk = ov_ctz64(edge_map);
+                uint8_t qp;
 
                 /* Skip non filtered edges */
                 large_map_q >>= nb_skipped_blk;
                 bs2_map     >>= nb_skipped_blk;
-                qp_col       += nb_skipped_blk;
+                qp_col       += nb_skipped_blk * 34;
                 src          += nb_skipped_blk * blk_stride;
 
-                filter_veritcal_edge_c(dbf_info, src, stride, *qp_col, bs2_map, large_map_q);
+                qp = (qp_col[-1] + qp_col[0] + 1) >> 1;
+
+                filter_veritcal_edge_c(dbf_info, src, stride, qp, bs2_map, large_map_q);
 
                 edge_map    >>= nb_skipped_blk + 1;
                 large_map_q >>= 1;
                 bs2_map     >>= 1;
 
                 src += blk_stride;
-                qp_col++;
+                qp_col += 34;
             }
         }
         src_cr += 1 << 3;
@@ -865,6 +871,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
 
             while(edge_map) {
                 uint8_t nb_skipped_blk = ov_ctz64(edge_map);
+                uint8_t qp;
 
                 /* Skip non filtered edges */
                 large_map_q >>= nb_skipped_blk;
@@ -872,7 +879,9 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
                 qp_row       += nb_skipped_blk;
                 src          += nb_skipped_blk * blk_stride;
 
-                filter_horizontal_edge_c(dbf_info, src, stride, *qp_row, bs2_map,
+                qp = (qp_row[0] + qp_row[34] + 1) >> 1;
+
+                filter_horizontal_edge_c(dbf_info, src, stride, qp, bs2_map,
                                          large_map_q, is_ctb_b);
 
                 edge_map    >>= nb_skipped_blk + 1;
@@ -907,6 +916,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
 
             while(edge_map) {
                 uint8_t nb_skipped_blk = ov_ctz64(edge_map);
+                uint8_t qp;
 
                 /* Skip non filtered edges */
                 large_map_q >>= nb_skipped_blk;
@@ -914,7 +924,9 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
                 qp_row       += nb_skipped_blk;
                 src          += nb_skipped_blk * blk_stride;
 
-                filter_horizontal_edge_c(dbf_info, src, stride, *qp_row, bs2_map,
+                qp = (qp_row[0] + qp_row[34] + 1) >> 1;
+
+                filter_horizontal_edge_c(dbf_info, src, stride, qp, bs2_map,
                                          large_map_q, is_ctb_b);
 
                 edge_map    >>= nb_skipped_blk + 1;
@@ -1062,20 +1074,23 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
             uint64_t small_map = edg_map[i - 1] | edg_map[i + 1];
 
-            const uint8_t *qp_col = &dbf_info->qp_map_y.ver[34 * i];
+            const uint8_t *qp_col = &dbf_info->qp_map_y.hor[36 + i];
 
             do {
                 uint8_t nb_skipped_blk = ov_ctz64(edg_msk);
+                uint8_t qp;
 
                 /* Skip non filtered edges */
                 large_p_map >>= nb_skipped_blk;
                 large_q_map >>= nb_skipped_blk;
                 small_map   >>= nb_skipped_blk;
                 bs2_map     >>= nb_skipped_blk;
-                qp_col       += nb_skipped_blk;
+                qp_col       += nb_skipped_blk * 34;
                 src_tmp      += nb_skipped_blk * blk_stride;
 
-                filter_veritcal_edge(dbf_info, src_tmp, stride, *qp_col, bs2_map, large_p_map,
+                qp = (qp_col[-1] + qp_col[0] + 1) >> 1;
+
+                filter_veritcal_edge(dbf_info, src_tmp, stride, qp, bs2_map, large_p_map,
                                      large_q_map, small_map);
 
                 edg_msk  >>= nb_skipped_blk + 1;
@@ -1086,7 +1101,7 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                 large_q_map >>= 1;
 
                 src_tmp += blk_stride;
-                qp_col++;
+                qp_col += 34;
             } while (edg_msk);
         }
         src += 1 << 2;
@@ -1220,6 +1235,7 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
             do {
                 uint8_t nb_skipped_blk = ov_ctz64(edg_msk);
+                uint8_t qp;
 
                 /* Skip non filtered edges */
                 large_p_map >>= nb_skipped_blk;
@@ -1229,7 +1245,9 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                 qp_row       += nb_skipped_blk;
                 src_tmp      += nb_skipped_blk * blk_stride;
 
-                filter_horizontal_edge(dbf_info, src_tmp, stride, *qp_row, bs2_map,
+                qp = (qp_row[0] + qp_row[34] + 1) >> 1;
+
+                filter_horizontal_edge(dbf_info, src_tmp, stride, qp, bs2_map,
                                        large_p_map, large_q_map, small_map);
 
                 edg_msk  >>= nb_skipped_blk + 1;
