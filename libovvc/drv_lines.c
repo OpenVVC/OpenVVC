@@ -442,7 +442,6 @@ dbf_clear_lines(const struct DBFLines *const l, int nb_ctu_line, int nb_pu_line)
 
 static void
 dbf_load_qp_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
-                struct DRVLines *l2,
                 uint8_t log2_ctu_s, int ctb_x)
 {
     uint8_t nb_units_ctb = 1 << (log2_ctu_s & 7) >> 2;
@@ -472,7 +471,6 @@ dbf_load_qp_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
 static void
 dbf_store_qp_map(const struct DBFInfo *const dbf_info,
                  const struct DBFLines *const l,
-                 struct DRVLines *l2,
                  uint8_t log2_ctu_s,
                  unsigned int ctb_x)
 {
@@ -615,7 +613,7 @@ dbf_load_info(struct DBFInfo *const dbf_info,
 {
     dbf_load_edge_map(dbf_info, dbf_lines, log2_ctu_s, ctb_x);
     dbf_load_bs_map(dbf_info, dbf_lines, log2_ctu_s, ctb_x);
-    dbf_load_qp_map(dbf_info, dbf_lines, NULL, log2_ctu_s, ctb_x);
+    dbf_load_qp_map(dbf_info, dbf_lines, log2_ctu_s, ctb_x);
 }
 
 void
@@ -625,7 +623,7 @@ dbf_store_info(struct DBFInfo *const dbf_info,
 {
     dbf_store_edge_map(dbf_info, dbf_lines, log2_ctu_s, ctb_x);
     dbf_store_bs_map(dbf_info, dbf_lines, log2_ctu_s, ctb_x);
-    dbf_store_qp_map(dbf_info, dbf_lines, NULL, log2_ctu_s, ctb_x);
+    dbf_store_qp_map(dbf_info, dbf_lines, log2_ctu_s, ctb_x);
 }
 
 int
