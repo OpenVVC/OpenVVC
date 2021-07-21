@@ -1362,7 +1362,8 @@ fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx,
             pos_shift += nb_skipped_blk;
 
             uint64_t abv_th = (abs(mv_abv->x - mv.x) >= LF_MV_THRESHOLD) |
-                              (abs(mv_abv->y - mv.y) >= LF_MV_THRESHOLD);
+                              (abs(mv_abv->y - mv.y) >= LF_MV_THRESHOLD) |
+                              (mv_abv->ref_idx != mv.ref_idx);
 
             bs1_map_h |= abv_th << pos_shift;
 
@@ -1384,7 +1385,8 @@ fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx,
             pos_shift += nb_skipped_blk;
 
             uint64_t lft_th = (abs(mv_lft->x - mv.x) >= LF_MV_THRESHOLD) |
-                              (abs(mv_lft->y - mv.y) >= LF_MV_THRESHOLD);
+                              (abs(mv_lft->y - mv.y) >= LF_MV_THRESHOLD) |
+                              (mv_lft->ref_idx != mv.ref_idx);
 
             bs1_map_v |= lft_th << pos_shift;
 
@@ -1435,8 +1437,10 @@ fill_dbf_mv_map(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, OV
             mv_abv    += nb_skipped_blk;
             pos_shift += nb_skipped_blk;
 
+            /* FIXME check ref_idx */
             uint64_t abv_th = (abs(mv_abv->x - mv.x) >= LF_MV_THRESHOLD) |
-                              (abs(mv_abv->y - mv.y) >= LF_MV_THRESHOLD);
+                              (abs(mv_abv->y - mv.y) >= LF_MV_THRESHOLD) |
+                              (mv_abv->ref_idx != mv.ref_idx);
 
             bs1_map_h |= abv_th << pos_shift;
 
@@ -1458,7 +1462,8 @@ fill_dbf_mv_map(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, OV
             pos_shift += nb_skipped_blk;
 
             uint64_t lft_th = (abs(mv_lft->x - mv.x) >= LF_MV_THRESHOLD) |
-                              (abs(mv_lft->y - mv.y) >= LF_MV_THRESHOLD);
+                              (abs(mv_lft->y - mv.y) >= LF_MV_THRESHOLD) |
+                              (mv_lft->ref_idx != mv.ref_idx);
 
             bs1_map_v |= lft_th << pos_shift;
 
