@@ -1042,7 +1042,7 @@ reset_intra_map(OVCTUDec *const ctudec, struct IntraDRVInfo *const intra_ctx,
     uint8_t x_cb = x0 >> log2_min_cb_s;
     uint8_t nb_cb_w = (1 << log2_cb_w) >> log2_min_cb_s;
     uint8_t nb_cb_h = (1 << log2_cb_h) >> log2_min_cb_s;
-    /*FIXME this have to be moved to DRV */
+
     /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
     memset(&intra_ctx->luma_mode_x[x_cb], OVINTRA_PLANAR, sizeof(uint8_t) * nb_cb_w);
     memset(&intra_ctx->luma_mode_y[y_cb], OVINTRA_PLANAR, sizeof(uint8_t) * nb_cb_h);
@@ -1133,6 +1133,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                 log2_cb_w, log2_cb_h, mv0, 0, ref_idx);
     }
 
+    /*FIXME this have to be moved to DRV */
     reset_intra_map(ctu_dec, i_info, x0, y0, log2_cb_w, log2_cb_h, log2_min_cb_s);
 
     return merge_flag;
@@ -1212,7 +1213,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     #if 1
     struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
-    struct IntraDRVInfo *const i_info = &ctu_dec->drv_ctx.intra_info;
+    struct IntraDRVInfo *const i_info   = &ctu_dec->drv_ctx.intra_info;
     VVCMergeInfo mv_info;
     #endif
     uint8_t ref_idx0 = 0;
@@ -1599,6 +1600,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
 end:
 
+    /*FIXME this have to be moved to DRV */
     reset_intra_map(ctu_dec, i_info, x0, y0, log2_cb_w, log2_cb_h, log2_min_cb_s);
 
     return cu_type;
