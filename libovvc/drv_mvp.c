@@ -1325,41 +1325,40 @@ fill_tmvp_map(struct OVMV *const tmvp_mv, OVMV mv,
 static void
 fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx,
                   struct OVMVCtx *const mv_ctx1, OVMV mv,
-                  int pb_x, int pb_y, int nb_pb_w, int nb_pb_h)
+                  int pb_x, int pb_y, int nb_unit_w, int nb_unit_h)
 {
+    uint64_t bs1_map_h = dbf_info->bs1_map.hor[pb_y];
+    uint64_t bs1_map_v = dbf_info->bs1_map.ver[pb_x];
+    uint64_t hor_msk = (uint64_t)1 << (2 + pb_x);
+    uint64_t ver_msk = (uint64_t)1 << pb_y;
+
     int i, j;
-    int mask = 1;
-    int shift_v = pb_y;
-    int shift_h = 2 + pb_x;
 
-    uint64_t val = dbf_info->bs1_map.hor[pb_y];
-
-    uint64_t tmp_mask_h = (uint64_t)mask << shift_h;
-    uint64_t tmp_mask_v = (uint64_t)mask << shift_v;
-
-    for (j = 0; j < nb_pb_w; ++j) {
+    for (j = 0; j < nb_unit_w; ++j) {
         OVMV mv_above = mv_ctx->mvs[PB_POS_IN_BUF(pb_x + j, pb_y - 1)];
+
         int64_t above_avail = -((!!(mv_ctx->map.hfield[pb_y]  & POS_MASK(pb_x + j, 0))
                                 & !(mv_ctx1->map.hfield[pb_y] & POS_MASK(pb_x + j, 0))));
         int64_t abv_th = -((abs(mv_above.x - mv.x) >= LF_MV_THRESHOLD) |
                            (abs(mv_above.y - mv.y) >= LF_MV_THRESHOLD));
-        val |= (tmp_mask_h & abv_th & above_avail) | (tmp_mask_h & (-(!above_avail)));
-        tmp_mask_h  <<= 1;
+
+        bs1_map_h |= (hor_msk & abv_th & above_avail) | (hor_msk & (-(!above_avail)));
+
+        hor_msk  <<= 1;
     }
-    dbf_info->bs1_map.hor[pb_y] |= val;
 
-    val = dbf_info->bs1_map.ver[pb_x];
+    dbf_info->bs1_map.hor[pb_y] |= bs1_map_h;
 
-    for (i = 0; i < nb_pb_h; ++i) {
+    for (i = 0; i < nb_unit_h; ++i) {
         OVMV mv_left = mv_ctx->mvs[PB_POS_IN_BUF(pb_x - 1, pb_y + i)];
         int64_t left_avail = -(!!(mv_ctx->map.vfield[pb_x]  & POS_MASK(pb_y + i, 0))
                               & !(mv_ctx1->map.vfield[pb_x] & POS_MASK(pb_y + i, 0)));
         int64_t abv_th = -((abs(mv_left.x - mv.x) >= LF_MV_THRESHOLD) |
                            (abs(mv_left.y - mv.y) >= LF_MV_THRESHOLD));
-        val |= (tmp_mask_v & abv_th & left_avail) | (tmp_mask_v & (-(!left_avail)));
-        tmp_mask_v <<= 1;
+        bs1_map_v |= (ver_msk & abv_th & left_avail) | (ver_msk & (-(!left_avail)));
+        ver_msk <<= 1;
     }
-    dbf_info->bs1_map.ver[pb_x] |= val;
+    dbf_info->bs1_map.ver[pb_x] |= bs1_map_v;
 }
 
 static void
@@ -1424,11 +1423,9 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
         fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
-
         fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
         fill_dbf_mv_map(dbf_info, mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
-
         fill_dbf_mv_map(dbf_info, mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
     } else if (inter_dir & 0x2) {
