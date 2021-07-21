@@ -1353,29 +1353,47 @@ fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx,
     abv_dir ^= bs1_map_h;
     lft_dir ^= bs1_map_v;
 
-    for (j = 0; j < nb_unit_w; ++j) {
-        if (abv_dir & 0x1) {
-            OVMV mv_abv = mv_ctx->mvs[PB_POS_IN_BUF(x0_unit + j, y0_unit - 1)];
+    if (abv_dir) {
+        const OVMV *mv_abv = &mv_ctx->mvs[PB_POS_IN_BUF(x0_unit, y0_unit - 1)];
+        uint8_t pos_shift = 0;
+        do {
+            uint8_t nb_skipped_blk = ov_ctz64(abv_dir);
+            mv_abv    += nb_skipped_blk;
+            pos_shift += nb_skipped_blk;
 
-            uint64_t abv_th = (abs(mv_abv.x - mv.x) >= LF_MV_THRESHOLD) |
-                              (abs(mv_abv.y - mv.y) >= LF_MV_THRESHOLD);
+            uint64_t abv_th = (abs(mv_abv->x - mv.x) >= LF_MV_THRESHOLD) |
+                              (abs(mv_abv->y - mv.y) >= LF_MV_THRESHOLD);
 
-            bs1_map_h |= abv_th << j;
-        }
-        abv_dir >>= 1;
+            bs1_map_h |= abv_th << pos_shift;
+
+            mv_abv++;
+            pos_shift++;
+
+            abv_dir >>= nb_skipped_blk + 1;
+
+        } while (abv_dir);
     }
 
+    if (lft_dir) {
+        const OVMV *mv_lft = &mv_ctx->mvs[PB_POS_IN_BUF(x0_unit - 1, y0_unit)];
 
-    for (i = 0; i < nb_unit_h; ++i) {
-        if (lft_dir & 0x1) {
-            OVMV mv_lft = mv_ctx->mvs[PB_POS_IN_BUF(x0_unit - 1, y0_unit + i)];
+        uint8_t pos_shift = 0;
+        do {
+            uint8_t nb_skipped_blk = ov_ctz64(lft_dir);
+            mv_lft    += 34 * nb_skipped_blk;
+            pos_shift += nb_skipped_blk;
 
-            uint64_t lft_th = (abs(mv_lft.x - mv.x) >= LF_MV_THRESHOLD) |
-                              (abs(mv_lft.y - mv.y) >= LF_MV_THRESHOLD);
+            uint64_t lft_th = (abs(mv_lft->x - mv.x) >= LF_MV_THRESHOLD) |
+                              (abs(mv_lft->y - mv.y) >= LF_MV_THRESHOLD);
 
-            bs1_map_v |= lft_th << i;
-        }
-        lft_dir >>= 1;
+            bs1_map_v |= lft_th << pos_shift;
+
+            mv_lft += 34;
+            pos_shift++;
+
+            lft_dir >>= nb_skipped_blk + 1;
+
+        } while (lft_dir);
     }
 
     dbf_info->bs1_map.hor[y0_unit] |= bs1_map_h << (x0_unit + 2);
@@ -1384,45 +1402,76 @@ fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx,
 
 static void
 fill_dbf_mv_map(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, OVMV mv,
-                int pb_x, int pb_y, int nb_pb_w, int nb_pb_h)
+                int x0_unit, int y0_unit, int nb_unit_w, int nb_unit_h)
 {
-    int mask = 1;
-    int shift_v = pb_y;
-    int shift_h = 2 + pb_x;
+    uint64_t unit_msk_w = ((uint64_t)1 << nb_unit_w) - 1;
+    uint64_t unit_msk_h = ((uint64_t)1 << nb_unit_h) - 1;
 
+    uint64_t bs1_map_h = (dbf_info->bs1_map.hor[y0_unit] >> (2 + x0_unit)) & unit_msk_w;
+    uint64_t bs1_map_v = (dbf_info->bs1_map.ver[x0_unit] >> y0_unit)       & unit_msk_h;
 
-    uint64_t tmp_mask_h = (uint64_t)mask << shift_h;
-    uint64_t tmp_mask_v = (uint64_t)mask << shift_v;
+    uint64_t dir_msk_abv = mv_ctx->map.hfield[y0_unit];
+    uint64_t dir_msk_lft = mv_ctx->map.vfield[x0_unit];
 
-    uint64_t val = dbf_info->bs1_map.hor[pb_y];
+    uint64_t abv_dir = (dir_msk_abv >> (x0_unit + 1)) & unit_msk_w;
+    uint64_t lft_dir = (dir_msk_lft >> (y0_unit + 1)) & unit_msk_w;
 
-    int i, j;
+    /* If abv_dir differ bs1 is set to one */
+    bs1_map_h |= (~abv_dir) & unit_msk_w;
+    bs1_map_v |= (~lft_dir) & unit_msk_h;
 
-    for (j = 0; j < nb_pb_w; ++j) {
+    /* Avoid checking already set bs1 or bs2
+     * There is no need to check for bs2 since inter dir would be implicitly
+     * different and corresponding bs1_map would already be set to 1
+     */
+    abv_dir ^= bs1_map_h;
+    lft_dir ^= bs1_map_v;
 
-        OVMV mv_above = mv_ctx->mvs[PB_POS_IN_BUF(pb_x + j, pb_y - 1)];
+    if (abv_dir) {
+        const OVMV *mv_abv = &mv_ctx->mvs[PB_POS_IN_BUF(x0_unit, y0_unit - 1)];
+        uint8_t pos_shift = 0;
+        do {
+            uint8_t nb_skipped_blk = ov_ctz64(abv_dir);
+            mv_abv    += nb_skipped_blk;
+            pos_shift += nb_skipped_blk;
 
-        int64_t above_avail = -(!!((mv_ctx->map.hfield[pb_y]) & POS_MASK(pb_x + j, 0)));
+            uint64_t abv_th = (abs(mv_abv->x - mv.x) >= LF_MV_THRESHOLD) |
+                              (abs(mv_abv->y - mv.y) >= LF_MV_THRESHOLD);
 
-        int64_t abv_th = -((abs(mv_above.x - mv.x) >= LF_MV_THRESHOLD) |
-                           (abs(mv_above.y - mv.y) >= LF_MV_THRESHOLD));
+            bs1_map_h |= abv_th << pos_shift;
 
-        val |= (tmp_mask_h & abv_th & above_avail) | (tmp_mask_h & (-(!above_avail)));
-        tmp_mask_h  <<= 1;
+            mv_abv++;
+            pos_shift++;
+
+            abv_dir >>= nb_skipped_blk + 1;
+
+        } while (abv_dir);
     }
-    dbf_info->bs1_map.hor[pb_y] |= val;
 
-    val = dbf_info->bs1_map.ver[(pb_x)];
+    if (lft_dir) {
+        const OVMV *mv_lft = &mv_ctx->mvs[PB_POS_IN_BUF(x0_unit - 1, y0_unit)];
 
-    for (i = 0; i < nb_pb_h; ++i) {
-        OVMV mv_left = mv_ctx->mvs[PB_POS_IN_BUF(pb_x - 1, pb_y + i)];
-        int64_t left_avail = -(!!(mv_ctx->map.vfield[pb_x] & POS_MASK(pb_y + i, 0)));
-        int64_t abv_th = -((abs(mv_left.x - mv.x) >= LF_MV_THRESHOLD) |
-                           (abs(mv_left.y - mv.y) >= LF_MV_THRESHOLD));
-        val |= (tmp_mask_v & abv_th & left_avail) | (tmp_mask_v & (-(!left_avail)));
-        tmp_mask_v <<= 1;
+        uint8_t pos_shift = 0;
+        do {
+            uint8_t nb_skipped_blk = ov_ctz64(lft_dir);
+            mv_lft    += 34 * nb_skipped_blk;
+            pos_shift += nb_skipped_blk;
+
+            uint64_t lft_th = (abs(mv_lft->x - mv.x) >= LF_MV_THRESHOLD) |
+                              (abs(mv_lft->y - mv.y) >= LF_MV_THRESHOLD);
+
+            bs1_map_v |= lft_th << pos_shift;
+
+            mv_lft += 34;
+            pos_shift++;
+
+            lft_dir >>= nb_skipped_blk + 1;
+
+        } while (lft_dir);
     }
-    dbf_info->bs1_map.ver[pb_x] |= val;
+
+    dbf_info->bs1_map.hor[y0_unit] |= bs1_map_h << (x0_unit + 2);
+    dbf_info->bs1_map.ver[x0_unit] |= bs1_map_v << y0_unit;
 }
 
 static void
