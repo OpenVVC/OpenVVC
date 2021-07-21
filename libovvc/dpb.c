@@ -149,7 +149,6 @@ ovdpb_unref_pic(OVPicture *pic, int flags)
     pthread_mutex_lock(&pic->pic_mtx);
     pic->flags &= ~flags;
 
-    //TODOpar: do it also in inter for ref piclist
     ovframe_unref(&pic->frame);
 
     pthread_mutex_unlock(&pic->pic_mtx);
@@ -170,7 +169,8 @@ ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
      * returned to the DPB;
      */
     pthread_mutex_lock(&pic->pic_mtx);
-    if (! pic->flags && !ref_count) {
+    // if (! pic->flags && !ref_count) {
+    if (!ref_count) {
         /* Release TMVP  MV maps */
         ov_log(NULL, OVLOG_DEBUG, "Release picture with poc %d\n", pic->poc);
         dpbpriv_release_pic(pic);
@@ -618,7 +618,7 @@ ovdpb_bump_frame(OVDPB *dpb, uint32_t poc, uint16_t output_cvs_id)
 {
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     int min_poc = INT_MAX;
-    int nb_output_pic;
+    int nb_output_pic = 0;
     int i;
 
     /* Count pictures in current output target Coded Video Sequence
@@ -1034,7 +1034,7 @@ void
 ovdpb_uninit_decoded_ctus(OVPicture *const pic)
 {   
     struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
-    if(!decoded_ctus->mask){
+    if(decoded_ctus->mask){
         for(int i = 0; i < decoded_ctus->mask_h; i++)
             ov_freep(&decoded_ctus->mask[i]);
         ov_freep(&decoded_ctus->mask);
