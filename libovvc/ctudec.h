@@ -61,8 +61,6 @@ struct CCLMParams{
    struct LMParams cr;
 };
 
-
-
 struct DBFMap
 {
     uint64_t ver[33]; /* Column map of vertical edges */
@@ -236,14 +234,6 @@ typedef struct VVCMergeInfo
     OVMV mv1;
     uint8_t inter_dir;
 } VVCMergeInfo;
-
-struct VVCTMVPStorage
-{
-    uint64_t *col0;
-    uint64_t *col1;
-    OVMV *mv0;
-    OVMV *mv1;
-};
 
 struct OVMVCtx
 {
