@@ -1618,72 +1618,85 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
                 uint8_t inter_dir0, uint8_t inter_dir1)
 {   
     VVCMergeInfo mv_info;
-    if (inter_dir0 == 1 && inter_dir1 == 2 ) {
-        mv_info.inter_dir  = 3;
-        mv_info.mv0     = mv_info0.mv0;
-        mv_info.mv1     = mv_info1.mv1;
-    } else if (inter_dir0 == 2 && inter_dir1 == 1) {
-        mv_info.inter_dir  = 3;
-        mv_info.mv0     = mv_info1.mv0;
-        mv_info.mv1     = mv_info0.mv1;
-    } else if (inter_dir0 == 1 && inter_dir1 == 1) {
-        mv_info.inter_dir = 1;
+    const struct VVCGPM *const gpm_info = &inter_ctx->gpm_ctx;
+
+    uint8_t inter_dir = inter_dir0 | inter_dir1;
+
+    /* FIXME can probably be simplified */
+    if (inter_dir == 0x1) {
         mv_info.mv0 = mv_info1.mv0;
-    } else if (inter_dir0 == 2 && inter_dir1 == 2) {
-        mv_info.inter_dir = 2;
+    } else if (inter_dir == 0x2) {
         mv_info.mv1 = mv_info1.mv1;
     } else {
-        memset(&mv_info, 0, sizeof(VVCMergeInfo));
+        if (inter_dir0 == 1 && inter_dir1 == 2) {
+            mv_info.mv0     = mv_info0.mv0;
+            mv_info.mv1     = mv_info1.mv1;
+        } else if (inter_dir0 == 2 && inter_dir1 == 1) {
+            mv_info.mv0     = mv_info1.mv0;
+            mv_info.mv1     = mv_info0.mv1;
+        }
     }
 
-    int split_dir = inter_ctx->gpm_ctx.split_dir;
+    mv_info.inter_dir = inter_dir;
+
+    int split_dir = gpm_info->split_dir;
+
     int16_t angle = g_GeoParams[split_dir][0];
-    int tpm_mask = 0;
-    int lookup_y = 0, motion_idx = 0;
-    uint8_t isFlip = angle >= 13 && angle <= 27;
+
     int d_idx = g_GeoParams[split_dir][1];
-    int dx = angle;
-    int dy = (dx + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES;
-    int offset_x = (-(int)nb_pb_w*4) >> 1;
-    int offset_y = (-(int)nb_pb_h*4) >> 1;
+
+    uint8_t flip = angle >= 13 && angle <= 27;
+
+    int offset_x = (-(int)nb_pb_w * 4) >> 1;
+    int offset_y = (-(int)nb_pb_h * 4) >> 1;
 
     if (d_idx > 0) {
-        if (angle % 16 == 8 || (angle % 16 != 0 && nb_pb_h*4 >= nb_pb_w*4)) {
+        if (angle % 16 == 8 || (angle % 16 != 0 && nb_pb_h * 4 >= nb_pb_w * 4)) {
             offset_y += angle < 16 ? ((d_idx * nb_pb_h*4) >> 3) : -(int)((d_idx * nb_pb_h*4) >> 3);
         } else {
             offset_x += angle < 16 ? ((d_idx * nb_pb_w*4) >> 3) : -(int)((d_idx * nb_pb_w*4) >> 3);
         }
     }
 
+    int x_dis = g_Dis[angle];
+    int y_dis = g_Dis[(angle + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES];
+
     for (int y = 0; y < nb_pb_h; y++) {
-        lookup_y = (((4 * y + offset_y) << 1) + 5) * g_Dis[dy];
+        int lookup_y = (((4 * y + offset_y) << 1) + 5) * y_dis;
 
         for (int x = 0; x < nb_pb_w; x++) {
-            motion_idx = (((4 * x + offset_x) << 1) + 5) * g_Dis[dx] + lookup_y;
-            tpm_mask = abs(motion_idx) < 32 ? 2 : (motion_idx <= 0 ? (1 - isFlip) : isFlip);
+            int motion_idx = (((4 * x + offset_x) << 1) + 5) * x_dis + lookup_y;
+            int tpm_mask = abs(motion_idx) < 32 ? 2 : (motion_idx <= 0 ? (1 - flip) : flip);
 
             if (tpm_mask == 2) {
+
                 if (mv_info.inter_dir == 1) {
                     mv_info.mv1.x = mv_info.mv1.y = 0;
                 } else if (mv_info.inter_dir == 2) {
                     mv_info.mv0.x = mv_info.mv0.y = 0;
                 }
+
                 update_gpm_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, pb_x + x, pb_y + y, 
                                     1, 1, mv_info.inter_dir);
+
             } else if (tpm_mask == 0) {
+
                 if (inter_dir0 == 1) {
                     mv_info0.mv1.x = mv_info0.mv1.y = 0;
                 } else if (inter_dir0 == 2) {
                     mv_info0.mv0.x = mv_info0.mv0.y = 0;
                 }
+
                 update_gpm_mv_ctx_b(inter_ctx, mv_info0.mv0, mv_info0.mv1, pb_x + x, pb_y + y, 
                                     1, 1, inter_dir0);
-            } else{
+            } else {
+
                 if (inter_dir1 == 1) {
                     mv_info1.mv1.x = mv_info1.mv1.y = 0;
-                } else if (inter_dir1 == 2){
+                } else if (inter_dir1 == 2) {
                     mv_info1.mv0.x = mv_info1.mv0.y = 0;
                 }
+
                 update_gpm_mv_ctx_b(inter_ctx, mv_info1.mv0, mv_info1.mv1, pb_x + x, pb_y + y, 
                                     1, 1, inter_dir1);
             }
@@ -2037,9 +2050,9 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
 
 void 
 drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
-                uint8_t pb_x, uint8_t pb_y,
-                uint8_t nb_pb_w, uint8_t nb_pb_h,
-                uint8_t max_nb_cand, uint8_t is_small)
+                    uint8_t pb_x, uint8_t pb_y,
+                    uint8_t nb_pb_w, uint8_t nb_pb_h,
+                    uint8_t max_nb_cand, uint8_t is_small)
 {
     struct VVCGPM* gpm_ctx = &inter_ctx->gpm_ctx;
     VVCMergeInfo mv_info0, mv_info1;
@@ -2047,14 +2060,14 @@ drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                                      nb_pb_w, nb_pb_h, gpm_ctx->merge_idx0,
                                      max_nb_cand, is_small);
 
-    if(gpm_ctx->merge_idx0 != gpm_ctx->merge_idx1){ 
+    if (gpm_ctx->merge_idx0 != gpm_ctx->merge_idx1) { 
         mv_info1 = vvc_derive_merge_mvp_b(inter_ctx, pb_x, pb_y,
                                          nb_pb_w, nb_pb_h, gpm_ctx->merge_idx1,
                                          max_nb_cand, is_small);
-    }
-    else{
+    } else{
         mv_info1 = mv_info0;
     }
+
     mv_info0.mv0.bcw_idx_plus1 = 0;
     mv_info0.mv1.bcw_idx_plus1 = 0;
     mv_info1.mv0.bcw_idx_plus1 = 0;
@@ -2065,21 +2078,21 @@ drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     mv_info1.mv1.prec_amvr = 0;
 
     uint8_t parity = gpm_ctx->merge_idx0 & 1;
-    if( mv_info0.inter_dir & (0x01 + parity) ){
+
+    if (mv_info0.inter_dir & (0x01 + parity)) {
         gpm_ctx->inter_dir0 = 1 + parity;
         gpm_ctx->mv0 = parity ? mv_info0.mv1 : mv_info0.mv0; 
-    }
-    else if (mv_info0.inter_dir & (0x02 - parity)){
+    } else if (mv_info0.inter_dir & (0x02 - parity)) {
         gpm_ctx->inter_dir0 = 2 - parity;
         gpm_ctx->mv0 = parity ? mv_info0.mv0 : mv_info0.mv1; 
     }   
 
     parity = gpm_ctx->merge_idx1 & 1;
-    if( mv_info1.inter_dir & (0x01 + parity) ){
+
+    if(mv_info1.inter_dir & (0x01 + parity)) {
         gpm_ctx->inter_dir1 = 1 + parity;
         gpm_ctx->mv1 = parity ? mv_info1.mv1 : mv_info1.mv0; 
-    }
-    else if (mv_info1.inter_dir & (0x02 - parity)){
+    } else if (mv_info1.inter_dir & (0x02 - parity)) {
         gpm_ctx->inter_dir1 = 2 - parity;
         gpm_ctx->mv1 = parity ? mv_info1.mv0 : mv_info1.mv1; 
     }  
