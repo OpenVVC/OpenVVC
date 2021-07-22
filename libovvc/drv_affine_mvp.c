@@ -2756,6 +2756,170 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
     }
 }
 
+#define LF_MV_THRESHOLD 8
+static void
+fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx,
+                  struct OVMVCtx *const mv_ctx1,
+                  int x0_unit, int y0_unit, int nb_unit_w, int nb_unit_h)
+{
+    uint64_t unit_msk_w = ((uint64_t)1 << nb_unit_w) - 1;
+    uint64_t unit_msk_h = ((uint64_t)1 << nb_unit_h) - 1;
+
+    uint64_t bs1_map_h = (dbf_info->bs1_map.hor[y0_unit] >> (2 + x0_unit)) & unit_msk_w;
+    uint64_t bs1_map_v = (dbf_info->bs1_map.ver[x0_unit] >> y0_unit)       & unit_msk_h;
+
+    uint64_t dir_msk_abv = mv_ctx->map.hfield[y0_unit] & (~mv_ctx1->map.hfield[y0_unit]);
+    uint64_t dir_msk_lft = mv_ctx->map.vfield[x0_unit] & (~mv_ctx1->map.vfield[x0_unit]);
+
+    uint64_t abv_dir = (dir_msk_abv >> (x0_unit + 1)) & unit_msk_w;
+    uint64_t lft_dir = (dir_msk_lft >> (y0_unit + 1)) & unit_msk_w;
+
+    /* If abv_dir differ bs1 is set to one */
+    bs1_map_h |= (~abv_dir) & unit_msk_w;
+    bs1_map_v |= (~lft_dir) & unit_msk_h;
+
+    /* Avoid checking already set bs1 or bs2
+     * There is no need to check for bs2 since inter dir would be implicitly
+     * different and corresponding bs1_map would already be set to 1
+     */
+    abv_dir ^= bs1_map_h;
+    lft_dir ^= bs1_map_v;
+
+    if (abv_dir) {
+        const OVMV *mv_abv = &mv_ctx->mvs[PB_POS_IN_BUF(x0_unit, y0_unit - 1)];
+        uint8_t pos_shift = 0;
+        do {
+            const OVMV *mv;
+            uint8_t nb_skipped_blk = ov_ctz64(abv_dir);
+            mv_abv    += nb_skipped_blk;
+            pos_shift += nb_skipped_blk;
+            mv = mv_abv + 34;
+
+            uint64_t abv_th = (abs(mv_abv->x - mv->x) >= LF_MV_THRESHOLD) |
+                              (abs(mv_abv->y - mv->y) >= LF_MV_THRESHOLD) |
+                              (mv_abv->ref_idx != mv->ref_idx);
+
+            bs1_map_h |= abv_th << pos_shift;
+
+            mv_abv++;
+            pos_shift++;
+
+            abv_dir >>= nb_skipped_blk + 1;
+
+        } while (abv_dir);
+    }
+
+    if (lft_dir) {
+        const OVMV *mv_lft = &mv_ctx->mvs[PB_POS_IN_BUF(x0_unit - 1, y0_unit)];
+
+        uint8_t pos_shift = 0;
+        do {
+            const OVMV *mv;
+            uint8_t nb_skipped_blk = ov_ctz64(lft_dir);
+            mv_lft    += 34 * nb_skipped_blk;
+            pos_shift += nb_skipped_blk;
+            mv = mv_lft + 1;
+
+            uint64_t lft_th = (abs(mv_lft->x - mv->x) >= LF_MV_THRESHOLD) |
+                              (abs(mv_lft->y - mv->y) >= LF_MV_THRESHOLD) |
+                              (mv_lft->ref_idx != mv->ref_idx);
+
+            bs1_map_v |= lft_th << pos_shift;
+
+            mv_lft += 34;
+            pos_shift++;
+
+            lft_dir >>= nb_skipped_blk + 1;
+
+        } while (lft_dir);
+    }
+
+    dbf_info->bs1_map.hor[y0_unit] |= bs1_map_h << (x0_unit + 2);
+    dbf_info->bs1_map.ver[x0_unit] |= bs1_map_v << y0_unit;
+}
+
+static void
+fill_dbf_mv_map(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx,
+                int x0_unit, int y0_unit, int nb_unit_w, int nb_unit_h)
+{
+    uint64_t unit_msk_w = ((uint64_t)1 << nb_unit_w) - 1;
+    uint64_t unit_msk_h = ((uint64_t)1 << nb_unit_h) - 1;
+
+    uint64_t bs1_map_h = (dbf_info->bs1_map.hor[y0_unit] >> (2 + x0_unit)) & unit_msk_w;
+    uint64_t bs1_map_v = (dbf_info->bs1_map.ver[x0_unit] >> y0_unit)       & unit_msk_h;
+
+    uint64_t dir_msk_abv = mv_ctx->map.hfield[y0_unit];
+    uint64_t dir_msk_lft = mv_ctx->map.vfield[x0_unit];
+
+    uint64_t abv_dir = (dir_msk_abv >> (x0_unit + 1)) & unit_msk_w;
+    uint64_t lft_dir = (dir_msk_lft >> (y0_unit + 1)) & unit_msk_w;
+
+    /* If abv_dir differ bs1 is set to one */
+    bs1_map_h |= (~abv_dir) & unit_msk_w;
+    bs1_map_v |= (~lft_dir) & unit_msk_h;
+
+    /* Avoid checking already set bs1 or bs2
+     * There is no need to check for bs2 since inter dir would be implicitly
+     * different and corresponding bs1_map would already be set to 1
+     */
+    abv_dir ^= bs1_map_h;
+    lft_dir ^= bs1_map_v;
+
+    if (abv_dir) {
+        const OVMV *mv_abv = &mv_ctx->mvs[PB_POS_IN_BUF(x0_unit, y0_unit - 1)];
+        uint8_t pos_shift = 0;
+        do {
+            const OVMV *mv;
+            uint8_t nb_skipped_blk = ov_ctz64(abv_dir);
+            mv_abv    += nb_skipped_blk;
+            pos_shift += nb_skipped_blk;
+            mv = mv_abv + 34;
+
+            /* FIXME check ref_idx */
+            uint64_t abv_th = (abs(mv_abv->x - mv->x) >= LF_MV_THRESHOLD) |
+                              (abs(mv_abv->y - mv->y) >= LF_MV_THRESHOLD) |
+                              (mv_abv->ref_idx != mv->ref_idx);
+
+            bs1_map_h |= abv_th << pos_shift;
+
+            mv_abv++;
+            pos_shift++;
+
+            abv_dir >>= nb_skipped_blk + 1;
+
+        } while (abv_dir);
+    }
+
+    if (lft_dir) {
+        const OVMV *mv_lft = &mv_ctx->mvs[PB_POS_IN_BUF(x0_unit - 1, y0_unit)];
+
+        uint8_t pos_shift = 0;
+        do {
+            const OVMV *mv;
+            uint8_t nb_skipped_blk = ov_ctz64(lft_dir);
+            mv_lft    += 34 * nb_skipped_blk;
+            pos_shift += nb_skipped_blk;
+
+            mv = mv_lft + 1;
+
+            uint64_t lft_th = (abs(mv_lft->x - mv->x) >= LF_MV_THRESHOLD) |
+                              (abs(mv_lft->y - mv->y) >= LF_MV_THRESHOLD) |
+                              (mv_lft->ref_idx != mv->ref_idx);
+
+            bs1_map_v |= lft_th << pos_shift;
+
+            mv_lft += 34;
+            pos_shift++;
+
+            lft_dir >>= nb_skipped_blk + 1;
+
+        } while (lft_dir);
+    }
+
+    dbf_info->bs1_map.hor[y0_unit] |= bs1_map_h << (x0_unit + 2);
+    dbf_info->bs1_map.ver[x0_unit] |= bs1_map_v << y0_unit;
+}
+
 /* FIXME avoid duplicated dmv derivation */
 static uint8_t
 update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
@@ -2768,6 +2932,7 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     /*FIXME check for specific DBF application for sub blokc MVs */
     struct AffineDRVInfo *aff_info = &inter_ctx->affine_ctx;
     const struct AffineControlInfo *const cinfo = mv_info.cinfo;
+    struct DBFInfo *const dbf_info = &inter_ctx->tmvp_ctx.ctudec->dbf_info;
     uint8_t affine_type = mv_info.affine_type;
 
     uint16_t pos = PB_POS_IN_BUF(pb_x, pb_y);
@@ -2796,9 +2961,13 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
         compute_subblock_mvs(&cinfo[1], dmv_1, &mv_ctx1->mvs[pos],
                              log2_cu_w, log2_cu_h, mv_broad_1);
 
+        fill_dbf_mv_map(dbf_info, mv_ctx0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+        fill_dbf_mv_map(dbf_info, mv_ctx1, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
         return ((!mv_broad_0) | (!mv_broad_1 << 1));
     } else if (inter_dir & 0x2) {
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         const struct AffineDeltaMV dmv_1 = derive_affine_delta_mvs(&cinfo[1],
                                                                    log2_cu_w, log2_cu_h,
                                                                    affine_type);
@@ -2810,9 +2979,12 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
         compute_subblock_mvs(&cinfo[1], dmv_1, &mv_ctx1->mvs[pos],
                              log2_cu_w, log2_cu_h, mv_broad_1);
 
+        fill_dbf_mv_map_b(dbf_info, mv_ctx1, mv_ctx0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
         return (!mv_broad_1 << 1);
     } else if (inter_dir & 0x1) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
         const struct AffineDeltaMV dmv_0 = derive_affine_delta_mvs(&cinfo[0],
                                                                    log2_cu_w, log2_cu_h,
                                                                    affine_type);
@@ -2823,6 +2995,9 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
 
         compute_subblock_mvs(&cinfo[0], dmv_0, &mv_ctx0->mvs[pos],
                              log2_cu_w, log2_cu_h, mv_broad_0);
+
+        fill_dbf_mv_map_b(dbf_info, mv_ctx0, mv_ctx1, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
         return (!mv_broad_0);
     }
     return 0;
@@ -3276,6 +3451,7 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
     /* Update for next pass */
     prof_dir &= update_mv_ctx_b(inter_ctx, mv_info, x_pb, y_pb, nb_pb_w,
                                 nb_pb_h, log2_cu_w, log2_cu_h, inter_dir);
+
     if (prof_dir) {
         uint8_t prof_0 = check_affine_prof(&mv_info, RPL_0);
         uint8_t prof_1 = check_affine_prof(&mv_info, RPL_1);
