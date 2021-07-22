@@ -1157,7 +1157,7 @@ transform_unit_st(OVCTUDec *const ctu_dec,
     uint8_t cbf_mask_c = cbf_mask & 0x3;
 
     if (cbf_mask) {
-        /* FIXME check if delta_qp is read per cu or per tu */
+        /* FIXME delta_qp is only read on first significant TU in CU */
         if (ctu_dec->delta_qp_enabled && cbf_mask) {
             OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
             int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
@@ -1235,7 +1235,7 @@ transform_unit_c(OVCTUDec *const ctu_dec,
     uint8_t cbf_mask_c = cbf_mask & 0x3;
 
     if (cbf_mask) {
-        /* FIXME check this */
+        /* FIXME Read only on first TU */
         if (ctu_dec->delta_qp_enabled && cbf_mask) {
             int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
             #if 1
