@@ -435,6 +435,7 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
 
 
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
+        fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
     }
 
     if (cbf_mask & 0x1) {
@@ -461,6 +462,7 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
         }
 
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
+        fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
     }
 }
 
@@ -483,8 +485,10 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
         memcpy(ctu_dec->transform_buff, coeffs_jcbcr, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
     }
 
-    fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0, y0, log2_tb_w, log2_tb_h);
-    fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0, y0, log2_tb_w, log2_tb_h);
+    fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
+    fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
+    fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
+    /* FIXME set jcbcr dbf qp */
 
     /* FIXME better organisation based on cbf_mask */
     if (cbf_mask == 3) {
@@ -1073,6 +1077,8 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
         if (ctu_dec->intra_mode_c >= 67 && ctu_dec->intra_mode_c < 70) {
             vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, &ctu_dec->rcn_ctx.ctu_buff, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1);
         }
+        fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
+        fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
     }
 
     if (jcbcr_flag) {
@@ -1107,6 +1113,9 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             memcpy(ctu_dec->transform_buff, coeffs_y, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
         }
+
+        fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
+        fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
 
         /* FIXME use transform add optimization */
         vvc_add_residual(ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
@@ -1178,6 +1187,10 @@ transform_unit_st(OVCTUDec *const ctu_dec,
 
     }
 
+    /* FIXME Move to RCN functions */
+    fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
+    fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
+
     return cbf_mask;
 }
 
@@ -1202,6 +1215,9 @@ transform_unit_l(OVCTUDec *const ctu_dec,
         residual_coding_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, tu_info);
 
     }
+
+    /* FIXME Move to RCN functions */
+    fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
 
     return cbf_mask;
 }
@@ -1241,6 +1257,9 @@ transform_unit_c(OVCTUDec *const ctu_dec,
         }
 
     }
+
+    /* FIXME Move to RCN functions */
+    fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
 
     return cbf_mask;
 }
@@ -1727,6 +1746,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
         uint8_t tu_cbf_cb = ovcabac_read_ae_tu_cbf_cb(cabac_ctx);
         uint8_t tu_cbf_cr = ovcabac_read_ae_tu_cbf_cr(cabac_ctx, tu_cbf_cb);
         cbf_mask_c = (tu_cbf_cb << 1) | tu_cbf_cr;
+        fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
     }
 
     cbf = !cbf_flags ? 1 : ovcabac_read_ae_tu_cbf_luma_isp(cabac_ctx, cbf);
@@ -1919,6 +1939,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
         uint8_t tu_cbf_cb = ovcabac_read_ae_tu_cbf_cb(cabac_ctx);
         uint8_t tu_cbf_cr = ovcabac_read_ae_tu_cbf_cr(cabac_ctx, tu_cbf_cb);
         cbf_mask_c = (tu_cbf_cb << 1) | tu_cbf_cr;
+        fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
     }
 
     cbf = !cbf_flags ? 1 : ovcabac_read_ae_tu_cbf_luma_isp(cabac_ctx, cbf);
