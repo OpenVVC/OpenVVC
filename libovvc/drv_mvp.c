@@ -1330,8 +1330,8 @@ fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx,
                   struct OVMVCtx *const mv_ctx1, OVMV mv,
                   int x0_unit, int y0_unit, int nb_unit_w, int nb_unit_h)
 {
-    uint64_t unit_msk_w = ((uint64_t)1 << nb_unit_w) - 1;
-    uint64_t unit_msk_h = ((uint64_t)1 << nb_unit_h) - 1;
+    uint64_t unit_msk_w = (uint64_t)((uint64_t)1 << nb_unit_w) - 1llu;
+    uint64_t unit_msk_h = (uint64_t)((uint64_t)1 << nb_unit_h) - 1llu;
 
     uint64_t bs1_map_h = (dbf_info->bs1_map.hor[y0_unit] >> (2 + x0_unit)) & unit_msk_w;
     uint64_t bs1_map_v = (dbf_info->bs1_map.ver[x0_unit] >> y0_unit)       & unit_msk_h;
@@ -1406,8 +1406,8 @@ static void
 fill_dbf_mv_map(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx, OVMV mv,
                 int x0_unit, int y0_unit, int nb_unit_w, int nb_unit_h)
 {
-    uint64_t unit_msk_w = ((uint64_t)1 << nb_unit_w) - 1;
-    uint64_t unit_msk_h = ((uint64_t)1 << nb_unit_h) - 1;
+    uint64_t unit_msk_w = (uint64_t)((uint64_t)1 << nb_unit_w) - 1llu;
+    uint64_t unit_msk_h = (uint64_t)((uint64_t)1 << nb_unit_h) - 1llu;
 
     uint64_t bs1_map_h = (dbf_info->bs1_map.hor[y0_unit] >> (2 + x0_unit)) & unit_msk_w;
     uint64_t bs1_map_v = (dbf_info->bs1_map.ver[x0_unit] >> y0_unit)       & unit_msk_h;
