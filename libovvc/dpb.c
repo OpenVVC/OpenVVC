@@ -27,7 +27,7 @@ enum SliceType
    SLICE_I = 2,
 };
 
-const SIZE_INT64 = 6;
+const uint8_t SIZE_INT64 = 6;
 
 static void tmvp_release_mv_planes(OVPicture *const pic);
 
@@ -169,8 +169,7 @@ ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
      * returned to the DPB;
      */
     pthread_mutex_lock(&pic->pic_mtx);
-    // if (! pic->flags && !ref_count) {
-    if (!ref_count) {
+    if (! pic->flags && !ref_count) {
         /* Release TMVP  MV maps */
         ov_log(NULL, OVLOG_DEBUG, "Release picture with poc %d\n", pic->poc);
         dpbpriv_release_pic(pic);
@@ -210,10 +209,12 @@ static void
 vvc_clear_refs(OVDPB *dpb)
 {
     int i;
+    ov_log(NULL, OVLOG_INFO, "Release all reference pictures\n");
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     // const uint8_t flags = OV_ST_REF_PIC_FLAG | OV_LT_REF_PIC_FLAG;
 
     for (i = 0; i < nb_dpb_pic; i++) {
+        // dpb->pictures[i].flags &= ~flags;
         ovdpb_release_pic(dpb, &dpb->pictures[i]);
     }
 }
@@ -227,6 +228,8 @@ ovdpb_flush_dpb(OVDPB *dpb)
     // const uint8_t flags = ~0;
 
     for (i = 0; i < nb_dpb_pic; i++) {
+        dpb->pictures[i].flags = 0; 
+        atomic_init( &dpb->pictures[i].ref_count, 0);
         ovdpb_release_pic(dpb, &dpb->pictures[i]);
     }
 }
@@ -449,7 +452,8 @@ vvc_unmark_refs(struct RPLInfo *rpl_info, const OVPicture **dst_rpl)
         ref_pic = dst_rpl[i];
         int16_t ref_poc  = rpl_info->ref_info[i].poc;
         int16_t ref_type = rpl_info->ref_info[i].type;
-        uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
+        // uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
+        uint8_t flag = 0;
 
         if(ref_pic != 0){
             ov_log(NULL, OVLOG_DEBUG, "Unmark active reference %d\n", ref_poc);
@@ -728,6 +732,7 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
     }
 
     /* Unreference all non marked Picture */
+    ov_log(NULL, OVLOG_TRACE, "Release unmarked reference pictures\n");
     for (i = 0; i < nb_dpb_pic; i++) {
         OVPicture *pic = &dpb->pictures[i];
         ovdpb_release_pic(dpb, pic);
@@ -957,6 +962,8 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     }
 
     dpb->poc = poc;
+
+    //TODOpar: understand and handle properly the release of reference pictures
 
     /* If the NALU is an Refresh Picture all previous pictures in DPB
      * can be unreferenced
