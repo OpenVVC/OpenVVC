@@ -1645,21 +1645,22 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
 
     int d_idx = g_GeoParams[split_dir][1];
 
+    int x_dis = g_Dis[angle];
+    int y_dis = g_Dis[(angle + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES];
+
     uint8_t flip = angle >= 13 && angle <= 27;
 
+    /* FIXME use absolute coordinates instead */
     int offset_x = (-(int)nb_pb_w * 4) >> 1;
     int offset_y = (-(int)nb_pb_h * 4) >> 1;
 
     if (d_idx > 0) {
-        if (angle % 16 == 8 || (angle % 16 != 0 && nb_pb_h * 4 >= nb_pb_w * 4)) {
-            offset_y += angle < 16 ? ((d_idx * nb_pb_h*4) >> 3) : -(int)((d_idx * nb_pb_h*4) >> 3);
+        if ((angle & 0xF) == 8 || ((angle & 0xF) && nb_pb_h >= nb_pb_w)) {
+            offset_y += angle < 16 ? ((d_idx * nb_pb_h) >> 1) : -(int)((d_idx * nb_pb_h) >> 1);
         } else {
-            offset_x += angle < 16 ? ((d_idx * nb_pb_w*4) >> 3) : -(int)((d_idx * nb_pb_w*4) >> 3);
+            offset_x += angle < 16 ? ((d_idx * nb_pb_w) >> 1) : -(int)((d_idx * nb_pb_w) >> 1);
         }
     }
-
-    int x_dis = g_Dis[angle];
-    int y_dis = g_Dis[(angle + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES];
 
     for (int y = 0; y < nb_pb_h; y++) {
         int lookup_y = (((4 * y + offset_y) << 1) + 5) * y_dis;
