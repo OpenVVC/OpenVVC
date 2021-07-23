@@ -1622,7 +1622,9 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
 
     uint8_t inter_dir = inter_dir0 | inter_dir1;
 
-    /* FIXME can probably be simplified */
+    /* FIXME can probably be simplified
+     * check usage from loop
+     */
     if (inter_dir == 0x1) {
         mv_info.mv0 = mv_info1.mv0;
     } else if (inter_dir == 0x2) {
@@ -1671,32 +1673,38 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
 
             if (tpm_mask == 2) {
 
+                #if 0
                 if (mv_info.inter_dir == 1) {
                     mv_info.mv1.x = mv_info.mv1.y = 0;
                 } else if (mv_info.inter_dir == 2) {
                     mv_info.mv0.x = mv_info.mv0.y = 0;
                 }
+                #endif
 
                 update_gpm_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, pb_x + x, pb_y + y, 
                                     1, 1, mv_info.inter_dir);
 
             } else if (tpm_mask == 0) {
 
+                #if 0
                 if (inter_dir0 == 1) {
                     mv_info0.mv1.x = mv_info0.mv1.y = 0;
                 } else if (inter_dir0 == 2) {
                     mv_info0.mv0.x = mv_info0.mv0.y = 0;
                 }
+                #endif
 
                 update_gpm_mv_ctx_b(inter_ctx, mv_info0.mv0, mv_info0.mv1, pb_x + x, pb_y + y, 
                                     1, 1, inter_dir0);
             } else {
 
+                #if 0
                 if (inter_dir1 == 1) {
                     mv_info1.mv1.x = mv_info1.mv1.y = 0;
                 } else if (inter_dir1 == 2) {
                     mv_info1.mv0.x = mv_info1.mv0.y = 0;
                 }
+                #endif
 
                 update_gpm_mv_ctx_b(inter_ctx, mv_info1.mv0, mv_info1.mv1, pb_x + x, pb_y + y, 
                                     1, 1, inter_dir1);
