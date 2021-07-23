@@ -2524,48 +2524,138 @@ rcn_ciip(OVCTUDec *const ctudec,
 
 }
 
-
 static int16_t g_globalGeoWeights [GEO_NUM_PRESTORED_MASK][GEO_WEIGHT_MASK_SIZE * GEO_WEIGHT_MASK_SIZE];
 static int16_t g_weightOffset     [GEO_NUM_PARTITION_MODE][GEO_NUM_CU_SIZE][GEO_NUM_CU_SIZE][2];
 
-int16_t g_GeoParams[GEO_NUM_PARTITION_MODE][2];
+const int16_t g_GeoParams[GEO_NUM_PARTITION_MODE][2] =
+{
+    {0, 1},
+    {0, 3},
 
-const int8_t g_Dis[GEO_NUM_ANGLES] = { 8, 8, 8, 8, 4, 4, 2, 1, 0, -1, -2, -4, -4, -8, -8, -8, -8, -8, -8, -8, -4, -4, -2, -1, 0, 1, 2, 4, 4, 8, 8, 8 };
-static const int8_t g_angle2mirror[GEO_NUM_ANGLES] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2 };
-static const int8_t g_angle2mask[GEO_NUM_ANGLES] = { 0, -1, 1, 2, 3, 4, -1, -1, 5, -1, -1, 4, 3, 2, 1, -1, 0, -1, 1, 2, 3, 4, -1, -1, 5, -1, -1, 4, 3, 2, 1, -1 };
+    {2, 0},
+    {2, 1},
+    {2, 2},
+    {2, 3},
+
+    {3, 0},
+    {3, 1},
+    {3, 2},
+    {3, 3},
+
+    {4, 0},
+    {4, 1},
+    {4, 2},
+    {4, 3},
+
+    {5, 0},
+    {5, 1},
+    {5, 2},
+    {5, 3},
+
+    {8, 1},
+    {8, 3},
+
+    {11, 0},
+    {11, 1},
+    {11, 2},
+    {11, 3},
+
+    {12, 0},
+    {12, 1},
+    {12, 2},
+    {12, 3},
+
+    {13, 0},
+    {13, 1},
+    {13, 2},
+    {13, 3},
+
+    {14, 0},
+    {14, 1},
+    {14, 2},
+    {14, 3},
+
+    {16, 1},
+    {16, 3},
+
+    {18, 1},
+    {18, 2},
+    {18, 3},
+
+    {19, 1},
+    {19, 2},
+    {19, 3},
+
+    {20, 1},
+    {20, 2},
+    {20, 3},
+
+    {21, 1},
+    {21, 2},
+    {21, 3},
+
+    {24, 1},
+    {24, 3},
+
+    {27, 1},
+    {27, 2},
+    {27, 3},
+
+    {28, 1},
+    {28, 2},
+    {28, 3},
+
+    {29, 1},
+    {29, 2},
+    {29, 3},
+
+    {30, 1},
+    {30, 2},
+    {30, 3}
+};
+
+const int8_t g_Dis[GEO_NUM_ANGLES] = { 
+    8,  8,  8,  8,  4,  4,  2,  1,
+    0, -1, -2, -4, -4, -8, -8, -8,
+
+   -8, -8, -8, -8, -4, -4, -2, -1,
+    0,  1,  2,  4,  4,  8,  8,  8
+};
+
+static const int8_t g_angle2mask[GEO_NUM_ANGLES] = {
+    0, -1,  1,  2,  3,  4, -1, -1,
+    5, -1, -1,  4,  3,  2,  1, -1,
+
+    0, -1,  1,  2,  3,  4, -1, -1,
+    5, -1, -1,  4,  3,  2,  1, -1
+};
 
 void rcn_init_gpm_params(){
-  int modeIdx = 0;
-  for( int angleIdx = 0; angleIdx < GEO_NUM_ANGLES; angleIdx++ ){
-    for( int distanceIdx = 0; distanceIdx < GEO_NUM_DISTANCES; distanceIdx++ ){
-      if( (distanceIdx == 0 && angleIdx >= 16)
-        || ((distanceIdx == 2 || distanceIdx == 0) && (g_angle2mask[angleIdx] == 0 || g_angle2mask[angleIdx] == 5))
-        || g_angle2mask[angleIdx] == -1 )
-      {
-        continue;
-      }
-      g_GeoParams[modeIdx][0] = (int16_t)angleIdx;
-      g_GeoParams[modeIdx][1] = (int16_t)distanceIdx;
-      modeIdx++;
-    }
-  }
-  for (int angleIdx = 0; angleIdx < (GEO_NUM_ANGLES >> 2) + 1; angleIdx++){
-    if (g_angle2mask[angleIdx] == -1){
+  int angle_idx;
+  for (angle_idx = 0; angle_idx < (GEO_NUM_ANGLES >> 2) + 1; angle_idx++){
+    int x, y;
+
+    if (g_angle2mask[angle_idx] == -1){
       continue;
     }
 
-    int distanceX = angleIdx;
-    int distanceY = (distanceX + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES;
-    int16_t rho = ((int)g_Dis[distanceX] << (GEO_MAX_CU_LOG2+1)) + ((int)g_Dis[distanceY] << (GEO_MAX_CU_LOG2 + 1));
-    static const int16_t maskOffset = (2*GEO_MAX_CU_SIZE - GEO_WEIGHT_MASK_SIZE) >> 1;
-    int index = 0;
-    for( int y = 0; y < GEO_WEIGHT_MASK_SIZE; y++ ){
-      int16_t lookUpY = (((y + maskOffset) << 1) + 1) * g_Dis[distanceY];
-      for( int x = 0; x < GEO_WEIGHT_MASK_SIZE; x++, index++ ){
-        int16_t sx_i = ((x + maskOffset) << 1) + 1;
-        int16_t weightIdx = sx_i * g_Dis[distanceX] + lookUpY - rho;
+    int dist_x = angle_idx;
+    int dist_y = (dist_x + (GEO_NUM_ANGLES >> 2)) % GEO_NUM_ANGLES;
+    int16_t rho = ((int)g_Dis[dist_x] << (GEO_MAX_CU_LOG2 + 1)) +
+                  ((int)g_Dis[dist_y] << (GEO_MAX_CU_LOG2 + 1));
+
+    static const int16_t offset_msk = (2 * GEO_MAX_CU_SIZE - GEO_WEIGHT_MASK_SIZE) >> 1;
+    int idx = 0;
+    for (y = 0; y < GEO_WEIGHT_MASK_SIZE; y++) {
+
+      int16_t lookUpY = (((y + offset_msk) << 1) + 1) * g_Dis[dist_y];
+
+      for (x = 0; x < GEO_WEIGHT_MASK_SIZE; x++, idx++) {
+        int16_t sx_i = ((x + offset_msk) << 1) + 1;
+        int16_t weightIdx = sx_i * g_Dis[dist_x] + lookUpY - rho;
         int weightLinearIdx = 32 + weightIdx;
-        g_globalGeoWeights[g_angle2mask[angleIdx]][index] = ov_clip((weightLinearIdx + 4) >> 3, 0, 8);
+
+        g_globalGeoWeights[g_angle2mask[angle_idx]][idx] = ov_clip((weightLinearIdx + 4) >> 3, 0, 8);
       }
     }
   }
@@ -2600,23 +2690,36 @@ static void
 rcn_gpm_weights_and_steps(int split_dir, int log2_pb_w_l, int log2_pb_h_l, int* step_x, int* step_y, 
                             int16_t** weight, int cr_scale)
 {
+    static const int8_t g_angle2mirror[GEO_NUM_ANGLES] = {
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1, 1, 1, 1, 2, 2, 2,
+
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1, 1, 1, 2, 2, 2, 2
+    };
+
   int16_t angle = g_GeoParams[split_dir][0];
   int16_t wIdx = log2_pb_w_l - GEO_MIN_CU_LOG2;
   int16_t hIdx = log2_pb_h_l - GEO_MIN_CU_LOG2;
   *step_x = 1 << cr_scale;
   *step_y = 0;
+
   if (g_angle2mirror[angle] == 2){
-    *step_y = -(int)((GEO_WEIGHT_MASK_SIZE << cr_scale) + (1 << log2_pb_w_l));
-    *weight = &g_globalGeoWeights[g_angle2mask[angle]][(GEO_WEIGHT_MASK_SIZE - 1 - g_weightOffset[split_dir][hIdx][wIdx][1]) * GEO_WEIGHT_MASK_SIZE + g_weightOffset[split_dir][hIdx][wIdx][0]];
-  }
-  else if (g_angle2mirror[angle] == 1){
-    *step_x = -1 << cr_scale;
-    *step_y = (GEO_WEIGHT_MASK_SIZE << cr_scale) + (1 << log2_pb_w_l);
-    *weight = &g_globalGeoWeights[g_angle2mask[angle]][g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + (GEO_WEIGHT_MASK_SIZE - 1 - g_weightOffset[split_dir][hIdx][wIdx][0])];
-  }
-  else{
-    *step_y = (GEO_WEIGHT_MASK_SIZE << cr_scale) - (1 << log2_pb_w_l);
-    *weight = &g_globalGeoWeights[g_angle2mask[angle]][g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + g_weightOffset[split_dir][hIdx][wIdx][0]];
+      int weight_offset = (GEO_WEIGHT_MASK_SIZE - 1 - g_weightOffset[split_dir][hIdx][wIdx][1])
+                        * GEO_WEIGHT_MASK_SIZE
+                        + g_weightOffset[split_dir][hIdx][wIdx][0];
+
+      *step_y = -(int)((GEO_WEIGHT_MASK_SIZE << cr_scale) + (1 << log2_pb_w_l));
+      *weight = &g_globalGeoWeights[g_angle2mask[angle]][weight_offset];
+  } else if (g_angle2mirror[angle] == 1) {
+      int weight_offset = g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + (GEO_WEIGHT_MASK_SIZE - 1 - g_weightOffset[split_dir][hIdx][wIdx][0]);
+      *step_x = -1 << cr_scale;
+      *step_y = (GEO_WEIGHT_MASK_SIZE << cr_scale) + (1 << log2_pb_w_l);
+      *weight = &g_globalGeoWeights[g_angle2mask[angle]][weight_offset];
+  } else {
+      int weight_offset = g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + g_weightOffset[split_dir][hIdx][wIdx][0];
+      *step_y = (GEO_WEIGHT_MASK_SIZE << cr_scale) - (1 << log2_pb_w_l);
+      *weight = &g_globalGeoWeights[g_angle2mask[angle]][weight_offset];
   }
 }
 

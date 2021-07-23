@@ -52,7 +52,7 @@ ctu_field_set_rect_bitfield(struct CTUBitField *const ctu_map,
 #define GEO_WEIGHT_MASK_SIZE    (3 * (GEO_MAX_CU_SIZE >> 3) * 2 + GEO_MAX_CU_SIZE)
 #define GEO_MV_MASK_SIZE        (GEO_WEIGHT_MASK_SIZE >> 2)
 
-extern int16_t   g_GeoParams[GEO_NUM_PARTITION_MODE][2];
+extern const int16_t   g_GeoParams[GEO_NUM_PARTITION_MODE][2];
 extern const int8_t    g_Dis[GEO_NUM_ANGLES];
 
 
