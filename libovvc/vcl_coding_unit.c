@@ -646,6 +646,7 @@ coding_unit(OVCTUDec *const ctu_dec,
 
     ctu_dec->qp_ctx.current_qp = pred_qp;
 
+    ctu_dec->tmp_ciip = 0;
     cu = ctu_dec->coding_unit(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h);
 
     ctu_dec->dequant_chroma = &ctu_dec->dequant_cb;
@@ -1320,6 +1321,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
                 mv_info.mv0.bcw_idx_plus1 = 0;
                 mv_info.mv1.bcw_idx_plus1 = 0;
+
+                fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_cb_w, log2_cb_h);
 
                 rcn_ciip_b(ctu_dec, mv_info.mv0, mv_info.mv1, x0, y0,
                            log2_cb_w, log2_cb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
