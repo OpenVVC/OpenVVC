@@ -2037,7 +2037,7 @@ VVCMergeInfo
 drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                 uint8_t pb_x, uint8_t pb_y,
                 uint8_t nb_pb_w, uint8_t nb_pb_h,
-                int cur_poc, uint8_t merge_idx,
+                uint8_t merge_idx,
                 uint8_t max_nb_cand, uint8_t is_small)
 {
 
@@ -2069,11 +2069,9 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     int ref1 = mv_info.mv1.ref_idx;
 
     if (mv_info.inter_dir == 0x3){
+        /* FIXME handle LT ref differently */
         int ref_type0 = inter_ctx->rpl_info0->ref_info[ref0].type;
         int ref_type1 = inter_ctx->rpl_info1->ref_info[ref1].type;
-
-        int32_t poc0 = inter_ctx->rpl0[ref0]->poc;
-        int32_t poc1 = inter_ctx->rpl1[ref1]->poc;
 
         if (f_pos == 0) {
             mvd0.x = offset;
@@ -2091,8 +2089,8 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
 
         uint8_t is_lterm0 = (ref_type0 == LT_REF);
         uint8_t is_lterm1 = (ref_type1 == LT_REF);
-        int32_t dist_ref0 = poc0 - cur_poc;
-        int32_t dist_ref1 = poc1 - cur_poc;
+        int32_t dist_ref0 = inter_ctx->dist_ref_0[ref0];
+        int32_t dist_ref1 = inter_ctx->dist_ref_1[ref1];
 
         /* Same ref */
         if (dist_ref0 == dist_ref1){
