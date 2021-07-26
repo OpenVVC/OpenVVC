@@ -22,7 +22,7 @@ typedef struct OVVCHdl{
 
 static int dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name);
 
-static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl, FILE *fout, int nb_threads);
+static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl, char *fout, int nb_threads);
 
 static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
@@ -132,7 +132,7 @@ main(int argc, char** argv)
     } else {
       ov_log(NULL, OVLOG_INFO, "Decoded stream will be written to '%s'.\n", output_file_name);
     }
-    ret = init_openvvc_hdl(&ovvc_hdl, fout, nb_threads);
+    ret = init_openvvc_hdl(&ovvc_hdl, output_file_name, nb_threads);
 
     if (ret < 0) goto failinit;
 
@@ -176,13 +176,13 @@ dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name)
 }
 
 static int
-init_openvvc_hdl(OVVCHdl *const ovvc_hdl, FILE *fout, int nb_threads)
+init_openvvc_hdl(OVVCHdl *const ovvc_hdl, char *output_file_name, int nb_threads)
 {
     OVVCDec **vvcdec = &ovvc_hdl->dec;
     OVVCDmx **vvcdmx = &ovvc_hdl->dmx;
     int ret;
 
-    ret = ovdec_init(vvcdec, fout, nb_threads);
+    ret = ovdec_init(vvcdec, output_file_name, nb_threads);
 
     if (ret < 0) goto faildec;
 

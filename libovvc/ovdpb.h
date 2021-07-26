@@ -115,7 +115,6 @@ struct OVPicture
        /* TODO tmvp scaling */
     } tmvp;
 
-    //Sub decoder that decoded the picture
     OVSEI *sei;
 
     int32_t poc;
@@ -154,6 +153,9 @@ struct DPB
     */
    uint8_t state;
 
+    //Boolean that indicates if the video is displayed
+    uint8_t display_output;
+    
    struct DPBInternal internal;
 };
 

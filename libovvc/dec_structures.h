@@ -294,6 +294,9 @@ struct OVVCDec
 
     } active_params;
 
+    //Boolean that indicates if the video is displayed
+    uint8_t display_output;
+    
     OVDPB *dpb;
 
     struct MVPool *mv_pool;

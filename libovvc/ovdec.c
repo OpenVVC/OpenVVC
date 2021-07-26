@@ -100,6 +100,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
 
     if (!dec->dpb) {
          ret = ovdpb_init(&dec->dpb, &dec->active_params);
+        dec->dpb->display_output = dec->display_output;
          if (ret < 0) {
              return ret;
          }
@@ -516,7 +517,7 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
 
 
 int
-ovdec_init(OVVCDec **vvcdec, FILE *fout, int nb_threads)
+ovdec_init(OVVCDec **vvcdec, char* output_file_name, int nb_threads)
 {
     /* FIXME might not be available on every plateform */
     if (nb_threads < 1)
@@ -533,6 +534,11 @@ ovdec_init(OVVCDec **vvcdec, FILE *fout, int nb_threads)
 
     // ovthread_output_init((*vvcdec), fout);
     
+    (*vvcdec)->display_output = 1; 
+    if( strcmp (output_file_name, "/dev/null") == 0 ){
+        (*vvcdec)->display_output = 0; 
+    }
+
     ovdec_init_subdec_list(*vvcdec);
 
     return 0;

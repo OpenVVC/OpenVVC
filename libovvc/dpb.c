@@ -206,18 +206,62 @@ ovdpb_new_ref_pic(OVPicture *pic, int flags)
 
 /* Remove reference flags on all picture */
 static void
-vvc_clear_refs(OVDPB *dpb)
+ovdpb_clear_refs(OVDPB *dpb)
 {
-    int i;
-    ov_log(NULL, OVLOG_INFO, "Release all reference pictures\n");
-    const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
-    // const uint8_t flags = OV_ST_REF_PIC_FLAG | OV_LT_REF_PIC_FLAG;
+    // int i;
+    // const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
+    // // const uint8_t flags = OV_ST_REF_PIC_FLAG | OV_LT_REF_PIC_FLAG;
 
+    // for (i = 0; i < nb_dpb_pic; i++) {
+    //     // dpb->pictures[i].flags &= ~flags;
+    //     ovdpb_release_pic(dpb, &dpb->pictures[i]);
+    // }
+
+    ov_log(NULL, OVLOG_INFO, "Release reference pictures\n");
+    int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
+    int min_poc = INT_MAX;
+    int nb_output_pic = 0;
+    int i;
+
+    /* Count pictures in current output target Coded Video Sequence
+     */
     for (i = 0; i < nb_dpb_pic; i++) {
-        // dpb->pictures[i].flags &= ~flags;
-        ovdpb_release_pic(dpb, &dpb->pictures[i]);
+        OVPicture *pic = &dpb->pictures[i];
+        // uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
+        // if (flags && is_output_cvs && not_current) {
+        if (pic->frame && pic->frame->data[0]) {
+            nb_output_pic++;
+        }
+    }
+
+    if (nb_output_pic >= dpb->max_nb_dpb_pic) {
+        /* Determine the min POC among those pic
+         */
+        for (i = 0; i < nb_dpb_pic; i++) {
+            OVPicture *pic = &dpb->pictures[i];
+            // uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
+            uint16_t ref_count = atomic_fetch_add_explicit(&pic->ref_count, 0, memory_order_acq_rel);
+            // if (flags && output_flag && is_output_cvs && not_current) {
+            if (pic->frame && pic->frame->data[0] && !pic->flags && !ref_count) {
+                if (pic->poc < min_poc) {
+                    min_poc = pic->poc;
+                }
+            }
+        }
+
+        /* Try to release picture with POC == to min_poc
+         */
+        for (i = 0; i < nb_dpb_pic; i++) {
+            OVPicture *pic = &dpb->pictures[i];
+            // uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
+            // if (output_flag && is_output_cvs && pic->poc == min_poc) {
+            if (pic->poc == min_poc) {
+                ovdpb_release_pic(dpb, pic);
+            }
+        }
     }
 }
+
 
 /* All pictures are removed from the DPB */
 void
@@ -301,16 +345,13 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc)
     dpb->active_pic = pic;
     #endif
 
-    #if 0
-    if (dpb->ps.ph_data->ph_pic_output_flag) {
-    #endif
+    // if (dpb->ps.ph_data->ph_pic_output_flag) {
+    if (dpb->display_output) {
         ovdpb_new_ref_pic(pic, OV_OUTPUT_PIC_FLAG);
         ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
-    #if 0
     } else {
         ovdpb_new_ref_pic(pic, OV_ST_REF_PIC_FLAG);
     }
-    #endif
 
     pic->poc    = poc;
     pic->cvs_id = dpb->cvs_id;
@@ -452,8 +493,8 @@ vvc_unmark_refs(struct RPLInfo *rpl_info, const OVPicture **dst_rpl)
         ref_pic = dst_rpl[i];
         int16_t ref_poc  = rpl_info->ref_info[i].poc;
         int16_t ref_type = rpl_info->ref_info[i].type;
-        // uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
-        uint8_t flag = 0;
+        uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
+        // uint8_t flag = 0;
 
         if(ref_pic != 0){
             ov_log(NULL, OVLOG_DEBUG, "Unmark active reference %d\n", ref_poc);
@@ -732,11 +773,7 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
     }
 
     /* Unreference all non marked Picture */
-    ov_log(NULL, OVLOG_TRACE, "Release unmarked reference pictures\n");
-    for (i = 0; i < nb_dpb_pic; i++) {
-        OVPicture *pic = &dpb->pictures[i];
-        ovdpb_release_pic(dpb, pic);
-    }
+    ovdpb_clear_refs(dpb);
 
     return 0;
 
@@ -746,6 +783,7 @@ fail:
      */
     return 1;
 }
+
 
 int16_t
 tmvp_compute_scale(int32_t dist_current, int32_t dist_colocated)
@@ -963,13 +1001,11 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
 
     dpb->poc = poc;
 
-    //TODOpar: understand and handle properly the release of reference pictures
-
     /* If the NALU is an Refresh Picture all previous pictures in DPB
      * can be unreferenced
      */
     if (idr_flag) {
-        vvc_clear_refs(dpb);
+        ovdpb_clear_refs(dpb);
     }
 
     /* FIXME test bumping here */
