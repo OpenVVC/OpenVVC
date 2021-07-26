@@ -296,7 +296,6 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
     const struct MVPlane *plane1 = tmvp_ctx->col_plane1;
 
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-    uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
 
     uint8_t nb_unit_ctb = (1 << log2_ctb_s) >> LOG2_MIN_CU_S;
     uint16_t nb_ctb_w = ctudec->nb_ctb_pic_w;
