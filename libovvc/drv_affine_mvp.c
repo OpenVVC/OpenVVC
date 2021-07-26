@@ -482,12 +482,12 @@ static OVMV tmvp_rescale(OVMV mv, int16_t scale)
 }
 
 static uint8_t
-tmvp_from_l0(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
+tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *const tmvp, struct TMVPPos pos,
              uint8_t rpl_idx, uint8_t ref_idx,
              uint8_t cand_msk, OVMV *const dst)
 {
-    int32_t dist_ref = rpl_idx == RPL_0 ? tmvp->dist_ref_0[ref_idx]
-                                       : tmvp->dist_ref_1[ref_idx];
+    int32_t dist_ref = rpl_idx == RPL_0 ? inter_ctx->dist_ref_0[ref_idx]
+                                        : inter_ctx->dist_ref_1[ref_idx];
 
     uint8_t cand_c0  = cand_msk & 0x1;
     uint8_t cand_c01 = cand_msk & 0x2;
@@ -547,12 +547,12 @@ found :
 
 /* FIXME We could invert TMVP context buff to avoid duplicating this function */
 static uint8_t
-tmvp_from_l1(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
+tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *const tmvp, struct TMVPPos pos,
              uint8_t rpl_idx, uint8_t ref_idx,
              uint8_t cand_msk, OVMV *const dst)
 {
-    int32_t dist_ref = rpl_idx == RPL_0 ? tmvp->dist_ref_0[ref_idx]
-                                        : tmvp->dist_ref_1[ref_idx];
+    int32_t dist_ref = rpl_idx == RPL_0 ? inter_ctx->dist_ref_0[ref_idx]
+                                        : inter_ctx->dist_ref_1[ref_idx];
     uint8_t cand_c0  = cand_msk & 0x1;
     uint8_t cand_c01 = cand_msk & 0x2;
     uint8_t cand_c1  = cand_msk & 0x4;
@@ -609,15 +609,15 @@ found :
 }
 
 static uint8_t
-merge_tmvp_from_ldc(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
+merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *const tmvp, struct TMVPPos pos,
                     uint8_t rpl_idx, uint8_t ref_idx,
                     uint8_t cand_msk, OVMV *const dst)
 {
-    int32_t dist_ref = rpl_idx == RPL_0 ? tmvp->dist_ref_0[ref_idx]
-                                        : tmvp->dist_ref_1[ref_idx];
+    int32_t dist_ref = rpl_idx == RPL_0 ? inter_ctx->dist_ref_0[ref_idx]
+                                        : inter_ctx->dist_ref_1[ref_idx];
 
-    int32_t dist_ref_opp = rpl_idx == RPL_0 ? tmvp->dist_ref_1[ref_idx]
-                                            : tmvp->dist_ref_0[ref_idx];
+    int32_t dist_ref_opp = rpl_idx == RPL_0 ? inter_ctx->dist_ref_1[ref_idx]
+                                            : inter_ctx->dist_ref_0[ref_idx];
     uint8_t cand_c0  = cand_msk & 0x1;
     uint8_t cand_c01 = cand_msk & 0x2;
 
@@ -755,15 +755,15 @@ merge_tmvp_from_ldc(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
 }
 
 static uint8_t
-merge_tmvp_from_l0(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
+merge_tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *const tmvp, struct TMVPPos pos,
                    uint8_t rpl_idx, uint8_t ref_idx,
                    uint8_t cand_msk, OVMV *const dst)
 {
-    int32_t dist_ref = rpl_idx == RPL_0 ? tmvp->dist_ref_0[ref_idx]
-                                        : tmvp->dist_ref_1[ref_idx];
+    int32_t dist_ref = rpl_idx == RPL_0 ? inter_ctx->dist_ref_0[ref_idx]
+                                        : inter_ctx->dist_ref_1[ref_idx];
 
-    int32_t dist_ref_opp = rpl_idx == RPL_0 ? tmvp->dist_ref_1[ref_idx]
-                                            : tmvp->dist_ref_0[ref_idx];
+    int32_t dist_ref_opp = rpl_idx == RPL_0 ? inter_ctx->dist_ref_1[ref_idx]
+                                            : inter_ctx->dist_ref_0[ref_idx];
     uint8_t cand_c0  = cand_msk & 0x1;
     uint8_t cand_c01 = cand_msk & 0x2;
 
@@ -840,15 +840,15 @@ merge_tmvp_from_l0(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
 
 /* FIXME We could invert TMVP context buff to avoid duplicating this function */
 static uint8_t
-merge_tmvp_from_l1(const struct VVCTMVP *const tmvp, struct TMVPPos pos,
+merge_tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *const tmvp, struct TMVPPos pos,
                    uint8_t rpl_idx, uint8_t ref_idx,
                    uint8_t cand_msk, OVMV *const dst)
 {
-    int32_t dist_ref = rpl_idx == RPL_0 ? tmvp->dist_ref_0[ref_idx]
-                                        : tmvp->dist_ref_1[ref_idx];
+    int32_t dist_ref = rpl_idx == RPL_0 ? inter_ctx->dist_ref_0[ref_idx]
+                                        : inter_ctx->dist_ref_1[ref_idx];
 
-    int32_t dist_ref_opp = rpl_idx == RPL_0 ? tmvp->dist_ref_1[ref_idx]
-                                            : tmvp->dist_ref_0[ref_idx];
+    int32_t dist_ref_opp = rpl_idx == RPL_0 ? inter_ctx->dist_ref_1[ref_idx]
+                                            : inter_ctx->dist_ref_0[ref_idx];
     uint8_t cand_c0  = cand_msk & 0x1;
     uint8_t cand_c01 = cand_msk & 0x2;
 
@@ -1364,9 +1364,9 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
             uint8_t col_ref_l0 = tmvp->col_ref_l0;
             OVMV dst;
             if ((!col_ref_l0 && !tmvp->ldc) || (tmvp->ldc && rpl_idx == RPL_0)) {
-                avail = tmvp_from_l0(tmvp, pos, rpl_idx, ref_idx, cand_msk, &dst);
+                avail = tmvp_from_l0(inter_ctx, tmvp, pos, rpl_idx, ref_idx, cand_msk, &dst);
             } else {
-                avail = tmvp_from_l1(tmvp, pos, rpl_idx, ref_idx, cand_msk, &dst);
+                avail = tmvp_from_l1(inter_ctx, tmvp, pos, rpl_idx, ref_idx, cand_msk, &dst);
             }
 
             if (avail) {
@@ -1507,15 +1507,15 @@ found:
 }
 
 static uint8_t
-sbtmvp_from_ldc(const struct VVCTMVP *const tmvp, struct OVPos pos,
+sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const tmvp, struct OVPos pos,
                 uint8_t rpl_idx, uint8_t ref_idx,
                 uint8_t cand_msk, OVMV *const dst)
 {
-    int32_t dist_ref = rpl_idx == RPL_0 ? tmvp->dist_ref_0[ref_idx]
-                                        : tmvp->dist_ref_1[ref_idx];
+    int32_t dist_ref = rpl_idx == RPL_0 ? inter_ctx->dist_ref_0[ref_idx]
+                                        : inter_ctx->dist_ref_1[ref_idx];
 
-    int32_t dist_ref_opp = rpl_idx == RPL_0 ? tmvp->dist_ref_1[ref_idx]
-                                            : tmvp->dist_ref_0[ref_idx];
+    int32_t dist_ref_opp = rpl_idx == RPL_0 ? inter_ctx->dist_ref_1[ref_idx]
+                                            : inter_ctx->dist_ref_0[ref_idx];
     uint8_t cand_c0  = cand_msk & 0x1;
     uint8_t cand_c01 = cand_msk & 0x2;
 
@@ -1661,7 +1661,7 @@ sbtmvp_from_ldc(const struct VVCTMVP *const tmvp, struct OVPos pos,
 }
 
 static uint8_t
-sbtmvp_from_same_rpl(const struct VVCTMVP *const tmvp, struct OVPos pos,
+sbtmvp_from_same_rpl(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *const tmvp, struct OVPos pos,
                      uint8_t rpl_idx, uint8_t ref_idx,
                      uint8_t cand_msk, OVMV *const dst)
 {
@@ -1677,13 +1677,13 @@ sbtmvp_from_same_rpl(const struct VVCTMVP *const tmvp, struct OVPos pos,
 
 
     if (rpl_idx == RPL_0) {
-        dist_ref  = tmvp->dist_ref_0[ref_idx];
+        dist_ref  = inter_ctx->dist_ref_0[ref_idx];
         dist_cols = tmvp->dist_col_0;
         mvs       = tmvp->mvs0;
 
         avail  = cand_msk & 0x1;
     } else {
-        dist_ref  = tmvp->dist_ref_1[ref_idx];
+        dist_ref  = inter_ctx->dist_ref_1[ref_idx];
         dist_cols = tmvp->dist_col_1;
         mvs       = tmvp->mvs1;
 
@@ -1770,14 +1770,17 @@ derive_sub_pu_merge_cand(const struct InterDRVCtx *inter_ctx,
     if (cand_msk) {
         if (tmvp->ldc) {
             OVMV col_mv[2];
-            inter_dir  = sbtmvp_from_ldc(tmvp, center_pos, RPL_0, 0, cand_msk, col_mv);
+            inter_dir  = sbtmvp_from_ldc(inter_ctx, tmvp, center_pos,
+                                         RPL_0, 0, cand_msk, col_mv);
 
             mv_info->mv0 = col_mv[0];
             mv_info->mv1 = col_mv[1];
         } else {
             OVMV col_mv[2];
-            inter_dir  = sbtmvp_from_same_rpl(tmvp, center_pos, RPL_0, 0, cand_msk, col_mv);
-            inter_dir |= sbtmvp_from_same_rpl(tmvp, center_pos, RPL_1, 0, cand_msk, &col_mv[1]) << 1;
+            inter_dir  = sbtmvp_from_same_rpl(inter_ctx, tmvp, center_pos,
+                                              RPL_0, 0, cand_msk, col_mv);
+            inter_dir |= sbtmvp_from_same_rpl(inter_ctx, tmvp, center_pos,
+                                              RPL_1, 0, cand_msk, &col_mv[1]) << 1;
             mv_info->mv0 = col_mv[0];
             mv_info->mv1 = col_mv[1];
         }
@@ -1843,14 +1846,14 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
             if (cand_msk) {
                 if (tmvp->ldc) {
                     OVMV col_mv[2];
-                    inter_dir  = sbtmvp_from_ldc(tmvp, col_pos, RPL_0, 0, cand_msk, col_mv);
+                    inter_dir  = sbtmvp_from_ldc(inter_ctx, tmvp, col_pos, RPL_0, 0, cand_msk, col_mv);
 
                     mv0 = col_mv[0];
                     mv1 = col_mv[1];
                 } else {
                     OVMV col_mv[2];
-                    inter_dir  = sbtmvp_from_same_rpl(tmvp, col_pos, RPL_0, 0, cand_msk, col_mv);
-                    inter_dir |= sbtmvp_from_same_rpl(tmvp, col_pos, RPL_1, 0, cand_msk, &col_mv[1]) << 1;
+                    inter_dir  = sbtmvp_from_same_rpl(inter_ctx, tmvp, col_pos, RPL_0, 0, cand_msk, col_mv);
+                    inter_dir |= sbtmvp_from_same_rpl(inter_ctx, tmvp, col_pos, RPL_1, 0, cand_msk, &col_mv[1]) << 1;
                     mv0 = col_mv[0];
                     mv1 = col_mv[1];
                 }
@@ -2518,11 +2521,14 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
 
                 /* FIXME inter_dir */
                 if (tmvp->ldc) {
-                    avail_dir = merge_tmvp_from_ldc(tmvp, pos, rpl_idx, 0, cand_msk, c0_mv);
+                    avail_dir = merge_tmvp_from_ldc(inter_ctx, tmvp, pos,
+                                                    rpl_idx, 0, cand_msk, c0_mv);
                 } else if (!col_ref_l0) {
-                    avail_dir = merge_tmvp_from_l0(tmvp, pos, rpl_idx, 0, cand_msk, c0_mv);
+                    avail_dir = merge_tmvp_from_l0(inter_ctx, tmvp, pos,
+                                                   rpl_idx, 0, cand_msk, c0_mv);
                 } else {
-                    avail_dir = merge_tmvp_from_l1(tmvp, pos, rpl_idx, 0, cand_msk, c0_mv);
+                    avail_dir = merge_tmvp_from_l1(inter_ctx, tmvp, pos,
+                                                   rpl_idx, 0, cand_msk, c0_mv);
                 }
 
 

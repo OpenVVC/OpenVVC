@@ -1153,7 +1153,7 @@ check_bdof(uint8_t log2_pu_w, uint8_t log2_pu_h, uint8_t ciip_flag, uint8_t smvd
 static inline uint8_t
 check_bdof_ref(struct InterDRVCtx *const inter_ctx, uint8_t ref_idx0, uint8_t ref_idx1)
 {
-    return inter_ctx->tmvp_ctx.dist_ref_0[ref_idx0] == -inter_ctx->tmvp_ctx.dist_ref_1[ref_idx1];
+    return inter_ctx->dist_ref_0[ref_idx0] == -inter_ctx->dist_ref_1[ref_idx1];
 }
 
 static inline uint8_t

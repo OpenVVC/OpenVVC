@@ -524,7 +524,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 int pos_in_buff = TMVP_POS_IN_BUF(c0_x, c0_y);
                 OVMV c0 = tmvp->mvs0[pos_in_buff];
                 int16_t col_ref_idx = c0.ref_idx;
-                int16_t scale0 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_0[col_ref_idx]);
+                int16_t scale0 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? inter_ctx->dist_ref_0[ref_idx] : inter_ctx->dist_ref_1[ref_idx], tmvp->dist_col_0[col_ref_idx]);
                 c0.x = tmvp_round_mv(c0.x);
                 c0.y = tmvp_round_mv(c0.y);
                 c0 = tmvp_scale_mv(scale0, c0);
@@ -537,7 +537,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 int pos_in_buff = TMVP_POS_IN_BUF(c0_x, c0_y);
                 OVMV c0 = tmvp->mvs1[pos_in_buff];
                 int16_t col_ref_idx = c0.ref_idx;
-                int16_t scale1 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_1[col_ref_idx]);
+                int16_t scale1 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? inter_ctx->dist_ref_0[ref_idx] : inter_ctx->dist_ref_1[ref_idx], tmvp->dist_col_1[col_ref_idx]);
                 c0.x = tmvp_round_mv(c0.x);
                 c0.y = tmvp_round_mv(c0.y);
                 c0 = tmvp_scale_mv(scale1, c0);
@@ -549,7 +549,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 int pos_in_buff = TMVP_POS_IN_BUF(c1_x, c1_y);
                 OVMV c1 = tmvp->mvs0[pos_in_buff];
                 int16_t col_ref_idx = c1.ref_idx;
-                int16_t scale0 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_0[col_ref_idx]);
+                int16_t scale0 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? inter_ctx->dist_ref_0[ref_idx] : inter_ctx->dist_ref_1[ref_idx], tmvp->dist_col_0[col_ref_idx]);
                 c1.x = tmvp_round_mv(c1.x);
                 c1.y = tmvp_round_mv(c1.y);
                 c1 = tmvp_scale_mv(scale0, c1);
@@ -561,7 +561,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 int pos_in_buff = TMVP_POS_IN_BUF(c1_x, c1_y);
                 OVMV c1 = tmvp->mvs1[pos_in_buff];
                 int16_t col_ref_idx = c1.ref_idx;
-                int16_t scale1 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_1[col_ref_idx]);
+                int16_t scale1 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? inter_ctx->dist_ref_0[ref_idx] : inter_ctx->dist_ref_1[ref_idx], tmvp->dist_col_1[col_ref_idx]);
                 c1.x = tmvp_round_mv(c1.x);
                 c1.y = tmvp_round_mv(c1.y);
                 c1 = tmvp_scale_mv(scale1, c1);
@@ -575,7 +575,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 int pos_in_buff = TMVP_POS_IN_BUF(c0_x, c0_y);
                 OVMV c0 = tmvp->mvs1[pos_in_buff];
                 int16_t col_ref_idx = c0.ref_idx;
-                int16_t scale1 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_1[col_ref_idx]);
+                int16_t scale1 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? inter_ctx->dist_ref_0[ref_idx] : inter_ctx->dist_ref_1[ref_idx], tmvp->dist_col_1[col_ref_idx]);
                 c0.x = tmvp_round_mv(c0.x);
                 c0.y = tmvp_round_mv(c0.y);
                 c0 = tmvp_scale_mv(scale1, c0);
@@ -587,7 +587,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 int pos_in_buff = TMVP_POS_IN_BUF(c0_x, c0_y);
                 OVMV c0 = tmvp->mvs0[pos_in_buff];
                 int16_t col_ref_idx = c0.ref_idx;
-                int16_t scale0 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_0[col_ref_idx]);
+                int16_t scale0 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? inter_ctx->dist_ref_0[ref_idx] : inter_ctx->dist_ref_1[ref_idx], tmvp->dist_col_0[col_ref_idx]);
                 c0.x = tmvp_round_mv(c0.x);
                 c0.y = tmvp_round_mv(c0.y);
                 c0 = tmvp_scale_mv(scale0, c0);
@@ -599,7 +599,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 int pos_in_buff = TMVP_POS_IN_BUF(c1_x, c1_y);
                 OVMV c1 = tmvp->mvs1[pos_in_buff];
                 int16_t col_ref_idx = c1.ref_idx;
-                int16_t scale1 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_1[col_ref_idx]);
+                int16_t scale1 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? inter_ctx->dist_ref_0[ref_idx] : inter_ctx->dist_ref_1[ref_idx], tmvp->dist_col_1[col_ref_idx]);
                 c1.x = tmvp_round_mv(c1.x);
                 c1.y = tmvp_round_mv(c1.y);
                 c1 = tmvp_scale_mv(scale1, c1);
@@ -611,7 +611,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
                 int pos_in_buff = TMVP_POS_IN_BUF(c1_x, c1_y);
                 OVMV c1 = tmvp->mvs0[pos_in_buff];
                 int16_t col_ref_idx = c1.ref_idx;
-                int16_t scale0 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? tmvp->dist_ref_0[ref_idx] : tmvp->dist_ref_1[ref_idx], tmvp->dist_col_0[col_ref_idx]);
+                int16_t scale0 = derive_tmvp_scale(mv_ctx == &inter_ctx->mv_ctx0 ? inter_ctx->dist_ref_0[ref_idx] : inter_ctx->dist_ref_1[ref_idx], tmvp->dist_col_0[col_ref_idx]);
                 c1.x = tmvp_round_mv(c1.x);
                 c1.y = tmvp_round_mv(c1.y);
                 c1 = tmvp_scale_mv(scale0, c1);
@@ -1008,8 +1008,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                 if (cand_c0) {
                     OVMV c0  = tmvp->mvs0[pos_in_buff];
                     uint8_t col_ref_idx = c0.ref_idx;
-                    int16_t scale00 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
-                    int16_t scale10 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_0[col_ref_idx]);
+                    int16_t scale00 = derive_tmvp_scale(inter_ctx->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
+                    int16_t scale10 = derive_tmvp_scale(inter_ctx->dist_ref_1[0], tmvp->dist_col_0[col_ref_idx]);
                     c0.x = tmvp_round_mv(c0.x);
                     c0.y = tmvp_round_mv(c0.y);
                     cand[nb_cand].mv0 = tmvp_scale_mv(scale00, c0);
@@ -1017,7 +1017,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                     if (cand_c01 && tmvp->ldc) {
                         OVMV c01  = tmvp->mvs1[pos_in_buff];
                         col_ref_idx = c01.ref_idx;
-                        int16_t scale11 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
+                        int16_t scale11 = derive_tmvp_scale(inter_ctx->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
                         c01.x = tmvp_round_mv(c01.x);
                         c01.y = tmvp_round_mv(c01.y);
                         cand[nb_cand].mv1 = tmvp_scale_mv(scale11, c01);
@@ -1035,8 +1035,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                 } else {
                     OVMV c0  = tmvp->mvs1[pos_in_buff];
                     uint8_t col_ref_idx = c0.ref_idx;
-                    int16_t scale01 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_1[col_ref_idx]);
-                    int16_t scale11 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
+                    int16_t scale01 = derive_tmvp_scale(inter_ctx->dist_ref_0[0], tmvp->dist_col_1[col_ref_idx]);
+                    int16_t scale11 = derive_tmvp_scale(inter_ctx->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
                     c0.x = tmvp_round_mv(c0.x);
                     c0.y = tmvp_round_mv(c0.y);
                     cand[nb_cand].mv0 = tmvp_scale_mv(scale01, c0);
@@ -1056,8 +1056,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                 if (cand_c1) {
                     OVMV c1  = tmvp->mvs0[pos_in_buff];
                     uint8_t col_ref_idx = c1.ref_idx;
-                    int16_t scale00 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
-                    int16_t scale10 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_0[col_ref_idx]);
+                    int16_t scale00 = derive_tmvp_scale(inter_ctx->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
+                    int16_t scale10 = derive_tmvp_scale(inter_ctx->dist_ref_1[0], tmvp->dist_col_0[col_ref_idx]);
                     c1.x = tmvp_round_mv(c1.x);
                     c1.y = tmvp_round_mv(c1.y);
                     cand[nb_cand].mv0 = tmvp_scale_mv(scale00, c1);
@@ -1065,7 +1065,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                     if (cand_c11 && tmvp->ldc) {
                         OVMV c11  = tmvp->mvs1[pos_in_buff];
                         col_ref_idx = c11.ref_idx;
-                        int16_t scale11 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
+                        int16_t scale11 = derive_tmvp_scale(inter_ctx->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
                         c11.x = tmvp_round_mv(c11.x);
                         c11.y = tmvp_round_mv(c11.y);
                         cand[nb_cand].mv1 = tmvp_scale_mv(scale11, c11);
@@ -1083,8 +1083,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                 } else {
                     OVMV c1  = tmvp->mvs1[pos_in_buff];
                     uint8_t col_ref_idx = c1.ref_idx;
-                    int16_t scale01 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_1[col_ref_idx]);
-                    int16_t scale11 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
+                    int16_t scale01 = derive_tmvp_scale(inter_ctx->dist_ref_0[0], tmvp->dist_col_1[col_ref_idx]);
+                    int16_t scale11 = derive_tmvp_scale(inter_ctx->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
                     c1.x = tmvp_round_mv(c1.x);
                     c1.y = tmvp_round_mv(c1.y);
                     cand[nb_cand].mv0 = tmvp_scale_mv(scale01, c1);
@@ -1106,8 +1106,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                 if (cand_c01) {
                     OVMV c0  = tmvp->mvs1[pos_in_buff];
                     uint8_t col_ref_idx = c0.ref_idx;
-                    int16_t scale01 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_1[col_ref_idx]);
-                    int16_t scale11 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
+                    int16_t scale01 = derive_tmvp_scale(inter_ctx->dist_ref_0[0], tmvp->dist_col_1[col_ref_idx]);
+                    int16_t scale11 = derive_tmvp_scale(inter_ctx->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
                     c0.x = tmvp_round_mv(c0.x);
                     c0.y = tmvp_round_mv(c0.y);
                     cand[nb_cand].mv1 = tmvp_scale_mv(scale11, c0);
@@ -1116,7 +1116,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                     if (cand_c0 && tmvp->ldc) {
                         OVMV c00  = tmvp->mvs0[pos_in_buff];
                         col_ref_idx = c00.ref_idx;
-                        int16_t scale00 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
+                        int16_t scale00 = derive_tmvp_scale(inter_ctx->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
                         c00.x = tmvp_round_mv(c00.x);
                         c00.y = tmvp_round_mv(c00.y);
                         cand[nb_cand].mv0 = tmvp_scale_mv(scale00, c00);
@@ -1134,8 +1134,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                 } else {
                     OVMV c0  = tmvp->mvs0[pos_in_buff];
                     uint8_t col_ref_idx = c0.ref_idx;
-                    int16_t scale00 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
-                    int16_t scale10 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_0[col_ref_idx]);
+                    int16_t scale00 = derive_tmvp_scale(inter_ctx->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
+                    int16_t scale10 = derive_tmvp_scale(inter_ctx->dist_ref_1[0], tmvp->dist_col_0[col_ref_idx]);
                     c0.x = tmvp_round_mv(c0.x);
                     c0.y = tmvp_round_mv(c0.y);
                     cand[nb_cand].mv0 = tmvp_scale_mv(scale00, c0);
@@ -1155,8 +1155,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                 if (cand_c11) {
                     OVMV c1  = tmvp->mvs1[pos_in_buff];
                     uint8_t col_ref_idx = c1.ref_idx;
-                    int16_t scale01 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_1[col_ref_idx]);
-                    int16_t scale11 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
+                    int16_t scale01 = derive_tmvp_scale(inter_ctx->dist_ref_0[0], tmvp->dist_col_1[col_ref_idx]);
+                    int16_t scale11 = derive_tmvp_scale(inter_ctx->dist_ref_1[0], tmvp->dist_col_1[col_ref_idx]);
                     c1.x = tmvp_round_mv(c1.x);
                     c1.y = tmvp_round_mv(c1.y);
                     cand[nb_cand].mv1 = tmvp_scale_mv(scale11, c1);
@@ -1165,7 +1165,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                     if (cand_c1 && tmvp->ldc) {
                         OVMV c10  = tmvp->mvs0[pos_in_buff];
                         col_ref_idx = c10.ref_idx;
-                        int16_t scale00 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
+                        int16_t scale00 = derive_tmvp_scale(inter_ctx->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
                         c10.x = tmvp_round_mv(c10.x);
                         c10.y = tmvp_round_mv(c10.y);
                         cand[nb_cand].mv0 = tmvp_scale_mv(scale00, c10);
@@ -1183,8 +1183,8 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
                 } else {
                     OVMV c1  = tmvp->mvs0[pos_in_buff];
                     uint8_t col_ref_idx = c1.ref_idx;
-                    int16_t scale00 = derive_tmvp_scale(tmvp->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
-                    int16_t scale10 = derive_tmvp_scale(tmvp->dist_ref_1[0], tmvp->dist_col_0[col_ref_idx]);
+                    int16_t scale00 = derive_tmvp_scale(inter_ctx->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
+                    int16_t scale10 = derive_tmvp_scale(inter_ctx->dist_ref_1[0], tmvp->dist_col_0[col_ref_idx]);
                     c1.x = tmvp_round_mv(c1.x);
                     c1.y = tmvp_round_mv(c1.y);
                     cand[nb_cand].mv0 = tmvp_scale_mv(scale00, c1);
@@ -1326,9 +1326,12 @@ fill_tmvp_map(struct OVMV *const tmvp_mv, OVMV mv,
  */
 
 static void
-fill_dbf_mv_map_b(struct DBFInfo *const dbf_info, struct OVMVCtx *const mv_ctx,
-                  struct OVMVCtx *const mv_ctx1, OVMV mv,
-                  int x0_unit, int y0_unit, int nb_unit_w, int nb_unit_h)
+dbf_mv_check_p(const struct InterDRVCtx *const inter_ctx,
+               struct DBFInfo *const dbf_info,
+               struct OVMVCtx *const mv_ctx0, struct OVMVCtx *const mv_ctx1,
+               OVMV mv0,
+               int x0_unit, int y0_unit,
+               int nb_unit_w, int nb_unit_h)
 {
     uint64_t unit_msk_w = (uint64_t)((uint64_t)1 << nb_unit_w) - 1llu;
     uint64_t unit_msk_h = (uint64_t)((uint64_t)1 << nb_unit_h) - 1llu;
