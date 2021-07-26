@@ -33,7 +33,8 @@ enum CTUNGHFlags
      CTU_UPRGT_FLG = 1 << 3,
 };
 
-enum VVCCUFlag{
+enum VVCCUFlag
+{
      DECL_FLG(cu_skip_flag,0),
      DECL_FLG(pred_mode_flag,1),
      DECL_FLG(mip_flag,2),
@@ -49,14 +50,16 @@ enum VVCCUFlag{
 struct TUInfo;
 
 /* FIXME: Move here for SSE */
-struct LMParams{
+struct LMParams
+{
    int shift;
    int a;
    int b;
 };
 
 /* FIXME: Move here for SSE */
-struct CCLMParams{
+struct CCLMParams
+{
    struct LMParams cb;
    struct LMParams cr;
 };
@@ -165,7 +168,8 @@ typedef struct VVCDeQuantCtx{
     uint8_t qp;
 }VVCDeQuantCtx;
 
-typedef struct VVCQPCTX{
+typedef struct VVCQPCTX
+{
     int8_t current_qp;
     int8_t min_qp_prime_ts;
     int8_t cb_offset;
@@ -174,9 +178,10 @@ typedef struct VVCQPCTX{
     const int8_t *chroma_qp_map_cb;
     const int8_t *chroma_qp_map_cr;
     const int8_t *chroma_qp_map_jcbcr;
-}VVCQPCTX;
+} VVCQPCTX;
 
-struct VVCCU{
+struct VVCCU
+{
 
 /*  intra_flags
  *  _ _ _ _ _ _ _ _
@@ -276,6 +281,7 @@ struct HMVPLUT
     uint8_t dir[5];
     uint8_t nb_mv;
 };
+
 struct MVPlane;
 
 struct MVCTU {
@@ -368,10 +374,7 @@ struct InterDRVCtx
     {
         /* FIXME tmp info */
         struct OVCTUDec *ctudec;
-        /* FIXME we used Ref Pictures
-         * but we only need motion vectors
-         * information or ref idx
-         */
+
         /* MV plane storage for current picture */
         const struct MVPlane *plane0;
         const struct MVPlane *plane1;
@@ -380,11 +383,6 @@ struct InterDRVCtx
             int8_t ref_idx_rpl0;
             int8_t ref_idx_rpl1;
         }col_info;
-
-
-        #if 0
-        OVPicture *col_ref;
-        #endif
 
         /* MV plane storage for collocated reference picture */
         const struct MVPlane *col_plane0;
@@ -466,12 +464,12 @@ struct FiltersDRVCtx
  * TODO this is intended to replace
  * it in ctu dec
  */
-struct TrCoeffData{
+struct TrCoeffData
+{
     int16_t residual_y[128*128];
     int16_t residual_cb[128*128];
     int16_t residual_cr[128*128];
     int16_t lfnst_subblock[16*2];
-
 };
 
 /* FIXME
