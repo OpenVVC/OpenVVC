@@ -1642,52 +1642,6 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
 
         dbf_mv_check_p(inter_ctx, dbf_info, mv_ctx0, mv_ctx1, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
     }
-
-    hmvp_update_lut_b(&inter_ctx->hmvp_lut, mv0, mv1, inter_dir);
-}
-
-static void
-update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
-                const OVMV mv0, const OVMV mv1,
-                uint8_t pb_x, uint8_t  pb_y,
-                uint8_t nb_pb_w, uint8_t nb_pb_h,
-                uint8_t inter_dir)
-{
-    /*FIXME Use specific DBF update function if DBF is disabled */
-    /*FIXME Find a better way to retrieve dbf_info */
-    struct DBFInfo *const dbf_info = &inter_ctx->tmvp_ctx.ctudec->dbf_info;
-    if (inter_dir == 3) {
-        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-
-        fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
-        fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
-
-        fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
-        fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
-
-        dbf_mv_check_b(inter_ctx, dbf_info, mv_ctx0, mv_ctx1, mv0, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
-
-    } else if (inter_dir & 0x2) {
-        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-
-        fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
-
-        fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
-
-        dbf_mv_check_p(inter_ctx, dbf_info, mv_ctx1, mv_ctx0, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
-
-    } else if (inter_dir & 0x1) {
-        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-
-        fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
-
-        fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
-
-        dbf_mv_check_p(inter_ctx, dbf_info, mv_ctx0, mv_ctx1, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
-    }
 }
 
 static void
@@ -1797,8 +1751,8 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
                 }
                 #endif
 
-                update_gpm_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, pb_x + x, pb_y + y, 
-                                    1, 1, mv_info.inter_dir);
+                update_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, pb_x + x, pb_y + y,
+                                1, 1, mv_info.inter_dir);
 
             } else if (tpm_mask == 0) {
 
@@ -1810,8 +1764,8 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
                 }
                 #endif
 
-                update_gpm_mv_ctx_b(inter_ctx, mv_info0.mv0, mv_info0.mv1, pb_x + x, pb_y + y, 
-                                    1, 1, inter_dir0);
+                update_mv_ctx_b(inter_ctx, mv_info0.mv0, mv_info0.mv1, pb_x + x, pb_y + y,
+                                1, 1, inter_dir0);
             } else {
 
                 #if 0
@@ -1822,8 +1776,8 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
                 }
                 #endif
 
-                update_gpm_mv_ctx_b(inter_ctx, mv_info1.mv0, mv_info1.mv1, pb_x + x, pb_y + y, 
-                                    1, 1, inter_dir1);
+                update_mv_ctx_b(inter_ctx, mv_info1.mv0, mv_info1.mv1, pb_x + x, pb_y + y,
+                                1, 1, inter_dir1);
             }
         }
     }
@@ -1905,6 +1859,9 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
     /* Update for next pass */
     update_mv_ctx_b(inter_ctx, mv0, mv1, x0_unit, y0_unit, nb_unit_w,
                     nb_unit_h, inter_dir);
+
+    hmvp_update_lut_b(&inter_ctx->hmvp_lut, mv0, mv1, inter_dir);
+
     return mv_info;
 }
 
@@ -2168,6 +2125,9 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     update_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, pb_x, pb_y,
                     nb_pb_w, nb_pb_h, mv_info.inter_dir);
 
+
+    hmvp_update_lut_b(&inter_ctx->hmvp_lut, mv_info.mv0, mv_info.mv1, mv_info.inter_dir);
+
     return mv_info;
 }
 
@@ -2247,6 +2207,8 @@ drv_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
 
     update_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, x0_unit, y0_unit,
                     nb_unit_w, nb_unit_h, mv_info.inter_dir);
+
+    hmvp_update_lut_b(&inter_ctx->hmvp_lut, mv_info.mv0, mv_info.mv1, mv_info.inter_dir);
 
     return mv_info;
 }
