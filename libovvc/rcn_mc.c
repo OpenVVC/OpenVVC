@@ -1149,7 +1149,7 @@ put_weighted_ciip_pixels(uint16_t* dst, int dststride,
 {   
     int x, y;
     int shift  = 2;
-    int offset = 2;
+    int offset = (1 << (shift - 1));
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
             dst[x] = ov_clip_pixel( ( ( src_intra[x] * wt + src_inter[x] * (4 - wt)) + offset ) >> shift );
@@ -1162,7 +1162,7 @@ put_weighted_ciip_pixels(uint16_t* dst, int dststride,
 
 
 void
-put_gpm_pel_bi_pixels(uint16_t* _dst, int _dststride, const int16_t* _src0,
+put_weighted_gpm_bi_pixels(uint16_t* _dst, int _dststride, const int16_t* _src0,
                   int _srcstride, const int16_t* _src1, int height,
                   intptr_t mx, intptr_t my, int width, int step_x, int step_y, int16_t* weight)
 {   

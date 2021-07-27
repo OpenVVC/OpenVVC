@@ -5,12 +5,13 @@
 #include <string.h>
 #include <tmmintrin.h>
 
-#define SIZE_BLOCK_4 2
-#define SIZE_BLOCK_8 3
-#define SIZE_BLOCK_16 4
-#define SIZE_BLOCK_32 5
-#define SIZE_BLOCK_64 6
-
+//Warning: homogeneous with rcn_inter (log2_pu_w - 1 ? -2 ? -0 ?)
+#define SIZE_BLOCK_4 1
+#define SIZE_BLOCK_8 2
+#define SIZE_BLOCK_16 3
+#define SIZE_BLOCK_32 4
+#define SIZE_BLOCK_64 5
+#define SIZE_BLOCK_128 6
 
 #define MAX_PB_SIZE 128
 
@@ -3885,7 +3886,7 @@ oh_hevc_put_hevc_uni_epel_hv64_10_sse(uint16_t* dst,
     dst, dststride, _src, _srcstride, height, mx, my, width);
 }
 
-#define WEIGHTED 0
+#define WEIGHTED 1
 #if WEIGHTED
 static __m128i
 _MM_PACKUS_EPI32(__m128i a, __m128i b)
@@ -3914,10 +3915,18 @@ put_vvc_qpel_h4_10_sse(int16_t* dst,
   __m128i x1, x2, x3, x4, r1, r3, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
-  c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][1]);
-  c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][2]);
-  c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][3]);
+  if (width == 4 && height == 4) {
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][3]);
+  }
+  else{
+    c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
+    c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][1]);
+    c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][2]);
+    c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][3]);
+  }
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadl_epi64((__m128i*)&src[x - 3 * 1]);
@@ -4020,8 +4029,7 @@ put_vvc_bi_w_qpel_v8_14_10_sse(uint8_t* _dst,
                                         int denom,
                                         int _wx0,
                                         int _wx1,
-                                        int _ox0,
-                                        int _ox1,
+
                                         intptr_t mx,
                                         intptr_t my,
                                         int width)
@@ -4032,11 +4040,11 @@ put_vvc_bi_w_qpel_v8_14_10_sse(uint8_t* _dst,
   const int srcstride = _srcstride >> 1;
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
-  const int ox0 = _ox0 << (10 - 8);
-  const int ox1 = _ox1 << (10 - 8);
+
+  
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
-  const __m128i offset = _mm_set1_epi32((ox0 + ox1 + 1) << log2Wd);
+  const __m128i offset = _mm_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
@@ -4121,8 +4129,6 @@ put_vvc_bi_w_qpel_v4_14_10_sse(uint8_t* _dst,
                                         int denom,
                                         int _wx0,
                                         int _wx1,
-                                        int _ox0,
-                                        int _ox1,
                                         intptr_t mx,
                                         intptr_t my,
                                         int width)
@@ -4134,17 +4140,27 @@ put_vvc_bi_w_qpel_v4_14_10_sse(uint8_t* _dst,
   const int srcstride = _srcstride >> 1;
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
-  const int ox0 = _ox0 << (10 - 8);
-  const int ox1 = _ox1 << (10 - 8);
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
-  const __m128i offset = _mm_set1_epi32((ox0 + ox1 + 1) << log2Wd);
+  const __m128i offset = _mm_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
-  c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
-  c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
-  c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
-  c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  if (width == 4 && height == 4) {
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][3]);
+  }
+  else{
+      c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
+      c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
+      c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
+      c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  }
+  // c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
+  // c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
+  // c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
+  // c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       __m128i r5;
@@ -4307,10 +4323,22 @@ put_vvc_uni_w_qpel_v4_14_10_sse(uint8_t* _dst,
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
-  c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
-  c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
-  c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
-  c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  if (width == 4 && height == 4) {
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][3]);
+  }
+  else{
+      c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
+      c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
+      c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
+      c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  }
+  // c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
+  // c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
+  // c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
+  // c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadu_si128((__m128i*)&src[x - 3 * srcstride]);
@@ -4413,8 +4441,6 @@ put_vvc_bi_w_pel_pixels4_10_sse(uint8_t* _dst,
                                          int denom,
                                          int _wx0,
                                          int _wx1,
-                                         int _ox0,
-                                         int _ox1,
                                          intptr_t mx,
                                          intptr_t my,
                                          int width)
@@ -4425,11 +4451,9 @@ put_vvc_bi_w_pel_pixels4_10_sse(uint8_t* _dst,
   const int srcstride = _srcstride >> 1;
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
-  const int ox0 = _ox0 << (10 - 8);
-  const int ox1 = _ox1 << (10 - 8);
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
-  const __m128i offset = _mm_set1_epi32((ox0 + ox1 + 1) << log2Wd);
+  const __m128i offset = _mm_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   for (y = 0; y < height; y++) {
@@ -4522,8 +4546,6 @@ put_vvc_bi_w_pel_pixels8_10_sse(uint8_t* _dst,
                                          int denom,
                                          int _wx0,
                                          int _wx1,
-                                         int _ox0,
-                                         int _ox1,
                                          intptr_t mx,
                                          intptr_t my,
                                          int width)
@@ -4533,12 +4555,10 @@ put_vvc_bi_w_pel_pixels8_10_sse(uint8_t* _dst,
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
   const int log2Wd = denom + 14 - 10;
-  const int shift2 = log2Wd + 1;
-  const int ox0 = _ox0 << (10 - 8);
-  const int ox1 = _ox1 << (10 - 8);
+  const int shift2 = log2Wd + 1;  
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
-  const __m128i offset = _mm_set1_epi32((ox0 + ox1 + 1) << log2Wd);
+  const __m128i offset = _mm_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   for (y = 0; y < height; y++) {
@@ -4647,9 +4667,7 @@ put_vvc_bi_w_epel_h4_10_sse(uint8_t* _dst,
                                      int denom,
                                      int _wx0,
                                      int _wx1,
-                                     int _ox0,
-                                     int _ox1,
-                                     intptr_t mx,
+                                                                          intptr_t mx,
                                      intptr_t my,
                                      int width)
 {
@@ -4659,11 +4677,11 @@ put_vvc_bi_w_epel_h4_10_sse(uint8_t* _dst,
   ptrdiff_t srcstride = _srcstride >> 1;
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
-  const int ox0 = _ox0 << (10 - 8);
-  const int ox1 = _ox1 << (10 - 8);
+
+  
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
-  const __m128i offset = _mm_set1_epi32((ox0 + ox1 + 1) << log2Wd);
+  const __m128i offset = _mm_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   f1 = _mm_load_si128((__m128i*)oh_hevc_epel_filters_sse[mx - 1][0]);
@@ -4790,9 +4808,7 @@ put_vvc_bi_w_epel_h8_10_sse(uint8_t* _dst,
                                      int denom,
                                      int _wx0,
                                      int _wx1,
-                                     int _ox0,
-                                     int _ox1,
-                                     intptr_t mx,
+                                                                          intptr_t mx,
                                      intptr_t my,
                                      int width)
 {
@@ -4802,11 +4818,11 @@ put_vvc_bi_w_epel_h8_10_sse(uint8_t* _dst,
   ptrdiff_t srcstride = _srcstride >> 1;
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
-  const int ox0 = _ox0 << (10 - 8);
-  const int ox1 = _ox1 << (10 - 8);
+
+  
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
-  const __m128i offset = _mm_set1_epi32((ox0 + ox1 + 1) << log2Wd);
+  const __m128i offset = _mm_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   f1 = _mm_load_si128((__m128i*)oh_hevc_epel_filters_sse[mx - 1][0]);
@@ -4932,8 +4948,6 @@ put_vvc_bi_w_epel_v4_10_sse(uint8_t* _dst,
                                      int denom,
                                      int _wx0,
                                      int _wx1,
-                                     int _ox0,
-                                     int _ox1,
                                      intptr_t mx,
                                      intptr_t my,
                                      int width)
@@ -4944,11 +4958,11 @@ put_vvc_bi_w_epel_v4_10_sse(uint8_t* _dst,
   uint16_t* src = ((uint16_t*)_src) - srcstride;
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
-  const int ox0 = _ox0 << (10 - 8);
-  const int ox1 = _ox1 << (10 - 8);
+
+  
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
-  const __m128i offset = _mm_set1_epi32((ox0 + ox1 + 1) << log2Wd);
+  const __m128i offset = _mm_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   f1 = _mm_load_si128((__m128i*)oh_hevc_epel_filters_sse[my - 1][0]);
@@ -5075,9 +5089,7 @@ put_vvc_bi_w_epel_v8_10_sse(uint8_t* _dst,
                                      int denom,
                                      int _wx0,
                                      int _wx1,
-                                     int _ox0,
-                                     int _ox1,
-                                     intptr_t mx,
+                                                                          intptr_t mx,
                                      intptr_t my,
                                      int width)
 {
@@ -5087,11 +5099,11 @@ put_vvc_bi_w_epel_v8_10_sse(uint8_t* _dst,
   uint16_t* src = ((uint16_t*)_src) - srcstride;
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
-  const int ox0 = _ox0 << (10 - 8);
-  const int ox1 = _ox1 << (10 - 8);
+
+  
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
-  const __m128i offset = _mm_set1_epi32((ox0 + ox1 + 1) << log2Wd);
+  const __m128i offset = _mm_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   f1 = _mm_load_si128((__m128i*)oh_hevc_epel_filters_sse[my - 1][0]);
@@ -5294,8 +5306,7 @@ put_vvc_bi_w_epel_hv4_10_sse(uint8_t* _dst,
                                       int denom,
                                       int _wx0,
                                       int _wx1,
-                                      int _ox0,
-                                      int _ox1,
+
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -5304,11 +5315,11 @@ put_vvc_bi_w_epel_hv4_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
-  const int ox0 = _ox0 << (10 - 8);
-  const int ox1 = _ox1 << (10 - 8);
+
+  
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
-  const __m128i offset = _mm_set1_epi32((ox0 + ox1 + 1) << log2Wd);
+  const __m128i offset = _mm_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   int16_t* src2_bis = src2;
@@ -5593,8 +5604,7 @@ put_vvc_bi_w_epel_hv8_10_sse(uint8_t* _dst,
                                       int denom,
                                       int _wx0,
                                       int _wx1,
-                                      int _ox0,
-                                      int _ox1,
+
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -5603,11 +5613,11 @@ put_vvc_bi_w_epel_hv8_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
-  const int ox0 = _ox0 << (10 - 8);
-  const int ox1 = _ox1 << (10 - 8);
+
+  
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
-  const __m128i offset = _mm_set1_epi32((ox0 + ox1 + 1) << log2Wd);
+  const __m128i offset = _mm_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   int16_t* src2_bis = src2;
@@ -5764,10 +5774,18 @@ put_vvc_uni_w_qpel_h4_10_sse(uint8_t* _dst,
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
-  c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
-  c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][1]);
-  c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][2]);
-  c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][3]);
+  if (width == 4 && height == 4) {
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][3]);
+  }
+  else{
+    c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
+    c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][1]);
+    c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][2]);
+    c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][3]);
+  }
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadl_epi64((__m128i*)&src[x - 3 * 1]);
@@ -5822,8 +5840,6 @@ put_vvc_bi_w_qpel_h4_10_sse(uint8_t* _dst,
                                      int denom,
                                      int _wx0,
                                      int _wx1,
-                                     int _ox0,
-                                     int _ox1,
                                      intptr_t mx,
                                      intptr_t my,
                                      int width)
@@ -5836,17 +5852,27 @@ put_vvc_bi_w_qpel_h4_10_sse(uint8_t* _dst,
   const int srcstride = _srcstride >> 1;
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
-  const int ox0 = _ox0 << (10 - 8);
-  const int ox1 = _ox1 << (10 - 8);
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
-  const __m128i offset = _mm_set1_epi32((ox0 + ox1 + 1) << log2Wd);
+  const __m128i offset = _mm_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
-  c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
-  c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][1]);
-  c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][2]);
-  c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][3]);
+  if (width == 4 && height == 4) {
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][3]);
+  }
+  else{
+      c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
+      c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][1]);
+      c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][2]);
+      c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][3]);
+  }
+  // c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
+  // c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][1]);
+  // c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][2]);
+  // c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][3]);
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       __m128i r5;
@@ -5991,9 +6017,7 @@ put_vvc_bi_w_qpel_h8_10_sse(uint8_t* _dst,
                                      int denom,
                                      int _wx0,
                                      int _wx1,
-                                     int _ox0,
-                                     int _ox1,
-                                     intptr_t mx,
+                                                                          intptr_t mx,
                                      intptr_t my,
                                      int width)
 {
@@ -6004,11 +6028,11 @@ put_vvc_bi_w_qpel_h8_10_sse(uint8_t* _dst,
   const int srcstride = _srcstride >> 1;
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
-  const int ox0 = _ox0 << (10 - 8);
-  const int ox1 = _ox1 << (10 - 8);
+
+  
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
-  const __m128i offset = _mm_set1_epi32((ox0 + ox1 + 1) << log2Wd);
+  const __m128i offset = _mm_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
@@ -6101,10 +6125,18 @@ put_vvc_uni_w_qpel_v4_10_sse(uint8_t* _dst,
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
-  c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
-  c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
-  c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
-  c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  if (width == 4 && height == 4) {
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][3]);
+  }
+  else{
+    c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  }
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadu_si128((__m128i*)&src[x - 3 * srcstride]);
@@ -6159,8 +6191,6 @@ put_vvc_bi_w_qpel_v4_10_sse(uint8_t* _dst,
                                      int denom,
                                      int _wx0,
                                      int _wx1,
-                                     int _ox0,
-                                     int _ox1,
                                      intptr_t mx,
                                      intptr_t my,
                                      int width)
@@ -6172,17 +6202,23 @@ put_vvc_bi_w_qpel_v4_10_sse(uint8_t* _dst,
   const int srcstride = _srcstride >> 1;
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
-  const int ox0 = _ox0 << (10 - 8);
-  const int ox1 = _ox1 << (10 - 8);
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
-  const __m128i offset = _mm_set1_epi32((ox0 + ox1 + 1) << log2Wd);
+  const __m128i offset = _mm_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
-  c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
-  c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
-  c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
-  c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  if (width == 4 && height == 4) {
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][3]);
+  }
+  else{
+    c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
+    c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
+    c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
+    c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
+  }
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       __m128i r5;
@@ -6330,8 +6366,6 @@ put_vvc_bi_w_qpel_v8_10_sse(uint8_t* _dst,
                                      int denom,
                                      int _wx0,
                                      int _wx1,
-                                     int _ox0,
-                                     int _ox1,
                                      intptr_t mx,
                                      intptr_t my,
                                      int width)
@@ -6342,11 +6376,9 @@ put_vvc_bi_w_qpel_v8_10_sse(uint8_t* _dst,
   const int srcstride = _srcstride >> 1;
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
-  const int ox0 = _ox0 << (10 - 8);
-  const int ox1 = _ox1 << (10 - 8);
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
-  const __m128i offset = _mm_set1_epi32((ox0 + ox1 + 1) << log2Wd);
+  const __m128i offset = _mm_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
@@ -6469,8 +6501,8 @@ put_vvc_bi_w_qpel_hv4_10_sse(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
-                                      int ox0,
-                                      int ox1,
+
+
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -6499,8 +6531,6 @@ put_vvc_bi_w_qpel_hv4_10_sse(uint8_t* dst,
                                           denom,
                                           wx0,
                                           wx1,
-                                          ox0,
-                                          ox1,
                                           mx,
                                           my,
                                           width);
@@ -6555,8 +6585,8 @@ put_vvc_bi_w_qpel_hv8_10_sse(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
-                                      int ox0,
-                                      int ox1,
+
+
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -6585,8 +6615,8 @@ put_vvc_bi_w_qpel_hv8_10_sse(uint8_t* dst,
                                           denom,
                                           wx0,
                                           wx1,
-                                          ox0,
-                                          ox1,
+  
+  
                                           mx,
                                           my,
                                           width);
@@ -6618,8 +6648,8 @@ put_vvc_bi_w_pel_pixels16_10_sse(uint8_t* dst,
                                           int denom,
                                           int wx0,
                                           int wx1,
-                                          int ox0,
-                                          int ox1,
+    
+    
                                           intptr_t mx,
                                           intptr_t my,
                                           int width)
@@ -6634,8 +6664,8 @@ put_vvc_bi_w_pel_pixels16_10_sse(uint8_t* dst,
                                            denom,
                                            wx0,
                                            wx1,
-                                           ox0,
-                                           ox1,
+   
+   
                                            mx,
                                            my,
                                            width);
@@ -6668,8 +6698,6 @@ put_vvc_bi_w_pel_pixels32_10_sse(uint8_t* dst,
                                           int denom,
                                           int wx0,
                                           int wx1,
-                                          int ox0,
-                                          int ox1,
                                           intptr_t mx,
                                           intptr_t my,
                                           int width)
@@ -6683,9 +6711,7 @@ put_vvc_bi_w_pel_pixels32_10_sse(uint8_t* dst,
                                            height,
                                            denom,
                                            wx0,
-                                           wx1,
-                                           ox0,
-                                           ox1,
+                                           wx1,  
                                            mx,
                                            my,
                                            width);
@@ -6718,8 +6744,8 @@ put_vvc_bi_w_pel_pixels64_10_sse(uint8_t* dst,
                                           int denom,
                                           int wx0,
                                           int wx1,
-                                          int ox0,
-                                          int ox1,
+    
+    
                                           intptr_t mx,
                                           intptr_t my,
                                           int width)
@@ -6734,8 +6760,8 @@ put_vvc_bi_w_pel_pixels64_10_sse(uint8_t* dst,
                                            denom,
                                            wx0,
                                            wx1,
-                                           ox0,
-                                           ox1,
+   
+   
                                            mx,
                                            my,
                                            width);
@@ -6767,8 +6793,8 @@ put_vvc_bi_w_qpel_h16_10_sse(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
-                                      int ox0,
-                                      int ox1,
+
+
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -6783,8 +6809,8 @@ put_vvc_bi_w_qpel_h16_10_sse(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
-                                       ox0,
-                                       ox1,
+
+
                                        mx,
                                        my,
                                        width);
@@ -6817,8 +6843,6 @@ put_vvc_bi_w_qpel_h32_10_sse(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
-                                      int ox0,
-                                      int ox1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -6833,8 +6857,6 @@ put_vvc_bi_w_qpel_h32_10_sse(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
-                                       ox0,
-                                       ox1,
                                        mx,
                                        my,
                                        width);
@@ -6867,8 +6889,6 @@ put_vvc_bi_w_qpel_h64_10_sse(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
-                                      int ox0,
-                                      int ox1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -6883,8 +6903,6 @@ put_vvc_bi_w_qpel_h64_10_sse(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
-                                       ox0,
-                                       ox1,
                                        mx,
                                        my,
                                        width);
@@ -6916,8 +6934,6 @@ put_vvc_bi_w_qpel_v16_10_sse(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
-                                      int ox0,
-                                      int ox1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -6932,8 +6948,6 @@ put_vvc_bi_w_qpel_v16_10_sse(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
-                                       ox0,
-                                       ox1,
                                        mx,
                                        my,
                                        width);
@@ -6966,8 +6980,6 @@ put_vvc_bi_w_qpel_v32_10_sse(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
-                                      int ox0,
-                                      int ox1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -6982,8 +6994,6 @@ put_vvc_bi_w_qpel_v32_10_sse(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
-                                       ox0,
-                                       ox1,
                                        mx,
                                        my,
                                        width);
@@ -7016,8 +7026,6 @@ put_vvc_bi_w_qpel_v64_10_sse(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
-                                      int ox0,
-                                      int ox1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -7032,8 +7040,6 @@ put_vvc_bi_w_qpel_v64_10_sse(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
-                                       ox0,
-                                       ox1,
                                        mx,
                                        my,
                                        width);
@@ -7065,8 +7071,6 @@ put_vvc_bi_w_qpel_hv16_10_sse(uint8_t* dst,
                                        int denom,
                                        int wx0,
                                        int wx1,
-                                       int ox0,
-                                       int ox1,
                                        intptr_t mx,
                                        intptr_t my,
                                        int width)
@@ -7081,8 +7085,6 @@ put_vvc_bi_w_qpel_hv16_10_sse(uint8_t* dst,
                                         denom,
                                         wx0,
                                         wx1,
-                                        ox0,
-                                        ox1,
                                         mx,
                                         my,
                                         width);
@@ -7115,8 +7117,6 @@ put_vvc_bi_w_qpel_hv32_10_sse(uint8_t* dst,
                                        int denom,
                                        int wx0,
                                        int wx1,
-                                       int ox0,
-                                       int ox1,
                                        intptr_t mx,
                                        intptr_t my,
                                        int width)
@@ -7131,8 +7131,6 @@ put_vvc_bi_w_qpel_hv32_10_sse(uint8_t* dst,
                                         denom,
                                         wx0,
                                         wx1,
-                                        ox0,
-                                        ox1,
                                         mx,
                                         my,
                                         width);
@@ -7165,8 +7163,6 @@ put_vvc_bi_w_qpel_hv64_10_sse(uint8_t* dst,
                                        int denom,
                                        int wx0,
                                        int wx1,
-                                       int ox0,
-                                       int ox1,
                                        intptr_t mx,
                                        intptr_t my,
                                        int width)
@@ -7181,8 +7177,6 @@ put_vvc_bi_w_qpel_hv64_10_sse(uint8_t* dst,
                                         denom,
                                         wx0,
                                         wx1,
-                                        ox0,
-                                        ox1,
                                         mx,
                                         my,
                                         width);
@@ -7214,8 +7208,6 @@ put_vvc_bi_w_epel_h16_10_sse(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
-                                      int ox0,
-                                      int ox1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -7230,8 +7222,6 @@ put_vvc_bi_w_epel_h16_10_sse(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
-                                       ox0,
-                                       ox1,
                                        mx,
                                        my,
                                        width);
@@ -7264,8 +7254,6 @@ put_vvc_bi_w_epel_h32_10_sse(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
-                                      int ox0,
-                                      int ox1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -7280,8 +7268,6 @@ put_vvc_bi_w_epel_h32_10_sse(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
-                                       ox0,
-                                       ox1,
                                        mx,
                                        my,
                                        width);
@@ -7314,8 +7300,6 @@ put_vvc_bi_w_epel_h64_10_sse(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
-                                      int ox0,
-                                      int ox1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -7330,8 +7314,6 @@ put_vvc_bi_w_epel_h64_10_sse(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
-                                       ox0,
-                                       ox1,
                                        mx,
                                        my,
                                        width);
@@ -7363,8 +7345,6 @@ put_vvc_bi_w_epel_v16_10_sse(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
-                                      int ox0,
-                                      int ox1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -7379,8 +7359,6 @@ put_vvc_bi_w_epel_v16_10_sse(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
-                                       ox0,
-                                       ox1,
                                        mx,
                                        my,
                                        width);
@@ -7413,8 +7391,6 @@ put_vvc_bi_w_epel_v32_10_sse(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
-                                      int ox0,
-                                      int ox1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -7429,8 +7405,6 @@ put_vvc_bi_w_epel_v32_10_sse(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
-                                       ox0,
-                                       ox1,
                                        mx,
                                        my,
                                        width);
@@ -7463,8 +7437,6 @@ put_vvc_bi_w_epel_v64_10_sse(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
-                                      int ox0,
-                                      int ox1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -7479,8 +7451,6 @@ put_vvc_bi_w_epel_v64_10_sse(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
-                                       ox0,
-                                       ox1,
                                        mx,
                                        my,
                                        width);
@@ -7512,8 +7482,6 @@ put_vvc_bi_w_epel_hv16_10_sse(uint8_t* dst,
                                        int denom,
                                        int wx0,
                                        int wx1,
-                                       int ox0,
-                                       int ox1,
                                        intptr_t mx,
                                        intptr_t my,
                                        int width)
@@ -7528,8 +7496,6 @@ put_vvc_bi_w_epel_hv16_10_sse(uint8_t* dst,
                                         denom,
                                         wx0,
                                         wx1,
-                                        ox0,
-                                        ox1,
                                         mx,
                                         my,
                                         width);
@@ -7562,8 +7528,6 @@ put_vvc_bi_w_epel_hv32_10_sse(uint8_t* dst,
                                        int denom,
                                        int wx0,
                                        int wx1,
-                                       int ox0,
-                                       int ox1,
                                        intptr_t mx,
                                        intptr_t my,
                                        int width)
@@ -7578,8 +7542,6 @@ put_vvc_bi_w_epel_hv32_10_sse(uint8_t* dst,
                                         denom,
                                         wx0,
                                         wx1,
-                                        ox0,
-                                        ox1,
                                         mx,
                                         my,
                                         width);
@@ -7612,8 +7574,6 @@ put_vvc_bi_w_epel_hv64_10_sse(uint8_t* dst,
                                        int denom,
                                        int wx0,
                                        int wx1,
-                                       int ox0,
-                                       int ox1,
                                        intptr_t mx,
                                        intptr_t my,
                                        int width)
@@ -7628,8 +7588,6 @@ put_vvc_bi_w_epel_hv64_10_sse(uint8_t* dst,
                                         denom,
                                         wx0,
                                         wx1,
-                                        ox0,
-                                        ox1,
                                         mx,
                                         my,
                                         width);
@@ -7803,6 +7761,40 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->bidir_w[3][SIZE_BLOCK_64] = &put_vvc_bi_w_qpel_hv64_10_sse;
   #endif
 
+  mc_l->unidir[0][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_pel_pixels64_10_sse;
+  mc_l->bidir0[0][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_pel_pixels64_10_sse;
+  mc_l->bidir1[0][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_pel_pixels64_10_sse;
+  #if WEIGHTED
+  mc_l->unidir_w[0][SIZE_BLOCK_128] = &put_vvc_uni_w_pel_pixels64_10_sse;
+  mc_l->bidir_w[0][SIZE_BLOCK_128] = &put_vvc_bi_w_pel_pixels64_10_sse;
+  #endif
+
+  mc_l->unidir[1][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_qpel_h64_10_sse;
+  mc_l->bidir0[1][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_qpel_h64_10_sse;
+  mc_l->bidir1[1][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_qpel_h64_10_sse;
+  #if WEIGHTED
+  mc_l->unidir_w[1][SIZE_BLOCK_128] = &put_vvc_uni_w_qpel_h64_10_sse;
+  mc_l->bidir_w[1][SIZE_BLOCK_128] = &put_vvc_bi_w_qpel_h64_10_sse;
+  #endif
+
+  mc_l->unidir[2][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_qpel_v64_10_sse;
+  mc_l->bidir0[2][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_qpel_v64_10_sse;
+  mc_l->bidir1[2][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_qpel_v64_10_sse;
+  #if WEIGHTED
+  mc_l->unidir_w[2][SIZE_BLOCK_128] = &put_vvc_uni_w_qpel_v64_10_sse;
+  mc_l->bidir_w[2][SIZE_BLOCK_128] = &put_vvc_bi_w_qpel_v64_10_sse;
+  #endif
+
+  mc_l->unidir[3][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_qpel_hv64_10_sse;
+  mc_l->bidir0[3][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_qpel_hv64_10_sse;
+  mc_l->bidir1[3][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_qpel_hv64_10_sse;
+  #if WEIGHTED
+  mc_l->unidir_w[3][SIZE_BLOCK_128] = &put_vvc_uni_w_qpel_hv64_10_sse;
+  mc_l->bidir_w[3][SIZE_BLOCK_128] = &put_vvc_bi_w_qpel_hv64_10_sse;
+  #endif
+
+
+
   // /* Chroma functions */
   mc_c->unidir[0][SIZE_BLOCK_4] = &oh_hevc_put_hevc_uni_pel_pixels4_10_sse;
   mc_c->bidir0[0][SIZE_BLOCK_4] = &oh_hevc_put_hevc_bi0_pel_pixels4_10_sse;
@@ -7962,5 +7954,37 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   #if WEIGHTED
   mc_c->unidir_w[3][SIZE_BLOCK_64] = &put_vvc_uni_w_epel_hv64_10_sse;
   mc_c->bidir_w[3][SIZE_BLOCK_64] = &put_vvc_bi_w_epel_hv64_10_sse;
+  #endif
+
+  mc_c->unidir[0][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_pel_pixels64_10_sse;
+  mc_c->bidir0[0][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_pel_pixels64_10_sse;
+  mc_c->bidir1[0][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_pel_pixels64_10_sse;
+  #if WEIGHTED
+  mc_c->unidir_w[0][SIZE_BLOCK_128] = &put_vvc_uni_w_pel_pixels64_10_sse;
+  mc_c->bidir_w[0][SIZE_BLOCK_128] = &put_vvc_bi_w_pel_pixels64_10_sse;
+  #endif
+
+  mc_c->unidir[1][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_epel_h64_10_sse;
+  mc_c->bidir0[1][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_epel_h64_10_sse;
+  mc_c->bidir1[1][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_epel_h64_10_sse;
+  #if WEIGHTED
+  mc_c->unidir_w[1][SIZE_BLOCK_128] = &put_vvc_uni_w_epel_h64_10_sse;
+  mc_c->bidir_w[1][SIZE_BLOCK_128] = &put_vvc_bi_w_epel_h64_10_sse;
+  #endif
+
+  mc_c->unidir[2][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_epel_v64_10_sse;
+  mc_c->bidir0[2][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_epel_v64_10_sse;
+  mc_c->bidir1[2][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_epel_v64_10_sse;
+  #if WEIGHTED
+  mc_c->unidir_w[2][SIZE_BLOCK_128] = &put_vvc_uni_w_epel_v64_10_sse;
+  mc_c->bidir_w[2][SIZE_BLOCK_128] = &put_vvc_bi_w_epel_v64_10_sse;
+  #endif
+
+  mc_c->unidir[3][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_epel_hv64_10_sse;
+  mc_c->bidir0[3][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_epel_hv64_10_sse;
+  mc_c->bidir1[3][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_epel_hv64_10_sse;
+  #if WEIGHTED
+  mc_c->unidir_w[3][SIZE_BLOCK_128] = &put_vvc_uni_w_epel_hv64_10_sse;
+  mc_c->bidir_w[3][SIZE_BLOCK_128] = &put_vvc_bi_w_epel_hv64_10_sse;
   #endif
 }

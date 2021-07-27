@@ -42,7 +42,7 @@ typedef void (*MCUniDirWFunc)(uint8_t* dst, ptrdiff_t dststride, uint8_t* _src,
 typedef void (*MCBiDirWFunc)(uint8_t* dst, ptrdiff_t dststride, uint8_t* _src,
                              ptrdiff_t _srcstride, int16_t* src2,
                              ptrdiff_t src2stride, int height, int denom,
-                             int wx0, int wx1, int ox0, int ox1, intptr_t mx,
+                             int wx0, int wx1, intptr_t mx,
                              intptr_t my, int width);
 
 typedef void (*MCBiDirWeightedFunc)(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
