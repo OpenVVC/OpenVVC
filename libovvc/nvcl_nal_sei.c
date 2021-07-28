@@ -49,12 +49,14 @@ copy_sei_params(OVSEI **dst_p, OVSEI *src)
     if(src){
         if(!(*dst_p))
             *dst_p = ov_mallocz(sizeof(struct OVSEI));
-
         OVSEI *dst = *dst_p; 
-        if(!dst->sei_fg){
-            dst->sei_fg = ov_mallocz(sizeof(struct OVSEIFGrain));
+
+        if(src->sei_fg){
+            if(!dst->sei_fg){
+                dst->sei_fg = ov_mallocz(sizeof(struct OVSEIFGrain));
+            }
+            *(dst->sei_fg) =  *(src->sei_fg);
         }
-        *(dst->sei_fg) =  *(src->sei_fg);
     }
 }
 
