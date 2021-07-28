@@ -22,7 +22,7 @@ typedef struct OVVCHdl{
 
 static int dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name);
 
-static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl, char *fout, int nb_threads);
+static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_threads);
 
 static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
@@ -176,7 +176,7 @@ dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name)
 }
 
 static int
-init_openvvc_hdl(OVVCHdl *const ovvc_hdl, char *output_file_name, int nb_threads)
+init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_threads)
 {
     OVVCDec **vvcdec = &ovvc_hdl->dec;
     OVVCDmx **vvcdmx = &ovvc_hdl->dmx;

@@ -5,7 +5,6 @@
 #include <string.h>
 #include <tmmintrin.h>
 
-//Warning: homogeneous with rcn_inter (log2_pu_w - 1 ? -2 ? -0 ?)
 #define SIZE_BLOCK_4 1
 #define SIZE_BLOCK_8 2
 #define SIZE_BLOCK_16 3

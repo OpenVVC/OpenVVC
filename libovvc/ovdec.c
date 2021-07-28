@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "ovutils.h"
 #include "ovmem.h"
@@ -517,7 +518,7 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
 
 
 int
-ovdec_init(OVVCDec **vvcdec, char* output_file_name, int nb_threads)
+ovdec_init(OVVCDec **vvcdec, const char* output_file_name, int nb_threads)
 {
     /* FIXME might not be available on every plateform */
     if (nb_threads < 1)
