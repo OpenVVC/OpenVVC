@@ -8,6 +8,7 @@ static inline void
 dbf_fill_qp_map(struct DBFQPMap *qp_map, int x0, int y0,
                 int log2_cb_w, int log2_cb_h, int8_t qp)
 {
+    /* FIXME use border storage */
     uint8_t x0_u = x0 >> 2;
     uint8_t y0_u = y0 >> 2;
     int nb_cb_w = (1 << log2_cb_w) >> 2;
@@ -18,6 +19,27 @@ dbf_fill_qp_map(struct DBFQPMap *qp_map, int x0, int y0,
 
     for (i = 0; i < nb_cb_h; i++) {
         memset(&qp_map->hor[first_pos_hor + 34 * i], qp, sizeof(uint8_t) * nb_cb_w);
+    }
+}
+
+static inline void
+dbf_fill_aff_map(struct DBFMap *aff_map, int x0_u, int y0_u,
+                int nb_unit_w, int nb_unit_h)
+{
+    /* FIXME avoid duplicate storage with MVs */
+    uint64_t mask_ver = (uint64_t)((uint64_t)1 << nb_unit_h) - 1;
+    uint64_t mask_hor = (uint64_t)((uint64_t)1 << nb_unit_w) - 1;
+    int i;
+
+    mask_ver <<= y0_u;
+    mask_hor <<= x0_u + 2;
+
+    for (i = 0; i < nb_unit_w; i++) {
+        aff_map->ver[x0_u + i + 1] |= mask_ver;
+    }
+
+    for (i = 0; i < nb_unit_h; i++) {
+        aff_map->hor[y0_u + i + 1] |= mask_hor;
     }
 }
 

@@ -100,6 +100,8 @@ struct DRVLines
         uint64_t *dbf_bs1_hor_cb;
         uint64_t *dbf_bs1_hor_cr;
 
+        uint64_t *dbf_affine;
+
         /* CU is large */
         uint64_t *large_map_c;
     } dbf_lines;

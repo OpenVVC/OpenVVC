@@ -1336,7 +1336,7 @@ mv_threshold_check(OVMV a, OVMV b)
     return chk;
 }
 
-uint64_t
+static uint64_t
 check_dbf_enabled_p(const int16_t *dist_ref_p, const int16_t *dist_ref_q, OVMV mv_p0, OVMV mv_q0)
 {
     int16_t ref0_p = dist_ref_p[mv_p0.ref_idx];
@@ -1377,7 +1377,7 @@ check_dbf_enabled_p(const int16_t *dist_ref_p, const int16_t *dist_ref_q, OVMV m
     return (uint64_t)bs;
 }
 
-uint64_t
+static uint64_t
 check_dbf_enabled(const struct InterDRVCtx *const inter_ctx,
                   OVMV mv_p0, OVMV mv_p1, OVMV mv_q0, OVMV mv_q1)
 {
@@ -1415,6 +1415,132 @@ check_dbf_enabled(const struct InterDRVCtx *const inter_ctx,
 }
 
 static void
+dbf_mv_check_abv_p(const struct InterDRVCtx *const inter_ctx,
+                   struct DBFInfo *const dbf_info,
+                   struct OVMVCtx *const mv_ctx0, struct OVMVCtx *const mv_ctx1,
+                   OVMV mv0,
+                   int x0_unit, int y0_unit,
+                   int nb_unit_w, int nb_unit_h)
+{
+    uint64_t unit_msk_w = (uint64_t)((uint64_t)1 << nb_unit_w) - 1llu;
+
+    uint64_t abv0_msk = (mv_ctx0->map.hfield[y0_unit] >> (x0_unit + 1)) & unit_msk_w;
+    uint64_t abv1_msk = (mv_ctx1->map.hfield[y0_unit] >> (x0_unit + 1)) & unit_msk_w;
+
+    uint64_t bs1_map_h = (dbf_info->bs1_map.hor[y0_unit] >> (2 + x0_unit)) & unit_msk_w;
+    const int16_t *dist_ref_q = mv_ctx0 == &inter_ctx->mv_ctx0 ? inter_ctx->dist_ref_0
+                                                               : inter_ctx->dist_ref_1;
+
+    /* Avoid checking already set bs1 or bs2.
+     * Note if no MV in map the other PU is intra so boundary strength is already 2
+     * This way we only check condition on MVs when required
+     */
+    uint64_t chk_abv = (abv0_msk ^ abv1_msk) & (~bs1_map_h);
+
+    /* Init checked boundary strength map part to 0 it will be disabled if all MVs
+     * are in the same ref * and the delta MVs are inferior to
+     * integer MV precision.
+     */
+    uint64_t dst_map_h = (~chk_abv) & unit_msk_w;
+
+    if (chk_abv) {
+        const OVMV *mv_abv0 = &mv_ctx0->mvs[PB_POS_IN_BUF(x0_unit, y0_unit - 1)];
+        const OVMV *mv_abv1 = &mv_ctx1->mvs[PB_POS_IN_BUF(x0_unit, y0_unit - 1)];
+        uint8_t pos_shift = 0;
+        do {
+            uint8_t nb_skipped_blk = ov_ctz64(chk_abv);
+            abv0_msk >>= nb_skipped_blk;
+            uint8_t is_l0 = abv0_msk & 0x1;
+            const int16_t *dist_ref_p = is_l0 ? ((mv_ctx0 == &inter_ctx->mv_ctx0) ? inter_ctx->dist_ref_0 : inter_ctx->dist_ref_1) : ((mv_ctx0 == &inter_ctx->mv_ctx1) ? inter_ctx->dist_ref_0 : inter_ctx->dist_ref_1);
+
+            mv_abv0   += nb_skipped_blk;
+            mv_abv1   += nb_skipped_blk;
+
+            pos_shift += nb_skipped_blk;
+
+            uint64_t abv_th = check_dbf_enabled_p(dist_ref_p, dist_ref_q, is_l0 ? *mv_abv0 : *mv_abv1, mv0);
+
+            dst_map_h |= abv_th << pos_shift;
+
+            mv_abv0++;
+            mv_abv1++;
+
+            pos_shift++;
+
+            abv0_msk >>= 1;
+            chk_abv >>= nb_skipped_blk + 1;
+
+        } while (chk_abv);
+    }
+
+    dbf_info->bs1_map.hor[y0_unit] |= (bs1_map_h | dst_map_h) << (x0_unit + 2);
+}
+
+static void
+dbf_mv_check_lft_p(const struct InterDRVCtx *const inter_ctx,
+                   struct DBFInfo *const dbf_info,
+                   struct OVMVCtx *const mv_ctx0, struct OVMVCtx *const mv_ctx1,
+                   OVMV mv0,
+                   int x0_unit, int y0_unit,
+                   int nb_unit_w, int nb_unit_h)
+{
+    uint64_t unit_msk_h = (uint64_t)((uint64_t)1 << nb_unit_h) - 1llu;
+
+    uint64_t lft0_msk = (mv_ctx0->map.vfield[x0_unit] >> (y0_unit + 1)) & unit_msk_h;
+    uint64_t lft1_msk = (mv_ctx1->map.vfield[x0_unit] >> (y0_unit + 1)) & unit_msk_h;
+
+    uint64_t bs1_map_v = (dbf_info->bs1_map.ver[x0_unit] >> y0_unit)       & unit_msk_h;
+    const int16_t *dist_ref_q = mv_ctx0 == &inter_ctx->mv_ctx0 ? inter_ctx->dist_ref_0
+                                                               : inter_ctx->dist_ref_1;
+
+    /* Avoid checking already set bs1 or bs2.
+     * Note if no MV in map the other PU is intra so boundary strength is already 2
+     * This way we only check condition on MVs when required
+     */
+    uint64_t chk_lft = (lft0_msk ^ lft1_msk) & (~bs1_map_v);
+
+    /* Init checked boundary strength map part to 0 it will be disabled if all MVs
+     * are in the same ref * and the delta MVs are inferior to
+     * integer MV precision.
+     */
+    uint64_t dst_map_v = (~chk_lft) & unit_msk_h;
+
+    if (chk_lft) {
+        const OVMV *mv_lft0 = &mv_ctx0->mvs[PB_POS_IN_BUF(x0_unit - 1, y0_unit)];
+        const OVMV *mv_lft1 = &mv_ctx1->mvs[PB_POS_IN_BUF(x0_unit - 1, y0_unit)];
+
+        uint8_t pos_shift = 0;
+        do {
+            uint8_t nb_skipped_blk = ov_ctz64(chk_lft);
+
+            lft0_msk >>= nb_skipped_blk;
+
+            uint8_t is_l0 = lft0_msk & 0x1;
+            const int16_t *dist_ref_p = is_l0 ? ((mv_ctx0 == &inter_ctx->mv_ctx0) ? inter_ctx->dist_ref_0 : inter_ctx->dist_ref_1) : ((mv_ctx0 == &inter_ctx->mv_ctx1) ? inter_ctx->dist_ref_0 : inter_ctx->dist_ref_1);
+
+            mv_lft0   += 34 * nb_skipped_blk;
+            mv_lft1   += 34 * nb_skipped_blk;
+
+            pos_shift += nb_skipped_blk;
+
+            uint64_t lft_th = check_dbf_enabled_p(dist_ref_p, dist_ref_q, is_l0 ? *mv_lft0 : *mv_lft1, mv0);
+
+            dst_map_v |= lft_th << pos_shift;
+
+            mv_lft0 += 34;
+            mv_lft1 += 34;
+
+            pos_shift++;
+
+            lft0_msk >>= 1;
+            chk_lft  >>= nb_skipped_blk + 1;
+
+        } while (chk_lft);
+    }
+    dbf_info->bs1_map.ver[x0_unit] |= dst_map_v << y0_unit;
+}
+
+static void
 dbf_mv_check_p(const struct InterDRVCtx *const inter_ctx,
                struct DBFInfo *const dbf_info,
                struct OVMVCtx *const mv_ctx0, struct OVMVCtx *const mv_ctx1,
@@ -1433,7 +1559,7 @@ dbf_mv_check_p(const struct InterDRVCtx *const inter_ctx,
 
     uint64_t bs1_map_h = (dbf_info->bs1_map.hor[y0_unit] >> (2 + x0_unit)) & unit_msk_w;
     uint64_t bs1_map_v = (dbf_info->bs1_map.ver[x0_unit] >> y0_unit)       & unit_msk_h;
-    const int16_t *dist_ref_p = mv_ctx0 == &inter_ctx->mv_ctx0 ? inter_ctx->dist_ref_0
+    const int16_t *dist_ref_q = mv_ctx0 == &inter_ctx->mv_ctx0 ? inter_ctx->dist_ref_0
                                                                : inter_ctx->dist_ref_1;
 
     /* Avoid checking already set bs1 or bs2.
@@ -1458,7 +1584,7 @@ dbf_mv_check_p(const struct InterDRVCtx *const inter_ctx,
             uint8_t nb_skipped_blk = ov_ctz64(chk_abv);
             abv0_msk >>= nb_skipped_blk;
             uint8_t is_l0 = abv0_msk & 0x1;
-            const int16_t *dist_ref_q = is_l0 ? ((mv_ctx0 == &inter_ctx->mv_ctx0) ? inter_ctx->dist_ref_0 : inter_ctx->dist_ref_1) : ((mv_ctx0 == &inter_ctx->mv_ctx1) ? inter_ctx->dist_ref_0 : inter_ctx->dist_ref_1);
+            const int16_t *dist_ref_p = is_l0 ? ((mv_ctx0 == &inter_ctx->mv_ctx0) ? inter_ctx->dist_ref_0 : inter_ctx->dist_ref_1) : ((mv_ctx0 == &inter_ctx->mv_ctx1) ? inter_ctx->dist_ref_0 : inter_ctx->dist_ref_1);
 
             mv_abv0   += nb_skipped_blk;
             mv_abv1   += nb_skipped_blk;
@@ -1491,7 +1617,7 @@ dbf_mv_check_p(const struct InterDRVCtx *const inter_ctx,
             lft0_msk >>= nb_skipped_blk;
 
             uint8_t is_l0 = lft0_msk & 0x1;
-            const int16_t *dist_ref_q = is_l0 ? ((mv_ctx0 == &inter_ctx->mv_ctx0) ? inter_ctx->dist_ref_0 : inter_ctx->dist_ref_1) : ((mv_ctx0 == &inter_ctx->mv_ctx1) ? inter_ctx->dist_ref_0 : inter_ctx->dist_ref_1);
+            const int16_t *dist_ref_p = is_l0 ? ((mv_ctx0 == &inter_ctx->mv_ctx0) ? inter_ctx->dist_ref_0 : inter_ctx->dist_ref_1) : ((mv_ctx0 == &inter_ctx->mv_ctx1) ? inter_ctx->dist_ref_0 : inter_ctx->dist_ref_1);
 
             mv_lft0   += 34 * nb_skipped_blk;
             mv_lft1   += 34 * nb_skipped_blk;
@@ -1513,6 +1639,111 @@ dbf_mv_check_p(const struct InterDRVCtx *const inter_ctx,
         } while (chk_lft);
     }
     dbf_info->bs1_map.hor[y0_unit] |= (bs1_map_h | dst_map_h) << (x0_unit + 2);
+    dbf_info->bs1_map.ver[x0_unit] |= dst_map_v << y0_unit;
+}
+
+static void
+dbf_mv_check_abv_b(const struct InterDRVCtx *const inter_ctx,
+                   struct DBFInfo *const dbf_info,
+                   struct OVMVCtx *const mv_ctx0, struct OVMVCtx *const mv_ctx1,
+                   OVMV mv0, OVMV mv1,
+                   int x0_unit, int y0_unit,
+                   int nb_unit_w, int nb_unit_h)
+{
+    uint64_t unit_msk_w = (uint64_t)((uint64_t)1 << nb_unit_w) - 1llu;
+
+    uint64_t abv0_msk = (mv_ctx0->map.hfield[y0_unit] >> (x0_unit + 1)) & unit_msk_w;
+    uint64_t abv1_msk = (mv_ctx1->map.hfield[y0_unit] >> (x0_unit + 1)) & unit_msk_w;
+
+    uint64_t bs1_map_h = (dbf_info->bs1_map.hor[y0_unit] >> (2 + x0_unit)) & unit_msk_w;
+
+    /* Note if no MV in map the other PU is intra so boundary strength is already 2
+     * This way we only check condition on MVs when required
+     */
+    uint64_t chk_abv = (abv0_msk & abv1_msk) & (~bs1_map_h);
+
+    /* Init checked boundary strength map part to 0 it will be disabled if all MVs
+     * are in the same ref * and the delta MVs are inferior to
+     * integer MV precision.
+     */
+    uint64_t dst_map_h = (~chk_abv) & unit_msk_w;
+
+    if (chk_abv) {
+        const OVMV *mv_abv0 = &mv_ctx0->mvs[PB_POS_IN_BUF(x0_unit, y0_unit - 1)];
+        const OVMV *mv_abv1 = &mv_ctx1->mvs[PB_POS_IN_BUF(x0_unit, y0_unit - 1)];
+        uint8_t pos_shift = 0;
+        do {
+            uint8_t nb_skipped_blk = ov_ctz64(chk_abv);
+
+            mv_abv0   += nb_skipped_blk;
+            mv_abv1   += nb_skipped_blk;
+            pos_shift += nb_skipped_blk;
+
+            uint64_t abv_th = check_dbf_enabled(inter_ctx, *mv_abv0, *mv_abv1, mv0, mv1);
+
+            dst_map_h |= abv_th << pos_shift;
+
+            mv_abv0++;
+            mv_abv1++;
+            pos_shift++;
+
+            chk_abv >>= nb_skipped_blk + 1;
+
+        } while (chk_abv);
+    }
+
+    dbf_info->bs1_map.hor[y0_unit] |= dst_map_h << (x0_unit + 2);
+}
+
+static void
+dbf_mv_check_lft_b(const struct InterDRVCtx *const inter_ctx,
+                   struct DBFInfo *const dbf_info,
+                   struct OVMVCtx *const mv_ctx0, struct OVMVCtx *const mv_ctx1,
+                   OVMV mv0, OVMV mv1,
+                   int x0_unit, int y0_unit,
+                   int nb_unit_w, int nb_unit_h)
+{
+    uint64_t unit_msk_h = (uint64_t)((uint64_t)1 << nb_unit_h) - 1llu;
+
+    uint64_t lft0_msk = (mv_ctx0->map.vfield[x0_unit] >> (y0_unit + 1)) & unit_msk_h;
+    uint64_t lft1_msk = (mv_ctx1->map.vfield[x0_unit] >> (y0_unit + 1)) & unit_msk_h;
+
+    uint64_t bs1_map_v = (dbf_info->bs1_map.ver[x0_unit] >> y0_unit)       & unit_msk_h;
+
+    /* Note if no MV in map the other PU is intra so boundary strength is already 2
+     * This way we only check condition on MVs when required
+     */
+    uint64_t chk_lft = (lft0_msk & lft1_msk) & (~bs1_map_v);
+
+    /* Init checked boundary strength map part to 0 it will be disabled if all MVs
+     * are in the same ref * and the delta MVs are inferior to
+     * integer MV precision.
+     */
+    uint64_t dst_map_v = (~chk_lft) & unit_msk_h;
+
+    if (chk_lft) {
+        const OVMV *mv_lft0 = &mv_ctx0->mvs[PB_POS_IN_BUF(x0_unit - 1, y0_unit)];
+        const OVMV *mv_lft1 = &mv_ctx1->mvs[PB_POS_IN_BUF(x0_unit - 1, y0_unit)];
+
+        uint8_t pos_shift = 0;
+        do {
+            uint8_t nb_skipped_blk = ov_ctz64(chk_lft);
+            mv_lft0   += 34 * nb_skipped_blk;
+            mv_lft1   += 34 * nb_skipped_blk;
+            pos_shift += nb_skipped_blk;
+
+            uint64_t lft_th = check_dbf_enabled(inter_ctx, *mv_lft0, *mv_lft1, mv0, mv1);
+
+            dst_map_v |= lft_th << pos_shift;
+
+            mv_lft0 += 34;
+            mv_lft1 += 34;
+            pos_shift++;
+
+            chk_lft >>= nb_skipped_blk + 1;
+
+        } while (chk_lft);
+    }
     dbf_info->bs1_map.ver[x0_unit] |= dst_map_v << y0_unit;
 }
 
@@ -1601,6 +1832,41 @@ dbf_mv_check_b(const struct InterDRVCtx *const inter_ctx,
 }
 
 static void
+update_gpm_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
+                    const OVMV mv0, const OVMV mv1,
+                    uint8_t pb_x, uint8_t  pb_y,
+                    uint8_t nb_pb_w, uint8_t nb_pb_h,
+                    uint8_t inter_dir)
+{
+    /*FIXME Use specific DBF update function if DBF is disabled */
+    /*FIXME Find a better way to retrieve dbf_info */
+    if (inter_dir == 3) {
+        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+        fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+        fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+        fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+        fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+    } else if (inter_dir & 0x2) {
+        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+        fill_tmvp_map(inter_ctx->tmvp_mv[1].mvs, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+        fill_mvp_map(mv_ctx1, mv1, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+    } else if (inter_dir & 0x1) {
+        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+
+        fill_tmvp_map(inter_ctx->tmvp_mv[0].mvs, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+
+        fill_mvp_map(mv_ctx0, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
+    }
+}
+
+static void
 update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
                 const OVMV mv0, const OVMV mv1,
                 uint8_t pb_x, uint8_t  pb_y,
@@ -1643,6 +1909,58 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
         dbf_mv_check_p(inter_ctx, dbf_info, mv_ctx0, mv_ctx1, mv0, pb_x, pb_y, nb_pb_w, nb_pb_h);
     }
 }
+
+static void
+gpm_dbf_check(struct InterDRVCtx *const inter_ctx,
+              uint8_t pb_x, uint8_t pb_y,
+              uint8_t nb_pb_w, uint8_t nb_pb_h)
+{
+    struct DBFInfo *const dbf_info = &inter_ctx->tmvp_ctx.ctudec->dbf_info;
+    struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+    struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+    uint64_t msk0_v = mv_ctx0->map.vfield[pb_x + 1] >> (1 + pb_y);
+    uint64_t msk1_v = mv_ctx1->map.vfield[pb_x + 1] >> (1 + pb_y);
+
+    uint64_t msk0_h = mv_ctx0->map.hfield[pb_y + 1] >> (1 + pb_x);
+    uint64_t msk1_h = mv_ctx1->map.hfield[pb_y + 1] >> (1 + pb_x);
+
+    int i;
+
+    for (i = 0; i < nb_pb_w; ++i) {
+        OVMV mv0 = mv_ctx0->mvs[35 + pb_x + i + pb_y * 34];
+        OVMV mv1 = mv_ctx1->mvs[35 + pb_x + i + pb_y * 34];
+        uint8_t inter_dir = (msk0_h & 0x1) | ((msk1_h & 0x1) << 1);
+
+        if (inter_dir == 3) {
+            dbf_mv_check_abv_b(inter_ctx, dbf_info, mv_ctx0, mv_ctx1, mv0, mv1, pb_x + i, pb_y, 1, 1);
+        } else if (inter_dir & 0x2) {
+            dbf_mv_check_abv_p(inter_ctx, dbf_info, mv_ctx1, mv_ctx0, mv1, pb_x + i, pb_y, 1, 1);
+
+        } else if (inter_dir & 0x1) {
+            dbf_mv_check_abv_p(inter_ctx, dbf_info, mv_ctx0, mv_ctx1, mv0, pb_x + i, pb_y, 1, 1);
+        }
+        msk0_h >>= 1;
+        msk1_h >>= 1;
+    }
+
+    for (i = 0; i < nb_pb_h; ++i) {
+        OVMV mv0 = mv_ctx0->mvs[35 + pb_x + (pb_y + i) * 34];
+        OVMV mv1 = mv_ctx1->mvs[35 + pb_x + (pb_y + i) * 34];
+        uint8_t inter_dir = (msk0_v & 0x1) | ((msk1_v & 0x1) << 1);
+        if (inter_dir == 3) {
+            dbf_mv_check_lft_b(inter_ctx, dbf_info, mv_ctx0, mv_ctx1, mv0, mv1, pb_x, pb_y + i, 1, 1);
+        } else if (inter_dir & 0x2) {
+            dbf_mv_check_lft_p(inter_ctx, dbf_info, mv_ctx1, mv_ctx0, mv1, pb_x, pb_y + i, 1, 1);
+
+        } else if (inter_dir & 0x1) {
+            dbf_mv_check_lft_p(inter_ctx, dbf_info, mv_ctx0, mv_ctx1, mv0, pb_x, pb_y + i, 1, 1);
+        }
+        msk0_v >>= 1;
+        msk1_v >>= 1;
+    }
+}
+
 
 static void
 update_mv_ctx(struct InterDRVCtx *const inter_ctx,
@@ -1751,7 +2069,7 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
                 }
                 #endif
 
-                update_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, pb_x + x, pb_y + y,
+                update_gpm_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, pb_x + x, pb_y + y, 
                                 1, 1, mv_info.inter_dir);
 
             } else if (tpm_mask == 0) {
@@ -1764,8 +2082,8 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
                 }
                 #endif
 
-                update_mv_ctx_b(inter_ctx, mv_info0.mv0, mv_info0.mv1, pb_x + x, pb_y + y,
-                                1, 1, inter_dir0);
+                update_gpm_mv_ctx_b(inter_ctx, mv_info0.mv0, mv_info0.mv1, pb_x + x, pb_y + y, 
+                                    1, 1, inter_dir0);
             } else {
 
                 #if 0
@@ -1776,11 +2094,12 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
                 }
                 #endif
 
-                update_mv_ctx_b(inter_ctx, mv_info1.mv0, mv_info1.mv1, pb_x + x, pb_y + y,
-                                1, 1, inter_dir1);
+                update_gpm_mv_ctx_b(inter_ctx, mv_info1.mv0, mv_info1.mv1, pb_x + x, pb_y + y, 
+                                    1, 1, inter_dir1);
             }
         }
     }
+    gpm_dbf_check(inter_ctx, pb_x, pb_y, nb_pb_w, nb_pb_h);
 }
 
 

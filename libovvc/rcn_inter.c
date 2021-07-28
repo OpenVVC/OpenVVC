@@ -1182,12 +1182,16 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
             delta_v += add.v;
         }
 
+        /* FIXME if dmvr_idx != 12 force DBF ?*/
+
         mv0->x += delta_h;
         mv0->y += delta_v;
 
         mv1->x -= delta_h;
         mv1->y -= delta_v;
 
+        /* FIXME clipping should be done on copy 
+         * since we use actual MVs for TMVP ? */
         mv0->x = ov_clip(mv0->x, MV_MIN, MV_MAX);
         mv0->y = ov_clip(mv0->y, MV_MIN, MV_MAX);
 
@@ -1228,6 +1232,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     ref1_b.y += delta_h3 + (int16_t)ref1_b.stride * delta_v3;
 
     uint8_t disable_bdof = apply_bdof ? min_cost < 2 * (pu_w * pu_h) : 1;
+
     if (disable_bdof) {
         mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride,
                                                     pu_h, prec_x0, prec_y0, pu_w);
@@ -1293,8 +1298,6 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     //uint16_t *edge_buff1_1 = edge_buff1 + 24 * RCN_CTB_STRIDE;
     uint16_t edge_buff0_1[RCN_CTB_SIZE];
     uint16_t edge_buff1_1[RCN_CTB_SIZE];
-
-
 
     struct OVBuffInfo ref0_c = derive_dmvr_ref_buf_c(ref0, tmp0,
                                                      pos_x >> 1, pos_y >> 1,

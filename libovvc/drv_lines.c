@@ -355,6 +355,8 @@ free_dbf_lines(struct DBFLines *const l)
     ov_freep(&l->dbf_bs1_hor);
     ov_freep(&l->dbf_bs1_hor_cb);
     ov_freep(&l->dbf_bs1_hor_cr);
+
+    ov_freep(&l->dbf_affine);
 }
 
 
@@ -377,6 +379,8 @@ init_dbf_lines(struct DBFLines *const l, int nb_ctu_line, int nb_pu_line)
     l->dbf_bs2_hor    = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
     l->dbf_bs2_hor_c  = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
 
+    l->dbf_affine  = ov_mallocz((nb_ctu_line + 1) * sizeof(uint64_t));
+
     malloc_chk |= l->qp_x_map       == NULL;
     malloc_chk |= l->qp_x_map_cb    == NULL;
     malloc_chk |= l->qp_x_map_cr    == NULL;
@@ -390,6 +394,8 @@ init_dbf_lines(struct DBFLines *const l, int nb_ctu_line, int nb_pu_line)
 
     malloc_chk |= l->dbf_bs2_hor    == NULL;
     malloc_chk |= l->dbf_bs2_hor_c  == NULL;
+
+    malloc_chk |= l->dbf_affine  == NULL;
 
     if (malloc_chk) {
         free_dbf_lines(l);
@@ -420,6 +426,8 @@ offset_dbf_lines(struct DBFLines *const l, int ctb_offset,
     l->dbf_bs2_hor    += ctb_offset;
     l->dbf_bs2_hor_c  += ctb_offset;
 
+    l->dbf_affine  += ctb_offset;
+
 }
 
 static void
@@ -438,6 +446,8 @@ dbf_clear_lines(const struct DBFLines *const l, int nb_ctu_line, int nb_pu_line)
 
     memset(l->dbf_bs2_hor,   0, (nb_ctu_line + 1) * sizeof(uint64_t));
     memset(l->dbf_bs2_hor_c, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
+
+    memset(l->dbf_affine, 0, (nb_ctu_line + 1) * sizeof(uint64_t));
 }
 
 static void
@@ -490,13 +500,17 @@ dbf_load_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l
         /* copy previous 8 vertical edges used for filter length derivation */
         uint64_t *ctb_bnd   = dbf_info->ctb_bound_ver;
         uint64_t *ctb_bnd_c = dbf_info->ctb_bound_ver_c;
+        uint64_t *ctb_aff = dbf_info->aff_edg_ver;
         memcpy(ctb_bnd, &ctb_bnd[nb_pb_s], 8 * sizeof(uint64_t));
+        memcpy(ctb_aff, &ctb_aff[nb_pb_s], 8 * sizeof(uint64_t));
         memcpy(ctb_bnd_c + 8 - 3, &ctb_bnd_c[nb_pb_s + 8 - 3], 3 * sizeof(uint64_t));
     }
 
     for (int i = 0; i < nb_pb_s + 1; ++i) {
         dbf_info->ctb_bound_hor[i + 8] = ctb_lft_msk & (dbf_info->ctb_bound_hor[i + 8] >> (nb_pb_s)) & 0x3;
+        dbf_info->aff_edg_hor[i + 8] = ctb_lft_msk & (dbf_info->aff_edg_hor[i + 8] >> (nb_pb_s)) & 0x3;
         dbf_info->ctb_bound_ver[i + 8] = 0;
+        dbf_info->aff_edg_ver[i + 8] = 0;
     }
 
     for (int i = 0; i < nb_pb_s + 1; ++i) {
@@ -539,6 +553,7 @@ dbf_load_bs_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
     struct DBFMap *const bs1_map    = &dbf_info->bs1_map;
     struct DBFMap *const bs1_map_cb = &dbf_info->bs1_map_cb;
     struct DBFMap *const bs1_map_cr = &dbf_info->bs1_map_cr;
+    struct DBFMap *const affine_map = &dbf_info->affine_map;
     int i;
 
     /* FIXME check cast */
@@ -552,6 +567,8 @@ dbf_load_bs_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
     bs1_map_cb->ver[0] = ctb_lft_msk & bs1_map_cb->ver[nb_pb_s];
     bs1_map_cr->ver[0] = ctb_lft_msk & bs1_map_cr->ver[nb_pb_s];
 
+    affine_map->ver[0] = ctb_lft_msk & affine_map->ver[nb_pb_s];
+
     /* Reset inner part of vertical maps */
     memset(bs2_map->ver + 1, 0, sizeof(*bs2_map->ver) * nb_pb_s);
     memset(bs2_map_c->ver + 1, 0, sizeof(*bs2_map_c->ver) * nb_pb_s);
@@ -559,6 +576,8 @@ dbf_load_bs_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
     memset(bs1_map->ver + 1, 0, sizeof(*bs1_map->ver) * nb_pb_s);
     memset(bs1_map_cb->ver + 1, 0, sizeof(*bs1_map_cb->ver) * nb_pb_s);
     memset(bs1_map_cr->ver + 1, 0, sizeof(*bs1_map_cr->ver) * nb_pb_s);
+
+    memset(affine_map->ver + 1, 0, sizeof(*affine_map->ver) * nb_pb_s);
 
     /* Reset inner part */
     for (i = 0; i < nb_pb_s + 1; ++i) {
@@ -568,6 +587,8 @@ dbf_load_bs_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
         bs1_map->hor[i] = ctb_lft_msk & (bs1_map->hor[i] >> nb_pb_s) & 0x3;
         bs1_map_cb->hor[i] = ctb_lft_msk & (bs1_map_cb->hor[i] >> nb_pb_s) & 0x3;
         bs1_map_cr->hor[i] = ctb_lft_msk & (bs1_map_cr->hor[i] >> nb_pb_s) & 0x3;
+
+        affine_map->hor[i] = ctb_lft_msk & (affine_map->hor[i] >> nb_pb_s) & 0x3;
     }
 
     /* LOAD current line */
@@ -577,6 +598,8 @@ dbf_load_bs_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
     bs1_map->hor[0]    |= l->dbf_bs1_hor[ctb_x] << 2;
     bs1_map_cb->hor[0] |= l->dbf_bs1_hor_cb[ctb_x] << 2;
     bs1_map_cr->hor[0] |= l->dbf_bs1_hor_cr[ctb_x] << 2;
+
+    affine_map->hor[0] |= l->dbf_affine[ctb_x] << 2;
 }
 
 static void
@@ -592,6 +615,8 @@ dbf_store_bs_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
     struct DBFMap *const bs1_map_cb = &dbf_info->bs1_map_cb;
     struct DBFMap *const bs1_map_cr = &dbf_info->bs1_map_cr;
 
+    struct DBFMap *const affine_map = &dbf_info->affine_map;
+
     /* STORE for next line */
     l->dbf_bs2_hor[ctb_x]   =  bs2_map->hor[nb_pb_s] >> 2;
     l->dbf_bs2_hor_c[ctb_x] =  bs2_map_c->hor[nb_pb_s] >> 2;
@@ -599,6 +624,8 @@ dbf_store_bs_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
     l->dbf_bs1_hor[ctb_x]    =  bs1_map->hor[nb_pb_s] >> 2;
     l->dbf_bs1_hor_cb[ctb_x] =  bs1_map_cb->hor[nb_pb_s] >> 2;
     l->dbf_bs1_hor_cr[ctb_x] =  bs1_map_cr->hor[nb_pb_s] >> 2;
+
+    l->dbf_affine[ctb_x] =  affine_map->hor[nb_pb_s] >> 2;
 
 }
 

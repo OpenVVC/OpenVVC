@@ -1393,6 +1393,7 @@ slicedec_update_entry_decoders(OVSliceDec *sldec, const OVPS *const prms)
         ctudec->pic_h = sldec->pic->frame->height[0];
         ctudec->cur_poc = sldec->pic->poc;
         slicedec_init_slice_tools(ctudec, prms);
+//if (sldec->slice_type != 2) ctudec->dbf_info.disable_v = 1;
     }
 
     return 0;

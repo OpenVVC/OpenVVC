@@ -651,6 +651,117 @@ coding_unit(OVCTUDec *const ctu_dec,
 
     ctu_dec->dequant_chroma = &ctu_dec->dequant_cb;
 
+    uint8_t qp_l  = ctu_dec->qp_ctx.current_qp;
+    #if 0
+    uint8_t qp_cb = (ctu_dec->dequant_chroma == &ctu_dec->dequant_joint_cb_cr) ?
+        ctu_dec->dequant_joint_cb_cr.qp - 12 :
+        ctu_dec->dequant_cb.qp - 12;
+
+    uint8_t qp_cr = (ctu_dec->dequant_chroma == &ctu_dec->dequant_joint_cb_cr) ?
+                ctu_dec->dequant_joint_cb_cr.qp - 12 :
+                ctu_dec->dequant_cb.qp - 12;
+                #endif
+    struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
+
+    //dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_cb_w, log2_cb_h, qp_l);
+
+    /* update dqp for deblocking filter usage */
+    #if 0
+    if (!ctu_dec->dbf_disable && !(cu.cu_flags & flg_isp_flag)) {
+        struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
+    #endif
+        /* FIXME check separate tree */
+
+        if (ctu_dec->coding_unit == &coding_unit_intra) {
+            uint8_t qp_l  = ctu_dec->qp_ctx.current_qp;
+
+            fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
+            dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_cb_w, log2_cb_h, qp_l);
+        } else if (ctu_dec->coding_unit == &coding_unit_intra_c) {
+#if 0
+            uint8_t qp_cb = (ctu_dec->dequant_chroma == &ctu_dec->dequant_joint_cb_cr) ?
+                ctu_dec->dequant_joint_cb_cr.qp - 12 :
+                ctu_dec->dequant_cb.qp - 12;
+
+            uint8_t qp_cr = (ctu_dec->dequant_chroma == &ctu_dec->dequant_joint_cb_cr) ?
+                ctu_dec->dequant_joint_cb_cr.qp - 12 :
+                ctu_dec->dequant_cb.qp - 12;
+#else
+            uint8_t qp_cb = ctu_dec->dequant_cb.qp - 12;
+
+            uint8_t qp_cr = ctu_dec->dequant_cb.qp - 12;
+#endif
+
+            dbf_fill_qp_map(&dbf_info->qp_map_cb, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1, qp_cb);
+            dbf_fill_qp_map(&dbf_info->qp_map_cr, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1, qp_cr);
+            fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1);
+
+        } else {
+            uint8_t qp_l  = ctu_dec->qp_ctx.current_qp;
+#if 0
+            uint8_t qp_cb = (ctu_dec->dequant_chroma == &ctu_dec->dequant_joint_cb_cr) ?
+                ctu_dec->dequant_joint_cb_cr.qp - 12 :
+                ctu_dec->dequant_cb.qp - 12;
+
+            uint8_t qp_cr = (ctu_dec->dequant_chroma == &ctu_dec->dequant_joint_cb_cr) ?
+                ctu_dec->dequant_joint_cb_cr.qp - 12 :
+                ctu_dec->dequant_cb.qp - 12;
+#else
+            uint8_t qp_cb = ctu_dec->dequant_cb.qp - 12;
+
+            uint8_t qp_cr = ctu_dec->dequant_cb.qp - 12;
+#endif
+
+            fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
+            fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
+
+            dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_cb_w, log2_cb_h, qp_l);
+            dbf_fill_qp_map(&dbf_info->qp_map_cb, x0, y0, log2_cb_w, log2_cb_h, qp_cb);
+            dbf_fill_qp_map(&dbf_info->qp_map_cr, x0, y0, log2_cb_w, log2_cb_h, qp_cr);
+        }
+    #if 0
+    } else {
+            fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
+        #if 0
+        if (ctu_dec->coding_unit == &coding_unit_intra) {
+            uint8_t qp_l  = ctu_dec->qp_ctx.current_qp;
+
+            fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
+            dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_cb_w, log2_cb_h, qp_l);
+        } else if (ctu_dec->coding_unit == &coding_unit_intra_c) {
+            uint8_t qp_cb = (ctu_dec->dequant_chroma == &ctu_dec->dequant_joint_cb_cr) ?
+                ctu_dec->dequant_joint_cb_cr.qp - 12 :
+                ctu_dec->dequant_cb.qp - 12;
+
+            uint8_t qp_cr = (ctu_dec->dequant_chroma == &ctu_dec->dequant_joint_cb_cr) ?
+                ctu_dec->dequant_joint_cb_cr.qp - 12 :
+                ctu_dec->dequant_cb.qp - 12;
+
+            dbf_fill_qp_map(&dbf_info->qp_map_cb, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1, qp_cb);
+            dbf_fill_qp_map(&dbf_info->qp_map_cr, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1, qp_cr);
+            fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1);
+
+        } else {
+            uint8_t qp_l  = ctu_dec->qp_ctx.current_qp;
+            uint8_t qp_cb = (ctu_dec->dequant_chroma == &ctu_dec->dequant_joint_cb_cr) ?
+                ctu_dec->dequant_joint_cb_cr.qp - 12 :
+                ctu_dec->dequant_cb.qp - 12;
+
+            uint8_t qp_cr = (ctu_dec->dequant_chroma == &ctu_dec->dequant_joint_cb_cr) ?
+                ctu_dec->dequant_joint_cb_cr.qp - 12 :
+                ctu_dec->dequant_cb.qp - 12;
+
+            fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
+
+            fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
+
+            dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_cb_w, log2_cb_h, qp_l);
+            dbf_fill_qp_map(&dbf_info->qp_map_cb, x0, y0, log2_cb_w, log2_cb_h, qp_cb);
+            dbf_fill_qp_map(&dbf_info->qp_map_cr, x0, y0, log2_cb_w, log2_cb_h, qp_cr);
+        }
+        #endif
+    }
+    #endif
     /* FIXME move after TU is read so we can reconstruct with or without
      * transform trees
      */
@@ -703,50 +814,6 @@ coding_unit(OVCTUDec *const ctu_dec,
 
     for (int i = 0; i < nb_cb_h; i++) {
         ctu_dec->drv_ctx.qp_map_y[y_cb + i] = ctu_dec->qp_ctx.current_qp;
-    }
-
-    /* update dqp for deblocking filter usage */
-    if (!ctu_dec->dbf_disable && !(cu.cu_flags & flg_isp_flag)) {
-        struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
-        /* FIXME check separate tree */
-        if (ctu_dec->coding_unit == &coding_unit_intra) {
-            uint8_t qp_l  = ctu_dec->qp_ctx.current_qp;
-
-            fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
-            dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_cb_w, log2_cb_h, qp_l);
-        } else if (ctu_dec->coding_unit == &coding_unit_intra_c) {
-            uint8_t qp_cb = (ctu_dec->dequant_chroma == &ctu_dec->dequant_joint_cb_cr) ?
-                ctu_dec->dequant_joint_cb_cr.qp - 12 :
-                ctu_dec->dequant_cb.qp - 12;
-
-            uint8_t qp_cr = (ctu_dec->dequant_chroma == &ctu_dec->dequant_joint_cb_cr) ?
-                ctu_dec->dequant_joint_cb_cr.qp - 12 :
-                ctu_dec->dequant_cb.qp - 12;
-
-            dbf_fill_qp_map(&dbf_info->qp_map_cb, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1, qp_cb);
-            dbf_fill_qp_map(&dbf_info->qp_map_cr, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1, qp_cr);
-            fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1);
-
-        } else {
-            uint8_t qp_l  = ctu_dec->qp_ctx.current_qp;
-            uint8_t qp_cb = (ctu_dec->dequant_chroma == &ctu_dec->dequant_joint_cb_cr) ?
-                ctu_dec->dequant_joint_cb_cr.qp - 12 :
-                ctu_dec->dequant_cb.qp - 12;
-
-            uint8_t qp_cr = (ctu_dec->dequant_chroma == &ctu_dec->dequant_joint_cb_cr) ?
-                ctu_dec->dequant_joint_cb_cr.qp - 12 :
-                ctu_dec->dequant_cb.qp - 12;
-
-            fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
-
-            fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
-
-            dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_cb_w, log2_cb_h, qp_l);
-            dbf_fill_qp_map(&dbf_info->qp_map_cb, x0, y0, log2_cb_w, log2_cb_h, qp_cb);
-            dbf_fill_qp_map(&dbf_info->qp_map_cr, x0, y0, log2_cb_w, log2_cb_h, qp_cr);
-        }
-    } else {
-            //fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
     }
 
     // Update depth_maps to selected depths

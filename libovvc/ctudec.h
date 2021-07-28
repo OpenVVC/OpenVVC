@@ -84,6 +84,10 @@ struct DBFInfo
     uint64_t ctb_bound_ver_c[16 + 33]; /* Column map of vertical edges */
     uint64_t ctb_bound_hor_c[16 + 33]; /* Row map of horizontal edges */
 
+    /* FIXME reduce since internal */
+    uint64_t aff_edg_ver[16 + 33]; /* Column map of affine internal vertical edges */
+    uint64_t aff_edg_hor[16 + 33]; /* Row map of affine internal horizontal edges */
+
 
     /* FIXME this overlap with edge maps */
     struct DBFMap bs2_map;
@@ -92,9 +96,9 @@ struct DBFInfo
     struct DBFMap bs1_map;
     struct DBFMap bs1_map_cb;
     struct DBFMap bs1_map_cr;
+    struct DBFMap affine_map;
 
     /* FIXME this overlap with edge maps */
-    uint64_t large_map_c;
 
     int16_t beta_offset;
     int16_t tc_offset;
@@ -105,6 +109,8 @@ struct DBFInfo
     struct DBFQPMap qp_map_y;
     struct DBFQPMap qp_map_cb;
     struct DBFQPMap qp_map_cr;
+    uint8_t disable_v;
+    uint8_t disable_h;
 };
 
 
