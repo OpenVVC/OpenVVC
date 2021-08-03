@@ -3,8 +3,10 @@ include config.mak
 # Set defaults
 VERBOSITY?=0
 LD_FLAGS?=-lpthread
+LD_FLAGS+=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_SSE42/lib/libSLHDRPostprocessor.so 
+LD_FLAGS+=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_SSE42/lib/libSLHDRCommon.so
 SRC_FOLDER:=libovvc/
-
+SLHDR_INC:=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_SSE42/include/
 
 # Compiler Verbosity Control
 USER_CC := $(CC)
@@ -29,6 +31,7 @@ include $(SRC_FOLDER)/libobj.mak
 LIB_SRC:=$(addprefix $(SRC_FOLDER),$(LIB_SRC))
 LIB_HEADER:=$(addprefix $(SRC_FOLDER),$(LIB_HEADER))
 LIB_OBJ:=$(addprefix $(BUILDDIR),$(LIB_SRC:%.c=%.o))
+LIB_OBJ:=$(LIB_OBJ:%.cpp=%.o)
 LIB_FILE:=$(LIB_HEADER) $(LIB_SRC)
 
 include $(SRC_FOLDER)/$(ARCH)/$(ARCH)obj.mak
@@ -66,7 +69,7 @@ $(BUILDDIR)$(PROG):  $(BUILDDIR)$(PROG).o $(BUILDDIR)$(LIB_NAME)$(SHARED_LIBSUFF
 	$(CC) $^ -o $@ $(LD_FLAGS)
 
 $(BUILDDIR)$(PROG)_stat:  $(BUILDDIR)$(PROG).o $(BUILDDIR)$(LIB_NAME)$(STATIC_LIBSUFF)
-	$(CC) $^ -o $@ $(LD_FLAGS)
+	$(CC) $^ -o $@ $(LD_FLAGS) -lstdc++
 
 
 $(BUILDDIR)$(LIB_NAME)$(STATIC_LIBSUFF): $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
@@ -90,6 +93,9 @@ $(BUILDDIR)%.o: %.c
 	$(AT)mkdir -p $(@D)
 	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) -I$(SRC_FOLDER)
 
+$(BUILDDIR)%.o: %.cpp
+	$(AT)mkdir -p $(@D)
+	g++-7 -std=c++11 -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) -I$(SRC_FOLDER) -I$(SLHDR_INC)
 
 .PHONY: install install-shared install-headers install-pkgconfig
 

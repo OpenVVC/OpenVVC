@@ -108,10 +108,17 @@ struct OVSEIFGrain
     int16_t fg_idr_pic;
 };
 
+struct OVSEISLHDR
+{
+    uint8_t payload_array[255];
+};
+
+
 /*Structure containing all SEI structures*/
 struct OVSEI
 {
     struct OVSEIFGrain* sei_fg;
+    struct OVSEISLHDR* sei_slhdr;
 };
 
 struct OVSPS
