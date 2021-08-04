@@ -110,6 +110,7 @@ struct OVSEIFGrain
 
 struct OVSEISLHDR
 {
+    void* slhdr_context;
     uint8_t payload_array[255];
 };
 

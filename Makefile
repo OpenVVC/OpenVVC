@@ -3,11 +3,16 @@ include config.mak
 # Set defaults
 VERBOSITY?=0
 LD_FLAGS?=-lpthread
-LD_FLAGS+=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_SSE42/lib/libSLHDRPostprocessor.so 
-LD_FLAGS+=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_SSE42/lib/libSLHDRCommon.so
-SRC_FOLDER:=libovvc/
-SLHDR_INC:=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_SSE42/include/
+# LD_FLAGS+=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_SSE42/lib/libSLHDRPostprocessor.so 
+# LD_FLAGS+=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_SSE42/lib/libSLHDRCommon.so
+# SRC_FOLDER:=libovvc/
+# SLHDR_INC:=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_SSE42/include/
 
+LD_FLAGS+=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_AVX2/lib/libSLHDRPostprocessor.so 
+LD_FLAGS+=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_AVX2/lib/libSLHDRCommon.so
+SRC_FOLDER:=libovvc/
+SLHDR_INC:=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_AVX2/include/
+	
 # Compiler Verbosity Control
 USER_CC := $(CC)
 CC_0 = @echo "$(USER_CC) $@"; $(USER_CC)

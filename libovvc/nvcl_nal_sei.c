@@ -67,17 +67,18 @@ copy_sei_params(OVSEI **dst_p, OVSEI *src)
     }
 }
 
-//TODOpp: find where to free in pic
 void
-free_sei_params(OVSEI *sei)
+nvcl_free_sei_params(OVSEI *sei)
 {   
     if(sei){
 
         if(sei->sei_fg)
             ov_freep(&sei->sei_fg);
 
-        if(sei->sei_slhdr)
+        if(sei->sei_slhdr){
+            pp_uninit_slhdr_lib(sei->sei_slhdr->slhdr_context);
             ov_freep(&sei->sei_slhdr);
+        }
 
         ov_freep(&sei);
     }
@@ -214,8 +215,10 @@ nvcl_decode_nalu_sei(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
             break;
         case USER_DATA_REGISTERED_ITU_T_T35:
             ov_log(NULL, OVLOG_DEBUG, "SEI: USER_DATA_REGISTERED_ITU_T_T35 (type = %d) with size %d.\n", payload.type, payload.size);
-            if(!sei->sei_slhdr)
+            if(!sei->sei_slhdr){
                 sei->sei_slhdr = ov_mallocz(sizeof(struct OVSEISLHDR));
+                pp_init_slhdr_lib(&sei->sei_slhdr->slhdr_context);
+            }
             nvcl_slhdr_read(rdr, sei->sei_slhdr, payload.size);
             break;
         default:

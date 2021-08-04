@@ -9,7 +9,7 @@ struct OVVCDec;
 typedef void (*FGFunc)(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain* fgrain, 
                           int pic_w, int pic_h, int poc, uint8_t isIdrPic, uint8_t enableDeblocking);
 
-typedef void (*SLHDRFunc)(int16_t** sdr_pic, int16_t** hdr_pic, uint8_t* SEIPayload, int pic_width, int pic_height);
+typedef void (*SLHDRFunc)(void* slhdr_context, int16_t** sdr_pic, int16_t** hdr_pic, uint8_t* SEIPayload, int pic_width, int pic_height);
 
 struct PostProcFunctions
 {

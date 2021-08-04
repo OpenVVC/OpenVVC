@@ -69,6 +69,11 @@ nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
     if (nvcl_ctx->sh) {
         ov_freep(&nvcl_ctx->sh);
     }
+
+    if (nvcl_ctx->sei) {
+        nvcl_free_sei_params(nvcl_ctx->sei);
+    }
+
 }
 
 uint32_t
