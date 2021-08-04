@@ -28,5 +28,6 @@ void fg_data_base_generation(uint8_t enableDeblocking);
 void fg_grain_apply_pic(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain* fgrain, 
                           int pic_w, int pic_h, int poc, uint8_t isIdrPic, uint8_t enableDeblocking);
 
-
+void fg_grain_no_filter(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain* fgrain, 
+                          int pic_w, int pic_h, int poc, uint8_t isIdrPic, uint8_t enableDeblocking);
 #endif
