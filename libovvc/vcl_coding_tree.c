@@ -838,6 +838,11 @@ multi_type_tree(OVCTUDec *const ctu_dec,
         can_split = allow_bt_v | allow_bt_h | allow_tt_v | allow_tt_h;
     }
 
+    uint8_t compute_chr_scale = ((log2_cb_h == 6 && log2_cb_w == 6) && ctu_dec->lmcs_info.lmcs_enabled_flag) ;
+    if (compute_chr_scale){
+        rcn_lmcs_compute_chroma_scale(ctu_dec, x0, y0);
+    }
+
     if (can_split) {
         int x_cb = x0 >> part_ctx->log2_min_cb_s;
         int y_cb = y0 >> part_ctx->log2_min_cb_s;

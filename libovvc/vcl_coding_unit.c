@@ -641,6 +641,11 @@ coding_unit(OVCTUDec *const ctu_dec,
 
     VVCCU cu;
 
+    uint8_t compute_chr_scale = ((!(x0 & 0x3F) && !(y0 & 0x3F)) && ctu_dec->lmcs_info.lmcs_enabled_flag) ;
+    if (compute_chr_scale){
+        rcn_lmcs_compute_chroma_scale(ctu_dec, x0, y0);
+    }
+
     int pred_qp = ((y0 ? ctu_dec->drv_ctx.qp_map_x[x_cb] : ctu_dec->qp_ctx.current_qp) +
                    (x0 ? ctu_dec->drv_ctx.qp_map_y[y_cb] : ctu_dec->qp_ctx.current_qp) + 1) >> 1;
 

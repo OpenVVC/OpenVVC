@@ -412,7 +412,7 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
 
     if (cbf_mask & 0x2) {
         uint16_t *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[(x0) + (y0 * RCN_CTB_STRIDE)];
-        int16_t scale  = ctu_dec->lmcs_info.lmcs_chroma_scale;
+        int16_t scale  =  ctu_dec->lmcs_info.scale_c_flag ? ctu_dec->lmcs_info.lmcs_chroma_scale : 1<< 11;
         int16_t *const coeffs_cb = ctu_dec->residual_cb + tu_info->pos_offset;
 
         if (!(tu_info->tr_skip_mask & 0x2)) {
@@ -440,7 +440,7 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
 
     if (cbf_mask & 0x1) {
         uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[(x0) + (y0 * RCN_CTB_STRIDE)];
-        int16_t scale  = ctu_dec->lmcs_info.lmcs_chroma_scale;
+        int16_t scale  =  ctu_dec->lmcs_info.scale_c_flag ? ctu_dec->lmcs_info.lmcs_chroma_scale : 1<< 11;
         int16_t *const coeffs_cr = ctu_dec->residual_cr + tu_info->pos_offset;
 
         if (!(tu_info->tr_skip_mask & 0x1)) {
@@ -497,17 +497,17 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
 
     /* FIXME better organisation based on cbf_mask */
     if (cbf_mask == 3) {
-        int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
+        int16_t scale  =  ctu_dec->lmcs_info.scale_c_flag ? ctu_dec->lmcs_info.lmcs_chroma_scale : 1<< 11;
         if (log2_tb_w + log2_tb_h == 2) scale = 1<<11;
         rcn_func->ict.ict[log2_tb_w][0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
         rcn_func->ict.ict[log2_tb_w][1](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
     } else if (cbf_mask == 2) {
-        int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
+        int16_t scale  =  ctu_dec->lmcs_info.scale_c_flag ? ctu_dec->lmcs_info.lmcs_chroma_scale : 1<< 11;
         if (log2_tb_w + log2_tb_h == 2) scale = 1<<11;
         rcn_func->ict.ict[log2_tb_w][0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
         rcn_func->ict.ict[log2_tb_w][2](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
     } else {
-        int16_t scale = ctu_dec->lmcs_info.lmcs_chroma_scale;
+        int16_t scale  =  ctu_dec->lmcs_info.scale_c_flag ? ctu_dec->lmcs_info.lmcs_chroma_scale : 1<< 11;
         if (log2_tb_w + log2_tb_h == 2) scale = 1<<11;
         rcn_func->ict.ict[log2_tb_w][0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
         rcn_func->ict.ict[log2_tb_w][2](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
@@ -1401,30 +1401,36 @@ rcn_transform_tree(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
                            log2_tb_w1, log2_tb_h1,
                            log2_max_tb_s, cu_flags, &tu_info[0]);
         if (split_v) {
+            #if 0
             uint8_t compute_chr_scale = (log2_tb_w == 7 && ctu_dec->lmcs_info.lmcs_enabled_flag);
             if (compute_chr_scale){
                 rcn_lmcs_compute_chroma_scale(ctu_dec, x0 + tb_w1, y0);
             }
+            #endif
             rcn_transform_tree(ctu_dec, x0 + tb_w1, y0,
                                log2_tb_w1, log2_tb_h1,
                                log2_max_tb_s, cu_flags, &tu_info[1]);
         }
 
         if (split_h) {
+            #if 0
             uint8_t compute_chr_scale = (log2_tb_h == 7 && ctu_dec->lmcs_info.lmcs_enabled_flag);
             if (compute_chr_scale){
                 rcn_lmcs_compute_chroma_scale(ctu_dec, x0, y0 + tb_h1);
             }
+            #endif
             rcn_transform_tree(ctu_dec, x0, y0 + tb_h1,
                                log2_tb_w1, log2_tb_h1,
                                log2_max_tb_s, cu_flags, &tu_info[2]);
         }
 
         if (split_h && split_v) {
+            #if 0
             uint8_t compute_chr_scale = ((log2_tb_h == 7 || log2_tb_w == 7) && ctu_dec->lmcs_info.lmcs_enabled_flag) ;
             if (compute_chr_scale){
                 rcn_lmcs_compute_chroma_scale(ctu_dec, x0 + tb_w1, y0 + tb_h1);
             }
+            #endif
             rcn_transform_tree(ctu_dec, x0 + tb_w1, y0 + tb_h1,
                                log2_tb_w1, log2_tb_h1,
                                log2_max_tb_s, cu_flags, &tu_info[3]);
