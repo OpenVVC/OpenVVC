@@ -206,7 +206,7 @@ sps_fill_qp_table(uint8_t dst_qp_tab[],
                   const uint8_t dqp_diff_val[],
                   int8_t start_qp, uint8_t nb_qp_min1)
 {
-    uint8_t nb_qp_points = nb_qp_min1;
+    uint8_t nb_qp_points = nb_qp_min1 + 1;
     int idx = start_qp;
     int next_idx;
     int j;
