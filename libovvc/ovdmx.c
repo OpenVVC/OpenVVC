@@ -857,12 +857,13 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
     }
 
     /* Keep track of overlapping removed start code or EBP*/
-    cache_ctx->first_pos = cache_end - &byte[byte_pos];
+    cache_ctx->first_pos = &byte[byte_pos] - cache_end;
 
-    /* End of cache */
-    sgmt_ctx.end_p = byte + byte_pos;
-
-    append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, &sgmt_ctx);
+    /* Recopy cache to RBSP cache before refill */
+    if (sgmt_ctx.start_p < byte + byte_pos) {
+        sgmt_ctx.end_p = byte + byte_pos;
+        append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, &sgmt_ctx);
+    }
 
     return 0;
 }
