@@ -1354,8 +1354,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
                 uint8_t merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
 
-                mv_info = drv_mmvd_merge_mvp_b(inter_ctx, x_cb, y_cb,
-                                               nb_cb_w, nb_cb_h, merge_idx,
+                mv_info = drv_mmvd_merge_mvp_b(inter_ctx, x0, y0,
+                                               log2_cb_w, log2_cb_h, merge_idx,
                                                max_nb_cand, log2_cb_w + log2_cb_h <= 5);
             } else {
                 uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
@@ -1408,7 +1408,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
                 ovcabac_read_ae_gpm_merge_idx(cabac_ctx, &inter_ctx->gpm_ctx, max_num_gpm_cand);
 
-                drv_gpm_merge_mvp_b(inter_ctx, x_cb, y_cb, nb_cb_w, nb_cb_h, max_nb_cand,
+                drv_gpm_merge_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h, max_nb_cand,
                                     log2_cb_w + log2_cb_h <= 5);
                 /* FIXME amvr? */
 

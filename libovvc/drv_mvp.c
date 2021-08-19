@@ -2310,8 +2310,8 @@ drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
 
 VVCMergeInfo
 drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
-                uint8_t pb_x, uint8_t pb_y,
-                uint8_t nb_pb_w, uint8_t nb_pb_h,
+                uint8_t x0, uint8_t y0,
+                uint8_t log2_pu_w, uint8_t log2_pu_h,
                 uint8_t merge_idx,
                 uint8_t max_nb_cand, uint8_t is_small)
 {
@@ -2319,6 +2319,10 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     static const uint8_t ref_mvd_cands[8] = { 1, 2, 4, 8, 16, 32, 64, 128};
     /* FIXME better input to avoid div */
     int smvd_mrg_idx = merge_idx / MMVD_MAX_REFINE_NUM;
+    uint8_t pb_x = x0 >> LOG2_MIN_CU_S;
+    uint8_t pb_y = y0 >> LOG2_MIN_CU_S;
+    uint8_t nb_pb_w = (1 << log2_pu_w) >> LOG2_MIN_CU_S;
+    uint8_t nb_pb_h = (1 << log2_pu_h) >> LOG2_MIN_CU_S;
 
     VVCMergeInfo mv_info = vvc_derive_merge_mvp_b(inter_ctx, pb_x, pb_y,
                                                   nb_pb_w, nb_pb_h, smvd_mrg_idx,
@@ -2453,12 +2457,17 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
 
 void 
 drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
-                    uint8_t pb_x, uint8_t pb_y,
-                    uint8_t nb_pb_w, uint8_t nb_pb_h,
+                    uint8_t x0, uint8_t y0,
+                    uint8_t log2_pu_w, uint8_t log2_pu_h,
                     uint8_t max_nb_cand, uint8_t is_small)
 {
     struct VVCGPM* gpm_ctx = &inter_ctx->gpm_ctx;
     VVCMergeInfo mv_info0, mv_info1;
+    uint8_t pb_x = x0 >> LOG2_MIN_CU_S;
+    uint8_t pb_y = y0 >> LOG2_MIN_CU_S;
+    uint8_t nb_pb_w = (1 << log2_pu_w) >> LOG2_MIN_CU_S;
+    uint8_t nb_pb_h = (1 << log2_pu_h) >> LOG2_MIN_CU_S;
+
     mv_info0 = vvc_derive_merge_mvp_b(inter_ctx, pb_x, pb_y,
                                      nb_pb_w, nb_pb_h, gpm_ctx->merge_idx0,
                                      max_nb_cand, is_small);
