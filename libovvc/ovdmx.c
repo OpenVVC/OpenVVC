@@ -299,20 +299,16 @@ ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
 
     /* Initialise reader cache by first read */
     if (!ovio_stream_eof(dmx->io_str)) {
-        int read_in_buf;
         struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
+        int read_in_buf;
 
         read_in_buf = ovio_stream_read(&cache_ctx->data_start, OVVCDMX_IO_BUFF_SIZE,
                                        dmx->io_str);
-        #if 0
-        cache_ctx->data_start -= 8;
-        #endif
-        /* pos is init at 8 so we do not overread first data chunk */
         cache_ctx->first_pos = 0;
-
-        /*TODO + 8 - 8 */
         cache_ctx->cache_start = cache_ctx->data_start;
-        cache_ctx->cache_end   = cache_ctx->data_start + OVVCDMX_IO_BUFF_SIZE - 8;
+
+        /* Buffer end is set to size minus 8 so we do not overread first data chunk */
+        cache_ctx->cache_end = cache_ctx->data_start + OVVCDMX_IO_BUFF_SIZE - 8;
 
         if (!read_in_buf) {
             /* TODO error handling if end of file is encountered on first read */
@@ -359,12 +355,6 @@ refill_reader_cache(struct ReaderCache *const cache_ctx, OVIOStream *const io_st
 
     cache_ctx->cache_start = cache_ctx->data_start;
     cache_ctx->cache_end   = cache_ctx->data_start + OVVCDMX_IO_BUFF_SIZE;
-
-    /* Do not update first pos it is computed at the end of extraction
-     */
-    #if 0
-    cache_ctx->first_pos   = 0;
-    #endif
 
     cache_ctx->nb_chunk_read += read_in_buf;
 
