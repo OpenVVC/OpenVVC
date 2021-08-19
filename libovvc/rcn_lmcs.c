@@ -156,43 +156,30 @@ init_lmcs_lut(struct LMCSLUTs *const lmcs_luts, const struct LMCSInfo2 *const lm
     memcpy(lmcs_luts->wnd_bnd, tmp_wnd.wnd_bnd, sizeof(lmcs_luts->wnd_bnd));
 }
 
-void 
-rcn_derive_lmcs_params(struct LMCSInfo *lmcs_info, uint16_t *const output_pivot, const OVLMCSData *const lmcs)
+static void
+lmcs_convert_data_to_info(struct LMCSInfo2 *const dst, const struct OVLMCSData *const src)
 {
     int i;
-    //BITDEPTH: only 10
-    int bitdepth_luma = 10;
-    uint8_t window_size = (1 << bitdepth_luma) >> 4; //(log2_cw_shift
-    int16_t code_words[17] = {0};
-    uint16_t   mapped_intervals[17];
-    uint16_t unmapped_intervals[17];
-    uint16_t interval_low =  lmcs->lmcs_min_bin_idx ? 0 : window_size;
+
+    dst->lmcs_min_bin_idx = src->lmcs_min_bin_idx;
+    dst->lmcs_delta_max_bin_idx = src->lmcs_delta_max_bin_idx;
+
+    memset(dst->lmcs_cw_delta, 0, sizeof(dst->lmcs_cw_delta));
+
+    for (i = dst->lmcs_min_bin_idx; i < NB_LMCS_WND - src->lmcs_delta_max_bin_idx; ++i){
+        dst->lmcs_cw_delta[i] = src->lmcs_delta_sign_cw_flag[i] ? -src->lmcs_delta_abs_cw[i]
+                                                                :  src->lmcs_delta_abs_cw[i];
+    }
+}
+
+void
+rcn_derive_lmcs_params(struct LMCSInfo *lmcs_info, uint16_t *const output_pivot, const OVLMCSData *const lmcs)
+{
     lmcs_info->min_idx = lmcs->lmcs_min_bin_idx;
     lmcs_info->max_idx = 16 - lmcs->lmcs_delta_max_bin_idx;
 
-    memset(output_pivot, 0, sizeof(uint16_t)*16);
-
-    code_words[0]         = 0;
-    unmapped_intervals[0] = 0;
-    mapped_intervals[0]   = 0;
-
-
-    for (i = 0; i < 16; ++i){
-        code_words[i] = lmcs->lmcs_delta_sign_cw_flag[i] ? -lmcs->lmcs_delta_abs_cw[i] + interval_low
-                                                        : lmcs->lmcs_delta_abs_cw[i] + interval_low;
-        interval_low = i + 1 >= lmcs->lmcs_min_bin_idx && i + 1 < lmcs_info->max_idx ? window_size : 0;
-    }
-
-    for (i = 0; i < 16; ++i){
-        mapped_intervals[i+1] = code_words[i] + mapped_intervals[i];
-        unmapped_intervals[i + 1]  = unmapped_intervals[i] + window_size;
-        output_pivot[i] = mapped_intervals[i];
-    }
-
     /* Keep track of associated parameters */
     lmcs_info->data = lmcs;
-
-    return;
 }
 
 void 
@@ -324,59 +311,18 @@ rcn_lmcs_reshape_luma_blk_lut(uint16_t *dst, ptrdiff_t stride_dst, uint16_t* lmc
 }
 
 void 
-rcn_lmcs_compute_lut_luma(struct LMCSInfo *lmcs_info, uint16_t* lmcs_lut_inv_luma, uint16_t* lmcs_lut_fwd_luma, 
-                            uint16_t* lmcs_output_pivot)
+rcn_lmcs_compute_lut_luma(struct LMCSInfo *lmcs_info, uint16_t* inverse_lut,
+                          uint16_t* forward_lut, uint16_t* wnd_boundaries)
 {
-    //BITDEPTH: only 10
-    int bitdepth = 10;
-    uint8_t nb_smp_wnd = (1 << bitdepth) >> 4;
-    uint16_t idx = lmcs_info->min_idx;
-        
-    int16_t map_high, map_low;
-    int16_t orig_low;
-    int16_t factor_inv, luma_inv_reshaped;
-    int16_t factor_fwd, luma_fwd_reshaped;
+    struct LMCSInfo2 new_lmcs;
+    struct LMCSLUTs new_luts;
+    lmcs_convert_data_to_info(&new_lmcs, lmcs_info->data);
 
-    for (uint16_t val = 0; val < (1 << bitdepth); val++){
-        int idx_fwd;
-        if (idx <= lmcs_info->max_idx && val >= lmcs_output_pivot[idx + 1]){
-            idx++;
-        }
+    init_lmcs_lut(&new_luts, &new_lmcs);
 
-        map_low  = lmcs_output_pivot[idx];
-        map_high = lmcs_output_pivot[idx + 1];
-
-        orig_low  = idx * nb_smp_wnd;
-
-        #if 0
-        if (idx == 15) {
-           map_low = lmcs_output_pivot[idx + 1];
-           map_high = 1023;
-        }
-        #endif
-
-        factor_inv = (idx == 15) ? nb_smp_wnd * (1 << 11) / (1024 - lmcs_output_pivot[idx+1]) : nb_smp_wnd * (1 << 11) / (map_high - map_low);
-        luma_inv_reshaped = orig_low + (((val - map_low) * factor_inv + (1 << bitdepth)) >> 11);
-        lmcs_lut_inv_luma[val] = ov_clip_uintp2(luma_inv_reshaped, bitdepth);
-        
-
-        idx_fwd = val / nb_smp_wnd;
-
-        map_low  = lmcs_output_pivot[idx_fwd];
-        map_high = lmcs_output_pivot[idx_fwd + 1];
-
-        #if 0
-        if (idx_fwd == 15) {
-           map_low = lmcs_output_pivot[idx_fwd + 1];
-           map_high = 1024;
-        }
-        #endif
-
-        orig_low  = idx_fwd * nb_smp_wnd;
-        factor_fwd = (idx_fwd == 15) ? 0 : (map_high - map_low) * (1 << 11) / nb_smp_wnd;
-        luma_fwd_reshaped = map_low + (((val - orig_low) * factor_fwd + (1 << bitdepth)) >> 11);
-        lmcs_lut_fwd_luma[val] = ov_clip_uintp2(luma_fwd_reshaped, bitdepth);
-    }
+    memcpy(forward_lut, new_luts.fwd_lut, sizeof(new_luts.fwd_lut));
+    memcpy(inverse_lut, new_luts.bwd_lut, sizeof(new_luts.bwd_lut));
+    memcpy(wnd_boundaries, &new_luts.wnd_bnd, sizeof(new_luts.wnd_bnd) - 2);
 }
 
 
