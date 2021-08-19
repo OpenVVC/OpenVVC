@@ -438,11 +438,11 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
     if(ph->ph_lmcs_enabled_flag){
         int bitdepth = 10;
         if(!lmcs_info->lmcs_lut_inv_luma){
-            lmcs_info->lmcs_lut_inv_luma = ov_malloc(sizeof(uint16_t) * (1<<bitdepth));
-            lmcs_info->lmcs_lut_fwd_luma = ov_malloc(sizeof(uint16_t) * (1<<bitdepth));
+            lmcs_info->lmcs_lut_inv_luma = ov_malloc(sizeof(uint16_t) << bitdepth);
+            lmcs_info->lmcs_lut_fwd_luma = ov_malloc(sizeof(uint16_t) << bitdepth);
         } else {
-            memset(lmcs_info->lmcs_lut_inv_luma, 0, sizeof(uint16_t) * (1<<bitdepth));
-            memset(lmcs_info->lmcs_lut_fwd_luma, 0, sizeof(uint16_t) * (1<<bitdepth));
+            memset(lmcs_info->lmcs_lut_inv_luma, 0, sizeof(uint16_t) << bitdepth);
+            memset(lmcs_info->lmcs_lut_fwd_luma, 0, sizeof(uint16_t) << bitdepth);
         }
 
         lmcs_info->lmcs_chroma_scaling_offset = aps_lmcs_data->lmcs_delta_sign_crs_flag ?
