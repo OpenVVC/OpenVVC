@@ -284,7 +284,8 @@ ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
        Maybe we should open file ourselves / and use a wrapper around
        I/Os */
     if (fstream == NULL) {
-        return -1;
+        ov_log(dmx, OVLOG_ERROR, "No stream to attach.\n");
+        return OVVC_EINDATA;
     }
 
     dmx->fstream = fstream;
@@ -292,12 +293,11 @@ ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
     /* TODO distinguish init and open / attach */
     dmx->io_str = ovio_stream_open(fstream);
     if (dmx->io_str == NULL) {
-        /* no mem*/
-        return -1;
+        ov_log(dmx, OVLOG_ERROR, "Failed to open stream.\n");
+        return OVVC_EINDATA;
     }
 
     /* Initialise reader cache by first read */
-
     if (!ovio_stream_eof(dmx->io_str)) {
         int read_in_buf;
         struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
