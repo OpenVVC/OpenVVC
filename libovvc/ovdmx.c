@@ -27,9 +27,8 @@
 
 #define OV_RBSP_PADDING 8
 
-/* FIXME remove dirty global variable on eof */
-static uint8_t eof = 0;
-enum DMXReturn {
+enum DMXReturn
+{
     OV_INVALID_DATA = -1,
     OV_ENOMEM = -2,
 };
@@ -57,12 +56,10 @@ struct RBSPSegment
 
 struct RBSPCacheData
 {
-    /* Cache buffer used to catenate RBSP chunks while
-       extracting RBSP_data.
+    /* Cache buffer used to catenate RBSP chunks while extracting RBSP_data.
        Its size is initialised at 64kB and will grow
        to the max RBSP size encountered in the stream */
     uint8_t *start;
-
     uint8_t *end;
 
     /* Size of rbsp cache buffer used to check
@@ -164,6 +161,8 @@ struct OVVCDmx
 
     /* Memory pool for NALUListElem */
     MemPool *nalu_elem_pool;
+
+    uint8_t eof;
 
     /* Demuxer options to be passed at init */
     struct{
@@ -315,7 +314,8 @@ ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
             int32_t nb_bytes;
             nb_bytes = ovio_stream_tell(dmx->io_str) & OVVCDMX_IO_BUFF_MASK;
             cache_ctx->cache_end = cache_ctx->cache_start + nb_bytes;
-                eof = 1;
+            dmx->eof = 1;
+            /* FIXME We could emulate a start code at the end of cache ?*/
         }
 
         /* FIXME Process first chunk of data ? */
@@ -347,10 +347,8 @@ static int
 refill_reader_cache(struct ReaderCache *const cache_ctx, OVIOStream *const io_str)
 {
     int read_in_buf;
-
     read_in_buf = ovio_stream_read(&cache_ctx->data_start, OVVCDMX_IO_BUFF_SIZE,
                                    io_str);
-
     cache_ctx->data_start -= 8;
 
     cache_ctx->cache_start = cache_ctx->data_start;
@@ -359,11 +357,9 @@ refill_reader_cache(struct ReaderCache *const cache_ctx, OVIOStream *const io_st
     cache_ctx->nb_chunk_read += read_in_buf;
 
     if (!read_in_buf) {
-        int32_t nb_bytes;
-        nb_bytes = ovio_stream_tell(io_str) & OVVCDMX_IO_BUFF_MASK;
+        int32_t nb_bytes = ovio_stream_tell(io_str) & OVVCDMX_IO_BUFF_MASK;
         cache_ctx->cache_end = cache_ctx->data_start + nb_bytes + 8;
-        eof = 1;
-        return -1;
+        return 1;
     }
 
     return 0;
@@ -407,11 +403,11 @@ extract_nal_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
     struct NALUnitListElem *current_nalu = pop_nalu_elem(nalu_list);
 
     do {
-        if (!current_nalu && !eof) {
+        if (!current_nalu && !dmx->eof) {
             struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
 
             /* FIXME error handling from demux + use return values */
-            refill_reader_cache(cache_ctx, dmx->io_str);
+            dmx->eof = refill_reader_cache(cache_ctx, dmx->io_str);
 
             extract_cache_segments(dmx, cache_ctx);
 
@@ -419,12 +415,12 @@ extract_nal_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
         }
 
         if (current_nalu) {
-
             append_nalu_elem(dst_list, current_nalu);
         }
-    } while (current_nalu == NULL && !eof);
 
-    return -(current_nalu == NULL && eof);
+    } while (current_nalu == NULL && !dmx->eof);
+
+    return -(current_nalu == NULL && dmx->eof);
 }
 
 #if 0
@@ -542,13 +538,13 @@ ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
     }
 
     #if 0
-    if (/*!eof &&*/ dmx->nalu_list.first_nalu) {
+    if (/*!dmx->eof &&*/ dmx->nalu_list.first_nalu) {
         ret = extract_access_unit(dmx, &pending_nalu_list);
 
         /* FIXME return */
 
 
-        if (!eof && ret < 0) {
+        if (!dmx->eof && ret < 0) {
             ov_log(dmx, OVLOG_ERROR, "No valid Access Unit found \n");
             free_nalu_list(&pending_nalu_list);
             ov_free(pu);
@@ -561,7 +557,7 @@ ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
     }
     #else
     ret = extract_nal_unit(dmx, &pending_nalu_list);
-    if (!eof && ret < 0) {
+    if (!dmx->eof && ret < 0) {
         ov_log(dmx, OVLOG_ERROR, "No valid Access Unit found \n");
         free_nalu_list(&pending_nalu_list);
         ov_free(pu);
@@ -851,7 +847,8 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
 
     } while (!end_of_cache);
 
-    if (eof) {
+    if (dmx->eof) {
+        ov_log(dmx, OVLOG_TRACE, "EOF reached\n");
         sgmt_ctx.end_p = cache_end;
         return process_start_code(dmx, cache_ctx, &sgmt_ctx);
     }
