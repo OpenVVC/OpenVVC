@@ -693,9 +693,7 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
     /* New NAL Unit start code found we end so we can process previous
      * NAL Unit data
      */
-    if (nalu_pending) {
-        append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
-    }
+    append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
 
     if (nalu_pending) {
         /* FIXME Using of mallocz is to prevent padding to be not zero */
@@ -730,6 +728,9 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
         empty_rbsp_cache(&dmx->rbsp_ctx);
 
         append_nalu_elem(nalu_list, nalu_pending);
+    } else {
+        ov_log(dmx, OVLOG_TRACE, "No pending nalu when processing start_code, skipping.\n");
+        empty_rbsp_cache(&dmx->rbsp_ctx);
     }
 
     nalu_elem->nalu.type = nalu_type;
