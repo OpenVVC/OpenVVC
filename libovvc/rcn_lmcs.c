@@ -36,6 +36,10 @@ rcn_derive_lmcs_params(struct LMCSInfo *lmcs_info, uint16_t *const output_pivot,
         unmapped_intervals[i + 1]  = unmapped_intervals[i] + window_size;
         output_pivot[i] = mapped_intervals[i];
     }
+
+    /* Keep track of associated parameters */
+    lmcs_info->data = lmcs;
+
     return;
 }
 
