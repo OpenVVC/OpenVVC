@@ -1112,8 +1112,8 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
             const uint8_t *qp_col = &dbf_info->qp_map_y.hor[36 + i];
 
             //if (i != 16) {
-               large_p_map  &= ~aff_edg_map[i];
-               large_q_map  &= ~aff_edg_map[i];
+               large_p_map  &= ~(aff_edg_map[i] & (~edg_map[i]));
+               large_q_map  &= ~(aff_edg_map[i] & (~edg_map[i]));
             //}
             do {
                 uint8_t nb_skipped_blk = ov_ctz64(edg_msk);
@@ -1313,8 +1313,8 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
             uint64_t affine_p = dbf_info->affine_map.hor[i];
             uint64_t affine_q = dbf_info->affine_map.hor[i + 1];
     //        if (i != 16) {
-               large_p_map  &= ~aff_edg_map[i];
-               large_q_map  &= ~aff_edg_map[i];
+               large_p_map  &= ~(aff_edg_map[i] & (~edg_map[i]));
+               large_q_map  &= ~(aff_edg_map[i] & (~edg_map[i]));
     //        }
 
             do {
