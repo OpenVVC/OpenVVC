@@ -1879,6 +1879,7 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
                                             x_pb + 2 * j, y_pb + 2 * i,
                                             2, 2);
                 mv0.ref_idx = 0;
+                mv0.bcw_idx_plus1 = 0;
                 tmvp_mv0[j] = mv0;
 
                 mv_buff0[j * 2]     = mv0;
@@ -1892,6 +1893,7 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
                                             x_pb + 2 * j, y_pb + 2 * i,
                                             2, 2);
                 mv1.ref_idx = 0;
+                mv1.bcw_idx_plus1 = 0;
 
                 tmvp_mv1[j] = mv1;
 
