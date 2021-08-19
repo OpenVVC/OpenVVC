@@ -2971,9 +2971,9 @@ dbf_sbtmvp_set_hedges(const struct InterDRVCtx *const inter_ctx,
     const int16_t *dist_ref0 = inter_ctx->dist_ref_0;
     const int16_t *dist_ref1 = inter_ctx->dist_ref_1;
 
-    chk_b  &= ~bs1_map_h & unit_msk_h;
-    chk_p0 &= ~bs1_map_h & unit_msk_h;
-    chk_p1 &= ~bs1_map_h & unit_msk_h;
+    chk_b  &= (~bs1_map_h) & unit_msk_h;
+    chk_p0 &= (~bs1_map_h) & unit_msk_h;
+    chk_p1 &= (~bs1_map_h) & unit_msk_h;
 
     uint64_t dst_map_h = (~(chk_p0 | chk_p1 | chk_b)) & unit_msk_h;
 
@@ -3088,9 +3088,9 @@ dbf_sbtmvp_set_vedges(const struct InterDRVCtx *const inter_ctx,
     const int16_t *dist_ref0 = inter_ctx->dist_ref_0;
     const int16_t *dist_ref1 = inter_ctx->dist_ref_1;
 
-    chk_b  &= ~bs1_map_v & unit_msk_v;
-    chk_p0 &= ~bs1_map_v & unit_msk_v;
-    chk_p1 &= ~bs1_map_v & unit_msk_v;
+    chk_b  &= (~bs1_map_v) & unit_msk_v;
+    chk_p0 &= (~bs1_map_v) & unit_msk_v;
+    chk_p1 &= (~bs1_map_v) & unit_msk_v;
 
     uint64_t dst_map_v = (~(chk_p0 | chk_p1 | chk_b)) & unit_msk_v;
 
