@@ -676,7 +676,7 @@ empty_rbsp_cache(struct RBSPCacheData *rbsp_cache)
 
 static int
 process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
-                   uint64_t byte_pos, struct RBSPSegment *sgmt_ctx)
+                   const struct RBSPSegment *sgmt_ctx)
 {
     const uint8_t *bytestream = sgmt_ctx->end_p;
     struct NALUnitsList *nalu_list = &dmx->nalu_list;
@@ -696,9 +696,6 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
     if (nalu_pending) {
         append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
     }
-
-    /* Next segment start is located after start code three bytes */
-    sgmt_ctx->end_p = sgmt_ctx->start_p = sgmt_ctx->end_p + 3;
 
     if (nalu_pending) {
         /* FIXME Using of mallocz is to prevent padding to be not zero */
@@ -744,22 +741,11 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
 
 static int
 process_emulation_prevention_byte(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
-                                  uint64_t byte_pos, struct RBSPSegment *sgmt_ctx)
+                                  const struct RBSPSegment *sgmt_ctx)
 {
     struct EPBCacheInfo *const epb_info = &dmx->epb_info;
 
-    /* We keep the two zero bytes of emulation prevention three bytes
-     * so the end of segment to append is at byte_pos + 2
-     */
-    sgmt_ctx->end_p += 2;
-
     append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
-
-    sgmt_ctx->end_p = sgmt_ctx->start_p = sgmt_ctx->end_p + 1;
-
-    /* We remove the emulation prevention 0x03 so the next segment start
-     * position in cache is at byte_pos + 3
-     */
 
     if (epb_info->nb_epb + 1 > (epb_info->cache_size)/sizeof(*epb_info->epb_pos)) {
         int ret = extend_epb_cache(epb_info);
@@ -814,17 +800,30 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
             if (ret) {
                 enum RBSPSegmentDelimiter dlm = ret;
 
-                /* Segment end corresponds to previous byte */
-                #if 1
-                sgmt_ctx.end_p = bytestream;
-                #endif
-
                 switch (dlm) {
                 case ANNEXB_STC:
-                    ret = process_start_code(dmx, cache_ctx, byte_pos, &sgmt_ctx);
+                    sgmt_ctx.end_p = bytestream;
+
+                    ret = process_start_code(dmx, cache_ctx, &sgmt_ctx);
+
+                    /* Next segment start is located after start code three bytes */
+                    sgmt_ctx.end_p = sgmt_ctx.start_p = bytestream + 3;
+                    if (sgmt_ctx.end_p > cache_end) {
+                        ov_log(dmx, OVLOG_DEBUG, "STC over cache end\n");
+                    }
                     break;
                 case ANNEXB_EPB:
-                    ret = process_emulation_prevention_byte(dmx, cache_ctx, byte_pos, &sgmt_ctx);
+                    /* Keep the two zero bytes of emulation prevention three bytes */
+                    sgmt_ctx.end_p = bytestream + 2;
+
+                    ret = process_emulation_prevention_byte(dmx, cache_ctx, &sgmt_ctx);
+
+                    /* Remove the emulation prevention 0x03 byte */
+                    sgmt_ctx.end_p = sgmt_ctx.start_p = bytestream + 3;
+                    if (sgmt_ctx.end_p > cache_end) {
+                        ov_log(dmx, OVLOG_DEBUG, "EBP over cache end\n");
+                    }
+
                     break;
                 default:
                     /* FIXME we should not have something different from STC or
@@ -853,7 +852,7 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
 
     if (eof) {
         sgmt_ctx.end_p = cache_end;
-        return process_start_code(dmx, cache_ctx, byte_pos, &sgmt_ctx);
+        return process_start_code(dmx, cache_ctx, &sgmt_ctx);
     }
 
     /* Keep track of overlapping removed start code or EBP*/
