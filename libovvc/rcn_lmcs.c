@@ -261,10 +261,11 @@ rcn_lmcs_compute_chroma_scale(struct OVCTUDec* ctudec, int x0, int y0)
     log2_num_luma_pu -= !!log2_num_luma_pu;
 
     luma_avg = log2_num_luma_pu ? ((luma_sum1 + luma_sum2) + (luma_sum3 + luma_sum4) + (1 << (log2_num_luma_pu + 1))) >> (log2_num_luma_pu + 2) : 512;
-    while (idx < lmcs_info->max_idx && luma_avg >= lmcs_info->lmcs_output_pivot[idx+1]){
-        idx++;
-    }
 
+    idx = get_bwd_idx((uint16_t*)lmcs_info->lmcs_output_pivot, luma_avg,
+                      lmcs_info->min_idx, lmcs_info->max_idx);
+
+    /* FIXME use coded window size instead ? */
     uint32_t size_interval = (uint32_t)(lmcs_info->lmcs_output_pivot[idx+1] - lmcs_info->lmcs_output_pivot[idx]);
     lmcs_info->lmcs_chroma_scale = (size_interval == 0) ? 1 << 11 
                                                     : (1<<17)/ (size_interval + lmcs_info->lmcs_chroma_scaling_offset);
