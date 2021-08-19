@@ -435,7 +435,7 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
     struct LMCSInfo* lmcs_info  = &ctudec->lmcs_info;
     lmcs_info->lmcs_enabled_flag = ph->ph_lmcs_enabled_flag;
     lmcs_info->scale_c_flag = ph->ph_chroma_residual_scale_flag;
-    if(ph->ph_lmcs_enabled_flag){
+    if(sh->sh_lmcs_used_flag){
         int bitdepth = 10;
         if(!lmcs_info->lmcs_lut_inv_luma){
             lmcs_info->lmcs_lut_inv_luma = ov_malloc(sizeof(uint16_t) << bitdepth);
