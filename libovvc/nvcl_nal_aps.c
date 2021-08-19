@@ -123,27 +123,27 @@ nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data, uint8_t 
 static int 
 nvcl_read_lmcs_data(OVNVCLReader *const rdr, struct OVLMCSData* lmcs, uint8_t aps_chroma_present_flag)
 {
-    lmcs->lmcs_min_bin_idx = nvcl_read_u_expgolomb(rdr);
-    lmcs->lmcs_delta_max_bin_idx = nvcl_read_u_expgolomb(rdr);
+    int i;
+    lmcs->lmcs_min_bin_idx          = nvcl_read_u_expgolomb(rdr);
+    lmcs->lmcs_delta_max_bin_idx    = nvcl_read_u_expgolomb(rdr);
     lmcs->lmcs_delta_cw_prec_minus1 = nvcl_read_u_expgolomb(rdr);
-    for (int i = lmcs->lmcs_min_bin_idx; i <= PIC_CODE_CW_BINS-(lmcs->lmcs_delta_max_bin_idx + 1); i++) {
+
+    for (i = lmcs->lmcs_min_bin_idx; i < PIC_CODE_CW_BINS - lmcs->lmcs_delta_max_bin_idx; i++) {
         lmcs->lmcs_delta_abs_cw[i] = nvcl_read_bits(rdr, lmcs->lmcs_delta_cw_prec_minus1 + 1);
-        if (lmcs->lmcs_delta_abs_cw[i] > 0) {
+        if (lmcs->lmcs_delta_abs_cw[i]) {
             lmcs->lmcs_delta_sign_cw_flag[i] = nvcl_read_flag(rdr);
         }
     }
 
     if (aps_chroma_present_flag) {
         lmcs->lmcs_delta_abs_crs = nvcl_read_bits(rdr, 3);
-        if (lmcs->lmcs_delta_abs_crs > 0) {
+        if (lmcs->lmcs_delta_abs_crs) {
             lmcs->lmcs_delta_sign_crs_flag = nvcl_read_flag(rdr);
         }
     }
+
+    /* FIXME return error if detected */
     return 1;
-    //ATTENTION: Utilite ?
-    //int signCW = code;
-    //info.chrResScalingOffset = (1 - 2 * signCW) * absCW;
-    //aps->setReshaperAPSInfo(info);
 }
 
 
