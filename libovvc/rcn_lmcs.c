@@ -270,37 +270,9 @@ rcn_lmcs_compute_chroma_scale(struct OVCTUDec* ctudec, int x0, int y0)
                                                     : (1<<17)/ (size_interval + lmcs_info->lmcs_chroma_scaling_offset);
 }
 
-
-void 
-rcn_lmcs_reshape_luma_blk(uint16_t *dst, ptrdiff_t stride_dst,
-                            uint16_t* lmcs_output_pivot, int width, int height)
-{
-    int bitdepth = 10;
-    uint8_t window_size = (1 << bitdepth) >> 4; 
-    uint8_t idx = 0;
-
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++){
-            idx = 1;
-            while (idx < 16 && dst[x] >= lmcs_output_pivot[idx+1]){
-                idx++;
-            }
-
-            int16_t map_low  = lmcs_output_pivot[idx];
-            int16_t map_high = lmcs_output_pivot[idx+1];
-            int16_t orig_low  = (idx) * window_size;
-            int16_t orig_high = (idx+1) * window_size;
-            int16_t factor    = (idx == 15) ? 0 : (orig_high - orig_low) * (1 << 11) / (map_high - map_low);
-            int16_t luma_inv_reshaped = orig_low + (((dst[x] - map_low) * factor + (1 << (10))) >> 11);
-
-            dst[x] = ov_clip_uintp2(luma_inv_reshaped, bitdepth);
-        }
-        dst += stride_dst;
-    }
-}
-
-void 
-rcn_lmcs_reshape_luma_blk_lut(uint16_t *dst, ptrdiff_t stride_dst, uint16_t* lmcs_lut_luma, int width, int height)
+static void 
+rcn_lmcs_reshape_luma_blk_lut(uint16_t *dst, ptrdiff_t stride_dst, uint16_t* lmcs_lut_luma,
+                              int width, int height)
 {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++){ 
