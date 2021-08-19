@@ -17,6 +17,9 @@ libopenvvc.pc
 *.cache
 *.annote
 
+# Build folder
+build/*
+
 # Editor created objects
 *.sw?
 *.session

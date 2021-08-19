@@ -4,8 +4,9 @@ config="$@"
 prefix_default="/usr/local"
 cc_default="gcc"
 builddir_default="$(pwd)/build"
+srcdir_default="$(pwd)/"
 
-teststreams_dir_default="./CI/test_bitstreams"
+teststreams_dir_default="$(pwd)/CI/test_bitstreams/all_intra/"
 teststreams_url_default="http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/all_intra/"
 
 debug_cflags="-O0 -g -Wall --pedantic"
@@ -36,6 +37,7 @@ Options:
   --includedir=DIR         install includes in DIR [PREFIX/include]
   --pkgconfigdir=DIR       install pkg-config files in DIR [LIBDIR/pkgconfig]
   --build-dir=DIR          build objects in DIR [$builddir_default]
+  --src-dir=DIR            build objects in DIR [$srcdir_default]
 
   --help                   print this message
 
@@ -74,6 +76,7 @@ includedir='${prefix}/include'
 pkgconfigdir='${libdir}/pkgconfig'
 
 build_dir=$builddir_default
+src_dir=$srcdir_default
 teststreams_dir=$teststreams_dir_default
 teststreams_url=$teststreams_url_default
 
@@ -115,6 +118,18 @@ for opt do
         ;;
     esac
 done
+
+# Create build directory if it doesn't exist
+[ -d $build_dir ] || mkdir -p $build_dir
+# cat >> Makefile <<EOF
+# cd $build_dir
+# EOF
+
+# Force path to absolute
+build_dir=$( cd $build_dir; pwd )
+
+# Copy Makefile to build directory
+cp Makefile.in $build_dir/Makefile
 
 if [ -z "$cflags" ] ; then
     cflags="$cflags_default"
@@ -160,7 +175,7 @@ ar="${cross_prefix}ar"
 ranlib="${cross_prefix}ranlib"
 
 
-cat > config.mak <<EOF
+cat > ${build_dir}/config.mak <<EOF
 OVVC_CONFIG="${config}"
 CC=${cc}
 AR=${ar}
@@ -171,6 +186,7 @@ LD_FLAGS=-lpthread
 SSE_CFLAGS= -mssse3 -msse4.1
 SHARED_LIBSUFF:=${shlib_suffix}
 STATIC_LIBSUFF:=${stlib_suffix}
+SRC_PATH=${src_dir}
 BUILDDIR=${build_dir}
 
 TESTSTREAMSDIR=$teststreams_dir_default
@@ -185,17 +201,16 @@ INSTALL_BIN=\$(INSTALL_PREFIX)/bin
 EOF
 
 if [ ${slhdr_enabled} = "1" ] ; then
-cat >> config.mak <<EOF
-  PP_INC+=${slhdr_include}
+  # Force path to absolute
+  slhdr_include=$( cd $slhdr_include; pwd )
+  slhdr_wrapper_lib=$( realpath $slhdr_wrapper_lib )
+cat >> ${build_dir}/config.mak <<EOF
+  PP_INC=${slhdr_include}
   LD_FLAGS+=${slhdr_wrapper_lib}
-EOF
-else
-cat >> config.mak <<EOF
-  PP_INC=.
 EOF
 fi
 
-cat > config.sh <<EOF
+cat > ${build_dir}/config.sh <<EOF
 INSTALL_PREFIX=${prefix}
 INSTALL_LIB=\${INSTALL_PREFIX}/lib/libopenvvc
 INSTALL_INCLUDE=\${INSTALL_PREFIX}/include/libopenvvc
@@ -203,7 +218,7 @@ INSTALL_PKGCONFIG=\${INSTALL_PREFIX}/lib/pkgconfig
 INSTALL_BIN=\${INSTALL_PREFIX}/bin
 EOF
 
-cat > libovvc/ovconfig.h <<EOF
+cat > ${build_dir}/ovconfig.h <<EOF
 #define _WIN32 $is_win32
 
 #define ARCH_X86 $is_x86
