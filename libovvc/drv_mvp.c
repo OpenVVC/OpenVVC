@@ -2342,6 +2342,7 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
 
     int ref0 = mv_info.mv0.ref_idx;
     int ref1 = mv_info.mv1.ref_idx;
+    offset <<= inter_ctx->mmvd_shift;
 
     if (mv_info.inter_dir == 0x3){
         /* FIXME handle LT ref differently */

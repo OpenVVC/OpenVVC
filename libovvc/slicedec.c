@@ -1370,6 +1370,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     init_slice_tree_ctx(ctudec, prms);
 
+    ctudec->drv_ctx.inter_ctx.mmvd_shift = ph->ph_mmvd_fullpel_only_flag << 1;
     ctudec->drv_ctx.inter_ctx.tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
     ctudec->drv_ctx.inter_ctx.mvd1_zero_flag = ph->ph_mvd_l1_zero_flag;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref_l0 = ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag

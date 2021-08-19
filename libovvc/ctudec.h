@@ -337,6 +337,7 @@ struct InterDRVCtx
      * information
      */
     uint8_t mmvd_flag;
+    uint8_t mmvd_shift;
 
     /* Bi-prediction CU-level Weight (BCW) Related
      * information
