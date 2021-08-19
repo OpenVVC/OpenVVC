@@ -1436,11 +1436,11 @@ mv_internal_to_integer(OVMV mv)
 
 /* FIXME truncated CTU */
 static inline struct OVPos
-clip_sb_pos_to_col_ctu(struct OVPos pos, int16_t ctu_w, int16_t ctu_h)
+clip_sb_pos_to_col_ctu(struct OVPos pos, int16_t ctu_w, int16_t ctu_h, uint8_t is_bnd)
 {
   struct OVPos sb_pos;
 
-  sb_pos.x = ov_clip(pos.x, 0, ctu_w + 3 - ((ctu_w == 64) << 2));
+  sb_pos.x = ov_clip(pos.x, 0, ctu_w + 3 - (is_bnd << 2));
   sb_pos.y = ov_clip(pos.y, 0, ctu_h - 1);
 
   sb_pos.x &= TMVP_POS_MSK;
@@ -1451,7 +1451,7 @@ clip_sb_pos_to_col_ctu(struct OVPos pos, int16_t ctu_w, int16_t ctu_h)
 
 static inline struct OVPos
 derive_sbtmvp_cand_pos(uint8_t x0, uint8_t y0, uint8_t log2_pu_w, uint8_t log2_pu_h,
-                       OVMV mv_offset, int16_t ctu_w, int16_t ctu_h)
+                       OVMV mv_offset, int16_t ctu_w, int16_t ctu_h, uint8_t is_bnd)
 {
     struct OVPos center_pos;
 
@@ -1461,7 +1461,7 @@ derive_sbtmvp_cand_pos(uint8_t x0, uint8_t y0, uint8_t log2_pu_w, uint8_t log2_p
     center_pos.x += mv_offset.x;
     center_pos.y += mv_offset.y;
 
-    center_pos = clip_sb_pos_to_col_ctu(center_pos, ctu_w, ctu_h);
+    center_pos = clip_sb_pos_to_col_ctu(center_pos, ctu_w, ctu_h, is_bnd);
 
     return center_pos;
 }
@@ -1750,6 +1750,7 @@ derive_sub_pu_merge_cand(const struct InterDRVCtx *inter_ctx,
         .log2_h = log2_pu_h
     };
     const struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
+    uint8_t is_bnd = tmvp->ctudec->ctb_x == tmvp->ctudec->nb_ctb_pic_w - 1;
 
     int16_t ctu_w = tmvp->ctu_w;
     int16_t ctu_h = tmvp->ctu_h;
@@ -1757,7 +1758,7 @@ derive_sub_pu_merge_cand(const struct InterDRVCtx *inter_ctx,
     OVMV mv_offset = derive_sbtmvp_mv_offset(inter_ctx, &pb_info, cand_rpl0, cand_rpl1);
 
     struct OVPos center_pos = derive_sbtmvp_cand_pos(x0, y0, log2_pu_w, log2_pu_h, mv_offset,
-                                                     ctu_w, ctu_h);
+                                                     ctu_w, ctu_h, is_bnd);
 
     uint8_t inter_dir = 0;
 
@@ -1804,6 +1805,7 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
     int nb_sb_h = OVMAX((1 << log2_pu_h) >> LOG2_SBTMVP_S, 1);
     uint16_t ctu_w = tmvp->ctu_w;
     uint16_t ctu_h = tmvp->ctu_h;
+    uint8_t is_bnd = tmvp->ctudec->ctb_x == tmvp->ctudec->nb_ctb_pic_w - 1;
 
     /* FIXME check if this clipping is needed */
     int sb_h = nb_sb_h == 1 ? 1 << log2_pu_h : 1 << LOG2_SBTMVP_S;
@@ -1840,7 +1842,7 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
 
             /* FIXME avoid clipping + correct CTU dimension
              */
-            col_pos = clip_sb_pos_to_col_ctu(col_pos, ctu_w, ctu_h);
+            col_pos = clip_sb_pos_to_col_ctu(col_pos, ctu_w, ctu_h, is_bnd);
 
             uint8_t cand_msk = check_sbtmvp_cand(tmvp->dir_map_v0, tmvp->dir_map_v1, col_pos);
 
