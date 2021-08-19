@@ -298,15 +298,19 @@ rcn_lmcs_compute_lut_luma(struct LMCSInfo *lmcs_info, uint16_t* inverse_lut,
 }
 
 
-void rcn_lmcs_no_reshape(uint16_t *dst, ptrdiff_t stride_dst, uint16_t* lmcs_lut_luma, int width, int height){
+void
+rcn_lmcs_no_reshape(uint16_t *dst, ptrdiff_t stride_dst, uint16_t* lmcs_lut_luma,
+                    int width, int height)
+{
     return;
 }
 
-void rcn_init_lmcs_function(struct RCNFunctions *rcn_func, uint8_t lmcs_flag){
+void
+rcn_init_lmcs_function(struct RCNFunctions *rcn_func, uint8_t lmcs_flag)
+{
     if(lmcs_flag){
         rcn_func->lmcs_reshape = &rcn_lmcs_reshape_luma_blk_lut;
-    }
-    else{
+    } else {
         rcn_func->lmcs_reshape = &rcn_lmcs_no_reshape;
     }
 }
