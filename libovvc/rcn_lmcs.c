@@ -2,7 +2,159 @@
 #include <string.h>
 
 #include "ovutils.h"
+
 #include "rcn_lmcs.h"
+
+#define BITDEPTH 10
+#define SMP_RNG (1 << BITDEPTH)
+#define CLIP_VAL ((1 << BITDEPTH) - 1)
+
+#define LOG2_NB_WND 4
+#define NB_LMCS_WND (1 << LOG2_NB_WND)
+
+#define NB_SMP_WND (SMP_RNG >> LOG2_NB_WND)
+
+#define LOG2_WND_RNG (BITDEPTH - LOG2_NB_WND)
+#define WND_RND (1 << (LOG2_WND_RNG - 1))
+
+#define LMCS_PREC 11
+#define LMCS_RND (1 << (LMCS_PREC - 1))
+
+/* Window information */
+struct TMPWindowsInfo
+{
+    int16_t scaled_fwd_step[NB_LMCS_WND];
+    int16_t scaled_bwd_step[NB_LMCS_WND];
+    int16_t wnd_bnd[NB_LMCS_WND + 1];
+    //int16_t wnd_sz[NB_LMCS_WND];
+};
+
+struct LMCSInfo2
+{
+    uint8_t lmcs_min_bin_idx;
+    uint8_t lmcs_delta_max_bin_idx;
+    int16_t lmcs_cw_delta[NB_LMCS_WND];
+};
+
+/* Backward and forward LUTs */
+struct LMCSLUTs
+{
+    int16_t fwd_lut[SMP_RNG];
+    int16_t bwd_lut[SMP_RNG];
+    int16_t wnd_bnd[NB_LMCS_WND + 1];
+};
+
+static uint8_t
+get_bwd_idx(const int16_t *const wnd_bnd, int16_t val, uint8_t min_idx, uint8_t max_idx_plus1)
+{
+  uint8_t i = min_idx;
+  for (; i < max_idx_plus1; i++) {
+      if (val < wnd_bnd[i + 1]) {
+          break;
+      }
+  }
+  return (uint8_t)OVMIN(i, NB_LMCS_WND - 1);
+}
+
+static void
+compute_windows_scale_steps(struct TMPWindowsInfo *const tmp_wnd_info,
+                            const int16_t *const lmcs_cw_delta,
+                            uint8_t min_idx, uint8_t max_idx_plus1)
+{
+  uint8_t min_idx_plus1 = min_idx + 1;
+
+  int16_t *const fwd_step = tmp_wnd_info->scaled_fwd_step;
+  int16_t *const bwd_step = tmp_wnd_info->scaled_bwd_step;
+  int16_t *const wnd_bnd = tmp_wnd_info->wnd_bnd;
+
+  int i;
+
+  /* Init left  with zero value until min_idx is reached */
+  memset(wnd_bnd, 0, sizeof(*wnd_bnd) * min_idx_plus1);
+
+  /* Init default to zero so padding is already done */
+  memset(fwd_step, 0, sizeof(int16_t) << LOG2_NB_WND);
+  memset(bwd_step, 0, sizeof(int16_t) << LOG2_NB_WND);
+
+  /* Compute windows */
+  for (i = min_idx; i < max_idx_plus1; i++) {
+      int16_t wnd_sz = NB_SMP_WND + lmcs_cw_delta[i];
+      if (wnd_sz) {
+          fwd_step[i] = ((wnd_sz << LMCS_PREC) + WND_RND) >> LOG2_WND_RNG;
+          bwd_step[i] = (NB_SMP_WND << LMCS_PREC) / wnd_sz;
+      }
+      wnd_bnd[i + 1] = wnd_bnd[i] + wnd_sz;
+  }
+
+  /* Broadcast last value */
+  for (i = max_idx_plus1; i < NB_LMCS_WND; i++) {
+      wnd_bnd[i + 1] = wnd_bnd[i];
+  }
+
+}
+
+static void
+derive_forward_lut(int16_t *const fwd_lut, const struct TMPWindowsInfo *const tmp_wnd_info)
+{
+    const int16_t *const fwd_step = tmp_wnd_info->scaled_fwd_step;
+    const int16_t *const wnd_bnd  = tmp_wnd_info->wnd_bnd;
+    int16_t val;
+    /* FIXME scaled_fwd/bwd_step[i] = 0 if outside of idx ranges
+     * Find a way to saturate using min and max idx.
+     */
+    for (val = 0; val < SMP_RNG; val++) {
+        uint8_t wnd_idx = val >> LOG2_WND_RNG;
+        int32_t wnd_lbnd = (int32_t)wnd_idx << LOG2_WND_RNG;
+
+        int32_t nb_step = val - wnd_lbnd;
+
+        int fwd_val = wnd_bnd[wnd_idx] + ((fwd_step[wnd_idx] * nb_step + LMCS_RND) >> LMCS_PREC);
+
+        fwd_lut[val] = ov_clip(fwd_val, 0, CLIP_VAL);
+    }
+}
+
+static void
+derive_backward_lut(int16_t *const bwd_lut, const struct TMPWindowsInfo *const tmp_wnd_info,
+                    uint8_t min_idx, uint8_t max_idx_plus1)
+{
+    const int16_t *const bwd_step = tmp_wnd_info->scaled_bwd_step;
+    const int16_t *const wnd_bnd  = tmp_wnd_info->wnd_bnd;
+    int16_t val;
+    /* FIXME scaled_fwd/bwd_step[i] = 0 if outside of idx ranges
+     * Find a way to saturate using min and max idx.
+     */
+    for (val = 0; val < SMP_RNG; val++) {
+        /* FIXME also construct an inverse idx LUT ? */
+        uint8_t wnd_idx = get_bwd_idx(wnd_bnd, val, min_idx, max_idx_plus1);
+        int32_t wnd_lbnd = (int32_t)wnd_idx << LOG2_WND_RNG;
+
+        int32_t nb_step = val - wnd_bnd[wnd_idx];
+
+        int bwd_val = wnd_lbnd + ((bwd_step[wnd_idx] * nb_step + LMCS_RND) >> LMCS_PREC);
+
+        bwd_lut[val] = ov_clip(bwd_val, 0, CLIP_VAL);
+    }
+}
+
+/* Note min_idx and max_bin_idx are supposed < 16 */
+void
+init_lmcs_lut(struct LMCSLUTs *const lmcs_luts, const struct LMCSInfo2 *const lmcs_info)
+{
+    struct TMPWindowsInfo tmp_wnd;
+    uint8_t min_idx = lmcs_info->lmcs_min_bin_idx;
+    uint8_t max_idx_plus1 = NB_LMCS_WND - lmcs_info->lmcs_delta_max_bin_idx;
+
+    /* TODO alloc LUTs */
+    compute_windows_scale_steps(&tmp_wnd, lmcs_info->lmcs_cw_delta, min_idx, max_idx_plus1);
+
+    derive_forward_lut(lmcs_luts->fwd_lut, &tmp_wnd);
+
+    derive_backward_lut(lmcs_luts->bwd_lut, &tmp_wnd, min_idx, max_idx_plus1);
+
+    /* Only required for chroma scaling */
+    memcpy(lmcs_luts->wnd_bnd, tmp_wnd.wnd_bnd, sizeof(lmcs_luts->wnd_bnd));
+}
 
 void 
 rcn_derive_lmcs_params(struct LMCSInfo *lmcs_info, uint16_t *const output_pivot, const OVLMCSData *const lmcs)
