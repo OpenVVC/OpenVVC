@@ -1015,20 +1015,13 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
 
     /* FIXME this is hackish joint cb cr involves a different delta qp from
        previous ones */
-
-    struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
-    uint8_t qp;
     if (cbf_mask == 3) {
-        qp = ctu_dec->dequant_joint_cb_cr.qp - 12;
         ctu_dec->dequant_chroma = &ctu_dec->dequant_joint_cb_cr;
         ctu_dec->dequant_skip = &ctu_dec->dequant_jcbcr_skip;
-
     } else if (cbf_mask == 1) {
-        qp = ctu_dec->dequant_cr.qp - 12;
         ctu_dec->dequant_chroma = &ctu_dec->dequant_cr;
         ctu_dec->dequant_skip   = &ctu_dec->dequant_cr_skip;
     } else {
-        qp = ctu_dec->dequant_cb.qp - 12;
         ctu_dec->dequant_chroma = &ctu_dec->dequant_cb;
         ctu_dec->dequant_skip   = &ctu_dec->dequant_cb_skip;
     }
