@@ -1078,18 +1078,23 @@ init_lines(OVCTUDec *ctudec, const OVSliceDec *sldec, const struct RectEntryInfo
 static void
 slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc)
 {
+    const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     ctudec->drv_ctx.inter_ctx.bi_dir_pred_flag = 0;
-    if (prms->sps->sps_smvd_enabled_flag && !ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc
-        && !ctudec->drv_ctx.inter_ctx.mvd1_zero_flag) {
-        int forw_poc = cur_poc;
-        int back_poc = cur_poc;
+
+    if (prms->sps->sps_smvd_enabled_flag && !inter_ctx->tmvp_ctx.ldc
+        && !inter_ctx->mvd1_zero_flag) {
+        const int nb_active_ref0 = inter_ctx->nb_active_ref0;
+        const int nb_active_ref1 = inter_ctx->nb_active_ref1;
         int ref = 0;
         int ref_idx0 = -1;
         int ref_idx1 = -1;
+        int forw_poc = cur_poc;
+        int back_poc = cur_poc;
+
         // search nearest forward POC in List 0
-        for (ref = 0; ref < ctudec->drv_ctx.inter_ctx.nb_active_ref0; ref++) {
-            int ref_poc = ctudec->drv_ctx.inter_ctx.rpl0[ref]->poc;
-            int ref_type = ctudec->drv_ctx.inter_ctx.rpl_info0->ref_info[ref].type;
+        for (ref = 0; ref < nb_active_ref0; ref++) {
+            int ref_poc = inter_ctx->rpl0[ref]->poc;
+            int ref_type = inter_ctx->rpl_info0->ref_info[ref].type;
             uint8_t is_lterm = (ref_type == LT_REF);
             if(ref_poc < cur_poc && (ref_poc > forw_poc || ref_idx0 == -1)  && !is_lterm) {
                 forw_poc = ref_poc;
@@ -1098,9 +1103,9 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
         }
 
         // search nearest backward POC in List 1
-        for (ref = 0; ref < ctudec->drv_ctx.inter_ctx.nb_active_ref1; ref++) {
-            int ref_poc = ctudec->drv_ctx.inter_ctx.rpl1[ref]->poc;
-            int ref_type = ctudec->drv_ctx.inter_ctx.rpl_info1->ref_info[ref].type;
+        for (ref = 0; ref < nb_active_ref1; ref++) {
+            int ref_poc = inter_ctx->rpl1[ref]->poc;
+            int ref_type = inter_ctx->rpl_info1->ref_info[ref].type;
             uint8_t is_lterm = (ref_type == LT_REF);
             if(ref_poc > cur_poc && (ref_poc < back_poc || ref_idx1 == -1)  && !is_lterm) {
                 back_poc = ref_poc;
@@ -1108,16 +1113,16 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
             }
         }
 
-        if ( !(forw_poc < cur_poc && back_poc > cur_poc) ){
+        if (!(forw_poc < cur_poc && back_poc > cur_poc)) {
             forw_poc = cur_poc;
             back_poc = cur_poc;
             ref_idx0 = -1;
             ref_idx1 = -1;
 
             // search nearest backward POC in List 0
-            for (ref = 0; ref < ctudec->drv_ctx.inter_ctx.nb_active_ref0; ref++) {
-                int ref_poc = ctudec->drv_ctx.inter_ctx.rpl0[ref]->poc;
-                int ref_type = ctudec->drv_ctx.inter_ctx.rpl_info0->ref_info[ref].type;
+            for (ref = 0; ref < nb_active_ref0; ref++) {
+                int ref_poc = inter_ctx->rpl0[ref]->poc;
+                int ref_type = inter_ctx->rpl_info0->ref_info[ref].type;
                 uint8_t is_lterm = (ref_type == LT_REF);
                 if(ref_poc > cur_poc && (ref_poc < back_poc || ref_idx0 == -1)  && !is_lterm) {
                     back_poc = ref_poc;
@@ -1126,9 +1131,9 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
             }
 
             // search nearest forward POC in List 1
-            for (ref = 0; ref < ctudec->drv_ctx.inter_ctx.nb_active_ref1; ref++) {
-                int ref_poc = ctudec->drv_ctx.inter_ctx.rpl1[ref]->poc;
-                int ref_type = ctudec->drv_ctx.inter_ctx.rpl_info1->ref_info[ref].type;
+            for (ref = 0; ref < nb_active_ref1; ref++) {
+                int ref_poc = inter_ctx->rpl1[ref]->poc;
+                int ref_type = inter_ctx->rpl_info1->ref_info[ref].type;
                 uint8_t is_lterm = (ref_type == LT_REF);
                 if(ref_poc < cur_poc && (ref_poc > forw_poc || ref_idx1 == -1)  && !is_lterm) {
                     forw_poc = ref_poc;
@@ -1136,7 +1141,8 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
                 }
             }
         }
-        if ( forw_poc < cur_poc && back_poc > cur_poc ){
+
+        if (forw_poc < cur_poc && back_poc > cur_poc){
             ctudec->drv_ctx.inter_ctx.bi_dir_pred_flag = 1;
             ctudec->drv_ctx.inter_ctx.ref_smvd_idx0 = ref_idx0;
             ctudec->drv_ctx.inter_ctx.ref_smvd_idx1 = ref_idx1;
@@ -1203,6 +1209,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         }
     }
 
+    /* FIXME Bidir only */
     slicedec_smvd_params(ctudec, prms, sldec->pic->poc);
 
     ctudec->drv_ctx.inter_ctx.ciip_flag = sldec->active_params->sps->sps_ciip_enabled_flag;
