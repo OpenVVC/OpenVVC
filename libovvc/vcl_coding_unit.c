@@ -1064,7 +1064,7 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
     VVCCU cu = {0};
     uint8_t cclm_flag = 0;
 
-    /* Force intra pred mode in case of separarate or dual tree */
+    /* Force intra pred mode in case of separate or dual tree */
     cu.cu_flags = 2;
 
     /* FIXME CCLM luma partition constraints */
