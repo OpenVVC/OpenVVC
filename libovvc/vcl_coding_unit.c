@@ -1206,17 +1206,10 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     struct IntraDRVInfo *const i_info   = &ctu_dec->drv_ctx.intra_info;
     VVCMergeInfo mv_info;
     #endif
+    uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
     uint8_t ref_idx0 = 0;
     uint8_t ref_idx1 = 0;
     uint8_t cu_type = OV_INTER;
-
-#if 1
-    uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
-    uint8_t y_cb = y0 >> log2_min_cb_s;
-    uint8_t x_cb = x0 >> log2_min_cb_s;
-    uint8_t nb_cb_w = (1 << log2_cb_w) >> log2_min_cb_s;
-    uint8_t nb_cb_h = (1 << log2_cb_h) >> log2_min_cb_s;
-#endif
 
     uint8_t smvd_flag = 0;
     uint8_t mmvd_flag = 0;
@@ -1238,6 +1231,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                                                    && log2_cb_h < 3 + log2_cb_w;
 
         if (ctu_dec->affine_enabled && log2_cb_w >= 3 && log2_cb_h >= 3) {
+            uint8_t y_cb = y0 >> log2_min_cb_s;
+            uint8_t x_cb = x0 >> log2_min_cb_s;
             uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_cb];
             uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_cb];
 
@@ -1348,6 +1343,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         uint8_t inter_dir = ovcabac_read_ae_inter_dir(cabac_ctx, log2_cb_w, log2_cb_h);
 
         if (ctu_dec->affine_enabled && log2_cb_w > 3 && log2_cb_h > 3) {
+            uint8_t y_cb = y0 >> log2_min_cb_s;
+            uint8_t x_cb = x0 >> log2_min_cb_s;
             uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_cb];
             uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_cb];
 
