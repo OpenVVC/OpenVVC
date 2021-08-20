@@ -551,10 +551,8 @@ void cc_alf_filterBlkVB_sse(int16_t * chroma_dst, int16_t * luma_src, const int 
   //BITDEPTH: uniquement pour bitdepth 10
   const int bit_depth = 10;
   __m128i offset = _mm_set1_epi16((1 << bit_depth) >> 1);
-  __m128i offset32 = _mm_set1_epi32((1 << bit_depth) >> 1);
 
   __m128i clip_h = _mm_set1_epi16((1<<bit_depth) - 1 );
-  __m128i clip_h32 = _mm_set1_epi32((1<<bit_depth) - 1 );
   __m128i clip_l = _mm_setzero_si128();
 
   for( int i = 0; i < blk_dst.height; i += STEP_Y )
