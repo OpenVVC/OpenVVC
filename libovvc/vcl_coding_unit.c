@@ -1520,7 +1520,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             uint8_t nb_sb_h = (1 << log2_cb_h) >> log2_h;
             int i, j;
 
-            uint8_t disable_bdof = 0;
             OVMV mv0 = mv_info.mv0;
             OVMV mv1 = mv_info.mv1;
             for (i = 0; i < nb_sb_h; ++i) {
@@ -1528,11 +1527,11 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                     if (dmvr_enable) {
                         OVMV *tmvp_mv0 = inter_ctx->tmvp_mv[0].mvs;
                         OVMV *tmvp_mv1 = inter_ctx->tmvp_mv[1].mvs;
-                        disable_bdof = rcn_dmvr_mv_refine(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
-                                                          x0 + j * 16, y0 + i * 16,
-                                                          log2_w, log2_h,
-                                                          &mv0, &mv1,
-                                                          ref_idx0, ref_idx1, bdof_enable);
+                        rcn_dmvr_mv_refine(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
+                                           x0 + j * 16, y0 + i * 16,
+                                           log2_w, log2_h,
+                                           &mv0, &mv1,
+                                           ref_idx0, ref_idx1, bdof_enable);
 
                         /* FIXME temporary hack to override MVs on 8x8 grid for TMVP */
                         /* FIXME find an alternative in case x0 % 8  is != 0 */
