@@ -984,8 +984,9 @@ dmvr_compute_sads(const int16_t *ref0, const int16_t *ref1,
     uint64_t min_cost = (uint64_t) -1;
 
     uint8_t idx;
-    uint8_t dmvr_idx;
+    uint8_t dmvr_idx = 12;
 
+    /* FIXME avoid already computed idx == 12 */
     for (idx = 0; idx < DMVR_NB_IDX; ++idx) {
         ref0 = ref0_start + (int16_t)dmvr_mv_x[idx]
                           + (int16_t)dmvr_mv_y[idx] * stride_l0;
