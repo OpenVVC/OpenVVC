@@ -881,22 +881,22 @@ residual_coding_l(OVCTUDec *const ctu_dec,
 
     if (!tr_skip_flag) {
         uint16_t last_pos;
-        uint8_t log2_red_w = log2_tb_w;
-        uint8_t log2_red_h = log2_tb_h;
         if (tu_info->is_sbt && tu_info->cu_mts_flag && log2_tb_w <= 5 && log2_tb_h <= 5) {
             last_pos = ovcabac_read_ae_last_sig_pos_red(cabac_ctx, log2_tb_w, log2_tb_h);
-            log2_red_w = log2_tb_w == 5 ? 4 : log2_tb_w;
-            log2_red_h = log2_tb_h == 5 ? 4 : log2_tb_h;
-            ctu_dec->tmp_red  = log2_tb_w - log2_red_w;
+            uint8_t log2_red_w = log2_tb_w == 5 ? 4 : log2_tb_w;
+            uint8_t log2_red_h = log2_tb_h == 5 ? 4 : log2_tb_h;
+
+            /* FIXME recheck this */
+            ctu_dec->tmp_red  =  log2_tb_w - log2_red_w;
             ctu_dec->tmp_red |= (log2_tb_h - log2_red_h) << 1;
 
             memset(coeffs_y, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
         } else {
             last_pos = ovcabac_read_ae_last_sig_pos(cabac_ctx, log2_tb_w, log2_tb_h);
         }
-        uint64_t sig_sb_map;
-        sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_tb_w, log2_tb_h,
-                                              last_pos);
+
+        uint64_t sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_tb_w, log2_tb_h,
+                                                       last_pos);
 
         ctu_dec->tmp_red  = 0;
         tb_info->sig_sb_map = sig_sb_map;
