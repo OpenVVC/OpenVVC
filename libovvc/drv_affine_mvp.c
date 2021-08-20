@@ -2771,8 +2771,8 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
 static inline uint8_t
 mv_threshold_check(OVMV a, OVMV b)
 {
-    uint32_t abs_delta_x = abs(a.x - b.x);
-    uint32_t abs_delta_y = abs(a.y - b.y);
+    uint32_t abs_delta_x = OVABS(a.x - b.x);
+    uint32_t abs_delta_y = OVABS(a.y - b.y);
 
     uint8_t chk = (abs_delta_x >= LF_MV_THRESHOLD) || (abs_delta_y >= LF_MV_THRESHOLD);
 
@@ -3317,8 +3317,8 @@ check_dbf_mv(const OVMV mv0)
     OVMV mv = {.x= mv0.x, .y= mv0.y};
     mv = round_dmv(mv);
     #endif
-    uint8_t int_diff  = abs(mv.x) >= LF_MV_THRESHOLD;
-            int_diff |= abs(mv.y) >= LF_MV_THRESHOLD;
+    uint8_t int_diff  = OVABS(mv.x) >= LF_MV_THRESHOLD;
+            int_diff |= OVABS(mv.y) >= LF_MV_THRESHOLD;
     return int_diff;
 }
 
@@ -3342,11 +3342,11 @@ check_dbf_mv_b(const OVMV mv_0, const OVMV mv_1)
     mv1 = round_dmv(mv1);
     #endif
 
-    uint8_t int_diff  = abs(mv0.x) >= LF_MV_THRESHOLD;
-            int_diff |= abs(mv0.y) >= LF_MV_THRESHOLD;
+    uint8_t int_diff  = OVABS(mv0.x) >= LF_MV_THRESHOLD;
+            int_diff |= OVABS(mv0.y) >= LF_MV_THRESHOLD;
 
-            int_diff |= abs(mv1.x) >= LF_MV_THRESHOLD;
-            int_diff |= abs(mv1.y) >= LF_MV_THRESHOLD;
+            int_diff |= OVABS(mv1.x) >= LF_MV_THRESHOLD;
+            int_diff |= OVABS(mv1.y) >= LF_MV_THRESHOLD;
 
     return int_diff;
 }
