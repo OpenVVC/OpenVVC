@@ -4157,7 +4157,6 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
         struct MergeInfo mv_info;
-        struct AffineMergeInfo mv_info2;
         OVMV mv_offset = {0};
 
         /* FIXME avoid duplication with merge derivation */
