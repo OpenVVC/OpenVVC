@@ -872,10 +872,6 @@ residual_coding_l(OVCTUDec *const ctu_dec,
 
     struct TBInfo *tb_info = &tu_info->tb_info[2];
 
-    /*FIXME move bs map filling to to cbf_flag reading */
-//    fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
- //   fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
-
     if (ctu_dec->transform_skip_enabled && log2_tb_w <= ctu_dec->max_log2_transform_skip_size
         && log2_tb_h <= ctu_dec->max_log2_transform_skip_size && !tu_info->is_sbt && !(cu_flags &flg_isp_flag)) {
         tr_skip_flag = ovcabac_read_ae_transform_skip_luma_flag(cabac_ctx);
@@ -948,9 +944,7 @@ residual_coding_c(OVCTUDec *const ctu_dec,
         }
 
         if (!(transform_skip_flag & 0x2)) {
-#if 1
             ctu_dec->dequant_chroma = &ctu_dec->dequant_cb;
-#endif
 
             last_pos_cb = ovcabac_read_ae_last_sig_pos_c(cabac_ctx, log2_tb_w, log2_tb_h);
 
@@ -976,9 +970,7 @@ residual_coding_c(OVCTUDec *const ctu_dec,
         }
 
         if (!(transform_skip_flag & 0x1)) {
-#if 1
             ctu_dec->dequant_chroma = &ctu_dec->dequant_cr;
-#endif
 
             last_pos_cr = ovcabac_read_ae_last_sig_pos_c(cabac_ctx, log2_tb_w, log2_tb_h);
 
@@ -1173,20 +1165,16 @@ transform_unit_st(OVCTUDec *const ctu_dec,
         if (ctu_dec->delta_qp_enabled && cbf_mask) {
             OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
             int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
-            #if 1
             derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
-            #endif
         }
 
         if (cbf_flag_l) {
 
             residual_coding_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, tu_info);
 
-            if (ctu_dec->tmp_ciip)
-            fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_tb_w, log2_tb_h);
-
-            //fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
-            //fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
+            if (ctu_dec->tmp_ciip) {
+                fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_tb_w, log2_tb_h);
+            }
 
         }
 
@@ -1195,16 +1183,18 @@ transform_unit_st(OVCTUDec *const ctu_dec,
             residual_coding_jcbcr(ctu_dec, x0 >> 1, y0 >> 1, log2_tb_w - 1,
                                   log2_tb_h - 1, cbf_mask_c, tu_info);
 
-            if (ctu_dec->tmp_ciip)
-            fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0, y0, log2_tb_w, log2_tb_h);
+            if (ctu_dec->tmp_ciip) {
+                fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0, y0, log2_tb_w, log2_tb_h);
+            }
 
         } else if (cbf_mask_c) {
 
             residual_coding_c(ctu_dec, x0 >> 1, y0 >> 1, log2_tb_w - 1,
                               log2_tb_h - 1, cbf_mask_c, tu_info);
 
-            if (ctu_dec->tmp_ciip)
-            fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0, y0, log2_tb_w, log2_tb_h);
+            if (ctu_dec->tmp_ciip) {
+                fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0, y0, log2_tb_w, log2_tb_h);
+            }
         }
 
     }
@@ -1224,17 +1214,12 @@ transform_unit_l(OVCTUDec *const ctu_dec,
     if (cbf_mask) {
         if (ctu_dec->delta_qp_enabled && cbf_mask) {
             int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
-#if 1
             derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
-#endif
         }
 
         residual_coding_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, tu_info);
 
     }
-
-    /* FIXME Move to RCN functions */
-    //fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
 
     return cbf_mask;
 }
@@ -1255,9 +1240,7 @@ transform_unit_c(OVCTUDec *const ctu_dec,
         /* FIXME Read only on first TU */
         if (ctu_dec->delta_qp_enabled && cbf_mask) {
             int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
-            #if 1
             derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
-            #endif
         }
 
         if (jcbcr_flag) {
@@ -1401,44 +1384,24 @@ rcn_transform_tree(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
                            log2_tb_w1, log2_tb_h1,
                            log2_max_tb_s, cu_flags, &tu_info[0]);
         if (split_v) {
-            #if 0
-            uint8_t compute_chr_scale = (log2_tb_w == 7 && ctu_dec->lmcs_info.lmcs_enabled_flag);
-            if (compute_chr_scale){
-                rcn_lmcs_compute_chroma_scale(ctu_dec, x0 + tb_w1, y0);
-            }
-            #endif
             rcn_transform_tree(ctu_dec, x0 + tb_w1, y0,
                                log2_tb_w1, log2_tb_h1,
                                log2_max_tb_s, cu_flags, &tu_info[1]);
         }
 
         if (split_h) {
-            #if 0
-            uint8_t compute_chr_scale = (log2_tb_h == 7 && ctu_dec->lmcs_info.lmcs_enabled_flag);
-            if (compute_chr_scale){
-                rcn_lmcs_compute_chroma_scale(ctu_dec, x0, y0 + tb_h1);
-            }
-            #endif
             rcn_transform_tree(ctu_dec, x0, y0 + tb_h1,
                                log2_tb_w1, log2_tb_h1,
                                log2_max_tb_s, cu_flags, &tu_info[2]);
         }
 
         if (split_h && split_v) {
-            #if 0
-            uint8_t compute_chr_scale = ((log2_tb_h == 7 || log2_tb_w == 7) && ctu_dec->lmcs_info.lmcs_enabled_flag) ;
-            if (compute_chr_scale){
-                rcn_lmcs_compute_chroma_scale(ctu_dec, x0 + tb_w1, y0 + tb_h1);
-            }
-            #endif
             rcn_transform_tree(ctu_dec, x0 + tb_w1, y0 + tb_h1,
                                log2_tb_w1, log2_tb_h1,
                                log2_max_tb_s, cu_flags, &tu_info[3]);
         }
 
-
     } else {
-
         rcn_res_wrap(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, tu_info);
     }
 }
@@ -1554,9 +1517,6 @@ sbt_half_hor(OVCTUDec *const ctu_dec,
     fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
     fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
     if (!sbt_pos) {
-        uint8_t y1 = y0 + (1 << (log2_tb_h - 1));
-        uint8_t y2 = y0 + (1 << (log2_tb_h - 1));
-        uint8_t y3 = y0 + (1 << (log2_tb_h - 1));
         tu_info[0].is_sbt = 1;
         if (log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
             tu_info->cu_mts_flag = 1;
@@ -1573,7 +1533,6 @@ sbt_half_hor(OVCTUDec *const ctu_dec,
     } else {
         tu_info[0].is_sbt = 1;
         uint8_t y1 = y0 + (1 << (log2_tb_h - 1));
-        uint8_t y2 = y0 + (1 << (log2_tb_h - 1));
         uint8_t y3 = y0 + (1 << (log2_tb_h - 1));
         if (log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
             tu_info->cu_mts_flag = 1;
@@ -1601,9 +1560,6 @@ sbt_quad_ver(OVCTUDec *const ctu_dec,
     fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
     if (!sbt_pos) {
         tu_info[0].is_sbt = 1;
-        uint8_t x3 = x0 + (3 << (log2_tb_w - 2));
-        uint8_t x1 = x0 + (1 << (log2_tb_w - 2));
-        uint8_t x2 = x0 + (2 << (log2_tb_w - 2));
 
         if (log2_tb_w - 2 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
@@ -1621,8 +1577,6 @@ sbt_quad_ver(OVCTUDec *const ctu_dec,
     } else {
         tu_info[0].is_sbt = 1;
         uint8_t x3 = x0 + (3 << (log2_tb_w - 2));
-        uint8_t x1 = x0 + (1 << (log2_tb_w - 2));
-        uint8_t x2 = x0 + (2 << (log2_tb_w - 2));
 
         if (log2_tb_w - 2 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
@@ -1735,7 +1689,6 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
     struct ISPTUInfo tu_info = {0};
     struct TUInfo tu_info_c = {0};
     uint8_t cbf_mask_c = 0;
-
 
     /* height < 16 imposes restrictions on split dimension */
     if (log2_cb_h < 4 && (log2_pb_w <= (4 - log2_cb_h))) {
@@ -2180,13 +2133,8 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
 
                 if (isp_mode == 2) {
                     isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode);
-
-                    //return cu;
-
                 } else if (isp_mode == 1) {
                     isp_subtree_h(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode);
-
-                    ////return cu;
                 }
             }
         }
@@ -2234,3 +2182,4 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
     }
     return 0;
 }
+
