@@ -14,6 +14,22 @@ enum CUMode {
     OV_MIP = 4,
 };
 
+struct TreeInfo
+{
+    VVCCU (*coding_unit)(struct OVCTUDec *const lc_ctx,
+                         const OVPartInfo *const part_ctx,
+                         uint8_t x0, uint8_t y0,
+                         uint8_t log2_cb_w, uint8_t log2_cb_h);
+
+    int (*transform_unit)(struct OVCTUDec *const lc_ctx,
+                          unsigned int x0, unsigned int y0,
+                          unsigned int log2_tb_w,
+                          unsigned int log2_tb_h,
+                          uint8_t cbf_ctx, uint8_t cu_flags,
+                          uint8_t tr_depth, struct TUInfo *const tu_info);
+    const OVPartInfo *part_ctx;
+};
+
 #if 0
 static int coding_quadtree(OVCTUDec *const ctu_dec,
                            const OVPartInfo *const part_ctx,
@@ -275,8 +291,9 @@ coding_quadtree(OVCTUDec *const ctu_dec,
                 if (sep_tree == 1) {
                     /*FIXME use specific function to launch chroma tree */
                     const OVPartInfo * part_ctx = ctu_dec->part_ctx;
-                    void (*coding_unit_bkup)    = ctu_dec->coding_unit;
-                    void (*transform_unit_bkup) = ctu_dec->transform_unit;
+                    struct TreeInfo root_tree;
+                    root_tree.coding_unit    = ctu_dec->coding_unit;
+                    root_tree.transform_unit = ctu_dec->transform_unit;
 
                     ctu_dec->coding_unit    = &coding_unit_intra;
                     ctu_dec->transform_unit = &transform_unit_l;
@@ -300,8 +317,8 @@ coding_quadtree(OVCTUDec *const ctu_dec,
                     coding_quadtree(ctu_dec, part_ctx, x0 >> 1, y1 >> 1, log2_cb_s - 2, qt_depth + 1);
                     coding_quadtree(ctu_dec, part_ctx, x1 >> 1, y1 >> 1, log2_cb_s - 2, qt_depth + 1);
 
-                    ctu_dec->coding_unit = coding_unit_bkup;
-                    ctu_dec->transform_unit = transform_unit_bkup;
+                    ctu_dec->coding_unit = root_tree.coding_unit;
+                    ctu_dec->transform_unit = root_tree.transform_unit;
                     ctu_dec->active_part_map = &ctu_dec->part_map;
                 } else {
                     coding_quadtree(ctu_dec, part_ctx, x0, y0, log2_cb_s - 1, qt_depth + 1);
@@ -503,11 +520,6 @@ dual_tree(OVCTUDec *const ctu_dec,
 
         part_ctx = ctu_dec->part_ctx_c;
 
-        #if 0
-        /* FIXME  Update LMCS for chroma */
-        ctu_dec->compute_lmcs(ctu_dec, x0, y0);
-        #endif
-
         ctu_dec->coding_unit   = &coding_unit_intra_c;
         ctu_dec->transform_unit= &transform_unit_c;
         ctu_dec->active_part_map = &ctu_dec->part_map_c;
@@ -595,8 +607,9 @@ separate_tree_mtt(OVCTUDec *const ctu_dec,
                    unsigned int mtt_depth,
                    uint8_t implicit_mt_depth)
 {
-    void (*coding_unit_bkup)    = ctu_dec->coding_unit;
-    void (*transform_unit_bkup) = ctu_dec->transform_unit;
+    struct TreeInfo root_tree;
+    root_tree.coding_unit    = ctu_dec->coding_unit;
+    root_tree.transform_unit = ctu_dec->transform_unit;
 
     ctu_dec->coding_unit     = &coding_unit_intra_c;
     ctu_dec->transform_unit  = &transform_unit_c;
@@ -607,8 +620,8 @@ separate_tree_mtt(OVCTUDec *const ctu_dec,
                     mtt_depth, 0, implicit_mt_depth);
 
     ctu_dec->active_part_map = &ctu_dec->part_map;
-    ctu_dec->coding_unit     = coding_unit_bkup;
-    ctu_dec->transform_unit  = transform_unit_bkup;
+    ctu_dec->coding_unit     = root_tree.coding_unit;
+    ctu_dec->transform_unit  = root_tree.transform_unit;
     ctu_dec->share = 0;
 }
 
@@ -716,7 +729,6 @@ separate_trees_qt(OVCTUDec *ctudec, const OVPartInfo *const part_ctx, uint8_t x0
     uint8_t log2_cb_s = log2_cb_w + log2_cb_h;
     uint16_t luma_area = (1 << log2_cb_s) >> 2;
     uint16_t chroma_area = luma_area >> 2;
-    uint8_t sep_tree = 0;
 
     if (ctudec->share || ctudec->coding_tree == &dual_tree) {
         return 0;
@@ -745,7 +757,6 @@ separate_trees_bt(OVCTUDec *ctudec, const OVPartInfo *const part_ctx, uint8_t x0
     uint8_t log2_cb_s = log2_cb_w + log2_cb_h;
     uint16_t luma_area = (1 << log2_cb_s) >> 1;
     uint16_t chroma_area = luma_area >> 2;
-    uint8_t sep_tree = 0;
 
     if (ctudec->share || ctudec->coding_tree == &dual_tree) {
         return 0;
@@ -895,16 +906,11 @@ multi_type_tree(OVCTUDec *const ctu_dec,
             }
 
             if (split_cu_bt) {
-                unsigned int log2_nb_s = log2_cb_w + log2_cb_h;
                 /* FIXME Separable tree */
-#if 0
-                uint8_t sep_tree = !ctu_dec->share && ((log2_nb_s == 6) || (log2_nb_s == 5) ||
-                                    (split_cu_v && log2_cb_w == 3)) &&
-                                    ctu_dec->coding_tree_implicit != &dual_tree_implicit
-                                    && ctu_dec->coding_tree != &dual_tree;
-#else
                 uint8_t sep_tree = separate_trees_bt(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, split_cu_v);
-#endif
+                struct TreeInfo root_tree;
+                root_tree.coding_unit    = ctu_dec->coding_unit;
+                root_tree.transform_unit = ctu_dec->transform_unit;
 
                 /* FIXME Separable tree */
                 if (!ctu_dec->share && sep_tree) {
@@ -922,9 +928,6 @@ multi_type_tree(OVCTUDec *const ctu_dec,
                     ctu_dec->enable_cclm = 1;
                 }
 
-                /* FIXME Separable tree */
-                void (*transform_unit_bkup) = ctu_dec->transform_unit;
-                void (*coding_unit_bkup) = ctu_dec->coding_unit;
                 if (sep_tree == 1) {
                     ctu_dec->transform_unit = &transform_unit_l;
                     ctu_dec->coding_unit = &coding_unit_intra;
@@ -934,8 +937,8 @@ multi_type_tree(OVCTUDec *const ctu_dec,
                          mtt_depth, implicit_mt_depth, split_cu_v);
 
                 /* FIXME Separable tree */
-                ctu_dec->transform_unit = transform_unit_bkup;
-                ctu_dec->coding_unit = coding_unit_bkup;
+                ctu_dec->transform_unit = root_tree.transform_unit;
+                ctu_dec->coding_unit    = root_tree.coding_unit;
 
                 /* FIXME Separable tree */
                 if (sep_tree == 1) {
@@ -950,23 +953,17 @@ multi_type_tree(OVCTUDec *const ctu_dec,
                 return 1;
 
             } else {
-                unsigned int log2_nb_s = log2_cb_w + log2_cb_h;
                 /* FIXME separable tree */
-#if 0
-                uint8_t sep_tree = !ctu_dec->share && ((log2_nb_s == 7) || (log2_nb_s == 6) ||
-                                    (split_cu_v && log2_cb_w == 4)) &&
-                                    ctu_dec->coding_tree_implicit != &dual_tree_implicit
-                                    && ctu_dec->coding_tree != &dual_tree;
-#else
                 uint8_t sep_tree = separate_trees_tt(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, split_cu_v);
-#endif
+
+                struct TreeInfo root_tree;
+                root_tree.coding_unit    = ctu_dec->coding_unit;
+                root_tree.transform_unit = ctu_dec->transform_unit;
 
                 if (!ctu_dec->share && sep_tree) {
                     ctu_dec->share = sep_tree;
                 }
 
-                void (*transform_unit_bkup) = ctu_dec->transform_unit;
-                void (*coding_unit_bkup) = ctu_dec->coding_unit;
                 if (sep_tree == 1) {
                     ctu_dec->transform_unit = &transform_unit_l;
                     ctu_dec->coding_unit = &coding_unit_intra;
@@ -977,8 +974,8 @@ multi_type_tree(OVCTUDec *const ctu_dec,
                          mtt_depth, implicit_mt_depth, split_cu_v);
 
                 /* FIXME separable tree */
-                ctu_dec->transform_unit = transform_unit_bkup; 
-                ctu_dec->coding_unit = coding_unit_bkup;
+                ctu_dec->transform_unit = root_tree.transform_unit;
+                ctu_dec->coding_unit    = root_tree.coding_unit;
 
                 if (sep_tree == 1) {
                     separate_tree_mtt(ctu_dec, x0, y0, log2_cb_w, log2_cb_h,
