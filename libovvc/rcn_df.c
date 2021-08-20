@@ -660,8 +660,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
     const int blk_stride = stride << 1;
     /* Mask applied to edge_mask based on CTU height */
     const uint64_t vedge_mask = ((uint64_t)1 << nb_unit_h) - 1;
-    uint64_t *const edg_map_tab = &dbf_info->ctb_bound_ver_c[8];
-    edg_map_tab[16] = -1ll;
+    const uint64_t *const edg_map_tab = &dbf_info->ctb_bound_ver_c[8];
     int i;
 
     /* The number of edges to process (should be ((1 << log2_ctu_s) >> 4) since we start
@@ -841,8 +840,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
     const uint64_t hedge_mask = (((uint64_t)1 << (nb_unit_w + (!!is_last_w << 1))) - 1);
     const uint8_t nb_hedge = ((nb_unit_h + 3) >> 2);
     const uint8_t skip_first = !ctu_abv;
-    uint64_t *const edg_map_tab = &dbf_info->ctb_bound_hor_c[8];
-    edg_map_tab[16] = -1ll;
+    const uint64_t *const edg_map_tab = &dbf_info->ctb_bound_hor_c[8];
     int i;
 
     src_cb -= blk_stride << 1;
@@ -1074,13 +1072,11 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
     const int blk_stride = stride << 2; 
     const uint64_t vedge_mask = ((uint64_t)1 << nb_unit_h) - 1;
 
-    uint64_t *edg_map = &dbf_info->ctb_bound_ver[8];
-    uint64_t *aff_edg_map = &dbf_info->aff_edg_ver[8];
+    const uint64_t *edg_map = &dbf_info->ctb_bound_ver[8];
+    const uint64_t *aff_edg_map = &dbf_info->aff_edg_ver[8];
     const uint8_t skip_first = !ctu_lft;
 
     int i;
-    edg_map[16] = -1ll;
-    aff_edg_map[16] = 0;
 
     src += skip_first << 2;
 
@@ -1273,12 +1269,10 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
     const uint64_t hedge_mask = ((uint64_t)1 << (nb_unit_w + (!!is_last_w << 1))) - 1;
     int i;
 
-    uint64_t *edg_map = &dbf_info->ctb_bound_hor[8];
-    uint64_t *aff_edg_map = &dbf_info->aff_edg_hor[8];
+    const uint64_t *edg_map = &dbf_info->ctb_bound_hor[8];
+    const uint64_t *aff_edg_map = &dbf_info->aff_edg_hor[8];
     uint8_t skip_first = !ctu_abv;
 
-    edg_map[16] = -1ll;
-    aff_edg_map[16] = 0;
     /* Filtering vertical edges on the whole would overlap with next CTU first
      * vertical edge.
      * Since max filter length is 7 we stop the horizontal process 2 units before
@@ -1368,6 +1362,21 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_inf
     /* FIXME give as argument */
     uint8_t ctu_lft = rcn_ctx->ctudec->ctu_ngh_flags & CTU_LFT_FLG;
     uint8_t ctu_abv = rcn_ctx->ctudec->ctu_ngh_flags & CTU_UP_FLG;
+
+    /* Force transform_edges on implicit transform trees */
+    uint64_t *edg_map_tab = &dbf_info->ctb_bound_ver_c[8];
+    edg_map_tab[16] = -1ll;
+    edg_map_tab = &dbf_info->ctb_bound_ver[8];
+    edg_map_tab[16] = -1ll;
+    edg_map_tab = &dbf_info->ctb_bound_hor[8];
+    edg_map_tab[16] = -1ll;
+    edg_map_tab = &dbf_info->ctb_bound_hor_c[8];
+    edg_map_tab[16] = -1ll;
+    uint64_t *aff_edg_map = &dbf_info->aff_edg_hor[8];
+    aff_edg_map[16] = -1ll;
+    aff_edg_map = &dbf_info->aff_edg_ver[8];
+    aff_edg_map[16] = -1ll;
+
 
     #if 1
     if (!dbf_info->disable_h)
