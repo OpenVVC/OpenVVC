@@ -228,7 +228,7 @@ sao_edge_filter_7_10_sse(uint8_t* _dst,
       r0 = _mm_add_epi16(r0, r2);
 
       //mask to remove processing on last element
-      r2 = _mm_set1_epi16(0xFFFF);
+      r2 = _mm_set1_epi16((int16_t)0xFFFF);
       r2 = _mm_bsrli_si128(r2,2);
       r0 = _mm_and_si128(r0, r2);
 
