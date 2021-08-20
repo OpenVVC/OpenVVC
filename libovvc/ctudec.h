@@ -116,12 +116,11 @@ struct DBFInfo
 
 struct SAOInfo
 {
-    //SAO flags on slice level 
+    /* FIXME move flags to ctudec */
     uint8_t sao_luma_flag;
     uint8_t sao_chroma_flag;
+    /* FIXME remove */
     uint8_t chroma_format_idc;
-    uint8_t sao_truncated_bitdepth;
-    uint8_t sao_truncated_bitdepth_chroma;
 
     /*array of SAO parameters structure for each ctu */ 
     SAOParamsCtu *sao_params;
@@ -129,11 +128,16 @@ struct SAOInfo
 
 struct ALFInfo
 {
+    /* FIXME move flags to ctu dec */
     uint8_t alf_luma_enabled_flag;
     uint8_t alf_cb_enabled_flag;
     uint8_t alf_cr_enabled_flag;
+    uint8_t cc_alf_cb_enabled_flag;
+    uint8_t cc_alf_cr_enabled_flag;
+
     uint8_t num_alf_aps_ids_luma;
     uint8_t left_ctb_alf_flag;
+
     //TODO: use width in ctu of image (or tile) instead of max value 32.
     uint8_t ctb_cc_alf_flag_line[2][32];
 
@@ -142,8 +146,6 @@ struct ALFInfo
     const struct OVALFData* aps_cc_alf_data_cb;
     const struct OVALFData* aps_cc_alf_data_cr;
 
-    uint8_t cc_alf_cb_enabled_flag;
-    uint8_t cc_alf_cr_enabled_flag;
     uint8_t left_ctb_cc_alf_flag[2];
     //TODO: use width in ctu of image (or tile) instead of max value 32.
     uint8_t ctb_alf_flag_line[32];
@@ -159,6 +161,7 @@ struct ALFInfo
 
 struct LMCSInfo
 {
+    /* FIXME use new LMCS structures */
     uint8_t  lmcs_enabled_flag;
     uint8_t  scale_c_flag;
     uint16_t lmcs_output_pivot[PIC_CODE_CW_BINS];
@@ -178,8 +181,9 @@ typedef struct VVCDeQuantCtx{
 
 typedef struct VVCQPCTX
 {
+    /* FIXME move current qp outside */
     int8_t current_qp;
-    int8_t min_qp_prime_ts;
+    int8_t min_qp_prime_ts; /* FIXME usefull ?*/
     int8_t cb_offset;
     int8_t cr_offset;
     int8_t jcbcr_offset;
@@ -227,13 +231,14 @@ struct VVCCU
 };
 
 /* FIXME move inter struct definitions somewhere else */
-struct CTUBitField{
+struct CTUBitField {
     uint64_t hfield[33];
     uint64_t vfield[33];
 };
 
 struct OVMV
 {
+    /*FIXME move ref_idx, bcw_idx and prec_amvr outside of struct */
     int32_t x;
     int32_t y;
     int8_t ref_idx;
@@ -370,15 +375,14 @@ struct InterDRVCtx
         OVMV mv1;
     } gpm_ctx;
 
-    /* Temporal Motion Vector Prediction Related
-     * information
-     */
-    uint8_t tmvp_avail;
-    uint8_t tmvp_enabled;
     uint8_t mvd1_zero_flag;
+
+    uint8_t tmvp_enabled;
     uint8_t sbtmvp_enabled;
+
     uint8_t prof_enabled;
 
+    uint8_t tmvp_avail;
     struct VVCTMVP
     {
         /* FIXME tmp info */
@@ -659,28 +663,36 @@ struct OVCTUDec
      */
     uint8_t transform_skip_enabled;
     uint8_t max_log2_transform_skip_size;
-
     uint8_t enable_sdh;
     uint8_t jcbcr_enabled;
-    uint8_t isp_enabled;
     uint8_t mts_implicit;
     uint8_t mts_enabled;
-    uint8_t delta_qp_enabled;
     uint8_t enable_lfnst;
+
+    uint8_t delta_qp_enabled;
+
+    uint8_t isp_enabled;
     uint8_t enabled_mip;
-    uint8_t lm_chroma_enabled;
-    uint8_t tmp_disable_cclm;
-    uint8_t enable_cclm;
     uint8_t enable_mrl;
-    uint8_t share;
+
+    uint8_t lm_chroma_enabled;
+    uint8_t enable_cclm;
     uint8_t max_num_merge_candidates;
-    uint8_t dbf_disable;
     uint8_t sbt_enabled;
+
     uint8_t affine_enabled;
     uint8_t affine_status;
     uint8_t affine_nb_merge_cand;
+
     uint8_t bdof_enabled;
     uint8_t dmvr_enabled;
+
+    uint8_t dbf_disable;
+
+    /* Separate chroma tree */
+    uint8_t share;
+
+    uint8_t tmp_disable_cclm;
 
     /**
      * Depths of left and up neighbours during in the decision tree
