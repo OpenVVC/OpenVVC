@@ -39,7 +39,6 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
         uint8_t ctu_sao_luma_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[SAO_TYPE_IDX_CTX_OFFSET]);
         if (ctu_sao_luma_flag) {
             sao_ctu->type_idx[0] = ovcabac_bypass_read(cabac_ctx) ? SAO_EDGE : SAO_BAND;
-            sao_ctu->old_type_idx[0] = sao_ctu->type_idx[0];
             for (i = 0; i < 4; i++) {
                 for (k = 0; k < num_bits_sao; k++) {
                     if (!ovcabac_bypass_read(cabac_ctx)) {
@@ -80,8 +79,6 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
         uint8_t ctu_sao_c_flag = ovcabac_ae_read(cabac_ctx,&cabac_state[SAO_TYPE_IDX_CTX_OFFSET]);
         if (ctu_sao_c_flag) {
             sao_ctu->type_idx[2] = sao_ctu->type_idx[1] = ovcabac_bypass_read(cabac_ctx) ? SAO_EDGE : SAO_BAND;
-            sao_ctu->old_type_idx[1] = sao_ctu->type_idx[1];
-            sao_ctu->old_type_idx[2] = sao_ctu->type_idx[2];
             for (i = 0; i < 4; i++) {
                 for (k = 0; k < num_bits_sao_c; k++) {
                     if (!ovcabac_bypass_read(cabac_ctx)) {
@@ -186,9 +183,6 @@ ovcabac_read_ae_sao_ctu(OVCTUDec *const ctudec, int ctb_rs)
                 int ctb_above = ctb_rs - ctudec->nb_ctb_pic_w; 
                 *sao_ctu = ctudec->sao_info.sao_params[ctb_above];;
             }
-            sao_ctu->type_idx[0]=sao_ctu->old_type_idx[0];
-            sao_ctu->type_idx[1]=sao_ctu->old_type_idx[1];
-            sao_ctu->type_idx[2]=sao_ctu->old_type_idx[2];
         }
     }
 }

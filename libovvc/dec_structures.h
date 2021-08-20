@@ -207,7 +207,6 @@ typedef struct SAOParamsCtu {
     uint8_t eo_class[3];        ///< sao_eo_class
 
     uint8_t type_idx[3];    ///< sao_type_idx
-    uint8_t old_type_idx[3];    ///< sao_type_idx
 } SAOParamsCtu;
 
 
