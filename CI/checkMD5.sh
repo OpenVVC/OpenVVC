@@ -82,15 +82,13 @@ for file in ${file_list}; do
 
   filter_extension name ${ext_list}
 
-  src_dir=$(dirname ${file})
-
-  md5_file="${src_dir}/${name}.md5"
-
   yuv_file="${tmp_dir}/${name}.yuv"
   log_file="${tmp_dir}/${name}.log"
 
   $DECODER -i "${file}" -o ${yuv_file} 2> ${log_file}
 
+  src_dir=$(dirname ${file})
+  md5_file="${src_dir}/${name}.md5"
   out_md5=$(md5sum ${yuv_file} | grep -o '[0-9,a-f]*\ ')
   ref_md5=$(cat    ${md5_file} | grep -o '[0-9,a-f]*\ ')
 
