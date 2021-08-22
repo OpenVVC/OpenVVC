@@ -31,13 +31,15 @@ filter_extension(){
   for ext in $*; do
     eval "var2=$(echo \$${var})"
     tmp=$(echo ${var2} | sed -e "s/\(.*\)\(\.${ext}\$\)/\1/g")
-    eval "${var}=${tmp}"
+    eval "${var}=${tmp}" 
   done
   unset tmp
   unset var
 }
 
 mkdir -p $STREAM
+tmp_dir=$STREAM
+
 if [[ "$#" == 3 ]];  then
   STREAMLIST=$(curl --silent $URL | grep -o -E '"([[:alnum:]]+_)+([[:alnum:]]+.(266|bin))"' | sed 's/\"/\ /g')
 fi
@@ -59,24 +61,32 @@ done
 
 rm -f failed.txt
 for file in ${file_list}; do
+
   name=$(basename ${file})
+
   filter_extension name ${ext_list}
+
   src_dir=$(dirname ${file})
-  yuv_file="${src_dir}/${name}.yuv"
-  log_file="${src_dir}/${name}.log"
+
   md5_file="${src_dir}/${name}.md5"
+
+  yuv_file="${tmp_dir}/${name}.yuv"
+  log_file="${tmp_dir}/${name}.log"
+
   $DECODER -i "${file}" -o ${yuv_file} 2> ${log_file}
-  MD5=$(md5sum ${yuv_file} | grep -o '[0-9,a-f]*\ ')
-  MD5fc=$(cat ${md5_file} | grep -o '[0-9,a-f]*\ ')
-  if [[ $MD5 == $MD5fc ]]; then
+
+  out_md5=$(md5sum ${yuv_file} | grep -o '[0-9,a-f]*\ ')
+  ref_md5=$(cat    ${md5_file} | grep -o '[0-9,a-f]*\ ')
+
+  if [[ ${out_md5} == ${ref_md5} ]]; then
     echo -e $GREEN${name}
-    echo -e Computed MD5:'\t'$MD5 $NC
+    echo -e Computed MD5:'\t'${out_md5} $NC
     rm -f ${log_file}.log
   else
     echo ${name} >> failed.txt
     echo -e $RED${name}
-    echo -e Computed MD5:'\t'$MD5
-    echo -e Reference MD5:'\t'$MD5fc $NC
+    echo -e Computed  MD5:'\t'${out_md5} $NC
+    echo -e Reference MD5:'\t'${ref_md5} $NC
     cat ${log_file}
     ((error=error+1))
   fi
