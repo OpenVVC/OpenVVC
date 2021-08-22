@@ -1,16 +1,32 @@
 #!/bin/bash
 
-if [[ "$#" < 2 ]];  then
-    echo "Illegal number of parameters"
-    echo
-    echo "USE ./checkMD5.sh <bitstreams folder> <decoder> [<url>]"
-    exit
-fi
+print_usage(){
+    cat <<EOF
+USAGE ./checkMD5.sh <bitstreams folder> <decoder> [<url>]
+EOF
+    exit 0
+}
 
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
+
+log_error(){
+    echo -e "$RED${*}$NC"
+}
+
+die(){
+    echo -e "$RED${*}$NC"
+    exit 1
+}
+
+if [[ "$#" < 2 ]];  then
+    log_error "Illegal number of parameters"
+    print_usage
+    die
+fi
+
 STREAM=$1
 DECODER=$2
 URL=$3
