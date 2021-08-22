@@ -30,7 +30,7 @@ fi
 STREAM=$1
 DECODER=$2
 URL=$3
-error=0
+nb_error=0
 
 ext_list="266
           bin"
@@ -104,10 +104,10 @@ for file in ${file_list}; do
     echo -e Computed  MD5:'\t'${out_md5} $NC
     echo -e Reference MD5:'\t'${ref_md5} $NC
     cat ${log_file}
-    ((error=error+1))
+    ((nb_error=nb_error+1))
   fi
   echo
   rm -f ${yuv_file}
 done
 
-exit $error
+exit $nb_error
