@@ -12,6 +12,13 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
+# Default values
+ext_list="266
+          bin
+          h266
+          vvc"
+
+
 log_error(){
     echo -e "$RED${*}$NC"
 }
@@ -30,10 +37,6 @@ fi
 STREAM=$1
 DECODER=$2
 URL=$3
-nb_error=0
-
-ext_list="266
-          bin"
 
 append(){
     var=${1}
@@ -76,6 +79,9 @@ for ext in ${ext_list}; do
 done
 
 rm -f failed.txt
+
+nb_error=0
+
 for file in ${file_list}; do
 
   name=$(basename ${file})
