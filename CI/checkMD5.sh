@@ -25,6 +25,18 @@ append(){
     eval "${var}=\"\$${var} ${*}\""
 }
 
+filter_extension(){
+  var=$1
+  shift
+  for ext in $*; do
+    eval "var2=$(echo \$${var})"
+    tmp=$(echo ${var2} | sed -e "s/\(.*\)\(\.${ext}\$\)/\1/g")
+    eval "${var}=${tmp}"
+  done
+  unset tmp
+  unset var
+}
+
 mkdir -p $STREAM
 if [[ "$#" == 3 ]];  then
   STREAMLIST=$(curl --silent $URL | grep -o -E '"([[:alnum:]]+_)+([[:alnum:]]+.(266|bin))"' | sed 's/\"/\ /g')
@@ -46,9 +58,9 @@ for ext in ${ext_list}; do
 done
 
 rm -f failed.txt
-for file in ${file_list}
-do
-  name=$(basename ${file} | sed -e "s/\.bin$//g" | sed -e "s/\.266$//g")
+for file in ${file_list}; do
+  name=$(basename ${file})
+  filter_extension name ${ext_list}
   src_dir=$(dirname ${file})
   yuv_file="${src_dir}/${name}.yuv"
   log_file="${src_dir}/${name}.log"
