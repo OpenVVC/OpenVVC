@@ -96,14 +96,18 @@ log_failure(){
 }
 
 check_md5sum(){
+  out_md5=$(md5sum ${yuv_file} | grep -o '[0-9,a-f]*\ ')
+
   src_dir=$(dirname ${file})
   md5_file="${src_dir}/${name}.md5"
-
-  out_md5=$(md5sum ${yuv_file} | grep -o '[0-9,a-f]*\ ')
-  ref_md5=$(cat    ${md5_file} | grep -o '[0-9,a-f]*\ ')
-
-  test "${out_md5}" = "${ref_md5}"
-  return $?
+  if [[ -f $md5_file ]] ; then
+      ref_md5=$(cat    ${md5_file} | grep -o '[0-9,a-f]*\ ')
+          test "${out_md5}" = "${ref_md5}" || handle_md5sum_mismatch
+  else
+      log_error "${name}"
+      log_error "Could not find a md5 reference."
+      return 1
+  fi
 }
 
 increment(){
@@ -161,7 +165,7 @@ for file in ${file_list}; do
 
   has_error && cleanup_onfail && continue
 
-  check_md5sum ${yuv_file} ${file} && log_success || handle_md5sum_mismatch
+  check_md5sum ${yuv_file} ${file} && log_success
 
   has_error && cleanup_onfail && continue
 
