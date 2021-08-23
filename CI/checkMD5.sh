@@ -82,7 +82,6 @@ decode(){
 log_success(){
     echo -e "$GREEN${name}$NC"
     rm -f ${log_file}.log
-    echo
 }
 
 log_failure(){
@@ -90,7 +89,6 @@ log_failure(){
     echo -e $RED${name}
     echo -e Computed  MD5:'\t'${out_md5} $NC
     echo -e Reference MD5:'\t'${ref_md5} $NC
-    echo
     cat ${log_file}
 }
 
