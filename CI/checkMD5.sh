@@ -127,8 +127,14 @@ has_error(){
    return $?
 }
 
-cleanup(){
+cleanup_onfail(){
   unset error
+  rm -f ${yuv_file}
+}
+
+cleanup_onsuccess(){
+  unset error
+  rm -f ${log_file}
   rm -f ${yuv_file}
 }
 
@@ -153,13 +159,13 @@ for file in ${file_list}; do
 
   decode ${file} ${yuv_file} ${log_file} || handle_decoding_error
 
-  has_error && cleanup && continue
+  has_error && cleanup_onfail && continue
 
   check_md5sum ${yuv_file} ${file} && log_success || handle_md5sum_mismatch
 
-  has_error && cleanup && continue
+  has_error && cleanup_onfail && continue
 
-  cleanup
+  cleanup_onsuccess
 
 done
 
