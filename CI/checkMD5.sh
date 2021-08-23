@@ -142,11 +142,27 @@ cleanup_onsuccess(){
   rm -f ${yuv_file}
 }
 
+find_in_list(){
+   exp=$1
+   shift
+   for v in $*; do
+       eval "case '$v' in $exp) return 0;; esac"
+   done
+   return 1
+}
+
 # Construct list of files based on extension rules
 for ext in ${ext_list}; do
   append file_list $(find ${STREAM} -name "*.${ext}")
 done
 
+# Construct directory list based on file list
+for file in ${file_list}; do
+  dir_name=$(dirname ${file})
+  find_in_list "$dir_name" $dir_list || append dir_list "$dir_name"
+done
+
+#TODO remove this one
 rm -f failed.txt
 
 tmp_dir=$STREAM
