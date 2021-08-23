@@ -89,7 +89,6 @@ log_failure(){
     echo -e $RED${name}
     echo -e Computed  MD5:'\t'${out_md5} $NC
     echo -e Reference MD5:'\t'${ref_md5} $NC
-    cat ${log_file}
 }
 
 check_md5sum(){
