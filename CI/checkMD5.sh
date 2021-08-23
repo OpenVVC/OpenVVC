@@ -153,10 +153,11 @@ for ext in ${ext_list}; do
 done
 
 # Construct directory list based on file list
-for file in ${file_list}; do
-  dir_name=$(dirname ${file})
-  find_in_list "$dir_name" $dir_list || append dir_list "$dir_name"
-done
+#dir_list=""
+#for file in ${file_list}; do
+#  dir_name=$(dirname ${file})
+#  find_in_list "$dir_name" $dir_list || append dir_list "$dir_name"
+#done
 
 #TODO remove this one
 rm -f failed.txt
