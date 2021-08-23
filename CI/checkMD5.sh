@@ -178,10 +178,11 @@ for file in ${file_list}; do
 
   has_error && cleanup_onfail && continue
 
-  check_md5sum ${yuv_file} ${file} && log_success
+  check_md5sum ${yuv_file} ${file}
 
   has_error && cleanup_onfail && continue
 
+  log_success
   cleanup_onsuccess
 
 done
