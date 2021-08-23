@@ -80,8 +80,7 @@ decode(){
 }
 
 log_success(){
-    echo -e $GREEN${name}
-    echo -e Computed MD5:'\t'${out_md5} $NC
+    echo -e "$GREEN${name}$NC"
     rm -f ${log_file}.log
     echo
 }
