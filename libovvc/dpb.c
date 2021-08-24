@@ -893,7 +893,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     /* If the NALU is an Refresh Picture all previous pictures in DPB
      * can be unreferenced
      */
-    if (idr_flag | cra_flag) {
+    if (idr_flag) {
         vvc_clear_refs(dpb);
     }
 
