@@ -171,6 +171,7 @@ done
 
 #TODO remove this one
 rm -f failed.txt
+rm -f ${ERROR_LOG_FILE}
 
 tmp_dir=$STREAM
 nb_error=0
