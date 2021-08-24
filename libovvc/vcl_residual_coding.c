@@ -1686,7 +1686,7 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
 
     const int x_mask = (1 << log2_sb_w) - 1;
     const uint8_t max_scan_pos = (1 << (log2_sb_w + scan_ctx->log2_sb_h)) - 1;
-    
+
     uint8_t sig_c_idx_map[16];
     uint8_t pass2_idx_map[16];
     uint8_t pass3_idx_map[16];
