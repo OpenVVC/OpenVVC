@@ -5137,7 +5137,10 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     }
 
     init_cc_ctx(&c_coding_ctx, buff, log2_tb_w, log2_tb_h);
-    c_coding_ctx.enable_sdh = ctu_dec->enable_sdh;
+    /* Sign data hiding is implicitly disabled when dependent quantization
+     * is active.
+     */
+    c_coding_ctx.enable_sdh = 0;
 
     reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
 
