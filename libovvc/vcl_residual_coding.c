@@ -4799,7 +4799,7 @@ init_cc_ctx(VVCCoeffCodingCtx *const cc_ctx, uint8_t* buff,
 }
 
 
-int
+static int
 decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
                         unsigned int log2_tb_w, unsigned int log2_tb_h,
                         uint16_t last_pos)
@@ -4947,7 +4947,7 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
 
 }
 
-int
+static int
 decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
                         unsigned int log2_tb_w, unsigned int log2_tb_h,
                         uint16_t last_pos)
