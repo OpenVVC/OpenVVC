@@ -968,6 +968,8 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
 
             cu.cu_mode_info = mpm_rem;
         }
+
+        updt_cu_maps(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, OV_INTRA);
     }
 
     return cu;
