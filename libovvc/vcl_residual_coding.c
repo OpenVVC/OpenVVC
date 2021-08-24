@@ -5096,7 +5096,7 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
     return 0xFFFF;
 }
 
-uint8_t
+static inline uint8_t
 has_sig_sb_neighbour(uint64_t sig_sb_map, int16_t sb_x, int16_t sb_y)
 {
     uint8_t sig_sb_blw = (((sig_sb_map >> ((sb_y + 1) << 3)) & 0xFF) >> sb_x) & 0x1;
