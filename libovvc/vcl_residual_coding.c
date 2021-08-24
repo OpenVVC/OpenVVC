@@ -5105,19 +5105,9 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     int16_t *const _dst = dst;
     //check for dependent quantization
     int state = 0;
-    int nb_sb;
-    int sb_offset;
-    int sb_pos;
-
-    //TODO derive start coeff idx in sb
-    int start_coeff_idx;
     int16_t sb_coeffs[16] = {0}; //temporary table to store coeffs in process
 
-    uint64_t sig_sb_map = 0;
-
-
     int qp = ctu_dec->dequant_chroma->qp;
-
     const struct IQScale deq_prms = derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
 
     uint8_t buff[VVC_TR_CTX_SIZE * 3];
@@ -5162,7 +5152,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         int16_t sb_x = last_x >> log2_sb_w;
         int16_t sb_y = last_y >> log2_sb_h;
 
-        nb_sb = sb_idx_2_sb_num[sb_x + sb_y * nb_sb_w];
+        uint8_t nb_sb = sb_idx_2_sb_num[sb_x + sb_y * nb_sb_w];
 
         if(!nb_sb){
             int last_coeff_idx = last_x + (last_y << log2_sb_w);
@@ -5183,10 +5173,11 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         int16_t x = last_x - (sb_x << log2_sb_w);
         int16_t y = last_y - (sb_y << log2_sb_h);
+        uint64_t sig_sb_map = 0;
 
-        start_coeff_idx = ff_vvc_diag_scan_4x4_num_cg[x + (y << log2_sb_h)];
+        int start_coeff_idx = ff_vvc_diag_scan_4x4_num_cg[x + (y << log2_sb_h)];
 
-        sb_offset = (sb_x << log2_sb_w) + (sb_y << log2_sb_h) * (VVC_TR_CTX_STRIDE);
+        int16_t sb_offset = (sb_x << log2_sb_w) + (sb_y << log2_sb_h) * (VVC_TR_CTX_STRIDE);
         position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_offset);
 
         nb_sig_coeff = ovcabac_read_ae_sb_4x4_first_c_dpq(cabac_ctx, sb_coeffs,
@@ -5195,7 +5186,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
-        sb_pos = (sb_x << log2_sb_w) + ((sb_y << log2_sb_h) * (nb_sb_w << log2_sb_w));
+        int16_t sb_pos = (sb_x << log2_sb_w) + ((sb_y << log2_sb_h) * (nb_sb_w << log2_sb_w));
         memcpy(&_dst[sb_pos + (0)]             , &sb_coeffs[ 0], sizeof(int16_t) * 4);
         memcpy(&_dst[sb_pos + (1 << log2_tb_w)], &sb_coeffs[ 4], sizeof(int16_t) * 4);
         memcpy(&_dst[sb_pos + (2 << log2_tb_w)], &sb_coeffs[ 8], sizeof(int16_t) * 4);
