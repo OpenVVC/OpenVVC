@@ -5103,15 +5103,9 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     int16_t *const _dst = dst;
-    uint8_t tb_width  = 1 << log2_tb_w;
     //check for dependent quantization
     int state = 0;
-    uint16_t max_nb_bins = ((1 << (log2_tb_w + log2_tb_h) << 5)
-                          - ((1 << (log2_tb_w + log2_tb_h)) << 2)) >> 4;
-    int last_x, last_y;
-    int last_sb_x, last_sb_y;
     int nb_sb;
-    int x, y;
     int sb_offset;
     int sb_pos;
 
@@ -5121,7 +5115,6 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     uint64_t sig_sb_map = 0;
 
-    int tb_width_in_sb  = tb_width  >> 2;
 
     int qp = ctu_dec->dequant_chroma->qp;
 
@@ -5149,6 +5142,8 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
 
     if (log2_tb_w > 1 && log2_tb_h > 1) {
+        const uint8_t log2_sb_w = 2;
+        int nb_sb_w  = (1 << log2_tb_w) >> log2_sb_w;
         const uint8_t *const sb_idx_2_sb_num = ff_vvc_idx_2_num[log2_tb_w - 2]
                                                                [log2_tb_h - 2];
 
@@ -5157,13 +5152,13 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         int nb_sig_coeff;
 
-        last_x =  last_pos       & 0x1F;
-        last_y = (last_pos >> 8) & 0x1F;
+        int16_t last_x =  last_pos       & 0x1F;
+        int16_t last_y = (last_pos >> 8) & 0x1F;
 
-        last_sb_x = last_x >> 2;
-        last_sb_y = last_y >> 2;
+        int16_t sb_x = last_x >> 2;
+        int16_t sb_y = last_y >> 2;
 
-        nb_sb = sb_idx_2_sb_num[last_sb_x + last_sb_y * tb_width_in_sb];
+        nb_sb = sb_idx_2_sb_num[sb_x + sb_y * nb_sb_w];
 
         if(!nb_sb){
             int last_coeff_idx = last_x + (last_y << 2);
@@ -5182,14 +5177,14 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
             return 0x1;
         }
 
-        sb_pos = (last_sb_x << 2) + ((last_sb_y * tb_width_in_sb) << 4);
+        sb_pos = (sb_x << 2) + ((sb_y * nb_sb_w) << 4);
 
-        x = last_x - (last_sb_x << 2);
-        y = last_y - (last_sb_y << 2);
+        int16_t x = last_x - (sb_x << 2);
+        int16_t y = last_y - (sb_y << 2);
 
         start_coeff_idx = ff_vvc_diag_scan_4x4_num_cg[x + (y << 2)];
 
-        sb_offset = (last_sb_x << 2) + (last_sb_y << 2) * (VVC_TR_CTX_STRIDE);
+        sb_offset = (sb_x << 2) + (sb_y << 2) * (VVC_TR_CTX_STRIDE);
 
         position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_offset);
 
@@ -5204,15 +5199,15 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         memcpy(&_dst[sb_pos + (2 << log2_tb_w)], &sb_coeffs[ 8], sizeof(int16_t) * 4);
         memcpy(&_dst[sb_pos + (3 << log2_tb_w)], &sb_coeffs[12], sizeof(int16_t) * 4);
 
-        sig_sb_map |= 1llu << (last_sb_x + (last_sb_y << 3));
+        sig_sb_map |= 1llu << (sb_x + (sb_y << 3));
 
         nb_sb--;
 
         for(int i = nb_sb; i > 0; --i){
             int x_sb = scan_sb_x[i];
             int y_sb = scan_sb_y[i];
-        uint8_t sig_sb_blw = (((sig_sb_map >> ((y_sb + 1) << 3)) & 0xFF) >> x_sb) & 0x1;
-        uint8_t sig_sb_rgt = (((sig_sb_map >> ( y_sb      << 3)) & 0xFF) >> (x_sb + 1)) & 0x1;
+            uint8_t sig_sb_blw = (((sig_sb_map >> ((y_sb + 1) << 3)) & 0xFF) >> x_sb) & 0x1;
+            uint8_t sig_sb_rgt = (((sig_sb_map >> ( y_sb      << 3)) & 0xFF) >> (x_sb + 1)) & 0x1;
 
             uint8_t sig_sb_flg = ovcabac_read_ae_significant_sb_flag_chroma(cabac_ctx, !!(sig_sb_rgt | sig_sb_blw));
 
@@ -5220,7 +5215,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
                 memset(sb_coeffs, 0, sizeof(int16_t) * 16);
 
-                sb_pos = (x_sb << 2) + ((y_sb * tb_width_in_sb) << 4);
+                sb_pos = (x_sb << 2) + ((y_sb * nb_sb_w) << 4);
                 sb_offset = (x_sb << 2) + (y_sb << 2) * (VVC_TR_CTX_STRIDE);
 
                 sig_sb_map |= 1llu << (x_sb + (y_sb << 3));
