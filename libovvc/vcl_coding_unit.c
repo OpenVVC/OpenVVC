@@ -604,7 +604,8 @@ ovcabac_read_ae_ref_idx(OVCABACCtx *const cabac_ctx, uint8_t nb_active_ref)
         ref_idx += 1;
         if (nb_active_ref > 2 && ovcabac_ae_read(cabac_ctx, &cabac_state[REF_PIC_CTX_OFFSET + 1])) {
             ref_idx += 1;
-            while (nb_active_ref <= ref_idx && ovcabac_bypass_read(cabac_ctx)) {
+            if (ref_idx + 1 < nb_active_ref)
+            while (nb_active_ref > ref_idx + 1 && ovcabac_bypass_read(cabac_ctx)) {
                 ref_idx++;
             }
         }
