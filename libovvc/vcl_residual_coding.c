@@ -5096,6 +5096,15 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
     return 0xFFFF;
 }
 
+uint8_t
+has_sig_sb_neighbour(uint64_t sig_sb_map, int16_t sb_x, int16_t sb_y)
+{
+    uint8_t sig_sb_blw = (((sig_sb_map >> ((sb_y + 1) << 3)) & 0xFF) >> sb_x) & 0x1;
+    uint8_t sig_sb_rgt = (((sig_sb_map >> ( sb_y      << 3)) & 0xFF) >> (sb_x + 1)) & 0x1;
+
+    return !!(sig_sb_rgt | sig_sb_blw);
+}
+
 int
 residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
                            unsigned int log2_tb_w, unsigned int log2_tb_h,
@@ -5144,7 +5153,6 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         const uint8_t *const scan_sb_x = ff_vvc_scan_x[log2_tb_w - 2][log2_tb_h - 2];
         const uint8_t *const scan_sb_y = ff_vvc_scan_y[log2_tb_w - 2][log2_tb_h - 2];
 
-
         int16_t last_x =  last_pos       & 0x1F;
         int16_t last_y = (last_pos >> 8) & 0x1F;
 
@@ -5172,7 +5180,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         }
 
         uint8_t nb_sb = sb_idx_2_sb_num[sb_x + sb_y * nb_sb_w];
-        uint64_t sig_sb_map = 0;
+        uint64_t sig_sb_map = 1llu << (sb_x + (sb_y << 3));
 
         int nb_sig_c;
 
@@ -5191,17 +5199,14 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         memcpy(&_dst[sb_pos + (2 << log2_tb_w)], &sb_coeffs[ 8], sizeof(int16_t) * 4);
         memcpy(&_dst[sb_pos + (3 << log2_tb_w)], &sb_coeffs[12], sizeof(int16_t) * 4);
 
-        sig_sb_map |= 1llu << (sb_x + (sb_y << 3));
 
         nb_sb--;
 
         for(int i = nb_sb; i > 0; --i){
             int x_sb = scan_sb_x[i];
             int y_sb = scan_sb_y[i];
-            uint8_t sig_sb_blw = (((sig_sb_map >> ((y_sb + 1) << 3)) & 0xFF) >> x_sb) & 0x1;
-            uint8_t sig_sb_rgt = (((sig_sb_map >> ( y_sb      << 3)) & 0xFF) >> (x_sb + 1)) & 0x1;
-
-            uint8_t sig_sb_flg = ovcabac_read_ae_significant_sb_flag_chroma(cabac_ctx, !!(sig_sb_rgt | sig_sb_blw));
+            uint8_t sig_sb_ngh = has_sig_sb_neighbour(sig_sb_map, x_sb, y_sb);
+            uint8_t sig_sb_flg = ovcabac_read_ae_significant_sb_flag_chroma(cabac_ctx, sig_sb_ngh);
 
             if(sig_sb_flg){
 
