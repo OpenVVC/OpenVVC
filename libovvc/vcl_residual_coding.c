@@ -4787,6 +4787,19 @@ position_cc_ctx(VVCCoeffCodingCtx *const cc_ctx, uint8_t* buff, int16_t buff_siz
 }
 
 static void
+update_cctx_pos_4x4(VVCCoeffCodingCtx *const cc_ctx, uint8_t* buff, int16_t buff_size,
+                    int16_t sb_x, int16_t sb_y)
+{
+    const uint8_t log2_sb_w = 2;
+    const uint8_t log2_sb_h = 2;
+    int16_t sb_offset = (sb_x << log2_sb_w) + (sb_y << log2_sb_h) * (VVC_TR_CTX_STRIDE);
+    uint8_t *init_pos = buff + VVC_TR_CTX_OFFSET + sb_offset;
+    cc_ctx->sum_abs_lvl  = init_pos;
+    cc_ctx->sum_abs_lvl2 = init_pos +  buff_size;
+    cc_ctx->sum_sig_nbs  = init_pos + (buff_size << 1);
+}
+
+static void
 init_cc_ctx(VVCCoeffCodingCtx *const cc_ctx, uint8_t* buff,
             uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
@@ -5199,8 +5212,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         int nb_sig_c;
 
-        int16_t sb_offset = (sb_x << log2_sb_w) + (sb_y << log2_sb_h) * (VVC_TR_CTX_STRIDE);
-        position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_offset);
+        update_cctx_pos_4x4(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_x, sb_y);
 
         nb_sig_c = ovcabac_read_ae_sb_4x4_first_c_dpq(cabac_ctx, sb_coeffs,
                                                       &state, nb_c_first_sb,
@@ -5224,8 +5236,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
                 sig_sb_map |= 1llu << (sb_x + (sb_y << 3));
 
-                sb_offset = (sb_x << log2_sb_w) + (sb_y << log2_sb_h) * (VVC_TR_CTX_STRIDE);
-                position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_offset);
+                update_cctx_pos_4x4(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_x, sb_y);
 
                 nb_sig_c += ovcabac_read_ae_sb_4x4_c_dpq(cabac_ctx, sb_coeffs,
                                                          &state, &c_coding_ctx);
