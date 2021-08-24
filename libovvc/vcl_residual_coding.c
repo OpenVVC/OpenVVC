@@ -5178,9 +5178,8 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     if (log2_tb_w > 1 && log2_tb_h > 1) {
         const uint8_t log2_sb_w = 2;
         const uint8_t log2_sb_h = 2;
-        int nb_sb_w  = (1 << log2_tb_w) >> log2_sb_w;
-        const uint8_t *const sb_idx_2_sb_num = ff_vvc_idx_2_num[log2_tb_w - 2]
-                                                               [log2_tb_h - 2];
+        const uint8_t *const sb_pos_2_scan_idx = ff_vvc_idx_2_num[log2_tb_w - 2]
+                                                                 [log2_tb_h - 2];
 
         const uint8_t *const scan_sb_x = ff_vvc_scan_x[log2_tb_w - 2][log2_tb_h - 2];
         const uint8_t *const scan_sb_y = ff_vvc_scan_y[log2_tb_w - 2][log2_tb_h - 2];
@@ -5209,7 +5208,8 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
             return 0x1;
         }
 
-        uint8_t nb_sb = sb_idx_2_sb_num[sb_x + sb_y * nb_sb_w];
+        int nb_sb_w  = (1 << log2_tb_w) >> log2_sb_w;
+        uint8_t sb_scan_idx = sb_pos_2_scan_idx[sb_x + sb_y * nb_sb_w];
         uint64_t sig_sb_map = 1llu << (sb_x + (sb_y << 3));
 
         int nb_sig_c;
@@ -5224,15 +5224,17 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         store_sb_coeff_4x4(dst, sb_coeffs, sb_x, sb_y, log2_tb_w);
 
-        nb_sb--;
+        while (--sb_scan_idx) {
+            uint8_t sig_sb_ngh;
+            uint8_t sig_sb_flg;
 
-        for(int i = nb_sb; i > 0; --i){
-            int sb_x = scan_sb_x[i];
-            int sb_y = scan_sb_y[i];
-            uint8_t sig_sb_ngh = has_sig_sb_neighbour(sig_sb_map, sb_x, sb_y);
-            uint8_t sig_sb_flg = ovcabac_read_ae_significant_sb_flag_chroma(cabac_ctx, sig_sb_ngh);
+            sb_x = scan_sb_x[sb_scan_idx];
+            sb_y = scan_sb_y[sb_scan_idx];
 
-            if(sig_sb_flg){
+            sig_sb_ngh = has_sig_sb_neighbour(sig_sb_map, sb_x, sb_y);
+            sig_sb_flg = ovcabac_read_ae_significant_sb_flag_chroma(cabac_ctx, sig_sb_ngh);
+
+            if (sig_sb_flg) {
 
                 memset(sb_coeffs, 0, sizeof(int16_t) * 16);
 
