@@ -5149,17 +5149,18 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         int16_t last_x =  last_pos       & 0x1F;
         int16_t last_y = (last_pos >> 8) & 0x1F;
 
+        int16_t x = last_x & ((1 << log2_sb_w) - 1);
+        int16_t y = last_y & ((1 << log2_sb_h) - 1);
+
         int16_t sb_x = last_x >> log2_sb_w;
         int16_t sb_y = last_y >> log2_sb_h;
 
-        uint8_t nb_sb = sb_idx_2_sb_num[sb_x + sb_y * nb_sb_w];
+        int nb_c_first_sb = ff_vvc_diag_scan_4x4_num_cg[x + (y << log2_sb_h)];
 
-        if(!nb_sb){
-            int last_coeff_idx = last_x + (last_y << log2_sb_w);
-            int nb_coeffs = ff_vvc_diag_scan_4x4_num_cg [last_coeff_idx];
+        if(!sb_x && !sb_y){
 
             ovcabac_read_ae_sb_4x4_dc_c_dpq(cabac_ctx, sb_coeffs,
-                                            &state, nb_coeffs, &c_coding_ctx);
+                                            &state, nb_c_first_sb, &c_coding_ctx);
 
             deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -5171,17 +5172,14 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
             return 0x1;
         }
 
-        int16_t x = last_x - (sb_x << log2_sb_w);
-        int16_t y = last_y - (sb_y << log2_sb_h);
+        uint8_t nb_sb = sb_idx_2_sb_num[sb_x + sb_y * nb_sb_w];
         uint64_t sig_sb_map = 0;
-
-        int start_coeff_idx = ff_vvc_diag_scan_4x4_num_cg[x + (y << log2_sb_h)];
 
         int16_t sb_offset = (sb_x << log2_sb_w) + (sb_y << log2_sb_h) * (VVC_TR_CTX_STRIDE);
         position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_offset);
 
         nb_sig_coeff = ovcabac_read_ae_sb_4x4_first_c_dpq(cabac_ctx, sb_coeffs,
-                                                           &state, start_coeff_idx,
+                                                           &state, nb_c_first_sb,
                                                            &c_coding_ctx);
 
         deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
