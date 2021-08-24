@@ -4905,6 +4905,7 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
     int16_t start_coeff_idx =  ff_vvc_diag_scan_8x2_num_cg [x + y * (1 << 3)];
 
     int16_t sb_pos    = last_sb_x << 3;
+
     sb_offset = last_sb_x << 3;
 
     position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_offset);
@@ -5198,7 +5199,8 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         if(!sb_x && !sb_y){
 
             ovcabac_read_ae_sb_4x4_dc_c_dpq(cabac_ctx, sb_coeffs,
-                                            &state, nb_c_first_sb, &c_coding_ctx);
+                                            &state, nb_c_first_sb,
+                                            &c_coding_ctx);
 
             deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
