@@ -159,7 +159,7 @@ find_in_list(){
 
 # Construct list of files based on extension rules
 for ext in ${ext_list}; do
-  append file_list $(find ${STREAM} -name "*.${ext}")
+  append file_list $(find ${STREAM} -name "*.${ext}" | sort)
 done
 
 # Construct directory list based on file list
