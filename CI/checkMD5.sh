@@ -84,11 +84,21 @@ log_success(){
     rm -f ${log_file}.log
 }
 
+ERROR_LOG_FILE="error.log"
+
+dump_md5error(){
+    cat <<EOF
+"${file}:"
+A md5 mismatch occured on file ${file}.
+Reference MD5:\t${ref_md5}
+The decoder output has been saved to ${log_file}.
+EOF
+}
+
 log_failure(){
     echo ${name} >> failed.txt
-    echo -e $RED${name}
-    echo -e Computed  MD5:'\t'${out_md5} $NC
-    echo -e Reference MD5:'\t'${ref_md5} $NC
+    echo -e "$RED${name}$NC: See $ERROR_LOG_FILE for more info."
+    dump_md5error >> ${ERROR_LOG_FILE}
 }
 
 check_md5sum(){
