@@ -4782,6 +4782,7 @@ init_cc_ctx(VVCCoeffCodingCtx *const cc_ctx, uint8_t* buff,
 
 struct SBReader
 {
+    const struct SBReader *rdr;
     int (*read_dc_coeff)(OVCABACCtx *const cabac_ctx, int16_t *const sb_coeffs);
 
     int (*read_dc_sb)(OVCABACCtx *const cabac_ctx, int16_t *const sb_coeffs,
@@ -4804,6 +4805,7 @@ struct SBReader
 };
 
 static const struct SBReader chroma_4x4_reader_dqp = {
+    .rdr = &chroma_4x4_reader_dqp,
     .read_dc_coeff = &ovcabac_read_ae_sb_dc_coeff_c_dpq,
     .read_dc_sb    = &ovcabac_read_ae_sb_4x4_dc_c_dpq,
     .read_first_sb = &ovcabac_read_ae_sb_4x4_first_c_dpq,
@@ -5154,42 +5156,20 @@ store_sb_coeff_4x4(int16_t *tb_coeff, const int16_t *sb_coeffs,
     memcpy(dst += dst_stride, sb_coeffs += src_stride, cpy_w);
 }
 
-int
-residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
-                           unsigned int log2_tb_w, unsigned int log2_tb_h,
-                           uint16_t last_pos)
+static int
+read_tb_inv_diag_scan(const struct SBReader *const sb_rdr, const struct IQScale *const deq_prms,
+                      OVCABACCtx *const cabac_ctx, int16_t *const dst, int log2_tb_w, int log2_tb_h,
+                      uint16_t last_pos)
 {
-    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    //check for dependent quantization
-    int state = 0;
-    int16_t sb_coeffs[16] = {0}; //temporary table to store sb_coeffs in process
-
-    int qp = ctu_dec->dequant_chroma->qp;
-    const struct IQScale deq_prms = derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
-
-    /* FIXME this is a bit wasteful if we only read a few sub blocks */
-    memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
-
-    if (!last_pos){
-
-        ovcabac_read_ae_sb_dc_coeff_c_dpq(cabac_ctx, sb_coeffs);
-
-        deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
-
-        dst[0] = sb_coeffs [0];
-
-        return 0x1;
-    }
-
-    if (log2_tb_w > 1 && log2_tb_h > 1) {
-
         VVCCoeffCodingCtx c_coding_ctx;
-        const struct SBReader *const sb_rdr = &chroma_4x4_reader_dqp;
+        int16_t sb_coeffs[16];// = {0}; //temporary table to store sb_coeffs in process
+        int state = 0;
 
         uint8_t buff[VVC_TR_CTX_SIZE * 3];
 
         const uint8_t log2_sb_w = 2;
         const uint8_t log2_sb_h = 2;
+
         int16_t last_x =  last_pos       & 0x1F;
         int16_t last_y = (last_pos >> 8) & 0x1F;
 
@@ -5214,7 +5194,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
             sb_rdr->read_dc_sb(cabac_ctx, sb_coeffs, &state, nb_c_first_sb,
                                &c_coding_ctx);
 
-            deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
+            deq_prms->dequant_sb(sb_coeffs, deq_prms->scale, deq_prms->shift);
 
             store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_tb_w);
 
@@ -5238,7 +5218,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         nb_sig_c = sb_rdr->read_first_sb(cabac_ctx, sb_coeffs, &state,
                                          nb_c_first_sb, &c_coding_ctx);
 
-        deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
+        deq_prms->dequant_sb(sb_coeffs, deq_prms->scale, deq_prms->shift);
 
         store_sb_coeff_4x4(dst, sb_coeffs, sb_x, sb_y, log2_tb_w);
 
@@ -5261,7 +5241,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
                 nb_sig_c += sb_rdr->read_sb(cabac_ctx, sb_coeffs, &state,
                                             &c_coding_ctx);
 
-                deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
+                deq_prms->dequant_sb(sb_coeffs, deq_prms->scale, deq_prms->shift);
 
                 store_sb_coeff_4x4(dst, sb_coeffs, sb_x, sb_y, log2_tb_w);
             }
@@ -5272,12 +5252,41 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         nb_sig_c += sb_rdr->read_last_sb(cabac_ctx, sb_coeffs, &state,
                                          &c_coding_ctx);
 
-        deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
+        deq_prms->dequant_sb(sb_coeffs, deq_prms->scale, deq_prms->shift);
 
         store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_tb_w);
 
         return 0xFFFF;
+}
 
+int
+residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
+                           unsigned int log2_tb_w, unsigned int log2_tb_h,
+                           uint16_t last_pos)
+{
+    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+
+    int qp = ctu_dec->dequant_chroma->qp;
+    const struct IQScale deq_prms = derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+
+    /* FIXME this is a bit wasteful if we only read a few sub blocks */
+    memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
+
+    if (!last_pos){
+        int16_t sb_coeffs[16];
+
+        ovcabac_read_ae_sb_dc_coeff_c_dpq(cabac_ctx, sb_coeffs);
+
+        deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
+
+        dst[0] = sb_coeffs [0];
+
+        return 0x1;
+    }
+
+    if (log2_tb_w > 1 && log2_tb_h > 1) {
+        const struct SBReader *const sb_rdr = &chroma_4x4_reader_dqp;
+        return read_tb_inv_diag_scan(sb_rdr, &deq_prms, cabac_ctx, dst, log2_tb_w, log2_tb_h, last_pos);
     } else if (log2_tb_h == 1) {
         return decode_dpq_small_h_tu_c(ctu_dec, dst, log2_tb_w, log2_tb_h, last_pos);
     } else if (log2_tb_w == 1) {
