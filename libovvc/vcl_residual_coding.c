@@ -5151,9 +5151,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     int qp = ctu_dec->dequant_chroma->qp;
     const struct IQScale deq_prms = derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
 
-    uint8_t buff[VVC_TR_CTX_SIZE * 3];
 
-    VVCCoeffCodingCtx c_coding_ctx;
 
     /* FIXME this is a bit wasteful if we only read a few sub blocks */
     memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
@@ -5167,22 +5165,15 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         return 0x1;
     }
 
-    init_cc_ctx(&c_coding_ctx, buff, log2_tb_w, log2_tb_h);
-    /* Sign data hiding is implicitly disabled when dependent quantization
-     * is active.
-     */
-    c_coding_ctx.enable_sdh = 0;
-
-    reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
-
     if (log2_tb_w > 1 && log2_tb_h > 1) {
+
+        VVCCoeffCodingCtx c_coding_ctx;
+        uint8_t buff[VVC_TR_CTX_SIZE * 3];
+
         const uint8_t log2_sb_w = 2;
         const uint8_t log2_sb_h = 2;
         const uint8_t *const sb_pos_2_scan_idx = ff_vvc_idx_2_num[log2_tb_w - 2]
                                                                  [log2_tb_h - 2];
-
-        const uint8_t *const scan_sb_x = ff_vvc_scan_x[log2_tb_w - 2][log2_tb_h - 2];
-        const uint8_t *const scan_sb_y = ff_vvc_scan_y[log2_tb_w - 2][log2_tb_h - 2];
 
         int16_t last_x =  last_pos       & 0x1F;
         int16_t last_y = (last_pos >> 8) & 0x1F;
@@ -5194,6 +5185,14 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         int16_t sb_y = last_y >> log2_sb_h;
 
         int nb_c_first_sb = ff_vvc_diag_scan_4x4_num_cg[x + (y << log2_sb_h)];
+
+        init_cc_ctx(&c_coding_ctx, buff, log2_tb_w, log2_tb_h);
+        /* Sign data hiding is implicitly disabled when dependent quantization
+         * is active.
+         */
+        c_coding_ctx.enable_sdh = 0;
+
+        reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
 
         if(!sb_x && !sb_y){
 
@@ -5207,6 +5206,9 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             return 0x1;
         }
+
+        const uint8_t *const scan_sb_x = ff_vvc_scan_x[log2_tb_w - 2][log2_tb_h - 2];
+        const uint8_t *const scan_sb_y = ff_vvc_scan_y[log2_tb_w - 2][log2_tb_h - 2];
 
         int nb_sb_w  = (1 << log2_tb_w) >> log2_sb_w;
         uint8_t sb_scan_idx = sb_pos_2_scan_idx[sb_x + sb_y * nb_sb_w];
