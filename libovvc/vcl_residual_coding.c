@@ -5170,9 +5170,6 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         const uint8_t log2_sb_w = 2;
         const uint8_t log2_sb_h = 2;
-        const uint8_t *const sb_pos_2_scan_idx = ff_vvc_idx_2_num[log2_tb_w - 2]
-                                                                 [log2_tb_h - 2];
-
         int16_t last_x =  last_pos       & 0x1F;
         int16_t last_y = (last_pos >> 8) & 0x1F;
 
@@ -5209,6 +5206,9 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         const uint8_t *const scan_sb_y = ff_vvc_scan_y[log2_tb_w - 2][log2_tb_h - 2];
 
         int nb_sb_w  = (1 << log2_tb_w) >> log2_sb_w;
+        const uint8_t *const sb_pos_2_scan_idx = ff_vvc_idx_2_num[log2_tb_w - 2]
+                                                                 [log2_tb_h - 2];
+
         uint8_t sb_scan_idx = sb_pos_2_scan_idx[sb_x + sb_y * nb_sb_w];
         uint64_t sig_sb_map = 1llu << (sb_x + (sb_y << 3));
 
