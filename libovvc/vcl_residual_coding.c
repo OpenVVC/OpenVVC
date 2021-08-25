@@ -411,7 +411,7 @@ static const uint8_t rice_param_tab[32] =
 
 static inline void
 decode_pass2_core(OVCABACCtx *const cabac_ctx,
-                  int16_t  *const coeffs, int nb_pass2,
+                  int16_t  *const sb_coeffs, int nb_pass2,
                   uint8_t  *const next_pass_idx_map,
                   const VVCSBScanContext *const scan_ctx,
                   const VVCCoeffCodingCtx *const c_coding_ctx)
@@ -440,13 +440,13 @@ decode_pass2_core(OVCABACCtx *const cabac_ctx,
             update_coeff_nbgh_other_pass(c_coding_ctx, tr_ctx_pos, rem_abs_lvl);
         }
 
-        coeffs[idx] += rem_abs_lvl;
+        sb_coeffs[idx] += rem_abs_lvl;
     }
 }
 
 static inline void
 decode_bypassed_coeff_core(OVCABACCtx *const cabac_ctx,
-                      int16_t *const coeffs, int last_scan_pos,
+                      int16_t *const sb_coeffs, int last_scan_pos,
                       uint8_t *const significant_map,
                       int *const nb_significant_coeff,
                       const VVCSBScanContext *const scan_ctx,
@@ -487,7 +487,7 @@ decode_bypassed_coeff_core(OVCABACCtx *const cabac_ctx,
         if(value){
             update_coeff_nbgh_bypassed(c_coding_ctx, tr_ctx_pos, value);
 
-            coeffs[idx] = value;
+            sb_coeffs[idx] = value;
 
             *state_map <<= 1;
             *state_map |= (*state >> 1);
@@ -501,7 +501,7 @@ decode_bypassed_coeff_core(OVCABACCtx *const cabac_ctx,
 }
 
 static void inline
-decode_signs(OVCABACCtx *const cabac_ctx, int16_t *const coeffs,
+decode_signs(OVCABACCtx *const cabac_ctx, int16_t *const sb_coeffs,
              uint32_t state_map, const uint8_t *const sig_c_idx_map,
              int nb_sig_c)
 {
@@ -520,8 +520,8 @@ decode_signs(OVCABACCtx *const cabac_ctx, int16_t *const coeffs,
         int idx = sig_c_idx_map[k];
         int add  = !!(state_map & (1u << 31));
         int sign = !!(signs_map & (1u << 31));
-        int abs_coeff = (coeffs[idx] << 1) - add;
-        coeffs[idx] = sign ? -abs_coeff : abs_coeff;
+        int abs_coeff = (sb_coeffs[idx] << 1) - add;
+        sb_coeffs[idx] = sign ? -abs_coeff : abs_coeff;
         signs_map <<= 1;
         state_map <<= 1;
     }
@@ -529,7 +529,7 @@ decode_signs(OVCABACCtx *const cabac_ctx, int16_t *const coeffs,
 
 static inline int
 residual_coding_first_subblock_4x4(OVCABACCtx *const cabac_ctx,
-                                  int16_t  *const coeffs,
+                                  int16_t  *const sb_coeffs,
                                   int *const state, int start_pos,
                                   uint64_t par_flag_offset_map,
                                   uint64_t sig_flag_offset_map,
@@ -590,7 +590,7 @@ residual_coding_first_subblock_4x4(OVCABACCtx *const cabac_ctx,
         }
     }
 
-    coeffs[idx] = coeff_val;
+    sb_coeffs[idx] = coeff_val;
     sig_idx_map[nb_sig_c++] = idx;
 
     tr_ctx_pos = (idx & x_mask) + (idx >> log2_sb_w) * VVC_TR_CTX_STRIDE;
@@ -650,7 +650,7 @@ residual_coding_first_subblock_4x4(OVCABACCtx *const cabac_ctx,
             --nb_rem_bins;
             sig_idx_map[nb_sig_c++] = idx;
 
-            coeffs[idx] = coeff_val;
+            sb_coeffs[idx] = coeff_val;
             update_coeff_nbgh_first_pass(c_coding_ctx, tr_ctx_pos, coeff_val);
         }
         prev_state = (state_trans_tab >> (( prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
@@ -660,17 +660,17 @@ residual_coding_first_subblock_4x4(OVCABACCtx *const cabac_ctx,
     }
 
     if (nb_pass2){
-        decode_pass2_core(cabac_ctx, coeffs, nb_pass2, gt2_idx_map,
+        decode_pass2_core(cabac_ctx, sb_coeffs, nb_pass2, gt2_idx_map,
                           scan_ctx, c_coding_ctx);
     }
 
     if (scan_pos >= 0){
-        decode_bypassed_coeff_core(cabac_ctx, coeffs, scan_pos, sig_idx_map,
+        decode_bypassed_coeff_core(cabac_ctx, sb_coeffs, scan_pos, sig_idx_map,
                                    &nb_sig_c, scan_ctx, c_coding_ctx,
                                    &luma_dep_quant_ctx, &prev_state, &dep_quant_map);
     }
 
-    decode_signs(cabac_ctx, coeffs, dep_quant_map, sig_idx_map, nb_sig_c);
+    decode_signs(cabac_ctx, sb_coeffs, dep_quant_map, sig_idx_map, nb_sig_c);
 
     c_coding_ctx->nb_remaining_bins = nb_rem_bins;
     *state = prev_state;
@@ -681,7 +681,7 @@ residual_coding_first_subblock_4x4(OVCABACCtx *const cabac_ctx,
 
 static inline int
 residual_coding_subblock_4x4(OVCABACCtx *const cabac_ctx,
-                             int16_t  *const coeffs,
+                             int16_t  *const sb_coeffs,
                              int *const state, int start_pos,
                              uint64_t par_flag_offset_map,
                              uint64_t sig_flag_offset_map,
@@ -768,7 +768,7 @@ residual_coding_subblock_4x4(OVCABACCtx *const cabac_ctx,
             --nb_rem_bins;
             sig_idx_map[nb_sig_c++] = idx;
 
-            coeffs[idx] = coeff_val;
+            sb_coeffs[idx] = coeff_val;
             update_coeff_nbgh_first_pass(c_coding_ctx, tr_ctx_pos, coeff_val);
         }
         prev_state = (state_trans_tab >> (( prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
@@ -825,7 +825,7 @@ residual_coding_subblock_4x4(OVCABACCtx *const cabac_ctx,
             --nb_rem_bins;
             sig_idx_map[nb_sig_c++] = idx;
 
-            coeffs[idx] = coeff_val;
+            sb_coeffs[idx] = coeff_val;
             update_coeff_nbgh_first_pass(c_coding_ctx, tr_ctx_pos, coeff_val);
         }
         prev_state = (state_trans_tab >> (( prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
@@ -835,17 +835,17 @@ residual_coding_subblock_4x4(OVCABACCtx *const cabac_ctx,
     }
 
     if (nb_pass2){
-        decode_pass2_core(cabac_ctx, coeffs, nb_pass2, gt2_idx_map,
+        decode_pass2_core(cabac_ctx, sb_coeffs, nb_pass2, gt2_idx_map,
                           scan_ctx, c_coding_ctx);
     }
 
     if (scan_pos >= 0){
-        decode_bypassed_coeff_core(cabac_ctx, coeffs, scan_pos, sig_idx_map,
+        decode_bypassed_coeff_core(cabac_ctx, sb_coeffs, scan_pos, sig_idx_map,
                                    &nb_sig_c, scan_ctx, c_coding_ctx,
                                    &luma_dep_quant_ctx, &prev_state, &dep_quant_map);
     }
 
-    decode_signs(cabac_ctx, coeffs, dep_quant_map, sig_idx_map, nb_sig_c);
+    decode_signs(cabac_ctx, sb_coeffs, dep_quant_map, sig_idx_map, nb_sig_c);
 
     c_coding_ctx->nb_remaining_bins = nb_rem_bins;
     *state = prev_state;
@@ -856,7 +856,7 @@ residual_coding_subblock_4x4(OVCABACCtx *const cabac_ctx,
 
 static inline int
 residual_coding_subblock_dc(OVCABACCtx *const cabac_ctx,
-                             int16_t  *const coeffs,
+                             int16_t  *const sb_coeffs,
                              int *const state, int start_pos,
                              uint64_t par_flag_offset_map,
                              uint64_t sig_flag_offset_map,
@@ -943,7 +943,7 @@ residual_coding_subblock_dc(OVCABACCtx *const cabac_ctx,
             --nb_rem_bins;
             sig_idx_map[nb_sig_c++] = idx;
 
-            coeffs[idx] = coeff_val;
+            sb_coeffs[idx] = coeff_val;
             update_coeff_nbgh_first_pass(c_coding_ctx, tr_ctx_pos, coeff_val);
         }
         prev_state = (state_trans_tab >> (( prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
@@ -998,7 +998,7 @@ residual_coding_subblock_dc(OVCABACCtx *const cabac_ctx,
             --nb_rem_bins;
             sig_idx_map[nb_sig_c++] = idx;
 
-            coeffs[idx] = coeff_val;
+            sb_coeffs[idx] = coeff_val;
             update_coeff_nbgh_first_pass(c_coding_ctx, tr_ctx_pos, coeff_val);
         }
         prev_state = (state_trans_tab >> (( prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
@@ -1008,17 +1008,17 @@ residual_coding_subblock_dc(OVCABACCtx *const cabac_ctx,
     }
 
     if (nb_pass2){
-        decode_pass2_core(cabac_ctx, coeffs, nb_pass2, gt2_idx_map,
+        decode_pass2_core(cabac_ctx, sb_coeffs, nb_pass2, gt2_idx_map,
                           scan_ctx, c_coding_ctx);
     }
 
     if (scan_pos >= 0){
-        decode_bypassed_coeff_core(cabac_ctx, coeffs, scan_pos, sig_idx_map,
+        decode_bypassed_coeff_core(cabac_ctx, sb_coeffs, scan_pos, sig_idx_map,
                                    &nb_sig_c, scan_ctx, c_coding_ctx,
                                    &luma_dep_quant_ctx, &prev_state, &dep_quant_map);
     }
 
-    decode_signs(cabac_ctx, coeffs, dep_quant_map, sig_idx_map, nb_sig_c);
+    decode_signs(cabac_ctx, sb_coeffs, dep_quant_map, sig_idx_map, nb_sig_c);
 
     c_coding_ctx->nb_remaining_bins = nb_rem_bins;
     *state = prev_state;
@@ -1031,11 +1031,11 @@ residual_coding_subblock_dc(OVCABACCtx *const cabac_ctx,
 static int
 ovcabac_read_ae_sb_4x4_dc_dpq(OVCABACCtx *const cabac_ctx,
                          uint64_t *const ctx_table,
-                         int16_t  *const coeffs,
+                         int16_t  *const sb_coeffs,
                          int *const state, int start_coeff_idx,
                          VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, ctx_table, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, ctx_table, sb_coeffs, state,
                                        start_coeff_idx, 0xFAAAAA5555555555,
                                        0x8884444444444000, c_coding_ctx,
                                        &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1046,7 +1046,7 @@ ovcabac_read_ae_sb_4x4_dc_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_4x4_first_dpq(OVCABACCtx *const cabac_ctx,
-                            int16_t  *const coeffs,
+                            int16_t  *const sb_coeffs,
                             int *const state, int start_coeff_idx,
                             uint8_t d_sb,
                             VVCCoeffCodingCtx *const c_coding_ctx)
@@ -1054,7 +1054,7 @@ ovcabac_read_ae_sb_4x4_first_dpq(OVCABACCtx *const cabac_ctx,
     uint64_t par_flg_ofst_map = d_sb > 2 ? 0 : parity_flag_offset_map[d_sb];
     uint64_t sig_flg_ofst_map = d_sb > 2 ? 0 : sig_flag_offset_map[d_sb];
 
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, par_flg_ofst_map,
                                        sig_flg_ofst_map, c_coding_ctx,
                                        &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1064,7 +1064,7 @@ ovcabac_read_ae_sb_4x4_first_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_4x4_dpq(OVCABACCtx *const cabac_ctx,
-                           int16_t  *const coeffs,
+                           int16_t  *const sb_coeffs,
                            int *const state,
                            uint8_t d_sb,
                            VVCCoeffCodingCtx *const c_coding_ctx)
@@ -1072,7 +1072,7 @@ ovcabac_read_ae_sb_4x4_dpq(OVCABACCtx *const cabac_ctx,
     uint64_t par_flg_ofst_map = d_sb > 2 ? 0 : parity_flag_offset_map[d_sb];
     uint64_t sig_flg_ofst_map = d_sb > 2 ? 0 : sig_flag_offset_map[d_sb];
 
-    residual_coding_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                  15, par_flg_ofst_map,
                                  sig_flg_ofst_map, c_coding_ctx,
                                  &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1082,11 +1082,11 @@ ovcabac_read_ae_sb_4x4_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_4x4_last_dc_dpq(OVCABACCtx *const cabac_ctx,
-                              int16_t  *const coeffs,
+                              int16_t  *const sb_coeffs,
                               int *const state,
                               VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_dc(cabac_ctx, coeffs, state,
+    residual_coding_subblock_dc(cabac_ctx, sb_coeffs, state,
                                  15, 0xFAAAAA5555555555,
                                  0x8884444444444000, c_coding_ctx,
                                  &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1096,7 +1096,7 @@ ovcabac_read_ae_sb_4x4_last_dc_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_dc_coeff_dpq(OVCABACCtx *const cabac_ctx,
-                                int16_t *const coeffs)
+                                int16_t *const sb_coeffs)
 {
     uint64_t *const ctx_table = cabac_ctx->ctx_table;
     uint8_t rem_abs_gt1_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[GT0_FLAG_CTX_OFFSET]);
@@ -1121,18 +1121,18 @@ ovcabac_read_ae_sb_dc_coeff_dpq(OVCABACCtx *const cabac_ctx,
     /*FIXME might need a second pass*/
     //FIXME state = 0? find out shift
     //FIXME adapt this for int16_t and change coeff storage + apply inv quantif
-    coeffs[0] = ( sign_flag ? -(int16_t)(value << 1) : (int16_t)(value << 1) );
+    sb_coeffs[0] = ( sign_flag ? -(int16_t)(value << 1) : (int16_t)(value << 1) );
 
     return 1;
 }
 
 static int
 ovcabac_read_ae_sb_4x4_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const coeffs,
+                                int16_t  *const sb_coeffs,
                                 int *const state, int start_coeff_idx,
                                 VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0x5000000000000000,
                                        0x4440000000000000, c_coding_ctx,
                                        &chroma_ctx_offsets, &chroma_dep_quant_ctx,
@@ -1142,11 +1142,11 @@ ovcabac_read_ae_sb_4x4_dc_c_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_4x4_first_c_dpq(OVCABACCtx *const cabac_ctx,
-                                   int16_t  *const coeffs,
+                                   int16_t  *const sb_coeffs,
                                    int *const state, int start_coeff_idx,
                                    VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
                                        &chroma_ctx_offsets, &chroma_dep_quant_ctx,
@@ -1156,11 +1156,11 @@ ovcabac_read_ae_sb_4x4_first_c_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_4x4_c_dpq(OVCABACCtx *const cabac_ctx,
-                             int16_t  *const coeffs,
+                             int16_t  *const sb_coeffs,
                              int *const state,
                              VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                  0, 0,
                                  0, c_coding_ctx,
                                  &chroma_ctx_offsets, &chroma_dep_quant_ctx,
@@ -1170,11 +1170,11 @@ ovcabac_read_ae_sb_4x4_c_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_4x4_last_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                     int16_t  *const coeffs,
+                                     int16_t  *const sb_coeffs,
                                      int *const state,
                                      VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_dc(cabac_ctx, coeffs, state,
+    residual_coding_subblock_dc(cabac_ctx, sb_coeffs, state,
                                  15, 0x5000000000000000,
                                  0x4440000000000000, c_coding_ctx,
                                  &chroma_ctx_offsets, &chroma_dep_quant_ctx,
@@ -1184,11 +1184,11 @@ ovcabac_read_ae_sb_4x4_last_dc_c_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_8x2_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const coeffs,
+                                int16_t  *const sb_coeffs,
                                 int *const state, int start_coeff_idx,
                                 VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0x5000000000000000,
                                        0x4440000000000000, c_coding_ctx,
                                        &chroma_ctx_offsets, &chroma_dep_quant_ctx,
@@ -1198,11 +1198,11 @@ ovcabac_read_ae_sb_8x2_dc_c_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_4x2_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const coeffs,
+                                int16_t  *const sb_coeffs,
                                 int *const state, int start_coeff_idx,
                                 VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0x5000000000000000,
                                        0x4440000000000000, c_coding_ctx,
                                        &chroma_ctx_offsets, &chroma_dep_quant_ctx,
@@ -1212,11 +1212,11 @@ ovcabac_read_ae_sb_4x2_dc_c_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const coeffs,
+                                int16_t  *const sb_coeffs,
                                 int *const state, int start_coeff_idx,
                                 VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0x5000000000000000,
                                        0x4440000000000000, c_coding_ctx,
                                        &chroma_ctx_offsets, &chroma_dep_quant_ctx,
@@ -1226,11 +1226,11 @@ ovcabac_read_ae_sb_2x8_dc_c_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x4_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const coeffs,
+                                int16_t  *const sb_coeffs,
                                 int *const state, int start_coeff_idx,
                                 VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0x5000000000000000,
                                        0x4440000000000000, c_coding_ctx,
                                        &chroma_ctx_offsets, &chroma_dep_quant_ctx,
@@ -1240,11 +1240,11 @@ ovcabac_read_ae_sb_2x4_dc_c_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x2_c_dpq(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const coeffs,
+                                int16_t  *const sb_coeffs,
                                 int *const state, int start_coeff_idx,
                                 VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0x0,
                                        0x0, c_coding_ctx,
                                        &chroma_ctx_offsets, &chroma_dep_quant_ctx,
@@ -1254,12 +1254,12 @@ ovcabac_read_ae_sb_2x2_c_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x2_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const coeffs,
+                                int16_t  *const sb_coeffs,
                                 int *const state, int start_coeff_idx,
                                 VVCCoeffCodingCtx *const c_coding_ctx)
 {
 
-    residual_coding_subblock_dc(cabac_ctx, coeffs, state,
+    residual_coding_subblock_dc(cabac_ctx, sb_coeffs, state,
                                 3, 0x5000,
                                 0x4440, c_coding_ctx,
                                 &chroma_ctx_offsets, &chroma_dep_quant_ctx,
@@ -1269,11 +1269,11 @@ ovcabac_read_ae_sb_2x2_dc_c_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_8x2_last_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                     int16_t  *const coeffs,
+                                     int16_t  *const sb_coeffs,
                                      int *const state,
                                      VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_dc(cabac_ctx, coeffs, state,
+    residual_coding_subblock_dc(cabac_ctx, sb_coeffs, state,
                                  15, 0x5000000000000000,
                                  0x4440000000000000, c_coding_ctx,
                                  &chroma_ctx_offsets, &chroma_dep_quant_ctx,
@@ -1283,11 +1283,11 @@ ovcabac_read_ae_sb_8x2_last_dc_c_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_last_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                     int16_t  *const coeffs,
+                                     int16_t  *const sb_coeffs,
                                      int *const state,
                                      VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_dc(cabac_ctx, coeffs, state,
+    residual_coding_subblock_dc(cabac_ctx, sb_coeffs, state,
                                  15, 0x5000000000000000,
                                  0x4440000000000000, c_coding_ctx,
                                  &chroma_ctx_offsets, &chroma_dep_quant_ctx,
@@ -1297,11 +1297,11 @@ ovcabac_read_ae_sb_2x8_last_dc_c_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_8x2_first_c_dpq(OVCABACCtx *const cabac_ctx,
-                                   int16_t  *const coeffs,
+                                   int16_t  *const sb_coeffs,
                                    int *const state, int start_coeff_idx,
                                    VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
                                        &chroma_ctx_offsets, &chroma_dep_quant_ctx,
@@ -1311,11 +1311,11 @@ ovcabac_read_ae_sb_8x2_first_c_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_first_c_dpq(OVCABACCtx *const cabac_ctx,
-                                   int16_t  *const coeffs,
+                                   int16_t  *const sb_coeffs,
                                    int *const state, int start_coeff_idx,
                                    VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
                                        &chroma_ctx_offsets, &chroma_dep_quant_ctx,
@@ -1325,11 +1325,11 @@ ovcabac_read_ae_sb_2x8_first_c_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_8x2_c_dpq(OVCABACCtx *const cabac_ctx,
-                             int16_t  *const coeffs,
+                             int16_t  *const sb_coeffs,
                              int *const state,
                              VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                  0, 0,
                                  0, c_coding_ctx,
                                  &chroma_ctx_offsets, &chroma_dep_quant_ctx,
@@ -1339,11 +1339,11 @@ ovcabac_read_ae_sb_8x2_c_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_c_dpq(OVCABACCtx *const cabac_ctx,
-                             int16_t  *const coeffs,
+                             int16_t  *const sb_coeffs,
                              int *const state,
                              VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                  0, 0,
                                  0, c_coding_ctx,
                                  &chroma_ctx_offsets, &chroma_dep_quant_ctx,
@@ -1353,7 +1353,7 @@ ovcabac_read_ae_sb_2x8_c_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_dc_coeff_c_dpq(OVCABACCtx *const cabac_ctx,
-                                  int16_t *const coeffs)
+                                  int16_t *const sb_coeffs)
 {
     uint8_t sign_flag;
     uint64_t *const ctx_table = cabac_ctx->ctx_table;
@@ -1377,18 +1377,18 @@ ovcabac_read_ae_sb_dc_coeff_c_dpq(OVCABACCtx *const cabac_ctx,
 
     //FIXME dep quant on dc
     //FIXME adapt this for int16_t and change coeff storage + apply inv quantif
-    coeffs[0] = ( sign_flag ? -(int16_t)(value << 1) : (int16_t)(value << 1));
+    sb_coeffs[0] = ( sign_flag ? -(int16_t)(value << 1) : (int16_t)(value << 1));
 
     return 1;
 }
 
 static int
 ovcabac_read_ae_sb_8x2_dc_dpq(OVCABACCtx *const cabac_ctx,
-                              int16_t  *const coeffs,
+                              int16_t  *const sb_coeffs,
                               int *const state, int start_coeff_idx,
                               VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0xFAAAA55555555555,
                                        0x8884444440000000, c_coding_ctx,
                                        &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1398,11 +1398,11 @@ ovcabac_read_ae_sb_8x2_dc_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_dc_dpq(OVCABACCtx *const cabac_ctx,
-                              int16_t  *const coeffs,
+                              int16_t  *const sb_coeffs,
                               int *const state, int start_coeff_idx,
                               VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0xFAAAA55555555555,
                                        0x8884444440000000, c_coding_ctx,
                                        &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1412,11 +1412,11 @@ ovcabac_read_ae_sb_2x8_dc_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_1x16_dc_dpq(OVCABACCtx *const cabac_ctx,
-                               int16_t  *const coeffs,
+                               int16_t  *const sb_coeffs,
                                int *const state, int start_coeff_idx,
                                VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0xFAA5555555000000,
                                        0x8844400000000000, c_coding_ctx,
                                        &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1426,11 +1426,11 @@ ovcabac_read_ae_sb_1x16_dc_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_8x2_last_dc_dpq(OVCABACCtx *const cabac_ctx,
-                                   int16_t  *const coeffs,
+                                   int16_t  *const sb_coeffs,
                                    int *const state,
                                    VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_dc(cabac_ctx, coeffs, state,
+    residual_coding_subblock_dc(cabac_ctx, sb_coeffs, state,
                                  15, 0xFAAAA55555555555,
                                  0x8884444440000000, c_coding_ctx,
                                  &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1440,11 +1440,11 @@ ovcabac_read_ae_sb_8x2_last_dc_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_last_dc_dpq(OVCABACCtx *const cabac_ctx,
-                                   int16_t  *const coeffs,
+                                   int16_t  *const sb_coeffs,
                                    int *const state,
                                    VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_dc(cabac_ctx, coeffs, state,
+    residual_coding_subblock_dc(cabac_ctx, sb_coeffs, state,
                                  15, 0xFAAAA55555555555,
                                  0x8884444440000000, c_coding_ctx,
                                  &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1454,11 +1454,11 @@ ovcabac_read_ae_sb_2x8_last_dc_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_1x16_last_dc_dpq(OVCABACCtx *const cabac_ctx,
-                                    int16_t  *const coeffs,
+                                    int16_t  *const sb_coeffs,
                                     int *const state,
                                     VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_dc(cabac_ctx, coeffs, state,
+    residual_coding_subblock_dc(cabac_ctx, sb_coeffs, state,
                                 15, 0xFAA5555555000000,
                                 0x8844400000000000, c_coding_ctx,
                                 &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1468,11 +1468,11 @@ ovcabac_read_ae_sb_1x16_last_dc_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_8x2_first_dpq(OVCABACCtx *const cabac_ctx,
-                                 int16_t  *const coeffs,
+                                 int16_t  *const sb_coeffs,
                                  int *const state, int start_coeff_idx,
                                  VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0x5550000000000000,
                                        0, c_coding_ctx,
                                        &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1482,11 +1482,11 @@ ovcabac_read_ae_sb_8x2_first_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_first_dpq(OVCABACCtx *const cabac_ctx,
-                                 int16_t  *const coeffs,
+                                 int16_t  *const sb_coeffs,
                                  int *const state, int start_coeff_idx,
                                  VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0x5550000000000000,
                                        0, c_coding_ctx,
                                        &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1496,11 +1496,11 @@ ovcabac_read_ae_sb_2x8_first_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_1x16_first_dpq(OVCABACCtx *const cabac_ctx,
-                                  int16_t  *const coeffs,
+                                  int16_t  *const sb_coeffs,
                                   int *const state, int start_coeff_idx,
                                   VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
                                        &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1510,11 +1510,11 @@ ovcabac_read_ae_sb_1x16_first_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_8x2_first_far_dpq(OVCABACCtx *const cabac_ctx,
-                                     int16_t  *const coeffs,
+                                     int16_t  *const sb_coeffs,
                                      int *const state, int start_coeff_idx,
                                      VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
                                        &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1524,11 +1524,11 @@ ovcabac_read_ae_sb_8x2_first_far_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_first_far_dpq(OVCABACCtx *const cabac_ctx,
-                                     int16_t  *const coeffs,
+                                     int16_t  *const sb_coeffs,
                                      int *const state, int start_coeff_idx,
                                      VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
                                        &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1538,11 +1538,11 @@ ovcabac_read_ae_sb_2x8_first_far_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_8x2_dpq(OVCABACCtx *const cabac_ctx,
-                           int16_t  *const coeffs,
+                           int16_t  *const sb_coeffs,
                            int *const state,
                            VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                  0, 0x5550000000000000,
                                  0, c_coding_ctx,
                                  &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1552,11 +1552,11 @@ ovcabac_read_ae_sb_8x2_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_dpq(OVCABACCtx *const cabac_ctx,
-                           int16_t  *const coeffs,
+                           int16_t  *const sb_coeffs,
                            int *const state,
                            VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                  0, 0x5550000000000000,
                                  0, c_coding_ctx,
                                  &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1567,11 +1567,11 @@ ovcabac_read_ae_sb_2x8_dpq(OVCABACCtx *const cabac_ctx,
 #if 0
 static int
 ovcabac_read_ae_sb_1x16_dpq(OVCABACCtx *const cabac_ctx,
-                       int16_t  *const coeffs,
+                       int16_t  *const sb_coeffs,
                        int *const state,
                        VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                  0, 0,
                                  0, c_coding_ctx,
                                  &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1582,11 +1582,11 @@ ovcabac_read_ae_sb_1x16_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_8x2_far_dpq(OVCABACCtx *const cabac_ctx,
-                               int16_t  *const coeffs,
+                               int16_t  *const sb_coeffs,
                                int *const state,
                                VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                  0, 0,
                                  0, c_coding_ctx,
                                  &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1596,11 +1596,11 @@ ovcabac_read_ae_sb_8x2_far_dpq(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_far_dpq(OVCABACCtx *const cabac_ctx,
-                               int16_t  *const coeffs,
+                               int16_t  *const sb_coeffs,
                                int *const state,
                                VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_4x4(cabac_ctx, coeffs, state,
+    residual_coding_subblock_4x4(cabac_ctx, sb_coeffs, state,
                                  0, 0,
                                  0, c_coding_ctx,
                                  &luma_ctx_offsets, &luma_dep_quant_ctx,
@@ -1675,7 +1675,7 @@ decode_pass2_ts(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
-                           int16_t  *const coeffs,
+                           int16_t  *const sb_coeffs,
                            const TSCoeffCodingCtx *cctx,
                            int16_t *const nb_remaining_bins,
                            const VVCSBScanContext *const scan_ctx)
@@ -1741,7 +1741,7 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
                 --(*nb_remaining_bins);
             }
 
-            coeffs[idx] = value;
+            sb_coeffs[idx] = value;
             update_ts_neighbourhood_first_pass(cctx->nb_sig_ngh, cctx->sign_map,
                                                cctx->abs_coeffs, x, y, value, ts_sign_flag);
         }
@@ -1788,14 +1788,14 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
             update_ts_neighbourhood_first_pass(cctx->nb_sig_ngh, cctx->sign_map, cctx->abs_coeffs,
                                                x, y, value, ts_sign_flag);
 
-            coeffs[max_scan_pos] = value;
+            sb_coeffs[max_scan_pos] = value;
         }
         ++coeff_idx;
         scan_map >>= 4;
     }
 
     if (nb_pass2) {
-        nb_read_pass2 = decode_pass2_ts(cabac_ctx, coeffs, nb_pass2, pass2_idx_map,
+        nb_read_pass2 = decode_pass2_ts(cabac_ctx, sb_coeffs, nb_pass2, pass2_idx_map,
                                         &nb_pass3, pass3_idx_map, cctx->abs_coeffs, nb_remaining_bins,
                                         log2_sb_w);
     }
@@ -1807,8 +1807,8 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
         int x = idx & x_mask;
         int y = idx >> log2_sb_w;
 
-        coeffs[idx] += remainder;
-        cctx->abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = coeffs[idx];
+        sb_coeffs[idx] += remainder;
+        cctx->abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = sb_coeffs[idx];
     }
 
     /* Loop over non already processed in pass 2 => bypass coded from pass 2 */
@@ -1818,12 +1818,12 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
         int x = idx & x_mask;
         int y = idx >> log2_sb_w;
 
-        coeffs[idx] += remainder;
-        cctx->abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = coeffs[idx];
+        sb_coeffs[idx] += remainder;
+        cctx->abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = sb_coeffs[idx];
     }
 
     /* FIXME we could probably move this to an other pass
-     * based on the fact coeffs[idx] == 1 can only be true in first pass
+     * based on the fact sb_coeffs[idx] == 1 can only be true in first pass
      * when no greater flag is encountered
      */
     /* TS coeff Prediction */
@@ -1834,21 +1834,21 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
         int max_abs_ngh = OVMAX(cctx->abs_coeffs[x     + ((y - 1) * VVC_TR_CTX_STRIDE)],
                                 cctx->abs_coeffs[x - 1 + ( y      * VVC_TR_CTX_STRIDE)]);
 
-        if (coeffs[idx] == 1 && max_abs_ngh) {
-            coeffs[idx] = max_abs_ngh;
-            cctx->abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = coeffs[idx];
+        if (sb_coeffs[idx] == 1 && max_abs_ngh) {
+            sb_coeffs[idx] = max_abs_ngh;
+            cctx->abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = sb_coeffs[idx];
         } else {
-            coeffs[idx] = coeffs[idx] - (coeffs[idx] <= max_abs_ngh);
-            cctx->abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = coeffs[idx];
+            sb_coeffs[idx] = sb_coeffs[idx] - (sb_coeffs[idx] <= max_abs_ngh);
+            cctx->abs_coeffs[x + y * VVC_TR_CTX_STRIDE] = sb_coeffs[idx];
         }
     }
 
     /* Bypass coded coefficients from pass 1 */
     for (int scan_idx = coeff_idx; scan_idx <= max_scan_pos; scan_idx++) {
         int idx = scan_map & 0xF;
-        coeffs[idx] = decode_truncated_rice(cabac_ctx, 1) >> 1;
+        sb_coeffs[idx] = decode_truncated_rice(cabac_ctx, 1) >> 1;
 
-        if (coeffs[idx]) {
+        if (sb_coeffs[idx]) {
             uint8_t sign_flag = ovcabac_bypass_read(cabac_ctx);
             sign_map |= (sign_flag << nb_sig_c);
             sig_c_idx_map[nb_sig_c++] = idx;
@@ -1860,7 +1860,7 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
     for (int i = 0; i < nb_sig_c; i++) {
         int idx = sig_c_idx_map[i];
 
-        coeffs[idx] = (sign_map & 0x1) ? -coeffs[idx] : coeffs[idx];
+        sb_coeffs[idx] = (sign_map & 0x1) ? -sb_coeffs[idx] : sb_coeffs[idx];
         sign_map = sign_map >> 1;
     }
 
@@ -1869,7 +1869,7 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
 
 static inline void
 decode_bypassed_coeff_sdh(OVCABACCtx *const cabac_ctx,
-                          int16_t *const coeffs, int last_scan_pos,
+                          int16_t *const sb_coeffs, int last_scan_pos,
                           uint8_t *const sig_idx_map,
                           int *const nb_sig_c,
                           const VVCSBScanContext *const scan_ctx,
@@ -1906,7 +1906,7 @@ decode_bypassed_coeff_sdh(OVCABACCtx *const cabac_ctx,
         if(value){
             update_coeff_nbgh_bypassed(c_coding_ctx, tr_ctx_pos, value);
 
-            coeffs[idx] = value;
+            sb_coeffs[idx] = value;
 
             sig_idx_map[(*nb_sig_c)++] = idx;
         }
@@ -1915,7 +1915,7 @@ decode_bypassed_coeff_sdh(OVCABACCtx *const cabac_ctx,
 }
 
 static void inline
-decode_signs_sdh(OVCABACCtx *const cabac_ctx, int16_t *const coeffs,
+decode_signs_sdh(OVCABACCtx *const cabac_ctx, int16_t *const sb_coeffs,
                  uint8_t *const sig_idx_map, int nb_sig_c,
                  uint8_t use_sdh)
 {
@@ -1934,24 +1934,24 @@ decode_signs_sdh(OVCABACCtx *const cabac_ctx, int16_t *const coeffs,
 
     for (unsigned k = 0; k < nb_signs; k++){
         int idx = sig_idx_map[k];
-        int16_t abs_coeff = coeffs[idx];
+        int16_t abs_coeff = sb_coeffs[idx];
         uint8_t sign = !!(signs_map & (1u << 31));
         sum_parity ^= abs_coeff;
-        coeffs[idx] = sign ? -abs_coeff : abs_coeff ;
+        sb_coeffs[idx] = sign ? -abs_coeff : abs_coeff ;
         signs_map <<= 1;
     }
 
     if (use_sdh){
         int idx = sig_idx_map[nb_signs];
-        int16_t abs_coeff = coeffs[idx];
+        int16_t abs_coeff = sb_coeffs[idx];
         sum_parity ^= abs_coeff;
-        coeffs[idx] = (sum_parity & 1) ? -abs_coeff : abs_coeff;
+        sb_coeffs[idx] = (sum_parity & 1) ? -abs_coeff : abs_coeff;
     }
 }
 
 static inline int
 residual_coding_first_subblock_sdh(OVCABACCtx *const cabac_ctx,
-                                   int16_t  *const coeffs,
+                                   int16_t  *const sb_coeffs,
                                    int start_pos,
                                    uint64_t par_flag_offset_map,
                                    uint64_t sig_flag_offset_map,
@@ -2005,7 +2005,7 @@ residual_coding_first_subblock_sdh(OVCABACCtx *const cabac_ctx,
         }
     }
 
-    coeffs[idx] = coeff_val;
+    sb_coeffs[idx] = coeff_val;
     sig_idx_map[nb_sig_c++] = idx;
 
     tr_ctx_pos = (idx & x_mask) + (idx >> log2_sb_w) * VVC_TR_CTX_STRIDE;
@@ -2058,7 +2058,7 @@ residual_coding_first_subblock_sdh(OVCABACCtx *const cabac_ctx,
             --nb_rem_bins;
             sig_idx_map[nb_sig_c++] = idx;
 
-            coeffs[idx] = coeff_val;
+            sb_coeffs[idx] = coeff_val;
             update_coeff_nbgh_first_pass(c_coding_ctx, tr_ctx_pos, coeff_val);
         }
         scan_map >>= 4;
@@ -2067,12 +2067,12 @@ residual_coding_first_subblock_sdh(OVCABACCtx *const cabac_ctx,
     }
 
     if (nb_pass2){
-        decode_pass2_core(cabac_ctx, coeffs, nb_pass2, gt2_idx_map,
+        decode_pass2_core(cabac_ctx, sb_coeffs, nb_pass2, gt2_idx_map,
                           scan_ctx, c_coding_ctx);
     }
 
     if (scan_pos >= 0){
-        decode_bypassed_coeff_sdh(cabac_ctx, coeffs, scan_pos, sig_idx_map,
+        decode_bypassed_coeff_sdh(cabac_ctx, sb_coeffs, scan_pos, sig_idx_map,
                                    &nb_sig_c, scan_ctx, c_coding_ctx);
     }
 
@@ -2081,7 +2081,7 @@ residual_coding_first_subblock_sdh(OVCABACCtx *const cabac_ctx,
         uint8_t first_nz = (scan_ctx->scan_idx_map >> ((max_start - (sig_idx_map[0])) << 2)) & 0XF;
         uint8_t last_nz  = (scan_ctx->scan_idx_map >> ((max_start - (sig_idx_map[nb_sig_c - 1])) << 2)) & 0XF;
         uint8_t use_sdh =  c_coding_ctx->enable_sdh && (first_nz - last_nz) >= 4;
-        decode_signs_sdh(cabac_ctx, coeffs, sig_idx_map, nb_sig_c, use_sdh);
+        decode_signs_sdh(cabac_ctx, sb_coeffs, sig_idx_map, nb_sig_c, use_sdh);
     }
 
     c_coding_ctx->nb_remaining_bins = nb_rem_bins;
@@ -2092,7 +2092,7 @@ residual_coding_first_subblock_sdh(OVCABACCtx *const cabac_ctx,
 
 static inline int
 residual_coding_subblock_sdh(OVCABACCtx *const cabac_ctx,
-                             int16_t  *const coeffs,
+                             int16_t  *const sb_coeffs,
                              int start_pos,
                              uint64_t par_flag_offset_map,
                              uint64_t sig_flag_offset_map,
@@ -2169,7 +2169,7 @@ residual_coding_subblock_sdh(OVCABACCtx *const cabac_ctx,
             --nb_rem_bins;
             sig_idx_map[nb_sig_c++] = idx;
 
-            coeffs[idx] = coeff_val;
+            sb_coeffs[idx] = coeff_val;
             update_coeff_nbgh_first_pass(c_coding_ctx, tr_ctx_pos, coeff_val);
         }
         scan_map >>= 4;
@@ -2221,7 +2221,7 @@ residual_coding_subblock_sdh(OVCABACCtx *const cabac_ctx,
             --nb_rem_bins;
             sig_idx_map[nb_sig_c++] = idx;
 
-            coeffs[idx] = coeff_val;
+            sb_coeffs[idx] = coeff_val;
             update_coeff_nbgh_first_pass(c_coding_ctx, tr_ctx_pos, coeff_val);
         }
         scan_map >>= 4;
@@ -2230,12 +2230,12 @@ residual_coding_subblock_sdh(OVCABACCtx *const cabac_ctx,
     }
 
     if (nb_pass2){
-        decode_pass2_core(cabac_ctx, coeffs, nb_pass2, gt2_idx_map,
+        decode_pass2_core(cabac_ctx, sb_coeffs, nb_pass2, gt2_idx_map,
                           scan_ctx, c_coding_ctx);
     }
 
     if (scan_pos >= 0){
-        decode_bypassed_coeff_sdh(cabac_ctx, coeffs, scan_pos, sig_idx_map,
+        decode_bypassed_coeff_sdh(cabac_ctx, sb_coeffs, scan_pos, sig_idx_map,
                                   &nb_sig_c, scan_ctx, c_coding_ctx);
     }
 
@@ -2244,7 +2244,7 @@ residual_coding_subblock_sdh(OVCABACCtx *const cabac_ctx,
         uint8_t first_nz = (scan_ctx->scan_idx_map >> ((max_start - (sig_idx_map[0])) << 2)) & 0XF;
         uint8_t last_nz  = (scan_ctx->scan_idx_map >> ((max_start - (sig_idx_map[nb_sig_c - 1])) << 2)) & 0XF;
         uint8_t use_sdh =  c_coding_ctx->enable_sdh && (first_nz - last_nz) >= 4;
-        decode_signs_sdh(cabac_ctx, coeffs, sig_idx_map, nb_sig_c, use_sdh);
+        decode_signs_sdh(cabac_ctx, sb_coeffs, sig_idx_map, nb_sig_c, use_sdh);
     }
 
     c_coding_ctx->nb_remaining_bins = nb_rem_bins;
@@ -2255,7 +2255,7 @@ residual_coding_subblock_sdh(OVCABACCtx *const cabac_ctx,
 
 static inline int
 residual_coding_subblock_dc_sdh(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const coeffs,
+                                int16_t  *const sb_coeffs,
                                 int start_pos,
                                 uint64_t par_flag_offset_map,
                                 uint64_t sig_flag_offset_map,
@@ -2332,7 +2332,7 @@ residual_coding_subblock_dc_sdh(OVCABACCtx *const cabac_ctx,
             --nb_rem_bins;
             sig_idx_map[nb_sig_c++] = idx;
 
-            coeffs[idx] = coeff_val;
+            sb_coeffs[idx] = coeff_val;
             update_coeff_nbgh_first_pass(c_coding_ctx, tr_ctx_pos, coeff_val);
         }
         scan_map >>= 4;
@@ -2382,7 +2382,7 @@ residual_coding_subblock_dc_sdh(OVCABACCtx *const cabac_ctx,
             --nb_rem_bins;
             sig_idx_map[nb_sig_c++] = idx;
 
-            coeffs[idx] = coeff_val;
+            sb_coeffs[idx] = coeff_val;
             update_coeff_nbgh_first_pass(c_coding_ctx, tr_ctx_pos, coeff_val);
         }
         scan_map >>= 4;
@@ -2391,12 +2391,12 @@ residual_coding_subblock_dc_sdh(OVCABACCtx *const cabac_ctx,
     }
 
     if (nb_pass2){
-        decode_pass2_core(cabac_ctx, coeffs, nb_pass2, gt2_idx_map,
+        decode_pass2_core(cabac_ctx, sb_coeffs, nb_pass2, gt2_idx_map,
                           scan_ctx, c_coding_ctx);
     }
 
     if (scan_pos >= 0){
-        decode_bypassed_coeff_sdh(cabac_ctx, coeffs, scan_pos, sig_idx_map,
+        decode_bypassed_coeff_sdh(cabac_ctx, sb_coeffs, scan_pos, sig_idx_map,
                                    &nb_sig_c, scan_ctx, c_coding_ctx);
     }
 
@@ -2405,7 +2405,7 @@ residual_coding_subblock_dc_sdh(OVCABACCtx *const cabac_ctx,
         uint8_t first_nz = (scan_ctx->scan_idx_map >> ((max_start - (sig_idx_map[0])) << 2)) & 0XF;
         uint8_t last_nz  = (scan_ctx->scan_idx_map >> ((max_start - (sig_idx_map[nb_sig_c - 1])) << 2)) & 0XF;
         uint8_t use_sdh =  c_coding_ctx->enable_sdh && (first_nz - last_nz) >= 4;
-        decode_signs_sdh(cabac_ctx, coeffs, sig_idx_map, nb_sig_c, use_sdh);
+        decode_signs_sdh(cabac_ctx, sb_coeffs, sig_idx_map, nb_sig_c, use_sdh);
     }
 
     c_coding_ctx->nb_remaining_bins = nb_rem_bins;
@@ -2417,11 +2417,11 @@ residual_coding_subblock_dc_sdh(OVCABACCtx *const cabac_ctx,
 #if 0
 static int
 ovcabac_read_ae_sb_4x4_dc_sdh(OVCABACCtx *const cabac_ctx,
-                         int16_t  *const coeffs,
+                         int16_t  *const sb_coeffs,
                          int *const state, int start_coeff_idx,
                          VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_first_subblock_sdh(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0xFAAAAA5555555555,
                                        0x8884444444444000, c_coding_ctx,
                                        &luma_ctx_offsets,
@@ -2432,7 +2432,7 @@ ovcabac_read_ae_sb_4x4_dc_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_4x4_first_sdh(OVCABACCtx *const cabac_ctx,
-                                 int16_t  *const coeffs,
+                                 int16_t  *const sb_coeffs,
                                  int start_coeff_idx,
                                  uint8_t d_sb,
                                  VVCCoeffCodingCtx *const c_coding_ctx)
@@ -2440,7 +2440,7 @@ ovcabac_read_ae_sb_4x4_first_sdh(OVCABACCtx *const cabac_ctx,
     uint64_t par_flg_ofst_map = d_sb > 2 ? 0 : parity_flag_offset_map[d_sb];
     uint64_t sig_flg_ofst_map = d_sb > 2 ? 0 : sig_flag_offset_map[d_sb];
 
-    residual_coding_first_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_first_subblock_sdh(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, par_flg_ofst_map,
                                        sig_flg_ofst_map, c_coding_ctx,
                                        &luma_ctx_offsets,
@@ -2450,14 +2450,14 @@ ovcabac_read_ae_sb_4x4_first_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_4x4_sdh(OVCABACCtx *const cabac_ctx,
-                           int16_t  *const coeffs,
+                           int16_t  *const sb_coeffs,
                            uint8_t d_sb,
                            VVCCoeffCodingCtx *const c_coding_ctx)
 {
     uint64_t par_flg_ofst_map = d_sb > 2 ? 0 : parity_flag_offset_map[d_sb];
     uint64_t sig_flg_ofst_map = d_sb > 2 ? 0 : sig_flag_offset_map[d_sb];
 
-    residual_coding_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_subblock_sdh(cabac_ctx, sb_coeffs,
                                  15, par_flg_ofst_map,
                                  sig_flg_ofst_map, c_coding_ctx,
                                  &luma_ctx_offsets,
@@ -2467,10 +2467,10 @@ ovcabac_read_ae_sb_4x4_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_4x4_last_dc_sdh(OVCABACCtx *const cabac_ctx,
-                                   int16_t  *const coeffs,
+                                   int16_t  *const sb_coeffs,
                                    VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_dc_sdh(cabac_ctx, coeffs,
+    residual_coding_subblock_dc_sdh(cabac_ctx, sb_coeffs,
                                     15, 0xFAAAAA5555555555,
                                     0x8884444444444000, c_coding_ctx,
                                     &luma_ctx_offsets,
@@ -2480,7 +2480,7 @@ ovcabac_read_ae_sb_4x4_last_dc_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_dc_coeff_sdh(OVCABACCtx *const cabac_ctx,
-                                int16_t *const coeffs)
+                                int16_t *const sb_coeffs)
 {
     uint64_t *const ctx_table = cabac_ctx->ctx_table;
     uint8_t rem_abs_gt1_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[GT0_FLAG_CTX_OFFSET]);
@@ -2504,18 +2504,18 @@ ovcabac_read_ae_sb_dc_coeff_sdh(OVCABACCtx *const cabac_ctx,
     /*FIXME might need a second pass*/
     //FIXME state = 0? find out shift
     //FIXME adapt this for int16_t and change coeff storage + apply inv quantif
-    coeffs[0] = ( sign_flag ? -(int16_t)(value) : (int16_t)(value) );
+    sb_coeffs[0] = ( sign_flag ? -(int16_t)(value) : (int16_t)(value) );
 
     return 1;
 }
 
 static int
 ovcabac_read_ae_sb_4x4_dc_c_sdh(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const coeffs,
+                                int16_t  *const sb_coeffs,
                                 int start_coeff_idx,
                                 VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_first_subblock_sdh(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0x5000000000000000,
                                        0x4440000000000000, c_coding_ctx,
                                        &chroma_ctx_offsets,
@@ -2525,11 +2525,11 @@ ovcabac_read_ae_sb_4x4_dc_c_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_4x4_first_c_sdh(OVCABACCtx *const cabac_ctx,
-                                   int16_t  *const coeffs,
+                                   int16_t  *const sb_coeffs,
                                    int start_coeff_idx,
                                    VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_first_subblock_sdh(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
                                        &chroma_ctx_offsets,
@@ -2539,10 +2539,10 @@ ovcabac_read_ae_sb_4x4_first_c_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_4x4_c_sdh(OVCABACCtx *const cabac_ctx,
-                             int16_t  *const coeffs,
+                             int16_t  *const sb_coeffs,
                              VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_subblock_sdh(cabac_ctx, sb_coeffs,
                                  0, 0,
                                  0, c_coding_ctx,
                                  &chroma_ctx_offsets,
@@ -2552,10 +2552,10 @@ ovcabac_read_ae_sb_4x4_c_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_4x4_last_dc_c_sdh(OVCABACCtx *const cabac_ctx,
-                                     int16_t  *const coeffs,
+                                     int16_t  *const sb_coeffs,
                                      VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_dc_sdh(cabac_ctx, coeffs,
+    residual_coding_subblock_dc_sdh(cabac_ctx, sb_coeffs,
                                     15, 0x5000000000000000,
                                     0x4440000000000000, c_coding_ctx,
                                     &chroma_ctx_offsets,
@@ -2565,11 +2565,11 @@ ovcabac_read_ae_sb_4x4_last_dc_c_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_8x2_dc_c_sdh(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const coeffs,
+                                int16_t  *const sb_coeffs,
                                 int start_coeff_idx,
                                 VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_first_subblock_sdh(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0x5000000000000000,
                                        0x4440000000000000, c_coding_ctx,
                                        &chroma_ctx_offsets,
@@ -2579,11 +2579,11 @@ ovcabac_read_ae_sb_8x2_dc_c_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_dc_c_sdh(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const coeffs,
+                                int16_t  *const sb_coeffs,
                                 int start_coeff_idx,
                                 VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_first_subblock_sdh(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0x5000000000000000,
                                        0x4440000000000000, c_coding_ctx,
                                        &chroma_ctx_offsets,
@@ -2593,10 +2593,10 @@ ovcabac_read_ae_sb_2x8_dc_c_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_8x2_last_dc_c_sdh(OVCABACCtx *const cabac_ctx,
-                                     int16_t  *const coeffs,
+                                     int16_t  *const sb_coeffs,
                                      VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_dc_sdh(cabac_ctx, coeffs,
+    residual_coding_subblock_dc_sdh(cabac_ctx, sb_coeffs,
                                     15, 0x5000000000000000,
                                     0x4440000000000000, c_coding_ctx,
                                     &chroma_ctx_offsets,
@@ -2606,10 +2606,10 @@ ovcabac_read_ae_sb_8x2_last_dc_c_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_last_dc_c_sdh(OVCABACCtx *const cabac_ctx,
-                                     int16_t  *const coeffs,
+                                     int16_t  *const sb_coeffs,
                                      VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_dc_sdh(cabac_ctx, coeffs,
+    residual_coding_subblock_dc_sdh(cabac_ctx, sb_coeffs,
                                     15, 0x5000000000000000,
                                     0x4440000000000000, c_coding_ctx,
                                     &chroma_ctx_offsets,
@@ -2619,11 +2619,11 @@ ovcabac_read_ae_sb_2x8_last_dc_c_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_8x2_first_c_sdh(OVCABACCtx *const cabac_ctx,
-                                   int16_t  *const coeffs,
+                                   int16_t  *const sb_coeffs,
                                    int start_coeff_idx,
                                    VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_first_subblock_sdh(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
                                        &chroma_ctx_offsets,
@@ -2633,11 +2633,11 @@ ovcabac_read_ae_sb_8x2_first_c_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_first_c_sdh(OVCABACCtx *const cabac_ctx,
-                                   int16_t  *const coeffs,
+                                   int16_t  *const sb_coeffs,
                                    int start_coeff_idx,
                                    VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_first_subblock_sdh(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
                                        &chroma_ctx_offsets,
@@ -2647,10 +2647,10 @@ ovcabac_read_ae_sb_2x8_first_c_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_8x2_c_sdh(OVCABACCtx *const cabac_ctx,
-                             int16_t  *const coeffs,
+                             int16_t  *const sb_coeffs,
                              VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_subblock_sdh(cabac_ctx, sb_coeffs,
                                  0, 0,
                                  0, c_coding_ctx,
                                  &chroma_ctx_offsets,
@@ -2660,10 +2660,10 @@ ovcabac_read_ae_sb_8x2_c_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_c_sdh(OVCABACCtx *const cabac_ctx,
-                             int16_t  *const coeffs,
+                             int16_t  *const sb_coeffs,
                              VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_subblock_sdh(cabac_ctx, sb_coeffs,
                                  0, 0,
                                  0, c_coding_ctx,
                                  &chroma_ctx_offsets,
@@ -2673,7 +2673,7 @@ ovcabac_read_ae_sb_2x8_c_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_dc_coeff_c_sdh(OVCABACCtx *const cabac_ctx,
-                                  int16_t *const coeffs)
+                                  int16_t *const sb_coeffs)
 {
     uint64_t *const ctx_table = cabac_ctx->ctx_table;
     uint8_t rem_abs_gt1_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[GT0_FLAG_C_CTX_OFFSET]);
@@ -2696,18 +2696,18 @@ ovcabac_read_ae_sb_dc_coeff_c_sdh(OVCABACCtx *const cabac_ctx,
 
     //FIXME dep quant on dc
     //FIXME adapt this for int16_t and change coeff storage + apply inv quantif
-    coeffs[0] = ( sign_flag ? -(int16_t)(value) : (int16_t)(value));
+    sb_coeffs[0] = ( sign_flag ? -(int16_t)(value) : (int16_t)(value));
 
     return 1;
 }
 
 static     int
 ovcabac_read_ae_sb_8x2_dc_sdh(OVCABACCtx *const cabac_ctx,
-                              int16_t  *const coeffs,
+                              int16_t  *const sb_coeffs,
                               int start_coeff_idx,
                               VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_first_subblock_sdh(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0xFAAAA55555555555,
                                        0x8884444440000000, c_coding_ctx,
                                        &luma_ctx_offsets,
@@ -2716,11 +2716,11 @@ ovcabac_read_ae_sb_8x2_dc_sdh(OVCABACCtx *const cabac_ctx,
 }
 static int
 ovcabac_read_ae_sb_2x8_dc_sdh(OVCABACCtx *const cabac_ctx,
-                              int16_t  *const coeffs,
+                              int16_t  *const sb_coeffs,
                               int start_coeff_idx,
                               VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_first_subblock_sdh(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0xFAAAA55555555555,
                                        0x8884444440000000, c_coding_ctx,
                                        &luma_ctx_offsets,
@@ -2730,11 +2730,11 @@ ovcabac_read_ae_sb_2x8_dc_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_1x16_dc_sdh(OVCABACCtx *const cabac_ctx,
-                               int16_t  *const coeffs,
+                               int16_t  *const sb_coeffs,
                                int start_coeff_idx,
                                VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_first_subblock_sdh(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0xFAA5555555000000,
                                        0x8844400000000000, c_coding_ctx,
                                        &luma_ctx_offsets,
@@ -2744,10 +2744,10 @@ ovcabac_read_ae_sb_1x16_dc_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_8x2_last_dc_sdh(OVCABACCtx *const cabac_ctx,
-                                   int16_t  *const coeffs,
+                                   int16_t  *const sb_coeffs,
                                    VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_dc_sdh(cabac_ctx, coeffs,
+    residual_coding_subblock_dc_sdh(cabac_ctx, sb_coeffs,
                                     15, 0xFAAAA55555555555,
                                     0x8884444440000000, c_coding_ctx,
                                     &luma_ctx_offsets,
@@ -2757,10 +2757,10 @@ ovcabac_read_ae_sb_8x2_last_dc_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_last_dc_sdh(OVCABACCtx *const cabac_ctx,
-                                   int16_t  *const coeffs,
+                                   int16_t  *const sb_coeffs,
                                    VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_dc_sdh(cabac_ctx, coeffs,
+    residual_coding_subblock_dc_sdh(cabac_ctx, sb_coeffs,
                                     15, 0xFAAAA55555555555,
                                     0x8884444440000000, c_coding_ctx,
                                     &luma_ctx_offsets,
@@ -2769,10 +2769,10 @@ ovcabac_read_ae_sb_2x8_last_dc_sdh(OVCABACCtx *const cabac_ctx,
 }
 static int
 ovcabac_read_ae_sb_1x16_last_dc_sdh(OVCABACCtx *const cabac_ctx,
-                                    int16_t  *const coeffs,
+                                    int16_t  *const sb_coeffs,
                                     VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_dc_sdh(cabac_ctx, coeffs,
+    residual_coding_subblock_dc_sdh(cabac_ctx, sb_coeffs,
                                     15, 0xFAA5555555000000,
                                     0x8844400000000000, c_coding_ctx,
                                     &luma_ctx_offsets,
@@ -2781,11 +2781,11 @@ ovcabac_read_ae_sb_1x16_last_dc_sdh(OVCABACCtx *const cabac_ctx,
 }
 static int
 ovcabac_read_ae_sb_8x2_first_sdh(OVCABACCtx *const cabac_ctx,
-                                 int16_t  *const coeffs,
+                                 int16_t  *const sb_coeffs,
                                  int start_coeff_idx,
                                  VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_first_subblock_sdh(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0x5550000000000000,
                                        0, c_coding_ctx,
                                        &luma_ctx_offsets,
@@ -2794,11 +2794,11 @@ ovcabac_read_ae_sb_8x2_first_sdh(OVCABACCtx *const cabac_ctx,
 }
 static int
 ovcabac_read_ae_sb_2x8_first_sdh(OVCABACCtx *const cabac_ctx,
-                                 int16_t  *const coeffs,
+                                 int16_t  *const sb_coeffs,
                                  int start_coeff_idx,
                                  VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_first_subblock_sdh(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0x5550000000000000,
                                        0, c_coding_ctx,
                                        &luma_ctx_offsets,
@@ -2807,11 +2807,11 @@ ovcabac_read_ae_sb_2x8_first_sdh(OVCABACCtx *const cabac_ctx,
 }
 static int
 ovcabac_read_ae_sb_1x16_first_sdh(OVCABACCtx *const cabac_ctx,
-                                  int16_t  *const coeffs,
+                                  int16_t  *const sb_coeffs,
                                   int start_coeff_idx,
                                   VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_first_subblock_sdh(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
                                        &luma_ctx_offsets,
@@ -2820,11 +2820,11 @@ ovcabac_read_ae_sb_1x16_first_sdh(OVCABACCtx *const cabac_ctx,
 }
 static int
 ovcabac_read_ae_sb_8x2_first_far_sdh(OVCABACCtx *const cabac_ctx,
-                                     int16_t  *const coeffs,
+                                     int16_t  *const sb_coeffs,
                                      int start_coeff_idx,
                                      VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_first_subblock_sdh(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
                                        &luma_ctx_offsets,
@@ -2834,11 +2834,11 @@ ovcabac_read_ae_sb_8x2_first_far_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_first_far_sdh(OVCABACCtx *const cabac_ctx,
-                                     int16_t  *const coeffs,
+                                     int16_t  *const sb_coeffs,
                                      int start_coeff_idx,
                                      VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_first_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_first_subblock_sdh(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
                                        &luma_ctx_offsets,
@@ -2848,10 +2848,10 @@ ovcabac_read_ae_sb_2x8_first_far_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_8x2_sdh(OVCABACCtx *const cabac_ctx,
-                           int16_t  *const coeffs,
+                           int16_t  *const sb_coeffs,
                            VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_subblock_sdh(cabac_ctx, sb_coeffs,
                                  0, 0x5550000000000000,
                                  0, c_coding_ctx,
                                  &luma_ctx_offsets,
@@ -2861,10 +2861,10 @@ ovcabac_read_ae_sb_8x2_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_2x8_sdh(OVCABACCtx *const cabac_ctx,
-                           int16_t  *const coeffs,
+                           int16_t  *const sb_coeffs,
                            VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_subblock_sdh(cabac_ctx, sb_coeffs,
                                  0, 0x5550000000000000,
                                  0, c_coding_ctx,
                                  &luma_ctx_offsets,
@@ -2875,10 +2875,10 @@ ovcabac_read_ae_sb_2x8_sdh(OVCABACCtx *const cabac_ctx,
 #if 0
 static int
 ovcabac_read_ae_sb_1x16_sdh(OVCABACCtx *const cabac_ctx,
-                            int16_t  *const coeffs,
+                            int16_t  *const sb_coeffs,
                             VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_subblock_sdh(cabac_ctx, sb_coeffs,
                                  0, 0,
                                  0, c_coding_ctx,
                                  &luma_ctx_offsets,
@@ -2889,10 +2889,10 @@ ovcabac_read_ae_sb_1x16_sdh(OVCABACCtx *const cabac_ctx,
 
 static int
 ovcabac_read_ae_sb_8x2_far_sdh(OVCABACCtx *const cabac_ctx,
-                               int16_t  *const coeffs,
+                               int16_t  *const sb_coeffs,
                                VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_subblock_sdh(cabac_ctx, sb_coeffs,
                                  0, 0,
                                  0, c_coding_ctx,
                                  &luma_ctx_offsets,
@@ -2901,10 +2901,10 @@ ovcabac_read_ae_sb_8x2_far_sdh(OVCABACCtx *const cabac_ctx,
 }
 static int
 ovcabac_read_ae_sb_2x8_far_sdh(OVCABACCtx *const cabac_ctx,
-                               int16_t  *const coeffs,
+                               int16_t  *const sb_coeffs,
                                VVCCoeffCodingCtx *const c_coding_ctx)
 {
-    residual_coding_subblock_sdh(cabac_ctx, coeffs,
+    residual_coding_subblock_sdh(cabac_ctx, sb_coeffs,
                                  0, 0,
                                  0, c_coding_ctx,
                                  &luma_ctx_offsets,
@@ -3627,7 +3627,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         .enable_sdh = ctu_dec->enable_sdh
     };
 
-    int16_t sb_coeffs[16] = {0}; //temporary table to store coeffs in process
+    int16_t sb_coeffs[16] = {0}; //temporary table to store sb_coeffs in process
 
     uint64_t sig_sb_map = 0;
 
@@ -4818,7 +4818,7 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
                         uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    int16_t sb_coeffs[16] = {0}; //temporary table to store coeffs in process
+    int16_t sb_coeffs[16] = {0}; //temporary table to store sb_coeffs in process
     int nb_sig_c;
     int16_t *const _dst = dst;
     int state = 0;
@@ -4967,7 +4967,7 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
                         uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    int16_t sb_coeffs[16] = {0}; //temporary table to store coeffs in process
+    int16_t sb_coeffs[16] = {0}; //temporary table to store sb_coeffs in process
     uint8_t sig_sb_flg = 1;
     int state = 0;
     int nb_sig_c;
@@ -5146,12 +5146,10 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     //check for dependent quantization
     int state = 0;
-    int16_t sb_coeffs[16] = {0}; //temporary table to store coeffs in process
+    int16_t sb_coeffs[16] = {0}; //temporary table to store sb_coeffs in process
 
     int qp = ctu_dec->dequant_chroma->qp;
     const struct IQScale deq_prms = derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
-
-
 
     /* FIXME this is a bit wasteful if we only read a few sub blocks */
     memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
