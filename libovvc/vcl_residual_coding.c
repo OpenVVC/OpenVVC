@@ -92,10 +92,7 @@ enum TBSize
     TB_128x128 = 63,
 };
 
-typedef struct VVCDepQuantCtx{
-    const uint16_t state_trans_table;
-    const uint8_t state_offset;
-}VVCDepQuantCtx;
+#define DQP_TRANSITION_MAP (int16_t)0x7D28
 
 typedef struct VVCCoeffCodingCtx{
     uint8_t *sum_sig_nbs;
@@ -118,6 +115,7 @@ typedef struct VVCResidualStates{
     const uint16_t abs_gt1_ctx_offset;
     const uint16_t par_lvl_ctx_offset;
     const uint16_t abs_gt2_ctx_offset;
+    const uint8_t state_offset[4];
 }VVCSBStates;
 
 typedef struct VVCSBScanContext{
@@ -126,16 +124,6 @@ typedef struct VVCSBScanContext{
    const uint8_t log2_sb_w;
    const uint8_t log2_sb_h;
 }VVCSBScanContext;
-
-static const VVCDepQuantCtx luma_dep_quant_ctx = {
-    0x7D28,
-    12
-};
-
-static const VVCDepQuantCtx chroma_dep_quant_ctx = {
-    0x7D28,
-    8
-};
 
 #if 0
 static const uint64_t inv_diag_map_4x4 = 0x041852C963DA7EBF;
@@ -259,6 +247,7 @@ static const VVCSBStates luma_ctx_offsets =
     GT0_FLAG_CTX_OFFSET,
     PAR_FLAG_CTX_OFFSET,
     GT1_FLAG_CTX_OFFSET,
+    {12*0, 12*0, 12*1, 12*2}
 };
 
 static const VVCSBStates chroma_ctx_offsets =
@@ -267,6 +256,7 @@ static const VVCSBStates chroma_ctx_offsets =
     GT0_FLAG_C_CTX_OFFSET,
     PAR_FLAG_C_CTX_OFFSET,
     GT1_FLAG_C_CTX_OFFSET,
+    {8*0, 8*0, 8*1, 8*2}
 };
 
 static uint8_t
@@ -452,7 +442,6 @@ decode_bypassed_coeff_core(OVCABACCtx *const cabac_ctx,
                       int *const nb_significant_coeff,
                       const VVCSBScanContext *const scan_ctx,
                       const VVCCoeffCodingCtx *const c_coding_ctx,
-                      const VVCDepQuantCtx *const dep_quant,
                       int *const state,
                       uint32_t *const state_map)
 {
@@ -463,7 +452,6 @@ decode_bypassed_coeff_core(OVCABACCtx *const cabac_ctx,
     const uint8_t log2_sb_w     = scan_ctx->log2_sb_w;
     const uint8_t x_mask = (1 << log2_sb_w) - 1;
 
-    const uint16_t state_trans_tab = dep_quant->state_trans_table;
     int max_start = (1 << (scan_ctx->log2_sb_w + scan_ctx->log2_sb_h)) - 1;
     uint8_t pos_shift = ((max_start - (last_scan_pos & 0xF)) << 2);
     uint64_t scan_map = inv_diag_map >> pos_shift;
@@ -496,7 +484,7 @@ decode_bypassed_coeff_core(OVCABACCtx *const cabac_ctx,
             significant_map[(*nb_significant_coeff)++] = idx;
         }
         // update state transition context
-        *state = ( state_trans_tab >> (( *state << 2) + ((value & 1) << 1)) ) & 3;
+        *state = ( DQP_TRANSITION_MAP >> (( *state << 2) + ((value & 1) << 1)) ) & 3;
         scan_map >>= 4;
     }
 }
@@ -536,7 +524,6 @@ residual_coding_first_subblock_4x4(OVCABACCtx *const cabac_ctx,
                                   uint64_t sig_flag_offset_map,
                                   VVCCoeffCodingCtx *const c_coding_ctx,
                                   const VVCSBStates *const ctx_offsets,
-                                  const VVCDepQuantCtx *const dep_quant_ctx,
                                   const VVCSBScanContext *const scan_ctx)
 {
     const uint64_t inv_diag_map = scan_ctx->scan_map;
@@ -548,8 +535,7 @@ residual_coding_first_subblock_4x4(OVCABACCtx *const cabac_ctx,
     uint64_t *const par_lvl_ctx = &cabac_ctx->ctx_table[ctx_offsets->par_lvl_ctx_offset];
     uint64_t *const abs_gt2_ctx = &cabac_ctx->ctx_table[ctx_offsets->abs_gt2_ctx_offset];
 
-    const uint16_t state_trans_tab = dep_quant_ctx->state_trans_table;
-    const uint8_t state_offset     = dep_quant_ctx->state_offset;
+    const uint8_t *state_offset     = ctx_offsets->state_offset;
 
     uint8_t sig_idx_map[16];
     uint8_t gt2_idx_map[16];
@@ -602,7 +588,7 @@ residual_coding_first_subblock_4x4(OVCABACCtx *const cabac_ctx,
     set_implicit_coeff_ngbh(c_coding_ctx, tr_ctx_pos, coeff_val);
 
     dep_quant_map |= (prev_state >> 1);
-    prev_state = (state_trans_tab >> ((prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
+    prev_state = (DQP_TRANSITION_MAP >> ((prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
 
     --scan_pos;
     scan_map >>= 4;
@@ -620,7 +606,7 @@ residual_coding_first_subblock_4x4(OVCABACCtx *const cabac_ctx,
 
         /*FIXME we could state ctx switch by same offset for chroma and luma
         */
-        ctx_offset  = state_offset * OVMAX(0, prev_state - 1);
+        ctx_offset  = state_offset[prev_state];
         ctx_offset += OVMIN(((c_coding_ctx->sum_abs_lvl[tr_ctx_pos] + 1) >> 1), 3);
         ctx_offset += sig_map & 0xF;
 
@@ -657,7 +643,7 @@ residual_coding_first_subblock_4x4(OVCABACCtx *const cabac_ctx,
             sb_coeffs[idx] = coeff_val;
             update_coeff_nbgh_first_pass(c_coding_ctx, tr_ctx_pos, coeff_val);
         }
-        prev_state = (state_trans_tab >> (( prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
+        prev_state = (DQP_TRANSITION_MAP >> (( prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
         scan_map >>= 4;
         par_map  >>= 4;
         sig_map  >>= 4;
@@ -671,7 +657,7 @@ residual_coding_first_subblock_4x4(OVCABACCtx *const cabac_ctx,
     if (scan_pos >= 0){
         decode_bypassed_coeff_core(cabac_ctx, sb_coeffs, scan_pos, sig_idx_map,
                                    &nb_sig_c, scan_ctx, c_coding_ctx,
-                                   &luma_dep_quant_ctx, &prev_state, &dep_quant_map);
+                                   &prev_state, &dep_quant_map);
     }
 
     decode_signs(cabac_ctx, sb_coeffs, dep_quant_map, sig_idx_map, nb_sig_c);
@@ -691,7 +677,6 @@ residual_coding_subblock_4x4(OVCABACCtx *const cabac_ctx,
                              uint64_t sig_flag_offset_map,
                              VVCCoeffCodingCtx *const c_coding_ctx,
                              const VVCSBStates *const ctx_offsets,
-                             const VVCDepQuantCtx *const dep_quant_ctx,
                              const VVCSBScanContext *const scan_ctx)
 {
     const uint64_t inv_diag_map = scan_ctx->scan_map;
@@ -703,8 +688,7 @@ residual_coding_subblock_4x4(OVCABACCtx *const cabac_ctx,
     uint64_t *const par_lvl_ctx = &cabac_ctx->ctx_table[ctx_offsets->par_lvl_ctx_offset];
     uint64_t *const abs_gt2_ctx = &cabac_ctx->ctx_table[ctx_offsets->abs_gt2_ctx_offset];
 
-    const uint16_t state_trans_tab = dep_quant_ctx->state_trans_table;
-    const uint8_t state_offset     = dep_quant_ctx->state_offset;
+    const uint8_t *const state_offset = ctx_offsets->state_offset;
 
     uint8_t sig_idx_map[16];
     uint8_t gt2_idx_map[16];
@@ -738,9 +722,7 @@ residual_coding_subblock_4x4(OVCABACCtx *const cabac_ctx,
         idx = scan_map & 0xF;
         tr_ctx_pos = (idx & x_mask) + (idx >> log2_sb_w) * VVC_TR_CTX_STRIDE;
 
-        /*FIXME we could state ctx switch by same offset for chroma and luma
-        */
-        ctx_offset  = state_offset * OVMAX(0, prev_state - 1);
+        ctx_offset  = state_offset[prev_state];
         ctx_offset += OVMIN(((c_coding_ctx->sum_abs_lvl[tr_ctx_pos] + 1) >> 1), 3);
         ctx_offset += sig_map & 0xF;
 
@@ -777,7 +759,7 @@ residual_coding_subblock_4x4(OVCABACCtx *const cabac_ctx,
             sb_coeffs[idx] = coeff_val;
             update_coeff_nbgh_first_pass(c_coding_ctx, tr_ctx_pos, coeff_val);
         }
-        prev_state = (state_trans_tab >> (( prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
+        prev_state = (DQP_TRANSITION_MAP >> (( prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
         scan_map >>= 4;
         par_map  >>= 4;
         sig_map  >>= 4;
@@ -795,7 +777,7 @@ residual_coding_subblock_4x4(OVCABACCtx *const cabac_ctx,
         --scan_pos;
 
         if (nb_sig_c){
-            ctx_offset  = state_offset * OVMAX(0, prev_state - 1);
+            ctx_offset  = state_offset[prev_state];
             ctx_offset += OVMIN(((c_coding_ctx->sum_abs_lvl[tr_ctx_pos] + 1) >> 1), 3);
             ctx_offset += sig_map & 0xF;
 
@@ -834,7 +816,7 @@ residual_coding_subblock_4x4(OVCABACCtx *const cabac_ctx,
             sb_coeffs[idx] = coeff_val;
             update_coeff_nbgh_first_pass(c_coding_ctx, tr_ctx_pos, coeff_val);
         }
-        prev_state = (state_trans_tab >> (( prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
+        prev_state = (DQP_TRANSITION_MAP >> (( prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
         scan_map >>= 4;
         par_map  >>= 4;
         sig_map  >>= 4;
@@ -848,7 +830,7 @@ residual_coding_subblock_4x4(OVCABACCtx *const cabac_ctx,
     if (scan_pos >= 0){
         decode_bypassed_coeff_core(cabac_ctx, sb_coeffs, scan_pos, sig_idx_map,
                                    &nb_sig_c, scan_ctx, c_coding_ctx,
-                                   &luma_dep_quant_ctx, &prev_state, &dep_quant_map);
+                                   &prev_state, &dep_quant_map);
     }
 
     decode_signs(cabac_ctx, sb_coeffs, dep_quant_map, sig_idx_map, nb_sig_c);
@@ -868,7 +850,6 @@ residual_coding_subblock_dc(OVCABACCtx *const cabac_ctx,
                              uint64_t sig_flag_offset_map,
                              VVCCoeffCodingCtx *const c_coding_ctx,
                              const VVCSBStates *const ctx_offsets,
-                             const VVCDepQuantCtx *const dep_quant_ctx,
                              const VVCSBScanContext *const scan_ctx)
 {
     const uint64_t inv_diag_map = scan_ctx->scan_map;
@@ -880,8 +861,7 @@ residual_coding_subblock_dc(OVCABACCtx *const cabac_ctx,
     uint64_t *const par_lvl_ctx = &cabac_ctx->ctx_table[ctx_offsets->par_lvl_ctx_offset];
     uint64_t *const abs_gt2_ctx = &cabac_ctx->ctx_table[ctx_offsets->abs_gt2_ctx_offset];
 
-    const uint16_t state_trans_tab = dep_quant_ctx->state_trans_table;
-    const uint8_t state_offset     = dep_quant_ctx->state_offset;
+    const uint8_t *const state_offset     = ctx_offsets->state_offset;
 
     uint8_t sig_idx_map[16];
     uint8_t gt2_idx_map[16];
@@ -917,7 +897,7 @@ residual_coding_subblock_dc(OVCABACCtx *const cabac_ctx,
 
         /*FIXME we could state ctx switch by same offset for chroma and luma
         */
-        ctx_offset  = state_offset * OVMAX(0, prev_state - 1);
+        ctx_offset  = state_offset[prev_state];
         ctx_offset += OVMIN(((c_coding_ctx->sum_abs_lvl[tr_ctx_pos] + 1) >> 1), 3);
         ctx_offset += sig_map & 0xF;
 
@@ -954,7 +934,7 @@ residual_coding_subblock_dc(OVCABACCtx *const cabac_ctx,
             sb_coeffs[idx] = coeff_val;
             update_coeff_nbgh_first_pass(c_coding_ctx, tr_ctx_pos, coeff_val);
         }
-        prev_state = (state_trans_tab >> (( prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
+        prev_state = (DQP_TRANSITION_MAP >> (( prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
         scan_map >>= 4;
         par_map  >>= 4;
         sig_map  >>= 4;
@@ -971,7 +951,7 @@ residual_coding_subblock_dc(OVCABACCtx *const cabac_ctx,
         //decrease scan_pos so we know last sig_coeff was read in first pass or not
         --scan_pos;
 
-        ctx_offset  = state_offset * OVMAX(0, prev_state - 1);
+        ctx_offset  = state_offset[prev_state];
         ctx_offset += OVMIN(((c_coding_ctx->sum_abs_lvl[tr_ctx_pos] + 1) >> 1), 3);
         ctx_offset += sig_map & 0xF;
 
@@ -1009,7 +989,7 @@ residual_coding_subblock_dc(OVCABACCtx *const cabac_ctx,
             sb_coeffs[idx] = coeff_val;
             update_coeff_nbgh_first_pass(c_coding_ctx, tr_ctx_pos, coeff_val);
         }
-        prev_state = (state_trans_tab >> (( prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
+        prev_state = (DQP_TRANSITION_MAP >> (( prev_state << 2) + ((coeff_val & 1) << 1))) & 3;
         scan_map >>= 4;
         par_map  >>= 4;
         sig_map  >>= 4;
@@ -1023,7 +1003,7 @@ residual_coding_subblock_dc(OVCABACCtx *const cabac_ctx,
     if (scan_pos >= 0){
         decode_bypassed_coeff_core(cabac_ctx, sb_coeffs, scan_pos, sig_idx_map,
                                    &nb_sig_c, scan_ctx, c_coding_ctx,
-                                   &luma_dep_quant_ctx, &prev_state, &dep_quant_map);
+                                   &prev_state, &dep_quant_map);
     }
 
     decode_signs(cabac_ctx, sb_coeffs, dep_quant_map, sig_idx_map, nb_sig_c);
@@ -1065,7 +1045,7 @@ ovcabac_read_ae_sb_4x4_first_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, par_flg_ofst_map,
                                        sig_flg_ofst_map, c_coding_ctx,
-                                       &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                       &luma_ctx_offsets,
                                        &inv_diag_4x4_scan);
     return 0;
 }
@@ -1082,7 +1062,7 @@ ovcabac_read_ae_sb_4x4_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_subblock_4x4(cabac_ctx, sb_coeffs,
                                  15, par_flg_ofst_map,
                                  sig_flg_ofst_map, c_coding_ctx,
-                                 &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                 &luma_ctx_offsets,
                                  &inv_diag_4x4_scan);
     return 0;
 }
@@ -1095,7 +1075,7 @@ ovcabac_read_ae_sb_4x4_last_dc_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_subblock_dc(cabac_ctx, sb_coeffs,
                                  15, 0xFAAAAA5555555555,
                                  0x8884444444444000, c_coding_ctx,
-                                 &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                 &luma_ctx_offsets,
                                  &inv_diag_4x4_scan);
     return 0;
 }
@@ -1142,7 +1122,7 @@ ovcabac_read_ae_sb_4x4_dc_c_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0x5000000000000000,
                                        0x4440000000000000, c_coding_ctx,
-                                       &chroma_ctx_offsets, &chroma_dep_quant_ctx,
+                                       &chroma_ctx_offsets,
                                        &inv_diag_4x4_scan);
     return 0;
 }
@@ -1156,7 +1136,7 @@ ovcabac_read_ae_sb_4x4_first_c_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
-                                       &chroma_ctx_offsets, &chroma_dep_quant_ctx,
+                                       &chroma_ctx_offsets,
                                        &inv_diag_4x4_scan);
     return 0;
 }
@@ -1169,7 +1149,7 @@ ovcabac_read_ae_sb_4x4_c_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_subblock_4x4(cabac_ctx, sb_coeffs,
                                  0, 0,
                                  0, c_coding_ctx,
-                                 &chroma_ctx_offsets, &chroma_dep_quant_ctx,
+                                 &chroma_ctx_offsets,
                                  &inv_diag_4x4_scan);
     return 0;
 }
@@ -1182,7 +1162,7 @@ ovcabac_read_ae_sb_4x4_last_dc_c_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_subblock_dc(cabac_ctx, sb_coeffs,
                                  15, 0x5000000000000000,
                                  0x4440000000000000, c_coding_ctx,
-                                 &chroma_ctx_offsets, &chroma_dep_quant_ctx,
+                                 &chroma_ctx_offsets,
                                  &inv_diag_4x4_scan);
     return 0;
 }
@@ -1196,7 +1176,7 @@ ovcabac_read_ae_sb_8x2_dc_c_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0x5000000000000000,
                                        0x4440000000000000, c_coding_ctx,
-                                       &chroma_ctx_offsets, &chroma_dep_quant_ctx,
+                                       &chroma_ctx_offsets,
                                        &inv_diag_8x2_scan);
     return 0;
 }
@@ -1210,7 +1190,7 @@ ovcabac_read_ae_sb_4x2_dc_c_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0x5000000000000000,
                                        0x4440000000000000, c_coding_ctx,
-                                       &chroma_ctx_offsets, &chroma_dep_quant_ctx,
+                                       &chroma_ctx_offsets,
                                        &inv_diag_4x2_scan);
     return 0;
 }
@@ -1224,7 +1204,7 @@ ovcabac_read_ae_sb_2x8_dc_c_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0x5000000000000000,
                                        0x4440000000000000, c_coding_ctx,
-                                       &chroma_ctx_offsets, &chroma_dep_quant_ctx,
+                                       &chroma_ctx_offsets,
                                        &inv_diag_2x8_scan);
     return 0;
 }
@@ -1238,7 +1218,7 @@ ovcabac_read_ae_sb_2x4_dc_c_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0x5000000000000000,
                                        0x4440000000000000, c_coding_ctx,
-                                       &chroma_ctx_offsets, &chroma_dep_quant_ctx,
+                                       &chroma_ctx_offsets,
                                        &inv_diag_2x4_scan);
     return 0;
 }
@@ -1252,7 +1232,7 @@ ovcabac_read_ae_sb_2x2_c_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0x0,
                                        0x0, c_coding_ctx,
-                                       &chroma_ctx_offsets, &chroma_dep_quant_ctx,
+                                       &chroma_ctx_offsets,
                                        &inv_diag_2x2_scan);
     return 0;
 }
@@ -1267,7 +1247,7 @@ ovcabac_read_ae_sb_2x2_dc_c_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_subblock_dc(cabac_ctx, sb_coeffs,
                                 3, 0x5000,
                                 0x4440, c_coding_ctx,
-                                &chroma_ctx_offsets, &chroma_dep_quant_ctx,
+                                &chroma_ctx_offsets,
                                 &inv_diag_2x2_scan);
     return 0;
 }
@@ -1280,7 +1260,7 @@ ovcabac_read_ae_sb_8x2_last_dc_c_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_subblock_dc(cabac_ctx, sb_coeffs,
                                  15, 0x5000000000000000,
                                  0x4440000000000000, c_coding_ctx,
-                                 &chroma_ctx_offsets, &chroma_dep_quant_ctx,
+                                 &chroma_ctx_offsets,
                                  &inv_diag_8x2_scan);
     return 0;
 }
@@ -1293,7 +1273,7 @@ ovcabac_read_ae_sb_2x8_last_dc_c_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_subblock_dc(cabac_ctx, sb_coeffs,
                                  15, 0x5000000000000000,
                                  0x4440000000000000, c_coding_ctx,
-                                 &chroma_ctx_offsets, &chroma_dep_quant_ctx,
+                                 &chroma_ctx_offsets,
                                  &inv_diag_2x8_scan);
     return 0;
 }
@@ -1307,7 +1287,7 @@ ovcabac_read_ae_sb_8x2_first_c_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
-                                       &chroma_ctx_offsets, &chroma_dep_quant_ctx,
+                                       &chroma_ctx_offsets,
                                        &inv_diag_8x2_scan);
     return 0;
 }
@@ -1321,7 +1301,7 @@ ovcabac_read_ae_sb_2x8_first_c_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
-                                       &chroma_ctx_offsets, &chroma_dep_quant_ctx,
+                                       &chroma_ctx_offsets,
                                        &inv_diag_2x8_scan);
     return 0;
 }
@@ -1334,7 +1314,7 @@ ovcabac_read_ae_sb_8x2_c_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_subblock_4x4(cabac_ctx, sb_coeffs,
                                  0, 0,
                                  0, c_coding_ctx,
-                                 &chroma_ctx_offsets, &chroma_dep_quant_ctx,
+                                 &chroma_ctx_offsets,
                                  &inv_diag_8x2_scan);
     return 0;
 }
@@ -1347,7 +1327,7 @@ ovcabac_read_ae_sb_2x8_c_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_subblock_4x4(cabac_ctx, sb_coeffs,
                                  0, 0,
                                  0, c_coding_ctx,
-                                 &chroma_ctx_offsets, &chroma_dep_quant_ctx,
+                                 &chroma_ctx_offsets,
                                  &inv_diag_2x8_scan);
     return 0;
 }
@@ -1392,7 +1372,7 @@ ovcabac_read_ae_sb_8x2_dc_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0xFAAAA55555555555,
                                        0x8884444440000000, c_coding_ctx,
-                                       &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                       &luma_ctx_offsets,
                                        &inv_diag_8x2_scan);
     return 0;
 }
@@ -1406,7 +1386,7 @@ ovcabac_read_ae_sb_2x8_dc_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0xFAAAA55555555555,
                                        0x8884444440000000, c_coding_ctx,
-                                       &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                       &luma_ctx_offsets,
                                        &inv_diag_2x8_scan);
     return 0;
 }
@@ -1420,7 +1400,7 @@ ovcabac_read_ae_sb_1x16_dc_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0xFAA5555555000000,
                                        0x8844400000000000, c_coding_ctx,
-                                       &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                       &luma_ctx_offsets,
                                        &inv_diag_1x16_scan);
     return 0;
 }
@@ -1433,7 +1413,7 @@ ovcabac_read_ae_sb_8x2_last_dc_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_subblock_dc(cabac_ctx, sb_coeffs,
                                  15, 0xFAAAA55555555555,
                                  0x8884444440000000, c_coding_ctx,
-                                 &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                 &luma_ctx_offsets,
                                  &inv_diag_8x2_scan);
     return 0;
 }
@@ -1446,7 +1426,7 @@ ovcabac_read_ae_sb_2x8_last_dc_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_subblock_dc(cabac_ctx, sb_coeffs,
                                  15, 0xFAAAA55555555555,
                                  0x8884444440000000, c_coding_ctx,
-                                 &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                 &luma_ctx_offsets,
                                  &inv_diag_2x8_scan);
     return 0;
 }
@@ -1459,7 +1439,7 @@ ovcabac_read_ae_sb_1x16_last_dc_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_subblock_dc(cabac_ctx, sb_coeffs,
                                 15, 0xFAA5555555000000,
                                 0x8844400000000000, c_coding_ctx,
-                                &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                &luma_ctx_offsets,
                                 &inv_diag_1x16_scan);
     return 0;
 }
@@ -1473,7 +1453,7 @@ ovcabac_read_ae_sb_8x2_first_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0x5550000000000000,
                                        0, c_coding_ctx,
-                                       &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                       &luma_ctx_offsets,
                                        &inv_diag_8x2_scan);
     return 0;
 }
@@ -1487,7 +1467,7 @@ ovcabac_read_ae_sb_2x8_first_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0x5550000000000000,
                                        0, c_coding_ctx,
-                                       &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                       &luma_ctx_offsets,
                                        &inv_diag_2x8_scan);
     return 0;
 }
@@ -1501,7 +1481,7 @@ ovcabac_read_ae_sb_1x16_first_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
-                                       &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                       &luma_ctx_offsets,
                                        &inv_diag_1x16_scan);
     return 0;
 }
@@ -1515,7 +1495,7 @@ ovcabac_read_ae_sb_8x2_first_far_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
-                                       &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                       &luma_ctx_offsets,
                                        &inv_diag_8x2_scan);
     return 0;
 }
@@ -1529,7 +1509,7 @@ ovcabac_read_ae_sb_2x8_first_far_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
                                        start_coeff_idx, 0,
                                        0, c_coding_ctx,
-                                       &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                       &luma_ctx_offsets,
                                        &inv_diag_2x8_scan);
     return 0;
 }
@@ -1542,7 +1522,7 @@ ovcabac_read_ae_sb_8x2_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_subblock_4x4(cabac_ctx, sb_coeffs,
                                  0, 0x5550000000000000,
                                  0, c_coding_ctx,
-                                 &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                 &luma_ctx_offsets,
                                  &inv_diag_8x2_scan);
     return 0;
 }
@@ -1555,7 +1535,7 @@ ovcabac_read_ae_sb_2x8_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_subblock_4x4(cabac_ctx, sb_coeffs,
                                  0, 0x5550000000000000,
                                  0, c_coding_ctx,
-                                 &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                 &luma_ctx_offsets,
                                  &inv_diag_2x8_scan);
     return 0;
 }
@@ -1583,7 +1563,7 @@ ovcabac_read_ae_sb_8x2_far_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_subblock_4x4(cabac_ctx, sb_coeffs,
                                  0, 0,
                                  0, c_coding_ctx,
-                                 &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                 &luma_ctx_offsets,
                                  &inv_diag_8x2_scan);
     return 0;
 }
@@ -1596,7 +1576,7 @@ ovcabac_read_ae_sb_2x8_far_dpq(OVCABACCtx *const cabac_ctx,
     residual_coding_subblock_4x4(cabac_ctx, sb_coeffs,
                                  0, 0,
                                  0, c_coding_ctx,
-                                 &luma_ctx_offsets, &luma_dep_quant_ctx,
+                                 &luma_ctx_offsets,
                                  &inv_diag_2x8_scan);
     return 0;
 }
