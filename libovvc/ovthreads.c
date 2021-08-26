@@ -45,7 +45,6 @@ thread_decode_entries(struct SliceThread *th_info, struct EntryThread *tdec)
         OVSliceDec *const sldec = th_info->owner;
         const OVPS *const prms  = sldec->active_params;
 
-        // usleep(1000000);
         th_info->decode_entry(sldec, ctudec, prms, entry_idx);
 
         entry_idx = atomic_fetch_add_explicit(&th_info->last_entry_idx, 1, memory_order_acq_rel);

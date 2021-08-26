@@ -55,14 +55,14 @@ ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec)
     return 0;
 }
 
-void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect)
+void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
 {
     if (is_border_rect & OV_BOUNDARY_RIGHT_RECT)
         return;
     
     struct OVFilterBuffers* fb = &ctudec->filter_buffers;
-    const int width_l = ( x_l + fb->filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_l ) : fb->filter_region_w[0];
-    const int height_l = ( y_l + fb->filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_l ) : fb->filter_region_h[0];
+    const int width_l = ( x_pic_l + fb->filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_pic_l ) : fb->filter_region_w[0];
+    const int height_l = ( y_pic_l + fb->filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_pic_l ) : fb->filter_region_h[0];
     const int margin = fb->margin;
 
     for(int comp = 0; comp < 3; comp++)
@@ -87,11 +87,11 @@ void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_
     
 }
 
-void ctudec_save_last_rows(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l, int y_l, uint8_t is_border_rect)
+void ctudec_save_last_rows(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
 {
     struct OVFilterBuffers* fb = &ctudec->filter_buffers;
-    const int width_l = ( x_l + fb->filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_l ) : fb->filter_region_w[0];
-    const int height_l = ( y_l + fb->filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_l ) : fb->filter_region_h[0];
+    const int width_l = ( x_pic_l + fb->filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_pic_l ) : fb->filter_region_w[0];
+    const int height_l = ( y_pic_l + fb->filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_pic_l ) : fb->filter_region_h[0];
     const int margin = fb->margin;
 
     for(int comp = 0; comp < 3; comp++)
@@ -107,8 +107,6 @@ void ctudec_save_last_rows(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l
         const int x = x_l/ratio;
 
         int stride_rows = fb->saved_rows_stride[comp];
-        // int x_tile  = ctb_x * max_cu_width;
-        int x_tile  = x;
         //save pixels in top left corner of ctu filter
         for(int ii=0; ii < margin; ii++)
         {
@@ -118,7 +116,7 @@ void ctudec_save_last_rows(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l
                 if ( 0 )
                     filter_region[ii*stride_filter + jj] = saved_rows_comp[ii*stride_rows];
                 else
-                    filter_region[ii*stride_filter + jj] = saved_rows_comp[ii*stride_rows + x_tile + width - margin + jj];
+                    filter_region[ii*stride_filter + jj] = saved_rows_comp[ii*stride_rows + x + width - margin + jj];
             }
         }
 
@@ -127,18 +125,18 @@ void ctudec_save_last_rows(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l
 
         for(int ii=0 ; ii < margin; ii++)
         {
-            memcpy(&saved_rows_comp[ii*stride_rows + x_tile], &filter_region[(height+ii)*stride_filter + margin], width * sizeof(int16_t));
+            memcpy(&saved_rows_comp[ii*stride_rows + x], &filter_region[(height+ii)*stride_filter + margin], width * sizeof(int16_t));
         }
     } 
 }
 
 
-void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l, int y_l, uint8_t is_border_rect)
+void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
 {   
 
     struct OVFilterBuffers* fb = &ctudec->filter_buffers;
-    const int width_l = ( x_l + fb->filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_l ) : fb->filter_region_w[0];
-    const int height_l = ( y_l + fb->filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_l ) : fb->filter_region_h[0];
+    const int width_l = ( x_pic_l + fb->filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_pic_l ) : fb->filter_region_w[0];
+    const int height_l = ( y_pic_l + fb->filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_pic_l ) : fb->filter_region_h[0];
     const int margin = fb->margin;
 
     for(int comp = 0; comp < 3; comp++)
@@ -149,7 +147,8 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, i
         const int width = width_l/ratio;
         const int height = height_l/ratio;
         const int x = x_l/ratio;
-        const int y = y_l/ratio;
+        const int x_pic = x_pic_l/ratio;
+        const int y_pic = y_pic_l/ratio;
 
         int16_t* saved_rows_comp = saved_rows[comp];
         int16_t* saved_cols = fb->saved_cols[comp];
@@ -157,7 +156,7 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, i
         int stride_filter = fb->filter_region_stride[comp];
 
         int stride_pic = fb->pic_frame->linesize[comp]/2;
-        int16_t* frame = (int16_t*) fb->pic_frame->data[comp] + y*stride_pic + x;
+        int16_t* frame = (int16_t*) fb->pic_frame->data[comp] + y_pic*stride_pic + x_pic;
 
         // //*******************************************************/
         // //Copy of entire frame in filter buffer
@@ -208,8 +207,6 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, i
         //*******************************************************/
         //Upper margins
         int stride_rows = fb->saved_rows_stride[comp];
-        // int x_tile  = ctb_x * max_cu_width;
-        int x_tile  = x;
         for(int ii=0; ii < margin; ii++)
         {
             int x_offset_end = 0;
@@ -217,7 +214,7 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, i
                 x_offset_end = margin;
 
             if ( !(is_border_rect & OV_BOUNDARY_UPPER_RECT) ){
-                memcpy(&filter_region[ii*stride_filter + margin], &saved_rows_comp[ii*stride_rows + x_tile], 
+                memcpy(&filter_region[ii*stride_filter + margin], &saved_rows_comp[ii*stride_rows + x], 
                     sizeof(int16_t)* (width + x_offset_end));
             }
             else{

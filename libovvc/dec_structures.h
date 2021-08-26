@@ -15,6 +15,24 @@
 
 struct MVPool;
 
+struct RectEntryInfo {
+    int tile_x;
+    int tile_y;
+    int ctb_x;
+    int ctb_y;
+    int nb_ctu_w;
+    int nb_ctu_h;
+    int nb_ctu_rect;
+    const uint8_t *entry_start;
+    const uint8_t *entry_end;
+    uint8_t ngh_flag;
+    uint8_t implicit_h;
+    uint8_t implicit_w;
+    int last_ctu_w;
+    int last_ctu_h;
+    int nb_ctb_pic_w;
+};
+
 struct OVPartInfo
 {
     /**

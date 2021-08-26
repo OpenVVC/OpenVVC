@@ -141,7 +141,7 @@ main(int argc, char** argv)
     if (ret < 0) goto failattach;
 
     read_write_stream(&ovvc_hdl, ovvc_hdl.fp, fout);
-    //read_stream(&ovvc_hdl, ovvc_hdl.fp);
+    // read_stream(&ovvc_hdl, ovvc_hdl.fp);
 
     ovdmx_detach_stream(ovvc_hdl.dmx);
 

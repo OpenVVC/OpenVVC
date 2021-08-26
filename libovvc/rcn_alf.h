@@ -3,6 +3,7 @@
 
 struct OVCTUDec;
 struct RCNFunctions;
+struct RectEntryInfo;
 
 #define MAX_ALF_NUM_CLIP_VAL  4
 #define NUM_BITS  8
@@ -79,7 +80,7 @@ typedef struct
 
 void rcn_alf_create(RCNALF* alf);
 
-void rcn_alf_filter_line(struct OVCTUDec *const ctudec, int nb_ctu_w, uint16_t ctb_y_pic);
+void rcn_alf_filter_line(struct OVCTUDec *const ctudec, const struct RectEntryInfo const *einfo, uint16_t ctb_y_pic);
 
 void rcn_alf_reconstruct_coeff_APS(RCNALF* alf, struct OVCTUDec *const ctudec, uint8_t luma_flag, uint8_t chroma_flag);
 

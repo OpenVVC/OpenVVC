@@ -439,7 +439,7 @@ update_pps_info(struct PPSInfo *const pps_info, const OVPPS *const pps,
                 const OVSPS *const sps)
 {
     struct TileInfo *const tinfo = &pps_info->tile_info;
-    uint8_t have_tile = pps->pps_num_exp_tile_columns_minus1 + pps->pps_num_exp_tile_rows_minus1;
+    uint8_t have_tile = pps->pps_num_tile_columns_minus1 + pps->pps_num_tile_rows_minus1;
 
     if (have_tile) {
         init_tile_ctx(tinfo, pps);

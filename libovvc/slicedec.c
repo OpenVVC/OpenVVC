@@ -25,24 +25,6 @@ enum SliceType {
      SLICE_I = 2
 };
 
-struct RectEntryInfo {
-    int tile_x;
-    int tile_y;
-    int ctb_x;
-    int ctb_y;
-    int nb_ctu_w;
-    int nb_ctu_h;
-    int nb_ctu_rect;
-    const uint8_t *entry_start;
-    const uint8_t *entry_end;
-    uint8_t ngh_flag;
-    uint8_t implicit_h;
-    uint8_t implicit_w;
-    int last_ctu_w;
-    int last_ctu_h;
-    int nb_ctb_pic_w;
-};
-
 static int
 slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms,
                            uint16_t entry_idx);
@@ -972,11 +954,11 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     }
 
     if(ctudec->ctb_y == 0){
-        rcn_sao_first_pix_rows(ctudec, einfo->nb_ctb_pic_w, 0); 
+        rcn_sao_first_pix_rows(ctudec, einfo, 0); 
     }
     else{
-        rcn_sao_filter_line(ctudec, einfo->nb_ctb_pic_w, ctudec->ctb_y-1);
-        rcn_alf_filter_line(ctudec, einfo->nb_ctb_pic_w, ctudec->ctb_y-1);
+        rcn_sao_filter_line(ctudec, einfo, ctudec->ctb_y-1);
+        rcn_alf_filter_line(ctudec, einfo, ctudec->ctb_y-1);
         ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
     }
 
@@ -1065,12 +1047,12 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     ret = decode_truncated_ctu(ctudec, einfo, ctb_addr_rs,
                                einfo->last_ctu_w, ctu_h);
 
-    rcn_sao_filter_line(ctudec, einfo->nb_ctu_w, ctudec->ctb_y-1);
-    rcn_sao_filter_line(ctudec, einfo->nb_ctu_w, ctudec->ctb_y);
+    rcn_sao_filter_line(ctudec, einfo, ctudec->ctb_y-1);
+    rcn_sao_filter_line(ctudec, einfo, ctudec->ctb_y);
 
-    rcn_alf_filter_line(ctudec, einfo->nb_ctu_w, ctudec->ctb_y-1);
+    rcn_alf_filter_line(ctudec, einfo, ctudec->ctb_y-1);
     ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
-    rcn_alf_filter_line(ctudec, einfo->nb_ctu_w, ctudec->ctb_y);
+    rcn_alf_filter_line(ctudec, einfo, ctudec->ctb_y);
     ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
 
     if (slice_type != SLICE_I) {

@@ -827,9 +827,9 @@ struct OVCTUDec
 int ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec);
 
 void ctudec_alloc_filter_buffers(OVCTUDec *const ctudec, int nb_ctu_w, int margin);
-void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l, int y_l, uint8_t is_border_rect);
-void ctudec_save_last_rows(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l, int y_l, uint8_t is_border_rect);
-void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_l, int y_l, uint8_t is_border_rect);
+void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect);
+void ctudec_save_last_rows(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect);
+void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_pic_l, int y_pic_l, uint8_t is_border_rect);
 void ctudec_free_filter_buffers(OVCTUDec *const ctudec);
 
 void ctudec_alloc_intra_line_buff(OVCTUDec *const ctudec, int nb_ctu_w);

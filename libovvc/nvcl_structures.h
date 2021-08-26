@@ -356,6 +356,8 @@ struct OVPPS
     uint8_t pps_log2_ctu_size_minus5;
     uint8_t pps_num_exp_tile_columns_minus1;
     uint8_t pps_num_exp_tile_rows_minus1;
+    uint8_t pps_num_tile_columns_minus1;
+    uint8_t pps_num_tile_rows_minus1;
     uint8_t pps_tile_column_width_minus1[16];
 
     uint8_t pps_tile_row_height_minus1[16];
