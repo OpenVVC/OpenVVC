@@ -1091,225 +1091,6 @@ ovcabac_read_ae_sb_dc_coeff_dpq(OVCABACCtx *const cabac_ctx,
 }
 
 static int
-ovcabac_read_ae_sb_4x4_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const sb_coeffs,
-                                int start_coeff_idx,
-                                VVCCoeffCodingCtx *const c_coding_ctx)
-{
-    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
-                                       start_coeff_idx, 0x5000000000000000,
-                                       0x4440000000000000, c_coding_ctx,
-                                       &chroma_ctx_offsets,
-                                       &inv_diag_4x4_scan);
-    return 0;
-}
-
-static int
-ovcabac_read_ae_sb_4x4_first_c_dpq(OVCABACCtx *const cabac_ctx,
-                                   int16_t  *const sb_coeffs,
-                                   int start_coeff_idx,
-                                   VVCCoeffCodingCtx *const c_coding_ctx)
-{
-    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
-                                       start_coeff_idx, 0,
-                                       0, c_coding_ctx,
-                                       &chroma_ctx_offsets,
-                                       &inv_diag_4x4_scan);
-    return 0;
-}
-
-static int
-ovcabac_read_ae_sb_4x4_c_dpq(OVCABACCtx *const cabac_ctx,
-                             int16_t  *const sb_coeffs,
-                             VVCCoeffCodingCtx *const c_coding_ctx)
-{
-    residual_coding_subblock_4x4(cabac_ctx, sb_coeffs,
-                                 0, 0,
-                                 0, c_coding_ctx,
-                                 &chroma_ctx_offsets,
-                                 &inv_diag_4x4_scan);
-    return 0;
-}
-
-static int
-ovcabac_read_ae_sb_4x4_last_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                     int16_t  *const sb_coeffs,
-                                     VVCCoeffCodingCtx *const c_coding_ctx)
-{
-    residual_coding_subblock_dc(cabac_ctx, sb_coeffs,
-                                 15, 0x5000000000000000,
-                                 0x4440000000000000, c_coding_ctx,
-                                 &chroma_ctx_offsets,
-                                 &inv_diag_4x4_scan);
-    return 0;
-}
-
-static int
-ovcabac_read_ae_sb_8x2_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const sb_coeffs,
-                                int start_coeff_idx,
-                                VVCCoeffCodingCtx *const c_coding_ctx)
-{
-    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
-                                       start_coeff_idx, 0x5000000000000000,
-                                       0x4440000000000000, c_coding_ctx,
-                                       &chroma_ctx_offsets,
-                                       &inv_diag_8x2_scan);
-    return 0;
-}
-
-static int
-ovcabac_read_ae_sb_4x2_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const sb_coeffs,
-                                int start_coeff_idx,
-                                VVCCoeffCodingCtx *const c_coding_ctx)
-{
-    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
-                                       start_coeff_idx, 0x5000000000000000,
-                                       0x4440000000000000, c_coding_ctx,
-                                       &chroma_ctx_offsets,
-                                       &inv_diag_4x2_scan);
-    return 0;
-}
-
-static int
-ovcabac_read_ae_sb_2x8_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const sb_coeffs,
-                                int start_coeff_idx,
-                                VVCCoeffCodingCtx *const c_coding_ctx)
-{
-    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
-                                       start_coeff_idx, 0x5000000000000000,
-                                       0x4440000000000000, c_coding_ctx,
-                                       &chroma_ctx_offsets,
-                                       &inv_diag_2x8_scan);
-    return 0;
-}
-
-static int
-ovcabac_read_ae_sb_2x4_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const sb_coeffs,
-                                int start_coeff_idx,
-                                VVCCoeffCodingCtx *const c_coding_ctx)
-{
-    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
-                                       start_coeff_idx, 0x5000000000000000,
-                                       0x4440000000000000, c_coding_ctx,
-                                       &chroma_ctx_offsets,
-                                       &inv_diag_2x4_scan);
-    return 0;
-}
-
-static int
-ovcabac_read_ae_sb_2x2_c_dpq(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const sb_coeffs,
-                                int start_coeff_idx,
-                                VVCCoeffCodingCtx *const c_coding_ctx)
-{
-    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
-                                       start_coeff_idx, 0x0,
-                                       0x0, c_coding_ctx,
-                                       &chroma_ctx_offsets,
-                                       &inv_diag_2x2_scan);
-    return 0;
-}
-
-static int
-ovcabac_read_ae_sb_2x2_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                int16_t  *const sb_coeffs,
-                                int start_coeff_idx,
-                                VVCCoeffCodingCtx *const c_coding_ctx)
-{
-
-    residual_coding_subblock_dc(cabac_ctx, sb_coeffs,
-                                3, 0x5000,
-                                0x4440, c_coding_ctx,
-                                &chroma_ctx_offsets,
-                                &inv_diag_2x2_scan);
-    return 0;
-}
-
-static int
-ovcabac_read_ae_sb_8x2_last_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                     int16_t  *const sb_coeffs,
-                                     VVCCoeffCodingCtx *const c_coding_ctx)
-{
-    residual_coding_subblock_dc(cabac_ctx, sb_coeffs,
-                                 15, 0x5000000000000000,
-                                 0x4440000000000000, c_coding_ctx,
-                                 &chroma_ctx_offsets,
-                                 &inv_diag_8x2_scan);
-    return 0;
-}
-
-static int
-ovcabac_read_ae_sb_2x8_last_dc_c_dpq(OVCABACCtx *const cabac_ctx,
-                                     int16_t  *const sb_coeffs,
-                                     VVCCoeffCodingCtx *const c_coding_ctx)
-{
-    residual_coding_subblock_dc(cabac_ctx, sb_coeffs,
-                                 15, 0x5000000000000000,
-                                 0x4440000000000000, c_coding_ctx,
-                                 &chroma_ctx_offsets,
-                                 &inv_diag_2x8_scan);
-    return 0;
-}
-
-static int
-ovcabac_read_ae_sb_8x2_first_c_dpq(OVCABACCtx *const cabac_ctx,
-                                   int16_t  *const sb_coeffs,
-                                   int start_coeff_idx,
-                                   VVCCoeffCodingCtx *const c_coding_ctx)
-{
-    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
-                                       start_coeff_idx, 0,
-                                       0, c_coding_ctx,
-                                       &chroma_ctx_offsets,
-                                       &inv_diag_8x2_scan);
-    return 0;
-}
-
-static int
-ovcabac_read_ae_sb_2x8_first_c_dpq(OVCABACCtx *const cabac_ctx,
-                                   int16_t  *const sb_coeffs,
-                                   int start_coeff_idx,
-                                   VVCCoeffCodingCtx *const c_coding_ctx)
-{
-    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
-                                       start_coeff_idx, 0,
-                                       0, c_coding_ctx,
-                                       &chroma_ctx_offsets,
-                                       &inv_diag_2x8_scan);
-    return 0;
-}
-
-static int
-ovcabac_read_ae_sb_8x2_c_dpq(OVCABACCtx *const cabac_ctx,
-                             int16_t  *const sb_coeffs,
-                             VVCCoeffCodingCtx *const c_coding_ctx)
-{
-    residual_coding_subblock_4x4(cabac_ctx, sb_coeffs,
-                                 0, 0,
-                                 0, c_coding_ctx,
-                                 &chroma_ctx_offsets,
-                                 &inv_diag_8x2_scan);
-    return 0;
-}
-
-static int
-ovcabac_read_ae_sb_2x8_c_dpq(OVCABACCtx *const cabac_ctx,
-                             int16_t  *const sb_coeffs,
-                             VVCCoeffCodingCtx *const c_coding_ctx)
-{
-    residual_coding_subblock_4x4(cabac_ctx, sb_coeffs,
-                                 0, 0,
-                                 0, c_coding_ctx,
-                                 &chroma_ctx_offsets,
-                                 &inv_diag_2x8_scan);
-    return 0;
-}
-
-static int
 ovcabac_read_ae_sb_dc_coeff_c_dpq(OVCABACCtx *const cabac_ctx,
                                   int16_t *const sb_coeffs)
 {
@@ -4682,56 +4463,133 @@ struct SBReader
 
     int (*read_dc_sb)(OVCABACCtx *const cabac_ctx, int16_t *const sb_coeffs,
                       int first_scan_idx,
-                      VVCCoeffCodingCtx *const c_coding_ctx);
+                      VVCCoeffCodingCtx *const c_coding_ctx, const struct SBReader *const sb_rdr);
 
     int (*read_first_sb)(OVCABACCtx *const cabac_ctx, int16_t *const sb_coeffs,
                          int first_scan_idx,
-                         VVCCoeffCodingCtx *const c_coding_ctx);
+                         VVCCoeffCodingCtx *const c_coding_ctx, const struct SBReader *const sb_rdr);
 
     int (*read_sb)(OVCABACCtx *const cabac_ctx, int16_t *const sb_coeffs,
-                   VVCCoeffCodingCtx *const c_coding_ctx);
+                   VVCCoeffCodingCtx *const c_coding_ctx, const struct SBReader *const sb_rdr);
 
     int (*read_last_sb)(OVCABACCtx *const cabac_ctx, int16_t *const sb_coeffs,
-                        VVCCoeffCodingCtx *const c_coding_ctx);
+                        VVCCoeffCodingCtx *const c_coding_ctx, const struct SBReader *const sb_rdr);
 
     const VVCSBScanContext *const scan_info;
+    const VVCSBStates *const cabac_offsets;
 };
+
+
+static int
+coeff_coding_dc_sb_dqp_c(OVCABACCtx *const cabac_ctx,
+                         int16_t  *const sb_coeffs,
+                         int start_coeff_idx,
+                         VVCCoeffCodingCtx *const c_coding_ctx,
+                         const struct SBReader *const sb_rdr)
+{
+    uint64_t par_map = sb_rdr->scan_info == &inv_diag_2x2_scan ? 0x5000 : 0x5000000000000000;
+    uint64_t sig_map = sb_rdr->scan_info == &inv_diag_2x2_scan ? 0x4440 : 0x4440000000000000;
+
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
+                                       start_coeff_idx, par_map,
+                                       sig_map, c_coding_ctx,
+                                       sb_rdr->cabac_offsets,
+                                       sb_rdr->scan_info);
+    return 0;
+}
+
+static int
+coeff_coding_last_sb_dpq_c(OVCABACCtx *const cabac_ctx,
+                           int16_t  *const sb_coeffs,
+                           VVCCoeffCodingCtx *const c_coding_ctx,
+                           const struct SBReader *const sb_rdr)
+{
+    uint64_t par_map = sb_rdr->scan_info == &inv_diag_2x2_scan ? 0x5000 : 0x5000000000000000;
+    uint64_t sig_map = sb_rdr->scan_info == &inv_diag_2x2_scan ? 0x4440 : 0x4440000000000000;
+    int start_pos = sb_rdr->scan_info == &inv_diag_2x2_scan ? 3 : 15;
+
+    residual_coding_subblock_dc(cabac_ctx, sb_coeffs,
+                                 start_pos, par_map,
+                                 sig_map, c_coding_ctx,
+                                 sb_rdr->cabac_offsets,
+                                 sb_rdr->scan_info);
+    return 0;
+}
+
+
+static int
+coeff_coding_first_sb_dqp_c(OVCABACCtx *const cabac_ctx,
+                            int16_t  *const sb_coeffs,
+                            int start_coeff_idx,
+                            VVCCoeffCodingCtx *const c_coding_ctx,
+                            const struct SBReader *const sb_rdr)
+{
+    residual_coding_first_subblock_4x4(cabac_ctx, sb_coeffs,
+                                       start_coeff_idx, 0,
+                                       0, c_coding_ctx,
+                                       sb_rdr->cabac_offsets,
+                                       sb_rdr->scan_info);
+    return 0;
+}
+
+static int
+coeff_coding_sb_dpq_c(OVCABACCtx *const cabac_ctx,
+                      int16_t  *const sb_coeffs,
+                      VVCCoeffCodingCtx *const c_coding_ctx,
+                      const struct SBReader *const sb_rdr)
+{
+    residual_coding_subblock_4x4(cabac_ctx, sb_coeffs,
+                                 0, 0,
+                                 0, c_coding_ctx,
+                                 sb_rdr->cabac_offsets,
+                                 sb_rdr->scan_info);
+    return 0;
+}
 
 static const struct SBReader chroma_4x4_reader_dqp = {
     .rdr = &chroma_4x4_reader_dqp,
+
     .read_dc_coeff = &ovcabac_read_ae_sb_dc_coeff_c_dpq,
-    .read_dc_sb    = &ovcabac_read_ae_sb_4x4_dc_c_dpq,
-    .read_first_sb = &ovcabac_read_ae_sb_4x4_first_c_dpq,
-    .read_sb       = &ovcabac_read_ae_sb_4x4_c_dpq,
-    .read_last_sb  = &ovcabac_read_ae_sb_4x4_last_dc_c_dpq,
-    .scan_info = &inv_diag_4x4_scan
+    .read_dc_sb    = &coeff_coding_dc_sb_dqp_c,
+    .read_first_sb = &coeff_coding_first_sb_dqp_c,
+    .read_sb       = &coeff_coding_sb_dpq_c,
+    .read_last_sb  = &coeff_coding_last_sb_dpq_c,
+
+    .scan_info = &inv_diag_4x4_scan,
+    .cabac_offsets = &chroma_ctx_offsets
 };
 
 static const struct SBReader chroma_2x8_reader_dqp = {
+    .rdr = &chroma_2x8_reader_dqp,
     .read_dc_coeff = &ovcabac_read_ae_sb_dc_coeff_c_dpq,
-    .read_dc_sb    = &ovcabac_read_ae_sb_2x8_dc_c_dpq,
-    .read_first_sb = &ovcabac_read_ae_sb_2x8_first_c_dpq,
-    .read_sb       = &ovcabac_read_ae_sb_2x8_c_dpq,
-    .read_last_sb  = &ovcabac_read_ae_sb_2x8_last_dc_c_dpq,
-    .scan_info = &inv_diag_2x8_scan
+    .read_dc_sb    = &coeff_coding_dc_sb_dqp_c,
+    .read_first_sb = &coeff_coding_first_sb_dqp_c,
+    .read_sb       = &coeff_coding_sb_dpq_c,
+    .read_last_sb  = &coeff_coding_last_sb_dpq_c,
+    .scan_info = &inv_diag_2x8_scan,
+    .cabac_offsets = &chroma_ctx_offsets
 };
 
 static const struct SBReader chroma_8x2_reader_dqp = {
+    .rdr = &chroma_8x2_reader_dqp,
     .read_dc_coeff = &ovcabac_read_ae_sb_dc_coeff_c_dpq,
-    .read_dc_sb    = &ovcabac_read_ae_sb_8x2_dc_c_dpq,
-    .read_first_sb = &ovcabac_read_ae_sb_8x2_first_c_dpq,
-    .read_sb       = &ovcabac_read_ae_sb_8x2_c_dpq,
-    .read_last_sb  = &ovcabac_read_ae_sb_8x2_last_dc_c_dpq,
-    .scan_info = &inv_diag_8x2_scan
+    .read_dc_sb    = &coeff_coding_dc_sb_dqp_c,
+    .read_first_sb = &coeff_coding_first_sb_dqp_c,
+    .read_sb       = &coeff_coding_sb_dpq_c,
+    .read_last_sb  = &coeff_coding_last_sb_dpq_c,
+    .scan_info = &inv_diag_8x2_scan,
+    .cabac_offsets = &chroma_ctx_offsets
 };
 
 static const struct SBReader chroma_2x2_reader_dqp = {
+    .rdr = &chroma_2x2_reader_dqp,
     .read_dc_coeff = &ovcabac_read_ae_sb_dc_coeff_c_dpq,
-    .read_dc_sb    = &ovcabac_read_ae_sb_2x2_dc_c_dpq,
-    .read_first_sb = &ovcabac_read_ae_sb_2x2_c_dpq,
-    .read_sb       = NULL,
-    .read_last_sb  = NULL,
-    .scan_info = &inv_diag_2x2_scan
+    .read_dc_sb    = &coeff_coding_dc_sb_dqp_c,
+    .read_first_sb = &coeff_coding_first_sb_dqp_c,
+    .read_sb       = &coeff_coding_sb_dpq_c,
+    .read_last_sb  = &coeff_coding_last_sb_dpq_c,
+    .scan_info = &inv_diag_2x2_scan,
+    .cabac_offsets = &chroma_ctx_offsets
 };
 
 static int
@@ -4776,7 +4634,7 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
                 nb_coeffs -= 4;
 
                 nb_sig_c = sb_rdr->read_first_sb(cabac_ctx, sb_coeffs, nb_coeffs,
-                                                  &c_coding_ctx);
+                                                  &c_coding_ctx, sb_rdr);
 
                 deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -4784,25 +4642,26 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
 
                 position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, 0);
 
-                nb_sig_c = sb_rdr->read_dc_sb(cabac_ctx, sb_coeffs + 4,
-                                              4, &c_coding_ctx);
+                nb_sig_c = sb_rdr->read_last_sb(cabac_ctx, sb_coeffs + 4,
+                                                &c_coding_ctx, sb_rdr);
 
                 deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
                 store_sb_coeff(_dst, sb_coeffs + 4, log2_tb_w, 1, 1);
 
             } else {
-                nb_sig_c = ovcabac_read_ae_sb_4x2_dc_c_dpq(cabac_ctx, sb_coeffs,
-                                                           nb_coeffs, &c_coding_ctx);
+                nb_sig_c = sb_rdr->read_dc_sb(cabac_ctx, sb_coeffs,
+                                              nb_coeffs, &c_coding_ctx, sb_rdr);
 
                 deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
-                memcpy(&_dst[0        ]     , &sb_coeffs[0], sizeof(int16_t) * 2);
-                memcpy(&_dst[1 << log2_tb_w], &sb_coeffs[8], sizeof(int16_t) * 2);
+                store_sb_coeff(_dst, sb_coeffs, log2_tb_w, 1, 1);
             }
         } else {
-            nb_sig_c = ovcabac_read_ae_sb_8x2_dc_c_dpq(cabac_ctx, sb_coeffs,
-                                                       nb_coeffs, &c_coding_ctx);
+            const struct SBReader *const sb_rdr = &chroma_8x2_reader_dqp;
+
+            nb_sig_c = sb_rdr->read_dc_sb(cabac_ctx, sb_coeffs, nb_coeffs,
+                                          &c_coding_ctx, sb_rdr);
 
             deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -4828,7 +4687,7 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
     position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_offset);
 
     nb_sig_c = sb_rdr->read_first_sb(cabac_ctx, sb_coeffs,
-                                     start_coeff_idx, &c_coding_ctx);
+                                     start_coeff_idx, &c_coding_ctx, sb_rdr);
 
     deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -4851,7 +4710,7 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_offset);
 
-            nb_sig_c = sb_rdr->read_sb(cabac_ctx, sb_coeffs, &c_coding_ctx);
+            nb_sig_c = sb_rdr->read_sb(cabac_ctx, sb_coeffs, &c_coding_ctx, sb_rdr);
 
             deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -4863,7 +4722,7 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, 0);
 
-    nb_sig_c += sb_rdr->read_last_sb(cabac_ctx, sb_coeffs, &c_coding_ctx);
+    nb_sig_c += sb_rdr->read_last_sb(cabac_ctx, sb_coeffs, &c_coding_ctx, sb_rdr);
 
     deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -4922,7 +4781,7 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
 
                 nb_sig_c = sb_rdr->read_first_sb(cabac_ctx, sb_coeffs,
                                                  nb_coeffs,
-                                                 &c_coding_ctx);
+                                                 &c_coding_ctx, sb_rdr);
 
 
                 deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
@@ -4931,8 +4790,8 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
 
                 position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, 0);
 
-                nb_sig_c = sb_rdr->read_dc_sb(cabac_ctx, sb_coeffs + 4,
-                                              4, &c_coding_ctx);
+                nb_sig_c = sb_rdr->read_last_sb(cabac_ctx, sb_coeffs + 4,
+                                                &c_coding_ctx, sb_rdr);
 
                 deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -4940,21 +4799,19 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             } else {
                 nb_coeffs = tmp_lut[last_coeff_idx];
-                nb_sig_c = ovcabac_read_ae_sb_2x4_dc_c_dpq(cabac_ctx, sb_coeffs,
-                                                            nb_coeffs,
-                                                            &c_coding_ctx);
+
+                nb_sig_c = sb_rdr->read_dc_sb(cabac_ctx, sb_coeffs,
+                                              nb_coeffs, &c_coding_ctx, sb_rdr);
 
                 deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
-                memcpy(&_dst[0], &sb_coeffs[0],  sizeof(int16_t) * 2);
-                memcpy(&_dst[1<<log2_tb_w], &sb_coeffs[2],  sizeof(int16_t) * 2);
-                memcpy(&_dst[2<<log2_tb_w], &sb_coeffs[4],  sizeof(int16_t) * 2);
-                memcpy(&_dst[3<<log2_tb_w], &sb_coeffs[6],  sizeof(int16_t) * 2);
+                store_sb_coeff(_dst, sb_coeffs, log2_tb_w, 1, 2);
             }
         } else {
-            nb_sig_c = ovcabac_read_ae_sb_2x8_dc_c_dpq(cabac_ctx, sb_coeffs,
-                                                        nb_coeffs,
-                                                        &c_coding_ctx);
+            const struct SBReader *const sb_rdr = &chroma_2x8_reader_dqp;
+            nb_sig_c = sb_rdr->read_dc_sb(cabac_ctx, sb_coeffs, nb_coeffs,
+                                          &c_coding_ctx, sb_rdr);
+
             deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
             memcpy(&_dst[0], &sb_coeffs[0],  sizeof(int16_t) * 16);
@@ -4978,7 +4835,7 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
     position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_offset);
 
     nb_sig_c = sb_rdr->read_first_sb(cabac_ctx, sb_coeffs, start_coeff_idx,
-                                     &c_coding_ctx);
+                                     &c_coding_ctx, sb_rdr);
 
     deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -4996,7 +4853,7 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_offset);
 
-            nb_sig_c = sb_rdr->read_sb(cabac_ctx, sb_coeffs, &c_coding_ctx);
+            nb_sig_c = sb_rdr->read_sb(cabac_ctx, sb_coeffs, &c_coding_ctx, sb_rdr);
 
             deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -5006,7 +4863,7 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, 0);
 
-    nb_sig_c += sb_rdr->read_last_sb(cabac_ctx, sb_coeffs, &c_coding_ctx);
+    nb_sig_c += sb_rdr->read_last_sb(cabac_ctx, sb_coeffs, &c_coding_ctx, sb_rdr);
 
     deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
@@ -5078,7 +4935,7 @@ read_tb_inv_diag_scan(const struct SBReader *const sb_rdr, const struct IQScale 
         if(!sb_x && !sb_y){
 
             sb_rdr->read_dc_sb(cabac_ctx, sb_coeffs, nb_c_first_sb,
-                               &c_coding_ctx);
+                               &c_coding_ctx, sb_rdr);
 
             deq_prms->dequant_sb(sb_coeffs, deq_prms->scale, deq_prms->shift);
 
@@ -5102,7 +4959,7 @@ read_tb_inv_diag_scan(const struct SBReader *const sb_rdr, const struct IQScale 
         update_cctx_pos_4x4(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_x, sb_y);
 
         nb_sig_c = sb_rdr->read_first_sb(cabac_ctx, sb_coeffs,
-                                         nb_c_first_sb, &c_coding_ctx);
+                                         nb_c_first_sb, &c_coding_ctx, sb_rdr);
 
         deq_prms->dequant_sb(sb_coeffs, deq_prms->scale, deq_prms->shift);
 
@@ -5125,7 +4982,7 @@ read_tb_inv_diag_scan(const struct SBReader *const sb_rdr, const struct IQScale 
                 update_cctx_pos_4x4(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_x, sb_y);
 
                 nb_sig_c += sb_rdr->read_sb(cabac_ctx, sb_coeffs,
-                                            &c_coding_ctx);
+                                            &c_coding_ctx, sb_rdr);
 
                 deq_prms->dequant_sb(sb_coeffs, deq_prms->scale, deq_prms->shift);
 
@@ -5136,7 +4993,7 @@ read_tb_inv_diag_scan(const struct SBReader *const sb_rdr, const struct IQScale 
         position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, 0);
 
         nb_sig_c += sb_rdr->read_last_sb(cabac_ctx, sb_coeffs,
-                                         &c_coding_ctx);
+                                         &c_coding_ctx, sb_rdr);
 
         deq_prms->dequant_sb(sb_coeffs, deq_prms->scale, deq_prms->shift);
 
