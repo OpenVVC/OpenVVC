@@ -88,9 +88,9 @@ ERROR_LOG_FILE="error.log"
 
 dump_md5error(){
     cat <<EOF
-"${file}:"
+${file}:
 A md5 mismatch occured on file ${file}.
-Reference MD5:\t${ref_md5}
+Reference MD5:	${ref_md5}
 The decoder output has been saved to ${log_file}.
 EOF
 }
