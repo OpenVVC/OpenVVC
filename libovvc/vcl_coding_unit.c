@@ -674,6 +674,7 @@ coding_unit(OVCTUDec *const ctu_dec,
         dbf_fill_qp_map(&dbf_info->qp_map_cb, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1, qp_cb);
         dbf_fill_qp_map(&dbf_info->qp_map_cr, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1, qp_cr);
     } else {
+        derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
         struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
         uint8_t qp_l  = ctu_dec->qp_ctx.current_qp;
         uint8_t qp_cb = ctu_dec->dequant_cb.qp - 12;
@@ -725,6 +726,16 @@ coding_unit(OVCTUDec *const ctu_dec,
     if (!(cu.cu_flags & flg_cu_skip_flag)) {
          /*TODO rename */
          transform_unit_wrap(ctu_dec, part_ctx,  x0, y0, log2_cb_w, log2_cb_h, cu);
+    } else {
+        derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
+        struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
+        uint8_t qp_l  = ctu_dec->qp_ctx.current_qp;
+        uint8_t qp_cb = ctu_dec->dequant_cb.qp - 12;
+        uint8_t qp_cr = ctu_dec->dequant_cr.qp - 12;
+
+        dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_cb_w, log2_cb_h, qp_l);
+        dbf_fill_qp_map(&dbf_info->qp_map_cb, x0, y0, log2_cb_w, log2_cb_h, qp_cb);
+        dbf_fill_qp_map(&dbf_info->qp_map_cr, x0, y0, log2_cb_w, log2_cb_h, qp_cr);
     }
 
     /* FIXME delta qp clean */
