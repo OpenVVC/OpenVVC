@@ -80,7 +80,7 @@ decode(){
 }
 
 log_success(){
-    echo -e "$GREEN${name}$NC"
+    printf "%-70.70s ${GREEN}%s${NC}\n" "${name}" PASS
     rm -f ${log_file}.log
 }
 
@@ -97,6 +97,7 @@ EOF
 
 log_failure(){
     echo ${name} >> failed.txt
+    printf "%-70.70s ${RED}%s${NC}\n" "${name}" FAIL
     echo -e "$RED${name}$NC: See $ERROR_LOG_FILE for more info."
     dump_md5error >> ${ERROR_LOG_FILE}
 }
