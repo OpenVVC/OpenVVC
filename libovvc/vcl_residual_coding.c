@@ -92,7 +92,7 @@ enum TBSize
     TB_128x128 = 63,
 };
 
-#define DQP_TRANSITION_MAP (int16_t)0x7D28
+#define DQP_TRANSITION_MAP (uint16_t)0x7D28
 
 typedef struct VVCCoeffCodingCtx{
     uint8_t *sum_sig_nbs;
