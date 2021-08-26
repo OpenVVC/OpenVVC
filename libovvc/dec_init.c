@@ -390,8 +390,10 @@ decinit_set_entry_points(OVPS *const prms, const OVNALUnit *nal, uint32_t nb_sh_
 static void
 init_tile_ctx(struct TileInfo *const tinfo, const OVPPS *const pps)
 {
-    int nb_cols = pps->pps_num_exp_tile_columns_minus1 + 1;
-    int nb_rows = pps->pps_num_exp_tile_rows_minus1 + 1;
+    // int nb_cols = pps->pps_num_exp_tile_columns_minus1 + 1;
+    // int nb_rows = pps->pps_num_exp_tile_rows_minus1 + 1;
+    int nb_cols = pps->pps_num_tile_columns_minus1 + 1;
+    int nb_rows = pps->pps_num_tile_rows_minus1 + 1;
 
     const int log2_ctu_s = pps->pps_log2_ctu_size_minus5 + 5;
 
@@ -417,8 +419,6 @@ init_tile_ctx(struct TileInfo *const tinfo, const OVPPS *const pps)
         tinfo->nb_ctu_h[i - 1] = tile_nb_ctu_h;
         rem_ctu_h -= tile_nb_ctu_h;
     }
-    tinfo->ctu_y[i - 1] = nb_ctu_h - rem_ctu_h;
-    tinfo->nb_ctu_h[i - 1] = rem_ctu_h;
 
     for (i = 1; i <= nb_cols; ++i) {
         const int tile_nb_ctu_w = pps->pps_tile_column_width_minus1[i - 1] + 1;
@@ -426,12 +426,9 @@ init_tile_ctx(struct TileInfo *const tinfo, const OVPPS *const pps)
         tinfo->nb_ctu_w[i - 1] = tile_nb_ctu_w;
         rem_ctu_w -= tile_nb_ctu_w;
     }
-
-    tinfo->ctu_x[i - 1] = nb_ctu_w - rem_ctu_w;
-    tinfo->nb_ctu_w[i - 1] = rem_ctu_w;
-
-    tinfo->nb_tile_cols = nb_cols + !!rem_ctu_w;
-    tinfo->nb_tile_rows = nb_rows + !!rem_ctu_h;
+    
+    tinfo->nb_tile_cols = nb_cols ;
+    tinfo->nb_tile_rows = nb_rows ;
 }
 
 static int
