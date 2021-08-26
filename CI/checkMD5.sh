@@ -59,7 +59,7 @@ filter_extension(){
 mkdir -p $STREAM
 
 if [[ "$#" == 3 ]];  then
-  STREAMLIST=$(curl --silent $URL | grep -o -E '"([[:alnum:]]+_)+([[:alnum:]]+.(266|bin))"' | sed 's/\"/\ /g')
+  STREAMLIST=$(curl --silent $URL | grep -o -E '"([[:alnum:]]+_)+([[:alnum:]]+.266)"' | sed 's/\"/\ /g')
 fi
 
 for file in $STREAMLIST
@@ -68,7 +68,7 @@ do
     echo Downloading $file ...
     curl --silent $URL/$file --output $STREAM/$file
     echo Downloading ${file%.266}.md5 ...
-    curl --silent $URL/${file%.(266|bin)}.md5 --output $STREAM/${file%.(266|bin)}.md5
+    curl --silent $URL/${file%.266}.md5 --output $STREAM/${file%.266}.md5
   fi
 done
 
