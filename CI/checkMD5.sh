@@ -80,7 +80,7 @@ decode(){
 }
 
 log_success(){
-    printf "%-70.70s ${GREEN}%s${NC}\n" "${name}" PASS
+    printf "\r%-70.70s ${GREEN}%s${NC}\n" "${name}" PASS
     rm -f ${log_file}.log
 }
 
@@ -177,9 +177,22 @@ rm -f ${ERROR_LOG_FILE}
 tmp_dir=$STREAM
 nb_error=0
 
+nb_files="$(echo "$file_list" | wc -w)"
+echo ${nb_files}
+file_id="0"
+
+short_name(){
+    printf "%.$2s" "$1"
+}
+
 for file in ${file_list}; do
 
   name=$(basename ${file})
+
+  increment file_id
+
+	 printf "\e[K"
+  printf "%-62.62s %s" "Processing $(short_name "$name" 30)..." "$file_id of $nb_files"
 
   filter_extension name ${ext_list}
 
