@@ -1088,25 +1088,21 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     uint8_t ref_idx = 0;
 
     OVMV mv0;
-    uint8_t apply_ciip = 0;
     if (merge_flag) {
         enum MergeTypeP mrg_type = P_DEFAULT_MERGE;
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
-        uint8_t apply_ciip = 0;
 
         /* FIXME missing affine in P */
         uint8_t sps_ciip_flag = inter_ctx->ciip_flag;
-        uint8_t ciip_flag = sps_ciip_flag && !skip_flag && (1 << log2_cb_w) < 128
+        uint8_t ciip_enabled = sps_ciip_flag && !skip_flag && (1 << log2_cb_w) < 128
                                                         && (1 << log2_cb_h) < 128
                                                         && 1 << (log2_cb_w + log2_cb_h) >= 64;
 
-        uint8_t reg_merge_flag = !ciip_flag || ovcabac_read_ae_reg_merge_flag(cabac_ctx, skip_flag);
+        uint8_t reg_merge_flag = !ciip_enabled || ovcabac_read_ae_reg_merge_flag(cabac_ctx, skip_flag);
         uint8_t mmvd_flag  = 0;
 
-        if (!reg_merge_flag){
-            apply_ciip = 1;
-        } else {
-            if (inter_ctx->mmvd_flag){
+        if (reg_merge_flag) {
+            if (inter_ctx->mmvd_flag) {
                 mmvd_flag = ovcabac_read_ae_mmvd_flag(cabac_ctx);
                 if (mmvd_flag){
                     uint8_t merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
