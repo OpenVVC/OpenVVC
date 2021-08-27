@@ -5,7 +5,7 @@
 
 #include "slicedec.h"
 
-#define THREAD 1
+#define USE_THREADS 1
 
 struct SliceThread;
 struct OVVCDec;

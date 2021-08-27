@@ -204,7 +204,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         if (ret < 0) {
             return ret;
         } else {
-            #if THREAD 
+            #if USE_THREADS 
             /*Select the first available subdecoder, or wait until one is available*/
             OVSliceDec *sldec = ovdec_select_subdec(vvcdec);
             #else
