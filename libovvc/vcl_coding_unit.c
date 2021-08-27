@@ -1079,7 +1079,6 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     uint8_t ref_idx = 0;
 
     OVMV mv0;
-    uint8_t apply_ciip = 0;
     if (merge_flag) {
         uint8_t mmvd_flag  = 0;
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
@@ -1130,12 +1129,8 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                           mvp_idx, 1, ref_idx, ref_idx);
     }
 
-    if(apply_ciip) {
-        rcn_ciip(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, mv0, ref_idx);
-    } else {
-        rcn_mcp(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, x0, y0,
-                log2_cb_w, log2_cb_h, mv0, 0, ref_idx);
-    }
+    rcn_mcp(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, x0, y0,
+            log2_cb_w, log2_cb_h, mv0, 0, ref_idx);
 
     /*FIXME this have to be moved to DRV */
     reset_intra_map(ctu_dec, i_info, x0, y0, log2_cb_w, log2_cb_h, log2_min_cb_s);
