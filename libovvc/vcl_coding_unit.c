@@ -1094,9 +1094,9 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
         /* FIXME missing affine in P */
         uint8_t sps_ciip_flag = inter_ctx->ciip_flag;
-        uint8_t ciip_enabled = sps_ciip_flag && !skip_flag && (1 << log2_cb_w) < 128
-                                                        && (1 << log2_cb_h) < 128
-                                                        && 1 << (log2_cb_w + log2_cb_h) >= 64;
+        uint8_t ciip_enabled = sps_ciip_flag && !skip_flag && log2_cb_w < 7
+                                                           && log2_cb_h < 7
+                                                           && (log2_cb_w + log2_cb_h) >= 6;
 
         uint8_t reg_merge_flag = !ciip_enabled || ovcabac_read_ae_reg_merge_flag(cabac_ctx, skip_flag);
         uint8_t mmvd_flag  = 0;
