@@ -1088,10 +1088,8 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
         uint8_t ciip_flag = sps_ciip_flag && !skip_flag && (1 << log2_cb_w) < 128
                                                         && (1 << log2_cb_h) < 128
                                                         && 1 << (log2_cb_w + log2_cb_h) >= 64;
-        uint8_t  reg_merge_flag = 1;
-        if (ciip_flag) {
-            reg_merge_flag = ovcabac_read_ae_reg_merge_flag(cabac_ctx, skip_flag);
-        }
+
+        uint8_t reg_merge_flag = !ciip_flag || ovcabac_read_ae_reg_merge_flag(cabac_ctx, skip_flag);
 
         if (reg_merge_flag){
             if (inter_ctx->mmvd_flag){
