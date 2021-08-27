@@ -229,9 +229,9 @@ uninit_entry_threads(struct SliceThread *th_info)
 }
 
 
-// /*
-// Functions needed by the threads decoding an entire slice
-// */
+/*
+Functions needed by the threads decoding an entire slice
+*/
 int
 ovthread_slice_thread_init(struct SliceThread *th_slice, int nb_threads)
 {   

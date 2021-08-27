@@ -130,7 +130,7 @@ int coding_unit(OVCTUDec *const ctu_dec,
                 uint8_t log2_cb_w, uint8_t log2_cb_h);
 
 
-void ovcabac_read_ae_sao_ctu( OVCTUDec *const ctudec, int ctb_rs );
+void ovcabac_read_ae_sao_ctu( OVCTUDec *const ctudec, int ctb_rs, uint16_t nb_ctu_w);
 
 void ovcabac_read_ae_alf_ctu( OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu_w);
 

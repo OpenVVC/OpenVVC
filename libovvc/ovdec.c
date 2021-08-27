@@ -204,8 +204,12 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         if (ret < 0) {
             return ret;
         } else {
+            #if THREAD 
             /*Select the first available subdecoder, or wait until one is available*/
             OVSliceDec *sldec = ovdec_select_subdec(vvcdec);
+            #else
+            OVSliceDec *sldec = vvcdec->subdec_list[0];
+            #endif
 
             ret = init_vcl_decoder(vvcdec, sldec, nvcl_ctx, nalu, &rdr);
 
@@ -216,7 +220,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
              */
 
             /* FIXME handle non rect entries later */
-            ret = slicedec_decode_rect_entries(sldec, &vvcdec->active_params);
+            ret = slicedec_decode_rect_entries(sldec, sldec->active_params);
  
             /* TODO start VCL decoder */
         }

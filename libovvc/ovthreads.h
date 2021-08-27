@@ -5,6 +5,8 @@
 
 #include "slicedec.h"
 
+#define THREAD 1
+
 struct SliceThread;
 struct OVVCDec;
 struct OVFrame;

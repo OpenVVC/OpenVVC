@@ -33,9 +33,11 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
                              uint8_t num_bits_sao,
                              uint8_t num_bits_sao_c)
 {
+
     int i, k;
 
     if (sao_enabled_l) {
+        memset(sao_ctu,0,sizeof(SAOParamsCtu));
         uint8_t ctu_sao_luma_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[SAO_TYPE_IDX_CTX_OFFSET]);
         if (ctu_sao_luma_flag) {
             sao_ctu->type_idx[0] = ovcabac_bypass_read(cabac_ctx) ? SAO_EDGE : SAO_BAND;
@@ -157,7 +159,7 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
 
 
 void
-ovcabac_read_ae_sao_ctu(OVCTUDec *const ctudec, int ctb_rs)
+ovcabac_read_ae_sao_ctu( OVCTUDec *const ctudec, int ctb_rs, uint16_t nb_ctu_w )
 {   
     SAOParamsCtu* sao_ctu = &ctudec->sao_info.sao_params[ctb_rs];
     uint8_t sao_enabled_l = ctudec->sao_info.sao_luma_flag;
@@ -179,8 +181,9 @@ ovcabac_read_ae_sao_ctu(OVCTUDec *const ctudec, int ctb_rs)
                 int ctb_left = ctb_rs-1; 
                 *sao_ctu = ctudec->sao_info.sao_params[ctb_left];
             }
-            if (val == SAO_MERGE_ABOVE) {
-                int ctb_above = ctb_rs - ctudec->nb_ctb_pic_w; 
+            if (val == SAO_MERGE_ABOVE)
+            {
+                int ctb_above = ctb_rs - nb_ctu_w; 
                 *sao_ctu = ctudec->sao_info.sao_params[ctb_above];;
             }
         }

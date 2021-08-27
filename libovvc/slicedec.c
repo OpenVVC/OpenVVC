@@ -693,14 +693,14 @@ slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
                      prms->pps_info.tile_info.nb_tile_rows;
 
     int ret = 0;
-    #if 0
+    #if USE_THREADS
+    ovthread_decode_entries(&sldec->th_info, slicedec_decode_rect_entry, nb_entries);
+    #else
     int i;
     for (i = 0; i < nb_entries; ++i) {
-        ret = slicedec_decode_rect_entry(sldec, prms, i);
+        ret = slicedec_decode_rect_entry(sldec, sldec->ctudec_list[0], prms, i);
     }
     ret = 0;
-    #else
-    ovthread_decode_entries(&sldec->th_info, slicedec_decode_rect_entry, nb_entries);
     #endif
     return ret;
 }
@@ -772,9 +772,9 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
      */
     derive_ctu_neighborhood(ctudec, ctb_addr_rs, nb_ctu_w);
 
-    ovcabac_read_ae_sao_ctu(ctudec, ctb_addr_rs);
-    ovcabac_read_ae_alf_ctu(ctudec, ctb_addr_rs, einfo->nb_ctu_w);
-    ovcabac_read_ae_cc_alf_ctu(ctudec, ctb_addr_rs, einfo->nb_ctu_w);
+    ovcabac_read_ae_sao_ctu(ctudec, ctb_addr_rs, nb_ctu_w);
+    ovcabac_read_ae_alf_ctu(ctudec, ctb_addr_rs, nb_ctu_w);
+    ovcabac_read_ae_cc_alf_ctu(ctudec, ctb_addr_rs, nb_ctu_w);
 
     init_ctu_bitfield(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s);
     if ((ctb_addr_rs + 2) % nb_ctu_w == 0 && einfo->implicit_w) {
@@ -819,9 +819,9 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
     /* FIXME pic border detection in neighbour flags ?*/
     derive_ctu_neighborhood(ctudec, ctb_addr_rs, nb_ctu_w);
 
-    ovcabac_read_ae_sao_ctu(ctudec, ctb_addr_rs);
-    ovcabac_read_ae_alf_ctu(ctudec, ctb_addr_rs, einfo->nb_ctu_w);
-    ovcabac_read_ae_cc_alf_ctu(ctudec, ctb_addr_rs, einfo->nb_ctu_w);
+    ovcabac_read_ae_sao_ctu(ctudec, ctb_addr_rs, nb_ctu_w);
+    ovcabac_read_ae_alf_ctu(ctudec, ctb_addr_rs, nb_ctu_w);
+    ovcabac_read_ae_cc_alf_ctu(ctudec, ctb_addr_rs, nb_ctu_w);
 
     /* FIXME pic border detection in neighbour flags ?*/
     init_ctu_bitfield_border(&ctudec->rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s,
@@ -953,12 +953,28 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         }
     }
 
-    if(ctudec->ctb_y == 0){
-        rcn_sao_first_pix_rows(ctudec, einfo, 0); 
+    //Apply in-loop filters on the available pixels of CTU line
+    int ctb_y = ctudec->ctb_y - einfo->ctb_y;
+    if(ctb_y == 0){
+        rcn_sao_first_pix_rows(ctudec, einfo, ctb_y);
+        if(einfo->nb_ctu_h == 1){
+            rcn_sao_filter_line(ctudec, einfo, ctb_y);
+            rcn_alf_filter_line(ctudec, einfo, ctb_y);
+            ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
+        } 
+    }    
+    else if(ctb_y == einfo->nb_ctu_h - 1){
+        rcn_sao_filter_line(ctudec, einfo, ctb_y-1);
+        rcn_sao_filter_line(ctudec, einfo, ctb_y);
+
+        rcn_alf_filter_line(ctudec, einfo, ctb_y-1);
+        ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
+        rcn_alf_filter_line(ctudec, einfo, ctb_y);
+        ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
     }
     else{
-        rcn_sao_filter_line(ctudec, einfo, ctudec->ctb_y-1);
-        rcn_alf_filter_line(ctudec, einfo, ctudec->ctb_y-1);
+        rcn_sao_filter_line(ctudec, einfo, ctb_y-1);
+        rcn_alf_filter_line(ctudec, einfo, ctb_y-1);
         ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
     }
 
@@ -1047,13 +1063,23 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     ret = decode_truncated_ctu(ctudec, einfo, ctb_addr_rs,
                                einfo->last_ctu_w, ctu_h);
 
-    rcn_sao_filter_line(ctudec, einfo, ctudec->ctb_y-1);
-    rcn_sao_filter_line(ctudec, einfo, ctudec->ctb_y);
+    int ctb_y = ctudec->ctb_y - einfo->ctb_y;
+    if(ctb_y == 0){
+        rcn_sao_first_pix_rows(ctudec, einfo, ctb_y);
+        rcn_sao_filter_line(ctudec, einfo, ctb_y);
+        rcn_alf_filter_line(ctudec, einfo, ctb_y);
+        ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
+    }    
+    else{
+        rcn_sao_filter_line(ctudec, einfo, ctb_y-1);
+        rcn_sao_filter_line(ctudec, einfo, ctb_y);
 
-    rcn_alf_filter_line(ctudec, einfo, ctudec->ctb_y-1);
-    ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
-    rcn_alf_filter_line(ctudec, einfo, ctudec->ctb_y);
-    ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
+        rcn_alf_filter_line(ctudec, einfo, ctb_y-1);
+        ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
+        rcn_alf_filter_line(ctudec, einfo, ctb_y);
+        ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
+    }
+
 
     if (slice_type != SLICE_I) {
         store_inter_maps(drv_lines, ctudec, ctb_x, 1);
@@ -1583,8 +1609,10 @@ slicedec_init(OVSliceDec *sldec, int nb_entry_th)
     }
 
     sldec->th_info.owner = sldec;
+    #if USE_THREADS 
     ret = ovthread_slice_thread_init(&sldec->th_info, nb_entry_th);
     ret = init_entry_threads(&sldec->th_info, nb_entry_th);
+    #endif
     if (ret < 0) {
         goto failthreads;
     }

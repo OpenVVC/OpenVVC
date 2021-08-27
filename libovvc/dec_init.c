@@ -408,11 +408,7 @@ init_tile_ctx(struct TileInfo *const tinfo, const OVPPS *const pps)
     int rem_ctu_w = nb_ctu_w;
     int rem_ctu_h = nb_ctu_h;
 
-
     int i;
-
-    /* FIXME review implicit last tile x and y
-    */
     for (i = 1; i <=  nb_rows; ++i) {
         const int tile_nb_ctu_h = pps->pps_tile_row_height_minus1[i - 1] + 1;
         tinfo->ctu_y[i - 1] = nb_ctu_h - rem_ctu_h;
@@ -426,7 +422,7 @@ init_tile_ctx(struct TileInfo *const tinfo, const OVPPS *const pps)
         tinfo->nb_ctu_w[i - 1] = tile_nb_ctu_w;
         rem_ctu_w -= tile_nb_ctu_w;
     }
-    
+
     tinfo->nb_tile_cols = nb_cols ;
     tinfo->nb_tile_rows = nb_rows ;
 }

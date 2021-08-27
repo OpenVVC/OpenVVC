@@ -1013,11 +1013,11 @@ static void alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx
 
 
 
-void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo const *einfo, uint16_t ctb_y_pic)
+void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo const *einfo, uint16_t ctb_y)
 {
     struct ALFInfo* alf_info = &ctudec->alf_info;
     if (!alf_info->alf_luma_enabled_flag && !alf_info->alf_cb_enabled_flag && !alf_info->alf_cr_enabled_flag){
-    return;
+        return;
     }
     struct OVFilterBuffers fb = ctudec->filter_buffers;
     OVFrame *frame = fb.pic_frame;
@@ -1025,13 +1025,11 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
     const OVPartInfo *const pinfo = ctudec->part_ctx;
     uint8_t log2_ctb_s = pinfo->log2_ctu_s;
     int ctu_width  = 1 << log2_ctb_s;
-    int nb_ctb_pic_w = (ctudec->pic_w + (ctu_width - 1)) >> log2_ctb_s;
 
     RCNALF* alf = &alf_info->rcn_alf;
     for (int ctb_x = 0; ctb_x < einfo->nb_ctu_w; ctb_x++) {
-        //TODO: change when applied on rectangular region
         int ctb_x_pic = ctb_x + einfo->ctb_x;
-        int ctb_y = ctb_y_pic - einfo->ctb_y;
+        int ctb_y_pic = ctb_y + einfo->ctb_y;
         int x_pos = ctu_width * ctb_x;
         int x_pos_pic = ctu_width * ctb_x_pic;
         int y_pos_pic = ctu_width * ctb_y_pic;
@@ -1046,19 +1044,19 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
         is_border = (ctb_y==einfo->nb_ctu_h-1) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
         // is_border = (y_pos_pic + ctu_width >= ctudec->pic_h) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
 
-        int ctu_rs_addr_pic = ctb_x_pic + ctb_y * nb_ctb_pic_w ;
-        ALFParamsCtu alf_params_ctu = alf_info->ctb_alf_params[ctu_rs_addr_pic];
+        int ctu_rs_addr = ctb_x + ctb_y * einfo->nb_ctu_w ;
+        ALFParamsCtu* alf_params_ctu = &alf_info->ctb_alf_params[ctu_rs_addr];
 
         int16_t **src = fb.filter_region;
         int16_t **saved_rows = fb.saved_rows_alf;
         ctudec_extend_filter_region(ctudec, saved_rows, x_pos, x_pos_pic, y_pos_pic, is_border);
 
-        if (alf_params_ctu.ctb_alf_flag & 0x4) {
+        if (alf_params_ctu->ctb_alf_flag & 0x4) {
             uint8_t c_idx = 0;
             Area blk_dst;
             
             //Source block in the filter buffers image
-            int stride_src = fb.filter_region_stride[c_idx];
+            int     stride_src = fb.filter_region_stride[c_idx];
             int16_t*  src_luma = &src[c_idx][fb.filter_region_offset[c_idx]];
 
             //Destination block in the final image
@@ -1070,7 +1068,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
 
             rcn_alf_derive_classification(alf, src_luma, stride_src, blk_dst, ctu_width, ctudec->pic_h, ctudec->rcn_ctx.rcn_funcs.alf.classif);
 
-            int16_t filter_idx = alf_params_ctu.ctb_alf_idx;
+            int16_t filter_idx = alf_params_ctu->ctb_alf_idx;
             int16_t *coeff = alf->filter_coeff_dec[filter_idx];
             int16_t *clip = alf->filter_clip_dec[filter_idx];
 
@@ -1089,7 +1087,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
         {
             const int chr_scale = frame->linesize[0] / frame->linesize[c_idx];
 
-            if( (c_idx==1 && (alf_params_ctu.ctb_alf_flag & 2)) || (c_idx==2 && (alf_params_ctu.ctb_alf_flag & 1)))
+            if( (c_idx==1 && (alf_params_ctu->ctb_alf_flag & 2)) || (c_idx==2 && (alf_params_ctu->ctb_alf_flag & 1)))
             {
                 Area blk_dst;
                 int stride_src = fb.filter_region_stride[c_idx];
@@ -1104,7 +1102,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
                 int stride_dst = frame->linesize[c_idx]/2;
                 int16_t*  dst_chroma = (int16_t*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
 
-                uint8_t alt_num = (c_idx == 1) ? alf_params_ctu.cb_alternative : alf_params_ctu.cr_alternative;
+                uint8_t alt_num = (c_idx == 1) ? alf_params_ctu->cb_alternative : alf_params_ctu->cr_alternative;
 
                 int virbnd_pos = (( y_pos_pic + ctu_width >= ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_width - ALF_VB_POS_ABOVE_CTUROW_LUMA)/chr_scale);
                 int yVb = (blk_dst.y + blk_dst.height - 1);// & (ctu_width - 1);
@@ -1123,7 +1121,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
             {
                 const OVALFData* alf_data = (c_idx==1) ? alf_info->aps_cc_alf_data_cb : alf_info->aps_cc_alf_data_cr;
 
-                const int filt_idx = alf_info->ctb_cc_alf_filter_idx[c_idx - 1][ctu_rs_addr_pic];
+                const int filt_idx = alf_info->ctb_cc_alf_filter_idx[c_idx - 1][ctu_rs_addr];
                 if (filt_idx != 0)
                 {
                     //TODO: maybe reverse buffer use, the alf reconstructed pixels are in the pic frame.
