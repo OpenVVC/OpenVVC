@@ -1080,8 +1080,8 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
     OVMV mv0;
     if (merge_flag) {
-        uint8_t mmvd_flag  = 0;
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
+        uint8_t apply_ciip = 0;
 
         /* FIXME missing affine in P */
         uint8_t sps_ciip_flag = inter_ctx->ciip_flag;
@@ -1090,22 +1090,23 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                                                         && 1 << (log2_cb_w + log2_cb_h) >= 64;
 
         uint8_t reg_merge_flag = !ciip_flag || ovcabac_read_ae_reg_merge_flag(cabac_ctx, skip_flag);
+        uint8_t mmvd_flag  = 0;
 
-        if (reg_merge_flag){
+        if (!reg_merge_flag){
+            apply_ciip = 1;
+        } else {
             if (inter_ctx->mmvd_flag){
                 mmvd_flag = ovcabac_read_ae_mmvd_flag(cabac_ctx);
+                if (mmvd_flag){
+                    uint8_t merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
+                    mv0 = drv_mmvd_merge_mvp(inter_ctx, mv_ctx0,
+                                             x_cb, y_cb, nb_cb_w, nb_cb_h,
+                                             merge_idx, max_nb_cand);
+                }
             }
-        } else {
-            apply_ciip = 1;
         }
 
-        uint8_t merge_idx;
-        if (mmvd_flag){
-            merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
-            mv0 = drv_mmvd_merge_mvp(inter_ctx, mv_ctx0,
-                            x_cb, y_cb, nb_cb_w, nb_cb_h,
-                            merge_idx, max_nb_cand);
-        } else {
+        if (!mmvd_flag) {
             uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
             mv0 = drv_merge_mvp(inter_ctx, mv_ctx0,
                                 x0, y0, log2_cb_w, log2_cb_h,
