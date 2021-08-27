@@ -1113,11 +1113,12 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
         }
 
     } else {
-        /*FIXME add ref_idx*/
-        OVMV mvd = ovcabac_read_ae_mvd(cabac_ctx);
+
         if (inter_ctx->nb_active_ref0 > 1) {
             ref_idx = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref0);
         }
+
+        OVMV mvd = ovcabac_read_ae_mvd(cabac_ctx);
 
         uint8_t mvp_idx = ovcabac_read_ae_mvp_flag(cabac_ctx);
 
