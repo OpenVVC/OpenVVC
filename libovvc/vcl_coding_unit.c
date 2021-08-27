@@ -1057,6 +1057,15 @@ reset_intra_map(OVCTUDec *const ctudec, struct IntraDRVInfo *const intra_ctx,
     }
 }
 
+enum MergeTypeP
+{
+    P_NO_MERGE,
+    P_SB_MERGE,
+    P_CIIP_MERGE,
+    P_MMVD_MERGE,
+    P_DEFAULT_MERGE
+};
+
 int
 prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                         const OVPartInfo *const part_ctx,
@@ -1081,6 +1090,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
     OVMV mv0;
     uint8_t apply_ciip = 0;
     if (merge_flag) {
+        enum MergeTypeP mrg_type = P_DEFAULT_MERGE;
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
         uint8_t apply_ciip = 0;
 
@@ -1100,6 +1110,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                 mmvd_flag = ovcabac_read_ae_mmvd_flag(cabac_ctx);
                 if (mmvd_flag){
                     uint8_t merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
+                    mrg_type = P_MMVD_MERGE;
                     mv0 = drv_mmvd_merge_mvp(inter_ctx, mv_ctx0,
                                              x_cb, y_cb, nb_cb_w, nb_cb_h,
                                              merge_idx, max_nb_cand);
@@ -1113,6 +1124,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                                 x0, y0, log2_cb_w, log2_cb_h,
                                 merge_idx, max_nb_cand);
             if (!reg_merge_flag) {
+                mrg_type = P_CIIP_MERGE;
                 rcn_ciip(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, mv0, ref_idx);
                 goto end;
             }
