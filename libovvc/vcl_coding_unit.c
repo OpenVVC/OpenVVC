@@ -1112,6 +1112,10 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
             mv0 = drv_merge_mvp(inter_ctx, mv_ctx0,
                                 x0, y0, log2_cb_w, log2_cb_h,
                                 merge_idx, max_nb_cand);
+            if (!reg_merge_flag) {
+                rcn_ciip(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, mv0, ref_idx);
+                goto end;
+            }
         }
 
     } else {
@@ -1130,13 +1134,10 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                           mvp_idx, 1, ref_idx, ref_idx);
     }
 
-    if(apply_ciip) {
-        rcn_ciip(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, mv0, ref_idx);
-    } else {
-        rcn_mcp(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, x0, y0,
-                log2_cb_w, log2_cb_h, mv0, 0, ref_idx);
-    }
+    rcn_mcp(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, x0, y0,
+            log2_cb_w, log2_cb_h, mv0, 0, ref_idx);
 
+end:
     /*FIXME this have to be moved to DRV */
     reset_intra_map(ctu_dec, i_info, x0, y0, log2_cb_w, log2_cb_h, log2_min_cb_s);
 
