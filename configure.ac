@@ -43,7 +43,12 @@ AC_ARG_ENABLE([simd], [AS_HELP_STRING([--disable-simd], [disable all simd optimi
 
 # --enable-arm-asm
 AC_ARG_ENABLE([arm-asm], [AS_HELP_STRING([--enable-arm-asm], [enables arm assembly optimisation [no]])],
-              [CPPFLAGS="$CPPFLAGS -DARCH_AARCH64_ASSEMBLY=1"], []
+              [flag_arm_asm="true" CPPFLAGS="$CPPFLAGS -DARCH_AARCH64_ASSEMBLY=1"], [flag_arm_asm="false"]
+)
+
+# --enable-arm-simde
+AC_ARG_ENABLE([arm-simde], [AS_HELP_STRING([--enable-arm-simde], [enables arm simde optimisation [no]])],
+              [flag_arm_simde="true" CPPFLAGS="$CPPFLAGS -DARM_SIMDE=1"], [flag_arm_simde="false"]
 )
 
 # host and cpu specific settings
@@ -78,5 +83,9 @@ AS_IF([test x"$X86" = x"true"], [AX_CHECK_COMPILE_FLAG([-msse4.1], [flag_sse4_1=
 AM_CONDITIONAL([HAVE_SSE4_1], [test x"$flag_sse4_1" = x"true" -a x"$X86" = x"true" -a x"$flag_disable_simd" = x"false"])
 
 AM_CONDITIONAL([HAVE_NEON], [test x"$ARM" = x"true" -a x"$flag_disable_simd" = x"false"])
+
+AM_CONDITIONAL([HAVE_NEON_ASM], [test x"$ARM" = x"true" -a x"$flag_disable_simd" = x"false" -a x"$flag_arm_asm" = x"true"])
+
+AM_CONDITIONAL([HAVE_NEON_SIMDE], [test x"$ARM" = x"true" -a x"$flag_disable_simd" = x"false" -a x"$flag_arm_simde" = x"true"])
 
 AC_OUTPUT

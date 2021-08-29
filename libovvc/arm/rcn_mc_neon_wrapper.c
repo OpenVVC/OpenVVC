@@ -479,17 +479,17 @@ rcn_init_mc_functions_neon(struct RCNFunctions* const rcn_funcs)
   mc_c->bidir0[0][SIZE_BLOCK_4] = &ov_put_vvc_bi0_pel_pixels_10_4_neon;
   mc_c->bidir1[0][SIZE_BLOCK_4] = &ov_put_vvc_bi1_pel_pixels_10_4_neon;
   //
-  // mc_c->unidir[1][SIZE_BLOCK_4] = &ov_put_vvc_uni_epel_h_10_8_neon_wrapper;
-  // mc_c->bidir0[1][SIZE_BLOCK_4] = &ov_put_vvc_bi0_epel_h_10_8_neon_wrapper;
-  // mc_c->bidir1[1][SIZE_BLOCK_4] = &ov_put_vvc_bi1_epel_h_10_8_neon_wrapper;
+  // mc_c->unidir[1][SIZE_BLOCK_4] = ;
+  // mc_c->bidir0[1][SIZE_BLOCK_4] = ;
+  // mc_c->bidir1[1][SIZE_BLOCK_4] = ;
   //
-  // mc_c->unidir[2][SIZE_BLOCK_4] = &dav1d_ff_hevc_transform_4x4_neon_8;
-  // mc_c->bidir0[2][SIZE_BLOCK_4] = &dav1d_ff_hevc_transform_4x4_neon_8;
-  // mc_c->bidir1[2][SIZE_BLOCK_4] = &dav1d_ff_hevc_transform_4x4_neon_8;
+  // mc_c->unidir[2][SIZE_BLOCK_4] = ;
+  // mc_c->bidir0[2][SIZE_BLOCK_4] = ;
+  // mc_c->bidir1[2][SIZE_BLOCK_4] = ;
   //
-  // mc_c->unidir[3][SIZE_BLOCK_4] = &dav1d_ff_hevc_transform_4x4_neon_8;
-  // mc_c->bidir0[3][SIZE_BLOCK_4] = &dav1d_ff_hevc_transform_4x4_neon_8;
-  // mc_c->bidir1[3][SIZE_BLOCK_4] = &dav1d_ff_hevc_transform_4x4_neon_8;
+  // mc_c->unidir[3][SIZE_BLOCK_4] = ;
+  // mc_c->bidir0[3][SIZE_BLOCK_4] = ;
+  // mc_c->bidir1[3][SIZE_BLOCK_4] = ;
   //
   mc_c->bidir0[0][SIZE_BLOCK_8] = &ov_put_vvc_bi0_pel_pixels_10_8_neon;
   mc_c->bidir1[0][SIZE_BLOCK_8] = &ov_put_vvc_bi1_pel_pixels_10_8_neon;
