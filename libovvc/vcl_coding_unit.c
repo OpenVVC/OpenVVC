@@ -1150,6 +1150,43 @@ inter_merge_data_p(OVCTUDec *const ctu_dec,
     return mrg_data;
 }
 
+struct MVPDataP
+{
+    OVMV mvd;
+    uint8_t ref_idx;
+    uint8_t mvp_idx;
+    uint8_t prec_amvr;
+};
+
+static struct MVPDataP
+inter_mvp_data_p(OVCTUDec *const ctu_dec, uint8_t nb_active_ref0_min1)
+{
+    OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+    struct MVPDataP mvp_data;
+    uint8_t ref_idx = nb_active_ref0_min1;
+    OVMV mvd;
+    uint8_t mvp_idx;
+    uint8_t prec_amvr;
+
+    if (nb_active_ref0_min1) {
+        ref_idx = ovcabac_read_ae_ref_idx(cabac_ctx, nb_active_ref0_min1 + 1);
+    }
+
+    mvd = ovcabac_read_ae_mvd(cabac_ctx);
+
+    mvp_idx = ovcabac_read_ae_mvp_flag(cabac_ctx);
+
+    prec_amvr = MV_PRECISION_QUARTER;
+
+
+    mvp_data.ref_idx   = ref_idx;
+    mvp_data.mvd       = mvd;
+    mvp_data.mvp_idx   = mvp_idx;
+    mvp_data.prec_amvr = prec_amvr;
+
+    return mvp_data;
+}
+
 int
 prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                         const OVPartInfo *const part_ctx,
@@ -1184,20 +1221,17 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
             goto end;
         }
 
+        ref_idx = mv0.ref_idx;
+
     } else {
+        struct MVPDataP mvp_data;
+        mvp_data = inter_mvp_data_p(ctu_dec, inter_ctx->nb_active_ref0 - 1);
 
-        if (inter_ctx->nb_active_ref0 > 1) {
-            ref_idx = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref0);
-        }
-
-        OVMV mvd = ovcabac_read_ae_mvd(cabac_ctx);
-
-        uint8_t mvp_idx = ovcabac_read_ae_mvp_flag(cabac_ctx);
-
-        uint8_t prec_amvr = MV_PRECISION_QUARTER;
-        mv0 = drv_mvp_mvd(inter_ctx, mv_ctx0, mvd, prec_amvr,
+        mv0 = drv_mvp_mvd(inter_ctx, mv_ctx0, mvp_data.mvd, mvp_data.prec_amvr,
                           x0, y0, log2_cb_w, log2_cb_h,
-                          mvp_idx, 1, ref_idx, ref_idx);
+                          mvp_data.mvp_idx, 1, mvp_data.ref_idx, mvp_data.ref_idx);
+
+        ref_idx = mvp_data.ref_idx;
     }
 
     rcn_mcp(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, x0, y0,
