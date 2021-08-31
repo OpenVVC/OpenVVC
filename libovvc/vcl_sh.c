@@ -239,6 +239,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
         }
 
         if (ph->ph_temporal_mvp_enabled_flag && !pps->pps_rpl_info_in_ph_flag) {
+            sh->sh_collocated_from_l0_flag = 1;
             if (sh->sh_slice_type == B) {
                 sh->sh_collocated_from_l0_flag = nvcl_read_flag(rdr);
             }
