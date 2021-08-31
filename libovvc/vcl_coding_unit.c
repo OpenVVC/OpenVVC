@@ -1431,8 +1431,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                                                                   && (log2_cb_w + log2_cb_h) >= 6;
 
         uint8_t gpm_enabled  = inter_ctx->gpm_flag && inter_ctx->max_gpm_cand > 1
-                                                   && log2_cb_w >= 3 && log2_cb_h >= 3
-                                                   && log2_cb_w <= 6 && log2_cb_h <= 6
+                                                   && log2_cb_w > 2 && log2_cb_h > 2
+                                                   && log2_cb_w < 7 && log2_cb_h < 7
                                                    && log2_cb_w < 3 + log2_cb_h
                                                    && log2_cb_h < 3 + log2_cb_w;
 
