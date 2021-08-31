@@ -1311,8 +1311,9 @@ inter_mvp_data_p(OVCTUDec *const ctu_dec, uint8_t nb_active_ref0_min1)
     struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
     uint8_t ref_idx = nb_active_ref0_min1;
     OVMV mvd;
+    uint8_t prec_amvr = MV_PRECISION_QUARTER;
     uint8_t mvp_idx;
-    uint8_t prec_amvr;
+
 
     if (nb_active_ref0_min1) {
         ref_idx = ovcabac_read_ae_ref_idx(cabac_ctx, nb_active_ref0_min1 + 1);
@@ -1322,8 +1323,6 @@ inter_mvp_data_p(OVCTUDec *const ctu_dec, uint8_t nb_active_ref0_min1)
 
     mvp_idx = ovcabac_read_ae_mvp_flag(cabac_ctx);
 
-    prec_amvr = MV_PRECISION_QUARTER;
-
     if (inter_ctx->amvr_flag) {
         uint8_t nz_mvd = check_nz_mvd_p(&mvd);
         if (nz_mvd) {
@@ -1331,7 +1330,6 @@ inter_mvp_data_p(OVCTUDec *const ctu_dec, uint8_t nb_active_ref0_min1)
             prec_amvr = ovcabac_read_ae_amvr_precision(cabac_ctx, ibc_flag);
         }
     }
-
 
     mvp_data.ref_idx   = ref_idx;
     mvp_data.mvd       = mvd;
