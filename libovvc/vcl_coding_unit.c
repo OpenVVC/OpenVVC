@@ -1279,18 +1279,20 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
                         uint8_t skip_flag, uint8_t merge_flag)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
     struct IntraDRVInfo *const i_info = &ctu_dec->drv_ctx.intra_info;
 #if 1
     struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
     struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
 #endif
 
+    uint8_t cu_type = OV_INTER;
+
     uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
     uint8_t ref_idx = 0;
 
     OVMV mv0;
     if (merge_flag) {
+        uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
         struct MergeDataP mrg_data;
         if (skip_flag) {
             mrg_data = inter_skip_data_p(ctu_dec, part_ctx, x0, y0,
@@ -1308,6 +1310,10 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
         if (mrg_data.merge_type == P_CIIP_MERGE) {
             rcn_ciip(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, mv0, ref_idx);
             goto end;
+        }
+
+        if (mrg_data.merge_type == P_SB_MERGE) {
+            cu_type = OV_AFFINE;
         }
 
         ref_idx = mv0.ref_idx;
@@ -1332,7 +1338,7 @@ end:
     /*FIXME this have to be moved to DRV */
     reset_intra_map(ctu_dec, i_info, x0, y0, log2_cb_w, log2_cb_h, log2_min_cb_s);
 
-    return merge_flag;
+    return cu_type;
 }
 
 static inline uint8_t
