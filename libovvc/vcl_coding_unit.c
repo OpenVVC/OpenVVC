@@ -1197,6 +1197,7 @@ inter_merge_data_p(OVCTUDec *const ctu_dec,
             mmvd_flag = mmvd_enabled && ovcabac_read_ae_mmvd_flag(cabac_ctx);
         } else {
             mrg_type = P_CIIP_MERGE;
+            ctu_dec->tmp_ciip = 1;
         }
     }
 
@@ -1358,6 +1359,8 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
 
     uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
     uint8_t ref_idx = 0;
+
+    ctu_dec->tmp_ciip = 0;
 
     OVMV mv0;
     if (merge_flag) {
