@@ -1115,16 +1115,35 @@ inter_skip_data_p(OVCTUDec *const ctu_dec,
     struct MergeDataP mrg_data;
     enum MergeTypeP mrg_type = P_DEFAULT_MERGE;
 
-    uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
-    /* FIXME missing affine in P */
+    uint8_t sb_merge_flag = 0;
+
+    if (ctu_dec->affine_enabled && log2_cb_w >= 3 && log2_cb_h >= 3) {
+        uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
+        uint8_t y_cb = y0 >> log2_min_cb_s;
+        uint8_t x_cb = x0 >> log2_min_cb_s;
+        uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_cb];
+        uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_cb];
+
+        uint8_t lft_affine = cu_type_lft == OV_AFFINE || cu_type_lft == OV_INTER_SKIP_AFFINE;
+        uint8_t abv_affine = cu_type_abv == OV_AFFINE || cu_type_abv == OV_INTER_SKIP_AFFINE;
+
+        sb_merge_flag = ovcabac_read_ae_sb_merge_flag(cabac_ctx, lft_affine, abv_affine);
+    }
+
     uint8_t mmvd_enabled = inter_ctx->mmvd_flag;
     uint8_t mmvd_flag = mmvd_enabled && ovcabac_read_ae_mmvd_flag(cabac_ctx);
     uint8_t merge_idx;
 
-    if (mmvd_flag){
+    if (sb_merge_flag) {
+        uint8_t nb_affine_merge_cand_min1 = ctu_dec->affine_nb_merge_cand - 1;
+        merge_idx = ovcabac_read_ae_affine_merge_idx(cabac_ctx, nb_affine_merge_cand_min1);
+        mrg_type = P_SB_MERGE;
+    } else if (mmvd_flag){
+        uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
         merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
         mrg_type = P_MMVD_MERGE;
     } else {
+        uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
         merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
     }
 
@@ -1154,23 +1173,40 @@ inter_merge_data_p(OVCTUDec *const ctu_dec,
                                          && log2_cb_h < 7
                                          && (log2_cb_w + log2_cb_h) >= 6;
 
+    uint8_t sb_merge_flag = 0;
+
+    if (ctu_dec->affine_enabled && log2_cb_w >= 3 && log2_cb_h >= 3) {
+        uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
+        uint8_t y_cb = y0 >> log2_min_cb_s;
+        uint8_t x_cb = x0 >> log2_min_cb_s;
+        uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_cb];
+        uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_cb];
+
+        uint8_t lft_affine = cu_type_lft == OV_AFFINE || cu_type_lft == OV_INTER_SKIP_AFFINE;
+        uint8_t abv_affine = cu_type_abv == OV_AFFINE || cu_type_abv == OV_INTER_SKIP_AFFINE;
+
+        sb_merge_flag = ovcabac_read_ae_sb_merge_flag(cabac_ctx, lft_affine, abv_affine);
+    }
+
     uint8_t reg_merge_flag = !ciip_enabled || ovcabac_read_ae_reg_merge_flag(cabac_ctx, 0);
     uint8_t mmvd_flag  = 0;
 
     if (reg_merge_flag) {
         uint8_t mmvd_enabled = inter_ctx->mmvd_flag;
         mmvd_flag = mmvd_enabled && ovcabac_read_ae_mmvd_flag(cabac_ctx);
-        if (mmvd_flag){
-            merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
-            mrg_type = P_MMVD_MERGE;
-        }
+    } else {
+        mrg_type = P_CIIP_MERGE;
     }
 
-    if (!mmvd_flag) {
+    if (sb_merge_flag) {
+        uint8_t nb_affine_merge_cand_min1 = ctu_dec->affine_nb_merge_cand - 1;
+        merge_idx = ovcabac_read_ae_affine_merge_idx(cabac_ctx, nb_affine_merge_cand_min1);
+        mrg_type = P_SB_MERGE;
+    } else if (mmvd_flag){
+        merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
+        mrg_type = P_MMVD_MERGE;
+    } else {
         merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, max_nb_cand);
-        if (!reg_merge_flag) {
-            mrg_type = P_CIIP_MERGE;
-        }
     }
 
     mrg_data.merge_type = mrg_type;
