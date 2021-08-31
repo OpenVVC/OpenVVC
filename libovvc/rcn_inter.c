@@ -602,7 +602,7 @@ derive_ref_buf_y(OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
 
 static struct OVBuffInfo
 derive_dmvr_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
-                      uint16_t *edge_buff, int pu_w, int pu_h)
+                      uint16_t *edge_buff, int pu_w, int pu_h, int log2_ctu_s)
 {
     struct OVBuffInfo ref_buff;
     uint16_t *const ref_y  = (uint16_t *) ref_pic->frame->data[0];
@@ -627,6 +627,16 @@ derive_dmvr_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int po
 
     int start_pos_x = ref_pos_x - REF_PADDING_L;
     int start_pos_y = ref_pos_y - REF_PADDING_L;
+
+    /*Frame thread synchronization to ensure data is available
+     */
+    int nb_ctb_pic_w = (pic_w + ((1 << log2_ctu_s) - 1)) >> log2_ctu_s;
+    int nb_ctb_pic_h = (pic_h + ((1 << log2_ctu_s) - 1)) >> log2_ctu_s;
+    int tl_ctu_y = OVMAX(ref_pos_y - 2, 0) >> log2_ctu_s;
+    int tl_ctu_x = OVMAX(ref_pos_x - 2, 0) >> log2_ctu_s;
+    int br_ctu_y = OVMIN(( ref_pos_y + 3 + pu_h ) >> log2_ctu_s, nb_ctb_pic_h-1);
+    int br_ctu_x = OVMIN(( ref_pos_x + 3 + pu_w ) >> log2_ctu_s, nb_ctb_pic_w-1);
+    ovdpb_wait_ref_decoded_ctus(ref_pic, tl_ctu_x, tl_ctu_y, br_ctu_x, br_ctu_y);
 
     emulate_block_border(edge_buff + 2 * RCN_CTB_STRIDE + 2, (src_y - src_off),
                          RCN_CTB_STRIDE, src_stride,
@@ -758,7 +768,6 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     dst.y  += x0 + y0 * dst.stride;
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-
 
     mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride, pu_h, prec_x0, prec_y0, pu_w);
     
@@ -1122,10 +1131,10 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     OVMV tmp1 = *mv1;
 
     struct OVBuffInfo ref0_b = derive_dmvr_ref_buf_y(ref0, *mv0, pos_x, pos_y, edge_buff0,
-                                                     pu_w, pu_h);
+                                                     pu_w, pu_h, ctudec->part_ctx->log2_ctu_s);
 
     struct OVBuffInfo ref1_b = derive_dmvr_ref_buf_y(ref1, *mv1, pos_x, pos_y, edge_buff1,
-                                                     pu_w, pu_h);
+                                                     pu_w, pu_h, ctudec->part_ctx->log2_ctu_s);
 
     uint8_t prec_x0 = (mv0->x) & 0xF;
     uint8_t prec_y0 = (mv0->y) & 0xF;
@@ -2010,7 +2019,7 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
     const uint16_t *src_cb = &ref0_cb[(ref_x >> 1) + (ref_y >> 1) * src_stride_c];
     const uint16_t *src_cr = &ref0_cr[(ref_x >> 1) + (ref_y >> 1) * src_stride_c];
 
-    /* FIXME
+    /* 
      * Thread synchronization to ensure data is available before usage
      */
     int tl_ctu_y = OVMAX(ref_y - 2, 0) >> log2_ctb_s;
@@ -2091,7 +2100,8 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
     uint16_t tmp_buff [RCN_CTB_SIZE];
 
-    const OVFrame *const frame0 =  type ? ref1->frame : ref0->frame;
+    OVPicture *ref_pic =  type ? ref1 : ref0;
+    const OVFrame *const frame0 = ref_pic->frame;
 
     const uint16_t *const ref0_y  = (uint16_t *) frame0->data[0];
 
@@ -2126,9 +2136,16 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
     const uint16_t *src_y  = &ref0_y [ ref_x       + ref_y        * src_stride];
 
-    /* FIXME
+    /*
      * Thread synchronization to ensure data is available before usage
      */
+    int nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+    int nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+    int tl_ctu_y = OVMAX(ref_y - 2, 0) >> log2_ctb_s;
+    int tl_ctu_x = OVMAX(ref_x - 2, 0) >> log2_ctb_s;
+    int br_ctu_y = OVMIN(( ref_y + 3 + pu_h ) >> log2_ctb_s, nb_ctb_pic_h-1);
+    int br_ctu_x = OVMIN(( ref_x + 3 + pu_w ) >> log2_ctb_s, nb_ctb_pic_w-1);
+    ovdpb_wait_ref_decoded_ctus(ref_pic, tl_ctu_x, tl_ctu_y, br_ctu_x, br_ctu_y);  
 
     if (emulate_edge){
         int src_off  = REF_PADDING_L * (src_stride) + (REF_PADDING_L);
@@ -2170,7 +2187,8 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
 
     uint16_t tmp_buff [RCN_CTB_SIZE];
 
-    const OVFrame *const frame0 =  type ? ref1->frame : ref0->frame;
+    OVPicture *ref_pic =  type ? ref1 : ref0;
+    const OVFrame *const frame0 = ref_pic->frame;
 
     const uint16_t *const ref0_y  = (uint16_t *) frame0->data[0];
 
@@ -2205,9 +2223,17 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
 
     const uint16_t *src_y  = &ref0_y [ ref_x       + ref_y        * src_stride];
 
-    /* FIXME
+    /* 
      * Thread synchronization to ensure data is available before usage
      */
+    int nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+    int nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+    int tl_ctu_y = OVMAX(ref_y - 2, 0) >> log2_ctb_s;
+    int tl_ctu_x = OVMAX(ref_x - 2, 0) >> log2_ctb_s;
+    int br_ctu_y = OVMIN(( ref_y + 3 + pu_h ) >> log2_ctb_s, nb_ctb_pic_h-1);
+    int br_ctu_x = OVMIN(( ref_x + 3 + pu_w ) >> log2_ctb_s, nb_ctb_pic_w-1);
+    ovdpb_wait_ref_decoded_ctus(ref_pic, tl_ctu_x, tl_ctu_y, br_ctu_x, br_ctu_y);
+
     int16_t tmp_prof[(SB_H + 2 * PROF_BUFF_PADD_H) * (128 + 2 * PROF_BUFF_PADD_W)];
     int16_t tmp_prof_stride = (128);
 
@@ -2260,7 +2286,8 @@ rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
     uint16_t tmp_buff [RCN_CTB_SIZE];
 
-    const OVFrame *const frame0 =  type ? ref1->frame : ref0->frame;
+    OVPicture *ref_pic =  type ? ref1 : ref0;
+    const OVFrame *const frame0 = ref_pic->frame;
 
     const uint16_t *const ref0_cb = (uint16_t *) frame0->data[1];
     const uint16_t *const ref0_cr = (uint16_t *) frame0->data[2];
@@ -2289,10 +2316,6 @@ rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
     const uint16_t *src_cb = &ref0_cb[(ref_x >> 1) + (ref_y >> 1) * src_stride_c];
     const uint16_t *src_cr = &ref0_cr[(ref_x >> 1) + (ref_y >> 1) * src_stride_c];
-
-    /* FIXME
-     * Thread synchronization to ensure data is available before usage
-     */
 
     uint8_t emulate_edge = test_for_edge_emulation_c(ref_x >> 1, ref_y >> 1, pic_w >> 1, pic_h >> 1,
                                                      pu_w >> 1, pu_h >> 1);;
