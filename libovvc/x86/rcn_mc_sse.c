@@ -3885,7 +3885,7 @@ oh_hevc_put_hevc_uni_epel_hv64_10_sse(uint16_t* dst,
     dst, dststride, _src, _srcstride, height, mx, my, width);
 }
 
-#define WEIGHTED 0
+#define WEIGHTED 1
 #if WEIGHTED
 static __m128i
 _MM_PACKUS_EPI32(__m128i a, __m128i b)
@@ -3914,7 +3914,7 @@ put_vvc_qpel_h4_10_sse(int16_t* dst,
   __m128i x1, x2, x3, x4, r1, r3, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  if (width == 4 && height == 4) {
+  if ((height==11 && width == 4)|| (height == 4 && width == 4)) {
     c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][0]);
     c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][1]);
     c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[mx - 1][2]);
@@ -4144,7 +4144,7 @@ put_vvc_bi_w_qpel_v4_14_10_sse(uint8_t* _dst,
   const __m128i offset = _mm_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
-  if (width == 4 && height == 4) {
+  if ((height==11 && width == 4)|| (height == 4 && width == 4)) {
     c1 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][0]);
     c2 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][1]);
     c3 = _mm_load_si128((__m128i*)ov_mc_filters_4_sse[my - 1][2]);
