@@ -1131,7 +1131,7 @@ inter_skip_data_p(OVCTUDec *const ctu_dec,
     }
 
     uint8_t mmvd_enabled = inter_ctx->mmvd_flag;
-    uint8_t mmvd_flag = mmvd_enabled && ovcabac_read_ae_mmvd_flag(cabac_ctx);
+    uint8_t mmvd_flag = mmvd_enabled && !sb_merge_flag && ovcabac_read_ae_mmvd_flag(cabac_ctx);
     uint8_t merge_idx;
 
     if (sb_merge_flag) {
@@ -1188,14 +1188,16 @@ inter_merge_data_p(OVCTUDec *const ctu_dec,
         sb_merge_flag = ovcabac_read_ae_sb_merge_flag(cabac_ctx, lft_affine, abv_affine);
     }
 
-    uint8_t reg_merge_flag = !ciip_enabled || ovcabac_read_ae_reg_merge_flag(cabac_ctx, 0);
     uint8_t mmvd_flag  = 0;
+    if (!sb_merge_flag) {
+        uint8_t reg_merge_flag = !ciip_enabled || ovcabac_read_ae_reg_merge_flag(cabac_ctx, 0);
 
-    if (reg_merge_flag) {
-        uint8_t mmvd_enabled = inter_ctx->mmvd_flag;
-        mmvd_flag = mmvd_enabled && ovcabac_read_ae_mmvd_flag(cabac_ctx);
-    } else {
-        mrg_type = P_CIIP_MERGE;
+        if (reg_merge_flag) {
+            uint8_t mmvd_enabled = inter_ctx->mmvd_flag;
+            mmvd_flag = mmvd_enabled && ovcabac_read_ae_mmvd_flag(cabac_ctx);
+        } else {
+            mrg_type = P_CIIP_MERGE;
+        }
     }
 
     if (sb_merge_flag) {
