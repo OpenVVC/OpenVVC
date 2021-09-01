@@ -1059,7 +1059,6 @@ reset_intra_map(OVCTUDec *const ctudec, struct IntraDRVInfo *const intra_ctx,
 
 enum MergeTypeP
 {
-    NO_MERGE,
     SB_MERGE,
     CIIP_MERGE,
     GPM_MERGE,
