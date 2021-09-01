@@ -186,7 +186,7 @@ cat > libovvc/ovconfig.h <<EOF
 #define ARCH_X86 $is_x86
 #define SSE_ENABLED $sse_enabled
 #define AVX_ENABLED 0
-#define ARCH_ARM $is_arm
+#define ARCH_AARCH64 $is_arm
 #define NEON_ENABLED $neon_enabled
 
 #define HAVE_POSIX_MEMALIGN $posix_memalign
