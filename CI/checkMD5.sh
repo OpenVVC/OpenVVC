@@ -97,7 +97,7 @@ EOF
 
 log_failure(){
     echo ${name} >> failed.txt
-    printf "%-70.70s ${RED}%s${NC}\n" "${name}" FAIL
+    printf "\r%-70.70s ${RED}%s${NC}\n" "${name}" FAIL
     echo -e "$RED${name}$NC: See $ERROR_LOG_FILE for more info."
     dump_md5error >> ${ERROR_LOG_FILE}
 }
