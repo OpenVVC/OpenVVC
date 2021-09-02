@@ -2194,50 +2194,65 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
 
 OVMV
 drv_mmvd_merge_mvp(struct InterDRVCtx *const inter_ctx,
-              const struct OVMVCtx *const mv_ctx,
-              uint8_t pb_x, uint8_t pb_y,
-              uint8_t nb_pb_w, uint8_t nb_pb_h,
-              uint8_t merge_idx, uint8_t max_nb_merge_cand)
+                   const struct OVMVCtx *const mv_ctx,
+                   uint8_t x0, uint8_t y0,
+                   uint8_t log2_cb_w, uint8_t log2_cb_h,
+                   uint8_t merge_idx, uint8_t max_nb_cand)
 {
-    int   f_base_idx = merge_idx / MMVD_MAX_REFINE_NUM;
-    OVMV mv0 = vvc_derive_merge_mvp(inter_ctx, mv_ctx, pb_x, pb_y,
-                                    nb_pb_w, nb_pb_h, f_base_idx,
-                                    max_nb_merge_cand, 0);
 
     static const uint8_t ref_mvd_cands[8] = { 1, 2, 4, 8, 16, 32, 64, 128};
-    int f_pos_group, f_pos_step, idx, f_pos;
+    uint8_t x0_unit = x0 >> LOG2_MIN_CU_S;
+    uint8_t y0_unit = y0 >> LOG2_MIN_CU_S;
+    uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
+    uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
 
-    f_pos_group = merge_idx / (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
-    idx  = merge_idx - f_pos_group * (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
-    idx -= f_base_idx * (MMVD_MAX_REFINE_NUM);
-    f_pos_step = idx >> 2;
-    f_pos = idx - (f_pos_step << 2);
-    int offset = (int32_t)ref_mvd_cands[f_pos_step] << 2;
+    int smvd_mrg_idx = merge_idx / MMVD_MAX_REFINE_NUM;
 
-    OVMV mvd = {0};
+    OVMV mv = vvc_derive_merge_mvp(inter_ctx, mv_ctx,
+                                   x0_unit, y0_unit,
+                                   nb_unit_w, nb_unit_h, smvd_mrg_idx,
+                                   max_nb_cand, log2_cb_w + log2_cb_h <= 5);
 
-    if (mv0.ref_idx >= 0) {
-        if (f_pos == 0) {
-            mvd.x = offset;
-            mvd.y = 0;
-        } else if (f_pos == 1) {
-            mvd.x = -offset;
-            mvd.y = 0;
-        } else if (f_pos == 2) {
-            mvd.x = 0;
-            mvd.y = offset;
-        } else {
-            mvd.x = 0;
-            mvd.y = -offset;
-        }
+
+    OVMV mvd0;
+
+    int f_pos_group = merge_idx / (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
+
+    int idx = merge_idx;
+    idx -= f_pos_group  * (MMVD_BASE_MV_NUM * MMVD_MAX_REFINE_NUM);
+    idx -= smvd_mrg_idx * (MMVD_MAX_REFINE_NUM);
+
+    int offset = (uint16_t)ref_mvd_cands[(idx >> 2)] << 2;
+
+    offset <<= inter_ctx->mmvd_shift;
+
+    int f_pos = idx - ((idx >> 2) << 2);
+
+    if (f_pos == 0) {
+        mvd0.x = offset;
+        mvd0.y = 0;
+    } else if (f_pos == 1) {
+        mvd0.x = -offset;
+        mvd0.y = 0;
+    } else if (f_pos == 2) {
+        mvd0.x = 0;
+        mvd0.y = offset;
+    } else {
+        mvd0.x = 0;
+        mvd0.y = -offset;
     }
 
-    mv0.x += mvd.x;
-    mv0.y += mvd.y;
+    mv.x += mvd0.x;
+    mv.y += mvd0.y;
 
-    update_mv_ctx(inter_ctx, mv0, pb_x, pb_y, nb_pb_w,
-                  nb_pb_h, 1);
-    return mv0;
+    /* Force to RPL_0 */
+    update_mv_ctx(inter_ctx, mv, x0_unit, y0_unit,
+                    nb_unit_w, nb_unit_h, 0x1);
+
+
+    hmvp_update_lut(&inter_ctx->hmvp_lut, mv);
+
+    return mv;
 }
 
 
@@ -2317,10 +2332,10 @@ drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
 
 VVCMergeInfo
 drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
-                uint8_t x0, uint8_t y0,
-                uint8_t log2_pu_w, uint8_t log2_pu_h,
-                uint8_t merge_idx,
-                uint8_t max_nb_cand, uint8_t is_small)
+                     uint8_t x0, uint8_t y0,
+                     uint8_t log2_pu_w, uint8_t log2_pu_h,
+                     uint8_t merge_idx,
+                     uint8_t max_nb_cand, uint8_t is_small)
 {
 
     static const uint8_t ref_mvd_cands[8] = { 1, 2, 4, 8, 16, 32, 64, 128};

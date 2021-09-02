@@ -1092,10 +1092,11 @@ drv_merge_motion_info_p(const struct MergeData *const mrg_data,
     switch (merge_type) {
         case MMVD_MERGE:
             mv = drv_mmvd_merge_mvp(inter_ctx, mv_ctx,
-                                    x_cb, y_cb, nb_cb_w, nb_cb_h,
+                                    x0, y0, log2_cb_w, log2_cb_h,
                                     merge_idx, max_nb_cand);
             break;
         default:
+            /* Note CIIP use classical MV derivation */
             mv = drv_merge_mvp(inter_ctx, mv_ctx,
                                x0, y0, log2_cb_w, log2_cb_h,
                                merge_idx, max_nb_cand);
