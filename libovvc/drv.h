@@ -117,6 +117,20 @@ void drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                             uint8_t log2_cu_w, uint8_t log2_cu_h,
                             uint8_t merge_idx);
 
+void drv_affine_mvp_p(struct InterDRVCtx *const inter_ctx,
+                      uint8_t x0, uint8_t y0,
+                      uint8_t log2_cu_w, uint8_t log2_cu_h,
+                      struct AffineControlInfo * cp_mvd0,
+                      struct AffineControlInfo * cp_mvd1,
+                      uint8_t mvp_idx0, uint8_t mvp_idx1, uint8_t bcw_idx,
+                      uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
+                      uint8_t affine_type);
+
+void drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
+                            uint8_t x0, uint8_t y0,
+                            uint8_t log2_cu_w, uint8_t log2_cu_h,
+                            uint8_t merge_idx);
+
 void drv_gpm_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                          uint8_t x0, uint8_t y0,
                          uint8_t log2_cu_w, uint8_t log2_cu_h,

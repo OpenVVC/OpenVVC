@@ -1801,6 +1801,100 @@ derive_sub_pu_merge_cand(const struct InterDRVCtx *inter_ctx,
 }
 
 void
+derive_sub_block_mvs_p(struct InterDRVCtx *inter_ctx,
+                       const struct VVCTMVP *tmvp,
+                       uint8_t x0, uint8_t y0,
+                       uint8_t log2_pu_w, uint8_t log2_pu_h,
+                       OVMV mv_offset, const struct MergeInfo *const main_mv)
+{
+    int nb_sb_w = OVMAX((1 << log2_pu_w) >> LOG2_SBTMVP_S, 1);
+    int nb_sb_h = OVMAX((1 << log2_pu_h) >> LOG2_SBTMVP_S, 1);
+    uint16_t ctu_w = tmvp->ctu_w;
+    uint16_t ctu_h = tmvp->ctu_h;
+    uint8_t is_bnd = tmvp->ctudec->ctb_x == tmvp->ctudec->nb_ctb_pic_w - 1;
+
+    /* FIXME check if this clipping is needed */
+    int sb_h = nb_sb_h == 1 ? 1 << log2_pu_h : 1 << LOG2_SBTMVP_S;
+    int sb_w = nb_sb_w == 1 ? 1 << log2_pu_w : 1 << LOG2_SBTMVP_S;
+
+    uint8_t x_pb = x0 >> 2;
+    uint8_t y_pb = y0 >> 2;
+
+    OVMV *mv_buff0 = &inter_ctx->mv_ctx0.mvs[35 + (x0 >> 2) + (y0 >> 2) * 34];
+    OVMV *tmvp_mv0 = &inter_ctx->tmvp_mv[0].mvs[((x0 + 4) >> 3) + (((y0 + 4) >> 3) << 4)];
+
+    /* FIXME check start_x , start_y */
+    int start_x = x0 + (sb_w >> 1) + mv_offset.x;
+    int start_y = y0 + (sb_h >> 1) + mv_offset.y;
+
+    int x, y;
+
+    int i, j;
+
+    for (y = start_y, i = 0; i < nb_sb_h; ++i, y += sb_h) {
+        for (x = start_x, j = 0; j < nb_sb_w; ++j, x += sb_w) {
+            struct OVPos col_pos = {
+                .x = x,
+                .y = y
+            };
+
+            uint8_t inter_dir = 0;
+
+            OVMV mv0;
+
+            /* FIXME avoid clipping + correct CTU dimension
+             */
+            col_pos = clip_sb_pos_to_col_ctu(col_pos, ctu_w, ctu_h, is_bnd);
+
+            uint8_t cand_msk = check_sbtmvp_cand(tmvp->dir_map_v0, tmvp->dir_map_v1, col_pos);
+
+            if (cand_msk) {
+                if (tmvp->ldc) {
+                    OVMV col_mv[2];
+                    inter_dir  = sbtmvp_from_ldc(inter_ctx, tmvp, col_pos, RPL_0, 0, cand_msk, col_mv);
+
+                    mv0 = col_mv[0];
+                } else {
+                    OVMV col_mv[2];
+                    inter_dir  = sbtmvp_from_same_rpl(inter_ctx, tmvp, col_pos, RPL_0, 0, cand_msk, col_mv);
+                    inter_dir |= sbtmvp_from_same_rpl(inter_ctx, tmvp, col_pos, RPL_1, 0, cand_msk, &col_mv[1]) << 1;
+                    mv0 = col_mv[0];
+                }
+            }
+
+            if (!(inter_dir & 0x1)) {
+                mv0 = main_mv->mv0;
+                inter_dir = 0x1;
+            }
+
+            inter_dir = 0x1;
+
+            ctu_field_set_rect_bitfield(&inter_ctx->mv_ctx0.map,
+                                        x_pb + 2 * j, y_pb + 2 * i,
+                                        2, 2);
+            mv0.ref_idx       = 0;
+            mv0.bcw_idx_plus1 = 0;
+
+            tmvp_mv0[j] = mv0;
+
+            mv_buff0[j * 2]     = mv0;
+            mv_buff0[j * 2 + 1] = mv0;
+            mv_buff0[34 + j * 2]     = mv0;
+            mv_buff0[34 + j * 2 + 1] = mv0;
+
+            /* FIXME Move somewhere else */
+            rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
+                      inter_ctx, tmvp->ctudec->part_ctx,
+                      mv0, mv0, x0 + 8 * j, y0 + 8 * i,
+                      3, 3, 0x1, 0, 0);
+
+        }
+        mv_buff0 += 34 * 2;
+        tmvp_mv0 += 16;
+    }
+}
+
+void
 derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
                      const struct VVCTMVP *tmvp,
                      uint8_t x0, uint8_t y0,
@@ -3665,6 +3759,7 @@ store_affine_info(struct AffineDRVInfo *const affine_ctx, struct AffineInfo aff_
         aff_buff += 34;
     }
 }
+
 #define SB_W 4
 #define SB_H 4
 
@@ -3931,11 +4026,6 @@ drv_affine_merge_mvp()
 {
 }
 
-void
-drv_affine_mvp_mvd()
-{
-}
-
 static inline uint8_t
 mv_cmp(const OVMV a, const OVMV b)
 {
@@ -3957,6 +4047,138 @@ uint8_t check_affine_prof(const struct AffineMergeInfo *const affine_info, uint8
     }
 
     return prof_enabled;
+}
+
+void
+drv_affine_mvp_p(struct InterDRVCtx *const inter_ctx,
+                 uint8_t x0, uint8_t y0,
+                 uint8_t log2_cu_w, uint8_t log2_cu_h,
+                 struct AffineControlInfo * cp_mvd0,
+                 struct AffineControlInfo * cp_mvd1,
+                 uint8_t mvp_idx0, uint8_t mvp_idx1, uint8_t bcw_idx,
+                 uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
+                 uint8_t affine_type)
+{
+    struct AffineDRVInfo *affine_ctx = &inter_ctx->affine_ctx;
+    struct AffineMergeInfo mv_info ={0};
+    uint8_t prec_amvr = inter_ctx->prec_amvr;
+
+    uint8_t x_pb = x0 >> 2;
+    uint8_t y_pb = y0 >> 2;
+
+    uint8_t nb_pb_w = (1 << log2_cu_w) >> 2;
+    uint8_t nb_pb_h = (1 << log2_cu_h) >> 2;
+
+    uint8_t opp_ref_idx0 = 0xFF;
+    uint8_t prof_dir = inter_ctx->prof_enabled ? 0x3 : 0;
+
+    for (int i = 0; i < inter_ctx->nb_active_ref1; i ++) {
+         if (inter_ctx->rpl0[ref_idx0] == inter_ctx->rpl1[i])
+             opp_ref_idx0 = i;
+    }
+
+    /* FIXME can we combine mvp derivation for bi pred */
+    if (inter_dir & 0x1) {
+        struct AffineControlInfo *const cp_info = &mv_info.cinfo[0];
+
+        *cp_info = drv_affine_mvp(inter_ctx, affine_ctx, x_pb, y_pb,
+                                  nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
+                                  ref_idx0, opp_ref_idx0, mvp_idx0,
+                                  inter_dir & 0x1, affine_type);
+
+        cp_mvd0->lt = drv_change_precision_mv(cp_mvd0->lt, prec_amvr, MV_PRECISION_INTERNAL);
+        cp_mvd0->rt = drv_change_precision_mv(cp_mvd0->rt, prec_amvr, MV_PRECISION_INTERNAL);
+
+        cp_info->lt.x +=  cp_mvd0->lt.x;
+        cp_info->lt.y +=  cp_mvd0->lt.y;
+
+        cp_info->rt.x +=  cp_mvd0->lt.x;
+        cp_info->rt.y +=  cp_mvd0->lt.y;
+        cp_info->rt.x +=  cp_mvd0->rt.x;
+        cp_info->rt.y +=  cp_mvd0->rt.y;
+
+        cp_info->lt = mv_clip_periodic(cp_info->lt);
+        cp_info->rt = mv_clip_periodic(cp_info->rt);
+        cp_info->lt.ref_idx = ref_idx0;
+        cp_info->rt.ref_idx = ref_idx0;
+        cp_info->lt.bcw_idx_plus1 = bcw_idx + 1;
+        cp_info->rt.bcw_idx_plus1 = bcw_idx + 1;
+        cp_info->lt.prec_amvr = prec_amvr;
+        cp_info->rt.prec_amvr = prec_amvr;
+        if (affine_type == AFFINE_3CP) {
+
+            cp_mvd0->lb = drv_change_precision_mv(cp_mvd0->lb, prec_amvr, MV_PRECISION_INTERNAL);
+            cp_info->lb.x +=  cp_mvd0->lt.x;
+            cp_info->lb.y +=  cp_mvd0->lt.y;
+            cp_info->lb.x +=  cp_mvd0->lb.x;
+            cp_info->lb.y +=  cp_mvd0->lb.y;
+            cp_info->lb = mv_clip_periodic(cp_info->lb);
+            cp_info->lb.ref_idx = ref_idx0;
+            cp_info->lb.bcw_idx_plus1 = bcw_idx + 1;
+            cp_info->lb.prec_amvr = prec_amvr;
+        }
+    }
+
+    mv_info.inter_dir = 0x1;
+    mv_info.affine_type = affine_type;
+    inter_ctx->prec_amvr = 0;
+
+    const struct AffineControlInfo *const cinfo = mv_info.cinfo;
+    const struct AffineDeltaMV dmv_0 = derive_affine_delta_mvs(&cinfo[0],
+                                                               log2_cu_w, log2_cu_h,
+                                                               affine_type);
+
+    const struct AffineDeltaMV dmv_1 = derive_affine_delta_mvs(&cinfo[1],
+                                                               log2_cu_w, log2_cu_h,
+                                                               affine_type);
+
+    /* Update for next pass */
+    prof_dir &= update_mv_ctx_b(inter_ctx, mv_info, x_pb, y_pb, nb_pb_w,
+                                nb_pb_h, log2_cu_w, log2_cu_h, 0x1);
+
+    if (prof_dir) {
+        uint8_t prof_0 = check_affine_prof(&mv_info, RPL_0);
+
+        prof_dir &= prof_0;
+        prof_dir &= 0x1;
+    }
+
+    if (!prof_dir) {
+        rcn_affine_mcp_b_l(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
+                           log2_cu_w, log2_cu_h,
+                           0x1);
+    } else {
+        rcn_affine_prof_mcp_b_l(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
+                                log2_cu_w, log2_cu_h,
+                                0x1, prof_dir, &dmv_0, &dmv_1);
+    }
+
+    rcn_affine_mcp_b_c(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
+                       log2_cu_w, log2_cu_h,
+                       0x1);
+
+    struct PBInfo pb = {
+        .x_pb = x_pb,
+        .y_pb = y_pb,
+        .nb_pb_w = nb_pb_w,
+        .nb_pb_h = nb_pb_h,
+        .log2_w = log2_cu_w,
+        .log2_h = log2_cu_h
+    };
+
+    struct AffineInfo aff_info = {
+        .cps[0] = mv_info.cinfo[0],
+        .cps[1] = mv_info.cinfo[1],
+        .pb = pb,
+        .type = affine_type
+    };
+
+    store_affine_info(affine_ctx, aff_info, x_pb, y_pb, nb_pb_w, nb_pb_h);
+}
+
+void
+drv_affine_mvp_mvd()
+{
 }
 
 /* Derive motion vectors and update motion maps */
@@ -4140,6 +4362,131 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
     };
 
     store_affine_info(affine_ctx, aff_info, x_pb, y_pb, nb_pb_w, nb_pb_h);
+}
+
+void
+drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
+                       uint8_t x0, uint8_t y0,
+                       uint8_t log2_cu_w, uint8_t log2_cu_h,
+                       uint8_t merge_idx)
+{
+    struct AffineDRVInfo *affine_ctx = &inter_ctx->affine_ctx;
+    struct AffineMergeInfo mv_info;
+
+    uint8_t x_pb = x0 >> 2;
+    uint8_t y_pb = y0 >> 2;
+
+    uint8_t nb_pb_w = (1 << log2_cu_w) >> 2;
+    uint8_t nb_pb_h = (1 << log2_cu_h) >> 2;
+    uint8_t sbtmvp_enabled = inter_ctx->sbtmvp_enabled;
+    uint8_t is_sbtmvp = 0;
+
+    if (sbtmvp_enabled) {
+        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+        struct MergeInfo mv_info;
+        OVMV mv_offset = {0};
+
+        /* FIXME avoid duplication with merge derivation */
+        uint64_t rpl0_lft_col = mv_ctx0->map.vfield[x_pb];
+        uint64_t rpl0_abv_row = mv_ctx0->map.hfield[y_pb];
+
+        const uint8_t rpl0_cand = check_cand_available(rpl0_abv_row, rpl0_lft_col, x_pb, y_pb,
+                                                       nb_pb_w, nb_pb_h);
+
+
+        uint8_t sb_cand = derive_sub_pu_merge_cand(inter_ctx, x0, y0,
+                                                   log2_cu_w, log2_cu_h,
+                                                   &mv_info, &mv_offset,
+                                                   rpl0_cand, 0);
+
+        if (sb_cand && merge_idx == 0) {
+            derive_sub_block_mvs_p(inter_ctx, &inter_ctx->tmvp_ctx,
+                                   x0, y0,
+                                   log2_cu_w, log2_cu_h,
+                                   mv_offset, &mv_info);
+
+#if 1
+            update_mv_ctx_b2(inter_ctx, x_pb, y_pb,
+                             nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
+                             0x1);
+#endif
+            is_sbtmvp = 1;
+        }
+
+        merge_idx -= sb_cand;
+    }
+
+    if (!is_sbtmvp) {
+        derive_affine_merge_mv(inter_ctx, affine_ctx, &mv_info,
+                               x_pb, y_pb, nb_pb_w, nb_pb_h,
+                               log2_cu_w, log2_cu_h,
+                               merge_idx);
+    }
+
+    mv_info.cinfo[0].lt.prec_amvr = 0;
+    mv_info.cinfo[0].rt.prec_amvr = 0;
+    mv_info.cinfo[0].lb.prec_amvr = 0;
+    mv_info.cinfo[1].lt.prec_amvr = 0;
+    mv_info.cinfo[1].rt.prec_amvr = 0;
+    mv_info.cinfo[1].lb.prec_amvr = 0;
+    mv_info.inter_dir = 0x1;
+
+    if (!is_sbtmvp) {
+        uint8_t prof_dir = inter_ctx->prof_enabled ? 0x1 : 0;
+
+        uint8_t affine_type = mv_info.affine_type;
+        const struct AffineControlInfo *const cinfo = mv_info.cinfo;
+
+        const struct AffineDeltaMV dmv_0 = derive_affine_delta_mvs(&cinfo[0],
+                                                                   log2_cu_w, log2_cu_h,
+                                                                   affine_type);
+
+        prof_dir &= update_mv_ctx_b(inter_ctx, mv_info, x_pb, y_pb,
+                                    nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
+                                    0x1);
+
+        if (prof_dir) {
+            uint8_t prof_0 = check_affine_prof(&mv_info, RPL_0);
+
+            prof_dir &= prof_0;
+
+            prof_dir &= mv_info.inter_dir;
+        }
+
+        if (!prof_dir) {
+            rcn_affine_mcp_b_l(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
+                               log2_cu_w, log2_cu_h,
+                               mv_info.inter_dir);
+        } else {
+            rcn_affine_prof_mcp_b_l(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
+                                    log2_cu_w, log2_cu_h,
+                                    mv_info.inter_dir, prof_dir, &dmv_0, NULL);
+        }
+
+        rcn_affine_mcp_b_c(inter_ctx->tmvp_ctx.ctudec, inter_ctx, x0, y0,
+                           log2_cu_w, log2_cu_h,
+                           mv_info.inter_dir);
+
+    }
+
+    struct PBInfo pb = {
+        .x_pb = x_pb,
+        .y_pb = y_pb,
+        .nb_pb_w = nb_pb_w,
+        .nb_pb_h = nb_pb_h,
+        .log2_w = log2_cu_w,
+        .log2_h = log2_cu_h
+    };
+
+    struct AffineInfo aff_info = {
+        .cps[0] = mv_info.cinfo[0],
+        .cps[1] = mv_info.cinfo[1],
+        .pb = pb,
+        .type = mv_info.affine_type
+    };
+
+    store_affine_info(affine_ctx, aff_info, x_pb, y_pb, nb_pb_w, nb_pb_h);
+
 }
 
 void
