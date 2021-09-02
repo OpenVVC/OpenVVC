@@ -953,6 +953,11 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         }
     }
 
+    /* FIXME if inter only */
+    if (slice_type != SLICE_I) {
+        store_inter_maps(drv_lines, ctudec, ctb_x, 1);
+    }
+
     //Apply in-loop filters on the available pixels of CTU line
     int ctb_y = ctudec->ctb_y - einfo->ctb_y;
     if(ctb_y == 0){
@@ -980,11 +985,6 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     if (ctb_x == 0) {
         backup_qp = ctudec->drv_ctx.qp_map_x[0];
-    }
-
-    /* FIXME if inter only */
-    if (slice_type != SLICE_I) {
-        store_inter_maps(drv_lines, ctudec, ctb_x, 1);
     }
 
     /* Next line will use the qp of the first pu as a start value
@@ -1063,6 +1063,10 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     ret = decode_truncated_ctu(ctudec, einfo, ctb_addr_rs,
                                einfo->last_ctu_w, ctu_h);
 
+    if (slice_type != SLICE_I) {
+        store_inter_maps(drv_lines, ctudec, ctb_x, 1);
+    }
+
     int ctb_y = ctudec->ctb_y - einfo->ctb_y;
     if(ctb_y == 0){
         rcn_sao_first_pix_rows(ctudec, einfo, ctb_y);
@@ -1078,11 +1082,6 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
         rcn_alf_filter_line(ctudec, einfo, ctb_y);
         ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
-    }
-
-
-    if (slice_type != SLICE_I) {
-        store_inter_maps(drv_lines, ctudec, ctb_x, 1);
     }
 
     ret = 0;
