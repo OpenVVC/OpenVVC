@@ -142,7 +142,7 @@ ovcabac_read_ae_mvp_merge_idx(OVCABACCtx *const cabac_ctx,
     return merge_idx;
 }
 
-uint8_t
+static uint8_t
 ovcabac_read_ae_mmvd_merge_idx(OVCABACCtx *const cabac_ctx,
                               uint8_t max_num_merge_cand)
 {
@@ -178,7 +178,7 @@ ovcabac_read_ae_mmvd_merge_idx(OVCABACCtx *const cabac_ctx,
     return (var0 * MMVD_MAX_REFINE_NUM + var1 * 4 + var2);
 }
 
-void
+static void
 ovcabac_read_ae_gpm_merge_idx(OVCABACCtx *const cabac_ctx, struct VVCGPM* gpm_ctx,
                               uint8_t max_num_geo_cand)
 {
