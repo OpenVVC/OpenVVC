@@ -1084,11 +1084,6 @@ drv_merge_motion_info_p(const struct MergeData *const mrg_data,
     uint8_t merge_idx = mrg_data->merge_idx;
     struct OVMVCtx *const mv_ctx = &inter_ctx->mv_ctx0;
 
-    uint8_t y_cb = y0 >> log2_min_cb_s;
-    uint8_t x_cb = x0 >> log2_min_cb_s;
-    uint8_t nb_cb_w = (1 << log2_cb_w) >> log2_min_cb_s;
-    uint8_t nb_cb_h = (1 << log2_cb_h) >> log2_min_cb_s;
-
     switch (merge_type) {
         case MMVD_MERGE:
             mv = drv_mmvd_merge_mvp(inter_ctx, mv_ctx,
