@@ -10,6 +10,12 @@
 
 struct EntryThread;
 
+enum StateSliceThread {
+    IDLE = 0,
+    ACTIVE,
+    DECODING_FINISHED
+};
+
 typedef int (*DecodeFunc)(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms, uint16_t entry_idx);
 
 struct SliceThread
@@ -23,10 +29,10 @@ struct SliceThread
     OVNALUnit* slice_nalu;
 
     int nb_threads;
-    int gnrl_state;
+    uint8_t active_state;
 
     /* Information on current task */
-    int nb_task_threads;
+    int nb_entry_threads;
     int nb_entries;
 
     DecodeFunc decode_entry;
@@ -135,7 +141,7 @@ typedef struct OVSliceDec
    OVCTUDec **ctudec_list; 
    int nb_sbdec;
 
-   struct SliceThread th_info;
+   struct SliceThread th_slice;
 
 } OVSliceDec;
 

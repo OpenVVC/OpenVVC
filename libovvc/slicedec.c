@@ -694,7 +694,7 @@ slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
 
     int ret = 0;
     #if USE_THREADS
-    ovthread_decode_entries(&sldec->th_info, slicedec_decode_rect_entry, nb_entries);
+    ovthread_decode_entries(&sldec->th_slice, slicedec_decode_rect_entry, nb_entries);
     #else
     int i;
     for (i = 0; i < nb_entries; ++i) {
@@ -1608,16 +1608,16 @@ slicedec_init(OVSliceDec *sldec, int nb_entry_th)
         goto failctudec;
     }
 
-    sldec->th_info.owner = sldec;
+    sldec->th_slice.owner = sldec;
     #if USE_THREADS 
-    ret = ovthread_slice_thread_init(&sldec->th_info, nb_entry_th);
-    ret = init_entry_threads(&sldec->th_info, nb_entry_th);
+    ret = ovthread_slice_thread_init(&sldec->th_slice, nb_entry_th);
+    ret = init_entry_threads(&sldec->th_slice, nb_entry_th);
     #endif
     if (ret < 0) {
         goto failthreads;
     }
 
-    sldec->th_info.owner = sldec;
+    sldec->th_slice.owner = sldec;
 
     return 0;
 
@@ -1635,7 +1635,7 @@ slicedec_uninit(OVSliceDec **sldec_p)
 {
     OVSliceDec *sldec = *sldec_p;
 
-    ovthread_slice_thread_uninit(&sldec->th_info);
+    ovthread_slice_thread_uninit(&sldec->th_slice);
 
     if (sldec->ctudec_list) {
         uninit_ctudec_list(sldec, sldec->nb_sbdec);

@@ -118,6 +118,7 @@ dpb_init_params(OVDPB *dpb, OVDPBParams const *prm)
     dpb->max_nb_dpb_pic       = prm->dpb_max_dec_pic_buffering_minus1 + 1;
     dpb->max_nb_reorder_pic   = prm->dpb_max_num_reorder_pics;
     dpb->max_latency_increase = prm->dpb_max_latency_increase_plus1 - 1;
+    dpb->poc_last_output      = -1;
     return 0;
 }
 
@@ -234,6 +235,7 @@ ovdpb_clear_refs(OVDPB *dpb)
         }
     }
 
+    ov_log(NULL, OVLOG_INFO, "nb_output_pic %d (max %d)\n", nb_output_pic, dpb->max_nb_dpb_pic);
     if (nb_output_pic >= dpb->max_nb_dpb_pic) {
         /* Determine the min POC among those pic
          */
@@ -350,7 +352,8 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc)
         ovdpb_new_ref_pic(pic, OV_OUTPUT_PIC_FLAG);
         ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
     } else {
-        ovdpb_new_ref_pic(pic, OV_ST_REF_PIC_FLAG);
+        ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
+        // ovdpb_new_ref_pic(pic, OV_ST_REF_PIC_FLAG);
     }
 
     pic->poc    = poc;
@@ -581,7 +584,7 @@ ovdpb_output_pic(OVDPB *dpb, OVPicture **out, int output_cvs_id)
         const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
         int nb_output = 0;
         int nb_decoded = 0;
-        int min_poc   = INT_MAX;
+        // int min_poc   = INT_MAX;
         int min_idx   = 0;
         int i;
         uint8_t in_decoding;
@@ -605,6 +608,7 @@ ovdpb_output_pic(OVDPB *dpb, OVPicture **out, int output_cvs_id)
             }
         }
 
+        //TODO: change to output a different frame than the last + 1
         /* Count pic marked for output in output cvs and find the min poc_id */
         for (i = 0; i < nb_dpb_pic; i++) {
             OVPicture *pic = &dpb->pictures[i];
@@ -613,15 +617,9 @@ ovdpb_output_pic(OVDPB *dpb, OVPicture **out, int output_cvs_id)
             if (output_flag && is_output_cvs) {
                 in_decoding = (pic->flags & OV_IN_DECODING_PIC_FLAG);
                 nb_decoded += in_decoding;
-                if (pic->poc < min_poc ){
-                    min_poc = pic->poc;
+                if(!in_decoding && pic->poc == dpb->poc_last_output+1){
                     min_idx = i;
-                    if(!in_decoding){
-                        nb_output ++;
-                    }
-                    else{
-                        nb_output = 0;
-                    }
+                    nb_output ++;
                 }
             }
         }
@@ -636,6 +634,7 @@ ovdpb_output_pic(OVDPB *dpb, OVPicture **out, int output_cvs_id)
 
         if (nb_output) {
             OVPicture *pic = &dpb->pictures[min_idx];
+            dpb->poc_last_output ++;
             *out = pic;
             return nb_output;
         }

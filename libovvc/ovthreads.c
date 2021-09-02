@@ -16,8 +16,8 @@ struct EntryThread
 {
     struct SliceThread *parent;
     pthread_t thread;
-    pthread_mutex_t task_mtx;
-    pthread_cond_t  task_cnd;
+    pthread_mutex_t entry_mtx;
+    pthread_cond_t  entry_cnd;
 
 
     /* CTU decoder associated to entry 
@@ -29,85 +29,84 @@ struct EntryThread
     int kill;
 };
 
-void uninit_entry_threads(struct SliceThread *th_info);
+void uninit_entry_threads(struct SliceThread *th_slice);
 
 static int
-thread_decode_entries(struct SliceThread *th_info, struct EntryThread *tdec)
+thread_decode_entries(struct SliceThread *th_slice, struct EntryThread *tdec)
 {
-    uint16_t nb_entries      = th_info->nb_entries;
-    uint16_t nb_task_threads = th_info->nb_task_threads;
+    uint16_t nb_entries      = th_slice->nb_entries;
+    uint16_t nb_entry_threads = th_slice->nb_entry_threads;
 
-    unsigned first_job = atomic_fetch_add_explicit(&th_info->first_job, 1, memory_order_acq_rel);
+    unsigned first_job = atomic_fetch_add_explicit(&th_slice->first_job, 1, memory_order_acq_rel);
     unsigned entry_idx = first_job;
-    ov_log(NULL, OVLOG_TRACE, "Decoder with POC %d, start entry, nb_entries %d\n", th_info->owner->pic->poc, nb_entries);
+    ov_log(NULL, OVLOG_TRACE, "Decoder with POC %d, start entry, nb_entries %d\n", th_slice->owner->pic->poc, nb_entries);
     do {
         OVCTUDec *const ctudec  = tdec->ctudec;
-        OVSliceDec *const sldec = th_info->owner;
+        OVSliceDec *const sldec = th_slice->owner;
         const OVPS *const prms  = sldec->active_params;
 
-        th_info->decode_entry(sldec, ctudec, prms, entry_idx);
+        th_slice->decode_entry(sldec, ctudec, prms, entry_idx);
 
-        entry_idx = atomic_fetch_add_explicit(&th_info->last_entry_idx, 1, memory_order_acq_rel);
+        entry_idx = atomic_fetch_add_explicit(&th_slice->last_entry_idx, 1, memory_order_acq_rel);
 
     } while (entry_idx < nb_entries);
 
-    /* Last thread to exit loop will have entry_idx set to nb_entry + nb_task_threads - 1*/
-    return entry_idx == nb_entries + nb_task_threads - 1;
+    /* Last thread to exit loop will have entry_idx set to nb_entry + nb_entry_threads - 1*/
+    return entry_idx == nb_entries + nb_entry_threads - 1;
 }
 
 int
-ovthread_decode_entries(struct SliceThread *th_info, DecodeFunc decode_entry, int nb_entries)
+ovthread_decode_entries(struct SliceThread *th_slice, DecodeFunc decode_entry, int nb_entries)
 {
     int i;
-    int nb_task_threads = OVMIN(nb_entries, th_info->nb_threads);
+    int nb_entry_threads = OVMIN(nb_entries, th_slice->nb_threads);
 
-    th_info->nb_task_threads = nb_task_threads;
-    th_info->nb_entries = nb_entries;
-    th_info->decode_entry = decode_entry;
+    th_slice->nb_entry_threads = nb_entry_threads;
+    th_slice->nb_entries = nb_entries;
+    th_slice->decode_entry = decode_entry;
 
-    atomic_store_explicit(&th_info->first_job, 0, memory_order_relaxed);
-    atomic_store_explicit(&th_info->last_entry_idx, nb_task_threads, memory_order_relaxed);
+    atomic_store_explicit(&th_slice->first_job, 0, memory_order_relaxed);
+    atomic_store_explicit(&th_slice->last_entry_idx, nb_entry_threads, memory_order_relaxed);
 
     /* Wake entry decoder threads by setting their state to 0 
-     * and signaling on task condition
+     * and signaling on entry condition
      */
-    for (i = 0; i < nb_task_threads; ++i) {
-        struct EntryThread *tdec = &th_info->tdec[i];
-        pthread_mutex_lock(&tdec->task_mtx);
-        tdec->ctudec = th_info->owner->ctudec_list[i];
+    for (i = 0; i < nb_entry_threads; ++i) {
+        struct EntryThread *tdec = &th_slice->tdec[i];
+        pthread_mutex_lock(&tdec->entry_mtx);
+        tdec->ctudec = th_slice->owner->ctudec_list[i];
         tdec->state = 0;
-        pthread_cond_signal(&tdec->task_cnd);
-        pthread_mutex_unlock(&tdec->task_mtx);
-        ov_log(NULL, OVLOG_TRACE, "Main signals frame %d entrytask %d\n", th_info->owner->pic->poc, i);
+        pthread_cond_signal(&tdec->entry_cnd);
+        pthread_mutex_unlock(&tdec->entry_mtx);
+        ov_log(NULL, OVLOG_TRACE, "Main launches POC %d entry %d\n", th_slice->owner->pic->poc, i);
     }
 
-
-    //TODOpar: re-use when the entry task will be launched by slice threads.  
-    /* Main thread wait until all gnrl_state has been set to 1 
+    //TODOpar: re-use when the entry entry will be launched by slice threads.  
+    /* Main thread wait until all active_state has been set to 1 
      * by the last decoder thread
      */
-    // pthread_mutex_lock(&th_info->gnrl_mtx);
-    // while (th_info->gnrl_state) {
-    //     pthread_cond_wait(&th_info->gnrl_cnd, &th_info->gnrl_mtx);
+    // pthread_mutex_lock(&th_slice->gnrl_mtx);
+    // while (th_slice->active_state) {
+    //     pthread_cond_wait(&th_slice->gnrl_cnd, &th_slice->gnrl_mtx);
     // }
-    // // th_info->gnrl_state = 0;
-    // pthread_mutex_unlock(&th_info->gnrl_mtx);
+    // // th_slice->active_state = 0;
+    // pthread_mutex_unlock(&th_slice->gnrl_mtx);
 
     return 0;
 }
 
 static void *
-thread_main_function(void *opaque)
+entry_thread_main_function(void *opaque)
 {
     struct EntryThread *tdec = (struct EntryThread *)opaque;
 
-    pthread_mutex_lock(&tdec->task_mtx);
+    pthread_mutex_lock(&tdec->entry_mtx);
     tdec->state = 1;
-    pthread_cond_signal(&tdec->task_cnd);
+    pthread_cond_signal(&tdec->entry_cnd);
 
     while (!tdec->kill){
         do { 
-            pthread_cond_wait(&tdec->task_cnd, &tdec->task_mtx);
+            pthread_cond_wait(&tdec->entry_cnd, &tdec->entry_mtx);
             if (tdec->kill && tdec->state != 0) {
                 return NULL;
             }
@@ -118,24 +117,22 @@ thread_main_function(void *opaque)
         uint8_t is_last = thread_decode_entries(tdec->parent, tdec);
 
         /* Main thread is not last so we wake it
-         * if its task has already ended
+         * if its entry has already ended
          */
         if (is_last) {
-            struct SliceThread *th_info = tdec->parent;
+            struct SliceThread *th_slice = tdec->parent;
             //TODOpar: change location when using SliceThreads
-            ov_nalu_unref(&th_info->slice_nalu);
+            ov_nalu_unref(&th_slice->slice_nalu);
 
-            ov_log(NULL, OVLOG_TRACE, "Decoder with POC %d, finished frame \n", th_info->owner->pic->poc);
-            ovdpb_unref_pic(th_info->owner->pic, OV_IN_DECODING_PIC_FLAG);
-            ovdpb_unmark_ref_pic_lists(th_info->owner->slice_type, th_info->owner->pic);
+            ov_log(NULL, OVLOG_TRACE, "Decoder with POC %d, finished frame \n", th_slice->owner->pic->poc);
 
-            pthread_mutex_lock(&th_info->gnrl_mtx);
-            th_info->gnrl_state = 0;
-            // pthread_cond_signal(&th_info->gnrl_cnd);
-            pthread_mutex_unlock(&th_info->gnrl_mtx);
+            pthread_mutex_lock(&th_slice->gnrl_mtx);
+            th_slice->active_state = DECODING_FINISHED;
+            // pthread_cond_signal(&th_slice->gnrl_cnd);
+            pthread_mutex_unlock(&th_slice->gnrl_mtx);
 
             //Signal main thread that a slice thread is available
-            struct MainThread* t_main = th_info->main_thread;
+            struct MainThread* t_main = th_slice->main_thread;
             if(t_main){
                 pthread_mutex_lock(&t_main->main_mtx);
                 pthread_cond_signal(&t_main->main_cnd);
@@ -143,61 +140,61 @@ thread_main_function(void *opaque)
             }
         }
     }
-    pthread_mutex_unlock(&tdec->task_mtx);
+    pthread_mutex_unlock(&tdec->entry_mtx);
     return NULL;
 }
 
 int
-init_entry_threads(struct SliceThread *th_info, int nb_threads)
+init_entry_threads(struct SliceThread *th_slice, int nb_threads)
 {
-    if(!th_info->tdec){
-        th_info->nb_threads = nb_threads;
+    if(!th_slice->tdec){
+        th_slice->nb_threads = nb_threads;
 
-        th_info->tdec = ov_mallocz(sizeof(struct EntryThread) * nb_threads);
+        th_slice->tdec = ov_mallocz(sizeof(struct EntryThread) * nb_threads);
 
-        if (!th_info->tdec) {
+        if (!th_slice->tdec) {
             goto failalloc;
         }
 
-        atomic_init(&th_info->first_job,      0);
-        atomic_init(&th_info->last_entry_idx, 0);
+        atomic_init(&th_slice->first_job,      0);
+        atomic_init(&th_slice->last_entry_idx, 0);
 
-        pthread_mutex_init(&th_info->gnrl_mtx, NULL);
-        pthread_cond_init(&th_info->gnrl_cnd,  NULL);
+        pthread_mutex_init(&th_slice->gnrl_mtx, NULL);
+        pthread_cond_init(&th_slice->gnrl_cnd,  NULL);
     }
     int i;
     for (i = 0; i < nb_threads; ++i){
-        struct EntryThread *tdec = &th_info->tdec[i];
+        struct EntryThread *tdec = &th_slice->tdec[i];
 
         tdec->state = 0;
         tdec->kill  = 0;
 
-        tdec->parent = th_info;
+        tdec->parent = th_slice;
 
-        pthread_mutex_init(&tdec->task_mtx, NULL);
-        pthread_cond_init(&tdec->task_cnd, NULL);
+        pthread_mutex_init(&tdec->entry_mtx, NULL);
+        pthread_cond_init(&tdec->entry_cnd, NULL);
 
-        pthread_mutex_lock(&tdec->task_mtx);
+        pthread_mutex_lock(&tdec->entry_mtx);
 
-        if (pthread_create(&tdec->thread, NULL, thread_main_function, tdec)) {
-            pthread_mutex_unlock(&tdec->task_mtx);
+        if (pthread_create(&tdec->thread, NULL, entry_thread_main_function, tdec)) {
+            pthread_mutex_unlock(&tdec->entry_mtx);
             ov_log(NULL, OVLOG_ERROR, "Thread creation failed at decoder init\n");
             goto failthread;
         }
 
         /* Wait until subdec is set */
         while (!tdec->state) {
-            pthread_cond_wait(&tdec->task_cnd, &tdec->task_mtx);
+            pthread_cond_wait(&tdec->entry_cnd, &tdec->entry_mtx);
         }
-        pthread_mutex_unlock(&tdec->task_mtx);
+        pthread_mutex_unlock(&tdec->entry_mtx);
     }
 
     return 0;
 
 failthread:
-    uninit_entry_threads(th_info);
+    uninit_entry_threads(th_slice);
 
-    ov_freep(&th_info->tdec);
+    ov_freep(&th_slice->tdec);
 
     return OVVC_ENOMEM;
 
@@ -206,25 +203,25 @@ failalloc:
 }
 
 void
-uninit_entry_threads(struct SliceThread *th_info)
+uninit_entry_threads(struct SliceThread *th_slice)
 {
     int i;
     void *ret;
-    for (i = 0; i < th_info->nb_threads; ++i){
-        struct EntryThread *th_dec = &th_info->tdec[i];
-        pthread_mutex_lock(&th_dec->task_mtx);
+    for (i = 0; i < th_slice->nb_threads; ++i){
+        struct EntryThread *th_dec = &th_slice->tdec[i];
+        pthread_mutex_lock(&th_dec->entry_mtx);
         th_dec->kill = 1;
-        pthread_cond_signal(&th_dec->task_cnd);
-        pthread_mutex_unlock(&th_dec->task_mtx);
+        pthread_cond_signal(&th_dec->entry_cnd);
+        pthread_mutex_unlock(&th_dec->entry_mtx);
 
         pthread_join(th_dec->thread, &ret);
-        pthread_mutex_destroy(&th_dec->task_mtx);
-        pthread_cond_destroy(&th_dec->task_cnd);
+        pthread_mutex_destroy(&th_dec->entry_mtx);
+        pthread_cond_destroy(&th_dec->entry_cnd);
     }
 
-    pthread_mutex_destroy(&th_info->gnrl_mtx);
-    pthread_cond_destroy(&th_info->gnrl_cnd);
-    ov_freep(&th_info->tdec);
+    pthread_mutex_destroy(&th_slice->gnrl_mtx);
+    pthread_cond_destroy(&th_slice->gnrl_cnd);
+    ov_freep(&th_slice->tdec);
 
 }
 
@@ -247,8 +244,8 @@ ovthread_slice_thread_init(struct SliceThread *th_slice, int nb_threads)
     pthread_mutex_init(&th_slice->gnrl_mtx, NULL);
     pthread_cond_init(&th_slice->gnrl_cnd,  NULL);
 
-    // if (pthread_create(&tdec->thread, NULL, thread_main_function, tdec)) {
-    //     pthread_mutex_unlock(&tdec->task_mtx);
+    // if (pthread_create(&tdec->thread, NULL, entry_thread_main_function, tdec)) {
+    //     pthread_mutex_unlock(&tdec->entry_mtx);
     //     ov_log(NULL, OVLOG_ERROR, "Thread creation failed at decoder init\n");
     //     goto failthread;
     // }
@@ -321,7 +318,7 @@ ovthread_out_frame_write(void *opaque)
                 write_decoded_frame_to_file(frame, fout);
                 ++nb_pic;
 
-                ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", frame->poc);
+                ov_log(NULL, OVLOG_DEBUG, "Got output picture with POC %d.\n", frame->poc);
             }
         } while (frame);
     } while (!t_out->kill);
@@ -333,7 +330,7 @@ ovthread_out_frame_write(void *opaque)
         if (frame) {
             write_decoded_frame_to_file(frame, fout);
             ++nb_pic;
-            ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", frame->poc);
+            ov_log(NULL, OVLOG_DEBUG, "Got output picture with POC %d.\n", frame->poc);
 
             ovframe_unref(&frame);
         }

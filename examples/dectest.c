@@ -307,7 +307,7 @@ read_write_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
                 if (frame) {
                     write_decoded_frame_to_file(frame, fout);
                     ++nb_pic;
-                    ov_log(NULL, OVLOG_DEBUG, "Got ouput picture with POC %d.\n", frame->poc);
+                    ov_log(NULL, OVLOG_DEBUG, "Got output picture with POC %d.\n", frame->poc);
 
                     ovframe_unref(&frame);
                 }

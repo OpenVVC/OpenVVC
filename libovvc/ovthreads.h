@@ -11,12 +11,11 @@ struct SliceThread;
 struct OVVCDec;
 struct OVFrame;
 
+int ovthread_decode_entries(struct SliceThread *th_slice, DecodeFunc decode_entry, int nb_entries);
 
-int ovthread_decode_entries(struct SliceThread *th_info, DecodeFunc decode_entry, int nb_entries);
+int init_entry_threads(struct SliceThread *th_slice, int nb_threads);
 
-int init_entry_threads(struct SliceThread *th_info, int nb_threads);
-
-void uninit_entry_threads(struct SliceThread *th_info);
+void uninit_entry_threads(struct SliceThread *th_slice);
 
 
 int ovthread_slice_thread_init(struct SliceThread *th_slice, int nb_threads);

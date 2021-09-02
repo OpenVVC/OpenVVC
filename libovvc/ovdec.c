@@ -77,8 +77,8 @@ ovdec_init_subdec_list(OVVCDec *dec)
         if (ret < 0) {
             return OVVC_ENOMEM;
         }
-        dec->subdec_list[i]->th_info.main_thread = &dec->main_thread;
-        dec->subdec_list[i]->th_info.output_thread = &dec->output_thread;
+        dec->subdec_list[i]->th_slice.main_thread = &dec->main_thread;
+        dec->subdec_list[i]->th_slice.output_thread = &dec->output_thread;
     }
 
     return 0;
@@ -129,7 +129,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
         }
     }
     //Add refs on nalu
-    ov_nalu_new_ref(&sldec->th_info.slice_nalu, nalu);
+    ov_nalu_new_ref(&sldec->th_slice.slice_nalu, nalu);
 
     /*FIXME return checks */
     ret = slicedec_init_lines(sldec, sldec->active_params);
@@ -145,26 +145,47 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
 OVSliceDec *
 ovdec_select_subdec(OVVCDec *const dec)
 {
+    #if USE_THREADS
     OVSliceDec **sldec_list = dec->subdec_list;
     int nb_threads = dec->nb_threads;
     struct MainThread* th_main = &dec->main_thread;
 
-    OVSliceDec * selected_subdec;
-    struct SliceThread* th_subdec;
+    OVSliceDec * slicedec;
+    struct SliceThread* th_slice;
     do{
-        //No slice thread is currently available
-        for(int i = 0; i < nb_threads; i++){
-            selected_subdec = sldec_list[i];
-            th_subdec = &selected_subdec->th_info;
-            pthread_mutex_lock(&th_subdec->gnrl_mtx);
+        //Unmark ref pict lists of decoded pics
+        int min_idx_available = nb_threads;
+        for(int i = nb_threads-1; i >= 0 ; i--){
+            slicedec = sldec_list[i];
+            th_slice = &slicedec->th_slice;
             
-            if(!th_subdec->gnrl_state){
-                th_subdec->gnrl_state = 1;
-                ov_log(NULL, OVLOG_TRACE, "Subdec %d selected\n", i);
-                pthread_mutex_unlock(&th_subdec->gnrl_mtx);
-                return selected_subdec;
+            if(th_slice->active_state == DECODING_FINISHED){
+                min_idx_available = i;
+                OVPicture *slice_pic = slicedec->pic;
+                if(slice_pic && (slice_pic->flags & OV_IN_DECODING_PIC_FLAG)){
+                    ov_log(NULL, OVLOG_TRACE, "Subdec %d Remove DECODING_PIC_FLAG POC: %d\n", min_idx_available, slice_pic->poc);
+                    ovdpb_unref_pic(slice_pic, OV_IN_DECODING_PIC_FLAG);
+                    ovdpb_unmark_ref_pic_lists(slicedec->slice_type, slice_pic);
+
+                    pthread_mutex_lock(&th_slice->gnrl_mtx);
+                    th_slice->active_state = IDLE;
+                    pthread_mutex_unlock(&th_slice->gnrl_mtx);
+                }
             }
-            pthread_mutex_unlock(&th_subdec->gnrl_mtx);  
+            else if(th_slice->active_state == IDLE){
+                min_idx_available = i;     
+            }
+
+        }
+
+        if(min_idx_available < nb_threads){
+            slicedec = sldec_list[min_idx_available];
+            th_slice = &slicedec->th_slice;
+            pthread_mutex_lock(&th_slice->gnrl_mtx);
+            th_slice->active_state = ACTIVE;
+            ov_log(NULL, OVLOG_TRACE, "Subdec %d selected\n", min_idx_available);
+            pthread_mutex_unlock(&th_slice->gnrl_mtx);
+            return slicedec;
         }
 
         pthread_mutex_lock(&th_main->main_mtx);
@@ -174,6 +195,10 @@ ovdec_select_subdec(OVVCDec *const dec)
     } while(!th_main->kill);
 
     return NULL;
+
+    #else
+    OVSliceDec *sldec = vvcdec->subdec_list[0];
+    #endif
 }
 
 
@@ -204,13 +229,9 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         if (ret < 0) {
             return ret;
         } else {
-            #if USE_THREADS 
             /*Select the first available subdecoder, or wait until one is available*/
             OVSliceDec *sldec = ovdec_select_subdec(vvcdec);
-            #else
-            OVSliceDec *sldec = vvcdec->subdec_list[0];
-            #endif
-
+ 
             ret = init_vcl_decoder(vvcdec, sldec, nvcl_ctx, nalu, &rdr);
 
             if (ret < 0) {

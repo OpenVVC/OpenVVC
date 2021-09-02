@@ -155,6 +155,7 @@ struct DPB
 
     //Boolean that indicates if the video is displayed
     uint8_t display_output;
+    int poc_last_output;
     
    struct DPBInternal internal;
 };
