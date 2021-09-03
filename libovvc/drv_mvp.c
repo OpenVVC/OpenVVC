@@ -2296,7 +2296,7 @@ drv_merge_mvp(struct InterDRVCtx *const inter_ctx,
 
     OVMV mv0 = vvc_derive_merge_mvp(inter_ctx, mv_ctx, x0_unit, y0_unit,
                                     nb_unit_w, nb_unit_h, merge_idx,
-                                    max_nb_merge_cand, 0);
+                                    max_nb_merge_cand,  log2_cb_w + log2_cb_h <= 5);
 
     update_mv_ctx(inter_ctx, mv0, x0_unit, y0_unit, nb_unit_w,
                   nb_unit_h, 1);
