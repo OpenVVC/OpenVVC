@@ -2277,7 +2277,6 @@ drv_mmvd_merge_mvp(struct InterDRVCtx *const inter_ctx,
                     nb_unit_w, nb_unit_h, 0x1);
 
 
-    hmvp_update_lut(&inter_ctx->hmvp_lut, mv);
 
     return mv;
 }
