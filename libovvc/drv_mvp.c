@@ -134,7 +134,8 @@ hmvp_add_merge_cand(const struct HMVPLUT *const hmvp_lut,
                     OVMV *const cand_list,
                     OVMV *const cand_amvp,
                     uint8_t got_B1, uint8_t got_A1,
-                    int *const nb_cand, uint8_t inter_dir, uint8_t mvp_idx)
+                    int *const nb_cand, uint8_t inter_dir, uint8_t mvp_idx,
+                    uint8_t max_nb_mrg_cand_min1)
 {
     int i;
     for (i = 1; i <= hmvp_lut->nb_mv;  ++i) {
@@ -148,7 +149,7 @@ hmvp_add_merge_cand(const struct HMVPLUT *const hmvp_lut,
                     return 1;
                 }
 
-                if (*nb_cand == 4) {
+                if (*nb_cand == max_nb_mrg_cand_min1) {
                    return 0;
                 }
             }
@@ -817,7 +818,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
         uint8_t found;
         const struct HMVPLUT *hmvp_lut = &inter_ctx->hmvp_lut;
 
-        found = hmvp_add_merge_cand(hmvp_lut, cand, cand_amvp, cand_t, cand_l, &nb_cand, 1, merge_idx);
+        found = hmvp_add_merge_cand(hmvp_lut, cand, cand_amvp, cand_t, cand_l, &nb_cand, 1, merge_idx, max_nb_merge_cand - 1);
         if (found) {
             return cand[nb_cand - 1];
         }
