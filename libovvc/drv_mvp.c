@@ -17,6 +17,7 @@
 
 #define OFFSET_BUFF(x,y) (35 + x + (y) * 34)
 #define MV_CMP(mv0,mv1) ((mv0.x == mv1.x) && (mv0.y == mv1.y))
+#define MV_CMP2(mv0,mv1) ((mv0.x == mv1.x) && (mv0.y == mv1.y) && (mv0.ref_idx == mv1.ref_idx))
 
 #define PB_POS_IN_BUF(x,y) (35 + (x) + ((y) * 34))
 #define TMVP_BUFF_STRIDE 17
@@ -139,8 +140,8 @@ hmvp_add_merge_cand(const struct HMVPLUT *const hmvp_lut,
     for (i = 1; i <= hmvp_lut->nb_mv;  ++i) {
         int mv_lut_idx = hmvp_lut->nb_mv - i;
         if (hmvp_lut->dir[mv_lut_idx] & inter_dir) {
-            if (i > 2 || ((!got_B1 || !MV_CMP(hmvp_lut->hmv0[mv_lut_idx], cand_amvp[0])) &&
-                (!got_A1 || !MV_CMP(hmvp_lut->hmv0[mv_lut_idx], cand_amvp[1])))) {
+            if (i > 2 || ((!got_B1 || !MV_CMP2(hmvp_lut->hmv0[mv_lut_idx], cand_amvp[0])) &&
+                (!got_A1 || !MV_CMP2(hmvp_lut->hmv0[mv_lut_idx], cand_amvp[1])))) {
                 cand_list[(*nb_cand)++] = inter_dir & 0x1 ? hmvp_lut->hmv0[mv_lut_idx]
                                                       : hmvp_lut->hmv1[mv_lut_idx];
                 if (*nb_cand == mvp_idx + 1) {
@@ -195,7 +196,7 @@ hmvp_update_lut(struct HMVPLUT *const hmvp_lut, OVMV mv)
     int i;
 
     for (i = 0; i < max_nb_cand; ++i) {
-        if (MV_CMP(mv, hmvp_lut->hmv0[i])) {
+        if (MV_CMP2(mv, hmvp_lut->hmv0[i])) {
             duplicated_mv = 1;
             break;
         }
@@ -684,7 +685,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
         int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y + nb_pb_h - 1);
         OVMV mv_A1 = mv_buff[pos_in_buff];
         cand_amvp[1] = mv_buff[pos_in_buff];
-        if (!cand_t || !MV_CMP(mv_A1, cand_amvp[0])) {
+        if (!cand_t || !MV_CMP2(mv_A1, cand_amvp[0])) {
             cand[nb_cand] = mv_A1;
             if (nb_cand++ == merge_idx)
                 return mv_A1;
@@ -696,7 +697,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
         int pos_in_buff = OFFSET_BUFF(pb_x + nb_pb_w, pb_y - 1);
         OVMV mv_B0 = mv_buff[pos_in_buff];
         cand_amvp[2] = mv_buff[pos_in_buff];
-        if (!cand_t || !MV_CMP(mv_B0, cand_amvp[0])) {
+        if (!cand_t || !MV_CMP2(mv_B0, cand_amvp[0])) {
             cand[nb_cand] = mv_B0;
             if (nb_cand++ == merge_idx)
                 return mv_B0;
@@ -708,7 +709,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
         int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y + nb_pb_h);
         OVMV mv_A0 = mv_buff[pos_in_buff];
         cand_amvp[3] = mv_buff[pos_in_buff];
-        if (!cand_l || !MV_CMP(mv_A0, cand_amvp[1])) {
+        if (!cand_l || !MV_CMP2(mv_A0, cand_amvp[1])) {
             cand[nb_cand] = mv_A0;
             if (nb_cand++ == merge_idx)
                 return mv_A0;
@@ -721,8 +722,8 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
             int pos_in_buff = OFFSET_BUFF(pb_x - 1, pb_y - 1);
             OVMV mv_B2   = mv_buff[pos_in_buff];
             cand_amvp[4] = mv_buff[pos_in_buff];
-            if ((!cand_l || !MV_CMP(mv_B2, cand_amvp[1])) &&
-                (!cand_t || !MV_CMP(mv_B2, cand_amvp[0]))) {
+            if ((!cand_l || !MV_CMP2(mv_B2, cand_amvp[1])) &&
+                (!cand_t || !MV_CMP2(mv_B2, cand_amvp[0]))) {
                 cand[nb_cand] = mv_B2;
                 if (nb_cand++ == merge_idx)
                     return mv_B2;
