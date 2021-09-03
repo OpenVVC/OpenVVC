@@ -849,6 +849,9 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
         avg_mv.y += 1 - (avg_mv.y >= 0);
         avg_mv.x >>= 1;
         avg_mv.y >>= 1;
+        if (cand[0].prec_amvr != cand[1].prec_amvr) {
+            avg_mv.prec_amvr = 0;
+        }
         if (nb_cand == merge_idx)
             return avg_mv;
 
