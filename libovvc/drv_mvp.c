@@ -858,9 +858,15 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
         nb_cand++;
     }
 
+    int8_t diff_cand = merge_idx - nb_cand;
+    int8_t num_min_ref = inter_ctx->nb_active_ref0;
+    int8_t ref_idx = 0;
+    if (diff_cand <= num_min_ref - 1) ref_idx = diff_cand;
+
     /*FIXME ref_idx*/
     while (nb_cand < max_nb_merge_cand) {
         OVMV zmv = {0};
+        zmv.ref_idx = ref_idx;
         cand[nb_cand++] = zmv;
     }
 
