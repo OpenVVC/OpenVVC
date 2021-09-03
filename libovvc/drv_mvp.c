@@ -778,6 +778,9 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
             c0.x = tmvp_round_mv(c0.x);
             c0.y = tmvp_round_mv(c0.y);
             c0 = tmvp_scale_mv(scale, c0);
+            c0.bcw_idx_plus1 = 0;
+            c0.prec_amvr = 0;
+            c0.ref_idx = 0;
             cand[nb_cand] = c0;
             if (nb_cand++ == merge_idx)
                 return c0;
@@ -790,6 +793,9 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
             c0.x = tmvp_round_mv(c0.x);
             c0.y = tmvp_round_mv(c0.y);
             c0 = tmvp_scale_mv(scale, c0);
+            c0.bcw_idx_plus1 = 0;
+            c0.prec_amvr = 0;
+            c0.ref_idx = 0;
             cand[nb_cand] = c0;
             if (nb_cand++ == merge_idx)
                 return c0;
@@ -801,6 +807,9 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
             c1.x = tmvp_round_mv(c1.x);
             c1.y = tmvp_round_mv(c1.y);
             c1 = tmvp_scale_mv(scale , c1);
+            c1.bcw_idx_plus1 = 0;
+            c1.prec_amvr = 0;
+            c1.ref_idx = 0;
             cand[nb_cand] = c1;
             if (nb_cand++ == merge_idx)
                 return c1;
@@ -812,6 +821,9 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
             c1.x = tmvp_round_mv(c1.x);
             c1.y = tmvp_round_mv(c1.y);
             c1 = tmvp_scale_mv(scale , c1);
+            c1.bcw_idx_plus1 = 0;
+            c1.prec_amvr = 0;
+            c1.ref_idx = 0;
             cand[nb_cand] = c1;
             if (nb_cand++ == merge_idx)
                 return c1;
