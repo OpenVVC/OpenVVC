@@ -2028,7 +2028,7 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
 
     }
 
-    hmvp_update_lut(&inter_ctx->hmvp_lut, mv);
+    hmvp_update_lut_b(&inter_ctx->hmvp_lut, mv, mv, 0x1);
 }
 
 static void
