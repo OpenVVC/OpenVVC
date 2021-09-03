@@ -772,8 +772,9 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
 
         if (cand_c0) {
             int pos_in_buff = TMVP_POS_IN_BUF(c0_x, c0_y);
-            int scale = tmvp->scale00;
             OVMV c0 = tmvp->mvs0[pos_in_buff];
+            uint8_t col_ref_idx = c0.ref_idx;
+            int16_t scale = derive_tmvp_scale(inter_ctx->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
             c0.x = tmvp_round_mv(c0.x);
             c0.y = tmvp_round_mv(c0.y);
             c0 = tmvp_scale_mv(scale, c0);
@@ -783,8 +784,9 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
 
         } else if (cand_c01) {
             int pos_in_buff = TMVP_POS_IN_BUF(c0_x, c0_y);
-            int scale = tmvp->scale01;
             OVMV c0 = tmvp->mvs1[pos_in_buff];
+            uint8_t col_ref_idx = c0.ref_idx;
+            int16_t scale = derive_tmvp_scale(inter_ctx->dist_ref_0[0], tmvp->dist_col_1[col_ref_idx]);
             c0.x = tmvp_round_mv(c0.x);
             c0.y = tmvp_round_mv(c0.y);
             c0 = tmvp_scale_mv(scale, c0);
@@ -793,8 +795,9 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
                 return c0;
         } else if (cand_c1) {
             int pos_in_buff = TMVP_POS_IN_BUF(c1_x, c1_y);
-            int scale = tmvp->scale00;
             OVMV c1 = tmvp->mvs0[pos_in_buff];
+            uint8_t col_ref_idx = c1.ref_idx;
+            int16_t scale = derive_tmvp_scale(inter_ctx->dist_ref_0[0], tmvp->dist_col_0[col_ref_idx]);
             c1.x = tmvp_round_mv(c1.x);
             c1.y = tmvp_round_mv(c1.y);
             c1 = tmvp_scale_mv(scale , c1);
@@ -803,8 +806,9 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
                 return c1;
         } else if (cand_c11) {
             int pos_in_buff = TMVP_POS_IN_BUF(c1_x, c1_y);
-            int scale = tmvp->scale01;
             OVMV c1 = tmvp->mvs1[pos_in_buff];
+            uint8_t col_ref_idx = c1.ref_idx;
+            int16_t scale = derive_tmvp_scale(inter_ctx->dist_ref_0[0], tmvp->dist_col_1[col_ref_idx]);
             c1.x = tmvp_round_mv(c1.x);
             c1.y = tmvp_round_mv(c1.y);
             c1 = tmvp_scale_mv(scale , c1);
