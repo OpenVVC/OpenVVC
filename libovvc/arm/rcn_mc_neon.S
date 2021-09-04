@@ -206,6 +206,82 @@ function put_vvc_bi1_pel_pixels_10_32_neon, export=1
                 ret lr
 endfunc
 
+.macro uni_qpel_filter, out, l0=V1, l1=V2, l2=V3, l3=V4, l4=V5, l5=V6, l6=V7, l7=V8, s1=.4H, s2=.8H
+      SMULL2 V11.4S,  \l0\s2, V0.H[0]
+      SMLAL2 V11.4S,  \l1\s2, V0.H[1]
+      SMLAL2 V11.4S, \l2\s2, V0.H[2]
+      SMLAL2 V11.4S, \l3\s2, V0.H[3]
+      SMLAL2 V11.4S, \l4\s2, V0.H[4]
+      SMLAL2 V11.4S, \l5\s2, V0.H[5]
+      SMLAL2 V11.4S, \l6\s2, V0.H[6]
+      SMLAL2 V11.4S, \l7\s2, V0.H[7]
+      SMULL V10.4S, \l0\s1, V0.H[0]
+      SMLAL V10.4S, \l1\s1, V0.H[1]
+      SMLAL V10.4S, \l2\s1, V0.H[2]
+      SMLAL V10.4S, \l3\s1, V0.H[3]
+      SMLAL V10.4S, \l4\s1, V0.H[4]
+      SMLAL V10.4S, \l5\s1, V0.H[5]
+      SMLAL V10.4S, \l6\s1, V0.H[6]
+      SMLAL V10.4S, \l7\s1, V0.H[7]
+      ADD   V10.4S, V10.4S, V29.4S
+      ADD   V11.4S, V11.4S, V29.4S
+      SSHR  V10.4S, V10.4S, #6
+      SSHR  V11.4S, V11.4S, #6
+      UZP1  \out, V10.8H, V11.8H
+      CLIP  \out, V30.8H, V31.8H
+.endm
+
+.macro bi0_qpel_filter, out, l0=V1, l1=V2, l2=V3, l3=V4, l4=V5, l5=V6, l6=V7, l7=V8, s1=.4H, s2=.8H
+      SMULL2 V11.4S,  \l0\s2, V0.H[0]
+      SMLAL2 V11.4S,  \l1\s2, V0.H[1]
+      SMLAL2 V11.4S, \l2\s2, V0.H[2]
+      SMLAL2 V11.4S, \l3\s2, V0.H[3]
+      SMLAL2 V11.4S, \l4\s2, V0.H[4]
+      SMLAL2 V11.4S, \l5\s2, V0.H[5]
+      SMLAL2 V11.4S, \l6\s2, V0.H[6]
+      SMLAL2 V11.4S, \l7\s2, V0.H[7]
+      SMULL V10.4S, \l0\s1, V0.H[0]
+      SMLAL V10.4S, \l1\s1, V0.H[1]
+      SMLAL V10.4S, \l2\s1, V0.H[2]
+      SMLAL V10.4S, \l3\s1, V0.H[3]
+      SMLAL V10.4S, \l4\s1, V0.H[4]
+      SMLAL V10.4S, \l5\s1, V0.H[5]
+      SMLAL V10.4S, \l6\s1, V0.H[6]
+      SMLAL V10.4S, \l7\s1, V0.H[7]
+      SSHR  V10.4S, V10.4S, #2
+      SSHR  V11.4S, V11.4S, #2
+      UZP1  \out, V10.8H, V11.8H
+.endm
+
+.macro bi1_qpel_filter, out,  src1, l0=V1, l1=V2, l2=V3, l3=V4, l4=V5, l5=V6, l6=V7, l7=V8, s1=.4H, s2=.8H
+SMULL2 V11.4S,  \l0\s2, V0.H[0]
+SMLAL2 V11.4S,  \l1\s2, V0.H[1]
+SMLAL2 V11.4S, \l2\s2, V0.H[2]
+SMLAL2 V11.4S, \l3\s2, V0.H[3]
+SMLAL2 V11.4S, \l4\s2, V0.H[4]
+SMLAL2 V11.4S, \l5\s2, V0.H[5]
+SMLAL2 V11.4S, \l6\s2, V0.H[6]
+SMLAL2 V11.4S, \l7\s2, V0.H[7]
+SMULL V10.4S, \l0\s1, V0.H[0]
+SMLAL V10.4S, \l1\s1, V0.H[1]
+SMLAL V10.4S, \l2\s1, V0.H[2]
+SMLAL V10.4S, \l3\s1, V0.H[3]
+SMLAL V10.4S, \l4\s1, V0.H[4]
+SMLAL V10.4S, \l5\s1, V0.H[5]
+SMLAL V10.4S, \l6\s1, V0.H[6]
+SMLAL V10.4S, \l7\s1, V0.H[7]
+ADD   V10.4S, V10.4S, V29.4S
+ADD   V11.4S, V11.4S, V29.4S
+SSHR  V10.4S, V10.4S, #2
+SSHR  V11.4S, V11.4S, #2
+SADDW V10.4S, V10.4S,  \src1\s1
+SADDW2 V11.4S, V11.4S, \src1\s2
+SSHR  V10.4S, V10.4S, #5
+SSHR  V11.4S, V11.4S, #5
+UZP1  \out, V10.8H, V11.8H
+CLIP  \out, V30.8H, V31.8H
+.endm
+
 .macro uni_qpel_h_filter, out, last_jump
       LD1   {V1.8H}, [x2], x12
       LD1   {V2.8H}, [x2], x12
@@ -215,34 +291,7 @@ endfunc
       LD1   {V6.8H}, [x2], x12
       LD1   {V7.8H}, [x2], x12
       LD1   {V8.8H}, [x2], \last_jump
-      SMULL2 V9.4S, V1.8H, V0.H[0]
-      SMLAL2 V9.4S, V2.8H, V0.H[1]
-      SMULL2 V10.4S, V3.8H, V0.H[2]
-      SMLAL2 V10.4S, V4.8H, V0.H[3]
-      SMULL2 V11.4S, V5.8H, V0.H[4]
-      SMLAL2 V11.4S, V6.8H, V0.H[5]
-      SMULL2 V12.4S, V7.8H, V0.H[6]
-      SMLAL2 V12.4S, V8.8H, V0.H[7]
-      SMULL V1.4S, V1.4H, V0.H[0]
-      SMLAL V1.4S, V2.4H, V0.H[1]
-      SMULL V2.4S, V3.4H, V0.H[2]
-      SMLAL V2.4S, V4.4H, V0.H[3]
-      SMULL V3.4S, V5.4H, V0.H[4]
-      SMLAL V3.4S, V6.4H, V0.H[5]
-      SMULL V4.4S, V7.4H, V0.H[6]
-      SMLAL V4.4S, V8.4H, V0.H[7]
-      ADD   V9.4S, V9.4S, V10.4S
-      ADD   V10.4S, V11.4S, V12.4S
-      ADD   V1.4S, V1.4S, V2.4S
-      ADD   V2.4S, V3.4S, V4.4S
-      ADD   V1.4S, V1.4S, V2.4S
-      ADD   V2.4S, V9.4S, V10.4S
-      ADD   V1.4S, V1.4S, V29.4S
-      ADD   V2.4S, V2.4S, V29.4S
-      SSHR  V1.4S, V1.4S, #6
-      SSHR  V2.4S, V2.4S, #6
-      UZP1  \out, V1.8H, V2.8H
-      CLIP  \out, V30.8H, V31.8H
+      uni_qpel_filter \out
 .endm
 
 function put_vvc_uni_qpel_h_10_8_neon, export=1
@@ -260,10 +309,10 @@ function put_vvc_uni_qpel_h_10_8_neon, export=1
                 SADDW   V0.8H, V30.8H, V0.8B
 0:
                 subs x4, x4, #2
-                uni_qpel_h_filter V14.8H, x3
-                uni_qpel_h_filter V15.8H, x3
-                ST1   {V14.8H}, [x0], x1
-                ST1   {V15.8H}, [x0], x1
+                uni_qpel_h_filter V17.8H, x3
+                uni_qpel_h_filter V18.8H, x3
+                ST1   {V17.8H}, [x0], x1
+                ST1   {V18.8H}, [x0], x1
                 b.ne 0b
                 ret lr
 endfunc
@@ -283,9 +332,9 @@ function put_vvc_uni_qpel_h_10_16_neon, export=1
                 SADDW   V0.8H, V30.8H, V0.8B
 0:
                 subs x4, x4, #1
-                uni_qpel_h_filter V14.8H, x12
-                uni_qpel_h_filter V15.8H, x3
-                ST1   {V14.8H-V15.8H}, [x0], x1
+                uni_qpel_h_filter V17.8H, x12
+                uni_qpel_h_filter V18.8H, x3
+                ST1   {V17.8H-V18.8H}, [x0], x1
                 b.ne 0b
                 ret lr
 endfunc
@@ -305,49 +354,137 @@ function put_vvc_uni_qpel_h_10_32_neon, export=1
                 SADDW   V0.8H, V30.8H, V0.8B
 0:
                 subs x4, x4, #1
-                uni_qpel_h_filter V14.8H, x12
-                uni_qpel_h_filter V15.8H, x12
-                uni_qpel_h_filter V16.8H, x12
-                uni_qpel_h_filter V17.8H, x3
-                ST1   {V14.8H-V17.8H}, [x0], x1
+                uni_qpel_h_filter V17.8H, x12
+                uni_qpel_h_filter V18.8H, x12
+                uni_qpel_h_filter V19.8H, x12
+                uni_qpel_h_filter V20.8H, x3
+                ST1   {V17.8H-V20.8H}, [x0], x1
                 b.ne 0b
                 ret lr
 endfunc
 
+.macro uni_qpel_v_filter, out, in
+                LD1    {V1.8H}, [\in], x3
+                LD1    {V2.8H}, [\in], x3
+                LD1    {V3.8H}, [\in], x3
+                LD1    {V4.8H}, [\in], x3
+                LD1    {V5.8H}, [\in], x3
+                LD1    {V6.8H}, [\in], x3
+                LD1    {V7.8H}, [\in], x3
+0:              subs x4, x4, #8
+                LD1    {V8.8H}, [\in], x3
+                uni_qpel_filter V17.8H, V1, V2, V3, V4, V5, V6, V7, V8
+                LD1    {V1.8H}, [\in], x3
+                uni_qpel_filter V18.8H, V2, V3, V4, V5, V6, V7, V8, V1
+                LD1    {V2.8H}, [\in], x3
+                uni_qpel_filter V19.8H, V3, V4, V5, V6, V7, V8, V1, V2
+                LD1    {V3.8H}, [\in], x3
+                uni_qpel_filter V20.8H, V4, V5, V6, V7, V8, V1, V2, V3
+                LD1    {V4.8H}, [\in], x3
+                uni_qpel_filter V21.8H, V5, V6, V7, V8, V1, V2, V3, V4
+                LD1    {V5.8H}, [\in], x3
+                uni_qpel_filter V22.8H, V6, V7, V8, V1, V2, V3, V4, V5
+                LD1    {V6.8H}, [\in], x3
+                uni_qpel_filter V23.8H, V7, V8, V1, V2, V3, V4, V5, V6
+                LD1    {V7.8H}, [\in], x3
+                uni_qpel_filter V24.8H, V8, V1, V2, V3, V4, V5, V6, V7
+                ST1   {V17.8H}, [\out], x1
+                ST1   {V18.8H}, [\out], x1
+                ST1   {V19.8H}, [\out], x1
+                ST1   {V20.8H}, [\out], x1
+                ST1   {V21.8H}, [\out], x1
+                ST1   {V22.8H}, [\out], x1
+                ST1   {V23.8H}, [\out], x1
+                ST1   {V24.8H}, [\out], x1
+                b.ne 0b
+.endm
+
+function put_vvc_uni_qpel_v_10_8_neon, export=1
+                mov    x12, #2
+                mov    w11, #32 //offset val
+                mov    w10, #0x03FF //max val
+                lsl    x1, x1, #1 //_dststride
+                lsl    x3, x3, #1 //_srcstride
+                lsl    x13, x3, #1 //2*_srcstride
+                sub    x2, x2, x3
+                sub    x2, x2, x13
+                DUP    V29.4S, w11 //offset vector
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                LD1    {V0.8B}, [x5]
+                SADDW   V0.8H, V30.8H, V0.8B
+                uni_qpel_v_filter x0, x2
+                ret lr
+endfunc
+
+function put_vvc_uni_qpel_v_10_16_neon, export=1
+                mov    x12, #2
+                mov    w11, #32 //offset val
+                mov    w10, #0x03FF //max val
+                lsl    x1, x1, #1 //_dststride
+                lsl    x3, x3, #1 //_srcstride
+                lsl    x13, x3, #1
+                sub    x2, x2, x3
+                sub    x2, x2, x13
+                mov    x9, x2  //save x2[-3*_srcstride]
+                mov    x8, x0  //save x0[0]
+                mov    x14, x4  //save height
+                DUP    V29.4S, w11 //offset vector
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                LD1    {V0.8B}, [x5]
+                SADDW   V0.8H, V30.8H, V0.8B
+                uni_qpel_v_filter x0, x2
+                add x0, x8, #16
+                add x2, x9, #16
+                mov    x4, x14
+                uni_qpel_v_filter x0, x2
+                ret lr
+endfunc
+
+function put_vvc_uni_qpel_v_10_32_neon, export=1
+                mov    x12, #2
+                mov    w11, #32 //offset val
+                mov    w10, #0x03FF //max val
+                lsl    x1, x1, #1 //_dststride
+                lsl    x3, x3, #1 //_srcstride
+                lsl    x13, x3, #1
+                sub    x2, x2, x3
+                sub    x2, x2, x13
+                mov    x9, x2  //save x2[-3*_srcstride]
+                mov    x8, x0  //save x0[0]
+                mov    x14, x4  //save height
+                DUP    V29.4S, w11 //offset vector
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                LD1    {V0.8B}, [x5]
+                SADDW   V0.8H, V30.8H, V0.8B
+                uni_qpel_v_filter x0, x2
+                add x0, x8, #16
+                add x2, x9, #16
+                mov    x4, x14
+                uni_qpel_v_filter x0, x2
+                add x0, x8, #32
+                add x2, x9, #32
+                mov    x4, x14
+                uni_qpel_v_filter x0, x2
+                add x0, x8, #48
+                add x2, x9, #48
+                mov    x4, x14
+                uni_qpel_v_filter x0, x2
+                ret lr
+endfunc
+
 .macro bi0_qpel_h_filter, out, last_jump
-      LD1   {V1.8H}, [x1], x12
-      LD1   {V2.8H}, [x1], x12
-      LD1   {V3.8H}, [x1], x12
-      LD1   {V4.8H}, [x1], x12
-      LD1   {V5.8H}, [x1], x12
-      LD1   {V6.8H}, [x1], x12
-      LD1   {V7.8H}, [x1], x12
-      LD1   {V8.8H}, [x1], \last_jump
-      SMULL2 V9.4S, V1.8H, V0.H[0]
-      SMLAL2 V9.4S, V2.8H, V0.H[1]
-      SMULL2 V10.4S, V3.8H, V0.H[2]
-      SMLAL2 V10.4S, V4.8H, V0.H[3]
-      SMULL2 V11.4S, V5.8H, V0.H[4]
-      SMLAL2 V11.4S, V6.8H, V0.H[5]
-      SMULL2 V12.4S, V7.8H, V0.H[6]
-      SMLAL2 V12.4S, V8.8H, V0.H[7]
-      SMULL V1.4S, V1.4H, V0.H[0]
-      SMLAL V1.4S, V2.4H, V0.H[1]
-      SMULL V2.4S, V3.4H, V0.H[2]
-      SMLAL V2.4S, V4.4H, V0.H[3]
-      SMULL V3.4S, V5.4H, V0.H[4]
-      SMLAL V3.4S, V6.4H, V0.H[5]
-      SMULL V4.4S, V7.4H, V0.H[6]
-      SMLAL V4.4S, V8.4H, V0.H[7]
-      ADD   V9.4S, V9.4S, V10.4S
-      ADD   V10.4S, V11.4S, V12.4S
-      ADD   V1.4S, V1.4S, V2.4S
-      ADD   V2.4S, V3.4S, V4.4S
-      ADD   V1.4S, V1.4S, V2.4S
-      ADD   V2.4S, V9.4S, V10.4S
-      SSHR  V1.4S, V1.4S, #2
-      SSHR  V2.4S, V2.4S, #2
-      UZP1  \out, V1.8H, V2.8H
+    LD1   {V1.8H}, [x1], x12
+    LD1   {V2.8H}, [x1], x12
+    LD1   {V3.8H}, [x1], x12
+    LD1   {V4.8H}, [x1], x12
+    LD1   {V5.8H}, [x1], x12
+    LD1   {V6.8H}, [x1], x12
+    LD1   {V7.8H}, [x1], x12
+    LD1   {V8.8H}, [x1], \last_jump
+    bi0_qpel_filter \out
 .endm
 
 function put_vvc_bi0_qpel_h_10_8_neon, export=1
@@ -363,10 +500,10 @@ function put_vvc_bi0_qpel_h_10_8_neon, export=1
                 SADDW   V0.8H, V30.8H, V0.8B
 0:
                 subs x3, x3, #2
-                bi0_qpel_h_filter V14.8H, x2
-                bi0_qpel_h_filter V15.8H, x2
-                ST1   {V14.8H}, [x0], x11
-                ST1   {V15.8H}, [x0], x11
+                bi0_qpel_h_filter V17.8H, x2
+                bi0_qpel_h_filter V18.8H, x2
+                ST1   {V17.8H}, [x0], x11
+                ST1   {V18.8H}, [x0], x11
                 b.ne 0b
                 ret lr
 endfunc
@@ -384,9 +521,9 @@ function put_vvc_bi0_qpel_h_10_16_neon, export=1
                 SADDW   V0.8H, V30.8H, V0.8B
 0:
                 subs x3, x3, #1
-                bi0_qpel_h_filter V14.8H, x12
-                bi0_qpel_h_filter V15.8H, x2
-                ST1   {V14.8H-V15.8H}, [x0], x11
+                bi0_qpel_h_filter V17.8H, x12
+                bi0_qpel_h_filter V18.8H, x2
+                ST1   {V17.8H-V18.8H}, [x0], x11
                 b.ne 0b
                 ret lr
 endfunc
@@ -404,14 +541,119 @@ function put_vvc_bi0_qpel_h_10_32_neon, export=1
                 SADDW   V0.8H, V30.8H, V0.8B
 0:
                 subs x3, x3, #1
-                bi0_qpel_h_filter V14.8H, x12
-                bi0_qpel_h_filter V15.8H, x12
-                bi0_qpel_h_filter V16.8H, x12
-                bi0_qpel_h_filter V17.8H, x2
-                ST1   {V14.8H-V17.8H}, [x0], x11
+                bi0_qpel_h_filter V17.8H, x12
+                bi0_qpel_h_filter V18.8H, x12
+                bi0_qpel_h_filter V19.8H, x12
+                bi0_qpel_h_filter V20.8H, x2
+                ST1   {V17.8H-V20.8H}, [x0], x11
                 b.ne 0b
                 ret lr
 endfunc
+
+.macro bi0_qpel_v_filter, out, in
+                LD1    {V1.8H}, [\in], x2
+                LD1    {V2.8H}, [\in], x2
+                LD1    {V3.8H}, [\in], x2
+                LD1    {V4.8H}, [\in], x2
+                LD1    {V5.8H}, [\in], x2
+                LD1    {V6.8H}, [\in], x2
+                LD1    {V7.8H}, [\in], x2
+0:              subs x3, x3, #8
+                LD1    {V8.8H}, [\in], x2
+                bi0_qpel_filter V17.8H, V1, V2, V3, V4, V5, V6, V7, V8
+                LD1    {V1.8H}, [\in], x2
+                bi0_qpel_filter V18.8H, V2, V3, V4, V5, V6, V7, V8, V1
+                LD1    {V2.8H}, [\in], x2
+                bi0_qpel_filter V19.8H, V3, V4, V5, V6, V7, V8, V1, V2
+                LD1    {V3.8H}, [\in], x2
+                bi0_qpel_filter V20.8H, V4, V5, V6, V7, V8, V1, V2, V3
+                LD1    {V4.8H}, [\in], x2
+                bi0_qpel_filter V21.8H, V5, V6, V7, V8, V1, V2, V3, V4
+                LD1    {V5.8H}, [\in], x2
+                bi0_qpel_filter V22.8H, V6, V7, V8, V1, V2, V3, V4, V5
+                LD1    {V6.8H}, [\in], x2
+                bi0_qpel_filter V23.8H, V7, V8, V1, V2, V3, V4, V5, V6
+                LD1    {V7.8H}, [\in], x2
+                bi0_qpel_filter V24.8H, V8, V1, V2, V3, V4, V5, V6, V7
+                ST1   {V17.8H}, [\out], x11
+                ST1   {V18.8H}, [\out], x11
+                ST1   {V19.8H}, [\out], x11
+                ST1   {V20.8H}, [\out], x11
+                ST1   {V21.8H}, [\out], x11
+                ST1   {V22.8H}, [\out], x11
+                ST1   {V23.8H}, [\out], x11
+                ST1   {V24.8H}, [\out], x11
+                b.ne 0b
+.endm
+
+function put_vvc_bi0_qpel_v_10_8_neon, export=1
+                mov    x11, MAX_PB_SIZE_16 //offset val
+                mov    w10, #0x03FF //max val
+                lsl    x2, x2, #1 //_srcstride
+                lsl    x12, x2, #1 //2*_srcstride
+                sub    x1, x1, x2
+                sub    x1, x1, x12
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                LD1    {V0.8B}, [x4]
+                SADDW   V0.8H, V30.8H, V0.8B
+                bi0_qpel_v_filter x0, x1
+                ret lr
+endfunc
+
+function put_vvc_bi0_qpel_v_10_16_neon, export=1
+                mov    x11, MAX_PB_SIZE_16 //offset val
+                mov    w10, #0x03FF //max val
+                lsl    x2, x2, #1 //_srcstride
+                lsl    x12, x2, #1 //2*_srcstride
+                sub    x1, x1, x2
+                sub    x1, x1, x12
+                mov    x9, x1  //save x1[-3*_srcstride]
+                mov    x8, x0  //save x0[0]
+                mov    x14, x3  //save height
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                LD1    {V0.8B}, [x4]
+                SADDW   V0.8H, V30.8H, V0.8B
+                bi0_qpel_v_filter x0, x1
+                add x0, x8, #16
+                add x1, x9, #16
+                mov x3, x14
+                bi0_qpel_v_filter x0, x1
+                ret lr
+endfunc
+
+function put_vvc_bi0_qpel_v_10_32_neon, export=1
+                mov    x11, MAX_PB_SIZE_16 //offset val
+                mov    w10, #0x03FF //max val
+                lsl    x2, x2, #1 //_srcstride
+                lsl    x12, x2, #1 //2*_srcstride
+                sub    x1, x1, x2
+                sub    x1, x1, x12
+                mov    x9, x1  //save x1[-3*_srcstride]
+                mov    x8, x0  //save x0[0]
+                mov    x14, x3  //save height
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                LD1    {V0.8B}, [x4]
+                SADDW   V0.8H, V30.8H, V0.8B
+                bi0_qpel_v_filter x0, x1
+                add x0, x8, #16
+                add x1, x9, #16
+                mov x3, x14
+                bi0_qpel_v_filter x0, x1
+                add x0, x8, #32
+                add x1, x9, #32
+                mov x3, x14
+                bi0_qpel_v_filter x0, x1
+                add x0, x8, #48
+                add x1, x9, #48
+                mov x3, x14
+                bi0_qpel_v_filter x0, x1
+                ret lr
+endfunc
+
+
 
 .macro bi1_qpel_h_filter, out, last_jump, src1, suffix1=.4H, suffix2=.8H
       LD1   {V1.8H}, [x2], x12
@@ -422,38 +664,7 @@ endfunc
       LD1   {V6.8H}, [x2], x12
       LD1   {V7.8H}, [x2], x12
       LD1   {V8.8H}, [x2], \last_jump
-      SMULL2 V9.4S, V1.8H, V0.H[0]
-      SMLAL2 V9.4S, V2.8H, V0.H[1]
-      SMULL2 V10.4S, V3.8H, V0.H[2]
-      SMLAL2 V10.4S, V4.8H, V0.H[3]
-      SMULL2 V11.4S, V5.8H, V0.H[4]
-      SMLAL2 V11.4S, V6.8H, V0.H[5]
-      SMULL2 V12.4S, V7.8H, V0.H[6]
-      SMLAL2 V12.4S, V8.8H, V0.H[7]
-      SMULL V1.4S, V1.4H, V0.H[0]
-      SMLAL V1.4S, V2.4H, V0.H[1]
-      SMULL V2.4S, V3.4H, V0.H[2]
-      SMLAL V2.4S, V4.4H, V0.H[3]
-      SMULL V3.4S, V5.4H, V0.H[4]
-      SMLAL V3.4S, V6.4H, V0.H[5]
-      SMULL V4.4S, V7.4H, V0.H[6]
-      SMLAL V4.4S, V8.4H, V0.H[7]
-      ADD   V9.4S, V9.4S, V10.4S
-      ADD   V10.4S, V11.4S, V12.4S
-      ADD   V1.4S, V1.4S, V2.4S
-      ADD   V2.4S, V3.4S, V4.4S
-      ADD   V1.4S, V1.4S, V2.4S
-      ADD   V2.4S, V9.4S, V10.4S
-      ADD   V1.4S, V1.4S, V29.4S
-      ADD   V2.4S, V2.4S, V29.4S
-      SSHR  V1.4S, V1.4S, #2
-      SSHR  V2.4S, V2.4S, #2
-      SADDW V1.4S, V1.4S,  \src1\suffix1
-      SADDW2 V2.4S, V2.4S, \src1\suffix2
-      SSHR  V1.4S, V1.4S, #5
-      SSHR  V2.4S, V2.4S, #5
-      UZP1  \out, V1.8H, V2.8H
-      CLIP  \out, V30.8H, V31.8H
+      bi1_qpel_filter \out, \src1
 .endm
 
 function put_vvc_bi1_qpel_h_10_8_neon, export=1
@@ -474,10 +685,10 @@ function put_vvc_bi1_qpel_h_10_8_neon, export=1
                 subs x5, x5, #2
                 LD1   {V27.8H}, [x4], x9
                 LD1   {V28.8H}, [x4], x9
-                bi1_qpel_h_filter V14.8H, x3, V27
-                bi1_qpel_h_filter V15.8H, x3, V28
-                ST1   {V14.8H}, [x0], x1
-                ST1   {V15.8H}, [x0], x1
+                bi1_qpel_h_filter V17.8H, x3, V27
+                bi1_qpel_h_filter V18.8H, x3, V28
+                ST1   {V17.8H}, [x0], x1
+                ST1   {V18.8H}, [x0], x1
                 b.ne 0b
                 ret lr
 endfunc
@@ -499,9 +710,9 @@ function put_vvc_bi1_qpel_h_10_16_neon, export=1
 0:
                 subs x5, x5, #1
                 LD1   {V27.8H-V28.8H}, [x4], x9
-                bi1_qpel_h_filter V14.8H, x12, V27
-                bi1_qpel_h_filter V15.8H, x3, V28
-                ST1   {V14.8H-V15.8H}, [x0], x1
+                bi1_qpel_h_filter V17.8H, x12, V27
+                bi1_qpel_h_filter V18.8H, x3, V28
+                ST1   {V17.8H-V18.8H}, [x0], x1
                 b.ne 0b
                 ret lr
 endfunc
@@ -523,12 +734,139 @@ function put_vvc_bi1_qpel_h_10_32_neon, export=1
 0:
                 subs x5, x5, #1
                 LD1   {V25.8H-V28.8H}, [x4], x9
-                bi1_qpel_h_filter V14.8H, x12, V25
-                bi1_qpel_h_filter V15.8H, x12, V26
-                bi1_qpel_h_filter V16.8H, x12, V27
-                bi1_qpel_h_filter V17.8H, x3, V28
-                ST1   {V14.8H-V17.8H}, [x0], x1
+                bi1_qpel_h_filter V17.8H, x12, V25
+                bi1_qpel_h_filter V18.8H, x12, V26
+                bi1_qpel_h_filter V19.8H, x12, V27
+                bi1_qpel_h_filter V20.8H, x3, V28
+                ST1   {V17.8H-V20.8H}, [x0], x1
                 b.ne 0b
+                ret lr
+endfunc
+
+.macro bi1_qpel_v_filter, out, in
+                LD1    {V1.8H}, [\in], x3
+                LD1    {V2.8H}, [\in], x3
+                LD1    {V3.8H}, [\in], x3
+                LD1    {V4.8H}, [\in], x3
+                LD1    {V5.8H}, [\in], x3
+                LD1    {V6.8H}, [\in], x3
+                LD1    {V7.8H}, [\in], x3
+0:              subs   x5, x5, #8
+                LD1    {V8.8H}, [\in], x3
+                LD1    {V28.8H}, [x4], x9
+                bi1_qpel_filter V17.8H, v28, V1, V2, V3, V4, V5, V6, V7, V8
+                LD1    {V1.8H}, [\in], x3
+                LD1    {V28.8H}, [x4], x9
+                bi1_qpel_filter V18.8H, v28, V2, V3, V4, V5, V6, V7, V8, V1
+                LD1    {V2.8H}, [\in], x3
+                LD1    {V28.8H}, [x4], x9
+                bi1_qpel_filter V19.8H, v28, V3, V4, V5, V6, V7, V8, V1, V2
+                LD1    {V3.8H}, [\in], x3
+                LD1    {V28.8H}, [x4], x9
+                bi1_qpel_filter V20.8H, v28, V4, V5, V6, V7, V8, V1, V2, V3
+                LD1    {V4.8H}, [\in], x3
+                LD1    {V28.8H}, [x4], x9
+                bi1_qpel_filter V21.8H, v28, V5, V6, V7, V8, V1, V2, V3, V4
+                LD1    {V5.8H}, [\in], x3
+                LD1    {V28.8H}, [x4], x9
+                bi1_qpel_filter V22.8H, v28, V6, V7, V8, V1, V2, V3, V4, V5
+                LD1    {V6.8H}, [\in], x3
+                LD1    {V28.8H}, [x4], x9
+                bi1_qpel_filter V23.8H, v28, V7, V8, V1, V2, V3, V4, V5, V6
+                LD1    {V7.8H}, [\in], x3
+                LD1    {V28.8H}, [x4], x9
+                bi1_qpel_filter V24.8H, v28, V8, V1, V2, V3, V4, V5, V6, V7
+                ST1   {V17.8H}, [\out], x1
+                ST1   {V18.8H}, [\out], x1
+                ST1   {V19.8H}, [\out], x1
+                ST1   {V20.8H}, [\out], x1
+                ST1   {V21.8H}, [\out], x1
+                ST1   {V22.8H}, [\out], x1
+                ST1   {V23.8H}, [\out], x1
+                ST1   {V24.8H}, [\out], x1
+                b.ne 0b
+.endm
+
+function put_vvc_bi1_qpel_v_10_8_neon, export=1
+                mov    x12, #2
+                mov    w11, #64 //offset val
+                mov    w10, #0x03FF //max val
+                mov    x9, MAX_PB_SIZE_16
+                lsl    x1, x1, #1 //_dststride
+                lsl    x3, x3, #1 //_srcstride
+                lsl    x13, x3, #1 //2*_srcstride
+                sub    x2, x2, x3
+                sub    x2, x2, x13
+                DUP    V29.4S, w11 //offset vector
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                LD1    {V0.8B}, [x6]
+                SADDW   V0.8H, V30.8H, V0.8B
+                bi1_qpel_v_filter x0, x2
+                ret lr
+endfunc
+
+function put_vvc_bi1_qpel_v_10_16_neon, export=1
+                mov    w11, #64 //offset val
+                mov    w10, #0x03FF //max val
+                mov    x9, MAX_PB_SIZE_16
+                lsl    x1, x1, #1 //_dststride
+                lsl    x3, x3, #1 //_srcstride
+                lsl    x13, x3, #1 //2*_srcstride
+                sub    x2, x2, x3
+                sub    x2, x2, x13
+                mov    x13, x0  //save x0[0]
+                mov    x12, x2  //save x2[-3*_srcstride]
+                mov    x14, x4  //save x4[0]
+                mov    x15, x5  //save height
+                DUP    V29.4S, w11 //offset vector
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                LD1    {V0.8B}, [x6]
+                SADDW   V0.8H, V30.8H, V0.8B
+                bi1_qpel_v_filter x0, x2
+                add x2, x12, #16
+                add x0, x13, #16
+                add x4, x14, #16
+                mov x5, x15
+                bi1_qpel_v_filter x0, x2
+                ret lr
+endfunc
+
+function put_vvc_bi1_qpel_v_10_32_neon, export=1
+                mov    w11, #64 //offset val
+                mov    w10, #0x03FF //max val
+                mov    x9, MAX_PB_SIZE_16
+                lsl    x1, x1, #1 //_dststride
+                lsl    x3, x3, #1 //_srcstride
+                lsl    x13, x3, #1 //2*_srcstride
+                sub    x2, x2, x3
+                sub    x2, x2, x13
+                mov    x12, x2  //save x2[-3*_srcstride]
+                mov    x13, x0  //save x0[0]
+                mov    x14, x4  //save x4[0]
+                mov    x15, x5  //save height
+                DUP    V29.4S, w11 //offset vector
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                LD1    {V0.8B}, [x6]
+                SADDW   V0.8H, V30.8H, V0.8B
+                bi1_qpel_v_filter x0, x2
+                add x2, x12, #16
+                add x0, x13, #16
+                add x4, x14, #16
+                mov x5, x15
+                bi1_qpel_v_filter x0, x2
+                add x2, x12, #32
+                add x0, x13, #32
+                add x4, x14, #32
+                mov x5, x15
+                bi1_qpel_v_filter x0, x2
+                add x2, x12, #48
+                add x0, x13, #48
+                add x4, x14, #48
+                mov x5, x15
+                bi1_qpel_v_filter x0, x2
                 ret lr
 endfunc
 

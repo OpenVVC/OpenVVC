@@ -83,13 +83,25 @@ void ov_put_vvc_uni_qpel_h_10_8_neon();
 void ov_put_vvc_uni_qpel_h_10_16_neon();
 void ov_put_vvc_uni_qpel_h_10_32_neon();
 
+void ov_put_vvc_uni_qpel_v_10_8_neon();
+void ov_put_vvc_uni_qpel_v_10_16_neon();
+void ov_put_vvc_uni_qpel_v_10_32_neon();
+
 void ov_put_vvc_bi0_qpel_h_10_8_neon();
 void ov_put_vvc_bi0_qpel_h_10_16_neon();
 void ov_put_vvc_bi0_qpel_h_10_32_neon();
 
+void ov_put_vvc_bi0_qpel_v_10_8_neon();
+void ov_put_vvc_bi0_qpel_v_10_16_neon();
+void ov_put_vvc_bi0_qpel_v_10_32_neon();
+
 void ov_put_vvc_bi1_qpel_h_10_8_neon();
 void ov_put_vvc_bi1_qpel_h_10_16_neon();
 void ov_put_vvc_bi1_qpel_h_10_32_neon();
+
+void ov_put_vvc_bi1_qpel_v_10_8_neon();
+void ov_put_vvc_bi1_qpel_v_10_16_neon();
+void ov_put_vvc_bi1_qpel_v_10_32_neon();
 
 void ov_put_vvc_uni_qpel_h_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
                    const uint16_t* _src, ptrdiff_t _srcstride,
@@ -107,6 +119,22 @@ void ov_put_vvc_uni_qpel_h_10_32_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststri
                      ov_put_vvc_uni_qpel_h_10_32_neon(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[mx-1], width);
                    }
 
+ void ov_put_vvc_uni_qpel_v_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
+                    const uint16_t* _src, ptrdiff_t _srcstride,
+                    int height, intptr_t mx, intptr_t my, int width){
+                      ov_put_vvc_uni_qpel_v_10_8_neon(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                    }
+ void ov_put_vvc_uni_qpel_v_10_16_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
+                    const uint16_t* _src, ptrdiff_t _srcstride,
+                    int height, intptr_t mx, intptr_t my, int width){
+                      ov_put_vvc_uni_qpel_v_10_16_neon(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                    }
+ void ov_put_vvc_uni_qpel_v_10_32_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
+                    const uint16_t* _src, ptrdiff_t _srcstride,
+                    int height, intptr_t mx, intptr_t my, int width){
+                      ov_put_vvc_uni_qpel_v_10_32_neon(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                    }
+
 void ov_put_vvc_bi0_qpel_h_10_8_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
                      ov_put_vvc_bi0_qpel_h_10_8_neon(_dst, _src, _srcstride, height, ov_mc_filters_neon[mx-1], width);
@@ -119,6 +147,20 @@ void ov_put_vvc_bi0_qpel_h_10_32_neon_wrapper(int16_t* _dst, const uint16_t* _sr
                   int height, intptr_t mx, intptr_t my, int width){
                     ov_put_vvc_bi0_qpel_h_10_32_neon(_dst, _src, _srcstride, height, ov_mc_filters_neon[mx-1], width);
                   }
+
+void ov_put_vvc_bi0_qpel_v_10_8_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
+                  int height, intptr_t mx, intptr_t my, int width){
+                     ov_put_vvc_bi0_qpel_v_10_8_neon(_dst, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                   }
+void ov_put_vvc_bi0_qpel_v_10_16_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
+                  int height, intptr_t mx, intptr_t my, int width){
+                    ov_put_vvc_bi0_qpel_v_10_16_neon(_dst, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                  }
+void ov_put_vvc_bi0_qpel_v_10_32_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
+                  int height, intptr_t mx, intptr_t my, int width){
+                    ov_put_vvc_bi0_qpel_v_10_32_neon(_dst, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                  }
+
 
  void ov_put_vvc_bi1_qpel_h_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
                    ptrdiff_t _srcstride, const int16_t* _src1, int height,
@@ -135,6 +177,22 @@ void ov_put_vvc_bi0_qpel_h_10_32_neon_wrapper(int16_t* _dst, const uint16_t* _sr
                    intptr_t mx, intptr_t my, int width){
                       ov_put_vvc_bi1_qpel_h_10_32_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[mx-1], width);
                     }
+
+void ov_put_vvc_bi1_qpel_v_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
+                  ptrdiff_t _srcstride, const int16_t* _src1, int height,
+                  intptr_t mx, intptr_t my, int width){
+                     ov_put_vvc_bi1_qpel_v_10_8_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[my-1], width);
+                   }
+void ov_put_vvc_bi1_qpel_v_10_16_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
+                  ptrdiff_t _srcstride, const int16_t* _src1, int height,
+                  intptr_t mx, intptr_t my, int width){
+                     ov_put_vvc_bi1_qpel_v_10_16_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[my-1], width);
+                   }
+void ov_put_vvc_bi1_qpel_v_10_32_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
+                  ptrdiff_t _srcstride, const int16_t* _src1, int height,
+                  intptr_t mx, intptr_t my, int width){
+                     ov_put_vvc_bi1_qpel_v_10_32_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[my-1], width);
+                   }
 
 void ov_put_vvc_uni_epel_h_10_8_neon();
 void ov_put_vvc_uni_epel_h_10_16_neon();
@@ -192,9 +250,9 @@ rcn_init_mc_functions_neon(struct RCNFunctions* const rcn_funcs)
   mc_l->bidir0[1][SIZE_BLOCK_8] = &ov_put_vvc_bi0_qpel_h_10_8_neon_wrapper;
   mc_l->bidir1[1][SIZE_BLOCK_8] = &ov_put_vvc_bi1_qpel_h_10_8_neon_wrapper;
   //
-  // mc_l->unidir[2][SIZE_BLOCK_8] = &dav1d_ff_hevc_transform_4x4_neon_8;
-  // mc_l->bidir0[2][SIZE_BLOCK_8] = &dav1d_ff_hevc_transform_4x4_neon_8;
-  // mc_l->bidir1[2][SIZE_BLOCK_8] = &dav1d_ff_hevc_transform_4x4_neon_8;
+  mc_l->unidir[2][SIZE_BLOCK_8] = &ov_put_vvc_uni_qpel_v_10_8_neon_wrapper;
+  mc_l->bidir0[2][SIZE_BLOCK_8] = &ov_put_vvc_bi0_qpel_v_10_8_neon_wrapper;
+  mc_l->bidir1[2][SIZE_BLOCK_8] = &ov_put_vvc_bi1_qpel_v_10_8_neon_wrapper;
   //
   // mc_l->unidir[3][SIZE_BLOCK_8] = &dav1d_ff_hevc_transform_4x4_neon_8;
   // mc_l->bidir0[3][SIZE_BLOCK_8] = &dav1d_ff_hevc_transform_4x4_neon_8;
@@ -207,9 +265,9 @@ rcn_init_mc_functions_neon(struct RCNFunctions* const rcn_funcs)
   mc_l->bidir0[1][SIZE_BLOCK_16] = &ov_put_vvc_bi0_qpel_h_10_16_neon_wrapper;
   mc_l->bidir1[1][SIZE_BLOCK_16] = &ov_put_vvc_bi1_qpel_h_10_16_neon_wrapper;
   //
-  // mc_l->unidir[2][SIZE_BLOCK_16] = &dav1d_ff_hevc_transform_4x4_neon_8;
-  // mc_l->bidir0[2][SIZE_BLOCK_16] = &dav1d_ff_hevc_transform_4x4_neon_8;
-  // mc_l->bidir1[2][SIZE_BLOCK_16] = &dav1d_ff_hevc_transform_4x4_neon_8;
+  mc_l->unidir[2][SIZE_BLOCK_16] = &ov_put_vvc_uni_qpel_v_10_16_neon_wrapper;
+  mc_l->bidir0[2][SIZE_BLOCK_16] = &ov_put_vvc_bi0_qpel_v_10_16_neon_wrapper;
+  mc_l->bidir1[2][SIZE_BLOCK_16] = &ov_put_vvc_bi1_qpel_v_10_16_neon_wrapper;
   //
   // mc_l->unidir[3][SIZE_BLOCK_16] = &dav1d_ff_hevc_transform_4x4_neon_8;
   // mc_l->bidir0[3][SIZE_BLOCK_16] = &dav1d_ff_hevc_transform_4x4_neon_8;
@@ -222,9 +280,9 @@ rcn_init_mc_functions_neon(struct RCNFunctions* const rcn_funcs)
   mc_l->bidir0[1][SIZE_BLOCK_32] = &ov_put_vvc_bi0_qpel_h_10_32_neon_wrapper;
   mc_l->bidir1[1][SIZE_BLOCK_32] = &ov_put_vvc_bi1_qpel_h_10_32_neon_wrapper;
   //
-  // mc_l->unidir[2][SIZE_BLOCK_32] = &dav1d_ff_hevc_transform_4x4_neon_8;
-  // mc_l->bidir0[2][SIZE_BLOCK_32] = &dav1d_ff_hevc_transform_4x4_neon_8;
-  // mc_l->bidir1[2][SIZE_BLOCK_32] = &dav1d_ff_hevc_transform_4x4_neon_8;
+  mc_l->unidir[2][SIZE_BLOCK_32] = &ov_put_vvc_uni_qpel_v_10_32_neon_wrapper;
+  mc_l->bidir0[2][SIZE_BLOCK_32] = &ov_put_vvc_bi0_qpel_v_10_32_neon_wrapper;
+  mc_l->bidir1[2][SIZE_BLOCK_32] = &ov_put_vvc_bi1_qpel_v_10_32_neon_wrapper;
   //
   // mc_l->unidir[3][SIZE_BLOCK_32] = &dav1d_ff_hevc_transform_4x4_neon_8;
   // mc_l->bidir0[3][SIZE_BLOCK_32] = &dav1d_ff_hevc_transform_4x4_neon_8;
