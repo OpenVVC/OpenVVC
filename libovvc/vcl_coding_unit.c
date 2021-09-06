@@ -1783,11 +1783,12 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
                           mv_info.mv0, mv_info.mv1, x0, y0,
                           log2_cb_w, log2_cb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
-            } else {
+            } else if (dmvr_enable) {
                 uint8_t log2_w = OVMIN(log2_cb_w, 4);
                 uint8_t log2_h = OVMIN(log2_cb_h, 4);
                 uint8_t nb_sb_w = (1 << log2_cb_w) >> log2_w;
                 uint8_t nb_sb_h = (1 << log2_cb_h) >> log2_h;
+
                 int i, j;
 
                 OVMV mv0 = mv_info.mv0;
@@ -1823,25 +1824,27 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                                 }
                             }
                         }
-
-                        if (bdof_enable) {
-                            if (!dmvr_enable) {
-                                rcn_bdof_mcp_l(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
-                                               x0 + j * 16, y0 + i * 16, log2_w, log2_h,
-                                               mv0, mv1, ref_idx0, ref_idx1);
-                                rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
-                                            mv0, mv1, x0 + j * 16, y0 + i * 16,
-                                            log2_w, log2_h, mv_info.inter_dir, ref_idx0, ref_idx1);
-                            }
-                        } else {
-                            if (!dmvr_enable) {
-                                rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
-                                          mv0, mv1, x0 + j * 16, y0 + i * 16,
-                                          log2_w, log2_h, mv_info.inter_dir, ref_idx0, ref_idx1);
-                            }
-                        }
                         mv0 = mv_info.mv0;
                         mv1 = mv_info.mv1;
+                    }
+                }
+            } else if (bdof_enable) {
+                int i, j;
+                uint8_t log2_w = OVMIN(log2_cb_w, 4);
+                uint8_t log2_h = OVMIN(log2_cb_h, 4);
+                uint8_t nb_sb_w = (1 << log2_cb_w) >> log2_w;
+                uint8_t nb_sb_h = (1 << log2_cb_h) >> log2_h;
+                OVMV mv0 = mv_info.mv0;
+                OVMV mv1 = mv_info.mv1;
+                for (i = 0; i < nb_sb_h; ++i) {
+                    for (j = 0; j < nb_sb_w; ++j) {
+
+                        rcn_bdof_mcp_l(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
+                                       x0 + j * 16, y0 + i * 16, log2_w, log2_h,
+                                       mv0, mv1, ref_idx0, ref_idx1);
+                        rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
+                                    mv0, mv1, x0 + j * 16, y0 + i * 16,
+                                    log2_w, log2_h, mv_info.inter_dir, ref_idx0, ref_idx1);
                     }
                 }
             }
