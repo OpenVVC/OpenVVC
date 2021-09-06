@@ -74,7 +74,7 @@ done
 
 decode(){
   #TODO handle /dev/null output and optional log
-  dec_arg="-i ${1} -o ${2}"
+  dec_arg="-i ${1} -o ${2} -t 8"
   $DECODER ${dec_arg} 2> ${3}
   return $?
 }

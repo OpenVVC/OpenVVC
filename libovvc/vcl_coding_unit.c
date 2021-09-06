@@ -1566,6 +1566,27 @@ check_nz_mvd(const OVMV *const mvd0, const OVMV *const mvd1,
     return (uint8_t)!!mvd_not_zero;
 }
 
+static inline uint8_t
+check_nz_mvd_b(const OVMV *const mvd0, const OVMV *const mvd1,
+               uint8_t mvd1_zero_flag)
+{
+    int32_t mvd_not_zero = 0;
+    mvd_not_zero |= (mvd0->x | mvd0->y);
+    if (!mvd1_zero_flag) {
+        mvd_not_zero |= (mvd1->x | mvd1->y);
+    }
+
+    return (uint8_t)!!mvd_not_zero;
+}
+
+static inline uint8_t
+check_nz_mvd_smvd(const OVMV *const mvd0)
+{
+    int32_t mvd_not_zero = 0;
+    mvd_not_zero |= (mvd0->x | mvd0->y);
+    return (uint8_t)!!mvd_not_zero;
+}
+
 static struct MergeDataP
 inter_skip_data_b(OVCTUDec *const ctu_dec,
                   const OVPartInfo *const part_ctx,
@@ -1990,6 +2011,12 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 mvp_idx0 = ovcabac_read_ae_mvp_flag(cabac_ctx);
                 mvp_idx1 = ovcabac_read_ae_mvp_flag(cabac_ctx);
 
+                if (inter_ctx->amvr_flag) {
+                    uint8_t nz_mvd = check_nz_mvd_smvd(&mvd0);
+                    if (nz_mvd) {
+                        inter_ctx->prec_amvr = ovcabac_read_ae_amvr_precision(cabac_ctx, ibc_flag);
+                    }
+                }
             } else {
                 uint8_t nb_active_ref0_min1 = inter_ctx->nb_active_ref0 - 1;
                 uint8_t nb_active_ref1_min1 = inter_ctx->nb_active_ref1 - 1;
@@ -2003,16 +2030,14 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 ref_idx1 = mvp_b.mvd1.ref_idx;
                 mvd1 = mvp_b.mvd1.mvd;
                 mvp_idx1 = mvp_b.mvd1.mvp_idx;
-            }
 
-            /* Note affine_flag is always 0 here */
-            /* Note skip_flag is always 0 here since merge_flag would default to 1 */
-            if (inter_ctx->amvr_flag) {
-                uint8_t nz_mvd = check_nz_mvd(&mvd0, &mvd1, inter_dir, smvd_flag,
-                                              inter_ctx->mvd1_zero_flag);
-                if (nz_mvd) {
-                    inter_ctx->prec_amvr = ovcabac_read_ae_amvr_precision(cabac_ctx, ibc_flag);
+                if (inter_ctx->amvr_flag) {
+                    uint8_t nz_mvd = check_nz_mvd_b(&mvd0, &mvd1, inter_ctx->mvd1_zero_flag);
+                    if (nz_mvd) {
+                        inter_ctx->prec_amvr = ovcabac_read_ae_amvr_precision(cabac_ctx, ibc_flag);
+                    }
                 }
+
             }
 
             if (inter_ctx->bcw_flag && !ibc_flag
