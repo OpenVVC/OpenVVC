@@ -1487,26 +1487,22 @@ check_bdof_ref(struct InterDRVCtx *const inter_ctx, uint8_t ref_idx0, uint8_t re
 }
 
 static inline uint8_t
-check_nz_affine_mvd(const struct AffineControlInfo *const cp_mvd0, const struct AffineControlInfo *const cp_mvd1, uint8_t affine_type, uint8_t inter_dir)
+check_nz_affine_b(const struct AffineControlInfo *const cp_mvd0, const struct AffineControlInfo *const cp_mvd1, uint8_t affine_type)
 {
     uint32_t mvd_not_zero = 0;
     if (affine_type) {
-        if (inter_dir & 0x1) {
-            mvd_not_zero |= (cp_mvd0->lt.x | cp_mvd0->lt.y);
-            mvd_not_zero |= (cp_mvd0->rt.x | cp_mvd0->rt.y);
-            mvd_not_zero |= (cp_mvd0->lb.x | cp_mvd0->lb.y);
-        }
-        if (!mvd_not_zero && inter_dir & 0x2) {
+        mvd_not_zero |= (cp_mvd0->lt.x | cp_mvd0->lt.y);
+        mvd_not_zero |= (cp_mvd0->rt.x | cp_mvd0->rt.y);
+        mvd_not_zero |= (cp_mvd0->lb.x | cp_mvd0->lb.y);
+        if (!mvd_not_zero) {
             mvd_not_zero |= (cp_mvd1->lt.x | cp_mvd1->lt.y);
             mvd_not_zero |= (cp_mvd1->rt.x | cp_mvd1->rt.y);
             mvd_not_zero |= (cp_mvd1->lb.x | cp_mvd1->lb.y);
         }
     } else {
-        if (inter_dir & 0x1) {
-            mvd_not_zero |= (cp_mvd0->lt.x | cp_mvd0->lt.y);
-            mvd_not_zero |= (cp_mvd0->rt.x | cp_mvd0->rt.y);
-        }
-        if (!mvd_not_zero && inter_dir & 0x2) {
+        mvd_not_zero |= (cp_mvd0->lt.x | cp_mvd0->lt.y);
+        mvd_not_zero |= (cp_mvd0->rt.x | cp_mvd0->rt.y);
+        if (!mvd_not_zero) {
             mvd_not_zero |= (cp_mvd1->lt.x | cp_mvd1->lt.y);
             mvd_not_zero |= (cp_mvd1->rt.x | cp_mvd1->rt.y);
         }
@@ -1915,8 +1911,8 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
 
                     /* Note affine is always be 1 here  skip_flag always 0 */
                     if (inter_ctx->affine_amvr_flag) {
-                        int32_t nz_mvd = check_nz_affine_mvd(&mvp_data.mvp0.mvd, &mvp_data.mvp1.mvd,
-                                                             affine_type, 0x3);
+                        int32_t nz_mvd = check_nz_affine_b(&mvp_data.mvp0.mvd, &mvp_data.mvp1.mvd,
+                                                           affine_type);
 
                         if (nz_mvd) {
                             uint8_t amvr_prec = ovcabac_read_ae_affine_amvr_precision(cabac_ctx, ibc_flag);
