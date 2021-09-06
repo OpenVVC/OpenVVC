@@ -965,7 +965,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         if(einfo->nb_ctu_h == 1){
             rcn_sao_filter_line(ctudec, einfo, ctb_y);
             rcn_alf_filter_line(ctudec, einfo, ctb_y);
-            ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
+            ovdpb_report_decoded_ctus(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
         } 
     }    
     else if(ctb_y == einfo->nb_ctu_h - 1){
@@ -973,14 +973,14 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         rcn_sao_filter_line(ctudec, einfo, ctb_y);
 
         rcn_alf_filter_line(ctudec, einfo, ctb_y-1);
-        ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
+        ovdpb_report_decoded_ctus(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
         rcn_alf_filter_line(ctudec, einfo, ctb_y);
-        ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
+        ovdpb_report_decoded_ctus(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
     }
     else{
         rcn_sao_filter_line(ctudec, einfo, ctb_y-1);
         rcn_alf_filter_line(ctudec, einfo, ctb_y-1);
-        ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
+        ovdpb_report_decoded_ctus(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
     }
 
     if (ctb_x == 0) {
@@ -1072,16 +1072,16 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         rcn_sao_first_pix_rows(ctudec, einfo, ctb_y);
         rcn_sao_filter_line(ctudec, einfo, ctb_y);
         rcn_alf_filter_line(ctudec, einfo, ctb_y);
-        ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
+        ovdpb_report_decoded_ctus(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
     }    
     else{
         rcn_sao_filter_line(ctudec, einfo, ctb_y-1);
         rcn_sao_filter_line(ctudec, einfo, ctb_y);
 
         rcn_alf_filter_line(ctudec, einfo, ctb_y-1);
-        ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
+        ovdpb_report_decoded_ctus(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
         rcn_alf_filter_line(ctudec, einfo, ctb_y);
-        ovdpb_update_decoded_ctus(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
+        ovdpb_report_decoded_ctus(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
     }
 
     ret = 0;

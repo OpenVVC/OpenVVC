@@ -218,7 +218,7 @@ ovdpb_clear_refs(OVDPB *dpb)
     //     ovdpb_release_pic(dpb, &dpb->pictures[i]);
     // }
 
-    ov_log(NULL, OVLOG_INFO, "Release reference pictures\n");
+    ov_log(NULL, OVLOG_DEBUG, "Release reference pictures\n");
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     int min_poc = INT_MAX;
     int nb_output_pic = 0;
@@ -235,7 +235,6 @@ ovdpb_clear_refs(OVDPB *dpb)
         }
     }
 
-    ov_log(NULL, OVLOG_INFO, "nb_output_pic %d (max %d)\n", nb_output_pic, dpb->max_nb_dpb_pic);
     if (nb_output_pic >= dpb->max_nb_dpb_pic) {
         /* Determine the min POC among those pic
          */
@@ -1023,6 +1022,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         goto fail;
     }
     ovdpb_init_decoded_ctus((*pic_p), ps);
+    ovdpb_reset_decoded_ctus((*pic_p));
 
     copy_sei_params(&(*pic_p)->sei, ovdec->active_params.sei);
     
@@ -1096,7 +1096,7 @@ void xctu_to_mask(uint64_t* mask, int mask_w, int xmin_ctu, int xmax_ctu)
 }
 
 void
-ovdpb_update_decoded_ctus(OVPicture *const pic, int y_ctu, int xmin_ctu, int xmax_ctu)
+ovdpb_report_decoded_ctus(OVPicture *const pic, int y_ctu, int xmin_ctu, int xmax_ctu)
 {
     struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
     int mask_w = decoded_ctus->mask_w;
@@ -1126,7 +1126,7 @@ ovdpb_reset_decoded_ctus(OVPicture *const pic)
 void
 ovdpb_get_lines_decoded_ctus(OVPicture *const pic, uint64_t** decoded, int y_start, int y_end )
 {
-    ov_log(NULL, OVLOG_DEBUG, "Get decoded_ctus ref POC %d lines %d,%d \n", pic->poc, y_start, y_end);
+    // ov_log(NULL, OVLOG_DEBUG, "Get decoded_ctus ref POC %d lines %d,%d \n", pic->poc, y_start, y_end);
     struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
     for(int i = y_start; i <= y_end; i++)
         memcpy(decoded[i], decoded_ctus->mask[i], decoded_ctus->mask_w * sizeof(int64_t)) ;

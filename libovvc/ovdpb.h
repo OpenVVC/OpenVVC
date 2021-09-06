@@ -184,7 +184,7 @@ int ovdpb_output_pic(OVDPB *dpb, OVPicture **out, int output_cvs_id);
 int ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVPicture * current_pic);
 
 
-void ovdpb_update_decoded_ctus(OVPicture *const pic, int y_ctu, int xmin_ctu, int xmax_ctu);
+void ovdpb_report_decoded_ctus(OVPicture *const pic, int y_ctu, int xmin_ctu, int xmax_ctu);
 
 void ovdpb_get_lines_decoded_ctus(OVPicture *const pic, uint64_t** decoded, int y_start, int y_end );
 
