@@ -2017,6 +2017,14 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                         inter_ctx->prec_amvr = ovcabac_read_ae_amvr_precision(cabac_ctx, ibc_flag);
                     }
                 }
+
+                ref_idx0     = inter_ctx->ref_smvd_idx0;
+                ref_idx1     = inter_ctx->ref_smvd_idx1;
+                mvd1.x       = -mvd0.x;
+                mvd1.y       = -mvd0.y;
+                /* FIXME check if necessary */
+                mvd1.ref_idx = inter_ctx->ref_smvd_idx1;
+
             } else {
                 uint8_t nb_active_ref0_min1 = inter_ctx->nb_active_ref0 - 1;
                 uint8_t nb_active_ref1_min1 = inter_ctx->nb_active_ref1 - 1;
@@ -2037,7 +2045,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                         inter_ctx->prec_amvr = ovcabac_read_ae_amvr_precision(cabac_ctx, ibc_flag);
                     }
                 }
-
             }
 
             if (inter_ctx->bcw_flag && !ibc_flag
@@ -2046,15 +2053,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 if (bcw_flag) {
                     bcw_idx = ovcabac_read_ae_bcw_idx(cabac_ctx, inter_ctx->tmvp_ctx.ldc);
                 }
-            }
-
-            if (smvd_flag) {
-                ref_idx0     = inter_ctx->ref_smvd_idx0;
-                ref_idx1     = inter_ctx->ref_smvd_idx1;
-                mvd1.x       = -mvd0.x;
-                mvd1.y       = -mvd0.y;
-                /* FIXME check if necessary */
-                mvd1.ref_idx = inter_ctx->ref_smvd_idx1;
             }
 
             mv_info = drv_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
