@@ -1759,6 +1759,93 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         ref_idx0 = mv_info.mv0.ref_idx;
         ref_idx1 = mv_info.mv1.ref_idx;
 
+        {
+            uint8_t bdof_enable = 0;
+            uint8_t dmvr_enable = 0;
+            if (ctu_dec->bdof_enabled && mv_info.inter_dir == 0x3) {
+                /* Note ciip_flag is zero in this function */
+                uint8_t ciip_flag = 0;
+                uint8_t bcw_flag = (mv_info.mv0.bcw_idx_plus1 != 0 && mv_info.mv0.bcw_idx_plus1 != 3);
+                bdof_enable = check_bdof(log2_cb_w, log2_cb_h, ciip_flag, bcw_flag, smvd_flag);
+
+                bdof_enable = bdof_enable && check_bdof_ref(inter_ctx, ref_idx0, ref_idx1);
+            }
+
+            if (ctu_dec->dmvr_enabled && mv_info.inter_dir == 0x3) {
+                /*FIXME check both mv in bir dir ?*/
+                uint8_t bcw_flag = (mv_info.mv0.bcw_idx_plus1 != 0 && mv_info.mv0.bcw_idx_plus1 != 3);
+                dmvr_enable = check_bdof(log2_cb_w, log2_cb_h, 0, mmvd_flag, bcw_flag);
+
+                dmvr_enable = dmvr_enable && check_bdof_ref(inter_ctx, ref_idx0, ref_idx1);
+            }
+
+            if (!bdof_enable && !dmvr_enable) {
+                rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
+                          mv_info.mv0, mv_info.mv1, x0, y0,
+                          log2_cb_w, log2_cb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
+            } else {
+                uint8_t log2_w = OVMIN(log2_cb_w, 4);
+                uint8_t log2_h = OVMIN(log2_cb_h, 4);
+                uint8_t nb_sb_w = (1 << log2_cb_w) >> log2_w;
+                uint8_t nb_sb_h = (1 << log2_cb_h) >> log2_h;
+                int i, j;
+
+                OVMV mv0 = mv_info.mv0;
+                OVMV mv1 = mv_info.mv1;
+                for (i = 0; i < nb_sb_h; ++i) {
+                    for (j = 0; j < nb_sb_w; ++j) {
+                        if (dmvr_enable) {
+                            OVMV *tmvp_mv0 = inter_ctx->tmvp_mv[0].mvs;
+                            OVMV *tmvp_mv1 = inter_ctx->tmvp_mv[1].mvs;
+                            rcn_dmvr_mv_refine(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
+                                               x0 + j * 16, y0 + i * 16,
+                                               log2_w, log2_h,
+                                               &mv0, &mv1,
+                                               ref_idx0, ref_idx1, bdof_enable);
+
+                            /* FIXME temporary hack to override MVs on 8x8 grid for TMVP */
+                            /* FIXME find an alternative in case x0 % 8  is != 0 */
+                            tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16] = mv0;
+                            tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16] = mv1;
+
+                            if (log2_w > 3) {
+                                tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 1] = mv0;
+                                tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 1] = mv1;
+                            }
+
+                            if (log2_h > 3) {
+                                tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16] = mv0;
+                                tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16] = mv1;
+
+                                if (log2_w > 3) {
+                                    tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16+ 1] = mv0;
+                                    tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16+ 1] = mv1;
+                                }
+                            }
+                        }
+
+                        if (bdof_enable) {
+                            if (!dmvr_enable) {
+                                rcn_bdof_mcp_l(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
+                                               x0 + j * 16, y0 + i * 16, log2_w, log2_h,
+                                               mv0, mv1, ref_idx0, ref_idx1);
+                                rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
+                                            mv0, mv1, x0 + j * 16, y0 + i * 16,
+                                            log2_w, log2_h, mv_info.inter_dir, ref_idx0, ref_idx1);
+                            }
+                        } else {
+                            if (!dmvr_enable) {
+                                rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
+                                          mv0, mv1, x0 + j * 16, y0 + i * 16,
+                                          log2_w, log2_h, mv_info.inter_dir, ref_idx0, ref_idx1);
+                            }
+                        }
+                        mv0 = mv_info.mv0;
+                        mv1 = mv_info.mv1;
+                    }
+                }
+            }
+        }
     } else {
         OVMV mvd0, mvd1 = {0};
 
@@ -1901,6 +1988,42 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             mv_info = drv_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
                                 mvd0, mvd1, inter_ctx->prec_amvr, mvp_idx0, mvp_idx1, bcw_idx,
                                 inter_dir, ref_idx0, ref_idx1, log2_cb_w + log2_cb_h <= 5);
+            {
+                uint8_t bdof_enable = 0;
+                if (ctu_dec->bdof_enabled) {
+                    /* Note ciip_flag is zero in this function */
+                    uint8_t ciip_flag = 0;
+                    uint8_t bcw_flag = (mv_info.mv0.bcw_idx_plus1 != 0 && mv_info.mv0.bcw_idx_plus1 != 3);
+                    bdof_enable = check_bdof(log2_cb_w, log2_cb_h, ciip_flag, bcw_flag, smvd_flag);
+
+                    bdof_enable = bdof_enable && check_bdof_ref(inter_ctx, ref_idx0, ref_idx1);
+                }
+
+                if (!bdof_enable) {
+                    rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
+                              mv_info.mv0, mv_info.mv1, x0, y0,
+                              log2_cb_w, log2_cb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
+                } else {
+                    uint8_t log2_w = OVMIN(log2_cb_w, 4);
+                    uint8_t log2_h = OVMIN(log2_cb_h, 4);
+                    uint8_t nb_sb_w = (1 << log2_cb_w) >> log2_w;
+                    uint8_t nb_sb_h = (1 << log2_cb_h) >> log2_h;
+                    int i, j;
+
+                    OVMV mv0 = mv_info.mv0;
+                    OVMV mv1 = mv_info.mv1;
+                    for (i = 0; i < nb_sb_h; ++i) {
+                        for (j = 0; j < nb_sb_w; ++j) {
+                            rcn_bdof_mcp_l(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
+                                           x0 + j * 16, y0 + i * 16, log2_w, log2_h,
+                                           mv0, mv1, ref_idx0, ref_idx1);
+                            rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
+                                        mv0, mv1, x0 + j * 16, y0 + i * 16,
+                                        log2_w, log2_h, mv_info.inter_dir, ref_idx0, ref_idx1);
+                        }
+                    }
+                }
+            }
         } else {
             if (ctu_dec->affine_enabled && log2_cb_w > 3 && log2_cb_h > 3) {
                 uint8_t y_cb = y0 >> log2_min_cb_s;
@@ -2000,102 +2123,12 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             }
 
             mv_info = drv_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                                mvd0, mvd1, inter_ctx->prec_amvr, mvp_idx0, mvp_idx1, bcw_idx,
+                                mvd0, mvd1, inter_ctx->prec_amvr, mvp_idx0, mvp_idx1, BCW_DEFAULT,
                                 inter_dir, ref_idx0, ref_idx1, log2_cb_w + log2_cb_h <= 5);
-        }
-    }
 
-    /* FIXME move all this to derivation
-     * => nothing to read passed this line
-     */
-    {
-        uint8_t bdof_enable = 0;
-        uint8_t dmvr_enable = 0;
-        if (ctu_dec->bdof_enabled && mv_info.inter_dir == 0x3) {
-            /* Note ciip_flag is zero in this function */
-            uint8_t ciip_flag = 0;
-            uint8_t bcw_flag = (mv_info.mv0.bcw_idx_plus1 != 0 && mv_info.mv0.bcw_idx_plus1 != 3);
-            bdof_enable = check_bdof(log2_cb_w, log2_cb_h, ciip_flag, bcw_flag, smvd_flag);
-
-            bdof_enable = bdof_enable && check_bdof_ref(inter_ctx, ref_idx0, ref_idx1);
-        }
-
-        /* FIXME DMVR only enable when merge_flag is set
-         * bcw_idx == default
-         */
-        if (merge_flag && ctu_dec->dmvr_enabled && mv_info.inter_dir == 0x3) {
-            /*FIXME check both mv in bir dir ?*/
-            uint8_t bcw_flag = (mv_info.mv0.bcw_idx_plus1 != 0 && mv_info.mv0.bcw_idx_plus1 != 3);
-            dmvr_enable = check_bdof(log2_cb_w, log2_cb_h, 0, mmvd_flag, bcw_flag);
-
-            dmvr_enable = dmvr_enable && check_bdof_ref(inter_ctx, ref_idx0, ref_idx1);
-        }
-
-        if (!bdof_enable && !dmvr_enable) {
             rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
                       mv_info.mv0, mv_info.mv1, x0, y0,
                       log2_cb_w, log2_cb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
-        } else {
-            uint8_t log2_w = OVMIN(log2_cb_w, 4);
-            uint8_t log2_h = OVMIN(log2_cb_h, 4);
-            uint8_t nb_sb_w = (1 << log2_cb_w) >> log2_w;
-            uint8_t nb_sb_h = (1 << log2_cb_h) >> log2_h;
-            int i, j;
-
-            OVMV mv0 = mv_info.mv0;
-            OVMV mv1 = mv_info.mv1;
-            for (i = 0; i < nb_sb_h; ++i) {
-                for (j = 0; j < nb_sb_w; ++j) {
-                    if (dmvr_enable) {
-                        OVMV *tmvp_mv0 = inter_ctx->tmvp_mv[0].mvs;
-                        OVMV *tmvp_mv1 = inter_ctx->tmvp_mv[1].mvs;
-                        rcn_dmvr_mv_refine(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
-                                           x0 + j * 16, y0 + i * 16,
-                                           log2_w, log2_h,
-                                           &mv0, &mv1,
-                                           ref_idx0, ref_idx1, bdof_enable);
-
-                        /* FIXME temporary hack to override MVs on 8x8 grid for TMVP */
-                        /* FIXME find an alternative in case x0 % 8  is != 0 */
-                        tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16] = mv0;
-                        tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16] = mv1;
-
-                        if (log2_w > 3) {
-                            tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 1] = mv0;
-                            tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 1] = mv1;
-                        }
-
-                        if (log2_h > 3) {
-                            tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16] = mv0;
-                            tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16] = mv1;
-
-                            if (log2_w > 3) {
-                                tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16+ 1] = mv0;
-                                tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16+ 1] = mv1;
-                            }
-                        }
-                    }
-
-                    if (bdof_enable) {
-                        if (!dmvr_enable) {
-                            rcn_bdof_mcp_l(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
-                                           x0 + j * 16, y0 + i * 16, log2_w, log2_h,
-                                           mv0, mv1, ref_idx0, ref_idx1);
-                            rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
-                                        mv0, mv1, x0 + j * 16, y0 + i * 16,
-                                        log2_w, log2_h, mv_info.inter_dir, ref_idx0, ref_idx1);
-                        }
-                    } else {
-                        if (!dmvr_enable) {
-                            rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
-                                      mv0, mv1, x0 + j * 16, y0 + i * 16,
-                                      log2_w, log2_h, mv_info.inter_dir, ref_idx0, ref_idx1);
-                        }
-                    }
-                    mv0 = mv_info.mv0;
-                    mv1 = mv_info.mv1;
-                }
-            }
         }
     }
 
