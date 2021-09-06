@@ -1305,19 +1305,19 @@ inter_affine_mvp_data_p(OVCTUDec *const ctu_dec, uint8_t nb_active_ref0_min1)
 }
 
 static struct MVPDataP
-inter_mvp_data_p(OVCTUDec *const ctu_dec, uint8_t nb_active_ref0_min1)
+inter_mvp_data_p(OVCTUDec *const ctu_dec, uint8_t nb_active_ref_min1)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     struct MVPDataP mvp_data;
     struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
-    uint8_t ref_idx = nb_active_ref0_min1;
+    uint8_t ref_idx = nb_active_ref_min1;
     OVMV mvd;
     uint8_t prec_amvr = MV_PRECISION_QUARTER;
     uint8_t mvp_idx;
 
 
-    if (nb_active_ref0_min1) {
-        ref_idx = ovcabac_read_ae_ref_idx(cabac_ctx, nb_active_ref0_min1 + 1);
+    if (nb_active_ref_min1) {
+        ref_idx = ovcabac_read_ae_ref_idx(cabac_ctx, nb_active_ref_min1 + 1);
     }
 
     mvd = ovcabac_read_ae_mvd(cabac_ctx);
@@ -2097,41 +2097,20 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 }
             }
 
-            if (inter_dir & 0x1) {
-                if (inter_ctx->nb_active_ref0 > 1) {
-                    ref_idx0 = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref0);
-                }
+            uint8_t nb_active_ref_min1 = inter_dir & 0x1 ? inter_ctx->nb_active_ref0 - 1
+                                                         : inter_ctx->nb_active_ref1 - 1;
 
-                mvd0 = ovcabac_read_ae_mvd(cabac_ctx);
-                mvp_idx0 = ovcabac_read_ae_mvp_flag(cabac_ctx);
-            }
+            struct MVPDataP mvp_data = inter_mvp_data_p(ctu_dec, nb_active_ref_min1);
 
-            if (inter_dir & 0x2) {
-                if (inter_ctx->nb_active_ref1 > 1) {
-                    ref_idx1 = ovcabac_read_ae_ref_idx(cabac_ctx, inter_ctx->nb_active_ref1);
-                }
-
-                mvd1 = ovcabac_read_ae_mvd(cabac_ctx);
-                mvp_idx1 = ovcabac_read_ae_mvp_flag(cabac_ctx);
-            }
-
-            /* Note affine_flag is always 0 here */
-            /* Note skip_flag is always 0 here since merge_flag would default to 1 */
-            if (inter_ctx->amvr_flag) {
-                uint8_t nz_mvd = check_nz_mvd(&mvd0, &mvd1, inter_dir, smvd_flag,
-                                              inter_ctx->mvd1_zero_flag);
-                if (nz_mvd) {
-                    inter_ctx->prec_amvr = ovcabac_read_ae_amvr_precision(cabac_ctx, ibc_flag);
-                }
-            }
+            inter_ctx->prec_amvr = mvp_data.prec_amvr;
 
             mv_info = drv_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                                mvd0, mvd1, inter_ctx->prec_amvr, mvp_idx0, mvp_idx1, BCW_DEFAULT,
-                                inter_dir, ref_idx0, ref_idx1, log2_cb_w + log2_cb_h <= 5);
+                                mvp_data.mvd, mvp_data.mvd, inter_ctx->prec_amvr, mvp_data.mvp_idx, mvp_data.mvp_idx, BCW_DEFAULT,
+                                inter_dir, mvp_data.ref_idx, mvp_data.ref_idx, log2_cb_w + log2_cb_h <= 5);
 
             rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
                       mv_info.mv0, mv_info.mv1, x0, y0,
-                      log2_cb_w, log2_cb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
+                      log2_cb_w, log2_cb_h, inter_dir, mvp_data.ref_idx, mvp_data.ref_idx);
         }
     }
 
