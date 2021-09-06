@@ -1232,7 +1232,6 @@ struct AffineMVPDataP
     struct AffineControlInfo mvd;
     uint8_t ref_idx;
     uint8_t mvp_idx;
-    uint8_t prec_amvr;
 };
 
 static inline uint8_t
@@ -1267,9 +1266,7 @@ inter_affine_mvp_data_p(OVCTUDec *const ctu_dec, uint8_t nb_active_ref_min1, uin
     struct AffineControlInfo cp_mvd;
     struct AffineMVPDataP mvp_data;
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
     uint8_t ref_idx = nb_active_ref_min1;
-    uint8_t prec_amvr = MV_PRECISION_QUARTER;
     uint8_t mvp_idx;
 
     if (nb_active_ref_min1) {
@@ -1285,19 +1282,9 @@ inter_affine_mvp_data_p(OVCTUDec *const ctu_dec, uint8_t nb_active_ref_min1, uin
 
     mvp_idx = ovcabac_read_ae_mvp_flag(cabac_ctx);
 
-    if (inter_ctx->affine_amvr_flag) {
-        int32_t nz_mvd = check_nz_affine_mvd_p(&cp_mvd, affine_type);
-
-        if (nz_mvd) {
-            uint8_t ibc_flag = 0;
-            prec_amvr = ovcabac_read_ae_affine_amvr_precision(cabac_ctx, ibc_flag);
-        }
-    }
-
     mvp_data.ref_idx   = ref_idx;
     mvp_data.mvd       = cp_mvd;
     mvp_data.mvp_idx   = mvp_idx;
-    mvp_data.prec_amvr = prec_amvr;
 
     return mvp_data;
 }
@@ -1407,9 +1394,19 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
             uint8_t six_affine_type = !!(ctu_dec->affine_status & 0x2);
             uint8_t affine_type = six_affine_type && ovcabac_read_ae_cu_affine_type(cabac_ctx);
 
+            uint8_t prec_amvr = MV_PRECISION_QUARTER;
             mvp_data = inter_affine_mvp_data_p(ctu_dec, inter_ctx->nb_active_ref0 - 1, affine_type);
 
-            inter_ctx->prec_amvr = mvp_data.prec_amvr;
+            if (inter_ctx->affine_amvr_flag) {
+                int32_t nz_mvd = check_nz_affine_mvd_p(&mvp_data.mvd, affine_type);
+
+                if (nz_mvd) {
+                    uint8_t ibc_flag = 0;
+                    prec_amvr = ovcabac_read_ae_affine_amvr_precision(cabac_ctx, ibc_flag);
+                }
+            }
+
+            inter_ctx->prec_amvr = prec_amvr;
             ref_idx = mvp_data.ref_idx;
 
             cu_type = OV_AFFINE;
@@ -2044,7 +2041,19 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                     uint8_t nb_active_ref_min1 = inter_dir & 0x1 ? inter_ctx->nb_active_ref0 - 1
                                                                  : inter_ctx->nb_active_ref1 - 1;
 
+                    uint8_t prec_amvr = MV_PRECISION_QUARTER;
                     struct AffineMVPDataP aff_mvp_data = inter_affine_mvp_data_p(ctu_dec, nb_active_ref_min1, affine_type);
+
+                    if (inter_ctx->affine_amvr_flag) {
+                        int32_t nz_mvd = check_nz_affine_mvd_p(&aff_mvp_data.mvd, affine_type);
+
+                        if (nz_mvd) {
+                            uint8_t ibc_flag = 0;
+                            prec_amvr = ovcabac_read_ae_affine_amvr_precision(cabac_ctx, ibc_flag);
+                        }
+                    }
+
+                    inter_ctx->prec_amvr = prec_amvr;
 
                     cu_type = OV_AFFINE;
 
