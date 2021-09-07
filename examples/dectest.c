@@ -26,7 +26,7 @@ static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_nam
 
 static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
-static int read_write_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout);
+static int read_write_stream(OVVCHdl *const hdl, FILE *fout);
 static int read_stream(OVVCHdl *const hdl, FILE *fp);
 
 static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
@@ -143,7 +143,7 @@ main(int argc, char** argv)
 
     if (ret < 0) goto failattach;
 
-    read_write_stream(&ovvc_hdl, ovvc_hdl.fp, fout);
+    read_write_stream(&ovvc_hdl, fout);
     // read_stream(&ovvc_hdl, ovvc_hdl.fp);
 
     ovdmx_detach_stream(ovvc_hdl.dmx);
@@ -185,7 +185,9 @@ init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_f
     OVVCDmx **vvcdmx = &ovvc_hdl->dmx;
     int ret;
 
-    ret = ovdec_init(vvcdec, output_file_name, nb_frame_th, nb_entry_th);
+    int display_output = !!strcmp(output_file_name, "/dev/null");
+
+    ret = ovdec_init(vvcdec, display_output, nb_frame_th, nb_entry_th);
 
     if (ret < 0) goto faildec;
 
@@ -277,7 +279,7 @@ end_out:
 }
 
 static int
-read_write_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
+read_write_stream(OVVCHdl *const hdl, FILE *fout)
 {
     #if 0
     ovdmx_read_stream(dmx);
@@ -326,7 +328,7 @@ read_write_stream(OVVCHdl *const hdl, FILE *fp, FILE *fout)
     } while (ret >= 0);
 
     //Wait for all the sub decoders to finish before draining dpb
-    ovdec_uninit_subdec_list(dec);
+    //ovdec_uninit_subdec_list(dec);
 
     ret = 1;
     while (ret > 0) {

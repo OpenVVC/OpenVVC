@@ -513,6 +513,8 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
     uint16_t out_cvs_id;
     int ret;
 
+    ovdec_uninit_subdec_list(dec);
+
     if (!dpb) {
         ov_log(dec, OVLOG_ERROR, "No DPB on output request.\n");
         /* FIXME new return value */
@@ -540,9 +542,57 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
     return ret;
 }
 
+static int
+set_display_output(OVVCDec *ovdec, int on_off)
+{
+    ovdec->display_output = !!on_off;
+    return 0;
+}
+
+static int
+set_nb_entry_threads(OVVCDec *ovdec, int nb_threads)
+{
+    ovdec->nb_entry_th = nb_threads;
+
+    return 0;
+}
+
+static int
+set_nb_frame_threads(OVVCDec *ovdec, int nb_threads)
+{
+    ovdec->nb_frame_th = nb_threads;
+
+    return 0;
+}
 
 int
-ovdec_init(OVVCDec **vvcdec, const char* output_file_name, int nb_frame_th, int nb_entry_th)
+ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value)
+{
+
+    switch (opt_id){
+        case OVDEC_NB_ENTRY_THREADS:
+            set_nb_entry_threads(ovdec, value);
+            break;
+        case OVDEC_NB_FRAME_THREADS:
+            set_nb_entry_threads(ovdec, value);
+            break;
+        case OVDEC_DISPLAY_OUTPUT:
+            set_display_output(ovdec, value);
+            break;
+        default :
+            if (opt_id < OVDEC_NB_OPTIONS) {
+                ov_log(ovdec, OVLOG_ERROR, "Invalid option id %d.", opt_id);
+                return OVVC_EINDATA;
+            }
+            break;
+    }
+    ov_log(ovdec, OVLOG_VERBOSE, "Option %s set to %d.\n", option_names[opt_id], value);
+
+    return 0;
+}
+
+int
+ovdec_init(OVVCDec **vvcdec, int display_output, int nb_frame_th, int nb_entry_th)
 {
     /* FIXME might not be available on every plateform */
     // nb_threads = get_number_of_cores();
@@ -551,21 +601,36 @@ ovdec_init(OVVCDec **vvcdec, const char* output_file_name, int nb_frame_th, int 
     if (nb_entry_th < 1)
         nb_entry_th = 1;
 
+    if (nb_frame_th < 0) {
+        nb_frame_th = 1;
+    } else if (nb_frame_th == 0) {
+        /* FIXME might not be available on every plateform */
+        nb_frame_th = get_number_of_cores();
+    } else {
+        nb_frame_th = nb_threads;
+    }
+
+    if (nb_entry_th < 1) {
+        nb_entry_th = 1;
+    }  else {
+        nb_entry_th = nb_threads;
+    }
+
     *vvcdec = ov_mallocz(sizeof(OVVCDec));
 
     if (*vvcdec == NULL) goto fail;
 
     (*vvcdec)->name = decname;
 
-    (*vvcdec)->nb_frame_th = nb_frame_th;
-    (*vvcdec)->nb_entry_th = nb_entry_th;
+    ovdec_set_option(*vvcdec, OVDEC_NB_FRAME_THREADS, nb_frame_th);
+
+    ovdec_set_option(*vvcdec, OVDEC_NB_ENTRY_THREADS, nb_entry_th);
+
+    ovdec_set_option(*vvcdec, OVDEC_DISPLAY_OUTPUT, display_output);
 
     // ovthread_output_init((*vvcdec), fout);
     
-    (*vvcdec)->display_output = 1; 
-    if( strcmp (output_file_name, "/dev/null") == 0 ){
-        (*vvcdec)->display_output = 0; 
-    }
+    (*vvcdec)->display_output = !!display_output;
 
     ovdec_init_subdec_list(*vvcdec);
 
@@ -575,6 +640,7 @@ fail:
     /* TODO proper error management (ENOMEM)*/
     return -1;
 }
+
 
 void
 ovdec_uninit_subdec_list(OVVCDec *vvcdec)

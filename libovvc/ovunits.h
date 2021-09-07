@@ -61,6 +61,7 @@ typedef struct OVNALUnit {
   enum OVNALUType type;
 
   atomic_uint ref_count;
+
 } OVNALUnit;
 
 /* Picture Unit */
@@ -97,10 +98,9 @@ int ov_nalu_new_ref(OVNALUnit **nalu_p, OVNALUnit *nalu);
 
 void ov_nalu_unref(OVNALUnit **nalu_p);
 
-int ov_init_nalu(void);
+int ov_nalu_init(OVNALUnit *nalu);
 
 void ov_free_pu(OVPictureUnit **pu);
-
 
 #endif
 

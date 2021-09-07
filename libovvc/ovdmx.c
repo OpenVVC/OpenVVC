@@ -587,20 +587,16 @@ create_nalu_elem(OVVCDmx *const dmx)
 {
     MemPool *const mempool = dmx->nalu_elem_pool;
     MemPoolElem *elem = ovmempool_popelem(mempool);
+
     struct NALUnitListElem *nalu_elem = NULL;
     if (!elem) {
         return NULL;
     }
+
     nalu_elem = elem->data;
     nalu_elem->private.pool_ref = elem;
 
-    nalu_elem->nalu.rbsp_data = NULL;
-    nalu_elem->nalu.rbsp_size = 0;
-
-    nalu_elem->nalu.epb_pos = NULL;
-    nalu_elem->nalu.nb_epb = 0;
-
-    atomic_init(&nalu_elem->nalu.ref_count, 0);
+    ov_nalu_init(&nalu_elem->nalu);
 
     return nalu_elem;
 }
