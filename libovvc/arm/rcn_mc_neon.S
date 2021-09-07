@@ -1263,27 +1263,72 @@ function put_vvc_bi1_qpel_hv_10_32_neon, export=1
                 ret lr
 endfunc
 
+.macro uni_epel_filter, out, coef=V0, l0=V1, l1=V2, l2=V3, l3=V4, shift=#6, s1=.4H, s2=.8H, s3=.H
+      SMULL2 V11.4S,  \l0\s2, \coef\s3[0]
+      SMLAL2 V11.4S,  \l1\s2, \coef\s3[1]
+      SMLAL2 V11.4S, \l2\s2, \coef\s3[2]
+      SMLAL2 V11.4S, \l3\s2, \coef\s3[3]
+      SMULL V10.4S, \l0\s1, \coef\s3[0]
+      SMLAL V10.4S, \l1\s1, \coef\s3[1]
+      SMLAL V10.4S, \l2\s1, \coef\s3[2]
+      SMLAL V10.4S, \l3\s1, \coef\s3[3]
+      ADD   V10.4S, V10.4S, V29.4S
+      ADD   V11.4S, V11.4S, V29.4S
+      SSHR  V10.4S, V10.4S, \shift
+      SSHR  V11.4S, V11.4S, \shift
+      UZP1  \out, V10.8H, V11.8H
+      CLIP  \out, V30.8H, V31.8H
+.endm
+
+.macro bi0_epel_filter, out, coef=V0, l0=V1, l1=V2, l2=V3, l3=V4, shift=#2,s1=.4H, s2=.8H, s3=.H
+      SMULL2 V11.4S,  \l0\s2, \coef\s3[0]
+      SMLAL2 V11.4S,  \l1\s2, \coef\s3[1]
+      SMLAL2 V11.4S, \l2\s2, \coef\s3[2]
+      SMLAL2 V11.4S, \l3\s2, \coef\s3[3]
+      SMULL V10.4S, \l0\s1, \coef\s3[0]
+      SMLAL V10.4S, \l1\s1, \coef\s3[1]
+      SMLAL V10.4S, \l2\s1, \coef\s3[2]
+      SMLAL V10.4S, \l3\s1, \coef\s3[3]
+      SSHR  V10.4S, V10.4S, \shift
+      SSHR  V11.4S, V11.4S, \shift
+      UZP1  \out, V10.8H, V11.8H
+.endm
+
+.macro bi1_epel_filter, out, src1, coef=V0, l0=V1, l1=V2, l2=V3, l3=V4, shift=#2, s1=.4H, s2=.8H, s3=.H
+      SMULL2 V11.4S,  \l0\s2, \coef\s3[0]
+      SMLAL2 V11.4S,  \l1\s2, \coef\s3[1]
+      SMLAL2 V11.4S, \l2\s2, \coef\s3[2]
+      SMLAL2 V11.4S, \l3\s2, \coef\s3[3]
+      SMULL V10.4S, \l0\s1, \coef\s3[0]
+      SMLAL V10.4S, \l1\s1, \coef\s3[1]
+      SMLAL V10.4S, \l2\s1, \coef\s3[2]
+      SMLAL V10.4S, \l3\s1, \coef\s3[3]
+      ADD   V10.4S, V10.4S, V29.4S
+      ADD   V11.4S, V11.4S, V29.4S
+      SSHR  V10.4S, V10.4S, \shift
+      SSHR  V11.4S, V11.4S, \shift
+      SADDW V10.4S, V10.4S,  \src1\s1
+      SADDW2 V11.4S, V11.4S, \src1\s2
+      SSHR  V10.4S, V10.4S, #5
+      SSHR  V11.4S, V11.4S, #5
+      UZP1  \out, V10.8H, V11.8H
+      CLIP  \out, V30.8H, V31.8H
+.endm
+
 .macro uni_epel_h_filter, out, last_jump
       LD1   {V1.8H}, [x2], x12
       LD1   {V2.8H}, [x2], x12
       LD1   {V3.8H}, [x2], x12
       LD1   {V4.8H}, [x2], \last_jump
-      SMULL2 V9.4S, V1.8H, V0.H[0]
-      SMLAL2 V9.4S, V2.8H, V0.H[1]
-      SMULL2 V10.4S, V3.8H, V0.H[2]
-      SMLAL2 V10.4S, V4.8H, V0.H[3]
-      SMULL V1.4S, V1.4H, V0.H[0]
-      SMLAL V1.4S, V2.4H, V0.H[1]
-      SMULL V2.4S, V3.4H, V0.H[2]
-      SMLAL V2.4S, V4.4H, V0.H[3]
-      ADD   V1.4S, V1.4S, V2.4S
-      ADD   V2.4S, V9.4S, V10.4S
-      ADD   V1.4S, V1.4S, V29.4S
-      ADD   V2.4S, V2.4S, V29.4S
-      SSHR  V1.4S, V1.4S, #6
-      SSHR  V2.4S, V2.4S, #6
-      UZP1  \out, V1.8H, V2.8H
-      CLIP  \out, V30.8H, V31.8H
+      uni_epel_filter \out
+.endm
+
+.macro bi0_epel_h_filter, out, last_jump, coef=V0, jump=x12, in=x1, l0=V1, l1=V2, l2=V3, l3=V4, s1=.4H, s2=.8H, s3=.H
+      LD1   {\l0\s2}, [\in], \jump
+      LD1   {\l1\s2}, [\in], \jump
+      LD1   {\l2\s2}, [\in], \jump
+      LD1   {\l3\s2}, [\in], \last_jump
+      bi0_epel_filter \out, \coef, \l0, \l1, \l2, \l3
 .endm
 
 function put_vvc_uni_epel_h_10_8_neon, export=1
@@ -1331,25 +1376,133 @@ function put_vvc_uni_epel_h_10_16_neon, export=1
                 ret lr
 endfunc
 
-.macro bi0_epel_h_filter, out, last_jump
-      LD1   {V1.8H}, [x1], x12
-      LD1   {V2.8H}, [x1], x12
-      LD1   {V3.8H}, [x1], x12
-      LD1   {V4.8H}, [x1], \last_jump
-      SMULL2 V9.4S, V1.8H, V0.H[0]
-      SMLAL2 V9.4S, V2.8H, V0.H[1]
-      SMULL2 V10.4S, V3.8H, V0.H[2]
-      SMLAL2 V10.4S, V4.8H, V0.H[3]
-      SMULL V1.4S, V1.4H, V0.H[0]
-      SMLAL V1.4S, V2.4H, V0.H[1]
-      SMULL V2.4S, V3.4H, V0.H[2]
-      SMLAL V2.4S, V4.4H, V0.H[3]
-      ADD   V1.4S, V1.4S, V2.4S
-      ADD   V2.4S, V9.4S, V10.4S
-      SSHR  V1.4S, V1.4S, #2
-      SSHR  V2.4S, V2.4S, #2
-      UZP1  \out, V1.8H, V2.8H
+.macro uni_epel_v_filter, out, in
+                LD1    {V1.8H}, [\in], x3
+                LD1    {V2.8H}, [\in], x3
+                LD1    {V3.8H}, [\in], x3
+0:              subs x4, x4, #4
+                LD1    {V4.8H}, [\in], x3
+                uni_epel_filter V17.8H, V0, V1, V2, V3, V4
+                LD1    {V1.8H}, [\in], x3
+                uni_epel_filter V18.8H, V0, V2, V3, V4, V1
+                LD1    {V2.8H}, [\in], x3
+                uni_epel_filter V19.8H, V0, V3, V4, V1, V2
+                LD1    {V3.8H}, [\in], x3
+                uni_epel_filter V20.8H, V0, V4, V1, V2, V3
+                ST1   {V17.8H}, [\out], x1
+                ST1   {V18.8H}, [\out], x1
+                ST1   {V19.8H}, [\out], x1
+                ST1   {V20.8H}, [\out], x1
+                b.ne 0b
 .endm
+
+function put_vvc_uni_epel_v_10_8_neon, export=1
+                mov    x12, #2
+                mov    w11, #32 //offset val
+                mov    w10, #0x03FF //max val
+                lsl    x1, x1, #1 //_dststride
+                lsl    x3, x3, #1 //_srcstride
+                sub    x2, x2, x3
+                DUP    V29.4S, w11 //offset vector
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                LD1    {V0.8B}, [x5]
+                SADDW   V0.8H, V30.8H, V0.8B
+                uni_epel_v_filter x0, x2
+                ret lr
+endfunc
+
+function put_vvc_uni_epel_v_10_16_neon, export=1
+                mov    x12, #2
+                mov    w11, #32 //offset val
+                mov    w10, #0x03FF //max val
+                lsl    x1, x1, #1 //_dststride
+                lsl    x3, x3, #1 //_srcstride
+                sub    x2, x2, x3
+                mov    x9, x2  //save x2[-_srcstride]
+                mov    x8, x0  //save x0[0]
+                mov    x14, x4  //save height
+                DUP    V29.4S, w11 //offset vector
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                LD1    {V0.8B}, [x5]
+                SADDW   V0.8H, V30.8H, V0.8B
+                uni_epel_v_filter x0, x2
+                add x0, x8, #16
+                add x2, x9, #16
+                mov x4, x14
+                uni_epel_v_filter x0, x2
+                ret lr
+endfunc
+
+.macro uni_epel_hv_filter, out, in, coefx=V0, coefy=V1, last_jump=x3, jump=x12
+                bi0_epel_h_filter V2.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                bi0_epel_h_filter V3.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                bi0_epel_h_filter V4.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+0:              subs x4, x4, #4
+                bi0_epel_h_filter V5.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                uni_epel_filter V20.8H, \coefy, V2, V3, V4, V5, shift=#10
+                bi0_epel_h_filter V2.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                uni_epel_filter V21.8H, \coefy, V3, V4, V5, V2, shift=#10
+                bi0_epel_h_filter V3.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                uni_epel_filter V22.8H, \coefy, V4, V5, V2, V3, shift=#10
+                bi0_epel_h_filter V4.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                uni_epel_filter V23.8H, \coefy, V5, V2, V3, V4, shift=#10
+                ST1   {V20.8H}, [\out], x1
+                ST1   {V21.8H}, [\out], x1
+                ST1   {V22.8H}, [\out], x1
+                ST1   {V23.8H}, [\out], x1
+                b.ne 0b
+.endm
+
+function put_vvc_uni_epel_hv_10_8_neon, export=1
+                mov    w11, #512 //offset val
+                mov    w10, #0x03FF //max val
+                DUP    V29.4S, w11 //offset vector
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                mov    x12, #2
+                sub    x2, x2, #2//start h src[]
+                sub    x13, x3, #3
+                lsl    x13, x13, #1 // last jump h
+                lsl    x1, x1, #1 //_dststride
+                lsl    x14, x3, #1 //_srcstride
+                sub    x2, x2, x14//start hv src[]
+                LD1    {V0.8B}, [x5]
+                LD1    {V1.8B}, [x6]
+                SADDW   V0.8H, V30.8H, V0.8B
+                SADDW   V1.8H, V30.8H, V1.8B
+                uni_epel_hv_filter x0, x2, V0, V1, x13, x12
+                ret lr
+endfunc
+
+function put_vvc_uni_epel_hv_10_16_neon, export=1
+                mov    w11, #512 //offset val
+                mov    w10, #0x03FF //max val
+                DUP    V29.4S, w11 //offset vector
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                mov    x12, #2
+                sub    x2, x2, #2//start h src[]
+                sub    x13, x3, #3
+                lsl    x13, x13, #1 // last jump h
+                lsl    x1, x1, #1 //_dststride
+                lsl    x14, x3, #1 //_srcstride
+                sub    x2, x2, x14//start hv src[]
+                mov    x16, x4//save height
+                mov    x17, x2//save start src
+                mov    x15, x0//save start dst
+                LD1    {V0.8B}, [x5]
+                LD1    {V1.8B}, [x6]
+                SADDW   V0.8H, V30.8H, V0.8B
+                SADDW   V1.8H, V30.8H, V1.8B
+                uni_epel_hv_filter x0, x2, V0, V1, x13, x12
+                add x0, x15, #16
+                add x2, x17, #16
+                mov x4, x16
+                uni_epel_hv_filter x0, x2, V0, V1, x13, x12
+                ret lr
+endfunc
 
 function put_vvc_bi0_epel_h_10_8_neon, export=1
                 mov    x12, #2
@@ -1392,31 +1545,133 @@ function put_vvc_bi0_epel_h_10_16_neon, export=1
                 ret lr
 endfunc
 
+.macro bi0_epel_v_filter, out, in
+                LD1    {V1.8H}, [\in], x2
+                LD1    {V2.8H}, [\in], x2
+                LD1    {V3.8H}, [\in], x2
+
+0:              subs x3, x3, #4
+                LD1    {V4.8H}, [\in], x2
+                bi0_epel_filter V17.8H, V0, V1, V2, V3, V4
+                LD1    {V1.8H}, [\in], x2
+                bi0_epel_filter V18.8H, V0, V2, V3, V4, V1
+                LD1    {V2.8H}, [\in], x2
+                bi0_epel_filter V19.8H, V0, V3, V4, V1, V2
+                LD1    {V3.8H}, [\in], x2
+                bi0_epel_filter V20.8H, V0, V4, V1, V2, V3
+                ST1   {V17.8H}, [\out], x11
+                ST1   {V18.8H}, [\out], x11
+                ST1   {V19.8H}, [\out], x11
+                ST1   {V20.8H}, [\out], x11
+                b.ne 0b
+.endm
+
+function put_vvc_bi0_epel_v_10_8_neon, export=1
+                mov    x11, MAX_PB_SIZE_16 //offset val
+                mov    w10, #0x03FF //max val
+                lsl    x2, x2, #1 //_srcstride
+                sub    x1, x1, x2
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                LD1    {V0.8B}, [x4]
+                SADDW   V0.8H, V30.8H, V0.8B
+                bi0_epel_v_filter x0, x1
+                ret lr
+endfunc
+
+function put_vvc_bi0_epel_v_10_16_neon, export=1
+                mov    x11, MAX_PB_SIZE_16 //offset val
+                mov    w10, #0x03FF //max val
+                lsl    x2, x2, #1 //_srcstride
+                sub    x1, x1, x2
+                mov    x9, x1  //save x1[-3*_srcstride]
+                mov    x8, x0  //save x0[0]
+                mov    x14, x3  //save height
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                LD1    {V0.8B}, [x4]
+                SADDW   V0.8H, V30.8H, V0.8B
+                bi0_epel_v_filter x0, x1
+                add x0, x8, #16
+                add x1, x9, #16
+                mov x3, x14
+                bi0_epel_v_filter x0, x1
+                ret lr
+endfunc
+
+.macro bi0_epel_hv_filter, out, in, coefx=V0, coefy=V1, last_jump=x3, jump=x12
+                bi0_epel_h_filter V2.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                bi0_epel_h_filter V3.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                bi0_epel_h_filter V4.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+0:              subs x3, x3, #4
+                bi0_epel_h_filter V5.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                bi0_epel_filter V20.8H, \coefy, V2, V3, V4, V5, shift=#6
+                bi0_epel_h_filter V2.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                bi0_epel_filter V21.8H, \coefy, V3, V4, V5, V2, shift=#6
+                bi0_epel_h_filter V3.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                bi0_epel_filter V22.8H, \coefy, V4, V5, V2, V3, shift=#6
+                bi0_epel_h_filter V4.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                bi0_epel_filter V23.8H, \coefy, V5, V2, V3, V4, shift=#6
+                ST1   {V20.8H}, [\out], x11
+                ST1   {V21.8H}, [\out], x11
+                ST1   {V22.8H}, [\out], x11
+                ST1   {V23.8H}, [\out], x11
+                b.ne 0b
+.endm
+
+function put_vvc_bi0_epel_hv_10_8_neon, export=1
+                mov    x11, MAX_PB_SIZE_16
+                mov    w10, #0x03FF //max val
+                DUP    V29.4S, w11 //offset vector
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                mov    x12, #2
+                sub    x1, x1, #2//start h src[]
+                sub    x13, x2, #3
+                lsl    x13, x13, #1 // last jump h
+                lsl    x14, x2, #1 //_srcstride
+                sub    x1, x1, x14
+                LD1    {V0.8B}, [x4]
+                LD1    {V1.8B}, [x5]
+                SADDW   V0.8H, V30.8H, V0.8B
+                SADDW   V1.8H, V30.8H, V1.8B
+                bi0_epel_hv_filter x0, x1, V0, V1, x13, x12
+                ret lr
+endfunc
+
+function put_vvc_bi0_epel_hv_10_16_neon, export=1
+                mov    x11, MAX_PB_SIZE_16
+                mov    w10, #0x03FF //max val
+                DUP    V29.4S, w11 //offset vector
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                mov    x12, #2
+                sub    x1, x1, #2//start h src[]
+                sub    x13, x2, #3
+                lsl    x13, x13, #1 // last jump h
+                lsl    x14, x2, #1 //_srcstride
+                sub    x1, x1, x14
+                mov    x16, x3//save height
+                mov    x17, x1//save start src
+                mov    x15, x0//save start dst
+                LD1    {V0.8B}, [x4]
+                LD1    {V1.8B}, [x5]
+                SADDW   V0.8H, V30.8H, V0.8B
+                SADDW   V1.8H, V30.8H, V1.8B
+                bi0_epel_hv_filter x0, x1, V0, V1, x13, x12
+                add x0, x15, #16
+                add x1, x17, #16
+                mov x3, x16
+                bi0_epel_hv_filter x0, x1, V0, V1, x13, x12
+                ret lr
+endfunc
+
 .macro bi1_epel_h_filter, out, last_jump, src1, suffix1=.4H, suffix2=.8H
       LD1   {V1.8H}, [x2], x12
       LD1   {V2.8H}, [x2], x12
       LD1   {V3.8H}, [x2], x12
       LD1   {V4.8H}, [x2], \last_jump
-      SMULL2 V9.4S, V1.8H, V0.H[0]
-      SMLAL2 V9.4S, V2.8H, V0.H[1]
-      SMULL2 V10.4S, V3.8H, V0.H[2]
-      SMLAL2 V10.4S, V4.8H, V0.H[3]
-      SMULL V1.4S, V1.4H, V0.H[0]
-      SMLAL V1.4S, V2.4H, V0.H[1]
-      SMULL V2.4S, V3.4H, V0.H[2]
-      SMLAL V2.4S, V4.4H, V0.H[3]
-      ADD   V1.4S, V1.4S, V2.4S
-      ADD   V2.4S, V9.4S, V10.4S
-      ADD   V1.4S, V1.4S, V29.4S
-      ADD   V2.4S, V2.4S, V29.4S
-      SSHR  V1.4S, V1.4S, #2
-      SSHR  V2.4S, V2.4S, #2
-      SADDW V1.4S, V1.4S,  \src1\suffix1
-      SADDW2 V2.4S, V2.4S, \src1\suffix2
-      SSHR  V1.4S, V1.4S, #5
-      SSHR  V2.4S, V2.4S, #5
-      UZP1  \out, V1.8H, V2.8H
-      CLIP  \out, V30.8H, V31.8H
+      bi1_epel_filter \out, \src1, V0
 .endm
 
 function put_vvc_bi1_epel_h_10_8_neon, export=1
@@ -1466,5 +1721,148 @@ function put_vvc_bi1_epel_h_10_16_neon, export=1
                 bi1_epel_h_filter V15.8H, x3, V28
                 ST1   {V14.8H-V15.8H}, [x0], x1
                 b.ne 0b
+                ret lr
+endfunc
+
+.macro bi1_epel_v_filter, out, in
+                LD1    {V1.8H}, [\in], x3
+                LD1    {V2.8H}, [\in], x3
+                LD1    {V3.8H}, [\in], x3
+0:              subs   x5, x5, #4
+                LD1    {V4.8H}, [\in], x3
+                LD1    {V28.8H}, [x4], x9
+                bi1_epel_filter V17.8H, v28, V0, V1, V2, V3, V4
+                LD1    {V1.8H}, [\in], x3
+                LD1    {V28.8H}, [x4], x9
+                bi1_epel_filter V18.8H, v28, V0, V2, V3, V4, V1
+                LD1    {V2.8H}, [\in], x3
+                LD1    {V28.8H}, [x4], x9
+                bi1_epel_filter V19.8H, v28, V0, V3, V4, V1, V2
+                LD1    {V3.8H}, [\in], x3
+                LD1    {V28.8H}, [x4], x9
+                bi1_epel_filter V20.8H, v28, V0, V4, V1, V2, V3
+                ST1   {V17.8H}, [\out], x1
+                ST1   {V18.8H}, [\out], x1
+                ST1   {V19.8H}, [\out], x1
+                ST1   {V20.8H}, [\out], x1
+                b.ne 0b
+.endm
+
+function put_vvc_bi1_epel_v_10_8_neon, export=1
+                mov    x12, #2
+                mov    w11, #64 //offset val
+                mov    w10, #0x03FF //max val
+                mov    x9, MAX_PB_SIZE_16
+                lsl    x1, x1, #1 //_dststride
+                lsl    x3, x3, #1 //_srcstride
+                sub    x2, x2, x3
+                DUP    V29.4S, w11 //offset vector
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                LD1    {V0.8B}, [x6]
+                SADDW   V0.8H, V30.8H, V0.8B
+                bi1_epel_v_filter x0, x2
+                ret lr
+endfunc
+
+function put_vvc_bi1_epel_v_10_16_neon, export=1
+                mov    w11, #64 //offset val
+                mov    w10, #0x03FF //max val
+                mov    x9, MAX_PB_SIZE_16
+                lsl    x1, x1, #1 //_dststride
+                lsl    x3, x3, #1 //_srcstride
+                sub    x2, x2, x3
+                mov    x13, x0  //save x0[0]
+                mov    x12, x2  //save x2[-_srcstride]
+                mov    x14, x4  //save x4[0]
+                mov    x15, x5  //save height
+                DUP    V29.4S, w11 //offset vector
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                LD1    {V0.8B}, [x6]
+                SADDW   V0.8H, V30.8H, V0.8B
+                bi1_epel_v_filter x0, x2
+                add x2, x12, #16
+                add x0, x13, #16
+                add x4, x14, #16
+                mov x5, x15
+                bi1_epel_v_filter x0, x2
+                ret lr
+endfunc
+
+.macro bi1_epel_hv_filter, out, in, coefx=V0, coefy=V1, last_jump=x3, jump=x12
+                bi0_epel_h_filter V2.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                bi0_epel_h_filter V3.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                bi0_epel_h_filter V4.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+0:              subs x5, x5, #4
+                bi0_epel_h_filter V5.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                LD1    {V28.8H}, [x4], x9
+                bi1_epel_filter V20.8H, V28, \coefy, V2, V3, V4, V5, shift=#6
+                bi0_epel_h_filter V2.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                LD1    {V28.8H}, [x4], x9
+                bi1_epel_filter V21.8H, V28, \coefy, V3, V4, V5, V2, shift=#6
+                bi0_epel_h_filter V3.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                LD1    {V28.8H}, [x4], x9
+                bi1_epel_filter V22.8H, V28, \coefy, V4, V5, V2, V3, shift=#6
+                bi0_epel_h_filter V4.8H, \last_jump, \coefx, \jump, \in, V6, V7, V8, V9
+                LD1    {V28.8H}, [x4], x9
+                bi1_epel_filter V23.8H, V28, \coefy, V5, V2, V3, V4, shift=#6
+                ST1   {V20.8H}, [\out], x1
+                ST1   {V21.8H}, [\out], x1
+                ST1   {V22.8H}, [\out], x1
+                ST1   {V23.8H}, [\out], x1
+                b.ne 0b
+.endm
+
+function put_vvc_bi1_epel_hv_10_8_neon, export=1
+                mov    x9, MAX_PB_SIZE_16
+                mov    w11, #1024 //offset val
+                mov    w10, #0x03FF //max val
+                DUP    V29.4S, w11 //offset vector
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                mov    x12, #2
+                sub    x2, x2, #2//start h src[]
+                sub    x13, x3, #3
+                lsl    x13, x13, #1 // last jump h
+                lsl    x1, x1, #1 //_dststride
+                lsl    x14, x3, #1 //_srcstride
+                sub    x2, x2, x14//start hv src[]
+                LD1    {V0.8B}, [x6]
+                LD1    {V1.8B}, [x7]
+                SADDW   V0.8H, V30.8H, V0.8B
+                SADDW   V1.8H, V30.8H, V1.8B
+                bi1_epel_hv_filter x0, x2, V0, V1, x13, x12
+                ret lr
+endfunc
+
+function put_vvc_bi1_epel_hv_10_16_neon, export=1
+                mov    x9, MAX_PB_SIZE_16
+                mov    w11, #1024 //offset val
+                mov    w10, #0x03FF //max val
+                DUP    V29.4S, w11 //offset vector
+                DUP    V30.8H, wzr //min val vector
+                DUP    V31.8H, w10 //max val vector
+                mov    x12, #2
+                sub    x2, x2, #2//start h src[]
+                sub    x13, x3, #3
+                lsl    x13, x13, #1 // last jump h
+                lsl    x1, x1, #1 //_dststride
+                lsl    x14, x3, #1 //_srcstride
+                sub    x2, x2, x14//start hv src[]
+                mov    x16, x5//save height
+                mov    x17, x2//save start src
+                mov    x15, x0//save start dst
+                mov    x14, x4//save start dst
+                LD1    {V0.8B}, [x6]
+                LD1    {V1.8B}, [x7]
+                SADDW   V0.8H, V30.8H, V0.8B
+                SADDW   V1.8H, V30.8H, V1.8B
+                bi1_epel_hv_filter x0, x2, V0, V1, x13, x12
+                add x0, x15, #16
+                add x2, x17, #16
+                add x4, x14, #16
+                mov x5, x16
+                bi1_epel_hv_filter x0, x2, V0, V1, x13, x12
                 ret lr
 endfunc
