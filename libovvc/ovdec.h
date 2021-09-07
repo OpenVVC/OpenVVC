@@ -9,6 +9,12 @@
 
 #include "ovdefs.h"
 
+enum OVOptions {
+   OVDEC_NB_FRAME_THREADS = 0,
+   OVDEC_NB_ENTRY_THREADS = 0,
+   OVDEC_DISPLAY_OUTPUT = 1,
+   OVDEC_NB_OPTIONS,
+};
 
 /**
  * Submit raw Annex B data corresponding to a Picture Unit
@@ -36,6 +42,8 @@ int ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p);
 int ovdec_drain_picture(OVVCDec *vvcdec, OVFrame **frame);
 
 int ovdec_init(OVVCDec **ovvcdec, int display_output, int nb_frame_th, int nb_entry_th);
+
+int ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value);
 
 int ovdec_close(OVVCDec *ovvcdec);
 

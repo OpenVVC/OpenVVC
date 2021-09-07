@@ -24,6 +24,12 @@
 
 static const char *const decname = "Open VVC Decoder";
 
+static const char *option_names[OVDEC_NB_OPTIONS] =
+{
+    "threads",
+    "display_output"
+};
+
 struct OVVCSubDec;
 
 
@@ -592,14 +598,8 @@ ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value)
 }
 
 int
-ovdec_init(OVVCDec **vvcdec, int display_output, int nb_frame_th, int nb_entry_th)
+ovdec_init(OVVCDec **vvcdec, int display_output, int nb_threads)
 {
-    /* FIXME might not be available on every plateform */
-    // nb_threads = get_number_of_cores();
-    if (nb_frame_th < 1)
-        nb_frame_th = 1;
-    if (nb_entry_th < 1)
-        nb_entry_th = 1;
 
     if (nb_frame_th < 0) {
         nb_frame_th = 1;
@@ -615,7 +615,6 @@ ovdec_init(OVVCDec **vvcdec, int display_output, int nb_frame_th, int nb_entry_t
     }  else {
         nb_entry_th = nb_threads;
     }
-
     *vvcdec = ov_mallocz(sizeof(OVVCDec));
 
     if (*vvcdec == NULL) goto fail;
@@ -628,8 +627,6 @@ ovdec_init(OVVCDec **vvcdec, int display_output, int nb_frame_th, int nb_entry_t
 
     ovdec_set_option(*vvcdec, OVDEC_DISPLAY_OUTPUT, display_output);
 
-    // ovthread_output_init((*vvcdec), fout);
-    
     (*vvcdec)->display_output = !!display_output;
 
     ovdec_init_subdec_list(*vvcdec);
