@@ -1815,17 +1815,7 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
                 }
             }
 
-            if (inter_ctx->bcw_flag && !ibc_flag
-                && (1 << (log2_cb_h + log2_cb_w) >= BCW_SIZE_CONSTRAINT)) {
-
-                uint8_t bcw_flag = ovcabac_read_ae_bcw_flag(cabac_ctx);
-                if (bcw_flag) {
-                    bcw_idx = ovcabac_read_ae_bcw_idx(cabac_ctx, inter_ctx->tmvp_ctx.ldc);
-                }
-            }
-
             mvp_info.data.aff_mvp = mvp_data;
-            mvp_info.bcw_idx = bcw_idx;
             mvp_info.prec_amvr = inter_ctx->prec_amvr;
             mvp_info.affine_type = affine_type;
         }
@@ -1868,16 +1858,20 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
             mvp_info.data.mvp = mvp_b;
         }
 
-        if (inter_ctx->bcw_flag && !ibc_flag
-            && (1 << (log2_cb_h + log2_cb_w) >= BCW_SIZE_CONSTRAINT)) {
-            uint8_t bcw_flag = ovcabac_read_ae_bcw_flag(cabac_ctx);
-            if (bcw_flag) {
-                bcw_idx = ovcabac_read_ae_bcw_idx(cabac_ctx, inter_ctx->tmvp_ctx.ldc);
-            }
-        }
         mvp_info.prec_amvr = inter_ctx->prec_amvr;
-        mvp_info.bcw_idx = bcw_idx;
     }
+
+    if (inter_ctx->bcw_flag && !ibc_flag
+        && (1 << (log2_cb_h + log2_cb_w) >= BCW_SIZE_CONSTRAINT)) {
+
+        uint8_t bcw_flag = ovcabac_read_ae_bcw_flag(cabac_ctx);
+        if (bcw_flag) {
+            bcw_idx = ovcabac_read_ae_bcw_idx(cabac_ctx, inter_ctx->tmvp_ctx.ldc);
+        }
+    }
+
+    mvp_info.bcw_idx = bcw_idx;
+
 
     if (affine_flag) {
         struct AffineMVPDataB *const mvp_data = &mvp_info.data.aff_mvp;
