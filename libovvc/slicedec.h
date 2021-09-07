@@ -32,7 +32,7 @@ struct SliceThread
     uint8_t active_state;
 
     /* Information on current task */
-    int nb_entry_threads;
+    int nb_entry_th;
     int nb_entries;
 
     DecodeFunc decode_entry;
@@ -139,7 +139,7 @@ typedef struct OVSliceDec
    OVPicture *pic;
 
    OVCTUDec **ctudec_list; 
-   int nb_sbdec;
+   int nb_entry_th;
 
    struct SliceThread th_slice;
 

@@ -1493,7 +1493,7 @@ int
 slicedec_update_entry_decoders(OVSliceDec *sldec, const OVPS *const prms)
 {
     int i;
-    int nb_ctudec = sldec->nb_sbdec;
+    int nb_ctudec = sldec->nb_entry_th;
 
     for (i = 0; i < nb_ctudec; ++i) {
         OVCTUDec *ctudec = sldec->ctudec_list[i];
@@ -1598,9 +1598,7 @@ int
 slicedec_init(OVSliceDec *sldec, int nb_entry_th)
 {
     int ret;
-    //Test frame par
-    nb_entry_th = 1;
-    sldec->nb_sbdec = nb_entry_th;
+    sldec->nb_entry_th = nb_entry_th;
 
     ret = init_ctudec_list(sldec, nb_entry_th);
     if (ret < 0) {
@@ -1610,7 +1608,6 @@ slicedec_init(OVSliceDec *sldec, int nb_entry_th)
     sldec->th_slice.owner = sldec;
     #if USE_THREADS 
     ret = ovthread_slice_thread_init(&sldec->th_slice, nb_entry_th);
-    ret = init_entry_threads(&sldec->th_slice, nb_entry_th);
     #endif
     if (ret < 0) {
         goto failthreads;
@@ -1637,7 +1634,7 @@ slicedec_uninit(OVSliceDec **sldec_p)
     ovthread_slice_thread_uninit(&sldec->th_slice);
 
     if (sldec->ctudec_list) {
-        uninit_ctudec_list(sldec, sldec->nb_sbdec);
+        uninit_ctudec_list(sldec, sldec->nb_entry_th);
     }
 
     /*FIXME is init test */

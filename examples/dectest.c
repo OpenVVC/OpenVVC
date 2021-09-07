@@ -22,7 +22,7 @@ typedef struct OVVCHdl{
 
 static int dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name);
 
-static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_threads);
+static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_frame_th, int nb_entry_th);
 
 static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
@@ -45,7 +45,8 @@ main(int argc, char** argv)
   const char *input_file_name = NULL, *output_file_name = NULL;
   int ov_log_level=OVLOG_INFO;
   FILE *fout = NULL;
-  int nb_threads = 1;
+  int nb_frame_th = 1;
+  int nb_entry_th = 1;
 
   uint8_t options_flag=0;
 
@@ -60,11 +61,11 @@ main(int argc, char** argv)
           {"log-level", required_argument, 0, 'l'},
           {"infile",      required_argument, 0, 'i'},
           {"outfile",      required_argument, 0, 'o'},
-          {"threads",      required_argument, 0, 't'},
+          {"framethr",      required_argument, 0, 't'},
+          {"entrythr",      required_argument, 0, 'e'},
         };
       int option_index = 0;
-
-      c = getopt_long (argc, argv, "vhl:i:o:t:",
+      c = getopt_long (argc, argv, "vhl:i:o:t:e:",
                        long_options, &option_index);
       if (c == -1){
         break;
@@ -94,7 +95,11 @@ main(int argc, char** argv)
           break;
 
         case 't':
-          nb_threads = atoi(optarg);
+          nb_frame_th = atoi(optarg);
+          break;
+
+        case 'e':
+          nb_entry_th = atoi(optarg);
           break;
 
         case '?':
@@ -116,9 +121,7 @@ main(int argc, char** argv)
     if (output_file_name == NULL){
       output_file_name ="test.yuv";
     }
-    if (output_file_name == NULL){
-      output_file_name ="test.yuv";
-    }
+
     if (options_flag){
       if (options_flag & 0x01) {print_version();}
       if (options_flag & 0x10) {print_usage();}
@@ -132,7 +135,7 @@ main(int argc, char** argv)
     } else {
       ov_log(NULL, OVLOG_INFO, "Decoded stream will be written to '%s'.\n", output_file_name);
     }
-    ret = init_openvvc_hdl(&ovvc_hdl, output_file_name, nb_threads);
+    ret = init_openvvc_hdl(&ovvc_hdl, output_file_name, nb_frame_th, nb_entry_th);
 
     if (ret < 0) goto failinit;
 
@@ -176,13 +179,13 @@ dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name)
 }
 
 static int
-init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_threads)
+init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_frame_th, int nb_entry_th)
 {
     OVVCDec **vvcdec = &ovvc_hdl->dec;
     OVVCDmx **vvcdmx = &ovvc_hdl->dmx;
     int ret;
 
-    ret = ovdec_init(vvcdec, output_file_name, nb_threads);
+    ret = ovdec_init(vvcdec, output_file_name, nb_frame_th, nb_entry_th);
 
     if (ret < 0) goto faildec;
 
@@ -370,5 +373,6 @@ static void print_usage(){
   printf("\t-l <level>, --log-level=<level>\t\tDefine the level of verbosity. Value between 0 and 6. (Default: 2)\n");
   printf("\t-i <file>, --infile=<file>\t\tPath to the file to be decoded (Default: test.266).\n");
   printf("\t-o <file>, --outfile=<file>\t\tPath to the output file (Default: test.yuv).\n");
-  printf("\t-t <nbthreads>, --threads=<nbthreads>\t\tNumber of decoding threads (Default: 1).\n");
+  printf("\t-f <nbthreads>, --framethr=<nbthreads>\t\tNumber of simultaneous frames decoded (Default: 1).\n");
+  printf("\t-e <nbthreads>, --entrythr=<nbthreads>\t\tNumber of simultaneous entries decoded per frame (Default: 1).\n");
 }

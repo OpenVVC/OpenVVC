@@ -326,7 +326,8 @@ struct OVVCDec
     OVSliceDec **subdec_list;
 
     /* Number of available threads */
-    int nb_threads;
+    int nb_frame_th;
+    int nb_entry_th;
 
     struct OutputThread output_thread;
 

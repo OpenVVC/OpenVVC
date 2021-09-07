@@ -3947,7 +3947,6 @@ rcn_affine_prof_mcp_b_l(OVCTUDec *const ctudec,
                tmvp_mv1[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv1;
             }
 
-            //TODOrebase: take into account amvr and bcw
             rcn_prof_mcp_b_l(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
                              mv0, mv1, x0 + 4*j, y0 + 4*i,
                              2, 2, inter_dir, ref_idx0, ref_idx1,

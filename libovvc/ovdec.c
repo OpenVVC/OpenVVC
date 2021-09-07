@@ -67,13 +67,12 @@ static int
 ovdec_init_subdec_list(OVVCDec *dec)
 {
     int ret;
-    uint8_t nb_threads = dec->nb_threads;
     if (!dec->subdec_list) 
-        dec->subdec_list = ov_mallocz(sizeof(OVSliceDec*) * nb_threads);
+        dec->subdec_list = ov_mallocz(sizeof(OVSliceDec*) * dec->nb_frame_th);
 
-    for (int i = 0; i < nb_threads; ++i){
+    for (int i = 0; i < dec->nb_frame_th; ++i){
         dec->subdec_list[i] = ov_mallocz(sizeof(OVSliceDec));
-        ret = slicedec_init(dec->subdec_list[i], dec->nb_threads);
+        ret = slicedec_init(dec->subdec_list[i], dec->nb_entry_th);
         if (ret < 0) {
             return OVVC_ENOMEM;
         }
@@ -147,7 +146,7 @@ ovdec_select_subdec(OVVCDec *const dec)
 {
     #if USE_THREADS
     OVSliceDec **sldec_list = dec->subdec_list;
-    int nb_threads = dec->nb_threads;
+    int nb_threads = dec->nb_frame_th;
     struct MainThread* th_main = &dec->main_thread;
 
     OVSliceDec * slicedec;
@@ -543,12 +542,14 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
 
 
 int
-ovdec_init(OVVCDec **vvcdec, const char* output_file_name, int nb_threads)
+ovdec_init(OVVCDec **vvcdec, const char* output_file_name, int nb_frame_th, int nb_entry_th)
 {
     /* FIXME might not be available on every plateform */
-    if (nb_threads < 1)
-        nb_threads = 1;
-        // nb_threads = get_number_of_cores();
+    // nb_threads = get_number_of_cores();
+    if (nb_frame_th < 1)
+        nb_frame_th = 1;
+    if (nb_entry_th < 1)
+        nb_entry_th = 1;
 
     *vvcdec = ov_mallocz(sizeof(OVVCDec));
 
@@ -556,7 +557,8 @@ ovdec_init(OVVCDec **vvcdec, const char* output_file_name, int nb_threads)
 
     (*vvcdec)->name = decname;
 
-    (*vvcdec)->nb_threads = nb_threads;
+    (*vvcdec)->nb_frame_th = nb_frame_th;
+    (*vvcdec)->nb_entry_th = nb_entry_th;
 
     // ovthread_output_init((*vvcdec), fout);
     
@@ -582,7 +584,7 @@ ovdec_uninit_subdec_list(OVVCDec *vvcdec)
     if (vvcdec != NULL)
     {
         if (vvcdec->subdec_list) {
-            for (int i = 0; i < vvcdec->nb_threads; ++i){
+            for (int i = 0; i < vvcdec->nb_frame_th; ++i){
                 sldec = vvcdec->subdec_list[i];
                 slicedec_uninit(&sldec);
                 ov_log(NULL, OVLOG_INFO, "Main joined thread: %d\n", i);

@@ -35,7 +35,7 @@ int ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p);
 
 int ovdec_drain_picture(OVVCDec *vvcdec, OVFrame **frame);
 
-int ovdec_init(OVVCDec **ovvcdec, const char* output_file_name, int nb_threads);
+int ovdec_init(OVVCDec **ovvcdec, const char* output_file_name, int nb_frame_th, int nb_entry_th);
 
 int ovdec_close(OVVCDec *ovvcdec);
 
