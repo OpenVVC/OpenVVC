@@ -1091,7 +1091,7 @@ void xctu_to_mask(uint64_t* mask, int mask_w, int xmin_ctu, int xmax_ctu)
 }
 
 void
-ovdpb_report_decoded_ctus(OVPicture *const pic, int y_ctu, int xmin_ctu, int xmax_ctu)
+ovdpb_report_decoded_ctu_line(OVPicture *const pic, int y_ctu, int xmin_ctu, int xmax_ctu)
 {
     struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
     int mask_w = decoded_ctus->mask_w;
@@ -1105,6 +1105,18 @@ ovdpb_report_decoded_ctus(OVPicture *const pic, int y_ctu, int xmin_ctu, int xma
     pthread_mutex_unlock(&decoded_ctus->ref_mtx);
     // ov_log(NULL, OVLOG_TRACE, "update_decoded_ctus POC %d line %d\n", pic->poc, y_ctu);
 
+}
+
+void
+ovdpb_report_decoded_frame(OVPicture *const pic)
+{
+    struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
+    pthread_mutex_lock(&decoded_ctus->ref_mtx);
+    for(int i = 0; i < decoded_ctus->mask_h; i++){
+        memset(decoded_ctus->mask[i], 0xFF, decoded_ctus->mask_w * sizeof(int64_t));
+    }
+    pthread_cond_broadcast(&decoded_ctus->ref_cnd);
+    pthread_mutex_unlock(&decoded_ctus->ref_mtx);
 }
 
 static void

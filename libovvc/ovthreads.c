@@ -119,24 +119,27 @@ entry_thread_main_function(void *opaque)
          * if its entry has already ended
          */
         if (is_last) {
-            struct SliceThread *th_slice = tdec->parent;
-            //TODOpar: change location when using SliceThreads
-            ov_nalu_unref(&th_slice->slice_nalu);
 
-            ov_log(NULL, OVLOG_DEBUG, "Decoder with POC %d, finished frame \n", th_slice->owner->pic->poc);
+            slicedec_finish_decoding(tdec->parent->owner);
 
-            pthread_mutex_lock(&th_slice->gnrl_mtx);
-            th_slice->active_state = DECODING_FINISHED;
-            // pthread_cond_signal(&th_slice->gnrl_cnd);
-            pthread_mutex_unlock(&th_slice->gnrl_mtx);
+            // struct SliceThread *th_slice = tdec->parent;
+            // //TODOpar: change location when using SliceThreads
+            // ov_nalu_unref(&th_slice->slice_nalu);
 
-            //Signal main thread that a slice thread is available
-            struct MainThread* t_main = th_slice->main_thread;
-            if(t_main){
-                pthread_mutex_lock(&t_main->main_mtx);
-                pthread_cond_signal(&t_main->main_cnd);
-                pthread_mutex_unlock(&t_main->main_mtx);
-            }
+            // ov_log(NULL, OVLOG_DEBUG, "Decoder with POC %d, finished frame \n", th_slice->owner->pic->poc);
+
+            // pthread_mutex_lock(&th_slice->gnrl_mtx);
+            // th_slice->active_state = DECODING_FINISHED;
+            // // pthread_cond_signal(&th_slice->gnrl_cnd);
+            // pthread_mutex_unlock(&th_slice->gnrl_mtx);
+
+            // //Signal main thread that a slice thread is available
+            // struct MainThread* t_main = th_slice->main_thread;
+            // if(t_main){
+            //     pthread_mutex_lock(&t_main->main_mtx);
+            //     pthread_cond_signal(&t_main->main_cnd);
+            //     pthread_mutex_unlock(&t_main->main_mtx);
+            // }
         }
     }
     pthread_mutex_unlock(&tdec->entry_mtx);
@@ -146,21 +149,6 @@ entry_thread_main_function(void *opaque)
 int
 init_entry_threads(struct SliceThread *th_slice, int nb_threads)
 {
-    // if(!th_slice->tdec){
-    //     th_slice->nb_frame_th = nb_threads;
-
-    //     th_slice->tdec = ov_mallocz(sizeof(struct EntryThread) * nb_threads);
-
-    //     if (!th_slice->tdec) {
-    //         goto failalloc;
-    //     }
-
-    //     atomic_init(&th_slice->first_job,      0);
-    //     atomic_init(&th_slice->last_entry_idx, 0);
-
-    //     pthread_mutex_init(&th_slice->gnrl_mtx, NULL);
-    //     pthread_cond_init(&th_slice->gnrl_cnd,  NULL);
-    // }
     int i;
     for (i = 0; i < nb_threads; ++i){
         struct EntryThread *tdec = &th_slice->tdec[i];
@@ -195,9 +183,6 @@ failthread:
 
     ov_freep(&th_slice->tdec);
 
-    return OVVC_ENOMEM;
-
-failalloc:
     return OVVC_ENOMEM;
 }
 

@@ -151,6 +151,8 @@ int slicedec_update_entry_decoders(OVSliceDec *sldec, const OVPS *const prms);
 
 int slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms);
 
+void slicedec_finish_decoding(OVSliceDec *sldec);
+
 #if 0
 int slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms);
 #endif
