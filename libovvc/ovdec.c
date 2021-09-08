@@ -230,7 +230,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         } else {
             /*Select the first available subdecoder, or wait until one is available*/
             OVSliceDec *sldec = ovdec_select_subdec(vvcdec);
- 
+                
             ret = init_vcl_decoder(vvcdec, sldec, nvcl_ctx, nalu, &rdr);
 
             if (ret < 0) {

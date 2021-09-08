@@ -61,6 +61,14 @@ ovdpb_init(OVDPB **dpb_p, const OVPS *ps)
     /* FIXME handle temporal and sub layers*/
     dpb_init_params(*dpb_p, &ps->sps->dpb_parameters[ps->sps->sps_max_sublayers_minus1]);
 
+    OVPicture *pic;
+    int nb_dpb_pic = sizeof((*dpb_p)->pictures) / sizeof(*pic);
+    for (int j = 0; j < nb_dpb_pic; j++) {
+        pic = &(*dpb_p)->pictures[j];
+        ovdpb_init_decoded_ctus(pic, ps);
+    }
+
+
     return 0;
 
 failframepool:
@@ -100,8 +108,6 @@ dpbpriv_release_pic(OVPicture *pic)
         pic->rpl_info1.nb_refs = 0;
 
         pic->tmvp.collocated_ref = NULL;
-
-        ovdpb_uninit_decoded_ctus(pic);
         
         /* Do not delete frame the frame will delete itself
          * when all its references are released
@@ -118,7 +124,6 @@ dpb_init_params(OVDPB *dpb, OVDPBParams const *prm)
     dpb->max_nb_dpb_pic       = prm->dpb_max_dec_pic_buffering_minus1 + 1;
     dpb->max_nb_reorder_pic   = prm->dpb_max_num_reorder_pics;
     dpb->max_latency_increase = prm->dpb_max_latency_increase_plus1 - 1;
-    dpb->poc_last_output      = -1;
     return 0;
 }
 
@@ -267,6 +272,7 @@ ovdpb_flush_dpb(OVDPB *dpb)
         dpb->pictures[i].flags = 0; 
         atomic_init( &dpb->pictures[i].ref_count, 0);
         ovdpb_release_pic(dpb, &dpb->pictures[i]);
+        ovdpb_uninit_decoded_ctus(&dpb->pictures[i]);
     }
 }
 
@@ -332,6 +338,8 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc)
     }
 
     *pic_p = pic;
+
+    ovdpb_reset_decoded_ctus(pic);
 
     #if 0
     dpb->active_pic = pic;
@@ -439,13 +447,14 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
                 return OVVC_ENOMEM;
             }
 
+            ovdpb_report_decoded_frame(ref_pic);
+
             ref_pic->poc    = ref_poc;
             ref_pic->cvs_id = dpb->cvs_id;
 
             ref_pic->flags  = 0;
-
-            ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
-            ovdpb_new_ref_pic(ref_pic, flag);
+            // ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
+            ovdpb_new_ref_pic(ref_pic, OV_ST_REF_PIC_FLAG);
 
             /*FIXME  Set output / corrupt flag ? */
             dst_rpl[i] = ref_pic; 
@@ -627,8 +636,6 @@ ovdpb_output_pic(OVDPB *dpb, OVPicture **out, int output_cvs_id)
 
         if (min_idx < nb_dpb_pic) {
             OVPicture *pic = &dpb->pictures[min_idx];
-            dpb->poc_last_output = pic->poc;
-            dpb->cvsid_last_output = pic->cvs_id;
             *out = pic;
             return nb_output;
         }
@@ -1016,8 +1023,6 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     if (ret < 0) {
         goto fail;
     }
-    ovdpb_init_decoded_ctus((*pic_p), ps);
-    ovdpb_reset_decoded_ctus((*pic_p));
 
     copy_sei_params(&(*pic_p)->sei, ovdec->active_params.sei);
     

@@ -119,27 +119,7 @@ entry_thread_main_function(void *opaque)
          * if its entry has already ended
          */
         if (is_last) {
-
             slicedec_finish_decoding(tdec->parent->owner);
-
-            // struct SliceThread *th_slice = tdec->parent;
-            // //TODOpar: change location when using SliceThreads
-            // ov_nalu_unref(&th_slice->slice_nalu);
-
-            // ov_log(NULL, OVLOG_DEBUG, "Decoder with POC %d, finished frame \n", th_slice->owner->pic->poc);
-
-            // pthread_mutex_lock(&th_slice->gnrl_mtx);
-            // th_slice->active_state = DECODING_FINISHED;
-            // // pthread_cond_signal(&th_slice->gnrl_cnd);
-            // pthread_mutex_unlock(&th_slice->gnrl_mtx);
-
-            // //Signal main thread that a slice thread is available
-            // struct MainThread* t_main = th_slice->main_thread;
-            // if(t_main){
-            //     pthread_mutex_lock(&t_main->main_mtx);
-            //     pthread_cond_signal(&t_main->main_cnd);
-            //     pthread_mutex_unlock(&t_main->main_mtx);
-            // }
         }
     }
     pthread_mutex_unlock(&tdec->entry_mtx);
