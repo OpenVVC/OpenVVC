@@ -108,6 +108,8 @@ dpbpriv_release_pic(OVPicture *pic)
         pic->rpl_info1.nb_refs = 0;
 
         pic->tmvp.collocated_ref = NULL;
+
+        pic->frame = NULL;
         
         /* Do not delete frame the frame will delete itself
          * when all its references are released
