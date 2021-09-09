@@ -65,7 +65,7 @@ ovthread_decode_entries(struct SliceThread *th_slice, DecodeFunc decode_entry, i
     th_slice->decode_entry = decode_entry;
 
     atomic_store_explicit(&th_slice->first_job, 0, memory_order_relaxed);
-    atomic_store_explicit(&th_slice->last_entry_idx, nb_entry_th, memory_order_relaxed);
+    atomic_store_explicit(&th_slice->last_entry_idx, th_slice->nb_entry_th, memory_order_relaxed);
 
     /* Wake entry decoder threads by setting their state to 0 
      * and signaling on entry condition
