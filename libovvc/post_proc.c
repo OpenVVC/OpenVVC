@@ -4,8 +4,10 @@
 
 #include "slicedec.h"
 #include "post_proc.h"
-#include "pp_wrapper_slhdr.h"
 
+#if ENABLE_SLHDR
+#include "pp_wrapper_slhdr.h"
+#endif
 void
 pp_init_functions(const OVSEI* sei, struct PostProcFunctions *const pp_funcs)
 {
@@ -21,6 +23,7 @@ pp_init_functions(const OVSEI* sei, struct PostProcFunctions *const pp_funcs)
             pp_funcs->pp_film_grain = fg_grain_no_filter;
         }
 
+#if ENABLE_SLHDR
         if (sei->sei_slhdr){
             pp_funcs->pp_sdr_to_hdr = pp_sdr_to_hdr;
             pp_funcs->pp_apply_flag = 1;
@@ -28,6 +31,7 @@ pp_init_functions(const OVSEI* sei, struct PostProcFunctions *const pp_funcs)
         else{
             pp_funcs->pp_sdr_to_hdr = pp_slhdr_no_filter;
         }
+#endif
     }
 }
 
@@ -52,6 +56,7 @@ pp_process_frame(const OVSEI* sei, OVDPB *dpb, OVFrame **frame_p)
         pp_funcs.pp_film_grain(dstComp, srcComp, sei->sei_fg, 
             frame->width[0], frame->height[0], frame->poc, 0, enable_deblock);
 
+#if ENABLE_SLHDR
         //TODOpp: redundant check with pp_init_functions
         if(sei->sei_slhdr){
             // uint8_t payload_example[87] = {0x06, 0x55, 0x04, 0x53, 0xb5, 0x00, 0x3a, 0x00, 0x01, 0x00, 0x30, 0x09, 0x00, 0x64, 0x00, 0x00, 0x21, 
@@ -63,6 +68,7 @@ pp_process_frame(const OVSEI* sei, OVDPB *dpb, OVFrame **frame_p)
             pp_funcs.pp_sdr_to_hdr(sei->sei_slhdr->slhdr_context, srcComp, dstComp, 
                                     sei->sei_slhdr->payload_array, frame->width[0], frame->height[0]);
         }
+#endif
 
         *frame_p = frame_post_proc;
     }

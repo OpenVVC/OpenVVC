@@ -3,16 +3,10 @@ include config.mak
 # Set defaults
 VERBOSITY?=0
 LD_FLAGS?=-lpthread
-LD_FLAGS+=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_SSE42/lib/libSLHDRPostprocessor.so 
-LD_FLAGS+=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_SSE42/lib/libSLHDRCommon.so
-SRC_FOLDER:=libovvc/
-SLHDR_INC:=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_SSE42/include/
 
-# LD_FLAGS+=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_AVX2/lib/libSLHDRPostprocessor.so 
-# LD_FLAGS+=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_AVX2/lib/libSLHDRCommon.so
-# SRC_FOLDER:=libovvc/
-# SLHDR_INC:=/home/tamestoy/Documents/PostDoc/Code/SLHDR/SLHDR_SDK_v1.6.0_Ubuntu_18_AVX2/include/
-	
+SRC_FOLDER:=libovvc/
+
+
 # Compiler Verbosity Control
 USER_CC := $(CC)
 CC_0 = @echo "$(USER_CC) $@"; $(USER_CC)
@@ -96,11 +90,7 @@ $(BUILDDIR_TYPE_ARCH)%_neon.o: $($(ARCH)_SRC_FOLDER)%_neon.c
 
 $(BUILDDIR)%.o: %.c
 	$(AT)mkdir -p $(@D)
-	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) -I$(SRC_FOLDER)
-
-$(BUILDDIR)%.o: %.cpp
-	$(AT)mkdir -p $(@D)
-	g++-7 -std=c++11 -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) -I$(SRC_FOLDER) -I$(SLHDR_INC)
+	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) -I$(SRC_FOLDER) -I$(PP_INC)
 
 .PHONY: install install-shared install-headers install-pkgconfig
 

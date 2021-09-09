@@ -23,6 +23,8 @@ aligned_malloc="0"
 log_enabled="1"
 is_win32="0"
 
+slhdr_enabled="0"
+
 show_help() {
     cat <<EOF
 Usage: configure [options]
@@ -43,6 +45,10 @@ Options:
   --disable-neon           disable neon optimizations [no]
   --disable-static         do not build static libraries [no]
   --enable-shared          build shared libraries [no]
+
+  --enable-slhdr           build slhdr feature [no]
+  --slhdr_include          path to slhdr lib headers
+  --slhdr_wrapper_lib      path to slhdr lib
 
   --cc=CC                  select compiler [$cc_default]
   --arch=ARCH              select architecture [$arch]
@@ -98,6 +104,9 @@ for opt do
         --disable-log)
             log_enabled="0"
         ;;
+        --enable-slhdr)
+            slhdr_enabled="1"
+        ;;
         *)
             optname="${opt%%=*}"
             optname="${optname#--}"
@@ -110,6 +119,7 @@ done
 if [ -z "$cflags" ] ; then
     cflags="$cflags_default"
 fi
+
 
 # Select arch var according to common arch names
 is_arm="0"
@@ -157,6 +167,7 @@ AR=${ar}
 RANLIB=${ranlib}
 ARCH=${arch}
 CFLAGS=${cflags}
+LD_FLAGS=-lpthread
 SSE_CFLAGS= -mssse3 -msse4.1
 SHARED_LIBSUFF:=${shlib_suffix}
 STATIC_LIBSUFF:=${stlib_suffix}
@@ -170,7 +181,19 @@ INSTALL_LIB=\$(INSTALL_PREFIX)/lib/libopenvvc
 INSTALL_INCLUDE=\$(INSTALL_PREFIX)/include/libopenvvc
 INSTALL_PKGCONFIG=\$(INSTALL_PREFIX)/lib/pkgconfig
 INSTALL_BIN=\$(INSTALL_PREFIX)/bin
+
 EOF
+
+if [ ${slhdr_enabled} = "1" ] ; then
+cat >> config.mak <<EOF
+  PP_INC+=${slhdr_include}
+  LD_FLAGS+=${slhdr_wrapper_lib}
+EOF
+else
+cat >> config.mak <<EOF
+  PP_INC=.
+EOF
+fi
 
 cat > config.sh <<EOF
 INSTALL_PREFIX=${prefix}
@@ -193,6 +216,9 @@ cat > libovvc/ovconfig.h <<EOF
 #define HAVE_ALIGNED_MALLOC $aligned_malloc
 
 #define ENABLE_LOG $log_enabled
+
+#define ENABLE_SLHDR $slhdr_enabled
+
 EOF
 
 

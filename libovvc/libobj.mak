@@ -30,7 +30,6 @@ LIB_SRC:=																																 \
 					ovunits.c                                                      \
 					ovframe.c                                                      \
 					pp_film_grain.c                                                 \
-					pp_wrapper_slhdr.cpp                                            \
 					post_proc.c                                                 \
 					ovthreads.c                                                    \
 					drv_affine_mvp.c                                                    \

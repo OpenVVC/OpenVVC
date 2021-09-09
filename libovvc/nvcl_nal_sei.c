@@ -58,12 +58,14 @@ copy_sei_params(OVSEI **dst_p, OVSEI *src)
             *(dst->sei_fg) =  *(src->sei_fg);
         }
 
+#if ENABLE_SLHDR
         if(src->sei_slhdr){
             if(!dst->sei_slhdr){
                 dst->sei_slhdr = ov_mallocz(sizeof(struct OVSEISLHDR));
             }
             *(dst->sei_slhdr) =  *(src->sei_slhdr);
         }
+#endif
     }
 }
 
@@ -75,11 +77,13 @@ nvcl_free_sei_params(OVSEI *sei)
         if(sei->sei_fg)
             ov_freep(&sei->sei_fg);
 
+#if ENABLE_SLHDR
         if(sei->sei_slhdr){
             pp_uninit_slhdr_lib(sei->sei_slhdr->slhdr_context);
             ov_freep(&sei->sei_slhdr);
         }
 
+#endif
         ov_freep(&sei);
     }
 }
@@ -153,6 +157,7 @@ nvcl_film_grain_read(OVNVCLReader *const rdr, struct OVSEIFGrain *const fg, OVNV
   } // cancel flag
 }
 
+#if ENABLE_SLHDR
 void
 nvcl_slhdr_read_complet(OVNVCLReader *const rdr,  uint32_t payloadSize)
 {
@@ -195,6 +200,7 @@ nvcl_slhdr_read(OVNVCLReader *const rdr, struct OVSEISLHDR* sei_slhdr, uint32_t 
         payload_array[i] = nvcl_read_bits(rdr, 8);
     }
 }
+#endif
 
 int 
 nvcl_decode_nalu_sei(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
@@ -215,11 +221,13 @@ nvcl_decode_nalu_sei(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
             break;
         case USER_DATA_REGISTERED_ITU_T_T35:
             ov_log(NULL, OVLOG_DEBUG, "SEI: USER_DATA_REGISTERED_ITU_T_T35 (type = %d) with size %d.\n", payload.type, payload.size);
+#if ENABLE_SLHDR
             if(!sei->sei_slhdr){
                 sei->sei_slhdr = ov_mallocz(sizeof(struct OVSEISLHDR));
                 pp_init_slhdr_lib(&sei->sei_slhdr->slhdr_context);
             }
             nvcl_slhdr_read(rdr, sei->sei_slhdr, payload.size);
+#endif
             break;
         default:
             for (int i = 0; i < payload.size; i++)
