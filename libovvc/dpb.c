@@ -1135,6 +1135,7 @@ ovdpb_reset_decoded_ctus(OVPicture *const pic)
     struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
     pthread_mutex_lock(&decoded_ctus->ref_mtx);
     for(int i = 0; i < decoded_ctus->mask_h; i++){
+        if (decoded_ctus->mask)
         memset(decoded_ctus->mask[i], 0, decoded_ctus->mask_w * sizeof(int64_t));
     }
     pthread_mutex_unlock(&decoded_ctus->ref_mtx);
