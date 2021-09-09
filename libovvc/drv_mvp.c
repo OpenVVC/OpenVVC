@@ -287,6 +287,22 @@ hmvp_update_lut_b(struct HMVPLUT *const hmvp_lut, OVMV mv0, OVMV mv1, uint8_t in
     }
 }
 
+void
+tmvp_inter_synchronization(OVPicture *ref_pic, int ctb_x, int ctb_y, int log2_ctu_s)
+{
+    const int pic_w = ref_pic->frame->width[0];
+    const int pic_h = ref_pic->frame->height[0];
+    
+    /*Frame thread synchronization to ensure data is available
+    */
+    int nb_ctb_pic_w = (pic_w + ((1 << log2_ctu_s) - 1)) >> log2_ctu_s;
+    int nb_ctb_pic_h = (pic_h + ((1 << log2_ctu_s) - 1)) >> log2_ctu_s;
+    int br_ctu_x = OVMIN(ctb_x + 1, nb_ctb_pic_w-1);
+    int br_ctu_y = OVMIN(ctb_y + 1, nb_ctb_pic_h-1);
+    // ovdpb_synchro_ref_decoded_ctus(ref_pic, ctb_x, ctb_y, br_ctu_x, br_ctu_y);
+    ref_pic->ovdpb_frame_synchro(ref_pic, ctb_x, ctb_y, br_ctu_x, br_ctu_y);
+}
+
 
 static void
 load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
@@ -302,12 +318,9 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
 
     uint8_t nb_unit_ctb = (1 << log2_ctb_s) >> LOG2_MIN_CU_S;
     uint16_t nb_ctb_w = ctudec->nb_ctb_pic_w;
-    uint16_t nb_ctb_h = (ctudec->pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
 
     const OVPicture* ref_pic = tmvp_ctx->col_ref;
-    int br_ctu_x = OVMIN(ctb_x + 1, nb_ctb_w-1);
-    int br_ctu_y = OVMIN(ctb_y + 1, nb_ctb_h-1);
-    ovdpb_wait_ref_decoded_ctus(ref_pic, ctb_x, ctb_y, br_ctu_x, br_ctu_y);
+    tmvp_inter_synchronization(ref_pic, ctb_x, ctb_y, log2_ctb_s);
 
     uint8_t is_border_pic = nb_ctb_w - 1 == ctb_x;
 

@@ -45,6 +45,8 @@ struct RPLInfo
    uint8_t nb_refs;
 };
 
+typedef void (*FrameSynchroFunction)(OVPicture *const ref_pic, int tl_ctu_x, 
+                                    int tl_ctu_y, int br_ctu_x, int br_ctu_y);
 
 struct OVPicture
 {
@@ -60,7 +62,6 @@ struct OVPicture
     pthread_mutex_t pic_mtx;
 
     //Map of decoded CTUs
-    //TODOpar: change 32 with n_ctu_w 
     struct PicDecodedCtusInfo {
         uint64_t** mask;
         int mask_h;
@@ -69,6 +70,7 @@ struct OVPicture
         pthread_cond_t  ref_cnd;
     } decoded_ctus;
 
+    FrameSynchroFunction ovdpb_frame_synchro;
 
     /* Pointers to ref_pic_list */
     /* FIXME use frame directly ? */
@@ -187,8 +189,10 @@ void ovdpb_report_decoded_ctu_line(OVPicture *const pic, int y_ctu, int xmin_ctu
 
 void ovdpb_report_decoded_frame(OVPicture *const pic);
 
-void ovdpb_get_lines_decoded_ctus(OVPicture *const pic, uint64_t** decoded, int y_start, int y_end );
+void ovdpb_get_lines_decoded_ctus(OVPicture *const pic, uint64_t* decoded, int y_start, int y_end );
 
-void ovdpb_wait_ref_decoded_ctus(OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y, int br_ctu_x, int br_ctu_y);
+void ovdpb_no_synchro(OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y, int br_ctu_x, int br_ctu_y);
+
+void ovdpb_synchro_ref_decoded_ctus(OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y, int br_ctu_x, int br_ctu_y);
 
 #endif
