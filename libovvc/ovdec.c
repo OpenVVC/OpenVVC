@@ -160,6 +160,8 @@ ovdec_select_subdec(OVVCDec *const dec)
     do{
         //Unmark ref pict lists of decoded pics
         int min_idx_available = nb_threads;
+        pthread_mutex_lock(&th_main->main_mtx);
+        
         for(int i = nb_threads-1; i >= 0 ; i--){
             slicedec = sldec_list[i];
             th_slice = &slicedec->th_slice;
@@ -180,20 +182,21 @@ ovdec_select_subdec(OVVCDec *const dec)
             else if(th_slice->active_state == IDLE){
                 min_idx_available = i;     
             }
-
         }
 
         if(min_idx_available < nb_threads){
             slicedec = sldec_list[min_idx_available];
             th_slice = &slicedec->th_slice;
+        
             pthread_mutex_lock(&th_slice->gnrl_mtx);
             th_slice->active_state = ACTIVE;
             ov_log(NULL, OVLOG_TRACE, "Subdec %d selected\n", min_idx_available);
             pthread_mutex_unlock(&th_slice->gnrl_mtx);
+
+            pthread_mutex_unlock(&th_main->main_mtx);
             return slicedec;
         }
 
-        pthread_mutex_lock(&th_main->main_mtx);
         pthread_cond_wait(&th_main->main_cnd, &th_main->main_mtx);
         pthread_mutex_unlock(&th_main->main_mtx);
 
@@ -240,6 +243,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
             ret = init_vcl_decoder(vvcdec, sldec, nvcl_ctx, nalu, &rdr);
 
             if (ret < 0) {
+                slicedec_finish_decoding(sldec);
                 goto failvcl;
             }
             /* Beyond this point unref current picture on failure
