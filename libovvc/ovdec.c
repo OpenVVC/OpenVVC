@@ -130,7 +130,6 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
 #endif
         ret = ovdpb_init_picture(dec->dpb, &sldec->pic, sldec->active_params, nalu->type, sldec, dec);
         if (ret < 0) {
-            ovdpb_flush_dpb(dec->dpb);
             return ret;
         }
     }
