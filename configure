@@ -205,8 +205,8 @@ if [ ${slhdr_enabled} = "1" ] ; then
   slhdr_include=$( cd $slhdr_include; pwd )
   slhdr_wrapper_lib=$( realpath $slhdr_wrapper_lib )
 cat >> ${build_dir}/config.mak <<EOF
-  PP_INC=${slhdr_include}
-  LD_FLAGS+=${slhdr_wrapper_lib}
+SLHDR_INC=${slhdr_include}
+LD_FLAGS+=${slhdr_wrapper_lib}
 EOF
 fi
 

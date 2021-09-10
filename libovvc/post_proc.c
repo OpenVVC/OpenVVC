@@ -1,4 +1,6 @@
 #include "ovdpb.h"
+#include "ovconfig.h"
+
 // #include "dec_structures.h"
 #include "nvcl_structures.h"
 

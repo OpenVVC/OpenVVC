@@ -2,6 +2,7 @@
 
 #include "ovutils.h"
 #include "ovmem.h"
+#include "ovconfig.h"
 
 #include "nvcl.h"
 #include "nvcl_utils.h"
