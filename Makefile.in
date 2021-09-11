@@ -102,7 +102,7 @@ install-shared: $(BUILDDIR)$(LIB_NAME)$(SHARED_LIBSUFF)
 	$(AT)mkdir -p $(INSTALL_LIB)
 	cp $< $(INSTALL_LIB)/$(<F)
 
-install-headers: $(LIB_HEADER)
+install-headers: $(LIB_HEADER) $(BUILDDIR)ovversion.h
 	$(AT)mkdir -p $(INSTALL_INCLUDE)
 	cp $^ $(INSTALL_INCLUDE)/
 

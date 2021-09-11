@@ -63,8 +63,7 @@ LIB_SRC:=																																 \
 					vcl_residual_coding.c                                          \
 					vcl_cabac.c																										 \
 
-LIB_HEADER:=ovversion.h   \
-						ovdefs.h       \
+LIB_HEADER:=ovdefs.h       \
 						ovunits.h      \
 						ovdec.h        \
 						ovframe.h
