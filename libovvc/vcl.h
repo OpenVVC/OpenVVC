@@ -1,6 +1,7 @@
 #ifndef VCL_H
 #define VCL_H
 #include <stdint.h>
+#include <string.h>
 
 #include "dec_structures.h"
 #include "ovdefs.h"
