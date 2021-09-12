@@ -33,13 +33,15 @@ cat > ${BUILDDIR}libopenvvc.pc << EOF
 prefix=${INSTALL_PREFIX}
 libdir=${prefix}/lib
 includedir=${prefix}/include
+extra_ld_flags=${EXTRA_LD_FLAGS}
+extra_cflags=${EXTRA_CFLAGS}
 
 Name: OpenVVC Library
 Description: Open Source VVC Decoder Library
 Version: ${MAJOR}.${MINOR}.${REVISION}
 Requires:
 Conflicts:
-Libs: -L\${libdir}/libopenvvc -lovvc
+Libs: -L\${libdir}/libopenvvc -Wl,-rpath=\${libdir}/libopenvvc -lovvc \${extra_ld_flags}
 Libs.private: -lpthreads
-Cflags: -I\${includedir}/libopenvvc -I\${libdir}/libopenvvc
+Cflags: -I\${includedir}/libopenvvc -I\${libdir}/libopenvvc \${extra_cflags}
 EOF
