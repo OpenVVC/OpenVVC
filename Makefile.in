@@ -4,8 +4,6 @@ VPATH=$(SRC_PATH)
 
 # Set defaults
 VERBOSITY?=0
-LD_FLAGS?=-lpthread
-SLHDR_INC?=.
 SRC_FOLDER:=libovvc/
 
 # Compiler Verbosity Control
