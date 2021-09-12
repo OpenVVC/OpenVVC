@@ -65,10 +65,10 @@ $(LIB_VERSION_HEADER): $(VPATH)VERSION
 	$(AT)$(VPATH)/version.sh $< $@ $(BUILDDIR)
 
 $(BUILDDIR)$(PROG):  $(BUILDDIR)$(PROG).o $(BUILDDIR)$(LIB_NAME)$(SHARED_LIBSUFF)
-	$(CC) $^ -o $@ $(LD_FLAGS)
+	$(CC) $^ -o $@ $(LD_FLAGS) $(EXTRA_LD_FLAGS)
 
 $(BUILDDIR)$(PROG)_stat:  $(BUILDDIR)$(PROG).o $(BUILDDIR)$(LIB_NAME)$(STATIC_LIBSUFF)
-	$(CC) $^ -o $@ $(LD_FLAGS)
+	$(CC) $^ -o $@ $(LD_FLAGS) $(EXTRA_LD_FLAGS)
 
 
 $(BUILDDIR)$(LIB_NAME)$(STATIC_LIBSUFF): $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
@@ -78,7 +78,7 @@ $(BUILDDIR)$(LIB_NAME)$(STATIC_LIBSUFF): $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
 
 $(BUILDDIR)$(LIB_NAME)$(SHARED_LIBSUFF): $(LIB_OBJ) $($(ARCH)_LIB_OBJ)
 	$(AT)$(VPATH)/version.sh $(VPATH)VERSION $(LIB_VERSION_HEADER) $(BUILDDIR)
-	$(CC) -shared $^ -o $@ $(LD_FLAGS)
+	$(CC) -shared $^ -o $@ $(LD_FLAGS) $(EXTRA_LD_FLAGS)
 
 $(BUILDDIR_TYPE_ARCH)%_sse.o: $($(ARCH)_SRC_FOLDER)%_sse.c
 	$(AT)[ -d $(@D) ] || mkdir -p $(@D)
@@ -90,7 +90,7 @@ $(BUILDDIR_TYPE_ARCH)%_neon.o: $($(ARCH)_SRC_FOLDER)%_neon.c
 
 $(BUILDDIR)%.o: %.c
 	$(AT)[ -d $(@D) ] || mkdir -p $(@D)
-	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) -I$(VPATH)$(SRC_FOLDER) -I$(BUILDDIR) -I$(SLHDR_INC)
+	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) -I$(VPATH)$(SRC_FOLDER) -I$(BUILDDIR) $(EXTRA_CFLAGS)
 
 $(BUILDDIR)%.o: %.S
 	$(AT)[ -d $(@D) ] || mkdir -p $(@D)

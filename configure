@@ -49,8 +49,6 @@ Options:
   --enable-shared          build shared libraries [no]
 
   --enable-slhdr           build slhdr feature [no]
-  --slhdr_include          path to slhdr lib headers
-  --slhdr_wrapper_lib      path to slhdr lib
 
   --cc=CC                  select compiler [$cc_default]
   --arch=ARCH              select architecture [$arch]
@@ -200,14 +198,21 @@ INSTALL_BIN=\$(INSTALL_PREFIX)/bin
 
 EOF
 
-if [ ${slhdr_enabled} = "1" ] ; then
-  # Force path to absolute
-  slhdr_include=$( cd $slhdr_include; pwd )
-  slhdr_wrapper_lib=$( realpath $slhdr_wrapper_lib )
-cat >> ${build_dir}/config.mak <<EOF
-SLHDR_INC=${slhdr_include}
-LD_FLAGS+=${slhdr_wrapper_lib}
+test_slhdr() {
+  pkg-config --exists slhdr_cwrap && return 0 || slhdr_enabled="0" && return 1
+}
+
+set_slhdr() {
+  EXTRA_LD_FLAGS=$(pkg-config --libs slhdr_cwrap)
+  EXTRA_CFLAGS=$(pkg-config --cflags slhdr_cwrap)
+  cat >> ${build_dir}/config.mak <<EOF
+EXTRA_CFLAGS=${EXTRA_CFLAGS}
+EXTRA_LD_FLAGS=${EXTRA_LD_FLAGS}
 EOF
+}
+
+if [ ${slhdr_enabled} = "1" ] ; then
+  test_slhdr && set_slhdr || { echo "SL-HDR C wrapper not found" && exit 1 ; }
 fi
 
 cat > ${build_dir}/config.sh <<EOF
@@ -216,6 +221,8 @@ INSTALL_LIB=\${INSTALL_PREFIX}/lib/libopenvvc
 INSTALL_INCLUDE=\${INSTALL_PREFIX}/include/libopenvvc
 INSTALL_PKGCONFIG=\${INSTALL_PREFIX}/lib/pkgconfig
 INSTALL_BIN=\${INSTALL_PREFIX}/bin
+EXTRA_CFLAGS="${EXTRA_CFLAGS}"
+EXTRA_LD_FLAGS="${EXTRA_LD_FLAGS}"
 EOF
 
 cat > ${build_dir}/ovconfig.h <<EOF
