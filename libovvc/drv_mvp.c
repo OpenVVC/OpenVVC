@@ -515,7 +515,6 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
         uint8_t pos_8x8 = tmvp->ctudec->part_ctx->log2_min_cb_s == 2;
 
         if (!inter_ctx->tmvp_avail) {
-            /* FIXME thread synchro */
             /*FIXME dirty ref to ctudec */
             OVCTUDec *ctudec = inter_ctx->tmvp_ctx.ctudec;
             load_ctb_tmvp(ctudec, ctudec->ctb_x, ctudec->ctb_y);
@@ -762,7 +761,6 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
         uint8_t pos_8x8 = tmvp->ctudec->part_ctx->log2_min_cb_s == 2;
 
         if (!inter_ctx->tmvp_avail) {
-            /* FIXME thread synchro */
             /*FIXME dirty ref to ctudec */
             OVCTUDec *ctudec = inter_ctx->tmvp_ctx.ctudec;
             load_ctb_tmvp(ctudec, ctudec->ctb_x, ctudec->ctb_y);
@@ -1024,7 +1022,6 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         uint8_t pos_8x8 = tmvp->ctudec->part_ctx->log2_min_cb_s == 2;
 
         if (!inter_ctx->tmvp_avail) {
-            /* FIXME thread synchro */
             /*FIXME dirty ref to ctudec */
             OVCTUDec *ctudec = inter_ctx->tmvp_ctx.ctudec;
             load_ctb_tmvp(ctudec, ctudec->ctb_x, ctudec->ctb_y);

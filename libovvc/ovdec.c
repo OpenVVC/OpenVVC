@@ -158,7 +158,6 @@ ovdec_select_subdec(OVVCDec *const dec)
     OVSliceDec * slicedec;
     struct SliceThread* th_slice;
     do{
-        //Unmark ref pict lists of decoded pics
         int min_idx_available = nb_threads;
         pthread_mutex_lock(&th_main->main_mtx);
         
@@ -166,6 +165,7 @@ ovdec_select_subdec(OVVCDec *const dec)
             slicedec = sldec_list[i];
             th_slice = &slicedec->th_slice;
             
+            //Unmark ref pict lists of decoded pics
             if(th_slice->active_state == DECODING_FINISHED){
                 min_idx_available = i;
                 OVPicture *slice_pic = slicedec->pic;

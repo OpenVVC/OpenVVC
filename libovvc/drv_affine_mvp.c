@@ -1353,7 +1353,6 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
         const struct TMVPPos pos = compute_tmpv_coord(pb_info, 2);
 
         if (!inter_ctx->tmvp_avail) {
-            /* FIXME thread synchro */
             /*FIXME dirty ref to ctudec */
             OVCTUDec *ctudec = inter_ctx->tmvp_ctx.ctudec;
             load_ctb_tmvp(ctudec, ctudec->ctb_x, ctudec->ctb_y);

@@ -216,7 +216,7 @@ ovdpb_new_ref_pic(OVPicture *pic, int flags)
 static void
 ovdpb_clear_refs(OVDPB *dpb)
 {
-
+    //TODO: loop untill min_idx == nb_dpb_pic or nb_used_pic > dpb->max_nb_dpb_pic
     ov_log(NULL, OVLOG_DEBUG, "Release reference pictures\n");
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     int min_poc = INT_MAX;
@@ -252,6 +252,7 @@ ovdpb_clear_refs(OVDPB *dpb)
             }
         }
 
+        //TODOdpb: loop untill min_idx == nb_dpb_pic or nb_used_pic > dpb->max_nb_dpb_pic
         /* Try to release picture with POC == to min_poc
          */
         if (min_idx < nb_dpb_pic) {
@@ -353,7 +354,6 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc)
         ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
     } else {
         ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
-        // ovdpb_new_ref_pic(pic, OV_ST_REF_PIC_FLAG);
     }
 
     pic->poc    = poc;
@@ -478,8 +478,8 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
                 if(ref_pic->frame && ref_pic->frame->data[0]){
                     ov_log(NULL, OVLOG_TRACE, "Mark non active reference %d for picture %d\n", ref_poc, dpb->poc);
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
-                    ref_pic->flags |= flag;
-                    // ovdpb_new_ref_pic(ref_pic, flag);
+                    ovdpb_new_ref_pic(ref_pic, flag);
+                    dst_rpl[i] = ref_pic; 
                 }
             }
         }
@@ -498,15 +498,8 @@ vvc_unmark_refs(struct RPLInfo *rpl_info, const OVPicture **dst_rpl)
         int16_t ref_poc  = rpl_info->ref_info[i].poc;
         int16_t ref_type = rpl_info->ref_info[i].type;
         uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
-        // uint8_t flag = 0;
-
-        if(ref_pic != 0){
-            ov_log(NULL, OVLOG_TRACE, "Unmark active reference %d\n", ref_poc);
-            ovdpb_unref_pic(ref_pic, flag);    
-        }
-        else{
-            ov_log(NULL, OVLOG_TRACE, "Unmark non active reference %d\n", ref_poc);
-        }
+        ov_log(NULL, OVLOG_TRACE, "Unmark reference %d\n", ref_poc);
+        ovdpb_unref_pic(ref_pic, flag);    
     }
     return 0;
 }
@@ -1168,7 +1161,6 @@ ovdpb_synchro_ref_decoded_ctus(OVPicture *const ref_pic, int tl_ctu_x, int tl_ct
     //TODOpar: store previous decoded_ctus of ref_pic in local memory.
     //Avoid to fetch decoded_ctus variable when not needed.
     int mask_w = decoded_ctus->mask_w;
-    int mask_h = decoded_ctus->mask_h;
     uint64_t wanted_mask[mask_w];
     xctu_to_mask(wanted_mask, mask_w, tl_ctu_x, br_ctu_x);
 
