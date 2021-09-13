@@ -31,12 +31,6 @@ static const char *option_names[OVDEC_NB_OPTIONS] =
     "display_output"
 };
 
-struct OVVCSubDec;
-
-
-/* Actions on unsupported NAL Unit types */
-static int nalu_type_unsupported(enum OVNALUType nalu_type);
-
 static int
 nalu_type_unsupported(enum OVNALUType nalu_type)
 {
@@ -44,31 +38,6 @@ nalu_type_unsupported(enum OVNALUType nalu_type)
 
     return 0;
 }
-
-#if 0
-/* TODO check Slice / Tiles / Sub Picture context */
-static int
-init_slice_decoder(OVVCDec *const dec, const OVNVCLCtx *const nvcl_ctx)
-{
-    const OVSH *const sh = nvcl_ctx->sh;
-    int ret;
-
-    #if 0
-    init_slice_tools();
-    #endif
-
-    #if 0
-    if (sh->nb_entry_points > 1){
-        /* TILES or WPP */
-        /* TODO loop other entry_points offsets and map entries to
-         * tile / slice / sub picture decoder */
-    } else {
-        /* Only one slice in NAL Unit */
-    }
-    #endif
-    return 0;
-}
-#endif
 
 static int
 ovdec_init_subdec_list(OVVCDec *dec)
@@ -89,7 +58,6 @@ ovdec_init_subdec_list(OVVCDec *dec)
 
     return 0;
 }
-
 
 static int
 init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const nvcl_ctx,
@@ -122,19 +90,16 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
     //Temporary: copy active parameters
     slicedec_copy_params(sldec, &dec->active_params);
 
-    /* FIXME clean way on new slice with address 0 */
-#if 0
-    if (dec->active_params.sh->sh_slice_address) {
-#else
-    if (1) {
-#endif
+    if (!dec->active_params.sh->sh_slice_address) {
         ret = ovdpb_init_picture(dec->dpb, &sldec->pic, sldec->active_params, nalu->type, sldec, dec);
         if (ret < 0) {
             return ret;
         }
+    } else {
+        /* FIXME clean way on new slice with address 0 */
+        ov_log(dec, OVLOG_ERROR, "Multiple slices in pic is not supported yet.\n");
     }
 
-    //Add refs on nalu
     ov_nalu_new_ref(&sldec->th_slice.slice_nalu, nalu);
 
     /*FIXME return checks */
@@ -146,7 +111,6 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
 
     return 0;
 }
-
 
 OVSliceDec *
 ovdec_select_subdec(OVVCDec *const dec)
@@ -210,17 +174,15 @@ ovdec_select_subdec(OVVCDec *const dec)
     #endif
 }
 
-
 static int
 decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
 {
     OVNVCLReader rdr;
     OVNVCLCtx *const nvcl_ctx = &vvcdec->nvcl_ctx;
     enum OVNALUType nalu_type = nalu->type;
-    /* FIXME add proper SH allocation */
+
     int ret;
 
-    /* TODO init NVCLReader */
     nvcl_reader_init(&rdr, nalu->rbsp_data, (nalu->rbsp_size) << 3);
 
     switch (nalu_type) {
@@ -238,22 +200,19 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         if (ret < 0) {
             return ret;
         } else {
-            /*Select the first available subdecoder, or wait until one is available*/
+            /* Select the first available subdecoder, or wait until one is available */
             OVSliceDec *sldec = ovdec_select_subdec(vvcdec);
-
+                
+            /* Beyond this point unref current picture on failure */
             ret = init_vcl_decoder(vvcdec, sldec, nvcl_ctx, nalu, &rdr);
 
             if (ret < 0) {
                 slicedec_finish_decoding(sldec);
                 goto failvcl;
             }
-            /* Beyond this point unref current picture on failure
-             */
 
             /* FIXME handle non rect entries later */
             ret = slicedec_decode_rect_entries(sldec, sldec->active_params);
- 
-            /* TODO start VCL decoder */
         }
 
         break;
@@ -341,130 +300,15 @@ fail:
     return ret;
 }
 
-#if 0
-static int
-vvc_validate_access_unit(VVCContext *const s, const VVCPacket *const pkt)
-{
-    int eos_at_start = 1;
-    int nb_vcl_nal = 0;
-    int first_vcl_type = 0; /* Zero is non vcl Init value */
-    int i;
-
-    s->last_eos = s->eos;
-    s->eos = 0;
-
-    /*FIXME we could add a more in depth conformance check
-     * e.g. for VCL and non VCL NALU order etc.
-     * we coud also filter some NALUs out here if we 'd like
-     * to ignore some NALUs type given decoder state
-    */
-    for (i = 0; i < pkt->nb_nals; i++) {
-        int nal_type = pkt->nals[i].type;
-        /*FIXME Check EOS is handled correctely afterwards
-         * last_eos should trigger an increase in sequence_id
-         * whereas eos is passed to next thread context
-         */
-        if (nal_type == OVNALU_EOB || nal_type == OVNALU_EOS) {
-            if (eos_at_start) {
-                s->last_eos = 1;
-            } else {
-                s->eos = 1;
-            }
-        } else {
-            eos_at_start = 0;
-        }
-
-        if (nal_type <= 12) {
-            if (!nb_vcl_nal)
-                first_vcl_type = nal_type;
-            else if (nal_type != first_vcl_type) {
-                av_log(s, AV_LOG_ERROR, "Received NALUs of different types in same access unit\n");
-                return AVERROR_INVALIDDATA;
-            }
-            ++nb_vcl_nal;
-        }
-    }
-
-    if (nb_vcl_nal > 1) {
-        /*FIXME we could probably decode first slice */
-        av_log(s, AV_LOG_ERROR, "Multiple slice in same picture, this is unsupported\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    return 0;
-}
-#endif
-
-#if 0
-static int
-vvc_decode_access_unit(VVCContext *s, const uint8_t *buf, int length)
-{
-    int i, ret;
-    VVCPacket *const pkt = &s->pkt;
-
-    s->active_pic = NULL;
-
-    /* split the input packet into NAL units, so we know the upper bound on the
-     * number of slices in the frame */
-    ret = ff_vvc_packet_split(pkt, buf, length, s->avctx, s->is_nalff,
-                                s->nal_length_size, s->avctx->codec_id, 0);
-    if (ret < 0) {
-        av_log(s->avctx, AV_LOG_ERROR,
-               "Error splitting the input into NAL units.\n");
-        return ret;
-    }
-
-    ret = vvc_validate_access_unit(s, pkt);
-    if (ret < 0) {
-        return ret;
-    }
-
-    /* decode the NAL units */
-    for (i = 0; i < pkt->nb_nals; i++) {
-        const VVCNAL *const nal = &pkt->nals[i];
-
-        ret = decode_nal_unit(s, nal);
-        if (ret < 0) {
-            av_log(s->avctx, AV_LOG_WARNING,
-                   "Error parsing NAL unit #%d.\n", i);
-            goto fail;
-        }
-    }
-
-fail:
-    if (s->active_pic && s->threads_type == FF_THREAD_FRAME)
-        ff_thread_report_progress(&s->active_pic->tf, INT_MAX, 0);
-
-    return ret;
-}
-#endif
-
 int
 ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *const pu)
 {
     int ret = 0;
 
-    #if 0
-    if (!vvcdec->dmx) {
-        OVVCDmx dmx;
-        dmx = ovvcdmx_create();
-        if (!dmx) {
-            /* Failed to allocate AnnexB demuxer*/
-            return -1;
-        }
-    }
-
-    ret = ovcdmx_extract_pu_nal_units(OVVCDmx *dmx, OVVCPUPacket *pkt);
-    if (ret < 0) {
-        return ret;
-    }
-    #endif
-
     ret = vvc_decode_picture_unit(vvcdec, pu);
 
     return ret;
 }
-
 
 int
 ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
@@ -481,11 +325,6 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
         /* FIXME new return value */
         return OVVC_EINDATA;
     }
-
-    #if 0
-    /* FIXME here or inside function */
-    ovframe_new_ref(frame_p, sldec->pic->frame);
-    #endif
 
     OVPicture *pic = NULL;
     out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
@@ -505,13 +344,7 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
         ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
     }
 
-    /*FIXME tmp */
-    #if 0
-    ovdpb_unref_pic(dec->dpb, sldec->pic, ~0);
-    #endif
     return ret;
-
-    return 0;
 }
 
 int
@@ -639,7 +472,6 @@ fail:
     /* TODO proper error management (ENOMEM)*/
     return -1;
 }
-
 
 void
 ovdec_uninit_subdec_list(OVVCDec *vvcdec)
