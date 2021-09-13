@@ -8,5 +8,6 @@ os:
 script:
   - if [ "$TRAVIS_OS_NAME" = "windows" ]; then export MAKE=mingw32-make; else export MAKE=make; fi
   - ./configure -cc=$TRAVIS_COMPILER
+  - cd build/
   - $MAKE
   - $MAKE test
