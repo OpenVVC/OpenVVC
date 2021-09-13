@@ -133,6 +133,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
             return ret;
         }
     }
+
     //Add refs on nalu
     ov_nalu_new_ref(&sldec->th_slice.slice_nalu, nalu);
 
@@ -239,7 +240,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         } else {
             /*Select the first available subdecoder, or wait until one is available*/
             OVSliceDec *sldec = ovdec_select_subdec(vvcdec);
-                
+
             ret = init_vcl_decoder(vvcdec, sldec, nvcl_ctx, nalu, &rdr);
 
             if (ret < 0) {

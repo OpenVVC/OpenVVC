@@ -347,7 +347,6 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
             /* Call long term post function with lt_header*/
             header_read_long_term_info(rdr, rpl1, rpl_h1, sps);
         }
-        memcpy(&rpl_h1->rpl_data, rpl1, sizeof(*rpl1));
     }
         rpl_h->rpl1 = &rpl_h1->rpl_data;
 

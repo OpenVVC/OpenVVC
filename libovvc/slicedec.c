@@ -697,7 +697,6 @@ slicedec_finish_decoding(OVSliceDec *sldec)
 
     pthread_mutex_lock(&th_slice->gnrl_mtx);
     th_slice->active_state = DECODING_FINISHED;
-    // pthread_cond_signal(&th_slice->gnrl_cnd);
     pthread_mutex_unlock(&th_slice->gnrl_mtx);
 
     //Signal main thread that a slice thread is available
