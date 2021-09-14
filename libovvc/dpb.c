@@ -171,7 +171,7 @@ ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
     if (!pic->frame || !pic->frame->data[0])
         return;
 
-    uint16_t ref_count = atomic_fetch_add_explicit(&pic->ref_count, 0, memory_order_acq_rel);
+    uint16_t ref_count = atomic_load(&pic->ref_count);
 
     /* If there is no more flags the picture can be
      * returned to the DPB;
@@ -241,7 +241,7 @@ ovdpb_clear_refs(OVDPB *dpb)
          */
         for (i = 0; i < nb_dpb_pic; i++) {
             OVPicture *pic = &dpb->pictures[i];
-            uint16_t ref_count = atomic_fetch_add_explicit(&pic->ref_count, 0, memory_order_acq_rel);
+            uint16_t ref_count = atomic_load(&pic->ref_count);
             // is_output_cvs = pic->cvs_id == output_cvs_id;
             // if (is_output_cvs && pic->frame && pic->frame->data[0] && !ref_count) {
             if (pic->frame && pic->frame->data[0] && !ref_count && !pic->flags) {
@@ -1065,7 +1065,9 @@ ovdpb_init_decoded_ctus(OVPicture *const pic, const OVPS *const ps)
             decoded_ctus->mask[i] = ov_mallocz(decoded_ctus->mask_w * sizeof(uint64_t));
     }
 
-    pic->ovdpb_frame_synchro = ovdpb_synchro_ref_decoded_ctus;
+    atomic_init(&pic->idx_function, 1);
+    pic->ovdpb_frame_synchro[0] = ovdpb_no_synchro;
+    pic->ovdpb_frame_synchro[1] = ovdpb_synchro_ref_decoded_ctus;
 }
 
 void
@@ -1119,7 +1121,7 @@ ovdpb_report_decoded_frame(OVPicture *const pic)
     pthread_cond_broadcast(&decoded_ctus->ref_cnd);
     pthread_mutex_unlock(&decoded_ctus->ref_mtx);
 
-    pic->ovdpb_frame_synchro = ovdpb_no_synchro;
+    atomic_store(&pic->idx_function, 0);
 }
 
 static void
@@ -1133,7 +1135,7 @@ ovdpb_reset_decoded_ctus(OVPicture *const pic)
     }
     pthread_mutex_unlock(&decoded_ctus->ref_mtx);
 
-    pic->ovdpb_frame_synchro = ovdpb_synchro_ref_decoded_ctus;
+    atomic_store(&pic->idx_function, 1);
 }
 
 void

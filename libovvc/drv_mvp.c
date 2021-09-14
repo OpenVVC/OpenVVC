@@ -299,8 +299,8 @@ tmvp_inter_synchronization(OVPicture *ref_pic, int ctb_x, int ctb_y, int log2_ct
     int nb_ctb_pic_h = (pic_h + ((1 << log2_ctu_s) - 1)) >> log2_ctu_s;
     int br_ctu_x = OVMIN(ctb_x + 1, nb_ctb_pic_w-1);
     int br_ctu_y = OVMIN(ctb_y + 1, nb_ctb_pic_h-1);
-    // ovdpb_synchro_ref_decoded_ctus(ref_pic, ctb_x, ctb_y, br_ctu_x, br_ctu_y);
-    ref_pic->ovdpb_frame_synchro(ref_pic, ctb_x, ctb_y, br_ctu_x, br_ctu_y);
+    uint16_t idx = atomic_load(&ref_pic->idx_function);
+    ref_pic->ovdpb_frame_synchro[idx](ref_pic, ctb_x, ctb_y, br_ctu_x, br_ctu_y);
 }
 
 

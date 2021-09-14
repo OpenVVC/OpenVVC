@@ -70,7 +70,8 @@ struct OVPicture
         pthread_cond_t  ref_cnd;
     } decoded_ctus;
 
-    FrameSynchroFunction ovdpb_frame_synchro;
+    atomic_uint idx_function;
+    FrameSynchroFunction ovdpb_frame_synchro[2];
 
     /* Pointers to ref_pic_list */
     /* FIXME use frame directly ? */
