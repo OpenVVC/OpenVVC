@@ -13,13 +13,11 @@ int
 nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
                  int bit_size)
 {
-    /* FIXME decide if stream check here */
     int buffer_size = (bit_size + 7) >> 3;
 
-    rdr->bytestream       = bytestream_start;
+    rdr->bytestream_start = bytestream_start;
     rdr->bytestream_end   = bytestream_start + buffer_size;
-    rdr->size_in_bits     = bit_size;
-    rdr->nb_bytes_read    = 0;
+    rdr->bytestream       = bytestream_start;
 
     fill_cache64(rdr);
 
@@ -79,6 +77,7 @@ nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
 uint32_t
 nvcl_nb_bytes_read(const OVNVCLReader *const rdr)
 {
-    return rdr->nb_bytes_read - ((rdr->nb_cached_bits + 7) >> 3);
+    ptrdiff_t nb_bytes_read = rdr->bytestream - rdr->bytestream_start;
+    return nb_bytes_read - ((rdr->nb_cached_bits + 7) >> 3);
 
 }

@@ -111,7 +111,6 @@ fill_cache64(OVNVCLReader *rdr)
     rdr->cache = read_bigendian_64(rdr->bytestream);
 
     rdr->bytestream      += 8;
-    rdr->nb_bytes_read   += 8;
     rdr->nb_cached_bits   = 64;
 }
 
@@ -126,19 +125,8 @@ fill_cache32(OVNVCLReader *rdr)
     rdr->cache |= cache_val << (32 - rdr->nb_cached_bits);
 
     rdr->bytestream     += 4;
-    rdr->nb_bytes_read  += 4;
     rdr->nb_cached_bits += 32;
 }
-
-#if 1
-static inline int
-nvclctx_num_bits_left(OVNVCLReader *rdr)
-{
-    int nb_bits_read = (rdr->nb_bytes_read << 3) - rdr->nb_cached_bits;
-    return rdr->size_in_bits - nb_bits_read;
-}
-#endif
-
 
 /* WARNING does not support n > 64 */
 

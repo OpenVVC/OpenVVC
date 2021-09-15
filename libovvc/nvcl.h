@@ -27,26 +27,17 @@ struct OVNVCLCtx
 
 struct OVNVCLReader
 {
-    const uint8_t *bytestream;
+    const uint8_t *bytestream_start;
     const uint8_t *bytestream_end;
+    const uint8_t *bytestream;
     uint64_t cache;
     int nb_cached_bits;
-    int nb_bytes_read;
-    int size_in_bits;
 };
 
 /* Attach a RBSP to the NVCL Reader
  */
 int nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
                      int bit_size);
-
-static inline int
-nvclctx_num_bits_read(const OVNVCLReader *rdr)
-{
-    return (rdr->nb_bytes_read << 3) - rdr->nb_cached_bits;
-}
-
-uint32_t nvcl_num_bytes_read(const OVNVCLReader *const rdr);
 
 void nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx);
 
