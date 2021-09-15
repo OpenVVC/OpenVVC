@@ -1,5 +1,6 @@
 #include "ovmem.h"
 #include "ovutils.h"
+#include "overror.h"
 
 #include "nvcl.h"
 #include "nvcl_utils.h"
@@ -188,7 +189,7 @@ nvcl_decode_nalu_aps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
 
     OVAPS *aps = ov_mallocz(sizeof(*aps));
     if (!aps) {
-        return OV_ENOMEM;
+        return OVVC_ENOMEM;
     }
 
     //TODO: mettre un retour d'erreur.

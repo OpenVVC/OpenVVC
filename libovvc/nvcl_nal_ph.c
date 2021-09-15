@@ -1,6 +1,7 @@
 #include <stddef.h>
 
 #include "ovutils.h"
+#include "overror.h"
 #include "ovmem.h"
 
 #include "nvcl.h"
@@ -50,7 +51,7 @@ nvcl_decode_nalu_ph(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
 
     OVPH *ph = ov_mallocz(sizeof(*ph));
     if (!ph) {
-        return OV_ENOMEM;
+        return OVVC_ENOMEM;
     }
 
     ret = nvcl_ph_read(rdr, ph, nvcl_ctx);
@@ -106,7 +107,7 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
         }
         if (!pps || !sps) {
             ov_log(NULL, 3, "SPS or PPS missing when trying to decode PH\n");
-            return OV_INVALID_DATA;
+            return OVVC_EINDATA;
         }
     }
 

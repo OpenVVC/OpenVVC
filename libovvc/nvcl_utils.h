@@ -6,11 +6,6 @@
 #include "nvcl.h"
 #include "ovutils.h"
 
-enum DecReturn {
-    OV_INVALID_DATA = -1,
-    OV_ENOMEM = -2,
-};
-
 struct OVNVCLReader
 {
     const uint8_t *bytestream_start;

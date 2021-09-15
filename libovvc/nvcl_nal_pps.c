@@ -1,5 +1,6 @@
 #include "ovmem.h"
 #include "ovutils.h"
+#include "overror.h"
 
 #include "nvcl.h"
 #include "nvcl_utils.h"
@@ -56,7 +57,7 @@ nvcl_decode_nalu_pps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
 
     pps = ov_mallocz(sizeof(*pps));
     if (!pps) {
-        return OV_ENOMEM;
+        return OVVC_ENOMEM;
     }
 
     ret = nvcl_pps_read(rdr, pps, nvcl_ctx);

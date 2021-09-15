@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include "overror.h"
 
 #include "ovutils.h"
 #include "ovmem.h"
@@ -25,7 +26,7 @@ nvcl_decode_nalu_sh(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx, uint8_t 
 
     OVSH *sh = ov_mallocz(sizeof(*sh));
     if (!sh) {
-        return OV_ENOMEM;
+        return OVVC_ENOMEM;
     }
 
     ret = nvcl_sh_read(rdr, sh, nvcl_ctx, nalu_type);
@@ -71,7 +72,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
         int ret = nvcl_decode_nalu_ph(rdr, nvcl_ctx);
         if (ret < 0) {
             ov_log(NULL, 3, "Failed reading PH from SH\n");
-            return OV_INVALID_DATA;
+            return OVVC_EINDATA;
         }
     }
 
@@ -82,7 +83,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
 
     if (!ph || !pps || !sps) {
         ov_log(NULL, 3, "Missing parameter sets while reading SH\n");
-        return OV_INVALID_DATA;
+        return OVVC_EINDATA;
     }
     /* TODO Once other parameter sets are properly activated we can derive
      * convenience variables from them including :

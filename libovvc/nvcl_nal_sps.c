@@ -1,4 +1,5 @@
 #include "ovmem.h"
+#include "overror.h"
 
 #include "nvcl.h"
 #include "nvcl_utils.h"
@@ -60,7 +61,7 @@ nvcl_decode_nalu_sps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
 
     sps = ov_mallocz(sizeof(*sps));
     if (!sps) {
-        return OV_ENOMEM;
+        return OVVC_ENOMEM;
     }
 
     ret = nvcl_sps_read(rdr, sps, nvcl_ctx);
