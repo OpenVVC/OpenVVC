@@ -25,13 +25,7 @@ struct OVNVCLCtx
     OVRPL *hrpl1;
 };
 
-/* Attach a RBSP to the NVCL Reader
- */
-int nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
-                     uint32_t buffer_size);
-
 void nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx);
-
 
 /* Reading functions */
 int nvcl_opi_read(OVNVCLReader *const rdr, OVOPI *const opi,

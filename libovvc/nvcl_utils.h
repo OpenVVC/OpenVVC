@@ -50,7 +50,21 @@ static inline void nvcl_skip_bits(OVNVCLReader *rdr, int n);
 static inline int nvclctx_num_bits_left(OVNVCLReader *rdr);
 #endif
 
-static inline void nvcl_skip_bits(OVNVCLReader *rdr, int n)
+static inline int
+nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
+                 uint32_t buffer_size)
+{
+    rdr->bytestream_start = bytestream_start;
+    rdr->bytestream_end   = bytestream_start + buffer_size;
+    rdr->bytestream       = bytestream_start;
+
+    fill_cache64(rdr);
+
+    return 0;
+}
+
+static inline void
+nvcl_skip_bits(OVNVCLReader *rdr, int n)
 {
     if (n > rdr->nb_cached_bits) {
         fill_cache32(rdr);

@@ -7,22 +7,6 @@
 #define NB_ARRAY_ELEMS(x) sizeof(x)/sizeof(*(x))
 
 
-/* FIXME give size in bytes instead and find SODB end
- * (RBSP stop bit) here instead
- */
-int
-nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
-                 uint32_t buffer_size)
-{
-    rdr->bytestream_start = bytestream_start;
-    rdr->bytestream_end   = bytestream_start + buffer_size;
-    rdr->bytestream       = bytestream_start;
-
-    fill_cache64(rdr);
-
-    return 0;
-}
-
 void
 nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
 {
