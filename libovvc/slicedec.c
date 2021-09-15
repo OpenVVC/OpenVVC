@@ -691,9 +691,11 @@ slicedec_finish_decoding(OVSliceDec *sldec)
     struct SliceThread *th_slice = &sldec->th_slice;
     ov_nalu_unref(&th_slice->slice_nalu);
 
-    ov_log(NULL, OVLOG_DEBUG, "Decoder with POC %d, finished frame \n", sldec->pic->poc);
+    if (sldec->pic) {
+        ov_log(NULL, OVLOG_DEBUG, "Decoder with POC %d, finished frame \n", sldec->pic->poc);
 
-    ovdpb_report_decoded_frame( sldec->pic );
+        ovdpb_report_decoded_frame( sldec->pic );
+    }
 
     pthread_mutex_lock(&th_slice->gnrl_mtx);
     th_slice->active_state = DECODING_FINISHED;
