@@ -66,7 +66,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
 {
 
     int ret;
-    int nb_sh_bytes = nvcl_num_bytes_read(rdr);
+    int nb_sh_bytes = nvcl_nb_bytes_read(rdr);
 
     ret = decinit_update_params(&dec->active_params, nvcl_ctx);
     if (ret < 0) {

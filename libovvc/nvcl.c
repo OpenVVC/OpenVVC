@@ -77,7 +77,7 @@ nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
 }
 
 uint32_t
-nvcl_num_bytes_read(const OVNVCLReader *const rdr)
+nvcl_nb_bytes_read(const OVNVCLReader *const rdr)
 {
     return rdr->nb_bytes_read - ((rdr->nb_cached_bits + 7) >> 3);
 
