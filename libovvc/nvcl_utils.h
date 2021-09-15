@@ -17,6 +17,14 @@ enum DecReturn {
     OV_ENOMEM = -2,
 };
 
+struct OVNVCLReader
+{
+    const uint8_t *bytestream_start;
+    const uint8_t *bytestream_end;
+    const uint8_t *bytestream;
+    uint64_t cache;
+    int nb_cached_bits;
+};
 
 static inline uint64_t read_bigendian_64(const uint8_t *bytestream);
 

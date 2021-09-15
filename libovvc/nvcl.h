@@ -25,15 +25,6 @@ struct OVNVCLCtx
     OVRPL *hrpl1;
 };
 
-struct OVNVCLReader
-{
-    const uint8_t *bytestream_start;
-    const uint8_t *bytestream_end;
-    const uint8_t *bytestream;
-    uint64_t cache;
-    int nb_cached_bits;
-};
-
 /* Attach a RBSP to the NVCL Reader
  */
 int nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
