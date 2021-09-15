@@ -43,6 +43,7 @@ struct RPLInfo
 {
    struct RefInfo ref_info[16];
    uint8_t nb_refs;
+   uint8_t nb_active_refs;
 };
 
 typedef void (*FrameSynchroFunction)(OVPicture *const ref_pic, int tl_ctu_x, 
@@ -76,7 +77,9 @@ struct OVPicture
     /* Pointers to ref_pic_list */
     /* FIXME use frame directly ? */
     const struct OVPicture *rpl0[16];
+    const struct OVPicture *rpl0_non_active[16];
     const struct OVPicture *rpl1[16];
+    const struct OVPicture *rpl1_non_active[16];
 
     /* FIXME Used only by TMPV? */
     #if 0
