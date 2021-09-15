@@ -90,7 +90,9 @@ ovmempool_pushelem(MemPoolElem *released_elem)
         mpool->stack_elem = released_elem;
         mpool->nb_ref--;
         if (!mpool->nb_ref) {
+            pthread_mutex_unlock(&mpool->pool_mtx);
             ovmempool_free(mpool);
+            return;
         }
         pthread_mutex_unlock(&mpool->pool_mtx);
     }
