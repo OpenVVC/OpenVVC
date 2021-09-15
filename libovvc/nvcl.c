@@ -1,4 +1,5 @@
 #include "ovmem.h"
+#include "ovutils.h"
 
 #include "nvcl.h"
 #include "nvcl_utils.h"

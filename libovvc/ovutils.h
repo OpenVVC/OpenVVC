@@ -22,6 +22,8 @@
 #define ov_clz64(x) __builtin_clzl(x)
 #define ov_ctz64(x) __builtin_ctzl(x)
 
+#define ov_ceil_log2(x) 32 - __builtin_clz(x)
+
 typedef enum
 {
     OVLOG_ERROR,

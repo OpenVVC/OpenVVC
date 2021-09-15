@@ -4,13 +4,7 @@
 #include <stdint.h>
 
 #include "nvcl.h"
-
-
-/*FIXME move this to somewhere more usefull */
-#define ov_clz(x) __builtin_clz(x) 
-
-#define ov_ceil_log2(x) 32 - __builtin_clz(x) 
-
+#include "ovutils.h"
 
 enum DecReturn {
     OV_INVALID_DATA = -1,
