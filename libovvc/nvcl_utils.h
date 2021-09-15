@@ -1,6 +1,7 @@
 #ifndef OVVC_GOLOMB_H
 #define OVVC_GOLOMB_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "nvcl.h"
@@ -62,6 +63,20 @@ nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
     fill_cache64(rdr);
 
     return 0;
+}
+
+static inline uint32_t
+nvcl_nb_bytes_read(const OVNVCLReader *const rdr)
+{
+    ptrdiff_t nb_bytes_read = rdr->bytestream - rdr->bytestream_start;
+    return nb_bytes_read - ((rdr->nb_cached_bits + 7) >> 3);
+}
+
+static inline uint32_t
+nvcl_nb_bits_read(const OVNVCLReader *const rdr)
+{
+    ptrdiff_t nb_bytes_read = rdr->bytestream - rdr->bytestream_start;
+    return (nb_bytes_read << 3) - rdr->nb_cached_bits;
 }
 
 static inline void
