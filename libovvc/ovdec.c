@@ -62,11 +62,10 @@ ovdec_init_subdec_list(OVVCDec *dec)
 
 static int
 init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const nvcl_ctx,
-                OVNALUnit * nalu, const OVNVCLReader *const rdr)
+                OVNALUnit * nalu, uint32_t nb_sh_bytes)
 {
 
     int ret;
-    int nb_sh_bytes = nvcl_nb_bytes_read(rdr);
 
     ret = decinit_update_params(&dec->active_params, nvcl_ctx);
     if (ret < 0) {
@@ -203,9 +202,11 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         } else {
             /* Select the first available subdecoder, or wait until one is available */
             OVSliceDec *sldec = ovdec_select_subdec(vvcdec);
+
+            uint32_t nb_sh_bytes = nvcl_nb_bytes_read(&rdr);
                 
             /* Beyond this point unref current picture on failure */
-            ret = init_vcl_decoder(vvcdec, sldec, nvcl_ctx, nalu, &rdr);
+            ret = init_vcl_decoder(vvcdec, sldec, nvcl_ctx, nalu, nb_sh_bytes);
 
             if (ret < 0) {
                 slicedec_finish_decoding(sldec);
