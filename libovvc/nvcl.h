@@ -37,7 +37,7 @@ struct OVNVCLReader
 /* Attach a RBSP to the NVCL Reader
  */
 int nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
-                     int bit_size);
+                     uint32_t buffer_size);
 
 void nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx);
 

@@ -11,19 +11,13 @@
  */
 int
 nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
-                 int bit_size)
+                 uint32_t buffer_size)
 {
-    int buffer_size = (bit_size + 7) >> 3;
-
     rdr->bytestream_start = bytestream_start;
     rdr->bytestream_end   = bytestream_start + buffer_size;
     rdr->bytestream       = bytestream_start;
 
     fill_cache64(rdr);
-
-    /* FIXME properly read NAL Unit header */
-    nvcl_skip_bits(rdr, 16);
-
 
     return 0;
 }

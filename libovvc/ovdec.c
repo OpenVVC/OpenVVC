@@ -183,7 +183,10 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
 
     int ret;
 
-    nvcl_reader_init(&rdr, nalu->rbsp_data, (nalu->rbsp_size) << 3);
+    nvcl_reader_init(&rdr, nalu->rbsp_data, nalu->rbsp_size);
+
+    /* FIXME properly read NAL Unit header */
+    nvcl_skip_bits(&rdr, 16);
 
     switch (nalu_type) {
     case OVNALU_TRAIL:
