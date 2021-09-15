@@ -79,6 +79,20 @@ nvcl_nb_bits_read(const OVNVCLReader *const rdr)
     return (nb_bytes_read << 3) - rdr->nb_cached_bits;
 }
 
+static inline uint32_t
+nvcl_nb_bytes(const OVNVCLReader *const rdr)
+{
+    ptrdiff_t nb_bytes = rdr->bytestream_end - rdr->bytestream_start;
+    return nb_bytes;
+}
+
+static inline uint8_t
+nvcl_peak_at_position(const OVNVCLReader *const rdr, int32_t pos)
+{
+    uint32_t index = ov_clip(pos, 0, nvcl_nb_bytes(rdr) - 1);
+    return rdr->bytestream_start[index];
+}
+
 static inline void
 nvcl_skip_bits(OVNVCLReader *rdr, int n)
 {
