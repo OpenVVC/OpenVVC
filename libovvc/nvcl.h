@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include "ovdefs.h"
+#include "ovunits.h"
 
 #define OV_MAX_NUM_VPS 16
 #define OV_MAX_NUM_SPS 16
@@ -25,6 +26,9 @@ struct OVNVCLCtx
     OVRPL *hrpl1;
 };
 
+typedef union HLSData OVHLSData;
+
+
 void nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx);
 
 /* Reading functions */
@@ -37,7 +41,7 @@ int nvcl_dci_read(OVNVCLReader *const rdr, OVDCI *const dci,
 int nvcl_vps_read(OVNVCLReader *const rdr, OVVPS *const vps,
                   OVNVCLCtx *const nvcl_ctx);
 
-int nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
+int nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const sps,
                   const OVNVCLCtx *const nvcl_ctx);
 
 int nvcl_pps_read(OVNVCLReader *const rdr, OVPPS *const pps,
@@ -56,7 +60,7 @@ int nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
                  OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
 
 /* Decoding functions */
-int nvcl_decode_nalu_sps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx);
+int nvcl_decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, OVNALUnit *nal_unit);
 
 int nvcl_decode_nalu_pps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx);
 

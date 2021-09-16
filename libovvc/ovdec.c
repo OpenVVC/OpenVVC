@@ -228,7 +228,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         }
         break;
     case OVNALU_SPS:
-        ret = nvcl_decode_nalu_sps(&rdr, nvcl_ctx);
+        ret = nvcl_decode_nalu_hls_data(nvcl_ctx, nalu);
         if (ret < 0) {
             goto fail;
         }

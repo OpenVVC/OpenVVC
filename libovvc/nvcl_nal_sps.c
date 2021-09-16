@@ -1,6 +1,9 @@
+#include <string.h>
+
 #include "ovmem.h"
 #include "overror.h"
 
+#include "hls_structures.h"
 #include "nvcl.h"
 #include "nvcl_utils.h"
 #include "nvcl_structures.h"
@@ -9,7 +12,6 @@
 //TODOgpm: do not init here
 #include "rcn.h"
 
-
 static uint8_t
 probe_sps_id(OVNVCLReader *const rdr)
 {
@@ -17,80 +19,54 @@ probe_sps_id(OVNVCLReader *const rdr)
     return sps_id;
 }
 
+static const union HLSData **
+storage_in_nvcl_ctx(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
+{
+    uint8_t id = probe_sps_id(rdr);
+    const OVSPS **list = nvcl_ctx->sps_list;
+    const union HLSData **storage = (const union HLSData**)&list[id];
+
+    return storage;
+}
 
 static int
-validate_sps(OVNVCLReader *rdr, OVSPS *const sps)
+validate_sps(OVNVCLReader *rdr, const union HLSData *const sps)
 {
     /* TODO various check on limitation and max sizes */
     return 1;
 }
 
 static void
-free_sps(OVSPS *const sps)
+free_sps(const union HLSData *const data)
 {
     /* TODO unref and/or free dynamic structure */
-    ov_free(sps);
+    const OVSPS *const sps = (const OVSPS *)data;
+    ov_free((void *)sps);
 }
 
-static void
-replace_sps(OVSPS *sps_list[], OVSPS *const sps, uint8_t sps_id)
+static int
+replace_sps(const struct HLSReader *const manager,
+            const union HLSData **storage,
+            const OVHLSData *const hls_data)
 {
     /* TODO unref and/or free dynamic structure */
-    OVSPS *to_free = sps_list[sps_id];
+    const union HLSData *to_free = *storage;
+    union HLSData *new = ov_malloc(manager->data_size);
 
-    free_sps(to_free);
-
-    sps_list[sps_id] = sps;
-}
-
-int
-nvcl_decode_nalu_sps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
-{
-    int ret;
-    uint8_t sps_id = probe_sps_id(rdr);
-    OVSPS **sps_list = nvcl_ctx->sps_list;
-    OVSPS *sps;
-
-    if (sps_list[sps_id]) {
-        /* TODO compare RBSP data to avoid new read */
-        uint8_t identical_rbsp = 0;
-        if (identical_rbsp) {
-            goto duplicated;
-        }
-    }
-
-    sps = ov_mallocz(sizeof(*sps));
-    if (!sps) {
+    if (!new) {
         return OVVC_ENOMEM;
     }
 
-    ret = nvcl_sps_read(rdr, sps, nvcl_ctx);
-    if (ret < 0) {
-        goto cleanup;
-    }
+    memcpy(new, hls_data, manager->data_size);
 
-    ret = validate_sps(rdr, sps);
-    if (ret < 0) {
-        goto cleanup;
-    }
+    *storage = new;
 
-    /*FIXME unref instead of free */
-    replace_sps(sps_list, sps, sps_id);
+    free_sps(to_free);
 
-    return 0;
-
-cleanup:
-    ov_free(sps);
-    return ret;
-
-duplicated:
-    #if 0
-    ov_log(NULL, 3, "Ignored Duplicated SPS");
-    #endif
     return 0;
 }
 
-void
+static void
 subpic_info(OVNVCLReader *const rdr, OVSPS *const sps)
 {
     sps->sps_num_subpics_minus1 = nvcl_read_u_expgolomb(rdr);
@@ -172,11 +148,14 @@ subpic_info(OVNVCLReader *const rdr, OVSPS *const sps)
     }
 }
 
+
 int
-nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
+nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
               const OVNVCLCtx *const nvcl_ctx)
 {
     int i, j;
+    OVSPS *const sps = &hls_data->sps;
+
     sps->sps_seq_parameter_set_id   = nvcl_read_bits(rdr, 4);
     sps->sps_video_parameter_set_id = nvcl_read_bits(rdr, 4);
     sps->sps_max_sublayers_minus1   = nvcl_read_bits(rdr, 3);
@@ -555,3 +534,15 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVSPS *const sps,
 
     return 0;
 }
+
+const struct HLSReader sps_manager =
+{
+    .name = "SPS",
+    .data_size = sizeof(struct OVSPS),
+    .probe_id     = &probe_sps_id,
+    .find_storage = &storage_in_nvcl_ctx,
+    .read         = &nvcl_sps_read,
+    .validate     = &validate_sps,
+    .replace      = &replace_sps,
+    .free         = &free_sps
+};
