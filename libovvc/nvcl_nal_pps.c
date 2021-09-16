@@ -1,3 +1,4 @@
+#include <string.h>
 #include "ovmem.h"
 #include "ovutils.h"
 #include "overror.h"
@@ -5,6 +6,7 @@
 #include "nvcl.h"
 #include "nvcl_utils.h"
 #include "nvcl_structures.h"
+#include "hls_structures.h"
 
 
 static uint8_t
@@ -14,75 +16,48 @@ probe_pps_id(OVNVCLReader *const rdr)
     return pps_id;
 }
 
+static const union HLSData **
+storage_in_nvcl_ctx(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
+{
+    uint8_t id = probe_pps_id(rdr);
+    OVPPS **list = nvcl_ctx->pps_list;
+    const union HLSData **storage = (const union HLSData**)&list[id];
+
+    return storage;
+}
 
 static int
-validate_pps(OVNVCLReader *rdr, OVPPS *const pps)
+validate_pps(OVNVCLReader *rdr, const union HLSData *const pps)
 {
     /* TODO various check on limitation and max sizes */
     return 1;
 }
 
 static void
-free_pps(OVPPS *const pps)
+free_pps(const union HLSData *pps)
 {
     /* TODO unref and/or free dynamic structure */
-    ov_free(pps);
+    ov_free((void *)pps);
 }
 
-static void
-replace_pps(OVPPS *pps_list[], OVPPS *const pps, uint8_t pps_id)
+static int
+replace_pps(const struct HLSReader *const manager,
+            const union HLSData **storage,
+            const OVHLSData *const hls_data)
 {
-    /* TODO unref and/or free dynamic structure */
-    OVPPS *to_free = pps_list[pps_id];
+    const union HLSData *to_free = *storage;
+    union HLSData *new = ov_malloc(manager->data_size);
 
-    free_pps(to_free);
-
-    pps_list[pps_id] = pps;
-}
-
-int
-nvcl_decode_nalu_pps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
-{
-    int ret;
-    uint8_t pps_id = probe_pps_id(rdr);
-    OVPPS *pps;
-    OVPPS **pps_list = nvcl_ctx->pps_list;
-    if (pps_list[pps_id]) {
-        /* TODO compare RBSP data to avoid new read */
-        uint8_t identical_rbsp = 0;
-        if (identical_rbsp) {
-            goto duplicated;
-        }
-    }
-
-    pps = ov_mallocz(sizeof(*pps));
-    if (!pps) {
+    if (!new) {
         return OVVC_ENOMEM;
     }
 
-    ret = nvcl_pps_read(rdr, pps, nvcl_ctx);
-    if (ret < 0) {
-        goto cleanup;
-    }
+    memcpy(new, hls_data, manager->data_size);
 
-    ret = validate_pps(rdr, pps);
-    if (ret < 0) {
-        goto cleanup;
-    }
+    *storage = new;
 
-    /*FIXME unref instead of free */
-    replace_pps(pps_list, pps, pps_id);
+    free_pps(to_free);
 
-    return 0;
-
-cleanup:
-    ov_free(pps);
-    return ret;
-
-duplicated:
-    #if 0
-    ov_log(NULL, 3, "Ignored Duplicated PPS");
-    #endif
     return 0;
 }
 
@@ -254,10 +229,11 @@ pps_read_pic_partition(OVNVCLReader *const rdr, OVPPS *const pps)
 }
 
 int
-nvcl_pps_read(OVNVCLReader *const rdr, OVPPS *const pps,
-              OVNVCLCtx *const nvcl_ctx)
+nvcl_pps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
+              const OVNVCLCtx *const nvcl_ctx)
 {
     int i;
+    OVPPS *const pps = &hls_data->pps;
 
     #if 0
     OVPPS stck_pps = {0};
@@ -462,3 +438,15 @@ nvcl_pps_read(OVNVCLReader *const rdr, OVPPS *const pps,
     #endif
     return 0;
 }
+
+const struct HLSReader pps_manager =
+{
+    .name = "SPS",
+    .data_size = sizeof(struct OVPPS),
+    .probe_id     = &probe_pps_id,
+    .find_storage = &storage_in_nvcl_ctx,
+    .read         = &nvcl_pps_read,
+    .validate     = &validate_pps,
+    .replace      = &replace_pps,
+    .free         = &free_pps
+};
