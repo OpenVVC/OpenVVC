@@ -6,7 +6,9 @@ build_linux_gcc_debug:
   stage: build
   tags:
     - x86
-  image: gcc:10.3
+  image: ubuntu
+  before_script:
+    - apt update && apt install -y build-essential curl
   script:
     - gcc --version
     - ./configure --cc=gcc --debug --build-dir=debug
@@ -23,8 +25,9 @@ build_linux_gcc_release:
   stage: build
   tags:
     - x86
-  image: gcc:10.3
-  allow_failure: true
+  image: ubuntu
+  before_script:
+    - apt update && apt install -y build-essential curl
   script:
     - gcc --version
     - ./configure --cc=gcc --release --build-dir=release
