@@ -153,7 +153,7 @@ void
 ovdpb_unref_pic(OVPicture *pic, int flags)
 {
     /* pic->frame can be NULL if context init failed */
-    if (!pic->frame || !pic->frame->data[0])
+    if (!pic || (!pic->frame || !pic->frame->data[0]))
         return;
 
     pthread_mutex_lock(&pic->pic_mtx);
