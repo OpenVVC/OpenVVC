@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <string.h>
 
 #include "ovutils.h"
 #include "overror.h"
@@ -8,6 +9,7 @@
 #include "nvcl_utils.h"
 #include "nvcl_structures.h"
 #include "nvcl_private.h"
+#include "hls_structures.h"
 
 //TODO: declare in another header file
 enum OVChromaFormat{
@@ -18,70 +20,63 @@ enum OVChromaFormat{
     OV_NUM_CHROMA_FORMAT = 4,
 };
 
+static uint8_t
+probe_ph_id(OVNVCLReader *const rdr)
+{
+    return 0;
+}
+
+static const union HLSData **
+storage_in_nvcl_ctx(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
+{
+    return (const union HLSData **)&nvcl_ctx->ph;
+}
+
 static int
-validate_ph(OVNVCLReader *rdr, OVPH *const ph)
+validate_ph(OVNVCLReader *rdr, const union HLSData *const ph)
 {
     /* TODO various check on limitation and max sizes */
     return 1;
 }
 
 static void
-free_ph(OVPH *const ph)
+free_ph(const union HLSData *ph)
 {
     /* TODO unref and/or free dynamic structure */
-    ov_free(ph);
+    ov_free((void *)ph);
 }
 
-static void
-replace_ph(OVNVCLCtx *const nvcl_ctx, OVPH *const ph)
+static int
+replace_ph(const struct HLSReader *const manager,
+           const union HLSData **storage,
+           const OVHLSData *const hls_data)
 {
     /* TODO unref and/or free dynamic structure */
-    OVPH *to_free = nvcl_ctx->ph;
+    const union HLSData *to_free = *storage;
+    union HLSData *new = ov_malloc(manager->data_size);
 
-    free_ph(to_free);
-
-    nvcl_ctx->ph = ph;
-}
-
-int
-nvcl_decode_nalu_ph(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
-{
-    int ret;
-    /* TODO compare RBSP data to avoid new read */
-
-    OVPH *ph = ov_mallocz(sizeof(*ph));
-    if (!ph) {
+    if (!new) {
         return OVVC_ENOMEM;
     }
 
-    ret = nvcl_ph_read(rdr, ph, nvcl_ctx);
-    if (ret < 0) {
-        goto cleanup;
-    }
+    memcpy(new, hls_data, manager->data_size);
 
-    ret = validate_ph(rdr, ph);
-    if (ret < 0) {
-        goto cleanup;
-    }
+    *storage = new;
 
-    /*FIXME unref instead of free */
-    replace_ph(nvcl_ctx, ph);
+    free_ph(to_free);
 
     return 0;
-
-cleanup:
-    ov_free(ph);
-    return ret;
 }
 
 int
-nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
+nvcl_ph_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
              OVNVCLCtx *const nvcl_ctx)
 {
     const OVPPS *pps = NULL;
     const OVSPS *sps = NULL;
     int num_ref_entries0 = 0;
     int num_ref_entries1 = 0;
+    OVPH *const ph = &hls_data->ph;
     int i;
 
     ph->ph_gdr_or_irap_pic_flag = nvcl_read_flag(rdr);
@@ -358,3 +353,15 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
     /*TODO decide on return checks and values */
     return 0;
 }
+
+const struct HLSReader ph_manager =
+{
+    .name = "PH",
+    .data_size = sizeof(struct OVPH),
+    .probe_id     = &probe_ph_id,
+    .find_storage = &storage_in_nvcl_ctx,
+    .read         = &nvcl_ph_read,
+    .validate     = &validate_ph,
+    .replace      = &replace_ph,
+    .free         = &free_ph
+};

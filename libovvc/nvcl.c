@@ -52,6 +52,7 @@ static const char *nalu_name[32] =
 static const struct HLSReader todo;
 extern const struct HLSReader sps_manager;
 extern const struct HLSReader pps_manager;
+extern const struct HLSReader ph_manager;
 
 static const struct HLSReader *nalu_reader[32] =
 {
@@ -74,7 +75,7 @@ static const struct HLSReader *nalu_reader[32] =
     &pps_manager         , /* PPS */
     &todo                , /* PREFIX_APS */
     &todo                , /* SUFFIX_APS */
-    &todo                , /* PH */
+    &ph_manager          , /* PH */
     &todo                , /* AUD */
     &todo                , /* EOS */
     &todo                , /* EOB */
@@ -229,7 +230,7 @@ static const NALUnitAction nalu_action[32] =
     &decode_nvcl_hls            , /* PPS */
     &log_ignored                , /* PREFIX_APS */
     &log_ignored                , /* SUFFIX_APS */
-    &log_ignored                , /* PH */
+    &decode_nvcl_hls            , /* PH */
     &log_ignored                , /* AUD */
     &log_ignored                , /* EOS */
     &log_ignored                , /* EOB */

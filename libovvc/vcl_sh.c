@@ -1,3 +1,4 @@
+#include <string.h>
 #include <stddef.h>
 #include "overror.h"
 
@@ -57,6 +58,50 @@ cleanup:
     return ret;
 }
 
+#include "hls_structures.h"
+extern const struct HLSReader ph_manager;
+
+static int
+nvcl_decode_ph(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx,
+               const struct HLSReader *const hls_hdl)
+{
+    const union HLSData **storage = hls_hdl->find_storage(rdr, nvcl_ctx);
+    union HLSData data;
+    int ret;
+
+    if (*storage) {
+        /* TODO compare RBSP data to avoid new read */
+        uint8_t identical_rbsp = 0;
+        if (identical_rbsp) goto duplicated;
+    }
+
+    memset(&data, 0, hls_hdl->data_size);
+
+    ov_log(NULL, OVLOG_TRACE, "Reading new %s\n", hls_hdl->name);
+
+    ret = hls_hdl->read(rdr, &data, nvcl_ctx);
+    if (ret < 0)  goto failread;
+
+    ret = hls_hdl->validate(rdr, &data);
+    if (ret < 0)  goto invalid;
+
+    ret = hls_hdl->replace(hls_hdl, storage, &data);
+
+    return ret;
+
+invalid:
+    ov_log(NULL, OVLOG_ERROR, "Invalid %s\n", hls_hdl->name);
+    return ret;
+
+failread:
+    ov_log(NULL, OVLOG_ERROR, "Error while reading %s\n", hls_hdl->name);
+    return ret;
+
+duplicated:
+    ov_log(NULL, OVLOG_TRACE, "Ignored duplicated %s\n", hls_hdl->name);
+    return 0;
+}
+
 int
 nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
              OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type)
@@ -69,7 +114,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
     sh->sh_picture_header_in_slice_header_flag = nvcl_read_flag(rdr);
     if (sh->sh_picture_header_in_slice_header_flag) {
         /* FIXME do not skip 16 first bits in this case */
-        int ret = nvcl_decode_nalu_ph(rdr, nvcl_ctx);
+        int ret = nvcl_decode_ph(rdr, nvcl_ctx, &ph_manager);
         if (ret < 0) {
             ov_log(NULL, 3, "Failed reading PH from SH\n");
             return OVVC_EINDATA;

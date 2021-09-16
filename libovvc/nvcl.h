@@ -50,7 +50,7 @@ int nvcl_pps_read(OVNVCLReader *const rdr, OVHLSData *const pps,
 void nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
                   OVNVCLCtx *const nvcl_ctx);
 
-int nvcl_ph_read(OVNVCLReader *const rdr, OVPH *const ph,
+int nvcl_ph_read(OVNVCLReader *const rdr, OVHLSData *const ph,
                  OVNVCLCtx *const nvcl_ctx);
 
 int nvcl_sei_read(OVNVCLReader *const rdr, OVSH *const sh,
@@ -62,8 +62,6 @@ int nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
 /* Decoding functions */
 int nvcl_decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, OVNALUnit *nal_unit);
 
-
-int nvcl_decode_nalu_ph(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx);
 
 int nvcl_decode_nalu_sh(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
 
