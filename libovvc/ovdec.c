@@ -222,14 +222,12 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
 
         break;
     case OVNALU_VPS:
-        ret = 0;
-        if (ret < 0) {
-            goto fail;
-        }
-        break;
     case OVNALU_SPS:
     case OVNALU_PPS:
     case OVNALU_PH:
+    case OVNALU_EOS:
+    case OVNALU_EOB:
+    case OVNALU_AUD:
         ret = nvcl_decode_nalu_hls_data(nvcl_ctx, nalu);
         if (ret < 0) {
             goto fail;
@@ -247,18 +245,6 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         ret = nvcl_decode_nalu_sei(&rdr, nvcl_ctx);
         if (ret < 0)
             goto fail;
-        break;
-    case OVNALU_EOS:
-    case OVNALU_EOB:
-        /* TODO update DPB status (new cvs);
-         * call dpb_uninit
-         */
-        break;
-    case OVNALU_AUD:
-        /* AUD is ignored it should be the first NALU if
-         * present
-         */
-        break;
     default:
         nalu_type_unsupported(nalu_type);
     }
@@ -266,7 +252,6 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
     return 0;
 
 fail:
-    /* TODO error hanling */
     return ret;
 
 failvcl:

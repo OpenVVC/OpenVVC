@@ -47,7 +47,7 @@ int nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const sps,
 int nvcl_pps_read(OVNVCLReader *const rdr, OVHLSData *const pps,
                   const OVNVCLCtx *const nvcl_ctx);
 
-void nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
+int nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
                   OVNVCLCtx *const nvcl_ctx);
 
 int nvcl_ph_read(OVNVCLReader *const rdr, OVHLSData *const ph,

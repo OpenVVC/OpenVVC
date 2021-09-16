@@ -15,7 +15,11 @@
 //     uint8_t scaling_list_delta_coef[id][i];
 // } OVScalingList;
 
-
+enum APSType {
+   APS_ALF          = 0,
+   APS_LMCS         = 1,
+   APS_SCALING_LIST = 2
+};
 
 static int
 validate_aps(OVNVCLReader *rdr, OVAPS *const aps)
@@ -26,7 +30,8 @@ validate_aps(OVNVCLReader *rdr, OVAPS *const aps)
 
 
 void 
-nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data, uint8_t aps_chroma_present_flag)
+nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data,
+                   uint8_t aps_chroma_present_flag)
 {
     alf_data->alf_luma_filter_signal_flag = nvcl_read_flag(rdr);
     uint8_t sign = 0;
@@ -42,7 +47,6 @@ nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data, uint8_t 
         alf_data->alf_luma_num_filters_signalled_minus1 = nvcl_read_u_expgolomb(rdr);
         if (alf_data->alf_luma_num_filters_signalled_minus1 > 0) {
             for (int filtIdx = 0; filtIdx < MAX_NUM_ALF_CLASSES; filtIdx++) {
-                // alf_data->alf_luma_coeff_delta_idx[filtIdx];
                 alf_data->alf_luma_coeff_delta_idx[filtIdx] = 
                 nvcl_read_bits(rdr, 31 - __builtin_clz(alf_data->alf_luma_num_filters_signalled_minus1) + 1);
             }
@@ -123,9 +127,11 @@ nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data, uint8_t 
 }
 
 static int 
-nvcl_read_lmcs_data(OVNVCLReader *const rdr, struct OVLMCSData* lmcs, uint8_t aps_chroma_present_flag)
+nvcl_read_lmcs_data(OVNVCLReader *const rdr, struct OVLMCSData* lmcs,
+                    uint8_t aps_chroma_present_flag)
 {
     int i;
+
     lmcs->lmcs_min_bin_idx          = nvcl_read_u_expgolomb(rdr);
     lmcs->lmcs_delta_max_bin_idx    = nvcl_read_u_expgolomb(rdr);
     lmcs->lmcs_delta_cw_prec_minus1 = nvcl_read_u_expgolomb(rdr);
@@ -144,12 +150,10 @@ nvcl_read_lmcs_data(OVNVCLReader *const rdr, struct OVLMCSData* lmcs, uint8_t ap
         }
     }
 
-    /* FIXME return error if detected */
-    return 1;
+    return 0;
 }
 
-
-void
+int
 nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
               OVNVCLCtx *const nvcl_ctx)
 {
@@ -157,28 +161,24 @@ nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
     aps->aps_adaptation_parameter_set_id    = nvcl_read_bits(rdr, 5);
     aps->aps_chroma_present_flag            = nvcl_read_flag(rdr);
 
-    //TODO: definir les ALF_APS etc
-    // if(aps->aps_params_type == ALF_APS) {
-    if(aps->aps_params_type == 0) {
+    if (aps->aps_params_type == APS_ALF) {
         nvcl_read_alf_data(rdr, &aps->aps_alf_data, aps->aps_chroma_present_flag);
-    // } else if(aps->aps_params_type == LMCS_APS) {
-    } else if(aps->aps_params_type == 1) {
+    } else if (aps->aps_params_type == APS_LMCS) {
         nvcl_read_lmcs_data(rdr, &aps->aps_lmcs_data, aps->aps_chroma_present_flag);
-    // } else if(aps->aps_params_type == SCALING_APS) {
-    } else if(aps->aps_params_type == 2) {
-        // scaling_list_data();
+    } else if (aps->aps_params_type == APS_SCALING_LIST) {
+        ov_log(NULL, OVLOG_WARNING, "Ignored unsupported scaling list APS.\n");
     }
 
     aps->aps_extension_flag = nvcl_read_flag(rdr);
-    //TODO: prendre en compte les extensions aps.
     #if 0
     if(aps->aps_extension_flag) {
         while(more_rbsp_data()) {
             aps->aps_extension_data_flag = nvcl_read_flag(rdr);
         }
     }
-    // rbsp_trailing_bits()
+    rbsp_trailing_bits()
     #endif
+    return 0;
 }
 
 int
@@ -192,12 +192,10 @@ nvcl_decode_nalu_aps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
         return OVVC_ENOMEM;
     }
 
-    //TODO: mettre un retour d'erreur.
-    // ret = 
-    nvcl_aps_read(rdr, aps, nvcl_ctx);
-    // if (ret < 0) {
-    //     goto cleanup;
-    // }
+    ret = nvcl_aps_read(rdr, aps, nvcl_ctx);
+    if (ret < 0) {
+        goto cleanup;
+    }
 
     ret = validate_aps(rdr, aps);
     if (ret < 0) {
@@ -256,6 +254,7 @@ scaling_list_data()
     }
 }
 #endif
+
 #if 0
 scaling_list_data2()
 {
