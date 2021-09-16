@@ -441,7 +441,7 @@ nvcl_pps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
 const struct HLSReader pps_manager =
 {
-    .name = "SPS",
+    .name = "PPS",
     .data_size = sizeof(struct OVPPS),
     .probe_id     = &probe_pps_id,
     .find_storage = &storage_in_nvcl_ctx,
