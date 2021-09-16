@@ -33,14 +33,6 @@ static const char *option_names[OVDEC_NB_OPTIONS] =
 };
 
 static int
-nalu_type_unsupported(enum OVNALUType nalu_type)
-{
-    ov_log(NULL, 2, "Ignored unsupported NAL type : %d \n", nalu_type);
-
-    return 0;
-}
-
-static int
 ovdec_init_subdec_list(OVVCDec *dec)
 {
     int ret;
@@ -221,18 +213,6 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         }
 
         break;
-    case OVNALU_VPS:
-    case OVNALU_SPS:
-    case OVNALU_PPS:
-    case OVNALU_PH:
-    case OVNALU_EOS:
-    case OVNALU_EOB:
-    case OVNALU_AUD:
-        ret = nvcl_decode_nalu_hls_data(nvcl_ctx, nalu);
-        if (ret < 0) {
-            goto fail;
-        }
-        break;
     case OVNALU_SUFFIX_APS:
     case OVNALU_PREFIX_APS:
         ret = nvcl_decode_nalu_aps(&rdr, nvcl_ctx);
@@ -245,8 +225,19 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         ret = nvcl_decode_nalu_sei(&rdr, nvcl_ctx);
         if (ret < 0)
             goto fail;
+    case OVNALU_VPS:
+    case OVNALU_SPS:
+    case OVNALU_PPS:
+    case OVNALU_PH:
+    case OVNALU_EOS:
+    case OVNALU_EOB:
+    case OVNALU_AUD:
     default:
-        nalu_type_unsupported(nalu_type);
+        ret = nvcl_decode_nalu_hls_data(nvcl_ctx, nalu);
+        if (ret < 0) {
+            goto fail;
+        }
+        break;
     }
 
     return 0;
