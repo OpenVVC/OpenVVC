@@ -238,7 +238,7 @@ ovdpb_clear_refs(OVDPB *dpb)
         }
     }
 
-    if (nb_used_pic >= dpb->max_nb_dpb_pic) {
+    if (nb_used_pic > dpb->max_nb_dpb_pic) {
         /* Determine the min POC among those pic
          */
         for (i = 0; i < nb_dpb_pic; i++) {
@@ -509,17 +509,21 @@ vvc_unmark_refs(struct RPLInfo *rpl_info, const OVPicture **dst_rpl, const OVPic
         int16_t ref_poc  = rpl_info->ref_info[i].poc;
         int16_t ref_type = rpl_info->ref_info[i].type;
         uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
-        ov_log(NULL, OVLOG_TRACE, "Unmark active reference %d\n", ref_poc);
-        ovdpb_unref_pic(ref_pic, flag);   
+        if(ref_pic){
+            ov_log(NULL, OVLOG_TRACE, "Unmark active reference %d\n", ref_poc);
+            ovdpb_unref_pic(ref_pic, flag);
+        }
     }
     for (;  i < rpl_info->nb_refs; ++i){
         ref_pic = dst_rpl_na[i-rpl_info->nb_active_refs];
         int16_t ref_poc  = rpl_info->ref_info[i].poc;
         int16_t ref_type = rpl_info->ref_info[i].type;
         uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
-        ov_log(NULL, OVLOG_TRACE, "Unmark non active reference %d\n", ref_poc);
-        ovdpb_unref_pic(ref_pic, flag);
-        dst_rpl_na[i-rpl_info->nb_active_refs] = NULL; 
+        if(ref_pic){
+            ov_log(NULL, OVLOG_TRACE, "Unmark non active reference %d\n", ref_poc);
+            ovdpb_unref_pic(ref_pic, flag);
+            dst_rpl_na[i-rpl_info->nb_active_refs] = NULL;
+        }
      }
     return 0;
 }
