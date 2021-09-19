@@ -1,13 +1,13 @@
 #include "nvcl.h"
 #include "nvcl_utils.h"
 
-typedef OVSubLayerHRD
+typedef struct OVSubLayerHRD
 {
     uint8_t bit_rate_value_minus1;
     uint8_t cpb_size_value_minus1;
     uint8_t cpb_size_du_value_minus1;
     uint8_t bit_rate_du_value_minus1;
-    uint8_t cbr_flag;
+    uint8_t cbr_flag[0];
 } OVSubLayerHRD;
 
 typedef struct OVOLSHRDParams
@@ -33,17 +33,19 @@ typedef struct OVGHRD
     uint8_t hrd_cpb_cnt_minus1;
 } OVGHRD;
 
-sublayer_hrd_parameters(OVNVCLReader *const rdr, subLayerId)
+int
+sublayer_hrd_parameters(OVNVCLReader *const rdr, int subLayerId)
 {
     int j;
-    OVSubLayerHRD **sl_hrd_list = &sl_hrd_sl_list[subLayerId];
-    for (j = 0; j <= hrd_cpb_cnt_minus1; j++) {
+    OVGHRD *ghrd;
+    OVSubLayerHRD **sl_hrd_list = &sl_hrd_list[subLayerId];
+    for (j = 0; j <= ghrd->hrd_cpb_cnt_minus1; j++) {
         OVSubLayerHRD *sl_hrd = sl_hrd_list[j];
 
         sl_hrd->bit_rate_value_minus1 = nvcl_read_u_expgolomb(rdr);
         sl_hrd->cpb_size_value_minus1 = nvcl_read_u_expgolomb(rdr);
 
-        if (general_du_hrd_params_present_flag) {
+        if (ghrd->general_du_hrd_params_present_flag) {
             sl_hrd->cpb_size_du_value_minus1 = nvcl_read_u_expgolomb(rdr);
             sl_hrd->bit_rate_du_value_minus1 = nvcl_read_u_expgolomb(rdr);
         }
@@ -52,11 +54,13 @@ sublayer_hrd_parameters(OVNVCLReader *const rdr, subLayerId)
     }
 }
 
-ols_timing_hrd_parameters(OVNVCLReader *const rdr, firstSubLayer, MaxSubLayersVal)
+int
+ols_timing_hrd_parameters(OVNVCLReader *const rdr, int firstSubLayer, int MaxSubLayersVal)
 {
     int i;
-    OVOLSHRDParams ols_hrd_list[64] = {0};
-    for (i = firstSubLayer; i <= MaxSubLayersVal; i++) {
+    OVGHRD *ghrd;
+    OVOLSHRDParams *ols_hrd_list[64] = {0};
+    for (int i = firstSubLayer; i <= MaxSubLayersVal; i++) {
         OVOLSHRDParams *ols_hrd = ols_hrd_list[i];
         ols_hrd->fixed_pic_rate_general_flag = nvcl_read_flag(rdr);
         if (!ols_hrd->fixed_pic_rate_general_flag) {
@@ -65,23 +69,25 @@ ols_timing_hrd_parameters(OVNVCLReader *const rdr, firstSubLayer, MaxSubLayersVa
 
         if (ols_hrd->fixed_pic_rate_within_cvs_flag) {
             ols_hrd->elemental_duration_in_tc_minus1 = nvcl_read_u_expgolomb(rdr);
-        } else if ((general_nal_hrd_params_present_flag || general_vcl_hrd_params_present_flag) && hrd_cpb_cnt_minus1 == 0) {
+        } else if ((ghrd->general_nal_hrd_params_present_flag || ghrd->general_vcl_hrd_params_present_flag) && ghrd->hrd_cpb_cnt_minus1 == 0) {
             ols_hrd->low_delay_hrd_flag = nvcl_read_flag(rdr);
         }
 
-        if (ols_hrd->general_nal_hrd_params_present_flag) {
-            sublayer_hrd_parameters(i);
+        if (ghrd->general_nal_hrd_params_present_flag) {
+            sublayer_hrd_parameters(rdr, i);
         }
 
-        if (ols_hrd->general_vcl_hrd_params_present_flag) {
-            sublayer_hrd_parameters(i);
+        if (ghrd->general_vcl_hrd_params_present_flag) {
+            sublayer_hrd_parameters(rdr, i);
         }
     }
 }
 
+int
 general_timing_hrd_parameters(OVNVCLReader *const rdr)
 {
     uint8_t ghrd_present;
+    OVGHRD *ghrd;
     ghrd->num_units_in_tick = nvcl_read_bits(rdr, 32);
     ghrd->time_scale = nvcl_read_bits(rdr, 32);
     ghrd->general_nal_hrd_params_present_flag = nvcl_read_flag(rdr);
