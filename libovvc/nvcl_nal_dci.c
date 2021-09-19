@@ -28,5 +28,5 @@ nvcl_dci_read(OVNVCLReader *const rdr, OVDCI *const dci,
         }
     }
 
-    rbsp_trailing_bits()
+    rbsp_trailing_bits();
 }
