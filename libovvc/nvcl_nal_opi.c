@@ -14,7 +14,7 @@ typedef struct OVOPI
 
 int
 nvcl_opi_read(OVNVCLReader *const rdr, OVOPI *const opi,
-                  OVNVCLCtx *const nvcl_ctx);
+                  OVNVCLCtx *const nvcl_ctx)
 {
     opi->opi_ols_info_present_flag  = nvcl_read_flag(rdr);
     opi->opi_htid_info_present_flag = nvcl_read_flag(rdr);
