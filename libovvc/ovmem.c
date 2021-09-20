@@ -55,7 +55,11 @@ ov_mallocz(size_t alloc_size)
 void
 ov_free(void *ptr)
 {
+#if HAVE_ALIGNED_MALLOC
+    _aligned_free(ptr); //For windows
+#else
     free(ptr);
+#endif
 }
 
 /* This is inspired from FFmpeg av_freep function
