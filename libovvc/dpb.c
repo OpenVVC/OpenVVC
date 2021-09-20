@@ -221,8 +221,6 @@ ovdpb_clear_refs(OVDPB *dpb)
     //TODO: loop untill min_idx == nb_dpb_pic or nb_used_pic > dpb->max_nb_dpb_pic
     ov_log(NULL, OVLOG_DEBUG, "Release reference pictures\n");
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
-    int min_poc = INT_MAX;
-    int min_idx = nb_dpb_pic;
     int nb_used_pic = 0;
     int i;
 
@@ -238,7 +236,9 @@ ovdpb_clear_refs(OVDPB *dpb)
         }
     }
 
-    if (nb_used_pic > dpb->max_nb_dpb_pic) {
+    while (nb_used_pic >= dpb->max_nb_dpb_pic) {
+        int min_poc = INT_MAX;
+        int min_idx = nb_dpb_pic;
         /* Determine the min POC among those pic
          */
         for (i = 0; i < nb_dpb_pic; i++) {
@@ -261,6 +261,11 @@ ovdpb_clear_refs(OVDPB *dpb)
             OVPicture *pic = &dpb->pictures[min_idx];
             ovdpb_release_pic(dpb, pic);
         }
+        else{
+            break;
+        }
+
+        nb_used_pic--;
     }
 }
 
