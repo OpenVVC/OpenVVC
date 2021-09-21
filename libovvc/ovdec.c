@@ -294,7 +294,7 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
     if (!dpb) {
         ov_log(dec, OVLOG_ERROR, "No DPB on output request.\n");
         /* FIXME new return value */
-        return OVVC_EINDATA;
+        return 0;
     }
 
     OVPicture *pic = NULL;
