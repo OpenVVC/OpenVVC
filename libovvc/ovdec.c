@@ -281,7 +281,7 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
      */
     OVDPB *dpb = dec->dpb;
     uint16_t out_cvs_id;
-    int ret;
+    int ret = 0;
 
     if (!dpb) {
         ov_log(dec, OVLOG_ERROR, "No DPB on output request.\n");
@@ -305,6 +305,8 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
          * will still be usable by the decoder if not bumped
          * */
         ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
+    } else {
+      *frame_p = NULL;
     }
 
     return ret;
