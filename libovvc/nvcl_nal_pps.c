@@ -56,7 +56,9 @@ replace_pps(const struct HLSReader *const manager,
 
     *storage = new;
 
-    free_pps(to_free);
+    if (to_free) {
+        free_pps(to_free);
+    }
 
     return 0;
 }

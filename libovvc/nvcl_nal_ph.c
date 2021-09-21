@@ -63,7 +63,9 @@ replace_ph(const struct HLSReader *const manager,
 
     *storage = new;
 
-    free_ph(to_free);
+    if (to_free) {
+        free_ph(to_free);
+    }
 
     return 0;
 }

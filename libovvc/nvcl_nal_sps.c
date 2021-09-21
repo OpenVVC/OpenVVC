@@ -61,7 +61,9 @@ replace_sps(const struct HLSReader *const manager,
 
     *storage = new;
 
-    free_sps(to_free);
+    if (to_free) {
+        free_sps(to_free);
+    }
 
     return 0;
 }
