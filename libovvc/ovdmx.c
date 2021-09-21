@@ -568,19 +568,19 @@ ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
     }
     #endif
 
-    ret = convert_nalu_list_to_pu(pu, &pending_nalu_list);
-    if (ret < 0) {
+    int ret2 = convert_nalu_list_to_pu(pu, &pending_nalu_list);
+    if (ret2 < 0) {
         free_nalu_list(&pending_nalu_list);
         *dst_pu = NULL;
         ov_free(pu);
-        return ret;
+        return ret2;
     }
 
     free_nalu_list(&pending_nalu_list);
 
     *dst_pu = pu;
 
-    return 0;
+    return ret;
 }
 
 static struct NALUnitListElem *
