@@ -1797,6 +1797,58 @@ derive_sub_pu_merge_cand(const struct InterDRVCtx *inter_ctx,
 }
 
 void
+set_zero_mvs_p(struct InterDRVCtx *inter_ctx,
+               const struct VVCTMVP *tmvp,
+               uint8_t x0, uint8_t y0,
+               uint8_t log2_pu_w, uint8_t log2_pu_h)
+{
+    int nb_sb_w = OVMAX((1 << log2_pu_w) >> LOG2_SBTMVP_S, 1);
+    int nb_sb_h = OVMAX((1 << log2_pu_h) >> LOG2_SBTMVP_S, 1);
+
+    uint8_t x_unit = x0 >> LOG2_MIN_CU_S;
+    uint8_t y_unit = y0 >> LOG2_MIN_CU_S;
+    uint8_t nb_units_w = (1 << log2_pu_w) >> LOG2_MIN_CU_S;
+    uint8_t nb_units_h = (1 << log2_pu_h) >> LOG2_MIN_CU_S;
+
+    OVMV *mv_buff0 = &inter_ctx->mv_ctx0.mvs[35 + x_unit + y_unit * 34];
+    OVMV *tmvp_mv0 = &inter_ctx->tmvp_mv[0].mvs[((x0 + 4) >> 3) + (((y0 + 4) >> 3) << 4)];
+
+    int i, j;
+
+    OVMV mv0 = {0};
+
+    ctu_field_set_rect_bitfield(&inter_ctx->mv_ctx0.map, x_unit, y_unit,
+                                nb_units_w , nb_units_h);
+
+    for (i = 0; i < nb_sb_h; ++i) {
+        for (j = 0; j < nb_sb_w; ++j) {
+
+            mv0.ref_idx       = 0;
+            mv0.bcw_idx_plus1 = 0;
+
+            tmvp_mv0[j] = mv0;
+
+            mv_buff0[j * 2]     = mv0;
+            mv_buff0[j * 2 + 1] = mv0;
+            mv_buff0[34 + j * 2]     = mv0;
+            mv_buff0[34 + j * 2 + 1] = mv0;
+
+            rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
+                      inter_ctx, tmvp->ctudec->part_ctx,
+                      mv0, mv0, x0 + 8 * j, y0 + 8 * i,
+                      3, 3, 0x1, 0, 0);
+
+        }
+        mv_buff0 += 34 * 2;
+        tmvp_mv0 += 16;
+    }
+
+    rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
+              inter_ctx, tmvp->ctudec->part_ctx, mv0, mv0, x0, y0,
+              log2_pu_w, log2_pu_h, 0x1, 0, 0);
+}
+
+void
 derive_sub_block_mvs_p(struct InterDRVCtx *inter_ctx,
                        const struct VVCTMVP *tmvp,
                        uint8_t x0, uint8_t y0,
@@ -1888,6 +1940,65 @@ derive_sub_block_mvs_p(struct InterDRVCtx *inter_ctx,
         mv_buff0 += 34 * 2;
         tmvp_mv0 += 16;
     }
+}
+
+void
+set_zero_mvs_b(struct InterDRVCtx *inter_ctx,
+               const struct VVCTMVP *tmvp,
+               uint8_t x0, uint8_t y0, uint8_t log2_pu_w, uint8_t log2_pu_h)
+{
+    int nb_sb_w = OVMAX((1 << log2_pu_w) >> LOG2_SBTMVP_S, 1);
+    int nb_sb_h = OVMAX((1 << log2_pu_h) >> LOG2_SBTMVP_S, 1);
+
+    uint8_t x_unit = x0 >> LOG2_MIN_CU_S;
+    uint8_t y_unit = y0 >> LOG2_MIN_CU_S;
+    uint8_t nb_units_w = (1 << log2_pu_w) >> LOG2_MIN_CU_S;
+    uint8_t nb_units_h = (1 << log2_pu_h) >> LOG2_MIN_CU_S;
+
+    OVMV *mv_buff0 = &inter_ctx->mv_ctx0.mvs[35 + x_unit + y_unit * 34];
+    OVMV *mv_buff1 = &inter_ctx->mv_ctx1.mvs[35 + x_unit + y_unit * 34];
+    OVMV *tmvp_mv0 = &inter_ctx->tmvp_mv[0].mvs[((x0 + 4) >> 3) + (((y0 + 4) >> 3) << 4)];
+    OVMV *tmvp_mv1 = &inter_ctx->tmvp_mv[1].mvs[((x0 + 4) >> 3) + (((y0 + 4) >> 3) << 4)];
+
+    int i, j;
+
+    OVMV mv0 = {0};
+    OVMV mv1 = {0};
+
+    uint8_t inter_dir = 0x3;
+
+    ctu_field_set_rect_bitfield(&inter_ctx->mv_ctx0.map, x_unit, y_unit,
+                                nb_units_w , nb_units_h);
+
+    ctu_field_set_rect_bitfield(&inter_ctx->mv_ctx1.map, x_unit, y_unit,
+                                nb_units_w, nb_units_h);
+
+    for (i = 0; i < nb_sb_h; ++i) {
+        for (j = 0; j < nb_sb_w; ++j) {
+            tmvp_mv0[j] = mv0;
+
+            mv_buff0[j * 2]     = mv0;
+            mv_buff0[j * 2 + 1] = mv0;
+            mv_buff0[34 + j * 2]     = mv0;
+            mv_buff0[34 + j * 2 + 1] = mv0;
+
+            tmvp_mv1[j] = mv1;
+
+            mv_buff1[j * 2]     = mv1;
+            mv_buff1[j * 2 + 1] = mv1;
+            mv_buff1[34 + j * 2]     = mv1;
+            mv_buff1[34 + j * 2 + 1] = mv1;
+        }
+        mv_buff0 += 34 * 2;
+        mv_buff1 += 34 * 2;
+        tmvp_mv0 += 16;
+        tmvp_mv1 += 16;
+    }
+
+    rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
+              inter_ctx, tmvp->ctudec->part_ctx,
+              mv0, mv1, x0, y0,
+              log2_pu_w, log2_pu_h, inter_dir, 0, 0);
 }
 
 void
@@ -4394,7 +4505,7 @@ drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
                                                    &mv_info, &mv_offset,
                                                    rpl0_cand, 0);
 
-        if (sb_cand && merge_idx == 0) {
+       if (sb_cand && merge_idx == 0) {
             derive_sub_block_mvs_p(inter_ctx, &inter_ctx->tmvp_ctx,
                                    x0, y0,
                                    log2_cu_w, log2_cu_h,
@@ -4406,7 +4517,16 @@ drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
                              0x1);
 #endif
             is_sbtmvp = 1;
-        }
+      } else if (!inter_ctx->tmvp_ctx.ctudec->affine_enabled) {
+
+            set_zero_mvs_p(inter_ctx, &inter_ctx->tmvp_ctx,
+                           x0, y0, log2_cu_w, log2_cu_h);
+
+            update_mv_ctx_b2(inter_ctx, x_pb, y_pb,
+                             nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
+                             0x1);
+            is_sbtmvp = 1;
+      }
 
         merge_idx -= sb_cand;
     }
@@ -4530,11 +4650,18 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                                  log2_cu_w, log2_cu_h,
                                  mv_offset, &mv_info);
 
-            #if 1
             update_mv_ctx_b2(inter_ctx, x_pb, y_pb,
                              nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
                              0x3);
-                             #endif
+            is_sbtmvp = 1;
+        } else if (!inter_ctx->tmvp_ctx.ctudec->affine_enabled) {
+
+            set_zero_mvs_b(inter_ctx, &inter_ctx->tmvp_ctx,
+                           x0, y0, log2_cu_w, log2_cu_h);
+
+            update_mv_ctx_b2(inter_ctx, x_pb, y_pb,
+                             nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
+                             0x3);
             is_sbtmvp = 1;
         }
 

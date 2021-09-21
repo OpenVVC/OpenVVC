@@ -1466,7 +1466,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->affine_enabled = sps->sps_affine_enabled_flag;
     ctudec->drv_ctx.inter_ctx.sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
     ctudec->drv_ctx.inter_ctx.prof_enabled = sps->sps_affine_prof_enabled_flag  && !ph->ph_prof_disabled_flag;
-    if (ctudec->affine_enabled) {
+    if (ctudec->affine_enabled || sps->sps_sbtmvp_enabled_flag) {
         init_affine_status(ctudec, sps, ph);
     }
 

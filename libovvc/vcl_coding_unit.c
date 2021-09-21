@@ -1113,7 +1113,8 @@ inter_skip_data_p(OVCTUDec *const ctu_dec,
 
     uint8_t sb_merge_flag = 0;
 
-    if (ctu_dec->affine_enabled && log2_cb_w >= 3 && log2_cb_h >= 3) {
+    if ((ctu_dec->drv_ctx.inter_ctx.sbtmvp_enabled || ctu_dec->affine_enabled)
+        && log2_cb_w >= 3 && log2_cb_h >= 3) {
         uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
         uint8_t y_cb = y0 >> log2_min_cb_s;
         uint8_t x_cb = x0 >> log2_min_cb_s;
@@ -1131,8 +1132,12 @@ inter_skip_data_p(OVCTUDec *const ctu_dec,
     uint8_t merge_idx;
 
     if (sb_merge_flag) {
-        uint8_t nb_affine_merge_cand_min1 = ctu_dec->affine_nb_merge_cand - 1;
-        merge_idx = ovcabac_read_ae_affine_merge_idx(cabac_ctx, nb_affine_merge_cand_min1);
+        if (ctu_dec->affine_enabled) {
+            uint8_t nb_affine_merge_cand_min1 = ctu_dec->affine_nb_merge_cand - 1;
+            merge_idx = ovcabac_read_ae_affine_merge_idx(cabac_ctx, nb_affine_merge_cand_min1);
+        } else {
+            merge_idx = 0;
+        }
         mrg_type = SB_MERGE;
     } else if (mmvd_flag){
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
@@ -1171,7 +1176,8 @@ inter_merge_data_p(OVCTUDec *const ctu_dec,
 
     uint8_t sb_merge_flag = 0;
 
-    if (ctu_dec->affine_enabled && log2_cb_w >= 3 && log2_cb_h >= 3) {
+    if ((ctu_dec->drv_ctx.inter_ctx.sbtmvp_enabled || ctu_dec->affine_enabled)
+        && log2_cb_w >= 3 && log2_cb_h >= 3) {
         uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
         uint8_t y_cb = y0 >> log2_min_cb_s;
         uint8_t x_cb = x0 >> log2_min_cb_s;
@@ -1198,8 +1204,12 @@ inter_merge_data_p(OVCTUDec *const ctu_dec,
     }
 
     if (sb_merge_flag) {
-        uint8_t nb_affine_merge_cand_min1 = ctu_dec->affine_nb_merge_cand - 1;
-        merge_idx = ovcabac_read_ae_affine_merge_idx(cabac_ctx, nb_affine_merge_cand_min1);
+        if (ctu_dec->affine_enabled) {
+            uint8_t nb_affine_merge_cand_min1 = ctu_dec->affine_nb_merge_cand - 1;
+            merge_idx = ovcabac_read_ae_affine_merge_idx(cabac_ctx, nb_affine_merge_cand_min1);
+        } else {
+            merge_idx = 0;
+        }
         mrg_type = SB_MERGE;
     } else if (mmvd_flag){
         merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
@@ -1733,7 +1743,8 @@ inter_skip_data_b(OVCTUDec *const ctu_dec,
                                                && log2_cb_w < 3 + log2_cb_h
                                                && log2_cb_h < 3 + log2_cb_w;
 
-    if (ctu_dec->affine_enabled && log2_cb_w >= 3 && log2_cb_h >= 3) {
+    if ((ctu_dec->drv_ctx.inter_ctx.sbtmvp_enabled || ctu_dec->affine_enabled) &&
+        log2_cb_w >= 3 && log2_cb_h >= 3) {
         uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
         uint8_t y_cb = y0 >> log2_min_cb_s;
         uint8_t x_cb = x0 >> log2_min_cb_s;
@@ -1758,8 +1769,12 @@ inter_skip_data_b(OVCTUDec *const ctu_dec,
 
 idx:
     if (sb_merge_flag) {
-        uint8_t nb_affine_merge_cand_min1 = ctu_dec->affine_nb_merge_cand - 1;
-        merge_idx = ovcabac_read_ae_affine_merge_idx(cabac_ctx, nb_affine_merge_cand_min1);
+        if (ctu_dec->affine_enabled) {
+            uint8_t nb_affine_merge_cand_min1 = ctu_dec->affine_nb_merge_cand - 1;
+            merge_idx = ovcabac_read_ae_affine_merge_idx(cabac_ctx, nb_affine_merge_cand_min1);
+        } else {
+            merge_idx = 0;
+        }
         mrg_type = SB_MERGE;
     } else if (!reg_merge_flag) {
         int max_num_gpm_cand = inter_ctx->max_gpm_cand;
@@ -1808,7 +1823,8 @@ inter_merge_data_b(OVCTUDec *const ctu_dec,
     uint8_t sb_merge_flag = 0;
     uint8_t mmvd_flag = 0;
 
-    if (ctu_dec->affine_enabled && log2_cb_w >= 3 && log2_cb_h >= 3) {
+    if ((ctu_dec->drv_ctx.inter_ctx.sbtmvp_enabled || ctu_dec->affine_enabled)
+        && log2_cb_w >= 3 && log2_cb_h >= 3) {
         uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
         uint8_t y_cb = y0 >> log2_min_cb_s;
         uint8_t x_cb = x0 >> log2_min_cb_s;
@@ -1840,8 +1856,12 @@ inter_merge_data_b(OVCTUDec *const ctu_dec,
 
 idx:
     if (sb_merge_flag) {
-        uint8_t nb_affine_merge_cand_min1 = ctu_dec->affine_nb_merge_cand - 1;
-        merge_idx = ovcabac_read_ae_affine_merge_idx(cabac_ctx, nb_affine_merge_cand_min1);
+        if (ctu_dec->affine_enabled) {
+            uint8_t nb_affine_merge_cand_min1 = ctu_dec->affine_nb_merge_cand - 1;
+            merge_idx = ovcabac_read_ae_affine_merge_idx(cabac_ctx, nb_affine_merge_cand_min1);
+        } else {
+            merge_idx = 0;
+        }
         mrg_type = SB_MERGE;
     } else if (!reg_merge_flag && !ciip_flag) {
         int max_num_gpm_cand = inter_ctx->max_gpm_cand;

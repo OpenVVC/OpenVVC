@@ -152,15 +152,16 @@ decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr,
     }
 
     memset(&data, 0, hls_hdl->data_size);
-
     ov_log(NULL, OVLOG_TRACE, "Reading new %s\n", hls_hdl->name);
 
     ret = hls_hdl->read(rdr, &data, nvcl_ctx);
     if (ret < 0)  goto failread;
 
+    ov_log(NULL, OVLOG_TRACE, "Checking %s\n", hls_hdl->name);
     ret = hls_hdl->validate(rdr, &data);
     if (ret < 0)  goto invalid;
 
+    ov_log(NULL, OVLOG_TRACE, "Replacing new %s\n", hls_hdl->name);
     ret = hls_hdl->replace(hls_hdl, storage, &data);
 
     return ret;
