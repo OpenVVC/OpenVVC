@@ -9,9 +9,9 @@
 
 struct OVNVCLReader
 {
-    const uint8_t *bytestream_start;
-    const uint8_t *bytestream_end;
-    const uint8_t *bytestream;
+    const uint8_t *str_start;
+    const uint8_t *str_end;
+    const uint8_t *cursor;
     uint64_t cache;
     int nb_cached_bits;
 };
@@ -55,10 +55,10 @@ static inline int
 nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
                  uint32_t buffer_size)
 {
-    rdr->bytestream_start = bytestream_start;
-    rdr->bytestream_end   = bytestream_start + buffer_size;
+    rdr->str_start = bytestream_start;
+    rdr->str_end   = bytestream_start + buffer_size;
 
-    rdr->bytestream       = bytestream_start;
+    rdr->cursor       = bytestream_start;
 
     fill_cache64(rdr);
 
@@ -68,21 +68,21 @@ nvcl_reader_init(OVNVCLReader *rdr, const uint8_t *bytestream_start,
 static inline uint32_t
 nvcl_nb_bytes_read(const OVNVCLReader *const rdr)
 {
-    ptrdiff_t nb_bytes_read = rdr->bytestream - rdr->bytestream_start;
+    ptrdiff_t nb_bytes_read = rdr->cursor - rdr->str_start;
     return nb_bytes_read - ((rdr->nb_cached_bits + 7) >> 3);
 }
 
 static inline uint32_t
 nvcl_nb_bits_read(const OVNVCLReader *const rdr)
 {
-    ptrdiff_t nb_bytes_read = rdr->bytestream - rdr->bytestream_start;
+    ptrdiff_t nb_bytes_read = rdr->cursor - rdr->str_start;
     return (nb_bytes_read << 3) - rdr->nb_cached_bits;
 }
 
 static inline uint32_t
 nvcl_nb_bytes(const OVNVCLReader *const rdr)
 {
-    ptrdiff_t nb_bytes = rdr->bytestream_end - rdr->bytestream_start;
+    ptrdiff_t nb_bytes = rdr->str_end - rdr->str_start;
     return nb_bytes;
 }
 
@@ -90,7 +90,7 @@ static inline uint8_t
 nvcl_peak_at_position(const OVNVCLReader *const rdr, int32_t pos)
 {
     uint32_t index = ov_clip(pos, 0, nvcl_nb_bytes(rdr) - 1);
-    return rdr->bytestream_start[index];
+    return rdr->str_start[index];
 }
 
 static inline void
@@ -146,12 +146,12 @@ read_bigendian_32(const uint8_t *bytestream)
 static inline void
 fill_cache64(OVNVCLReader *rdr)
 {
-    if (rdr->bytestream >= rdr->bytestream_end)
+    if (rdr->cursor >= rdr->str_end)
         return;
 
-    rdr->cache = read_bigendian_64(rdr->bytestream);
+    rdr->cache = read_bigendian_64(rdr->cursor);
 
-    rdr->bytestream      += 8;
+    rdr->cursor      += 8;
     rdr->nb_cached_bits   = 64;
 }
 
@@ -159,13 +159,13 @@ static inline void
 fill_cache32(OVNVCLReader *rdr)
 {
     uint64_t cache_val;
-    if (rdr->bytestream >= rdr->bytestream_end)
+    if (rdr->cursor >= rdr->str_end)
         return;
 
-    cache_val = read_bigendian_32(rdr->bytestream);
+    cache_val = read_bigendian_32(rdr->cursor);
     rdr->cache |= cache_val << (32 - rdr->nb_cached_bits);
 
-    rdr->bytestream     += 4;
+    rdr->cursor     += 4;
     rdr->nb_cached_bits += 32;
 }
 
