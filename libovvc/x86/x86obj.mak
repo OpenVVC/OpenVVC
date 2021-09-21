@@ -10,3 +10,4 @@ x86_LIB_SRC:=																														 \
 					rcn_lfnst_sse.c		      		          												 \
 					rcn_intra_mip_sse.c		   		          												 \
 					rcn_sao_sse.c		   		    			      												 \
+					rcn_dmvr_sse.c		   		    			     												 \

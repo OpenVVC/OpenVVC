@@ -121,6 +121,10 @@ typedef void (*SAOEdgeFilterFunc)(uint8_t* _dst, uint8_t* _src,
 
 typedef void (*LMCSReshapeFunc)(uint16_t *_dst, ptrdiff_t stride_dst, uint16_t* lmcs_lut_luma, int width, int height);
 
+typedef uint64_t (*DMVRSADFunc)(const int16_t *ref0, const int16_t *ref1, int16_t dmvr_stride, int16_t pb_w, int16_t pb_h);
+
+typedef uint64_t (*DMVRComputeSADsFunc)(const int16_t *ref0, const int16_t *ref1, uint64_t *sad_array, int sb_w, int sb_h);
+
 /**
  * The Context put together all functions used by strategies.
  */
@@ -194,6 +198,11 @@ struct SAOFunctions{
     SAOEdgeFilterFunc edge[2];
 };
 
+struct DMVRFunctions{
+    DMVRSADFunc sad[2];
+    DMVRComputeSADsFunc computeSB[2];
+};
+
 struct RCNFunctions
 {
     /* Motion Compensation Luma */
@@ -229,6 +238,9 @@ struct RCNFunctions
 
     /* LMCS Functions */
     LMCSReshapeFunc lmcs_reshape;
+
+    /* DMVR Functions */
+    struct DMVRFunctions dmvr;
 };
 
 

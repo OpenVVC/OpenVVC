@@ -933,55 +933,60 @@ struct DMVRDelta
 };
 
 static uint64_t
-rcn_dmvr_sad(const int16_t *ref0, const int16_t *ref1,
+rcn_dmvr_sad_16(const int16_t *ref0, const int16_t *ref1,
              int16_t dmvr_stride, int16_t pb_w, int16_t pb_h)
 {
   uint64_t sum = 0;
   int i;
+  for (i = 0; i < (pb_h >> 1); ++i) {
+      sum += abs(ref0[0]  - ref1[0]);
+      sum += abs(ref0[1]  - ref1[1]);
+      sum += abs(ref0[2]  - ref1[2]);
+      sum += abs(ref0[3]  - ref1[3]);
+      sum += abs(ref0[4]  - ref1[4]);
+      sum += abs(ref0[5]  - ref1[5]);
+      sum += abs(ref0[6]  - ref1[6]);
+      sum += abs(ref0[7]  - ref1[7]);
+      sum += abs(ref0[8]  - ref1[8]);
+      sum += abs(ref0[9]  - ref1[9]);
+      sum += abs(ref0[10] - ref1[10]);
+      sum += abs(ref0[11] - ref1[11]);
+      sum += abs(ref0[12] - ref1[12]);
+      sum += abs(ref0[13] - ref1[13]);
+      sum += abs(ref0[14] - ref1[14]);
+      sum += abs(ref0[15] - ref1[15]);
 
-  if (pb_w == 16) {
-      for (i = 0; i < (pb_h >> 1); ++i) {
-          sum += abs(ref0[0]  - ref1[0]);
-          sum += abs(ref0[1]  - ref1[1]);
-          sum += abs(ref0[2]  - ref1[2]);
-          sum += abs(ref0[3]  - ref1[3]);
-          sum += abs(ref0[4]  - ref1[4]);
-          sum += abs(ref0[5]  - ref1[5]);
-          sum += abs(ref0[6]  - ref1[6]);
-          sum += abs(ref0[7]  - ref1[7]);
-          sum += abs(ref0[8]  - ref1[8]);
-          sum += abs(ref0[9]  - ref1[9]);
-          sum += abs(ref0[10] - ref1[10]);
-          sum += abs(ref0[11] - ref1[11]);
-          sum += abs(ref0[12] - ref1[12]);
-          sum += abs(ref0[13] - ref1[13]);
-          sum += abs(ref0[14] - ref1[14]);
-          sum += abs(ref0[15] - ref1[15]);
+      ref0 += dmvr_stride << 1;
+      ref1 += dmvr_stride << 1;
+  }
+  return sum;
+}
 
-          ref0 += dmvr_stride << 1;
-          ref1 += dmvr_stride << 1;
-      }
-  } else {
-      for (i = 0; i < (pb_h >> 1); ++i) {
-          sum += abs(ref0[0]  - ref1[0]);
-          sum += abs(ref0[1]  - ref1[1]);
-          sum += abs(ref0[2]  - ref1[2]);
-          sum += abs(ref0[3]  - ref1[3]);
-          sum += abs(ref0[4]  - ref1[4]);
-          sum += abs(ref0[5]  - ref1[5]);
-          sum += abs(ref0[6]  - ref1[6]);
-          sum += abs(ref0[7]  - ref1[7]);
+static uint64_t
+rcn_dmvr_sad_8(const int16_t *ref0, const int16_t *ref1,
+             int16_t dmvr_stride, int16_t pb_w, int16_t pb_h)
+{
+  uint64_t sum = 0;
+  int i;
+  for (i = 0; i < (pb_h >> 1); ++i) {
+      sum += abs(ref0[0]  - ref1[0]);
+      sum += abs(ref0[1]  - ref1[1]);
+      sum += abs(ref0[2]  - ref1[2]);
+      sum += abs(ref0[3]  - ref1[3]);
+      sum += abs(ref0[4]  - ref1[4]);
+      sum += abs(ref0[5]  - ref1[5]);
+      sum += abs(ref0[6]  - ref1[6]);
+      sum += abs(ref0[7]  - ref1[7]);
 
-          ref0 += dmvr_stride << 1;
-          ref1 += dmvr_stride << 1;
-      }
+      ref0 += dmvr_stride << 1;
+      ref1 += dmvr_stride << 1;
   }
   return sum;
 }
 
 /*FIXME return min_dmvr_idx; */
 static uint8_t
-dmvr_compute_sads(const int16_t *ref0, const int16_t *ref1,
+dmvr_compute_sads_16(const int16_t *ref0, const int16_t *ref1,
                   uint64_t *sad_array, int sb_w, int sb_h)
 {
     const int32_t stride_l0 = 128 + 4;
@@ -994,25 +999,76 @@ dmvr_compute_sads(const int16_t *ref0, const int16_t *ref1,
     uint8_t idx;
     uint8_t dmvr_idx = 12;
 
-    /* FIXME avoid already computed idx == 12 */
-    for (idx = 0; idx < DMVR_NB_IDX; ++idx) {
+    for (idx = 0; idx < 12; ++idx) {
         ref0 = ref0_start + (int16_t)dmvr_mv_x[idx]
                           + (int16_t)dmvr_mv_y[idx] * stride_l0;
 
         ref1 = ref1_start - (int16_t)dmvr_mv_x[idx]
                           - (int16_t)dmvr_mv_y[idx] * stride_l1;
 
-        /* TODO skip 12 already filled by activation first check */
-        uint64_t cost = rcn_dmvr_sad(ref0, ref1, stride_l1,
+        sad_array[idx] = rcn_dmvr_sad_16(ref0, ref1, stride_l1,
                                      sb_w, sb_h);
-        if (idx == 12) {
-            cost -= cost >> 2;
+    }
+
+    for (idx = 13; idx < DMVR_NB_IDX; ++idx) {
+        ref0 = ref0_start + (int16_t)dmvr_mv_x[idx]
+                          + (int16_t)dmvr_mv_y[idx] * stride_l0;
+
+        ref1 = ref1_start - (int16_t)dmvr_mv_x[idx]
+                          - (int16_t)dmvr_mv_y[idx] * stride_l1;
+
+        sad_array[idx] = rcn_dmvr_sad_16(ref0, ref1, stride_l1,
+                                     sb_w, sb_h);
+    }
+    for (idx = 0; idx < DMVR_NB_IDX; ++idx) {
+        if (sad_array[idx] < min_cost || (idx == 12 && sad_array[idx] <= min_cost)) {
+            min_cost = sad_array[idx];
+            dmvr_idx = idx;
         }
+    }
 
-        sad_array[idx] = cost;
+    return dmvr_idx;
+}
 
-        if (cost < min_cost || (idx == 12 && cost <= min_cost)) {
-            min_cost = cost;
+/*FIXME return min_dmvr_idx; */
+static uint8_t
+dmvr_compute_sads_8(const int16_t *ref0, const int16_t *ref1,
+                  uint64_t *sad_array, int sb_w, int sb_h)
+{
+    const int32_t stride_l0 = 128 + 4;
+    const int32_t stride_l1 = 128 + 4;
+
+    const int16_t *const ref0_start = ref0;
+    const int16_t *const ref1_start = ref1;
+    uint64_t min_cost = (uint64_t) -1;
+
+    uint8_t idx;
+    uint8_t dmvr_idx = 12;
+
+    for (idx = 0; idx < 12; ++idx) {
+        ref0 = ref0_start + (int16_t)dmvr_mv_x[idx]
+                          + (int16_t)dmvr_mv_y[idx] * stride_l0;
+
+        ref1 = ref1_start - (int16_t)dmvr_mv_x[idx]
+                          - (int16_t)dmvr_mv_y[idx] * stride_l1;
+
+        sad_array[idx] = rcn_dmvr_sad_8(ref0, ref1, stride_l1,
+                                     sb_w, sb_h);
+    }
+
+    for (idx = 13; idx < DMVR_NB_IDX; ++idx) {
+        ref0 = ref0_start + (int16_t)dmvr_mv_x[idx]
+                          + (int16_t)dmvr_mv_y[idx] * stride_l0;
+
+        ref1 = ref1_start - (int16_t)dmvr_mv_x[idx]
+                          - (int16_t)dmvr_mv_y[idx] * stride_l1;
+
+        sad_array[idx] = rcn_dmvr_sad_8(ref0, ref1, stride_l1,
+                                     sb_w, sb_h);
+    }
+    for (idx = 0; idx < DMVR_NB_IDX; ++idx) {
+        if (sad_array[idx] < min_cost || (idx == 12 && sad_array[idx] <= min_cost)) {
+            min_cost = sad_array[idx];
             dmvr_idx = idx;
         }
     }
@@ -1108,12 +1164,13 @@ uint8_t
 rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                    uint8_t x0, uint8_t y0,
                    uint8_t log2_pu_w, uint8_t log2_pu_h,
-                   OVMV *mv0, OVMV *mv1, uint8_t ref_idx0, uint8_t ref_idx1, uint8_t 
+                   OVMV *mv0, OVMV *mv1, uint8_t ref_idx0, uint8_t ref_idx1, uint8_t
                    apply_bdof)
 {
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
+    struct DMVRFunctions *dmvr = &rcn_ctx->rcn_funcs.dmvr;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
@@ -1153,7 +1210,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     int16_t dmvr_stride = 128 + 4;
     uint64_t dmvr_sad;
-    uint64_t min_cost; 
+    uint64_t min_cost;
 
 
     /* Interpolate ref 0/1 with 2 additional samples before and after */
@@ -1166,7 +1223,13 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                                    prec_x1, prec_y1, pu_w + 4);
 
     /* Compute SAD on center part */
-    dmvr_sad = rcn_dmvr_sad(ref_dmvr0 + 2 + 2 * dmvr_stride,
+    uint64_t (*rcn_dmvr_sad)(const int16_t *ref0, const int16_t *ref1, int16_t dmvr_stride, int16_t pb_w, int16_t pb_h);
+    if ( pu_w ==16 ){
+      rcn_dmvr_sad = &rcn_dmvr_sad_16;
+    } else {
+      rcn_dmvr_sad = &rcn_dmvr_sad_8;
+    }
+    dmvr_sad = dmvr->sad[pu_w==16](ref_dmvr0 + 2 + 2 * dmvr_stride,
                             ref_dmvr1 + 2 + 2 * dmvr_stride,
                             dmvr_stride, pu_w, pu_h);
 
@@ -1175,7 +1238,8 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     /* skip MV refinement if cost is small or zero */
     if (min_cost >= (pu_w * pu_h)) {
         uint64_t sad[25];
-        uint8_t dmvr_idx = dmvr_compute_sads(ref_dmvr0 + 2 + 2 * dmvr_stride,
+        sad[12]=min_cost;
+        uint8_t dmvr_idx = dmvr->computeSB[pu_w==16](ref_dmvr0 + 2 + 2 * dmvr_stride,
                                              ref_dmvr1 + 2 + 2 * dmvr_stride,
                                              sad, pu_w, pu_h);
 
@@ -2878,4 +2942,14 @@ rcn_gpm_b(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
     rcn_gpm_mc(ctudec, dst, gpm_ctx->split_dir, x0, y0, log2_pb_w, log2_pb_h, 
                           type0, gpm_ctx->mv0, type1, gpm_ctx->mv1);
 
+}
+
+void
+rcn_dmvr_functions(struct RCNFunctions *const rcn_funcs)
+{
+    rcn_funcs->dmvr.sad[0] = &rcn_dmvr_sad_8;
+    rcn_funcs->dmvr.sad[1] = &rcn_dmvr_sad_16;
+
+    rcn_funcs->dmvr.computeSB[0] = &dmvr_compute_sads_8;
+    rcn_funcs->dmvr.computeSB[1] = &dmvr_compute_sads_16;
 }
