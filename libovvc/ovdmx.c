@@ -561,6 +561,7 @@ ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
     ret = extract_nal_unit(dmx, &pending_nalu_list);
     if (!dmx->eof && ret < 0) {
         ov_log(dmx, OVLOG_ERROR, "No valid Access Unit found \n");
+        *dst_pu = NULL;
         free_nalu_list(&pending_nalu_list);
         ov_free(pu);
         return ret;
