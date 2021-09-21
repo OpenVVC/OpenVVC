@@ -30,6 +30,29 @@ set_ov_log_level(OVLOG_TYPE log_level)
         ov_log_level = log_level;
 }
 
+static void
+ov_log_default(void* ctx, int log_level, const char* log_content, va_list vl)
+{
+    if (log_level <= ov_log_level) {
+        const char* type = "NULL";
+        if (ctx != NULL) {
+            type = vvctype;
+        }
+        fprintf(stderr, "%s", OVLOG_COLORIFY[log_level]);
+        fprintf(stderr, "[%s @ %p] : ", type, (long unsigned)ctx);
+        vfprintf(stderr, log_content, vl);
+        fprintf(stderr, "%s", RST);
+    }
+}
+
+static void (*ov_log_callback)(void* ctx, int log_level, const char* log_content, va_list vl) = ov_log_default;
+
+void
+set_log_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl))
+{
+    ov_log_callback = log_function;
+}
+
 void
 ov_log(void* ctx, int log_level, const char* log_content, ...)
 {
@@ -37,18 +60,7 @@ ov_log(void* ctx, int log_level, const char* log_content, ...)
 
         va_start(args, log_content);
 
-        #if ENABLE_LOG
-        if (log_level <= ov_log_level) {
-                const char* type = "NULL";
-                if (ctx != NULL) {
-                        type = vvctype;
-                }
-                fprintf(stderr, "%s", OVLOG_COLORIFY[log_level]);
-                fprintf(stderr, "[%s @ Ox%.16lx] : ", type, (long unsigned)ctx);
-                vfprintf(stderr, log_content, args);
-                fprintf(stderr, "%s", RST);
-        }
-        #endif
+        ov_log_callback(ctx, log_level, log_content, args);
 
         va_end(args);
 }

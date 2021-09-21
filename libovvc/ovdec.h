@@ -1,6 +1,7 @@
 #ifndef OPENVVC_H
 #define OPENVVC_H
 
+#include <stdarg.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -48,5 +49,7 @@ int ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value);
 int ovdec_close(OVVCDec *ovvcdec);
 
 void ovdec_uninit_subdec_list(OVVCDec *vvcdec);
+
+void ovdec_set_log_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl));
 
 #endif

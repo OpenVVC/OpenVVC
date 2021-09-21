@@ -1,6 +1,7 @@
 #ifndef OVVCUTILS_H
 #define OVVCUTILS_H
 
+#include <stdarg.h>
 #include <stdint.h>
 
 #define RED   "\x1B[31m"
@@ -40,11 +41,11 @@ extern OVLOG_TYPE ov_log_level;
 void
 print_ov_lib_version();
 
-void
-set_ov_log_level(OVLOG_TYPE log_level);
+void set_ov_log_level(OVLOG_TYPE log_level);
 
-void
-ov_log(void* ctx, int log_level, const char* log_content, ...);
+void ov_log(void* ctx, int log_level, const char* log_content, ...);
+
+void set_log_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl));
 
 /* FIXME
  * Add specific clip for unsigned */

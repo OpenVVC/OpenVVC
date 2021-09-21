@@ -495,3 +495,8 @@ fail:
     ov_log(vvcdec, 3, "Trying to close a something not a decoder.\n");
     return -1;
 }
+
+void ovdec_set_log_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl))
+{
+    set_log_callback(log_function);
+}
