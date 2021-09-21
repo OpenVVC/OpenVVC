@@ -228,14 +228,14 @@ static const NALUnitAction nalu_action[32] =
     &warn_unsupported           , /* VPS */
     &decode_nvcl_hls            , /* SPS */
     &decode_nvcl_hls            , /* PPS */
-    &log_ignored                , /* PREFIX_APS */
-    &log_ignored                , /* SUFFIX_APS */
+    &nvcl_decode_nalu_aps       , /* PREFIX_APS */
+    &nvcl_decode_nalu_aps       , /* SUFFIX_APS */
     &decode_nvcl_hls            , /* PH */
     &log_ignored                , /* AUD */
     &log_ignored                , /* EOS */
     &log_ignored                , /* EOB */
-    &log_ignored                , /* PREFIX_SEI */
-    &log_ignored                , /* SUFFIX_SEI */
+    &nvcl_decode_nalu_sei       , /* PREFIX_SEI */
+    &nvcl_decode_nalu_sei       , /* SUFFIX_SEI */
     &log_ignored                , /* FD */
     &warn_unspec                , /* RSVD_NVCL */
     &warn_unspec                , /* RSVD_NVCL */
@@ -256,6 +256,7 @@ nvcl_decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, OVNALUnit *const nalu)
     nvcl_skip_bits(&rdr, 16);
 
     uint8_t nalu_type = nalu->type & 0x1F;
+    ov_log(NULL, OVLOG_TRACE, "Received new %s NAL unit.\n", nalu_name[nalu_type]);
 
     return nalu_action[nalu_type](nvcl_ctx, &rdr, nalu_type);
 }

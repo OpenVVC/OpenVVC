@@ -182,7 +182,7 @@ nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
 }
 
 int
-nvcl_decode_nalu_aps(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
+nvcl_decode_nalu_aps(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr, uint8_t nalu_type)
 {
     int ret;
     /* TODO compare RBSP data to avoid new read */

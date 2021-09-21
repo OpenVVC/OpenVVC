@@ -204,7 +204,7 @@ nvcl_slhdr_read(OVNVCLReader *const rdr, struct OVSEISLHDR* sei_slhdr, uint32_t 
 #endif
 
 int 
-nvcl_decode_nalu_sei(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
+nvcl_decode_nalu_sei(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr, uint8_t nalu_type)
 {   
     if(!nvcl_ctx->sei)
         nvcl_ctx->sei = ov_mallocz(sizeof(struct OVSEI));    

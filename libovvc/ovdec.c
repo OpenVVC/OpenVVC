@@ -213,18 +213,10 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         }
 
         break;
-    case OVNALU_SUFFIX_APS:
-    case OVNALU_PREFIX_APS:
-        ret = nvcl_decode_nalu_aps(&rdr, nvcl_ctx);
-        if (ret < 0) {
-            goto fail;
-        }
-        break;
     case OVNALU_PREFIX_SEI:
     case OVNALU_SUFFIX_SEI:
-        ret = nvcl_decode_nalu_sei(&rdr, nvcl_ctx);
-        if (ret < 0)
-            goto fail;
+    case OVNALU_SUFFIX_APS:
+    case OVNALU_PREFIX_APS:
     case OVNALU_VPS:
     case OVNALU_SPS:
     case OVNALU_PPS:
