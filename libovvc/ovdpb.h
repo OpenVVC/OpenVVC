@@ -76,10 +76,11 @@ struct OVPicture
 
     /* Pointers to ref_pic_list */
     /* FIXME use frame directly ? */
-    const struct OVPicture *rpl0[16];
-    const struct OVPicture *rpl0_non_active[16];
-    const struct OVPicture *rpl1[16];
-    const struct OVPicture *rpl1_non_active[16];
+    /* FIXME should be const */
+    struct OVPicture *rpl0[16];
+    struct OVPicture *rpl0_non_active[16];
+    struct OVPicture *rpl1[16];
+    struct OVPicture *rpl1_non_active[16];
 
     /* FIXME Used only by TMPV? */
     #if 0
