@@ -130,6 +130,7 @@ int
 init_entry_threads(struct SliceThread *th_slice, int nb_threads)
 {
     int i;
+    ov_log(NULL, OVLOG_TRACE, "Creating %d entry threads\n", nb_threads);
     for (i = 0; i < nb_threads; ++i){
         struct EntryThread *tdec = &th_slice->tdec[i];
 
@@ -159,6 +160,7 @@ init_entry_threads(struct SliceThread *th_slice, int nb_threads)
     return 0;
 
 failthread:
+    ov_log(NULL, OVLOG_ERROR,  "Entry threads creation failed\n");
     uninit_entry_threads(th_slice);
 
     ov_freep(&th_slice->tdec);
@@ -171,6 +173,7 @@ uninit_entry_threads(struct SliceThread *th_slice)
 {
     int i;
     void *ret;
+    ov_log(NULL, OVLOG_TRACE, "Deleting %d entry threads\n", th_slice->nb_entry_th);
     for (i = 0; i < th_slice->nb_entry_th; ++i){
         struct EntryThread *th_entry = &th_slice->tdec[i];
         pthread_mutex_lock(&th_entry->entry_mtx);

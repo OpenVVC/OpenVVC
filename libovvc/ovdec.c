@@ -35,6 +35,7 @@ static int
 ovdec_init_subdec_list(OVVCDec *dec)
 {
     int ret;
+    ov_log(NULL, OVLOG_TRACE, "Creating %d Slice decoders\n", dec->nb_frame_th);
     if (!dec->subdec_list) 
         dec->subdec_list = ov_mallocz(sizeof(OVSliceDec*) * dec->nb_frame_th);
 
@@ -60,7 +61,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
 
     ret = decinit_update_params(&dec->active_params, nvcl_ctx);
     if (ret < 0) {
-        ov_log(dec, 3, "Failed to activate parameters\n");
+        ov_log(dec, OVLOG_ERROR, "Failed to activate parameters\n");
         return ret;
     }
 
@@ -430,9 +431,11 @@ ovdec_init(OVVCDec **vvcdec, int display_output, int nb_frame_th, int nb_entry_t
 
     ovdec_init_subdec_list(*vvcdec);
 
+    ov_log(NULL, OVLOG_TRACE, "OpenVVC init at %p\n", *vvcdec);
     return 0;
 
 fail:
+    ov_log(NULL, OVLOG_ERROR, "Failed OpenVVC init\n");
     /* TODO proper error management (ENOMEM)*/
     return -1;
 }

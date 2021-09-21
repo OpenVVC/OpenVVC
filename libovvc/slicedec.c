@@ -1614,6 +1614,7 @@ init_ctudec_list(OVSliceDec *const sldec, int nb_threads)
      #endif
      return 0;
 failctudec:
+     ov_log(NULL, OVLOG_ERROR, "Failed line decoder initialisation\n");
      uninit_ctudec_list(sldec, nb_ctudec);
 
      return OVVC_ENOMEM;
@@ -1643,6 +1644,7 @@ slicedec_init(OVSliceDec *sldec, int nb_entry_th)
     return 0;
 
 failthreads:
+    ov_log(NULL, OVLOG_ERROR, "Failed slice decoder initialisation\n");
     uninit_ctudec_list(sldec, nb_entry_th);
 failctudec:
     ov_freep(&sldec);
