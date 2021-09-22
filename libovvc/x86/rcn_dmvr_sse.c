@@ -1,4 +1,5 @@
-#include <emmintrin.h>
+#include <tmmintrin.h>
+#include <immintrin.h>
 
 #include "rcn_structures.h"
 
@@ -38,27 +39,25 @@ rcn_dmvr_sad_16(const int16_t *ref0, const int16_t *ref1,
 {
   uint64_t sum = 0;
   int i;
+  __m128i zero = _mm_setzero_si128();
+  __m128i sumV = _mm_setzero_si128();
   for (i = 0; i < (pb_h >> 1); ++i) {
-      sum += abs(ref0[0]  - ref1[0]);
-      sum += abs(ref0[1]  - ref1[1]);
-      sum += abs(ref0[2]  - ref1[2]);
-      sum += abs(ref0[3]  - ref1[3]);
-      sum += abs(ref0[4]  - ref1[4]);
-      sum += abs(ref0[5]  - ref1[5]);
-      sum += abs(ref0[6]  - ref1[6]);
-      sum += abs(ref0[7]  - ref1[7]);
-      sum += abs(ref0[8]  - ref1[8]);
-      sum += abs(ref0[9]  - ref1[9]);
-      sum += abs(ref0[10] - ref1[10]);
-      sum += abs(ref0[11] - ref1[11]);
-      sum += abs(ref0[12] - ref1[12]);
-      sum += abs(ref0[13] - ref1[13]);
-      sum += abs(ref0[14] - ref1[14]);
-      sum += abs(ref0[15] - ref1[15]);
+      __m128i x1 = _mm_loadu_si128((__m128i *)&ref0[0]);
+      __m128i x2 = _mm_loadu_si128((__m128i *)&ref0[8]);
+      __m128i y1 = _mm_loadu_si128((__m128i *)&ref1[0]);
+      __m128i y2 = _mm_loadu_si128((__m128i *)&ref1[8]);
+      x1 = _mm_abs_epi16(_mm_sub_epi16(x1, y1));
+      x2 = _mm_abs_epi16(_mm_sub_epi16(x2, y2));
+      x1 = _mm_add_epi16(x1, x2);
+      sumV = _mm_add_epi32(sumV, x1);
 
       ref0 += dmvr_stride << 1;
       ref1 += dmvr_stride << 1;
   }
+  sumV = _mm_add_epi32(_mm_unpacklo_epi16(sumV,zero), _mm_unpackhi_epi16(sumV,zero));
+  sumV = _mm_add_epi64(_mm_unpacklo_epi32(sumV,zero), _mm_unpackhi_epi32(sumV,zero));
+  sumV = _mm_add_epi64(_mm_unpacklo_epi64(sumV,zero), _mm_unpackhi_epi64(sumV,zero));
+  _mm_storel_epi64((__m128i *) &sum, sumV);
   return sum;
 }
 
@@ -68,19 +67,21 @@ rcn_dmvr_sad_8(const int16_t *ref0, const int16_t *ref1,
 {
   uint64_t sum = 0;
   int i;
+  __m128i zero = _mm_setzero_si128();
+  __m128i sumV = _mm_setzero_si128();
   for (i = 0; i < (pb_h >> 1); ++i) {
-      sum += abs(ref0[0]  - ref1[0]);
-      sum += abs(ref0[1]  - ref1[1]);
-      sum += abs(ref0[2]  - ref1[2]);
-      sum += abs(ref0[3]  - ref1[3]);
-      sum += abs(ref0[4]  - ref1[4]);
-      sum += abs(ref0[5]  - ref1[5]);
-      sum += abs(ref0[6]  - ref1[6]);
-      sum += abs(ref0[7]  - ref1[7]);
+      __m128i x1 = _mm_loadu_si128((__m128i *)&ref0[0]);
+      __m128i y1 = _mm_loadu_si128((__m128i *)&ref1[0]);
+      x1 = _mm_abs_epi16(_mm_sub_epi16(x1, y1));
+      sumV = _mm_add_epi32(sumV, x1);
 
       ref0 += dmvr_stride << 1;
       ref1 += dmvr_stride << 1;
   }
+  sumV = _mm_add_epi32(_mm_unpacklo_epi16(sumV,zero), _mm_unpackhi_epi16(sumV,zero));
+  sumV = _mm_add_epi64(_mm_unpacklo_epi32(sumV,zero), _mm_unpackhi_epi32(sumV,zero));
+  sumV = _mm_add_epi64(_mm_unpacklo_epi64(sumV,zero), _mm_unpackhi_epi64(sumV,zero));
+  _mm_storel_epi64((__m128i *) &sum, sumV);
   return sum;
 }
 
