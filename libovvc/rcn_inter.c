@@ -1171,6 +1171,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
     struct DMVRFunctions *dmvr = &rcn_ctx->rcn_funcs.dmvr;
+    struct PROFFunctions *prof = &rcn_ctx->rcn_funcs.prof;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
@@ -1335,10 +1336,10 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         extend_bdof_buff(ref0_b.y, (uint16_t*)tmp_buff, ref0_b.stride, pu_w, pu_h, prec_x0 >> 3, prec_y0 >> 3);
         extend_bdof_buff(ref1_b.y, (uint16_t*)tmp_buff1, ref1_b.stride, pu_w, pu_h, prec_x1 >> 3, prec_y1 >> 3);
 
-        compute_prof_grad((uint16_t *)tmp_buff, ref_stride, pu_w, pu_h, grad_stride,
+        prof->grad((uint16_t *)tmp_buff, ref_stride, pu_w, pu_h, grad_stride,
                           grad_x0 + grad_stride + 1, grad_y0 + grad_stride + 1);
 
-        compute_prof_grad((uint16_t *)tmp_buff1, ref_stride, pu_w, pu_h, grad_stride,
+        prof->grad((uint16_t *)tmp_buff1, ref_stride, pu_w, pu_h, grad_stride,
                           grad_x1 + grad_stride + 1, grad_y1 + grad_stride + 1);
 
         /* Grad padding */
@@ -1683,6 +1684,7 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
+    struct PROFFunctions *prof = &rcn_ctx->rcn_funcs.prof;
     /* FIXME derive ref_idx */
     uint8_t ref_idx_0 = ref_idx0;
     uint8_t ref_idx_1 = ref_idx1;
@@ -1763,10 +1765,10 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     extend_bdof_buff(ref0_b.y, (uint16_t *)ref_bdof0, ref0_b.stride, pb_w, pb_h, prec_x0 >> 3, prec_y0 >> 3);
     extend_bdof_buff(ref1_b.y, (uint16_t *)ref_bdof1, ref1_b.stride, pb_w, pb_h, prec_x1 >> 3, prec_y1 >> 3);
 
-    compute_prof_grad((uint16_t *)ref_bdof0, ref_stride, pb_w, pb_h, grad_stride,
+    prof->grad((uint16_t *)ref_bdof0, ref_stride, pb_w, pb_h, grad_stride,
                       grad_x0 + grad_stride + 1, grad_y0 + grad_stride + 1);
 
-    compute_prof_grad((uint16_t *)ref_bdof1, ref_stride, pb_w, pb_h, grad_stride,
+    prof->grad((uint16_t *)ref_bdof1, ref_stride, pb_w, pb_h, grad_stride,
                       grad_x1 + grad_stride + 1, grad_y1 + grad_stride + 1);
 
     /* Grad padding */
@@ -1802,6 +1804,7 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
+    struct PROFFunctions *prof = &rcn_ctx->rcn_funcs.prof;
     /* FIXME derive ref_idx */
     uint8_t ref_idx_0 = ref_idx0;
     uint8_t ref_idx_1 = ref_idx1;
@@ -1874,7 +1877,7 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
         extend_prof_buff(ref0_b.y, (uint16_t *)tmp_prof, ref0_b.stride, prec_x0 >> 3, prec_y0 >> 3);
 
-        compute_prof_grad((uint16_t *)tmp_prof, tmp_prof_stride, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
+        prof->grad((uint16_t *)tmp_prof, tmp_prof_stride, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
 
         rcn_prof((uint16_t *)tmp_buff, MAX_PB_SIZE, (uint16_t *)tmp_prof + 128 + 1, tmp_prof_stride, tmp_grad_x, tmp_grad_y,
                  4, prof_info->dmv_scale_h_0, prof_info->dmv_scale_v_0, 1);
@@ -1895,7 +1898,7 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
         extend_prof_buff(ref1_b.y, (uint16_t *)tmp_prof, ref1_b.stride, prec_x1 >> 3, prec_y1 >> 3);
 
-        compute_prof_grad((uint16_t *)tmp_prof, tmp_prof_stride, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
+        prof->grad((uint16_t *)tmp_prof, tmp_prof_stride, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
 
         rcn_prof((uint16_t *)tmp_buff1, MAX_PB_SIZE, (uint16_t *)tmp_prof + 128 + 1, tmp_prof_stride,
                  tmp_grad_x, tmp_grad_y,
@@ -2237,6 +2240,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
     struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
+    struct PROFFunctions *prof = &rcn_ctx->rcn_funcs.prof;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
@@ -2313,7 +2317,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
 
     extend_prof_buff(src_y, (uint16_t *)tmp_prof, src_stride, prec_x >> 3, prec_y >> 3);
 
-    compute_prof_grad((uint16_t *)tmp_prof, tmp_prof_stride, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
+    prof->grad((uint16_t *)tmp_prof, tmp_prof_stride, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
 
     rcn_prof(dst.y, dst.stride, (uint16_t *)tmp_prof + 128 + 1, tmp_prof_stride, tmp_grad_x, tmp_grad_y,
              4, dmv_scale_h, dmv_scale_v, 0);
@@ -2952,4 +2956,10 @@ rcn_dmvr_functions(struct RCNFunctions *const rcn_funcs)
 
     rcn_funcs->dmvr.computeSB[0] = &dmvr_compute_sads_8;
     rcn_funcs->dmvr.computeSB[1] = &dmvr_compute_sads_16;
+}
+
+void
+rcn_prof_functions(struct RCNFunctions *const rcn_funcs)
+{
+    rcn_funcs->prof.grad = &compute_prof_grad;
 }

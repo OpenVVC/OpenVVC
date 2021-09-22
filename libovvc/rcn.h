@@ -126,6 +126,8 @@ void rcn_init_sao_functions(struct RCNFunctions *const rcn_funcs);
 
 void rcn_dmvr_functions(struct RCNFunctions *const rcn_funcs);
 
+void rcn_prof_functions(struct RCNFunctions *const rcn_funcs);
+
 void rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
                  uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y);
 

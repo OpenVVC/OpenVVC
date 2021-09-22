@@ -125,6 +125,9 @@ typedef uint64_t (*DMVRSADFunc)(const int16_t *ref0, const int16_t *ref1, int16_
 
 typedef uint64_t (*DMVRComputeSADsFunc)(const int16_t *ref0, const int16_t *ref1, uint64_t *sad_array, int sb_w, int sb_h);
 
+typedef void (*PROFGradFunction)(const uint16_t* src, int src_stride, int sb_w, int sb_h,
+                  int grad_stride, int16_t* grad_x, int16_t* grad_y);
+
 /**
  * The Context put together all functions used by strategies.
  */
@@ -203,6 +206,10 @@ struct DMVRFunctions{
     DMVRComputeSADsFunc computeSB[2];
 };
 
+struct PROFFunctions{
+    PROFGradFunction grad;
+};
+
 struct RCNFunctions
 {
     /* Motion Compensation Luma */
@@ -241,6 +248,9 @@ struct RCNFunctions
 
     /* DMVR Functions */
     struct DMVRFunctions dmvr;
+
+    /* PROF Functions */
+    struct PROFFunctions prof;
 };
 
 
