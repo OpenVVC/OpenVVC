@@ -670,6 +670,8 @@ struct OVCTUDec
     uint8_t jcbcr_enabled;
     uint8_t mts_implicit;
     uint8_t mts_enabled;
+    uint8_t mts_explicit_intra;
+    uint8_t mts_explicit_inter;
     uint8_t enable_lfnst;
 
     uint8_t delta_qp_enabled;

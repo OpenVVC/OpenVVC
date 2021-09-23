@@ -1282,7 +1282,8 @@ lfnst_mts(const OVCTUDec *const ctu_dec, uint8_t log2_tb_w, uint8_t log2_tb_h,
             }
         }
 
-        if (ctu_dec->mts_enabled && (cu_flags & 0x2)) {
+        if (ctu_dec->mts_enabled && (((cu_flags & 0x2) && ctu_dec->mts_explicit_intra)
+                                 || (!(cu_flags & 0x2) && ctu_dec->mts_explicit_inter))) {
             const struct TBInfo *tb_info = &tu_info->tb_info[2];
             if (!tu_info->lfnst_flag && !!tb_info->last_pos && (log2_tb_w < 6) && (log2_tb_h < 6)
                 && !(tb_info->sig_sb_map & (~0x000000000F0F0F0F))) {
@@ -1320,8 +1321,9 @@ lfnst_mts(const OVCTUDec *const ctu_dec, uint8_t log2_tb_w, uint8_t log2_tb_h,
                 }
             }
 
-            if (!tu_info->lfnst_flag && !!tb_info->last_pos && (cu_flags & 0x2)
-                && ctu_dec->mts_enabled && (log2_tb_w < 6) && (log2_tb_h < 6)
+            if (!tu_info->lfnst_flag && !!tb_info->last_pos && (((cu_flags & 0x2) && ctu_dec->mts_explicit_intra)
+                                 || (!(cu_flags & 0x2) && ctu_dec->mts_explicit_inter))
+                && (log2_tb_w < 6) && (log2_tb_h < 6)
                 && !(tb_info->sig_sb_map & (~0x000000000F0F0F0F))) {
                 OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 

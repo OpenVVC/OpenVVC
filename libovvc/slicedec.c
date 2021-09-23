@@ -165,7 +165,10 @@ init_coding_coeff_coding_ctx(OVCTUDec *ctudec, const OVPS *prms)
     #endif
 
     /* FIXME replace this with a status on MTS */
-    ctudec->mts_enabled  = sps->sps_mts_enabled_flag && sps->sps_explicit_mts_intra_enabled_flag;
+    uint8_t mts_enabled = sps->sps_mts_enabled_flag;
+    ctudec->mts_enabled = mts_enabled;
+    ctudec->mts_explicit_intra = mts_enabled && sps->sps_explicit_mts_intra_enabled_flag;
+    ctudec->mts_explicit_inter = mts_enabled && sps->sps_explicit_mts_inter_enabled_flag;
     ctudec->mts_implicit = sps->sps_mts_enabled_flag && !sps->sps_explicit_mts_intra_enabled_flag;
 
     if (sh->sh_dep_quant_used_flag) {
