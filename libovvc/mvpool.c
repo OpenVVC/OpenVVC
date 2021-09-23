@@ -13,14 +13,14 @@
 
 
 #define LOG2_MIN_CU_S 2
+#define LOG2_MIN_MV_STORAGE 3
 
 static int
 init_mv_pool(struct MVPool *const mv_pool, const struct PicPartInfo *const pinfo)
 {
     size_t   nb_ctb_pic = (size_t) pinfo->nb_ctb_w * pinfo->nb_ctb_h;
-    uint16_t nb_pb_ctb_w = (1 << pinfo->log2_ctu_s) >> LOG2_MIN_CU_S;
+    uint16_t nb_pb_ctb_w = (1 << pinfo->log2_ctu_s) >> LOG2_MIN_MV_STORAGE;
 
-    /*FIXME tmp size to ben reduced to 8x8*/
     size_t elem_size = nb_ctb_pic * sizeof(OVMV) * nb_pb_ctb_w * nb_pb_ctb_w;
 
     mv_pool->mv_pool = ovmempool_init(elem_size);
