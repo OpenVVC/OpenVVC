@@ -1059,6 +1059,8 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
             int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             uint8_t is_mip = !!(cu_flags & flg_mip_flag);
+            uint8_t is_intra = !!(cu_flags & 0x2);
+            is_mip |= !is_intra;
             rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
                          lim_sb_s, tu_info->cu_mts_flag, tu_info->cu_mts_idx,
                          !tb_info->last_pos, tu_info->lfnst_flag, is_mip, tu_info->lfnst_idx, tu_info->is_sbt);
@@ -1113,6 +1115,8 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
             int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             uint8_t is_mip = !!(cu_flags & flg_mip_flag);
+            uint8_t is_intra = !!(cu_flags & 0x2);
+            is_mip |= !is_intra;
             rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
                          lim_sb_s, tu_info->cu_mts_flag, tu_info->cu_mts_idx,
                          !tb_info->last_pos, tu_info->lfnst_flag, is_mip, tu_info->lfnst_idx, tu_info->is_sbt);
