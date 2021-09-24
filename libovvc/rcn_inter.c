@@ -1224,12 +1224,6 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                                    prec_x1, prec_y1, pu_w + 4);
 
     /* Compute SAD on center part */
-    uint64_t (*rcn_dmvr_sad)(const int16_t *ref0, const int16_t *ref1, int16_t dmvr_stride, int16_t pb_w, int16_t pb_h);
-    if ( pu_w ==16 ){
-      rcn_dmvr_sad = &rcn_dmvr_sad_16;
-    } else {
-      rcn_dmvr_sad = &rcn_dmvr_sad_8;
-    }
     dmvr_sad = dmvr->sad[pu_w==16](ref_dmvr0 + 2 + 2 * dmvr_stride,
                             ref_dmvr1 + 2 + 2 * dmvr_stride,
                             dmvr_stride, pu_w, pu_h);

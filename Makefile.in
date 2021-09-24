@@ -34,7 +34,7 @@ LIB_FILE:=$(LIB_HEADER) $(LIB_SRC)
 include $(VPATH)$(SRC_FOLDER)/$(ARCH)/$(ARCH)obj.mak
 $(ARCH)_LIB_SRC:=$(addprefix $($(ARCH)_SRC_FOLDER),$($(ARCH)_LIB_SRC))
 $(ARCH)_LIB_OBJ:=$(addprefix $(BUILDDIR),$($(ARCH)_LIB_SRC:%.c=%.o))
-$(ARCH)_LIB_OBJ:=$($(ARCH)_LIB_OBJ:%.S=%.o))
+$(ARCH)_LIB_OBJ:=$($(ARCH)_LIB_OBJ:%.S=%.o)
 BUILDDIR_TYPE_ARCH:=$(addprefix $(BUILDDIR), $($(ARCH)_SRC_FOLDER))
 
 LIB_NAME:= libovvc
