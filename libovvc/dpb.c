@@ -796,8 +796,6 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
         }
     }
 
-    /* Unreference all non marked Picture */
-    ovdpb_clear_refs(dpb);
 
     return 0;
 
@@ -1028,9 +1026,6 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     /* If the NALU is an Refresh Picture all previous pictures in DPB
      * can be unreferenced
      */
-    if (idr_flag | cra_flag) {
-        ovdpb_clear_refs(dpb);
-    }
 
     /* FIXME test bumping here */
     /* Mark previous pic for output */
@@ -1057,12 +1052,14 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
      * Slices it is not clear whether we should still mark them
      * or not
      */
-    if (!idr_flag && !cra_flag) {
+    if (!idr_flag) {
         const OVRPL *rpl0 = sh->hrpl.rpl0;
         const OVRPL *rpl1 = sh->hrpl.rpl1;
         uint8_t slice_type = sh->sh_slice_type;
         mark_ref_pic_lists(dpb, slice_type, rpl0, rpl1, sldec);
     }
+
+    ovdpb_clear_refs(dpb);
 
     /* Init picture TMVP info */
     if (ps->sps->sps_temporal_mvp_enabled_flag) {
