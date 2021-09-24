@@ -1,3 +1,4 @@
+#include <emmintrin.h>
 #include <smmintrin.h>
 
 #include "rcn_structures.h"
@@ -33,20 +34,20 @@ static void rcn_prof_sse(uint16_t* dst, int dst_stride, const uint16_t* src, int
         __m128i sv3 = _mm_loadu_si128((__m128i *)&dmv_scale_v[8]);
         __m128i sv4 = _mm_loadu_si128((__m128i *)&dmv_scale_v[12]);
 
-        __m128i x1 = _mm_loadu_si64((__m128i *)&grad_x[0*grad_stride]);
-        __m128i x2 = _mm_loadu_si64((__m128i *)&grad_x[1*grad_stride]);
-        __m128i x3 = _mm_loadu_si64((__m128i *)&grad_x[2*grad_stride]);
-        __m128i x4 = _mm_loadu_si64((__m128i *)&grad_x[3*grad_stride]);
+        __m128i x1 = _mm_loadl_epi64((__m128i *)&grad_x[0*grad_stride]);
+        __m128i x2 = _mm_loadl_epi64((__m128i *)&grad_x[1*grad_stride]);
+        __m128i x3 = _mm_loadl_epi64((__m128i *)&grad_x[2*grad_stride]);
+        __m128i x4 = _mm_loadl_epi64((__m128i *)&grad_x[3*grad_stride]);
 
-        __m128i y1 = _mm_loadu_si64((__m128i *)&grad_y[0*grad_stride]);
-        __m128i y2 = _mm_loadu_si64((__m128i *)&grad_y[1*grad_stride]);
-        __m128i y3 = _mm_loadu_si64((__m128i *)&grad_y[2*grad_stride]);
-        __m128i y4 = _mm_loadu_si64((__m128i *)&grad_y[3*grad_stride]);
+        __m128i y1 = _mm_loadl_epi64((__m128i *)&grad_y[0*grad_stride]);
+        __m128i y2 = _mm_loadl_epi64((__m128i *)&grad_y[1*grad_stride]);
+        __m128i y3 = _mm_loadl_epi64((__m128i *)&grad_y[2*grad_stride]);
+        __m128i y4 = _mm_loadl_epi64((__m128i *)&grad_y[3*grad_stride]);
 
-        __m128i srcV1 = _mm_loadu_si64((__m128i *)&src[0*src_stride]);
-        __m128i srcV2 = _mm_loadu_si64((__m128i *)&src[1*src_stride]);
-        __m128i srcV3 = _mm_loadu_si64((__m128i *)&src[2*src_stride]);
-        __m128i srcV4 = _mm_loadu_si64((__m128i *)&src[3*src_stride]);
+        __m128i srcV1 = _mm_loadl_epi64((__m128i *)&src[0*src_stride]);
+        __m128i srcV2 = _mm_loadl_epi64((__m128i *)&src[1*src_stride]);
+        __m128i srcV3 = _mm_loadl_epi64((__m128i *)&src[2*src_stride]);
+        __m128i srcV4 = _mm_loadl_epi64((__m128i *)&src[3*src_stride]);
 
         sh1 = _mm_packs_epi32(sh1, _mm_setzero_si128());
         sh2 = _mm_packs_epi32(sh2, _mm_setzero_si128());
@@ -141,10 +142,10 @@ static void rcn_prof_sse(uint16_t* dst, int dst_stride, const uint16_t* src, int
         x3 = _mm_min_epi16(x3, _mm_set1_epi16(1023));
         x4 = _mm_min_epi16(x4, _mm_set1_epi16(1023));
 
-        _mm_storeu_si64((__m128i *)&dst[0*dst_stride], x1);
-        _mm_storeu_si64((__m128i *)&dst[1*dst_stride], x2);
-        _mm_storeu_si64((__m128i *)&dst[2*dst_stride], x3);
-        _mm_storeu_si64((__m128i *)&dst[3*dst_stride], x4);
+        _mm_storel_epi64((__m128i *)&dst[0*dst_stride], x1);
+        _mm_storel_epi64((__m128i *)&dst[1*dst_stride], x2);
+        _mm_storel_epi64((__m128i *)&dst[2*dst_stride], x3);
+        _mm_storel_epi64((__m128i *)&dst[3*dst_stride], x4);
     } else {
       __m128i min_val = _mm_set1_epi32(-PROF_DELTA_LIMIT);
       __m128i max_val = _mm_set1_epi32(PROF_DELTA_LIMIT - 1);
@@ -159,20 +160,20 @@ static void rcn_prof_sse(uint16_t* dst, int dst_stride, const uint16_t* src, int
       __m128i sv3 = _mm_loadu_si128((__m128i *)&dmv_scale_v[8]);
       __m128i sv4 = _mm_loadu_si128((__m128i *)&dmv_scale_v[12]);
 
-      __m128i x1 = _mm_loadu_si64((__m128i *)&grad_x[0*grad_stride]);
-      __m128i x2 = _mm_loadu_si64((__m128i *)&grad_x[1*grad_stride]);
-      __m128i x3 = _mm_loadu_si64((__m128i *)&grad_x[2*grad_stride]);
-      __m128i x4 = _mm_loadu_si64((__m128i *)&grad_x[3*grad_stride]);
+      __m128i x1 = _mm_loadl_epi64((__m128i *)&grad_x[0*grad_stride]);
+      __m128i x2 = _mm_loadl_epi64((__m128i *)&grad_x[1*grad_stride]);
+      __m128i x3 = _mm_loadl_epi64((__m128i *)&grad_x[2*grad_stride]);
+      __m128i x4 = _mm_loadl_epi64((__m128i *)&grad_x[3*grad_stride]);
 
-      __m128i y1 = _mm_loadu_si64((__m128i *)&grad_y[0*grad_stride]);
-      __m128i y2 = _mm_loadu_si64((__m128i *)&grad_y[1*grad_stride]);
-      __m128i y3 = _mm_loadu_si64((__m128i *)&grad_y[2*grad_stride]);
-      __m128i y4 = _mm_loadu_si64((__m128i *)&grad_y[3*grad_stride]);
+      __m128i y1 = _mm_loadl_epi64((__m128i *)&grad_y[0*grad_stride]);
+      __m128i y2 = _mm_loadl_epi64((__m128i *)&grad_y[1*grad_stride]);
+      __m128i y3 = _mm_loadl_epi64((__m128i *)&grad_y[2*grad_stride]);
+      __m128i y4 = _mm_loadl_epi64((__m128i *)&grad_y[3*grad_stride]);
 
-      __m128i srcV1 = _mm_loadu_si64((__m128i *)&src[0*src_stride]);
-      __m128i srcV2 = _mm_loadu_si64((__m128i *)&src[1*src_stride]);
-      __m128i srcV3 = _mm_loadu_si64((__m128i *)&src[2*src_stride]);
-      __m128i srcV4 = _mm_loadu_si64((__m128i *)&src[3*src_stride]);
+      __m128i srcV1 = _mm_loadl_epi64((__m128i *)&src[0*src_stride]);
+      __m128i srcV2 = _mm_loadl_epi64((__m128i *)&src[1*src_stride]);
+      __m128i srcV3 = _mm_loadl_epi64((__m128i *)&src[2*src_stride]);
+      __m128i srcV4 = _mm_loadl_epi64((__m128i *)&src[3*src_stride]);
 
       sh1 = _mm_packs_epi32(sh1, _mm_setzero_si128());
       sh2 = _mm_packs_epi32(sh2, _mm_setzero_si128());
@@ -238,10 +239,10 @@ static void rcn_prof_sse(uint16_t* dst, int dst_stride, const uint16_t* src, int
       x3 = _mm_shuffle_epi32(x3, 0x88);
       x4 = _mm_shuffle_epi32(x4, 0x88);
 
-      _mm_storeu_si64((__m128i *)&dst[0*dst_stride], x1);
-      _mm_storeu_si64((__m128i *)&dst[1*dst_stride], x2);
-      _mm_storeu_si64((__m128i *)&dst[2*dst_stride], x3);
-      _mm_storeu_si64((__m128i *)&dst[3*dst_stride], x4);
+      _mm_storel_epi64((__m128i *)&dst[0*dst_stride], x1);
+      _mm_storel_epi64((__m128i *)&dst[1*dst_stride], x2);
+      _mm_storel_epi64((__m128i *)&dst[2*dst_stride], x3);
+      _mm_storel_epi64((__m128i *)&dst[3*dst_stride], x4);
     }
 }
 
@@ -257,10 +258,10 @@ compute_prof_grad_4_sse(const uint16_t* src, int src_stride, int sb_w, int sb_h,
     src += src_stride + 1;
     __m128i offset = _mm_set1_epi16(1 << 13);
     for (y = 0; y < nb_smp_h; ++y) {
-        __m128i x1 = _mm_loadu_si64((__m128i *)&src[1]);
-        __m128i x2 = _mm_loadu_si64((__m128i *)&src[-1]);
-        __m128i y1 = _mm_loadu_si64((__m128i *)&src[src_stride]);
-        __m128i y2 = _mm_loadu_si64((__m128i *)&src[-src_stride]);
+        __m128i x1 = _mm_loadl_epi64((__m128i *)&src[1]);
+        __m128i x2 = _mm_loadl_epi64((__m128i *)&src[-1]);
+        __m128i y1 = _mm_loadl_epi64((__m128i *)&src[src_stride]);
+        __m128i y2 = _mm_loadl_epi64((__m128i *)&src[-src_stride]);
         x1 = _mm_sub_epi16(x1, offset);
         x2 = _mm_sub_epi16(x2, offset);
         y1 = _mm_sub_epi16(y1, offset);
@@ -271,8 +272,8 @@ compute_prof_grad_4_sse(const uint16_t* src, int src_stride, int sb_w, int sb_h,
         y2 = _mm_srai_epi16(y2, GRAD_SHIFT);
         x1 = _mm_sub_epi16(x1, x2);
         y1 = _mm_sub_epi16(y1, y2);
-        _mm_storeu_si64((__m128i *)grad_x, x1);
-        _mm_storeu_si64((__m128i *)grad_y, y1);
+        _mm_storel_epi64((__m128i *)grad_x, x1);
+        _mm_storel_epi64((__m128i *)grad_y, y1);
         grad_x += grad_stride;
         grad_y += grad_stride;
         src += src_stride;
@@ -382,35 +383,35 @@ rcn_apply_bdof_subblock_sse(const int16_t* src0, int src0_stride,
                         const int16_t *gradY0, const int16_t *gradY1, int grad_stride,
                         int wgt_x, int wgt_y)
 {
-    __m128i x01 = _mm_loadu_si64((__m128i *)&gradX0[0*grad_stride]);
-    __m128i x02 = _mm_loadu_si64((__m128i *)&gradX0[1*grad_stride]);
-    __m128i x03 = _mm_loadu_si64((__m128i *)&gradX0[2*grad_stride]);
-    __m128i x04 = _mm_loadu_si64((__m128i *)&gradX0[3*grad_stride]);
+    __m128i x01 = _mm_loadl_epi64((__m128i *)&gradX0[0*grad_stride]);
+    __m128i x02 = _mm_loadl_epi64((__m128i *)&gradX0[1*grad_stride]);
+    __m128i x03 = _mm_loadl_epi64((__m128i *)&gradX0[2*grad_stride]);
+    __m128i x04 = _mm_loadl_epi64((__m128i *)&gradX0[3*grad_stride]);
 
-    __m128i x11 = _mm_loadu_si64((__m128i *)&gradX1[0*grad_stride]);
-    __m128i x12 = _mm_loadu_si64((__m128i *)&gradX1[1*grad_stride]);
-    __m128i x13 = _mm_loadu_si64((__m128i *)&gradX1[2*grad_stride]);
-    __m128i x14 = _mm_loadu_si64((__m128i *)&gradX1[3*grad_stride]);
+    __m128i x11 = _mm_loadl_epi64((__m128i *)&gradX1[0*grad_stride]);
+    __m128i x12 = _mm_loadl_epi64((__m128i *)&gradX1[1*grad_stride]);
+    __m128i x13 = _mm_loadl_epi64((__m128i *)&gradX1[2*grad_stride]);
+    __m128i x14 = _mm_loadl_epi64((__m128i *)&gradX1[3*grad_stride]);
 
-    __m128i y01 = _mm_loadu_si64((__m128i *)&gradY0[0*grad_stride]);
-    __m128i y02 = _mm_loadu_si64((__m128i *)&gradY0[1*grad_stride]);
-    __m128i y03 = _mm_loadu_si64((__m128i *)&gradY0[2*grad_stride]);
-    __m128i y04 = _mm_loadu_si64((__m128i *)&gradY0[3*grad_stride]);
+    __m128i y01 = _mm_loadl_epi64((__m128i *)&gradY0[0*grad_stride]);
+    __m128i y02 = _mm_loadl_epi64((__m128i *)&gradY0[1*grad_stride]);
+    __m128i y03 = _mm_loadl_epi64((__m128i *)&gradY0[2*grad_stride]);
+    __m128i y04 = _mm_loadl_epi64((__m128i *)&gradY0[3*grad_stride]);
 
-    __m128i y11 = _mm_loadu_si64((__m128i *)&gradY1[0*grad_stride]);
-    __m128i y12 = _mm_loadu_si64((__m128i *)&gradY1[1*grad_stride]);
-    __m128i y13 = _mm_loadu_si64((__m128i *)&gradY1[2*grad_stride]);
-    __m128i y14 = _mm_loadu_si64((__m128i *)&gradY1[3*grad_stride]);
+    __m128i y11 = _mm_loadl_epi64((__m128i *)&gradY1[0*grad_stride]);
+    __m128i y12 = _mm_loadl_epi64((__m128i *)&gradY1[1*grad_stride]);
+    __m128i y13 = _mm_loadl_epi64((__m128i *)&gradY1[2*grad_stride]);
+    __m128i y14 = _mm_loadl_epi64((__m128i *)&gradY1[3*grad_stride]);
 
-    __m128i src01 = _mm_loadu_si64((__m128i *)&src0[0*src0_stride]);
-    __m128i src02 = _mm_loadu_si64((__m128i *)&src0[1*src0_stride]);
-    __m128i src03 = _mm_loadu_si64((__m128i *)&src0[2*src0_stride]);
-    __m128i src04 = _mm_loadu_si64((__m128i *)&src0[3*src0_stride]);
+    __m128i src01 = _mm_loadl_epi64((__m128i *)&src0[0*src0_stride]);
+    __m128i src02 = _mm_loadl_epi64((__m128i *)&src0[1*src0_stride]);
+    __m128i src03 = _mm_loadl_epi64((__m128i *)&src0[2*src0_stride]);
+    __m128i src04 = _mm_loadl_epi64((__m128i *)&src0[3*src0_stride]);
 
-    __m128i src11 = _mm_loadu_si64((__m128i *)&src1[0*src1_stride]);
-    __m128i src12 = _mm_loadu_si64((__m128i *)&src1[1*src1_stride]);
-    __m128i src13 = _mm_loadu_si64((__m128i *)&src1[2*src1_stride]);
-    __m128i src14 = _mm_loadu_si64((__m128i *)&src1[3*src1_stride]);
+    __m128i src11 = _mm_loadl_epi64((__m128i *)&src1[0*src1_stride]);
+    __m128i src12 = _mm_loadl_epi64((__m128i *)&src1[1*src1_stride]);
+    __m128i src13 = _mm_loadl_epi64((__m128i *)&src1[2*src1_stride]);
+    __m128i src14 = _mm_loadl_epi64((__m128i *)&src1[3*src1_stride]);
 
     __m128i wx = _mm_set1_epi16(wgt_x);
     __m128i wy = _mm_set1_epi16(wgt_y);
@@ -493,10 +494,10 @@ rcn_apply_bdof_subblock_sse(const int16_t* src0, int src0_stride,
       x03 = _mm_min_epi16(x03, _mm_set1_epi16(1023));
       x04 = _mm_min_epi16(x04, _mm_set1_epi16(1023));
 
-      _mm_storeu_si64((__m128i *)&dst[0*dst_stride], x01);
-      _mm_storeu_si64((__m128i *)&dst[1*dst_stride], x02);
-      _mm_storeu_si64((__m128i *)&dst[2*dst_stride], x03);
-      _mm_storeu_si64((__m128i *)&dst[3*dst_stride], x04);
+      _mm_storel_epi64((__m128i *)&dst[0*dst_stride], x01);
+      _mm_storel_epi64((__m128i *)&dst[1*dst_stride], x02);
+      _mm_storel_epi64((__m128i *)&dst[2*dst_stride], x03);
+      _mm_storel_epi64((__m128i *)&dst[3*dst_stride], x04);
 }
 
 void
