@@ -1031,12 +1031,12 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
 
         sig_sb_map = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_jcbcr, log2_tb_w, log2_tb_h,
                                                      last_pos);
+        tb_info->last_pos   = last_pos;
     } else {
         residual_coding_ts(ctu_dec, ctu_dec->residual_cb + tu_info->pos_offset, log2_tb_w, log2_tb_h);
     }
 
     tb_info->sig_sb_map = sig_sb_map;
-    tb_info->last_pos   = last_pos;
 
     return 0;
 }

@@ -46,7 +46,7 @@ struct RPLInfo
    uint8_t nb_active_refs;
 };
 
-typedef void (*FrameSynchroFunction)(OVPicture *const ref_pic, int tl_ctu_x, 
+typedef void (*FrameSynchroFunction)(const OVPicture *const ref_pic, int tl_ctu_x, 
                                     int tl_ctu_y, int br_ctu_x, int br_ctu_y);
 
 struct OVPicture
@@ -195,9 +195,5 @@ void ovdpb_report_decoded_ctu_line(OVPicture *const pic, int y_ctu, int xmin_ctu
 void ovdpb_report_decoded_frame(OVPicture *const pic);
 
 void ovdpb_get_lines_decoded_ctus(OVPicture *const pic, uint64_t* decoded, int y_start, int y_end );
-
-void ovdpb_no_synchro(OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y, int br_ctu_x, int br_ctu_y);
-
-void ovdpb_synchro_ref_decoded_ctus(OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y, int br_ctu_x, int br_ctu_y);
 
 #endif

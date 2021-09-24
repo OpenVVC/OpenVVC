@@ -29,7 +29,6 @@ static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_nam
 static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
 static int read_write_stream(OVVCHdl *const hdl, FILE *fout);
-static int read_stream(OVVCHdl *const hdl);
 
 static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
 
@@ -246,7 +245,7 @@ faildmxclose:
     return ret;
 }
 
-
+#if 0
 static int
 read_stream(OVVCHdl *const hdl)
 {
@@ -280,6 +279,7 @@ read_stream(OVVCHdl *const hdl)
 end_out:
     return 1;
 }
+#endif
 
 static int
 read_write_stream(OVVCHdl *const hdl, FILE *fout)

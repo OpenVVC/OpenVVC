@@ -1001,8 +1001,9 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
     cu.cu_flags = 2;
 
     /* FIXME CCLM luma partition constraints */
-    if (ctu_dec->lm_chroma_enabled && (!ctu_dec->tmp_disable_cclm &&
-        ctu_dec->enable_cclm == 1 || ctu_dec->coding_tree != &dual_tree)) {
+    if (ctu_dec->lm_chroma_enabled && ((!ctu_dec->tmp_disable_cclm &&
+        ctu_dec->enable_cclm == 1 && ctu_dec->coding_tree == &dual_tree) ||
+        ctu_dec->coding_tree != &dual_tree)) {
 
         cclm_flag = ovcabac_read_ae_cclm_flag(cabac_ctx);
         FLG_STORE(cclm_flag, cu.cu_flags);

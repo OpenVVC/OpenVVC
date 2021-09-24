@@ -188,50 +188,6 @@ hmvp_add_merge_cand_b(const struct HMVPLUT *const hmvp_lut,
     return 0;
 }
 
-
-static void
-hmvp_update_lut(struct HMVPLUT *const hmvp_lut, OVMV mv)
-{
-    int max_nb_cand = OVMIN(5, hmvp_lut->nb_mv);
-    int duplicated_mv = 0;
-    int i;
-
-    for (i = 0; i < max_nb_cand; ++i) {
-        if (MV_CMP2(mv, hmvp_lut->hmv0[i])) {
-            duplicated_mv = 1;
-            break;
-        }
-    }
-
-    if (duplicated_mv) {
-        int j;
-
-        for (j = i; j < max_nb_cand - 1; ++j) {
-            hmvp_lut->hmv0[j] = hmvp_lut->hmv0[j + 1];
-        }
-
-        hmvp_lut->hmv0[j] = mv;
-
-    } else if (hmvp_lut->nb_mv == 5) {
-        int j;
-
-        for (j = 1; j < 5; ++j) {
-            hmvp_lut->hmv0[j - 1] = hmvp_lut->hmv0[j];
-        }
-
-        hmvp_lut->hmv0[4] = mv;
-
-    } else {
-        hmvp_lut->hmv0[hmvp_lut->nb_mv++] = mv;
-    }
-
-    hmvp_lut->dir[0]= 0x1;
-    hmvp_lut->dir[1]= 0x1;
-    hmvp_lut->dir[2]= 0x1;
-    hmvp_lut->dir[3]= 0x1;
-    hmvp_lut->dir[4]= 0x1;
-}
-
 static void
 hmvp_update_lut_b(struct HMVPLUT *const hmvp_lut, OVMV mv0, OVMV mv1, uint8_t inter_dir)
 {
@@ -288,7 +244,7 @@ hmvp_update_lut_b(struct HMVPLUT *const hmvp_lut, OVMV mv0, OVMV mv1, uint8_t in
 }
 
 void
-tmvp_inter_synchronization(OVPicture *ref_pic, int ctb_x, int ctb_y, int log2_ctu_s)
+tmvp_inter_synchronization(const OVPicture *ref_pic, int ctb_x, int ctb_y, int log2_ctu_s)
 {
     const int pic_w = ref_pic->frame->width[0];
     const int pic_h = ref_pic->frame->height[0];
@@ -2072,6 +2028,8 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
     }
 
     mv_info.inter_dir = inter_dir;
+    mv_info0.inter_dir = inter_dir0;
+    mv_info1.inter_dir = inter_dir1;
 
     int split_dir = gpm_info->split_dir;
 
@@ -2103,44 +2061,17 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
             int motion_idx = (((4 * x + offset_x) << 1) + 5) * x_dis + lookup_y;
             int tpm_mask = abs(motion_idx) < 32 ? 2 : (motion_idx <= 0 ? (1 - flip) : flip);
 
+            VVCMergeInfo sbmv;
+
             if (tpm_mask == 2) {
-
-                #if 0
-                if (mv_info.inter_dir == 1) {
-                    mv_info.mv1.x = mv_info.mv1.y = 0;
-                } else if (mv_info.inter_dir == 2) {
-                    mv_info.mv0.x = mv_info.mv0.y = 0;
-                }
-                #endif
-
-                update_gpm_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, pb_x + x, pb_y + y, 
-                                1, 1, mv_info.inter_dir);
-
+                sbmv = mv_info;
             } else if (tpm_mask == 0) {
-
-                #if 0
-                if (inter_dir0 == 1) {
-                    mv_info0.mv1.x = mv_info0.mv1.y = 0;
-                } else if (inter_dir0 == 2) {
-                    mv_info0.mv0.x = mv_info0.mv0.y = 0;
-                }
-                #endif
-
-                update_gpm_mv_ctx_b(inter_ctx, mv_info0.mv0, mv_info0.mv1, pb_x + x, pb_y + y, 
-                                    1, 1, inter_dir0);
+                sbmv = mv_info0;
             } else {
-
-                #if 0
-                if (inter_dir1 == 1) {
-                    mv_info1.mv1.x = mv_info1.mv1.y = 0;
-                } else if (inter_dir1 == 2) {
-                    mv_info1.mv0.x = mv_info1.mv0.y = 0;
-                }
-                #endif
-
-                update_gpm_mv_ctx_b(inter_ctx, mv_info1.mv0, mv_info1.mv1, pb_x + x, pb_y + y, 
-                                    1, 1, inter_dir1);
+                sbmv = mv_info1;
             }
+            update_gpm_mv_ctx_b(inter_ctx, sbmv.mv0, sbmv.mv1, pb_x + x, pb_y + y, 
+                                1, 1, sbmv.inter_dir);
         }
     }
     gpm_dbf_check(inter_ctx, pb_x, pb_y, nb_pb_w, nb_pb_h);

@@ -1079,6 +1079,56 @@ fail:
     return ret;
 }
 
+static void
+xctu_to_mask(uint64_t* mask, int mask_w, int xmin_ctu, int xmax_ctu)
+{
+    int sub_xmin_ctu, sub_xmax_ctu;
+    for(int i = (xmin_ctu >> SIZE_INT64); i <= (xmax_ctu >> SIZE_INT64); i++)
+    {
+        mask[i] = 0;
+        sub_xmin_ctu = xmin_ctu > (i<<SIZE_INT64)     ? xmin_ctu % (1<<SIZE_INT64) : 0;
+        sub_xmax_ctu = xmax_ctu < ((i+1)<<SIZE_INT64) ? xmax_ctu % (1<<SIZE_INT64) : (1<<SIZE_INT64)-1;
+        for(int ii = sub_xmin_ctu; ii <= sub_xmax_ctu; ii++)
+            mask[i] |= 1 << ii;
+    }
+}
+
+static void
+ovdpb_no_synchro(const OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y, int br_ctu_x, int br_ctu_y)
+{
+    return;
+}
+
+static void
+ovdpb_synchro_ref_decoded_ctus(const OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y, int br_ctu_x, int br_ctu_y)
+{
+    const struct PicDecodedCtusInfo* decoded_ctus = &ref_pic->decoded_ctus;
+
+    //TODOpar: store previous decoded_ctus of ref_pic in local memory.
+    //Avoid to fetch decoded_ctus variable when not needed.
+    int mask_w = decoded_ctus->mask_w;
+    uint64_t wanted_mask[mask_w];
+    xctu_to_mask(wanted_mask, mask_w, tl_ctu_x, br_ctu_x);
+
+    //TODOpar: create a mutex + ref_cnd by ctu line ?
+    uint8_t all_ctus_available;
+    do {
+        pthread_mutex_lock(&decoded_ctus->ref_mtx);
+
+        all_ctus_available = 1;
+        for (int ctu_y = tl_ctu_y; ctu_y <= br_ctu_y; ctu_y++ ) {
+            for (int i = 0; i < mask_w; i++)
+                all_ctus_available = all_ctus_available && ((decoded_ctus->mask[ctu_y][i] & wanted_mask[i]) == wanted_mask[i]);
+        }
+        if (!all_ctus_available) {
+            // ov_log(NULL, OVLOG_DEBUG, "Wait ref POC %d lines %d,%d \n", ref_pic->poc, tl_ctu_x, tl_ctu_y);
+            pthread_cond_wait(&decoded_ctus->ref_cnd, &decoded_ctus->ref_mtx);
+        }
+        pthread_mutex_unlock(&decoded_ctus->ref_mtx);
+
+    } while (!all_ctus_available);
+}
+
 void
 ovdpb_init_decoded_ctus(OVPicture *const pic, const OVPS *const ps)
 {   
@@ -1104,19 +1154,6 @@ ovdpb_uninit_decoded_ctus(OVPicture *const pic)
         for(int i = 0; i < decoded_ctus->mask_h; i++)
             ov_freep(&decoded_ctus->mask[i]);
         ov_freep(&decoded_ctus->mask);
-    }
-}
-
-void xctu_to_mask(uint64_t* mask, int mask_w, int xmin_ctu, int xmax_ctu)
-{
-    int sub_xmin_ctu, sub_xmax_ctu;
-    for(int i = (xmin_ctu >> SIZE_INT64); i <= (xmax_ctu >> SIZE_INT64); i++)
-    {
-        mask[i] = 0;
-        sub_xmin_ctu = xmin_ctu > (i<<SIZE_INT64)     ? xmin_ctu % (1<<SIZE_INT64) : 0;
-        sub_xmax_ctu = xmax_ctu < ((i+1)<<SIZE_INT64) ? xmax_ctu % (1<<SIZE_INT64) : (1<<SIZE_INT64)-1;
-        for(int ii = sub_xmin_ctu; ii <= sub_xmax_ctu; ii++)
-            mask[i] |= 1 << ii;
     }
 }
 
@@ -1175,40 +1212,3 @@ ovdpb_get_lines_decoded_ctus(OVPicture *const pic, uint64_t* decoded, int y_star
     memcpy(&decoded[y_start*mask_w], decoded_ctus->mask[y_start], (y_end-y_start) * mask_w * sizeof(int64_t)) ;
 }
 
-void
-ovdpb_no_synchro(OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y, int br_ctu_x, int br_ctu_y)
-{
-    return;
-}
-
-void
-ovdpb_synchro_ref_decoded_ctus(OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y, int br_ctu_x, int br_ctu_y)
-{
-    struct PicDecodedCtusInfo* decoded_ctus = &ref_pic->decoded_ctus;
-
-    //TODOpar: store previous decoded_ctus of ref_pic in local memory.
-    //Avoid to fetch decoded_ctus variable when not needed.
-    int mask_w = decoded_ctus->mask_w;
-    uint64_t wanted_mask[mask_w];
-    xctu_to_mask(wanted_mask, mask_w, tl_ctu_x, br_ctu_x);
-
-    //TODOpar: create a mutex + ref_cnd by ctu line ?
-    uint8_t all_ctus_available;
-    do{
-        pthread_mutex_lock(&decoded_ctus->ref_mtx);
-
-        all_ctus_available = 1;
-        for (int ctu_y = tl_ctu_y; ctu_y <= br_ctu_y; ctu_y++ ) {
-            for (int i = 0; i < mask_w; i++) {
-                all_ctus_available = all_ctus_available && ((decoded_ctus->mask[ctu_y][i] & wanted_mask[i]) == wanted_mask[i]);
-            }
-        }
-
-        if (!all_ctus_available) {
-            // ov_log(NULL, OVLOG_DEBUG, "Wait ref POC %d lines %d,%d \n", ref_pic->poc, tl_ctu_x, tl_ctu_y);
-            pthread_cond_wait(&decoded_ctus->ref_cnd, &decoded_ctus->ref_mtx);
-        }
-
-        pthread_mutex_unlock(&decoded_ctus->ref_mtx);
-    }while(!all_ctus_available);
-}

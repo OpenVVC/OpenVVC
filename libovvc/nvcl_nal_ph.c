@@ -72,7 +72,7 @@ replace_ph(const struct HLSReader *const manager,
 
 int
 nvcl_ph_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
-             OVNVCLCtx *const nvcl_ctx)
+             const OVNVCLCtx *const nvcl_ctx)
 {
     const OVPPS *pps = NULL;
     const OVSPS *sps = NULL;

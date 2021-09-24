@@ -4195,7 +4195,6 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
     }
     const struct SBReader *const sb_rdr = &chroma_8x2_reader_dqp;
     const uint8_t log2_sb_w = 3;
-    const uint8_t log2_sb_h = 1;
 
     int16_t sb_idx = last_sb_x;
 
@@ -4753,7 +4752,6 @@ decode_dpq_small_h_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     }
     const struct SBReader *const sb_rdr = &chroma_8x2_reader_sdh;
     const uint8_t log2_sb_w = 3;
-    const uint8_t log2_sb_h = 1;
 
     int16_t sb_idx = last_sb_x;
 

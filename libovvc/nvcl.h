@@ -51,7 +51,7 @@ int nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
                   OVNVCLCtx *const nvcl_ctx);
 
 int nvcl_ph_read(OVNVCLReader *const rdr, OVHLSData *const ph,
-                 OVNVCLCtx *const nvcl_ctx);
+                 const OVNVCLCtx *const nvcl_ctx);
 
 int nvcl_sei_read(OVNVCLReader *const rdr, OVSH *const sh,
                   OVNVCLCtx *const nvcl_ctx);

@@ -107,7 +107,7 @@ clip_mv(int pos_x, int pos_y, int pic_w, int pic_h, int pb_w, int pb_h, OVMV mv)
 }
 
 static void
-rcn_inter_synchronization(OVPicture *ref_pic, int ref_pos_x, int ref_pos_y, int pu_w, int pu_h, int log2_ctu_s)
+rcn_inter_synchronization(const OVPicture *ref_pic, int ref_pos_x, int ref_pos_y, int pu_w, int pu_h, int log2_ctu_s)
 {
     const int pic_w = ref_pic->frame->width[0];
     const int pic_h = ref_pic->frame->height[0];

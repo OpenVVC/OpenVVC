@@ -23,7 +23,7 @@ static const union HLSData **
 storage_in_nvcl_ctx(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
 {
     uint8_t id = probe_sps_id(rdr);
-    const OVSPS **list = nvcl_ctx->sps_list;
+    OVSPS **list = nvcl_ctx->sps_list;
     const union HLSData **storage = (const union HLSData**)&list[id];
 
     return storage;
@@ -540,7 +540,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 const struct HLSReader sps_manager =
 {
     .name = "SPS",
-    .data_size = sizeof(struct OVSPS),
+    .data_size    = sizeof(struct OVSPS),
     .probe_id     = &probe_sps_id,
     .find_storage = &storage_in_nvcl_ctx,
     .read         = &nvcl_sps_read,
