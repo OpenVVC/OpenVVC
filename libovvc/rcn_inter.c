@@ -86,7 +86,7 @@ enum CUMode {
     OV_MIP = 4,
 };
 static void
-rcn_bdof(int16_t *dst, int dst_stride,
+rcn_bdof(struct BDOFFunctions *const bdof, int16_t *dst, int dst_stride,
          const int16_t *ref_bdof0, const int16_t *ref_bdof1, int ref_stride,
          const int16_t *grad_x0, const int16_t *grad_y0,
          const int16_t *grad_x1, const int16_t *grad_y1,
@@ -1171,7 +1171,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
     struct DMVRFunctions *dmvr = &rcn_ctx->rcn_funcs.dmvr;
-    struct PROFFunctions *prof = &rcn_ctx->rcn_funcs.prof;
+    struct BDOFFunctions *bdof = &rcn_ctx->rcn_funcs.bdof;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
@@ -1336,10 +1336,10 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         extend_bdof_buff(ref0_b.y, (uint16_t*)tmp_buff, ref0_b.stride, pu_w, pu_h, prec_x0 >> 3, prec_y0 >> 3);
         extend_bdof_buff(ref1_b.y, (uint16_t*)tmp_buff1, ref1_b.stride, pu_w, pu_h, prec_x1 >> 3, prec_y1 >> 3);
 
-        prof->grad((uint16_t *)tmp_buff, ref_stride, pu_w, pu_h, grad_stride,
+        bdof->grad((uint16_t *)tmp_buff, ref_stride, pu_w, pu_h, grad_stride,
                           grad_x0 + grad_stride + 1, grad_y0 + grad_stride + 1);
 
-        prof->grad((uint16_t *)tmp_buff1, ref_stride, pu_w, pu_h, grad_stride,
+        bdof->grad((uint16_t *)tmp_buff1, ref_stride, pu_w, pu_h, grad_stride,
                           grad_x1 + grad_stride + 1, grad_y1 + grad_stride + 1);
 
         /* Grad padding */
@@ -1353,7 +1353,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         extend_bdof_grad((uint16_t *)tmp_buff1, ref_stride, pu_w, pu_h);
 
         /* Split into 4x4 subblocks for BDOF computation */
-        rcn_bdof((int16_t *)dst.y, dst.stride, tmp_buff + 128 + 1, tmp_buff1 + 128 + 1,
+        rcn_bdof(bdof, (int16_t *)dst.y, dst.stride, tmp_buff + 128 + 1, tmp_buff1 + 128 + 1,
                  ref_stride, grad_x0, grad_y0, grad_x1, grad_y1,
                  grad_stride, pu_w, pu_h);
 
@@ -1491,32 +1491,26 @@ rcn_apply_bdof_subblock(const int16_t* src0, int src0_stride,
                         const int16_t *gradY0, const int16_t *gradY1, int grad_stride,
                         int wgt_x, int wgt_y)
 {
-    int i/*, j*/;
+    int i;
 
     for (i = 0; i < SB_H; i++) {
-        #if 0
-        for (j = 0; j < SB_W; j += 4) {
-        #endif
-            int32_t b0, b1, b2, b3;
-            int16_t val0, val1, val2, val3;
+        int32_t b0, b1, b2, b3;
+        int16_t val0, val1, val2, val3;
 
-            b0 = wgt_x * (gradX0[0] - gradX1[0]) + wgt_y * (gradY0[0] - gradY1[0]);
-            b1 = wgt_x * (gradX0[1] - gradX1[1]) + wgt_y * (gradY0[1] - gradY1[1]);
-            b2 = wgt_x * (gradX0[2] - gradX1[2]) + wgt_y * (gradY0[2] - gradY1[2]);
-            b3 = wgt_x * (gradX0[3] - gradX1[3]) + wgt_y * (gradY0[3] - gradY1[3]);
+        b0 = wgt_x * (gradX0[0] - gradX1[0]) + wgt_y * (gradY0[0] - gradY1[0]);
+        b1 = wgt_x * (gradX0[1] - gradX1[1]) + wgt_y * (gradY0[1] - gradY1[1]);
+        b2 = wgt_x * (gradX0[2] - gradX1[2]) + wgt_y * (gradY0[2] - gradY1[2]);
+        b3 = wgt_x * (gradX0[3] - gradX1[3]) + wgt_y * (gradY0[3] - gradY1[3]);
 
-            val0 = (int16_t)((src0[0] + src1[0] + b0 + BDOF_OFFSET) >> BDOF_SHIFT);
-            val1 = (int16_t)((src0[1] + src1[1] + b1 + BDOF_OFFSET) >> BDOF_SHIFT);
-            val2 = (int16_t)((src0[2] + src1[2] + b2 + BDOF_OFFSET) >> BDOF_SHIFT);
-            val3 = (int16_t)((src0[3] + src1[3] + b3 + BDOF_OFFSET) >> BDOF_SHIFT);
+        val0 = (int16_t)((src0[0] + src1[0] + b0 + BDOF_OFFSET) >> BDOF_SHIFT);
+        val1 = (int16_t)((src0[1] + src1[1] + b1 + BDOF_OFFSET) >> BDOF_SHIFT);
+        val2 = (int16_t)((src0[2] + src1[2] + b2 + BDOF_OFFSET) >> BDOF_SHIFT);
+        val3 = (int16_t)((src0[3] + src1[3] + b3 + BDOF_OFFSET) >> BDOF_SHIFT);
 
-            dst[0] = ov_clip(val0, 0, 1023);
-            dst[1] = ov_clip(val1, 0, 1023);
-            dst[2] = ov_clip(val2, 0, 1023);
-            dst[3] = ov_clip(val3, 0, 1023);
-        #if 0
-        }
-        #endif
+        dst[0] = ov_clip(val0, 0, 1023);
+        dst[1] = ov_clip(val1, 0, 1023);
+        dst[2] = ov_clip(val2, 0, 1023);
+        dst[3] = ov_clip(val3, 0, 1023);
 
         dst += dst_stride;
 
@@ -1605,7 +1599,7 @@ derive_bdof_weights(const int16_t* ref0, const int16_t* ref1,
 }
 
 static void
-rcn_bdof(int16_t *dst, int dst_stride,
+rcn_bdof(struct BDOFFunctions *const bdof, int16_t *dst, int dst_stride,
          const int16_t *ref_bdof0, const int16_t *ref_bdof1, int ref_stride,
          const int16_t *grad_x0, const int16_t *grad_y0,
          const int16_t *grad_x1, const int16_t *grad_y1,
@@ -1646,7 +1640,7 @@ rcn_bdof(int16_t *dst, int dst_stride,
                                 grad_stride,
                                 &wgt_x, &wgt_y);
 
-            rcn_apply_bdof_subblock(ref0_tmp + ref_stride + 1, ref_stride,
+            bdof->subblock(ref0_tmp + ref_stride + 1, ref_stride,
                                     ref1_tmp + ref_stride + 1, ref_stride,
                                     dst, dst_stride,
                                     grad_x0 + grad_stride + 1, grad_x1 + grad_stride + 1,
@@ -1684,7 +1678,7 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
-    struct PROFFunctions *prof = &rcn_ctx->rcn_funcs.prof;
+    struct BDOFFunctions *bdof = &rcn_ctx->rcn_funcs.bdof;
     /* FIXME derive ref_idx */
     uint8_t ref_idx_0 = ref_idx0;
     uint8_t ref_idx_1 = ref_idx1;
@@ -1765,10 +1759,10 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     extend_bdof_buff(ref0_b.y, (uint16_t *)ref_bdof0, ref0_b.stride, pb_w, pb_h, prec_x0 >> 3, prec_y0 >> 3);
     extend_bdof_buff(ref1_b.y, (uint16_t *)ref_bdof1, ref1_b.stride, pb_w, pb_h, prec_x1 >> 3, prec_y1 >> 3);
 
-    prof->grad((uint16_t *)ref_bdof0, ref_stride, pb_w, pb_h, grad_stride,
+    bdof->grad((uint16_t *)ref_bdof0, ref_stride, pb_w, pb_h, grad_stride,
                       grad_x0 + grad_stride + 1, grad_y0 + grad_stride + 1);
 
-    prof->grad((uint16_t *)ref_bdof1, ref_stride, pb_w, pb_h, grad_stride,
+    bdof->grad((uint16_t *)ref_bdof1, ref_stride, pb_w, pb_h, grad_stride,
                       grad_x1 + grad_stride + 1, grad_y1 + grad_stride + 1);
 
     /* Grad padding */
@@ -1784,7 +1778,7 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     dst.y += y0 * RCN_CTB_STRIDE;
 
     /* Split into 4x4 subblocks for BDOF computation */
-    rcn_bdof((int16_t *)dst.y, dst.stride, ref_bdof0 + 128 + 1, ref_bdof1 + 128 + 1,
+    rcn_bdof(bdof, (int16_t *)dst.y, dst.stride, ref_bdof0 + 128 + 1, ref_bdof1 + 128 + 1,
              ref_stride, grad_x0, grad_y0, grad_x1, grad_y1,
              grad_stride, pb_w, pb_h);
 
@@ -2963,4 +2957,11 @@ rcn_prof_functions(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->prof.grad = &compute_prof_grad;
     rcn_funcs->prof.rcn = &rcn_prof;
+}
+
+void
+rcn_bdof_functions(struct RCNFunctions *const rcn_funcs)
+{
+    rcn_funcs->bdof.grad = &compute_prof_grad;
+    rcn_funcs->bdof.subblock = &rcn_apply_bdof_subblock;
 }

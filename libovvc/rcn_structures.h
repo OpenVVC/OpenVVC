@@ -130,6 +130,13 @@ typedef void (*PROFGradFunction)(const uint16_t* src, int src_stride, int sb_w, 
 typedef void (*PROFFunction)(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
          const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
          const int32_t* dmv_scale_h, const int32_t* dmv_scale_v, uint8_t bidir);
+
+typedef void (*BDOFSBFunction)(const int16_t* src0, int src0_stride,
+                        const int16_t* src1, int src1_stride,
+                        int16_t *dst, int dst_stride,
+                        const int16_t *gradX0, const int16_t *gradX1,
+                        const int16_t *gradY0, const int16_t *gradY1, int grad_stride,
+                        int wgt_x, int wgt_y);
 /**
  * The Context put together all functions used by strategies.
  */
@@ -213,6 +220,11 @@ struct PROFFunctions{
     PROFFunction rcn;
 };
 
+struct BDOFFunctions{
+    PROFGradFunction grad;
+    BDOFSBFunction subblock;
+};
+
 struct RCNFunctions
 {
     /* Motion Compensation Luma */
@@ -254,6 +266,9 @@ struct RCNFunctions
 
     /* PROF Functions */
     struct PROFFunctions prof;
+
+    /* BDOF Functions */
+    struct BDOFFunctions bdof;
 };
 
 

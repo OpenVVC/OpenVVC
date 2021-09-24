@@ -13,5 +13,6 @@ void rcn_init_mip_functions_sse(struct RCNFunctions *const rcn_funcs);
 void rcn_init_sao_functions_sse(struct RCNFunctions *const rcn_funcs);
 void rcn_dmvr_functions_sse(struct RCNFunctions *const rcn_funcs);
 void rcn_prof_functions_sse(struct RCNFunctions *const rcn_funcs);
+void rcn_bdof_functions_sse(struct RCNFunctions *const rcn_funcs);
 
 #endif//RCN_SSE_H
