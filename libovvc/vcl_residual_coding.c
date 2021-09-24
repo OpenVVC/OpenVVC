@@ -2955,8 +2955,11 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     int16_t *const _dst = dst;
-    uint8_t lim_log2_w = OVMIN(log2_tb_w, 5);
-    uint8_t lim_log2_h = OVMIN(log2_tb_h, 5);
+    uint8_t tmp_red_w =   (ctu_dec->tmp_red & 0x1);
+    uint8_t tmp_red_h = !!(ctu_dec->tmp_red & 0x2);
+    /*FIXME we can reduce LUT based on the fact it cannot be greater than 5 */
+    uint8_t lim_log2_w = OVMIN(log2_tb_w - tmp_red_w, 5);
+    uint8_t lim_log2_h = OVMIN(log2_tb_h - tmp_red_h, 5);
 
     /*FIXME sort and rewrite scan map */
     const uint8_t *const sb_idx_2_sb_num = ff_vvc_idx_2_num[lim_log2_w  - 2]
@@ -3012,7 +3015,7 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         return 1;
     }
 
-    reset_ctx_buffers(&c_coding_ctx, lim_log2_w, lim_log2_h);
+    reset_ctx_buffers(&c_coding_ctx, lim_log2_w + tmp_red_w, lim_log2_h + tmp_red_h);
 
     last_x =  last_pos       & 0x1F;
     last_y = (last_pos >> 8) & 0x1F;
