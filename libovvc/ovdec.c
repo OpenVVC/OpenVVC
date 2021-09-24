@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include "sys/resource.h"
 
 #include "ovutils.h"
 #include "ovmem.h"

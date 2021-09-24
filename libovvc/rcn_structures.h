@@ -121,6 +121,22 @@ typedef void (*SAOEdgeFilterFunc)(uint8_t* _dst, uint8_t* _src,
 
 typedef void (*LMCSReshapeFunc)(uint16_t *_dst, ptrdiff_t stride_dst, uint16_t* lmcs_lut_luma, int width, int height);
 
+typedef uint64_t (*DMVRSADFunc)(const int16_t *ref0, const int16_t *ref1, int16_t dmvr_stride, int16_t pb_w, int16_t pb_h);
+
+typedef uint64_t (*DMVRComputeSADsFunc)(const int16_t *ref0, const int16_t *ref1, uint64_t *sad_array, int sb_w, int sb_h);
+
+typedef void (*PROFGradFunction)(const uint16_t* src, int src_stride, int sb_w, int sb_h, int grad_stride, int16_t* grad_x, int16_t* grad_y);
+
+typedef void (*PROFFunction)(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
+         const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
+         const int32_t* dmv_scale_h, const int32_t* dmv_scale_v, uint8_t bidir);
+
+typedef void (*BDOFSBFunction)(const int16_t* src0, int src0_stride,
+                        const int16_t* src1, int src1_stride,
+                        int16_t *dst, int dst_stride,
+                        const int16_t *gradX0, const int16_t *gradX1,
+                        const int16_t *gradY0, const int16_t *gradY1, int grad_stride,
+                        int wgt_x, int wgt_y);
 /**
  * The Context put together all functions used by strategies.
  */
@@ -194,6 +210,21 @@ struct SAOFunctions{
     SAOEdgeFilterFunc edge[2];
 };
 
+struct DMVRFunctions{
+    DMVRSADFunc sad[2];
+    DMVRComputeSADsFunc computeSB[2];
+};
+
+struct PROFFunctions{
+    PROFGradFunction grad;
+    PROFFunction rcn;
+};
+
+struct BDOFFunctions{
+    PROFGradFunction grad;
+    BDOFSBFunction subblock;
+};
+
 struct RCNFunctions
 {
     /* Motion Compensation Luma */
@@ -229,6 +260,15 @@ struct RCNFunctions
 
     /* LMCS Functions */
     LMCSReshapeFunc lmcs_reshape;
+
+    /* DMVR Functions */
+    struct DMVRFunctions dmvr;
+
+    /* PROF Functions */
+    struct PROFFunctions prof;
+
+    /* BDOF Functions */
+    struct BDOFFunctions bdof;
 };
 
 
