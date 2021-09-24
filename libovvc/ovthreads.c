@@ -107,6 +107,7 @@ entry_thread_main_function(void *opaque)
         do { 
             pthread_cond_wait(&tdec->entry_cnd, &tdec->entry_mtx);
             if (tdec->kill && tdec->state != 0) {
+                pthread_mutex_unlock(&tdec->entry_mtx);
                 return NULL;
             }
         /*FIXME determine state value to exit loop*/
@@ -141,7 +142,6 @@ init_entry_threads(struct SliceThread *th_slice, int nb_threads)
 
         pthread_mutex_init(&tdec->entry_mtx, NULL);
         pthread_cond_init(&tdec->entry_cnd, NULL);
-
         pthread_mutex_lock(&tdec->entry_mtx);
 
         if (pthread_create(&tdec->thread, NULL, entry_thread_main_function, tdec)) {
