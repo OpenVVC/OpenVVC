@@ -236,7 +236,9 @@ ovthread_slice_thread_uninit(struct SliceThread *th_slice)
 {   
     OVSliceDec * slicedec = th_slice->owner;
     //Unmark ref pict lists of decoded pics
-    if(th_slice->active_state == DECODING_FINISHED){
+    pthread_mutex_lock(&th_slice->gnrl_mtx);
+    if (th_slice->active_state == DECODING_FINISHED) {
+        pthread_mutex_unlock(&th_slice->gnrl_mtx);
         OVPicture *slice_pic = slicedec->pic;
         if(slice_pic && (slice_pic->flags & OV_IN_DECODING_PIC_FLAG)){
             ov_log(NULL, OVLOG_TRACE, "Remove DECODING_PIC_FLAG POC: %d\n", slice_pic->poc);
@@ -247,6 +249,8 @@ ovthread_slice_thread_uninit(struct SliceThread *th_slice)
             th_slice->active_state = IDLE;
             pthread_mutex_unlock(&th_slice->gnrl_mtx);
         }
+    } else {
+        pthread_mutex_unlock(&th_slice->gnrl_mtx);
     }
 
     uninit_entry_threads(th_slice);

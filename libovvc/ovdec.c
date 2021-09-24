@@ -124,7 +124,9 @@ ovdec_select_subdec(OVVCDec *const dec)
             th_slice = &slicedec->th_slice;
             
             //Unmark ref pict lists of decoded pics
+            pthread_mutex_lock(&th_slice->gnrl_mtx);
             if(th_slice->active_state == DECODING_FINISHED){
+                pthread_mutex_unlock(&th_slice->gnrl_mtx);
                 min_idx_available = i;
                 OVPicture *slice_pic = slicedec->pic;
                 if(slice_pic && (slice_pic->flags & OV_IN_DECODING_PIC_FLAG)){
@@ -136,9 +138,11 @@ ovdec_select_subdec(OVVCDec *const dec)
                     th_slice->active_state = IDLE;
                     pthread_mutex_unlock(&th_slice->gnrl_mtx);
                 }
-            }
-            else if(th_slice->active_state == IDLE){
+            } else if (th_slice->active_state == IDLE) {
+                pthread_mutex_unlock(&th_slice->gnrl_mtx);
                 min_idx_available = i;     
+            } else {
+                pthread_mutex_unlock(&th_slice->gnrl_mtx);
             }
         }
 
