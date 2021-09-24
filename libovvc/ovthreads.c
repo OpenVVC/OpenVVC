@@ -240,7 +240,7 @@ ovthread_slice_thread_uninit(struct SliceThread *th_slice)
     if (th_slice->active_state == DECODING_FINISHED) {
         pthread_mutex_unlock(&th_slice->gnrl_mtx);
         OVPicture *slice_pic = slicedec->pic;
-        if(slice_pic && (slice_pic->flags & OV_IN_DECODING_PIC_FLAG)){
+        if (slice_pic && (slice_pic->flags & OV_IN_DECODING_PIC_FLAG)) {
             ov_log(NULL, OVLOG_TRACE, "Remove DECODING_PIC_FLAG POC: %d\n", slice_pic->poc);
             ovdpb_unref_pic(slice_pic, OV_IN_DECODING_PIC_FLAG);
             ovdpb_unmark_ref_pic_lists(slicedec->slice_type, slice_pic);

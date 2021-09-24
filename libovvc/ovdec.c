@@ -115,21 +115,21 @@ ovdec_select_subdec(OVVCDec *const dec)
 
     OVSliceDec * slicedec;
     struct SliceThread* th_slice;
-    do{
+    do {
         int min_idx_available = nb_threads;
         pthread_mutex_lock(&th_main->main_mtx);
         
-        for(int i = nb_threads-1; i >= 0 ; i--){
+        for(int i = nb_threads-1; i >= 0 ; i--) {
             slicedec = sldec_list[i];
             th_slice = &slicedec->th_slice;
             
             //Unmark ref pict lists of decoded pics
             pthread_mutex_lock(&th_slice->gnrl_mtx);
-            if(th_slice->active_state == DECODING_FINISHED){
+            if (th_slice->active_state == DECODING_FINISHED) {
                 pthread_mutex_unlock(&th_slice->gnrl_mtx);
                 min_idx_available = i;
                 OVPicture *slice_pic = slicedec->pic;
-                if(slice_pic && (slice_pic->flags & OV_IN_DECODING_PIC_FLAG)){
+                if (slice_pic && (slice_pic->flags & OV_IN_DECODING_PIC_FLAG)) {
                     ov_log(NULL, OVLOG_TRACE, "Subdec %d Remove DECODING_PIC_FLAG POC: %d\n", min_idx_available, slice_pic->poc);
                     ovdpb_unref_pic(slice_pic, OV_IN_DECODING_PIC_FLAG);
                     ovdpb_unmark_ref_pic_lists(slicedec->slice_type, slice_pic);
@@ -146,14 +146,15 @@ ovdec_select_subdec(OVVCDec *const dec)
             }
         }
 
-        if(min_idx_available < nb_threads){
+        if (min_idx_available < nb_threads) {
             slicedec = sldec_list[min_idx_available];
             th_slice = &slicedec->th_slice;
         
             pthread_mutex_lock(&th_slice->gnrl_mtx);
             th_slice->active_state = ACTIVE;
-            ov_log(NULL, OVLOG_TRACE, "Subdec %d selected\n", min_idx_available);
             pthread_mutex_unlock(&th_slice->gnrl_mtx);
+
+            ov_log(NULL, OVLOG_TRACE, "Subdec %d selected\n", min_idx_available);
 
             pthread_mutex_unlock(&th_main->main_mtx);
             return slicedec;
@@ -162,7 +163,7 @@ ovdec_select_subdec(OVVCDec *const dec)
         pthread_cond_wait(&th_main->main_cnd, &th_main->main_mtx);
         pthread_mutex_unlock(&th_main->main_mtx);
 
-    } while(!th_main->kill);
+    } while (!th_main->kill);
 
     return NULL;
 
