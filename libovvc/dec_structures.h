@@ -238,22 +238,6 @@ typedef struct ALFParamsCtu {
     uint8_t cr_alternative;
 } ALFParamsCtu;
 
-
-struct OutputThread
-{
-    FILE *fout;
-
-    /* Thread displaying the frames after 
-     * the decoding is finished.
-     */
-    pthread_t thread;
-    pthread_mutex_t gnrl_mtx;
-    pthread_cond_t gnrl_cnd;
-
-    uint8_t write;
-    uint8_t kill;
-};
-
 struct MainThread
 {
     int kill;
@@ -321,8 +305,6 @@ struct OVVCDec
     /* Number of available threads */
     int nb_frame_th;
     int nb_entry_th;
-
-    struct OutputThread output_thread;
 
     struct MainThread main_thread;
 

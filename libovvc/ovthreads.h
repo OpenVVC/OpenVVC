@@ -22,11 +22,4 @@ int ovthread_slice_thread_init(struct SliceThread *th_slice, int nb_threads);
 
 void ovthread_slice_thread_uninit(struct SliceThread *th_slice);
 
-
-uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
-
-int ovthread_output_init(OVVCDec *dec, FILE* fout);
-
-void ovthread_output_uninit(struct OutputThread* t_out);
-
 #endif

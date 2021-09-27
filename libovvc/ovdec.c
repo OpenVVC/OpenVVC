@@ -47,7 +47,6 @@ ovdec_init_subdec_list(OVVCDec *dec)
             return OVVC_ENOMEM;
         }
         dec->subdec_list[i]->th_slice.main_thread = &dec->main_thread;
-        dec->subdec_list[i]->th_slice.output_thread = &dec->output_thread;
     }
 
     return 0;

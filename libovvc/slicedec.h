@@ -23,7 +23,6 @@ struct SliceThread
     OVSliceDec *owner;
     struct EntryThread *tdec;
     
-    struct OutputThread* output_thread;
     struct MainThread* main_thread;
     
     OVNALUnit* slice_nalu;
