@@ -1354,16 +1354,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     /* FIXME Bidir only */
     slicedec_smvd_params(ctudec, prms, sldec->pic->poc);
 
-    ctudec->drv_ctx.inter_ctx.ciip_flag = sldec->active_params->sps->sps_ciip_enabled_flag;
-    ctudec->drv_ctx.inter_ctx.mmvd_flag = sldec->active_params->sps->sps_mmvd_enabled_flag;
-
-    ctudec->drv_ctx.inter_ctx.gpm_flag  = sldec->active_params->sps->sps_gpm_enabled_flag;
-    ctudec->drv_ctx.inter_ctx.max_gpm_cand = ctudec->max_num_merge_candidates
-                            - sldec->active_params->sps->sps_max_num_merge_cand_minus_max_num_gpm_cand;
-    ctudec->drv_ctx.inter_ctx.bcw_flag = sldec->active_params->sps->sps_bcw_enabled_flag;
-    ctudec->drv_ctx.inter_ctx.amvr_flag = sldec->active_params->sps->sps_amvr_enabled_flag;
-    ctudec->drv_ctx.inter_ctx.affine_amvr_flag = sldec->active_params->sps->sps_affine_amvr_enabled_flag;
-
     /* FIXME entry might be check before attaching entry to CABAC so there
      * is no need for this check
      */
@@ -1509,6 +1499,16 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->drv_ctx.inter_ctx.mvd1_zero_flag = ph->ph_mvd_l1_zero_flag;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref_l0 = ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag
                                                     || sh->sh_slice_type == SLICE_P;
+
+    ctudec->drv_ctx.inter_ctx.ciip_flag = sps->sps_ciip_enabled_flag;
+    ctudec->drv_ctx.inter_ctx.mmvd_flag = sps->sps_mmvd_enabled_flag;
+
+    ctudec->drv_ctx.inter_ctx.gpm_flag  = sps->sps_gpm_enabled_flag;
+    ctudec->drv_ctx.inter_ctx.max_gpm_cand = ctudec->max_num_merge_candidates
+                            - sps->sps_max_num_merge_cand_minus_max_num_gpm_cand;
+    ctudec->drv_ctx.inter_ctx.bcw_flag = sps->sps_bcw_enabled_flag;
+    ctudec->drv_ctx.inter_ctx.amvr_flag = sps->sps_amvr_enabled_flag;
+    ctudec->drv_ctx.inter_ctx.affine_amvr_flag = sps->sps_affine_amvr_enabled_flag;
 
     rcn_init_functions(&ctudec->rcn_ctx.rcn_funcs, ict_type(ph), ctudec->lm_chroma_enabled,
                         sps->sps_chroma_vertical_collocated_flag, ph->ph_lmcs_enabled_flag);
