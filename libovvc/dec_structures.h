@@ -265,13 +265,6 @@ struct OVVCDec
 {
     const char *name;
 
-    /* NAL Units to be decoded
-     * Corresponding to a Picture Unit
-     */
-    #if 0
-    OVPictureUnit *nalu_list;
-    #endif
-
     /* Paramters sets context */
     OVNVCLCtx nvcl_ctx;
 
