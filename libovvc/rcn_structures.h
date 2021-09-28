@@ -151,7 +151,7 @@ struct MCFunctions{
     MCUniDirWFunc unidir_w[4][8];
     MCBiDirWFunc bidir_w[4][8];
 
-    MCUniDirFunc bilinear[4];
+    MCUniDirFunc bilinear[4][8];
 };
 
 struct CCLMFunctions

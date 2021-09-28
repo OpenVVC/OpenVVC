@@ -1218,6 +1218,11 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_l->bidir_w[2][i] = &put_weighted_qpel_bi_v;
         mc_l->bidir_w[3][i] = &put_weighted_qpel_bi_hv;
 
+        mc_l->bilinear[0][i] = &put_vvc_pel_bilinear_pixels;
+        mc_l->bilinear[1][i] = &put_vvc_qpel_bilinear_h;
+        mc_l->bilinear[2][i] = &put_vvc_qpel_bilinear_v;
+        mc_l->bilinear[3][i] = &put_vvc_qpel_bilinear_hv;
+
         /* Chroma functions */
         mc_c->unidir[0][i] = &put_vvc_pel_uni_pixels;
         mc_c->unidir[1][i] = &put_vvc_epel_uni_h;
@@ -1240,9 +1245,5 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_c->bidir_w[3][i] = &put_weighted_epel_bi_hv;
     }
 
-    mc_l->bilinear[0] = &put_vvc_pel_bilinear_pixels;
-    mc_l->bilinear[1] = &put_vvc_qpel_bilinear_h;
-    mc_l->bilinear[2] = &put_vvc_qpel_bilinear_v;
-    mc_l->bilinear[3] = &put_vvc_qpel_bilinear_hv;
 
 }

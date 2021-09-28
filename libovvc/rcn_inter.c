@@ -1215,11 +1215,11 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
 
     /* Interpolate ref 0/1 with 2 additional samples before and after */
-    mc_l->bilinear[prec_0_mc_type]((uint16_t *)ref_dmvr0, dmvr_stride,
+    mc_l->bilinear[prec_0_mc_type][log2_pu_w-1]((uint16_t *)ref_dmvr0, dmvr_stride,
                                    ref0_b.y -2 -2 * ref0_b.stride, ref0_b.stride, pu_h + 4,
                                    prec_x0, prec_y0, pu_w + 4);
 
-    mc_l->bilinear[prec_1_mc_type]((uint16_t *)ref_dmvr1, dmvr_stride,
+    mc_l->bilinear[prec_1_mc_type][log2_pu_w-1]((uint16_t *)ref_dmvr1, dmvr_stride,
                                    ref1_b.y -2 -2 * ref1_b.stride, ref1_b.stride, pu_h + 4,
                                    prec_x1, prec_y1, pu_w + 4);
 

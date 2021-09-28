@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <tmmintrin.h>
+#include <smmintrin.h>
 
 #define SIZE_BLOCK_4 1
 #define SIZE_BLOCK_8 2
@@ -21,6 +22,8 @@
 #define QPEL_EXTRA_BEFORE 3
 #define QPEL_EXTRA_AFTER 4
 #define QPEL_EXTRA QPEL_EXTRA_BEFORE + QPEL_EXTRA_AFTER
+
+#define BIT_DEPTH 10
 
 DECLARE_ALIGNED(16, const int16_t, oh_hevc_epel_filters_sse[31][2][8]) = {
   //{  0, 64,  0,  0 },
@@ -208,6 +211,26 @@ DECLARE_ALIGNED(16, static const int16_t, ov_mc_filters_4_sse[15][4][8]) =
         {-2,  4, -2,  4, -2,  4, -2,  4},
         {63,  -3, 63,  -3, 63,  -3, 63,  -3},
         {1,  0,  1,  0,  1,  0,  1,  0}}
+};
+
+static const int16_t ov_bilinear_filters_4[15][8] =
+{
+  /*{ 16,  0, },*/
+  { 15,  1, 15,  1, 15,  1, 15,  1, },
+  { 14,  2, 14,  2, 14,  2, 14,  2, },
+  { 13,  3, 13,  3, 13,  3, 13,  3, },
+  { 12,  4, 12,  4, 12,  4, 12,  4, },
+  { 11,  5, 11,  5, 11,  5, 11,  5, },
+  { 10,  6, 10,  6, 10,  6, 10,  6, },
+  { 9,   7,  9,  7,  9,  7,  9,  7, },
+  { 8,   8,  8,  8,  8,  8,  8,  8, },
+  { 7,   9,  7,  9,  7,  9,  7,  9, },
+  { 6,  10,  6, 10,  6, 10,  6, 10, },
+  { 5,  11,  5, 11,  5, 11,  5, 11, },
+  { 4,  12,  4, 12,  4, 12,  4, 12, },
+  { 3,  13,  3, 13,  3, 13,  3, 13, },
+  { 2,  14,  2, 14,  2, 14,  2, 14, },
+  { 1,  15,  1, 15,  1, 15,  1, 15, }
 };
 
 static void
@@ -4040,7 +4063,7 @@ put_vvc_bi_w_qpel_v8_14_10_sse(uint8_t* _dst,
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
 
-  
+
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
   const __m128i offset = _mm_set1_epi32(1 << log2Wd);
@@ -4554,7 +4577,7 @@ put_vvc_bi_w_pel_pixels8_10_sse(uint8_t* _dst,
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
   const int log2Wd = denom + 14 - 10;
-  const int shift2 = log2Wd + 1;  
+  const int shift2 = log2Wd + 1;
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
   const __m128i offset = _mm_set1_epi32(1 << log2Wd);
@@ -4677,7 +4700,7 @@ put_vvc_bi_w_epel_h4_10_sse(uint8_t* _dst,
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
 
-  
+
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
   const __m128i offset = _mm_set1_epi32(1 << log2Wd);
@@ -4818,7 +4841,7 @@ put_vvc_bi_w_epel_h8_10_sse(uint8_t* _dst,
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
 
-  
+
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
   const __m128i offset = _mm_set1_epi32(1 << log2Wd);
@@ -4958,7 +4981,7 @@ put_vvc_bi_w_epel_v4_10_sse(uint8_t* _dst,
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
 
-  
+
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
   const __m128i offset = _mm_set1_epi32(1 << log2Wd);
@@ -5099,7 +5122,7 @@ put_vvc_bi_w_epel_v8_10_sse(uint8_t* _dst,
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
 
-  
+
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
   const __m128i offset = _mm_set1_epi32(1 << log2Wd);
@@ -5315,7 +5338,7 @@ put_vvc_bi_w_epel_hv4_10_sse(uint8_t* _dst,
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
 
-  
+
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
   const __m128i offset = _mm_set1_epi32(1 << log2Wd);
@@ -5613,7 +5636,7 @@ put_vvc_bi_w_epel_hv8_10_sse(uint8_t* _dst,
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
 
-  
+
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
   const __m128i offset = _mm_set1_epi32(1 << log2Wd);
@@ -6028,7 +6051,7 @@ put_vvc_bi_w_qpel_h8_10_sse(uint8_t* _dst,
   const int log2Wd = denom + 14 - 10;
   const int shift2 = log2Wd + 1;
 
-  
+
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
   const __m128i offset = _mm_set1_epi32(1 << log2Wd);
@@ -6614,8 +6637,8 @@ put_vvc_bi_w_qpel_hv8_10_sse(uint8_t* dst,
                                           denom,
                                           wx0,
                                           wx1,
-  
-  
+
+
                                           mx,
                                           my,
                                           width);
@@ -6647,8 +6670,8 @@ put_vvc_bi_w_pel_pixels16_10_sse(uint8_t* dst,
                                           int denom,
                                           int wx0,
                                           int wx1,
-    
-    
+
+
                                           intptr_t mx,
                                           intptr_t my,
                                           int width)
@@ -6663,8 +6686,8 @@ put_vvc_bi_w_pel_pixels16_10_sse(uint8_t* dst,
                                            denom,
                                            wx0,
                                            wx1,
-   
-   
+
+
                                            mx,
                                            my,
                                            width);
@@ -6710,7 +6733,7 @@ put_vvc_bi_w_pel_pixels32_10_sse(uint8_t* dst,
                                            height,
                                            denom,
                                            wx0,
-                                           wx1,  
+                                           wx1,
                                            mx,
                                            my,
                                            width);
@@ -6743,8 +6766,8 @@ put_vvc_bi_w_pel_pixels64_10_sse(uint8_t* dst,
                                           int denom,
                                           int wx0,
                                           int wx1,
-    
-    
+
+
                                           intptr_t mx,
                                           intptr_t my,
                                           int width)
@@ -6759,8 +6782,8 @@ put_vvc_bi_w_pel_pixels64_10_sse(uint8_t* dst,
                                            denom,
                                            wx0,
                                            wx1,
-   
-   
+
+
                                            mx,
                                            my,
                                            width);
@@ -7593,6 +7616,116 @@ put_vvc_bi_w_epel_hv64_10_sse(uint8_t* dst,
 }
 #endif
 
+static void
+put_vvc_qpel_bilinear_h_sse(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                        ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                        int width)
+{
+    int x, y;
+    __m128i x1, x2, t1, t2;
+    const uint16_t* src = ((uint16_t*)_src);
+    ptrdiff_t srcstride = _srcstride;
+    uint16_t* dst = (uint16_t*)_dst;
+    ptrdiff_t dststride = _dststride;
+    const int16_t* filter = ov_bilinear_filters_4[mx - 1];
+    int shift = 14 - BIT_DEPTH;
+    __m128i c = _mm_loadu_si128((__m128i*)filter);
+    __m128i offset = _mm_set1_epi32(1 << (shift - 1));
+
+    for (y = 0; y < height; y++) {
+      for (x = 0; x < width; x+=8) {
+        x1 = _mm_loadu_si128((__m128i*)&src[x]);
+        x2 = _mm_loadu_si128((__m128i*)&src[x + 1]);
+
+        t1 = _mm_unpacklo_epi16(x1, x2);
+        t2 = _mm_unpackhi_epi16(x1, x2);
+
+        t1 = _mm_madd_epi16(t1, c);
+        t2 = _mm_madd_epi16(t2, c);
+
+        x1 = _mm_add_epi32(t1, offset);
+        x2 = _mm_add_epi32(t2, offset);
+
+        x1 = _mm_srai_epi32(x1, shift);
+        x2 = _mm_srai_epi32(x2, shift);
+
+        x1 = _mm_max_epi32(x1, _mm_setzero_si128());
+        x2 = _mm_max_epi32(x2, _mm_setzero_si128());
+
+        x1 = _mm_min_epi32(x1, _mm_set1_epi32(1023));
+        x2 = _mm_min_epi32(x2, _mm_set1_epi32(1023));
+
+        x1 = _mm_packs_epi32(x1,x2);
+
+        _mm_storeu_si128((__m128i*)&dst[x], x1);
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
+static void
+put_vvc_qpel_bilinear_v_sse(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                        ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                        int width)
+{
+  {
+      int x, y;
+      __m128i x1, x2, t1, t2;
+      const uint16_t* src = ((uint16_t*)_src);
+      ptrdiff_t srcstride = _srcstride;
+      uint16_t* dst = (uint16_t*)_dst;
+      ptrdiff_t dststride = _dststride;
+      const int16_t* filter = ov_bilinear_filters_4[my - 1];
+      int shift = 14 - BIT_DEPTH;
+      __m128i c = _mm_loadu_si128((__m128i*)filter);
+      __m128i offset = _mm_set1_epi32(1 << (shift - 1));
+
+      for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x+=8) {
+          x1 = _mm_loadu_si128((__m128i*)&src[x]);
+          x2 = _mm_loadu_si128((__m128i*)&src[x + srcstride]);
+
+          t1 = _mm_unpacklo_epi16(x1, x2);
+          t2 = _mm_unpackhi_epi16(x1, x2);
+
+          t1 = _mm_madd_epi16(t1, c);
+          t2 = _mm_madd_epi16(t2, c);
+
+          x1 = _mm_add_epi32(t1, offset);
+          x2 = _mm_add_epi32(t2, offset);
+
+          x1 = _mm_srai_epi32(x1, shift);
+          x2 = _mm_srai_epi32(x2, shift);
+
+          x1 = _mm_max_epi32(x1, _mm_setzero_si128());
+          x2 = _mm_max_epi32(x2, _mm_setzero_si128());
+
+          x1 = _mm_min_epi32(x1, _mm_set1_epi32(1023));
+          x2 = _mm_min_epi32(x2, _mm_set1_epi32(1023));
+
+          x1 = _mm_packs_epi32(x1,x2);
+
+          _mm_storeu_si128((__m128i*)&dst[x], x1);
+          }
+          src += srcstride;
+          dst += dststride;
+      }
+  }
+}
+
+static void
+put_vvc_qpel_bilinear_hv_sse(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                         ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                         int width)
+{
+  uint16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
+  uint16_t* tmp = tmp_array;
+  put_vvc_qpel_bilinear_h_sse(tmp, MAX_PB_SIZE, _src-1, _srcstride, height+2, mx, my, width+2);
+  tmp = tmp_array + 1;
+  put_vvc_qpel_bilinear_v_sse(_dst, _dststride, tmp, MAX_PB_SIZE, height, mx, my, width);
+}
+
 void
 rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
 {
@@ -7611,6 +7744,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[1][SIZE_BLOCK_4] = &oh_hevc_put_hevc_uni_qpel_h4_10_sse;
   mc_l->bidir0[1][SIZE_BLOCK_4] = &oh_hevc_put_hevc_bi0_qpel_h4_10_sse;
   mc_l->bidir1[1][SIZE_BLOCK_4] = &oh_hevc_put_hevc_bi1_qpel_h4_10_sse;
+  mc_l->bilinear[1][SIZE_BLOCK_4] = &put_vvc_qpel_bilinear_h_sse;
   #if WEIGHTED
   mc_l->unidir_w[1][SIZE_BLOCK_4] = &put_vvc_uni_w_qpel_h4_10_sse;
   mc_l->bidir_w[1][SIZE_BLOCK_4] = &put_vvc_bi_w_qpel_h4_10_sse;
@@ -7619,6 +7753,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[2][SIZE_BLOCK_4] = &oh_hevc_put_hevc_uni_qpel_v4_10_sse;
   mc_l->bidir0[2][SIZE_BLOCK_4] = &oh_hevc_put_hevc_bi0_qpel_v4_10_sse;
   mc_l->bidir1[2][SIZE_BLOCK_4] = &oh_hevc_put_hevc_bi1_qpel_v4_10_sse;
+  mc_l->bilinear[2][SIZE_BLOCK_4] = &put_vvc_qpel_bilinear_v_sse;
   #if WEIGHTED
   mc_l->unidir_w[2][SIZE_BLOCK_4] = &put_vvc_uni_w_qpel_v4_10_sse;
   mc_l->bidir_w[2][SIZE_BLOCK_4] = &put_vvc_bi_w_qpel_v4_10_sse;
@@ -7627,6 +7762,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[3][SIZE_BLOCK_4] = &oh_hevc_put_hevc_uni_qpel_hv4_10_sse;
   mc_l->bidir0[3][SIZE_BLOCK_4] = &oh_hevc_put_hevc_bi0_qpel_hv4_10_sse;
   mc_l->bidir1[3][SIZE_BLOCK_4] = &oh_hevc_put_hevc_bi1_qpel_hv4_10_sse;
+  mc_l->bilinear[3][SIZE_BLOCK_4] = &put_vvc_qpel_bilinear_hv_sse;
   #if WEIGHTED
   mc_l->unidir_w[3][SIZE_BLOCK_4] = &put_vvc_uni_w_qpel_hv4_10_sse;
   mc_l->bidir_w[3][SIZE_BLOCK_4] = &put_vvc_bi_w_qpel_hv4_10_sse;
@@ -7643,6 +7779,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[1][SIZE_BLOCK_8] = &oh_hevc_put_hevc_uni_qpel_h8_10_sse;
   mc_l->bidir0[1][SIZE_BLOCK_8] = &oh_hevc_put_hevc_bi0_qpel_h8_10_sse;
   mc_l->bidir1[1][SIZE_BLOCK_8] = &oh_hevc_put_hevc_bi1_qpel_h8_10_sse;
+  mc_l->bilinear[1][SIZE_BLOCK_8] = &put_vvc_qpel_bilinear_h_sse;
   #if WEIGHTED
   mc_l->unidir_w[1][SIZE_BLOCK_8] = &put_vvc_uni_w_qpel_h8_10_sse;
   mc_l->bidir_w[1][SIZE_BLOCK_8] = &put_vvc_bi_w_qpel_h8_10_sse;
@@ -7651,6 +7788,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[2][SIZE_BLOCK_8] = &oh_hevc_put_hevc_uni_qpel_v8_10_sse;
   mc_l->bidir0[2][SIZE_BLOCK_8] = &oh_hevc_put_hevc_bi0_qpel_v8_10_sse;
   mc_l->bidir1[2][SIZE_BLOCK_8] = &oh_hevc_put_hevc_bi1_qpel_v8_10_sse;
+  mc_l->bilinear[2][SIZE_BLOCK_8] = &put_vvc_qpel_bilinear_v_sse;
   #if WEIGHTED
   mc_l->unidir_w[2][SIZE_BLOCK_8] = &put_vvc_uni_w_qpel_v8_10_sse;
   mc_l->bidir_w[2][SIZE_BLOCK_8] = &put_vvc_bi_w_qpel_v8_10_sse;
@@ -7659,6 +7797,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[3][SIZE_BLOCK_8] = &oh_hevc_put_hevc_uni_qpel_hv8_10_sse;
   mc_l->bidir0[3][SIZE_BLOCK_8] = &oh_hevc_put_hevc_bi0_qpel_hv8_10_sse;
   mc_l->bidir1[3][SIZE_BLOCK_8] = &oh_hevc_put_hevc_bi1_qpel_hv8_10_sse;
+  mc_l->bilinear[3][SIZE_BLOCK_8] = &put_vvc_qpel_bilinear_hv_sse;
   #if WEIGHTED
   mc_l->unidir_w[3][SIZE_BLOCK_8] = &put_vvc_uni_w_qpel_hv8_10_sse;
   mc_l->bidir_w[3][SIZE_BLOCK_8] = &put_vvc_bi_w_qpel_hv8_10_sse;
@@ -7675,6 +7814,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[1][SIZE_BLOCK_16] = &oh_hevc_put_hevc_uni_qpel_h16_10_sse;
   mc_l->bidir0[1][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi0_qpel_h16_10_sse;
   mc_l->bidir1[1][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi1_qpel_h16_10_sse;
+  mc_l->bilinear[1][SIZE_BLOCK_16] = &put_vvc_qpel_bilinear_h_sse;
   #if WEIGHTED
   mc_l->unidir_w[1][SIZE_BLOCK_16] = &put_vvc_uni_w_qpel_h16_10_sse;
   mc_l->bidir_w[1][SIZE_BLOCK_16] = &put_vvc_bi_w_qpel_h16_10_sse;
@@ -7683,6 +7823,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[2][SIZE_BLOCK_16] = &oh_hevc_put_hevc_uni_qpel_v16_10_sse;
   mc_l->bidir0[2][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi0_qpel_v16_10_sse;
   mc_l->bidir1[2][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi1_qpel_v16_10_sse;
+  mc_l->bilinear[2][SIZE_BLOCK_16] = &put_vvc_qpel_bilinear_v_sse;
   #if WEIGHTED
   mc_l->unidir_w[2][SIZE_BLOCK_16] = &put_vvc_uni_w_qpel_v16_10_sse;
   mc_l->bidir_w[2][SIZE_BLOCK_16] = &put_vvc_bi_w_qpel_v16_10_sse;
@@ -7691,6 +7832,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[3][SIZE_BLOCK_16] = &oh_hevc_put_hevc_uni_qpel_hv16_10_sse;
   mc_l->bidir0[3][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi0_qpel_hv16_10_sse;
   mc_l->bidir1[3][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi1_qpel_hv16_10_sse;
+  mc_l->bilinear[3][SIZE_BLOCK_16] = &put_vvc_qpel_bilinear_hv_sse;
   #if WEIGHTED
   mc_l->unidir_w[3][SIZE_BLOCK_16] = &put_vvc_uni_w_qpel_hv16_10_sse;
   mc_l->bidir_w[3][SIZE_BLOCK_16] = &put_vvc_bi_w_qpel_hv16_10_sse;
@@ -7707,6 +7849,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[1][SIZE_BLOCK_32] = &oh_hevc_put_hevc_uni_qpel_h32_10_sse;
   mc_l->bidir0[1][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi0_qpel_h32_10_sse;
   mc_l->bidir1[1][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi1_qpel_h32_10_sse;
+  mc_l->bilinear[1][SIZE_BLOCK_32] = &put_vvc_qpel_bilinear_h_sse;
   #if WEIGHTED
   mc_l->unidir_w[1][SIZE_BLOCK_32] = &put_vvc_uni_w_qpel_h32_10_sse;
   mc_l->bidir_w[1][SIZE_BLOCK_32] = &put_vvc_bi_w_qpel_h32_10_sse;
@@ -7715,6 +7858,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[2][SIZE_BLOCK_32] = &oh_hevc_put_hevc_uni_qpel_v32_10_sse;
   mc_l->bidir0[2][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi0_qpel_v32_10_sse;
   mc_l->bidir1[2][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi1_qpel_v32_10_sse;
+  mc_l->bilinear[2][SIZE_BLOCK_32] = &put_vvc_qpel_bilinear_v_sse;
   #if WEIGHTED
   mc_l->unidir_w[2][SIZE_BLOCK_32] = &put_vvc_uni_w_qpel_v32_10_sse;
   mc_l->bidir_w[2][SIZE_BLOCK_32] = &put_vvc_bi_w_qpel_v32_10_sse;
@@ -7723,6 +7867,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[3][SIZE_BLOCK_32] = &oh_hevc_put_hevc_uni_qpel_hv32_10_sse;
   mc_l->bidir0[3][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi0_qpel_hv32_10_sse;
   mc_l->bidir1[3][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi1_qpel_hv32_10_sse;
+  mc_l->bilinear[3][SIZE_BLOCK_32] = &put_vvc_qpel_bilinear_hv_sse;
   #if WEIGHTED
   mc_l->unidir_w[3][SIZE_BLOCK_32] = &put_vvc_uni_w_qpel_hv32_10_sse;
   mc_l->bidir_w[3][SIZE_BLOCK_32] = &put_vvc_bi_w_qpel_hv32_10_sse;
@@ -7739,6 +7884,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[1][SIZE_BLOCK_64] = &oh_hevc_put_hevc_uni_qpel_h64_10_sse;
   mc_l->bidir0[1][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi0_qpel_h64_10_sse;
   mc_l->bidir1[1][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi1_qpel_h64_10_sse;
+  mc_l->bilinear[1][SIZE_BLOCK_64] = &put_vvc_qpel_bilinear_h_sse;
   #if WEIGHTED
   mc_l->unidir_w[1][SIZE_BLOCK_64] = &put_vvc_uni_w_qpel_h64_10_sse;
   mc_l->bidir_w[1][SIZE_BLOCK_64] = &put_vvc_bi_w_qpel_h64_10_sse;
@@ -7747,6 +7893,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[2][SIZE_BLOCK_64] = &oh_hevc_put_hevc_uni_qpel_v64_10_sse;
   mc_l->bidir0[2][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi0_qpel_v64_10_sse;
   mc_l->bidir1[2][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi1_qpel_v64_10_sse;
+  mc_l->bilinear[2][SIZE_BLOCK_64] = &put_vvc_qpel_bilinear_v_sse;
   #if WEIGHTED
   mc_l->unidir_w[2][SIZE_BLOCK_64] = &put_vvc_uni_w_qpel_v64_10_sse;
   mc_l->bidir_w[2][SIZE_BLOCK_64] = &put_vvc_bi_w_qpel_v64_10_sse;
@@ -7755,6 +7902,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[3][SIZE_BLOCK_64] = &oh_hevc_put_hevc_uni_qpel_hv64_10_sse;
   mc_l->bidir0[3][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi0_qpel_hv64_10_sse;
   mc_l->bidir1[3][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi1_qpel_hv64_10_sse;
+  mc_l->bilinear[3][SIZE_BLOCK_64] = &put_vvc_qpel_bilinear_hv_sse;
   #if WEIGHTED
   mc_l->unidir_w[3][SIZE_BLOCK_64] = &put_vvc_uni_w_qpel_hv64_10_sse;
   mc_l->bidir_w[3][SIZE_BLOCK_64] = &put_vvc_bi_w_qpel_hv64_10_sse;
@@ -7771,6 +7919,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[1][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_qpel_h64_10_sse;
   mc_l->bidir0[1][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_qpel_h64_10_sse;
   mc_l->bidir1[1][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_qpel_h64_10_sse;
+  mc_l->bilinear[1][SIZE_BLOCK_128] = &put_vvc_qpel_bilinear_h_sse;
   #if WEIGHTED
   mc_l->unidir_w[1][SIZE_BLOCK_128] = &put_vvc_uni_w_qpel_h64_10_sse;
   mc_l->bidir_w[1][SIZE_BLOCK_128] = &put_vvc_bi_w_qpel_h64_10_sse;
@@ -7779,6 +7928,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[2][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_qpel_v64_10_sse;
   mc_l->bidir0[2][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_qpel_v64_10_sse;
   mc_l->bidir1[2][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_qpel_v64_10_sse;
+  mc_l->bilinear[2][SIZE_BLOCK_128] = &put_vvc_qpel_bilinear_v_sse;
   #if WEIGHTED
   mc_l->unidir_w[2][SIZE_BLOCK_128] = &put_vvc_uni_w_qpel_v64_10_sse;
   mc_l->bidir_w[2][SIZE_BLOCK_128] = &put_vvc_bi_w_qpel_v64_10_sse;
@@ -7787,6 +7937,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_l->unidir[3][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_qpel_hv64_10_sse;
   mc_l->bidir0[3][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_qpel_hv64_10_sse;
   mc_l->bidir1[3][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_qpel_hv64_10_sse;
+  mc_l->bilinear[3][SIZE_BLOCK_128] = &put_vvc_qpel_bilinear_hv_sse;
   #if WEIGHTED
   mc_l->unidir_w[3][SIZE_BLOCK_128] = &put_vvc_uni_w_qpel_hv64_10_sse;
   mc_l->bidir_w[3][SIZE_BLOCK_128] = &put_vvc_bi_w_qpel_hv64_10_sse;
