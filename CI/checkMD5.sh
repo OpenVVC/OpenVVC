@@ -105,21 +105,27 @@ log_failure(){
   dump_md5error >> ${ERROR_LOG_FILE}
 }
 
-check_md5sum(){
-  out_md5=$(md5sum ${yuv_file} | grep -o '[0-9,a-f]*\ ')
-
-  src_dir=$(dirname ${file})
-  md5_file="${src_dir}/${name}.md5"
-  if [ -f $md5_file ] ; then
-      ref_md5=$(cat    ${md5_file} | grep -o '[0-9,a-f]*\ ')
-          test "${out_md5}" = "${ref_md5}" || handle_md5sum_mismatch
-  else
+on_missing_md5_file(){
     error="No MD5 file"
+    increment nb_error
     log_status "MISSING MD5" $RED
     log_error "${name}"
     log_error "Could not find a md5 reference."
     return 1
-  fi
+}
+
+find_md5_file() {
+  src_dir=$(dirname ${1})
+  md5_file="${src_dir}/${name}.md5"
+  [ -f $md5_file ] || on_missing_md5_file
+}
+
+check_md5sum(){
+  find_md5_file ${file} && {
+    out_md5=$(md5sum ${yuv_file} | grep -o '[0-9,a-f]*\ ')
+    ref_md5=$(cat    ${md5_file} | grep -o '[0-9,a-f]*\ ')
+    test "${out_md5}" = "${ref_md5}" || handle_md5sum_mismatch
+  }
 }
 
 increment(){
