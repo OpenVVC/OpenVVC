@@ -183,21 +183,20 @@ for ext in ${ext_list}; do
   append file_list $(find ${STREAM} -name "*.${ext}" | sort)
 done
 
+short_name(){
+    printf "%.$2s" "$1"
+}
+
+
 #TODO remove this one
 rm -f failed.txt
 rm -f ${ERROR_LOG_FILE}
 
+nb_files="$(echo "$file_list" | wc -w)"
 tmp_dir=$(mktemp -d -t ovnreg_XXXX)
 
 nb_error=0
-
-nb_files="$(echo "$file_list" | wc -w)"
-echo ${nb_files}
 file_id=0
-
-short_name(){
-    printf "%.$2s" "$1"
-}
 
 for file in ${file_list}; do
 
@@ -228,6 +227,6 @@ done
 printf "${RED}Detected ${nb_error} errors $NC: See $ERROR_LOG_FILE for more info.\n"
 
 keep_log=''
-[ -z $keep_log ] && rm -r $tmp_dir && echo removed
+[ -z $keep_log ] && rm -r $tmp_dir
 
 exit $nb_error
