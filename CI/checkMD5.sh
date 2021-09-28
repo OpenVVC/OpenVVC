@@ -188,7 +188,8 @@ done
 rm -f failed.txt
 rm -f ${ERROR_LOG_FILE}
 
-tmp_dir=$STREAM
+tmp_dir=$(mktemp -d -t ovnreg_XXXX)
+
 nb_error=0
 
 nb_files="$(echo "$file_list" | wc -w)"
