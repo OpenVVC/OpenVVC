@@ -18,9 +18,10 @@ ext_list="266
           h266
           vvc"
 
+ERROR_LOG_FILE="error.log"
 
 log_error(){
-    echo -e "$RED${*}$NC"
+    echo "${*}" >> ${ERROR_LOG_FILE}
 }
 
 die(){
@@ -29,9 +30,8 @@ die(){
 }
 
 if [ $# -lt 2 ];  then
-    log_error "Illegal number of parameters"
     print_usage
-    die
+    die "Illegal number of parameters"
 fi
 
 STREAM=$1
@@ -83,8 +83,6 @@ log_success(){
     printf "\r%-70.70s ${GREEN}%s${NC}\n" "${name}" PASS
     rm -f ${log_file}.log
 }
-
-ERROR_LOG_FILE="error.log"
 
 dump_md5error(){
     cat <<EOF
