@@ -100,10 +100,9 @@ EOF
 }
 
 log_failure(){
-    echo ${name} >> failed.txt
+  echo ${name} >> failed.txt
   log_status 'FAIL' $RED
-    echo -e "$RED${name}$NC: See $ERROR_LOG_FILE for more info."
-    dump_md5error >> ${ERROR_LOG_FILE}
+  dump_md5error >> ${ERROR_LOG_FILE}
 }
 
 check_md5sum(){
@@ -225,5 +224,10 @@ for file in ${file_list}; do
   cleanup_onsuccess
 
 done
+
+printf "${RED}Detected ${nb_error} errors $NC: See $ERROR_LOG_FILE for more info.\n"
+
+keep_log=''
+[ -z $keep_log ] && rm -r $tmp_dir && echo removed
 
 exit $nb_error
