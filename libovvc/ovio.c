@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "ovmem.h"
 
@@ -8,7 +9,7 @@
 
 /* Use Fixed size of demux read cache buffer to 64K */
 
-#define OVIO_BUFF_SIZE (1 << 16)
+#define OVIO_FILEIO_BUFF_SIZE (1 << 16)
 
 typedef struct OVReadBuff{
     uint8_t *bytestream;
@@ -16,10 +17,49 @@ typedef struct OVReadBuff{
 }OVReadBuff;
 
 struct OVIOStream {
-    FILE *fstream;
+    OVIO *io;
     const uint8_t *bytestream;
     OVReadBuff opaque_cache;
 };
+
+static int OVFileIOClose(OVIO* io)
+{
+    int ret = 0;
+    OVFileIO* file_io = (OVFileIO*) io;
+    ret = fclose(file_io->file);
+    free(file_io);
+    return ret;
+}
+
+static size_t OVFileIORead(void *ptr, OVIO* io)
+{
+    int read = 0;
+    OVFileIO* file_io = (OVFileIO*) io;
+    read = fread(ptr, 1, io->size, file_io->file);
+    if(!read)
+        read = ftell(file_io->file);
+    return  read;
+}
+
+static int OVFileIOEOF(OVIO* io)
+{
+    OVFileIO* file_io = (OVFileIO*) io;
+    return feof(file_io->file);
+}
+
+const OVFileIO defaultFileIO = {
+  .super = { .close = OVFileIOClose, .read = OVFileIORead, .eof = OVFileIOEOF, .size = OVIO_FILEIO_BUFF_SIZE },
+  .file = NULL
+};
+
+OVFileIO*
+ovio_new_fileio(const char* path, const char* mode)
+{
+  OVFileIO* io = ov_malloc(sizeof(OVFileIO));
+  memcpy(io, &defaultFileIO, sizeof(OVFileIO));
+  io->file = fopen(path, mode);
+  return io;
+}
 
 
 static int ovread_buff_init(struct OVReadBuff *const cache_buff,
@@ -28,11 +68,11 @@ static int ovread_buff_init(struct OVReadBuff *const cache_buff,
 static void ovread_buff_close(struct OVReadBuff *const cache_buff);
 
 OVIOStream *
-ovio_stream_open(FILE *fstream)
+ovio_stream_open(OVIO *io)
 {
     OVIOStream *io_str;
     int ret;
-    if (fstream == NULL) {
+    if (io == NULL) {
         return NULL;
     }
 
@@ -41,13 +81,13 @@ ovio_stream_open(FILE *fstream)
         return io_str;
     }
 
-    ret = ovread_buff_init(&io_str->opaque_cache, OVIO_BUFF_SIZE);
+    ret = ovread_buff_init(&io_str->opaque_cache, io->size);
     if (ret < 0) {
         ov_freep(&io_str);
         return io_str;
     }
 
-    io_str->fstream = fstream;
+    io_str->io = io;
     io_str->bytestream = io_str->opaque_cache.bytestream;
 
     return io_str;
@@ -108,10 +148,10 @@ ovread_buff_close(struct OVReadBuff *const cache_buff)
 
 /* FIXME find a way to give a pointer to cache directly to bytestream */
 size_t
-ovio_stream_read(const uint8_t **dst_buff, size_t size, OVIOStream *const io_str)
+ovio_stream_read(const uint8_t **dst_buff, OVIOStream *const io_str)
 {
-    const size_t i_buff_size = OVIO_BUFF_SIZE;
-    FILE *fstream = io_str->fstream;
+    OVIO *io = io_str->io;
+    const size_t i_buff_size = io->size;
     uint8_t *cache_start = io_str->opaque_cache.bytestream;
     uint8_t *cache_end = cache_start + i_buff_size;
     size_t read_in_buf;
@@ -120,7 +160,7 @@ ovio_stream_read(const uint8_t **dst_buff, size_t size, OVIOStream *const io_str
        be done somewhere else this force cache buffer */
     memcpy(cache_start - 8, cache_end - 8, sizeof(*cache_start) * 8);
 
-    read_in_buf = fread(cache_start, i_buff_size, 1, fstream);
+    read_in_buf = io->read(cache_start, io);
 
     *dst_buff = cache_start;
 
@@ -131,23 +171,14 @@ ovio_stream_read(const uint8_t **dst_buff, size_t size, OVIOStream *const io_str
 int
 ovio_stream_eof(OVIOStream *const io_str)
 {
-    FILE *fstream = io_str->fstream;
+    OVIO *io = io_str->io;
 
-    return feof(fstream);
+    return io->eof(io);
 }
 
-int
-ovio_stream_error(OVIOStream *const io_str)
+size_t
+ovio_stream_buff_size(OVIOStream* const io_str)
 {
-    FILE *fstream = io_str->fstream;
-
-    return ferror(fstream);
-}
-
-long int
-ovio_stream_tell(OVIOStream *const io_str)
-{
-    FILE *fstream = io_str->fstream;
-
-    return ftell(fstream);
+    OVIO *io = io_str->io;
+    return io->size;
 }

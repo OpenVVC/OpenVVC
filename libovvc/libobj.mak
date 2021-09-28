@@ -66,4 +66,6 @@ LIB_SRC:=																																 \
 LIB_HEADER:=ovdefs.h       \
 						ovunits.h      \
 						ovdec.h        \
-						ovframe.h
+						ovframe.h     \
+						ovio.h        \
+						ovdmx.h

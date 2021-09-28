@@ -15,12 +15,6 @@
 #include "ovunits.h"
 
 
-/* Use Fixed size of demux read cache buffer to 64K */
-
-#define OVVCDMX_IO_BUFF_SIZE (1 << 16)
-
-#define OVVCDMX_IO_BUFF_MASK ((1 << 16) - 1)
-
 #define OVRBSP_CACHE_SIZE (1 << 16)
 
 #define OVEPB_CACHE_SIZE (16 * sizeof(uint32_t))
@@ -136,8 +130,6 @@ struct OVVCDmx
 {
     const char *name;
 
-    FILE *fstream;
-
     /* Points to a read only IO context */
     OVIOStream *io_str;
 
@@ -201,7 +193,7 @@ static void free_nalu_elem(struct NALUnitListElem *nalu_elem);
 int
 ovdmx_init(OVVCDmx **vvcdmx)
 {
-    int ret;
+    int ret = 0;
     *vvcdmx = ov_mallocz(sizeof(**vvcdmx));
 
     if (*vvcdmx == NULL) return OV_ENOMEM;
@@ -271,10 +263,8 @@ fail:
     return -1;
 }
 
-/*FIXME do not use FILE use a wrapper to something more general instead
-  so we can support other IO types */
 int
-ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
+ovdmx_attach_stream(OVVCDmx *const dmx, OVIO *io)
 {
     int ret = 0;
 
@@ -282,15 +272,13 @@ ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
        be called if stream is not allocated.
        Maybe we should open file ourselves / and use a wrapper around
        I/Os */
-    if (fstream == NULL) {
+    if (io == NULL) {
         ov_log(dmx, OVLOG_ERROR, "No stream to attach.\n");
         return OVVC_EINDATA;
     }
 
-    dmx->fstream = fstream;
-
     /* TODO distinguish init and open / attach */
-    dmx->io_str = ovio_stream_open(fstream);
+    dmx->io_str = ovio_stream_open(io);
     if (dmx->io_str == NULL) {
         ov_log(dmx, OVLOG_ERROR, "Failed to open stream.\n");
         return OVVC_EINDATA;
@@ -301,21 +289,18 @@ ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
         struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
         int read_in_buf;
 
-        read_in_buf = ovio_stream_read(&cache_ctx->data_start, OVVCDMX_IO_BUFF_SIZE,
-                                       dmx->io_str);
+        read_in_buf = ovio_stream_read(&cache_ctx->data_start, dmx->io_str);
         cache_ctx->first_pos = 0;
         cache_ctx->cache_start = cache_ctx->data_start;
 
-        /* Buffer end is set to size minus 8 so we do not overread first data chunk */
-        cache_ctx->cache_end = cache_ctx->data_start + OVVCDMX_IO_BUFF_SIZE - 8;
+        cache_ctx->cache_end = cache_ctx->cache_start + read_in_buf;
 
-        if (!read_in_buf) {
-            /* TODO error handling if end of file is encountered on first read */
-            int32_t nb_bytes;
-            nb_bytes = ovio_stream_tell(dmx->io_str) & OVVCDMX_IO_BUFF_MASK;
-            cache_ctx->cache_end = cache_ctx->cache_start + nb_bytes;
+        if (read_in_buf < io->size) {
             dmx->eof = 1;
-            /* FIXME We could emulate a start code at the end of cache ?*/
+        }
+        else {
+            /* Buffer end is set to size minus 8 so we do not overread first data chunk */
+            cache_ctx->cache_end -= 8;
         }
 
         /* FIXME Process first chunk of data ? */
@@ -332,8 +317,6 @@ ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
 void
 ovdmx_detach_stream(OVVCDmx *const dmx)
 {
-    dmx->fstream = NULL;
-
     /* FIXME decide if it should free OVIOStream cache buff */
     if (dmx->io_str != NULL) {
         ovio_stream_close(dmx->io_str);
@@ -347,18 +330,16 @@ static int
 refill_reader_cache(struct ReaderCache *const cache_ctx, OVIOStream *const io_str)
 {
     int read_in_buf;
-    read_in_buf = ovio_stream_read(&cache_ctx->data_start, OVVCDMX_IO_BUFF_SIZE,
-                                   io_str);
+    read_in_buf = ovio_stream_read(&cache_ctx->data_start, io_str);
     cache_ctx->data_start -= 8;
 
     cache_ctx->cache_start = cache_ctx->data_start;
-    cache_ctx->cache_end   = cache_ctx->data_start + OVVCDMX_IO_BUFF_SIZE;
+    cache_ctx->cache_end   = cache_ctx->data_start + read_in_buf;
 
     cache_ctx->nb_chunk_read += read_in_buf;
 
-    if (!read_in_buf) {
-        int32_t nb_bytes = ovio_stream_tell(io_str) & OVVCDMX_IO_BUFF_MASK;
-        cache_ctx->cache_end = cache_ctx->data_start + nb_bytes + 8;
+    if (read_in_buf != ovio_stream_buff_size(io_str)) {
+        cache_ctx->cache_end += 8;
         return 1;
     }
 
@@ -770,10 +751,9 @@ process_emulation_prevention_byte(OVVCDmx *const dmx, struct ReaderCache *const 
 static int
 extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
 {
-    const uint64_t mask = OVVCDMX_IO_BUFF_MASK;
     const uint8_t *byte = cache_ctx->cache_start;
     const uint8_t *const cache_end = cache_ctx->cache_end;
-    uint32_t byte_pos = cache_ctx->first_pos & mask;
+    uint32_t byte_pos = cache_ctx->first_pos;
     uint8_t end_of_cache;
     struct RBSPSegment sgmt_ctx = {0};
 
@@ -781,7 +761,7 @@ extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
     sgmt_ctx.end_p   = byte + byte_pos;
 
     do {
-        const uint8_t *bytestream = &byte[byte_pos & mask];
+        const uint8_t *bytestream = &byte[byte_pos];
 
         /* FIXME we will actually loop over this more than once even if a start
          * code has been detected. This is a bit inefficient

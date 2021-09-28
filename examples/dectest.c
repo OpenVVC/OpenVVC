@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "ovdec.h"
+#include "ovio.h"
 #include "ovdefs.h"
 #include "ovdmx.h"
 #include "ovframe.h"
@@ -18,7 +19,7 @@ typedef struct OVVCHdl{
     /* TODO decide whether or not file pointer must be given
        to dmx or not  it is only given to the hadle so when can
        close the file later since we opened it from here*/
-    FILE *fp;
+    OVIO *io;
 }OVVCHdl;
 
 static int dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name);
@@ -28,7 +29,7 @@ static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_nam
 static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
 static int read_write_stream(OVVCHdl *const hdl, FILE *fout);
-static int read_stream(OVVCHdl *const hdl, FILE *fp);
+static int read_stream(OVVCHdl *const hdl);
 
 static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
 
@@ -164,17 +165,17 @@ static int
 dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name)
 {
     int ret;
-    FILE *file = fopen(input_file_name,"rb");
+    OVFileIO *file_io = ovio_new_fileio(input_file_name,"rb");
 
-    if (file == NULL) {
+    if (file_io == NULL) {
         perror(input_file_name);
-       vvc_hdl->fp = NULL;
+       vvc_hdl->io = NULL;
        return -1;
     }
 
-    vvc_hdl->fp = file;
+    vvc_hdl->io = (OVIO*) file_io;
 
-    ret = ovdmx_attach_stream(vvc_hdl->dmx, vvc_hdl->fp);
+    ret = ovdmx_attach_stream(vvc_hdl->dmx, (OVIO*) vvc_hdl->io);
 
     return ret;
 }
@@ -217,10 +218,11 @@ close_openvvc_hdl(OVVCHdl *const ovvc_hdl)
 {
     OVVCDec *vvcdec = ovvc_hdl->dec;
     OVVCDmx *vvcdmx = ovvc_hdl->dmx;
+    OVIO* io = ovvc_hdl->io;
     int ret;
 
-    if (ovvc_hdl->fp != NULL) {
-        fclose(ovvc_hdl->fp);
+    if (io != NULL) {
+        io->close(io);
     }
 
     ret = ovdec_close(vvcdec);
@@ -246,7 +248,7 @@ faildmxclose:
 
 
 static int
-read_stream(OVVCHdl *const hdl, FILE *fp)
+read_stream(OVVCHdl *const hdl)
 {
     int ret;
     OVVCDmx *const dmx = hdl->dmx;
