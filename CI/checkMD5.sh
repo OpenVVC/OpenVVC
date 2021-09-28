@@ -121,11 +121,9 @@ find_md5_file() {
 }
 
 check_md5sum(){
-  find_md5_file ${file} && {
-    out_md5=$(md5sum ${yuv_file} | grep -o '[0-9,a-f]*\ ')
-    ref_md5=$(cat    ${md5_file} | grep -o '[0-9,a-f]*\ ')
-    test "${out_md5}" = "${ref_md5}" || handle_md5sum_mismatch
-  }
+  out_md5=$(md5sum ${yuv_file} | grep -o '[0-9,a-f]*\ ')
+  ref_md5=$(cat    ${md5_file} | grep -o '[0-9,a-f]*\ ')
+  test "${out_md5}" = "${ref_md5}" || handle_md5sum_mismatch
 }
 
 increment(){
@@ -216,6 +214,8 @@ for file in ${file_list}; do
 
   yuv_file="${tmp_dir}/${name}.yuv"
   log_file="${tmp_dir}/${name}.log"
+
+  find_md5_file ${file} || continue
 
   decode ${file} ${yuv_file} ${log_file} || handle_decoding_error
 
