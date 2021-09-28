@@ -123,7 +123,7 @@ typedef void (*LMCSReshapeFunc)(uint16_t *_dst, ptrdiff_t stride_dst, uint16_t* 
 
 typedef uint64_t (*DMVRSADFunc)(const int16_t *ref0, const int16_t *ref1, int16_t dmvr_stride, int16_t pb_w, int16_t pb_h);
 
-typedef uint64_t (*DMVRComputeSADsFunc)(const int16_t *ref0, const int16_t *ref1, uint64_t *sad_array, int sb_w, int sb_h);
+typedef uint8_t (*DMVRComputeSADsFunc)(const int16_t *ref0, const int16_t *ref1, uint64_t *sad_array, int sb_w, int sb_h);
 
 typedef void (*PROFGradFunction)(const uint16_t* src, int src_stride, int sb_w, int sb_h, int grad_stride, int16_t* grad_x, int16_t* grad_y);
 
@@ -137,6 +137,10 @@ typedef void (*BDOFSBFunction)(const int16_t* src0, int src0_stride,
                         const int16_t *gradX0, const int16_t *gradX1,
                         const int16_t *gradY0, const int16_t *gradY1, int grad_stride,
                         int wgt_x, int wgt_y);
+
+typedef void (*CIIPWeightedFuntion)(uint16_t* dst, int dststride, const uint16_t* src_intra,
+                                    const uint16_t* src_inter, int srcstride, int width, int height, int wt);
+
 /**
  * The Context put together all functions used by strategies.
  */
@@ -225,6 +229,10 @@ struct BDOFFunctions{
     BDOFSBFunction subblock;
 };
 
+struct CIIPFunctions{
+    CIIPWeightedFuntion weighted;
+};
+
 struct RCNFunctions
 {
     /* Motion Compensation Luma */
@@ -269,6 +277,9 @@ struct RCNFunctions
 
     /* BDOF Functions */
     struct BDOFFunctions bdof;
+
+    /* CIIP Functions */
+    struct CIIPFunctions ciip;
 };
 
 

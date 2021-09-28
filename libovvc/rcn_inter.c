@@ -2498,6 +2498,7 @@ void rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, 
                             unsigned int x0, unsigned int y0,
                             unsigned int log2_pb_w, unsigned int log2_pb_h)
 {
+    struct CIIPFunctions *ciip = &ctudec->rcn_ctx.rcn_funcs.ciip;
     //Compute weight in function of neighboring coding modes
     int x_right  = x0 + (1 << log2_pb_w) - 1;
     int y_bottom = y0 + (1 << log2_pb_h) - 1;
@@ -2513,7 +2514,7 @@ void rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, 
     dst.y  += x0 + y0 * dst.stride;
     tmp_intra->y  += x0 + y0 * tmp_intra->stride;
     tmp_inter->y  += x0 + y0 * tmp_inter->stride;
-    put_weighted_ciip_pixels(dst.y, dst.stride, tmp_intra->y, tmp_inter->y, tmp_inter->stride,
+    ciip->weighted(dst.y, dst.stride, tmp_intra->y, tmp_inter->y, tmp_inter->stride,
                        1 << log2_pb_w, 1 << log2_pb_h, wt);
 
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
@@ -2530,9 +2531,9 @@ void rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, 
         mc_c->unidir[0][0](dst.cr, dst.stride_c, tmp_inter->cr, tmp_inter->stride_c, 1 << (log2_pb_h - 1), 0, 0, 1 << (log2_pb_w - 1));
     }
     else{
-        put_weighted_ciip_pixels(dst.cb, dst.stride_c, tmp_intra->cb, tmp_inter->cb, tmp_inter->stride_c,
+        ciip->weighted(dst.cb, dst.stride_c, tmp_intra->cb, tmp_inter->cb, tmp_inter->stride_c,
                            1 << (log2_pb_w - 1), 1 << (log2_pb_h - 1), wt);
-        put_weighted_ciip_pixels(dst.cr, dst.stride_c, tmp_intra->cr, tmp_inter->cr, tmp_inter->stride_c,
+        ciip->weighted(dst.cr, dst.stride_c, tmp_intra->cr, tmp_inter->cr, tmp_inter->stride_c,
                            1 << (log2_pb_w - 1), 1 << (log2_pb_h - 1), wt);
     }
 }
@@ -2937,7 +2938,7 @@ rcn_gpm_b(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
 }
 
 void
-rcn_dmvr_functions(struct RCNFunctions *const rcn_funcs)
+rcn_init_dmvr_functions(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->dmvr.sad[0] = &rcn_dmvr_sad_8;
     rcn_funcs->dmvr.sad[1] = &rcn_dmvr_sad_16;
@@ -2947,14 +2948,14 @@ rcn_dmvr_functions(struct RCNFunctions *const rcn_funcs)
 }
 
 void
-rcn_prof_functions(struct RCNFunctions *const rcn_funcs)
+rcn_init_prof_functions(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->prof.grad = &compute_prof_grad;
     rcn_funcs->prof.rcn = &rcn_prof;
 }
 
 void
-rcn_bdof_functions(struct RCNFunctions *const rcn_funcs)
+rcn_init_bdof_functions(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->bdof.grad = &compute_prof_grad;
     rcn_funcs->bdof.subblock = &rcn_apply_bdof_subblock;

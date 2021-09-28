@@ -178,7 +178,7 @@ dmvr_compute_sads_8(const int16_t *ref0, const int16_t *ref1,
 }
 
 void
-rcn_dmvr_functions_sse(struct RCNFunctions *const rcn_funcs)
+rcn_init_dmvr_functions_sse(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->dmvr.sad[0] = &rcn_dmvr_sad_8;
     rcn_funcs->dmvr.sad[1] = &rcn_dmvr_sad_16;

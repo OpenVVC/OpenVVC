@@ -7726,6 +7726,51 @@ put_vvc_qpel_bilinear_hv_sse(uint16_t* _dst, ptrdiff_t _dststride, const uint16_
   put_vvc_qpel_bilinear_v_sse(_dst, _dststride, tmp, MAX_PB_SIZE, height, mx, my, width);
 }
 
+static void
+put_weighted_ciip_pixels_sse(uint16_t* dst, int dststride,
+                      const uint16_t* src_intra, const uint16_t* src_inter, int srcstride,
+                      int width, int height, int wt)
+{
+  int x, y;
+  int shift  = 2;
+  __m128i x1, x2, t1, t2;
+  __m128i c1 = _mm_set1_epi16(wt);
+  __m128i c2 = _mm_set1_epi16(4-wt);
+  __m128i c = _mm_unpacklo_epi16(c1, c2);
+  __m128i offset = _mm_set1_epi32(1 << (shift - 1));
+  for (y = 0; y < height; y++) {
+    for (x = 0; x < width; x+=8) {
+      x1 = _mm_loadu_si128((__m128i*)&src_intra[x]);
+      x2 = _mm_loadu_si128((__m128i*)&src_inter[x]);
+
+      t1 = _mm_unpacklo_epi16(x1, x2);
+      t2 = _mm_unpackhi_epi16(x1, x2);
+
+      t1 = _mm_madd_epi16(t1, c);
+      t2 = _mm_madd_epi16(t2, c);
+
+      x1 = _mm_add_epi32(t1, offset);
+      x2 = _mm_add_epi32(t2, offset);
+
+      x1 = _mm_srai_epi32(x1, shift);
+      x2 = _mm_srai_epi32(x2, shift);
+
+      x1 = _mm_max_epi32(x1, _mm_setzero_si128());
+      x2 = _mm_max_epi32(x2, _mm_setzero_si128());
+
+      x1 = _mm_min_epi32(x1, _mm_set1_epi32(1023));
+      x2 = _mm_min_epi32(x2, _mm_set1_epi32(1023));
+
+      x1 = _mm_packs_epi32(x1,x2);
+
+      _mm_storeu_si128((__m128i*)&dst[x], x1);
+      }
+      src_intra += srcstride;
+      src_inter += srcstride;
+      dst += dststride;
+  }
+}
+
 void
 rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
 {
@@ -8137,4 +8182,10 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_c->unidir_w[3][SIZE_BLOCK_128] = &put_vvc_uni_w_epel_hv64_10_sse;
   mc_c->bidir_w[3][SIZE_BLOCK_128] = &put_vvc_bi_w_epel_hv64_10_sse;
   #endif
+}
+
+void rcn_init_ciip_functions_sse(struct RCNFunctions *const rcn_funcs)
+{
+    struct CIIPFunctions *const ciip = &rcn_funcs->ciip;
+    ciip->weighted = &put_weighted_ciip_pixels_sse;
 }

@@ -11,8 +11,9 @@ void rcn_init_cclm_functions_sse(struct RCNFunctions *rcn_func);
 void rcn_init_lfnst_functions_sse(struct RCNFunctions *rcn_func);
 void rcn_init_mip_functions_sse(struct RCNFunctions *const rcn_funcs);
 void rcn_init_sao_functions_sse(struct RCNFunctions *const rcn_funcs);
-void rcn_dmvr_functions_sse(struct RCNFunctions *const rcn_funcs);
-void rcn_prof_functions_sse(struct RCNFunctions *const rcn_funcs);
-void rcn_bdof_functions_sse(struct RCNFunctions *const rcn_funcs);
+void rcn_init_dmvr_functions_sse(struct RCNFunctions *const rcn_funcs);
+void rcn_init_prof_functions_sse(struct RCNFunctions *const rcn_funcs);
+void rcn_init_bdof_functions_sse(struct RCNFunctions *const rcn_funcs);
+void rcn_init_ciip_functions_sse(struct RCNFunctions *const rcn_funcs);
 
 #endif//RCN_SSE_H

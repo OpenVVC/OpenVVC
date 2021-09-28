@@ -28,7 +28,7 @@
 #define MCP_FILTER_C(src, stride, filter)                                      \
         (filter[0] * src[x - stride] + filter[1] * src[x] +                    \
          filter[2] * src[x + stride] + filter[3] * src[x + 2 * stride])
- 
+
 #define BLN_FILTER_L(src, stride, filter)                                      \
         (filter[0] * src[x - 1 * stride] + filter[1] * src[x - 0 * stride])
 
@@ -923,7 +923,7 @@ put_weighted_epel_bi_v(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
 {
     int x, y;
     const uint16_t* src = (uint16_t*) _src;
-    
+
 
     uint16_t* dst = (uint16_t*)_dst;
 
@@ -956,7 +956,7 @@ put_weighted_epel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
 {
     int x, y;
     const uint16_t* src = (uint16_t*) _src;
-    
+
 
     uint16_t* dst = (uint16_t*)_dst;
 
@@ -1002,10 +1002,10 @@ void
 put_weighted_pel_bi_pixels(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdiff_t _srcstride,
                   int16_t* src2, ptrdiff_t src2stride, int height, int denom,
                   int wx0, int wx1, intptr_t mx, intptr_t my, int width)
-{   
+{
     int x, y;
     const uint16_t* src = (uint16_t*) _src;
-    
+
     ptrdiff_t srcstride = _srcstride >> 1;
     uint16_t* dst = (uint16_t*)_dst;
     ptrdiff_t dststride = _dststride >> 1;
@@ -1029,7 +1029,7 @@ put_weighted_qpel_bi_h(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
 {
     int x, y;
     const uint16_t* src = (uint16_t*) _src;
-    
+
 
     uint16_t* dst = (uint16_t*)_dst;
 
@@ -1063,7 +1063,7 @@ put_weighted_qpel_bi_v(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
 {
     int x, y;
     const uint16_t* src = (uint16_t*) _src;
-    
+
 
     uint16_t* dst = (uint16_t*)_dst;
 
@@ -1098,7 +1098,7 @@ put_weighted_qpel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
     int x, y;
 
     const uint16_t* src = (uint16_t*) _src;
-    
+
     uint16_t* dst = (uint16_t*)_dst;
 
     ptrdiff_t srcstride = _srcstride >> 1;
@@ -1141,11 +1141,11 @@ put_weighted_qpel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
 }
 
 
-void
+static void
 put_weighted_ciip_pixels(uint16_t* dst, int dststride,
                       const uint16_t* src_intra, const uint16_t* src_inter, int srcstride,
                       int width, int height, int wt)
-{   
+{
     int x, y;
     int shift  = 2;
     int offset = (1 << (shift - 1));
@@ -1164,7 +1164,7 @@ void
 put_weighted_gpm_bi_pixels(uint16_t* _dst, int _dststride, const int16_t* _src0,
                   int _srcstride, const int16_t* _src1, int height,
                   intptr_t mx, intptr_t my, int width, int step_x, int step_y, int16_t* weight)
-{   
+{
     int x, y;
     const int16_t* src0 = _src0;
     const int16_t* src1 = _src1;
@@ -1244,6 +1244,10 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_c->bidir_w[2][i] = &put_weighted_epel_bi_v;
         mc_c->bidir_w[3][i] = &put_weighted_epel_bi_hv;
     }
+}
 
-
+void rcn_init_ciip_functions(struct RCNFunctions *const rcn_funcs)
+{
+    struct CIIPFunctions *const ciip = &rcn_funcs->ciip;
+    ciip->weighted = &put_weighted_ciip_pixels;
 }

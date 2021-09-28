@@ -105,7 +105,7 @@ void rcn_init_gpm_params();
 void rcn_gpm_b(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx, int x0, int y0, int log2_pb_w, int log2_pb_h);
 
 /* FIXME check vertical / horizontal */
-void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled, 
+void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled,
                         uint8_t sps_chroma_vertical_collocated_flag, uint8_t lmcs_flag);
 
 void rcn_init_cclm_functions(struct RCNFunctions *rcn_func);
@@ -124,11 +124,13 @@ void rcn_init_mip_functions(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_sao_functions(struct RCNFunctions *const rcn_funcs);
 
-void rcn_dmvr_functions(struct RCNFunctions *const rcn_funcs);
+void rcn_init_dmvr_functions(struct RCNFunctions *const rcn_funcs);
 
-void rcn_prof_functions(struct RCNFunctions *const rcn_funcs);
+void rcn_init_prof_functions(struct RCNFunctions *const rcn_funcs);
 
-void rcn_bdof_functions(struct RCNFunctions *const rcn_funcs);
+void rcn_init_bdof_functions(struct RCNFunctions *const rcn_funcs);
+
+void rcn_init_ciip_functions(struct RCNFunctions *const rcn_funcs);
 
 void rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
                  uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y);

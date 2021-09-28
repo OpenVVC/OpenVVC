@@ -501,14 +501,14 @@ rcn_apply_bdof_subblock_sse(const int16_t* src0, int src0_stride,
 }
 
 void
-rcn_prof_functions_sse(struct RCNFunctions *const rcn_funcs)
+rcn_init_prof_functions_sse(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->prof.grad = &compute_prof_grad_sse;
     rcn_funcs->prof.rcn = &rcn_prof_sse;
 }
 
 void
-rcn_bdof_functions_sse(struct RCNFunctions *const rcn_funcs)
+rcn_init_bdof_functions_sse(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->bdof.grad = &compute_prof_grad_sse;
     rcn_funcs->bdof.subblock = &rcn_apply_bdof_subblock_sse;
