@@ -72,6 +72,12 @@ do
   fi
 done
 
+log_status(){
+  status=$1
+  color=$2
+  printf "\r%-70.70s ${color}%+10s${NC}\n" "${name}" "${status}"
+}
+
 decode(){
   #TODO handle /dev/null output and optional log
   dec_arg="-i ${1} -o ${2} -t 8"
@@ -80,7 +86,7 @@ decode(){
 }
 
 log_success(){
-    printf "\r%-70.70s ${GREEN}%s${NC}\n" "${name}" PASS
+    log_status 'PASS' $GREEN
     rm -f ${log_file}.log
 }
 
@@ -95,7 +101,7 @@ EOF
 
 log_failure(){
     echo ${name} >> failed.txt
-    printf "\r%-70.70s ${RED}%s${NC}\n" "${name}" FAIL
+  log_status 'FAIL' $RED
     echo -e "$RED${name}$NC: See $ERROR_LOG_FILE for more info."
     dump_md5error >> ${ERROR_LOG_FILE}
 }
@@ -109,9 +115,11 @@ check_md5sum(){
       ref_md5=$(cat    ${md5_file} | grep -o '[0-9,a-f]*\ ')
           test "${out_md5}" = "${ref_md5}" || handle_md5sum_mismatch
   else
-      log_error "${name}"
-      log_error "Could not find a md5 reference."
-      return 1
+    error="No MD5 file"
+    log_status "MISSING MD5" $RED
+    log_error "${name}"
+    log_error "Could not find a md5 reference."
+    return 1
   fi
 }
 
@@ -120,9 +128,24 @@ increment(){
 }
 
 handle_decoding_error(){
+    retval=$?
     increment nb_error
+    case $retval in
+      "139")
+        er='SEGFAULT'
+        ;;
+      "134")
+        er='STACK'
+        ;;
+      *)
+        er='OTHER'
+        ;;
+    esac
+
+    log_status "$er" $RED
+
     log_error "Error while decoding ${file}"
-    cat ${log_file}
+
     error="Decoder issue"
 }
 
@@ -182,7 +205,6 @@ for file in ${file_list}; do
 
   increment file_id
 
-	 printf "\e[K"
   printf "%-62.62s %s" "Processing $(short_name "$name" 30)..." "$file_id of $nb_files"
 
   filter_extension name ${ext_list}
