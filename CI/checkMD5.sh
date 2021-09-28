@@ -163,13 +163,6 @@ for ext in ${ext_list}; do
   append file_list $(find ${STREAM} -name "*.${ext}" | sort)
 done
 
-# Construct directory list based on file list
-#dir_list=""
-#for file in ${file_list}; do
-#  dir_name=$(dirname ${file})
-#  find_in_list "$dir_name" $dir_list || append dir_list "$dir_name"
-#done
-
 #TODO remove this one
 rm -f failed.txt
 rm -f ${ERROR_LOG_FILE}
