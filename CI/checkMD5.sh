@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 print_usage(){
     cat <<EOF
@@ -28,7 +28,7 @@ die(){
     exit 1
 }
 
-if [[ "$#" < 2 ]];  then
+if [ $# -lt 2 ];  then
     log_error "Illegal number of parameters"
     print_usage
     die
@@ -58,13 +58,13 @@ filter_extension(){
 
 mkdir -p $STREAM
 
-if [[ "$#" == 3 ]];  then
+if [ $# -eq 3 ];  then
   STREAMLIST=$(curl --silent $URL | grep -o -E '"([[:alnum:]]+_)+([[:alnum:]]+.266)"' | sed 's/\"/\ /g')
 fi
 
 for file in $STREAMLIST
 do
-  if [[ ! -f "$STREAM/$file" ]]; then
+  if [ ! -f "$STREAM/$file" ]; then
     echo Downloading $file ...
     curl --silent $URL/$file --output $STREAM/$file
     echo Downloading ${file%.266}.md5 ...
@@ -107,7 +107,7 @@ check_md5sum(){
 
   src_dir=$(dirname ${file})
   md5_file="${src_dir}/${name}.md5"
-  if [[ -f $md5_file ]] ; then
+  if [ -f $md5_file ] ; then
       ref_md5=$(cat    ${md5_file} | grep -o '[0-9,a-f]*\ ')
           test "${out_md5}" = "${ref_md5}" || handle_md5sum_mismatch
   else
@@ -118,7 +118,7 @@ check_md5sum(){
 }
 
 increment(){
-    eval "((${1}=${1}+1))"
+    eval "${1}=$((${1} + 1))"
 }
 
 handle_decoding_error(){
