@@ -193,7 +193,7 @@ nb_error=0
 
 nb_files="$(echo "$file_list" | wc -w)"
 echo ${nb_files}
-file_id="0"
+file_id=0
 
 short_name(){
     printf "%.$2s" "$1"
