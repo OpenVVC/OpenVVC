@@ -15,12 +15,61 @@ typedef struct OVReadBuff{
     void *opaque;
 }OVReadBuff;
 
+
+static int OVFileIOClose(OVIO* io)
+{
+    int ret;
+    OVFileIO* file_io = (OVFileIO*) io;
+    ret = fclose(file_io->file);
+    free(file_io);
+    return ret;
+}
+
+static size_t OVFileIORead(void *ptr, size_t size, size_t nmemb,
+                    OVIO* io)
+{
+    OVFileIO* file_io = (OVFileIO*) io;
+    return fread(ptr, size, nmemb, file_io->file);
+}
+
+static int OVFileIOEOF(OVIO* io)
+{
+    OVFileIO* file_io = (OVFileIO*) io;
+    return ftell(file_io->file);
+}
+
+static int OVFileIOError(OVIO* io)
+{
+    OVFileIO* file_io = (OVFileIO*) io;
+    return ferror(file_io->file);
+}
+
+static long OVFileIOTell(OVIO* io)
+{
+    OVFileIO* file_io = (OVFileIO*) io;
+    return ferror(file_io->file);
+}
+
+const OVFileIO defaultFileIO = { .super = { .close = OVFileIOClose,
+                                            .read = OVFileIORead,
+                                            .tell = OVFileIOTell,
+                                            .eof = OVFileIOEOF,
+                                            .error = OVFileIOError },
+                                        .file = NULL };
+OVFileIO*
+ovio_new_fileio(const char* path, const char* mode)
+{
+  OVFileIO* io = ov_malloc(sizeof(OVFileIO));
+  memcpy(io, &defaultFileIO, sizeof(OVFileIO));
+  io->file = fopen(path, mode);
+  return io;
+}
+
 struct OVIOStream {
-    FILE *fstream;
+    OVIO *io;
     const uint8_t *bytestream;
     OVReadBuff opaque_cache;
 };
-
 
 static int ovread_buff_init(struct OVReadBuff *const cache_buff,
                              size_t buff_size);
@@ -28,11 +77,11 @@ static int ovread_buff_init(struct OVReadBuff *const cache_buff,
 static void ovread_buff_close(struct OVReadBuff *const cache_buff);
 
 OVIOStream *
-ovio_stream_open(FILE *fstream)
+ovio_stream_open(OVIO *io)
 {
     OVIOStream *io_str;
     int ret;
-    if (fstream == NULL) {
+    if (io == NULL) {
         return NULL;
     }
 
@@ -47,7 +96,7 @@ ovio_stream_open(FILE *fstream)
         return io_str;
     }
 
-    io_str->fstream = fstream;
+    io_str->io = io;
     io_str->bytestream = io_str->opaque_cache.bytestream;
 
     return io_str;
@@ -111,7 +160,7 @@ size_t
 ovio_stream_read(const uint8_t **dst_buff, size_t size, OVIOStream *const io_str)
 {
     const size_t i_buff_size = OVIO_BUFF_SIZE;
-    FILE *fstream = io_str->fstream;
+    OVIO *io = io_str->io;
     uint8_t *cache_start = io_str->opaque_cache.bytestream;
     uint8_t *cache_end = cache_start + i_buff_size;
     size_t read_in_buf;
@@ -120,7 +169,7 @@ ovio_stream_read(const uint8_t **dst_buff, size_t size, OVIOStream *const io_str
        be done somewhere else this force cache buffer */
     memcpy(cache_start - 8, cache_end - 8, sizeof(*cache_start) * 8);
 
-    read_in_buf = fread(cache_start, i_buff_size, 1, fstream);
+    read_in_buf = io->read(cache_start, i_buff_size, 1, io);
 
     *dst_buff = cache_start;
 
@@ -131,23 +180,23 @@ ovio_stream_read(const uint8_t **dst_buff, size_t size, OVIOStream *const io_str
 int
 ovio_stream_eof(OVIOStream *const io_str)
 {
-    FILE *fstream = io_str->fstream;
+    OVIO *io = io_str->io;
 
-    return feof(fstream);
+    return io->eof(io);
 }
 
 int
 ovio_stream_error(OVIOStream *const io_str)
 {
-    FILE *fstream = io_str->fstream;
+    OVIO *io = io_str->io;
 
-    return ferror(fstream);
+    return io->error(io);
 }
 
 long int
 ovio_stream_tell(OVIOStream *const io_str)
 {
-    FILE *fstream = io_str->fstream;
+    OVIO *io = io_str->io;
 
-    return ftell(fstream);
+    return io->tell(io);
 }

@@ -2,6 +2,7 @@
 #define OVVCDMX_H
 
 #include <stdio.h>
+#include "ovio.h"
 #include "ovunits.h"
 
 typedef struct OVVCDmx OVVCDmx;
@@ -10,7 +11,7 @@ int ovdmx_init(OVVCDmx **vvcdmx);
 
 int ovdmx_close(OVVCDmx *vvcdmx);
 
-int ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream);
+int ovdmx_attach_stream(OVVCDmx *const dmx, OVIO *io);
 
 void ovdmx_detach_stream(OVVCDmx *const dmx);
 

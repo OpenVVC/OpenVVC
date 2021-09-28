@@ -136,8 +136,6 @@ struct OVVCDmx
 {
     const char *name;
 
-    FILE *fstream;
-
     /* Points to a read only IO context */
     OVIOStream *io_str;
 
@@ -271,10 +269,8 @@ fail:
     return -1;
 }
 
-/*FIXME do not use FILE use a wrapper to something more general instead
-  so we can support other IO types */
 int
-ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
+ovdmx_attach_stream(OVVCDmx *const dmx, OVIO *io)
 {
     int ret = 0;
 
@@ -282,15 +278,13 @@ ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
        be called if stream is not allocated.
        Maybe we should open file ourselves / and use a wrapper around
        I/Os */
-    if (fstream == NULL) {
+    if (io == NULL) {
         ov_log(dmx, OVLOG_ERROR, "No stream to attach.\n");
         return OVVC_EINDATA;
     }
 
-    dmx->fstream = fstream;
-
     /* TODO distinguish init and open / attach */
-    dmx->io_str = ovio_stream_open(fstream);
+    dmx->io_str = ovio_stream_open(io);
     if (dmx->io_str == NULL) {
         ov_log(dmx, OVLOG_ERROR, "Failed to open stream.\n");
         return OVVC_EINDATA;
@@ -332,8 +326,6 @@ ovdmx_attach_stream(OVVCDmx *const dmx, FILE *fstream)
 void
 ovdmx_detach_stream(OVVCDmx *const dmx)
 {
-    dmx->fstream = NULL;
-
     /* FIXME decide if it should free OVIOStream cache buff */
     if (dmx->io_str != NULL) {
         ovio_stream_close(dmx->io_str);

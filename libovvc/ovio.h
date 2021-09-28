@@ -13,7 +13,24 @@
 typedef struct OVIOStream OVIOStream;
 
 /* TODO open / close */
-OVIOStream *ovio_stream_open(FILE *fstream);
+
+typedef struct OVIO {
+    struct OVIO* (*open)();
+    int (*close)(struct OVIO*);
+    size_t (*read)(void *, size_t, size_t, struct OVIO*);
+    long (*tell)(struct OVIO*);
+    int (*eof)(struct OVIO*);
+    int (*error)(struct OVIO*);
+} OVIO;
+
+typedef struct OVFileIO{
+    const struct OVIO super;
+    FILE* file;
+} OVFileIO;
+
+struct OVFileIO* ovio_new_fileio(const char* path, const char* mode);
+
+OVIOStream *ovio_stream_open(OVIO *io);
 
 void ovio_stream_close(OVIOStream *io_str);
 
