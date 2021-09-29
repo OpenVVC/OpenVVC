@@ -5,7 +5,7 @@
 #define MAX_PB_SIZE_16 #256
 #define SHIFT_VAL #4 //14 - bitdepth, for 10 -> 4, for 8 -> 6
 
-.macro clip, val, min_val, max_val
+.macro CLIP, val, min_val, max_val
       SMAX  \val, \val, \min_val
       SMIN  \val, \val, \max_val
 .endm
