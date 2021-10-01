@@ -258,33 +258,32 @@ void ctudec_alloc_filter_buffers(OVCTUDec *const ctudec, int nb_ctu_w, int margi
 {   
     const OVPartInfo *const pinfo = ctudec->part_ctx;
     uint8_t log2_ctb_size = pinfo->log2_ctu_s;
-    int max_cu_width_l = 1 << log2_ctb_size;
+    int ctu_s = 1 << log2_ctb_size;
 
     struct OVFilterBuffers* fb = &ctudec->filter_buffers;
     int16_t** saved_rows_sao = fb->saved_rows_sao;
     int16_t** saved_rows_alf = fb->saved_rows_alf;
     int16_t** saved_cols    = fb->saved_cols;
     int16_t** filter_region = fb->filter_region;
-    fb->margin    = margin;
+    fb->margin = margin;
 
-    for(int comp = 0; comp < 3; comp++)
-    {   
-        //CHROMA: only 420
+    for(int comp = 0; comp < 3; comp++) {   
         int ratio_luma_chroma = 2;
         int ratio = comp==0 ? 1 : ratio_luma_chroma;
 
-        fb->filter_region_w[comp]        = max_cu_width_l /ratio ;
-        fb->filter_region_h[comp]        = max_cu_width_l /ratio ;
-        fb->filter_region_stride[comp]   = max_cu_width_l /ratio + 2*margin ;
+        fb->filter_region_w[comp]        = ctu_s / ratio ;
+        fb->filter_region_h[comp]        = ctu_s / ratio ;
+        fb->filter_region_stride[comp]   = ctu_s / ratio + 2 * margin ;
         fb->filter_region_offset[comp]   = margin * fb->filter_region_stride[comp] + margin;
-        if(!filter_region[comp]){
-            filter_region[comp] = ov_malloc( fb->filter_region_stride[comp] * (fb->filter_region_h[comp] + 2*margin) * sizeof(int16_t));
+
+        if (!filter_region[comp]) {
+            int ext_size = fb->filter_region_stride[comp] * (fb->filter_region_h[comp] + 2 * margin);
+            filter_region[comp] = ov_malloc(ext_size * sizeof(int16_t));
             saved_cols[comp]    = ov_malloc(fb->filter_region_h[comp] * margin * sizeof(int16_t));
         } 
 
-        //Re-alloc saved_rows with a new value of nb_ctu_w
-        fb->saved_rows_stride[comp] = nb_ctu_w*max_cu_width_l/ratio; ;
-        if(saved_rows_sao[comp]){
+        fb->saved_rows_stride[comp] = nb_ctu_w * ctu_s / ratio; ;
+        if (saved_rows_sao[comp]) {
             ov_freep(&saved_rows_sao[comp]);
         }
         saved_rows_sao[comp] = ov_mallocz(margin * fb->saved_rows_stride[comp] * sizeof(int16_t));
