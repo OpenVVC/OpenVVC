@@ -438,7 +438,7 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
 }
 
 
-void
+static void
 rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const int stride,
                               Area blk, int ctu_width, int pic_h,
                               ALFClassifBlkFunc classif_func)
@@ -1013,7 +1013,7 @@ static void alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx
   }
 }
 
-static uint8_t
+static inline uint8_t
 check_virtual_bound(int y_pos_pic, int height, int virbnd_pos, uint8_t log2_ctb_s)
 {
     uint16_t ctu_msk = (1 << log2_ctb_s) - 1;
