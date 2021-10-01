@@ -736,6 +736,7 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
             _mm_storeu_si128((__m128i *) &colSums[i >> 1][j], _mm_hadd_epi16(t, all));
             prev = all;
         }
+        _src += stride << 1;
     }
 
     for (i = 0; i < (blk_h >> 1); i += 4) {
