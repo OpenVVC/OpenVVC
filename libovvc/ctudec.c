@@ -170,17 +170,23 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, i
         // //*******************************************************/
         //Left margins
         if (bnd_msk & OV_BOUNDARY_LEFT_RECT) {
+            int16_t *dst = &filter_region[margin * stride_filter];
             for (int ii=0; ii < height; ii++) {
-                int16_t val = filter_region[(ii + margin) * stride_filter + margin];
+                int16_t pad = dst[margin];
                 for (int jj=0; jj < margin; jj++) {
-                    filter_region[(ii + margin) * stride_filter + jj] = val;
+                    dst[jj] = pad;
                 }
+                dst += stride_filter;
             }
         } else {
+            int16_t *dst = &filter_region[margin * stride_filter];
+            const int16_t *src = saved_cols;
             for (int ii=0; ii < height; ii++) {
                 for (int jj=0; jj < margin; jj++) {
-                    filter_region[(ii + margin) * stride_filter + jj] = saved_cols[ii * margin + jj];
+                    dst[jj] = src[jj];
                 }
+                src += margin;
+                dst += stride_filter;
             }
         }
 
@@ -188,17 +194,23 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, i
         int h = margin + height;
         int w = margin + width;
         if (bnd_msk & OV_BOUNDARY_RIGHT_RECT) {
+            int16_t *dst = &filter_region[margin * stride_filter + w];
             for (int ii=0; ii < height; ii++) {
-                int16_t val = filter_region[(ii + margin) * stride_filter + w - 1];
+                const int16_t pad = dst[-1];
                 for (int jj=0; jj < margin; jj++) {
-                    filter_region[(ii + margin) * stride_filter + w + jj] = val;
+                    dst[jj] = pad;
                 }
+                dst += stride_filter;
             }
         } else {
+            const int16_t *src = &frame[width];
+                  int16_t *dst = &filter_region[margin * stride_filter + w];
             for (int ii=0; ii < height; ii++) {
                 for (int jj=0; jj < margin; jj++) {
-                    filter_region[(ii + margin) * stride_filter + w + jj] = frame[ii * stride_pic + width + jj];
+                    dst[jj] = src[jj];
                 }
+                dst += stride_filter;
+                src += stride_pic;
             }
         }
 
@@ -232,10 +244,11 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, i
         //Bottom margins
         if (bnd_msk & OV_BOUNDARY_BOTTOM_RECT) {
             int cpy_s = sizeof(int16_t) * (width + 2 * margin);
-            const int16_t *src = &filter_region[(h - 1) * stride_filter];
+                  int16_t *dst = &filter_region[h * stride_filter];
+            const int16_t *src = dst - stride_filter;
             for (int ii=0; ii < margin; ii++) {
-                int16_t *dst = &filter_region[(h + ii) * stride_filter];
                 memcpy(dst, src, cpy_s);
+                dst += stride_filter;
             }
         } else {
             int cpy_s = sizeof(int16_t) * (width + 2 * margin);
