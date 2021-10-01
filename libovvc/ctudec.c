@@ -131,7 +131,8 @@ void ctudec_save_last_rows(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l
 }
 
 
-void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
+void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l,
+                                 int x_pic_l, int y_pic_l, uint8_t bnd_msk)
 {   
 
     struct OVFilterBuffers* fb = &ctudec->filter_buffers;
@@ -170,8 +171,7 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, i
         //Left margins
         for (int ii=0; ii < height; ii++) {
             for (int jj=0; jj < margin; jj++) {
-                if (!(is_border_rect & OV_BOUNDARY_LEFT_RECT)) {
-                    //mettre un memcpy de taille margin
+                if (!(bnd_msk & OV_BOUNDARY_LEFT_RECT)) {
                     filter_region[(ii+margin)*stride_filter + jj] = saved_cols[ii*margin + jj];
                 } else {
                     filter_region[(ii+margin)*stride_filter + jj] = filter_region[(ii+margin)*stride_filter + margin];
@@ -180,13 +180,15 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, i
         }
 
         //Right margins
-        int h = margin+height;
-        int w = margin+width;
+        int h = margin + height;
+        int w = margin + width;
         for (int ii=0; ii < height; ii++) {
-            for (int jj=0; jj < margin; jj++) {
-                if (!(is_border_rect & OV_BOUNDARY_RIGHT_RECT)) {
+            if (!(bnd_msk & OV_BOUNDARY_RIGHT_RECT)) {
+                for (int jj=0; jj < margin; jj++) {
                     filter_region[(ii+margin)*stride_filter + w + jj] = frame[ii*stride_pic + width + jj];
-                } else {
+                }
+            } else {
+                for (int jj=0; jj < margin; jj++) {
                     filter_region[(ii+margin)*stride_filter + w + jj] = filter_region[(ii+margin)*stride_filter + w - 1 ];
                 }
             }
@@ -194,37 +196,46 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, i
 
         //*******************************************************/
         //Upper margins
-        int stride_rows = fb->saved_rows_stride[comp];
-        for(int ii=0; ii < margin; ii++) {
-            int x_offset_end = 0;
-            int16_t *dst = &filter_region[ii * stride_filter + margin];
-            if (!(is_border_rect & OV_BOUNDARY_RIGHT_RECT))
-                x_offset_end = margin;
+        int x_offset_end = 0;
 
+        if (!(bnd_msk & OV_BOUNDARY_RIGHT_RECT))
+            x_offset_end = margin;
+
+        if (!(bnd_msk & OV_BOUNDARY_UPPER_RECT)) {
             int cpy_s = sizeof(int16_t) * (width + x_offset_end);
-            if (!(is_border_rect & OV_BOUNDARY_UPPER_RECT)){
+            int stride_rows = fb->saved_rows_stride[comp];
+            for(int ii=0; ii < margin; ii++) {
+                int16_t *dst = &filter_region[ii * stride_filter + margin];
                 memcpy(dst, &saved_rows_comp[ii * stride_rows + x], cpy_s);
-            } else {
+            }
+        } else {
+            int cpy_s = sizeof(int16_t) * (width + x_offset_end);
+            for(int ii=0; ii < margin; ii++) {
+                int16_t *dst = &filter_region[ii * stride_filter + margin];
                 memcpy(dst, &filter_region[margin * stride_filter + margin], cpy_s);
             }
         }
 
         //Bottom margins
-        for (int ii=0; ii < margin; ii++) {
-            int16_t *dst = &filter_region[(h + ii) * stride_filter];
+        if (!(bnd_msk & OV_BOUNDARY_BOTTOM_RECT)) {
             int cpy_s = sizeof(int16_t) * (width + 2 * margin);
-            const int16_t *src;
-            if (!(is_border_rect & OV_BOUNDARY_BOTTOM_RECT)) {
-                src = &frame[(height + ii) * stride_pic - margin];
-            } else {
-                src = &filter_region[(h - 1) * stride_filter];
+            for (int ii=0; ii < margin; ii++) {
+                const int16_t *src = &frame[(height + ii) * stride_pic - margin];
+                      int16_t *dst = &filter_region[(h + ii) * stride_filter];
+                memcpy(dst, src, cpy_s);
             }
-            memcpy(dst, src, cpy_s);
+        } else {
+            int cpy_s = sizeof(int16_t) * (width + 2 * margin);
+            for (int ii=0; ii < margin; ii++) {
+                const int16_t *src = &filter_region[(h - 1) * stride_filter];
+                      int16_t *dst = &filter_region[(h + ii) * stride_filter];
+                memcpy(dst, src, cpy_s);
+            }
         }
 
         //*******************************************************/
         //Fill all corners on boudaries
-        if (is_border_rect & OV_BOUNDARY_UPPER_RECT) {
+        if (bnd_msk & OV_BOUNDARY_UPPER_RECT) {
             for (int ii = 0; ii < margin; ii++) {
                 const int16_t *src = &filter_region[margin * stride_filter];
                       int16_t *dst = &filter_region[ii     * stride_filter];
@@ -233,7 +244,7 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, i
             }
         }
 
-        if (is_border_rect & OV_BOUNDARY_BOTTOM_RECT) {
+        if (bnd_msk & OV_BOUNDARY_BOTTOM_RECT) {
             for (int ii = 0; ii < margin; ii++) {
                 const int16_t *src = &filter_region[(h - 1)  * stride_filter];
                       int16_t *dst = &filter_region[(h + ii) * stride_filter];
@@ -242,7 +253,7 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, i
             }
         }
 
-        if (is_border_rect & OV_BOUNDARY_LEFT_RECT) {
+        if (bnd_msk & OV_BOUNDARY_LEFT_RECT) {
             for (int ii = 0; ii < margin; ii++) {
                 int16_t *src  = &filter_region[ ii      * stride_filter];
                 int16_t *src2 = &filter_region[(h + ii) * stride_filter];
@@ -253,7 +264,7 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, i
             }
         }
 
-        if (is_border_rect & OV_BOUNDARY_RIGHT_RECT) {
+        if (bnd_msk & OV_BOUNDARY_RIGHT_RECT) {
             for (int ii=0; ii < margin; ii++) {
                 int16_t *src  = &filter_region[ ii      * stride_filter + w];
                 int16_t *src2 = &filter_region[(h + ii) * stride_filter + w];
