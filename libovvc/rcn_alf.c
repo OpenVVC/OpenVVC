@@ -1036,17 +1036,16 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
 
     const OVPartInfo *const pinfo = ctudec->part_ctx;
     uint8_t log2_ctb_s = pinfo->log2_ctu_s;
-    int ctu_width  = 1 << log2_ctb_s;
+    int ctu_s  = 1 << log2_ctb_s;
 
     RCNALF* alf = &alf_info->rcn_alf;
     for (int ctb_x = 0; ctb_x < einfo->nb_ctu_w; ctb_x++) {
         int ctb_x_pic = ctb_x + einfo->ctb_x;
         int ctb_y_pic = ctb_y + einfo->ctb_y;
-        int x_pos = ctu_width * ctb_x;
-        int x_pos_pic = ctu_width * ctb_x_pic;
-        int y_pos_pic = ctu_width * ctb_y_pic;
-        int width  = (x_pos_pic + ctu_width > ctudec->pic_w) ? (ctudec->pic_w - x_pos_pic) : ctu_width;
-        int height = (y_pos_pic + ctu_width > ctudec->pic_h) ? (ctudec->pic_h - y_pos_pic) : ctu_width;
+        int x_pos_pic = ctu_s * ctb_x_pic;
+        int y_pos_pic = ctu_s * ctb_y_pic;
+        int ctu_w = (x_pos_pic + ctu_s > ctudec->pic_w) ? (ctudec->pic_w - x_pos_pic) : ctu_s;
+        int ctu_h = (y_pos_pic + ctu_s > ctudec->pic_h) ? (ctudec->pic_h - y_pos_pic) : ctu_s;
 
         //left | right | up | down
         uint8_t is_border = 0;
@@ -1054,13 +1053,15 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
         is_border = (ctb_x == einfo->nb_ctu_w - 1) ? is_border | OV_BOUNDARY_RIGHT_RECT: is_border;
         is_border = (ctb_y == 0)                   ? is_border | OV_BOUNDARY_UPPER_RECT: is_border;
         is_border = (ctb_y == einfo->nb_ctu_h - 1) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
-        // is_border = (y_pos_pic + ctu_width >= ctudec->pic_h) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
 
         int ctu_rs_addr = ctb_x + ctb_y * einfo->nb_ctu_w ;
+
         ALFParamsCtu* alf_params_ctu = &alf_info->ctb_alf_params[ctu_rs_addr];
 
-        int16_t **src = fb.filter_region;
+        int16_t **src        = fb.filter_region;
         int16_t **saved_rows = fb.saved_rows_alf;
+
+        int x_pos = ctu_s * ctb_x;
 
         ctudec_extend_filter_region(ctudec, saved_rows, x_pos, x_pos_pic, y_pos_pic, is_border);
 
@@ -1068,33 +1069,33 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
             uint8_t c_idx = 0;
             int stride_src = fb.filter_region_stride[c_idx];
             int stride_dst = frame->linesize[c_idx] / 2;
-            int16_t*  src_luma = &src[c_idx][fb.filter_region_offset[c_idx]];
-            int16_t*  dst_luma = (int16_t*) frame->data[c_idx] + y_pos_pic * stride_dst + x_pos_pic;
+            int16_t *src_luma = &src[c_idx][fb.filter_region_offset[c_idx]];
+            int16_t *dst_luma = (int16_t *) frame->data[c_idx] + y_pos_pic * stride_dst + x_pos_pic;
 
             Area blk_dst = {
                 .x = x_pos_pic,
                 .y = y_pos_pic,
-                .width  = width,
-                .height = height,
+                .width  = ctu_w,
+                .height = ctu_h,
             };
 
             rcn_alf_derive_classification(alf, src_luma, stride_src, blk_dst,
-                                          ctu_width, ctudec->pic_h,
+                                          ctu_s, ctudec->pic_h,
                                           ctudec->rcn_ctx.rcn_funcs.alf.classif);
 
             int16_t filter_idx = alf_params_ctu->ctb_alf_idx;
             int16_t *coeff = alf->filter_coeff_dec[filter_idx];
-            int16_t *clip  = alf->filter_clip_dec[filter_idx];
+            int16_t *clip  = alf->filter_clip_dec [filter_idx];
 
-            int virbnd_pos = (y_pos_pic + ctu_width >= ctudec->pic_h) ? ctudec->pic_h
-                                                                      : height - ALF_VB_POS_ABOVE_CTUROW_LUMA;
+            int virbnd_pos = (y_pos_pic + ctu_s >= ctudec->pic_h) ? ctudec->pic_h
+                                                                      : ctu_h - ALF_VB_POS_ABOVE_CTUROW_LUMA;
 
-            uint8_t req_vb = check_virtual_bound(y_pos_pic, height, virbnd_pos, log2_ctb_s);
+            uint8_t req_vb = check_virtual_bound(y_pos_pic, ctu_h, virbnd_pos, log2_ctb_s);
 
             (ctudec->rcn_ctx.rcn_funcs.alf.luma[req_vb])(alf->class_idx, alf->transpose_idx, dst_luma,
                                                          src_luma, stride_dst, stride_src,
                                                          blk_dst, coeff, clip,
-                                                         ctu_width, virbnd_pos);
+                                                         ctu_s, virbnd_pos);
         }
 
         for( uint8_t c_idx = 1; c_idx < 3; c_idx++ )
@@ -1110,24 +1111,24 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
                 blk_dst.x = x_pos_pic/chr_scale;
                 blk_dst.y = y_pos_pic/chr_scale;
 
-                blk_dst.width  = width /chr_scale;
-                blk_dst.height = height/chr_scale;
+                blk_dst.width  = ctu_w /chr_scale;
+                blk_dst.height = ctu_h/chr_scale;
 
                 int stride_dst = frame->linesize[c_idx]/2;
                 int16_t*  dst_chroma = (int16_t*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
 
                 uint8_t alt_num = (c_idx == 1) ? alf_params_ctu->cb_alternative : alf_params_ctu->cr_alternative;
 
-                int virbnd_pos = (( y_pos_pic + ctu_width >= ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_width - ALF_VB_POS_ABOVE_CTUROW_LUMA)/chr_scale);
-                int yVb = (blk_dst.y + blk_dst.height - 1);// & (ctu_width - 1);
-                yVb = yVb & (ctu_width/chr_scale - 1);
+                int virbnd_pos = (( y_pos_pic + ctu_s >= ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA)/chr_scale);
+                int yVb = (blk_dst.y + blk_dst.height - 1);// & (ctu_s - 1);
+                yVb = yVb & (ctu_s/chr_scale - 1);
 
                 uint8_t isVB = (yVb < virbnd_pos && (yVb >= virbnd_pos - 2)) || (yVb >= virbnd_pos && (yVb <= virbnd_pos + 1));
                 ctudec->rcn_ctx.rcn_funcs.alf.chroma[isVB](dst_chroma, src_chroma,
                                                      stride_dst, stride_src, blk_dst,
                                                      alf->chroma_coeff_final[alt_num],
                                                      alf->chroma_clip_final[alt_num],
-                                                     ctu_width/chr_scale,
+                                                     ctu_s/chr_scale,
                                                      virbnd_pos);
             }
 
@@ -1146,7 +1147,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
 
                     //Destination block in the final image
                     blk_dst.x=x_pos_pic/chr_scale; blk_dst.y=y_pos_pic/chr_scale;
-                    blk_dst.width=width/chr_scale; blk_dst.height=height/chr_scale;
+                    blk_dst.width=ctu_w/chr_scale; blk_dst.height=ctu_h/chr_scale;
                     //BITDEPTH
                     int stride_dst = frame->linesize[c_idx]/2;
                     int16_t*  dst_chroma = (int16_t*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
@@ -1155,14 +1156,14 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
                     const int16_t *filt_coeff = alf_data->alf_cc_mapped_coeff[c_idx - 1][filt_idx - 1];
 
                     // FIXME: CC ALF seems to be applied only on border block
-                    int virbnd_pos = (( y_pos_pic + ctu_width >= ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_width - ALF_VB_POS_ABOVE_CTUROW_LUMA));
-                    // int yVb = (blk_dst.y);// & (ctu_width - 1);
-                    // yVb = yVb & (ctu_width - 1);
+                    int virbnd_pos = (( y_pos_pic + ctu_s >= ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA));
+                    // int yVb = (blk_dst.y);// & (ctu_s - 1);
+                    // yVb = yVb & (ctu_s - 1);
 
                     uint8_t isVB = 1;
 
                     ctudec->rcn_ctx.rcn_funcs.alf.ccalf[isVB](dst_chroma, src_chroma, stride_dst, stride_src, blk_dst, c_idx, filt_coeff,
-                    ctu_width, virbnd_pos);
+                    ctu_s, virbnd_pos);
 
                 }
             }
