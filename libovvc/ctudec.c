@@ -197,57 +197,69 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, i
         int stride_rows = fb->saved_rows_stride[comp];
         for(int ii=0; ii < margin; ii++) {
             int x_offset_end = 0;
+            int16_t *dst = &filter_region[ii * stride_filter + margin];
             if (!(is_border_rect & OV_BOUNDARY_RIGHT_RECT))
                 x_offset_end = margin;
 
+            int cpy_s = sizeof(int16_t) * (width + x_offset_end);
             if (!(is_border_rect & OV_BOUNDARY_UPPER_RECT)){
-                memcpy(&filter_region[ii*stride_filter + margin], &saved_rows_comp[ii*stride_rows + x], 
-                       sizeof(int16_t)* (width + x_offset_end));
+                memcpy(dst, &saved_rows_comp[ii * stride_rows + x], cpy_s);
             } else {
-                memcpy(&filter_region[ii*stride_filter + margin], &filter_region[margin*stride_filter + margin], 
-                       sizeof(int16_t)* (width + x_offset_end));
+                memcpy(dst, &filter_region[margin * stride_filter + margin], cpy_s);
             }
         }
 
         //Bottom margins
         for (int ii=0; ii < margin; ii++) {
+            int16_t *dst = &filter_region[(h + ii) * stride_filter];
+            int cpy_s = sizeof(int16_t) * (width + 2 * margin);
+            const int16_t *src;
             if (!(is_border_rect & OV_BOUNDARY_BOTTOM_RECT)) {
-                memcpy(&filter_region[(h+ii)*stride_filter], &frame[(height+ii)*stride_pic - margin],
-                       sizeof(int16_t)* (width + 2*margin));
+                src = &frame[(height + ii) * stride_pic - margin];
             } else {
-                memcpy(&filter_region[(h+ii)*stride_filter ], &filter_region[(h-1)*stride_filter],
-                       sizeof(int16_t)* (width + 2*margin));
+                src = &filter_region[(h - 1) * stride_filter];
             }
+            memcpy(dst, src, cpy_s);
         }
 
         //*******************************************************/
         //Fill all corners on boudaries
         if (is_border_rect & OV_BOUNDARY_UPPER_RECT) {
-            for (int ii=0; ii < margin; ii++) {
-                memcpy(&filter_region[ii*stride_filter], &filter_region[margin*stride_filter], sizeof(int16_t)*margin);
-                memcpy(&filter_region[ii*stride_filter + w], &filter_region[margin*stride_filter + w],sizeof(int16_t)* margin);
+            for (int ii = 0; ii < margin; ii++) {
+                const int16_t *src = &filter_region[margin * stride_filter];
+                      int16_t *dst = &filter_region[ii     * stride_filter];
+                memcpy(dst    , src    , sizeof(int16_t) * margin);
+                memcpy(dst + w, src + w, sizeof(int16_t) * margin);
             }
         }
+
         if (is_border_rect & OV_BOUNDARY_BOTTOM_RECT) {
-            for (int ii=0; ii < margin; ii++) {
-                memcpy(&filter_region[(h+ii)*stride_filter ], &filter_region[(h-1)*stride_filter ], sizeof(int16_t)*margin) ;
-                memcpy(&filter_region[(h+ii)*stride_filter + w ], &filter_region[(h-1)*stride_filter + w ], sizeof(int16_t)*margin) ;
+            for (int ii = 0; ii < margin; ii++) {
+                const int16_t *src = &filter_region[(h - 1)  * stride_filter];
+                      int16_t *dst = &filter_region[(h + ii) * stride_filter];
+                memcpy(dst    , src    , sizeof(int16_t) * margin);
+                memcpy(dst + w, src + w, sizeof(int16_t) * margin);
             }
         }
+
         if (is_border_rect & OV_BOUNDARY_LEFT_RECT) {
-            for (int ii=0; ii < margin; ii++) {
-                for (int jj=0; jj < margin; jj++) {
-                    filter_region[ii*stride_filter + jj] = filter_region[ii*stride_filter + margin];
-                    filter_region[(h+ii)*stride_filter + jj] = filter_region[(h+ii)*stride_filter + margin];
+            for (int ii = 0; ii < margin; ii++) {
+                int16_t *src  = &filter_region[ ii      * stride_filter];
+                int16_t *src2 = &filter_region[(h + ii) * stride_filter];
+                for (int jj = 0; jj < margin; jj++) {
+                    src [jj] = src [margin];
+                    src2[jj] = src2[margin];
                 }
             }
         }
 
         if (is_border_rect & OV_BOUNDARY_RIGHT_RECT) {
             for (int ii=0; ii < margin; ii++) {
+                int16_t *src  = &filter_region[ ii      * stride_filter + w];
+                int16_t *src2 = &filter_region[(h + ii) * stride_filter + w];
                 for (int jj=0; jj < margin; jj++) {
-                    filter_region[ii*stride_filter + w + jj] = filter_region[ii*stride_filter + w - 1];
-                    filter_region[(h+ii)*stride_filter + w + jj] = filter_region[(h+ii)*stride_filter + w - 1];
+                    src [jj] = src [-1];
+                    src2[jj] = src2[-1];
                 }
             }
         }
