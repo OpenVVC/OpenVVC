@@ -672,15 +672,15 @@ void cc_alf_filterBlkVB_sse(int16_t * chroma_dst, int16_t * luma_src, const int 
 
 static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr,
                                         int16_t *const src, const int stride, const Area blk,
-                                        const int shift, const int ctu_height, int virbnd_pos)
+                                        const int shift, const int ctu_s, int virbnd_pos)
 {
-    int height = blk.height;
-    int width  = blk.width;
+    int blk_h = blk.height;
+    int blk_w = blk.width;
 
     uint16_t colSums[18][40];
     int i;
 
-    for (i = 0; i < height + 4; i += 2) {
+    for (i = 0; i < blk_h + 4; i += 2) {
         int yoffset = (i - 3) * stride - 3;
         const int16_t *src0 = &src[yoffset];
         const int16_t *src1 = &src[yoffset + stride];
@@ -690,15 +690,15 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
         const int y = blk.y - 2 + i;
         int j;
 
-        if (y > 0 && (y & (ctu_height - 1)) == virbnd_pos - 2) {
+        if (y > 0 && (y & (ctu_s - 1)) == virbnd_pos - 2) {
             src3 = src2;
-        } else if (y > 0 && (y & (ctu_height - 1)) == virbnd_pos) {
+        } else if (y > 0 && (y & (ctu_s - 1)) == virbnd_pos) {
             src0 = src1;
         }
 
         __m128i prev = _mm_setzero_si128();
 
-        for (j = 0; j < width + 4; j += 8) {
+        for (j = 0; j < blk_w + 4; j += 8) {
             const __m128i x0 = _mm_loadu_si128((const __m128i *) (src0 + j));
             const __m128i x1 = _mm_loadu_si128((const __m128i *) (src1 + j));
             const __m128i x2 = _mm_loadu_si128((const __m128i *) (src2 + j));
@@ -737,13 +737,13 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
         }
     }
 
-    for (i = 0; i < (height >> 1); i += 4) {
+    for (i = 0; i < (blk_h >> 1); i += 4) {
         __m128i class_idx[4], transpose_idx[4];
         for (size_t k = 0; k < 4; k++) {
             __m128i x0, x1, x2, x3, x4, x5, x6, x7;
 
-            const uint32_t z = (2 * i + blk.y) & (ctu_height - 1);
-            const uint32_t z2 = (2 * i + 4 + blk.y) & (ctu_height - 1);
+            const uint32_t z = (2 * i + blk.y) & (ctu_s - 1);
+            const uint32_t z2 = (2 * i + 4 + blk.y) & (ctu_s - 1);
 
             x0 = (z == virbnd_pos) ? _mm_setzero_si128() : _mm_loadu_si128((__m128i *) &colSums[i + 0][(k*8) + 4]);
             x1 = _mm_loadu_si128((__m128i *) &colSums[i + 1][(k*8) + 4]);
@@ -849,8 +849,8 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
         t1 = _mm_unpacklo_epi32(t1, t2);
 
 
-        int yOffset = (2*i + blk.y) % ctu_height;
-        int xOffset = (blk.x) % ctu_height;
+        int yOffset = (2*i + blk.y) % ctu_s;
+        int xOffset = (blk.x) % ctu_s;
         _mm_storel_epi64((__m128i *) (class_idx_arr + (yOffset>>2) * CLASSIFICATION_BLK_SIZE + (xOffset>>2)), c1);
         _mm_storel_epi64((__m128i *) (class_idx_arr + ((yOffset>>2)+1) * CLASSIFICATION_BLK_SIZE + (xOffset>>2)), _mm_bsrli_si128(c1, 8));
 
