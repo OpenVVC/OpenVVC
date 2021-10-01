@@ -1157,13 +1157,10 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
                     int stride_dst = frame->linesize[c_idx]/2;
                     int16_t*  dst_chroma = (int16_t*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
 
-                    // const int16_t *filt_coeff = alf_data.alf_cc_mapped_coeff[c_idx - 1][filt_idx];
                     const int16_t *filt_coeff = alf_data->alf_cc_mapped_coeff[c_idx - 1][filt_idx - 1];
 
                     // FIXME: CC ALF seems to be applied only on border block
                     int virbnd_pos = (( y_pos_pic + ctu_s >= ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA));
-                    // int yVb = (blk_dst.y);// & (ctu_s - 1);
-                    // yVb = yVb & (ctu_s - 1);
 
                     uint8_t isVB = 1;
 
