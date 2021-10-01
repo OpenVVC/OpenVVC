@@ -438,20 +438,22 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
 }
 
 
-void rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const int stride, Area blk, int ctu_width, int pic_h, ALFClassifBlkFunc classif_func)
+void
+rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const int stride,
+                              Area blk, int ctu_width, int pic_h,
+                              ALFClassifBlkFunc classif_func)
 {
     int height = blk.y + blk.height;
-    int width = blk.x + blk.width;
-    //BITDEPTH: uniquement pour bitdepth 10
+    int width  = blk.x + blk.width;
     int bit_depth = 10;
+    int i;
 
-    for( int i = blk.y; i < height; i += CLASSIFICATION_BLK_SIZE )
-    {
-        int nHeight = OVMIN( i + CLASSIFICATION_BLK_SIZE, height ) - i;
+    for (i = blk.y; i < height; i += CLASSIFICATION_BLK_SIZE) {
+        int nHeight = OVMIN(i + CLASSIFICATION_BLK_SIZE, height) - i;
+        int j;
 
-        for( int j = blk.x; j < width; j += CLASSIFICATION_BLK_SIZE )
-        {
-            int nWidth = OVMIN( j + CLASSIFICATION_BLK_SIZE, width ) - j;
+        for(j = blk.x; j < width; j += CLASSIFICATION_BLK_SIZE) {
+            int nWidth = OVMIN(j + CLASSIFICATION_BLK_SIZE, width) - j;
             Area blk_class;
             blk_class.x = j;
             blk_class.y = i;
@@ -461,7 +463,7 @@ void rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const in
             int16_t* rcn_img_class = rcn_img + (i - blk.y) * stride + (j - blk.x);
             classif_func(alf->class_idx, alf->transpose_idx, rcn_img_class, stride, blk_class,
                          bit_depth + 4, ctu_width,
-                         (blk.height<ctu_width) ? pic_h : blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA);
+                         (blk.height < ctu_width) ? pic_h : blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA);
         }
     }
 }
@@ -1011,7 +1013,16 @@ static void alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx
   }
 }
 
+static uint8_t
+check_virtual_bound(int y_pos_pic, int height, int virbnd_pos, uint8_t log2_ctb_s)
+{
+    uint16_t ctu_msk = (1 << log2_ctb_s) - 1;
+    int16_t ctu_vb_y = (y_pos_pic + height - 1) & ctu_msk;
 
+    uint8_t req_vb = (ctu_vb_y  < virbnd_pos && (ctu_vb_y >= virbnd_pos - 4)) ||
+                     (ctu_vb_y >= virbnd_pos && (ctu_vb_y <= virbnd_pos + 3));
+    return req_vb;
+}
 
 void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo const *einfo, uint16_t ctb_y)
 {
@@ -1019,6 +1030,7 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
     if (!alf_info->alf_luma_enabled_flag && !alf_info->alf_cb_enabled_flag && !alf_info->alf_cr_enabled_flag){
         return;
     }
+
     struct OVFilterBuffers fb = ctudec->filter_buffers;
     OVFrame *frame = fb.pic_frame;
 
@@ -1033,15 +1045,15 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
         int x_pos = ctu_width * ctb_x;
         int x_pos_pic = ctu_width * ctb_x_pic;
         int y_pos_pic = ctu_width * ctb_y_pic;
-        int width = ( x_pos_pic + ctu_width > ctudec->pic_w ) ? ( ctudec->pic_w - x_pos_pic ) : ctu_width;
-        int height = ( y_pos_pic + ctu_width > ctudec->pic_h ) ? ( ctudec->pic_h - y_pos_pic ) : ctu_width;
+        int width  = (x_pos_pic + ctu_width > ctudec->pic_w) ? (ctudec->pic_w - x_pos_pic) : ctu_width;
+        int height = (y_pos_pic + ctu_width > ctudec->pic_h) ? (ctudec->pic_h - y_pos_pic) : ctu_width;
 
         //left | right | up | down
         uint8_t is_border = 0;
-        is_border = (ctb_x==0)                 ? is_border | OV_BOUNDARY_LEFT_RECT: is_border;
-        is_border = (ctb_x==einfo->nb_ctu_w-1) ? is_border | OV_BOUNDARY_RIGHT_RECT: is_border;
-        is_border = (ctb_y==0)                 ? is_border | OV_BOUNDARY_UPPER_RECT: is_border;
-        is_border = (ctb_y==einfo->nb_ctu_h-1) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
+        is_border = (ctb_x == 0)                   ? is_border | OV_BOUNDARY_LEFT_RECT: is_border;
+        is_border = (ctb_x == einfo->nb_ctu_w - 1) ? is_border | OV_BOUNDARY_RIGHT_RECT: is_border;
+        is_border = (ctb_y == 0)                   ? is_border | OV_BOUNDARY_UPPER_RECT: is_border;
+        is_border = (ctb_y == einfo->nb_ctu_h - 1) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
         // is_border = (y_pos_pic + ctu_width >= ctudec->pic_h) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
 
         int ctu_rs_addr = ctb_x + ctb_y * einfo->nb_ctu_w ;
@@ -1049,38 +1061,40 @@ void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
 
         int16_t **src = fb.filter_region;
         int16_t **saved_rows = fb.saved_rows_alf;
+
         ctudec_extend_filter_region(ctudec, saved_rows, x_pos, x_pos_pic, y_pos_pic, is_border);
 
         if (alf_params_ctu->ctb_alf_flag & 0x4) {
             uint8_t c_idx = 0;
-            Area blk_dst;
-            
-            //Source block in the filter buffers image
-            int     stride_src = fb.filter_region_stride[c_idx];
+            int stride_src = fb.filter_region_stride[c_idx];
+            int stride_dst = frame->linesize[c_idx] / 2;
             int16_t*  src_luma = &src[c_idx][fb.filter_region_offset[c_idx]];
+            int16_t*  dst_luma = (int16_t*) frame->data[c_idx] + y_pos_pic * stride_dst + x_pos_pic;
 
-            //Destination block in the final image
-            blk_dst.x=x_pos_pic; blk_dst.y=y_pos_pic;
-            blk_dst.width=width; blk_dst.height=height;
-            //BITDEPTH
-            int stride_dst = frame->linesize[c_idx]/2;
-            int16_t*  dst_luma = (int16_t*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
+            Area blk_dst = {
+                .x = x_pos_pic,
+                .y = y_pos_pic,
+                .width  = width,
+                .height = height,
+            };
 
-            rcn_alf_derive_classification(alf, src_luma, stride_src, blk_dst, ctu_width, ctudec->pic_h, ctudec->rcn_ctx.rcn_funcs.alf.classif);
+            rcn_alf_derive_classification(alf, src_luma, stride_src, blk_dst,
+                                          ctu_width, ctudec->pic_h,
+                                          ctudec->rcn_ctx.rcn_funcs.alf.classif);
 
             int16_t filter_idx = alf_params_ctu->ctb_alf_idx;
             int16_t *coeff = alf->filter_coeff_dec[filter_idx];
-            int16_t *clip = alf->filter_clip_dec[filter_idx];
+            int16_t *clip  = alf->filter_clip_dec[filter_idx];
 
-            int virbnd_pos = (y_pos_pic + ctu_width >= ctudec->pic_h) ? ctudec->pic_h : height - ALF_VB_POS_ABOVE_CTUROW_LUMA;
-            int yVb = (blk_dst.y + blk_dst.height - 1);// & (ctu_width - 1);
-            yVb = yVb & (ctu_width - 1);
+            int virbnd_pos = (y_pos_pic + ctu_width >= ctudec->pic_h) ? ctudec->pic_h
+                                                                      : height - ALF_VB_POS_ABOVE_CTUROW_LUMA;
 
-            uint8_t isVB = (yVb < virbnd_pos && (yVb >= virbnd_pos - 4)) || (yVb >= virbnd_pos && (yVb <= virbnd_pos + 3));
+            uint8_t req_vb = check_virtual_bound(y_pos_pic, height, virbnd_pos, log2_ctb_s);
 
-            (ctudec->rcn_ctx.rcn_funcs.alf.luma[isVB])(alf->class_idx, alf->transpose_idx, dst_luma, src_luma, stride_dst, stride_src,
-              blk_dst, coeff, clip,
-              ctu_width, virbnd_pos);
+            (ctudec->rcn_ctx.rcn_funcs.alf.luma[req_vb])(alf->class_idx, alf->transpose_idx, dst_luma,
+                                                         src_luma, stride_dst, stride_src,
+                                                         blk_dst, coeff, clip,
+                                                         ctu_width, virbnd_pos);
         }
 
         for( uint8_t c_idx = 1; c_idx < 3; c_idx++ )
