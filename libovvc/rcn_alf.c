@@ -440,30 +440,35 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
 
 static void
 rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const int stride,
-                              Area blk, int ctu_width, int pic_h,
+                              Area blk, int ctu_s, int pic_h,
                               ALFClassifBlkFunc classif_func)
 {
-    int height = blk.y + blk.height;
-    int width  = blk.x + blk.width;
+    int ctu_h = blk.height;
+    int ctu_w = blk.width;
+
     int bit_depth = 10;
     int i;
 
-    for (i = blk.y; i < height; i += CLASSIFICATION_BLK_SIZE) {
-        int nHeight = OVMIN(i + CLASSIFICATION_BLK_SIZE, height) - i;
+    for (i = 0; i < ctu_h; i += CLASSIFICATION_BLK_SIZE) {
+        int blk_h = OVMIN(CLASSIFICATION_BLK_SIZE, ctu_h - i);
         int j;
 
-        for(j = blk.x; j < width; j += CLASSIFICATION_BLK_SIZE) {
-            int nWidth = OVMIN(j + CLASSIFICATION_BLK_SIZE, width) - j;
-            Area blk_class;
-            blk_class.x = j;
-            blk_class.y = i;
-            blk_class.width = nWidth;
-            blk_class.height = nHeight;
+        for(j = 0; j < ctu_w; j += CLASSIFICATION_BLK_SIZE) {
+            int blk_w = OVMIN(CLASSIFICATION_BLK_SIZE, ctu_w - j);
+            int16_t* rcn_img_class = rcn_img + i * stride + j;
 
-            int16_t* rcn_img_class = rcn_img + (i - blk.y) * stride + (j - blk.x);
+            int virbnd_pos = (ctu_h < ctu_s) ? pic_h : ctu_h - ALF_VB_POS_ABOVE_CTUROW_LUMA;
+
+            Area blk_class = {
+                .x = j,
+                .y = i,
+                .width  = blk_w,
+                .height = blk_h
+            };
+
             classif_func(alf->class_idx, alf->transpose_idx, rcn_img_class, stride, blk_class,
-                         bit_depth + 4, ctu_width,
-                         (blk.height < ctu_width) ? pic_h : blk.height - ALF_VB_POS_ABOVE_CTUROW_LUMA);
+                         bit_depth + 4, ctu_s,
+                         virbnd_pos);
         }
     }
 }
