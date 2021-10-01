@@ -679,6 +679,7 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
 
     uint16_t colSums[18][40];
     int i;
+    const uint32_t ctb_msk = ctu_s - 1;
 
     for (i = 0; i < blk_h + 4; i += 2) {
         int yoffset = (i - 3) * stride - 3;
@@ -690,9 +691,9 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
         const int y = blk.y - 2 + i;
         int j;
 
-        if (y > 0 && (y & (ctu_s - 1)) == virbnd_pos - 2) {
+        if (y > 0 && (y & ctb_msk) == virbnd_pos - 2) {
             src3 = src2;
-        } else if (y > 0 && (y & (ctu_s - 1)) == virbnd_pos) {
+        } else if (y > 0 && (y & ctb_msk) == virbnd_pos) {
             src0 = src1;
         }
 
@@ -742,8 +743,8 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
         for (size_t k = 0; k < 4; k++) {
             __m128i x0, x1, x2, x3, x4, x5, x6, x7;
 
-            const uint32_t z = (2 * i + blk.y) & (ctu_s - 1);
-            const uint32_t z2 = (2 * i + 4 + blk.y) & (ctu_s - 1);
+            const uint32_t z = (2 * i + blk.y) & ctb_msk;
+            const uint32_t z2 = (2 * i + 4 + blk.y) & ctb_msk;
 
             x0 = (z == virbnd_pos) ? _mm_setzero_si128() : _mm_loadu_si128((__m128i *) &colSums[i + 0][(k*8) + 4]);
             x1 = _mm_loadu_si128((__m128i *) &colSums[i + 1][(k*8) + 4]);
@@ -849,8 +850,8 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
         t1 = _mm_unpacklo_epi32(t1, t2);
 
 
-        int yOffset = (2*i + blk.y) % ctu_s;
-        int xOffset = (blk.x) % ctu_s;
+        int yOffset = (2*i + blk.y) & ctb_msk;
+        int xOffset = (blk.x) & ctb_msk;
         _mm_storel_epi64((__m128i *) (class_idx_arr + (yOffset>>2) * CLASSIFICATION_BLK_SIZE + (xOffset>>2)), c1);
         _mm_storel_epi64((__m128i *) (class_idx_arr + ((yOffset>>2)+1) * CLASSIFICATION_BLK_SIZE + (xOffset>>2)), _mm_bsrli_si128(c1, 8));
 
