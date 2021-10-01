@@ -680,13 +680,13 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
     uint16_t colSums[18][40];
     int i;
     const uint32_t ctb_msk = ctu_s - 1;
+    const int16_t *_src = src - 3 * stride - 3;
 
     for (i = 0; i < blk_h + 4; i += 2) {
-        int yoffset = (i - 3) * stride - 3;
-        const int16_t *src0 = &src[yoffset];
-        const int16_t *src1 = &src[yoffset + stride];
-        const int16_t *src2 = &src[yoffset + stride * 2];
-        const int16_t *src3 = &src[yoffset + stride * 3];
+        const int16_t *src0 = &_src[0         ];
+        const int16_t *src1 = &_src[stride    ];
+        const int16_t *src2 = &_src[stride * 2];
+        const int16_t *src3 = &_src[stride * 3];
 
         const int y = blk.y - 2 + i;
         int j;
@@ -733,7 +733,9 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
             const __m128i all = _mm_hadd_epi16(hv, di);
 
             const __m128i t = _mm_blend_epi16(all, prev, 0xaa);
+
             _mm_storeu_si128((__m128i *) &colSums[i >> 1][j], _mm_hadd_epi16(t, all));
+
             prev = all;
         }
         _src += stride << 1;
@@ -741,11 +743,15 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
 
     for (i = 0; i < (blk_h >> 1); i += 4) {
         __m128i class_idx[4], transpose_idx[4];
+        const uint32_t z = (2 * i + blk.y) & ctb_msk;
+        const uint32_t z2 = (2 * i + 4 + blk.y) & ctb_msk;
+
+        int sb_y = ((2 * i + blk.y) & ctb_msk) >> 2;
+        int sb_x = ((blk.x)         & ctb_msk) >> 2;
+
         for (size_t k = 0; k < 4; k++) {
             __m128i x0, x1, x2, x3, x4, x5, x6, x7;
 
-            const uint32_t z = (2 * i + blk.y) & ctb_msk;
-            const uint32_t z2 = (2 * i + 4 + blk.y) & ctb_msk;
 
             x0 = (z == virbnd_pos) ? _mm_setzero_si128() : _mm_loadu_si128((__m128i *) &colSums[i + 0][(k*8) + 4]);
             x1 = _mm_loadu_si128((__m128i *) &colSums[i + 1][(k*8) + 4]);
@@ -802,6 +808,7 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
 
             const uint32_t scale  = (z == virbnd_pos - 4 || z == virbnd_pos) ? 96 : 64;
             const uint32_t scale2 = (z2 == virbnd_pos - 4 || z2 == virbnd_pos) ? 96 : 64;
+
             __m128i activity = _mm_mullo_epi32(tempAct, _mm_unpacklo_epi64(_mm_set1_epi32(scale), _mm_set1_epi32(scale2)));
             activity         = _mm_srl_epi32(activity, _mm_cvtsi32_si128(shift));
             activity         = _mm_min_epi32(activity, _mm_set1_epi32(15));
@@ -817,6 +824,7 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
 
             __m128i a      = _mm_xor_si128(_mm_mullo_epi32(d1, hv0), _mm_set1_epi32(0x80000000));
             __m128i b      = _mm_xor_si128(_mm_mullo_epi32(hv1, d0), _mm_set1_epi32(0x80000000));
+
             __m128i dirIdx = _mm_cmpgt_epi32(a, b);
             __m128i hvd1   = _mm_blendv_epi8(hv1, d1, dirIdx);
             __m128i hvd0   = _mm_blendv_epi8(hv0, d0, dirIdx);
@@ -835,8 +843,15 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
             transposeIdx         = _mm_add_epi32(transposeIdx, dirTempDMinus1);
             transposeIdx         = _mm_add_epi32(transposeIdx, dirTempDMinus1);
 
-            class_idx[k] = _mm_shuffle_epi8(classIdx, _mm_setr_epi8(0, 4, 8, 12, 0, 4, 8, 12, 0, 4, 8, 12, 0, 4, 8, 12));
-            transpose_idx[k] = _mm_shuffle_epi8(transposeIdx, _mm_setr_epi8(0, 4, 8, 12, 0, 4, 8, 12, 0, 4, 8, 12, 0, 4, 8, 12));
+            class_idx[k] = _mm_shuffle_epi8(classIdx, _mm_setr_epi8(0, 4, 8, 12,
+                                                                    0, 4, 8, 12,
+                                                                    0, 4, 8, 12,
+                                                                    0, 4, 8, 12));
+
+            transpose_idx[k] = _mm_shuffle_epi8(transposeIdx, _mm_setr_epi8(0, 4, 8, 12,
+                                                                            0, 4, 8, 12,
+                                                                            0, 4, 8, 12,
+                                                                            0, 4, 8, 12));
         }
 
 
@@ -851,14 +866,12 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
         t1 = _mm_unpacklo_epi32(t1, t2);
 
 
-        int yOffset = (2*i + blk.y) & ctb_msk;
-        int xOffset = (blk.x) & ctb_msk;
-        _mm_storel_epi64((__m128i *) (class_idx_arr + (yOffset>>2) * CLASSIFICATION_BLK_SIZE + (xOffset>>2)), c1);
-        _mm_storel_epi64((__m128i *) (class_idx_arr + ((yOffset>>2)+1) * CLASSIFICATION_BLK_SIZE + (xOffset>>2)), _mm_bsrli_si128(c1, 8));
+        _mm_storel_epi64((__m128i *) (class_idx_arr +  sb_y      * CLASSIFICATION_BLK_SIZE + sb_x), c1);
+        _mm_storel_epi64((__m128i *) (class_idx_arr + (sb_y + 1) * CLASSIFICATION_BLK_SIZE + sb_x), _mm_bsrli_si128(c1, 8));
 
 
-        _mm_storel_epi64((__m128i *) (transpose_idx_arr + (yOffset>>2) * CLASSIFICATION_BLK_SIZE + (xOffset>>2)), t1);
-        _mm_storel_epi64((__m128i *) (transpose_idx_arr + ((yOffset>>2)+1) * CLASSIFICATION_BLK_SIZE + (xOffset>>2)), _mm_bsrli_si128(t1, 8));
+        _mm_storel_epi64((__m128i *) (transpose_idx_arr + sb_y * CLASSIFICATION_BLK_SIZE + sb_x), t1);
+        _mm_storel_epi64((__m128i *) (transpose_idx_arr + (sb_y + 1) * CLASSIFICATION_BLK_SIZE + sb_x), _mm_bsrli_si128(t1, 8));
     }
 }
 

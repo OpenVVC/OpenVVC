@@ -316,7 +316,7 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
             lpl_b[j] += lpl_b[j + 2] + lpl_b[j + 4] + lpl_b[j + 6];
         }
 
-        _src += stride;
+        _src += stride << 1;
     }
 
     // classification block size
