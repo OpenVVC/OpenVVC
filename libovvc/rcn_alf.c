@@ -252,12 +252,10 @@ void rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t 
     }
 }
 
-
-
-void
-rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr,
-                                 int16_t *const src, const int stride, const Area blk,
-                                 const int shift, const int ctu_s, int virbnd_pos)
+static void
+rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_arr,
+                     int16_t *const src, const int stride, const Area blk,
+                     const int shift, int virbnd_pos)
 {
     int laplacian[NUM_DIRECTIONS][CLASSIFICATION_BLK_SIZE + 5][(32 >> 2)];
 
@@ -273,11 +271,6 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
         const int16_t *src2 = &_src[stride * 2];
         const int16_t *src3 = &_src[stride * 3];
 
-        int* lpl_v = laplacian[VER][i >> 1];
-        int* lpl_h = laplacian[HOR][i >> 1];
-        int* lpl_d = laplacian[DIAG0][i >> 1];
-        int* lpl_b = laplacian[DIAG1][i >> 1];
-
         int tmp_v[(32 + 4) >> 1];
         int tmp_h[(32 + 4) >> 1];
         int tmp_d[(32 + 4) >> 1];
@@ -286,34 +279,10 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
         const int y = blk.y + i;
         int j;
 
-        /* Note virbnd_pos = ctu_s - 4 or ctu_h on pic boundary
-         * Two lines from boundary
-         *
-         *                                                  src0 = src - 3 - 3 * stride + (ctu_s - 1) * stride;
-         * Thus when i + 2 == ctu_s => src0 = src1 = l with src1 = src - 3 - 3 * stride + (ctu_s - 1) * stride;
-         *                                                  src2 = src - 3 - 3 * stride + (ctu_s + 0) * stride;
-         *                                                  src3 = src - 3 - 3 * stride + (ctu_s + 1) * stride;
-         *
-         *
-         * 4 lines from boundary
-         *                                                  src0 = src - 3 - 3 * stride + (ctu_s - 4) * stride;
-         *                                                  src1 = src - 3 - 3 * stride + (ctu_s - 3) * stride;
-         *       and i + 4 == ctu_s => src3 = src2 = l with src2 = src - 3 - 3 * stride + (ctu_s - 2) * stride;
-         *                                                  src3 = src - 3 - 3 * stride + (ctu_s - 2) * stride;
-         *
-         */
         if (y == virbnd_pos) {
-            src3 = src2;// = src - 3 - 3 * stride + (ctu_s - blk.y - 2) * stride;
-            src0 = src - 3 - 3 * stride + (ctu_s - blk.y - 4) * stride;
-            src1 = src - 3 - 3 * stride + (ctu_s - blk.y - 3) * stride;
-            src2 = src - 3 - 3 * stride + (ctu_s - blk.y - 2) * stride;
-            src3 = src - 3 - 3 * stride + (ctu_s - blk.y - 2) * stride;
+            src3 = src2;
         } else if (y == virbnd_pos + 2) {
-            src0 = src1;// = src - 3 - 3 * stride + (ctu_s - blk.y - 1) * stride;
-            src0 = src - 3 - 3 * stride + (ctu_s - blk.y - 1) * stride;
-            src1 = src - 3 - 3 * stride + (ctu_s - blk.y - 1) * stride;
-            src2 = src - 3 - 3 * stride + (ctu_s - blk.y + 0) * stride;
-            src3 = src - 3 - 3 * stride + (ctu_s - blk.y + 1) * stride;
+            src0 = src1;
         }
 
         const int16_t *l0 = &src0[1];
@@ -343,6 +312,10 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
             l3 += 4;
         }
 
+        int* lpl_v = laplacian[VER]  [i >> 1];
+        int* lpl_h = laplacian[HOR]  [i >> 1];
+        int* lpl_d = laplacian[DIAG0][i >> 1];
+        int* lpl_b = laplacian[DIAG1][i >> 1];
         for (j = 0; j < (blk_w >> 2); ++j) {
             lpl_v[j] = tmp_v[j] + tmp_v[j + 1];
             lpl_h[j] = tmp_h[j] + tmp_h[j + 1];
@@ -386,6 +359,27 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
             int activity;
             const uint8_t max_activity = 15;
 
+#if 0
+            if (y == (virbnd_pos - 4)) {
+                sum_v = lpl_v0[j] +/* lpl_v1[j] +*/ lpl_v2[j];
+                sum_h = lpl_h0[j] +/* lpl_h1[j] +*/ lpl_h2[j];
+                sum_d = lpl_d0[j] +/* lpl_d1[j] +*/ lpl_d2[j];
+                sum_b = lpl_b0[j] +/* lpl_b1[j] +*/ lpl_b2[j];
+                activity = (int16_t) OVMIN( OVMAX(0, ((sum_h + sum_v) * 96) >> shift) , max_activity);
+            } else if (y == virbnd_pos) {
+                sum_v = /*lpl_v1[j]*/ + lpl_v2[j] /*+ lpl_v3[j]*/;
+                sum_h = /*lpl_h1[j]*/ + lpl_h2[j] /*+ lpl_h3[j]*/;
+                sum_d = /*lpl_d1[j]*/ + lpl_d2[j] /*+ lpl_d3[j]*/;
+                sum_b = /*lpl_b1[j]*/ + lpl_b2[j] /*+ lpl_b3[j]*/;
+                activity = (int16_t) OVMIN( OVMAX(0, ((sum_h + sum_v) * 96) >> shift) , max_activity);
+            } else {
+                sum_v = lpl_v0[j] +/* lpl_v1[j] +*/ lpl_v2[j] /*+ lpl_v3[j]*/;
+                sum_h = lpl_h0[j] +/* lpl_h1[j] +*/ lpl_h2[j] /*+ lpl_h3[j]*/;
+                sum_d = lpl_d0[j] +/* lpl_d1[j] +*/ lpl_d2[j] /*+ lpl_d3[j]*/;
+                sum_b = lpl_b0[j] +/* lpl_b1[j] +*/ lpl_b2[j] /*+ lpl_b3[j]*/;
+                activity = (int16_t) OVMIN( OVMAX(0, ((sum_h + sum_v) * 64) >> shift) , max_activity);
+            }
+#else
             if (y == (virbnd_pos - 4)) {
                 sum_v = lpl_v0[j] + lpl_v1[j] + lpl_v2[j];
                 sum_h = lpl_h0[j] + lpl_h1[j] + lpl_h2[j];
@@ -405,6 +399,7 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
                 sum_b = lpl_b0[j] + lpl_b1[j] + lpl_b2[j] + lpl_b3[j];
                 activity = (int16_t) OVMIN( OVMAX(0, ((sum_h + sum_v) * 64) >> shift) , max_activity);
             }
+#endif
 
             static const int th[16] = { 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4 };
             int class_idx = th[activity];
@@ -464,6 +459,191 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
             transpose_idx_arr[sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = transpose_idx;
         }
     }
+}
+
+static void
+rcn_alf_classif_novbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_arr,
+                       int16_t *const src, const int stride, const Area blk,
+                       const int shift)
+{
+    int laplacian[NUM_DIRECTIONS][CLASSIFICATION_BLK_SIZE + 5][(32 >> 2)];
+
+    int blk_h = blk.height;
+    int blk_w = blk.width;
+
+    const int16_t *_src = src - 3 * stride - 3;
+    int i;
+
+    for (i = 0; i < blk_h + 4; i += 2) {
+        const int16_t *src0 = &_src[0         ];
+        const int16_t *src1 = &_src[stride    ];
+        const int16_t *src2 = &_src[stride * 2];
+        const int16_t *src3 = &_src[stride * 3];
+
+        int tmp_v[(32 + 4) >> 1];
+        int tmp_h[(32 + 4) >> 1];
+        int tmp_d[(32 + 4) >> 1];
+        int tmp_b[(32 + 4) >> 1];
+
+        const int y = blk.y + i;
+        int j;
+
+        const int16_t *l0 = &src0[1];
+        const int16_t *l1 = &src1[1];
+        const int16_t *l2 = &src2[1];
+        const int16_t *l3 = &src3[1];
+
+        for (j = 0; j < (blk_w >> 2) + 1; ++j) {
+            int16_t y1  = l1[0] << 1;
+            int16_t y2  = l2[1] << 1;
+            int16_t y12 = l1[2] << 1;
+            int16_t y22 = l2[3] << 1;
+
+            tmp_v[j] = abs(y1 - l0[ 0] - l2[ 0]) + abs(y2 - l1[1] - l3[1]);
+            tmp_h[j] = abs(y1 - l1[ 1] - l1[-1]) + abs(y2 - l2[2] - l2[0]);
+            tmp_d[j] = abs(y1 - l0[-1] - l2[ 1]) + abs(y2 - l1[0] - l3[2]);
+            tmp_b[j] = abs(y1 - l2[-1] - l0[ 1]) + abs(y2 - l3[0] - l1[2]);
+
+            tmp_v[j] += abs(y12 - l0[2] - l2[2]) + abs(y22 - l1[3] - l3[3]);
+            tmp_h[j] += abs(y12 - l1[3] - l1[1]) + abs(y22 - l2[4] - l2[2]);
+            tmp_d[j] += abs(y12 - l0[1] - l2[3]) + abs(y22 - l1[2] - l3[4]);
+            tmp_b[j] += abs(y12 - l2[1] - l0[3]) + abs(y22 - l3[2] - l1[4]);
+
+            l0 += 4;
+            l1 += 4;
+            l2 += 4;
+            l3 += 4;
+        }
+
+        if ((i >> 1) & 0x1) {
+            int* lpl_v = laplacian[VER]  [(i >> 1) - 1];
+            int* lpl_h = laplacian[HOR]  [(i >> 1) - 1];
+            int* lpl_d = laplacian[DIAG0][(i >> 1) - 1];
+            int* lpl_b = laplacian[DIAG1][(i >> 1) - 1];
+            for (j = 0; j < (blk_w >> 2); ++j) {
+                lpl_v[j] += tmp_v[j] + tmp_v[j + 1];
+                lpl_h[j] += tmp_h[j] + tmp_h[j + 1];
+                lpl_d[j] += tmp_d[j] + tmp_d[j + 1];
+                lpl_b[j] += tmp_b[j] + tmp_b[j + 1];
+            }
+        } else {
+            int* lpl_v = laplacian[VER]  [i >> 1];
+            int* lpl_h = laplacian[HOR]  [i >> 1];
+            int* lpl_d = laplacian[DIAG0][i >> 1];
+            int* lpl_b = laplacian[DIAG1][i >> 1];
+            for (j = 0; j < (blk_w >> 2); ++j) {
+                lpl_v[j] = tmp_v[j] + tmp_v[j + 1];
+                lpl_h[j] = tmp_h[j] + tmp_h[j + 1];
+                lpl_d[j] = tmp_d[j] + tmp_d[j + 1];
+                lpl_b[j] = tmp_b[j] + tmp_b[j + 1];
+            }
+        }
+
+        _src += stride << 1;
+    }
+
+    for (i = 0; i < (blk_h >> 1); i += 2) {
+        const int* lpl_v0 = laplacian[VER][i];
+        const int* lpl_v2 = laplacian[VER][i + 2];
+
+        const int* lpl_h0 = laplacian[HOR][i];
+        const int* lpl_h2 = laplacian[HOR][i + 2];
+
+        const int* lpl_d0 = laplacian[DIAG0][i];
+        const int* lpl_d2 = laplacian[DIAG0][i + 2];
+
+        const int* lpl_b0 = laplacian[DIAG1][i];
+        const int* lpl_b2 = laplacian[DIAG1][i + 2];
+        int j;
+
+        for (j = 0; j < (blk_w >> 2); ++j) {
+            int sum_v = 0;
+            int sum_h = 0;
+            int sum_d = 0;
+            int sum_b = 0;
+
+            const uint8_t max_activity = 15;
+
+            sum_v = lpl_v0[j] + lpl_v2[j];
+            sum_h = lpl_h0[j] + lpl_h2[j];
+            sum_d = lpl_d0[j] + lpl_d2[j];
+            sum_b = lpl_b0[j] + lpl_b2[j];
+
+            int activity = (int16_t) OVMIN(OVMAX(0, ((sum_h + sum_v) * 64) >> shift) , max_activity);
+
+            static const int th[16] = { 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4 };
+            int class_idx = th[activity];
+
+            int max_hv, min_hv, max_db, min_db, max_dir, min_dir;
+            int main_dir, secondary_dir, dir_hv, dir_db;
+
+
+            if (sum_v > sum_h) {
+                max_hv = sum_v;
+                min_hv = sum_h;
+                dir_hv = 1;
+            } else {
+                max_hv = sum_h;
+                min_hv = sum_v;
+                dir_hv = 3;
+            }
+
+            if (sum_d > sum_b) {
+                max_db = sum_d;
+                min_db = sum_b;
+                dir_db = 0;
+            } else {
+                max_db = sum_b;
+                min_db = sum_d;
+                dir_db = 2;
+            }
+
+            if ((uint32_t)max_db * (uint32_t)min_hv > (uint32_t)max_hv * (uint32_t)min_db) {
+                max_dir = max_db;
+                min_dir = min_db;
+                main_dir = dir_db;
+                secondary_dir = dir_hv;
+            } else {
+                max_dir = max_hv;
+                min_dir = min_hv;
+                main_dir = dir_hv;
+                secondary_dir = dir_db;
+            }
+
+            if (max_dir * 2 > 9 * min_dir) {
+                uint8_t is_hv_main = (main_dir & 0x1);
+                class_idx += ((is_hv_main << 1) + 2) * 5;
+            } else if (max_dir > 2 * min_dir) {
+                uint8_t is_hv_main = (main_dir & 0x1);
+                class_idx += ((is_hv_main << 1) + 1) * 5;
+            }
+
+            static const uint8_t tr_lut[8] = { 0, 1, 0, 2, 2, 3, 1, 3 };
+
+            uint8_t transpose_idx = tr_lut[(main_dir << 1) + (secondary_dir >> 1)];
+
+            int sb_y = (i >> 1) + (blk.y >> 2);
+            int sb_x = j + (blk.x >> 2);
+
+            class_idx_arr    [sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = class_idx;
+            transpose_idx_arr[sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = transpose_idx;
+        }
+    }
+}
+
+void
+rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr,
+                                 int16_t *const src, const int stride, const Area blk,
+                                 const int shift, const int ctu_s, int virbnd_pos)
+{
+    if (blk.height + blk.y >= virbnd_pos) {
+        rcn_alf_classif_vbnd(class_idx_arr, transpose_idx_arr, src, stride, blk,
+                             shift, virbnd_pos);
+    } else {
+        rcn_alf_classif_novbnd(class_idx_arr, transpose_idx_arr, src, stride, blk,
+                               shift);
+    }
+
 }
 
 
