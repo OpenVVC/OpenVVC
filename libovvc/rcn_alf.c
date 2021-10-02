@@ -474,7 +474,7 @@ rcn_alf_classif_novbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_id
     const int16_t *_src = src - 3 * stride - 3;
     int i;
 
-    for (i = 0; i < blk_h + 4; i += 2) {
+    for (i = 0; i < (blk_h >> 1) + 2; ++i) {
         const int16_t *src0 = &_src[0         ];
         const int16_t *src1 = &_src[stride    ];
         const int16_t *src2 = &_src[stride * 2];
@@ -485,7 +485,6 @@ rcn_alf_classif_novbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_id
         int tmp_d[(32 + 4) >> 1];
         int tmp_b[(32 + 4) >> 1];
 
-        const int y = blk.y + i;
         int j;
 
         const int16_t *l0 = &src0[1];
@@ -515,11 +514,11 @@ rcn_alf_classif_novbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_id
             l3 += 4;
         }
 
-        if ((i >> 1) & 0x1) {
-            int* lpl_v = laplacian[VER]  [(i >> 1) - 1];
-            int* lpl_h = laplacian[HOR]  [(i >> 1) - 1];
-            int* lpl_d = laplacian[DIAG0][(i >> 1) - 1];
-            int* lpl_b = laplacian[DIAG1][(i >> 1) - 1];
+        if (i & 0x1) {
+            int* lpl_v = laplacian[VER]  [i >> 1];
+            int* lpl_h = laplacian[HOR]  [i >> 1];
+            int* lpl_d = laplacian[DIAG0][i >> 1];
+            int* lpl_b = laplacian[DIAG1][i >> 1];
             for (j = 0; j < (blk_w >> 2); ++j) {
                 lpl_v[j] += tmp_v[j] + tmp_v[j + 1];
                 lpl_h[j] += tmp_h[j] + tmp_h[j + 1];
@@ -542,18 +541,18 @@ rcn_alf_classif_novbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_id
         _src += stride << 1;
     }
 
-    for (i = 0; i < (blk_h >> 1); i += 2) {
+    for (i = 0; i < (blk_h >> 2); ++i) {
         const int* lpl_v0 = laplacian[VER][i];
-        const int* lpl_v2 = laplacian[VER][i + 2];
+        const int* lpl_v2 = laplacian[VER][i + 1];
 
         const int* lpl_h0 = laplacian[HOR][i];
-        const int* lpl_h2 = laplacian[HOR][i + 2];
+        const int* lpl_h2 = laplacian[HOR][i + 1];
 
         const int* lpl_d0 = laplacian[DIAG0][i];
-        const int* lpl_d2 = laplacian[DIAG0][i + 2];
+        const int* lpl_d2 = laplacian[DIAG0][i + 1];
 
         const int* lpl_b0 = laplacian[DIAG1][i];
-        const int* lpl_b2 = laplacian[DIAG1][i + 2];
+        const int* lpl_b2 = laplacian[DIAG1][i + 1];
         int j;
 
         for (j = 0; j < (blk_w >> 2); ++j) {
@@ -622,7 +621,7 @@ rcn_alf_classif_novbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_id
 
             uint8_t transpose_idx = tr_lut[(main_dir << 1) + (secondary_dir >> 1)];
 
-            int sb_y = (i >> 1) + (blk.y >> 2);
+            int sb_y = i + (blk.y >> 2);
             int sb_x = j + (blk.x >> 2);
 
             class_idx_arr    [sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = class_idx;
