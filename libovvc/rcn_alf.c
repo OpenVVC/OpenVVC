@@ -281,9 +281,9 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
         const int y = blk.y + i;
         int j;
 
-        if (y > 2 && y == virbnd_pos) {
+        if (y == virbnd_pos) {
             src3 = src2;
-        } else if (y > 2 && y == virbnd_pos + 2) {
+        } else if (y == virbnd_pos + 2) {
             src0 = src1;
         }
 
