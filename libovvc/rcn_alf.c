@@ -264,8 +264,6 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
     int blk_h = blk.height;
     int blk_w = blk.width;
 
-    const uint32_t ctb_msk = ctu_s - 1;
-
     const int16_t *_src = src - 3 * stride - 3;
     int i;
 
@@ -280,12 +278,12 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
         int* lpl_d = laplacian[DIAG0][i];
         int* lpl_b = laplacian[DIAG1][i];
 
-        const int y = blk.y - 2 + i;
+        const int y = blk.y + i;
         int j;
 
-        if (y > 0 && (y & ctb_msk) == virbnd_pos - 2) {
+        if (y > 2 && y == virbnd_pos) {
             src3 = src2;
-        } else if (y > 0 && (y & ctb_msk) == virbnd_pos) {
+        } else if (y > 2 && y == virbnd_pos + 2) {
             src0 = src1;
         }
 
@@ -340,7 +338,7 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
         const int* lpl_b6 = laplacian[DIAG1][i + 6];
         int j;
 
-        int sb_y = ((i + blk.y) & ctb_msk) >> 2;
+        int sb_y = (i + blk.y) >> 2;
 
         for (j = 0; j < blk_w; j += sb_w) {
             int sum_v = 0;
@@ -348,7 +346,7 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
             int sum_d = 0;
             int sum_b = 0;
 
-            const int y = (i + blk.y) & ctb_msk;
+            const int y = i + blk.y;
 
             int activity;
             const uint8_t max_activity = 15;
@@ -424,7 +422,7 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
 
             uint8_t transpose_idx = tr_lut[(main_dir << 1) + (secondary_dir >> 1)];
 
-            int sb_x = ((j + blk.x) & ctb_msk) >> 2;
+            int sb_x = (j + blk.x) >> 2;
             class_idx_arr    [sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = class_idx;
             transpose_idx_arr[sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = transpose_idx;
         }
