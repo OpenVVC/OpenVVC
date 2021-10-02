@@ -259,7 +259,7 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
                                  int16_t *const src, const int stride, const Area blk,
                                  const int shift, const int ctu_s, int virbnd_pos)
 {
-    int laplacian[NUM_DIRECTIONS][CLASSIFICATION_BLK_SIZE + 5][CLASSIFICATION_BLK_SIZE + 5];
+    int laplacian[NUM_DIRECTIONS][CLASSIFICATION_BLK_SIZE + 5][(32 >> 2)];
 
     int blk_h = blk.height;
     int blk_w = blk.width;
@@ -273,101 +273,136 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
         const int16_t *src2 = &_src[stride * 2];
         const int16_t *src3 = &_src[stride * 3];
 
-        int* lpl_v = laplacian[VER][i];
-        int* lpl_h = laplacian[HOR][i];
-        int* lpl_d = laplacian[DIAG0][i];
-        int* lpl_b = laplacian[DIAG1][i];
+        int* lpl_v = laplacian[VER][i >> 1];
+        int* lpl_h = laplacian[HOR][i >> 1];
+        int* lpl_d = laplacian[DIAG0][i >> 1];
+        int* lpl_b = laplacian[DIAG1][i >> 1];
+
+        int tmp_v[(32 + 4) >> 1];
+        int tmp_h[(32 + 4) >> 1];
+        int tmp_d[(32 + 4) >> 1];
+        int tmp_b[(32 + 4) >> 1];
 
         const int y = blk.y + i;
         int j;
 
+        /* Note virbnd_pos = ctu_s - 4 or ctu_h on pic boundary
+         * Two lines from boundary
+         *
+         *                                                  src0 = src - 3 - 3 * stride + (ctu_s - 1) * stride;
+         * Thus when i + 2 == ctu_s => src0 = src1 = l with src1 = src - 3 - 3 * stride + (ctu_s - 1) * stride;
+         *                                                  src2 = src - 3 - 3 * stride + (ctu_s + 0) * stride;
+         *                                                  src3 = src - 3 - 3 * stride + (ctu_s + 1) * stride;
+         *
+         *
+         * 4 lines from boundary
+         *                                                  src0 = src - 3 - 3 * stride + (ctu_s - 4) * stride;
+         *                                                  src1 = src - 3 - 3 * stride + (ctu_s - 3) * stride;
+         *       and i + 4 == ctu_s => src3 = src2 = l with src2 = src - 3 - 3 * stride + (ctu_s - 2) * stride;
+         *                                                  src3 = src - 3 - 3 * stride + (ctu_s - 2) * stride;
+         *
+         */
         if (y == virbnd_pos) {
-            src3 = src2;
+            src3 = src2;// = src - 3 - 3 * stride + (ctu_s - blk.y - 2) * stride;
+            src0 = src - 3 - 3 * stride + (ctu_s - blk.y - 4) * stride;
+            src1 = src - 3 - 3 * stride + (ctu_s - blk.y - 3) * stride;
+            src2 = src - 3 - 3 * stride + (ctu_s - blk.y - 2) * stride;
+            src3 = src - 3 - 3 * stride + (ctu_s - blk.y - 2) * stride;
         } else if (y == virbnd_pos + 2) {
-            src0 = src1;
+            src0 = src1;// = src - 3 - 3 * stride + (ctu_s - blk.y - 1) * stride;
+            src0 = src - 3 - 3 * stride + (ctu_s - blk.y - 1) * stride;
+            src1 = src - 3 - 3 * stride + (ctu_s - blk.y - 1) * stride;
+            src2 = src - 3 - 3 * stride + (ctu_s - blk.y + 0) * stride;
+            src3 = src - 3 - 3 * stride + (ctu_s - blk.y + 1) * stride;
         }
 
-        for (j = 0; j < blk_w + 4; j += 2) {
-            const int16_t *l0 = &src0[j + 1];
-            const int16_t *l1 = &src1[j + 1];
-            const int16_t *l2 = &src2[j + 1];
-            const int16_t *l3 = &src3[j + 1];
+        const int16_t *l0 = &src0[1];
+        const int16_t *l1 = &src1[1];
+        const int16_t *l2 = &src2[1];
+        const int16_t *l3 = &src3[1];
 
-            const int16_t y1 = l1[0] << 1;
-            const int16_t y2 = l2[1] << 1;
+        for (j = 0; j < (blk_w >> 2) + 1; ++j) {
+            int16_t y1  = l1[0] << 1;
+            int16_t y2  = l2[1] << 1;
+            int16_t y12 = l1[2] << 1;
+            int16_t y22 = l2[3] << 1;
 
-            lpl_v[j] = abs(y1 - l0[ 0] - l2[ 0]) + abs(y2 - l1[1] - l3[1]);
-            lpl_h[j] = abs(y1 - l1[ 1] - l1[-1]) + abs(y2 - l2[2] - l2[0]);
-            lpl_d[j] = abs(y1 - l0[-1] - l2[ 1]) + abs(y2 - l1[0] - l3[2]);
-            lpl_b[j] = abs(y1 - l2[-1] - l0[ 1]) + abs(y2 - l3[0] - l1[2]);
+            tmp_v[j] = abs(y1 - l0[ 0] - l2[ 0]) + abs(y2 - l1[1] - l3[1]);
+            tmp_h[j] = abs(y1 - l1[ 1] - l1[-1]) + abs(y2 - l2[2] - l2[0]);
+            tmp_d[j] = abs(y1 - l0[-1] - l2[ 1]) + abs(y2 - l1[0] - l3[2]);
+            tmp_b[j] = abs(y1 - l2[-1] - l0[ 1]) + abs(y2 - l3[0] - l1[2]);
+
+            tmp_v[j] += abs(y12 - l0[2] - l2[2]) + abs(y22 - l1[3] - l3[3]);
+            tmp_h[j] += abs(y12 - l1[3] - l1[1]) + abs(y22 - l2[4] - l2[2]);
+            tmp_d[j] += abs(y12 - l0[1] - l2[3]) + abs(y22 - l1[2] - l3[4]);
+            tmp_b[j] += abs(y12 - l2[1] - l0[3]) + abs(y22 - l3[2] - l1[4]);
+
+            l0 += 4;
+            l1 += 4;
+            l2 += 4;
+            l3 += 4;
         }
 
-        for (j = 0; j < blk_w - 2; j += 4) {
-            lpl_v[j] += lpl_v[j + 2] + lpl_v[j + 4] + lpl_v[j + 6];
-            lpl_h[j] += lpl_h[j + 2] + lpl_h[j + 4] + lpl_h[j + 6];
-            lpl_d[j] += lpl_d[j + 2] + lpl_d[j + 4] + lpl_d[j + 6];
-            lpl_b[j] += lpl_b[j + 2] + lpl_b[j + 4] + lpl_b[j + 6];
+        for (j = 0; j < (blk_w >> 2); ++j) {
+            lpl_v[j] = tmp_v[j] + tmp_v[j + 1];
+            lpl_h[j] = tmp_h[j] + tmp_h[j + 1];
+            lpl_d[j] = tmp_d[j] + tmp_d[j + 1];
+            lpl_b[j] = tmp_b[j] + tmp_b[j + 1];
         }
 
         _src += stride << 1;
     }
 
-    // classification block size
-    const int sb_h = 4;
-    const int sb_w = 4;
-
-    for (i = 0; i < blk_h; i += sb_h) {
+    for (i = 0; i < (blk_h >> 1); i += 2) {
         const int* lpl_v0 = laplacian[VER][i];
+        const int* lpl_v1 = laplacian[VER][i + 1];
         const int* lpl_v2 = laplacian[VER][i + 2];
-        const int* lpl_v4 = laplacian[VER][i + 4];
-        const int* lpl_v6 = laplacian[VER][i + 6];
+        const int* lpl_v3 = laplacian[VER][i + 3];
 
         const int* lpl_h0 = laplacian[HOR][i];
+        const int* lpl_h1 = laplacian[HOR][i + 1];
         const int* lpl_h2 = laplacian[HOR][i + 2];
-        const int* lpl_h4 = laplacian[HOR][i + 4];
-        const int* lpl_h6 = laplacian[HOR][i + 6];
+        const int* lpl_h3 = laplacian[HOR][i + 3];
 
         const int* lpl_d0 = laplacian[DIAG0][i];
+        const int* lpl_d1 = laplacian[DIAG0][i + 1];
         const int* lpl_d2 = laplacian[DIAG0][i + 2];
-        const int* lpl_d4 = laplacian[DIAG0][i + 4];
-        const int* lpl_d6 = laplacian[DIAG0][i + 6];
+        const int* lpl_d3 = laplacian[DIAG0][i + 3];
 
         const int* lpl_b0 = laplacian[DIAG1][i];
+        const int* lpl_b1 = laplacian[DIAG1][i + 1];
         const int* lpl_b2 = laplacian[DIAG1][i + 2];
-        const int* lpl_b4 = laplacian[DIAG1][i + 4];
-        const int* lpl_b6 = laplacian[DIAG1][i + 6];
+        const int* lpl_b3 = laplacian[DIAG1][i + 3];
         int j;
 
-        int sb_y = (i + blk.y) >> 2;
-
-        for (j = 0; j < blk_w; j += sb_w) {
+        for (j = 0; j < (blk_w >> 2); ++j) {
             int sum_v = 0;
             int sum_h = 0;
             int sum_d = 0;
             int sum_b = 0;
 
-            const int y = i + blk.y;
+            const int y = (i << 1) + blk.y;
 
             int activity;
             const uint8_t max_activity = 15;
 
             if (y == (virbnd_pos - 4)) {
-                sum_v = lpl_v0[j] + lpl_v2[j] + lpl_v4[j];
-                sum_h = lpl_h0[j] + lpl_h2[j] + lpl_h4[j];
-                sum_d = lpl_d0[j] + lpl_d2[j] + lpl_d4[j];
-                sum_b = lpl_b0[j] + lpl_b2[j] + lpl_b4[j];
+                sum_v = lpl_v0[j] + lpl_v1[j] + lpl_v2[j];
+                sum_h = lpl_h0[j] + lpl_h1[j] + lpl_h2[j];
+                sum_d = lpl_d0[j] + lpl_d1[j] + lpl_d2[j];
+                sum_b = lpl_b0[j] + lpl_b1[j] + lpl_b2[j];
                 activity = (int16_t) OVMIN( OVMAX(0, ((sum_h + sum_v) * 96) >> shift) , max_activity);
             } else if (y == virbnd_pos) {
-                sum_v = lpl_v2[j] + lpl_v4[j] + lpl_v6[j];
-                sum_h = lpl_h2[j] + lpl_h4[j] + lpl_h6[j];
-                sum_d = lpl_d2[j] + lpl_d4[j] + lpl_d6[j];
-                sum_b = lpl_b2[j] + lpl_b4[j] + lpl_b6[j];
+                sum_v = lpl_v1[j] + lpl_v2[j] + lpl_v3[j];
+                sum_h = lpl_h1[j] + lpl_h2[j] + lpl_h3[j];
+                sum_d = lpl_d1[j] + lpl_d2[j] + lpl_d3[j];
+                sum_b = lpl_b1[j] + lpl_b2[j] + lpl_b3[j];
                 activity = (int16_t) OVMIN( OVMAX(0, ((sum_h + sum_v) * 96) >> shift) , max_activity);
             } else {
-                sum_v = lpl_v0[j] + lpl_v2[j] + lpl_v4[j] + lpl_v6[j];
-                sum_h = lpl_h0[j] + lpl_h2[j] + lpl_h4[j] + lpl_h6[j];
-                sum_d = lpl_d0[j] + lpl_d2[j] + lpl_d4[j] + lpl_d6[j];
-                sum_b = lpl_b0[j] + lpl_b2[j] + lpl_b4[j] + lpl_b6[j];
+                sum_v = lpl_v0[j] + lpl_v1[j] + lpl_v2[j] + lpl_v3[j];
+                sum_h = lpl_h0[j] + lpl_h1[j] + lpl_h2[j] + lpl_h3[j];
+                sum_d = lpl_d0[j] + lpl_d1[j] + lpl_d2[j] + lpl_d3[j];
+                sum_b = lpl_b0[j] + lpl_b1[j] + lpl_b2[j] + lpl_b3[j];
                 activity = (int16_t) OVMIN( OVMAX(0, ((sum_h + sum_v) * 64) >> shift) , max_activity);
             }
 
@@ -422,7 +457,9 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
 
             uint8_t transpose_idx = tr_lut[(main_dir << 1) + (secondary_dir >> 1)];
 
-            int sb_x = (j + blk.x) >> 2;
+            int sb_y = (i >> 1) + (blk.y >> 2);
+            int sb_x = j + (blk.x >> 2);
+
             class_idx_arr    [sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = class_idx;
             transpose_idx_arr[sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = transpose_idx;
         }
