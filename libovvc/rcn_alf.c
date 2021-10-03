@@ -258,13 +258,15 @@ struct ALFilterIdx {
 };
 
 static struct ALFilterIdx
-derive_filter_idx(uint32_t sum_h, uint32_t sum_v, uint32_t sum_d, uint32_t sum_b, uint8_t shift)
+derive_filter_idx(uint32_t sum_h, uint32_t sum_v, uint32_t sum_d, uint32_t sum_b, uint8_t shift, uint8_t is_vbnd)
 {
     static const int th[16] = { 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4 };
     static const uint8_t tr_lut[8] = { 0, 1, 0, 2, 2, 3, 1, 3 };
     const uint8_t max_activity = 15;
 
-    uint8_t activity = ov_clip(((sum_h + sum_v) * 64) >> shift, 0, max_activity);
+    uint32_t scale = is_vbnd ? 96 : 64;
+
+    uint8_t activity = ov_clip(((sum_h + sum_v) * scale) >> shift, 0, max_activity);
 
     uint32_t max_hv, min_hv, max_db, min_db, max_dir, min_dir;
     uint8_t main_dir, secondary_dir, dir_hv, dir_db;
@@ -329,6 +331,11 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
     int blk_h = blk.height;
     int blk_w = blk.width;
 
+    int tmp_v[(32 + 4) >> 1];
+    int tmp_h[(32 + 4) >> 1];
+    int tmp_d[(32 + 4) >> 1];
+    int tmp_b[(32 + 4) >> 1];
+
     const int16_t *_src = src - 3 * stride - 3;
     int i;
 
@@ -337,11 +344,6 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
         const int16_t *src1 = &_src[stride    ];
         const int16_t *src2 = &_src[stride * 2];
         const int16_t *src3 = &_src[stride * 3];
-
-        int tmp_v[(32 + 4) >> 1];
-        int tmp_h[(32 + 4) >> 1];
-        int tmp_d[(32 + 4) >> 1];
-        int tmp_b[(32 + 4) >> 1];
 
         const int y = blk.y + i;
         int j;
@@ -423,107 +425,31 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
 
             const int y = (i << 1) + blk.y;
 
-            int activity;
-            const uint8_t max_activity = 15;
-
-#if 0
-            if (y == (virbnd_pos - 4)) {
-                sum_v = lpl_v0[j] +/* lpl_v1[j] +*/ lpl_v2[j];
-                sum_h = lpl_h0[j] +/* lpl_h1[j] +*/ lpl_h2[j];
-                sum_d = lpl_d0[j] +/* lpl_d1[j] +*/ lpl_d2[j];
-                sum_b = lpl_b0[j] +/* lpl_b1[j] +*/ lpl_b2[j];
-                activity = (int16_t) OVMIN( OVMAX(0, ((sum_h + sum_v) * 96) >> shift) , max_activity);
-            } else if (y == virbnd_pos) {
-                sum_v = /*lpl_v1[j]*/ + lpl_v2[j] /*+ lpl_v3[j]*/;
-                sum_h = /*lpl_h1[j]*/ + lpl_h2[j] /*+ lpl_h3[j]*/;
-                sum_d = /*lpl_d1[j]*/ + lpl_d2[j] /*+ lpl_d3[j]*/;
-                sum_b = /*lpl_b1[j]*/ + lpl_b2[j] /*+ lpl_b3[j]*/;
-                activity = (int16_t) OVMIN( OVMAX(0, ((sum_h + sum_v) * 96) >> shift) , max_activity);
-            } else {
-                sum_v = lpl_v0[j] +/* lpl_v1[j] +*/ lpl_v2[j] /*+ lpl_v3[j]*/;
-                sum_h = lpl_h0[j] +/* lpl_h1[j] +*/ lpl_h2[j] /*+ lpl_h3[j]*/;
-                sum_d = lpl_d0[j] +/* lpl_d1[j] +*/ lpl_d2[j] /*+ lpl_d3[j]*/;
-                sum_b = lpl_b0[j] +/* lpl_b1[j] +*/ lpl_b2[j] /*+ lpl_b3[j]*/;
-                activity = (int16_t) OVMIN( OVMAX(0, ((sum_h + sum_v) * 64) >> shift) , max_activity);
-            }
-#else
             if (y == (virbnd_pos - 4)) {
                 sum_v = lpl_v0[j] + lpl_v1[j] + lpl_v2[j];
                 sum_h = lpl_h0[j] + lpl_h1[j] + lpl_h2[j];
                 sum_d = lpl_d0[j] + lpl_d1[j] + lpl_d2[j];
                 sum_b = lpl_b0[j] + lpl_b1[j] + lpl_b2[j];
-                activity = (int16_t) OVMIN( OVMAX(0, ((sum_h + sum_v) * 96) >> shift) , max_activity);
             } else if (y == virbnd_pos) {
                 sum_v = lpl_v1[j] + lpl_v2[j] + lpl_v3[j];
                 sum_h = lpl_h1[j] + lpl_h2[j] + lpl_h3[j];
                 sum_d = lpl_d1[j] + lpl_d2[j] + lpl_d3[j];
                 sum_b = lpl_b1[j] + lpl_b2[j] + lpl_b3[j];
-                activity = (int16_t) OVMIN( OVMAX(0, ((sum_h + sum_v) * 96) >> shift) , max_activity);
             } else {
                 sum_v = lpl_v0[j] + lpl_v1[j] + lpl_v2[j] + lpl_v3[j];
                 sum_h = lpl_h0[j] + lpl_h1[j] + lpl_h2[j] + lpl_h3[j];
                 sum_d = lpl_d0[j] + lpl_d1[j] + lpl_d2[j] + lpl_d3[j];
                 sum_b = lpl_b0[j] + lpl_b1[j] + lpl_b2[j] + lpl_b3[j];
-                activity = (int16_t) OVMIN( OVMAX(0, ((sum_h + sum_v) * 64) >> shift) , max_activity);
             }
-#endif
-
-            static const int th[16] = { 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4 };
-            int class_idx = th[activity];
-
-            int max_hv, min_hv, max_db, min_db, max_dir, min_dir;
-            int main_dir, secondary_dir, dir_hv, dir_db;
-
-
-            if (sum_v > sum_h) {
-                max_hv = sum_v;
-                min_hv = sum_h;
-                dir_hv = 1;
-            } else {
-                max_hv = sum_h;
-                min_hv = sum_v;
-                dir_hv = 3;
-            }
-
-            if (sum_d > sum_b) {
-                max_db = sum_d;
-                min_db = sum_b;
-                dir_db = 0;
-            } else {
-                max_db = sum_b;
-                min_db = sum_d;
-                dir_db = 2;
-            }
-
-            if ((uint32_t)max_db * (uint32_t)min_hv > (uint32_t)max_hv * (uint32_t)min_db) {
-                max_dir = max_db;
-                min_dir = min_db;
-                main_dir = dir_db;
-                secondary_dir = dir_hv;
-            } else {
-                max_dir = max_hv;
-                min_dir = min_hv;
-                main_dir = dir_hv;
-                secondary_dir = dir_db;
-            }
-
-            if (max_dir * 2 > 9 * min_dir) {
-                uint8_t is_hv_main = (main_dir & 0x1);
-                class_idx += ((is_hv_main << 1) + 2) * 5;
-            } else if (max_dir > 2 * min_dir) {
-                uint8_t is_hv_main = (main_dir & 0x1);
-                class_idx += ((is_hv_main << 1) + 1) * 5;
-            }
-
-            static const uint8_t tr_lut[8] = { 0, 1, 0, 2, 2, 3, 1, 3 };
-
-            uint8_t transpose_idx = tr_lut[(main_dir << 1) + (secondary_dir >> 1)];
 
             int sb_y = (i >> 1) + (blk.y >> 2);
             int sb_x = j + (blk.x >> 2);
+            uint8_t is_vbnd = (y == virbnd_pos) || (y == virbnd_pos - 4);
 
-            class_idx_arr    [sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = class_idx;
-            transpose_idx_arr[sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = transpose_idx;
+            struct ALFilterIdx fidx = derive_filter_idx(sum_h, sum_v, sum_d, sum_b, shift, is_vbnd);
+
+            class_idx_arr    [sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = fidx.class_idx;
+            transpose_idx_arr[sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = fidx.tr_idx;
         }
     }
 }
@@ -626,7 +552,7 @@ rcn_alf_classif_novbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_id
             int sb_y = i + (blk.y >> 2);
             int sb_x = j + (blk.x >> 2);
 
-            struct ALFilterIdx fidx = derive_filter_idx(sum_h, sum_v, sum_d, sum_b, shift);
+            struct ALFilterIdx fidx = derive_filter_idx(sum_h, sum_v, sum_d, sum_b, shift, 0);
 
             class_idx_arr    [sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = fidx.class_idx;
             transpose_idx_arr[sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = fidx.tr_idx;
