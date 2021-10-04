@@ -139,7 +139,7 @@ struct ALFInfo
     uint8_t left_ctb_alf_flag;
 
     //TODO: use width in ctu of image (or tile) instead of max value 32.
-    uint8_t ctb_cc_alf_flag_line[2][32];
+    uint8_t ctb_cc_alf_flag_line[2][256];
 
     const struct OVALFData* aps_alf_data[8];
     const struct OVALFData* aps_alf_data_c;
@@ -148,7 +148,7 @@ struct ALFInfo
 
     uint8_t left_ctb_cc_alf_flag[2];
     //TODO: use width in ctu of image (or tile) instead of max value 32.
-    uint8_t ctb_alf_flag_line[32];
+    uint8_t ctb_alf_flag_line[256];
     uint8_t* ctb_cc_alf_filter_idx[2];
 
     //TODO:  better here or in slicedec ?
