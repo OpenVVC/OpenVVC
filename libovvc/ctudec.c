@@ -131,8 +131,9 @@ void ctudec_save_last_rows(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l
 }
 
 
-void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l,
-                                 int x_pic_l, int y_pic_l, uint8_t bnd_msk)
+void
+ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l,
+                            int x_pic_l, int y_pic_l, uint8_t bnd_msk)
 {   
 
     struct OVFilterBuffers* fb = &ctudec->filter_buffers;
@@ -262,11 +263,12 @@ void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, i
             }
         } else {
             int cpy_s = sizeof(int16_t) * (width + 2 * margin);
-            int16_t *dst = &filter_region[h * stride_filter];
+                  int16_t *dst = &filter_region[h * stride_filter];
+            const int16_t *src = &frame[height * stride_pic - margin];
             for (int ii=0; ii < margin; ii++) {
-                const int16_t *src = &frame[(height + ii) * stride_pic - margin];
                 memcpy(dst, src, cpy_s);
                 dst += stride_filter;
+                src += stride_pic;
             }
         }
 
