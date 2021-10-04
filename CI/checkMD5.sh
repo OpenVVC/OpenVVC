@@ -206,6 +206,23 @@ for v ; do
 done
 }
 
+log_cleanup() {
+	rm $tmp_fail;
+	rm $tmp_pass;
+	rm $tmp_segf;
+	rm $tmp_nmd5;
+	rm -rf $tmp_dir;
+}
+
+on_interrupt() {
+	printf "\r"
+	tput el
+	log_cleanup ;
+	exit 0;
+}
+
+trap on_interrupt INT
+
 #TODO remove this one
 rm -f failed.txt
 rm -f ${ERROR_LOG_FILE}
