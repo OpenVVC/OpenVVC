@@ -328,21 +328,17 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
 {
     int laplacian[NUM_DIRECTIONS][CLASSIFICATION_BLK_SIZE + 5][(32 >> 2)];
 
-    int blk_h = blk.height;
-    int blk_w = blk.width;
-
     int tmp_v[(32 + 4) >> 1];
     int tmp_h[(32 + 4) >> 1];
     int tmp_d[(32 + 4) >> 1];
     int tmp_b[(32 + 4) >> 1];
 
+
+    int blk_h = blk.height;
+    int blk_w = blk.width;
+
     const int16_t *_src = src - 3 * stride - 3;
     int i;
-
-    //(y + 4 == (virbnd_pos)) (y == virbnd_pos) (y == virbnd_pos)
-    /* y < virbnd - 4;
-     *
-     */
 
     for (i = 0; i + blk.y < virbnd_pos; i += 2) {
         const int16_t *src0 = &_src[0         ];
@@ -431,7 +427,6 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
         }
     }
 
-
     i = virbnd_pos - blk.y;
 
     for (; i < blk_h + 4; i += 2) {
@@ -497,6 +492,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
         const int y = (i << 1) + blk.y;
 
         if (y == (virbnd_pos - 4)) {
+            /* No third line (0 - 5)*/
             const int* lpl_v0 = laplacian[VER][i];
             const int* lpl_v1 = laplacian[VER][i + 1];
             const int* lpl_v2 = laplacian[VER][i + 2];
@@ -527,6 +523,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
                 transpose_idx_arr[sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = fidx.tr_idx;
             }
         } else if (y == virbnd_pos) {
+            /* No first line (-2 - 3) */
             const int* lpl_v1 = laplacian[VER][i + 1];
             const int* lpl_v2 = laplacian[VER][i + 2];
             const int* lpl_v3 = laplacian[VER][i + 3];
