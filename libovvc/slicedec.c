@@ -352,6 +352,7 @@ init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
     const OVSPS *const sps = prms->sps;
     const OVSH *const sh = prms->sh;
     const OVPH *const ph = prms->ph;
+
     const struct OVLMCSData* aps_lmcs_data = &prms->aps_lmcs->aps_lmcs_data;
 
     uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
@@ -1440,25 +1441,21 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     ctudec->max_log2_transform_skip_size = sps->sps_log2_transform_skip_max_size_minus2 + 2;
 
-    #if 0
-    ctudec->alf_num_chroma_alt = vvc_ctx->alf_num_alt_chroma;
-    #endif
     /* FIXME dissociate SPS and SH/PH specific overrides to avoid  always resetting*/
-    ctudec->enabled_mip = sps->sps_mip_enabled_flag;
-
+    ctudec->enabled_mip   = sps->sps_mip_enabled_flag;
     ctudec->jcbcr_enabled = sps->sps_joint_cbcr_enabled_flag;
     ctudec->enable_lfnst  = sps->sps_lfnst_enabled_flag;
     ctudec->isp_enabled   = sps->sps_isp_enabled_flag;
     ctudec->enable_mrl    = sps->sps_mrl_enabled_flag;
 
-    ctudec->transform_skip_enabled = sps->sps_transform_skip_enabled_flag;
+    ctudec->transform_skip_enabled   = sps->sps_transform_skip_enabled_flag;
     ctudec->max_num_merge_candidates = 6 - sps->sps_six_minus_max_num_merge_cand;
 
     ctudec->delta_qp_enabled = pps->pps_cu_qp_delta_enabled_flag;
-    ctudec->sbt_enabled = sps->sps_sbt_enabled_flag;
-    ctudec->affine_enabled = sps->sps_affine_enabled_flag;
+    ctudec->sbt_enabled      = sps->sps_sbt_enabled_flag;
+    ctudec->affine_enabled   = sps->sps_affine_enabled_flag;
     ctudec->drv_ctx.inter_ctx.sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
-    ctudec->drv_ctx.inter_ctx.prof_enabled = sps->sps_affine_prof_enabled_flag  && !ph->ph_prof_disabled_flag;
+
     if (ctudec->affine_enabled || sps->sps_sbtmvp_enabled_flag) {
         init_affine_status(ctudec, sps, ph);
     }
@@ -1471,10 +1468,11 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
                           ctudec->dbf_disable = 1;
 #endif
     ctudec->dbf_info.beta_offset = sh->sh_luma_beta_offset_div2 * 2;
-    ctudec->dbf_info.tc_offset = sh->sh_luma_tc_offset_div2 * 2;
+    ctudec->dbf_info.tc_offset   = sh->sh_luma_tc_offset_div2 * 2;
 
     ctudec->lm_chroma_enabled = sps->sps_cclm_enabled_flag;
 
+    ctudec->drv_ctx.inter_ctx.prof_enabled = sps->sps_affine_prof_enabled_flag  && !ph->ph_prof_disabled_flag;
     ctudec->bdof_enabled = sps->sps_bdof_enabled_flag && (!ph->ph_bdof_disabled_flag);
     ctudec->bdof_enabled &= sh->sh_slice_type == SLICE_B;
     ctudec->dmvr_enabled = sps->sps_dmvr_enabled_flag && (!ph->ph_dmvr_disabled_flag);
@@ -1497,12 +1495,12 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->drv_ctx.inter_ctx.mmvd_shift = ph->ph_mmvd_fullpel_only_flag << 1;
     ctudec->drv_ctx.inter_ctx.tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
     ctudec->drv_ctx.inter_ctx.mvd1_zero_flag = ph->ph_mvd_l1_zero_flag;
-    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref_l0 = ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag
-                                                    || sh->sh_slice_type == SLICE_P;
+    ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref_l0 = ph->ph_collocated_from_l0_flag ||
+                                                    sh->sh_collocated_from_l0_flag ||
+                                                    sh->sh_slice_type == SLICE_P;
 
     ctudec->drv_ctx.inter_ctx.ciip_flag = sps->sps_ciip_enabled_flag;
     ctudec->drv_ctx.inter_ctx.mmvd_flag = sps->sps_mmvd_enabled_flag;
-
     ctudec->drv_ctx.inter_ctx.gpm_flag  = sps->sps_gpm_enabled_flag;
     ctudec->drv_ctx.inter_ctx.max_gpm_cand = ctudec->max_num_merge_candidates
                             - sps->sps_max_num_merge_cand_minus_max_num_gpm_cand;
