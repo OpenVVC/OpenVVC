@@ -141,6 +141,8 @@ typedef void (*BDOFSBFunction)(const int16_t* src0, int src0_stride,
 typedef void (*CIIPWeightedFuntion)(uint16_t* dst, int dststride, const uint16_t* src_intra,
                                     const uint16_t* src_inter, int srcstride, int width, int height, int wt);
 
+typedef void (*DFFilterFunction)(int16_t *src, const int stride, const int tc);
+
 /**
  * The Context put together all functions used by strategies.
  */
@@ -233,6 +235,11 @@ struct CIIPFunctions{
     CIIPWeightedFuntion weighted;
 };
 
+struct DFFunctions{
+    DFFilterFunction filter_h[11];
+    DFFilterFunction filter_v[11];
+};
+
 struct RCNFunctions
 {
     /* Motion Compensation Luma */
@@ -280,6 +287,9 @@ struct RCNFunctions
 
     /* CIIP Functions */
     struct CIIPFunctions ciip;
+
+    /* DF Functions */
+    struct DFFunctions df;
 };
 
 

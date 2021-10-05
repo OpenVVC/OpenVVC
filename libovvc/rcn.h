@@ -132,6 +132,8 @@ void rcn_init_bdof_functions(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_ciip_functions(struct RCNFunctions *const rcn_funcs);
 
+void rcn_init_df_functions(struct RCNFunctions *const rcn_funcs);
+
 void rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
                  uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y);
 

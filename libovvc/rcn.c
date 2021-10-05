@@ -513,7 +513,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
   rcn_init_prof_functions(rcn_func);
   rcn_init_bdof_functions(rcn_func);
   rcn_init_ciip_functions(rcn_func);
-
+  rcn_init_df_functions(rcn_func);
   if (lm_chroma_enabled) {
       /* FIXME add support vertical */
       if (sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {

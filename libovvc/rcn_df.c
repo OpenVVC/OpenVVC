@@ -3,31 +3,32 @@
 #include "ovutils.h"
 #include "dec_structures.h"
 #include "ctudec.h"
+#include "rcn_structures.h"
 
 #define DEFAULT_INTRA_TC_OFFSET 2 ///< Default intra TC offset
 #define MAX_QP 64
 
 static const uint16_t tc_lut[MAX_QP + 1 + DEFAULT_INTRA_TC_OFFSET] =
 {
-      0,   0,   0,   0,   0,   0,   0,   0,   
-      0,   0,   0,   0,   0,   0,   0,   0,   
-      0,   0,   3,   4,   4,   4,   4,   5,   
-      5,   5,   5,   7,   7,   8,   9,  10,   
-     10,  11,  13,  14,  15,  17,  19,  21, 
-     24,  25,  29,  33,  36,  41,  45,  51, 
-     57,  64,  71,  80,  89, 100, 112, 125, 
-    141, 157, 177, 198, 222, 250, 280, 314, 
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   3,   4,   4,   4,   4,   5,
+      5,   5,   5,   7,   7,   8,   9,  10,
+     10,  11,  13,  14,  15,  17,  19,  21,
+     24,  25,  29,  33,  36,  41,  45,  51,
+     57,  64,  71,  80,  89, 100, 112, 125,
+    141, 157, 177, 198, 222, 250, 280, 314,
     352, 395
 };
 
 static const uint8_t beta_lut[MAX_QP + 1] =
 {
-     0,  0,  0,  0,  0,  0,  0,  0,  
-     0,  0,  0,  0,  0,  0,  0,  0,  
-     6,  7,  8,  9, 10, 11, 12, 13, 
-    14, 15, 16, 17, 18, 20, 22, 24, 
-    26, 28, 30, 32, 34, 36, 38, 40, 
-    42, 44, 46, 48, 50, 52, 54, 56, 
+     0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,
+     6,  7,  8,  9, 10, 11, 12, 13,
+    14, 15, 16, 17, 18, 20, 22, 24,
+    26, 28, 30, 32, 34, 36, 38, 40,
+    42, 44, 46, 48, 50, 52, 54, 56,
     58, 60, 62, 64, 66, 68, 70, 72,
     74, 76, 78, 80, 82, 84, 86, 88
 };
@@ -164,7 +165,7 @@ derive_filter_idx(int filter_l_p, int filter_l_q)
 }
 
 static void
-filter_7_7(int16_t *src, const int stride, const int tc)
+filter_h_7_7(int16_t *src, const int stride, const int tc)
 {
     int16_t* srcP = src - stride;
     int16_t* srcQ = src;
@@ -176,7 +177,7 @@ filter_7_7(int16_t *src, const int stride, const int tc)
     int refQ = (srcQ[ 6 * stride] + srcQ[ 7 * stride] + 1) >> 1;
 
     int refMiddle = (2 * (srcP[0] + srcQ[0])
-                    + srcP[-stride] + srcP[-2 * stride] + srcP[-3 * stride] + srcP[-4 * stride] + srcP[-5 * stride] + srcP[-6 * stride] 
+                    + srcP[-stride] + srcP[-2 * stride] + srcP[-3 * stride] + srcP[-4 * stride] + srcP[-5 * stride] + srcP[-6 * stride]
                     + srcQ[ stride] + srcQ[ 2 * stride] + srcQ[ 3 * stride] + srcQ[ 4 * stride] + srcQ[ 5 * stride] + srcQ[ 6 * stride] + 8) >> 4;
 
     for (int pos = 0; pos < 7; pos++) {
@@ -193,7 +194,7 @@ filter_7_7(int16_t *src, const int stride, const int tc)
 }
 
 static void
-filter_7_5(int16_t *src, const int stride, const int tc)
+filter_h_7_5(int16_t *src, const int stride, const int tc)
 {
     int16_t* srcP = src - stride;
     int16_t* srcQ = src;
@@ -224,7 +225,7 @@ filter_7_5(int16_t *src, const int stride, const int tc)
 }
 
 static void
-filter_5_7(int16_t *src, const int stride, const int tc)
+filter_h_5_7(int16_t *src, const int stride, const int tc)
 {
     int16_t* srcP = src - stride;
     int16_t* srcQ = src;
@@ -254,7 +255,7 @@ filter_5_7(int16_t *src, const int stride, const int tc)
 }
 
 static void
-filter_5_5(int16_t *src, const int stride, const int tc)
+filter_h_5_5(int16_t *src, const int stride, const int tc)
 {
     int16_t* srcP = src - stride;
     int16_t* srcQ = src;
@@ -285,7 +286,7 @@ filter_5_5(int16_t *src, const int stride, const int tc)
 }
 
 static void
-filter_7_3(int16_t *src, const int stride, const int tc)
+filter_h_7_3(int16_t *src, const int stride, const int tc)
 {
     int16_t* srcP = src - stride;
     int16_t* srcQ = src;
@@ -299,7 +300,7 @@ filter_7_3(int16_t *src, const int stride, const int tc)
     int refP = (srcP[-6 * stride] + srcP[-7 * stride] + 1) >> 1;
     int refQ = (srcQ[ 2 * stride] + srcQ[ 3 * stride] + 1) >> 1;
 
-    int refMiddle = (2 * (srcP[0] + srcQ[0]) 
+    int refMiddle = (2 * (srcP[0] + srcQ[0])
             + srcP[-stride] + srcP[-2 * stride] + srcP[-3 * stride] + srcP[-4 * stride] + srcP[-5 * stride] + srcP[-6 * stride]
             + srcQ[      0] + srcQ[     stride] + srcQ[     stride] + srcQ[2 *  stride] + srcQ[ 2 * stride] + srcQ[     stride] + 8) >> 4;
 
@@ -317,7 +318,7 @@ filter_7_3(int16_t *src, const int stride, const int tc)
 }
 
 static void
-filter_3_7(int16_t *src, const int stride, const int tc)
+filter_h_3_7(int16_t *src, const int stride, const int tc)
 {
     int16_t* srcP = src - stride;
     int16_t* srcQ = src;
@@ -331,7 +332,7 @@ filter_3_7(int16_t *src, const int stride, const int tc)
     int refP = (srcP[-2 * stride] + srcP[-3 * stride] + 1) >> 1;
     int refQ = (srcQ[ 6 * stride] + srcQ[ 7 * stride] + 1) >> 1;
 
-    int refMiddle = (2 * (srcQ[0] + srcP[0]) 
+    int refMiddle = (2 * (srcQ[0] + srcP[0])
             + srcP[      0] + srcP[    -stride] + srcP[    -stride] + srcP[-2 * stride] + srcP[-2 * stride] + srcP[    -stride]
             + srcQ[ stride] + srcQ[2 *  stride] + srcQ[3 *  stride] + srcQ[4 *  stride] + srcQ[5 *  stride] + srcQ[6 *  stride] + 8) >> 4;
 
@@ -349,7 +350,7 @@ filter_3_7(int16_t *src, const int stride, const int tc)
 }
 
 static void
-filter_5_3(int16_t *src, const int stride, const int tc)
+filter_h_5_3(int16_t *src, const int stride, const int tc)
 {
     int16_t* srcP = src - stride;
     int16_t* srcQ = src;
@@ -380,7 +381,7 @@ filter_5_3(int16_t *src, const int stride, const int tc)
 }
 
 static void
-filter_3_5(int16_t *src, const int stride, const int tc)
+filter_h_3_5(int16_t *src, const int stride, const int tc)
 {
     int16_t* srcP = src - stride;
     int16_t* srcQ = src;
@@ -410,17 +411,251 @@ filter_3_5(int16_t *src, const int stride, const int tc)
     }
 }
 
-void (*filter_lut[11])(int16_t *src, const int stride, const int tc) = {
-    NULL       , &filter_3_5, &filter_3_7, NULL       ,
-    &filter_5_3, &filter_5_5, &filter_5_7, NULL       ,
-    &filter_7_3, &filter_7_5, &filter_7_7
-};
-
-static inline void
-filter_luma_strong_large(int16_t* src, const int stride, const int tc, int max_l_p, int max_l_q)
+static void
+filter_v_7_7(int16_t *src, const int stride, const int tc)
 {
-    const int filter_idx = derive_filter_idx(max_l_p, max_l_q);
-    filter_lut[filter_idx](src, stride, tc);
+    int16_t* srcP = src - stride;
+    int16_t* srcQ = src;
+
+    static const int dbCoeffs7[7] = { 59, 50, 41, 32, 23, 14, 5 };
+    static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
+
+    int refP = (srcP[-6 * stride] + srcP[-7 * stride] + 1) >> 1;
+    int refQ = (srcQ[ 6 * stride] + srcQ[ 7 * stride] + 1) >> 1;
+
+    int refMiddle = (2 * (srcP[0] + srcQ[0])
+                    + srcP[-stride] + srcP[-2 * stride] + srcP[-3 * stride] + srcP[-4 * stride] + srcP[-5 * stride] + srcP[-6 * stride]
+                    + srcQ[ stride] + srcQ[ 2 * stride] + srcQ[ 3 * stride] + srcQ[ 4 * stride] + srcQ[ 5 * stride] + srcQ[ 6 * stride] + 8) >> 4;
+
+    for (int pos = 0; pos < 7; pos++) {
+        int cvalue = (tc * tc7[pos]) >> 1;
+        src = &srcP[-stride * pos];
+        srcP[-stride * pos] = ov_clip(((refMiddle * dbCoeffs7[pos] + refP * (64 - dbCoeffs7[pos]) + 32) >> 6),*src - cvalue, *src + cvalue);
+    }
+
+    for (int pos = 0; pos < 7; pos++) {
+        int cvalue = (tc * tc7[pos]) >> 1;
+        src = &srcQ[ stride * pos];
+        srcQ[ stride * pos] = ov_clip(((refMiddle * dbCoeffs7[pos] + refQ * (64 - dbCoeffs7[pos]) + 32) >> 6),*src - cvalue, *src + cvalue);
+    }
+}
+
+static void
+filter_v_7_5(int16_t *src, const int stride, const int tc)
+{
+    int16_t* srcP = src - stride;
+    int16_t* srcQ = src;
+
+    static const int dbCoeffs7[7] = { 59, 50, 41, 32, 23, 14, 5 };
+    static const int dbCoeffs5[5] = { 58, 45, 32, 19, 6};
+    static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
+
+    int refP = (srcP[-6 * stride] + srcP[-7 * stride] + 1) >> 1;
+    int refQ = (srcQ[ 4 * stride] + srcQ[ 5 * stride] + 1) >> 1;
+
+    int refMiddle = (2 * (srcP[0] + srcP[-stride] + srcQ[0] + srcQ[ stride])
+                + srcP[-2 * stride] + srcP[-3 * stride] + srcP[-4 * stride] + srcP[-5 * stride]
+                + srcQ[ 2 * stride] + srcQ[ 3 * stride] + srcQ[ 4 * stride] + srcQ[ 5 * stride] + 8) >> 4;
+
+
+    for (int pos = 0; pos < 7; pos++) {
+        int cvalue = (tc * tc7[pos]) >> 1;
+        src = &srcP[-stride * pos];
+        srcP[-stride * pos] = ov_clip(((refMiddle * dbCoeffs7[pos] + refP * (64 - dbCoeffs7[pos]) + 32) >> 6),*src - cvalue, *src + cvalue);
+    }
+
+    for (int pos = 0; pos < 5; pos++) {
+        int cvalue = (tc * tc7[pos]) >> 1;
+        src = &srcQ[ stride * pos];
+        srcQ[ stride * pos] = ov_clip(((refMiddle * dbCoeffs5[pos] + refQ * (64 - dbCoeffs5[pos]) + 32) >> 6),*src - cvalue, *src + cvalue);
+    }
+}
+
+static void
+filter_v_5_7(int16_t *src, const int stride, const int tc)
+{
+    int16_t* srcP = src - stride;
+    int16_t* srcQ = src;
+
+    static const int dbCoeffs7[7] = { 59, 50, 41, 32, 23, 14, 5 };
+    static const int dbCoeffs5[5] = { 58, 45, 32, 19, 6};
+    static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
+
+    int refP = (srcP[-4 * stride] + srcP[-5 * stride] + 1) >> 1;
+    int refQ = (srcQ[ 6 * stride] + srcQ[ 7 * stride] + 1) >> 1;
+
+    int refMiddle = (2 * (srcP[0] + srcP[-stride] + srcQ[0] + srcQ[ stride])
+            + srcP[-2 * stride] + srcP[-3 * stride] + srcP[-4 * stride] + srcP[-5 * stride]
+            + srcQ[ 2 * stride] + srcQ[ 3 * stride] + srcQ[ 4 * stride] + srcQ[ 5 * stride] + 8) >> 4;
+
+    for (int pos = 0; pos < 5; pos++) {
+        int cvalue = (tc * tc7[pos]) >> 1;
+        src = &srcP[-stride * pos];
+        srcP[-stride * pos] = ov_clip(((refMiddle * dbCoeffs5[pos] + refP * (64 - dbCoeffs5[pos]) + 32) >> 6),*src - cvalue, *src + cvalue);
+    }
+
+    for (int pos = 0; pos < 7; pos++) {
+        int cvalue = (tc * tc7[pos]) >> 1;
+        src = &srcQ[ stride * pos];
+        srcQ[ stride * pos] = ov_clip(((refMiddle * dbCoeffs7[pos] + refQ * (64 - dbCoeffs7[pos]) + 32) >> 6),*src - cvalue, *src + cvalue);
+    }
+}
+
+static void
+filter_v_5_5(int16_t *src, const int stride, const int tc)
+{
+    int16_t* srcP = src - stride;
+    int16_t* srcQ = src;
+
+    static const int dbCoeffs5[5] = { 58, 45, 32, 19, 6};
+    static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
+
+    int refP = (srcP[-4 * stride] + srcP[-5 * stride] + 1) >> 1;
+    int refQ = (srcQ[ 4 * stride] + srcQ[ 5 * stride] + 1) >> 1;
+
+    int refMiddle = (2 * (srcP[0] + srcP[-stride] + srcP[-2 * stride]
+                        + srcQ[0] + srcQ[ stride] + srcQ[ 2 * stride])
+              + srcP[-3 * stride] + srcP[-4 * stride]
+              + srcQ[ 3 * stride] + srcQ[ 4 * stride] + 8) >> 4;
+
+
+    for (int pos = 0; pos < 5; pos++) {
+        int cvalue = (tc * tc7[pos]) >> 1;
+        src = &srcP[-stride * pos];
+        srcP[-stride * pos] = ov_clip(((refMiddle * dbCoeffs5[pos] + refP * (64 - dbCoeffs5[pos]) + 32) >> 6),*src - cvalue, *src + cvalue);
+    }
+
+    for (int pos = 0; pos < 5; pos++) {
+        int cvalue = (tc * tc7[pos]) >> 1;
+        src = &srcQ[ stride * pos];
+        srcQ[ stride * pos] = ov_clip(((refMiddle * dbCoeffs5[pos] + refQ * (64 - dbCoeffs5[pos]) + 32) >> 6),*src - cvalue, *src + cvalue);
+    }
+}
+
+static void
+filter_v_7_3(int16_t *src, const int stride, const int tc)
+{
+    int16_t* srcP = src - stride;
+    int16_t* srcQ = src;
+
+    static const int dbCoeffs7[7] = { 59, 50, 41, 32, 23, 14, 5 };
+    static const int dbCoeffs3[3] = { 53, 32, 11 };
+    static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
+    static const int8_t tc3[3] = { 6, 4, 2 };
+
+
+    int refP = (srcP[-6 * stride] + srcP[-7 * stride] + 1) >> 1;
+    int refQ = (srcQ[ 2 * stride] + srcQ[ 3 * stride] + 1) >> 1;
+
+    int refMiddle = (2 * (srcP[0] + srcQ[0])
+            + srcP[-stride] + srcP[-2 * stride] + srcP[-3 * stride] + srcP[-4 * stride] + srcP[-5 * stride] + srcP[-6 * stride]
+            + srcQ[      0] + srcQ[     stride] + srcQ[     stride] + srcQ[2 *  stride] + srcQ[ 2 * stride] + srcQ[     stride] + 8) >> 4;
+
+    for (int pos = 0; pos < 7; pos++) {
+        int cvalue = (tc * tc7[pos]) >> 1;
+        src = &srcP[-stride * pos];
+        srcP[-stride * pos] = ov_clip(((refMiddle * dbCoeffs7[pos] + refP * (64 - dbCoeffs7[pos]) + 32) >> 6),*src - cvalue, *src + cvalue);
+    }
+
+    for (int pos = 0; pos < 3; pos++) {
+        int cvalue = (tc * tc3[pos]) >> 1;
+        src = &srcQ[ stride * pos];
+        srcQ[ stride * pos] = ov_clip(((refMiddle * dbCoeffs3[pos] + refQ * (64 - dbCoeffs3[pos]) + 32) >> 6),*src - cvalue, *src + cvalue);
+    }
+}
+
+static void
+filter_v_3_7(int16_t *src, const int stride, const int tc)
+{
+    int16_t* srcP = src - stride;
+    int16_t* srcQ = src;
+
+    static const int dbCoeffs7[7] = { 59, 50, 41, 32, 23, 14, 5 };
+    static const int dbCoeffs3[3] = { 53, 32, 11 };
+    static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
+    static const int8_t tc3[3] = { 6, 4, 2 };
+
+
+    int refP = (srcP[-2 * stride] + srcP[-3 * stride] + 1) >> 1;
+    int refQ = (srcQ[ 6 * stride] + srcQ[ 7 * stride] + 1) >> 1;
+
+    int refMiddle = (2 * (srcQ[0] + srcP[0])
+            + srcP[      0] + srcP[    -stride] + srcP[    -stride] + srcP[-2 * stride] + srcP[-2 * stride] + srcP[    -stride]
+            + srcQ[ stride] + srcQ[2 *  stride] + srcQ[3 *  stride] + srcQ[4 *  stride] + srcQ[5 *  stride] + srcQ[6 *  stride] + 8) >> 4;
+
+    for (int pos = 0; pos < 3; pos++) {
+        int cvalue = (tc * tc3[pos]) >> 1;
+        src = &srcP[-stride * pos];
+        srcP[-stride * pos] = ov_clip(((refMiddle * dbCoeffs3[pos] + refP * (64 - dbCoeffs3[pos]) + 32) >> 6),*src - cvalue, *src + cvalue);
+    }
+
+    for (int pos = 0; pos < 7; pos++) {
+        int cvalue = (tc * tc7[pos]) >> 1;
+        src = &srcQ[ stride * pos];
+        srcQ[ stride * pos] = ov_clip(((refMiddle * dbCoeffs7[pos] + refQ * (64 - dbCoeffs7[pos]) + 32) >> 6),*src - cvalue, *src + cvalue);
+    }
+}
+
+static void
+filter_v_5_3(int16_t *src, const int stride, const int tc)
+{
+    int16_t* srcP = src - stride;
+    int16_t* srcQ = src;
+
+    static const int dbCoeffs3[3] = { 53, 32, 11 };
+    static const int dbCoeffs5[5] = { 58, 45, 32, 19, 6};
+    static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
+    static const int8_t tc3[3] = { 6, 4, 2 };
+
+
+    int refP = (srcP[-4 * stride] + srcP[-5 * stride] + 1) >> 1;
+    int refQ = (srcQ[ 2 * stride] + srcQ[ 3 * stride] + 1) >> 1;
+
+    int refMiddle = (srcP[0] + srcP[-stride] + srcP[-2 * stride] + srcP[-3 * stride]
+                   + srcQ[0] + srcQ[ stride] + srcQ[ 2 * stride] + srcQ[ 3 * stride] + 4) >> 3;
+
+    for (int pos = 0; pos < 5; pos++) {
+        int cvalue = (tc * tc7[pos]) >> 1;
+        src = &srcP[-stride * pos];
+        srcP[-stride * pos] = ov_clip(((refMiddle * dbCoeffs5[pos] + refP * (64 - dbCoeffs5[pos]) + 32) >> 6),*src - cvalue, *src + cvalue);
+    }
+
+    for (int pos = 0; pos < 3; pos++) {
+        int cvalue = (tc * tc3[pos]) >> 1;
+        src = &srcQ[ stride * pos];
+        srcQ[ stride * pos] = ov_clip(((refMiddle * dbCoeffs3[pos] + refQ * (64 - dbCoeffs3[pos]) + 32) >> 6),*src - cvalue, *src + cvalue);
+    }
+}
+
+static void
+filter_v_3_5(int16_t *src, const int stride, const int tc)
+{
+    int16_t* srcP = src - stride;
+    int16_t* srcQ = src;
+
+    static const int dbCoeffs3[3] = { 53, 32, 11 };
+    static const int dbCoeffs5[5] = { 58, 45, 32, 19, 6};
+    static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
+    static const int8_t tc3[3] = { 6, 4, 2 };
+
+    int refP = (srcP[-2 * stride] + srcP[-3 * stride] + 1) >> 1;
+    int refQ = (srcQ[ 4 * stride] + srcQ[ 5 * stride] + 1) >> 1;
+
+    int refMiddle = (srcP[0] + srcP[-stride] + srcP[-2 * stride] + srcP[-3 * stride]
+                   + srcQ[0] + srcQ[ stride] + srcQ[ 2 * stride] + srcQ[ 3 * stride] + 4) >> 3;
+
+
+    for (int pos = 0; pos < 3; pos++) {
+        int cvalue = (tc * tc3[pos]) >> 1;
+        src = &srcP[-stride * pos];
+        srcP[-stride * pos] = ov_clip(((refMiddle * dbCoeffs3[pos] + refP * (64 - dbCoeffs3[pos]) + 32) >> 6),*src - cvalue, *src + cvalue);
+    }
+
+    for (int pos = 0; pos < 5; pos++) {
+        int cvalue = (tc * tc7[pos]) >> 1;
+        src = &srcQ[ stride * pos];
+        srcQ[ stride * pos] = ov_clip(((refMiddle * dbCoeffs5[pos] + refQ * (64 - dbCoeffs5[pos]) + 32) >> 6),*src - cvalue, *src + cvalue);
+    }
 }
 
 static inline void
@@ -684,7 +919,7 @@ vvc_dbf_chroma_hor(uint16_t *src_cb, uint16_t *src_cr, int stride,
 
         /* FIXME Use directly CTU start and modify maps storage and rotation
          */
-        /* Discard first edge corresponding to upper CTU and mask 
+        /* Discard first edge corresponding to upper CTU and mask
          * out of picture edge
          */
         edge_map &= vedge_mask;
@@ -943,7 +1178,7 @@ vvc_dbf_chroma_ver(uint16_t *src_cb, uint16_t *src_cr, int stride,
 }
 
 static void
-filter_veritcal_edge(const struct DBFInfo *const dbf_info, uint16_t *src, ptrdiff_t stride,
+filter_veritcal_edge(const struct DFFunctions *df, const struct DBFInfo *const dbf_info, uint16_t *src, ptrdiff_t stride,
                      uint8_t qp, uint64_t bs2_map, uint64_t large_p_map,
                      uint64_t large_q_map, uint64_t small_map,
                      uint64_t affine_p, uint64_t affine_q, uint64_t aff_edg_1)
@@ -1019,8 +1254,9 @@ filter_veritcal_edge(const struct DBFInfo *const dbf_info, uint16_t *src, ptrdif
             /* FIXME should already be 3 or higher since we would be small otherwise */
             max_l_p = max_l_p > 3 ? max_l_p : 3;
             max_l_q = max_l_q > 3 ? max_l_q : 3;
+            const int filter_idx = derive_filter_idx(max_l_p, max_l_q);
             for (int i = 0; i < 4; i++) {
-                filter_luma_strong_large(_src, 1, dbf_params.tc, max_l_p, max_l_q);
+                df->filter_h[filter_idx](_src, 1, dbf_params.tc);
                 _src += stride;
             }
         }
@@ -1066,10 +1302,10 @@ filter_veritcal_edge(const struct DBFInfo *const dbf_info, uint16_t *src, ptrdif
 }
 
 static void
-vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
+vvc_dbf_ctu_hor(const struct DFFunctions * df, uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                 uint8_t nb_unit_h, int is_last_h, uint8_t nb_unit_w, uint8_t ctu_lft)
 {
-    const int blk_stride = stride << 2; 
+    const int blk_stride = stride << 2;
     const uint64_t vedge_mask = ((uint64_t)1 << nb_unit_h) - 1;
 
     const uint64_t *edg_map = &dbf_info->ctb_bound_ver[8];
@@ -1128,7 +1364,7 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
                 qp = (qp_col[-1] + qp_col[0] + 1) >> 1;
 
-                filter_veritcal_edge(dbf_info, src_tmp, stride, qp, bs2_map, large_p_map,
+                filter_veritcal_edge(df, dbf_info, src_tmp, stride, qp, bs2_map, large_p_map,
                                      large_q_map, small_map, affine_p, affine_q, aff_edg_1);
 
                 edg_msk  >>= nb_skipped_blk + 1;
@@ -1151,7 +1387,7 @@ vvc_dbf_ctu_hor(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 }
 
 static void
-filter_horizontal_edge(const struct DBFInfo *const dbf_info, uint16_t *src, ptrdiff_t stride,
+filter_horizontal_edge(const struct DFFunctions *df, const struct DBFInfo *const dbf_info, uint16_t *src, ptrdiff_t stride,
                        uint8_t qp, uint64_t bs2_map, uint64_t large_p_map,
                        uint64_t large_q_map, uint64_t small_map,
                        uint64_t affine_p, uint64_t affine_q, uint64_t aff_edg_1)
@@ -1223,10 +1459,11 @@ filter_horizontal_edge(const struct DBFInfo *const dbf_info, uint16_t *src, ptrd
     if (use_strong_large) {
             max_l_p = max_l_p > 3 ? max_l_p : 3;
             max_l_q = max_l_q > 3 ? max_l_q : 3;
-        for (int i = 0; i < 4; i++) {
-            int16_t *_src = src0 + i;
-            filter_luma_strong_large(_src, stride, dbf_params.tc, max_l_p, max_l_q);
-        }
+            const int filter_idx = derive_filter_idx(max_l_p, max_l_q);
+            for (int i = 0; i < 4; i++) {
+                int16_t *_src = src0 + i;
+                df->filter_v[filter_idx](_src, stride, dbf_params.tc);
+            }
     } else {
         const int d0 = dp0 + dq0;
         const int d3 = dp3 + dq3;
@@ -1262,7 +1499,7 @@ filter_horizontal_edge(const struct DBFInfo *const dbf_info, uint16_t *src, ptrd
 }
 
 static void
-vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
+vvc_dbf_ctu_ver(const struct DFFunctions *df, uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
                 uint8_t nb_unit_w, int is_last_w, uint8_t nb_unit_h, uint8_t ctu_abv)
 {
     const int blk_stride = 1 << 2;
@@ -1328,7 +1565,7 @@ vvc_dbf_ctu_ver(uint16_t *src, int stride, const struct DBFInfo *const dbf_info,
 
                 qp = (qp_row[0] + qp_row[34] + 1) >> 1;
 
-                filter_horizontal_edge(dbf_info, src_tmp, stride, qp, bs2_map,
+                filter_horizontal_edge(df, dbf_info, src_tmp, stride, qp, bs2_map,
                                        large_p_map, large_q_map, small_map,
                                        affine_p, affine_q, aff_edg_1);
 
@@ -1357,7 +1594,7 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_inf
             uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y)
 {
     const struct OVBuffInfo *const fbuff = &rcn_ctx->frame_buff;
-
+    const struct DFFunctions *df = &rcn_ctx->rcn_funcs.df;
     uint8_t nb_unit = (1 << log2_ctu_s) >> 2;
     /* FIXME give as argument */
     uint8_t ctu_lft = rcn_ctx->ctudec->ctu_ngh_flags & CTU_LFT_FLG;
@@ -1380,9 +1617,9 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_inf
 
     #if 1
     if (!dbf_info->disable_h)
-    vvc_dbf_ctu_hor(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_y, nb_unit, ctu_lft);
+    vvc_dbf_ctu_hor(df, fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_y, nb_unit, ctu_lft);
     if (!dbf_info->disable_v)
-    vvc_dbf_ctu_ver(fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_x, nb_unit, ctu_abv);
+    vvc_dbf_ctu_ver(df, fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_x, nb_unit, ctu_abv);
 
     if (!dbf_info->disable_h)
     vvc_dbf_chroma_hor(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
@@ -1400,6 +1637,7 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *con
                       uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y, uint8_t ctu_w, uint8_t ctu_h)
 {
     const struct OVBuffInfo *const fbuff = &rcn_ctx->frame_buff;
+    const struct DFFunctions *df = &rcn_ctx->rcn_funcs.df;
 
     uint8_t nb_unit_w = (ctu_w) >> 2;
     uint8_t nb_unit_h = (ctu_h) >> 2;
@@ -1409,9 +1647,9 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *con
 
     #if 1
     if (!dbf_info->disable_h)
-    vvc_dbf_ctu_hor(fbuff->y, fbuff->stride, dbf_info, nb_unit_h, !!last_y, nb_unit_w, ctu_lft);
+    vvc_dbf_ctu_hor(df, fbuff->y, fbuff->stride, dbf_info, nb_unit_h, !!last_y, nb_unit_w, ctu_lft);
     if (!dbf_info->disable_v)
-    vvc_dbf_ctu_ver(fbuff->y, fbuff->stride, dbf_info, nb_unit_w, !!last_x, nb_unit_h, ctu_abv);
+    vvc_dbf_ctu_ver(df, fbuff->y, fbuff->stride, dbf_info, nb_unit_w, !!last_x, nb_unit_h, ctu_abv);
 
     if (!dbf_info->disable_h)
     vvc_dbf_chroma_hor(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
@@ -1425,3 +1663,30 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *con
 }
 #endif
 
+void
+rcn_init_df_functions(struct RCNFunctions *const rcn_funcs)
+{
+  rcn_funcs->df.filter_h[0] = NULL;
+  rcn_funcs->df.filter_h[1] = &filter_h_3_5;
+  rcn_funcs->df.filter_h[2] = &filter_h_3_7;
+  rcn_funcs->df.filter_h[3] = NULL;
+  rcn_funcs->df.filter_h[4] = &filter_h_5_3;
+  rcn_funcs->df.filter_h[5] = &filter_h_5_5;
+  rcn_funcs->df.filter_h[6] = &filter_h_5_7;
+  rcn_funcs->df.filter_h[7] = NULL;
+  rcn_funcs->df.filter_h[8] = &filter_h_7_3;
+  rcn_funcs->df.filter_h[9] = &filter_h_7_5;
+  rcn_funcs->df.filter_h[10]= &filter_h_7_7;
+
+  rcn_funcs->df.filter_v[0] = NULL;
+  rcn_funcs->df.filter_v[1] = &filter_v_3_5;
+  rcn_funcs->df.filter_v[2] = &filter_v_3_7;
+  rcn_funcs->df.filter_v[3] = NULL;
+  rcn_funcs->df.filter_v[4] = &filter_v_5_3;
+  rcn_funcs->df.filter_v[5] = &filter_v_5_5;
+  rcn_funcs->df.filter_v[6] = &filter_v_5_7;
+  rcn_funcs->df.filter_v[7] = NULL;
+  rcn_funcs->df.filter_v[8] = &filter_v_7_3;
+  rcn_funcs->df.filter_v[9] = &filter_v_7_5;
+  rcn_funcs->df.filter_v[10]= &filter_v_7_7;
+}
