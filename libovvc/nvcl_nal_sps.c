@@ -30,9 +30,20 @@ storage_in_nvcl_ctx(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
 }
 
 static int
-validate_sps(OVNVCLReader *rdr, const union HLSData *const sps)
+validate_sps(OVNVCLReader *rdr, const union HLSData *const data)
 {
     /* TODO various check on limitation and max sizes */
+    const OVSPS *const sps =  (const OVSPS *)data;
+    if (sps->sps_bitdepth_minus8 != 2) {
+        ov_log(NULL, OVLOG_ERROR, "Unsupported bitdepth\n");
+        return OVVC_EINDATA;
+    }
+
+    if (sps->sps_subpic_info_present_flag) {
+        ov_log(NULL, OVLOG_ERROR, "Unsupported subpicture\n");
+        return OVVC_EINDATA;
+    }
+
     return 1;
 }
 
