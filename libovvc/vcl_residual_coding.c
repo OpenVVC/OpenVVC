@@ -125,12 +125,6 @@ typedef struct VVCSBScanContext{
    const uint8_t log2_sb_h;
 }VVCSBScanContext;
 
-static const uint64_t diag_map_4X4 = 0xFBE7AD369C258140;
-static const uint64_t diag_map_2x8 = 0xFDEBC9A785634120;
-static const uint64_t diag_map_8x2 = 0xF7E6D5C4B3A29180;
-static const uint64_t diag_map_2x2 = 0x0000000000003120;
-
-
 static const VVCSBScanContext inv_diag_4x4_scan =
 {
      0x041852C963DA7EBF,
@@ -148,22 +142,6 @@ static const VVCSBScanContext inv_diag_2x8_scan =
 };
 
 static const VVCSBScanContext inv_diag_8x2_scan =
-{
-     0x08192A3B4C5D6E7F,
-     0x02468ACE13579BDF,
-     3,
-     1,
-};
-
-static const VVCSBScanContext inv_diag_2x4_scan =
-{
-     0x0213465700000000,
-     0x0213465700000000,
-     1,
-     3,
-};
-
-static const VVCSBScanContext inv_diag_4x2_scan =
 {
      0x08192A3B4C5D6E7F,
      0x02468ACE13579BDF,
