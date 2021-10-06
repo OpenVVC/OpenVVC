@@ -169,7 +169,7 @@ void rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_start_pic, int
     }
 }
 
-void rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo const *einfo, uint16_t ctb_y)
+void rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y)
 {
     if (!ctudec->sao_info.sao_luma_flag && !ctudec->sao_info.sao_chroma_flag){
         return;
@@ -219,8 +219,8 @@ void rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo cons
     }
 }
 
-void rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo const *einfo, uint16_t ctb_y) 
-{  
+void rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y)
+{
     if (!ctudec->sao_info.sao_luma_flag && !ctudec->sao_info.sao_chroma_flag){
         return;
     }

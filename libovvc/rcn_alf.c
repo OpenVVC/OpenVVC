@@ -1271,7 +1271,7 @@ check_virtual_bound(int y_pos_pic, int height, int virbnd_pos, uint8_t log2_ctb_
     return req_vb;
 }
 
-void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo const *einfo, uint16_t ctb_y)
+void rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y)
 {
     struct ALFInfo* alf_info = &ctudec->alf_info;
     if (!alf_info->alf_luma_enabled_flag && !alf_info->alf_cb_enabled_flag && !alf_info->alf_cr_enabled_flag){
