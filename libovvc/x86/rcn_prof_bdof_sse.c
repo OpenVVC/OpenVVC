@@ -21,8 +21,6 @@ static void rcn_prof_sse(uint16_t* dst, int dst_stride, const uint16_t* src, int
          uint8_t bidir)
 {
     //FIXME: Convert dmv_scale to int16_t to avoid _mm_packs_epi32
-    int idx = 0;
-    int x, y;
     if (!bidir) {
         __m128i sh1 = _mm_loadu_si128((__m128i *)&dmv_scale_h[0]);
         __m128i sh2 = _mm_loadu_si128((__m128i *)&dmv_scale_h[4]);
@@ -251,9 +249,8 @@ static void
 compute_prof_grad_4_sse(const uint16_t* src, int src_stride, int sb_w, int sb_h,
                   int grad_stride, int16_t* grad_x, int16_t* grad_y)
 {
-    int y, x;
+    int y;
     const int nb_smp_h = sb_h;
-    const int nb_smp_w = sb_w;
 
     src += src_stride + 1;
     __m128i offset = _mm_set1_epi16(1 << 13);
@@ -284,9 +281,8 @@ static void
 compute_prof_grad_8_sse(const uint16_t* src, int src_stride, int sb_w, int sb_h,
                   int grad_stride, int16_t* grad_x, int16_t* grad_y)
 {
-    int y, x;
+    int y;
     const int nb_smp_h = sb_h;
-    const int nb_smp_w = sb_w;
 
     src += src_stride + 1;
     __m128i offset = _mm_set1_epi16(1 << 13);
@@ -317,9 +313,8 @@ static void
 compute_prof_grad_16_sse(const uint16_t* src, int src_stride, int sb_w, int sb_h,
                   int grad_stride, int16_t* grad_x, int16_t* grad_y)
 {
-    int y, x;
+    int y;
     const int nb_smp_h = sb_h;
-    const int nb_smp_w = sb_w;
 
     src += src_stride + 1;
     __m128i offset = _mm_set1_epi16(1 << 13);
