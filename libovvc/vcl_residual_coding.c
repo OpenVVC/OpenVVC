@@ -2933,6 +2933,18 @@ residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     }
 }
 
+static inline uint8_t
+has_sig_sb_neighbour(uint64_t sig_sb_map, uint16_t sb_x, uint16_t sb_y)
+{
+    uint64_t lines_msk    = (sig_sb_map >> (sb_y << 3)) & 0xFFFF;
+    uint16_t line_msk_blw = (lines_msk >> 8) & 0xFF;
+    uint16_t line_msk     =  lines_msk & 0xFF;
+
+    uint8_t sig_sb_blw = (line_msk_blw >> sb_x) & 0x1;
+    uint8_t sig_sb_rgt = (line_msk     >> sb_x) & 0x2;
+    return !!(sig_sb_rgt | sig_sb_blw);
+}
+
 uint64_t
 residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
                     unsigned int log2_tb_w, unsigned int log2_tb_h,
@@ -3060,13 +3072,11 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         int x_sb = scan_sb_x[nb_sb];
         int y_sb = scan_sb_y[nb_sb];
 
-        uint8_t sig_sb_flg;
-        uint8_t sig_sb_blw = (((sig_sb_map >> ((y_sb + 1) << 3)) & 0xFF) >> x_sb) & 0x1;
-        uint8_t sig_sb_rgt = (((sig_sb_map >> ( y_sb      << 3)) & 0xFF) >> (x_sb + 1)) & 0x1;
+        uint8_t sig_sb_ngh = has_sig_sb_neighbour(sig_sb_map, x_sb, y_sb);
 
-        sig_sb_flg = ovcabac_read_ae_significant_sb_flag(cabac_ctx, !!(sig_sb_rgt | sig_sb_blw));
+        uint8_t sig_sb_flg = ovcabac_read_ae_significant_sb_flag(cabac_ctx, sig_sb_ngh);
 
-        if(sig_sb_flg){
+        if (sig_sb_flg) {
 
             sb_pos    = (x_sb << 2) + ((y_sb << log2_tb_w) << 2);
             sb_offset = (x_sb << 2) + (y_sb << 2) * (VVC_TR_CTX_STRIDE);
@@ -3601,6 +3611,15 @@ select_sb_scan_map_y(int8_t log2_tb_w, int8_t log2_tb_h, int8_t log2_sb_w, int8_
     return ff_vvc_scan_y[idx_w][idx_h];
 }
 
+static inline uint8_t
+nb_sig_sb_ngh(uint64_t sig_sb_map, int16_t sb_x, int16_t sb_y)
+{
+    uint8_t sig_sb_abv = (((sig_sb_map >> (((sb_y - 1) & 0x7) << 3)) & 0xFF) >> sb_x) & 0x1;
+    uint8_t sig_sb_lft = (((sig_sb_map >> ( sb_y      << 3)) & 0xFF) >> ((sb_x - 1) & 0x7)) & 0x1;
+
+    return  !!sig_sb_abv + !!sig_sb_lft;
+}
+
 int
 residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
                    uint8_t log2_tb_w, uint8_t log2_tb_h)
@@ -3670,12 +3689,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
             int x_sb = scan_sb_x[i];
             int y_sb = scan_sb_y[i];
 
-            /* FIXME this could be simplified */
-            uint8_t sig_sb_abv = (((sig_sb_map >> ((y_sb - 1) << 3)) & 0xFF) >> x_sb) & 0x1;
-            uint8_t sig_sb_lft = (((sig_sb_map >> ( y_sb      << 3)) & 0xFF) >> (x_sb - 1)) & 0x1;
-
-            int sig_sb_offset = !!sig_sb_abv + !!sig_sb_lft;
-
+            int sig_sb_offset = nb_sig_sb_ngh(sig_sb_map, x_sb, y_sb);
 
             sig_sb_flg = ovcabac_read_ae_significant_ts_sb_flag(cabac_ctx, sig_sb_offset);
 
@@ -3710,9 +3724,8 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
         if (sig_sb_map) {
             int x_sb = scan_sb_x[i];
             int y_sb = scan_sb_y[i];
-            uint8_t sig_sb_abv = (((sig_sb_map >> ((uint8_t)(y_sb - 1) << 3)) & 0xFF) >> x_sb) & 0x1;
-            uint8_t sig_sb_lft = (((sig_sb_map >> ( y_sb      << 3)) & 0xFF) >> (uint8_t)(x_sb - 1)) & 0x1;
-            int sig_sb_offset = !!sig_sb_abv + !!sig_sb_lft;
+
+            int sig_sb_offset = nb_sig_sb_ngh(sig_sb_map, x_sb, y_sb);
 
             sig_sb_flg = ovcabac_read_ae_significant_ts_sb_flag(cabac_ctx, sig_sb_offset);
         }
@@ -3876,11 +3889,9 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         int x_sb = scan_sb_x[nb_sb];
         int y_sb = scan_sb_y[nb_sb];
 
-        uint8_t sig_sb_flg;
-        uint8_t sig_sb_blw = ((uint8_t)((sig_sb_map >> ((y_sb + 1) << 3)) & 0xFF) >> x_sb) & 0x1;
-        uint8_t sig_sb_rgt = ((uint8_t)((sig_sb_map >> ( y_sb      << 3)) & 0xFF) >> (x_sb + 1)) & 0x1;
+        uint8_t sig_sb_ngh = has_sig_sb_neighbour(sig_sb_map, x_sb, y_sb);
 
-        sig_sb_flg = ovcabac_read_ae_significant_sb_flag(cabac_ctx, (sig_sb_rgt | sig_sb_blw));
+        uint8_t sig_sb_flg = ovcabac_read_ae_significant_sb_flag(cabac_ctx, sig_sb_ngh);
 
         if(sig_sb_flg){
 
@@ -4375,15 +4386,6 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
     memcpy(&_dst[0], &sb_coeffs[0],  sizeof(int16_t) * 16);
 
     return 0xFFFF;
-}
-
-static inline uint8_t
-has_sig_sb_neighbour(uint64_t sig_sb_map, int16_t sb_x, int16_t sb_y)
-{
-    uint8_t sig_sb_blw = (((sig_sb_map >> ((sb_y + 1) << 3)) & 0xFF) >> sb_x) & 0x1;
-    uint8_t sig_sb_rgt = (((sig_sb_map >> ( sb_y      << 3)) & 0xFF) >> (sb_x + 1)) & 0x1;
-
-    return !!(sig_sb_rgt | sig_sb_blw);
 }
 
 static void
