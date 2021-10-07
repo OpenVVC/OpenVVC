@@ -632,21 +632,23 @@ slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
     *(slice_params->sh) = *(dec_params->sh);
     *(slice_params->ph) = *(dec_params->ph);
 
-    if(dec_params->aps_alf){
-        for (int i=0; i<8; i++){
-            if(dec_params->aps_alf[i])
-                *(slice_params->aps_alf[i]) = *(dec_params->aps_alf[i]);
-        }
+    for (int i=0; i<8; i++){
+        if(dec_params->aps_alf[i])
+            *(slice_params->aps_alf[i]) = *(dec_params->aps_alf[i]);
     }
+
     if(dec_params->aps_alf_c){
         *(slice_params->aps_alf_c) = *(dec_params->aps_alf_c);
     }
+
     if(dec_params->aps_cc_alf_cb){
         *(slice_params->aps_cc_alf_cb) = *(dec_params->aps_cc_alf_cb);
     }
+
     if(dec_params->aps_cc_alf_cr){
         *(slice_params->aps_cc_alf_cr) = *(dec_params->aps_cc_alf_cr);
     }
+
     if(dec_params->aps_lmcs){
         *(slice_params->aps_lmcs) = *(dec_params->aps_lmcs);
     }
