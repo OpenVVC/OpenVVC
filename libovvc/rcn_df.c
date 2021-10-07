@@ -857,7 +857,7 @@ filter_chroma_weak(uint16_t* src, const int stride, const int tc)
     const int16_t m4 = src[0          ];
     const int16_t m5 = src[ stride    ];
 
-    delta = ov_clip(((((m4 - m3) << 2) + m2 - m5 + 4) >> 3), -tc, tc);
+    delta = ov_clip((((m4 << 2) - (m3 << 2) + m2 - m5 + 4) >> 3), -tc, tc);
     src[-stride] = ov_clip(m3 + delta, 0, 1023);
     src[0]       = ov_clip(m4 - delta, 0, 1023);
 }
