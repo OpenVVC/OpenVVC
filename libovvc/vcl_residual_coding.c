@@ -2440,7 +2440,7 @@ dequant_sb_neg(int16_t *const sb_coeffs, int scale, int shift)
     const int32_t max_coeff_value   =  (1 << max_log2_tr_range) - 1;
 
     for( int i = 0; i < 16 ; i++ ){
-        sb_coeffs[i] = ov_clip((int32_t)(sb_coeffs[i] * scale) << shift ,
+        sb_coeffs[i] = ov_clip((int32_t)sb_coeffs[i] * (scale << shift) ,
                 min_coeff_value, max_coeff_value);
     }
 }
