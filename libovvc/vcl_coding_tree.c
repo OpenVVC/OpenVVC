@@ -145,8 +145,8 @@ ovcabac_read_ae_mtt_split_cu_vertical_flag(OVCABACCtx *const cabac_ctx,
 
     /* FIXME try to avoid branch in this function */
     if (nb_split_cand_v == nb_split_cand_h) {
-        int w_ratio = (1 << log2_cu_w) >> log2_cu_w_abv;
-        int h_ratio = (1 << log2_cu_h) >> log2_cu_h_lft;
+        int w_ratio = (1 << log2_cu_w) >> (log2_cu_w_abv & 0x7);
+        int h_ratio = (1 << log2_cu_h) >> (log2_cu_h_lft & 0x7);
 
         if ((w_ratio == h_ratio) || (log2_cu_w_abv == 0xFF)
                                  || (log2_cu_h_lft == 0xFF)) {
