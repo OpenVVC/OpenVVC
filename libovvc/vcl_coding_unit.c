@@ -1787,6 +1787,8 @@ idx:
         /* FIXME gpm idx type */
         ovcabac_read_ae_gpm_merge_idx(cabac_ctx, gpm_info, max_num_gpm_cand);
         mrg_type = GPM_MERGE;
+        /* set to what was read in gpm merge idx to discard uninitialized value */
+        merge_idx = gpm_info->merge_idx0;
     } else if (mmvd_flag){
         uint8_t max_nb_cand = ctu_dec->max_num_merge_candidates;
         merge_idx = ovcabac_read_ae_mmvd_merge_idx(cabac_ctx, max_nb_cand);
