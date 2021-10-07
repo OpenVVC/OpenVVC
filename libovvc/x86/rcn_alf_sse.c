@@ -540,9 +540,9 @@ void cc_alf_filterBlkVB_sse(int16_t * chroma_dst, int16_t * luma_src, const int 
   const int scaleX             = 1;
   const int scaleY             = 1;
 
-  __m128i filter01 = _mm_set1_epi32((filt_coeff[0] & 0xFFFF) | ((filt_coeff[1] & 0xFFFF)<<16));
-  __m128i filter23 = _mm_set1_epi32((filt_coeff[2] & 0xFFFF) | ((filt_coeff[3] & 0xFFFF)<<16));
-  __m128i filter45 = _mm_set1_epi32((filt_coeff[4] & 0xFFFF) | ((filt_coeff[5] & 0xFFFF)<<16));
+  __m128i filter01 = _mm_set1_epi32((filt_coeff[0] & 0xFFFF) | ((uint32_t)(filt_coeff[1] & 0xFFFF) << 16));
+  __m128i filter23 = _mm_set1_epi32((filt_coeff[2] & 0xFFFF) | ((uint32_t)(filt_coeff[3] & 0xFFFF) << 16));
+  __m128i filter45 = _mm_set1_epi32((filt_coeff[4] & 0xFFFF) | ((uint32_t)(filt_coeff[5] & 0xFFFF) << 16));
   __m128i filter6  = _mm_set1_epi16(filt_coeff[6]);
 
   const int scale_bits = 7;
