@@ -341,12 +341,16 @@ vvc_exp_golomb_mv(OVCABACCtx *const cabac_ctx)
 
     prefix -= 1 - bit;
 
+    #if 0
     if (prefix < 0) {
         offset = prefix << 1;
     } else {
+    #endif
         offset = (((1 << prefix ) - 1) << 1);
         length += (prefix == (32 - 17) ? 17 - 1 : prefix);
+    #if 0
     }
+    #endif
 
     while(length){
         add_val <<= 1;
