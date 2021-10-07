@@ -285,8 +285,8 @@ derive_intra_angular_mode(struct IntraDRVInfo *i_info,
 {
     uint8_t mpm_flag = cu_flags & flg_mpm_flag;
 
-    int16_t tr_pos = (x_pu + nb_pb_w - 1) + ((y_pu - 1) << 5);
-    int16_t bl_pos = (x_pu - 1) + ((y_pu + nb_pb_h - 1) << 5);
+    int16_t tr_pos = (x_pu + nb_pb_w - 1) + (y_pu << 5) - 32;
+    int16_t bl_pos = (x_pu - 1) + ((y_pu + nb_pb_h) << 5) - 32;
 
     uint8_t intra_mode;
 
