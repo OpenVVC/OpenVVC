@@ -1721,7 +1721,9 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
             uint64_t scan_map = 0xFDA6EB73C8419520;
             int last_y = last_pos >> 8;
             int last_x = last_pos & 0xFF;
-            tb_info->last_pos = (scan_map >> ((last_x + (last_y << 2)) << 2)) & 0xF;
+            int sb_pos = scan_map >> ((last_y & 0x3) << 4);
+                sb_pos >>= ((last_x & 0x3) << 2);
+                tb_info->last_pos = sb_pos & 0xF; //(scan_map >> ((last_x + ((last_y << 2)) << 2)) & 0xF;
 
             if (log2_pb_w < 2) {
                 tb_info->sig_sb_map = 2;
@@ -1760,7 +1762,9 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
             uint64_t scan_map = 0xFDA6EB73C8419520;
             int last_y = last_pos >> 8;
             int last_x = last_pos & 0xFF;
-            tb_info->last_pos  = (scan_map >> ((last_x + (last_y << 2)) << 2)) & 0xF;
+            int sb_pos = scan_map >> ((last_y & 0x3) << 4);
+                sb_pos >>= ((last_x & 0x3) << 2);
+                tb_info->last_pos = sb_pos & 0xF; //(scan_map >> ((last_x + ((last_y << 2)) << 2)) & 0xF;
             tb_info->sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
         }
     }
@@ -1917,7 +1921,9 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
                 uint64_t scan_map = 0xFDA6EB73C8419520;
                 int last_y = last_pos >> 8;
                 int last_x = last_pos & 0xFF;
-                tb_info->last_pos   = (scan_map >> ((last_x + (last_y << 2)) << 2)) & 0xF;
+                int sb_pos = scan_map >> ((last_y & 0x3) << 4);
+                sb_pos >>= ((last_x & 0x3) << 2);
+                tb_info->last_pos = sb_pos & 0xF; //(scan_map >> ((last_x + ((last_y << 2)) << 2)) & 0xF;
                 tb_info->sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
             }
         }
@@ -1951,7 +1957,9 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
             uint64_t scan_map = 0xFDA6EB73C8419520;
             int last_y = last_pos >> 8;
             int last_x = last_pos & 0xFF;
-            tb_info->last_pos  = (scan_map >> ((last_x + (last_y << 2)) << 2)) & 0xF;
+            int sb_pos = scan_map >> ((last_y & 0x3) << 4);
+            sb_pos >>= ((last_x & 0x3) << 2);
+            tb_info->last_pos = sb_pos & 0xF; //(scan_map >> ((last_x + ((last_y << 2)) << 2)) & 0xF;
             tb_info->sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
         }
     }
