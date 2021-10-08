@@ -351,7 +351,7 @@ void ctudec_alloc_filter_buffers(OVCTUDec *const ctudec, int nb_ctu_w, int margi
         fb->filter_region_offset[comp]   = margin * fb->filter_region_stride[comp] + margin;
 
         if (!filter_region[comp]) {
-            int ext_size = fb->filter_region_stride[comp] * (fb->filter_region_h[comp] + 2 * margin);
+            int ext_size = fb->filter_region_stride[comp] * (fb->filter_region_h[comp] + 2 * margin + 1);
             filter_region[comp] = ov_malloc(ext_size * sizeof(int16_t));
             saved_cols[comp]    = ov_malloc(fb->filter_region_h[comp] * margin * sizeof(int16_t));
         } 
