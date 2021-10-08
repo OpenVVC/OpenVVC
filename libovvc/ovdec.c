@@ -67,7 +67,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
 
     if (!dec->dpb) {
          ret = ovdpb_init(&dec->dpb, &dec->active_params);
-        dec->dpb->display_output = dec->display_output;
+         dec->dpb->display_output = dec->display_output;
          if (ret < 0) {
              return ret;
          }
@@ -118,7 +118,7 @@ ovdec_select_subdec(OVVCDec *const dec)
         int min_idx_available = nb_threads;
         pthread_mutex_lock(&th_main->main_mtx);
         
-        for(int i = nb_threads-1; i >= 0 ; i--) {
+        for(int i = nb_threads - 1; i >= 0 ; i--) {
             slicedec = sldec_list[i];
             th_slice = &slicedec->th_slice;
             
@@ -167,7 +167,7 @@ ovdec_select_subdec(OVVCDec *const dec)
     return NULL;
 
     #else
-    OVSliceDec *sldec = vvcdec->subdec_list[0];
+   return dec->subdec_list[0];
     #endif
 }
 
