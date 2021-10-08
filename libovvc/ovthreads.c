@@ -186,10 +186,6 @@ uninit_entry_threads(struct SliceThread *th_slice)
         pthread_cond_destroy(&th_entry->entry_cnd);
     }
 
-    pthread_mutex_destroy(&th_slice->gnrl_mtx);
-    pthread_cond_destroy(&th_slice->gnrl_cnd);
-    ov_freep(&th_slice->tdec);
-
 }
 
 
@@ -235,13 +231,19 @@ void
 ovthread_slice_thread_uninit(struct SliceThread *th_slice)
 {   
     OVSliceDec * slicedec = th_slice->owner;
-    //Unmark ref pict lists of decoded pics
+
+    uninit_entry_threads(th_slice);
+
     pthread_mutex_lock(&th_slice->gnrl_mtx);
     if (th_slice->active_state == DECODING_FINISHED) {
         pthread_mutex_unlock(&th_slice->gnrl_mtx);
+
         OVPicture *slice_pic = slicedec->pic;
+
         if (slice_pic && (slice_pic->flags & OV_IN_DECODING_PIC_FLAG)) {
+
             ov_log(NULL, OVLOG_TRACE, "Remove DECODING_PIC_FLAG POC: %d\n", slice_pic->poc);
+
             ovdpb_unref_pic(slice_pic, OV_IN_DECODING_PIC_FLAG);
             ovdpb_unmark_ref_pic_lists(slicedec->slice_type, slice_pic);
 
@@ -253,6 +255,9 @@ ovthread_slice_thread_uninit(struct SliceThread *th_slice)
         pthread_mutex_unlock(&th_slice->gnrl_mtx);
     }
 
-    uninit_entry_threads(th_slice);
+    pthread_mutex_destroy(&th_slice->gnrl_mtx);
+    pthread_cond_destroy(&th_slice->gnrl_cnd);
+    ov_freep(&th_slice->tdec);
+
 }
 
