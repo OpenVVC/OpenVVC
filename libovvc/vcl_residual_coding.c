@@ -500,6 +500,7 @@ residual_coding_first_subblock_4x4(OVCABACCtx *const cabac_ctx,
 {
     const uint64_t inv_diag_map = scan_ctx->scan_map;
     const uint8_t log2_sb_w     = scan_ctx->log2_sb_w;
+    const uint8_t log2_sb_h     = scan_ctx->log2_sb_h;
     const uint8_t x_mask    = (1 << log2_sb_w) - 1;
 
     uint64_t *const sig_flg_ctx = &cabac_ctx->ctx_table[ctx_offsets->sig_flg_ctx_offset];
@@ -534,7 +535,7 @@ residual_coding_first_subblock_4x4(OVCABACCtx *const cabac_ctx,
     uint8_t idx = scan_map & 0xF;
 
     /* Reset dst*/
-    memset(sb_coeffs, 0, sizeof(int16_t) * 16);
+    memset(sb_coeffs, 0, sizeof(int16_t) << (log2_sb_w + log2_sb_h));
 
     abs_gt1_flag = ovcabac_ae_read(cabac_ctx, abs_gt1_ctx);
 
@@ -653,6 +654,7 @@ residual_coding_subblock_4x4(OVCABACCtx *const cabac_ctx,
 {
     const uint64_t inv_diag_map = scan_ctx->scan_map;
     const uint8_t log2_sb_w     = scan_ctx->log2_sb_w;
+    const uint8_t log2_sb_h     = scan_ctx->log2_sb_h;
     const uint8_t x_mask    = (1 << log2_sb_w) - 1;
 
     uint64_t *const sig_flg_ctx = &cabac_ctx->ctx_table[ctx_offsets->sig_flg_ctx_offset];
@@ -683,7 +685,7 @@ residual_coding_subblock_4x4(OVCABACCtx *const cabac_ctx,
 
     uint8_t idx;
 
-    memset(sb_coeffs, 0, sizeof(int16_t) * 16);
+    memset(sb_coeffs, 0, sizeof(int16_t) << (log2_sb_w + log2_sb_h));
 
     // First pass
     for ( ; scan_pos > 0 && nb_rem_bins >= 4; --scan_pos ){
@@ -826,6 +828,7 @@ residual_coding_subblock_dc(OVCABACCtx *const cabac_ctx,
 {
     const uint64_t inv_diag_map = scan_ctx->scan_map;
     const uint8_t log2_sb_w     = scan_ctx->log2_sb_w;
+    const uint8_t log2_sb_h     = scan_ctx->log2_sb_h;
     const uint8_t x_mask    = (1 << log2_sb_w) - 1;
 
     uint64_t *const sig_flg_ctx = &cabac_ctx->ctx_table[ctx_offsets->sig_flg_ctx_offset];
@@ -856,7 +859,7 @@ residual_coding_subblock_dc(OVCABACCtx *const cabac_ctx,
 
     uint8_t idx;
 
-    memset(sb_coeffs, 0, sizeof(int16_t) * 16);
+    memset(sb_coeffs, 0, sizeof(int16_t) << (log2_sb_h + log2_sb_w));
 
     // First pass
     for ( ; scan_pos > 0 && nb_rem_bins >= 4; --scan_pos ){
@@ -1376,6 +1379,7 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
 {
     uint64_t *const ctx_table = cabac_ctx->ctx_table;
     const uint8_t log2_sb_w = scan_ctx->log2_sb_w;
+    const uint8_t log2_sb_h = scan_ctx->log2_sb_h;
     uint64_t scan_map = scan_ctx->scan_map;
 
     const int x_mask = (1 << log2_sb_w) - 1;
@@ -1394,7 +1398,7 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
     uint16_t sign_map = 0;
 
     int coeff_idx;
-    memset(sb_coeffs, 0, sizeof(int16_t) * 16);
+    memset(sb_coeffs, 0, sizeof(int16_t) << (log2_sb_h + log2_sb_w));
 
     for (coeff_idx = 0; coeff_idx < max_scan_pos && *nb_remaining_bins >= 4; ++coeff_idx) {
 
@@ -1656,6 +1660,7 @@ residual_coding_first_subblock_sdh(OVCABACCtx *const cabac_ctx,
 {
     const uint64_t inv_diag_map = scan_ctx->scan_map;
     const uint8_t log2_sb_w     = scan_ctx->log2_sb_w;
+    const uint8_t log2_sb_h     = scan_ctx->log2_sb_h;
     const uint8_t x_mask    = (1 << log2_sb_w) - 1;
 
     uint64_t *const sig_flg_ctx = &cabac_ctx->ctx_table[ctx_offsets->sig_flg_ctx_offset];
@@ -1684,7 +1689,7 @@ residual_coding_first_subblock_sdh(OVCABACCtx *const cabac_ctx,
 
     uint8_t idx = scan_map & 0xF;
 
-    memset(sb_coeffs, 0, sizeof(int16_t) * 16);
+    memset(sb_coeffs, 0, sizeof(int16_t) << (log2_sb_h + log2_sb_w));
 
     abs_gt1_flag = ovcabac_ae_read(cabac_ctx, abs_gt1_ctx);
 
@@ -1799,6 +1804,7 @@ residual_coding_subblock_sdh(OVCABACCtx *const cabac_ctx,
 {
     const uint64_t inv_diag_map = scan_ctx->scan_map;
     const uint8_t log2_sb_w     = scan_ctx->log2_sb_w;
+    const uint8_t log2_sb_h     = scan_ctx->log2_sb_h;
     const uint8_t x_mask    = (1 << log2_sb_w) - 1;
 
     uint64_t *const sig_flg_ctx = &cabac_ctx->ctx_table[ctx_offsets->sig_flg_ctx_offset];
@@ -1825,7 +1831,7 @@ residual_coding_subblock_sdh(OVCABACCtx *const cabac_ctx,
 
     uint8_t idx;
 
-    memset(sb_coeffs, 0, sizeof(int16_t) * 16);
+    memset(sb_coeffs, 0, sizeof(int16_t) << (log2_sb_h + log2_sb_w));
     // First pass
     for ( ; scan_pos > 0 && nb_rem_bins >= 4; --scan_pos ){
 
@@ -1963,6 +1969,7 @@ residual_coding_subblock_dc_sdh(OVCABACCtx *const cabac_ctx,
 {
     const uint64_t inv_diag_map = scan_ctx->scan_map;
     const uint8_t log2_sb_w     = scan_ctx->log2_sb_w;
+    const uint8_t log2_sb_h     = scan_ctx->log2_sb_h;
     const uint8_t x_mask    = (1 << log2_sb_w) - 1;
 
     uint64_t *const sig_flg_ctx = &cabac_ctx->ctx_table[ctx_offsets->sig_flg_ctx_offset];
@@ -1989,7 +1996,7 @@ residual_coding_subblock_dc_sdh(OVCABACCtx *const cabac_ctx,
 
     uint8_t idx;
 
-    memset(sb_coeffs, 0, sizeof(int16_t) * 16);
+    memset(sb_coeffs, 0, sizeof(int16_t) << (log2_sb_h + log2_sb_w));
     // First pass
     for ( ; scan_pos > 0 && nb_rem_bins >= 4; --scan_pos ){
 
