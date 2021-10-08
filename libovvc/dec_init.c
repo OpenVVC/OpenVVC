@@ -639,10 +639,8 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
         }
     }
 
-    if (!sh->sh_num_alf_aps_ids_luma) {
-        for (int i=0; i<8; i++){
-            ps->aps_alf[i] = NULL;
-        }
+    for (int i=sh->sh_num_alf_aps_ids_luma; i < 8; i++){
+        ps->aps_alf[i] = NULL;
     }
 
     OVAPS * aps_alf_c = retrieve_aps_alf(nvcl_ctx, sh->sh_alf_aps_id_chroma);
