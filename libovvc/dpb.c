@@ -112,6 +112,9 @@ dpbpriv_release_pic(OVPicture *pic)
         pic->tmvp.collocated_ref = NULL;
 
         pic->frame = NULL;
+        if (pic->sei) {
+            ov_freep(&pic->sei);
+        }
         
         /* Do not delete frame the frame will delete itself
          * when all its references are released
