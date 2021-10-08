@@ -357,6 +357,7 @@ vvc_intra_angular_hpos_wide(const uint16_t* const ref_abv,
                         last_ref_val = curr_ref_val;
                 }
                 // TODO move this part to previous loop
+                if (scale >= 0)
                 for (int x = 0; x < OVMIN(3 << scale, height); x++) {
                         // TODO check if we can use LUTs instead
                         int wL = 32 >> ((x << 1) >> scale);
@@ -420,6 +421,7 @@ vvc_intra_angular_vpos_wide(const uint16_t* const ref_abv,
                            5);
                         last_ref_val = curr_ref_val;
                 }
+                if (scale >= 0)
                 for (int x = 0; x < OVMIN(3 << scale, width); x++) {
                         // TODO check if we can use LUTs instead
                         int wL = 32 >> ((x << 1) >> scale);
@@ -496,6 +498,7 @@ intra_angular_h_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                 for (int x = 0; x < height; x++) {
                         _tmp[x] = ref_lft[x + delta_pos + 1];
                 }
+                if (scale >= 0)
                 for (int x = 0; x < OVMIN(3 << scale, height); x++) {
                         int wL = 32 >> ((x << 1) >> scale);
                         const uint16_t* p =
@@ -556,6 +559,7 @@ intra_angular_h_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                           6;
                         ref++;
                 }
+                if (scale >= 0)
                 for (int x = 0; x < OVMIN(3 << scale, height); x++) {
                         int wL = 32 >> ((x << 1) >> scale);
                         const uint16_t* p =
@@ -627,6 +631,7 @@ intra_angular_v_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                 for (x = 0; x < width; x++) {
                         _dst[x] = ref_abv[x + delta_int + 1];
                 }
+                if (scale >= 0)
                 for (x = 0; x < OVMIN(3 << scale, width); ++x) {
                         int wL = 32 >> ((x << 1) >> scale);
 
@@ -673,6 +678,7 @@ intra_angular_v_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                           6;
                         ref++;
                 }
+                if (scale >= 0)
                 for (int x = 0; x < OVMIN(3 << scale, width); x++) {
                         int wL = 32 >> ((x << 1) >> scale);
                         const uint16_t* p =
@@ -875,6 +881,7 @@ intra_angular_h_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                         _tmp[x] = ov_clip(val, 0, 1023);
                 }
 
+                if (scale >= 0)
                 for (int x = 0; x < OVMIN(3 << scale, height); x++) {
                         int wL = 32 >> ((x << 1) >> scale);
                         const uint16_t* p =
@@ -932,6 +939,7 @@ intra_angular_v_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                         _dst[x] = ov_clip(val, 0, 1023);
                 }
 
+                if (scale >= 0)
                 for (int x = 0; x < OVMIN(3 << scale, width); x++) {
                         int wL = 32 >> ((x << 1) >> scale);
                         const uint16_t* p =
