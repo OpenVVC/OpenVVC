@@ -39,8 +39,8 @@ drv_change_precision_mv(OVMV mv, int src, int dst)
     int shift = dst - src;
     if (shift >= 0)
     {
-        mv.x <<= shift;
-        mv.y <<= shift;
+        mv.x = (uint32_t)mv.x << shift;
+        mv.y = (uint32_t)mv.y << shift;
     }
     else
     {
