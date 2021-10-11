@@ -97,8 +97,8 @@ clip_mv(int pos_x, int pos_y, int pic_w, int pic_h, int pb_w, int pb_h, OVMV mv)
 {
     int x_max  = (pic_w + 2 - pos_x) << 4;
     int y_max  = (pic_h + 2 - pos_y) << 4;
-    int x_min  = (-pb_w - 3 - pos_x) << 4;
-    int y_min  = (-pb_h - 3 - pos_y) << 4;
+    int x_min  = -((pb_w + 3 + pos_x) << 4);
+    int y_min  = -((pb_h + 3 + pos_y) << 4);
 
     mv.x = ov_clip(mv.x, x_min, x_max);
     mv.y = ov_clip(mv.y, y_min, y_max);
