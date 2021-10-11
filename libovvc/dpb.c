@@ -872,8 +872,8 @@ tmvp_set_mv_scales(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic,
     int32_t dist_ref0 = pic->poc - pic->rpl_info0.ref_info[0].poc;
     int32_t dist_ref1 = pic->poc - pic->rpl_info1.ref_info[0].poc;
 
-    int32_t dist_col0 = col_pic->rpl_info0.nb_refs ? col_pic->poc - col_pic->rpl_info0.ref_info[0].poc : 0;
-    int32_t dist_col1 = col_pic->rpl_info1.nb_refs ? col_pic->poc - col_pic->rpl_info1.ref_info[0].poc : 0;
+    int32_t dist_col0 = col_pic && col_pic->rpl_info0.nb_refs ? col_pic->poc - col_pic->rpl_info0.ref_info[0].poc : 0;
+    int32_t dist_col1 = col_pic && col_pic->rpl_info1.nb_refs ? col_pic->poc - col_pic->rpl_info1.ref_info[0].poc : 0;
     const struct RPLInfo *const col_rpl0 = &col_pic->rpl_info0;
     const struct RPLInfo *const col_rpl1 = &col_pic->rpl_info1;
     const struct RPLInfo *const rpl0 = &pic->rpl_info0;
