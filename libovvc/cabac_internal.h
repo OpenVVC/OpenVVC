@@ -1,10 +1,10 @@
 #ifndef CABAC_INTERNAL_H
 #define CABAC_INTERNAL_H
+#include "ovutils.h"
 #include "vcl_cabac.h"
 
 #define NB_CABAC_BITS 16
 #define CABAC_MASK ((1 << NB_CABAC_BITS) - 1)
-#define ov_ctz(x) __builtin_ctz(x)
 
 extern const uint8_t lps_renorm_table[64];
 extern const uint8_t range_lps_lut[512];
