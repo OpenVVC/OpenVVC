@@ -2266,8 +2266,8 @@ derive_affine_control_point_0(struct ControlPointMVCand mi, int model_idx,
                 mv1[CP_LT] = mi.mv1[CP_LT];
                 mv1[CP_LB] = mi.mv1[CP_LB];
 
-                tmp.x = (int32_t)(mv1[0].x << AFFINE_SHIFT) + (int32_t)((uint32_t)(mv1[2].y - mv1[0].y) << shift_hw);
-                tmp.y = (int32_t)(mv1[0].y << AFFINE_SHIFT) - (int32_t)((uint32_t)(mv1[2].x - mv1[0].x) << shift_hw);
+                tmp.x = (int32_t)((uint32_t)mv1[0].x << AFFINE_SHIFT) + (int32_t)((uint32_t)(mv1[2].y - mv1[0].y) << shift_hw);
+                tmp.y = (int32_t)((uint32_t)mv1[0].y << AFFINE_SHIFT) - (int32_t)((uint32_t)(mv1[2].x - mv1[0].x) << shift_hw);
 
                 mv1[1] = round_affine_mv2(tmp);
 
@@ -2950,14 +2950,14 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
         int i, j;
         OVMV center_mv;
 
-        center_mv.x = cinfo->lt.x << AFFINE_SHIFT;
-        center_mv.y = cinfo->lt.y << AFFINE_SHIFT;
+        center_mv.x = (uint32_t)cinfo->lt.x << AFFINE_SHIFT;
+        center_mv.y = (uint32_t)cinfo->lt.y << AFFINE_SHIFT;
 
-        center_mv.x += (delta_mv.h.x << log2_cu_w) >> 1;
-        center_mv.y += (delta_mv.h.y << log2_cu_w) >> 1;
+        center_mv.x += (int32_t)((uint32_t)delta_mv.h.x << log2_cu_w) >> 1;
+        center_mv.y += (int32_t)((uint32_t)delta_mv.h.y << log2_cu_w) >> 1;
 
-        center_mv.x += (delta_mv.v.x << log2_cu_h) >> 1;
-        center_mv.y += (delta_mv.v.y << log2_cu_h) >> 1;
+        center_mv.x += (int32_t)((uint32_t)delta_mv.v.x << log2_cu_h) >> 1;
+        center_mv.y += (int32_t)((uint32_t)delta_mv.v.y << log2_cu_h) >> 1;
 
         center_mv = round_affine_mv2(center_mv);
 
