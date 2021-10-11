@@ -941,14 +941,14 @@ derive_affine_delta_mvs(const struct AffineControlInfo *const cinfo,
 
     const uint8_t scale_h = AFFINE_SHIFT - log2_pb_w;
 
-    delta_mv_h.x = (cinfo->rt.x - cinfo->lt.x) << scale_h;
-    delta_mv_h.y = (cinfo->rt.y - cinfo->lt.y) << scale_h;
+    delta_mv_h.x = (uint32_t)(cinfo->rt.x - cinfo->lt.x) << scale_h;
+    delta_mv_h.y = (uint32_t)(cinfo->rt.y - cinfo->lt.y) << scale_h;
 
     if (affine_type == AFFINE_3CP) {
         const uint8_t scale_v = AFFINE_SHIFT - log2_pb_h;
 
-        delta_mv_v.x = (cinfo->lb.x - cinfo->lt.x) << scale_v;
-        delta_mv_v.y = (cinfo->lb.y - cinfo->lt.y) << scale_v;
+        delta_mv_v.x = (uint32_t)(cinfo->lb.x - cinfo->lt.x) << scale_v;
+        delta_mv_v.y = (uint32_t)(cinfo->lb.y - cinfo->lt.y) << scale_v;
 
     } else {
         delta_mv_v.x = -delta_mv_h.y;
@@ -1005,8 +1005,8 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
     }
 
     /* Derive LT based on candidate position */
-    lt_mv.x = ngh_cp->lt.x << AFFINE_SHIFT;
-    lt_mv.y = ngh_cp->lt.y << AFFINE_SHIFT;
+    lt_mv.x = (uint32_t)ngh_cp->lt.x << AFFINE_SHIFT;
+    lt_mv.y = (uint32_t)ngh_cp->lt.y << AFFINE_SHIFT;
 
     lt_mv.x += delta_mv.h.x * delta_pos_x;
     lt_mv.y += delta_mv.h.y * delta_pos_x;
@@ -1024,8 +1024,8 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
     dst_cp.lt.bcw_idx_plus1 = bcw_idx_plus1;
     dst_cp.lt.prec_amvr = prec_amvr;
 
-    tmp.x = lt_mv.x + (delta_mv.h.x << log2_pb_w);
-    tmp.y = lt_mv.y + (delta_mv.h.y << log2_pb_w);
+    tmp.x = lt_mv.x + (int32_t)((uint32_t)delta_mv.h.x << log2_pb_w);
+    tmp.y = lt_mv.y + (int32_t)((uint32_t)delta_mv.h.y << log2_pb_w);
 
     dst_cp.rt = round_affine_mv2(tmp);
     dst_cp.rt = clip_mv(dst_cp.rt);
@@ -1034,8 +1034,8 @@ derive_cp_from_cand(const struct AffineControlInfo *const ngh_cp,
     dst_cp.rt.prec_amvr = prec_amvr;
 
     if (affine_type == AFFINE_3CP) {
-        tmp.x = lt_mv.x + (delta_mv.v.x << log2_pb_h);
-        tmp.y = lt_mv.y + (delta_mv.v.y << log2_pb_h);
+        tmp.x = lt_mv.x + (int32_t)((uint32_t)delta_mv.v.x << log2_pb_h);
+        tmp.y = lt_mv.y + (int32_t)((uint32_t)delta_mv.v.y << log2_pb_h);
 
         dst_cp.lb = round_affine_mv2(tmp);
         dst_cp.lb = clip_mv(dst_cp.lb);
@@ -2249,8 +2249,8 @@ derive_affine_control_point_0(struct ControlPointMVCand mi, int model_idx,
                 mv0[CP_LT] = mi.mv0[CP_LT];
                 mv0[CP_LB] = mi.mv0[CP_LB];
 
-                tmp.x = (mv0[0].x << AFFINE_SHIFT) + ((mv0[2].y - mv0[0].y) << shiftHtoW);
-                tmp.y = (mv0[0].y << AFFINE_SHIFT) - ((mv0[2].x - mv0[0].x) << shiftHtoW);
+                tmp.x = (int32_t)((uint32_t)mv0[0].x << AFFINE_SHIFT) + (int32_t)((uint32_t)(mv0[2].y - mv0[0].y) << shiftHtoW);
+                tmp.y = (int32_t)((uint32_t)mv0[0].y << AFFINE_SHIFT) - (int32_t)((uint32_t)(mv0[2].x - mv0[0].x) << shiftHtoW);
 
                 mv0[1] = round_affine_mv2(tmp);
 
@@ -2266,8 +2266,8 @@ derive_affine_control_point_0(struct ControlPointMVCand mi, int model_idx,
                 mv1[CP_LT] = mi.mv1[CP_LT];
                 mv1[CP_LB] = mi.mv1[CP_LB];
 
-                tmp.x = (mv1[0].x << AFFINE_SHIFT) + ((mv1[2].y - mv1[0].y) << shift_hw);
-                tmp.y = (mv1[0].y << AFFINE_SHIFT) - ((mv1[2].x - mv1[0].x) << shift_hw);
+                tmp.x = (int32_t)(mv1[0].x << AFFINE_SHIFT) + (int32_t)((uint32_t)(mv1[2].y - mv1[0].y) << shift_hw);
+                tmp.y = (int32_t)(mv1[0].y << AFFINE_SHIFT) - (int32_t)((uint32_t)(mv1[2].x - mv1[0].x) << shift_hw);
 
                 mv1[1] = round_affine_mv2(tmp);
 
@@ -2910,9 +2910,9 @@ compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
         OVMV accu_mv_v;
         OVMV mv_dst;
 
-        accu_mv_v.x = (cinfo->lt.x << AFFINE_SHIFT) + delta_mv.h.x * HALF_SB_SIZE
+        accu_mv_v.x = ((uint32_t)cinfo->lt.x << AFFINE_SHIFT) + delta_mv.h.x * HALF_SB_SIZE
                                                     + delta_mv.v.x * HALF_SB_SIZE;
-        accu_mv_v.y = (cinfo->lt.y << AFFINE_SHIFT) + delta_mv.h.y * HALF_SB_SIZE
+        accu_mv_v.y = ((uint32_t)cinfo->lt.y << AFFINE_SHIFT) + delta_mv.h.y * HALF_SB_SIZE
                                                     + delta_mv.v.y * HALF_SB_SIZE;
 
         for (i = 0; i < nb_sb_h; ++i) {
@@ -3913,13 +3913,13 @@ compute_prof_dmv_scale(struct AffineDeltaMV delta_mv,
     int32_t *dmv_scale_h_p = dmv_scale_h;
     int32_t *dmv_scale_v_p = dmv_scale_v;
 
-    quad_dmv_h.x = delta_mv.h.x << 2;
-    quad_dmv_h.y = delta_mv.h.y << 2;
-    quad_dmv_v.x = delta_mv.v.x << 2;
-    quad_dmv_v.y = delta_mv.v.y << 2;
+    quad_dmv_h.x = (uint32_t)delta_mv.h.x << 2;
+    quad_dmv_h.y = (uint32_t)delta_mv.h.y << 2;
+    quad_dmv_v.x = (uint32_t)delta_mv.v.x << 2;
+    quad_dmv_v.y = (uint32_t)delta_mv.v.y << 2;
 
-    dmv_scale_h_p[0] = ((delta_mv.h.x + delta_mv.v.x) << 1) - ((quad_dmv_h.x + quad_dmv_v.x) << 1);
-    dmv_scale_v_p[0] = ((delta_mv.h.y + delta_mv.v.y) << 1) - ((quad_dmv_h.y + quad_dmv_v.y) << 1);
+    dmv_scale_h_p[0] = ((uint32_t)(delta_mv.h.x + delta_mv.v.x) << 1) - ((uint32_t)(quad_dmv_h.x + quad_dmv_v.x) << 1);
+    dmv_scale_v_p[0] = ((uint32_t)(delta_mv.h.y + delta_mv.v.y) << 1) - ((uint32_t)(quad_dmv_h.y + quad_dmv_v.y) << 1);
 
     for (x = 1; x < SB_W; x++) {
         dmv_scale_h_p[x] = dmv_scale_h_p[x - 1] + quad_dmv_h.x;
