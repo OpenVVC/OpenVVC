@@ -1092,7 +1092,7 @@ xctu_to_mask(uint64_t* mask, int mask_w, int xmin_ctu, int xmax_ctu)
         sub_xmin_ctu = xmin_ctu > (i<<SIZE_INT64)     ? xmin_ctu % (1<<SIZE_INT64) : 0;
         sub_xmax_ctu = xmax_ctu < ((i+1)<<SIZE_INT64) ? xmax_ctu % (1<<SIZE_INT64) : (1<<SIZE_INT64)-1;
         for(int ii = sub_xmin_ctu; ii <= sub_xmax_ctu; ii++)
-            mask[i] |= 1 << ii;
+            mask[i] |= (uint64_t)1 << ii;
     }
 }
 
