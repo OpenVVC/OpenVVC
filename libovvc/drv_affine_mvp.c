@@ -4319,9 +4319,11 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
              opp_ref_idx0 = i;
     }
 
-    for (int i = 0; i < inter_ctx->nb_active_ref0; i ++) {
-         if (inter_ctx->rpl1[ref_idx1] == inter_ctx->rpl0[i])
-             opp_ref_idx1 = i;
+    if (ref_idx1 != 0xFF) {
+        for (int i = 0; i < inter_ctx->nb_active_ref0; i ++) {
+            if (inter_ctx->rpl1[ref_idx1] == inter_ctx->rpl0[i])
+                opp_ref_idx1 = i;
+        }
     }
 
     /* FIXME can we combine mvp derivation for bi pred */
