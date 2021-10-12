@@ -266,7 +266,7 @@ rcn_lmcs_compute_chroma_scale(struct OVCTUDec* ctudec, int x0, int y0)
                       lmcs_info->min_idx, lmcs_info->max_idx);
 
     /* FIXME use coded window size instead ? */
-    uint32_t size_interval = (uint32_t)(lmcs_info->lmcs_output_pivot[idx+1] - lmcs_info->lmcs_output_pivot[idx]);
+    uint32_t size_interval = (uint32_t)(lmcs_info->lmcs_output_pivot[idx + 1] - lmcs_info->lmcs_output_pivot[idx]);
     lmcs_info->lmcs_chroma_scale = (size_interval == 0) ? 1 << 11 
                                                     : (1<<17)/ (size_interval + lmcs_info->lmcs_chroma_scaling_offset);
 }
