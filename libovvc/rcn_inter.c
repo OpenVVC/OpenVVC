@@ -1136,7 +1136,7 @@ refine_mv(uint64_t *sad_buff)
 
     if (0 != den_h) {
         if ((sad_lc[1] != sad_lc[0]) && (sad_lc[3] != sad_lc[0])) {
-            int64_t num = (int64_t)(sad_lc[1] - sad_lc[3]) << DMVR_SB_PXL_LVL;
+            int64_t num = (int64_t)(sad_lc[1]  << DMVR_SB_PXL_LVL) - (int64_t)(sad_lc[3] << DMVR_SB_PXL_LVL);
             delta.h = div_for_maxq7(num, den_h);
         } else {
             delta.h = (sad_lc[1] == sad_lc[0]) ? -8 : 8;
