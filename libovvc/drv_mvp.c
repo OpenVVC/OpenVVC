@@ -276,7 +276,9 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
     uint16_t nb_ctb_w = ctudec->nb_ctb_pic_w;
 
     const OVPicture* ref_pic = tmvp_ctx->col_ref;
-    tmvp_inter_synchronization(ref_pic, ctb_x, ctb_y, log2_ctb_s);
+    if (ref_pic) {
+        tmvp_inter_synchronization(ref_pic, ctb_x, ctb_y, log2_ctb_s);
+    }
 
     uint8_t is_border_pic = nb_ctb_w - 1 == ctb_x;
 
