@@ -441,7 +441,7 @@ coding_quadtree_implicit(OVCTUDec *const ctu_dec,
             y1 = y0 + (1 << (log2_cb_s - 1));
 
             /* FIXME dirty hack for CCLM management */
-            if (log2_cb_s == 5) {
+            if (log2_cb_s <= 5) {
                 ctu_dec->enable_cclm = 1;
             }
 
@@ -473,6 +473,12 @@ coding_quadtree_implicit(OVCTUDec *const ctu_dec,
         } else {
 
             store_qt_depth(ctu_dec, part_ctx, log2_cb_s, x0, y0, qt_depth);
+
+            /* FIXME CCLM henadling */
+            /* 64X64 luma node in dual tree will BT or TT split => disable CCLM */
+            if (ctu_dec->coding_unit == coding_unit_intra && log2_cb_s == 6){
+                ctu_dec->tmp_disable_cclm = 1;
+            }
 
             if (x1 > rem_w) {
                 binary_tree_implicit_v(ctu_dec, part_ctx, x0, y0,

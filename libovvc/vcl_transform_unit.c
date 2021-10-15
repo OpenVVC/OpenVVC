@@ -2100,7 +2100,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
             uint8_t intra_mode = cu.cu_mode_idx;
             if (isp_mode) {
                 /* Disable CCLM in 64x64 ISP CU*/
-                ctu_dec->tmp_disable_cclm = log2_cb_h == log2_cb_w && log2_cb_h == 6;
+                ctu_dec->tmp_disable_cclm |= log2_cb_h == log2_cb_w && log2_cb_h == 6;
 
                 if (isp_mode == 2) {
                     isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode);
