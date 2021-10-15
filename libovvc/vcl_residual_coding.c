@@ -478,7 +478,8 @@ decode_signs(OVCABACCtx *const cabac_ctx, int16_t *const sb_coeffs,
         int idx = sig_c_idx_map[k];
         int add  = (state_map >> (nb_sig_c - k - 1)) & 0x1;
         int sign = (signs_map >> (nb_sig_c - k - 1)) & 0x1;
-        int abs_coeff = (sb_coeffs[idx] << 1) - add;
+        uint32_t abs_coeff = sb_coeffs[idx];
+        abs_coeff = (int32_t)(abs_coeff << 1) - add;
         sb_coeffs[idx] = sign ? -abs_coeff : abs_coeff;
     }
 }
