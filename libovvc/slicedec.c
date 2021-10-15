@@ -1182,8 +1182,10 @@ tmvp_entry_init(OVCTUDec *ctudec, OVPicture *active_pic)
     tmvp_ctx->col_plane0 = collocated_ref ? &collocated_ref->mv_plane0 : NULL;
     tmvp_ctx->col_plane1 = collocated_ref ? &collocated_ref->mv_plane1 : NULL;
 
+    /* FIXME used by other tools */
     memcpy(inter_ctx->dist_ref_0, active_pic->tmvp.dist_ref_0, sizeof(inter_ctx->dist_ref_0));
     memcpy(inter_ctx->dist_ref_1, active_pic->tmvp.dist_ref_1, sizeof(inter_ctx->dist_ref_1));
+
     memcpy(tmvp_ctx->dist_col_0, active_pic->tmvp.dist_col_0, sizeof(tmvp_ctx->dist_col_0));
     memcpy(tmvp_ctx->dist_col_1, active_pic->tmvp.dist_col_1, sizeof(tmvp_ctx->dist_col_1));
 
