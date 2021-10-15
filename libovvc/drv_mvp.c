@@ -2057,10 +2057,10 @@ update_gpm_mv_ctx(struct InterDRVCtx *const inter_ctx,
     }
 
     for (int y = 0; y < nb_pb_h; y++) {
-        int lookup_y = (((4 * y + offset_y) << 1) + 5) * y_dis;
+        int lookup_y = (((4 * y + offset_y) * 2) + 5) * y_dis;
 
         for (int x = 0; x < nb_pb_w; x++) {
-            int motion_idx = (((4 * x + offset_x) << 1) + 5) * x_dis + lookup_y;
+            int motion_idx = (((4 * x + offset_x) * 2) + 5) * x_dis + lookup_y;
             int tpm_mask = abs(motion_idx) < 32 ? 2 : (motion_idx <= 0 ? (1 - flip) : flip);
 
             VVCMergeInfo sbmv;
