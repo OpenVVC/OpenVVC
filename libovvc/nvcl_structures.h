@@ -385,7 +385,7 @@ struct OVPPS
     uint8_t pps_num_exp_slices_in_tile[16];
     uint8_t pps_exp_slice_height_in_ctus_minus1[16*16];
 
-    int8_t pps_tile_idx_delta_val[16];
+    int8_t pps_tile_idx_delta_val[16*16];
 
     uint8_t pps_loop_filter_across_slices_enabled_flag;
 
