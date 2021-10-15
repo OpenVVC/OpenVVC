@@ -1430,6 +1430,7 @@ init_affine_status(OVCTUDec *const ctudec, const OVSPS *const sps,
     ctudec->affine_status  = sps->sps_affine_amvr_enabled_flag;
     ctudec->affine_status |= sps->sps_6param_affine_enabled_flag << 1;
     ctudec->affine_status |= sps->sps_affine_prof_enabled_flag << 2;
+    ctudec->drv_ctx.inter_ctx.affine_6params_enabled = sps->sps_6param_affine_enabled_flag;
 }
 
 /* FIXME clean this init */

@@ -2768,7 +2768,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
 
         /* Set control points */
         /* FIXME plug this */
-        uint8_t sps_affine_type_flag = 1;
+        uint8_t sps_affine_type_flag = inter_ctx->affine_6params_enabled;
         if (sps_affine_type_flag) {
             if (check_avail_cp(avail_cp_map, CP3_MASK0)) {
                 nb_cand += derive_affine_control_point_1(mi, 0, aff_mrg_ctx);
