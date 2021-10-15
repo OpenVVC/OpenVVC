@@ -1059,7 +1059,13 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
          * a new coded video sequence
          */
         dpb->cvs_id = (dpb->cvs_id + 1) & 0xFF;
-        poc = 0;
+        if (ps->ph->ph_poc_msb_cycle_present_flag) {
+            uint8_t log2_max_poc_lsb = ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4;
+            poc = ps->ph->ph_poc_msb_cycle_val << log2_max_poc_lsb;
+        } else {
+            poc = 0;
+        }
+        poc += ps->ph->ph_pic_order_cnt_lsb;
     } else {
         /* FIXME arg should be last_poc */
         poc = derive_poc(ps->ph->ph_pic_order_cnt_lsb,
