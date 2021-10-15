@@ -14,10 +14,6 @@
 #include "slicedec.h"
 #include "ovdec_internal.h"
 
-
-#if 1
-#endif
-
 /* FIXME More global scope for this enum
  */
 enum SliceType
