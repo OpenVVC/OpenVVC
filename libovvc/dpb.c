@@ -984,7 +984,7 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
             tmvp_set_mv_scales(tmvp_ctx, pic, col_pic);
 
 
-        } else {
+        } else if (sh->sh_slice_type != SLICE_I) {
             /* FIXME idx can be ph */
             int ref_idx = sh->sh_collocated_ref_idx;
             const OVPicture *col_pic = pic->rpl1[ref_idx];
@@ -999,6 +999,18 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
 
             tmvp_set_mv_scales(tmvp_ctx, pic, col_pic);
 
+        } else {
+            tmvp_ctx->collocated_ref = NULL;
+        }
+    } else {
+        const struct RPLInfo *const rpl0 = &pic->rpl_info0;
+        const struct RPLInfo *const rpl1 = &pic->rpl_info1;
+        for (int i = 0; i < rpl0->nb_refs; ++i) {
+            pic->tmvp.dist_ref_0[i] = pic->poc - rpl0->ref_info[i].poc;
+        }
+
+        for (int i = 0; i < rpl1->nb_refs; ++i) {
+            pic->tmvp.dist_ref_1[i] = pic->poc - rpl1->ref_info[i].poc;
         }
     }
 
@@ -1102,6 +1114,16 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     /* Init picture TMVP info */
     if (ps->sps->sps_temporal_mvp_enabled_flag) {
         ret = init_tmvp_info(&(*pic_p)->tmvp, *pic_p, ps, ovdec);
+    } else if (!idr_flag) {
+        const struct RPLInfo *const rpl0 = &(*pic_p)->rpl_info0;
+        const struct RPLInfo *const rpl1 = &(*pic_p)->rpl_info1;
+        for (int i = 0; i < rpl0->nb_refs; ++i) {
+            (*pic_p)->tmvp.dist_ref_0[i] = poc - rpl0->ref_info[i].poc;
+        }
+
+        for (int i = 0; i < rpl1->nb_refs; ++i) {
+            (*pic_p)->tmvp.dist_ref_1[i] = poc - rpl1->ref_info[i].poc;
+        }
     }
 
     return ret;
