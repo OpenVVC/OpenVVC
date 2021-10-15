@@ -943,6 +943,8 @@ ovcabac_init_slice_context_table(uint64_t cabac_states[], uint8_t slice_type,
     uint16_t state_0, state_1;
     const uint8_t *ctx_init_tab = init_values[slice_type];
 
+    slice_qp = ov_clip(slice_qp, 0, 63);
+
     for (i = 0; i < OVCABAC_NB_CTX; i++) {
         int init_value    = ctx_init_tab[i];
         int log2_window_s = rate_init_table[i];
