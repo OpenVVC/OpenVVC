@@ -225,6 +225,7 @@ ovdpb_clear_refs(OVDPB *dpb)
     ov_log(NULL, OVLOG_DEBUG, "Release reference pictures\n");
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     int nb_used_pic = 0;
+    int min_cvs_id = INT_MAX;
     int i;
 
     //TODOdpb: use cvs_id for max_nb_dpb_pic
@@ -236,6 +237,9 @@ ovdpb_clear_refs(OVDPB *dpb)
         // if (is_output_cvs && pic->frame && pic->frame->data[0]) {
         if (pic->frame && pic->frame->data[0]) {
             nb_used_pic++;
+            if (pic->cvs_id < min_cvs_id) {
+                min_cvs_id = pic->cvs_id;
+            }
         }
     }
 
@@ -250,7 +254,7 @@ ovdpb_clear_refs(OVDPB *dpb)
             // is_output_cvs = pic->cvs_id == output_cvs_id;
             // if (is_output_cvs && pic->frame && pic->frame->data[0] && !ref_count) {
             if (pic->frame && pic->frame->data[0] && !ref_count && !pic->flags) {
-                if (pic->poc < min_poc) {
+                if (pic->poc < min_poc && pic->cvs_id == min_cvs_id) {
                     min_poc = pic->poc;
                     min_idx = i;
                 }
@@ -263,8 +267,7 @@ ovdpb_clear_refs(OVDPB *dpb)
         if (min_idx < nb_dpb_pic) {
             OVPicture *pic = &dpb->pictures[min_idx];
             ovdpb_release_pic(dpb, pic);
-        }
-        else{
+        } else {
             break;
         }
 
@@ -441,7 +444,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
         found = 0;
         for (j = 0; j < nb_dpb_pic; j++) {
             ref_pic = &dpb->pictures[j];
-            if (ref_pic->poc == ref_poc){
+            if (ref_pic->poc == ref_poc && ref_pic->cvs_id == dpb->cvs_id){
                 if(ref_pic->frame && ref_pic->frame->data[0]){
                     found = 1;
                     ov_log(NULL, OVLOG_TRACE, "Mark active reference %d for picture %d\n", ref_poc, dpb->poc);
@@ -490,7 +493,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
         for (j = 0; j < nb_dpb_pic; j++) {
             ref_pic = &dpb->pictures[j];
             if (ref_pic->poc == ref_poc){
-                if(ref_pic->frame && ref_pic->frame->data[0]){
+                if(ref_pic->frame && ref_pic->frame->data[0] && ref_pic->cvs_id == dpb->cvs_id){
                     found = 1;
                     ov_log(NULL, OVLOG_TRACE, "Mark non active reference %d for picture %d\n", ref_poc, dpb->poc);
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
@@ -539,6 +542,23 @@ vvc_unmark_refs(struct RPLInfo *rpl_info, OVPicture **dst_rpl, OVPicture **dst_r
 int
 ovdpb_drain_frame(OVDPB *dpb, OVPicture **out, int output_cvs_id)
 {
+    int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
+    int min_cvs_id = INT_MAX;
+    int i;
+
+    /* Count pictures in current output target Coded Video Sequence
+     */
+    for (i = 0; i < nb_dpb_pic; i++) {
+        OVPicture *pic = &dpb->pictures[i];
+        if (pic->frame && pic->frame->data[0]) {
+            if (pic->cvs_id < min_cvs_id) {
+                min_cvs_id = pic->cvs_id;
+            }
+        }
+    }
+
+    output_cvs_id = min_cvs_id;
+
     do {
         const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
         int nb_output = 0;
@@ -606,12 +626,26 @@ ovdpb_drain_frame(OVDPB *dpb, OVPicture **out, int output_cvs_id)
 int
 ovdpb_output_pic(OVDPB *dpb, OVPicture **out, int output_cvs_id)
 {
-    do {
-        const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
+    int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
+    int min_cvs_id = INT_MAX;
+    int i;
+
+    /* Count pictures in current output target Coded Video Sequence
+     */
+    for (i = 0; i < nb_dpb_pic; i++) {
+        OVPicture *pic = &dpb->pictures[i];
+        if (pic->frame && pic->frame->data[0]) {
+            if (pic->cvs_id < min_cvs_id) {
+                min_cvs_id = pic->cvs_id;
+            }
+        }
+    }
+
+    output_cvs_id = min_cvs_id;
+
         int nb_output = 0;
         int min_poc   = INT_MAX;
         int min_idx   = nb_dpb_pic;
-        int i;
         uint8_t in_decoding;
 
         #if 0
@@ -669,12 +703,9 @@ ovdpb_output_pic(OVDPB *dpb, OVPicture **out, int output_cvs_id)
 
         /* If no output pic found increase cvs_id and retry */
         if (output_cvs_id != dpb->cvs_id) {
-            output_cvs_id = (output_cvs_id + 1) & 0xff;
         } else {
-            break;
         }
 
-    } while (1);
 
     ov_log(NULL, OVLOG_TRACE, "No picture to output\n");
 
