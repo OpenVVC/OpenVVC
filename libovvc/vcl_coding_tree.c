@@ -223,6 +223,9 @@ coding_quadtree(OVCTUDec *const ctu_dec,
     uint8_t allow_tt = log2_cb_s <= part_ctx->log2_max_tt_s;
     uint8_t allow_bt = log2_cb_s <= part_ctx->log2_max_bt_s;
 
+    allow_tt &= !!part_ctx->max_mtt_depth;
+    allow_bt &= !!part_ctx->max_mtt_depth;
+
     allow_tt &= ((log2_cb_s - 1) > part_ctx->log2_min_cb_s);
     allow_bt &= ( log2_cb_s      > part_ctx->log2_min_cb_s);
     /* Disable splits if less than 16 samples */
