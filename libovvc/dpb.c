@@ -307,11 +307,13 @@ alloc_frame(OVDPB *dpb)
         ret = dpbpriv_request_frame(&dpb->internal, &pic->frame);
         
         if (ret < 0) {
+            ov_log(NULL, OVLOG_ERROR, "Error while requesting picture from DPB\n");
             return NULL;
         }
 
         pic->flags = 0;
         atomic_init(&pic->ref_count, 0);
+
         return pic;
     }
 
