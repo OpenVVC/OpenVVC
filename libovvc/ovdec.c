@@ -298,8 +298,7 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
     int ret = 0;
 
     if (!dpb) {
-        ov_log(dec, OVLOG_ERROR, "No DPB on output request.\n");
-        /* FIXME new return value ? */
+        ov_log(dec, OVLOG_TRACE, "No DPB on output request.\n");
         return 0;
     }
 
@@ -321,9 +320,8 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
     ovdec_uninit_subdec_list(dec);
 
     if (!dpb) {
-        ov_log(dec, OVLOG_ERROR, "No DPB on output request.\n");
-        /* FIXME new return value */
-        return OVVC_EINDATA;
+        ov_log(dec, OVLOG_TRACE, "No DPB on output request.\n");
+        return 0;
     }
 
     ret = ovdpb_drain_frame(dpb, frame_p);
