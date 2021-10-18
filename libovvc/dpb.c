@@ -419,9 +419,9 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t 
         poc = ref_poc;
 
     }
+
     return 0;
 }
-
 
 static int
 vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_info, OVPicture **dst_rpl, OVPicture **dst_rpl_na)
@@ -469,14 +469,11 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
             ref_pic->cvs_id = dpb->cvs_id;
 
             ref_pic->flags  = 0;
-            // ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
+
             ovdpb_new_ref_pic(ref_pic, OV_ST_REF_PIC_FLAG);
 
             /*FIXME  Set output / corrupt flag ? */
             dst_rpl[i] = ref_pic; 
-            #if 0
-            return 0;
-            #endif
         }
     }
 
@@ -487,6 +484,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
         flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
         OVPicture *ref_pic;
         found = 0;
+
         for (j = 0; j < nb_dpb_pic; j++) {
             ref_pic = &dpb->pictures[j];
             if (ref_pic->poc == ref_poc){
@@ -499,6 +497,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_inf
                 }
             }
         }
+
         if (!found){
             ov_log(NULL, OVLOG_TRACE, "Not found non active reference %d for picture %d\n", ref_poc, dpb->poc);
         }

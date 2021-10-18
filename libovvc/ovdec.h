@@ -4,10 +4,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stddef.h>
-#include <stdio.h>
 
 #include "ovunits.h"
-
 #include "ovdefs.h"
 
 enum OVOptions {

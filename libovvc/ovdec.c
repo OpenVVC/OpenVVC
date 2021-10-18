@@ -73,7 +73,6 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
          }
     }
 
-    /* FIXME only if TMVP */
     //TODOpar: protect mv pool when more than one thread ?
     if (!dec->mv_pool) {
         ret = mvpool_init(&dec->mv_pool, &dec->active_params.pic_info);
@@ -356,7 +355,7 @@ int
 ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value)
 {
 
-    switch (opt_id){
+    switch (opt_id) {
         case OVDEC_NB_ENTRY_THREADS:
             set_nb_entry_threads(ovdec, value);
             break;
@@ -423,8 +422,7 @@ ovdec_uninit_subdec_list(OVVCDec *vvcdec)
 {
     OVSliceDec *sldec;
 
-    if (vvcdec != NULL)
-    {
+    if (vvcdec != NULL) {
         if (vvcdec->subdec_list) {
             for (int i = 0; i < vvcdec->nb_frame_th; ++i){
                 sldec = vvcdec->subdec_list[i];
@@ -433,8 +431,6 @@ ovdec_uninit_subdec_list(OVVCDec *vvcdec)
             }
             ov_freep(&vvcdec->subdec_list);
         }
-
-        // ovthread_output_uninit(&vvcdec->output_thread);
     }
 }
 
@@ -470,7 +466,8 @@ fail:
     return -1;
 }
 
-void ovdec_set_log_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl))
+void
+ovdec_set_log_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl))
 {
     set_log_callback(log_function);
 }

@@ -342,6 +342,7 @@ struct OVPPS
     uint8_t pps_mixed_nalu_types_in_pic_flag;
     uint16_t pps_pic_width_in_luma_samples;
     uint16_t pps_pic_height_in_luma_samples;
+
     uint8_t pps_conformance_window_flag;
     uint8_t pps_conf_win_left_offset;
     uint8_t pps_conf_win_right_offset;

@@ -87,7 +87,6 @@ dpbpriv_request_frame(struct DPBInternal *dpb_priv, OVFrame **frame)
 
     /* Copy frame_info */
 
-
     return 0;
 
 failrequest:
