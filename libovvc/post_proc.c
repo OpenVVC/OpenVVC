@@ -71,7 +71,7 @@ pp_process_frame(const OVSEI* sei, OVDPB *dpb, OVFrame **frame_p)
                                     sei->sei_slhdr->payload_array, frame->width[0], frame->height[0]);
         }
 #endif
-
+        ovframe_unref(frame_p);
         *frame_p = frame_post_proc;
     }
     return ret;

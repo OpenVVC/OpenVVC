@@ -281,38 +281,17 @@ ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *const pu)
 int
 ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
 {
-    /* FIXME this is temporary request output from DPB
-     * instead
-     */
     OVDPB *dpb = dec->dpb;
     uint16_t out_cvs_id;
     int ret = 0;
 
     if (!dpb) {
         ov_log(dec, OVLOG_ERROR, "No DPB on output request.\n");
-        /* FIXME new return value */
+        /* FIXME new return value ? */
         return 0;
     }
 
-    OVPicture *pic = NULL;
-    out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
-    ret = ovdpb_output_pic(dpb, &pic, out_cvs_id);
-
-    if (pic) {
-        *frame_p = pic->frame;
-        pp_process_frame(pic->sei, dec->dpb, frame_p);
-
-        //New ref if it is a frame already in a DPB pic
-        if(*frame_p ==  pic->frame){
-            ovframe_new_ref(frame_p, pic->frame);
-        }
-        /* we unref the picture even if ref failed the picture
-         * will still be usable by the decoder if not bumped
-         * */
-        ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
-    } else {
-      *frame_p = NULL;
-    }
+    ret = ovdpb_output_pic(dpb, frame_p);
 
     return ret;
 }
@@ -320,13 +299,13 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
 int
 ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
 {
-    /* FIXME this is temporary request output from DPB
-     * instead
-     */
     OVDPB *dpb = dec->dpb;
-    uint16_t out_cvs_id;
     int ret;
 
+    /* FIXME this is to ensure at least one subdecoder has finished
+     * decoding its frame so we do not return no frame when some
+     * subdecoders are still running
+     */
     ovdec_uninit_subdec_list(dec);
 
     if (!dpb) {
@@ -335,23 +314,7 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
         return OVVC_EINDATA;
     }
 
-    OVPicture *pic = NULL;
-    out_cvs_id = (dpb->cvs_id - 1) & 0xFF;
-    ret = ovdpb_drain_frame(dpb, &pic, out_cvs_id);
-
-    if (pic) {
-        *frame_p = pic->frame;
-        pp_process_frame(pic->sei, dec->dpb, frame_p);
-
-        //New ref if it is a frame already in a DPB pic
-        if(*frame_p ==  pic->frame){
-            ovframe_new_ref(frame_p, pic->frame);
-        }
-        /* we unref the picture even if ref failed the picture
-         * will still be usable by the decoder if not bumped
-         * */
-        ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
-    }
+    ret = ovdpb_drain_frame(dpb, frame_p);
 
     return ret;
 }

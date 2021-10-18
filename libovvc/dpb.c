@@ -535,12 +535,27 @@ vvc_unmark_refs(struct RPLInfo *rpl_info, OVPicture **dst_rpl, OVPicture **dst_r
     return 0;
 }
 
+static void
+dpb_pic_to_frame_ref(OVPicture *pic, OVDPB *dpb, OVFrame **dst)
+{
+    ovframe_new_ref(dst, pic->frame);
+    /* FIXME this should not be called inside of DPB
+     * but the SEI  information are attached to the picture
+     * + we might need to request some new planes to the frame pool
+     * if we need to work on the picture data.
+     */
+    pp_process_frame(pic->sei, dpb, dst);
+
+    ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
+}
+
 int
-ovdpb_drain_frame(OVDPB *dpb, OVPicture **out, int output_cvs_id)
+ovdpb_drain_frame(OVDPB *dpb, OVFrame **out)
 {
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     int min_cvs_id = INT_MAX;
     int i;
+    int output_cvs_id;
 
     /* Count pictures in current output target Coded Video Sequence
      */
@@ -600,7 +615,7 @@ ovdpb_drain_frame(OVDPB *dpb, OVPicture **out, int output_cvs_id)
          */
         if (nb_output) {
             OVPicture *pic = &dpb->pictures[min_idx];
-            *out = pic;
+            dpb_pic_to_frame_ref(pic, dpb, out);
             return nb_output;
         }
 
@@ -613,21 +628,21 @@ ovdpb_drain_frame(OVDPB *dpb, OVPicture **out, int output_cvs_id)
 
     } while (1);
 
+    *out = NULL;
     ov_log(NULL, OVLOG_TRACE, "No picture to output\n");
 
     return 0;
 }
 
-
 int
-ovdpb_output_pic(OVDPB *dpb, OVPicture **out, int output_cvs_id)
+ovdpb_output_pic(OVDPB *dpb, OVFrame **out)
 {
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     int min_cvs_id = INT_MAX;
     int i;
+    int output_cvs_id;
 
-    /* Count pictures in current output target Coded Video Sequence
-     */
+    /* Count pictures in current output target Coded Video Sequence */
     for (i = 0; i < nb_dpb_pic; i++) {
         OVPicture *pic = &dpb->pictures[i];
         if (pic->frame && pic->frame->data[0]) {
@@ -693,7 +708,7 @@ ovdpb_output_pic(OVDPB *dpb, OVPicture **out, int output_cvs_id)
 
         if (min_idx < nb_dpb_pic) {
             OVPicture *pic = &dpb->pictures[min_idx];
-            *out = pic;
+            dpb_pic_to_frame_ref(pic, dpb, out);
             return nb_output;
         }
 
@@ -702,6 +717,7 @@ ovdpb_output_pic(OVDPB *dpb, OVPicture **out, int output_cvs_id)
         } else {
         }
 
+        *out = NULL;
 
     ov_log(NULL, OVLOG_TRACE, "No picture to output\n");
 
