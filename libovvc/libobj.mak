@@ -29,6 +29,7 @@ LIB_SRC:=																																 \
 					ovannexb.c                                                     \
 					ovunits.c                                                      \
 					ovframe.c                                                      \
+					ovframepool.c                                                  \
 					pp_film_grain.c                                                 \
 					post_proc.c                                                 \
 					ovthreads.c                                                    \

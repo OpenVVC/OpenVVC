@@ -2,12 +2,14 @@
 #define OVDPB_INTERNAL_H
 
 #include "ovdpb.h"
-#include "nvcl.h"
+#include "ovdefs.h"
 #include "ovframe.h"
+
+struct FramePool;
 
 struct DPBInternal
 {
-    struct FramePool frame_pool;
+    struct FramePool *frame_pool;
 };
 
 void dpb_uninit_framepool(struct DPBInternal *dpb_priv);

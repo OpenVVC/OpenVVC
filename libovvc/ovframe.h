@@ -13,7 +13,6 @@ enum ChromaFmt
     OV_YUV_420_P10 = 1,
 };
 
-struct MemPool;
 /* Miscelaneous information on Picture */
 struct FrameInfo
 {
@@ -32,18 +31,14 @@ struct PlaneProp
     uint16_t depth;
 };
 
-struct FramePool
-{
-    struct MemPool *plane_pool[4];
-    struct PlaneProp plane_prop[4];
-};
+struct FramePool;
 
 struct FrameInternal
 {
     /* reference counter */
     atomic_uint ref_count;
 
-    struct frame_pool *frame_pool;
+    struct FramePool *frame_pool;
     void *pool_elem[4];
 };
 
@@ -70,10 +65,8 @@ struct Frame
      */
 };
 
-
 int ovframe_new_ref(OVFrame **dst, OVFrame *src);
 
 void ovframe_unref(OVFrame **frame);
 
-int framepool_request_planes(OVFrame *const frame, struct FramePool *const fp);
 #endif
