@@ -90,16 +90,28 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
     } else {
         /* FIXME clean way on new slice with address 0 */
         ov_log(dec, OVLOG_ERROR, "Multiple slices in pic is not supported yet.\n");
+        if (ret < 0) {
+            return OVVC_EINDATA;
+        }
     }
 
     ov_nalu_new_ref(&sldec->th_slice.slice_nalu, nalu);
 
     /*FIXME return checks */
     ret = slicedec_init_lines(sldec, sldec->active_params);
+    if (ret < 0) {
+        return ret;
+    }
 
     ret = decinit_set_entry_points(sldec->active_params, nalu, nb_sh_bytes);
+    if (ret < 0) {
+        return ret;
+    }
 
     ret = slicedec_update_entry_decoders(sldec, sldec->active_params);
+    if (ret < 0) {
+        return ret;
+    }
 
     return 0;
 }
