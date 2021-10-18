@@ -45,19 +45,15 @@ enum OVNALUType
     OVNALU_UNSPEC_31 = 31
 };
 
-typedef struct OVVRBSPData{
-    uint8_t *data;
-    size_t size;
-}OVRBSPData;
-
 /* NAL Units */
 typedef struct OVNALUnit {
-  /* Associated Raw byte sequence stream payload
-   */
+  /* Associated Raw byte sequence payload */
   const uint8_t  *rbsp_data;
-  const uint32_t *epb_pos;
   size_t rbsp_size;
+
+  const uint32_t *epb_pos;
   int nb_epb;
+
   enum OVNALUType type;
 
   atomic_uint ref_count;
@@ -81,18 +77,6 @@ typedef struct OVPictureUnit
     uint64_t dts;
     uint64_t pts;
 } OVPictureUnit;
-
-/* Acces Unit Unit
-   A list of Picitures Units, in mutli layer context,
-   an Acces Unit may contain more than one Picture Unit
-   It shoud not be used at the current time however
-   it is defined here for later use
- */
-typedef struct OVAccessUnit
-{
-    OVPictureUnit *picture_units;
-} OVAccessUnit;
-
 
 int ov_nalu_new_ref(OVNALUnit **nalu_p, OVNALUnit *nalu);
 
