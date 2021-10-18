@@ -304,7 +304,6 @@ alloc_frame(OVDPB *dpb)
             continue;
         }
 
-        ov_log(NULL, OVLOG_INFO, "Chose Picture : %d\n", i);
         ret = dpbpriv_request_frame(&dpb->internal, &pic->frame);
         
         if (ret < 0) {
