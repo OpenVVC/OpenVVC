@@ -1171,11 +1171,6 @@ tmvp_entry_init(OVCTUDec *ctudec, OVPicture *active_pic)
     tmvp_ctx->plane0 = &active_pic->mv_plane0;
     tmvp_ctx->plane1 = &active_pic->mv_plane1;
 
-    /* FIXME rewrite TMVP motion scaling */
-    tmvp_ctx->scale00 = active_pic->tmvp.scale00;
-    tmvp_ctx->scale10 = active_pic->tmvp.scale10;
-    tmvp_ctx->scale01 = active_pic->tmvp.scale01;
-    tmvp_ctx->scale11 = active_pic->tmvp.scale11;
     tmvp_ctx->col_info.ref_idx_rpl0 = active_pic->tmvp.col_info.ref_idx_rpl0;
     tmvp_ctx->col_info.ref_idx_rpl1 = active_pic->tmvp.col_info.ref_idx_rpl1;
 

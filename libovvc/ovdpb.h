@@ -82,11 +82,6 @@ struct OVPicture
     struct OVPicture *rpl1[16];
     struct OVPicture *rpl1_non_active[16];
 
-    /* FIXME Used only by TMPV? */
-    #if 0
-    uint32_t ref_poc0[16];
-    uint32_t ref_poc1[16];
-    #endif
     struct RPLInfo rpl_info0;
     struct RPLInfo rpl_info1;
 
@@ -95,31 +90,18 @@ struct OVPicture
 
     struct TMVPInfo {
        const struct OVPicture *collocated_ref;
-       /* Per ref_idx Motion Scaling information */
-       struct TMVPScale {
-           int32_t scale;
-       } scale_0[16];
-
-       /* FIXME old compat  use sclae instead */
-       int16_t scale00;
-       int16_t scale01;
-       int16_t scale10;
-       int16_t scale11;
 
        int16_t dist_ref_0[16];
        int16_t dist_ref_1[16];
 
        int16_t dist_col_0[16];
        int16_t dist_col_1[16];
-       /* Per CTU Bit fields for available Motion Vectors */
-       void *mv_field0;
-       void *mv_field1;
 
         struct ColInfoPic {
             int8_t ref_idx_rpl0;
             int8_t ref_idx_rpl1;
-        }col_info;
-       /* TODO tmvp scaling */
+        } col_info;
+
     } tmvp;
 
     OVSEI *sei;
