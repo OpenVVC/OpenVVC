@@ -109,6 +109,12 @@ dpbpriv_release_pic(OVPicture *pic)
 
         pic->frame = NULL;
         if (pic->sei) {
+            if (pic->sei->sei_fg) {
+                ov_freep(&pic->sei->sei_fg);
+            }
+            if (pic->sei->sei_slhdr) {
+                ov_freep(&pic->sei->sei_slhdr);
+            }
             ov_freep(&pic->sei);
         }
         
