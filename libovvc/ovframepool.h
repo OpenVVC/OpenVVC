@@ -8,9 +8,8 @@ void ovframepool_uninit(struct FramePool **fpool_p);
 
 int ovframepool_init(struct FramePool **fpool_p, uint8_t fmt, uint16_t pic_w, uint16_t pic_h);
 
-int ovframepool_request_planes(OVFrame *const frame, struct FramePool *const fp);
+OVFrame *ovframepool_request_frame(struct FramePool *fpool);
 
-void ovframepool_release_planes(OVFrame *const frame);
-
+void ovframepool_release_frame(OVFrame **frame_p);
 #endif
 

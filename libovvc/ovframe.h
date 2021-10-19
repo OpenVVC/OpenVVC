@@ -23,14 +23,6 @@ struct FrameInfo
      */
 };
 
-struct PlaneProp
-{
-    uint16_t stride;
-    uint16_t width;
-    uint16_t height;
-    uint16_t depth;
-};
-
 struct FramePool;
 
 struct FrameInternal
@@ -39,6 +31,7 @@ struct FrameInternal
     atomic_uint ref_count;
 
     struct FramePool *frame_pool;
+    void *felem;
     void *pool_elem[4];
 };
 

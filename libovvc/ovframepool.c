@@ -6,8 +6,17 @@
 #include "ovutils.h"
 #include "ovframepool.h"
 
+struct PlaneProp
+{
+    uint16_t stride;
+    uint16_t width;
+    uint16_t height;
+    uint16_t depth;
+};
+
 struct FramePool
 {
+    struct MemPool *frame_pool;
     struct MemPool *plane_pool[4];
     struct PlaneProp plane_prop[4];
     const struct ChromaFmtInfo *fmt_info;
@@ -50,13 +59,17 @@ static void set_plane_properties(struct PlaneProp *const pln, const struct Chrom
 void
 ovframepool_uninit(struct FramePool **fpool_p)
 {
-    struct FramePool *fp = *fpool_p;
-    const struct  ChromaFmtInfo *const fmt_info = fp->fmt_info;
+    struct FramePool *fpool = *fpool_p;
+    const struct  ChromaFmtInfo *const fmt_info = fpool->fmt_info;
     int i;
     for (i = 0; i < fmt_info->nb_comp; ++i) {
-        if (fp->plane_pool[i]) {
-            ovmempool_uninit(&fp->plane_pool[i]);
+        if (fpool->plane_pool[i]) {
+            ovmempool_uninit(&fpool->plane_pool[i]);
         }
+    }
+
+    if (fpool->frame_pool) {
+        ovmempool_uninit(&fpool->frame_pool);
     }
 
     ov_freep(fpool_p);
@@ -69,7 +82,7 @@ ovframepool_init(struct FramePool **fpool_p, uint8_t fmt, uint16_t pic_w, uint16
 
     /* FIXME allocation size overflow */
     size_t pic_size = (pic_w * pic_h) << fmt_info->bd_shift;
-    struct FramePool *fp;
+    struct FramePool *fpool;
 
     int i;
 
@@ -78,21 +91,26 @@ ovframepool_init(struct FramePool **fpool_p, uint8_t fmt, uint16_t pic_w, uint16
         goto fail_alloc;
     }
 
-    fp = *fpool_p;
+    fpool = *fpool_p;
 
-    fp->fmt_info = fmt_info;
+    fpool->fmt_info = fmt_info;
+
+    fpool->frame_pool = ovmempool_init(sizeof(OVFrame));
+    if (!fpool->frame_pool) {
+        goto fail_poolinit;
+    }
 
     for (i = 0; i < fmt_info->nb_comp; ++i) {
         uint8_t comp_shift = fmt_info->shift_h[i] + fmt_info->shift_v[i];
         size_t elem_size = pic_size >> comp_shift;
 
-        fp->plane_pool[i] = ovmempool_init(elem_size);
+        fpool->plane_pool[i] = ovmempool_init(elem_size);
 
-        if (!fp->plane_pool[i]) {
+        if (!fpool->plane_pool[i]) {
             goto fail_poolinit;
         }
 
-        set_plane_properties(&fp->plane_prop[i], fmt_info, i, pic_w, pic_h);
+        set_plane_properties(&fpool->plane_prop[i], fmt_info, i, pic_w, pic_h);
     }
 
     return 0;
@@ -106,7 +124,7 @@ fail_alloc:
     return OVVC_ENOMEM;
 }
 
-void
+static void
 ovframepool_release_planes(OVFrame *const frame)
 {
     const int nb_comp = frame->internal.frame_pool->fmt_info->nb_comp;
@@ -126,16 +144,18 @@ ovframepool_release_planes(OVFrame *const frame)
     }
 }
 
-int
-ovframepool_request_planes(OVFrame *const frame, struct FramePool *const fp)
+static int
+ovframepool_request_planes(OVFrame *const frame, struct FramePool *const fpool)
 {
-    const int nb_comp = fp->fmt_info->nb_comp;
+    const int nb_comp = fpool->fmt_info->nb_comp;
     int i;
 
+    frame->internal.frame_pool = fpool;
+
     for (i = 0; i < nb_comp; ++i) {
-        MemPool *pool = fp->plane_pool[i];
+        MemPool *pool = fpool->plane_pool[i];
         struct MemPoolElem *pool_elem;
-        struct PlaneProp *prop = &fp->plane_prop[i];
+        struct PlaneProp *prop = &fpool->plane_prop[i];
         pool_elem = ovmempool_popelem(pool);
         if (!pool_elem) {
              goto failpop;
@@ -157,5 +177,46 @@ ovframepool_request_planes(OVFrame *const frame, struct FramePool *const fp)
 failpop:
     ovframepool_release_planes(frame);
     return OVVC_ENOMEM;
+}
+
+static OVFrame *
+create_new_frame(struct FramePool *fpool)
+{
+    OVFrame *frame;
+    int ret;
+    struct MemPoolElem *felem = ovmempool_popelem(fpool->frame_pool);
+    if (!felem) {
+        return NULL;
+    }
+
+    frame = felem->data;
+
+    frame->internal.felem = felem;
+
+    ret = ovframepool_request_planes(frame, fpool);
+    if (ret < 0) {
+        goto failrequest;
+    }
+
+    return frame;
+
+failrequest:
+    ovmempool_pushelem(felem);
+    return NULL;
+}
+
+OVFrame *
+ovframepool_request_frame(struct FramePool *fpool)
+{
+    OVFrame *frame = create_new_frame(fpool);
+    return frame;
+}
+
+void
+ovframepool_release_frame(OVFrame **frame_p)
+{
+    ovframepool_release_planes(*frame_p);
+    ovmempool_pushelem((*frame_p)->internal.felem);
+    *frame_p = NULL;
 }
 

@@ -35,24 +35,13 @@ fail_init:
 }
 
 int
-dpbpriv_request_frame(struct DPBInternal *dpb_priv, OVFrame **frame)
+dpbpriv_request_frame(struct DPBInternal *dpb_priv, OVFrame **frame_p)
 {
-    int ret;
-
-    *frame = ov_mallocz(sizeof(**frame));
-    if (!(*frame)) {
+    *frame_p = ovframepool_request_frame(dpb_priv->frame_pool);
+    if (!*frame_p) {
         return OVVC_ENOMEM;
     }
 
-    ret = ovframepool_request_planes(*frame, dpb_priv->frame_pool);
-    if (ret < 0) {
-        goto failrequest;
-    }
-
     return 0;
-
-failrequest:
-    ov_freep(frame);
-    return OVVC_ENOMEM;
 }
 
