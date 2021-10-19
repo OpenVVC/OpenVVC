@@ -542,7 +542,7 @@ vvc_unmark_refs(struct RPLInfo *rpl_info, OVPicture **dst_rpl, OVPicture **dst_r
 }
 
 static void
-dpb_pic_to_frame_ref(OVPicture *pic, OVDPB *dpb, OVFrame **dst)
+dpb_pic_to_frame_ref(OVPicture *pic, OVFrame **dst)
 {
     ovframe_new_ref(dst, pic->frame);
     /* FIXME this should not be called inside of DPB
@@ -550,7 +550,7 @@ dpb_pic_to_frame_ref(OVPicture *pic, OVDPB *dpb, OVFrame **dst)
      * + we might need to request some new planes to the frame pool
      * if we need to work on the picture data.
      */
-    pp_process_frame(pic->sei, dpb, dst);
+    pp_process_frame(pic->sei, dst);
 
     ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
 }
@@ -621,7 +621,7 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out)
          */
         if (nb_output) {
             OVPicture *pic = &dpb->pictures[min_idx];
-            dpb_pic_to_frame_ref(pic, dpb, out);
+            dpb_pic_to_frame_ref(pic, out);
             return nb_output;
         }
 
@@ -714,7 +714,7 @@ ovdpb_output_pic(OVDPB *dpb, OVFrame **out)
 
         if (min_idx < nb_dpb_pic) {
             OVPicture *pic = &dpb->pictures[min_idx];
-            dpb_pic_to_frame_ref(pic, dpb, out);
+            dpb_pic_to_frame_ref(pic, out);
             return nb_output;
         }
 
