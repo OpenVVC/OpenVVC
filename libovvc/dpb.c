@@ -91,8 +91,8 @@ static void
 dpbpriv_release_pic(OVPicture *pic)
 {
     if (pic->frame) {
-        /* FIXME unref frame */
         ovframe_unref(&pic->frame);
+
         ov_log(NULL, OVLOG_TRACE, "Unref frame in pic %d\n", pic->poc);
 
         /* FIXME better existence check */
@@ -117,13 +117,6 @@ dpbpriv_release_pic(OVPicture *pic)
             }
             ov_freep(&pic->sei);
         }
-        
-        /* Do not delete frame the frame will delete itself
-         * when all its references are released
-         */
-        #if 0
-        ov_freep(&pic->frame);
-        #endif
     }
 }
 
