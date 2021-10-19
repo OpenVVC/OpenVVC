@@ -141,10 +141,12 @@ case "$arch" in
     arm*|aarch*)
         arch="arm"
         is_arm="1"
+        sse_cflags=""
     ;;
     i[3-6]86*|x86_64|x86_32|amd64)
         arch="x86"
         is_x86="1"
+        sse_cflags="-mssse3 -msse4.1"
     ;;
 		*)
 		echo "Unsupported archictecture $arch"
@@ -181,7 +183,7 @@ RANLIB=${ranlib}
 ARCH=${arch}
 CFLAGS=${cflags}
 LD_FLAGS=-lpthread
-SSE_CFLAGS= -mssse3 -msse4.1
+SSE_CFLAGS= ${sse_cflags}
 SHARED_LIBSUFF:=${shlib_suffix}
 STATIC_LIBSUFF:=${stlib_suffix}
 SRC_PATH=${src_dir}
