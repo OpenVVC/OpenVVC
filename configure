@@ -175,14 +175,14 @@ case "$arch" in
     ;;
 
     x86_64|amd64)
-        cflags="${cflags} -arch x86_64"
+        cflags="${cflags}"
         build_arch="x86"
         is_x86="1"
         neon_enabled="0"
     ;;
 
     i[3-6]86*|x86_32)
-        cflags="${cflags} -arch i386"
+        cflags="${cflags}"
         build_arch="x86"
         is_x86="1"
         neon_enabled="0"
