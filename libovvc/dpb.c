@@ -173,8 +173,6 @@ ovdpb_unref_pic(OVPicture *pic, int flags)
     pthread_mutex_lock(&pic->pic_mtx);
     pic->flags &= ~flags;
 
-    ovframe_unref(&pic->frame);
-
     pthread_mutex_unlock(&pic->pic_mtx);
 
     atomic_fetch_add_explicit(&pic->ref_count, -1, memory_order_acq_rel);
@@ -205,20 +203,12 @@ ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
 int
 ovdpb_new_ref_pic(OVPicture *pic, int flags)
 {
-    int ret;
-
     atomic_fetch_add_explicit(&pic->ref_count, 1, memory_order_acq_rel);
 
     pthread_mutex_lock(&pic->pic_mtx);
     pic->flags |= flags;
 
-    //Todopar: check this why need ** frame in this case?
-    ret = ovframe_new_ref(&pic->frame, pic->frame);
     pthread_mutex_unlock(&pic->pic_mtx);
-
-    if (ret < 0) {
-        return ret;
-    }
 
     /* TMVP */
     // dst->poc     = src->poc;

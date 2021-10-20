@@ -1,8 +1,5 @@
-#include "mempool.h"
-#include "mempool_internal.h"
 #include "overror.h"
 #include "ovutils.h"
-#include "ovmem.h"
 
 #include "ovframe.h"
 #include "ovframepool.h"
@@ -39,4 +36,6 @@ ovframe_unref(OVFrame **frame_p)
     if (!ref_count) {
         ovframepool_release_frame(frame_p);
     }
+
+    *frame_p = NULL;
 }

@@ -309,7 +309,6 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
             }
 
             do {
-                frame = NULL;
                 nb_pic2 = ovdec_receive_picture(dec, &frame);
 
                 /* FIXME use ret instead of frame */
@@ -338,7 +337,6 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
 
     ret = 1;
     while (ret > 0) {
-        frame = NULL;
         ret = ovdec_drain_picture(dec, &frame);
         /* FIXME use ret instead of frame */
         if (frame) {
