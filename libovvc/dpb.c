@@ -120,12 +120,28 @@ dpbpriv_release_pic(OVPicture *pic)
     }
 }
 
+struct Rational {
+    uint32_t num;
+    uint32_t den;
+};
+
 static int
 dpb_init_params(OVDPB *dpb, OVDPBParams const *prm)
 {
+    struct Rational framerate = {
+        .num = 60,
+        .den = 1
+    };
+
+    uint32_t time_scale         = 27000000;
+    uint32_t nb_units_in_ticks  = framerate.den * time_scale / framerate.num;
+
     dpb->max_nb_dpb_pic       = prm->dpb_max_dec_pic_buffering_minus1 + 1;
     dpb->max_nb_reorder_pic   = prm->dpb_max_num_reorder_pics;
     dpb->max_latency_increase = prm->dpb_max_latency_increase_plus1 - 1;
+
+    dpb->nb_units_in_ticks = nb_units_in_ticks;
+    dpb->pts = 0;
     return 0;
 }
 
@@ -614,6 +630,8 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out)
          */
         if (nb_output) {
             OVPicture *pic = &dpb->pictures[min_idx];
+            dpb->pts += dpb->nb_units_in_ticks;
+            pic->frame->pts = dpb->pts;
             dpb_pic_to_frame_ref(pic, out);
             return nb_output;
         }
@@ -707,6 +725,8 @@ ovdpb_output_pic(OVDPB *dpb, OVFrame **out)
 
         if (min_idx < nb_dpb_pic) {
             OVPicture *pic = &dpb->pictures[min_idx];
+            dpb->pts += dpb->nb_units_in_ticks;
+            pic->frame->pts = dpb->pts;
             dpb_pic_to_frame_ref(pic, out);
             return nb_output;
         }

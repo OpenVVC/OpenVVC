@@ -48,14 +48,13 @@ struct Frame
     /* Picture Order Count */
     uint32_t poc;
 
+    /* Presentation Timestamp */
+    uint64_t pts;
+
     struct FrameInfo frame_info;
 
     /* private data */
     struct FrameInternal internal;
-    /* TODO we could attach associated NAL Units to
-     * the frame so the user might process things as SEI
-     * outside of the actual decoding process
-     */
 };
 
 int ovframe_new_ref(OVFrame **dst, OVFrame *src);
