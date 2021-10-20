@@ -46,16 +46,54 @@ enum OVNALUType
 };
 
 /* NAL Units */
-typedef struct OVNALUnit {
-  /* Associated Raw byte sequence payload */
-  const uint8_t  *rbsp_data;
-  size_t rbsp_size;
+typedef struct OVNALUnit
+{
 
-  const uint32_t *epb_pos;
-  int nb_epb;
-
+  /* The type of current NAL Unit
+   *
+   * At the current time this needs to be set for the decoder to
+   * select appropriate reader for NAL Unit data.
+   */
   enum OVNALUType type;
 
+  /* Associated Raw Byte Sequence Payload (RBSP)
+   *
+   * A pointer to a buffer containing NAL Unit payload.
+   * Two bytes are required for the NALU Header.
+   * The buffer requires an 8 bytes padding at the end of the RBSP data
+   * so that the reader can process data using 64 bits fetches.
+   * Note at the current time rbsp_data does not correspond to RBSP
+   * but to the position of the NALU header so two bytes ahead of
+   * the RBSP start. This might change in later versions to adjust
+   * naming.
+   */
+  const uint8_t *rbsp_data;
+
+  /* Size in bytes of the RBSP buffer plus 2 bytes
+   *
+   * Two bytes are required for the NALU Header.
+   * Note this does not include the 8 padding bytes
+   * at the end of the RBSP data buffer.
+   */
+  size_t rbsp_size;
+
+  /* Emulation Prevention 0x3 Bytes position information
+   *
+   * If the NAL Unit byte stream was extracted from a raw video format
+   * epb_pos should point to a table containing position offsets of
+   * the removed 0x3 emulation prevention bytes in the rbsp_data buffer.
+   */
+  const uint32_t *epb_pos;
+
+  /* Number of Emulation Prevention 0x3 Bytes removed by demuxer
+   */
+  int nb_epb;
+
+  /* Reference counter
+   *
+   * This is used internally to know when the NAL Unit should be freed.
+   * Do not set manually. See ov_nalu_ref_instead.
+   */
   atomic_uint ref_count;
 
 } OVNALUnit;
@@ -63,23 +101,31 @@ typedef struct OVNALUnit {
 /* Picture Unit */
 typedef struct OVPictureUnit
 {
-    /* A vector of NAL Units */
+    /* TODO A vector of NAL Units
+     */
     OVNALUnit **nalus;
 
-    /*
-     * The number of NAL Units in this Picture Unit
-     * int8_t should be sufficient it would be
-     * surprising to get more than 127 NALUs in a PU
+    /* The number of NAL Units in this Picture Unit
      */
-    int8_t nb_nalus;
+    uint8_t nb_nalus;
 
-    /* Time stamps if needed later */
+    /* Decoding Time Stamp used for Presentation Time Stamps computation
+     *
+     * At the current time OpenVVC uses an internal clock with a
+     * time scale value of 27 000 000 and 450 000 time units
+     * per tick.
+     */
     uint64_t dts;
-    uint64_t pts;
+
 } OVPictureUnit;
 
 int ov_nalu_new_ref(OVNALUnit **nalu_p, OVNALUnit *nalu);
 
+/* Decrement reference counter of the OVNALUnit pointed by nalu_p
+ * and set nalu_p to NULL.
+ * If the reference counter drop down to zero the OVNALUnit pointed
+ * by nalu_p will be freed.
+ */
 void ov_nalu_unref(OVNALUnit **nalu_p);
 
 int ov_nalu_init(OVNALUnit *nalu);
@@ -87,4 +133,3 @@ int ov_nalu_init(OVNALUnit *nalu);
 void ov_free_pu(OVPictureUnit **pu);
 
 #endif
-
