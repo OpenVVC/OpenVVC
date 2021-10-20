@@ -36,17 +36,15 @@ int ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *pu);
  * the frame must be unreferenced by a calling
  * ovframe_unref()
  */
-int ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p);
+int ovdec_receive_picture(OVVCDec *ovdec, OVFrame **frame_p);
 
-int ovdec_drain_picture(OVVCDec *vvcdec, OVFrame **frame_p);
+int ovdec_drain_picture(OVVCDec *ovdec, OVFrame **frame_p);
 
-int ovdec_init(OVVCDec **ovvcdec, int display_output, int nb_frame_th, int nb_entry_th);
-
-int ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value);
+int ovdec_init(OVVCDec **ovdec_p, int display_output, int nb_frame_th, int nb_entry_th);
 
 int ovdec_close(OVVCDec *ovvcdec);
 
-void ovdec_uninit_subdec_list(OVVCDec *vvcdec);
+int ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value);
 
 void ovdec_set_log_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl));
 

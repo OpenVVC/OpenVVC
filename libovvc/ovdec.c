@@ -32,6 +32,8 @@ static const char *option_names[OVDEC_NB_OPTIONS] =
     "display_output"
 };
 
+static void ovdec_uninit_subdec_list(OVVCDec *vvcdec);
+
 static int
 ovdec_init_subdec_list(OVVCDec *dec)
 {
@@ -417,7 +419,7 @@ fail:
     return -1;
 }
 
-void
+static void
 ovdec_uninit_subdec_list(OVVCDec *vvcdec)
 {
     OVSliceDec *sldec;
