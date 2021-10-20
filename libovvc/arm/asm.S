@@ -30,7 +30,7 @@
 
 #include "ovconfig.h"
 
-#if ARCH_ARM
+#if ARCH_ARM && !ARCH_AARCH64
         .syntax unified
 #ifdef __ELF__
         .arch armv7-a
@@ -71,7 +71,7 @@
 #define PASTE(a,b) a ## b
 #define CONCAT(a,b) PASTE(a,b)
 
-#ifdef PREFIX
+#if PREFIX
 #define EXTERN CONCAT(_,PRIVATE_PREFIX)
 #else
 #define EXTERN PRIVATE_PREFIX

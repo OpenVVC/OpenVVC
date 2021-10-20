@@ -91,9 +91,9 @@ $(BUILDDIR)%.o: %.c
 	$(AT)[ -d $(@D) ] || mkdir -p $(@D)
 	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) -I$(VPATH)$(SRC_FOLDER) -I$(BUILDDIR) $(EXTRA_CFLAGS)
 
-$(BUILDDIR)%.o: %.S
+$(BUILDDIR)%_neon.o: %_neon.S
 	$(AT)[ -d $(@D) ] || mkdir -p $(@D)
-	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) -I$(VPATH)$(SRC_FOLDER) -I$(BUILDDIR)
+	$(CC) -c $< -o $@ -MMD -MF $(@:.o=.d) -MT $@ $(CFLAGS) $(NEON_CFLAGS) -I$(VPATH)$(SRC_FOLDER) -I$(BUILDDIR)
 
 .PHONY: install install-shared install-headers install-pkgconfig
 

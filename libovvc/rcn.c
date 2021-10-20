@@ -24,7 +24,7 @@
   #else
     //Failover x86
   #endif
-#elif ARCH_AARCH64
+#elif ARCH_ARM
   #if NEON_ENABLED
     #include "arm/rcn_neon.h"
   #else
@@ -548,28 +548,31 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
     #else
       //Failover x86
     #endif
-  #elif ARCH_AARCH64
+  #elif ARCH_ARM
     #if NEON_ENABLED
-      rcn_init_mc_functions_sse(rcn_func);
-      rcn_init_tr_functions_sse(rcn_func);
-      rcn_init_dc_planar_functions_sse(rcn_func);
-      rcn_init_ict_functions_sse(rcn_func, ict_type);
-      rcn_init_lfnst_functions_sse(rcn_func);
-      rcn_init_mip_functions_sse(rcn_func);
-      rcn_init_alf_functions_sse(rcn_func);
-      rcn_init_sao_functions_sse(rcn_func);
-      rcn_init_dmvr_functions_sse(rcn_func);
-      rcn_init_prof_functions_sse(rcn_func);
-      rcn_init_bdof_functions_sse(rcn_func);
-      rcn_init_ciip_functions_sse(rcn_func);
-      rcn_init_df_functions_sse(rcn_func);
-      if (lm_chroma_enabled) {
-          if (!sps_chroma_vertical_collocated_flag ) {
-              rcn_init_cclm_functions_sse(rcn_func);
-          }
-      }
+      // rcn_init_mc_functions_sse(rcn_func);
+      // rcn_init_tr_functions_sse(rcn_func);
+      // rcn_init_dc_planar_functions_sse(rcn_func);
+      // rcn_init_ict_functions_sse(rcn_func, ict_type);
+      // rcn_init_lfnst_functions_sse(rcn_func);
+      // rcn_init_mip_functions_sse(rcn_func);
+      // rcn_init_alf_functions_sse(rcn_func);
+      // rcn_init_sao_functions_sse(rcn_func);
+      // rcn_init_dmvr_functions_sse(rcn_func);
+      // rcn_init_prof_functions_sse(rcn_func);
+      // rcn_init_bdof_functions_sse(rcn_func);
+      // rcn_init_ciip_functions_sse(rcn_func);
+      // rcn_init_df_functions_sse(rcn_func);
+      // if (lm_chroma_enabled) {
+      //     if (!sps_chroma_vertical_collocated_flag ) {
+      //         rcn_init_cclm_functions_sse(rcn_func);
+      //     }
+      // }
 
-      rcn_init_mc_functions_neon(rcn_func);
+      // to enable Assembly optimisation
+      #if ARCH_AARCH64_ASSEMBLY
+        rcn_init_mc_functions_neon(rcn_func);
+      #endif
     #else
       //Failover ARM
     #endif

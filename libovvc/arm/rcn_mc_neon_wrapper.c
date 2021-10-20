@@ -443,7 +443,7 @@ rcn_init_mc_functions_neon(struct RCNFunctions* const rcn_funcs)
   //
   mc_l->unidir[3][SIZE_BLOCK_8] = &ov_put_vvc_uni_qpel_hv_10_8_neon_wrapper;
   mc_l->bidir0[3][SIZE_BLOCK_8] = &ov_put_vvc_bi0_qpel_hv_10_8_neon_wrapper;
-  // mc_l->bidir1[3][SIZE_BLOCK_8] = &dav1d_ff_hevc_transform_4x4_neon_8;
+  // mc_l->bidir0[3][SIZE_BLOCK_8] = &ov_put_vvc_bi1_qpel_hv_10_8_neon_wrapper;
   //
   mc_l->bidir0[0][SIZE_BLOCK_16] = &ov_put_vvc_bi0_pel_pixels_10_16_neon;
   mc_l->bidir1[0][SIZE_BLOCK_16] = &ov_put_vvc_bi1_pel_pixels_10_16_neon;

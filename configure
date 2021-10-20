@@ -6,8 +6,8 @@ cc_default="gcc"
 builddir_default="$(pwd)/build"
 srcdir_default="$(pwd)/"
 
-teststreams_dir_default="$(pwd)/CI/test_bitstreams/all_intra/"
-teststreams_url_default="http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/all_intra/"
+teststreams_dir_default="$(pwd)/CI/test_bitstreams/random_access/"
+teststreams_url_default="http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/random_access/"
 
 debug_cflags="-O0 -g -Wall --pedantic"
 release_cflags="-O3 -Wall"
@@ -16,6 +16,8 @@ cflags_olevel="-O3"
 cflags_warnings="-Wall"
 cflags_error=
 cflags_default="${cflags_warnings} ${cflags_olevel}"
+
+ldflags_default=""
 
 sse_enabled="1"
 neon_enabled="1"
@@ -55,9 +57,11 @@ Options:
   --target-os=OS           compiler targets OS [$target_os]
 
   --cross-prefix=PREFIX    use PREFIX for compilation tools [$cross_prefix]
+  --sysroot=SYSROOT        use define sysroot path
   --enable-cross-compile   assume a cross-compiler is used
 
   --cflags=CFLAGS          use CFLAGS as compiler flags [$cflags_default]
+  --ldflags=LDFLAGS          use CFLAGS as compiler flags [$ldflags_default]
   --release                use specific release compiler flags [CFLAGS ${release_cflags}]
   --debug                  use specific debug compiler cflags [CFLAGS ${debug_cflags}]
 
@@ -133,46 +137,110 @@ if [ -z "$cflags" ] ; then
     cflags="$cflags_default"
 fi
 
+if [ -z "$ldflags" ] ; then
+    ldflags="$ldflags_default"
+fi
+
+
 
 # Select arch var according to common arch names
+is_arm64="0"
 is_arm="0"
 is_x86="0"
+target_and=""
+target_ios=""
+
 case "$arch" in
-    arm*|aarch*)
-        arch="arm"
+    aarch64|arm64)
+        cflags="${cflags} -march=armv8-a"
+        ldflags="${ldflags} -arch armv8"
+        target_and="aarch64"
+        target_ios="aarch64"
+        build_arch="arm"
+        is_arm64="1"
         is_arm="1"
+        sse_enabled="0"
         sse_cflags=""
     ;;
-    i[3-6]86*|x86_64|x86_32|amd64)
-        arch="x86"
-        is_x86="1"
-        sse_cflags="-mssse3 -msse4.1"
+
+    arm)
+        cflags="${cflags} -march=armv7-a"
+        ldflags="${ldflags} -arch armv7"
+        target_and="armv7-a"
+        target_ios="armv7"
+        build_arch="arm"
+        is_arm="1"
+        sse_enabled="0"
+        sse_cflags=""
     ;;
-		*)
-		echo "Unsupported archictecture $arch"
-		exit 1.
-		;;
+
+    x86_64|amd64)
+        cflags="${cflags} -arch x86_64"
+        build_arch="x86"
+        is_x86="1"
+        neon_enabled="0"
+    ;;
+
+    i[3-6]86*|x86_32)
+        cflags="${cflags} -arch i386"
+        build_arch="x86"
+        is_x86="1"
+        neon_enabled="0"
+    ;;
+
+	*)
+   echo "Unsupported archictecture $arch"
+   exit 1.
+;;
 esac
+cc_cross_prefix=${cross_prefix}
+add_prefix="0"
 
 case $target_os in
     *win32|*win64)
-    shlib_suffix=".dll"
-    stlib_suffix=".lib"
-    aligned_malloc="1"
-    is_win32="1"
+        ldflags="${ldflags} -lpthread"
+        shlib_suffix=".dll"
+        stlib_suffix=".lib"
+        aligned_malloc="1"
+        is_win32="1"
     ;;
-    *)
-    shlib_suffix=".so"
-    stlib_suffix=".a"
-    # Append PIC flag for shared lib
-    cflags="${cflags} -fPIC"
-    posix_memalign="1"
+      Darwin|darwin|macos|macOS)
+        shlib_suffix=".so"
+        stlib_suffix=".a"
+        cflags="${cflags} -fPIC --target=${target_ios}-apple-darwin"
+        ldflags="${ldflags}"
+        posix_memalign="1"
+        add_prefix="1"
+    ;;
+      iOS|ios)
+        shlib_suffix=".so"
+        stlib_suffix=".a"
+        cflags="${cflags} -fPIC --target=${target_ios}-apple-darwin -miphoneos-version-min=9.0 -isysroot ${sysroot}"
+        ldflags="${ldflags} -lpthread -isysroot ${sysroot}"
+        posix_memalign="1"
+        add_prefix="1"
+    ;;
+      Android|android)
+        cflags="${cflags} -fPIC --target=${target_and}-none-linux-android21 --sysroot=${sysroot}"
+        ldflags="${ldflags} -fPIE -pie -Wl,--no-undefined"
+        shlib_suffix=".so"
+        stlib_suffix=".a"
+        cc_cross_prefix=${cross_prefix}21-
+        cross_prefix=${cross_prefix}-
+        posix_memalign="1"
+    ;;
+      *)
+        cflags="${cflags} -fPIC"
+        ldflags="${ldflags} -lpthread"
+        shlib_suffix=".so"
+        stlib_suffix=".a"
+        posix_memalign="1"
     ;;
 esac
 
-cc="${cross_prefix}${cc}"
-ar="${cross_prefix}ar"
-ranlib="${cross_prefix}ranlib"
+cc="${cc_cross_prefix}${cc}"
+ar="ar"
+ranlib="ranlib"
 
 
 cat > ${build_dir}/config.mak <<EOF
@@ -180,9 +248,9 @@ OVVC_CONFIG="${config}"
 CC=${cc}
 AR=${ar}
 RANLIB=${ranlib}
-ARCH=${arch}
+ARCH=${build_arch}
 CFLAGS=${cflags}
-LD_FLAGS=-lpthread
+LD_FLAGS=${ldflags}
 SSE_CFLAGS= ${sse_cflags}
 SHARED_LIBSUFF:=${shlib_suffix}
 STATIC_LIBSUFF:=${stlib_suffix}
@@ -233,8 +301,11 @@ cat > ${build_dir}/ovconfig.h <<EOF
 #define ARCH_X86 $is_x86
 #define SSE_ENABLED $sse_enabled
 #define AVX_ENABLED 0
-#define ARCH_AARCH64 $is_arm
+#define ARCH_ARM $is_arm
 #define NEON_ENABLED $neon_enabled
+#define ARCH_AARCH64 $is_arm64
+#define ARCH_AARCH64_ASSEMBLY 1
+#define PREFIX $add_prefix
 
 #define HAVE_POSIX_MEMALIGN $posix_memalign
 #define HAVE_ALIGNED_MALLOC $aligned_malloc
