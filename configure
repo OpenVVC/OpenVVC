@@ -16,6 +16,7 @@ cflags_olevel="-O3"
 cflags_warnings="-Wall"
 cflags_error=
 cflags_default="${cflags_warnings} ${cflags_olevel}"
+sse_cflags="-mssse3 -msse4.1"
 
 ldflags_default=""
 
