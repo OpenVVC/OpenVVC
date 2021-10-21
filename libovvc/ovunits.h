@@ -109,11 +109,14 @@ typedef struct OVPictureUnit
      */
     uint8_t nb_nalus;
 
-    /* Decoding Time Stamp used for Presentation Time Stamps computation
+    /* Decoding Time Stamp (DTS) used for Presentation Time Stamps computation
      *
      * At the current time OpenVVC uses an internal clock with a
      * time scale value of 27 000 000 and 450 000 time units
      * per tick.
+     *
+     * Note:
+     *     - currently unused for output PTS computation.
      */
     uint64_t dts;
 
