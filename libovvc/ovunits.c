@@ -63,17 +63,19 @@ ov_nalu_unref(OVNALUnit **nalu_p)
 
 /*FIXME Add and reference counting */
 void
-ov_free_pu(OVPictureUnit **pu)
+ov_free_pu(OVPictureUnit **ovpu_p)
 {
-    OVPictureUnit *to_free = *pu;
-    if (to_free) {
+    OVPictureUnit *ovpu = *ovpu_p;
+
+    if (ovpu) {
         int i;
-        for (i = 0; i < to_free->nb_nalus; ++i) {
-            OVNALUnit *nalu = to_free->nalus[i];
+        for (i = 0; i < ovpu->nb_nalus; ++i) {
+            OVNALUnit *nalu = ovpu->nalus[i];
 
             ov_nalu_unref(&nalu);
         }
-        ov_free(to_free->nalus);
+        ov_free(ovpu->nalus);
     }
-    ov_freep(pu);
+
+    ov_freep(ovpu_p);
 }
