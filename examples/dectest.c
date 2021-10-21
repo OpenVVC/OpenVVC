@@ -111,7 +111,7 @@ main(int argc, char** argv)
         }
     }
 
-    if (OVLOG_ERROR <= ov_log_level && ov_log_level <= OVLOG_TRACE){
+    if (OVLOG_ERROR <= ov_log_level && ov_log_level <= OVLOG_DEBUG){
       set_ov_log_level(ov_log_level);
     }
 

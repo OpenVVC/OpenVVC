@@ -91,9 +91,8 @@ static void
 dpbpriv_release_pic(OVPicture *pic)
 {
     if (pic->frame) {
+        ov_log(NULL, OVLOG_TRACE, "Release Picture with POC %d\n", pic->poc);
         ovframe_unref(&pic->frame);
-
-        ov_log(NULL, OVLOG_TRACE, "Unref frame in pic %d\n", pic->poc);
 
         /* FIXME better existence check */
         if (pic->mv_plane0.mvs){
@@ -108,6 +107,7 @@ dpbpriv_release_pic(OVPicture *pic)
         pic->tmvp.collocated_ref = NULL;
 
         pic->frame = NULL;
+
         if (pic->sei) {
             if (pic->sei->sei_fg) {
                 ov_freep(&pic->sei->sei_fg);
@@ -145,7 +145,6 @@ dpb_init_params(OVDPB *dpb, OVDPBParams const *prm)
     return 0;
 }
 
-
 static int
 derive_poc(int poc_lsb, int log2_max_poc_lsb, int prev_poc)
 {
@@ -161,7 +160,6 @@ derive_poc(int poc_lsb, int log2_max_poc_lsb, int prev_poc)
     }
     return poc_msb + poc_lsb;
 }
-
 
 void
 ovdpb_unref_pic(OVPicture *pic, int flags)
@@ -193,12 +191,10 @@ ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
     pthread_mutex_lock(&pic->pic_mtx);
     if (! pic->flags && !ref_count) {
         /* Release TMVP  MV maps */
-        ov_log(NULL, OVLOG_TRACE, "Release picture with poc %d\n", pic->poc);
         dpbpriv_release_pic(pic);
     }
     pthread_mutex_unlock(&pic->pic_mtx);
 }
-
 
 int
 ovdpb_new_ref_pic(OVPicture *pic, int flags)
@@ -209,11 +205,6 @@ ovdpb_new_ref_pic(OVPicture *pic, int flags)
     pic->flags |= flags;
 
     pthread_mutex_unlock(&pic->pic_mtx);
-
-    /* TMVP */
-    // dst->poc     = src->poc;
-    // dst->flags   = src->flags;
-    // dst->cvs_id  = src->cvs_id;
 
     return 0;
 }
@@ -318,6 +309,8 @@ alloc_frame(OVDPB *dpb)
 
         pic->flags = 0;
         atomic_init(&pic->ref_count, 0);
+
+        ov_log(NULL, OVLOG_DEBUG, "Attached frame %p to Picture with POC %d\n", pic->frame, pic->poc);
 
         return pic;
     }

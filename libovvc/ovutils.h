@@ -31,8 +31,8 @@ typedef enum
     OVLOG_WARNING,
     OVLOG_INFO,
     OVLOG_VERBOSE,
-    OVLOG_DEBUG,
-    OVLOG_TRACE
+    OVLOG_TRACE,
+    OVLOG_DEBUG
 } OVLOG_TYPE;
 
 extern OVLOG_TYPE ov_log_level;
