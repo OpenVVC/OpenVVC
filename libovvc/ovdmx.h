@@ -1,21 +1,38 @@
 #ifndef OVVCDMX_H
 #define OVVCDMX_H
 
+/* Experimental raw video demuxer Annex B */
+
 #include <stdio.h>
 #include "ovio.h"
 #include "ovunits.h"
 
 typedef struct OVVCDmx OVVCDmx;
 
-int ovdmx_init(OVVCDmx **vvcdmx);
+/* Initialize demuxer
+ */
+int ovdmx_init(OVVCDmx **ovdmx_p);
 
-int ovdmx_close(OVVCDmx *vvcdmx);
+/* Close demuxer
+ */
+int ovdmx_close(OVVCDmx *ovdmx);
 
-int ovdmx_attach_stream(OVVCDmx *const dmx, OVIO *io);
+/* Attach an input stream to the demuxer
+ */
+int ovdmx_attach_stream(OVVCDmx *const ovdmx, OVIO *io);
 
-void ovdmx_detach_stream(OVVCDmx *const dmx);
+/* Reinit the demuxer.
+ */
+void ovdmx_detach_stream(OVVCDmx *const ovdmx);
 
-int ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu);
+/* Extract a Picture Unit
+ *
+ * Note :
+ *     - at the current time output does not correspond to
+ *     a complete Picture Unit. The OVPictureUnit only contains
+ *     one OVNALUnit.
+ */
+int ovdmx_extract_picture_unit(OVVCDmx *const ovdmx, OVPictureUnit **ovpu_p);
 
 #endif
 
