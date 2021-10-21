@@ -371,7 +371,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
 
     /*FIXME derive nb entry points */
     int nb_entry_points = (pps->pps_num_tile_columns_minus1 + 1) * (pps->pps_num_tile_rows_minus1 + 1) - 1;
-    if (nb_entry_points > 1) {
+    if (nb_entry_points > 0) {
         sh->sh_entry_offset_len_minus1 = nvcl_read_u_expgolomb(rdr);
         for (i = 0; i < nb_entry_points; i++) {
             sh->sh_entry_point_offset_minus1[i] = nvcl_read_bits(rdr, sh->sh_entry_offset_len_minus1 + 1);
