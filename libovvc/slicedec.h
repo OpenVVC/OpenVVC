@@ -10,7 +10,7 @@
 
 struct EntryThread;
 
-enum StateSliceThread {
+enum StateSynchro {
     IDLE = 0,
     ACTIVE,
     DECODING_FINISHED
@@ -18,10 +18,10 @@ enum StateSliceThread {
 
 typedef int (*DecodeFunc)(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms, uint16_t entry_idx);
 
-struct SliceThread
+struct SliceSynchro
 {
     OVSliceDec *owner;
-    struct EntryThread *tdec;
+    // struct EntryThread *tdec;
     
     struct MainThread* main_thread;
     
@@ -31,13 +31,11 @@ struct SliceThread
     uint8_t active_state;
 
     /* Information on current task */
-    int nb_entry_th;
+    // int nb_entry_th;
     int nb_entries;
+    atomic_uint nb_entries_decoded;
 
     DecodeFunc decode_entry;
-
-    atomic_uint first_job;
-    atomic_uint last_entry_idx;
 
     /* Slice decoder thread to be used later if
      * multiple slices
@@ -137,26 +135,25 @@ typedef struct OVSliceDec
    /* Reference to current pic being decoded */
    OVPicture *pic;
 
-   OVCTUDec **ctudec_list; 
-   int nb_entry_th;
-
-   struct SliceThread th_slice;
+   struct SliceSynchro slice_sync;
 
 } OVSliceDec;
 
 void slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params);
 
-int slicedec_update_entry_decoders(OVSliceDec *sldec, const OVPS *const prms);
+int slicedec_update_entry_decoder(OVSliceDec *sldec, OVCTUDec *ctudec);
 
 int slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms);
 
 void slicedec_finish_decoding(OVSliceDec *sldec);
+
+void slicedec_uninit_in_loop_filters(OVCTUDec *const ctudec, int ctb_size);
 
 #if 0
 int slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms);
 #endif
 int slicedec_init_lines(OVSliceDec *const sldec, const OVPS *const ps);
 
-int slicedec_init(OVSliceDec *sldec, int nb_entry_th);
+int slicedec_init(OVSliceDec *sldec);
 void slicedec_uninit(OVSliceDec **sldec_p);
 #endif

@@ -45,11 +45,11 @@ ovdec_init_subdec_list(OVVCDec *dec)
 
     for (int i = 0; i < dec->nb_frame_th; ++i){
         dec->subdec_list[i] = ov_mallocz(sizeof(OVSliceDec));
-        ret = slicedec_init(dec->subdec_list[i], dec->nb_entry_th);
+        ret = slicedec_init(dec->subdec_list[i]);
         if (ret < 0) {
             return OVVC_ENOMEM;
         }
-        dec->subdec_list[i]->th_slice.main_thread = &dec->main_thread;
+        dec->subdec_list[i]->slice_sync.main_thread = &dec->main_thread;
     }
 
     return 0;
@@ -97,7 +97,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
         }
     }
 
-    ov_nalu_new_ref(&sldec->th_slice.slice_nalu, nalu);
+    ov_nalu_new_ref(&sldec->slice_sync.slice_nalu, nalu);
 
     /*FIXME return checks */
     ret = slicedec_init_lines(sldec, sldec->active_params);
@@ -110,12 +110,45 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
         return ret;
     }
 
-    ret = slicedec_update_entry_decoders(sldec, sldec->active_params);
-    if (ret < 0) {
-        return ret;
-    }
+    // ret = slicedec_update_entry_decoders(sldec, sldec->active_params);
 
     return 0;
+}
+
+void
+ovdec_wait_available_entry_thread(OVVCDec *const dec)
+{
+    #if USE_THREADS
+    struct MainThread* th_main = &dec->main_thread;
+    struct EntryThread *entry_th_list = th_main->entry_threads_list;
+    struct EntryThread *entry_th;
+    int nb_threads = dec->nb_frame_th;
+    /* The main thread checks if at least an entry thread 
+    *  is available.
+    */
+    do {
+        pthread_mutex_lock(&th_main->entry_threads_mtx);
+        for(int i = 0; i < nb_threads ; i++) {
+            entry_th = &entry_th_list[i];
+            pthread_mutex_lock(&entry_th->entry_mtx);
+            int state = entry_th->state;
+            pthread_mutex_unlock(&entry_th->entry_mtx);
+            if (state == IDLE){
+                pthread_mutex_unlock(&th_main->entry_threads_mtx);
+                return;
+            }
+        }
+        // ov_log(NULL, OVLOG_DEBUG,"main wait entry\n");
+        pthread_cond_wait(&th_main->entry_threads_cnd, &th_main->entry_threads_mtx);
+        pthread_mutex_unlock(&th_main->entry_threads_mtx);
+
+    } while (!th_main->kill);
+
+    return ;
+
+    #else
+    return ;
+    #endif
 }
 
 OVSliceDec *
@@ -126,19 +159,19 @@ ovdec_select_subdec(OVVCDec *const dec)
     struct MainThread* th_main = &dec->main_thread;
 
     OVSliceDec * slicedec;
-    struct SliceThread* th_slice;
+    struct SliceSynchro* slice_sync;
     do {
         int min_idx_available = nb_threads;
         pthread_mutex_lock(&th_main->main_mtx);
         
         for(int i = nb_threads - 1; i >= 0 ; i--) {
             slicedec = sldec_list[i];
-            th_slice = &slicedec->th_slice;
+            slice_sync = &slicedec->slice_sync;
             
             //Unmark ref pict lists of decoded pics
-            pthread_mutex_lock(&th_slice->gnrl_mtx);
-            if (th_slice->active_state == DECODING_FINISHED) {
-                pthread_mutex_unlock(&th_slice->gnrl_mtx);
+            pthread_mutex_lock(&slice_sync->gnrl_mtx);
+            if (slice_sync->active_state == DECODING_FINISHED) {
+                pthread_mutex_unlock(&slice_sync->gnrl_mtx);
                 min_idx_available = i;
                 OVPicture *slice_pic = slicedec->pic;
                 if (slice_pic && (slice_pic->flags & OV_IN_DECODING_PIC_FLAG)) {
@@ -146,32 +179,32 @@ ovdec_select_subdec(OVVCDec *const dec)
                     ovdpb_unref_pic(slice_pic, OV_IN_DECODING_PIC_FLAG);
                     ovdpb_unmark_ref_pic_lists(slicedec->slice_type, slice_pic);
 
-                    pthread_mutex_lock(&th_slice->gnrl_mtx);
-                    th_slice->active_state = IDLE;
-                    pthread_mutex_unlock(&th_slice->gnrl_mtx);
+                    pthread_mutex_lock(&slice_sync->gnrl_mtx);
+                    slice_sync->active_state = IDLE;
+                    pthread_mutex_unlock(&slice_sync->gnrl_mtx);
                 }
-            } else if (th_slice->active_state == IDLE) {
-                pthread_mutex_unlock(&th_slice->gnrl_mtx);
+            } else if (slice_sync->active_state == IDLE) {
+                pthread_mutex_unlock(&slice_sync->gnrl_mtx);
                 min_idx_available = i;     
             } else {
-                pthread_mutex_unlock(&th_slice->gnrl_mtx);
+                pthread_mutex_unlock(&slice_sync->gnrl_mtx);
             }
         }
 
         if (min_idx_available < nb_threads) {
             slicedec = sldec_list[min_idx_available];
-            th_slice = &slicedec->th_slice;
+            slice_sync = &slicedec->slice_sync;
         
-            pthread_mutex_lock(&th_slice->gnrl_mtx);
-            th_slice->active_state = ACTIVE;
-            pthread_mutex_unlock(&th_slice->gnrl_mtx);
+            pthread_mutex_lock(&slice_sync->gnrl_mtx);
+            slice_sync->active_state = ACTIVE;
+            pthread_mutex_unlock(&slice_sync->gnrl_mtx);
 
             ov_log(NULL, OVLOG_TRACE, "Subdec %d selected\n", min_idx_available);
 
             pthread_mutex_unlock(&th_main->main_mtx);
             return slicedec;
         }
-
+        // ov_log(NULL, OVLOG_DEBUG,"main wait slice\n");
         pthread_cond_wait(&th_main->main_cnd, &th_main->main_mtx);
         pthread_mutex_unlock(&th_main->main_mtx);
 
@@ -211,6 +244,9 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         } else {
             /* Select the first available subdecoder, or wait until one is available */
             OVSliceDec *sldec = ovdec_select_subdec(vvcdec);
+
+            /* Wait until at least one entry thread is available */
+            ovdec_wait_available_entry_thread(vvcdec);
 
             uint32_t nb_sh_bytes = nvcl_nb_bytes_read(&rdr);
                 
@@ -336,6 +372,7 @@ static int
 set_nb_entry_threads(OVVCDec *ovdec, int nb_threads)
 {
     ovdec->nb_entry_th = nb_threads;
+    ovdec->main_thread.nb_entry_th = nb_threads;
 
     return 0;
 }
@@ -377,16 +414,12 @@ ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value)
 int
 ovdec_init(OVVCDec **vvcdec, int display_output, int nb_frame_th, int nb_entry_th)
 {
-
-    if (nb_frame_th < 0) {
-        nb_frame_th = 1;
-    } else if (nb_frame_th == 0) {
-        /* FIXME might not be available on every plateform */
-        nb_frame_th = get_number_of_cores();
-    }
-
     if (nb_entry_th < 1) {
-        nb_entry_th = 1;
+        nb_entry_th = get_number_of_cores();
+        ov_log(NULL, OVLOG_DEBUG, "Physical cores in platform: %i\n", nb_entry_th);
+    }
+    if (nb_frame_th < 1) {
+        nb_frame_th = nb_entry_th;
     }
 
     *vvcdec = ov_mallocz(sizeof(OVVCDec));
@@ -405,6 +438,8 @@ ovdec_init(OVVCDec **vvcdec, int display_output, int nb_frame_th, int nb_entry_t
 
     ovdec_init_subdec_list(*vvcdec);
 
+    ovthread_init_main_thread(*vvcdec);
+
     ov_log(NULL, OVLOG_TRACE, "OpenVVC init at %p\n", *vvcdec);
     return 0;
 
@@ -419,14 +454,19 @@ ovdec_uninit_subdec_list(OVVCDec *vvcdec)
 {
     OVSliceDec *sldec;
 
-    if (vvcdec != NULL) {
+    if (vvcdec != NULL)
+    {   
         if (vvcdec->subdec_list) {
+
+            ovthread_uninit_main_thread(vvcdec);
+
             for (int i = 0; i < vvcdec->nb_frame_th; ++i){
                 sldec = vvcdec->subdec_list[i];
                 slicedec_uninit(&sldec);
                 ov_log(NULL, OVLOG_INFO, "Main joined thread: %d\n", i);
             }
             ov_freep(&vvcdec->subdec_list);
+
         }
     }
 }
@@ -451,8 +491,6 @@ ovdec_close(OVVCDec *vvcdec)
             mvpool_uninit(&vvcdec->mv_pool);
         }
 
-        pthread_mutex_destroy(&vvcdec->main_thread.main_mtx);
-        pthread_cond_destroy(&vvcdec->main_thread.main_cnd);
         ov_free(vvcdec);
 
         return 0;

@@ -316,7 +316,7 @@ cabac_lines_uninit(OVSliceDec *sldec)
 }
 
 void
-uninit_in_loop_filters(OVCTUDec *const ctudec, int ctb_size)
+slicedec_uninit_in_loop_filters(OVCTUDec *const ctudec, int ctb_size)
 {
     //Uninit SAO info and ctu params
     struct SAOInfo* sao_info  = &ctudec->sao_info;
@@ -694,8 +694,8 @@ slicedec_free_params(OVSliceDec *sldec)
 void
 slicedec_finish_decoding(OVSliceDec *sldec)
 {
-    struct SliceThread *th_slice = &sldec->th_slice;
-    ov_nalu_unref(&th_slice->slice_nalu);
+    struct SliceSynchro *slice_sync = &sldec->slice_sync;
+    ov_nalu_unref(&slice_sync->slice_nalu);
 
     if (sldec->pic) {
         ov_log(NULL, OVLOG_DEBUG, "Decoder with POC %d, finished frame \n", sldec->pic->poc);
@@ -703,14 +703,15 @@ slicedec_finish_decoding(OVSliceDec *sldec)
         ovdpb_report_decoded_frame( sldec->pic );
     }
 
-    pthread_mutex_lock(&th_slice->gnrl_mtx);
-    th_slice->active_state = DECODING_FINISHED;
-    pthread_mutex_unlock(&th_slice->gnrl_mtx);
+    pthread_mutex_lock(&slice_sync->gnrl_mtx);
+    slice_sync->active_state = DECODING_FINISHED;
+    pthread_mutex_unlock(&slice_sync->gnrl_mtx);
 
     //Signal main thread that a slice thread is available
-    struct MainThread* t_main = th_slice->main_thread;
+    struct MainThread* t_main = slice_sync->main_thread;
     if(t_main){
         pthread_mutex_lock(&t_main->main_mtx);
+        // ov_log(NULL, OVLOG_DEBUG,"Slice sign main\n");
         pthread_cond_signal(&t_main->main_cnd);
         pthread_mutex_unlock(&t_main->main_mtx);
     }
@@ -725,7 +726,8 @@ slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
 
     int ret = 0;
     #if USE_THREADS
-    ovthread_decode_entries(&sldec->th_slice, slicedec_decode_rect_entry, nb_entries);
+    // ovthread_decode_entries(&sldec->slice_sync, slicedec_decode_rect_entry, nb_entries);
+    ovthread_add_entry_jobs(&sldec->slice_sync, slicedec_decode_rect_entry, nb_entries);
     #else
     int i;
     for (i = 0; i < nb_entries; ++i) {
@@ -1515,21 +1517,14 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     return 0;
 }
 
-/*FIXME check init return */
 int
-slicedec_update_entry_decoders(OVSliceDec *sldec, const OVPS *const prms)
+slicedec_update_entry_decoder(OVSliceDec *sldec, OVCTUDec *ctudec)
 {
-    int i;
-    int nb_ctudec = sldec->nb_entry_th;
-
-    for (i = 0; i < nb_ctudec; ++i) {
-        OVCTUDec *ctudec = sldec->ctudec_list[i];
-        ctudec->pic_w = sldec->pic->frame->width[0];
-        ctudec->pic_h = sldec->pic->frame->height[0];
-        ctudec->cur_poc = sldec->pic->poc;
-        slicedec_init_slice_tools(ctudec, prms);
-//if (sldec->slice_type != 2) ctudec->dbf_info.disable_v = 1;
-    }
+    const OVPS *const prms = sldec->active_params;
+    ctudec->pic_w = sldec->pic->frame->width[0];
+    ctudec->pic_h = sldec->pic->frame->height[0];
+    ctudec->cur_poc = sldec->pic->poc;
+    slicedec_init_slice_tools(ctudec, prms);
 
     return 0;
 }
@@ -1564,93 +1559,80 @@ slicedec_init_lines(OVSliceDec *const sldec, const OVPS *const prms)
     return 0;
 }
 
-static void
-uninit_ctudec_list(OVSliceDec *const sldec, int nb_threads)
-{
-    int nb_ctudec = nb_threads;
-    int i;
+// static void
+// uninit_ctudec_list(OVSliceDec *const sldec, int nb_threads)
+// {
+//     int nb_ctudec = nb_threads;
+//     int i;
 
-    if(sldec->active_params)
-    {    const OVSPS *const sps = sldec->active_params->sps;
-        uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
+//     if(sldec->active_params)
+//     {    const OVSPS *const sps = sldec->active_params->sps;
+//         uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
 
 
-        for (i = 0; i < nb_ctudec; ++i) {
-            OVCTUDec *ctudec = sldec->ctudec_list[i];
-            uninit_in_loop_filters(ctudec, (1<<log2_ctb_s));
-        }
-    }
+//         for (i = 0; i < nb_ctudec; ++i) {
+//             OVCTUDec *ctudec = sldec->ctudec_list[i];
+//             slicedec_uninit_in_loop_filters(ctudec, (1<<log2_ctb_s));
+//         }
+//     }
 
-    for (i = 0; i < nb_ctudec; ++i) {
-        OVCTUDec *ctudec = sldec->ctudec_list[i];
-        ctudec_uninit(ctudec);
-    }
-    ov_freep(&sldec->ctudec_list);
-    #if 0
-    ctudec_uninit(sldec->ctudec_list);
-    #endif
-}
+//     for (i = 0; i < nb_ctudec; ++i) {
+//         OVCTUDec *ctudec = sldec->ctudec_list[i];
+//         ctudec_uninit(ctudec);
+//     }
+//     ov_freep(&sldec->ctudec_list);
+//     #if 0
+//     ctudec_uninit(sldec->ctudec_list);
+//     #endif
+// }
 
-static int
-init_ctudec_list(OVSliceDec *const sldec, int nb_threads)
-{
-     int nb_ctudec = nb_threads;
-     int i;
+// static int
+// init_ctudec_list(OVSliceDec *const sldec, int nb_threads)
+// {
+//      int nb_ctudec = nb_threads;
+//      int i;
 
-     sldec->ctudec_list = ov_mallocz(sizeof(*sldec->ctudec_list) * nb_ctudec);
-     if (!sldec->ctudec_list) {
-         return OVVC_ENOMEM;
-     }
+//      sldec->ctudec_list = ov_mallocz(sizeof(*sldec->ctudec_list) * nb_ctudec);
+//      if (!sldec->ctudec_list) {
+//          return OVVC_ENOMEM;
+//      }
 
-     for (i = 0; i < nb_ctudec; ++i) {
-         int ret;
-         OVCTUDec **ctudec_p = &sldec->ctudec_list[i];
-         ret = ctudec_init(ctudec_p);
-         if (ret < 0) {
-             goto failctudec;
-         }
-     }
+//      for (i = 0; i < nb_ctudec; ++i) {
+//          int ret;
+//          OVCTUDec **ctudec_p = &sldec->ctudec_list[i];
+//          ret = ctudec_init(ctudec_p);
+//          if (ret < 0) {
+//              goto failctudec;
+//          }
+//      }
 
-     #if 0
-     ctudec_uninit(sldec->ctudec_list);
-     #endif
-     return 0;
-failctudec:
-     ov_log(NULL, OVLOG_ERROR, "Failed line decoder initialisation\n");
-     uninit_ctudec_list(sldec, nb_ctudec);
+//      #if 0
+//      ctudec_uninit(sldec->ctudec_list);
+//      #endif
+//      return 0;
+// failctudec:
+//      ov_log(NULL, OVLOG_ERROR, "Failed line decoder initialisation\n");
+//      uninit_ctudec_list(sldec, nb_ctudec);
 
-     return OVVC_ENOMEM;
-}
+//      return OVVC_ENOMEM;
+// }
 
 int
-slicedec_init(OVSliceDec *sldec, int nb_entry_th)
+slicedec_init(OVSliceDec *sldec)
 {
     int ret;
-    sldec->nb_entry_th = nb_entry_th;
 
-    ret = init_ctudec_list(sldec, nb_entry_th);
-    if (ret < 0) {
-        goto failctudec;
-    }
-
-    sldec->th_slice.owner = sldec;
-    ret = ovthread_slice_thread_init(&sldec->th_slice, nb_entry_th);
+    sldec->slice_sync.owner = sldec;
+    ret = ovthread_slice_sync_init(&sldec->slice_sync);
     if (ret < 0) {
         goto failthreads;
     }
-
-    sldec->th_slice.owner = sldec;
 
     return 0;
 
 failthreads:
     ov_log(NULL, OVLOG_ERROR, "Failed slice decoder initialisation\n");
-    uninit_ctudec_list(sldec, nb_entry_th);
     return OVVC_ENOMEM;
-failctudec:
-    ov_freep(&sldec);
-    return OVVC_ENOMEM;
-
 }
 
 /*FIXME check is alloc in case of init failure*/
@@ -1658,13 +1640,8 @@ void
 slicedec_uninit(OVSliceDec **sldec_p)
 {
     OVSliceDec *sldec = *sldec_p;
-    #if USE_THREADS
-    ovthread_slice_thread_uninit(&sldec->th_slice);
-    #endif
 
-    if (sldec->ctudec_list) {
-        uninit_ctudec_list(sldec, sldec->nb_entry_th);
-    }
+    ovthread_slice_sync_uninit(&sldec->slice_sync);
 
     /*FIXME is init test */
     if (sldec->cabac_lines[0].log2_cu_w_map_x) {

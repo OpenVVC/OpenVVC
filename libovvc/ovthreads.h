@@ -1,5 +1,5 @@
-#ifndef OVTHREADS_H
-#define OVTHREADS_H
+#ifndef ovthread_H
+#define ovthread_H
 
 #include <stdint.h>
 
@@ -7,19 +7,51 @@
 
 #define USE_THREADS 1
 
-struct SliceThread;
+struct SliceSynchro;
 struct OVVCDec;
 struct OVFrame;
+/*
+Functions for the threads decoding rectangular entries
+*/
+struct EntryThread
+{
+    struct MainThread *main_thread;
+    pthread_t thread;
+    pthread_mutex_t entry_mtx;
+    pthread_cond_t  entry_cnd;
 
-int ovthread_decode_entries(struct SliceThread *th_slice, DecodeFunc decode_entry, int nb_entries);
+    /* CTU decoder associated to entry 
+     * thread
+     */
+    OVCTUDec *ctudec;
 
-int init_entry_threads(struct SliceThread *th_slice, int nb_threads);
+    uint8_t state;
+    uint8_t kill;
+};
 
-void uninit_entry_threads(struct SliceThread *th_slice);
+struct EntryJob{
+    struct SliceSynchro *slice_sync;
+    uint8_t entry_idx;
+};
 
 
-int ovthread_slice_thread_init(struct SliceThread *th_slice, int nb_threads);
+int ovthread_init_entry_threads(OVVCDec *vvcdec, int nb_threads);
 
-void ovthread_slice_thread_uninit(struct SliceThread *th_slice);
+void ovthread_uninit_entry_threads(OVVCDec *vvcdec);
+
+void ovthread_init_entry_jobs(OVVCDec *vvcdec, int nb_entry_th);
+
+int ovthread_init_main_thread(OVVCDec *vvcdec);
+
+int ovthread_uninit_main_thread(OVVCDec *vvcdec);
+
+
+int ovthread_decode_entries(struct SliceSynchro *slice_sync, DecodeFunc decode_entry, int nb_entries);
+
+int ovthread_add_entry_jobs(struct SliceSynchro *slice_sync, DecodeFunc decode_entry, int nb_entries);
+
+int ovthread_slice_sync_init(struct SliceSynchro *slice_sync);
+
+void ovthread_slice_sync_uninit(struct SliceSynchro *slice_sync);
 
 #endif

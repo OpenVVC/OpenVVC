@@ -14,6 +14,7 @@
 #define OV_BOUNDARY_BOTTOM_RECT    (1 << 7)
 
 struct MVPool;
+// struct EntryThread;
 
 struct RectEntryInfo {
     int tile_x;
@@ -218,7 +219,8 @@ enum SAOModeMergeTypes
     SAO_MERGE_ABOVE
 };
 
-typedef struct SAOParamsCtu {
+typedef struct SAOParamsCtu
+{
     int offset_abs[3][4];   ///< sao_offset_abs
     int offset_sign[3][4];  ///< sao_offset_sign
 
@@ -231,16 +233,31 @@ typedef struct SAOParamsCtu {
 } SAOParamsCtu;
 
 
-typedef struct ALFParamsCtu {
+typedef struct ALFParamsCtu
+{
     uint8_t ctb_alf_flag;
     uint8_t ctb_alf_idx;
     uint8_t cb_alternative;
     uint8_t cr_alternative;
 } ALFParamsCtu;
 
+
 struct MainThread
 {
     int kill;
+
+    /*List of entry threads*/
+    int nb_entry_th;
+    struct EntryThread *entry_threads_list;
+    pthread_mutex_t entry_threads_mtx;
+    pthread_cond_t entry_threads_cnd;
+
+    /*FIFO of entry jobs*/
+    struct EntryJob *entry_jobs_fifo;
+    int64_t first_idx_fifo;
+    int64_t last_idx_fifo;
+    uint16_t size_fifo;
+    
     pthread_mutex_t main_mtx;
     pthread_cond_t main_cnd;
 };
@@ -307,7 +324,6 @@ struct OVVCDec
     int nb_entry_th;
 
     struct MainThread main_thread;
-
     /* Informations on decoder behaviour transmitted by user
      */
     struct {
