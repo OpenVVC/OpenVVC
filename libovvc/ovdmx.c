@@ -477,6 +477,13 @@ free_nalu_list(struct NALUnitsList *list)
     list->last_nalu = NULL;
 }
 
+static void
+move_nalu_elem_to_ovnalu(struct NALUnitListElem *lelem, OVNALUnit *nalu)
+{
+    memcpy(nalu, &lelem->nalu, sizeof(lelem->nalu)) ;
+    memset(&lelem->nalu, 0, sizeof(lelem->nalu));
+}
+
 int
 convert_nalu_list_to_pu(OVPictureUnit **dst_pu, struct NALUnitsList *const src)
 {
@@ -499,14 +506,14 @@ convert_nalu_list_to_pu(OVPictureUnit **dst_pu, struct NALUnitsList *const src)
         ov_free(pu);
         return OV_ENOMEM;
     }
+
     for(int i=0; i < nb_nalus; i++)
         pu->nalus[i] = ov_mallocz(sizeof(*pu->nalus[i]));
 
     lelem = src->first_nalu;
 
     while (lelem) {
-        memcpy(pu->nalus[i++], &lelem->nalu, sizeof(lelem->nalu)) ;
-        memset(&lelem->nalu, 0, sizeof(lelem->nalu));
+        move_nalu_elem_to_ovnalu(lelem, pu->nalus[i++]);
         lelem = lelem->next_nalu;
     }
 
