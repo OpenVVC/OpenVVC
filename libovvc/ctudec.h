@@ -838,6 +838,8 @@ void ctudec_free_filter_buffers(OVCTUDec *const ctudec);
 void ctudec_alloc_intra_line_buff(OVCTUDec *const ctudec, int nb_ctu_w);
 void ctudec_free_intra_line_buff(OVCTUDec *const ctudec);
 
+int ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms);
+
 int ctudec_init(OVCTUDec **ctudec_p);
 int ctudec_uninit(OVCTUDec *ctudec_p);
 

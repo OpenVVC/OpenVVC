@@ -213,6 +213,114 @@ ovdec_select_subdec(OVVCDec *const dec)
     return NULL;
 }
 
+
+void
+ovdec_init_entry_jobs(OVVCDec *vvcdec, int nb_entry_th)
+{   
+    struct MainThread* main_thread = &vvcdec->main_thread;
+    // main_thread->size_fifo       = nb_entry_th*nb_entry_th;
+    main_thread->size_fifo       = 512;
+    main_thread->entry_jobs_fifo = ov_mallocz(main_thread->size_fifo * sizeof(struct EntryJob)); 
+    main_thread->first_idx_fifo  =  0; 
+    main_thread->last_idx_fifo   = -1; 
+}
+
+void
+ovdec_uninit_entry_jobs(OVVCDec *vvcdec)
+{
+    struct MainThread* main_thread = &vvcdec->main_thread;
+    ov_freep(&main_thread->entry_jobs_fifo); 
+}
+
+
+void
+ovdec_uninit_entry_threads(OVVCDec *vvcdec)
+{
+    int i;
+    void *ret;
+    ov_log(NULL, OVLOG_TRACE, "Deleting %d entry threads\n", vvcdec->nb_entry_th);
+    struct MainThread *th_main       = &vvcdec->main_thread;
+
+    /* Wait for the job fifo to be empty before joining entry thread.
+    */
+    pthread_mutex_lock(&th_main->main_mtx); 
+    int16_t first_idx = th_main->first_idx_fifo;
+    int16_t last_idx  = th_main->last_idx_fifo;
+    while (first_idx <= last_idx) {
+        pthread_cond_wait(&th_main->main_cnd, &th_main->main_mtx);
+        first_idx = th_main->first_idx_fifo;
+        last_idx  = th_main->last_idx_fifo;
+    }
+    pthread_mutex_unlock(&th_main->main_mtx);
+
+    struct EntryThread *entry_threads_list = th_main->entry_threads_list;
+    for (i = 0; i < vvcdec->nb_entry_th; ++i){
+        struct EntryThread *th_entry = &entry_threads_list[i];
+
+        /* Signal and join entry thread.
+        */
+        pthread_mutex_lock(&th_entry->entry_mtx);
+        th_entry->kill = 1;
+        pthread_cond_signal(&th_entry->entry_cnd);
+        pthread_mutex_unlock(&th_entry->entry_mtx);
+
+        pthread_join(th_entry->thread, &ret);
+        ovthread_uninit_entry_thread(th_entry);
+    }
+    ov_freep(&entry_threads_list);
+}
+
+int
+ovdec_init_entry_threads(OVVCDec *vvcdec, int nb_entry_th)
+{
+    int i, ret;
+    ov_log(NULL, OVLOG_TRACE, "Creating %d entry threads\n", nb_entry_th);
+    vvcdec->main_thread.entry_threads_list = ov_mallocz(nb_entry_th*sizeof(struct EntryThread));
+    for (i = 0; i < nb_entry_th; ++i){
+        struct EntryThread *entry_th = &vvcdec->main_thread.entry_threads_list[i];
+        entry_th->main_thread = &vvcdec->main_thread;
+
+        ret = ovthread_init_entry_thread(entry_th); 
+        if (ret != 0)
+            goto failthread;
+    }
+
+    return 0;
+
+failthread:
+    ov_log(NULL, OVLOG_ERROR,  "Entry threads creation failed\n");
+    ovdec_uninit_entry_threads(vvcdec);
+
+    return OVVC_ENOMEM;
+}
+
+
+int
+ovdec_init_main_thread(OVVCDec *vvcdec)
+{   
+    struct MainThread* main_thread = &vvcdec->main_thread;
+    int nb_entry_th = main_thread->nb_entry_th;
+
+    pthread_mutex_init(&main_thread->entry_threads_mtx, NULL);
+    pthread_cond_init(&main_thread->entry_threads_cnd,  NULL);
+    pthread_mutex_init(&main_thread->main_mtx, NULL);
+    pthread_cond_init(&main_thread->main_cnd,  NULL);
+
+    ovdec_init_entry_jobs(vvcdec, nb_entry_th);
+    ovdec_init_entry_threads(vvcdec, nb_entry_th);
+    return 0;
+
+}
+
+int
+ovdec_uninit_main_thread(OVVCDec *vvcdec)
+{   
+    ovdec_uninit_entry_threads(vvcdec);
+    ovdec_uninit_entry_jobs(vvcdec);
+
+    return 0;
+}
+
 static int
 decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
 {
@@ -438,7 +546,7 @@ ovdec_init(OVVCDec **vvcdec, int display_output, int nb_frame_th, int nb_entry_t
 
     ovdec_init_subdec_list(*vvcdec);
 
-    ovthread_init_main_thread(*vvcdec);
+    ovdec_init_main_thread(*vvcdec);
 
     ov_log(NULL, OVLOG_TRACE, "OpenVVC init at %p\n", *vvcdec);
     return 0;
@@ -458,7 +566,7 @@ ovdec_uninit_subdec_list(OVVCDec *vvcdec)
     {   
         if (vvcdec->subdec_list) {
 
-            ovthread_uninit_main_thread(vvcdec);
+            ovdec_uninit_main_thread(vvcdec);
 
             for (int i = 0; i < vvcdec->nb_frame_th; ++i){
                 sldec = vvcdec->subdec_list[i];

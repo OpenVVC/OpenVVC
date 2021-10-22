@@ -147,8 +147,6 @@ int slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms);
 
 void slicedec_finish_decoding(OVSliceDec *sldec);
 
-void slicedec_uninit_in_loop_filters(OVCTUDec *const ctudec, int ctb_size);
-
 #if 0
 int slicedec_decode_rect_entry(OVSliceDec *sldec, const OVPS *const prms);
 #endif
