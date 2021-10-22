@@ -525,7 +525,7 @@ convert_nalu_list_to_pu(OVPictureUnit **dst_pu, struct NALUnitsList *const src)
 }
 
 int
-ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
+ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu_p)
 {
     int ret;
     struct NALUnitsList pending_nalu_list = {0};
@@ -552,16 +552,14 @@ ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
     ret = extract_nal_unit(dmx, &pending_nalu_list);
     if (!dmx->eof && ret < 0) {
         ov_log(dmx, OVLOG_ERROR, "No valid Access Unit found \n");
-        *dst_pu = NULL;
         free_nalu_list(&pending_nalu_list);
         return ret;
     }
     #endif
 
-    int ret2 = convert_nalu_list_to_pu(dst_pu, &pending_nalu_list);
+    int ret2 = convert_nalu_list_to_pu(dst_pu_p, &pending_nalu_list);
     if (ret2 < 0) {
         free_nalu_list(&pending_nalu_list);
-        *dst_pu = NULL;
         return ret2;
     }
 
