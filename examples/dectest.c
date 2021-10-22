@@ -40,102 +40,111 @@ static void print_usage(void);
 int
 main(int argc, char** argv)
 {
-  /* basic options parser and assign
-     filenames into a functions*/
-  int c;
-  const char *input_file_name = NULL, *output_file_name = NULL;
-  int ov_log_level=OVLOG_INFO;
-  FILE *fout = NULL;
-  int nb_frame_th = 1;
-  int nb_entry_th = 1;
+    /* basic options parser and assign
+       filenames into a functions*/
+    int c;
+    const char *input_file_name = NULL, *output_file_name = NULL;
+    int ov_log_level = OVLOG_INFO;
+    FILE *fout = NULL;
+    int nb_frame_th = 1;
+    int nb_entry_th = 1;
 
-  uint8_t options_flag=0;
+    uint8_t options_flag=0;
 
-  OVVCHdl ovvc_hdl;
-  int ret = 0;
-  while (1)
+    OVVCHdl ovvc_hdl;
+    int ret = 0;
+    while (1)
     {
-      static struct option long_options[] =
+        static struct option long_options[] =
         {
-          {"version", no_argument,      0, 'v'},
-          {"help",    no_argument,       0, 'h'},
-          {"log-level", required_argument, 0, 'l'},
-          {"infile",      required_argument, 0, 'i'},
-          {"outfile",      required_argument, 0, 'o'},
-          {"framethr",      required_argument, 0, 't'},
-          {"entrythr",      required_argument, 0, 'e'},
+            {"version", no_argument,      0, 'v'},
+            {"help",    no_argument,       0, 'h'},
+            {"log-level", required_argument, 0, 'l'},
+            {"infile",      required_argument, 0, 'i'},
+            {"outfile",      required_argument, 0, 'o'},
+            {"framethr",      required_argument, 0, 't'},
+            {"entrythr",      required_argument, 0, 'e'},
         };
-      int option_index = 0;
-      c = getopt_long (argc, argv, "vhl:i:o:t:e:",
-                       long_options, &option_index);
-      if (c == -1){
-        break;
-      }
-      switch (c)
+        int option_index = 0;
+        c = getopt_long (argc, argv, "vhl:i:o:t:e:",
+                         long_options, &option_index);
+        if (c == -1){
+            break;
+        }
+        switch (c)
         {
-        case 'v':
-          options_flag+=0x01;
-          break;
+            case 'v':
+                options_flag+=0x01;
+                break;
 
-        case 'h':
-          options_flag+=0x10;
-          break;
+            case 'h':
+                options_flag+=0x10;
+                break;
 
-        case 'l':
-          ov_log_level = optarg[0]-'0';
-          break;
+            case 'l':
+                ov_log_level = optarg[0]-'0';
+                break;
 
-        case 'i':
-          /*TODO: Sanitize filename*/
-          input_file_name = optarg;
-          break;
+            case 'i':
+                /*TODO: Sanitize filename*/
+                input_file_name = optarg;
+                break;
 
-        case 'o':
-          /*TODO: Sanitize filename*/
-          output_file_name = optarg;
-          break;
+            case 'o':
+                /*TODO: Sanitize filename*/
+                output_file_name = optarg;
+                break;
 
-        case 't':
-          nb_frame_th = atoi(optarg);
-          break;
+            case 't':
+                nb_frame_th = atoi(optarg);
+                break;
 
-        case 'e':
-          nb_entry_th = atoi(optarg);
-          break;
+            case 'e':
+                nb_entry_th = atoi(optarg);
+                break;
 
-        case '?':
-          options_flag+=0x10;
-          break;
-        default:
-          abort ();
+            case '?':
+                options_flag+=0x10;
+                break;
+            default:
+                abort ();
         }
     }
 
     if (OVLOG_ERROR <= ov_log_level && ov_log_level <= OVLOG_DEBUG){
-      set_ov_log_level(ov_log_level);
+        set_ov_log_level(ov_log_level);
     }
 
     if (input_file_name == NULL){
-      input_file_name ="test.266";
+        input_file_name ="test.266";
     }
 
     if (output_file_name == NULL){
-      output_file_name ="test.yuv";
+        output_file_name ="test.yuv";
     }
 
     if (options_flag){
-      if (options_flag & 0x01) {print_version();}
-      if (options_flag & 0x10) {print_usage();}
-      return 0;
+
+        if (options_flag & 0x01) {
+            print_version();
+        }
+
+        if (options_flag & 0x10) {
+            print_usage();
+        }
+
+        return 0;
     }
 
     fout = fopen(output_file_name, "wb");
+
     if (fout == NULL) {
-      ov_log(NULL, OVLOG_ERROR, "Failed to open output file '%s'.\n", output_file_name);
-      goto failinit;
+        ov_log(NULL, OVLOG_ERROR, "Failed to open output file '%s'.\n", output_file_name);
+        goto failinit;
     } else {
-      ov_log(NULL, OVLOG_INFO, "Decoded stream will be written to '%s'.\n", output_file_name);
+        ov_log(NULL, OVLOG_INFO, "Decoded stream will be written to '%s'.\n", output_file_name);
     }
+
     ret = init_openvvc_hdl(&ovvc_hdl, output_file_name, nb_frame_th, nb_entry_th);
 
     if (ret < 0) goto failinit;
@@ -145,12 +154,8 @@ main(int argc, char** argv)
     if (ret < 0) goto failattach;
 
     read_write_stream(&ovvc_hdl, fout);
-    // read_stream(&ovvc_hdl, ovvc_hdl.fp);
 
     ovdmx_detach_stream(ovvc_hdl.dmx);
-
-
-    /* Do stuff here */
 
 failattach:
     ret = close_openvvc_hdl(&ovvc_hdl);
@@ -168,8 +173,8 @@ dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name)
 
     if (file_io == NULL) {
         perror(input_file_name);
-       vvc_hdl->io = NULL;
-       return -1;
+        vvc_hdl->io = NULL;
+        return -1;
     }
 
     vvc_hdl->io = (OVIO*) file_io;
@@ -237,7 +242,7 @@ close_openvvc_hdl(OVVCHdl *const ovvc_hdl)
 faildecclose:
     /* Do not check for dmx failure  since it might override
        return value to a correct one in either success or
-       failure we already raised an error*/
+       failure we already raised an error */
     ov_log(NULL, OVLOG_ERROR, "Decoder failed at cloture.\n");
     ovdmx_close(vvcdmx);
 
@@ -245,56 +250,16 @@ faildmxclose:
     return ret;
 }
 
-#if 0
-static int
-read_stream(OVVCHdl *const hdl)
-{
-    int ret;
-    OVVCDmx *const dmx = hdl->dmx;
-    OVVCDec *const dec = hdl->dec;
-    OVPictureUnit *pu = NULL;
-    
-    do {
-        ret = ovdmx_extract_picture_unit(dmx, &pu);
-        if (ret < 0) {
-            ov_log(NULL, OVLOG_INFO, "Picture unit not extracted\n");
-            goto end_out;
-        }
-
-        if (pu){
-            ret = ovdec_submit_picture_unit(dec, pu);
-            if (ret < 0) {
-                ov_log(NULL, OVLOG_INFO, "Picture unit not submitted\n");
-                ov_free_pu(&pu);
-                goto end_out;
-            }
-            /* FIXME Picture unit freeing be inside the decoder
-             * use ref_counted buffer and call unref here instead
-             */
-            ov_free_pu(&pu);
-        }
-    } while (ret >= 0);
-
-//TODOpar: stop cleanly program in case of error
-end_out:
-    return 1;
-}
-#endif
-
 static int
 read_write_stream(OVVCHdl *const hdl, FILE *fout)
 {
-    #if 0
-    ovdmx_read_stream(dmx);
-    #else
-    int ret;
-    OVVCDmx *const dmx = hdl->dmx;
     OVVCDec *const dec = hdl->dec;
-    OVPictureUnit *pu = NULL;
-    OVFrame *frame = NULL;
-
     int nb_pic = 0;
+    int ret;
+
     do {
+        OVVCDmx *const dmx = hdl->dmx;
+        OVPictureUnit *pu = NULL;
         ret = ovdmx_extract_picture_unit(dmx, &pu);
         if (ret < 0) {
             break;
@@ -309,9 +274,9 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
             }
 
             do {
+                OVFrame *frame = NULL;
                 nb_pic2 = ovdec_receive_picture(dec, &frame);
 
-                /* FIXME use ret instead of frame */
                 if (frame) {
                     write_decoded_frame_to_file(frame, fout);
                     ++nb_pic;
@@ -332,13 +297,12 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
 
     } while (ret >= 0);
 
-    //Wait for all the sub decoders to finish before draining dpb
-    //ovdec_uninit_subdec_list(dec);
-
     ret = 1;
+
     while (ret > 0) {
+        OVFrame *frame = NULL;
         ret = ovdec_drain_picture(dec, &frame);
-        /* FIXME use ret instead of frame */
+
         if (frame) {
             write_decoded_frame_to_file(frame, fout);
             ++nb_pic;
@@ -350,25 +314,26 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
 
     ov_log(NULL, OVLOG_INFO, "Decoded %d pictures\n", nb_pic);
 
-    #endif
     return 1;
 }
 
+static uint32_t
+write_decoded_frame_to_file(OVFrame *const frame, FILE *fp)
+{
+    uint8_t component = 0;
+    uint32_t ret = 0;
 
-static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp){
-  uint8_t component = 0;
-  uint32_t ret = 0;
-  for(component=0; component<3; component++){
-    uint32_t frame_size = frame->height[component] * frame->linesize[component];
-    ret +=fwrite(frame->data[component], frame_size, sizeof(uint8_t), fp);
-  }
-  return ret;
+    for (component = 0; component < 3; component++) {
+        uint32_t frame_size = frame->height[component] * frame->linesize[component];
+        ret += fwrite(frame->data[component], frame_size, sizeof(uint8_t), fp);
+    }
+
+    return ret;
 }
 
-
-
-static void print_version(){
-  print_ov_lib_version();
+static void
+print_version(){
+    print_ov_lib_version();
 }
 
 static void print_usage(){
