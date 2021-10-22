@@ -1885,6 +1885,7 @@ compute_lm_subsample_collocated(const uint16_t *lm_src, uint16_t *dst_cb, uint16
         lm_src += lm_src_stride2;
     }
 }
+
 static inline struct LMParams
 compute_lm_params(int16_t avg_min_l, int16_t avg_min_c, int16_t avg_max_c, int16_t v, int8_t log2_rng_l)
 {
@@ -1897,7 +1898,7 @@ compute_lm_params(int16_t avg_min_l, int16_t avg_min_c, int16_t avg_max_c, int16
      * so we require an absolute value
      */
 
-    int log2_rng_c_plus1 = floor_log2(OVABS(range_c)) + 1;
+    int log2_rng_c_plus1 = range_c ? floor_log2(OVABS(range_c)) + 1 : 0;
     int add = (1 << log2_rng_c_plus1) >> 1;
 
     a = (range_c * v + add) >> log2_rng_c_plus1;
