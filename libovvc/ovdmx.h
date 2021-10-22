@@ -8,6 +8,7 @@
 #include "ovunits.h"
 
 typedef struct OVVCDmx OVVCDmx;
+typedef struct NALUnitsList NALUnitsList;
 
 /* Initialize demuxer
  */
@@ -24,6 +25,8 @@ int ovdmx_attach_stream(OVVCDmx *const ovdmx, OVIO *io);
 /* Reinit the demuxer.
  */
 void ovdmx_detach_stream(OVVCDmx *const ovdmx);
+
+int convert_nalu_list_to_pu(OVPictureUnit **dst_pu, NALUnitsList *const src);
 
 /* Extract a Picture Unit
  *

@@ -477,9 +477,14 @@ free_nalu_list(struct NALUnitsList *list)
     list->last_nalu = NULL;
 }
 
-static int
-convert_nalu_list_to_pu(OVPictureUnit *dst, struct NALUnitsList *const src)
+int
+convert_nalu_list_to_pu(OVPictureUnit **dst_pu, struct NALUnitsList *const src)
 {
+    OVPictureUnit *pu = ov_mallocz(sizeof(*pu));
+    if (!pu) {
+        return OV_ENOMEM;
+    }
+
     /* FIXME retrieve number of NAL Units for alloc */
     int nb_nalus = 0;
     int i = 0;
@@ -489,22 +494,25 @@ convert_nalu_list_to_pu(OVPictureUnit *dst, struct NALUnitsList *const src)
         nb_nalus++;
     }
 
-    dst->nalus = ov_mallocz(sizeof(*dst->nalus) * nb_nalus);
-    if (!dst->nalus) {
+    pu->nalus = ov_mallocz(sizeof(*pu->nalus) * nb_nalus);
+    if (!pu->nalus) {
+        ov_free(pu);
         return OV_ENOMEM;
     }
     for(int i=0; i < nb_nalus; i++)
-        dst->nalus[i] = ov_mallocz(sizeof(*dst->nalus[i]));
+        pu->nalus[i] = ov_mallocz(sizeof(*pu->nalus[i]));
 
     lelem = src->first_nalu;
 
     while (lelem) {
-        memcpy(dst->nalus[i++], &lelem->nalu, sizeof(lelem->nalu)) ;
+        memcpy(pu->nalus[i++], &lelem->nalu, sizeof(lelem->nalu)) ;
         memset(&lelem->nalu, 0, sizeof(lelem->nalu));
         lelem = lelem->next_nalu;
     }
 
-    dst->nb_nalus = nb_nalus;
+    pu->nb_nalus = nb_nalus;
+
+    *dst_pu = pu;
 
     return 0;
 }
@@ -514,11 +522,6 @@ ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
 {
     int ret;
     struct NALUnitsList pending_nalu_list = {0};
-    OVPictureUnit *pu = ov_mallocz(sizeof(*pu));
-    if (!pu) {
-        *dst_pu = NULL;
-        return OV_ENOMEM;
-    }
 
     #if 0
     if (/*!dmx->eof &&*/ dmx->nalu_list.first_nalu) {
@@ -544,22 +547,18 @@ ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu)
         ov_log(dmx, OVLOG_ERROR, "No valid Access Unit found \n");
         *dst_pu = NULL;
         free_nalu_list(&pending_nalu_list);
-        ov_free(pu);
         return ret;
     }
     #endif
 
-    int ret2 = convert_nalu_list_to_pu(pu, &pending_nalu_list);
+    int ret2 = convert_nalu_list_to_pu(dst_pu, &pending_nalu_list);
     if (ret2 < 0) {
         free_nalu_list(&pending_nalu_list);
         *dst_pu = NULL;
-        ov_free(pu);
         return ret2;
     }
 
     free_nalu_list(&pending_nalu_list);
-
-    *dst_pu = pu;
 
     return ret;
 }
