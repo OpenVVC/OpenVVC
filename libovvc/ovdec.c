@@ -466,7 +466,7 @@ fail:
 void
 ovdec_set_log_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl))
 {
-    set_log_callback(log_function);
+    ovlog_set_callback(log_function);
 }
 
 const char *

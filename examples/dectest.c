@@ -114,7 +114,7 @@ main(int argc, char** argv)
     }
 
     if (OVLOG_ERROR <= ov_log_level && ov_log_level <= OVLOG_DEBUG){
-        set_ov_log_level(ov_log_level);
+        ovlog_set_log_level(ov_log_level);
     }
 
     if (input_file_name == NULL){
@@ -338,7 +338,7 @@ write_decoded_frame_to_file(OVFrame *const frame, FILE *fp)
 
 static void
 print_version(){
-    print_ov_lib_version();
+    printf("libovvc version %s\n", ovdec_version());
 }
 
 static void print_usage(){

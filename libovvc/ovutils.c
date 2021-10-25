@@ -40,7 +40,8 @@ ov_clip_intp2(int32_t val, uint32_t a)
     }
 }
 
-int get_number_of_cores() {
+int
+get_number_of_cores() {
 #if _WIN32
     SYSTEM_INFO sysinfo;
     GetSystemInfo(&sysinfo);

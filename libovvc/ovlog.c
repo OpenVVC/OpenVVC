@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include "ovlog.h"
-#include "ovversion.h"
 
 OVLogLevel ov_log_level = OVLOG_INFO;
 
@@ -18,13 +17,7 @@ static const char* vvctype = "VVCDec";
 static const char *OVLOG_COLORIFY[6] = { RED, YEL, BLU, CYN, GRN, MAG};
 
 void
-print_ov_lib_version()
-{
-  printf("libovvc version %u.%u.%u-%s\n", VER_MAJOR, VER_MINOR, VER_REVISION, VER_BUILD);
-}
-
-void
-set_ov_log_level(OVLogLevel log_level)
+ovlog_set_log_level(OVLogLevel log_level)
 {
     ov_log_level = log_level;
 }
@@ -47,7 +40,7 @@ ov_log_default(void* ctx, int log_level, const char* log_content, va_list vl)
 static void (*ov_log_callback)(void* ctx, int log_level, const char* log_content, va_list vl) = ov_log_default;
 
 void
-set_log_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl))
+ovlog_set_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl))
 {
     ov_log_callback = log_function;
 }

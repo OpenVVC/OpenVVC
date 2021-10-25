@@ -13,11 +13,12 @@ typedef enum
     OVLOG_DEBUG
 } OVLogLevel;
 
-void set_ov_log_level(OVLogLevel log_level);
+void ovlog_set_log_level(OVLogLevel log_level);
 
 void ov_log(void* ctx, int log_level, const char* log_content, ...);
 
-void set_log_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl));
+void ovlog_set_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl));
+
 
 #endif
 

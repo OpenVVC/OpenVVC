@@ -18,10 +18,6 @@
 
 #define ov_ceil_log2(x) 32 - __builtin_clz(x)
 
-//extern OVLogLevel ov_log_level;
-
-void print_ov_lib_version();
-
 /* FIXME
  * Add specific clip for unsigned */
 static inline int32_t
