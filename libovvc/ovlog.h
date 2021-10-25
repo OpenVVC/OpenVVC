@@ -19,6 +19,5 @@ void ov_log(void* ctx, int log_level, const char* log_content, ...);
 
 void ovlog_set_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl));
 
-
 #endif
 
