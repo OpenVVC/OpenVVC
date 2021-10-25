@@ -1,3 +1,4 @@
+#include "overror.h"
 #include "ovunits.h"
 #include "ovmem.h"
 #include "ovutils.h"
@@ -66,7 +67,7 @@ ov_nalu_unref(OVNALUnit **nalu_p)
 }
 
 int
-ovnalu_init(OVNALUnit **nalu_p, uint8_t *rbsp_data, uint32_t *epb_offset, size_t rbsp_size,
+ovnalu_init(OVNALUnit **nalu_p, const uint8_t *rbsp_data, const uint32_t *epb_offset, size_t rbsp_size,
             uint32_t nb_epb, uint8_t nalu_type, void (*release_callback)(struct OVNALUnit **))
 {
     OVNALUnit *nalu = *nalu_p;
@@ -83,6 +84,28 @@ ovnalu_init(OVNALUnit **nalu_p, uint8_t *rbsp_data, uint32_t *epb_offset, size_t
     }
 
     atomic_init(&nalu->ref_count, 0);
+    return 0;
+}
+
+int
+ovpu_init(OVPictureUnit **ovpu_p, uint8_t nb_nalus)
+{
+    OVPictureUnit *pu = ov_mallocz(sizeof(*pu));
+    if (!pu) {
+        return OVVC_ENOMEM;
+    }
+
+    pu->nalus = ov_mallocz(sizeof(*pu->nalus) * nb_nalus);
+    if (!pu->nalus) {
+        ov_free(pu);
+        *ovpu_p = NULL;
+        return OVVC_ENOMEM;
+    }
+
+    pu->nb_nalus = nb_nalus;
+
+    *ovpu_p = pu;
+
     return 0;
 }
 

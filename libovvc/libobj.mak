@@ -68,7 +68,6 @@ LIB_SRC:=																																 \
 LIB_HEADER:=ovdefs.h       \
 						ovunits.h      \
 						ovlog.h        \
-						ovversion.h    \
 						ovdec.h        \
 						ovframe.h     \
 						ovio.h        \

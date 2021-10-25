@@ -484,42 +484,42 @@ move_nalu_elem_to_ovnalu(struct NALUnitListElem *lelem, OVNALUnit *nalu)
     memset(&lelem->nalu, 0, sizeof(lelem->nalu));
 }
 
-int
-convert_nalu_list_to_pu(OVPictureUnit **dst_pu, struct NALUnitsList *const src)
+static int
+count_list_nal_units(struct NALUnitsList *const src)
 {
-    OVPictureUnit *pu = ov_mallocz(sizeof(*pu));
-    if (!pu) {
-        return OV_ENOMEM;
-    }
-
-    /* FIXME retrieve number of NAL Units for alloc */
+    /* FIXME Avoid counting list elements */
     int nb_nalus = 0;
-    int i = 0;
     struct NALUnitListElem *lelem = src->first_nalu;
     while (lelem) {
         lelem = lelem->next_nalu;
         nb_nalus++;
     }
+    return nb_nalus;
+}
 
-    pu->nalus = ov_mallocz(sizeof(*pu->nalus) * nb_nalus);
-    if (!pu->nalus) {
-        ov_free(pu);
-        return OV_ENOMEM;
+int
+ovdmx_init_pu_from_list(OVPictureUnit **ovpu_p, struct NALUnitsList *const src)
+{
+    OVPictureUnit *ovpu;
+    struct NALUnitListElem *lelem = src->first_nalu;
+    int nb_nalus = count_list_nal_units(src);
+    int ret = ovpu_init(ovpu_p, nb_nalus);
+    int i;
+    if (ret < 0) {
+        return ret;
     }
 
-    for(int i=0; i < nb_nalus; i++)
-        pu->nalus[i] = ov_mallocz(sizeof(*pu->nalus[i]));
+    ovpu = *ovpu_p;
 
-    lelem = src->first_nalu;
-
-    while (lelem) {
-        move_nalu_elem_to_ovnalu(lelem, pu->nalus[i++]);
+    for (i = 0; i < nb_nalus; i++) {
+        ovpu->nalus[i] = ov_mallocz(sizeof(*ovpu->nalus[i]));
+        move_nalu_elem_to_ovnalu(lelem, ovpu->nalus[i++]);
         lelem = lelem->next_nalu;
     }
 
-    pu->nb_nalus = nb_nalus;
+    ovpu->nb_nalus = nb_nalus;
 
-    *dst_pu = pu;
+    *ovpu_p = ovpu;
 
     return 0;
 }
@@ -557,7 +557,7 @@ ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu_p)
     }
     #endif
 
-    int ret2 = convert_nalu_list_to_pu(dst_pu_p, &pending_nalu_list);
+    int ret2 = ovdmx_init_pu_from_list(dst_pu_p, &pending_nalu_list);
     if (ret2 < 0) {
         free_nalu_list(&pending_nalu_list);
         return ret2;

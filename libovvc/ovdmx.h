@@ -28,6 +28,8 @@ void ovdmx_detach_stream(OVVCDmx *const ovdmx);
 
 int convert_nalu_list_to_pu(OVPictureUnit **dst_pu, NALUnitsList *const src);
 
+int ovdmx_init_pu_from_list(OVPictureUnit **ovpu_p, struct NALUnitsList *const src);
+
 /* Extract a Picture Unit
  *
  * Note :
