@@ -13,14 +13,12 @@
 #include "ovutils.h"
 #include "ovversion.h"
 
-typedef struct OVVCHdl{
+typedef struct OVVCHdl
+{
     OVVCDmx *dmx;
     OVVCDec *dec;
-    /* TODO decide whether or not file pointer must be given
-       to dmx or not  it is only given to the hadle so when can
-       close the file later since we opened it from here*/
     OVIO *io;
-}OVVCHdl;
+} OVVCHdl;
 
 static int dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name);
 
@@ -30,7 +28,7 @@ static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
 static int read_write_stream(OVVCHdl *const hdl, FILE *fout);
 
-static uint32_t write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
+static int write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
 
 static void print_version(void);
 
@@ -53,32 +51,36 @@ main(int argc, char** argv)
 
     OVVCHdl ovvc_hdl;
     int ret = 0;
-    while (1)
-    {
-        static struct option long_options[] =
+
+    while (1) {
+
+        const static struct option long_options[] =
         {
-            {"version", no_argument,      0, 'v'},
-            {"help",    no_argument,       0, 'h'},
+            {"version",   no_argument,       0, 'v'},
+            {"help",      no_argument,       0, 'h'},
             {"log-level", required_argument, 0, 'l'},
-            {"infile",      required_argument, 0, 'i'},
-            {"outfile",      required_argument, 0, 'o'},
-            {"framethr",      required_argument, 0, 't'},
-            {"entrythr",      required_argument, 0, 'e'},
+            {"infile",    required_argument, 0, 'i'},
+            {"outfile",   required_argument, 0, 'o'},
+            {"framethr",  required_argument, 0, 't'},
+            {"entrythr",  required_argument, 0, 'e'},
         };
+
         int option_index = 0;
-        c = getopt_long (argc, argv, "vhl:i:o:t:e:",
-                         long_options, &option_index);
+
+        c = getopt_long(argc, argv, "vhl:i:o:t:e:", long_options,
+                        &option_index);
         if (c == -1){
             break;
         }
+
         switch (c)
         {
             case 'v':
-                options_flag+=0x01;
+                options_flag += 0x01;
                 break;
 
             case 'h':
-                options_flag+=0x10;
+                options_flag += 0x10;
                 break;
 
             case 'l':
@@ -104,10 +106,10 @@ main(int argc, char** argv)
                 break;
 
             case '?':
-                options_flag+=0x10;
+                options_flag += 0x10;
                 break;
             default:
-                abort ();
+                abort();
         }
     }
 
@@ -168,8 +170,8 @@ failinit:
 static int
 dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name)
 {
+    OVFileIO *file_io = ovio_new_fileio(input_file_name, "rb");
     int ret;
-    OVFileIO *file_io = ovio_new_fileio(input_file_name,"rb");
 
     if (file_io == NULL) {
         perror(input_file_name);
@@ -240,7 +242,7 @@ close_openvvc_hdl(OVVCHdl *const ovvc_hdl)
     return 0;
 
 faildecclose:
-    /* Do not check for dmx failure  since it might override
+    /* Do not check for dmx failure since it might override
        return value to a correct one in either success or
        failure we already raised an error */
     ov_log(NULL, OVLOG_ERROR, "Decoder failed at cloture.\n");
@@ -258,14 +260,13 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
     int ret;
 
     do {
-        OVVCDmx *const dmx = hdl->dmx;
         OVPictureUnit *pu = NULL;
-        ret = ovdmx_extract_picture_unit(dmx, &pu);
+        ret = ovdmx_extract_picture_unit(hdl->dmx, &pu);
         if (ret < 0) {
             break;
         }
 
-        if (pu){
+        if (pu) {
             int nb_pic2;
             ret = ovdec_submit_picture_unit(dec, pu);
             if (ret < 0) {
@@ -279,10 +280,12 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
 
                 if (frame) {
                     write_decoded_frame_to_file(frame, fout);
-                    ++nb_pic;
+
                     ov_log(NULL, OVLOG_DEBUG, "Got output picture with POC %d.\n", frame->poc);
 
                     ovframe_unref(&frame);
+
+                    ++nb_pic;
                 }
             } while (nb_pic2 > 0);
 
@@ -305,10 +308,12 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
 
         if (frame) {
             write_decoded_frame_to_file(frame, fout);
-            ++nb_pic;
+
             ov_log(NULL, OVLOG_DEBUG, "Drain picture with POC %d.\n", frame->poc);
 
             ovframe_unref(&frame);
+
+            ++nb_pic;
         }
     }
 
@@ -317,14 +322,14 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
     return 1;
 }
 
-static uint32_t
+static int
 write_decoded_frame_to_file(OVFrame *const frame, FILE *fp)
 {
     uint8_t component = 0;
-    uint32_t ret = 0;
+    int ret = 0;
 
     for (component = 0; component < 3; component++) {
-        uint32_t frame_size = frame->height[component] * frame->linesize[component];
+        int frame_size = frame->height[component] * frame->linesize[component];
         ret += fwrite(frame->data[component], frame_size, sizeof(uint8_t), fp);
     }
 
