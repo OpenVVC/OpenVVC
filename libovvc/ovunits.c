@@ -129,3 +129,39 @@ ov_free_pu(OVPictureUnit **ovpu_p)
 
     ov_freep(ovpu_p);
 }
+
+void
+ovpu_unref(OVPictureUnit **ovpu_p)
+{
+    if (!ovpu_p)
+        return;
+
+    OVPictureUnit *ovpu = *ovpu_p;
+
+    if (!ovpu){
+        ov_log(NULL, OVLOG_ERROR, "Trying to unref NULL ovpu\n");
+        return;
+    }
+
+    unsigned ref_count = atomic_fetch_add_explicit(&ovpu->ref_count, -1, memory_order_acq_rel);
+
+    if (!ref_count) {
+        ov_free_pu(ovpu_p);
+    }
+
+    *ovpu_p = NULL;
+}
+
+int
+ovpu_new_ref(OVPictureUnit **ovpu_p, OVPictureUnit *ovpu)
+{
+    if (!ovpu) {
+        return -1;
+    }
+
+    atomic_fetch_add_explicit(&ovpu->ref_count, 1, memory_order_acq_rel);
+
+    *ovpu_p = ovpu;
+
+    return 0;
+}

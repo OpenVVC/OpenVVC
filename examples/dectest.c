@@ -269,10 +269,8 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
         if (pu) {
             int nb_pic2;
             ret = ovdec_submit_picture_unit(dec, pu);
-            if (ret < 0) {
-                ov_free_pu(&pu);
-                break;
-            }
+
+            ovpu_unref(&pu);
 
             do {
                 OVFrame *frame = NULL;
@@ -289,10 +287,6 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
                 }
             } while (nb_pic2 > 0);
 
-            /* FIXME Picture unit freeing be inside the decoder
-             * use ref_counted buffer and call unref here instead
-             */
-            ov_free_pu(&pu);
         } else {
             break;
         }

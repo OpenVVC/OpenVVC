@@ -107,12 +107,15 @@ typedef struct OVNALUnit
 /* Picture Unit */
 typedef struct OVPictureUnit
 {
-    /* TODO A vector of NAL Units
+    /* A table of OVNALUnits pointers
+     *
+     * Note :
+     *    - must be at least nb_nalus wide
      */
     OVNALUnit **nalus;
 
     /* The number of NAL Units in this Picture Unit
-     */
+    */
     uint8_t nb_nalus;
 
     /* Decoding Time Stamp (DTS) used for Presentation Time Stamps computation
@@ -126,6 +129,19 @@ typedef struct OVPictureUnit
      */
     uint64_t dts;
 
+    /* Reference counter
+     *
+     * This is used internally to know when the Picture Unit should be freed.
+     * Do not set manually. See ovpu_ref_instead.
+     */
+    atomic_uint ref_count;
+
+    /* Release function
+     *
+     * Callback function which will be called once OpenVVC does not need
+     * a reference to this OVPictureUnit anymore.
+     */
+    void (*release)(struct OVNALUnit **nalu_p);
 } OVPictureUnit;
 
 /* Reference an OVNALUnit pointer
@@ -149,6 +165,26 @@ int ov_nalu_new_ref(OVNALUnit **dst_p, OVNALUnit *src);
 void ov_nalu_unref(OVNALUnit **nalu_p);
 
 int ov_nalu_init(OVNALUnit *nalu);
+
+/* Reference an OVPictureUnit pointer
+ *
+ * Add a new reference to an OVPictureUnit pointed by src and increase its
+ * internal reference counter.
+ *
+ * Note:
+ *     - Do not call if the value pointed by dst_p already
+ *     references an OVPictureUnit
+ *     - src must be a valid OVPictureUnit (i.e. from the decoder output)
+ */
+int ovpu_new_ref(OVPictureUnit **dst_p, OVPictureUnit *src);
+
+/* Dereference an OVPictureUnit pointer
+ *
+ * Decrements reference counter of the OVPictureUnit pointed by ovpu_p
+ * and set ovnalu_p to NULL. If the OVPictureUnit reference counter drops down
+ * to zero OpenVVC will call the function pointed by release.
+ */
+void ovpu_unref(OVPictureUnit **ovpu_p);
 
 void ov_free_pu(OVPictureUnit **pu);
 
