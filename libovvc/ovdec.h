@@ -125,4 +125,6 @@ int ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value);
 
 void ovdec_set_log_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl));
 
+const char* ovdec_version();
+
 #endif

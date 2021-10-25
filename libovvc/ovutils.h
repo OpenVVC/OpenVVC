@@ -4,6 +4,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+#include "ovlog.h"
+
 #define OVMAX(a, b) (((a) > (b)) ? (a) : (b))
 #define OVMIN(a, b) (((a) < (b)) ? (a) : (b))
 #define OVABS(a) (((a) < (0)) ? -(a) : (a))
@@ -16,25 +18,9 @@
 
 #define ov_ceil_log2(x) 32 - __builtin_clz(x)
 
-typedef enum
-{
-    OVLOG_ERROR,
-    OVLOG_WARNING,
-    OVLOG_INFO,
-    OVLOG_VERBOSE,
-    OVLOG_TRACE,
-    OVLOG_DEBUG
-} OVLogLevel;
-
-extern OVLogLevel ov_log_level;
+//extern OVLogLevel ov_log_level;
 
 void print_ov_lib_version();
-
-void set_ov_log_level(OVLogLevel log_level);
-
-void ov_log(void* ctx, int log_level, const char* log_content, ...);
-
-void set_log_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl));
 
 /* FIXME
  * Add specific clip for unsigned */

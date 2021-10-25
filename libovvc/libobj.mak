@@ -26,6 +26,7 @@ LIB_SRC:=																																 \
 					overror.c																										   \
 					ovdmx.c                                                        \
 					ovio.c                                                         \
+					ovlog.c                                                        \
 					ovannexb.c                                                     \
 					ovunits.c                                                      \
 					ovframe.c                                                      \
@@ -66,6 +67,8 @@ LIB_SRC:=																																 \
 
 LIB_HEADER:=ovdefs.h       \
 						ovunits.h      \
+						ovlog.h        \
+						ovversion.h    \
 						ovdec.h        \
 						ovframe.h     \
 						ovio.h        \
