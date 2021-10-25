@@ -120,7 +120,6 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
 OVSliceDec *
 ovdec_select_subdec(OVVCDec *const dec)
 {
-    #if USE_THREADS
     OVSliceDec **sldec_list = dec->subdec_list;
     int nb_threads = dec->nb_frame_th;
     struct MainThread* th_main = &dec->main_thread;
@@ -178,10 +177,6 @@ ovdec_select_subdec(OVVCDec *const dec)
     } while (!th_main->kill);
 
     return NULL;
-
-    #else
-   return dec->subdec_list[0];
-    #endif
 }
 
 static int
@@ -295,7 +290,6 @@ int
 ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
 {
     OVDPB *dpb = dec->dpb;
-    uint16_t out_cvs_id;
     int ret = 0;
 
     if (!dpb) {

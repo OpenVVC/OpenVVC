@@ -731,6 +731,7 @@ slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
     for (i = 0; i < nb_entries; ++i) {
         ret = slicedec_decode_rect_entry(sldec, sldec->ctudec_list[0], prms, i);
     }
+    slicedec_finish_decoding(sldec);
     ret = 0;
     #endif
     return ret;
@@ -1633,9 +1634,7 @@ slicedec_init(OVSliceDec *sldec, int nb_entry_th)
     }
 
     sldec->th_slice.owner = sldec;
-    #if USE_THREADS 
     ret = ovthread_slice_thread_init(&sldec->th_slice, nb_entry_th);
-    #endif
     if (ret < 0) {
         goto failthreads;
     }
@@ -1647,6 +1646,7 @@ slicedec_init(OVSliceDec *sldec, int nb_entry_th)
 failthreads:
     ov_log(NULL, OVLOG_ERROR, "Failed slice decoder initialisation\n");
     uninit_ctudec_list(sldec, nb_entry_th);
+    return OVVC_ENOMEM;
 failctudec:
     ov_freep(&sldec);
     return OVVC_ENOMEM;
@@ -1658,8 +1658,9 @@ void
 slicedec_uninit(OVSliceDec **sldec_p)
 {
     OVSliceDec *sldec = *sldec_p;
-
+    #if USE_THREADS
     ovthread_slice_thread_uninit(&sldec->th_slice);
+    #endif
 
     if (sldec->ctudec_list) {
         uninit_ctudec_list(sldec, sldec->nb_entry_th);

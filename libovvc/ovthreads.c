@@ -195,12 +195,6 @@ Functions needed by the threads decoding an entire slice
 int
 ovthread_slice_thread_init(struct SliceThread *th_slice, int nb_entry_th)
 {   
-    th_slice->nb_entry_th = nb_entry_th;
-    th_slice->tdec = ov_mallocz(sizeof(struct EntryThread) * nb_entry_th);
-    if (!th_slice->tdec) {
-        goto failalloc;
-    }
-
     atomic_init(&th_slice->first_job,      0);
     atomic_init(&th_slice->last_entry_idx, 0);
 
@@ -212,8 +206,14 @@ ovthread_slice_thread_init(struct SliceThread *th_slice, int nb_entry_th)
     //     ov_log(NULL, OVLOG_ERROR, "Thread creation failed at decoder init\n");
     //     goto failthread;
     // }
-
+#if USE_THREADS
+    th_slice->nb_entry_th = nb_entry_th;
+    th_slice->tdec = ov_mallocz(sizeof(struct EntryThread) * nb_entry_th);
+    if (!th_slice->tdec) {
+        return OVVC_ENOMEM;
+    }
     init_entry_threads(th_slice, nb_entry_th);
+#endif
 
     return 0;
 
@@ -221,8 +221,6 @@ ovthread_slice_thread_init(struct SliceThread *th_slice, int nb_entry_th)
 //     ov_freep(&th_slice->tdec);
 //     return OVVC_ENOMEM;
 
-failalloc:
-    return OVVC_ENOMEM;
 }
 
 
@@ -232,7 +230,9 @@ ovthread_slice_thread_uninit(struct SliceThread *th_slice)
 {   
     OVSliceDec * slicedec = th_slice->owner;
 
+#if USE_THREADS
     uninit_entry_threads(th_slice);
+#endif
 
     pthread_mutex_lock(&th_slice->gnrl_mtx);
     if (th_slice->active_state == DECODING_FINISHED) {
