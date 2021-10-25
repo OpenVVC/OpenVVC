@@ -11,23 +11,30 @@
 #include <unistd.h>
 #endif
 
-
-
-OVLOG_TYPE ov_log_level = OVLOG_INFO;
+OVLogLevel ov_log_level = OVLOG_INFO;
 
 static const char* vvctype = "VVCDec";
+
+#define RED   "\x1B[31m"
+#define GRN   "\x1B[32m"
+#define YEL   "\x1B[33m"
+#define BLU   "\x1B[34m"
+#define MAG   "\x1B[35m"
+#define CYN   "\x1B[36m"
+#define WHT   "\x1B[37m"
+#define RST "\x1B[0m"
 
 static const char *OVLOG_COLORIFY[6] = { RED, YEL, BLU, CYN, GRN, MAG};
 
 void
 print_ov_lib_version(){
-  printf("libovvc version %u.%u.%u-%s\n", VER_MAJOR,VER_MINOR,VER_REVISION, VER_BUILD);
+  printf("libovvc version %u.%u.%u-%s\n", VER_MAJOR, VER_MINOR, VER_REVISION, VER_BUILD);
 }
 
 void
-set_ov_log_level(OVLOG_TYPE log_level)
+set_ov_log_level(OVLogLevel log_level)
 {
-        ov_log_level = log_level;
+    ov_log_level = log_level;
 }
 
 static void
@@ -96,7 +103,6 @@ ov_clip_intp2(int32_t val, uint32_t a)
         return -(((-overflow) & mask) | (val & mask));
     }
 }
-
 
 int get_number_of_cores() {
 #if _WIN32
