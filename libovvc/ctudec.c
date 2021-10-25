@@ -544,6 +544,7 @@ ctudec_uninit(OVCTUDec *ctudec)
     ctudec_free_filter_buffers(ctudec);    
     ctudec_free_intra_line_buff(ctudec);
 
-    ov_free(ctudec);
+    ov_freep(&ctudec);
+
     return 0;
 }

@@ -239,7 +239,7 @@ ovdec_uninit_entry_threads(OVVCDec *vvcdec)
     int i;
     void *ret;
     ov_log(NULL, OVLOG_TRACE, "Deleting %d entry threads\n", vvcdec->nb_entry_th);
-    struct MainThread *th_main       = &vvcdec->main_thread;
+    struct MainThread *th_main = &vvcdec->main_thread;
 
     /* Wait for the job fifo to be empty before joining entry thread.
     */

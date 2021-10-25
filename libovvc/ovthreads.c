@@ -109,7 +109,6 @@ ovthread_init_entry_thread(struct EntryThread *entry_th)
     entry_th->state = IDLE;
     entry_th->kill  = 0;
 
-    entry_th->ctudec = ov_mallocz(sizeof(OVCTUDec));
     int ret = ctudec_init(&entry_th->ctudec);
     if (ret < 0) {
         ov_log(NULL, OVLOG_ERROR, "Failed line decoder initialisation\n");
