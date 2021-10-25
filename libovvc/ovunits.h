@@ -128,12 +128,23 @@ typedef struct OVPictureUnit
 
 } OVPictureUnit;
 
-int ov_nalu_new_ref(OVNALUnit **nalu_p, OVNALUnit *nalu);
+/* Reference an OVNALUnit pointer
+ *
+ * Add a new reference to an OVNALUnit pointed by src and increase its
+ * internal reference counter.
+ *
+ * Note:
+ *     - Do not call if the value pointed by dst_p already
+ *     references an OVNALUnit
+ *     - src must be a valid OVNALUnit (i.e. from the decoder output)
+ */
+int ov_nalu_new_ref(OVNALUnit **dst_p, OVNALUnit *src);
 
-/* Decrement reference counter of the OVNALUnit pointed by nalu_p
- * and set nalu_p to NULL.
- * If the reference counter drop down to zero the OVNALUnit pointed
- * by nalu_p will be freed.
+/* Dereference an OVNALUnit pointer
+ *
+ * Decrements reference counter of the OVNALUnit pointed by ovnalu_p
+ * and set ovnalu_p to NULL. If the OVNALUnit reference counter drops down
+ * to zero OpenVVC will call the function pointed by release.
  */
 void ov_nalu_unref(OVNALUnit **nalu_p);
 
