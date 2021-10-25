@@ -148,13 +148,13 @@ fi
 is_arm64="0"
 is_arm="0"
 is_x86="0"
-target_and=""
-target_ios=""
+target_and="${arch}"
+target_ios="${arch}"
 
 case "$arch" in
     aarch64|arm64)
         cflags="${cflags} -march=armv8-a"
-        ldflags="${ldflags} -arch armv8"
+        ldflags="${ldflags} -arch arm64"
         target_and="aarch64"
         target_ios="aarch64"
         build_arch="arm"
@@ -223,7 +223,7 @@ case $target_os in
     ;;
       Android|android)
         cflags="${cflags} -fPIC --target=${target_and}-none-linux-android21 --sysroot=${sysroot}"
-        ldflags="${ldflags} -fPIE -pie -Wl,--no-undefined"
+        ldflags="${ldflags} -fPIE -Wl,--no-undefined"
         shlib_suffix=".so"
         stlib_suffix=".a"
         cc_cross_prefix=${cross_prefix}21-
