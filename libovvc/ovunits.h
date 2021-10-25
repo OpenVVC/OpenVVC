@@ -96,6 +96,12 @@ typedef struct OVNALUnit
    */
   atomic_uint ref_count;
 
+  /* Release function
+   *
+   * Callback function which will be called once OpenVVC does not need
+   * a reference to this OVNALUnit anymore.
+   */
+  void (*release)(struct OVNALUnit **nalu_p);
 } OVNALUnit;
 
 /* Picture Unit */
@@ -134,5 +140,8 @@ void ov_nalu_unref(OVNALUnit **nalu_p);
 int ov_nalu_init(OVNALUnit *nalu);
 
 void ov_free_pu(OVPictureUnit **pu);
+
+int ovnalu_init(OVNALUnit **nalu_p, const uint8_t *rbsp_data, const uint32_t *epb_offset, size_t rbsp_size,
+                uint32_t nb_epb, uint8_t nalu_type, void (*release_callback)(struct OVNALUnit **));
 
 #endif
