@@ -75,7 +75,7 @@ ovnalu_init(OVNALUnit **nalu_p, const uint8_t *rbsp_data, const uint32_t *epb_of
     nalu->rbsp_size = rbsp_size;
 
     nalu->epb_pos = epb_offset;
-    nalu->nb_epb = 0;
+    nalu->nb_epb = nb_epb;
 
     nalu->type = nalu_type;
 
