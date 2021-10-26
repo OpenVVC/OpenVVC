@@ -513,6 +513,9 @@ ovdmx_init_pu_from_list(OVPictureUnit **ovpu_p, struct NALUnitsList *const src)
 
     for (i = 0; i < nb_nalus; i++) {
         ovpu->nalus[i] = ov_mallocz(sizeof(*ovpu->nalus[i]));
+        if (!ovpu->nalus[i]) {
+            goto fail_nalu_alloc;
+        }
         move_nalu_elem_to_ovnalu(lelem, ovpu->nalus[i++]);
         lelem = lelem->next_nalu;
     }
@@ -522,6 +525,10 @@ ovdmx_init_pu_from_list(OVPictureUnit **ovpu_p, struct NALUnitsList *const src)
     *ovpu_p = ovpu;
 
     return 0;
+
+fail_nalu_alloc:
+    ovpu_unref(ovpu_p);
+    return OVVC_ENOMEM;
 }
 
 int
