@@ -79,7 +79,7 @@ log_status(){
 }
 
 decode(){
-  dec_arg="-i ${1} -o ${2} -t 8"
+  dec_arg="-i ${1} -o ${2}"
   $($($DECODER ${dec_arg} 2> ${3}) 2> /dev/null)
   return $?
 }

@@ -44,8 +44,8 @@ main(int argc, char** argv)
     const char *input_file_name = NULL, *output_file_name = NULL;
     int ov_log_level = OVLOG_INFO;
     FILE *fout = NULL;
-    int nb_frame_th = 1;
-    int nb_entry_th = 1;
+    int nb_frame_th = 0;
+    int nb_entry_th = 0;
 
     uint8_t options_flag=0;
 
@@ -343,6 +343,6 @@ static void print_usage(){
   printf("\t-l <level>, --log-level=<level>\t\tDefine the level of verbosity. Value between 0 and 6. (Default: 2)\n");
   printf("\t-i <file>, --infile=<file>\t\tPath to the file to be decoded (Default: test.266).\n");
   printf("\t-o <file>, --outfile=<file>\t\tPath to the output file (Default: test.yuv).\n");
-  printf("\t-f <nbthreads>, --framethr=<nbthreads>\t\tNumber of simultaneous frames decoded (Default: 1).\n");
-  printf("\t-e <nbthreads>, --entrythr=<nbthreads>\t\tNumber of simultaneous entries decoded per frame (Default: 1).\n");
+  printf("\t-t <nbthreads>, --framethr=<nbthreads>\t\tNumber of simultaneous frames decoded (Default: 0).\n");
+  printf("\t-e <nbthreads>, --entrythr=<nbthreads>\t\tNumber of simultaneous entries decoded per frame (Default: 0).\n");
 }

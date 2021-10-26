@@ -529,6 +529,9 @@ ovdec_init(OVVCDec **vvcdec, int display_output, int nb_frame_th, int nb_entry_t
     if (nb_frame_th < 1) {
         nb_frame_th = nb_entry_th;
     }
+    else{
+        nb_frame_th = OVMIN(nb_frame_th, nb_entry_th);
+    }
 
     *vvcdec = ov_mallocz(sizeof(OVVCDec));
 
