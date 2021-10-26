@@ -188,7 +188,7 @@ void ovpu_unref(OVPictureUnit **ovpu_p);
 
 void ov_free_pu(OVPictureUnit **pu);
 
-int ovnalu_init(OVNALUnit **nalu_p, const uint8_t *rbsp_data, const uint32_t *epb_offset, size_t rbsp_size,
+int ovnalu_init(OVNALUnit *nalu, const uint8_t *rbsp_data, const uint32_t *epb_offset, size_t rbsp_size,
                 uint32_t nb_epb, uint8_t nalu_type, void (*release_callback)(struct OVNALUnit **));
 
 int ovpu_init(OVPictureUnit **pu, uint8_t nb_nalus);

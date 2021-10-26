@@ -67,10 +67,9 @@ ov_nalu_unref(OVNALUnit **nalu_p)
 }
 
 int
-ovnalu_init(OVNALUnit **nalu_p, const uint8_t *rbsp_data, const uint32_t *epb_offset, size_t rbsp_size,
+ovnalu_init(OVNALUnit *nalu, const uint8_t *rbsp_data, const uint32_t *epb_offset, size_t rbsp_size,
             uint32_t nb_epb, uint8_t nalu_type, void (*release_callback)(struct OVNALUnit **))
 {
-    OVNALUnit *nalu = *nalu_p;
     nalu->rbsp_data = rbsp_data;
     nalu->rbsp_size = rbsp_size;
 
