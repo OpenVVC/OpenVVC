@@ -29,12 +29,13 @@ static void
 ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state,
                              SAOParamsCtu *sao_ctu,
                              uint8_t sao_enabled_l,
-                             uint8_t sao_enabled_c,
-                             uint8_t num_bits_sao,
-                             uint8_t num_bits_sao_c)
+                             uint8_t sao_enabled_c, uint8_t bit_depth_minus8)
 {
 
     int i, k;
+    uint8_t nb_bits = 0x7 | ((bit_depth_minus8 > 1) << 3);
+    uint8_t num_bits_sao   = nb_bits;
+    uint8_t num_bits_sao_c = nb_bits;
 
     if (sao_enabled_l) {
         memset(sao_ctu,0,sizeof(SAOParamsCtu));
@@ -159,30 +160,30 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
 
 
 void
-ovcabac_read_ae_sao_ctu( OVCTUDec *const ctudec, int ctb_rs, uint16_t nb_ctu_w )
+ovcabac_read_ae_sao_ctu(OVCTUDec *const ctudec, int ctb_rs, uint16_t nb_ctu_w)
 {   
     SAOParamsCtu* sao_ctu = &ctudec->sao_info.sao_params[ctb_rs];
     uint8_t sao_enabled_l = ctudec->sao_info.sao_luma_flag;
     uint8_t sao_enabled_c = ctudec->sao_info.sao_chroma_flag;
+
     if (sao_enabled_l | sao_enabled_c) {
         OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
         uint64_t *const cabac_state = cabac_ctx->ctx_table;
         const uint8_t ctu_neighbour_flags = ctudec->ctu_ngh_flags;
-        uint8_t val = ovcabac_read_ae_sao_merge_type(cabac_ctx, cabac_state, ctu_neighbour_flags);
+        uint8_t merge_type = ovcabac_read_ae_sao_merge_type(cabac_ctx, cabac_state, ctu_neighbour_flags);
 
-        if (!val) {
-            uint8_t num_bits_sao   = 31;
-            uint8_t num_bits_sao_c = 31;
+        if (!merge_type) {
+            uint8_t bit_depth_minus8 = 0;
             ovcabac_read_ae_sao_type_idx(cabac_ctx, cabac_state, sao_ctu,
-                                         sao_enabled_l, sao_enabled_c,
-                                         num_bits_sao, num_bits_sao_c);
+                                         sao_enabled_l, sao_enabled_c, bit_depth_minus8);
         } else {
-            if (val == SAO_MERGE_LEFT) {
-                int ctb_left = ctb_rs-1; 
+
+            if (merge_type == SAO_MERGE_LEFT) {
+                int ctb_left = ctb_rs - 1;
                 *sao_ctu = ctudec->sao_info.sao_params[ctb_left];
             }
-            if (val == SAO_MERGE_ABOVE)
-            {
+
+            if (merge_type == SAO_MERGE_ABOVE) {
                 int ctb_above = ctb_rs - nb_ctu_w; 
                 *sao_ctu = ctudec->sao_info.sao_params[ctb_above];;
             }
