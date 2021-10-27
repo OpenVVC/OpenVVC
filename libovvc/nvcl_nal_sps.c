@@ -34,10 +34,6 @@ validate_sps(OVNVCLReader *rdr, const union HLSData *const data)
 {
     /* TODO various check on limitation and max sizes */
     const OVSPS *const sps =  (const OVSPS *)data;
-    if (sps->sps_bitdepth_minus8 != 2) {
-        ov_log(NULL, OVLOG_ERROR, "Unsupported bitdepth\n");
-        return OVVC_EINDATA;
-    }
 
     if (sps->sps_subpic_info_present_flag) {
         ov_log(NULL, OVLOG_ERROR, "Unsupported subpicture\n");
