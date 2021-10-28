@@ -56,6 +56,11 @@ pp_process_frame(const OVSEI* sei, OVFrame **frame_p)
             ov_log(NULL, OVLOG_ERROR, "Could not get a writable picture for post processing\n");
             goto no_writable_pic;
         }
+        //TODOrpr: put width and height as parameters of ovframepool_request_frame
+        for(int i = 0; i < 3; i++){
+            frame_post_proc->width[i] = frame->width[i];
+            frame_post_proc->height[i] = frame->height[i];
+        }
 
         int16_t* srcComp[3] = {(int16_t*)frame->data[0], (int16_t*)frame->data[1], (int16_t*)frame->data[2]};
         int16_t* dstComp[3] = {(int16_t*)frame_post_proc->data[0], (int16_t*)frame_post_proc->data[1], 

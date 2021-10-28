@@ -453,6 +453,7 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t 
     return 0;
 }
 
+
 static int
 vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, struct RPLInfo *rpl_info, OVPicture **dst_rpl, OVPicture **dst_rpl_na)
 {
@@ -1104,6 +1105,13 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     ret = ovdpb_init_current_pic(dpb, pic_p, poc);
     if (ret < 0) {
         goto fail;
+    }
+    //TODOrpr: put width and height as parameters of ovdpb_init_current_pic
+    for(int i = 0; i < 3; i++){
+        //FIXME: only 420
+        int scale = i==0 ? 0 : 1;
+        (*pic_p)->frame->width[i] = ps->pps->pps_pic_width_in_luma_samples >> scale;
+        (*pic_p)->frame->height[i] = ps->pps->pps_pic_height_in_luma_samples >> scale;
     }
 
     copy_sei_params(&(*pic_p)->sei, ovdec->active_params.sei);

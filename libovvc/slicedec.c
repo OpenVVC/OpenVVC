@@ -323,7 +323,6 @@ init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
     uint8_t slice_type = sldec->slice_type;
     const OVPartInfo *const pinfo = slice_type == SLICE_I ? &prms->sps_info.part_info[0]
                                                           : &prms->sps_info.part_info[1];
-     const OVSPS *const sps = prms->sps;
      const struct TileInfo *const tinfo = &prms->pps_info.tile_info;
 
      struct CCLines *const lns   = &sldec->cabac_lines[0];
@@ -332,7 +331,8 @@ init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
      uint8_t log2_ctb_s = pinfo->log2_ctu_s;
      uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
 
-     uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
+     const OVPPS *const pps = prms->pps;
+     uint16_t pic_w = pps->pps_pic_width_in_luma_samples;
 
      uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
      uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
@@ -365,7 +365,6 @@ clear_cabac_lines(const OVSliceDec *sldec, const OVPS *const prms)
      const OVPartInfo *const pinfo = slice_type == SLICE_I ? &prms->sps_info.part_info[0]
                                                            : &prms->sps_info.part_info[1];
      const struct TileInfo *const tinfo = &prms->pps_info.tile_info;
-     const OVSPS *const sps = prms->sps;
 
      const struct CCLines *const lns   = &sldec->cabac_lines[0];
      const struct CCLines *const lns_c = &sldec->cabac_lines[1];
@@ -376,7 +375,8 @@ clear_cabac_lines(const OVSliceDec *sldec, const OVPS *const prms)
      /* TODO use active parameters such as generic pic info
       * see init_cabac_lines
       */
-     uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
+     const OVPPS *const pps = prms->pps;
+     uint16_t pic_w = pps->pps_pic_width_in_luma_samples;
      uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
      uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
 
@@ -414,10 +414,12 @@ init_pic_border_info(struct RectEntryInfo *einfo, const OVPS *const prms, int en
 {
     /* Various info on pic_border */
     /* TODO check entry is border pic */
-    const OVSPS *const sps = prms->sps;
     /*TODO use derived value instead */
-    uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
-    uint16_t pic_h = sps->sps_pic_height_max_in_luma_samples;
+    const OVPPS *const pps = prms->pps;
+    uint16_t pic_w = pps->pps_pic_width_in_luma_samples;
+    uint16_t pic_h = pps->pps_pic_height_in_luma_samples;
+
+    const OVSPS *const sps = prms->sps;
     uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
 
     const int last_ctu_w = pic_w & ((1 << log2_ctb_s) - 1);
@@ -1221,6 +1223,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     ctudec->drv_ctx.inter_ctx.nb_active_ref0 = prms->sh->hrpl.rpl_h0.rpl_data.num_ref_active_entries;
     ctudec->drv_ctx.inter_ctx.nb_active_ref1 = prms->sh->hrpl.rpl_h1.rpl_data.num_ref_active_entries;
 
+    ctudec_compute_refs_scaling(ctudec);
+
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 1;
     for (int i = 0; i < ctudec->drv_ctx.inter_ctx.nb_active_ref0; ++i) {
         if(ctudec->drv_ctx.inter_ctx.rpl0[i]->poc > sldec->pic->poc) {
@@ -1402,8 +1406,8 @@ int
 slicedec_update_entry_decoder(OVSliceDec *sldec, OVCTUDec *ctudec)
 {
     const OVPS *const prms = sldec->active_params;
-    ctudec->pic_w = sldec->pic->frame->width[0];
-    ctudec->pic_h = sldec->pic->frame->height[0];
+    ctudec->pic_w = prms->pps->pps_pic_width_in_luma_samples;
+    ctudec->pic_h = prms->pps->pps_pic_height_in_luma_samples;
     slicedec_init_slice_tools(ctudec, prms);
 
     return 0;

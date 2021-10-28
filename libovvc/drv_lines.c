@@ -657,7 +657,6 @@ init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
      uint8_t slice_type = sldec->slice_type;
     const OVPartInfo *const pinfo = slice_type == SLICE_I ? &prms->sps_info.part_info[0]
                                                           : &prms->sps_info.part_info[1];
-     const OVSPS *const sps = prms->sps;
      const struct TileInfo *tinfo = &prms->pps_info.tile_info;
 
      struct DRVLines *const lns = &sldec->drv_lines;
@@ -672,7 +671,8 @@ init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
       * in the decoding process
       */
 
-     uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
+     const OVPPS *const pps = prms->pps;
+     uint16_t pic_w = pps->pps_pic_width_in_luma_samples;
 
      uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
 
@@ -715,7 +715,6 @@ reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
      uint8_t slice_type = sldec->slice_type;
     const OVPartInfo *const pinfo = slice_type == SLICE_I ? &prms->sps_info.part_info[0]
                                                           : &prms->sps_info.part_info[1];
-    const OVSPS *const sps = prms->sps;
      const struct TileInfo *tinfo = &prms->pps_info.tile_info;
 
     struct DRVLines *const lns = &sldec->drv_lines;
@@ -725,11 +724,12 @@ reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
     /* TODO use active parameters such as generic pic info
      * see init_cabac_lines
      */
-    uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
+    const OVPPS *const pps = prms->pps;
+    uint16_t pic_w = pps->pps_pic_width_in_luma_samples;
     uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
 
-     nb_ctb_pic_w += tinfo->nb_tile_cols;
-     nb_ctb_pic_w *= tinfo->nb_tile_rows;
+    nb_ctb_pic_w += tinfo->nb_tile_cols;
+    nb_ctb_pic_w *= tinfo->nb_tile_rows;
 
     uint16_t nb_pb_pic_w = (nb_ctb_pic_w << log2_ctb_s) >> log2_min_cb_s;
     uint16_t nb_pb_pic_w2 = (nb_ctb_pic_w << log2_ctb_s) >> LOG2_MIN_CU_S;

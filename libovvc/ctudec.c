@@ -1,9 +1,12 @@
 #include <string.h>
 #include "ovdefs.h"
+#include "ovdpb.h"
 #include "ctudec.h"
 #include "rcn_lmcs.h"
 #include "ovmem.h"
 #include "overror.h"
+
+#include "rcn_lmcs.h"
 
 static void
 attach_rcn_ctu_buff(OVCTUDec *const ctudec)
@@ -48,6 +51,49 @@ void ctudec_free_intra_line_buff(OVCTUDec *const ctudec)
         ov_freep(&intra_line_b->y);
         ov_freep(&intra_line_b->cb);
         ov_freep(&intra_line_b->cr);
+    }
+}
+
+void
+ctudec_compute_refs_scaling(OVCTUDec *const ctudec)
+{
+    // pps->pps_scaling_window_explicit_signalling_flag = nvcl_read_flag(rdr);
+    // if (pps->pps_scaling_window_explicit_signalling_flag) {
+    //     pps->pps_scaling_win_left_offset   = nvcl_read_s_expgolomb(rdr);
+    //     pps->pps_scaling_win_right_offset  = nvcl_read_s_expgolomb(rdr);
+    //     pps->pps_scaling_win_top_offset    = nvcl_read_s_expgolomb(rdr);
+    //     pps->pps_scaling_win_bottom_offset = nvcl_read_s_expgolomb(rdr);
+    // }
+
+    int scaling_hor, scaling_ver;
+    int ref_pic_w, ref_pic_h;
+    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    const int pic_w = ctudec->pic_w;
+    const int pic_h = ctudec->pic_h;
+
+    for (int i = 0;  i < inter_ctx->nb_active_ref0; ++i){
+        OVPicture *ref_pic = inter_ctx->rpl0[i];
+        if (!ref_pic->frame)
+            continue;
+        ref_pic_w = ref_pic->frame->width[0];
+        ref_pic_h = ref_pic->frame->height[0];
+        scaling_hor = (ref_pic_w << RPR_SCALE_PREC) / pic_w;
+        scaling_ver = (ref_pic_h << RPR_SCALE_PREC) / pic_h;
+        scaling_ver = (scaling_ver + 1) / 16 * 16;
+        inter_ctx->scaling_rpl0[i][0] = scaling_hor;
+        inter_ctx->scaling_rpl0[i][1] = scaling_ver;
+    }
+    for (int i = 0;  i < inter_ctx->nb_active_ref1; ++i){
+        OVPicture *ref_pic = inter_ctx->rpl1[i];
+        if (!ref_pic->frame)
+            continue;
+        ref_pic_w = ref_pic->frame->width[0];
+        ref_pic_h = ref_pic->frame->height[0];
+        scaling_hor = (ref_pic_w << RPR_SCALE_PREC) / pic_w;
+        scaling_ver = (ref_pic_h << RPR_SCALE_PREC) / pic_h;
+        scaling_ver = (scaling_ver + 1) / 16 * 16;
+        inter_ctx->scaling_rpl1[i][0] = scaling_hor;
+        inter_ctx->scaling_rpl1[i][1] = scaling_ver;
     }
 }
 
@@ -393,11 +439,12 @@ int
 ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
 {
     const OVSPS *const sps = prms->sps;
+    const OVPPS *const pps = prms->pps;
     const OVSH *const sh = prms->sh;
     const OVPH *const ph = prms->ph;
 
-    uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
-    uint16_t pic_h = sps->sps_pic_height_max_in_luma_samples;
+    uint16_t pic_w = pps->pps_pic_width_in_luma_samples;
+    uint16_t pic_h = pps->pps_pic_height_in_luma_samples;
     uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
     int nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
     int nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;

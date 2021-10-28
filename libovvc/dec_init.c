@@ -335,8 +335,6 @@ decinit_set_entry_points(OVPS *const prms, const OVNALUnit *nal, uint32_t nb_sh_
 static void
 init_tile_ctx(struct TileInfo *const tinfo, const OVPPS *const pps)
 {
-    // int nb_cols = pps->pps_num_exp_tile_columns_minus1 + 1;
-    // int nb_rows = pps->pps_num_exp_tile_rows_minus1 + 1;
     int nb_cols = pps->pps_num_tile_columns_minus1 + 1;
     int nb_rows = pps->pps_num_tile_rows_minus1 + 1;
 
@@ -490,15 +488,15 @@ retrieve_pps(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
 }
 
 static void
-set_pic_part_info(struct PicPartInfo *pic_info, const OVSPS *const sps)
+set_pic_part_info(struct PicPartInfo *pic_info, const OVSPS *const sps, const OVPPS *const pps)
 {
      /* Masks are to ensure log2_size does not exceed standard requirements */
      uint8_t log2_ctb_s    = (sps->sps_log2_ctu_size_minus5 + 5) & 0x7;
      uint8_t log2_min_cb_s = (sps->sps_log2_min_luma_coding_block_size_minus2 + 2) & 0x7;
      /* FIXME assert log2_min < log2_ctb */
 
-     uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
-     uint16_t pic_h = sps->sps_pic_height_max_in_luma_samples;
+     uint16_t pic_w = pps->pps_pic_width_in_luma_samples;
+     uint16_t pic_h = pps->pps_pic_height_in_luma_samples;
 
      uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
      uint16_t nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
@@ -606,7 +604,7 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
     if (ps->aps_lmcs != aps_lmcs) {
         ps->aps_lmcs = aps_lmcs;
     }
-    set_pic_part_info(&ps->pic_info, ps->sps);
+    set_pic_part_info(&ps->pic_info, ps->sps, ps->pps);
 
     return 0;
 

@@ -631,6 +631,7 @@ const char *
 ovdec_version()
 {
     static const char *ov_version = OV_VERSION_STR(VER_MAJOR,VER_MINOR,VER_REVISION,VER_BUILD);
+    //static const char *ov_version = "0.3.0";
     return ov_version;
 }
 

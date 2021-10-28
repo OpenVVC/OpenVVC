@@ -13,6 +13,8 @@
 #define OV_BOUNDARY_RIGHT_RECT     (1 << 5)
 #define OV_BOUNDARY_BOTTOM_RECT    (1 << 7)
 
+#define RPR_SCALE_PREC 4
+
 struct MVPool;
 // struct EntryThread;
 

@@ -388,6 +388,8 @@ coding_quadtree_implicit(OVCTUDec *const ctu_dec,
 
     uint8_t allow_qt = log2_cb_s >  part_ctx->log2_min_qt_s;
     uint8_t allow_bt = log2_cb_s <= part_ctx->log2_max_bt_s && log2_cb_s <= 6;
+    allow_bt &= part_ctx->max_mtt_depth > 0;
+    allow_qt |= (!allow_bt);
 
     /* FIXME check everything is correct */
     if ((x1 > rem_w || y1 > rem_h)) {

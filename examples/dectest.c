@@ -28,7 +28,7 @@ static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
 static int read_write_stream(OVVCHdl *const hdl, FILE *fout);
 
-static int write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
+static int write_decoded_frame_to_file(OVFrame *const frame, FILE *fp, int* max_frame_h);
 
 static void print_version(void);
 
@@ -258,6 +258,7 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
     OVVCDec *const dec = hdl->dec;
     int nb_pic = 0;
     int ret;
+    int max_frame_h[3] = {0};
 
     do {
         OVPictureUnit *pu = NULL;
@@ -277,7 +278,7 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
                 nb_pic2 = ovdec_receive_picture(dec, &frame);
 
                 if (frame) {
-                    write_decoded_frame_to_file(frame, fout);
+                    write_decoded_frame_to_file(frame, fout, max_frame_h);
 
                     ov_log(NULL, OVLOG_DEBUG, "Got output picture with POC %d.\n", frame->poc);
 
@@ -301,7 +302,7 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
         ret = ovdec_drain_picture(dec, &frame);
 
         if (frame) {
-            write_decoded_frame_to_file(frame, fout);
+            write_decoded_frame_to_file(frame, fout, max_frame_h);
 
             ov_log(NULL, OVLOG_DEBUG, "Drain picture with POC %d.\n", frame->poc);
 
@@ -317,13 +318,14 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
 }
 
 static int
-write_decoded_frame_to_file(OVFrame *const frame, FILE *fp)
+write_decoded_frame_to_file(OVFrame *const frame, FILE *fp, int* max_frame_h)
 {
     uint8_t component = 0;
     int ret = 0;
 
     for (component = 0; component < 3; component++) {
-        int frame_size = frame->height[component] * frame->linesize[component];
+        max_frame_h[component] = OVMAX(max_frame_h[component], frame->height[component]);
+        int frame_size = max_frame_h[component] * frame->linesize[component];
         ret += fwrite(frame->data[component], frame_size, sizeof(uint8_t), fp);
     }
 
