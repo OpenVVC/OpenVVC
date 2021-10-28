@@ -281,7 +281,7 @@ ovdec_init_entry_threads(OVVCDec *vvcdec, int nb_entry_th)
         entry_th->main_thread = &vvcdec->main_thread;
 
         ret = ovthread_init_entry_thread(entry_th); 
-        if (ret != 0)
+        if (ret < 0)
             goto failthread;
     }
 
