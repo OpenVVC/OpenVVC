@@ -516,7 +516,7 @@ ovdmx_init_pu_from_list(OVPictureUnit **ovpu_p, struct NALUnitsList *const src)
         if (!ovpu->nalus[i]) {
             goto fail_nalu_alloc;
         }
-        move_nalu_elem_to_ovnalu(lelem, ovpu->nalus[i++]);
+        move_nalu_elem_to_ovnalu(lelem, ovpu->nalus[i]);
         lelem = lelem->next_nalu;
     }
 
