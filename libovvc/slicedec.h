@@ -143,7 +143,7 @@ void slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params);
 
 int slicedec_update_entry_decoder(OVSliceDec *sldec, OVCTUDec *ctudec);
 
-int slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms);
+int slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms, struct EntryThread* entry_th);
 
 void slicedec_finish_decoding(OVSliceDec *sldec);
 

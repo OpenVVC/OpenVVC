@@ -113,8 +113,6 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
         return ret;
     }
 
-    // ret = slicedec_update_entry_decoders(sldec, sldec->active_params);
-
     return 0;
 }
 
@@ -367,7 +365,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
             }
 
             /* FIXME handle non rect entries later */
-            ret = slicedec_decode_rect_entries(sldec, sldec->active_params);
+            ret = slicedec_decode_rect_entries(sldec, sldec->active_params, vvcdec->main_thread.entry_threads_list);
         }
 
         break;
@@ -526,6 +524,7 @@ ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value)
 int
 ovdec_init(OVVCDec **vvcdec, int display_output, int nb_frame_th, int nb_entry_th)
 {
+#if USE_THREADS
     if (nb_entry_th < 1) {
         nb_entry_th = get_number_of_cores();
         ov_log(NULL, OVLOG_DEBUG, "Physical cores in platform: %i\n", nb_entry_th);
@@ -538,6 +537,10 @@ ovdec_init(OVVCDec **vvcdec, int display_output, int nb_frame_th, int nb_entry_t
     else{
         nb_frame_th = OVMIN(nb_frame_th, nb_entry_th);
     }
+#else
+    nb_entry_th = 1;
+    nb_frame_th = 1;
+#endif
 
     *vvcdec = ov_mallocz(sizeof(OVVCDec));
 

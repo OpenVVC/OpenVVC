@@ -596,7 +596,7 @@ slicedec_finish_decoding(OVSliceDec *sldec)
 }
 
 int
-slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
+slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms, struct EntryThread* entry_th)
 {
     /* FIXME do not recompute everywhere */
     int nb_entries = prms->pps_info.tile_info.nb_tile_cols *
@@ -609,7 +609,8 @@ slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms)
     #else
     int i;
     for (i = 0; i < nb_entries; ++i) {
-        ret = slicedec_decode_rect_entry(sldec, sldec->ctudec_list[0], prms, i);
+        slicedec_update_entry_decoder(sldec, entry_th->ctudec);
+        ret = slicedec_decode_rect_entry(sldec, entry_th->ctudec, prms, i);
     }
     slicedec_finish_decoding(sldec);
     ret = 0;

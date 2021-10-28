@@ -120,12 +120,13 @@ ovthread_init_entry_thread(struct EntryThread *entry_th)
     pthread_cond_init(&entry_th->entry_cnd, NULL);
     pthread_mutex_lock(&entry_th->entry_mtx);
 
+#if USE_THREADS
     if (pthread_create(&entry_th->thread, NULL, entry_thread_main_function, entry_th)) {
         pthread_mutex_unlock(&entry_th->entry_mtx);
         ov_log(NULL, OVLOG_ERROR, "Thread creation failed at decoder init\n");
         return OVVC_ENOMEM;
     }
-
+#endif
     pthread_mutex_unlock(&entry_th->entry_mtx);
     return 1;
 }
