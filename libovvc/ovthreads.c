@@ -127,6 +127,7 @@ ovthread_init_entry_thread(struct EntryThread *entry_th)
     }
 
     pthread_mutex_unlock(&entry_th->entry_mtx);
+    return 1;
 }
 
 
