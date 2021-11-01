@@ -209,6 +209,46 @@ ovdpb_new_ref_pic(OVPicture *pic, int flags)
     return 0;
 }
 
+static int
+find_min_cvs_id(const OVDPB *const dpb)
+{
+    /* Count pictures in current output target Coded Video Sequence
+     */
+    int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
+    int min_cvs_id = INT_MAX;
+    int i;
+
+    for (i = 0; i < nb_dpb_pic; i++) {
+        OVPicture *pic = &dpb->pictures[i];
+        if (pic->frame && pic->frame->data[0]) {
+            if (pic->cvs_id < min_cvs_id) {
+                min_cvs_id = pic->cvs_id;
+            }
+        }
+    }
+
+        ov_log(NULL, OVLOG_ERROR, "MIN CVS ID: %d\n", min_cvs_id);
+    if (min_cvs_id == 0) {
+        int cvs_id_min1 = 0xFF;
+        int got_pic = 0;
+        do {
+            for (i = 0; i < nb_dpb_pic; i++) {
+                OVPicture *pic = &dpb->pictures[i];
+                if (pic->frame && pic->frame->data[0] && pic->cvs_id == cvs_id_min1) {
+                    min_cvs_id = pic->cvs_id;
+                    got_pic = 1;
+                    cvs_id_min1--;
+                    break;
+                }
+                got_pic = 0;
+            }
+        } while (got_pic);
+        ov_log(NULL, OVLOG_ERROR, "MIN CVS ID: %d\n", min_cvs_id);
+    }
+
+    return min_cvs_id;
+}
+
 /* Remove reference flags on all picture */
 static void
 ovdpb_clear_refs(OVDPB *dpb)
@@ -217,21 +257,15 @@ ovdpb_clear_refs(OVDPB *dpb)
     ov_log(NULL, OVLOG_DEBUG, "Release reference pictures\n");
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     int nb_used_pic = 0;
-    int min_cvs_id = INT_MAX;
+    int min_cvs_id = find_min_cvs_id(dpb);
     int i;
 
-    //TODOdpb: use cvs_id for max_nb_dpb_pic
     /* Count pictures in current output target Coded Video Sequence
      */
     for (i = 0; i < nb_dpb_pic; i++) {
         OVPicture *pic = &dpb->pictures[i];
-        // uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
-        // if (is_output_cvs && pic->frame && pic->frame->data[0]) {
         if (pic->frame && pic->frame->data[0]) {
             nb_used_pic++;
-            if (pic->cvs_id < min_cvs_id) {
-                min_cvs_id = pic->cvs_id;
-            }
         }
     }
 
@@ -551,22 +585,8 @@ int
 ovdpb_drain_frame(OVDPB *dpb, OVFrame **out)
 {
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
-    int min_cvs_id = INT_MAX;
     int i;
-    int output_cvs_id;
-
-    /* Count pictures in current output target Coded Video Sequence
-     */
-    for (i = 0; i < nb_dpb_pic; i++) {
-        OVPicture *pic = &dpb->pictures[i];
-        if (pic->frame && pic->frame->data[0]) {
-            if (pic->cvs_id < min_cvs_id) {
-                min_cvs_id = pic->cvs_id;
-            }
-        }
-    }
-
-    output_cvs_id = min_cvs_id;
+    int output_cvs_id = find_min_cvs_id(dpb);
 
     do {
         const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
@@ -638,21 +658,8 @@ int
 ovdpb_output_pic(OVDPB *dpb, OVFrame **out)
 {
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
-    int min_cvs_id = INT_MAX;
     int i;
-    int output_cvs_id;
-
-    /* Count pictures in current output target Coded Video Sequence */
-    for (i = 0; i < nb_dpb_pic; i++) {
-        OVPicture *pic = &dpb->pictures[i];
-        if (pic->frame && pic->frame->data[0]) {
-            if (pic->cvs_id < min_cvs_id) {
-                min_cvs_id = pic->cvs_id;
-            }
-        }
-    }
-
-    output_cvs_id = min_cvs_id;
+    int output_cvs_id = find_min_cvs_id(dpb);
 
         int nb_output = 0;
         int min_poc   = INT_MAX;
