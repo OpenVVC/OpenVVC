@@ -43,14 +43,15 @@ derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
                   int cu_qp_delta)
 {
     /*FIXME avoid negative values especiallly in chroma_map derivation*/
+    int qp_bd_offset = 6 * (BITDEPTH - 8);
     int base_qp = (qp_ctx->current_qp + cu_qp_delta + 64) & 63;
-    ctudec->dequant_luma.qp = ((base_qp + 12) & 63);
+    ctudec->dequant_luma.qp = ((base_qp + qp_bd_offset) & 63);
 
     /*FIXME update transform skip ctx to VTM-10.0 */
     ctudec->dequant_luma_skip.qp = OVMAX(ctudec->dequant_luma.qp, qp_ctx->min_qp_prime_ts);
-    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[(base_qp + qp_ctx->cb_offset + 64) & 63] + 12;
-    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[(base_qp + qp_ctx->cr_offset + 64) & 63] + 12;
-    ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[(base_qp + 64) & 63] + qp_ctx->jcbcr_offset + 12;
+    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[(base_qp + qp_ctx->cb_offset + 64) & 63] + qp_bd_offset;
+    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[(base_qp + qp_ctx->cr_offset + 64) & 63] + qp_bd_offset;
+    ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[(base_qp + 64) & 63] + qp_ctx->jcbcr_offset + qp_bd_offset;
     ctudec->qp_ctx.current_qp = base_qp;
 }
 
@@ -489,7 +490,8 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
     fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
     fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
     if ((cbf_mask & 0x3) == 0x3) {
-        uint8_t    qp = ctu_dec->dequant_joint_cb_cr.qp - 12;
+        const uint8_t qp_bd_offset = 6 * (BITDEPTH - 8);
+        uint8_t    qp = ctu_dec->dequant_joint_cb_cr.qp - qp_bd_offset;
         dbf_fill_qp_map(&ctu_dec->dbf_info.qp_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1, qp);
         dbf_fill_qp_map(&ctu_dec->dbf_info.qp_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1, qp);
     }
@@ -1081,12 +1083,13 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
 
     }
 
+    const uint8_t qp_bd_offset = 6 * (BITDEPTH - 8);
     derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
     struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
     uint8_t qp_l  = ctu_dec->qp_ctx.current_qp;
-    uint8_t qp_jc = ctu_dec->dequant_joint_cb_cr.qp - 12;
-    uint8_t qp_cb = (cbf_mask & 0x3) == 0x3 && jcbcr_flag ? qp_jc : ctu_dec->dequant_cb.qp - 12;
-    uint8_t qp_cr = (cbf_mask & 0x3) == 0x3 && jcbcr_flag ? qp_jc : ctu_dec->dequant_cr.qp - 12;
+    uint8_t qp_jc = ctu_dec->dequant_joint_cb_cr.qp - qp_bd_offset;
+    uint8_t qp_cb = (cbf_mask & 0x3) == 0x3 && jcbcr_flag ? qp_jc : ctu_dec->dequant_cb.qp - qp_bd_offset;
+    uint8_t qp_cr = (cbf_mask & 0x3) == 0x3 && jcbcr_flag ? qp_jc : ctu_dec->dequant_cr.qp - qp_bd_offset;
 
     dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_tb_w, log2_tb_h, qp_l);
     dbf_fill_qp_map(&dbf_info->qp_map_cb, x0, y0, log2_tb_w, log2_tb_h, qp_cb);

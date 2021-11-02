@@ -255,7 +255,7 @@ slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
     VVCQPCTX *const qp_ctx = &ctudec->qp_ctx;
 
     /*FIXME check if not done in dec init */
-    const uint8_t qp_bd_offset = 12;
+    const uint8_t qp_bd_offset = 6 * (BITDEPTH - 8);
     uint8_t pic_base_qp = pps->pps_init_qp_minus26 + 26;
     uint8_t pic_qp = pic_base_qp + ph->ph_qp_delta;
     int8_t slice_qp = pic_qp + sh->sh_qp_delta;
@@ -1565,15 +1565,16 @@ static void
 derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
                   int cu_qp_delta)
 {
+    int qp_bd_offset = 6 * (BITDEPTH - 8);
     /*FIXME avoid negative values especiallly in chroma_map derivation*/
     int base_qp = (qp_ctx->current_qp + cu_qp_delta + 64) & 63;
-    ctudec->dequant_luma.qp = ((base_qp + 12) & 63);
+    ctudec->dequant_luma.qp = ((base_qp + qp_bd_offset) & 63);
 
     /*FIXME update transform skip ctx to VTM-10.0 */
     ctudec->dequant_luma_skip.qp = OVMAX(ctudec->dequant_luma.qp, qp_ctx->min_qp_prime_ts);
-    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[(base_qp + qp_ctx->cb_offset + 64) & 63] + 12;
-    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[(base_qp + qp_ctx->cr_offset + 64) & 63] + 12;
-    ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[(base_qp + 64) & 63] + qp_ctx->jcbcr_offset + 12;
+    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[(base_qp + qp_ctx->cb_offset + 64) & 63] + qp_bd_offset;
+    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[(base_qp + qp_ctx->cr_offset + 64) & 63] + qp_bd_offset;
+    ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[(base_qp + 64) & 63] + qp_ctx->jcbcr_offset + qp_bd_offset;
     ctudec->dequant_cb_skip.qp = OVMAX(ctudec->dequant_cb.qp, qp_ctx->min_qp_prime_ts);
     ctudec->dequant_cr_skip.qp = OVMAX(ctudec->dequant_cr.qp, qp_ctx->min_qp_prime_ts);
     ctudec->dequant_jcbcr_skip.qp = OVMAX(ctudec->dequant_joint_cb_cr.qp, qp_ctx->min_qp_prime_ts);
