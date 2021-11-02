@@ -265,68 +265,6 @@ sps_init_chroma_qp_tables(struct SPSInfo *sps_info, const OVSPS *const sps)
     }
 }
 
-#if 0
-static void
-sps_init_dpb_parameters(OVVCDec *const dec, struct OVPS *const prms)
-{
-    const OVSPS *const sps = prms->sps;
-    const OVDPBParams *dpb_list = sps->dpb_parameters;
-
-    #if 0
-    dpb_init_params(dpb, &dpb_params[0]);
-    #endif
-
-}
-#endif
-
-#if 0
-static void
-pps_init_qp(struct OVPS *prms)
-{
-    int base_qp = pps->pps_init_qp_minus26 + 26;
-    /* FIXME chroma_qp_offsets */
-
-
-
-
-}
-
-static int
-pps_init_dpb(const OVPPS *const pps)
-{
-    pps_pic_width_in_luma_samples;
-    pps_pic_height_in_luma_samples;
-}
-
-static void
-slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
-{
-    const uint8_t qp_bd_offset = 12;
-    uint8_t pic_base_qp = pps->pps_init_qp_minus26 + 26;
-    uint8_t pic_qp = pic_base_qp + ph->ph_qp_delta;
-    int8_t slice_qp = pic_qp + sh->qp_delta;
-    int8_t cb_qp_offset = sh->sh_cb_qp_offset + pps->pps_cb_qp_offset;
-    int8_t cr_qp_offset = sh->sh_cr_qp_offset + pps->pps_cr_qp_offset;
-    int8_t jcbcr_qp_offset = sh->sh_slice_joint_cbcr_qp_offset + pps->pps_joint_cbcr_qp_offset_value;
-
-    ctudec->slice_qp = pic_qp + sh->sh->qp_delta;
-
-    qp_ctx->chroma_qp_map_cb    = sps_info->chroma_qp_mapping_tables;
-    qp_ctx->chroma_qp_map_cr    = sps_info->chroma_qp_mapping_tables;
-    qp_ctx->chroma_qp_map_jcbcr = sps_info->chroma_qp_mapping_tables;
-
-    qp_ctx->current_qp = slice_qp;
-    qp_ctx->cb_offset = cb_qp_offset;
-    qp_ctx->cr_offset = cr_qp_offset;
-    qp_ctx->jcbcr_offset = jcbcr_qp_offset;
-
-    ctudec->dequant_luma.qp = slice_qp + qp_bd_offset;
-    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[slice_qp + cb_qp_offset] + qp_bd_offset;
-    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[slice_qp + cr_qp_offset] + qp_bd_offset;
-    ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[base_qp + jcbcr_qp_offset] + qp_bd_offset;
-}
-#endif
-
 static int
 update_sps_info(struct SPSInfo *const sps_info, const OVSPS *const sps)
 {
