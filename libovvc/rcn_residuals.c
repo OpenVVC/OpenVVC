@@ -7,6 +7,7 @@
 #include "ovutils.h"
 #include "ctudec.h"
 
+#define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
 
 void
 vvc_scale_add_residual(const int16_t *src, uint16_t *dst,
@@ -26,7 +27,7 @@ vvc_scale_add_residual(const int16_t *src, uint16_t *dst,
             sign  = value & (1 << 15);
             value = (abs(value) * scale + (1 << (11 - 1))) >> 11;
             value = (ov_clip(sign ? -value : value ,-(1 << 15),1 << 15));
-            _dst[j] = ov_clip((int32_t)_dst[j] + value, 0, 1023);
+            _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
         _dst += RCN_CTB_STRIDE;
         _src += tb_w;
@@ -51,7 +52,7 @@ vvc_scale_sub_residual(const int16_t *src, uint16_t *dst,
             sign  = value & (1 << 15);
             value = (abs(value) * scale + (1 << (11 - 1))) >> 11;
             value = (ov_clip(sign ? -value : value ,-(1 << 15),1 << 15));
-            _dst[j] = ov_clip((int32_t)_dst[j] + value, 0, 1023);
+            _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
         _dst += RCN_CTB_STRIDE;
         _src += tb_w;
@@ -76,7 +77,7 @@ vvc_scale_add_half_residual(const int16_t *src, uint16_t *dst,
             sign  = value & (1 << 15);
             value = (abs(value) * scale + (1 << (11 - 1))) >> 11;
             value = (ov_clip(sign ? -value : value ,-(1 << 15),1 << 15));
-            _dst[j] = ov_clip((int32_t)_dst[j] + value, 0, 1023);
+            _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
         _dst += RCN_CTB_STRIDE;
         _src += tb_w;
@@ -101,7 +102,7 @@ vvc_scale_sub_half_residual(const int16_t *src, uint16_t *dst,
             sign  = value & (1 << 15);
             value = (abs(value) * scale + (1 << (11 - 1))) >> 11;
             value = (ov_clip(sign ? -value : value ,-(1 << 15),1 << 15));
-            _dst[j] = ov_clip((int32_t)_dst[j] + value, 0, 1023);
+            _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
         _dst += RCN_CTB_STRIDE;
         _src += tb_w;
@@ -123,7 +124,7 @@ vvc_add_residual(const int16_t *src, uint16_t *dst,
     for (i = 0; i < tb_h; ++i){
         for (j = 0; j < tb_w; ++j){
             value   = _src[j];
-            _dst[j] = ov_clip((int32_t)_dst[j] + value, 0, 1023);
+            _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
         _dst += RCN_CTB_STRIDE;
         _src += tb_w;
@@ -144,7 +145,7 @@ vvc_sub_residual(const int16_t *src, uint16_t *dst,
     for (i = 0; i < tb_h; ++i){
         for (j = 0; j < tb_w; ++j){
             value   = -_src[j];
-            _dst[j] = ov_clip((int32_t)_dst[j] + value, 0, 1023);
+            _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
         _dst += RCN_CTB_STRIDE;
         _src += tb_w;
@@ -165,7 +166,7 @@ vvc_add_half_residual(const int16_t *src, uint16_t *dst,
     for (i = 0; i < tb_h; ++i){
         for (j = 0; j < tb_w; ++j){
             value   = _src[j] >> 1;
-            _dst[j] = ov_clip((int32_t)_dst[j] + value, 0, 1023);
+            _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
         _dst += RCN_CTB_STRIDE;
         _src += tb_w;
@@ -186,7 +187,7 @@ vvc_sub_half_residual(const int16_t *src, uint16_t *dst,
     for (i = 0; i < tb_h; ++i){
         for (j = 0; j < tb_w; ++j){
             value   = (-_src[j]) >> 1;
-            _dst[j] = ov_clip((int32_t)_dst[j] + value, 0, 1023);
+            _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
         _dst += RCN_CTB_STRIDE;
         _src += tb_w;
