@@ -8,6 +8,8 @@
 #define DEFAULT_INTRA_TC_OFFSET 2 ///< Default intra TC offset
 #define MAX_QP 64
 
+#define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
+
 static const uint16_t tc_lut[MAX_QP + 1 + DEFAULT_INTRA_TC_OFFSET] =
 {
       0,   0,   0,   0,   0,   0,   0,   0,
@@ -747,19 +749,19 @@ filter_luma_weak(int16_t* src, const int stride, const int tc, const int th_cut,
 
     if (abs(delta) < th_cut) {
         delta = ov_clip(delta,-tc, tc);
-        src[-stride] = ov_clip(m3 + delta, 0, 1023 );
-        src[0]       = ov_clip(m4 - delta, 0, 1023);
+        src[-stride] = ov_bdclip(m3 + delta);
+        src[0]       = ov_bdclip(m4 - delta);
 
         if (extend_p) {
             const int tc2 = tc >> 1;
             const int delta1 = ov_clip(((((m1 + m3 + 1) >> 1) - m2 + delta) >> 1),-tc2, tc2);
-            src[-stride * 2] = ov_clip(m2 + delta1, 0, 1023);
+            src[-stride * 2] = ov_bdclip(m2 + delta1);
         }
 
         if (extend_q) {
             const int tc2 = tc >> 1;
             const int delta2 = ov_clip(((((m6 + m4 + 1) >> 1) - m5 - delta) >> 1),-tc2, tc2);
-            src[stride] = ov_clip(m5 + delta2, 0, 1023);
+            src[stride] = ov_bdclip(m5 + delta2);
         }
     }
 }
@@ -858,8 +860,8 @@ filter_chroma_weak(uint16_t* src, const int stride, const int tc)
     const int16_t m5 = src[ stride    ];
 
     delta = ov_clip((((m4 << 2) - (m3 << 2) + m2 - m5 + 4) >> 3), -tc, tc);
-    src[-stride] = ov_clip(m3 + delta, 0, 1023);
-    src[0]       = ov_clip(m4 - delta, 0, 1023);
+    src[-stride] = ov_bdclip(m3 + delta);
+    src[0]       = ov_bdclip(m4 - delta);
 }
 
 /* Check if filter is 3 or 1 sample large based on other left edges */
