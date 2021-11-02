@@ -44,6 +44,7 @@
 #define BDOF_SHIFT   (14 + 1 - BITDEPTH)
 #define BDOF_OFFSET  ((1 << (BDOF_SHIFT - 1)))
 
+#define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
 static const int8_t dmvr_mv_x[25 + 25] = {
     -2, -1, 0, 1, 2,
     -2, -1, 0, 1, 2,
@@ -169,7 +170,7 @@ rcn_prof(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
             /* Clipping if not bi directional */
             if (!bidir) {
                 val = (val + 8200 /*+ PROF_SMP_OFFSET*/) >> PROF_SMP_SHIFT;
-                dst[x] = ov_clip(val, 0, 1023);
+                dst[x] = ov_bdclip(val);
             } else {
                 dst[x] = val + (1 << 13);
             }
@@ -1497,10 +1498,10 @@ rcn_apply_bdof_subblock(const int16_t* src0, int src0_stride,
         val2 = (int16_t)((src0[2] + src1[2] + b2 + BDOF_OFFSET) >> BDOF_SHIFT);
         val3 = (int16_t)((src0[3] + src1[3] + b3 + BDOF_OFFSET) >> BDOF_SHIFT);
 
-        dst[0] = ov_clip(val0, 0, 1023);
-        dst[1] = ov_clip(val1, 0, 1023);
-        dst[2] = ov_clip(val2, 0, 1023);
-        dst[3] = ov_clip(val3, 0, 1023);
+        dst[0] = ov_clip_pixel2(val0);
+        dst[1] = ov_clip_pixel2(val1);
+        dst[2] = ov_clip_pixel2(val2);
+        dst[3] = ov_clip_pixel2(val3);
 
         dst += dst_stride;
 
