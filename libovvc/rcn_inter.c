@@ -31,7 +31,6 @@
 #define PROF_MV_SHIFT 8
 #define PROF_MV_RND (1 << (PROF_MV_SHIFT - 1))
 
-#define BITDEPTH 10
 #define PROF_SMP_SHIFT (14 - BITDEPTH)
 #define PROF_SMP_RND (1 << (14 - 1))
 #define PROF_SMP_OFFSET (1 << (PROF_SMP_SHIFT + 1) - 1)
@@ -75,7 +74,7 @@ struct OVDMV {
     int32_t y;
 };
 
-#define BIT_DEPTH 10
+#define BIT_DEPTH BITDEPTH
 #define ov_clip_pixel(a) ov_clip_uintp2(a, BIT_DEPTH)
 
 enum CUMode {

@@ -118,7 +118,7 @@ void
 rcn_alf_create(RCNALF* alf)
 {
     //BITDEPTH: uniquement pour bitdepth 10
-    int bit_depth = 10;
+    int bit_depth = BITDEPTH;
     int shift_luma = bit_depth - 8;
     int shift_chroma = bit_depth - 8;
 
@@ -688,7 +688,7 @@ rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const int str
     int ctu_h = blk.height;
     int ctu_w = blk.width;
 
-    int bit_depth = 10;
+    int bit_depth = BITDEPTH;
     int i;
 
     for (i = 0; i < ctu_h; i += CLASSIFICATION_BLK_SIZE) {
@@ -772,9 +772,9 @@ void cc_alf_filterBlk(int16_t * chroma_dst, int16_t * luma_src, const int chr_st
           const int scale_bits = 7;
           sum = (sum + ((1 << scale_bits ) >> 1)) >> scale_bits;
 
-          //BITDEPTH: uniquement pour bitdepth 10
-          const int bit_depth = 10;
+          const int bit_depth = BITDEPTH;
           const int offset = 1 << bit_depth >> 1;
+          /* FIXME 2 clipping ?*/
           sum = OVMAX( OVMIN( sum + offset, (1<<bit_depth) - 1 ), 0) - offset;
 
           sum += srcSelf[jj];
@@ -847,7 +847,7 @@ void cc_alf_filterBlkVB(int16_t * chroma_dst, int16_t * luma_src, const int chr_
             sum = (sum + ((1 << scale_bits ) >> 1)) >> scale_bits;
 
             //BITDEPTH: uniquement pour bitdepth 10
-            const int bit_depth = 10;
+            const int bit_depth = BITDEPTH;
             const int offset = 1 << bit_depth >> 1;
             sum = OVMAX( OVMIN( sum + offset, (1<<bit_depth) - 1 ), 0) - offset;
 
@@ -922,7 +922,7 @@ static void alf_filter_c(int16_t *const dst, const int16_t *const src,
                     sum = (sum + offset) >> shift;
 
                     sum += curr;
-                    dst1[l] = OVMAX( OVMIN( sum, (1<<10) - 1 ), 0);
+                    dst1[l] = OVMAX( OVMIN( sum, (1<<BITDEPTH) - 1 ), 0);
 
                     src_0++;
                     src_1++;
@@ -1031,7 +1031,7 @@ static void alf_filter_cVB(int16_t *const dst, const int16_t *const src,
                     }
 
                     sum += curr;
-                    dst1[l] = OVMAX( OVMIN( sum, (1<<10) - 1 ), 0);
+                    dst1[l] = OVMAX( OVMIN( sum, (1<<BITDEPTH) - 1 ), 0);
 
                     src_0++;
                     src_1++;
@@ -1124,7 +1124,7 @@ static void alf_filterBlkLuma(uint8_t * class_idx_arr, uint8_t * transpose_idx_a
           sum = (sum + offset) >> shift;
 
           sum += curr;
-          pRec1[jj] = OVMAX( OVMIN( sum, (1<<10) - 1 ), 0);
+          pRec1[jj] = OVMAX( OVMIN( sum, (1<<BITDEPTH) - 1 ), 0);
 
           pImg0++;
           pImg1++;
@@ -1239,7 +1239,7 @@ static void alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx
           }
 
           sum += curr;
-          pRec1[jj] = OVMAX( OVMIN( sum, (1<<10) - 1 ), 0);
+          pRec1[jj] = OVMAX( OVMIN( sum, (1<<BITDEPTH) - 1 ), 0);
 
           pImg0++;
           pImg1++;

@@ -387,6 +387,7 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
     }
     }
 }
+
 #include "dbf_utils.h"
 void
 rcn_residual(OVCTUDec *const ctudec,
@@ -400,7 +401,7 @@ rcn_residual(OVCTUDec *const ctudec,
     struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
     fill_bs_map(&ctudec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
     int shift_v = 6 + 1;
-    int shift_h = (6 + 15 - 1) - 10;
+    int shift_h = (6 + 15 - 1) - BITDEPTH;
 
     DECLARE_ALIGNED(32, int16_t, tmp)[64*64];
 
@@ -459,7 +460,7 @@ rcn_residual_c(OVCTUDec *const ctudec,
     struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
 
     const int shift_v = 6 + 1;
-    const int shift_h = (6 + 15 - 1) - 10;
+    const int shift_h = (6 + 15 - 1) - BITDEPTH;
 
     DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
 

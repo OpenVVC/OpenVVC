@@ -124,7 +124,7 @@ struct DBFParams{
 static struct DBFParams
 compute_dbf_limits(const struct DBFInfo *const dbf_info, int qp, int bs)
 {
-    const int bitdepth  = 10;
+    const int bitdepth  = BITDEPTH;
     int beta_offset  = dbf_info->beta_offset;
     int tc_offset    = dbf_info->tc_offset;
 

@@ -11,7 +11,6 @@
 // #include "dec_structures.h"
 // #include "ctudec.h"
 
-#define BIT_DEPTH 10
 
 static void sao_band_filter(uint8_t *_dst, uint8_t *_src,
         ptrdiff_t stride_dst, ptrdiff_t stride_src,
@@ -24,7 +23,7 @@ static void sao_band_filter(uint8_t *_dst, uint8_t *_src,
     int offset_table[32] = { 0 };
     int k, y, x;
     //BITDEPTH: uniquement pour bitdepth 10
-    int shift  = BIT_DEPTH - 5;
+    int shift  = BITDEPTH - 5;
 
     int16_t *sao_offset_val = sao->offset_val[c_idx];
     uint8_t sao_left_class  = sao->band_position[c_idx];

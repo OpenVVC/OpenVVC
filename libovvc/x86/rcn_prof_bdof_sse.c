@@ -6,7 +6,6 @@
 
 #define GRAD_SHIFT 6
 #define PROF_DELTA_LIMIT (1 << (BITDEPTH + 3))
-#define BITDEPTH 10
 #define SB_H 4
 #define SB_W 4
 #define PROF_SMP_SHIFT (14 - BITDEPTH)

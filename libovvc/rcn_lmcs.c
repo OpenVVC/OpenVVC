@@ -5,7 +5,6 @@
 
 #include "rcn_lmcs.h"
 
-#define BITDEPTH 10
 #define SMP_RNG (1 << BITDEPTH)
 #define CLIP_VAL ((1 << BITDEPTH) - 1)
 

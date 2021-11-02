@@ -3880,7 +3880,6 @@ store_affine_info(struct AffineDRVInfo *const affine_ctx, struct AffineInfo aff_
 #define PROF_MV_SHIFT 8
 #define PROF_MV_RND (1 << (PROF_MV_SHIFT - 1))
 
-#define BITDEPTH 10
 #define PROF_SMP_SHIFT (14 - BITDEPTH)
 #define PROF_SMP_RND (1 << (14 - 1))
 #define PROF_SMP_OFFSET (1 << (PROF_SMP_SHIFT - 1)) + PROF_SMP_RND

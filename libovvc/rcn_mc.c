@@ -7,9 +7,10 @@
 #include "rcn_mc.h"
 #include "rcn_structures.h"
 
+#define BIT_DEPTH BITDEPTH
+
 #define ov_clip_pixel(a) ov_clip_uintp2(a, BIT_DEPTH)
 #define MAX_PB_SIZE 128
-#define BIT_DEPTH 10
 
 #define EPEL_EXTRA_BEFORE 1
 #define EPEL_EXTRA_AFTER 2
