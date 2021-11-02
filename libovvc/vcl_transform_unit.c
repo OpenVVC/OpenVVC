@@ -1044,6 +1044,7 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
 
     if (cbf_flag_l) {
         const struct TBInfo *const tb_info = &tu_info->tb_info[2];
+        const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
 
         if (!(tu_info->tr_skip_mask & 0x10)) {
             int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;
@@ -1061,7 +1062,7 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
         }
 
         /* FIXME use transform add optimization */
-        vvc_add_residual(ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
+        rcn_func->ict.add[log2_tb_w](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
         /* FIXME Avoid reprocessing CCLM from here by recontructing at the end of transform tree */
         if (ctu_dec->intra_mode_c >= 67 && ctu_dec->intra_mode_c < 70) {
             vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, &ctu_dec->rcn_ctx.ctu_buff, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1);
@@ -1101,6 +1102,8 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
 {
     const struct TBInfo *const tb_info = &tu_info->tb_info[2];
     if (cbf_mask) {
+        const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
+
         if (!(tu_info->tr_skip_mask & 0x10)) {
             int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
@@ -1120,7 +1123,7 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
         fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
 
         /* FIXME use transform add optimization */
-        vvc_add_residual(ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
+        rcn_func->ict.add[log2_tb_w](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
     }
 }
 
