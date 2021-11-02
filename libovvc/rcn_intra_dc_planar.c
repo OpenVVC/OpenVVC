@@ -4,6 +4,8 @@
 #include "ovutils.h"
 #include "rcn_structures.h"
 
+#define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
+
 static const uint8_t vvc_pdpc_w[3][128] = {
         { 32, 8, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
           0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -147,7 +149,7 @@ vvc_intra_dc_pdpc(const uint16_t* const src_above,
                         int val = ((t_wgh * l_val) + (l_wgh * t_val) +
                                    (64 - (t_wgh + l_wgh)) * dc_val + 32) >>
                                   6;
-                        _dst[x] = ov_clip(val, 0, 1023);
+                        _dst[x] = ov_bdclip(val);
                 }
                 _dst += dst_stride;
         }
@@ -212,7 +214,7 @@ vvc_intra_planar_pdpc(const uint16_t* const src_above,
                         val = ((x_wgh * l_val) + (y_wgh * t_val) +
                                (64 - (x_wgh + y_wgh)) * val + 32) >>
                               6;
-                        _dst[x] = ov_clip(val, 0, 1023);
+                        _dst[x] = ov_bdclip(val);
                 }
                 // #if CUT_PDPC
                 //                 for (; x < width; ++x) {
@@ -225,7 +227,7 @@ vvc_intra_planar_pdpc(const uint16_t* const src_above,
                 //                               s_shift;
                 //                         val = ((y_wgh * t_val) + (64 - y_wgh)
                 //                         * val + 32) >> 6; _dst[x] =
-                //                         av_clip(val, 0, 1023);
+                //                         ov_bdclip(val);
                 //                 }
                 // #endif
                 _dst += dst_stride;
@@ -248,7 +250,7 @@ vvc_intra_planar_pdpc(const uint16_t* const src_above,
         //                                offset) >>
         //                               s_shift;
         //                         val = ((x_wgh * l_val) + (64 - x_wgh) * val +
-        //                         32) >> 6; _dst[x] = av_clip(val, 0, 1023);
+        //                         32) >> 6; _dst[x] = ov_bdclip(val);
         //                 }
         //                 for (; x < width; ++x) {
         //                         int32_t val;
@@ -259,7 +261,7 @@ vvc_intra_planar_pdpc(const uint16_t* const src_above,
         //                         w_scale) +
         //                                offset) >>
         //                               s_shift;
-        //                         _dst[x] = av_clip(val, 0, 1023);
+        //                         _dst[x] = ov_bdclip(val);
         //                 }
         //                 _dst += dst_stride;
         //         }
