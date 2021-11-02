@@ -558,7 +558,8 @@ vvc_inverse_dct_ii_dc(int16_t* const dst, int log2_tb_w, int log2_tb_h,
         const int tb_h = 1 << log2_tb_h;
         int clip_min = -(1 << 15);
         int clip_max = (1 << 15) - 1;
-        int value = (((dc_val + 1) >> 1) + 8) >> 4;
+        const int add = 1 << ((14 - BITDEPTH) - 1);
+        int value = (((dc_val + 1) >> 1) + add) >> (14 - BITDEPTH);
         value = ov_clip(value, clip_min, clip_max);
         for (i = 0; i < tb_h; ++i) {
                 for (j = 0; j < tb_w; ++j) {
