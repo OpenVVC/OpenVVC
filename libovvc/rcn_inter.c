@@ -146,7 +146,7 @@ compute_prof_grad(const uint16_t* src, int src_stride, int sb_w, int sb_h,
     }
 }
 
-#define PROF_DELTA_LIMIT (1 << (BITDEPTH + 3))
+#define PROF_DELTA_LIMIT (1 << (13))
 void
 rcn_prof(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
          const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
@@ -168,7 +168,7 @@ rcn_prof(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
 
             /* Clipping if not bi directional */
             if (!bidir) {
-                val = (val + 8200) >> PROF_SMP_SHIFT;
+                val = (val + (1 << 13) + (1 << (13 - BITDEPTH))) >> PROF_SMP_SHIFT;
                 dst[x] = ov_bdclip(val);
             } else {
                 dst[x] = val + (1 << 13);
@@ -1430,7 +1430,7 @@ tmp_mrg(uint16_t* _dst, ptrdiff_t _dststride,
     uint16_t* dst = (uint16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     int shift = 14 - BITDEPTH + 1;
-    int offset = 16400;
+    int offset = 2*((1 << 13) + (1 << (13 - BITDEPTH)));
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
@@ -1456,7 +1456,7 @@ tmp_mrg_w(uint16_t* _dst, ptrdiff_t _dststride,
     ptrdiff_t dststride = _dststride;
     int log_weights = floor_log2(wt0 + wt1);
     int shift = 14 - BITDEPTH + log_weights;
-    int offset = 16400 << (log_weights - 1) ;
+    int offset = 2*((1 << 13) + (1 << (13 - BITDEPTH))) << (log_weights - 1) ;
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
