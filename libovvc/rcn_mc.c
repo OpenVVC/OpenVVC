@@ -317,7 +317,7 @@ put_vvc_qpel_bilinear_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _s
     uint16_t* dst = (uint16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     const int8_t* filter = ov_bilinear_filters_4[mx - 1];
-    int shift = 14 - BIT_DEPTH;
+    int shift = 4 - (10 - BIT_DEPTH);
     int offset = 1 << (shift - 1);
 
     src += 1;
@@ -342,7 +342,7 @@ put_vvc_qpel_bilinear_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _s
     uint16_t* dst = (uint16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     const int8_t* filter = ov_bilinear_filters_4[my - 1];
-    int shift = 14 - BIT_DEPTH;
+    int shift = 4 - (10 - BIT_DEPTH);
     int offset = 1 << (shift - 1);
 
     src += srcstride;
@@ -370,7 +370,7 @@ put_vvc_qpel_bilinear_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _
     int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
 
-    int shift = 14 - BIT_DEPTH;
+    int shift = 4 - (10 - BIT_DEPTH);
     int offset = 1 << (shift - 1);
 
     filter = ov_bilinear_filters_4[mx - 1];
@@ -386,6 +386,8 @@ put_vvc_qpel_bilinear_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _
     tmp = tmp_array + MAX_PB_SIZE + 1;
     filter = ov_bilinear_filters_4[my - 1];
 
+    shift = 4;
+    offset = 1 << (shift - 1);
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = ov_clip_pixel((BLN_FILTER_L(tmp, MAX_PB_SIZE, filter) +
