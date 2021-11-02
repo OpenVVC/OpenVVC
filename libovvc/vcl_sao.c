@@ -29,11 +29,11 @@ static void
 ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state,
                              SAOParamsCtu *sao_ctu,
                              uint8_t sao_enabled_l,
-                             uint8_t sao_enabled_c, uint8_t bit_depth_minus8)
+                             uint8_t sao_enabled_c, uint8_t bitdepth_minus8)
 {
 
     int i, k;
-    uint8_t nb_bits = 0x7 | ((bit_depth_minus8 > 1) << 3);
+    uint8_t nb_bits = (0x1F >> ((bitdepth_minus8 <= 1) + !bitdepth_minus8)) | 0x7;
     uint8_t num_bits_sao   = nb_bits;
     uint8_t num_bits_sao_c = nb_bits;
 
@@ -173,9 +173,9 @@ ovcabac_read_ae_sao_ctu(OVCTUDec *const ctudec, int ctb_rs, uint16_t nb_ctu_w)
         uint8_t merge_type = ovcabac_read_ae_sao_merge_type(cabac_ctx, cabac_state, ctu_neighbour_flags);
 
         if (!merge_type) {
-            uint8_t bit_depth_minus8 = 0;
+            uint8_t bitdepth_minus8 = BITDEPTH - 8;
             ovcabac_read_ae_sao_type_idx(cabac_ctx, cabac_state, sao_ctu,
-                                         sao_enabled_l, sao_enabled_c, bit_depth_minus8);
+                                         sao_enabled_l, sao_enabled_c, bitdepth_minus8);
         } else {
 
             if (merge_type == SAO_MERGE_LEFT) {
