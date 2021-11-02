@@ -2476,7 +2476,8 @@ derive_dequant_sdh(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
     /*FIXME non size dependent prefix could be derived from earlier ctx
       as soon as we know of bitdepth and tr range*/
     shift = IQUANT_SHIFT - (dep_quant_qp / 6)
-              - (max_log2_tr_range - 10 - (log2_tb_s >> 1) - (log2_tb_s & 1));
+              - (max_log2_tr_range - BITDEPTH - (log2_tb_s >> 1) - (log2_tb_s & 1));
+
     scale  = inverse_quant_scale_lut[log2_tb_s & 1][dep_quant_qp % 6];
 
     if (shift >= 0){
@@ -2504,7 +2505,7 @@ derive_dequant_dpq(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
     /*FIXME non size dependent prefix could be derived from earlier ctx
       as soon as we know of bitdepth and tr range*/
     shift = IQUANT_SHIFT + 1 - (dep_quant_qp / 6)
-              - (max_log2_tr_range - 10 - (log2_tb_s >> 1) - (log2_tb_s & 1));
+              - (max_log2_tr_range - BITDEPTH - (log2_tb_s >> 1) - (log2_tb_s & 1));
     scale  = inverse_quant_scale_lut[log2_tb_s & 1][dep_quant_qp % 6];
 
     if (shift >= 0){
