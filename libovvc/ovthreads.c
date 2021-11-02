@@ -43,8 +43,8 @@ entry_thread_select_job(struct EntryThread *entry_th)
     struct EntryJob *entry_job = NULL;
 
     pthread_mutex_lock(&main_thread->main_mtx); 
-    int16_t first_idx = main_thread->first_idx_fifo;
-    int16_t last_idx  = main_thread->last_idx_fifo;
+    int64_t first_idx = main_thread->first_idx_fifo;
+    int64_t last_idx  = main_thread->last_idx_fifo;
     if (first_idx <= last_idx) {
         int idx = first_idx % size_fifo;
         entry_job = &entry_jobs_fifo[idx];

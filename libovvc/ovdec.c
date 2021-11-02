@@ -213,7 +213,6 @@ ovdec_select_subdec(OVVCDec *const dec)
     return NULL;
 }
 
-
 void
 ovdec_init_entry_jobs(OVVCDec *vvcdec, int nb_entry_th)
 {   
@@ -232,7 +231,6 @@ ovdec_uninit_entry_jobs(OVVCDec *vvcdec)
     ov_freep(&main_thread->entry_jobs_fifo); 
 }
 
-
 void
 ovdec_uninit_entry_threads(OVVCDec *vvcdec)
 {
@@ -244,8 +242,8 @@ ovdec_uninit_entry_threads(OVVCDec *vvcdec)
     /* Wait for the job fifo to be empty before joining entry thread.
     */
     pthread_mutex_lock(&th_main->main_mtx); 
-    int16_t first_idx = th_main->first_idx_fifo;
-    int16_t last_idx  = th_main->last_idx_fifo;
+    int64_t first_idx = th_main->first_idx_fifo;
+    int64_t last_idx  = th_main->last_idx_fifo;
     while (first_idx <= last_idx) {
         pthread_cond_wait(&th_main->main_cnd, &th_main->main_mtx);
         first_idx = th_main->first_idx_fifo;
@@ -293,7 +291,6 @@ failthread:
 
     return OVVC_ENOMEM;
 }
-
 
 int
 ovdec_init_main_thread(OVVCDec *vvcdec)
