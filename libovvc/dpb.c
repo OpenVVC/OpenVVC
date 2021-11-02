@@ -336,8 +336,8 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc)
 
         if (pic->frame && pic->frame->data[0] && pic->cvs_id == dpb->cvs_id &&
             pic->poc == poc) {
-            ov_log(NULL, OVLOG_ERROR, "Duplicate POC in a sequence: %d.\n",
-                   poc);
+            ov_log(NULL, OVLOG_ERROR, "Duplicate POC in a sequence: %d for cvs_id: %d.\n",
+                   poc, pic->cvs_id);
             return OVVC_EINDATA;
         }
     }
