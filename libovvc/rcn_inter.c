@@ -288,15 +288,10 @@ extend_prof_buff(const uint16_t *const src, uint16_t *dst_prof, int16_t ref_stri
     for (j = 0; j < SB_H; ++j) {
         dst[0]     = (ref[0]     << PROF_SMP_SHIFT);
         dst_lst[0] = (ref_lst[0] << PROF_SMP_SHIFT);
-        #if 0
-        for (i = 1; i< 5; ++i) {
-            dst[i] = dst[i];
-        }
-        #endif
 
-        ref += ref_stride;
+        ref     += ref_stride;
         ref_lst += ref_stride;
-        dst += tmp_prof_stride;
+        dst     += tmp_prof_stride;
         dst_lst += tmp_prof_stride;
     }
 }
