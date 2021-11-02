@@ -6,7 +6,6 @@
 #include "rcn_lmcs.h"
 
 #define SMP_RNG (1 << BITDEPTH)
-#define CLIP_VAL ((1 << BITDEPTH) - 1)
 
 #define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
 
