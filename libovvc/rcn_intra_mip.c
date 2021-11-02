@@ -219,7 +219,7 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
 
 
     if (red_size) {
-        bndy_line[0] = (1 << (10 - 1));
+        bndy_line[0] = (1 << (BITDEPTH - 1));
     }
 
     int sum = 0;
@@ -356,7 +356,7 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
     uint8_t red_size = log2_pu_h == 2 || log2_pu_w == 2 || (log2_pu_h <= 3 && log2_pu_w <= 3);
 
     if (red_size) {
-        bndy_line[0] = (1 << (10 - 1));
+        bndy_line[0] = (1 << (BITDEPTH - 1));
     }
 
     int sum = 0;

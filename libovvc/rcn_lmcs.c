@@ -21,6 +21,8 @@
 #define LMCS_PREC 11
 #define LMCS_RND (1 << (LMCS_PREC - 1))
 
+#define AVG_VAL (1 << (BITDEPTH - 1))
+
 /* Window information */
 struct TMPWindowsInfo
 {
@@ -203,7 +205,7 @@ rcn_lmcs_compute_chroma_scale(struct OVCTUDec* ctudec, int x0, int y0)
     uint32_t luma_sum4 = 0;
     uint8_t num_luma_pu = 0;
     uint32_t log2_num_luma_pu = 0;
-    uint32_t luma_avg=512;
+    uint32_t luma_avg = AVG_VAL;
     int idx = lmcs_info->min_idx;
     
     uint8_t num_luma_pu_above = 0;
@@ -261,7 +263,7 @@ rcn_lmcs_compute_chroma_scale(struct OVCTUDec* ctudec, int x0, int y0)
     //decrease of 1 if not zero
     log2_num_luma_pu -= !!log2_num_luma_pu;
 
-    luma_avg = log2_num_luma_pu ? ((luma_sum1 + luma_sum2) + (luma_sum3 + luma_sum4) + (1 << (log2_num_luma_pu + 1))) >> (log2_num_luma_pu + 2) : 512;
+    luma_avg = log2_num_luma_pu ? ((luma_sum1 + luma_sum2) + (luma_sum3 + luma_sum4) + (1 << (log2_num_luma_pu + 1))) >> (log2_num_luma_pu + 2) : AVG_VAL;
 
     idx = get_bwd_idx((int16_t*)lmcs_info->lmcs_output_pivot, luma_avg,
                       lmcs_info->min_idx, lmcs_info->max_idx);

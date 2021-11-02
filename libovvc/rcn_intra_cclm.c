@@ -11,6 +11,7 @@
 #define W_SHIFT 1
 #define H_SHIFT 1
 
+#define AVG_VAL (1 << (BITDEPTH - 1))
 
 struct AVGMinMax{
     uint16_t min_l;
@@ -496,8 +497,8 @@ vvc_intra_cclm2(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
                uint8_t y0, LMsubsampleFunc const *compute_subsample)
 {
     struct CCLMParams lm_params = {
-        .cb = {.a = 0, .b = 512, .shift = 0},
-        .cr = {.a = 0, .b = 512, .shift = 0}
+        .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
+        .cr = {.a = 0, .b = AVG_VAL, .shift = 0}
     };
 
     int pb_w = 1 << log2_pb_w;
@@ -568,8 +569,8 @@ vvc_intra_cclm2_collocated(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *d
                            uint8_t y0)
 {
     struct CCLMParams lm_params = {
-        .cb = {.a = 0, .b = 512, .shift = 0},
-        .cr = {.a = 0, .b = 512, .shift = 0}
+        .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
+        .cr = {.a = 0, .b = AVG_VAL, .shift = 0}
     };
 
     int pb_w = 1 << log2_pb_w;
@@ -649,8 +650,8 @@ vvc_intra_mdlm_t2(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
                   uint8_t y0, uint8_t x0, uint64_t abv_map, LMsubsampleFunc const *compute_subsample)
 {
     struct CCLMParams lm_params = {
-        .cb = {.a = 0, .b = 512, .shift = 0},
-        .cr = {.a = 0, .b = 512, .shift = 0}
+        .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
+        .cr = {.a = 0, .b = AVG_VAL, .shift = 0}
     };
 
     int pb_w = 1 << log2_pb_w;
@@ -708,8 +709,8 @@ vvc_intra_mdlm_t2_collocated(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t 
                              uint8_t y0, uint8_t x0, uint64_t abv_map)
 {
     struct CCLMParams lm_params = {
-        .cb = {.a = 0, .b = 512, .shift = 0},
-        .cr = {.a = 0, .b = 512, .shift = 0}
+        .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
+        .cr = {.a = 0, .b = AVG_VAL, .shift = 0}
     };
 
     int pb_w = 1 << log2_pb_w;
@@ -779,8 +780,8 @@ vvc_intra_mdlm_l2(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
                   uint8_t y0, uint8_t x0, uint64_t lft_map, LMsubsampleFunc const *compute_subsample)
 {
     struct CCLMParams lm_params = {
-        .cb = {.a = 0, .b = 512, .shift = 0},
-        .cr = {.a = 0, .b = 512, .shift = 0}
+        .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
+        .cr = {.a = 0, .b = AVG_VAL, .shift = 0}
     };
 
     int pb_w = 1 << log2_pb_w;
@@ -830,8 +831,8 @@ vvc_intra_mdlm_l2_collocated(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t 
                              uint8_t y0, uint8_t x0, uint64_t lft_map)
 {
     struct CCLMParams lm_params = {
-        .cb = {.a = 0, .b = 512, .shift = 0},
-        .cr = {.a = 0, .b = 512, .shift = 0}
+        .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
+        .cr = {.a = 0, .b = AVG_VAL, .shift = 0}
     };
 
     int pb_w = 1 << log2_pb_w;

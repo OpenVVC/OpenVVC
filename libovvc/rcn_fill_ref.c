@@ -3,6 +3,8 @@
 
 #include "rcn_fill_ref.h"
 
+#define AVG_VAL (1 << (BITDEPTH - 1))
+
 // note src2 is only usefull for top_left value filtering
 // WARNING src and dst cannot be aliased
 // FIXME we could probably merge this part with ref filling
@@ -54,7 +56,7 @@ fill_ref_left_0(const uint16_t* const src, int src_stride,
         } else if (avl_map_l) {
                 int nb_pb_avl = 64 - __builtin_clzll(avl_map_l);
                 // int nb_pb_navl = nb_pb_ref_l - nb_pb_avl;
-                uint16_t padding_val = 512;
+                uint16_t padding_val = AVG_VAL;
                 uint16_t* _dst = ref_left;
                 int i;
 
@@ -94,7 +96,7 @@ fill_ref_left_0(const uint16_t* const src, int src_stride,
                 uint64_t avl_map_a = (intra_map_rows >> x_pb) & ref_map_a;
 
                 const int ref_length_l = (1 << (log2_pb_h + 1)) + 1;
-                uint16_t padding_val = 512;
+                uint16_t padding_val = AVG_VAL;
                 int i;
 
                 if (avl_map_a) {
@@ -137,7 +139,7 @@ fill_ref_left_0_chroma(const uint16_t* const src, int src_stride,
         } else if (avl_map_l) {
                 int nb_pb_avl = 64 - __builtin_clzll(avl_map_l);
                 // int nb_pb_navl = nb_pb_ref_l - nb_pb_avl;
-                uint16_t padding_val = 512;
+                uint16_t padding_val = AVG_VAL;
                 uint16_t* _dst = ref_left;
                 int i;
 
@@ -173,7 +175,7 @@ fill_ref_left_0_chroma(const uint16_t* const src, int src_stride,
                 uint64_t avl_map_a = (intra_map_rows >> x_pb) & ref_map_a;
 
                 const int ref_length_l = (1 << (log2_pb_h + 1)) + 1;
-                uint16_t padding_val = 512;
+                uint16_t padding_val = AVG_VAL;
                 int i;
 
                 if (avl_map_a) {
@@ -220,7 +222,7 @@ fill_ref_left_0_mref(const uint16_t* const src, int src_stride,
         } else if (avl_map_l) {
                 int nb_pb_avl = 64 - __builtin_clzll(avl_map_l);
                 // int nb_pb_navl = nb_pb_ref_l - nb_pb_avl;
-                uint16_t padding_val = 512;
+                uint16_t padding_val = AVG_VAL;
                 uint16_t* _dst = ref_left;
                 int i;
 
@@ -266,7 +268,7 @@ fill_ref_left_0_mref(const uint16_t* const src, int src_stride,
 
                 const int ref_length_l =
                   (1 << (log2_pb_h + 1)) + 1 + (mref_idx + 1);
-                uint16_t padding_val = 512;
+                uint16_t padding_val = AVG_VAL;
                 int i;
 
                 if (avl_map_a) {
@@ -308,7 +310,7 @@ fill_ref_above_0(const uint16_t* const src, int src_stride,
                         ++_src;
                 }
         } else {
-                uint16_t padding_value = 512;
+                uint16_t padding_value = AVG_VAL;
                 if (avl_map_a) {
 
                         // FIXME: int nb_pb_usable = 64 -
@@ -365,7 +367,7 @@ fill_ref_above_0(const uint16_t* const src, int src_stride,
                         const uint16_t* _src =
                           &src[(x0 + offset_x - 1) + y0 * src_stride];
 
-                        padding_value = 512;
+                        padding_value = AVG_VAL;
 
                         if (usable_mask_l) {
                                 padding_value = *_src;
@@ -407,7 +409,7 @@ fill_ref_above_0_chroma(const uint16_t* const src, int src_stride,
                         ++_src;
                 }
         } else {
-                uint16_t padding_value = 512;
+                uint16_t padding_value = AVG_VAL;
                 if (avl_map_a) {
 
                         // FIXME: int nb_pb_usable = 64 -
@@ -458,7 +460,7 @@ fill_ref_above_0_chroma(const uint16_t* const src, int src_stride,
 
                         int i;
 
-                        padding_value = 512;
+                        padding_value = AVG_VAL;
 
                         if (usable_mask_l) {
                                 padding_value = _src[src_stride];
@@ -503,7 +505,7 @@ fill_ref_above_0_mref(const uint16_t* const src, int src_stride,
                         ++_src;
                 }
         } else {
-                uint16_t padding_value = 512;
+                uint16_t padding_value = AVG_VAL;
                 if (avl_map_a) {
 
                         // FIXME: int nb_pb_usable = 64 -
@@ -567,7 +569,7 @@ fill_ref_above_0_mref(const uint16_t* const src, int src_stride,
                         int i;
                         const uint16_t* _src = &src[(x0 - 1) + y0 * src_stride];
 
-                        padding_value = 512;
+                        padding_value = AVG_VAL;
 
                         if (usable_mask_l) {
                                 padding_value = *_src;
