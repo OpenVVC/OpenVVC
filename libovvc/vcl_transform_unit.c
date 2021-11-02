@@ -580,7 +580,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
 
             if (log2_pb_w) {
                 int shift_v = 6 + 1;
-                int shift_h = (6 + 15 - 1) - 10;
+                int shift_h = (6 + 15 - 1) - BITDEPTH;
                 DECLARE_ALIGNED(32, int16_t, tmp)[64*64];
                 int16_t *src = coeffs_y;
                 int16_t *dst = ctudec->transform_buff;
@@ -603,7 +603,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
                 TRFunc->func[type_v][OVMIN(log2_cb_h,6)](src, tmp, pb_w, pb_w, cb_h, shift_v);
                 TRFunc->func[type_h][OVMIN(log2_pb_w,6)](tmp, dst, cb_h, cb_h, pb_w, shift_h);
             } else {
-                int shift_h = (6 + 15 - 1) - 10;
+                int shift_h = (6 + 15 - 1) - BITDEPTH;
                 int cb_h = 1 << log2_cb_h;
                 DECLARE_ALIGNED(32, int16_t, tmp)[64];
 
@@ -678,7 +678,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
             if (log2_pb_h) {
                 DECLARE_ALIGNED(32, int16_t, tmp)[64*64];
                 int shift_v = 6 + 1;
-                int shift_h = (6 + 15 - 1) - 10;
+                int shift_h = (6 + 15 - 1) - BITDEPTH;
                 int16_t *src = coeffs_y;
                 int16_t *dst = ctudec->transform_buff;
                 int cb_w = 1 << log2_cb_w;
@@ -703,7 +703,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                 TRFunc->func[type_v][OVMIN(log2_pb_h,6)](src, tmp, cb_w, cb_w, pb_h, shift_v);
                 TRFunc->func[type_h][OVMIN(log2_cb_w,6)](tmp, dst, pb_h, pb_h, cb_w, shift_h);
             } else {
-                int shift_h = (6 + 15 - 1) - 10;
+                int shift_h = (6 + 15 - 1) - BITDEPTH;
                 int cb_w = 1 << log2_cb_w;
                 DECLARE_ALIGNED(32, int16_t, tmp)[64];
 
