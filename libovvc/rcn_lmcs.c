@@ -8,6 +8,8 @@
 #define SMP_RNG (1 << BITDEPTH)
 #define CLIP_VAL ((1 << BITDEPTH) - 1)
 
+#define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
+
 #define LOG2_NB_WND 4
 #define NB_LMCS_WND (1 << LOG2_NB_WND)
 
@@ -109,7 +111,7 @@ derive_forward_lut(int16_t *const fwd_lut, const struct TMPWindowsInfo *const tm
 
         int fwd_val = wnd_bnd[wnd_idx] + ((fwd_step[wnd_idx] * nb_step + LMCS_RND) >> LMCS_PREC);
 
-        fwd_lut[val] = ov_clip(fwd_val, 0, CLIP_VAL);
+        fwd_lut[val] = ov_bdclip(fwd_val);
     }
 }
 
@@ -132,7 +134,7 @@ derive_backward_lut(int16_t *const bwd_lut, const struct TMPWindowsInfo *const t
 
         int bwd_val = wnd_lbnd + ((bwd_step[wnd_idx] * nb_step + LMCS_RND) >> LMCS_PREC);
 
-        bwd_lut[val] = ov_clip(bwd_val, 0, CLIP_VAL);
+        bwd_lut[val] = ov_bdclip(bwd_val);
     }
 }
 

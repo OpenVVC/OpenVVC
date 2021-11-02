@@ -68,6 +68,8 @@ up_sample(uint16_t *const dst, const int16_t *const src,
 #define MIP_SHIFT 6
 #define MIP_OFFSET (1 << (MIP_SHIFT - 1))
 
+#define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
+
 struct MIPCtx{
     const uint8_t *mip_matrix;
 };
@@ -112,7 +114,7 @@ mip_matmult(int16_t * bndy_line, uint16_t * mip_pred, const int stride_x, const 
                 tmp3 += ((int32_t)bndy_line[i + 3]) * matrix_mip[i + 3];
             }
             val = (tmp0 + tmp1) + (tmp2 + tmp3);
-            mip_pred[pos++] = ov_clip(((val + rnd_mip) >> MIP_SHIFT) + input_offset, 0, 1023);
+            mip_pred[pos++] = ov_bdclip(((val + rnd_mip) >> MIP_SHIFT) + input_offset);
             matrix_mip += stride_x;
         }
     }
