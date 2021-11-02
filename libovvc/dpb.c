@@ -1145,6 +1145,7 @@ fail:
         dpb->active_pic = NULL;
     }
     #endif
+    ovdpb_clear_refs(dpb);
 
     return ret;
 }
