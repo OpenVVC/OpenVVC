@@ -4,6 +4,8 @@
 #include "ovutils.h"
 #include "ctudec.h"
 
+#define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
+
 #define SWAP(type,a,b) do{type tmp= b; b = a; a = tmp;}while(0)
 
 #define W_SHIFT 1
@@ -218,8 +220,8 @@ compute_lm_subsample_collocated(const uint16_t *lm_src, uint16_t *dst_cb, uint16
             lm_val += lm_src[2 * i + lm_src_stride];
 
             lm_val >>= 3;
-            dst_cb[i] = ov_clip(((lm_val * scale_cb) >> shift_cb) + offset_cb, 0, 1023);
-            dst_cr[i] = ov_clip(((lm_val * scale_cr) >> shift_cr) + offset_cr, 0, 1023);
+            dst_cb[i] = ov_bdclip(((lm_val * scale_cb) >> shift_cb) + offset_cb);
+            dst_cr[i] = ov_bdclip(((lm_val * scale_cr) >> shift_cr) + offset_cr);
         }
         dst_cb += dst_stride_c;
         dst_cr += dst_stride_c;
@@ -478,8 +480,8 @@ compute_lm_subsample(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
             lm_val += lm_src[2 * i + 1 + lm_src_stride];
             lm_val += lm_src[2 * i + lm_src_stride - (!pad_left)];
             lm_val >>= 3;
-            dst_cb[i] = ov_clip(((lm_val * scale_cb) >> shift_cb) + offset_cb, 0, 1023);
-            dst_cr[i] = ov_clip(((lm_val * scale_cr) >> shift_cr) + offset_cr, 0, 1023);
+            dst_cb[i] = ov_bdclip(((lm_val * scale_cb) >> shift_cb) + offset_cb);
+            dst_cr[i] = ov_bdclip(((lm_val * scale_cr) >> shift_cr) + offset_cr);
         }
         dst_cb += dst_stride_c;
         dst_cr += dst_stride_c;
