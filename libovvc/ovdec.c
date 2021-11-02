@@ -393,10 +393,7 @@ fail:
     return ret;
 
 failvcl:
-    //TODOpar: change 0
-    if (vvcdec->subdec_list[0]->pic) {
-        ovdpb_unref_pic(vvcdec->subdec_list[0]->pic, ~0);
-    }
+
     return ret;
 }
 
