@@ -227,7 +227,6 @@ find_min_cvs_id(const OVDPB *const dpb)
         }
     }
 
-        ov_log(NULL, OVLOG_ERROR, "MIN CVS ID: %d\n", min_cvs_id);
     if (min_cvs_id == 0) {
         int cvs_id_min1 = 0xFF;
         int got_pic = 0;
@@ -243,7 +242,6 @@ find_min_cvs_id(const OVDPB *const dpb)
                 got_pic = 0;
             }
         } while (got_pic);
-        ov_log(NULL, OVLOG_ERROR, "MIN CVS ID: %d\n", min_cvs_id);
     }
 
     return min_cvs_id;
