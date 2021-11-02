@@ -33,7 +33,6 @@
 
 #define PROF_SMP_SHIFT (14 - BITDEPTH)
 #define PROF_SMP_RND (1 << (14 - 1))
-#define PROF_SMP_OFFSET (1 << (PROF_SMP_SHIFT + 1) - 1)
 
 #define PROF_BUFF_PADD_H 1
 #define PROF_BUFF_PADD_W 1
@@ -169,7 +168,7 @@ rcn_prof(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
 
             /* Clipping if not bi directional */
             if (!bidir) {
-                val = (val + 8200 /*+ PROF_SMP_OFFSET*/) >> PROF_SMP_SHIFT;
+                val = (val + 8200) >> PROF_SMP_SHIFT;
                 dst[x] = ov_bdclip(val);
             } else {
                 dst[x] = val + (1 << 13);
