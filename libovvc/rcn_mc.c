@@ -300,7 +300,14 @@ put_vvc_pel_bilinear_pixels(uint16_t* _dst, ptrdiff_t _dststride,
     ptrdiff_t dststride = _dststride;
 
     for (y = 0; y < height; y++) {
-        memcpy(dst, src, width * sizeof(uint16_t));
+        int x;
+        for (x = 0; x < width; ++x) {
+            #if (BITDEPTH - 10) > 0
+            dst [x] = (src[x] + (1 << (BITDEPTH - 10)) >> (BITDEPTH - 10);
+            #else
+            dst [x] = src[x] << (10 - BITDEPTH);
+            #endif
+        }
         src += srcstride;
         dst += dststride;
     }
@@ -323,8 +330,7 @@ put_vvc_qpel_bilinear_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _s
     src += 1;
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            dst[x] = ov_clip_pixel((BLN_FILTER_L(src, 1, filter) +
-                                    offset) >> shift);
+            dst[x] = (BLN_FILTER_L(src, 1, filter) + offset) >> shift;
         }
         src += srcstride;
         dst += dststride;
@@ -348,8 +354,7 @@ put_vvc_qpel_bilinear_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _s
     src += srcstride;
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            dst[x] = ov_clip_pixel((BLN_FILTER_L(src, srcstride, filter)
-                                    + offset) >> shift);
+            dst[x] = (BLN_FILTER_L(src, srcstride, filter) + offset) >> shift;
         }
         src += srcstride;
         dst += dststride;
@@ -390,8 +395,7 @@ put_vvc_qpel_bilinear_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _
     offset = 1 << (shift - 1);
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            dst[x] = ov_clip_pixel((BLN_FILTER_L(tmp, MAX_PB_SIZE, filter) +
-                                    offset) >> shift);
+            dst[x] = (BLN_FILTER_L(tmp, MAX_PB_SIZE, filter) + offset) >> shift;
         }
         tmp += MAX_PB_SIZE;
         dst += dststride;
