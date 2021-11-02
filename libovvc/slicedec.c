@@ -566,7 +566,13 @@ void
 slicedec_finish_decoding(OVSliceDec *sldec)
 {
     struct SliceSynchro *slice_sync = &sldec->slice_sync;
-    ov_nalu_unref(&slice_sync->slice_nalu);
+
+    /* There might be no NAL Unit attached to slicedec if
+     * we failed before attaching NALU
+     */
+    if (slice_sync->slice_nalu) {
+        ov_nalu_unref(&slice_sync->slice_nalu);
+    }
 
     if (sldec->pic) {
         ov_log(NULL, OVLOG_DEBUG, "Decoder with POC %d, finished frame \n", sldec->pic->poc);
