@@ -183,18 +183,16 @@ rcn_prof(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
     }
 }
 
-/* FIXME check edge_emulation OK */
-
+#define PROF_BUFF_STRIDE 128
 static void
 extend_bdof_buff(const uint16_t *const src, uint16_t *dst_prof,
                  int16_t ref_stride, int16_t pb_w, int16_t pb_h,
                  uint8_t ext_x, uint8_t ext_y)
 {
-    int16_t tmp_prof_stride = 128;
     const uint16_t *ref = src  - ref_stride  - 1;
 
     uint16_t     *dst = dst_prof;
-    uint16_t *dst_lst = dst_prof + (pb_h + 1) * tmp_prof_stride;
+    uint16_t *dst_lst = dst_prof + (pb_h + 1) * PROF_BUFF_STRIDE;
     int i, j;
 
     /* Position ref according to precision */
@@ -214,7 +212,7 @@ extend_bdof_buff(const uint16_t *const src, uint16_t *dst_prof,
         dst_lst[i] = (ref_lst[i] << PROF_SMP_SHIFT);
     }
 
-    dst += tmp_prof_stride;
+    dst += PROF_BUFF_STRIDE;
     dst_lst = dst + pb_w + 1;
 
     ref = src - 1;
@@ -236,18 +234,17 @@ extend_bdof_buff(const uint16_t *const src, uint16_t *dst_prof,
 
         ref     += ref_stride;
         ref_lst += ref_stride;
-        dst     += tmp_prof_stride;
-        dst_lst += tmp_prof_stride;
+        dst     += PROF_BUFF_STRIDE;
+        dst_lst += PROF_BUFF_STRIDE;
     }
 }
 
 static void
 extend_prof_buff(const uint16_t *const src, uint16_t *dst_prof, int16_t ref_stride, uint8_t ext_x, uint8_t ext_y)
 {
-    int16_t tmp_prof_stride = (128);
     const uint16_t *ref = src  - ref_stride  - 1;
     uint16_t       *dst = dst_prof;
-    uint16_t *dst_lst = dst_prof + (SB_H + 1) * tmp_prof_stride;
+    uint16_t *dst_lst = dst_prof + (SB_H + 1) * PROF_BUFF_STRIDE;
     int i, j;
 
     /* Position ref according to precision */
@@ -267,7 +264,7 @@ extend_prof_buff(const uint16_t *const src, uint16_t *dst_prof, int16_t ref_stri
         dst_lst[i] = (ref_lst[i] << PROF_SMP_SHIFT);
     }
 
-    dst += tmp_prof_stride;
+    dst += PROF_BUFF_STRIDE;
     dst_lst = dst + SB_W + 1;
 
     ref = src - 1;
@@ -289,8 +286,8 @@ extend_prof_buff(const uint16_t *const src, uint16_t *dst_prof, int16_t ref_stri
 
         ref     += ref_stride;
         ref_lst += ref_stride;
-        dst     += tmp_prof_stride;
-        dst_lst += tmp_prof_stride;
+        dst     += PROF_BUFF_STRIDE;
+        dst_lst += PROF_BUFF_STRIDE;
     }
 }
 
@@ -1838,43 +1835,41 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint8_t prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
 
     if (prof_dir & 0x1) {
-        int16_t tmp_prof[(SB_H + 2 * PROF_BUFF_PADD_H) * (128 + 2 * PROF_BUFF_PADD_W)];
-        int16_t tmp_prof_stride = (128);
+        int16_t tmp_prof[(SB_H + 2 * PROF_BUFF_PADD_H) * (PROF_BUFF_STRIDE + 2 * PROF_BUFF_PADD_W)];
 
         int16_t tmp_grad_x[16];
         int16_t tmp_grad_y[16];
-        mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_prof + 128 + 1,
+        mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_prof + PROF_BUFF_STRIDE + 1,
                                               ref0_b.y, ref0_b.stride, pu_h,
                                               prec_x0, prec_y0, pu_w);
 
         extend_prof_buff(ref0_b.y, (uint16_t *)tmp_prof, ref0_b.stride, prec_x0 >> 3, prec_y0 >> 3);
 
-        prof->grad((uint16_t *)tmp_prof, tmp_prof_stride, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
+        prof->grad((uint16_t *)tmp_prof, PROF_BUFF_STRIDE, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
 
-        prof->rcn((uint16_t *)tmp_buff, MAX_PB_SIZE, (uint16_t *)tmp_prof + 128 + 1, tmp_prof_stride, tmp_grad_x, tmp_grad_y,
-                 4, prof_info->dmv_scale_h_0, prof_info->dmv_scale_v_0, 1);
+        prof->rcn((uint16_t *)tmp_buff, MAX_PB_SIZE, (uint16_t *)tmp_prof + PROF_BUFF_STRIDE + 1, PROF_BUFF_STRIDE, tmp_grad_x, tmp_grad_y,
+                  4, prof_info->dmv_scale_h_0, prof_info->dmv_scale_v_0, 1);
     } else {
         mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride,
                                                     pu_h, prec_x0, prec_y0, pu_w);
     }
 
     if (prof_dir & 0x2) {
-        int16_t tmp_prof[(SB_H + 2 * PROF_BUFF_PADD_H) * (128 + 2 * PROF_BUFF_PADD_W)];
-        int16_t tmp_prof_stride = (128);
+        int16_t tmp_prof[(SB_H + 2 * PROF_BUFF_PADD_H) * (PROF_BUFF_STRIDE + 2 * PROF_BUFF_PADD_W)];
 
         int16_t tmp_grad_x[16];
         int16_t tmp_grad_y[16];
 
-        mc_l->bidir0[prec_1_mc_type][log2_pu_w - 1](tmp_prof + 128 + 1,
-                                                ref1_b.y, ref1_b.stride, pu_h,
-                                                prec_x1, prec_y1, pu_w);
+        mc_l->bidir0[prec_1_mc_type][log2_pu_w - 1](tmp_prof + PROF_BUFF_STRIDE + 1,
+                                                    ref1_b.y, ref1_b.stride, pu_h,
+                                                    prec_x1, prec_y1, pu_w);
 
         extend_prof_buff(ref1_b.y, (uint16_t *)tmp_prof, ref1_b.stride, prec_x1 >> 3, prec_y1 >> 3);
 
-        prof->grad((uint16_t *)tmp_prof, tmp_prof_stride, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
+        prof->grad((uint16_t *)tmp_prof, PROF_BUFF_STRIDE, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
 
-        prof->rcn((uint16_t *)tmp_buff1, MAX_PB_SIZE, (uint16_t *)tmp_prof + 128 + 1, tmp_prof_stride,
-                 tmp_grad_x, tmp_grad_y, 4, prof_info->dmv_scale_h_1, prof_info->dmv_scale_v_1, 1);
+        prof->rcn((uint16_t *)tmp_buff1, MAX_PB_SIZE, (uint16_t *)tmp_prof + PROF_BUFF_STRIDE + 1, PROF_BUFF_STRIDE,
+                  tmp_grad_x, tmp_grad_y, 4, prof_info->dmv_scale_h_1, prof_info->dmv_scale_v_1, 1);
 
         /*FIXME merge */
         if (mv0.bcw_idx_plus1 == 0 || mv0.bcw_idx_plus1 == 3){
@@ -2256,8 +2251,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
      */
     rcn_inter_synchronization(ref_pic, ref_x, ref_y, pu_w, pu_h, log2_ctb_s);
 
-    int16_t tmp_prof[(SB_H + 2 * PROF_BUFF_PADD_H) * (128 + 2 * PROF_BUFF_PADD_W)];
-    int16_t tmp_prof_stride = (128);
+    int16_t tmp_prof[(SB_H + 2 * PROF_BUFF_PADD_H) * (PROF_BUFF_STRIDE + 2 * PROF_BUFF_PADD_W)];
 
     int16_t tmp_grad_x[16];
     int16_t tmp_grad_y[16];
@@ -2277,15 +2271,15 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
     }
 
     /* FIXME specialize and reduce buff sizes */
-    mc_l->bidir0[prec_mc_type][log2_pu_w - 1](tmp_prof + 128 + 1,
+    mc_l->bidir0[prec_mc_type][log2_pu_w - 1](tmp_prof + PROF_BUFF_STRIDE + 1,
                                           src_y, src_stride, pu_h,
                                           prec_x, prec_y, pu_w);
 
     extend_prof_buff(src_y, (uint16_t *)tmp_prof, src_stride, prec_x >> 3, prec_y >> 3);
 
-    prof->grad((uint16_t *)tmp_prof, tmp_prof_stride, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
+    prof->grad((uint16_t *)tmp_prof, PROF_BUFF_STRIDE, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
 
-    prof->rcn(dst.y, dst.stride, (uint16_t *)tmp_prof + 128 + 1, tmp_prof_stride, tmp_grad_x, tmp_grad_y,
+    prof->rcn(dst.y, dst.stride, (uint16_t *)tmp_prof + PROF_BUFF_STRIDE + 1, PROF_BUFF_STRIDE, tmp_grad_x, tmp_grad_y,
              4, dmv_scale_h, dmv_scale_v, 0);
 
     rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
