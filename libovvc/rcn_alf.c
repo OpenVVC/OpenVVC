@@ -10,13 +10,13 @@
 #include "rcn_structures.h"
 
 
-static inline int clipALF(const int clip, const int32_t ref, const int32_t val0, const int32_t val1)
-  {
-    // return Clip3<int>(-clip, +clip, val0-ref) + Clip3<int>(-clip, +clip, val1-ref);
-    int clip1 = (int) OVMIN( OVMAX(-clip, val0 - ref) , clip);
-    int clip2 = (int) OVMIN( OVMAX(-clip, val1 - ref) , clip);
+static inline int
+alf_clip(const int clip, const int32_t ref, const int32_t val0, const int32_t val1)
+{
+    int clip1 = ov_clip(val0 - ref, -clip, clip);
+    int clip2 = ov_clip(val1 - ref, -clip, clip);
     return clip1 + clip2;
-  }
+}
 
 
 static const int16_t fixed_filter_coeff[ALF_FIXED_FILTER_NUM][MAX_NUM_ALF_LUMA_COEFF] =
@@ -912,12 +912,12 @@ static void alf_filter_c(int16_t *const dst, const int16_t *const src,
                 for (l = 0; l < blk_w; l++) {
                     int sum = 0;
                     const int16_t curr = src_0[0];
-                    sum += filter_set[0] * clipALF(clip_set[0], curr, src_3[ 0], src_4[ 0]);
-                    sum += filter_set[1] * clipALF(clip_set[1], curr, src_1[ 1], src_2[-1]);
-                    sum += filter_set[2] * clipALF(clip_set[2], curr, src_1[ 0], src_2[ 0]);
-                    sum += filter_set[3] * clipALF(clip_set[3], curr, src_1[-1], src_2[ 1]);
-                    sum += filter_set[4] * clipALF(clip_set[4], curr, src_0[ 2], src_0[-2]);
-                    sum += filter_set[5] * clipALF(clip_set[5], curr, src_0[ 1], src_0[-1]);
+                    sum += filter_set[0] * alf_clip(clip_set[0], curr, src_3[ 0], src_4[ 0]);
+                    sum += filter_set[1] * alf_clip(clip_set[1], curr, src_1[ 1], src_2[-1]);
+                    sum += filter_set[2] * alf_clip(clip_set[2], curr, src_1[ 0], src_2[ 0]);
+                    sum += filter_set[3] * alf_clip(clip_set[3], curr, src_1[-1], src_2[ 1]);
+                    sum += filter_set[4] * alf_clip(clip_set[4], curr, src_0[ 2], src_0[-2]);
+                    sum += filter_set[5] * alf_clip(clip_set[5], curr, src_0[ 1], src_0[-1]);
 
                     sum = (sum + offset) >> shift;
 
@@ -1016,12 +1016,12 @@ static void alf_filter_cVB(int16_t *const dst, const int16_t *const src,
                 for (l = 0; l < blk_w; l++) {
                     int sum = 0;
                     const int16_t curr = src_0[0];
-                    sum += filter_set[0] * clipALF(clip_set[0], curr, src_3[ 0], src_4[ 0]);
-                    sum += filter_set[1] * clipALF(clip_set[1], curr, src_1[ 1], src_2[-1]);
-                    sum += filter_set[2] * clipALF(clip_set[2], curr, src_1[ 0], src_2[ 0]);
-                    sum += filter_set[3] * clipALF(clip_set[3], curr, src_1[-1], src_2[ 1]);
-                    sum += filter_set[4] * clipALF(clip_set[4], curr, src_0[ 2], src_0[-2]);
-                    sum += filter_set[5] * clipALF(clip_set[5], curr, src_0[ 1], src_0[-1]);
+                    sum += filter_set[0] * alf_clip(clip_set[0], curr, src_3[ 0], src_4[ 0]);
+                    sum += filter_set[1] * alf_clip(clip_set[1], curr, src_1[ 1], src_2[-1]);
+                    sum += filter_set[2] * alf_clip(clip_set[2], curr, src_1[ 0], src_2[ 0]);
+                    sum += filter_set[3] * alf_clip(clip_set[3], curr, src_1[-1], src_2[ 1]);
+                    sum += filter_set[4] * alf_clip(clip_set[4], curr, src_0[ 2], src_0[-2]);
+                    sum += filter_set[5] * alf_clip(clip_set[5], curr, src_0[ 1], src_0[-1]);
 
                     if (!(isNearVBabove || isNearVBbelow)) {
                         sum = (sum + offset) >> shift;
@@ -1103,23 +1103,23 @@ static void alf_filterBlkLuma(uint8_t * class_idx_arr, uint8_t * transpose_idx_a
         for( int jj = 0; jj < clsSizeX; jj++ ) {
           int sum = 0;
           const int16_t curr = pImg0[+0];
-          sum += filt_coeff[0] * ( clipALF(filt_clip[0], curr, pImg5[+0], pImg6[+0]) );
-          sum += filt_coeff[1] * ( clipALF(filt_clip[1], curr, pImg3[+1], pImg4[-1]) );
+          sum += filt_coeff[0] * alf_clip(filt_clip[0], curr, pImg5[+0], pImg6[+0]);
+          sum += filt_coeff[1] * alf_clip(filt_clip[1], curr, pImg3[+1], pImg4[-1]);
 
-          sum += filt_coeff[2] * ( clipALF(filt_clip[2], curr, pImg3[+0], pImg4[+0]) );
-          sum += filt_coeff[3] * ( clipALF(filt_clip[3], curr, pImg3[-1], pImg4[+1]) );
+          sum += filt_coeff[2] * alf_clip(filt_clip[2], curr, pImg3[+0], pImg4[+0]);
+          sum += filt_coeff[3] * alf_clip(filt_clip[3], curr, pImg3[-1], pImg4[+1]);
 
-          sum += filt_coeff[4] * ( clipALF(filt_clip[4], curr, pImg1[+2], pImg2[-2]) );
-          sum += filt_coeff[5] * ( clipALF(filt_clip[5], curr, pImg1[+1], pImg2[-1]) );
+          sum += filt_coeff[4] * alf_clip(filt_clip[4], curr, pImg1[+2], pImg2[-2]);
+          sum += filt_coeff[5] * alf_clip(filt_clip[5], curr, pImg1[+1], pImg2[-1]);
 
-          sum += filt_coeff[6] * ( clipALF(filt_clip[6], curr, pImg1[+0], pImg2[+0]) );
-          sum += filt_coeff[7] * ( clipALF(filt_clip[7], curr, pImg1[-1], pImg2[+1]) );
+          sum += filt_coeff[6] * alf_clip(filt_clip[6], curr, pImg1[+0], pImg2[+0]);
+          sum += filt_coeff[7] * alf_clip(filt_clip[7], curr, pImg1[-1], pImg2[+1]);
 
-          sum += filt_coeff[8] * ( clipALF(filt_clip[8], curr, pImg1[-2], pImg2[+2]) );
-          sum += filt_coeff[9] * ( clipALF(filt_clip[9], curr, pImg0[+3], pImg0[-3]) );
+          sum += filt_coeff[8] * alf_clip(filt_clip[8], curr, pImg1[-2], pImg2[+2]);
+          sum += filt_coeff[9] * alf_clip(filt_clip[9], curr, pImg0[+3], pImg0[-3]);
 
-          sum += filt_coeff[10] * ( clipALF(filt_clip[10], curr, pImg0[+2], pImg0[-2]) );
-          sum += filt_coeff[11] * ( clipALF(filt_clip[11], curr, pImg0[+1], pImg0[-1]) );
+          sum += filt_coeff[10] * alf_clip(filt_clip[10], curr, pImg0[+2], pImg0[-2]);
+          sum += filt_coeff[11] * alf_clip(filt_clip[11], curr, pImg0[+1], pImg0[-1]);
 
           sum = (sum + offset) >> shift;
 
@@ -1211,26 +1211,29 @@ static void alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx
 
         uint8_t isNearVBabove = yVb < virbnd_pos && (yVb >= virbnd_pos - 1);
         uint8_t isNearVBbelow = yVb >= virbnd_pos && (yVb <= virbnd_pos);
+
         for( int jj = 0; jj < clsSizeX; jj++ ) {
-          int sum = 0;
           const int16_t curr = pImg0[+0];
-          sum += filt_coeff[0] * ( clipALF(filt_clip[0], curr, pImg5[+0], pImg6[+0]) );
-          sum += filt_coeff[1] * ( clipALF(filt_clip[1], curr, pImg3[+1], pImg4[-1]) );
 
-          sum += filt_coeff[2] * ( clipALF(filt_clip[2], curr, pImg3[+0], pImg4[+0]) );
-          sum += filt_coeff[3] * ( clipALF(filt_clip[3], curr, pImg3[-1], pImg4[+1]) );
+          int sum = 0;
 
-          sum += filt_coeff[4] * ( clipALF(filt_clip[4], curr, pImg1[+2], pImg2[-2]) );
-          sum += filt_coeff[5] * ( clipALF(filt_clip[5], curr, pImg1[+1], pImg2[-1]) );
+          sum += filt_coeff[0] * alf_clip(filt_clip[0], curr, pImg5[+0], pImg6[+0]);
+          sum += filt_coeff[1] * alf_clip(filt_clip[1], curr, pImg3[+1], pImg4[-1]);
 
-          sum += filt_coeff[6] * ( clipALF(filt_clip[6], curr, pImg1[+0], pImg2[+0]) );
-          sum += filt_coeff[7] * ( clipALF(filt_clip[7], curr, pImg1[-1], pImg2[+1]) );
+          sum += filt_coeff[2] * alf_clip(filt_clip[2], curr, pImg3[+0], pImg4[+0]);
+          sum += filt_coeff[3] * alf_clip(filt_clip[3], curr, pImg3[-1], pImg4[+1]);
 
-          sum += filt_coeff[8] * ( clipALF(filt_clip[8], curr, pImg1[-2], pImg2[+2]) );
-          sum += filt_coeff[9] * ( clipALF(filt_clip[9], curr, pImg0[+3], pImg0[-3]) );
+          sum += filt_coeff[4] * alf_clip(filt_clip[4], curr, pImg1[+2], pImg2[-2]);
+          sum += filt_coeff[5] * alf_clip(filt_clip[5], curr, pImg1[+1], pImg2[-1]);
 
-          sum += filt_coeff[10] * ( clipALF(filt_clip[10], curr, pImg0[+2], pImg0[-2]) );
-          sum += filt_coeff[11] * ( clipALF(filt_clip[11], curr, pImg0[+1], pImg0[-1]) );
+          sum += filt_coeff[6] * alf_clip(filt_clip[6], curr, pImg1[+0], pImg2[+0]);
+          sum += filt_coeff[7] * alf_clip(filt_clip[7], curr, pImg1[-1], pImg2[+1]);
+
+          sum += filt_coeff[8] * alf_clip(filt_clip[8], curr, pImg1[-2], pImg2[+2]);
+          sum += filt_coeff[9] * alf_clip(filt_clip[9], curr, pImg0[+3], pImg0[-3]);
+
+          sum += filt_coeff[10] * alf_clip(filt_clip[10], curr, pImg0[+2], pImg0[-2]);
+          sum += filt_coeff[11] * alf_clip(filt_clip[11], curr, pImg0[+1], pImg0[-1]);
 
           if (!(isNearVBabove || isNearVBbelow)) {
             sum = (sum + offset) >> shift;
