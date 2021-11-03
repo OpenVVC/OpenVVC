@@ -2484,8 +2484,7 @@ void rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, 
     int mode_lft = ctudec->part_map.cu_mode_y[y_bottom >> ctudec->part_ctx->log2_min_cb_s];
     uint8_t cu_intra_abv = mode_abv == OV_INTRA || mode_abv == OV_MIP;
     uint8_t cu_intra_lft = mode_lft == OV_INTRA || mode_lft == OV_MIP;
-    int wt = 1;
-    wt += (cu_intra_abv + cu_intra_lft) ;
+    int wt = 1 + (cu_intra_abv + cu_intra_lft);
 
     //Apply weighted sum to the final CIIP predicted block
     struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
@@ -2493,7 +2492,7 @@ void rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, 
     tmp_intra->y  += x0 + y0 * tmp_intra->stride;
     tmp_inter->y  += x0 + y0 * tmp_inter->stride;
     ciip->weighted(dst.y, dst.stride, tmp_intra->y, tmp_inter->y, tmp_inter->stride,
-                       1 << log2_pb_w, 1 << log2_pb_h, wt);
+                   1 << log2_pb_w, 1 << log2_pb_h, wt);
 
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     tmp_intra->cb += (x0 >> 1) + (y0 >> 1) * tmp_intra->stride_c;
@@ -2507,8 +2506,7 @@ void rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, 
     if (log2_pb_w <= 2){
         mc_c->unidir[0][0](dst.cb, dst.stride_c, tmp_inter->cb, tmp_inter->stride_c, 1 << (log2_pb_h - 1), 0, 0, 1 << (log2_pb_w - 1));
         mc_c->unidir[0][0](dst.cr, dst.stride_c, tmp_inter->cr, tmp_inter->stride_c, 1 << (log2_pb_h - 1), 0, 0, 1 << (log2_pb_w - 1));
-    }
-    else{
+    } else {
         ciip->weighted(dst.cb, dst.stride_c, tmp_intra->cb, tmp_inter->cb, tmp_inter->stride_c,
                            1 << (log2_pb_w - 1), 1 << (log2_pb_h - 1), wt);
         ciip->weighted(dst.cr, dst.stride_c, tmp_intra->cr, tmp_inter->cr, tmp_inter->stride_c,
@@ -2539,7 +2537,7 @@ rcn_ciip_b(OVCTUDec*const ctudec,
     tmp_inter.stride   = RCN_CTB_STRIDE;
     tmp_inter.stride_c = RCN_CTB_STRIDE;
     rcn_mcp_b(ctudec, tmp_inter, inter_ctx, part_ctx, mv0, mv1, x0, y0, log2_pb_w, log2_pb_h,
-        inter_dir, ref_idx0, ref_idx1);
+              inter_dir, ref_idx0, ref_idx1);
 
     //Intra Planar mode
     struct OVBuffInfo tmp_intra;
