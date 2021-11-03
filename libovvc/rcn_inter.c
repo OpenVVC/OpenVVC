@@ -161,15 +161,15 @@ rcn_prof(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
 
             add = ov_clip(add, -PROF_DELTA_LIMIT, PROF_DELTA_LIMIT - 1);
 
-            val = (int16_t)src[x] -(1 << 13);
+            val = (int16_t)src[x];
             val += add;
 
             /* Clipping if not bi directional */
             if (!bidir) {
-                val = (val + (1 << 13) + (1 << (13 - BITDEPTH))) >> PROF_SMP_SHIFT;
+                val = (val + (1 << (13 - BITDEPTH))) >> PROF_SMP_SHIFT;
                 dst[x] = ov_bdclip(val);
             } else {
-                dst[x] = val + (1 << 13);
+                dst[x] = val;
             }
 
             idx++;
@@ -1107,7 +1107,6 @@ div_for_maxq7(int64_t num, int64_t den)
   return q;
 }
 
-
 static struct DMVRDelta
 refine_mv(uint64_t *sad_buff)
 {
@@ -1427,11 +1426,11 @@ tmp_mrg(uint16_t* _dst, ptrdiff_t _dststride,
     uint16_t* dst = (uint16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     int shift = 14 - BITDEPTH + 1;
-    int offset = 2*((1 << 13) + (1 << (13 - BITDEPTH)));
+    int offset = 2*((1 << (13 - BITDEPTH)));
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
-            dst[x] = ov_bdclip((src0[x]-(1<<13) + src1[x]-(1<<13) + offset) >> shift);
+            dst[x] = ov_bdclip((src0[x] + src1[x] + offset) >> shift);
         }
         src0 += srcstride;
         src1 += MAX_PB_SIZE;
@@ -1453,11 +1452,11 @@ tmp_mrg_w(uint16_t* _dst, ptrdiff_t _dststride,
     ptrdiff_t dststride = _dststride;
     int log_weights = floor_log2(wt0 + wt1);
     int shift = 14 - BITDEPTH + log_weights;
-    int offset = 2*((1 << 13) + (1 << (13 - BITDEPTH))) << (log_weights - 1) ;
+    int offset = 2*((1 << (13 - BITDEPTH))) << (log_weights - 1) ;
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
-            dst[x] = ov_bdclip(((src0[x] - (1<<13)) * wt0 + (src1[x]-(1<<13)) * wt1 + offset) >> shift);
+            dst[x] = ov_bdclip((src0[x] * wt0 + src1[x] * wt1 + offset) >> shift);
         }
         src0 += srcstride;
         src1 += MAX_PB_SIZE;
