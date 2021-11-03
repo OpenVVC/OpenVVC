@@ -44,6 +44,7 @@
 #define BDOF_OFFSET  ((1 << (BDOF_SHIFT - 1)))
 
 #define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
+
 static const int8_t dmvr_mv_x[25 + 25] = {
     -2, -1, 0, 1, 2,
     -2, -1, 0, 1, 2,
@@ -73,9 +74,6 @@ struct OVDMV {
     int32_t x;
     int32_t y;
 };
-
-#define BIT_DEPTH BITDEPTH
-#define ov_clip_pixel(a) ov_clip_uintp2(a, BIT_DEPTH)
 
 enum CUMode {
     OV_NA = 0xFF,
@@ -1416,7 +1414,6 @@ struct PROFInfo
     int32_t dmv_scale_v_1[16];
 };
 
-#define ov_clip_pixel2(a) ov_clip_uintp2(a, BITDEPTH)
 static void
 tmp_mrg(uint16_t* _dst, ptrdiff_t _dststride,
         const uint16_t* _src0, ptrdiff_t _srcstride,
@@ -1434,7 +1431,7 @@ tmp_mrg(uint16_t* _dst, ptrdiff_t _dststride,
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
-            dst[x] = ov_clip_pixel2((src0[x]-(1<<13) + src1[x]-(1<<13) + offset) >> shift);
+            dst[x] = ov_bdclip((src0[x]-(1<<13) + src1[x]-(1<<13) + offset) >> shift);
         }
         src0 += srcstride;
         src1 += MAX_PB_SIZE;
@@ -1460,7 +1457,7 @@ tmp_mrg_w(uint16_t* _dst, ptrdiff_t _dststride,
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
-            dst[x] = ov_clip_pixel2(((src0[x] - (1<<13)) * wt0 + (src1[x]-(1<<13)) * wt1 + offset) >> shift);
+            dst[x] = ov_bdclip(((src0[x] - (1<<13)) * wt0 + (src1[x]-(1<<13)) * wt1 + offset) >> shift);
         }
         src0 += srcstride;
         src1 += MAX_PB_SIZE;
@@ -1492,10 +1489,10 @@ rcn_apply_bdof_subblock(const int16_t* src0, int src0_stride,
         val2 = (int16_t)((src0[2] + src1[2] + b2 + BDOF_OFFSET) >> BDOF_SHIFT);
         val3 = (int16_t)((src0[3] + src1[3] + b3 + BDOF_OFFSET) >> BDOF_SHIFT);
 
-        dst[0] = ov_clip_pixel2(val0);
-        dst[1] = ov_clip_pixel2(val1);
-        dst[2] = ov_clip_pixel2(val2);
-        dst[3] = ov_clip_pixel2(val3);
+        dst[0] = ov_bdclip(val0);
+        dst[1] = ov_bdclip(val1);
+        dst[2] = ov_bdclip(val2);
+        dst[3] = ov_bdclip(val3);
 
         dst += dst_stride;
 
