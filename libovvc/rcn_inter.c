@@ -135,8 +135,8 @@ compute_prof_grad(const uint16_t* src, int src_stride, int sb_w, int sb_h,
         for (x = 0; x < nb_smp_w; ++x) {
             grad_y[x]  = (((int16_t)src[x + src_stride] - (1 << 13)) >> GRAD_SHIFT);
             grad_y[x] -= (((int16_t)src[x - src_stride] - (1 << 13)) >> GRAD_SHIFT);
-            grad_x[x]  = (((int16_t)src[x + 1] - (1 << 13)) >> GRAD_SHIFT);
-            grad_x[x] -= (((int16_t)src[x - 1] - (1 << 13)) >> GRAD_SHIFT);
+            grad_x[x]  = (((int16_t)src[x + 1]          - (1 << 13)) >> GRAD_SHIFT);
+            grad_x[x] -= (((int16_t)src[x - 1]          - (1 << 13)) >> GRAD_SHIFT);
         }
         grad_x += grad_stride;
         grad_y += grad_stride;
@@ -1664,11 +1664,11 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
 
-    uint16_t *edge_buff0 = rcn_ctx->data.edge_buff0;
-    uint16_t *edge_buff1 = rcn_ctx->data.edge_buff1;
-    
-    
-    /*FIXME we suppose here both refs possess the same size*/
+    /* TMP buffers for edge emulation
+     * FIXME use tmp buffers in local contexts
+     */
+    uint16_t edge_buff0[RCN_CTB_SIZE];
+    uint16_t edge_buff1[RCN_CTB_SIZE];
 
     const int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
 
@@ -1698,12 +1698,14 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint8_t prec_y0 = (mv0.y) & 0xF;
     uint8_t prec_x1 = (mv1.x) & 0xF;
     uint8_t prec_y1 = (mv1.y) & 0xF;
-    if(inter_ctx->prec_amvr == 3){
+
+    if (inter_ctx->prec_amvr == 3) {
         prec_x0 += (prec_x0 == 8) ? 8 : 0;
         prec_y0 += (prec_y0 == 8) ? 8 : 0;
         prec_x1 += (prec_x1 == 8) ? 8 : 0;
         prec_y1 += (prec_y1 == 8) ? 8 : 0;
     }
+
     uint8_t prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
     uint8_t prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
 
@@ -2933,12 +2935,12 @@ void
 rcn_init_prof_functions(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->prof.grad = &compute_prof_grad;
-    rcn_funcs->prof.rcn = &rcn_prof;
+    rcn_funcs->prof.rcn  = &rcn_prof;
 }
 
 void
 rcn_init_bdof_functions(struct RCNFunctions *const rcn_funcs)
 {
-    rcn_funcs->bdof.grad = &compute_prof_grad;
+    rcn_funcs->bdof.grad     = &compute_prof_grad;
     rcn_funcs->bdof.subblock = &rcn_apply_bdof_subblock;
 }
