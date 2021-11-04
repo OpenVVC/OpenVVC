@@ -8,7 +8,7 @@
 #define MIP_SHIFT 6
 
 static inline void
-mip_matmult_8_8(const int16_t *bndy_line, uint16_t *dst, int stride_x,
+mip_matmult_8_8(const int16_t *bndy_line, uint16_t *dst,
                 const uint8_t *matrix_mip, int16_t input_offset,
                 int rnd_mip, uint8_t log2_red_h)
 {
@@ -20,10 +20,10 @@ mip_matmult_8_8(const int16_t *bndy_line, uint16_t *dst, int stride_x,
     b = _mm_load_si128((__m128i *)bndy_line);
 
     for (y = 0; y < (1 << log2_red_h); y++) {
-        d[0] = _mm_load_si128((__m128i *)&matrix_mip[0 * stride_x]);
-        d[1] = _mm_load_si128((__m128i *)&matrix_mip[2 * stride_x]);
-        d[2] = _mm_load_si128((__m128i *)&matrix_mip[4 * stride_x]);
-        d[3] = _mm_load_si128((__m128i *)&matrix_mip[6 * stride_x]);
+        d[0] = _mm_load_si128((__m128i *)&matrix_mip[0 * 8]);
+        d[1] = _mm_load_si128((__m128i *)&matrix_mip[2 * 8]);
+        d[2] = _mm_load_si128((__m128i *)&matrix_mip[4 * 8]);
+        d[3] = _mm_load_si128((__m128i *)&matrix_mip[6 * 8]);
 
         tmp[0] = _mm_unpacklo_epi8(d[0], _mm_setzero_si128());
         tmp[1] = _mm_unpackhi_epi8(d[0], _mm_setzero_si128());
@@ -83,13 +83,13 @@ mip_matmult_8_8(const int16_t *bndy_line, uint16_t *dst, int stride_x,
         m[0] = _mm_max_epi16(m[0], _mm_setzero_si128());
 
         _mm_store_si128((__m128i *)dst, m[0]);
-        dst   += 8;
-        matrix_mip += 8 * stride_x;
+        dst        += 8;
+        matrix_mip += 8 * 8;
     }
 }
 
 static inline void
-mip_matmult_8_4(const int16_t *bndy_line, uint16_t *dst, int stride_x,
+mip_matmult_8_4(const int16_t *bndy_line, uint16_t *dst,
                 const uint8_t *matrix_mip, int16_t input_offset,
                 int rnd_mip, uint8_t log2_red_h)
 {
@@ -102,8 +102,8 @@ mip_matmult_8_4(const int16_t *bndy_line, uint16_t *dst, int stride_x,
     b = _mm_loadu_si128((__m128i *)bndy_line);
 
     for (y = 0; y < (1 << log2_red_h); y++) {
-        d[0] = _mm_loadu_si128((__m128i *)&matrix_mip[0 * stride_x]);
-        d[1] = _mm_loadu_si128((__m128i *)&matrix_mip[2 * stride_x]);
+        d[0] = _mm_loadu_si128((__m128i *)&matrix_mip[0 * 8]);
+        d[1] = _mm_loadu_si128((__m128i *)&matrix_mip[2 * 8]);
 
         tmp[0] = _mm_unpacklo_epi8(d[0], _mm_setzero_si128());
         tmp[1] = _mm_unpackhi_epi8(d[0], _mm_setzero_si128());
@@ -141,13 +141,14 @@ mip_matmult_8_4(const int16_t *bndy_line, uint16_t *dst, int stride_x,
         m[0] = _mm_max_epi16(m[0], _mm_setzero_si128());
 
         _mm_storeu_si128((__m128i *)dst, m[0]);
-        dst += 4;
-        matrix_mip += 4*stride_x;
+
+        dst        += 4;
+        matrix_mip += 4 * 8;
     }
 }
 
 static inline void
-mip_matmult_4_4(const int16_t *bndy_line, uint16_t *dst, int stride_x,
+mip_matmult_4_4(const int16_t *bndy_line, uint16_t *dst,
                 const uint8_t *matrix_mip, int16_t input_offset,
                 int rnd_mip, uint8_t log2_red_h)
 {
@@ -161,7 +162,7 @@ mip_matmult_4_4(const int16_t *bndy_line, uint16_t *dst, int stride_x,
     b = _mm_unpacklo_epi64(b,b);
 
     for (y = 0; y < (1 << log2_red_h); y++) {
-        d = _mm_loadu_si128((__m128i *)&matrix_mip[0 * stride_x]);
+        d = _mm_loadu_si128((__m128i *)&matrix_mip[0 * 4]);
 
         tmp[0] = _mm_unpacklo_epi8(d, _mm_setzero_si128());
         tmp[1] = _mm_unpackhi_epi8(d, _mm_setzero_si128());
@@ -184,7 +185,7 @@ mip_matmult_4_4(const int16_t *bndy_line, uint16_t *dst, int stride_x,
 
         _mm_storel_epi64((__m128i *)dst, m[0]);
         dst        += 4;
-        matrix_mip += 4 * stride_x;
+        matrix_mip += 4 * 4;
     }
 }
 
@@ -196,15 +197,13 @@ mip_matmult(const int16_t *bndy_line, uint16_t *dst,
 {
 
     if (log2_bndy - 1) {
-        const int stride_x = 2 << log2_bndy;
         if (log2_red_w == 3) {
-            mip_matmult_8_8(bndy_line, dst, stride_x, matrix_mip, input_offset, rnd_mip, log2_red_h);
+            mip_matmult_8_8(bndy_line, dst, matrix_mip, input_offset, rnd_mip, log2_red_h);
         } else if (log2_red_w == 2) {
-            mip_matmult_8_4(bndy_line, dst, stride_x, matrix_mip, input_offset, rnd_mip, log2_red_h);
+            mip_matmult_8_4(bndy_line, dst, matrix_mip, input_offset, rnd_mip, log2_red_h);
         }
     } else {
-        const int stride_x = 2 << log2_bndy;
-        mip_matmult_4_4(bndy_line, dst, stride_x, matrix_mip, input_offset, rnd_mip, log2_red_h);
+        mip_matmult_4_4(bndy_line, dst, matrix_mip, input_offset, rnd_mip, log2_red_h);
     }
 }
 
