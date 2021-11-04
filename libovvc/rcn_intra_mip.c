@@ -243,7 +243,6 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
 
     DECLARE_ALIGNED(32, int16_t, bndy_line)[8];
     DECLARE_ALIGNED(32, uint16_t, mip_pred)[64];
-    DECLARE_ALIGNED(32, uint16_t, mip_pred2)[64];
 
     uint16_t ref_abv[(128<<1) + 128];
     uint16_t ref_lft[(128<<1) + 128];
@@ -309,40 +308,42 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
 
     rcn_funcs->mip.matmult(bndy_line, mip_pred, matrix_mip, input_offset, rnd_mip, log2_bndy, log2_red_w, log2_red_h);
 
-    for (i = 0; i < (1 << log2_red_h); ++i) {
-        for (j = 0; j < (1 << log2_red_w); ++j) {
-            mip_pred2 [j + (i << log2_red_w)] = mip_pred[(j << log2_red_h) + i];
-        }
-    }
-
     uint8_t log2_scale_x = log2_pu_w - log2_red_w;
     uint8_t log2_scale_y = log2_pu_h - log2_red_h;
 
     if (log2_scale_x || log2_scale_y) {
-            int src_stride;
-            int src_step;
-            const uint16_t *src;
-            if (log2_scale_x) {
-                uint16_t *_dst = dst + ((1 << log2_scale_y) - 1) * RCN_CTB_STRIDE;
-               rcn_funcs->mip.upsample_h[log2_red_w == 3][log2_scale_x - 1](_dst, (int16_t *)mip_pred2, ref_lft, log2_red_w, log2_red_h,
-                                                                            1, (1 << log2_red_w),
-                                                                            1, (1 << log2_scale_y) * RCN_CTB_STRIDE,
-                                                                            (1 << log2_scale_y), log2_scale_x);
-                src        = _dst;
-                src_step   = (1 << log2_scale_y) * RCN_CTB_STRIDE;
-                src_stride = 1;
-            } else {
-                src        = mip_pred2;
-                src_step   = (1 << log2_pu_w);
-                src_stride = 1;
-            }
+        DECLARE_ALIGNED(32, uint16_t, mip_pred2)[64];
+        int src_stride;
+        int src_step;
+        const uint16_t *src;
 
-            if (log2_scale_y) {
-              rcn_funcs->mip.upsample_v[log2_red_h == 3][log2_scale_y - 1](dst, (int16_t *)src, ref_abv, log2_red_h, log2_pu_w,
-                                                                           src_step, src_stride,
-                                                                           RCN_CTB_STRIDE, 1,
-                                                                           1, log2_scale_y);
+        for (i = 0; i < (1 << log2_red_h); ++i) {
+            for (j = 0; j < (1 << log2_red_w); ++j) {
+                mip_pred2 [j + (i << log2_red_w)] = mip_pred[(j << log2_red_h) + i];
             }
+        }
+
+        if (log2_scale_x) {
+            uint16_t *_dst = dst + ((1 << log2_scale_y) - 1) * RCN_CTB_STRIDE;
+            rcn_funcs->mip.upsample_h[log2_red_w == 3][log2_scale_x - 1](_dst, (int16_t *)mip_pred2, ref_lft, log2_red_w, log2_red_h,
+                                                                         1, (1 << log2_red_w),
+                                                                         1, (1 << log2_scale_y) * RCN_CTB_STRIDE,
+                                                                         (1 << log2_scale_y), log2_scale_x);
+            src        = _dst;
+            src_step   = (1 << log2_scale_y) * RCN_CTB_STRIDE;
+            src_stride = 1;
+        } else {
+            src        = mip_pred2;
+            src_step   = (1 << log2_pu_w);
+            src_stride = 1;
+        }
+
+        if (log2_scale_y) {
+            rcn_funcs->mip.upsample_v[log2_red_h == 3][log2_scale_y - 1](dst, (int16_t *)src, ref_abv, log2_red_h, log2_pu_w,
+                                                                         src_step, src_stride,
+                                                                         RCN_CTB_STRIDE, 1,
+                                                                         1, log2_scale_y);
+        }
 
 
     } else {
