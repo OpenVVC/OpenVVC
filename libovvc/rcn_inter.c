@@ -2536,17 +2536,9 @@ rcn_ciip_b(OVCTUDec*const ctudec,
               inter_dir, ref_idx0, ref_idx1);
 
     //Intra Planar mode
-    struct OVBuffInfo tmp_intra;
-    uint16_t * tmp_intra_l = rcn_ctx->data.tmp_intra_l;
-    uint16_t * tmp_intra_cb = rcn_ctx->data.tmp_intra_cb;
-    uint16_t * tmp_intra_cr = rcn_ctx->data.tmp_intra_cr;
-    tmp_intra.y  = &tmp_intra_l [RCN_CTB_PADDING];
-    tmp_intra.cb = &tmp_intra_cb[RCN_CTB_PADDING];
-    tmp_intra.cr = &tmp_intra_cr[RCN_CTB_PADDING];
-    tmp_intra.stride   = RCN_CTB_STRIDE;
-    tmp_intra.stride_c = RCN_CTB_STRIDE;
+    struct OVBuffInfo tmp_intra = ctudec->rcn_ctx.ctu_buff;
     vvc_intra_pred(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0, y0, log2_pb_w, log2_pb_h);
-    vvc_intra_pred_chroma(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0 >> 1, y0 >> 1, log2_pb_w - 1, log2_pb_h - 1);
+    vvc_intra_pred_chroma(&ctudec->rcn_ctx, OVINTRA_PLANAR, x0 >> 1, y0 >> 1, log2_pb_w - 1, log2_pb_h - 1);
 
     rcn_ciip_weighted_sum(ctudec, &tmp_intra, &tmp_inter, x0, y0, log2_pb_w, log2_pb_h);
 }
@@ -2571,18 +2563,9 @@ rcn_ciip(OVCTUDec *const ctudec,
     rcn_mcp(ctudec, tmp_inter, x0, y0, log2_pb_w, log2_pb_h, mv, 0, ref_idx);
 
     //Intra Planar mode
-    struct OVBuffInfo tmp_intra;
-    uint16_t * tmp_intra_l = rcn_ctx->data.tmp_intra_l;
-    uint16_t *tmp_intra_cb = rcn_ctx->data.tmp_intra_cb;
-    uint16_t *tmp_intra_cr = rcn_ctx->data.tmp_intra_cr;
-    
-    tmp_intra.y  = &tmp_intra_l [RCN_CTB_PADDING];
-    tmp_intra.cb = &tmp_intra_cb[RCN_CTB_PADDING];
-    tmp_intra.cr = &tmp_intra_cr[RCN_CTB_PADDING];
-    tmp_intra.stride   = RCN_CTB_STRIDE;
-    tmp_intra.stride_c = RCN_CTB_STRIDE;
+    const struct OVBuffInfo tmp_intra = ctudec->rcn_ctx.ctu_buff;
     vvc_intra_pred(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0, y0, log2_pb_w, log2_pb_h);
-    vvc_intra_pred_chroma(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0 >> 1, y0 >> 1, log2_pb_w - 1, log2_pb_h - 1);
+    vvc_intra_pred_chroma(&ctudec->rcn_ctx, OVINTRA_PLANAR, x0 >> 1, y0 >> 1, log2_pb_w - 1, log2_pb_h - 1);
 
     rcn_ciip_weighted_sum(ctudec, &tmp_intra, &tmp_inter, x0, y0, log2_pb_w, log2_pb_h);
 

@@ -40,7 +40,6 @@ derive_wide_angular_mode(int log2_pb_w, int log2_pb_h, int pred_mode)
     return pred_mode;
 }
 
-
 /* FIXME
  * try to remove + 2  and use mask instead of %
  * Factorize + clean redundancies in derive mpm functions
@@ -423,7 +422,7 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
 }
 
 void
-vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, struct OVBuffInfo* ctu_buff,
+vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ctu_buff,
                uint8_t intra_mode, int x0, int y0,
                int log2_pb_width, int log2_pb_height)
 {
@@ -438,7 +437,7 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, struct OVBuffInfo* ctu_buff
 
     ptrdiff_t dst_stride = ctu_buff->stride;
 
-    const uint16_t *src = &rcn_ctx->ctu_buff.y[0];
+    const uint16_t *src = ctu_buff->y;
     uint16_t *dst = &ctu_buff->y[x0 + (y0 * dst_stride)];
 
     uint16_t *ref1 = ref_above + (1 << log2_pb_height);
@@ -761,14 +760,16 @@ vvc_intra_chroma_angular(const uint16_t *const src, uint16_t *const dst,
                          int8_t intra_mode);
 
 void
-vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx, struct OVBuffInfo *ctu_buff,
+vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
                       uint8_t intra_mode, int x0, int y0,
-                      int log2_pb_w, int log2_pb_h){
-
+                      int log2_pb_w, int log2_pb_h)
+{
     const struct RCNFunctions *rcn_func = &rcn_ctx->rcn_funcs;
     const struct DCFunctions *dc = &rcn_ctx->rcn_funcs.dc;
     const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
     OVCTUDec *const ctudec = rcn_ctx->ctudec;
+
+    const struct OVBuffInfo *ctu_buff = &rcn_ctx->ctu_buff;
 
     uint16_t *const dst_cb = &ctu_buff->cb[(x0) + (y0 * RCN_CTB_STRIDE)];
     uint16_t *const dst_cr = &ctu_buff->cr[(x0) + (y0 * RCN_CTB_STRIDE)];
