@@ -3,9 +3,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <stdint.h>
-#include <stddef.h>
-
 struct ALFClassifier;
 struct Area;
 struct CCLMParams;
@@ -39,6 +36,7 @@ typedef void (*MCUniDirWFunc)(uint8_t* dst, ptrdiff_t dststride, uint8_t* _src,
                               ptrdiff_t _srcstride, int height, int denom,
                               int wx, int ox, intptr_t mx, intptr_t my,
                               int width);
+
 typedef void (*MCBiDirWFunc)(uint8_t* dst, ptrdiff_t dststride, uint8_t* _src,
                              ptrdiff_t _srcstride, int16_t* src2,
                              ptrdiff_t src2stride, int height, int denom,
@@ -46,9 +44,9 @@ typedef void (*MCBiDirWFunc)(uint8_t* dst, ptrdiff_t dststride, uint8_t* _src,
                              intptr_t my, int width);
 
 typedef void (*LMsubsampleFunc)(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
-                               ptrdiff_t lm_src_stride, ptrdiff_t dst_stride_c,
-                               const struct CCLMParams *const lm_params,
-                               int pb_w, int pb_h, uint8_t lft_avail);
+                                ptrdiff_t lm_src_stride, ptrdiff_t dst_stride_c,
+                                const struct CCLMParams *const lm_params,
+                                int pb_w, int pb_h, uint8_t lft_avail);
 
 typedef void (*CCLMFunc)( const uint16_t* const src_luma, uint16_t* const dst_cb,
                           uint16_t* const dst_cr, int log2_pb_w, int log2_pb_h, int y0,
@@ -128,15 +126,15 @@ typedef uint8_t (*DMVRComputeSADsFunc)(const int16_t *ref0, const int16_t *ref1,
 typedef void (*PROFGradFunction)(const uint16_t* src, int src_stride, int sb_w, int sb_h, int grad_stride, int16_t* grad_x, int16_t* grad_y);
 
 typedef void (*PROFFunction)(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
-         const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
-         const int32_t* dmv_scale_h, const int32_t* dmv_scale_v, uint8_t bidir);
+                             const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
+                             const int32_t* dmv_scale_h, const int32_t* dmv_scale_v, uint8_t bidir);
 
 typedef void (*BDOFSBFunction)(const int16_t* src0, int src0_stride,
-                        const int16_t* src1, int src1_stride,
-                        int16_t *dst, int dst_stride,
-                        const int16_t *gradX0, const int16_t *gradX1,
-                        const int16_t *gradY0, const int16_t *gradY1, int grad_stride,
-                        int wgt_x, int wgt_y);
+                               const int16_t* src1, int src1_stride,
+                               int16_t *dst, int dst_stride,
+                               const int16_t *gradX0, const int16_t *gradX1,
+                               const int16_t *gradY0, const int16_t *gradY1, int grad_stride,
+                               int wgt_x, int wgt_y);
 
 typedef void (*CIIPWeightedFuntion)(uint16_t* dst, int dststride, const uint16_t* src_intra,
                                     const uint16_t* src_inter, int srcstride, int width, int height, int wt);
