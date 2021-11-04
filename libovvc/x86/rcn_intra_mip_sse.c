@@ -8,190 +8,206 @@
 #define MIP_SHIFT 6
 
 static inline void
-mip_matmult_8_8(int16_t * bndy_line, uint16_t * mip_pred, const int stride_x, const uint8_t *matrix_mip, int16_t input_offset, const int rnd_mip, uint8_t log2_red_h)
-  {
+mip_matmult_8_8(const int16_t *bndy_line, uint16_t *dst, int stride_x,
+                const uint8_t *matrix_mip, int16_t input_offset,
+                int rnd_mip, uint8_t log2_red_h)
+{
     uint8_t y;
     __m128i d[4], a[8], b, m[8], tmp[8];
     __m128i rnd = _mm_set1_epi32(rnd_mip);
     __m128i add = _mm_set1_epi32(input_offset);
+
     b = _mm_load_si128((__m128i *)bndy_line);
-      for (y = 0; y < (1 << log2_red_h); y++) {
-          d[0] = _mm_load_si128((__m128i *)&matrix_mip[0 * stride_x]);
-          d[1] = _mm_load_si128((__m128i *)&matrix_mip[2 * stride_x]);
-          d[2] = _mm_load_si128((__m128i *)&matrix_mip[4 * stride_x]);
-          d[3] = _mm_load_si128((__m128i *)&matrix_mip[6 * stride_x]);
 
-          tmp[0] = _mm_unpacklo_epi8(d[0], _mm_setzero_si128());
-          tmp[1] = _mm_unpackhi_epi8(d[0], _mm_setzero_si128());
-          tmp[2] = _mm_unpacklo_epi8(d[1], _mm_setzero_si128());
-          tmp[3] = _mm_unpackhi_epi8(d[1], _mm_setzero_si128());
+    for (y = 0; y < (1 << log2_red_h); y++) {
+        d[0] = _mm_load_si128((__m128i *)&matrix_mip[0 * stride_x]);
+        d[1] = _mm_load_si128((__m128i *)&matrix_mip[2 * stride_x]);
+        d[2] = _mm_load_si128((__m128i *)&matrix_mip[4 * stride_x]);
+        d[3] = _mm_load_si128((__m128i *)&matrix_mip[6 * stride_x]);
 
-          tmp[4] = _mm_unpacklo_epi8(d[2], _mm_setzero_si128());
-          tmp[5] = _mm_unpackhi_epi8(d[2], _mm_setzero_si128());
-          tmp[6] = _mm_unpacklo_epi8(d[3], _mm_setzero_si128());
-          tmp[7] = _mm_unpackhi_epi8(d[3], _mm_setzero_si128());
+        tmp[0] = _mm_unpacklo_epi8(d[0], _mm_setzero_si128());
+        tmp[1] = _mm_unpackhi_epi8(d[0], _mm_setzero_si128());
+        tmp[2] = _mm_unpacklo_epi8(d[1], _mm_setzero_si128());
+        tmp[3] = _mm_unpackhi_epi8(d[1], _mm_setzero_si128());
 
-          m[0] = _mm_madd_epi16(b, tmp[0]);
-          m[1] = _mm_madd_epi16(b, tmp[1]);
-          m[2] = _mm_madd_epi16(b, tmp[2]);
-          m[3] = _mm_madd_epi16(b, tmp[3]);
-          m[4] = _mm_madd_epi16(b, tmp[4]);
-          m[5] = _mm_madd_epi16(b, tmp[5]);
-          m[6] = _mm_madd_epi16(b, tmp[6]);
-          m[7] = _mm_madd_epi16(b, tmp[7]);
+        tmp[4] = _mm_unpacklo_epi8(d[2], _mm_setzero_si128());
+        tmp[5] = _mm_unpackhi_epi8(d[2], _mm_setzero_si128());
+        tmp[6] = _mm_unpacklo_epi8(d[3], _mm_setzero_si128());
+        tmp[7] = _mm_unpackhi_epi8(d[3], _mm_setzero_si128());
 
-          a[0] = _mm_unpacklo_epi32(m[0], m[1]);
-          a[1] = _mm_unpacklo_epi32(m[2], m[3]);
-          a[2] = _mm_unpacklo_epi32(m[4], m[5]);
-          a[3] = _mm_unpacklo_epi32(m[6], m[7]);
+        m[0] = _mm_madd_epi16(b, tmp[0]);
+        m[1] = _mm_madd_epi16(b, tmp[1]);
+        m[2] = _mm_madd_epi16(b, tmp[2]);
+        m[3] = _mm_madd_epi16(b, tmp[3]);
+        m[4] = _mm_madd_epi16(b, tmp[4]);
+        m[5] = _mm_madd_epi16(b, tmp[5]);
+        m[6] = _mm_madd_epi16(b, tmp[6]);
+        m[7] = _mm_madd_epi16(b, tmp[7]);
 
-          a[4] = _mm_unpackhi_epi32(m[0], m[1]);
-          a[5] = _mm_unpackhi_epi32(m[2], m[3]);
-          a[6] = _mm_unpackhi_epi32(m[4], m[5]);
-          a[7] = _mm_unpackhi_epi32(m[6], m[7]);
+        a[0] = _mm_unpacklo_epi32(m[0], m[1]);
+        a[1] = _mm_unpacklo_epi32(m[2], m[3]);
+        a[2] = _mm_unpacklo_epi32(m[4], m[5]);
+        a[3] = _mm_unpacklo_epi32(m[6], m[7]);
 
-          m[0] = _mm_add_epi32(a[0], a[4]);
-          m[1] = _mm_add_epi32(a[1], a[5]);
-          m[2] = _mm_add_epi32(a[2], a[6]);
-          m[3] = _mm_add_epi32(a[3], a[7]);
+        a[4] = _mm_unpackhi_epi32(m[0], m[1]);
+        a[5] = _mm_unpackhi_epi32(m[2], m[3]);
+        a[6] = _mm_unpackhi_epi32(m[4], m[5]);
+        a[7] = _mm_unpackhi_epi32(m[6], m[7]);
 
-          a[0] = _mm_unpacklo_epi64(m[0], m[1]);
-          a[1] = _mm_unpacklo_epi64(m[2], m[3]);
+        m[0] = _mm_add_epi32(a[0], a[4]);
+        m[1] = _mm_add_epi32(a[1], a[5]);
+        m[2] = _mm_add_epi32(a[2], a[6]);
+        m[3] = _mm_add_epi32(a[3], a[7]);
 
-          a[2] = _mm_unpackhi_epi64(m[0], m[1]);
-          a[3] = _mm_unpackhi_epi64(m[2], m[3]);
+        a[0] = _mm_unpacklo_epi64(m[0], m[1]);
+        a[1] = _mm_unpacklo_epi64(m[2], m[3]);
 
-          m[0] = _mm_add_epi32(a[0], a[2]);
-          m[1] = _mm_add_epi32(a[1], a[3]);
+        a[2] = _mm_unpackhi_epi64(m[0], m[1]);
+        a[3] = _mm_unpackhi_epi64(m[2], m[3]);
 
-          m[0] = _mm_add_epi32(m[0], rnd);
-          m[1] = _mm_add_epi32(m[1], rnd);
+        m[0] = _mm_add_epi32(a[0], a[2]);
+        m[1] = _mm_add_epi32(a[1], a[3]);
 
-          m[0] = _mm_srai_epi32(m[0], MIP_SHIFT);
-          m[1] = _mm_srai_epi32(m[1], MIP_SHIFT);
+        m[0] = _mm_add_epi32(m[0], rnd);
+        m[1] = _mm_add_epi32(m[1], rnd);
 
-          m[0] = _mm_add_epi32(m[0], add);
-          m[1] = _mm_add_epi32(m[1], add);
+        m[0] = _mm_srai_epi32(m[0], MIP_SHIFT);
+        m[1] = _mm_srai_epi32(m[1], MIP_SHIFT);
 
-          m[0] = _mm_packs_epi32(m[0], m[1]);
+        m[0] = _mm_add_epi32(m[0], add);
+        m[1] = _mm_add_epi32(m[1], add);
 
-          m[0] = _mm_min_epi16(m[0], _mm_set1_epi16(1023));
-          m[0] = _mm_max_epi16(m[0], _mm_setzero_si128());
+        m[0] = _mm_packs_epi32(m[0], m[1]);
 
-          _mm_store_si128((__m128i *)mip_pred, m[0]);
-          mip_pred += 8;
-          matrix_mip += 8*stride_x;
-      }
-  }
+        m[0] = _mm_min_epi16(m[0], _mm_set1_epi16(1023));
+        m[0] = _mm_max_epi16(m[0], _mm_setzero_si128());
 
-  static inline void
-  mip_matmult_8_4(int16_t * bndy_line, uint16_t * mip_pred, const int stride_x, const uint8_t *matrix_mip, int16_t input_offset, const int rnd_mip, uint8_t log2_red_h)
-    {
-      uint8_t y;
-      __m128i d[2], a[4], b, m[4], tmp[4];
-      __m128i rnd = _mm_set1_epi32(rnd_mip);
-      __m128i add = _mm_set1_epi32(input_offset);
-      b = _mm_loadu_si128((__m128i *)bndy_line);
-        for (y = 0; y < (1 << log2_red_h); y++) {
-            d[0] = _mm_loadu_si128((__m128i *)&matrix_mip[0 * stride_x]);
-            d[1] = _mm_loadu_si128((__m128i *)&matrix_mip[2 * stride_x]);
-
-            tmp[0] = _mm_unpacklo_epi8(d[0], _mm_setzero_si128());
-            tmp[1] = _mm_unpackhi_epi8(d[0], _mm_setzero_si128());
-            tmp[2] = _mm_unpacklo_epi8(d[1], _mm_setzero_si128());
-            tmp[3] = _mm_unpackhi_epi8(d[1], _mm_setzero_si128());
-
-            m[0] = _mm_madd_epi16(b, tmp[0]);
-            m[1] = _mm_madd_epi16(b, tmp[1]);
-            m[2] = _mm_madd_epi16(b, tmp[2]);
-            m[3] = _mm_madd_epi16(b, tmp[3]);
-
-            a[0] = _mm_unpacklo_epi32(m[0], m[1]);
-            a[1] = _mm_unpacklo_epi32(m[2], m[3]);
-
-            a[2] = _mm_unpackhi_epi32(m[0], m[1]);
-            a[3] = _mm_unpackhi_epi32(m[2], m[3]);
-
-            m[0] = _mm_add_epi32(a[0], a[2]);
-            m[1] = _mm_add_epi32(a[1], a[3]);
-
-            a[0] = _mm_unpacklo_epi64(m[0], m[1]);
-            a[1] = _mm_unpackhi_epi64(m[0], m[1]);
-
-            m[0] = _mm_add_epi32(a[0], a[1]);
-
-            m[0] = _mm_add_epi32(m[0], rnd);
-
-            m[0] = _mm_srai_epi32(m[0], MIP_SHIFT);
-
-            m[0] = _mm_add_epi32(m[0], add);
-
-            m[0] = _mm_packs_epi32(m[0], m[1]);
-
-            m[0] = _mm_min_epi16(m[0], _mm_set1_epi16(1023));
-            m[0] = _mm_max_epi16(m[0], _mm_setzero_si128());
-
-            _mm_storeu_si128((__m128i *)mip_pred, m[0]);
-            mip_pred += 4;
-            matrix_mip += 4*stride_x;
-        }
-    }
-
-static inline void
-mip_matmult_4_4(int16_t * bndy_line, uint16_t * mip_pred, const int stride_x, const uint8_t *matrix_mip, int16_t input_offset, const int rnd_mip, uint8_t log2_red_h)
-  {
-    uint8_t y;
-    __m128i d, b, a, m[2], tmp[2];
-    __m128i rnd = _mm_set1_epi32(rnd_mip);
-    __m128i add = _mm_set1_epi32(input_offset);
-    b = _mm_loadu_si128((__m128i *)bndy_line);
-    b = _mm_unpacklo_epi64(b,b);
-      for (y = 0; y < (1 << log2_red_h); y++) {
-          d = _mm_loadu_si128((__m128i *)&matrix_mip[0 * stride_x]);
-
-          tmp[0] = _mm_unpacklo_epi8(d, _mm_setzero_si128());
-          tmp[1] = _mm_unpackhi_epi8(d, _mm_setzero_si128());
-
-          m[0] = _mm_madd_epi16(b, tmp[0]);
-          m[1] = _mm_madd_epi16(b, tmp[1]);
-
-
-          a = _mm_hadd_epi32(m[0], m[1]);
-
-
-          m[0] = _mm_add_epi32(a, rnd);
-
-          m[0] = _mm_srai_epi32(m[0], MIP_SHIFT);
-
-          m[0] = _mm_add_epi32(m[0], add);
-
-          m[0] = _mm_packs_epi32(m[0], _mm_setzero_si128());
-
-          m[0] = _mm_min_epi16(m[0], _mm_set1_epi16(1023));
-          m[0] = _mm_max_epi16(m[0], _mm_setzero_si128());
-
-          _mm_storel_epi64((__m128i *)mip_pred, m[0]);
-          mip_pred += 4;
-          matrix_mip += 4*stride_x;
-      }
-  }
-
-static inline void
-mip_matmult(int16_t * bndy_line, uint16_t * mip_pred, const int stride_x, const uint8_t *matrix_mip, int16_t input_offset, const int rnd_mip,
-  uint8_t log2_bndy, uint8_t log2_red_w, uint8_t log2_red_h)
-  {
-    if (log2_bndy-1){
-      if (log2_red_w == 3){
-        mip_matmult_8_8(bndy_line, mip_pred, stride_x, matrix_mip, input_offset, rnd_mip, log2_red_h);
-      }
-      else if (log2_red_w == 2){
-        mip_matmult_8_4(bndy_line, mip_pred, stride_x, matrix_mip, input_offset, rnd_mip, log2_red_h);
-      }
-    }
-    else{
-      mip_matmult_4_4(bndy_line, mip_pred, stride_x, matrix_mip, input_offset, rnd_mip, log2_red_h);
+        _mm_store_si128((__m128i *)dst, m[0]);
+        dst   += 8;
+        matrix_mip += 8 * stride_x;
     }
 }
+
+static inline void
+mip_matmult_8_4(const int16_t *bndy_line, uint16_t *dst, int stride_x,
+                const uint8_t *matrix_mip, int16_t input_offset,
+                int rnd_mip, uint8_t log2_red_h)
+{
+    __m128i d[2], a[4], b, m[4], tmp[4];
+    uint8_t y;
+
+    __m128i rnd = _mm_set1_epi32(rnd_mip);
+    __m128i add = _mm_set1_epi32(input_offset);
+
+    b = _mm_loadu_si128((__m128i *)bndy_line);
+
+    for (y = 0; y < (1 << log2_red_h); y++) {
+        d[0] = _mm_loadu_si128((__m128i *)&matrix_mip[0 * stride_x]);
+        d[1] = _mm_loadu_si128((__m128i *)&matrix_mip[2 * stride_x]);
+
+        tmp[0] = _mm_unpacklo_epi8(d[0], _mm_setzero_si128());
+        tmp[1] = _mm_unpackhi_epi8(d[0], _mm_setzero_si128());
+        tmp[2] = _mm_unpacklo_epi8(d[1], _mm_setzero_si128());
+        tmp[3] = _mm_unpackhi_epi8(d[1], _mm_setzero_si128());
+
+        m[0] = _mm_madd_epi16(b, tmp[0]);
+        m[1] = _mm_madd_epi16(b, tmp[1]);
+        m[2] = _mm_madd_epi16(b, tmp[2]);
+        m[3] = _mm_madd_epi16(b, tmp[3]);
+
+        a[0] = _mm_unpacklo_epi32(m[0], m[1]);
+        a[1] = _mm_unpacklo_epi32(m[2], m[3]);
+
+        a[2] = _mm_unpackhi_epi32(m[0], m[1]);
+        a[3] = _mm_unpackhi_epi32(m[2], m[3]);
+
+        m[0] = _mm_add_epi32(a[0], a[2]);
+        m[1] = _mm_add_epi32(a[1], a[3]);
+
+        a[0] = _mm_unpacklo_epi64(m[0], m[1]);
+        a[1] = _mm_unpackhi_epi64(m[0], m[1]);
+
+        m[0] = _mm_add_epi32(a[0], a[1]);
+
+        m[0] = _mm_add_epi32(m[0], rnd);
+
+        m[0] = _mm_srai_epi32(m[0], MIP_SHIFT);
+
+        m[0] = _mm_add_epi32(m[0], add);
+
+        m[0] = _mm_packs_epi32(m[0], m[1]);
+
+        m[0] = _mm_min_epi16(m[0], _mm_set1_epi16(1023));
+        m[0] = _mm_max_epi16(m[0], _mm_setzero_si128());
+
+        _mm_storeu_si128((__m128i *)dst, m[0]);
+        dst += 4;
+        matrix_mip += 4*stride_x;
+    }
+}
+
+static inline void
+mip_matmult_4_4(const int16_t *bndy_line, uint16_t *dst, int stride_x,
+                const uint8_t *matrix_mip, int16_t input_offset,
+                int rnd_mip, uint8_t log2_red_h)
+{
+    __m128i d, b, a, m[2], tmp[2];
+    uint8_t y;
+
+    __m128i rnd = _mm_set1_epi32(rnd_mip);
+    __m128i add = _mm_set1_epi32(input_offset);
+
+    b = _mm_loadu_si128((__m128i *)bndy_line);
+    b = _mm_unpacklo_epi64(b,b);
+
+    for (y = 0; y < (1 << log2_red_h); y++) {
+        d = _mm_loadu_si128((__m128i *)&matrix_mip[0 * stride_x]);
+
+        tmp[0] = _mm_unpacklo_epi8(d, _mm_setzero_si128());
+        tmp[1] = _mm_unpackhi_epi8(d, _mm_setzero_si128());
+
+        m[0] = _mm_madd_epi16(b, tmp[0]);
+        m[1] = _mm_madd_epi16(b, tmp[1]);
+
+        a = _mm_hadd_epi32(m[0], m[1]);
+
+        m[0] = _mm_add_epi32(a, rnd);
+
+        m[0] = _mm_srai_epi32(m[0], MIP_SHIFT);
+
+        m[0] = _mm_add_epi32(m[0], add);
+
+        m[0] = _mm_packs_epi32(m[0], _mm_setzero_si128());
+
+        m[0] = _mm_min_epi16(m[0], _mm_set1_epi16(1023));
+        m[0] = _mm_max_epi16(m[0], _mm_setzero_si128());
+
+        _mm_storel_epi64((__m128i *)dst, m[0]);
+        dst        += 4;
+        matrix_mip += 4 * stride_x;
+    }
+}
+
+static void
+mip_matmult(const int16_t *bndy_line, uint16_t *dst,
+            const uint8_t *matrix_mip, int16_t input_offset,
+            int rnd_mip, uint8_t log2_bndy,
+            uint8_t log2_red_w, uint8_t log2_red_h)
+{
+
+    if (log2_bndy - 1) {
+        const int stride_x = 2 << log2_bndy;
+        if (log2_red_w == 3) {
+            mip_matmult_8_8(bndy_line, dst, stride_x, matrix_mip, input_offset, rnd_mip, log2_red_h);
+        } else if (log2_red_w == 2) {
+            mip_matmult_8_4(bndy_line, dst, stride_x, matrix_mip, input_offset, rnd_mip, log2_red_h);
+        }
+    } else {
+        const int stride_x = 2 << log2_bndy;
+        mip_matmult_4_4(bndy_line, dst, stride_x, matrix_mip, input_offset, rnd_mip, log2_red_h);
+    }
+}
+
 static inline void
 up_sample_h_4_2(uint16_t *const dst, const int16_t *const src,
           const uint16_t *ref,

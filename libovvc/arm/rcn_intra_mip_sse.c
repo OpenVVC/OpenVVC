@@ -186,19 +186,17 @@ mip_matmult_4_4(int16_t * bndy_line, uint16_t * mip_pred, const int stride_x, co
       }
   }
 
-static inline void
-mip_matmult(int16_t * bndy_line, uint16_t * mip_pred, const int stride_x, const uint8_t *matrix_mip, int16_t input_offset, const int rnd_mip,
+static void
+mip_matmult(const int16_t *bndy_line, uint16_t *mip_pred, int stride_x, const uint8_t *matrix_mip, int16_t input_offset, int rnd_mip,
   uint8_t log2_bndy, uint8_t log2_red_w, uint8_t log2_red_h)
   {
-    if (log2_bndy-1){
+    if (log2_bndy - 1){
       if (log2_red_w == 3){
         mip_matmult_8_8(bndy_line, mip_pred, stride_x, matrix_mip, input_offset, rnd_mip, log2_red_h);
-      }
-      else if (log2_red_w == 2){
+      } else if (log2_red_w == 2) {
         mip_matmult_8_4(bndy_line, mip_pred, stride_x, matrix_mip, input_offset, rnd_mip, log2_red_h);
       }
-    }
-    else{
+    } else {
       mip_matmult_4_4(bndy_line, mip_pred, stride_x, matrix_mip, input_offset, rnd_mip, log2_red_h);
     }
 }

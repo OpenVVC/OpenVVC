@@ -12,33 +12,30 @@
 
 #define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
 
-struct MIPCtx{
-    const uint8_t *mip_matrix;
-};
-
-static const struct MIPCtx
+static const uint8_t *
 derive_mip_ctx(int log2_pb_w, int log2_pb_h, uint8_t mip_mode)
 {
-    struct MIPCtx mip_ctx;
     const uint8_t *mip_matrix_selector = mip_weight_16x16;
-    int matrix_size = 64*8;
+    int matrix_size = 64 * 8;
     if (log2_pb_h == log2_pb_w && log2_pb_h == 2) { //4x4
         mip_matrix_selector = mip_weight_4x4;
-        matrix_size = 16*4;
+        matrix_size = 16 * 4;
     } else if (log2_pb_h == 2 || log2_pb_w == 2 || (log2_pb_h <= 3 && log2_pb_w <= 3)) { //8x8
         mip_matrix_selector = mip_weight_8x8;
-        matrix_size = 16*8;
+        matrix_size = 16 * 8;
     }
 
-    mip_ctx.mip_matrix = &mip_matrix_selector[(int)mip_mode * matrix_size];
-
-    return mip_ctx;
+    return &mip_matrix_selector[(int)mip_mode * matrix_size];
 }
 
-static inline void
-mip_matmult(int16_t * bndy_line, uint16_t * mip_pred, const int stride_x, const uint8_t *matrix_mip, int16_t input_offset, const int rnd_mip,
-  uint8_t log2_bndy, uint8_t log2_red_w, uint8_t log2_red_h)
+static void
+mip_matmult(const int16_t *bndy_line, uint16_t *dst,
+            const uint8_t *matrix_mip, int16_t input_offset,
+            int rnd_mip, uint8_t log2_bndy,
+            uint8_t log2_red_w, uint8_t log2_red_h)
 {
+    const int stride_x = 2 << log2_bndy;
+
     int x, y, i;
     int pos = 0;
 
@@ -56,7 +53,7 @@ mip_matmult(int16_t * bndy_line, uint16_t * mip_pred, const int stride_x, const 
                 tmp3 += ((int32_t)bndy_line[i + 3]) * matrix_mip[i + 3];
             }
             val = (tmp0 + tmp1) + (tmp2 + tmp3);
-            mip_pred[pos++] = ov_bdclip(((val + rnd_mip) >> MIP_SHIFT) + input_offset);
+            dst[pos++] = ov_bdclip(((val + rnd_mip) >> MIP_SHIFT) + input_offset);
             matrix_mip += stride_x;
         }
     }
@@ -100,16 +97,14 @@ up_sample(uint16_t *const dst, const int16_t *const src,
 }
 
 
-void
+static void
 vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
-                   uint16_t *const dst,
                    int x0, int y0, int log2_pu_w, int log2_pu_h,
                    uint8_t mip_mode)
 {
-    /* FIXME use an assert or ensure it cannot be called */
-    if (log2_pu_w == 7 || log2_pu_h == 7) return;
-
     const struct RCNFunctions * rcn_funcs = &rcn_ctx->rcn_funcs;
+
+    uint16_t *dst = &rcn_ctx->ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
     const uint16_t *src = &rcn_ctx->ctu_buff.y[0];
 
     DECLARE_ALIGNED(32,  int16_t, bndy_line)[8];//buffer used to store averaged boundaries use int
@@ -186,11 +181,9 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
 
     // if 4x16 bndy_size = 8 but need to skip some lines since 16 is reduced
     //(output on 4 * 8 =>32 instead of 8 * 8
-    const int stride_x = 2 << log2_bndy;
-    const struct MIPCtx mip_ctx = derive_mip_ctx(log2_pu_w, log2_pu_h, mip_mode);
 
-    const uint8_t *matrix_mip = mip_ctx.mip_matrix;
-    rcn_funcs->mip.matmult(bndy_line, mip_pred, stride_x, matrix_mip, input_offset, rnd_mip, log2_bndy, log2_red_w, log2_red_h);
+    const uint8_t *const matrix_mip = derive_mip_ctx(log2_pu_w, log2_pu_h, mip_mode);
+    rcn_funcs->mip.matmult(bndy_line, mip_pred, matrix_mip, input_offset, rnd_mip, log2_bndy, log2_red_w, log2_red_h);
 
     uint8_t log2_scale_x = log2_pu_w - log2_red_w;
     uint8_t log2_scale_y = log2_pu_h - log2_red_h;
@@ -232,15 +225,11 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
     }
 }
 
-void
+static void
 vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
-                      uint16_t *const dst,
                       int x0, int y0, int log2_pu_w, int log2_pu_h,
                       uint8_t mip_mode)
 {
-    /* FIXME use an assert or ensure it cannot be called */
-    if (log2_pu_w == 7 || log2_pu_h == 7) return;
-
     const struct RCNFunctions * rcn_funcs = &rcn_ctx->rcn_funcs;
     uint8_t log2_bndy = 1 << ((log2_pu_w > 2) || (log2_pu_h > 2));
 
@@ -249,7 +238,8 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
 
     int rnd;
     int i, j;
-    const uint16_t *src = &rcn_ctx->ctu_buff.y[0];
+    const uint16_t *src = rcn_ctx->ctu_buff.y;
+    uint16_t *dst = &rcn_ctx->ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
 
     DECLARE_ALIGNED(32, int16_t, bndy_line)[8];
     DECLARE_ALIGNED(32, uint16_t, mip_pred)[64];
@@ -315,11 +305,9 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
         log2_red_h = OVMIN(3, log2_pu_h);
     }
 
-    const int stride_x = 2 << log2_bndy;
-    const struct MIPCtx mip_ctx = derive_mip_ctx(log2_pu_w, log2_pu_h, mip_mode);
+    const uint8_t *const matrix_mip = derive_mip_ctx(log2_pu_w, log2_pu_h, mip_mode);
 
-    const uint8_t *matrix_mip = mip_ctx.mip_matrix;
-    rcn_funcs->mip.matmult(bndy_line, mip_pred, stride_x, matrix_mip, input_offset, rnd_mip, log2_bndy, log2_red_w, log2_red_h);
+    rcn_funcs->mip.matmult(bndy_line, mip_pred, matrix_mip, input_offset, rnd_mip, log2_bndy, log2_red_w, log2_red_h);
 
     for (i = 0; i < (1 << log2_red_h); ++i) {
         for (j = 0; j < (1 << log2_red_w); ++j) {
@@ -363,6 +351,24 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
                 dst [j + i * RCN_CTB_STRIDE] = mip_pred[(j << log2_red_h) + i];
             }
         }
+    }
+}
+
+void
+rcn_intra_mip(const struct OVRCNCtx *const rcn_ctx,
+              int x0, int y0, int log2_pb_w, int log2_pb_h,
+              uint8_t mip_opaque)
+{
+    /* FIXME use an assert or ensure it cannot be called */
+    if (log2_pb_w == 7 || log2_pb_h == 7) return;
+
+    uint8_t transpose_mip = (mip_opaque >> 7) & 0x1;
+    if (!transpose_mip) {
+        uint8_t mip_mode = mip_opaque & 0x3F;
+        vvc_intra_pred_mip(rcn_ctx, x0, y0, log2_pb_w, log2_pb_h, mip_mode);
+    } else {
+        uint8_t mip_mode = mip_opaque & 0x3F;
+        vvc_intra_pred_mip_tr(rcn_ctx, x0, y0, log2_pb_w, log2_pb_h, mip_mode);
     }
 }
 

@@ -147,17 +147,10 @@ uint8_t rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                            OVMV *mv0, OVMV *mv1, uint8_t ref_idx0, uint8_t ref_idx1, uint8_t
                            apply_bdof);
 void rcn_lmcs_compute_chroma_scale(struct OVCTUDec* ctudec, int x0, int y0);
-void
-vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
-                     uint16_t *const dst,
-                     int x0, int y0, int log2_pu_w, int log2_pu_h,
-                     uint8_t mip_mode);
 
-void
-vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
-                  uint16_t *const dst,
-                  int x0, int y0, int log2_pu_w, int log2_pu_h,
-                  uint8_t mip_mode);
+void rcn_intra_mip(const struct OVRCNCtx *const rcn_ctx,
+                   uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,
+                   uint8_t mip_opaque);
 
 void
 vvc_add_residual(const int16_t *src, uint16_t *dst,

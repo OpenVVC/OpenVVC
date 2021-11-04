@@ -338,19 +338,8 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
     
 
     if (mip_flag){
-        uint8_t transpose_mip = (cu.cu_opaque >> 7) & 0x1;
-        if (!transpose_mip) {
-            uint8_t mip_mode_idx = cu.cu_opaque & 0x3F;
-            const struct OVRCNCtx *rcn = &ctudec->rcn_ctx;
-            uint16_t *dst = &rcn->ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
-            vvc_intra_pred_mip(rcn, dst, x0, y0, log2_cb_w, log2_cb_h, mip_mode_idx);
-        } else {
-            uint8_t mip_mode_idx = cu.cu_opaque & 0x3F;
-            const struct OVRCNCtx *rcn = &ctudec->rcn_ctx;
-            uint16_t *dst = &rcn->ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
-            vvc_intra_pred_mip_tr(rcn, dst, x0, y0, log2_cb_w, log2_cb_h, mip_mode_idx);
-        }
-
+        const struct OVRCNCtx *rcn = &ctudec->rcn_ctx;
+        rcn_intra_mip(rcn, x0, y0, log2_cb_w, log2_cb_h, cu.cu_opaque);
     } else {
         uint8_t isp_flag = !!(cu.cu_flags & flg_isp_flag);
 

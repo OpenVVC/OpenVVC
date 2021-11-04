@@ -84,8 +84,8 @@ typedef void (*MIPUpSample)(uint16_t *const dst, const int16_t *const src,
                             int dst_step, int dst_stride,
                             int ref_step, int log2_scale);
 
-typedef void (*MIPMatMult)(int16_t * src, uint16_t *dst, const int stride,
-                           const uint8_t *matrix, int16_t offset, const int rnd,
+typedef void (*MIPMatMult)(const int16_t *src, uint16_t *dst,
+                           const uint8_t *matrix, int16_t offset, int rnd,
                            uint8_t log2_src, uint8_t log2_red_w, uint8_t log2_red_h);
 
 typedef void (*ALFClassifBlkFunc)(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr,
