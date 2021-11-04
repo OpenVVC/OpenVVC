@@ -219,7 +219,7 @@ find_min_cvs_id(const OVDPB *const dpb)
     int i;
 
     for (i = 0; i < nb_dpb_pic; i++) {
-        OVPicture *pic = &dpb->pictures[i];
+        const OVPicture *pic = &dpb->pictures[i];
         if (pic->frame && pic->frame->data[0]) {
             if (pic->cvs_id < min_cvs_id) {
                 min_cvs_id = pic->cvs_id;
@@ -232,7 +232,7 @@ find_min_cvs_id(const OVDPB *const dpb)
         int got_pic = 0;
         do {
             for (i = 0; i < nb_dpb_pic; i++) {
-                OVPicture *pic = &dpb->pictures[i];
+                const OVPicture *pic = &dpb->pictures[i];
                 if (pic->frame && pic->frame->data[0] && pic->cvs_id == cvs_id_min1) {
                     min_cvs_id = pic->cvs_id;
                     got_pic = 1;
