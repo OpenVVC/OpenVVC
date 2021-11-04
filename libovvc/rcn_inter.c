@@ -69,6 +69,7 @@ static const int8_t dmvr_mv_y[25 + 25] = {
     -1, -1, -1, -1, -1,
     -2, -2, -2, -2, -2,
 };
+
 struct OVDMV {
     int32_t x;
     int32_t y;
@@ -81,6 +82,7 @@ enum CUMode {
     OV_INTER_SKIP = 3,
     OV_MIP = 4,
 };
+
 static void
 rcn_bdof(struct BDOFFunctions *const bdof, int16_t *dst, int dst_stride,
          const int16_t *ref_bdof0, const int16_t *ref_bdof1, int ref_stride,
@@ -303,17 +305,11 @@ extend_bdof_grad(uint16_t *dst_grad, int16_t grad_stride, int16_t pb_w, int16_t 
 
     /* Copy or extend left and right column*/
     for (j = 0; j < pb_h; ++j) {
-        #if 1
         dst[0]     = ref[0];
         dst_lst[0] = ref_lst[0];
-        #else
-        //dst[0] = 0;
-        dst[0]     = ref[0];
-        dst_lst[0] = 0;
-        #endif
 
-        ref += grad_stride;
-        dst += grad_stride;
+        ref     += grad_stride;
+        dst     += grad_stride;
         ref_lst += grad_stride;
         dst_lst += grad_stride;
     }
@@ -425,14 +421,11 @@ static uint8_t
 test_for_edge_emulation(int pb_x, int pb_y, int pic_w, int pic_h,
                         int pu_w, int pu_h)
 {
-    /* FIXME thi could be simplified */
     uint8_t emulate_edge = 0;
-    emulate_edge =       pb_x - REF_PADDING_L < 0;
+    emulate_edge  =      pb_x - REF_PADDING_L < 0;
     emulate_edge |= 2 * (pb_y - REF_PADDING_L < 0);
-
     emulate_edge |= 4 * (pb_x >= pic_w);
     emulate_edge |= 8 * (pb_y >= pic_h);
-
     emulate_edge |= 4 * ((pb_x + pu_w + QPEL_EXTRA_AFTER) >= pic_w);
     emulate_edge |= 8 * ((pb_y + pu_h + QPEL_EXTRA_AFTER) >= pic_h);
     return emulate_edge;
@@ -628,8 +621,7 @@ derive_dmvr_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int po
     int start_pos_x = ref_pos_x - REF_PADDING_L;
     int start_pos_y = ref_pos_y - REF_PADDING_L;
 
-    /*Frame thread synchronization to ensure data is available
-     */
+    /* Frame thread synchronization to ensure data is available */
     rcn_inter_synchronization(ref_pic, ref_pos_x, ref_pos_y, pu_w, pu_h, log2_ctu_s);
 
     emulate_block_border(edge_buff + 2 * RCN_CTB_STRIDE + 2, (src_y - src_off),
@@ -686,7 +678,6 @@ derive_dmvr_ref_buf_c(const OVPicture *const ref_pic, OVMV mv, int pos_x, int po
     ref_buff.cb  = edge_buff0 + buff_off + 2 * RCN_CTB_STRIDE + 2;
     ref_buff.cr  = edge_buff1 + buff_off + 2 * RCN_CTB_STRIDE + 2;
     ref_buff.stride_c = RCN_CTB_STRIDE;
-    //padd_dmvr(edge_buff + buff_off + 2 * RCN_CTB_STRIDE + 2, ref_buff.stride, pu_w, pu_h);
 
     return ref_buff;
 }
@@ -1347,8 +1338,6 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
 
     struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
-    //uint16_t *edge_buff0_1 = edge_buff0 + 24 * RCN_CTB_STRIDE;
-    //uint16_t *edge_buff1_1 = edge_buff1 + 24 * RCN_CTB_STRIDE;
     uint16_t *edge_buff0_1 = rcn_ctx->data.edge_buff0;
     uint16_t *edge_buff1_1 = rcn_ctx->data.edge_buff1;
     
