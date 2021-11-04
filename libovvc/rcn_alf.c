@@ -119,14 +119,12 @@ static const uint8_t shuffle_lut[4][13] = {
 void
 rcn_alf_create(RCNALF* alf)
 {
-    //BITDEPTH: uniquement pour bitdepth 10
-    int bit_depth = BITDEPTH;
-    int shift_luma = bit_depth - 8;
-    int shift_chroma = bit_depth - 8;
+    int shift_luma = BITDEPTH - 8;
+    int shift_chroma = BITDEPTH - 8;
 
     /* FIXME would be better to get (1 << bitdepth) - 1 for clipping */
-    alf->alf_clipping_values[CHANNEL_TYPE_LUMA][0] = 1 << bit_depth;
-    alf->alf_clipping_values[CHANNEL_TYPE_CHROMA][0] = 1 << bit_depth;
+    alf->alf_clipping_values[CHANNEL_TYPE_LUMA][0] = 1 << BITDEPTH;
+    alf->alf_clipping_values[CHANNEL_TYPE_CHROMA][0] = 1 << BITDEPTH;
     for(int i = 1; i < MAX_ALF_NUM_CLIP_VAL; ++i) {
         alf->alf_clipping_values[CHANNEL_TYPE_LUMA][i] = 1 << (7 - 2 * i + shift_luma);
         alf->alf_clipping_values[CHANNEL_TYPE_CHROMA][i] = 1 << (7 - 2 * i + shift_chroma);
@@ -690,7 +688,6 @@ rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const int str
     int ctu_h = blk.height;
     int ctu_w = blk.width;
 
-    int bit_depth = BITDEPTH;
     int i;
 
     for (i = 0; i < ctu_h; i += CLASSIFICATION_BLK_SIZE) {
@@ -711,7 +708,7 @@ rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const int str
             };
 
             classif_func(alf->class_idx, alf->transpose_idx, rcn_img_class, stride, blk_class,
-                         bit_depth + 4, ctu_s,
+                         BITDEPTH + 4, ctu_s,
                          virbnd_pos);
         }
     }
@@ -774,8 +771,7 @@ void cc_alf_filterBlk(int16_t * chroma_dst, int16_t * luma_src, const int chr_st
           const int scale_bits = 7;
           sum = (sum + ((1 << scale_bits ) >> 1)) >> scale_bits;
 
-          const int bit_depth = BITDEPTH;
-          const int offset = 1 << bit_depth >> 1;
+          const int offset = 1 << BITDEPTH >> 1;
 
           /* FIXME 2 clipping ?*/
           sum = ov_bdclip(sum + offset);
@@ -849,9 +845,7 @@ void cc_alf_filterBlkVB(int16_t * chroma_dst, int16_t * luma_src, const int chr_
             const int scale_bits = 7;
             sum = (sum + ((1 << scale_bits ) >> 1)) >> scale_bits;
 
-            //BITDEPTH: uniquement pour bitdepth 10
-            const int bit_depth = BITDEPTH;
-            const int offset = 1 << bit_depth >> 1;
+            const int offset = 1 << BITDEPTH >> 1;
 
             /* FIXME 2 clipping ?*/
             sum = ov_bdclip(sum + offset);

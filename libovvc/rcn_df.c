@@ -126,7 +126,6 @@ struct DBFParams{
 static struct DBFParams
 compute_dbf_limits(const struct DBFInfo *const dbf_info, int qp, int bs)
 {
-    const int bitdepth  = BITDEPTH;
     int beta_offset  = dbf_info->beta_offset;
     int tc_offset    = dbf_info->tc_offset;
 
@@ -135,13 +134,13 @@ compute_dbf_limits(const struct DBFInfo *const dbf_info, int qp, int bs)
     const int tc_idx   = ov_clip((qp + DEFAULT_INTRA_TC_OFFSET * (bs - 1) + tc_offset), 0, MAX_QP + DEFAULT_INTRA_TC_OFFSET);
     const int beta_idx = ov_clip(qp + beta_offset, 0, MAX_QP);
 
-    #if (BITDEPTH - 10) > 0
-    const int tc = tc_lut[tc_idx] << (bitdepth - 10);
+    #if (BITDEPTH - 10) >= 0
+    const int tc = tc_lut[tc_idx] << (BITDEPTH - 10);
     #else
     const int tc = (tc_lut[tc_idx] + (1 << (9 - BITDEPTH))) >> (10 - BITDEPTH);
     #endif
 
-    const int beta = beta_lut[beta_idx] << (bitdepth - 8);
+    const int beta = beta_lut[beta_idx] << (BITDEPTH - 8);
     struct DBFParams dbf_params;
     dbf_params.beta = beta;
     dbf_params.tc = tc;
