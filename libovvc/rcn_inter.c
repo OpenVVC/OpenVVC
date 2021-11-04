@@ -9,7 +9,6 @@
 #include "rcn.h"
 #include "rcn_mc.h"
 #include "drv.h"
-#include "rcn.h"
 #include "drv_utils.h"
 
 #define MAX_PB_SIZE 128
