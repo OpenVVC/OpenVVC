@@ -530,9 +530,11 @@ ovdec_init(OVVCDec **vvcdec, int display_output, int nb_frame_th, int nb_entry_t
         nb_entry_th = get_number_of_cores();
         ov_log(NULL, OVLOG_DEBUG, "Physical cores in platform: %i\n", nb_entry_th);
     }
+
     if (nb_frame_th < 1) {
         nb_frame_th = nb_entry_th;
     }
+
     else{
         nb_frame_th = OVMIN(nb_frame_th, nb_entry_th);
     }
