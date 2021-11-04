@@ -69,7 +69,7 @@ vvc_intra_planar(const uint16_t* const src_above,
                  ptrdiff_t dst_stride, int log2_pb_width, int log2_pb_height)
 {
 
-    uint16_t* _dst = dst; // TODO template according to bitdepth;
+    uint16_t* _dst = dst;
     const uint32_t width = 1 << log2_pb_width;
     const uint32_t height = 1 << log2_pb_height;
     const uint32_t shift = 1 + log2_pb_width + log2_pb_height;
@@ -162,7 +162,7 @@ vvc_intra_planar_pdpc(const uint16_t* const src_above,
                       ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h)
 {
 
-        uint16_t* _dst = dst; // TODO template according to bitdepth;
+        uint16_t* _dst = dst;
         const uint32_t width = 1 << log2_pb_w;
         const uint32_t height = 1 << log2_pb_h;
         const uint32_t w_scale = OVMAX(1, log2_pb_w);

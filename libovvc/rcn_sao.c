@@ -23,7 +23,6 @@ static void sao_band_filter(uint8_t *_dst, uint8_t *_src,
     int16_t *src = (int16_t *)_src;
     int offset_table[32] = { 0 };
     int k, y, x;
-    //BITDEPTH: uniquement pour bitdepth 10
     int shift  = BITDEPTH - 5;
 
     int16_t *sao_offset_val = sao->offset_val[c_idx];
@@ -109,7 +108,6 @@ void rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_start_pic, int
         int width    = OVMIN(ctb_size_h, f_width - x0);
         int height   = OVMIN(ctb_size_v, f_height - y0);
 
-        //BITDEPTH: uniquement pour bitdepth 10
         int int16_t_shift = 1;
         ptrdiff_t stride_out_pic = frame->linesize[c_idx];
         uint8_t *out_pic = frame->data[c_idx];
