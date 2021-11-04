@@ -865,11 +865,12 @@ void cc_alf_filterBlkVB(int16_t * chroma_dst, int16_t * luma_src, const int chr_
 // src   : filter buffer pre-ALF (of size CTU)
 // blk_dst: location and dimension of destination block in frame
 // blk   : location and dimension of destination block in filter buffer
-static void alf_filter_c(int16_t *const dst, const int16_t *const src,
-                  const int dst_stride, const int src_stride,
-                  Area blk_dst,
-                  const int16_t *const filter_set, const int16_t *const clip_set,
-                  const int ctu_height, int virbnd_pos)
+static void
+alf_filter_c(int16_t *const dst, const int16_t *const src,
+             const int dst_stride, const int src_stride,
+             Area blk_dst,
+             const int16_t *const filter_set, const int16_t *const clip_set,
+             const int ctu_height, int virbnd_pos)
 {
     const int shift = NUM_BITS - 1;
     const int offset = 1 << ( shift - 1 );
