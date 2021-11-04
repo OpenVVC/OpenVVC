@@ -1,7 +1,10 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+
+#if !_WIN32
 #include "sys/resource.h"
+#endif
 
 #include "ovversion.h"
 #include "ovutils.h"
@@ -40,7 +43,7 @@ ovdec_init_subdec_list(OVVCDec *dec)
 {
     int ret;
     ov_log(NULL, OVLOG_TRACE, "Creating %d Slice decoders\n", dec->nb_frame_th);
-    if (!dec->subdec_list) 
+    if (!dec->subdec_list)
         dec->subdec_list = ov_mallocz(sizeof(OVSliceDec*) * dec->nb_frame_th);
 
     for (int i = 0; i < dec->nb_frame_th; ++i){
@@ -123,7 +126,7 @@ ovdec_wait_available_entry_thread(OVVCDec *const dec)
     struct EntryThread *entry_th_list = th_main->entry_threads_list;
     struct EntryThread *entry_th;
     int nb_threads = dec->nb_frame_th;
-    /* The main thread checks if at least an entry thread 
+    /* The main thread checks if at least an entry thread
     *  is available.
     */
     do {
@@ -163,11 +166,11 @@ ovdec_select_subdec(OVVCDec *const dec)
     do {
         int min_idx_available = nb_threads;
         pthread_mutex_lock(&th_main->main_mtx);
-        
+
         for(int i = nb_threads - 1; i >= 0 ; i--) {
             slicedec = sldec_list[i];
             slice_sync = &slicedec->slice_sync;
-            
+
             //Unmark ref pict lists of decoded pics
             pthread_mutex_lock(&slice_sync->gnrl_mtx);
             if (slice_sync->active_state == DECODING_FINISHED) {
@@ -185,7 +188,7 @@ ovdec_select_subdec(OVVCDec *const dec)
                 }
             } else if (slice_sync->active_state == IDLE) {
                 pthread_mutex_unlock(&slice_sync->gnrl_mtx);
-                min_idx_available = i;     
+                min_idx_available = i;
             } else {
                 pthread_mutex_unlock(&slice_sync->gnrl_mtx);
             }
@@ -194,7 +197,7 @@ ovdec_select_subdec(OVVCDec *const dec)
         if (min_idx_available < nb_threads) {
             slicedec = sldec_list[min_idx_available];
             slice_sync = &slicedec->slice_sync;
-        
+
             pthread_mutex_lock(&slice_sync->gnrl_mtx);
             slice_sync->active_state = ACTIVE;
             pthread_mutex_unlock(&slice_sync->gnrl_mtx);
@@ -215,20 +218,20 @@ ovdec_select_subdec(OVVCDec *const dec)
 
 void
 ovdec_init_entry_jobs(OVVCDec *vvcdec, int nb_entry_th)
-{   
+{
     struct MainThread* main_thread = &vvcdec->main_thread;
     // main_thread->size_fifo       = nb_entry_th*nb_entry_th;
     main_thread->size_fifo       = 512;
-    main_thread->entry_jobs_fifo = ov_mallocz(main_thread->size_fifo * sizeof(struct EntryJob)); 
-    main_thread->first_idx_fifo  =  0; 
-    main_thread->last_idx_fifo   = -1; 
+    main_thread->entry_jobs_fifo = ov_mallocz(main_thread->size_fifo * sizeof(struct EntryJob));
+    main_thread->first_idx_fifo  =  0;
+    main_thread->last_idx_fifo   = -1;
 }
 
 void
 ovdec_uninit_entry_jobs(OVVCDec *vvcdec)
 {
     struct MainThread* main_thread = &vvcdec->main_thread;
-    ov_freep(&main_thread->entry_jobs_fifo); 
+    ov_freep(&main_thread->entry_jobs_fifo);
 }
 
 void
@@ -241,7 +244,7 @@ ovdec_uninit_entry_threads(OVVCDec *vvcdec)
 
     /* Wait for the job fifo to be empty before joining entry thread.
     */
-    pthread_mutex_lock(&th_main->main_mtx); 
+    pthread_mutex_lock(&th_main->main_mtx);
     int64_t first_idx = th_main->first_idx_fifo;
     int64_t last_idx  = th_main->last_idx_fifo;
     while (first_idx <= last_idx) {
@@ -278,7 +281,7 @@ ovdec_init_entry_threads(OVVCDec *vvcdec, int nb_entry_th)
         struct EntryThread *entry_th = &vvcdec->main_thread.entry_threads_list[i];
         entry_th->main_thread = &vvcdec->main_thread;
 
-        ret = ovthread_init_entry_thread(entry_th); 
+        ret = ovthread_init_entry_thread(entry_th);
         if (ret < 0)
             goto failthread;
     }
@@ -294,7 +297,7 @@ failthread:
 
 int
 ovdec_init_main_thread(OVVCDec *vvcdec)
-{   
+{
     struct MainThread* main_thread = &vvcdec->main_thread;
     int nb_entry_th = main_thread->nb_entry_th;
 
@@ -311,7 +314,7 @@ ovdec_init_main_thread(OVVCDec *vvcdec)
 
 int
 ovdec_uninit_main_thread(OVVCDec *vvcdec)
-{   
+{
     ovdec_uninit_entry_threads(vvcdec);
     ovdec_uninit_entry_jobs(vvcdec);
 
@@ -354,7 +357,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
             ovdec_wait_available_entry_thread(vvcdec);
 
             uint32_t nb_sh_bytes = nvcl_nb_bytes_read(&rdr);
-                
+
             /* Beyond this point unref current picture on failure */
             ret = init_vcl_decoder(vvcdec, sldec, nvcl_ctx, nalu, nb_sh_bytes);
 
@@ -560,7 +563,7 @@ ovdec_uninit_subdec_list(OVVCDec *vvcdec)
     OVSliceDec *sldec;
 
     if (vvcdec != NULL)
-    {   
+    {
         if (vvcdec->subdec_list) {
 
             ovdec_uninit_main_thread(vvcdec);
@@ -617,4 +620,9 @@ ovdec_version()
 {
     static const char *ov_version = OV_VERSION_STR(VER_MAJOR,VER_MINOR,VER_REVISION,VER_BUILD);
     return ov_version;
+}
+
+const char* ovdec_get_version()
+{
+  return OV_VERSION;
 }

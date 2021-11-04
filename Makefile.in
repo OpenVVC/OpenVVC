@@ -101,11 +101,15 @@ install-shared: $(BUILDDIR)$(LIB_NAME)$(SHARED_LIBSUFF)
 	$(AT)mkdir -p $(INSTALL_LIB)
 	cp $< $(INSTALL_LIB)/$(<F)
 
+install-static: $(BUILDDIR)$(LIB_NAME)$(STATIC_LIBSUFF)
+	$(AT)mkdir -p $(INSTALL_LIB)
+	cp $< $(INSTALL_LIB)/$(<F)
+
 install-headers: $(LIB_HEADER) $(BUILDDIR)ovversion.h
 	$(AT)mkdir -p $(INSTALL_INCLUDE)
 	cp $^ $(INSTALL_INCLUDE)/
 
-install: install-shared install-headers install-pkgconfig
+install: install-static install-shared install-headers install-pkgconfig
 
 install-pkgconfig: version
 	$(AT)mkdir -p $(INSTALL_PKGCONFIG)

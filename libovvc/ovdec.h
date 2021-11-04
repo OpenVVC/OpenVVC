@@ -127,4 +127,6 @@ void ovdec_set_log_callback(void (*log_function)(void* ctx, int log_level, const
 
 const char* ovdec_version();
 
+const char* ovdec_get_version();
+
 #endif

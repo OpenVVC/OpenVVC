@@ -20,6 +20,7 @@ cat > ${BUILDDIR}${VERSION_HEADER} << EOF
 #define VER_MINOR ${MINOR}
 #define VER_REVISION ${REVISION}
 #define VER_BUILD "${BUILD}"
+#define OV_VERSION "${MAJOR}.${MINOR}.${REVISION}"
 
 #define OV_STR(s) #s
 #define OV_VERSION_STR(maj,min,rev,build) OV_STR(maj)OV_STR(.)OV_STR(min)OV_STR(.)OV_STR(rev)OV_STR(-)build

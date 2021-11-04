@@ -205,6 +205,14 @@ case $target_os in
         aligned_malloc="1"
         is_win32="1"
     ;;
+    mingw64)
+        ldflags="${ldflags} -lpthread"
+        shlib_suffix=".so"
+        stlib_suffix=".a"
+        aligned_malloc="1"
+        add_prefix="1"
+        is_win32="1"
+     ;;
       Darwin|darwin|macos|macOS)
         shlib_suffix=".so"
         stlib_suffix=".a"
