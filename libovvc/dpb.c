@@ -582,8 +582,6 @@ dpb_pic_to_frame_ref(OVPicture *pic, OVFrame **dst)
 int
 ovdpb_drain_frame(OVDPB *dpb, OVFrame **out)
 {
-    int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
-    int i;
     int output_cvs_id = find_min_cvs_id(dpb);
 
     do {
