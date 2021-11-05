@@ -337,6 +337,13 @@ update_sps_info(struct SPSInfo *const sps_info, const OVSPS *const sps)
 
     sps_init_chroma_qp_tables(sps_info, sps);
 
+    if (sps->sps_vui_parameters_present_flag) {
+        sps_info->color_desc.colour_primaries         = sps->vui.vui_colour_primaries;
+        sps_info->color_desc.transfer_characteristics = sps->vui.vui_transfer_characteristics;
+        sps_info->color_desc.matrix_coeffs            = sps->vui.vui_matrix_coeffs;
+        sps_info->color_desc.full_range               = sps->vui.vui_full_range_flag;
+    }
+
     return 0;
 }
 

@@ -106,6 +106,12 @@ struct SPSInfo
     struct OVChromaQPTable qp_tables_c[3];
 
     uint8_t bitdepth;
+    struct {
+        uint8_t colour_primaries;
+        uint8_t transfer_characteristics;
+        uint8_t matrix_coeffs;
+        uint8_t full_range;
+    } color_desc;
 };
 
 struct PPSInfo

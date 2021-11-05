@@ -441,6 +441,13 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
 
     ret = ovdpb_output_pic(dpb, frame_p);
 
+    if (*frame_p) {
+        (*frame_p)->frame_info.color_desc.colour_primaries = dec->active_params.sps_info.color_desc.colour_primaries;
+        (*frame_p)->frame_info.color_desc.transfer_characteristics = dec->active_params.sps_info.color_desc.transfer_characteristics;
+        (*frame_p)->frame_info.color_desc.matrix_coeffs = dec->active_params.sps_info.color_desc.matrix_coeffs;
+        (*frame_p)->frame_info.color_desc.full_range = dec->active_params.sps_info.color_desc.full_range;
+    }
+
     return ret;
 }
 
