@@ -131,7 +131,6 @@ fill_ref_left_0_chroma(const uint16_t* const src, int src_stride,
         }
     } else if (avl_map_l) {
         int nb_pb_avl = 64 - __builtin_clzll(avl_map_l);
-        // int nb_pb_navl = nb_pb_ref_l - nb_pb_avl;
         uint16_t padding_val = AVG_VAL;
         uint16_t* _dst = ref_left;
         int i;
@@ -214,7 +213,6 @@ fill_ref_left_0_mref(const uint16_t* const src, int src_stride,
         }
     } else if (avl_map_l) {
         int nb_pb_avl = 64 - __builtin_clzll(avl_map_l);
-        // int nb_pb_navl = nb_pb_ref_l - nb_pb_avl;
         uint16_t padding_val = AVG_VAL;
         uint16_t* _dst = ref_left;
         int i;
@@ -303,28 +301,6 @@ fill_ref_above_0(const uint16_t* const src, int src_stride,
 
         if (avl_map_a) {
             uint16_t *_dst = ref_above + 1;
-            #if 0
-
-            if (avl_map_a & 0x1) {
-                ref_above[0] = *(_src + offset_x);
-            } else {
-                ref_above[0] = _src[1];
-            }
-
-            ++_src;
-            avl_map_a  >>= 1;
-            navl_map_a >>= 1;
-
-            while (avl_map_a) {
-                memcpy(_dst, _src, (sizeof(*_dst) << LOG2_UNIT_S));
-                avl_map_a  >>= 1;
-                navl_map_a >>= 1;
-                _src += 4;
-                _dst += 4;
-            }
-
-            padding_value = _src[-1];
-            #else
             int nb_pb_avl = 64 - __builtin_clzll(avl_map_a);
 
             memcpy(_dst, _src + 1, (nb_pb_avl - 1) * (sizeof(*_dst) << LOG2_UNIT_S));
@@ -339,7 +315,6 @@ fill_ref_above_0(const uint16_t* const src, int src_stride,
             padding_value = _dst[-1];
 
             navl_map_a >>= nb_pb_avl;
-            #endif
 
             while (navl_map_a) {
                 _dst[0] = padding_value;
