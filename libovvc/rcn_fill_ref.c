@@ -1,6 +1,7 @@
-#include "ovutils.h"
 #include <stdint.h>
+#include <string.h>
 
+#include "ovutils.h"
 #include "rcn_fill_ref.h"
 
 #define AVG_VAL (1 << (BITDEPTH - 1))
@@ -39,23 +40,20 @@ fill_ref_left_0(const uint16_t* const src, int src_stride,
                 int log2_pb_h, int offset_y)
 {
     const uint16_t* _src = &src[(x0 - 1) + (y0 - 1) * src_stride];
-    int y_pb = y0 >> 2;
+    uint64_t  avl_map_l =     available_units_map(intra_map_cols, y0, log2_pb_h);
+    uint64_t navl_map_l = non_available_units_map(intra_map_cols, y0, log2_pb_h);
+    const int ref_length_l = (1 << (log2_pb_h + 1)) + 1;
     int nb_pb_ref_l = ((1 << (log2_pb_h + 1)) >> 2) + 1;
 
-    uint64_t ref_map_l = (1llu << (nb_pb_ref_l + 1)) - 1;
-    uint64_t avl_map_l = (intra_map_cols >> y_pb) & ref_map_l;
-    uint64_t navl_map_l = avl_map_l ^ ref_map_l;
-
     if (!navl_map_l) {
-        const int ref_length_l = (1 << (log2_pb_h + 1)) + 1;
         int i;
         for (i = 0; i < ref_length_l; ++i) {
             ref_left[i] = *_src;
             _src += src_stride;
         }
+
     } else if (avl_map_l) {
         int nb_pb_avl = 64 - __builtin_clzll(avl_map_l);
-        // int nb_pb_navl = nb_pb_ref_l - nb_pb_avl;
         uint16_t padding_val = AVG_VAL;
         uint16_t* _dst = ref_left;
         int i;
@@ -74,10 +72,11 @@ fill_ref_left_0(const uint16_t* const src, int src_stride,
             _dst[1] = _src[1 * src_stride];
             _dst[2] = _src[2 * src_stride];
             _dst[3] = _src[3 * src_stride];
-            padding_val = _src[3 * src_stride];
             _src += 4 * src_stride;
             _dst += 4;
         }
+
+        padding_val = *(_dst - 1);
 
         for (; i < nb_pb_ref_l; ++i) {
             _dst[0] = padding_val;
@@ -89,13 +88,8 @@ fill_ref_left_0(const uint16_t* const src, int src_stride,
 
     } else {
         /* Pad with first available sample in above ref */
-        int x_pb = x0 >> 2;
-        int nb_pb_ref_a = ((1 << (log2_pb_w + 1)) >> 2) + 1;
+        uint64_t avl_map_a = available_units_map(intra_map_rows, x0, log2_pb_w);
 
-        uint64_t ref_map_a = (1llu << (nb_pb_ref_a + 1)) - 1;
-        uint64_t avl_map_a = (intra_map_rows >> x_pb) & ref_map_a;
-
-        const int ref_length_l = (1 << (log2_pb_h + 1)) + 1;
         uint16_t padding_val = AVG_VAL;
         int i;
 
@@ -110,8 +104,7 @@ fill_ref_left_0(const uint16_t* const src, int src_stride,
 
     /* Padding for wide angle */
     for (int i = 0; i < 4 + offset_y; ++i) {
-        ref_left[(1 << (log2_pb_h + 1)) + 1 + i] =
-            ref_left[(1 << (log2_pb_h + 1)) + i];
+        ref_left[ref_length_l + i] = ref_left[ref_length_l - 1];
     }
 }
 
@@ -293,17 +286,13 @@ fill_ref_above_0(const uint16_t* const src, int src_stride,
                  uint64_t intra_map_cols, int8_t x0, int8_t y0, int log2_pb_w,
                  int log2_pb_h, int offset_x)
 {
-    int x_pb = x0 >> 2;
-    int nb_pb_ref_a = ((1 << (log2_pb_w + 1)) >> 2) + 1;
+    const uint16_t *_src = &src[(x0 - 1) + (y0 - 1) * src_stride];
 
-    uint64_t ref_map_a = (1llu << (nb_pb_ref_a + 1)) - 1;
-    uint64_t avl_map_a = (intra_map_rows >> x_pb) & ref_map_a;
-    uint64_t navl_map_a = avl_map_a ^ ref_map_a;
-
-    const uint16_t* _src = &src[(x0 - 1) + (y0 - 1) * src_stride];
+    uint64_t  avl_map_a =     available_units_map(intra_map_rows, x0, log2_pb_w);
+    uint64_t navl_map_a = non_available_units_map(intra_map_rows, x0, log2_pb_w);
+    const int ref_length_a = (1 << (log2_pb_w + 1)) + 1;
 
     if (!navl_map_a) {
-        const int ref_length_a = (1 << (log2_pb_w + 1)) + 1;
         int i;
         for (i = 0; i < ref_length_a; ++i) {
             ref_above[i] = *_src;
@@ -311,13 +300,10 @@ fill_ref_above_0(const uint16_t* const src, int src_stride,
         }
     } else {
         uint16_t padding_value = AVG_VAL;
-        if (avl_map_a) {
 
-            // FIXME: int nb_pb_usable = 64 -
-            // __builtin_clzll(avl_map_a);
-            // FIXME: int nb_pb_missing = nb_pb_ref_a -
-            // nb_pb_usable;
-            uint16_t* _dst = ref_above + 1;
+        if (avl_map_a) {
+            uint16_t *_dst = ref_above + 1;
+            #if 0
 
             if (avl_map_a & 0x1) {
                 ref_above[0] = *(_src + offset_x);
@@ -326,21 +312,34 @@ fill_ref_above_0(const uint16_t* const src, int src_stride,
             }
 
             ++_src;
-            avl_map_a >>= 1;
+            avl_map_a  >>= 1;
             navl_map_a >>= 1;
 
             while (avl_map_a) {
-                _dst[0] = _src[0];
-                _dst[1] = _src[1];
-                _dst[2] = _src[2];
-                _dst[3] = _src[3];
-                avl_map_a >>= 1;
+                memcpy(_dst, _src, (sizeof(*_dst) << LOG2_UNIT_S));
+                avl_map_a  >>= 1;
                 navl_map_a >>= 1;
                 _src += 4;
                 _dst += 4;
             }
 
             padding_value = _src[-1];
+            #else
+            int nb_pb_avl = 64 - __builtin_clzll(avl_map_a);
+
+            memcpy(_dst, _src + 1, (nb_pb_avl - 1) * (sizeof(*_dst) << LOG2_UNIT_S));
+            _dst += (nb_pb_avl - 1) << LOG2_UNIT_S;
+
+            if (avl_map_a & 0x1) {
+                ref_above[0] = *(_src + offset_x);
+            } else {
+                ref_above[0] = _src[1];
+            }
+
+            padding_value = _dst[-1];
+
+            navl_map_a >>= nb_pb_avl;
+            #endif
 
             while (navl_map_a) {
                 _dst[0] = padding_value;
@@ -353,23 +352,13 @@ fill_ref_above_0(const uint16_t* const src, int src_stride,
 
         } else {
             /* Pad with first available left ref sample value */
-            int y_pb = y0 >> 2;
-            const int ref_length_a = (1 << (log2_pb_w + 1)) + 1;
-            int nb_pb_ref_l = ((1 << (log2_pb_h + 1)) >> 2) + 1;
-
-            uint64_t needed_mask_l =
-                (1llu << (nb_pb_ref_l + 1)) - 1;
-            uint64_t usable_mask_l =
-                (intra_map_cols >> y_pb) & needed_mask_l;
-
+            uint64_t avl_map_l = available_units_map(intra_map_cols, y0, log2_pb_h);
             int i;
-            // FIXME: Redeclaration de *_src
-            const uint16_t* _src =
-                &src[(x0 + offset_x - 1) + y0 * src_stride];
 
             padding_value = AVG_VAL;
 
-            if (usable_mask_l) {
+            if (avl_map_l) {
+                _src = &src[(x0 + offset_x - 1) + y0 * src_stride];
                 padding_value = *_src;
             }
 
@@ -381,8 +370,7 @@ fill_ref_above_0(const uint16_t* const src, int src_stride,
 
     /* Padding for wide angle */
     for (int i = 0; i < 4 + offset_x; ++i) {
-        ref_above[(1 << (log2_pb_w + 1)) + 1 + i] =
-            ref_above[(1 << (log2_pb_w + 1)) + i];
+        ref_above[ref_length_a + i] = ref_above[ref_length_a - 1 + i];
     }
 }
 
@@ -434,7 +422,7 @@ fill_ref_above_0_chroma(const uint16_t* const src, int src_stride,
                 _dst[1] = _src[1];
                 avl_map_a >>= 1;
                 navl_map_a >>= 1;
-                _src += 2;
+               _src += 2;
                 _dst += 2;
             }
 
