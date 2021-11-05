@@ -286,7 +286,13 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
 
     if (red_size) {
         bndy_line[0] = (1 << (BITDEPTH - 1));
+        log2_red_w = 2;
+        log2_red_h = 2;
+    } else {
+        log2_red_w = OVMIN(3, log2_pu_w);
+        log2_red_h = OVMIN(3, log2_pu_h);
     }
+
 
     int sum = 0;
     for (i = 0; i < (2 << log2_bndy); ++i) {
@@ -295,14 +301,6 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
     }
 
     const int rnd_mip = MIP_OFFSET - MIP_OFFSET * sum;
-
-    if (red_size) {
-        log2_red_w = 2;
-        log2_red_h = 2;
-    } else {
-        log2_red_w = OVMIN(3, log2_pu_w);
-        log2_red_h = OVMIN(3, log2_pu_h);
-    }
 
     const uint8_t *const matrix_mip = derive_mip_ctx(log2_pu_w, log2_pu_h, mip_mode);
 
