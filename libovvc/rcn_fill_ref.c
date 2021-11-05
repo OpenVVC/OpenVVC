@@ -333,7 +333,7 @@ fill_ref_above_0(const uint16_t* const src, int src_stride,
             padding_value = AVG_VAL;
 
             if (avl_map_l) {
-                _src = &src[(x0 + offset_x - 1) + y0 * src_stride];
+                _src += offset_x + src_stride;
                 padding_value = *_src;
             }
 
