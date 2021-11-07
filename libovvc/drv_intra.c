@@ -590,7 +590,7 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ct
 
             //FIXME recheck filter derivation
             int use_gauss_filter = log2_pb_width + log2_pb_height > 5 &&
-                        (OVABS(mode_idx) > intra_filter[((log2_pb_width +
+                (OVABS(mode_idx) > intra_filter[((log2_pb_width +
                                                           log2_pb_height) >> 1)]) ? 1: 0;
 
             switch (mode_idx) {
@@ -640,6 +640,7 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ct
                             inv_angle_sum += inv_angle;
                             ref2[k] = ref1[OVMIN(inv_angle_sum >> 9,pu_width)];
                         }
+
                         intra_angular_h_nofrac(ref2, dst, dst_stride,
                                                 log2_pb_width, log2_pb_height,
                                                 -abs_angle_val);
@@ -693,9 +694,9 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ct
                             int top_ref_length  = 1 << (log2_pb_width  + 1);
                             int left_ref_length = 1 << (log2_pb_height + 1);
                             filter_ref_samples(ref1, ref_above_filtered,
-                                    ref2, top_ref_length);
+                                               ref2, top_ref_length);
                             filter_ref_samples(ref2, ref_left_filtered,
-                                    ref1, left_ref_length);
+                                               ref1, left_ref_length);
                             ref1 = ref_above_filtered;
                             ref2 = ref_left_filtered;
                         }
@@ -709,8 +710,8 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ct
                                              mode_idx);
                         } else {
                             intra_angular_h_cubic_pdpc(ref1, ref2, dst, dst_stride,
-                                                  log2_pb_width, log2_pb_height,
-                                                  mode_idx);
+                                                       log2_pb_width, log2_pb_height,
+                                                       mode_idx);
                         }
                     }
                 }

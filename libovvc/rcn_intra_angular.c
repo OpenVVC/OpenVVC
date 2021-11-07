@@ -45,8 +45,6 @@ static const int8_t chroma_filter[4 * 32] =
      0,  2, 63, -1
 };
 
-
-
 static const uint8_t vvc_pdpc_w[3][128] =
 {
     {  32,  8, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -86,19 +84,29 @@ vvc_intra_angular_hdia(const uint16_t* const ref_abv,
 
     int delta_pos = 32;
 
-    for (int y = 0; y < pb_w; y++) {
-        const int delta_int = delta_pos >> 5;
-        for (int x = 0; x < pb_h; x++) {
-            _tmp[x] = ref_lft[x + delta_int + 1];
-        }
-        if (pb_h >= 4 && scale >= 0)
+    if (pb_h >= 4 && scale >= 0) {
+        for (int y = 0; y < pb_w; y++) {
+            const int delta_int = delta_pos >> 5;
+            for (int x = 0; x < pb_h; x++) {
+                _tmp[x] = ref_lft[x + delta_int + 1];
+            }
             for (int x = 0; x < OVMIN(3 << scale, pb_h); x++) {
                 int wL = 32 >> (2 * x >> scale);
                 const int16_t above = ref_abv[y + x + 2];
                 _tmp[x] = ov_bdclip(_tmp[x] + ((wL * (above - _tmp[x]) + 32) >> 6));
             }
-        delta_pos += 32;
-        _tmp += tmp_stride;
+            delta_pos += 32;
+            _tmp += tmp_stride;
+        }
+    } else {
+        for (int y = 0; y < pb_w; y++) {
+            const int delta_int = delta_pos >> 5;
+            for (int x = 0; x < pb_h; x++) {
+                _tmp[x] = ref_lft[x + delta_int + 1];
+            }
+            delta_pos += 32;
+            _tmp += tmp_stride;
+        }
     }
 
     _tmp = tmp_dst;
@@ -125,19 +133,29 @@ vvc_intra_angular_vdia(const uint16_t* const ref_abv,
     int pb_h = 1 << log2_pb_h;
     int scale = OVMIN(2, log2_pb_h - (floor_log2(3 * 512 - 2) - 8));
 
-    for (int y = 0; y < pb_h; y++) {
-        const int delta_int = delta_pos >> 5;
-        for (int x = 0; x < pb_w; x++) {
-            _dst[x] = ref_abv[x + delta_int + 1];
-        }
-        if (pb_h >= 4 && scale >= 0)
+    if (pb_h >= 4 && scale >= 0) {
+        for (int y = 0; y < pb_h; y++) {
+            const int delta_int = delta_pos >> 5;
+            for (int x = 0; x < pb_w; x++) {
+                _dst[x] = ref_abv[x + delta_int + 1];
+            }
             for (int x = 0; x < OVMIN(3 << scale, pb_w); x++) {
                 int wL = 32 >> (2 * x >> scale);
                 const int16_t left = ref_lft[y + x + 2];
                 _dst[x] = ov_bdclip(_dst[x] + ((wL * (left - _dst[x]) + 32) >> 6));
             }
-        delta_pos += 32;
-        _dst += dst_stride;
+            delta_pos += 32;
+            _dst += dst_stride;
+        }
+    } else {
+        for (int y = 0; y < pb_h; y++) {
+            const int delta_int = delta_pos >> 5;
+            for (int x = 0; x < pb_w; x++) {
+                _dst[x] = ref_abv[x + delta_int + 1];
+            }
+            delta_pos += 32;
+            _dst += dst_stride;
+        }
     }
 }
 
@@ -158,15 +176,15 @@ vvc_intra_angular_h_c(const uint16_t* ref_lft, uint16_t* dst,
     for (int y = 0; y < pb_w; y++) {
         const int delta_int = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
-        const uint16_t* pRM = ref_lft + delta_int + 1;
-        int last_ref_val = *pRM++;
+        const uint16_t* ref = ref_lft + delta_int + 1;
+        int last_ref_val = *ref++;
         for (int x = 0; x < pb_h; x++) {
-            int curr_ref_val = *pRM;
+            int curr_ref_val = *ref;
             int val;
             val = (int16_t)last_ref_val + (((delta_frac) * (curr_ref_val - last_ref_val) + 16) >> 5);
             _tmp[x] = ov_bdclip(val);
             last_ref_val = curr_ref_val;
-            pRM++;
+            ref++;
         }
         delta_pos += angle_val;
         _tmp += tmp_stride;
@@ -196,10 +214,10 @@ vvc_intra_angular_v_c(const uint16_t* ref_abv, uint16_t* dst,
     for (int y = 0, delta_pos = angle_val; y < pb_h; y++) {
         const int delta_int = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
-        const uint16_t* pRM = ref_abv + delta_int + 1;
-        int last_ref_val = *pRM++;
-        for (int x = 0; x < pb_w; pRM++, x++) {
-            int curr_ref_val = *pRM;
+        const uint16_t* ref = ref_abv + delta_int + 1;
+        int last_ref_val = *ref++;
+        for (int x = 0; x < pb_w; ref++, x++) {
+            int curr_ref_val = *ref;
             int val;
             val = (int16_t)last_ref_val + (((delta_frac) * (curr_ref_val - last_ref_val) + 16) >> 5);
             _dst[x] = ov_bdclip(val);
@@ -310,36 +328,47 @@ vvc_intra_angular_hpos_wide(const uint16_t* const ref_abv,
     int delta_pos = angle_val;
     int scale = OVMIN(2, log2_pb_w - (floor_log2(3 * inv_angle - 2) - 8));
 
-    for (int y = 0; y < pb_w; y++) {
-        const int delta_int = delta_pos >> 5;
-        const int delta_frac = delta_pos & 0x1F;
-        int inv_angle_sum = 256 + inv_angle;
+    if (scale >= 0) {
+        for (int y = 0; y < pb_w; y++) {
+            const int delta_int = delta_pos >> 5;
+            const int delta_frac = delta_pos & 0x1F;
+            int inv_angle_sum = 256 + inv_angle;
 
-        const uint16_t* pRM = ref_lft + delta_int + 1;
-        int last_ref_val = *pRM++;
-        for (int x = 0; x < pb_h; pRM++, x++) {
-            int curr_ref_val = *pRM;
-            _tmp[x] =
-                (int16_t)last_ref_val +
-                (((delta_frac) * (curr_ref_val - last_ref_val) +
-                  16) >>
-                 5);
-            last_ref_val = curr_ref_val;
-        }
+            const uint16_t* ref = ref_lft + delta_int + 1;
+            int last_ref_val = *ref++;
+            for (int x = 0; x < pb_h; ref++, x++) {
+                int curr_ref_val = *ref;
+                _tmp[x] = (int16_t)last_ref_val + (((delta_frac) * (curr_ref_val - last_ref_val) + 16) >> 5);
+                last_ref_val = curr_ref_val;
+            }
 
-        if (scale >= 0)
             for (int x = 0; x < OVMIN(3 << scale, pb_h); x++) {
                 int wL = 32 >> ((x << 1) >> scale);
-                const uint16_t* p =
-                    ref_abv + y + (inv_angle_sum >> 9) + 1;
+                const uint16_t* p = ref_abv + y + (inv_angle_sum >> 9) + 1;
 
                 int32_t left = p[0];
-                _tmp[x] =
-                    ov_bdclip(_tmp[x] + ((wL * (left - _tmp[x]) + 32) >> 6));
+                _tmp[x] = ov_bdclip(_tmp[x] + ((wL * (left - _tmp[x]) + 32) >> 6));
                 inv_angle_sum += inv_angle;
             }
-        delta_pos += angle_val;
-        _tmp += tmp_stride;
+            delta_pos += angle_val;
+            _tmp += tmp_stride;
+        }
+    } else {
+        for (int y = 0; y < pb_w; y++) {
+            const int delta_int  = delta_pos >> 5;
+            const int delta_frac = delta_pos & 0x1F;
+
+            const uint16_t* ref = ref_lft + delta_int + 1;
+            int last_ref_val = *ref++;
+            for (int x = 0; x < pb_h; ref++, x++) {
+                int curr_ref_val = *ref;
+                _tmp[x] = (int16_t)last_ref_val + (((delta_frac) * (curr_ref_val - last_ref_val) + 16) >> 5);
+                last_ref_val = curr_ref_val;
+            }
+
+            delta_pos += angle_val;
+            _tmp += tmp_stride;
+        }
     }
 
     _tmp = tmp_dst;
@@ -368,25 +397,20 @@ vvc_intra_angular_vpos_wide(const uint16_t* const ref_abv,
     int pb_h = 1 << log2_pb_h;
     int scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inv_angle - 2) - 8));
 
-    for (int y = 0; y < pb_h; y++) {
-        const int delta_int = delta_pos >> 5;
-        const int delta_frac = delta_pos & 0x1F;
-        int inv_angle_sum = 256 + inv_angle;
+    if (scale >= 0) {
+        for (int y = 0; y < pb_h; y++) {
+            const int delta_int = delta_pos >> 5;
+            const int delta_frac = delta_pos & 0x1F;
+            int inv_angle_sum = 256 + inv_angle;
 
-        const uint16_t* pRM = ref_abv + delta_int + 1;
-        int last_ref_val = *pRM++;
-        for (int x = 0; x < pb_w; pRM++, x++) {
-            int curr_ref_val = *pRM;
-            _dst[x] =
-                (int16_t)last_ref_val +
-                (((delta_frac) * (curr_ref_val - last_ref_val) +
-                  16) >>
-                 5);
-            last_ref_val = curr_ref_val;
-        }
-        if (scale >= 0)
+            const uint16_t* ref = ref_abv + delta_int + 1;
+            int last_ref_val = *ref++;
+            for (int x = 0; x < pb_w; ref++, x++) {
+                int curr_ref_val = *ref;
+                _dst[x] = (int16_t)last_ref_val + (((delta_frac) * (curr_ref_val - last_ref_val) + 16) >> 5);
+                last_ref_val = curr_ref_val;
+            }
             for (int x = 0; x < OVMIN(3 << scale, pb_w); x++) {
-                // TODO check if we can use LUTs instead
                 int wL = 32 >> ((x << 1) >> scale);
                 const uint16_t* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
 
@@ -394,8 +418,24 @@ vvc_intra_angular_vpos_wide(const uint16_t* const ref_abv,
                 _dst[x] = ov_bdclip(_dst[x] + ((wL * (left - _dst[x]) + 32) >> 6));
                 inv_angle_sum += inv_angle;
             }
-        delta_pos += angle_val;
-        _dst += dst_stride;
+            delta_pos += angle_val;
+            _dst += dst_stride;
+        }
+    } else {
+        for (int y = 0; y < pb_h; y++) {
+            const int delta_int = delta_pos >> 5;
+            const int delta_frac = delta_pos & 0x1F;
+
+            const uint16_t* ref = ref_abv + delta_int + 1;
+            int last_ref_val = *ref++;
+            for (int x = 0; x < pb_w; ref++, x++) {
+                int curr_ref_val = *ref;
+                _dst[x] = (int16_t)last_ref_val + (((delta_frac) * (curr_ref_val - last_ref_val) + 16) >> 5);
+                last_ref_val = curr_ref_val;
+            }
+            delta_pos += angle_val;
+            _dst += dst_stride;
+        }
     }
 }
 
@@ -448,28 +488,34 @@ intra_angular_h_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
     int delta_pos = angle_val >> 5;
-    int scale =
-        OVMIN(2, log2_pb_w - (floor_log2(3 * inv_angle - 2) - 8));
+    int scale = OVMIN(2, log2_pb_w - (floor_log2(3 * inv_angle - 2) - 8));
     int y/*, x*/;
 
-    for (y = 0; y < pb_w; ++y) {
-        int inv_angle_sum = 256 + inv_angle;
-        for (int x = 0; x < pb_h; x++) {
-            _tmp[x] = ref_lft[x + delta_pos + 1];
-        }
-        if (scale >= 0)
+    if (scale >= 0) {
+        for (y = 0; y < pb_w; ++y) {
+            int inv_angle_sum = 256 + inv_angle;
+            for (int x = 0; x < pb_h; x++) {
+                _tmp[x] = ref_lft[x + delta_pos + 1];
+            }
             for (int x = 0; x < OVMIN(3 << scale, pb_h); x++) {
                 int wL = 32 >> ((x << 1) >> scale);
-                const uint16_t* p =
-                    ref_abv + y + (inv_angle_sum >> 9) + 1;
+                const uint16_t* p = ref_abv + y + (inv_angle_sum >> 9) + 1;
 
                 int16_t left = p[0];
-                _tmp[x] =
-                    ov_bdclip(_tmp[x] + ((wL * (left - _tmp[x]) + 32) >> 6));
+                _tmp[x] = ov_bdclip(_tmp[x] + ((wL * (left - _tmp[x]) + 32) >> 6));
                 inv_angle_sum += inv_angle;
             }
-        delta_pos += angle_val >> 5;
-        _tmp += tmp_stride;
+            delta_pos += angle_val >> 5;
+            _tmp += tmp_stride;
+        }
+    } else {
+        for (y = 0; y < pb_w; ++y) {
+            for (int x = 0; x < pb_h; x++) {
+                _tmp[x] = ref_lft[x + delta_pos + 1];
+            }
+            delta_pos += angle_val >> 5;
+            _tmp += tmp_stride;
+        }
     }
 
     _tmp = tmp_dst;
@@ -501,31 +547,46 @@ intra_angular_h_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
     int delta_pos = angle_val;
     int scale = OVMIN(2, log2_pb_w - (floor_log2(3 * inv_angle - 2) - 8));
 
-    for (int y = 0; y < pb_w; y++) {
-        const int delta_int = delta_pos >> 5;
-        const int delta_frac = delta_pos & 0x1F;
-        int inv_angle_sum = 256 + inv_angle;
-        const int16_t* ref = (int16_t *)ref_lft + delta_int;
-        for (int x = 0; x < pb_h; x++) {
-            _tmp[x] = ((int32_t)(ref[0] * (16 - (delta_frac >> 1))) +
-                       (int32_t)(ref[1] * (32 - (delta_frac >> 1))) +
-                       (int32_t)(ref[2] * (16 + (delta_frac >> 1))) +
-                       (int32_t)(ref[3] * (     (delta_frac >> 1))) + 32) >> 6;
-            ref++;
-        }
-        if (scale >= 0)
+    if (scale >= 0) {
+        for (int y = 0; y < pb_w; y++) {
+            const int delta_int = delta_pos >> 5;
+            const int delta_frac = delta_pos & 0x1F;
+            int inv_angle_sum = 256 + inv_angle;
+            const int16_t* ref = (int16_t *)ref_lft + delta_int;
+            for (int x = 0; x < pb_h; x++) {
+                _tmp[x] = ((int32_t)(ref[0] * (16 - (delta_frac >> 1))) +
+                           (int32_t)(ref[1] * (32 - (delta_frac >> 1))) +
+                           (int32_t)(ref[2] * (16 + (delta_frac >> 1))) +
+                           (int32_t)(ref[3] * (     (delta_frac >> 1))) + 32) >> 6;
+                ref++;
+            }
             for (int x = 0; x < OVMIN(3 << scale, pb_h); x++) {
                 int wL = 32 >> ((x << 1) >> scale);
-                const uint16_t* p =
-                    ref_abv + y + (inv_angle_sum >> 9) + 1;
+                const uint16_t* p = ref_abv + y + (inv_angle_sum >> 9) + 1;
 
                 int16_t left = p[0];
                 _tmp[x] = ov_bdclip(_tmp[x] + ((wL * (left - _tmp[x]) + 32) >> 6));
                 inv_angle_sum += inv_angle;
             }
 
-        delta_pos += angle_val;
-        _tmp += tmp_stride;
+            delta_pos += angle_val;
+            _tmp += tmp_stride;
+        }
+    } else {
+        for (int y = 0; y < pb_w; y++) {
+            const int delta_int = delta_pos >> 5;
+            const int delta_frac = delta_pos & 0x1F;
+            const int16_t* ref = (int16_t *)ref_lft + delta_int;
+            for (int x = 0; x < pb_h; x++) {
+                _tmp[x] = ((int32_t)(ref[0] * (16 - (delta_frac >> 1))) +
+                           (int32_t)(ref[1] * (32 - (delta_frac >> 1))) +
+                           (int32_t)(ref[2] * (16 + (delta_frac >> 1))) +
+                           (int32_t)(ref[3] * (     (delta_frac >> 1))) + 32) >> 6;
+                ref++;
+            }
+            delta_pos += angle_val;
+            _tmp += tmp_stride;
+        }
     }
 
     _tmp = tmp_dst;
@@ -575,13 +636,13 @@ intra_angular_v_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
     int scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inv_angle - 2) - 8));
 
     int y, x;
-    for (y = 0; y < pb_h; ++y) {
-        const int delta_int = delta_pos >> 5;
-        int inv_angle_sum = 256 + inv_angle;
-        for (x = 0; x < pb_w; x++) {
-            _dst[x] = ref_abv[x + delta_int + 1];
-        }
-        if (scale >= 0)
+    if (scale >= 0) {
+        for (y = 0; y < pb_h; ++y) {
+            const int delta_int = delta_pos >> 5;
+            int inv_angle_sum = 256 + inv_angle;
+            for (x = 0; x < pb_w; x++) {
+                _dst[x] = ref_abv[x + delta_int + 1];
+            }
             for (x = 0; x < OVMIN(3 << scale, pb_w); ++x) {
                 int wL = 32 >> ((x << 1) >> scale);
                 const uint16_t* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
@@ -591,8 +652,18 @@ intra_angular_v_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
 
                 inv_angle_sum += inv_angle;
             }
-        delta_pos += angle_val;
-        _dst += dst_stride;
+            delta_pos += angle_val;
+            _dst += dst_stride;
+        }
+    } else {
+        for (y = 0; y < pb_h; ++y) {
+            const int delta_int = delta_pos >> 5;
+            for (x = 0; x < pb_w; x++) {
+                _dst[x] = ref_abv[x + delta_int + 1];
+            }
+            delta_pos += angle_val;
+            _dst += dst_stride;
+        }
     }
 }
 
@@ -609,10 +680,35 @@ intra_angular_v_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
     int delta_pos = angle_val;
     int scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inv_angle - 2) - 8));
 
-    for (int y = 0; y < pb_h; y++) {
+    if (scale >= 0) {
+        for (int y = 0; y < pb_h; y++) {
+            const int delta_int  = delta_pos >> 5;
+            const int delta_frac = delta_pos & 0x1F;
+            int inv_angle_sum = 256 + inv_angle;
+            const int16_t* ref = (int16_t*)ref_abv + delta_int;
+
+            for (int x = 0; x < pb_w; x++) {
+                _dst[x] = ((int32_t)(ref[0] * (16 - (delta_frac >> 1))) +
+                           (int32_t)(ref[1] * (32 - (delta_frac >> 1))) +
+                           (int32_t)(ref[2] * (16 + (delta_frac >> 1))) +
+                           (int32_t)(ref[3] * (     (delta_frac >> 1))) + 32) >> 6;
+                ref++;
+            }
+            for (int x = 0; x < OVMIN(3 << scale, pb_w); x++) {
+                int wL = 32 >> ((x << 1) >> scale);
+                const uint16_t* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
+
+                int16_t left = p[0];
+                _dst[x] =
+                    ov_bdclip(_dst[x] + ((wL * (left - _dst[x]) + 32) >> 6));
+                inv_angle_sum += inv_angle;
+            }
+            delta_pos += angle_val;
+            _dst += dst_stride;
+        }
+    } else {
         const int delta_int  = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
-        int inv_angle_sum = 256 + inv_angle;
         const int16_t* ref = (int16_t*)ref_abv + delta_int;
 
         for (int x = 0; x < pb_w; x++) {
@@ -622,17 +718,6 @@ intra_angular_v_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                        (int32_t)(ref[3] * (     (delta_frac >> 1))) + 32) >> 6;
             ref++;
         }
-        if (scale >= 0)
-            for (int x = 0; x < OVMIN(3 << scale, pb_w); x++) {
-                int wL = 32 >> ((x << 1) >> scale);
-                const uint16_t* p =
-                    ref_lft + y + (inv_angle_sum >> 9) + 1;
-
-                int16_t left = p[0];
-                _dst[x] =
-                    ov_bdclip(_dst[x] + ((wL * (left - _dst[x]) + 32) >> 6));
-                inv_angle_sum += inv_angle;
-            }
         delta_pos += angle_val;
         _dst += dst_stride;
     }
@@ -696,7 +781,7 @@ intra_angular_h_gauss(const uint16_t* ref_lft, uint16_t* dst,
 
     int delta_pos = angle_val;
     for (int y = 0; y < pb_w; y++) {
-        const int delta_int = delta_pos >> 5;
+        const int delta_int  = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
         const int16_t* ref = (int16_t*)ref_lft + delta_int;
         for (int x = 0; x < pb_h; x++) {
@@ -733,7 +818,7 @@ intra_angular_v_cubic(const uint16_t* ref_abv, uint16_t* dst,
     uint16_t* _dst = dst;
 
     for (int y = 0; y < pb_h; y++) {
-        const int delta_int = delta_pos >> 5;
+        const int delta_int  = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
 
         const int16_t* ref = (int16_t*)ref_abv + delta_int;
@@ -796,23 +881,23 @@ intra_angular_h_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
     int delta_pos = angle_val;
     int scale = OVMIN(2, log2_pb_w - (floor_log2(3 * inv_angle - 2) - 8));
 
-    for (int y = 0; y < pb_w; y++) {
-        const int delta_int = delta_pos >> 5;
-        const int delta_frac = delta_pos & 0x1F;
-        int inv_angle_sum = 256 + inv_angle;
-        const int16_t* ref = (int16_t*)ref_lft + delta_int;
-        const int8_t* filter = &chroma_filter[delta_frac << 2];
+    if (scale >= 0) {
+        for (int y = 0; y < pb_w; y++) {
+            const int delta_int = delta_pos >> 5;
+            const int delta_frac = delta_pos & 0x1F;
+            int inv_angle_sum = 256 + inv_angle;
+            const int16_t* ref = (int16_t*)ref_lft + delta_int;
+            const int8_t* filter = &chroma_filter[delta_frac << 2];
 
-        for (int x = 0; x < pb_h; x++) {
-            int val = ((int32_t)(ref[0] * filter[0]) +
-                       (int32_t)(ref[1] * filter[1]) +
-                       (int32_t)(ref[2] * filter[2]) +
-                       (int32_t)(ref[3] * filter[3]) + 32) >> 6;
-            ref++;
-            _tmp[x] = ov_bdclip(val);
-        }
+            for (int x = 0; x < pb_h; x++) {
+                int val = ((int32_t)(ref[0] * filter[0]) +
+                           (int32_t)(ref[1] * filter[1]) +
+                           (int32_t)(ref[2] * filter[2]) +
+                           (int32_t)(ref[3] * filter[3]) + 32) >> 6;
+                ref++;
+                _tmp[x] = ov_bdclip(val);
+            }
 
-        if (scale >= 0)
             for (int x = 0; x < OVMIN(3 << scale, pb_h); x++) {
                 int wL = 32 >> ((x << 1) >> scale);
                 const uint16_t* p = ref_abv + y + (inv_angle_sum >> 9) + 1;
@@ -822,8 +907,28 @@ intra_angular_h_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
 
                 inv_angle_sum += inv_angle;
             }
-        delta_pos += angle_val;
-        _tmp += tmp_stride;
+            delta_pos += angle_val;
+            _tmp += tmp_stride;
+        }
+    } else {
+        for (int y = 0; y < pb_w; y++) {
+            const int delta_int = delta_pos >> 5;
+            const int delta_frac = delta_pos & 0x1F;
+            const int16_t* ref = (int16_t*)ref_lft + delta_int;
+            const int8_t* filter = &chroma_filter[delta_frac << 2];
+
+            for (int x = 0; x < pb_h; x++) {
+                int val = ((int32_t)(ref[0] * filter[0]) +
+                           (int32_t)(ref[1] * filter[1]) +
+                           (int32_t)(ref[2] * filter[2]) +
+                           (int32_t)(ref[3] * filter[3]) + 32) >> 6;
+                ref++;
+                _tmp[x] = ov_bdclip(val);
+            }
+
+            delta_pos += angle_val;
+            _tmp += tmp_stride;
+        }
     }
 
     _tmp = tmp_dst;
@@ -851,33 +956,53 @@ intra_angular_v_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
     int delta_pos = angle_val;
     int scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inv_angle - 2) - 8));
 
-    for (int y = 0; y < pb_h; y++) {
-        const int delta_int = delta_pos >> 5;
-        const int delta_frac = delta_pos & 0x1F;
-        int inv_angle_sum = 256 + inv_angle;
-        const int16_t* ref = (int16_t *)ref_abv + delta_int;
-        const int8_t* filter = &chroma_filter[delta_frac << 2];
-        for (int x = 0; x < pb_w; x++) {
-            int val = ((int32_t)(ref[0] * filter[0]) +
-                       (int32_t)(ref[1] * filter[1]) +
-                       (int32_t)(ref[2] * filter[2]) +
-                       (int32_t)(ref[3] * filter[3]) + 32) >> 6;
+    if (scale >= 0) {
+        for (int y = 0; y < pb_h; y++) {
+            const int delta_int = delta_pos >> 5;
+            const int delta_frac = delta_pos & 0x1F;
+            int inv_angle_sum = 256 + inv_angle;
+            const int16_t* ref = (int16_t *)ref_abv + delta_int;
+            const int8_t* filter = &chroma_filter[delta_frac << 2];
+            for (int x = 0; x < pb_w; x++) {
+                int val = ((int32_t)(ref[0] * filter[0]) +
+                           (int32_t)(ref[1] * filter[1]) +
+                           (int32_t)(ref[2] * filter[2]) +
+                           (int32_t)(ref[3] * filter[3]) + 32) >> 6;
 
-            ref++;
-            _dst[x] = ov_bdclip(val);
-        }
+                ref++;
+                _dst[x] = ov_bdclip(val);
+            }
 
-        if (scale >= 0)
             for (int x = 0; x < OVMIN(3 << scale, pb_w); x++) {
                 int wL = 32 >> ((x << 1) >> scale);
                 const uint16_t* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
 
                 int16_t left = p[0];
+
                 _dst[x] = ov_bdclip(_dst[x] + ((wL * (left - _dst[x]) + 32) >> 6));
                 inv_angle_sum += inv_angle;
             }
-        delta_pos += angle_val;
-        _dst += dst_stride;
+            delta_pos += angle_val;
+            _dst += dst_stride;
+        }
+    } else {
+        for (int y = 0; y < pb_h; y++) {
+            const int delta_int = delta_pos >> 5;
+            const int delta_frac = delta_pos & 0x1F;
+            const int16_t* ref = (int16_t *)ref_abv + delta_int;
+            const int8_t* filter = &chroma_filter[delta_frac << 2];
+            for (int x = 0; x < pb_w; x++) {
+                int val = ((int32_t)(ref[0] * filter[0]) +
+                           (int32_t)(ref[1] * filter[1]) +
+                           (int32_t)(ref[2] * filter[2]) +
+                           (int32_t)(ref[3] * filter[3]) + 32) >> 6;
+
+                ref++;
+                _dst[x] = ov_bdclip(val);
+            }
+            delta_pos += angle_val;
+            _dst += dst_stride;
+        }
     }
 }
 
@@ -1007,7 +1132,7 @@ intra_angular_v_cubic_mref(const uint16_t* const ref_abv, uint16_t* const dst,
 
     if ((angle_val & 0x1F)) {
         for (int y = 0; y < pb_h; y++) {
-            const int delta_int = delta_pos >> 5;
+            const int delta_int  = delta_pos >> 5;
             const int delta_frac = delta_pos & 0x1F;
             const int16_t* ref = (int16_t *)ref_abv + delta_int;
             const int8_t* filter = &chroma_filter[delta_frac << 2];
