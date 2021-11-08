@@ -726,10 +726,10 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     /* TMP buffers for edge emulation
      * FIXME use tmp buffers in local contexts
      */
-    uint16_t edge_buff0[RCN_CTB_SIZE];
-    uint16_t edge_buff1[RCN_CTB_SIZE];
-    uint16_t edge_buff0_1[RCN_CTB_SIZE];
-    uint16_t edge_buff1_1[RCN_CTB_SIZE];
+    uint16_t *edge_buff0 = ctudec->rcn_ctx.data.edge_buff0;
+    uint16_t *edge_buff1 = ctudec->rcn_ctx.data.edge_buff1;
+    uint16_t *edge_buff0_1 = ctudec->rcn_ctx.data.edge_buff0_1;
+    uint16_t *edge_buff1_1 = ctudec->rcn_ctx.data.edge_buff1_1;
     int16_t *tmp_buff = (int16_t *) ctudec->rcn_ctx.data.tmp_buff;
 
     /*FIXME we suppose here both refs possess the same size*/
@@ -849,12 +849,9 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
-
-    /* TMP buffers for edge emulation
-     * FIXME use tmp buffers in local contexts
-     */
-    uint16_t edge_buff0[RCN_CTB_SIZE];
-    uint16_t edge_buff1[RCN_CTB_SIZE];
+    
+    uint16_t *edge_buff0 = ctudec->rcn_ctx.data.edge_buff0;
+    uint16_t *edge_buff1 = ctudec->rcn_ctx.data.edge_buff1;
     int16_t *tmp_buff = (int16_t *) ctudec->rcn_ctx.data.tmp_buff;
 
     /*FIXME we suppose here both refs possess the same size*/
@@ -1176,9 +1173,9 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
 
-    uint16_t edge_buff0[RCN_CTB_SIZE];
-    uint16_t edge_buff1[RCN_CTB_SIZE];
-
+    uint16_t *edge_buff0 = ctudec->rcn_ctx.data.edge_buff0;
+    uint16_t *edge_buff1 = ctudec->rcn_ctx.data.edge_buff1;
+    
     /*FIXME permit smaller stride to reduce tables */
     int16_t ref_dmvr0[(16 + 2 * DMVR_REF_PADD) * (128 + 2 * DMVR_REF_PADD)] = {0};
     int16_t ref_dmvr1[(16 + 2 * DMVR_REF_PADD) * (128 + 2 * DMVR_REF_PADD)] = {0};
@@ -1312,9 +1309,9 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         int16_t grad_y0[(16 + 2) * (16 + 2)];
         int16_t grad_x1[(16 + 2) * (16 + 2)];
         int16_t grad_y1[(16 + 2) * (16 + 2)];
-
-        int16_t tmp_buff1[RCN_CTB_SIZE];
-
+        
+        int16_t *tmp_buff1 = (int16_t*) ctudec->rcn_ctx.data.tmp_buff1;
+        
         int16_t ref_stride = 128;
         int16_t grad_stride = pu_w + 2;
 
@@ -1365,9 +1362,9 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
     //uint16_t *edge_buff0_1 = edge_buff0 + 24 * RCN_CTB_STRIDE;
     //uint16_t *edge_buff1_1 = edge_buff1 + 24 * RCN_CTB_STRIDE;
-    uint16_t edge_buff0_1[RCN_CTB_SIZE];
-    uint16_t edge_buff1_1[RCN_CTB_SIZE];
-
+    uint16_t *edge_buff0_1 = ctudec->rcn_ctx.data.edge_buff0;
+    uint16_t *edge_buff1_1 = ctudec->rcn_ctx.data.edge_buff1;
+    
     struct OVBuffInfo ref0_c = derive_dmvr_ref_buf_c(ref0, tmp0,
                                                      pos_x >> 1, pos_y >> 1,
                                                      edge_buff0, edge_buff0_1,
@@ -1680,12 +1677,10 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
 
-    /* TMP buffers for edge emulation
-     * FIXME use tmp buffers in local contexts
-     */
-    uint16_t edge_buff0[RCN_CTB_SIZE];
-    uint16_t edge_buff1[RCN_CTB_SIZE];
-
+    uint16_t *edge_buff0 = ctudec->rcn_ctx.data.edge_buff0;
+    uint16_t *edge_buff1 = ctudec->rcn_ctx.data.edge_buff1;
+    
+    
     /*FIXME we suppose here both refs possess the same size*/
 
     const int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
@@ -1803,13 +1798,13 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
 
-    /* TMP buffers for edge emulation
-     * FIXME use tmp buffers in local contexts
-     */
-    uint16_t edge_buff0[RCN_CTB_SIZE];
-    uint16_t edge_buff1[RCN_CTB_SIZE];
+        
+    uint16_t *edge_buff0 = ctudec->rcn_ctx.data.edge_buff0;
+    uint16_t *edge_buff1 = ctudec->rcn_ctx.data.edge_buff1;
+    int16_t *tmp_buff1 = (int16_t*) ctudec->rcn_ctx.data.tmp_buff1;
+    
     int16_t *tmp_buff = (int16_t *) ctudec->rcn_ctx.data.tmp_buff;
-    int16_t tmp_buff1[RCN_CTB_SIZE];
+
 
     /*FIXME we suppose here both refs possess the same size*/
 
@@ -1943,13 +1938,11 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
 
-    /* TMP buffers for edge emulation
-     * FIXME use tmp buffers in local contexts
-     */
-    uint16_t edge_buff0[RCN_CTB_SIZE];
-    uint16_t edge_buff1[RCN_CTB_SIZE];
-    uint16_t edge_buff0_1[RCN_CTB_SIZE];
-    uint16_t edge_buff1_1[RCN_CTB_SIZE];
+    
+    uint16_t *edge_buff0 = ctudec->rcn_ctx.data.edge_buff0;
+    uint16_t *edge_buff1 = ctudec->rcn_ctx.data.edge_buff1;
+    uint16_t *edge_buff0_1 = ctudec->rcn_ctx.data.edge_buff0_1;
+    uint16_t *edge_buff1_1 = ctudec->rcn_ctx.data.edge_buff1_1;
     int16_t *tmp_buff = (int16_t *) ctudec->rcn_ctx.data.tmp_buff;
 
     /*FIXME we suppose here both refs possess the same size*/
@@ -2817,15 +2810,13 @@ rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
     OVPicture *ref0 = type0 == 1 ? inter_ctx->rpl0[ref_idx_0]: inter_ctx->rpl1[ref_idx_0];
     OVPicture *ref1 = type1 == 1 ? inter_ctx->rpl0[ref_idx_1]: inter_ctx->rpl1[ref_idx_1];
 
-    /* TMP buffers for edge emulation
-     * FIXME use tmp buffers in local contexts
-     */
-    uint16_t edge_buff0[RCN_CTB_SIZE];
-    uint16_t edge_buff1[RCN_CTB_SIZE];
-    uint16_t edge_buff0_1[RCN_CTB_SIZE];
-    uint16_t edge_buff1_1[RCN_CTB_SIZE];
-    int16_t tmp_buff0[RCN_CTB_SIZE];
-    int16_t tmp_buff1[RCN_CTB_SIZE];
+  
+    uint16_t *edge_buff0 = ctudec->rcn_ctx.data.edge_buff0;
+    uint16_t *edge_buff1 = ctudec->rcn_ctx.data.edge_buff1;
+    uint16_t *edge_buff0_1 = ctudec->rcn_ctx.data.edge_buff0_1;
+    uint16_t *edge_buff1_1 = ctudec->rcn_ctx.data.edge_buff1_1;
+    int16_t *tmp_buff0 = (int16_t*) ctudec->rcn_ctx.data.tmp_buff0;
+    int16_t *tmp_buff1 = (int16_t*) ctudec->rcn_ctx.data.tmp_buff1;
 
     /*FIXME we suppose here both refs possess the same size*/
 

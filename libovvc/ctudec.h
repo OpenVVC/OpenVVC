@@ -522,7 +522,14 @@ struct CTURCNData
     /* To be used for temporary storage
      * when we needed
      */
-    uint16_t tmp_buff[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, edge_buff0)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, edge_buff1)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, edge_buff0_1)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, edge_buff1_1)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, tmp_buff0)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, tmp_buff1)[RCN_CTB_SIZE];
+    
+   DECLARE_ALIGNED(32, uint16_t, tmp_buff)[RCN_CTB_SIZE];
 };
 
 struct OVCTUDec
