@@ -736,265 +736,344 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
 
 static void
 intra_angular_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
-                uint8_t log2_pb_w, uint8_t log2_pb_h, uint8_t pred_mode)
+                uint8_t log2_pb_w, uint8_t log2_pb_h, int8_t pred_mode)
 {
-    uint16_t ref_above_filtered[(128<<1) + 128]/*={0}*/;
-    uint16_t ref_left_filtered [(128<<1) + 128]/*={0}*/;
     int mode_idx = pred_mode - (int)OVINTRA_VER;
     uint8_t log2_nb_smp = log2_pb_w + log2_pb_h;
+    uint8_t use_gauss_filter = log2_nb_smp > 5 && OVABS(mode_idx) > intra_filter[log2_nb_smp >> 1];
 
-    int use_gauss_filter = log2_nb_smp > 5 && OVABS(mode_idx) > intra_filter[log2_nb_smp >> 1];
+    if (use_gauss_filter) {
+        uint16_t filtered_ref_abv[(128 << 1) + 128];
+        uint16_t filtered_ref_lft[(128 << 1) + 128];
+        switch (mode_idx) {
+            case 0:
+                vvc_intra_ver_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w,
+                                   log2_pb_h);
+                break;
+            case (16):
+                {
+                int abv_ref_length = 1 << (log2_pb_w + 1);
+                int lft_ref_length = 1 << (log2_pb_h + 1);
+                filter_ref_samples(ref1, filtered_ref_abv, ref2,
+                                   abv_ref_length);
+                filter_ref_samples(ref2, filtered_ref_lft, ref1,
+                                   lft_ref_length);
+                ref1 = filtered_ref_abv;
+                ref2 = filtered_ref_lft;
+                vvc_intra_angular_vdia(ref1, ref2, dst, dst_stride,
+                                       log2_pb_w, log2_pb_h);
+                }
+                break;
+            default:
+                if(mode_idx < 0){
+                    int abv_ref_length = 1 << (log2_pb_w + 1);
+                    int lft_ref_length = 1 << (log2_pb_h + 1);
+                    int pu_w = 1 << log2_pb_w;
+                    int pu_h = 1 << log2_pb_h;
+                    int abs_angle_val = angle_table[-mode_idx];
+                    uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                    if (!req_frac){
+                        int inv_angle = inverse_angle_table[-mode_idx];
+                        int inv_angle_sum = 256;
 
-    switch (mode_idx) {
-        case 0: //Pure vertical
-            vvc_intra_ver_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w,
-                               log2_pb_h);
-            break;
-        case (16)://Pure diagonal
-            if(use_gauss_filter){
-                int top_ref_length  = 1 << (log2_pb_w  + 1);
-                int left_ref_length = 1 << (log2_pb_h + 1);
-                filter_ref_samples(ref1, ref_above_filtered, ref2,
-                                   top_ref_length);
-                filter_ref_samples(ref2, ref_left_filtered, ref1,
-                                   left_ref_length);
-                ref1 = ref_above_filtered;
-                ref2 = ref_left_filtered;
-            }
-            vvc_intra_angular_vdia(ref1, ref2, dst, dst_stride,
-                                   log2_pb_w, log2_pb_h);
-            break;
-        default:
-            if(mode_idx < 0){
-                int top_ref_length  = 1 << (log2_pb_w  + 1);
-                int left_ref_length = 1 << (log2_pb_h + 1);
-                int pu_w = 1 << log2_pb_w;
-                int pu_h = 1 << log2_pb_h;
-                int abs_angle_val = angle_table[-mode_idx];
-                uint8_t req_frac = !!(abs_angle_val & 0x1F);
-                if (!req_frac){
-                    int inv_angle = inverse_angle_table[-mode_idx];
-                    int inv_angle_sum    = 256;
+                        filter_ref_samples(ref1, filtered_ref_abv + pu_h,
+                                           ref2, abv_ref_length);
+                        filter_ref_samples(ref2, filtered_ref_lft + pu_w,
+                                           ref1, lft_ref_length);
+                        ref1 = filtered_ref_abv + pu_h;
+                        ref2 = filtered_ref_lft + pu_w;
 
-                    if (use_gauss_filter){
-                        filter_ref_samples(ref1, ref_above_filtered + pu_h,
-                                           ref2, top_ref_length);
-                        filter_ref_samples(ref2, ref_left_filtered + pu_w,
-                                           ref1, left_ref_length);
-                        ref1 = ref_above_filtered + pu_h;
-                        ref2 = ref_left_filtered + pu_w;
-                    }
+                        for (int k = -1; k >= -pu_h; k--) {
+                            inv_angle_sum += inv_angle;
+                            ref1[k] = ref2[OVMIN(inv_angle_sum >> 9,pu_h)];
+                        }
 
-                    for ( int k = -1; k >= -pu_h; k-- ){
-                        inv_angle_sum += inv_angle;
-                        ref1[k] = ref2[OVMIN(inv_angle_sum >> 9,pu_h)];
-                    }
+                        intra_angular_v_nofrac(ref1, dst, dst_stride,
+                                               log2_pb_w, log2_pb_h,
+                                               -abs_angle_val);
+                    } else {
+                        int inv_angle = inverse_angle_table[-mode_idx];
+                        int inv_angle_sum = 256;
+                        for ( int k = -1; k >= -pu_h; k-- ){
+                            inv_angle_sum += inv_angle;
+                            ref1[k] = ref2[OVMIN(inv_angle_sum >> 9,pu_h)];
+                        }
 
-                    intra_angular_v_nofrac(ref1, dst, dst_stride,
-                                           log2_pb_w, log2_pb_h,
-                                           -abs_angle_val);
-                } else {
-                    int inv_angle = inverse_angle_table[-mode_idx];
-                    int inv_angle_sum    = 256;
-                    for ( int k = -1; k >= -pu_h; k-- ){
-                        inv_angle_sum += inv_angle;
-                        ref1[k] = ref2[OVMIN(inv_angle_sum >> 9,pu_h)];
-                    }
-
-                    if (use_gauss_filter){
                         intra_angular_v_gauss(ref1, dst, dst_stride,
                                               log2_pb_w, log2_pb_h,
                                               -abs_angle_val);
+                    }
+                } else if (OVMIN(2, log2_pb_h - (floor_log2(3*inverse_angle_table[mode_idx] - 2) - 8)) < 0 ){
+                    //FIXME check this
+                    int abs_angle_val = angle_table[mode_idx];
+                    uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                    if (!req_frac){
+                        int abv_ref_length = 1 << (log2_pb_w + 1);
+                        filter_ref_samples(ref1, filtered_ref_abv, ref2,
+                                           abv_ref_length);
+                        ref1 = filtered_ref_abv;
+                        intra_angular_v_nofrac(ref1, dst, dst_stride,
+                                               log2_pb_w, log2_pb_h,
+                                               abs_angle_val);
                     } else {
-                        intra_angular_v_cubic(ref1, dst, dst_stride,
-                                              log2_pb_w, log2_pb_h,
-                                              -abs_angle_val);
-                    }
-                }
-            } else if (OVMIN(2, log2_pb_h - (floor_log2(3*inverse_angle_table[mode_idx] - 2) - 8)) < 0 ){
-                //FIXME check this
-                int abs_angle_val = angle_table[mode_idx];
-                uint8_t req_frac = !!(abs_angle_val & 0x1F);
-                if (!req_frac){
-                    if (use_gauss_filter){
-                        int top_ref_length  = 1 << (log2_pb_w  + 1);
-                        filter_ref_samples(ref1, ref_above_filtered, ref2,
-                                           top_ref_length);
-                        ref1 = ref_above_filtered;
-                    }
-                    intra_angular_v_nofrac(ref1, dst, dst_stride,
-                                           log2_pb_w, log2_pb_h,
-                                           abs_angle_val);
-                } else {
-                    if (use_gauss_filter){
                         intra_angular_v_gauss(ref1, dst, dst_stride,
                                               log2_pb_w, log2_pb_h,
                                               abs_angle_val);
-                    } else {
-                        intra_angular_v_cubic(ref1, dst, dst_stride,
-                                              log2_pb_w, log2_pb_h,
-                                              abs_angle_val);
                     }
-                }
-            } else {
-                uint8_t req_frac = !!(angle_table[mode_idx] & 0x1F);
-                if (!req_frac){
-                    if (use_gauss_filter){
-                        int top_ref_length  = 1 << (log2_pb_w  + 1);
-                        int left_ref_length = 1 << (log2_pb_h + 1);
-                        filter_ref_samples(ref1, ref_above_filtered, ref2,
-                                           top_ref_length);
-                        filter_ref_samples(ref2, ref_left_filtered, ref1,
-                                           left_ref_length);
-                        ref1 = ref_above_filtered;
-                        ref2 = ref_left_filtered;
-                    }
-                    intra_angular_v_nofrac_pdpc(ref1, ref2, dst, dst_stride,
-                                                log2_pb_w, log2_pb_h,
-                                                mode_idx);
                 } else {
-                    if (use_gauss_filter){
+                    uint8_t req_frac = !!(angle_table[mode_idx] & 0x1F);
+                    if (!req_frac){
+                        int abv_ref_length = 1 << (log2_pb_w + 1);
+                        int lft_ref_length = 1 << (log2_pb_h + 1);
+                        filter_ref_samples(ref1, filtered_ref_abv, ref2,
+                                           abv_ref_length);
+                        filter_ref_samples(ref2, filtered_ref_lft, ref1,
+                                           lft_ref_length);
+                        ref1 = filtered_ref_abv;
+                        ref2 = filtered_ref_lft;
+                        intra_angular_v_nofrac_pdpc(ref1, ref2, dst, dst_stride,
+                                                    log2_pb_w, log2_pb_h,
+                                                    mode_idx);
+                    } else {
                         intra_angular_v_gauss_pdpc(ref1, ref2, dst, dst_stride,
                                                    log2_pb_w, log2_pb_h,
                                                    mode_idx);
+                    }
+                }
+                break;
+        }
+    } else {
+        switch (mode_idx) {
+            case 0: //Pure vertical
+                vvc_intra_ver_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w,
+                                   log2_pb_h);
+                break;
+            case (16)://Pure diagonal
+                vvc_intra_angular_vdia(ref1, ref2, dst, dst_stride,
+                                       log2_pb_w, log2_pb_h);
+                break;
+            default:
+                if (mode_idx < 0) {
+                    int pu_h = 1 << log2_pb_h;
+                    int abs_angle_val = angle_table[-mode_idx];
+                    uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                    int inv_angle = inverse_angle_table[-mode_idx];
+                    int inv_angle_sum = 256;
+
+                    for (int k = -1; k >= -pu_h; k--){
+                        inv_angle_sum += inv_angle;
+                        ref1[k] = ref2[OVMIN(inv_angle_sum >> 9,pu_h)];
+                    }
+
+                    if (!req_frac){
+
+                        intra_angular_v_nofrac(ref1, dst, dst_stride,
+                                               log2_pb_w, log2_pb_h,
+                                               -abs_angle_val);
+                    } else {
+
+                        intra_angular_v_cubic(ref1, dst, dst_stride,
+                                              log2_pb_w, log2_pb_h,
+                                              -abs_angle_val);
+                    }
+                } else if (OVMIN(2, log2_pb_h - (floor_log2(3*inverse_angle_table[mode_idx] - 2) - 8)) < 0 ){
+                    //FIXME check this
+                    int abs_angle_val = angle_table[mode_idx];
+                    uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                    if (!req_frac){
+                        intra_angular_v_nofrac(ref1, dst, dst_stride,
+                                               log2_pb_w, log2_pb_h,
+                                               abs_angle_val);
+                    } else {
+                        intra_angular_v_cubic(ref1, dst, dst_stride,
+                                              log2_pb_w, log2_pb_h,
+                                              abs_angle_val);
+                    }
+                } else {
+                    uint8_t req_frac = !!(angle_table[mode_idx] & 0x1F);
+                    if (!req_frac){
+                        intra_angular_v_nofrac_pdpc(ref1, ref2, dst, dst_stride,
+                                                    log2_pb_w, log2_pb_h,
+                                                    mode_idx);
                     } else {
                         intra_angular_v_cubic_pdpc(ref1, ref2, dst, dst_stride,
                                                    log2_pb_w, log2_pb_h,
                                                    mode_idx);
                     }
                 }
-            }
-            break;
+                break;
+        }
     }
-
 }
 
 static void
 intra_angular_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                 uint8_t log2_pb_w, uint8_t log2_pb_h, int8_t pred_mode)
 {
-    uint16_t ref_above_filtered[(128 << 1) + 128];
-    uint16_t ref_left_filtered [(128 << 1) + 128];
     int mode_idx = -(pred_mode - (int)OVINTRA_HOR);
     uint8_t log2_nb_smp = log2_pb_w + log2_pb_h;
 
-    int use_gauss_filter = log2_nb_smp > 5 && OVABS(mode_idx) > intra_filter[log2_nb_smp >> 1];
+    uint8_t use_gauss_filter = log2_nb_smp > 5 && OVABS(mode_idx) > intra_filter[log2_nb_smp >> 1];
 
-    switch (mode_idx) {
-        case 0: //Pure horizontal
-            vvc_intra_hor_pdpc(ref1, ref2, dst, dst_stride,
-                               log2_pb_w, log2_pb_h);
-            break;
-
-        case (16)://Pure diagonal
-            if (use_gauss_filter){
-                int top_ref_length  = 1 << (log2_pb_w  + 1);
-                int left_ref_length = 1 << (log2_pb_h + 1);
-                filter_ref_samples(ref1, ref_above_filtered, ref2,
-                                   top_ref_length);
-                filter_ref_samples(ref2, ref_left_filtered, ref1,
-                                   left_ref_length);
-                ref1 = ref_above_filtered;
-                ref2 = ref_left_filtered;
-            }
-            vvc_intra_angular_hdia(ref1, ref2, dst, dst_stride,
+    if (use_gauss_filter) {
+        uint16_t filtered_ref_abv[(128 << 1) + 128];
+        uint16_t filtered_ref_lft[(128 << 1) + 128];
+        switch (mode_idx) {
+            case 0: //Pure horizontal
+                vvc_intra_hor_pdpc(ref1, ref2, dst, dst_stride,
                                    log2_pb_w, log2_pb_h);
-            break;
-        default:
-            {
-                if (mode_idx < 0){
-                    int top_ref_length  = 1 << (log2_pb_w  + 1);
-                    int left_ref_length = 1 << (log2_pb_h + 1);
-                    int pu_w  = 1 << log2_pb_w;
-                    int pu_h = 1 << log2_pb_h;
-                    int abs_angle_val = angle_table[-mode_idx];
+                break;
 
-                    uint8_t req_frac = !!(abs_angle_val & 0x1F);
-                    if (!req_frac){
-                        int inv_angle = inverse_angle_table[-mode_idx];
-                        int inv_angle_sum    = 256;
+            case (16)://Pure diagonal
+                {
+                    int abv_ref_length = 1 << (log2_pb_w + 1);
+                    int lft_ref_length = 1 << (log2_pb_h + 1);
+                    filter_ref_samples(ref1, filtered_ref_abv, ref2,
+                                       abv_ref_length);
+                    filter_ref_samples(ref2, filtered_ref_lft, ref1,
+                                       lft_ref_length);
+                    ref1 = filtered_ref_abv;
+                    ref2 = filtered_ref_lft;
+                    vvc_intra_angular_hdia(ref1, ref2, dst, dst_stride,
+                                           log2_pb_w, log2_pb_h);
+                }
+                break;
+            default:
+                {
+                    if (mode_idx < 0){
+                        int pu_w = 1 << log2_pb_w;
+                        int pu_h = 1 << log2_pb_h;
+                        int abs_angle_val = angle_table[-mode_idx];
 
-                        if (use_gauss_filter) {
-                            filter_ref_samples(ref1, ref_above_filtered + pu_h,
-                                               ref2, top_ref_length);
-                            filter_ref_samples(ref2, ref_left_filtered + pu_w,
-                                               ref1, left_ref_length);
-                            ref1 = ref_above_filtered + pu_h;
-                            ref2 = ref_left_filtered + pu_w;
-                        }
+                        uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                        if (!req_frac){
+                            int abv_ref_length = 1 << (log2_pb_w + 1);
+                            int lft_ref_length = 1 << (log2_pb_h + 1);
+                            int inv_angle = inverse_angle_table[-mode_idx];
+                            int inv_angle_sum    = 256;
 
-                        for ( int k = -1; k >= -pu_w; k-- ){
-                            inv_angle_sum += inv_angle;
-                            ref2[k] = ref1[OVMIN(inv_angle_sum >> 9,pu_w)];
-                        }
+                            filter_ref_samples(ref1, filtered_ref_abv + pu_h,
+                                               ref2, abv_ref_length);
+                            filter_ref_samples(ref2, filtered_ref_lft + pu_w,
+                                               ref1, lft_ref_length);
+                            ref1 = filtered_ref_abv + pu_h;
+                            ref2 = filtered_ref_lft + pu_w;
 
-                        intra_angular_h_nofrac(ref2, dst, dst_stride,
-                                               log2_pb_w, log2_pb_h,
-                                               -abs_angle_val);
-                    } else {
-                        int inv_angle = inverse_angle_table[-mode_idx];
-                        int inv_angle_sum    = 256;
-                        for( int k = -1; k >= -pu_w; k-- ){
-                            inv_angle_sum += inv_angle;
-                            ref2[k] = ref1[OVMIN(inv_angle_sum >> 9,pu_w)];
-                        }
-                        if (use_gauss_filter){
+                            for (int k = -1; k >= -pu_w; k--) {
+                                inv_angle_sum += inv_angle;
+                                ref2[k] = ref1[OVMIN(inv_angle_sum >> 9,pu_w)];
+                            }
+
+                            intra_angular_h_nofrac(ref2, dst, dst_stride,
+                                                   log2_pb_w, log2_pb_h,
+                                                   -abs_angle_val);
+                        } else {
+                            int inv_angle = inverse_angle_table[-mode_idx];
+                            int inv_angle_sum    = 256;
+                            for (int k = -1; k >= -pu_w; k--) {
+                                inv_angle_sum += inv_angle;
+                                ref2[k] = ref1[OVMIN(inv_angle_sum >> 9,pu_w)];
+                            }
                             intra_angular_h_gauss(ref2, dst, dst_stride,
                                                   log2_pb_w, log2_pb_h,
                                                   -abs_angle_val);
-                        } else {
-                            intra_angular_h_cubic(ref2, dst, dst_stride,
-                                                  log2_pb_w, log2_pb_h,
-                                                  -abs_angle_val);
                         }
-                    }
 
-                } else if (OVMIN(2, log2_pb_w - (floor_log2(3*inverse_angle_table[mode_idx] - 2) - 8)) < 0 ){//FIXME check this
-                    //from 0 to ref_lengths +1, 0 being top_left sample
-                    int abs_angle_val = angle_table[mode_idx];
-                    uint8_t req_frac = !!(abs_angle_val & 0x1F);
-                    if (!req_frac){
-                        if (use_gauss_filter){
-                            int left_ref_length = 1 << (log2_pb_h + 1);
-                            filter_ref_samples(ref2, ref_left_filtered,
-                                               ref1, left_ref_length);
-                            ref2 = ref_left_filtered;
-                        }
-                        intra_angular_h_nofrac(ref2, dst, dst_stride,
-                                               log2_pb_w, log2_pb_h,
-                                               abs_angle_val);
-                    } else {
-                        if (use_gauss_filter){
+                    } else if (OVMIN(2, log2_pb_w - (floor_log2(3*inverse_angle_table[mode_idx] - 2) - 8)) < 0 ){//FIXME check this
+                        //from 0 to ref_lengths +1, 0 being top_left sample
+                        int abs_angle_val = angle_table[mode_idx];
+                        uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                        if (!req_frac){
+                            int lft_ref_length = 1 << (log2_pb_h + 1);
+                            filter_ref_samples(ref2, filtered_ref_lft,
+                                               ref1, lft_ref_length);
+                            ref2 = filtered_ref_lft;
+                            intra_angular_h_nofrac(ref2, dst, dst_stride,
+                                                   log2_pb_w, log2_pb_h,
+                                                   abs_angle_val);
+                        } else {
                             intra_angular_h_gauss(ref2, dst, dst_stride,
                                                   log2_pb_w, log2_pb_h,
                                                   abs_angle_val);
-                        } else {
-                            intra_angular_h_cubic(ref2, dst, dst_stride,
-                                                  log2_pb_w, log2_pb_h,
-                                                  abs_angle_val);
                         }
-                    }
-                } else {
-                    uint8_t req_frac = !!(angle_table[mode_idx] & 0x1F);
-                    if (!req_frac){
-                        if (use_gauss_filter){
-                            int top_ref_length  = 1 << (log2_pb_w  + 1);
-                            int left_ref_length = 1 << (log2_pb_h + 1);
-                            filter_ref_samples(ref1, ref_above_filtered,
-                                               ref2, top_ref_length);
-                            filter_ref_samples(ref2, ref_left_filtered,
-                                               ref1, left_ref_length);
-                            ref1 = ref_above_filtered;
-                            ref2 = ref_left_filtered;
-                        }
-                        intra_angular_h_nofrac_pdpc(ref1, ref2, dst, dst_stride,
-                                                    log2_pb_w, log2_pb_h,
-                                                    mode_idx);
                     } else {
-                        if (use_gauss_filter){
+                        uint8_t req_frac = !!(angle_table[mode_idx] & 0x1F);
+                        if (!req_frac){
+                            int abv_ref_length = 1 << (log2_pb_w + 1);
+                            int lft_ref_length = 1 << (log2_pb_h + 1);
+                            filter_ref_samples(ref1, filtered_ref_abv,
+                                               ref2, abv_ref_length);
+                            filter_ref_samples(ref2, filtered_ref_lft,
+                                               ref1, lft_ref_length);
+                            ref1 = filtered_ref_abv;
+                            ref2 = filtered_ref_lft;
+                            intra_angular_h_nofrac_pdpc(ref1, ref2, dst, dst_stride,
+                                                        log2_pb_w, log2_pb_h,
+                                                        mode_idx);
+                        } else {
                             intra_angular_h_gauss_pdpc(ref1, ref2, dst, dst_stride,
                                                        log2_pb_w, log2_pb_h,
                                                        mode_idx);
+                        }
+                    }
+                }
+                break;
+        }
+    } else {
+        switch (mode_idx) {
+            case 0:
+                vvc_intra_hor_pdpc(ref1, ref2, dst, dst_stride,
+                                   log2_pb_w, log2_pb_h);
+                break;
+
+            case (16):
+                vvc_intra_angular_hdia(ref1, ref2, dst, dst_stride,
+                                       log2_pb_w, log2_pb_h);
+                break;
+            default:
+                {
+                    if (mode_idx < 0){
+                        int pu_w  = 1 << log2_pb_w;
+                        int abs_angle_val = angle_table[-mode_idx];
+
+                        uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                        int inv_angle = inverse_angle_table[-mode_idx];
+                        int inv_angle_sum    = 256;
+
+                        for (int k = -1; k >= -pu_w; k--) {
+                            inv_angle_sum += inv_angle;
+                            ref2[k] = ref1[OVMIN(inv_angle_sum >> 9,pu_w)];
+                        }
+
+                        if (!req_frac){
+                            intra_angular_h_nofrac(ref2, dst, dst_stride,
+                                                   log2_pb_w, log2_pb_h,
+                                                   -abs_angle_val);
+                        } else {
+                            intra_angular_h_cubic(ref2, dst, dst_stride,
+                                                  log2_pb_w, log2_pb_h,
+                                                  -abs_angle_val);
+                        }
+
+                    } else if (OVMIN(2, log2_pb_w - (floor_log2(3*inverse_angle_table[mode_idx] - 2) - 8)) < 0 ){//FIXME check this
+                        //from 0 to ref_lengths +1, 0 being top_left sample
+                        int abs_angle_val = angle_table[mode_idx];
+                        uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                        if (!req_frac){
+                            intra_angular_h_nofrac(ref2, dst, dst_stride,
+                                                   log2_pb_w, log2_pb_h,
+                                                   abs_angle_val);
+                        } else {
+                            intra_angular_h_cubic(ref2, dst, dst_stride,
+                                                  log2_pb_w, log2_pb_h,
+                                                  abs_angle_val);
+                        }
+                    } else {
+                        uint8_t req_frac = !!(angle_table[mode_idx] & 0x1F);
+                        if (!req_frac){
+                            intra_angular_h_nofrac_pdpc(ref1, ref2, dst, dst_stride,
+                                                        log2_pb_w, log2_pb_h,
+                                                        mode_idx);
                         } else {
                             intra_angular_h_cubic_pdpc(ref1, ref2, dst, dst_stride,
                                                        log2_pb_w, log2_pb_h,
@@ -1002,8 +1081,8 @@ intra_angular_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                         }
                     }
                 }
-            }
-            break;
+                break;
+        }
     }
 }
 
@@ -1015,11 +1094,8 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ct
     const struct DCFunctions *dc = &rcn_ctx->rcn_funcs.dc;
     const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
 
-    uint16_t ref_above[(128 << 1) + 128]/*={0}*/;
-    uint16_t ref_left [(128 << 1) + 128]/*={0}*/;
-
-    uint16_t ref_above_filtered[(128 << 1) + 128]/*={0}*/;
-    uint16_t ref_left_filtered [(128 << 1) + 128]/*={0}*/;
+    uint16_t ref_above[(128 << 1) + 128];
+    uint16_t ref_left [(128 << 1) + 128];
 
     ptrdiff_t dst_stride = ctu_buff->stride;
 
@@ -1042,13 +1118,16 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ct
     switch (intra_mode) {
     case OVINTRA_PLANAR:
     {
+        uint16_t filtered_ref_abv[(128 << 1) + 128];
+        uint16_t filtered_ref_lft[(128 << 1) + 128];
+
         if ((log2_pb_h + log2_pb_w) > 5) {
-            filter_ref_samples(ref1, ref_above_filtered, ref2,
+            filter_ref_samples(ref1, filtered_ref_abv, ref2,
                                (1 << log2_pb_w) + 4);
-            filter_ref_samples(ref2, ref_left_filtered, ref1,
+            filter_ref_samples(ref2, filtered_ref_lft, ref1,
                                (1 << log2_pb_h) + 4);
-            ref1 = ref_above_filtered;
-            ref2 = ref_left_filtered;
+            ref1 = filtered_ref_abv;
+            ref2 = filtered_ref_lft;
         }
 
         planar->pdpc[log2_pb_w > 5 || log2_pb_h > 5](ref1, ref2, dst, dst_stride,
