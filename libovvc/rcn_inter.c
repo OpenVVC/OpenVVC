@@ -730,7 +730,7 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint16_t edge_buff1[RCN_CTB_SIZE];
     uint16_t edge_buff0_1[RCN_CTB_SIZE];
     uint16_t edge_buff1_1[RCN_CTB_SIZE];
-    int16_t tmp_buff[RCN_CTB_SIZE];
+    int16_t *tmp_buff = (int16_t *) ctudec->rcn_ctx.data.tmp_buff;
 
     /*FIXME we suppose here both refs possess the same size*/
 
@@ -855,7 +855,7 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
      */
     uint16_t edge_buff0[RCN_CTB_SIZE];
     uint16_t edge_buff1[RCN_CTB_SIZE];
-    int16_t tmp_buff[RCN_CTB_SIZE];
+    int16_t *tmp_buff = (int16_t *) ctudec->rcn_ctx.data.tmp_buff;
 
     /*FIXME we suppose here both refs possess the same size*/
 
@@ -1183,7 +1183,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int16_t ref_dmvr0[(16 + 2 * DMVR_REF_PADD) * (128 + 2 * DMVR_REF_PADD)] = {0};
     int16_t ref_dmvr1[(16 + 2 * DMVR_REF_PADD) * (128 + 2 * DMVR_REF_PADD)] = {0};
 
-    int16_t tmp_buff[RCN_CTB_SIZE];
+    int16_t *tmp_buff = (int16_t *) ctudec->rcn_ctx.data.tmp_buff;
 
     const int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     const int pu_w = 1 << log2_pu_w;
@@ -1808,7 +1808,7 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
      */
     uint16_t edge_buff0[RCN_CTB_SIZE];
     uint16_t edge_buff1[RCN_CTB_SIZE];
-    int16_t tmp_buff[RCN_CTB_SIZE];
+    int16_t *tmp_buff = (int16_t *) ctudec->rcn_ctx.data.tmp_buff;
     int16_t tmp_buff1[RCN_CTB_SIZE];
 
     /*FIXME we suppose here both refs possess the same size*/
@@ -1950,7 +1950,7 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint16_t edge_buff1[RCN_CTB_SIZE];
     uint16_t edge_buff0_1[RCN_CTB_SIZE];
     uint16_t edge_buff1_1[RCN_CTB_SIZE];
-    int16_t tmp_buff[RCN_CTB_SIZE];
+    int16_t *tmp_buff = (int16_t *) ctudec->rcn_ctx.data.tmp_buff;
 
     /*FIXME we suppose here both refs possess the same size*/
 
@@ -2033,9 +2033,7 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
     dst.y  += x0 + y0 * dst.stride;
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-
-    uint16_t tmp_buff [RCN_CTB_SIZE];
-
+    uint16_t *tmp_buff = ctudec->rcn_ctx.data.tmp_buff;
     const OVFrame *const frame0 = ref_pic->frame;
 
     const uint16_t *const ref0_y  = (uint16_t *) frame0->data[0];
@@ -2153,8 +2151,7 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
     dst.y  += x0 + y0 * dst.stride;
 
-    uint16_t tmp_buff [RCN_CTB_SIZE];
-
+    uint16_t *tmp_buff = ctudec->rcn_ctx.data.tmp_buff;
     OVPicture *ref_pic =  type ? ref1 : ref0;
     const OVFrame *const frame0 = ref_pic->frame;
 
@@ -2235,7 +2232,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
 
     dst.y  += x0 + y0 * dst.stride;
 
-    uint16_t tmp_buff [RCN_CTB_SIZE];
+    uint16_t *tmp_buff = ctudec->rcn_ctx.data.tmp_buff;
 
     OVPicture *ref_pic =  type ? ref1 : ref0;
     const OVFrame *const frame0 = ref_pic->frame;
@@ -2328,8 +2325,8 @@ rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
 
-    uint16_t tmp_buff [RCN_CTB_SIZE];
-
+    uint16_t *tmp_buff = ctudec->rcn_ctx.data.tmp_buff;
+    
     OVPicture *ref_pic =  type ? ref1 : ref0;
     const OVFrame *const frame0 = ref_pic->frame;
 
