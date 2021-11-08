@@ -518,7 +518,16 @@ struct CTURCNData
     DECLARE_ALIGNED(32, uint16_t, y_buff)[RCN_CTB_SIZE];
     DECLARE_ALIGNED(32, uint16_t, cb_buff)[RCN_CTB_SIZE];
     DECLARE_ALIGNED(32, uint16_t, cr_buff)[RCN_CTB_SIZE];
-
+    
+    
+    
+    DECLARE_ALIGNED(32, uint16_t, tmp_intra_l)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, tmp_intra_cb)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, tmp_intra_cr)[RCN_CTB_SIZE];
+    
+    DECLARE_ALIGNED(32, uint16_t, tmp_inter_l)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, tmp_inter_cb)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, tmp_inter_cr)[RCN_CTB_SIZE];
     /* To be used for temporary storage
      * when we needed
      */
