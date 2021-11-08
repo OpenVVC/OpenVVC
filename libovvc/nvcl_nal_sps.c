@@ -177,6 +177,49 @@ subpic_info(OVNVCLReader *const rdr, OVSPS *const sps)
 }
 
 
+static void
+vui_payload(OVNVCLReader *const rdr, struct OVVUI *vui)
+{
+    vui->vui_progressive_source_flag        = nvcl_read_flag(rdr);
+    vui->vui_interlaced_source_flag         = nvcl_read_flag(rdr);
+    vui->vui_non_packed_constraint_flag     = nvcl_read_flag(rdr);
+    vui->vui_non_projected_constraint_flag  = nvcl_read_flag(rdr);
+
+    vui->vui_aspect_ratio_info_present_flag = nvcl_read_flag(rdr);
+    if (vui->vui_aspect_ratio_info_present_flag) {
+        vui->vui_aspect_ratio_constant_flag = nvcl_read_flag(rdr);
+        vui->vui_aspect_ratio_idc = nvcl_read_bits(rdr, 8);
+        if (vui->vui_aspect_ratio_idc == 255) {
+            vui->vui_sar_width  = nvcl_read_bits(rdr, 16);
+            vui->vui_sar_height = nvcl_read_bits(rdr, 16);
+        }
+    }
+
+    vui->vui_overscan_info_present_flag = nvcl_read_flag(rdr);
+    if (vui->vui_overscan_info_present_flag) {
+        vui->vui_overscan_appropriate_flag = nvcl_read_flag(rdr);
+    }
+
+    vui->vui_colour_description_present_flag = nvcl_read_flag(rdr);
+    if (vui->vui_colour_description_present_flag) {
+        vui->vui_colour_primaries         = nvcl_read_bits(rdr, 8);
+        vui->vui_transfer_characteristics = nvcl_read_bits(rdr, 8);
+        vui->vui_matrix_coeffs            = nvcl_read_bits(rdr, 8);
+        vui->vui_full_range_flag = nvcl_read_flag(rdr);
+    }
+
+    vui->vui_chroma_loc_info_present_flag = nvcl_read_flag(rdr);
+    if (vui->vui_chroma_loc_info_present_flag) {
+        if (vui->vui_progressive_source_flag && !vui->vui_interlaced_source_flag) {
+            vui->vui_chroma_sample_loc_type_frame = nvcl_read_u_expgolomb(rdr);
+        } else {
+            vui->vui_chroma_sample_loc_type_top_field = nvcl_read_u_expgolomb(rdr);
+            vui->vui_chroma_sample_loc_type_bottom_field = nvcl_read_u_expgolomb(rdr);
+        }
+    }
+}
+
+
 int
 nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
               const OVNVCLCtx *const nvcl_ctx)
@@ -533,19 +576,11 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     sps->sps_vui_parameters_present_flag = nvcl_read_flag(rdr);
     if (sps->sps_vui_parameters_present_flag) {
         sps->sps_vui_payload_size_minus1 = nvcl_read_u_expgolomb(rdr);
-        #if 0
-        while (!byte_aligned()) {
-            sps->sps_vui_alignment_zero_bit;
-        }
-        #else
-        /*FIXME byte alignment function could return negative walue if
-          bits read before alignment are not zeroed */
-            nvcl_align(rdr);
-        #endif
 
-        #if 0
-        vui_payload(sps->sps_vui_payload_size_minus1 + 1)
-        fprintf(stderr, "VUI support not available yet");
+        nvcl_align(rdr);
+
+        #if 1
+        vui_payload(rdr, &sps->vui);
         #else
         nvcl_skip_bits(rdr, sps->sps_vui_payload_size_minus1 + 1);
         #endif

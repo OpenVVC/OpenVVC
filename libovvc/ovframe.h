@@ -12,10 +12,19 @@ enum ChromaFmt
     OV_YUV_420_P10 = 1,
 };
 
+struct ColorDescription
+{
+    uint8_t colour_primaries;
+    uint8_t transfer_characteristics;
+    uint8_t matrix_coeffs;
+    uint8_t full_range;
+};
+
 /* Miscelaneous information on Picture */
 struct FrameInfo
 {
     enum ChromaFmt chromat_format;
+    struct ColorDescription color_desc;
 };
 
 struct FramePool;

@@ -122,6 +122,37 @@ struct OVSEI
     struct OVSEISLHDR* sei_slhdr;
 };
 
+struct OVVUI
+{
+    uint8_t vui_progressive_source_flag;
+    uint8_t vui_interlaced_source_flag;
+    uint8_t vui_non_packed_constraint_flag;
+    uint8_t vui_non_projected_constraint_flag;
+
+    uint8_t vui_aspect_ratio_info_present_flag;
+    uint8_t vui_aspect_ratio_constant_flag;
+
+    uint8_t vui_aspect_ratio_idc;
+
+    uint16_t vui_sar_width;
+    uint16_t vui_sar_height;
+
+    uint8_t vui_overscan_info_present_flag;
+    uint8_t vui_overscan_appropriate_flag;
+
+    uint8_t vui_colour_description_present_flag;
+    uint8_t vui_colour_primaries;
+    uint8_t vui_transfer_characteristics;
+    uint8_t vui_matrix_coeffs;
+    uint8_t vui_full_range_flag;
+    uint8_t vui_chroma_loc_info_present_flag;
+
+    uint32_t vui_chroma_sample_loc_type_frame;
+    uint32_t vui_chroma_sample_loc_type_top_field;
+    uint32_t vui_chroma_sample_loc_type_bottom_field;
+
+};
+
 struct OVSPS
 {
     uint8_t sps_seq_parameter_set_id;
@@ -328,7 +359,7 @@ struct OVSPS
     uint8_t sps_vui_payload_size_minus1;
     uint8_t sps_vui_alignment_zero_bit;
 
-    struct OVVUI *vui_payload;
+    struct OVVUI vui;
 
     uint8_t sps_extension_flag;
     uint8_t sps_extension_data_flag;
