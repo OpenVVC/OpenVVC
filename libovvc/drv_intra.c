@@ -765,15 +765,18 @@ intra_angular_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                 }
                 break;
             default:
-                if(mode_idx < 0){
+            {
+                int abs_angle_val = angle_table[OVABS(mode_idx)];
+                int inv_angle = inverse_angle_table[OVABS(mode_idx)];
+                uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                int8_t pdpc_scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inverse_angle_table[OVABS(mode_idx)] - 2) - 8));
+
+                if (mode_idx < 0) {
                     int abv_ref_length = 1 << (log2_pb_w + 1);
                     int lft_ref_length = 1 << (log2_pb_h + 1);
                     int pu_w = 1 << log2_pb_w;
                     int pu_h = 1 << log2_pb_h;
-                    int abs_angle_val = angle_table[-mode_idx];
-                    uint8_t req_frac = !!(abs_angle_val & 0x1F);
                     if (!req_frac){
-                        int inv_angle = inverse_angle_table[-mode_idx];
                         int inv_angle_sum = 256;
 
                         filter_ref_samples(ref1, filtered_ref_abv + pu_h,
@@ -792,7 +795,6 @@ intra_angular_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                                                log2_pb_w, log2_pb_h,
                                                -abs_angle_val);
                     } else {
-                        int inv_angle = inverse_angle_table[-mode_idx];
                         int inv_angle_sum = 256;
                         for ( int k = -1; k >= -pu_h; k-- ){
                             inv_angle_sum += inv_angle;
@@ -803,10 +805,7 @@ intra_angular_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                                               log2_pb_w, log2_pb_h,
                                               -abs_angle_val);
                     }
-                } else if (OVMIN(2, log2_pb_h - (floor_log2(3*inverse_angle_table[mode_idx] - 2) - 8)) < 0 ){
-                    //FIXME check this
-                    int abs_angle_val = angle_table[mode_idx];
-                    uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                } else if (pdpc_scale < 0) {
                     if (!req_frac){
                         int abv_ref_length = 1 << (log2_pb_w + 1);
                         filter_ref_samples(ref1, filtered_ref_abv, ref2,
@@ -821,7 +820,6 @@ intra_angular_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                                               abs_angle_val);
                     }
                 } else {
-                    uint8_t req_frac = !!(angle_table[mode_idx] & 0x1F);
                     if (!req_frac){
                         int abv_ref_length = 1 << (log2_pb_w + 1);
                         int lft_ref_length = 1 << (log2_pb_h + 1);
@@ -840,24 +838,27 @@ intra_angular_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                                                    mode_idx);
                     }
                 }
+            }
                 break;
         }
     } else {
         switch (mode_idx) {
-            case 0: //Pure vertical
+            case 0:
                 vvc_intra_ver_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w,
                                    log2_pb_h);
                 break;
-            case (16)://Pure diagonal
+            case (16):
                 vvc_intra_angular_vdia(ref1, ref2, dst, dst_stride,
                                        log2_pb_w, log2_pb_h);
                 break;
             default:
+            {
+                int abs_angle_val = angle_table[OVABS(mode_idx)];
+                int inv_angle = inverse_angle_table[OVABS(mode_idx)];
+                uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                int8_t pdpc_scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inverse_angle_table[OVABS(mode_idx)] - 2) - 8));
                 if (mode_idx < 0) {
                     int pu_h = 1 << log2_pb_h;
-                    int abs_angle_val = angle_table[-mode_idx];
-                    uint8_t req_frac = !!(abs_angle_val & 0x1F);
-                    int inv_angle = inverse_angle_table[-mode_idx];
                     int inv_angle_sum = 256;
 
                     for (int k = -1; k >= -pu_h; k--){
@@ -876,10 +877,7 @@ intra_angular_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                                               log2_pb_w, log2_pb_h,
                                               -abs_angle_val);
                     }
-                } else if (OVMIN(2, log2_pb_h - (floor_log2(3*inverse_angle_table[mode_idx] - 2) - 8)) < 0 ){
-                    //FIXME check this
-                    int abs_angle_val = angle_table[mode_idx];
-                    uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                } else if (pdpc_scale < 0){
                     if (!req_frac){
                         intra_angular_v_nofrac(ref1, dst, dst_stride,
                                                log2_pb_w, log2_pb_h,
@@ -890,7 +888,6 @@ intra_angular_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                                               abs_angle_val);
                     }
                 } else {
-                    uint8_t req_frac = !!(angle_table[mode_idx] & 0x1F);
                     if (!req_frac){
                         intra_angular_v_nofrac_pdpc(ref1, ref2, dst, dst_stride,
                                                     log2_pb_w, log2_pb_h,
@@ -901,7 +898,8 @@ intra_angular_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                                                    mode_idx);
                     }
                 }
-                break;
+            }
+            break;
         }
     }
 }
@@ -940,17 +938,19 @@ intra_angular_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                 break;
             default:
                 {
+                    int abs_angle_val = angle_table[OVABS(mode_idx)];
+                    int inv_angle = inverse_angle_table[OVABS(mode_idx)];
+                    uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                    int8_t pdpc_scale = OVMIN(2, log2_pb_w - (floor_log2(3 * inverse_angle_table[OVABS(mode_idx)] - 2) - 8));
+
                     if (mode_idx < 0){
                         int pu_w = 1 << log2_pb_w;
                         int pu_h = 1 << log2_pb_h;
-                        int abs_angle_val = angle_table[-mode_idx];
 
-                        uint8_t req_frac = !!(abs_angle_val & 0x1F);
                         if (!req_frac){
                             int abv_ref_length = 1 << (log2_pb_w + 1);
                             int lft_ref_length = 1 << (log2_pb_h + 1);
-                            int inv_angle = inverse_angle_table[-mode_idx];
-                            int inv_angle_sum    = 256;
+                            int inv_angle_sum  = 256;
 
                             filter_ref_samples(ref1, filtered_ref_abv + pu_h,
                                                ref2, abv_ref_length);
@@ -968,7 +968,6 @@ intra_angular_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                                                    log2_pb_w, log2_pb_h,
                                                    -abs_angle_val);
                         } else {
-                            int inv_angle = inverse_angle_table[-mode_idx];
                             int inv_angle_sum    = 256;
                             for (int k = -1; k >= -pu_w; k--) {
                                 inv_angle_sum += inv_angle;
@@ -979,11 +978,8 @@ intra_angular_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                                                   -abs_angle_val);
                         }
 
-                    } else if (OVMIN(2, log2_pb_w - (floor_log2(3*inverse_angle_table[mode_idx] - 2) - 8)) < 0 ){//FIXME check this
-                        //from 0 to ref_lengths +1, 0 being top_left sample
-                        int abs_angle_val = angle_table[mode_idx];
-                        uint8_t req_frac = !!(abs_angle_val & 0x1F);
-                        if (!req_frac){
+                    } else if (pdpc_scale < 0) {
+                        if (!req_frac) {
                             int lft_ref_length = 1 << (log2_pb_h + 1);
                             filter_ref_samples(ref2, filtered_ref_lft,
                                                ref1, lft_ref_length);
@@ -997,7 +993,6 @@ intra_angular_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                                                   abs_angle_val);
                         }
                     } else {
-                        uint8_t req_frac = !!(angle_table[mode_idx] & 0x1F);
                         if (!req_frac){
                             int abv_ref_length = 1 << (log2_pb_w + 1);
                             int lft_ref_length = 1 << (log2_pb_h + 1);
@@ -1032,17 +1027,17 @@ intra_angular_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                 break;
             default:
                 {
+                    int abs_angle_val = angle_table[OVABS(mode_idx)];
+                    int inv_angle = inverse_angle_table[OVABS(mode_idx)];
+                    uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                    int8_t pdpc_scale = OVMIN(2, log2_pb_w - (floor_log2(3 * inverse_angle_table[OVABS(mode_idx)] - 2) - 8));
                     if (mode_idx < 0){
                         int pu_w  = 1 << log2_pb_w;
-                        int abs_angle_val = angle_table[-mode_idx];
-
-                        uint8_t req_frac = !!(abs_angle_val & 0x1F);
-                        int inv_angle = inverse_angle_table[-mode_idx];
-                        int inv_angle_sum    = 256;
+                        int inv_angle_sum = 256;
 
                         for (int k = -1; k >= -pu_w; k--) {
                             inv_angle_sum += inv_angle;
-                            ref2[k] = ref1[OVMIN(inv_angle_sum >> 9,pu_w)];
+                            ref2[k] = ref1[OVMIN(inv_angle_sum >> 9, pu_w)];
                         }
 
                         if (!req_frac){
@@ -1055,10 +1050,7 @@ intra_angular_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                                                   -abs_angle_val);
                         }
 
-                    } else if (OVMIN(2, log2_pb_w - (floor_log2(3*inverse_angle_table[mode_idx] - 2) - 8)) < 0 ){//FIXME check this
-                        //from 0 to ref_lengths +1, 0 being top_left sample
-                        int abs_angle_val = angle_table[mode_idx];
-                        uint8_t req_frac = !!(abs_angle_val & 0x1F);
+                    } else if (pdpc_scale < 0) {
                         if (!req_frac){
                             intra_angular_h_nofrac(ref2, dst, dst_stride,
                                                    log2_pb_w, log2_pb_h,
@@ -1069,7 +1061,6 @@ intra_angular_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                                                   abs_angle_val);
                         }
                     } else {
-                        uint8_t req_frac = !!(angle_table[mode_idx] & 0x1F);
                         if (!req_frac){
                             intra_angular_h_nofrac_pdpc(ref1, ref2, dst, dst_stride,
                                                         log2_pb_w, log2_pb_h,
