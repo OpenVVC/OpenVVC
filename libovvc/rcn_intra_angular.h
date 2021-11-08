@@ -5,15 +5,26 @@
 #include <stdint.h>
 
 void
-vvc_intra_angular_hdia(const uint16_t* const ref_above,
-                       const uint16_t* const ref_left, uint16_t* const dst,
-                       ptrdiff_t dst_stride, int log2_pb_width,
-                       int log2_pb_height);
+intra_angular_hdia_pdpc(const uint16_t* const ref_above,
+                        const uint16_t* const ref_left, uint16_t* const dst,
+                        ptrdiff_t dst_stride, int log2_pb_width,
+                        int log2_pb_height);
 void
-vvc_intra_angular_vdia(const uint16_t* const ref_above,
-                       const uint16_t* const ref_left, uint16_t* const dst,
-                       ptrdiff_t dst_stride, int log2_pb_width,
-                       int log2_pb_height);
+intra_angular_vdia_pdpc(const uint16_t* const ref_above,
+                        const uint16_t* const ref_left, uint16_t* const dst,
+                        ptrdiff_t dst_stride, int log2_pb_width,
+                        int log2_pb_height);
+
+void
+intra_angular_hdia(const uint16_t* const ref_above,
+                   const uint16_t* const ref_left, uint16_t* const dst,
+                   ptrdiff_t dst_stride, int log2_pb_width,
+                   int log2_pb_height);
+void
+intra_angular_vdia(const uint16_t* const ref_above,
+                   const uint16_t* const ref_left, uint16_t* const dst,
+                   ptrdiff_t dst_stride, int log2_pb_width,
+                   int log2_pb_height);
 void
 vvc_intra_angular_h_c(const uint16_t* ref_left, uint16_t* dst,
                       ptrdiff_t dst_stride, int log2_pb_width,

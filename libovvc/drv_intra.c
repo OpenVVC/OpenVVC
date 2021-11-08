@@ -638,8 +638,8 @@ intra_angular_gauss_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                 ref1 = filtered_ref_abv;
                 ref2 = filtered_ref_lft;
 
-                vvc_intra_angular_vdia(ref1, ref2, dst, dst_stride,
-                                       log2_pb_w, log2_pb_h);
+                intra_angular_vdia_pdpc(ref1, ref2, dst, dst_stride,
+                                        log2_pb_w, log2_pb_h);
             }
             break;
         default:
@@ -748,8 +748,8 @@ intra_angular_gauss_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                                    lft_ref_length);
                 ref1 = filtered_ref_abv;
                 ref2 = filtered_ref_lft;
-                vvc_intra_angular_hdia(ref1, ref2, dst, dst_stride,
-                                       log2_pb_w, log2_pb_h);
+                intra_angular_hdia_pdpc(ref1, ref2, dst, dst_stride,
+                                        log2_pb_w, log2_pb_h);
             }
             break;
         default:
@@ -851,8 +851,13 @@ intra_angular_cubic_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
             }
             break;
         case (16):
-            vvc_intra_angular_vdia(ref1, ref2, dst, dst_stride,
+            if (log2_pb_h > 1) {
+                intra_angular_vdia_pdpc(ref1, ref2, dst, dst_stride,
+                                        log2_pb_w, log2_pb_h);
+            } else {
+                intra_angular_vdia(ref1, ref2, dst, dst_stride,
                                    log2_pb_w, log2_pb_h);
+            }
             break;
         default:
             {
@@ -931,8 +936,13 @@ intra_angular_cubic_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
             break;
 
         case (16):
-            vvc_intra_angular_hdia(ref1, ref2, dst, dst_stride,
+            if (log2_pb_h > 1){
+                intra_angular_hdia_pdpc(ref1, ref2, dst, dst_stride,
+                                        log2_pb_w, log2_pb_h);
+            } else {
+                intra_angular_hdia(ref1, ref2, dst, dst_stride,
                                    log2_pb_w, log2_pb_h);
+            }
             break;
         default:
             {
@@ -1302,13 +1312,13 @@ vvc_intra_chroma_angular(const uint16_t *const src, uint16_t *const dst,
             {
                     int abs_angle = angle_table[mode_idx];
                 if (log2_pb_h > 1 && log2_pb_w > 1)
-                vvc_intra_angular_vdia(ref1, ref2, dst, dst_stride,
-                                       log2_pb_w, log2_pb_h);
+                    intra_angular_vdia_pdpc(ref1, ref2, dst, dst_stride,
+                                            log2_pb_w, log2_pb_h);
                 else
                     vvc_intra_angular_v_c(ref1, dst, dst_stride,
                                            log2_pb_w, log2_pb_h,
                                            abs_angle);
-                    }
+            }
                 break;
             default:
                 if(mode_idx < 0){
@@ -1383,12 +1393,12 @@ vvc_intra_chroma_angular(const uint16_t *const src, uint16_t *const dst,
                 break;
             case (16)://Pure diagonal
                 if (log2_pb_h > 1 && log2_pb_w > 1)
-                vvc_intra_angular_hdia(ref1, ref2, dst, dst_stride,
-                                       log2_pb_w, log2_pb_h);
-                                       else
-                            vvc_intra_angular_h_c(ref2, dst, dst_stride,
-                                                   log2_pb_w, log2_pb_h,
-                                                   32);
+                    intra_angular_hdia_pdpc(ref1, ref2, dst, dst_stride,
+                                            log2_pb_w, log2_pb_h);
+                else
+                    vvc_intra_angular_h_c(ref2, dst, dst_stride,
+                                          log2_pb_w, log2_pb_h,
+                                          32);
                 break;
             default:
                 {
@@ -1427,7 +1437,7 @@ vvc_intra_chroma_angular(const uint16_t *const src, uint16_t *const dst,
                                                   abs_angle);
                         }
 
-                    } else {//wide angular
+                    } else {
                         int abs_angle = angle_table[mode_idx];
                         uint8_t req_frac = !!(abs_angle& 0x1F);
                         if (!req_frac){
