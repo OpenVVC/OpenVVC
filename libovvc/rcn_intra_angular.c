@@ -225,7 +225,7 @@ intra_angular_h_c(const uint16_t* ref_lft, uint16_t* dst,
     }
 
     _tmp = tmp_dst;
-    // Transpose block
+
     for (int y = 0; y < pb_w; y++) {
         _dst = &dst[y];
         for (int x = 0; x < pb_h; x++) {
@@ -460,7 +460,6 @@ intra_angular_h_nofrac(const uint16_t* ref_lft, uint16_t* dst,
 
     _tmp = tmp_dst;
 
-    // Transpose block
     for (int y = 0; y < pb_w; y++) {
         _dst = &dst[y];
         for (int x = 0; x < pb_h; x++) {
@@ -486,7 +485,7 @@ intra_angular_h_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
     int pb_h = 1 << log2_pb_h;
     int delta_pos = angle_val >> 5;
     int scale = OVMIN(2, log2_pb_w - (floor_log2(3 * inv_angle - 2) - 8));
-    int y/*, x*/;
+    int y;
 
     for (y = 0; y < pb_w; ++y) {
         int inv_angle_sum = 256 + inv_angle;
@@ -507,7 +506,6 @@ intra_angular_h_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
 
     _tmp = tmp_dst;
 
-    // Transpose block
     for (int y = 0; y < pb_w; y++) {
         _dst = &dst[y];
         for (int x = 0; x < pb_h; x++) {
