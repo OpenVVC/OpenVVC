@@ -174,8 +174,7 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
             int mode_idx = pred_mode - OVINTRA_VER ;
             switch (mode_idx) {
             case 0:
-                intra_angular_ver(ref1, ref2, dst, dst_stride,
-                                  log2_pb_w, log2_pb_h);
+                intra_angular_ver(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
                 break;
             case 16:
 
@@ -223,8 +222,7 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
             int mode_idx = -(pred_mode - OVINTRA_HOR);
             switch (mode_idx) {
             case 0:
-                intra_angular_hor(ref1, ref2, dst, dst_stride,
-                                  log2_pb_w, log2_pb_h);
+                intra_angular_hor(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
                 break;
             case 16:
 
@@ -860,8 +858,7 @@ intra_angular_cubic_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                 intra_angular_ver_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w,
                                        log2_pb_h);
             } else {
-                intra_angular_ver(ref1, ref2, dst, dst_stride, log2_pb_w,
-                                  log2_pb_h);
+                intra_angular_ver(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
             }
             break;
         case (16):
@@ -943,8 +940,7 @@ intra_angular_cubic_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                 intra_angular_hor_pdpc(ref1, ref2, dst, dst_stride,
                                        log2_pb_w, log2_pb_h);
             } else {
-                intra_angular_hor(ref1, ref2, dst, dst_stride,
-                                  log2_pb_w, log2_pb_h);
+                intra_angular_hor(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
             }
             break;
 
@@ -1442,8 +1438,7 @@ vvc_intra_chroma_angular(const uint16_t *const src, uint16_t *const dst,
                     intra_angular_ver_pdpc(ref1, ref2, dst, dst_stride,
                                            log2_pb_w, log2_pb_h);
                 } else {
-                    intra_angular_ver(ref1, ref2, dst, dst_stride,
-                                      log2_pb_w, log2_pb_h);
+                    intra_angular_ver(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
                 }
 
                 break;
@@ -1475,8 +1470,7 @@ vvc_intra_chroma_angular(const uint16_t *const src, uint16_t *const dst,
                     intra_angular_hor_pdpc(ref1, ref2, dst, dst_stride,
                                            log2_pb_w, log2_pb_h);
                 } else {
-                    intra_angular_hor(ref1, ref2, dst, dst_stride,
-                                      log2_pb_w, log2_pb_h);
+                    intra_angular_hor(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
                 }
                 break;
             case (16)://Pure diagonal
