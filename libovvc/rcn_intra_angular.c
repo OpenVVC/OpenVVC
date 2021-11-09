@@ -913,64 +913,6 @@ intra_angular_v_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
 }
 
 void
-intra_angular_hdia_mref(const uint16_t* const ref_abv,
-                        const uint16_t* const ref_lft, uint16_t* const dst,
-                        ptrdiff_t dst_stride, int log2_pb_w,
-                        int log2_pb_h, uint8_t mrl_idx)
-{
-
-    uint16_t tmp_dst[128 * 128];
-    const int tmp_stride = 128;
-    uint16_t* _tmp = tmp_dst;
-    uint16_t* _dst = dst;
-    int pb_w = 1 << log2_pb_w;
-    int pb_h = 1 << log2_pb_h;
-
-    int delta_pos = 32 * (mrl_idx + 1);
-
-    for (int y = 0; y < pb_w; y++) {
-        const int delta_int = delta_pos >> 5;
-        for (int x = 0; x < pb_h; x++) {
-            _tmp[x] = ref_lft[x + delta_int + 1];
-        }
-        delta_pos += 32;
-        _tmp += tmp_stride;
-    }
-
-    _tmp = tmp_dst;
-    for (int y = 0; y < pb_w; y++) {
-        _dst = &dst[y];
-        for (int x = 0; x < pb_h; x++) {
-            _dst[0] = _tmp[x];
-            _dst += dst_stride;
-        }
-        _tmp += tmp_stride;
-    }
-}
-
-void
-intra_angular_vdia_mref(const uint16_t* const ref_abv,
-                        const uint16_t* const ref_lft, uint16_t* const dst,
-                        ptrdiff_t dst_stride, int log2_pb_w,
-                        int log2_pb_h, uint8_t mrl_idx)
-{
-    int delta_pos = 32 * (mrl_idx + 1);
-    uint16_t* _dst = dst;
-    int pb_w = 1 << log2_pb_w;
-    int pb_h = 1 << log2_pb_h;
-
-    for (int y = 0; y < pb_h; y++) {
-        const int delta_int = delta_pos >> 5;
-        for (int x = 0; x < pb_w; x++) {
-            _dst[x] = ref_abv[x + delta_int + 1];
-        }
-
-        delta_pos += 32;
-        _dst += dst_stride;
-    }
-}
-
-void
 intra_angular_h_cubic_mref(const uint16_t* const ref_lft, uint16_t* const dst,
                            ptrdiff_t dst_stride,
                            int log2_pb_w, int log2_pb_h,
@@ -984,33 +926,22 @@ intra_angular_h_cubic_mref(const uint16_t* const ref_lft, uint16_t* const dst,
     int pb_h = 1 << log2_pb_h;
     int delta_pos = angle_val * (mrl_idx + 1);
 
-    if ((angle_val & 0x1F)) {
-        for (int y = 0; y < pb_w; y++) {
-            const int delta_int  = delta_pos >> 5;
-            const int delta_frac = delta_pos & 0x1F;
-            const int16_t* ref = (int16_t *)ref_lft + delta_int;
-            const int8_t* filter = &chroma_filter[delta_frac << 2];
+    for (int y = 0; y < pb_w; y++) {
+        const int delta_int  = delta_pos >> 5;
+        const int delta_frac = delta_pos & 0x1F;
+        const int16_t* ref = (int16_t *)ref_lft + delta_int;
+        const int8_t* filter = &chroma_filter[delta_frac << 2];
 
-            for (int x = 0; x < pb_h; x++) {
-                int val = ((int32_t)(ref[0] * filter[0]) +
-                           (int32_t)(ref[1] * filter[1]) +
-                           (int32_t)(ref[2] * filter[2]) +
-                           (int32_t)(ref[3] * filter[3]) + 32) >> 6;
-                ref++;
-                _tmp[x] = ov_bdclip(val);
-            }
-            delta_pos += angle_val;
-            _tmp += tmp_stride;
+        for (int x = 0; x < pb_h; x++) {
+            int val = ((int32_t)(ref[0] * filter[0]) +
+                       (int32_t)(ref[1] * filter[1]) +
+                       (int32_t)(ref[2] * filter[2]) +
+                       (int32_t)(ref[3] * filter[3]) + 32) >> 6;
+            ref++;
+            _tmp[x] = ov_bdclip(val);
         }
-    } else {
-        for (int y = 0; y < pb_w; y++) {
-            const int delta_int = delta_pos >> 5;
-            for (int x = 0; x < pb_h; x++) {
-                _tmp[x] = ref_lft[x + delta_int + 1];
-            }
-            delta_pos += angle_val;
-            _tmp += tmp_stride;
-        }
+        delta_pos += angle_val;
+        _tmp += tmp_stride;
     }
 
     _tmp = tmp_dst;
@@ -1036,31 +967,20 @@ intra_angular_v_cubic_mref(const uint16_t* const ref_abv, uint16_t* const dst,
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
 
-    if ((angle_val & 0x1F)) {
-        for (int y = 0; y < pb_h; y++) {
-            const int delta_int  = delta_pos >> 5;
-            const int delta_frac = delta_pos & 0x1F;
-            const int16_t* ref = (int16_t *)ref_abv + delta_int;
-            const int8_t* filter = &chroma_filter[delta_frac << 2];
-            for (int x = 0; x < pb_w; x++) {
-                int val = ((int32_t)(ref[0] * filter[0]) +
-                           (int32_t)(ref[1] * filter[1]) +
-                           (int32_t)(ref[2] * filter[2]) +
-                           (int32_t)(ref[3] * filter[3]) + 32) >> 6;
-                ref++;
-                _dst[x] = ov_bdclip(val);
-            }
-            delta_pos += angle_val;
-            _dst += dst_stride;
+    for (int y = 0; y < pb_h; y++) {
+        const int delta_int  = delta_pos >> 5;
+        const int delta_frac = delta_pos & 0x1F;
+        const int16_t* ref = (int16_t *)ref_abv + delta_int;
+        const int8_t* filter = &chroma_filter[delta_frac << 2];
+        for (int x = 0; x < pb_w; x++) {
+            int val = ((int32_t)(ref[0] * filter[0]) +
+                       (int32_t)(ref[1] * filter[1]) +
+                       (int32_t)(ref[2] * filter[2]) +
+                       (int32_t)(ref[3] * filter[3]) + 32) >> 6;
+            ref++;
+            _dst[x] = ov_bdclip(val);
         }
-    } else {
-        for (int y = 0; y < pb_h; y++) {
-            const int delta_int = delta_pos >> 5;
-            for (int x = 0; x < pb_w; x++) {
-                _dst[x] = ref_abv[x + delta_int + 1];
-            }
-            delta_pos += angle_val;
-            _dst += dst_stride;
-        }
+        delta_pos += angle_val;
+        _dst += dst_stride;
     }
 }

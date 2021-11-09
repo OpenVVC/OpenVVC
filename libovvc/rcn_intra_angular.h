@@ -113,16 +113,6 @@ intra_angular_v_cubic_pdpc(const uint16_t* ref_above, const uint16_t* ref_left,
                            uint16_t* const dst, ptrdiff_t dst_stride,
                            int log2_pb_width, int log2_pb_height, int mode_idx);
 void
-intra_angular_hdia_mref(const uint16_t* const ref_above,
-                        const uint16_t* const ref_left, uint16_t* const dst,
-                        ptrdiff_t dst_stride, int log2_pb_width,
-                        int log2_pb_height, uint8_t multi_ref_idx);
-void
-intra_angular_vdia_mref(const uint16_t* const ref_above,
-                        const uint16_t* const ref_left, uint16_t* const dst,
-                        ptrdiff_t dst_stride, int log2_pb_width,
-                        int log2_pb_height, uint8_t multi_ref_idx);
-void
 intra_angular_h_cubic_mref(const uint16_t* const ref_left, uint16_t* const dst,
                            ptrdiff_t dst_stride,
                            int log2_pb_width, int log2_pb_height,

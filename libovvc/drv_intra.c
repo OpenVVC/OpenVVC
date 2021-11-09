@@ -178,9 +178,10 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
                               log2_pb_w, log2_pb_h);
                 break;
             case 16:
-                intra_angular_vdia_mref(ref1, ref2, dst, dst_stride,
-                                        log2_pb_w, log2_pb_h,
-                                        mrl_idx);
+
+                ref1 += mrl_idx;
+                intra_angular_vdia(ref1, ref2, dst, dst_stride,
+                                   log2_pb_w, log2_pb_h);
                 break;
             default:
             {
@@ -205,9 +206,16 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
                     angle_val = angle_table[mode_idx];
                 }
 
-                intra_angular_v_cubic_mref(ref1, dst, dst_stride,
+                if (angle_val & 0x1F) {
+                    intra_angular_v_cubic_mref(ref1, dst, dst_stride,
+                                               log2_pb_w, log2_pb_h,
+                                               angle_val, mrl_idx);
+                } else {
+                    ref1 += (angle_val * mrl_idx) >> 5;
+                    intra_angular_v_nofrac(ref1, dst, dst_stride,
                                            log2_pb_w, log2_pb_h,
-                                           angle_val, mrl_idx);
+                                           angle_val);
+                }
 
                 break;
             }
@@ -220,9 +228,10 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
                               log2_pb_w, log2_pb_h);
                 break;
             case 16:
-                intra_angular_hdia_mref(ref1, ref2, dst, dst_stride,
-                                        log2_pb_w, log2_pb_h,
-                                        mrl_idx);
+
+                ref2 += mrl_idx;
+                intra_angular_hdia(ref1, ref2, dst, dst_stride,
+                                   log2_pb_w, log2_pb_h);
                 break;
             default:
             {
@@ -248,9 +257,16 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
                     angle_val = angle_table[mode_idx];
                 }
 
-                intra_angular_h_cubic_mref(ref2, dst, dst_stride,
+                if (angle_val & 0x1F) {
+                    intra_angular_h_cubic_mref(ref2, dst, dst_stride,
+                                               log2_pb_w, log2_pb_h,
+                                               angle_val, mrl_idx);
+                } else {
+                    ref2 += (angle_val * mrl_idx) >> 5;
+                    intra_angular_h_nofrac(ref2, dst, dst_stride,
                                            log2_pb_w, log2_pb_h,
-                                           angle_val, mrl_idx);
+                                           angle_val);
+                }
                 break;
             }
             }
