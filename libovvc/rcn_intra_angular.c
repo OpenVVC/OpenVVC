@@ -194,9 +194,9 @@ intra_angular_vdia_pdpc(const uint16_t* const ref_abv,
 }
 
 void
-vvc_intra_angular_h_c(const uint16_t* ref_lft, uint16_t* dst,
-                      ptrdiff_t dst_stride, int log2_pb_w,
-                      int log2_pb_h, int angle_val)
+intra_angular_h_c(const uint16_t* ref_lft, uint16_t* dst,
+                  ptrdiff_t dst_stride, int log2_pb_w,
+                  int log2_pb_h, int angle_val)
 {
     int16_t tmp_dst[128 * 128];
     int16_t* _tmp = tmp_dst;
@@ -237,9 +237,9 @@ vvc_intra_angular_h_c(const uint16_t* ref_lft, uint16_t* dst,
 }
 
 void
-vvc_intra_angular_v_c(const uint16_t* ref_abv, uint16_t* dst,
-                      ptrdiff_t dst_stride, int log2_pb_w,
-                      int log2_pb_h, int angle_val)
+intra_angular_v_c(const uint16_t* ref_abv, uint16_t* dst,
+                  ptrdiff_t dst_stride, int log2_pb_w,
+                  int log2_pb_h, int angle_val)
 {
     uint16_t* _dst = dst;
     int pb_w = 1 << log2_pb_w;
@@ -263,10 +263,10 @@ vvc_intra_angular_v_c(const uint16_t* ref_abv, uint16_t* dst,
 }
 
 void
-vvc_intra_hor_pdpc(const uint16_t* const ref_abv,
-                   const uint16_t* const ref_lft, uint16_t* const dst,
-                   ptrdiff_t dst_stride, uint16_t log2_pb_w,
-                   uint16_t log2_pb_h)
+intra_angular_hor_pdpc(const uint16_t* const ref_abv,
+                       const uint16_t* const ref_lft, uint16_t* const dst,
+                       ptrdiff_t dst_stride, uint16_t log2_pb_w,
+                       uint16_t log2_pb_h)
 {
     uint16_t* _dst = dst;
     int pb_width = 1 << log2_pb_w;
@@ -288,10 +288,10 @@ vvc_intra_hor_pdpc(const uint16_t* const ref_abv,
 }
 
 void
-vvc_intra_ver_pdpc(const uint16_t* const ref_abv,
-                   const uint16_t* const ref_lft, uint16_t* const dst,
-                   ptrdiff_t dst_stride, uint16_t log2_pb_w,
-                   uint16_t log2_pb_h)
+intra_angular_ver_pdpc(const uint16_t* const ref_abv,
+                       const uint16_t* const ref_lft, uint16_t* const dst,
+                       ptrdiff_t dst_stride, uint16_t log2_pb_w,
+                       uint16_t log2_pb_h)
 {
     uint16_t* _dst = dst;
     const uint16_t tl_val = ref_abv[0];
@@ -314,9 +314,9 @@ vvc_intra_ver_pdpc(const uint16_t* const ref_abv,
 }
 
 void
-vvc_intra_hor(const uint16_t* const ref_abv, const uint16_t* const ref_lft,
-              uint16_t* const dst, ptrdiff_t dst_stride, uint16_t log2_pb_w,
-              uint16_t log2_pb_h)
+intra_angular_hor(const uint16_t* const ref_abv, const uint16_t* const ref_lft,
+                  uint16_t* const dst, ptrdiff_t dst_stride, uint16_t log2_pb_w,
+                  uint16_t log2_pb_h)
 {
     uint16_t* _dst = dst;
     int pb_width = 1 << log2_pb_w;
@@ -331,9 +331,9 @@ vvc_intra_hor(const uint16_t* const ref_abv, const uint16_t* const ref_lft,
 }
 
 void
-vvc_intra_ver(const uint16_t* const ref_abv, const uint16_t* const ref_lft,
-              uint16_t* const dst, ptrdiff_t dst_stride, uint16_t log2_pb_w,
-              uint16_t log2_pb_h)
+intra_angular_ver(const uint16_t* const ref_abv, const uint16_t* const ref_lft,
+                  uint16_t* const dst, ptrdiff_t dst_stride, uint16_t log2_pb_w,
+                  uint16_t log2_pb_h)
 {
     uint16_t* _dst = dst;
     int pb_width = 1 << log2_pb_w;
@@ -346,10 +346,10 @@ vvc_intra_ver(const uint16_t* const ref_abv, const uint16_t* const ref_lft,
 }
 
 void
-vvc_intra_angular_hpos_wide(const uint16_t* const ref_abv,
-                            const uint16_t* const ref_lft, uint16_t* const dst,
-                            ptrdiff_t dst_stride, int log2_pb_w,
-                            int log2_pb_h, int mode_idx)
+intra_angular_h_c_pdpc(const uint16_t* const ref_abv,
+                       const uint16_t* const ref_lft, uint16_t* const dst,
+                       ptrdiff_t dst_stride, int log2_pb_w,
+                       int log2_pb_h, int mode_idx)
 {
     int16_t tmp_dst[128 * 128];
     const int tmp_stride = 128;
@@ -400,10 +400,10 @@ vvc_intra_angular_hpos_wide(const uint16_t* const ref_abv,
 }
 
 void
-vvc_intra_angular_vpos_wide(const uint16_t* const ref_abv,
-                            const uint16_t* const ref_lft, uint16_t* const dst,
-                            ptrdiff_t dst_stride, int log2_pb_w,
-                            int log2_pb_h, int mode_idx)
+intra_angular_v_c_pdpc(const uint16_t* const ref_abv,
+                       const uint16_t* const ref_lft, uint16_t* const dst,
+                       ptrdiff_t dst_stride, int log2_pb_w,
+                       int log2_pb_h, int mode_idx)
 {
     uint16_t* _dst = dst;
     int angle_val = angle_table[mode_idx];
@@ -802,7 +802,7 @@ intra_angular_v_gauss(const uint16_t* ref_abv, uint16_t* dst,
             _dst[x] = ((int32_t)(ref[0] * (16 - (delta_frac >> 1))) +
                        (int32_t)(ref[1] * (32 - (delta_frac >> 1))) +
                        (int32_t)(ref[2] * (16 + (delta_frac >> 1))) +
-                       (int32_t)(ref[3] * ((delta_frac >> 1))) + 32) >> 6;
+                       (int32_t)(ref[3] * (     (delta_frac >> 1))) + 32) >> 6;
             ref++;
         }
         delta_pos += angle_val;

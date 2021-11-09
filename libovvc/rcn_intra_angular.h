@@ -24,41 +24,41 @@ intra_angular_vdia(const uint16_t* const ref_above, uint16_t* const dst,
                    ptrdiff_t dst_stride, int log2_pb_width,
                    int log2_pb_height);
 void
-vvc_intra_angular_h_c(const uint16_t* ref_left, uint16_t* dst,
-                      ptrdiff_t dst_stride, int log2_pb_width,
-                      int log2_pb_height, int angle_val);
+intra_angular_h_c(const uint16_t* ref_left, uint16_t* dst,
+                  ptrdiff_t dst_stride, int log2_pb_width,
+                  int log2_pb_height, int angle_val);
 void
-vvc_intra_angular_v_c(const uint16_t* ref_above, uint16_t* dst,
-                      ptrdiff_t dst_stride, int log2_pb_width,
-                      int log2_pb_height, int angle_val);
+intra_angular_v_c(const uint16_t* ref_above, uint16_t* dst,
+                  ptrdiff_t dst_stride, int log2_pb_width,
+                  int log2_pb_height, int angle_val);
 void
-vvc_intra_hor_pdpc(const uint16_t* const ref_above,
-                   const uint16_t* const ref_left, uint16_t* const dst,
-                   ptrdiff_t dst_stride, uint16_t log2_pb_width,
-                   uint16_t log2_pb_height);
+intra_angular_hor_pdpc(const uint16_t* const ref_above,
+                       const uint16_t* const ref_left, uint16_t* const dst,
+                       ptrdiff_t dst_stride, uint16_t log2_pb_width,
+                       uint16_t log2_pb_height);
 void
-vvc_intra_ver_pdpc(const uint16_t* const ref_above,
-                   const uint16_t* const ref_left, uint16_t* const dst,
-                   ptrdiff_t dst_stride, uint16_t log2_pb_width,
-                   uint16_t log2_pb_height);
+intra_angular_ver_pdpc(const uint16_t* const ref_above,
+                       const uint16_t* const ref_left, uint16_t* const dst,
+                       ptrdiff_t dst_stride, uint16_t log2_pb_width,
+                       uint16_t log2_pb_height);
 void
-vvc_intra_hor(const uint16_t* const ref_above, const uint16_t* const ref_left,
-              uint16_t* const dst, ptrdiff_t dst_stride, uint16_t log2_pb_width,
-              uint16_t log2_pb_height);
+intra_angular_hor(const uint16_t* const ref_above, const uint16_t* const ref_left,
+                  uint16_t* const dst, ptrdiff_t dst_stride, uint16_t log2_pb_width,
+                  uint16_t log2_pb_height);
 void
-vvc_intra_ver(const uint16_t* const ref_above, const uint16_t* const ref_left,
-              uint16_t* const dst, ptrdiff_t dst_stride, uint16_t log2_pb_width,
-              uint16_t log2_pb_height);
+intra_angular_ver(const uint16_t* const ref_above, const uint16_t* const ref_left,
+                  uint16_t* const dst, ptrdiff_t dst_stride, uint16_t log2_pb_width,
+                  uint16_t log2_pb_height);
 void
-vvc_intra_angular_hpos_wide(const uint16_t* const ref_above,
-                            const uint16_t* const ref_left, uint16_t* const dst,
-                            ptrdiff_t dst_stride, int log2_pb_width,
-                            int log2_pb_height, int mode_idx);
+intra_angular_h_c_pdpc(const uint16_t* const ref_above,
+                       const uint16_t* const ref_left, uint16_t* const dst,
+                       ptrdiff_t dst_stride, int log2_pb_width,
+                       int log2_pb_height, int mode_idx);
 void
-vvc_intra_angular_vpos_wide(const uint16_t* const ref_above,
-                            const uint16_t* const ref_left, uint16_t* const dst,
-                            ptrdiff_t dst_stride, int log2_pb_width,
-                            int log2_pb_height, int mode_idx);
+intra_angular_v_c_pdpc(const uint16_t* const ref_above,
+                       const uint16_t* const ref_left, uint16_t* const dst,
+                       ptrdiff_t dst_stride, int log2_pb_width,
+                       int log2_pb_height, int mode_idx);
 
 void
 intra_angular_h_nofrac(const uint16_t* ref_left, uint16_t* dst,
