@@ -180,8 +180,7 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
             case 16:
 
                 ref1 += mrl_idx;
-                intra_angular_vdia(ref1, ref2, dst, dst_stride,
-                                   log2_pb_w, log2_pb_h);
+                intra_angular_vdia(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
                 break;
             default:
             {
@@ -230,8 +229,7 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
             case 16:
 
                 ref2 += mrl_idx;
-                intra_angular_hdia(ref1, ref2, dst, dst_stride,
-                                   log2_pb_w, log2_pb_h);
+                intra_angular_hdia(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
                 break;
             default:
             {
@@ -871,8 +869,7 @@ intra_angular_cubic_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                 intra_angular_vdia_pdpc(ref1, ref2, dst, dst_stride,
                                         log2_pb_w, log2_pb_h);
             } else {
-                intra_angular_vdia(ref1, ref2, dst, dst_stride,
-                                   log2_pb_w, log2_pb_h);
+                intra_angular_vdia(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
             }
             break;
         default:
@@ -956,8 +953,7 @@ intra_angular_cubic_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                 intra_angular_hdia_pdpc(ref1, ref2, dst, dst_stride,
                                         log2_pb_w, log2_pb_h);
             } else {
-                intra_angular_hdia(ref1, ref2, dst, dst_stride,
-                                   log2_pb_w, log2_pb_h);
+                intra_angular_hdia(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
             }
             break;
         default:

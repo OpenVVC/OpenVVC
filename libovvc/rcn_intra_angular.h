@@ -16,13 +16,11 @@ intra_angular_vdia_pdpc(const uint16_t* const ref_above,
                         int log2_pb_height);
 
 void
-intra_angular_hdia(const uint16_t* const ref_above,
-                   const uint16_t* const ref_left, uint16_t* const dst,
+intra_angular_hdia(const uint16_t* const ref_left, uint16_t* const dst,
                    ptrdiff_t dst_stride, int log2_pb_width,
                    int log2_pb_height);
 void
-intra_angular_vdia(const uint16_t* const ref_above,
-                   const uint16_t* const ref_left, uint16_t* const dst,
+intra_angular_vdia(const uint16_t* const ref_above, uint16_t* const dst,
                    ptrdiff_t dst_stride, int log2_pb_width,
                    int log2_pb_height);
 void

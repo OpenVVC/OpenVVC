@@ -68,8 +68,7 @@ static const uint8_t vvc_pdpc_w[3][128] =
 };
 
 void
-intra_angular_hdia(const uint16_t* const ref_abv,
-                   const uint16_t* const ref_lft, uint16_t* const dst,
+intra_angular_hdia(const uint16_t* const ref_lft, uint16_t* const dst,
                    ptrdiff_t dst_stride, int log2_pb_w,
                    int log2_pb_h)
 {
@@ -148,8 +147,7 @@ intra_angular_hdia_pdpc(const uint16_t* const ref_abv,
 }
 
 void
-intra_angular_vdia(const uint16_t* const ref_abv,
-                   const uint16_t* const ref_lft, uint16_t* const dst,
+intra_angular_vdia(const uint16_t* const ref_abv, uint16_t* const dst,
                    ptrdiff_t dst_stride, int log2_pb_w,
                    int log2_pb_h)
 {
