@@ -35,26 +35,28 @@ intra_dc(const uint16_t* const ref_abv, const uint16_t* const ref_lft,
 {
     uint16_t* _dst = dst;
     int dc_val = 0;
-    int idx;
+    int i, j;
 
     const int shift = OVMAX(log2_pb_w, log2_pb_h) + (log2_pb_w == log2_pb_h);
     const int offset = ((1 << shift) >> 1);
+    const int pb_w = 1 << log2_pb_w;
+    const int pb_h = 1 << log2_pb_h;
 
     if (log2_pb_w >= log2_pb_h) {
-        for (idx = 0; idx < (1 << log2_pb_w); idx++) {
-            dc_val += ref_abv[1 + idx];
+        for (i = 0; i < pb_w; i++) {
+            dc_val += ref_abv[1 + i];
         }
     }
     if (log2_pb_w <= log2_pb_h) {
-        for (idx = 0; idx < (1 << log2_pb_h); idx++) {
-            dc_val += ref_lft[1 + idx];
+        for (i = 0; i < pb_h; i++) {
+            dc_val += ref_lft[1 + i];
         }
     }
 
     dc_val = (dc_val + offset) >> shift;
 
-    for (int i = 0; i < (1 << log2_pb_h); ++i) {
-        for (int j = 0; j < (1 << log2_pb_w); j++) {
+    for (i = 0; i < pb_h; ++i) {
+        for (j = 0; j < pb_w; j++) {
             _dst[j] = dc_val;
         }
         _dst += dst_stride;
@@ -112,33 +114,35 @@ intra_dc_pdpc(const uint16_t* const ref_abv,
               ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h)
 {
     uint16_t* _dst = dst;
-    uint32_t dc_val = 0;
-    int idx;
+    int i;
 
     const int shift = OVMAX(log2_pb_w, log2_pb_h) + (log2_pb_w == log2_pb_h);
     const int offset = ((1 << shift) >> 1);
 
     const int pdpc_scale = (log2_pb_w + log2_pb_h - 2) >> 2;
     const uint8_t* pdpc_w = vvc_pdpc_w[pdpc_scale];
+    const uint32_t pb_w = 1 << log2_pb_w;
+    const uint32_t pb_h = 1 << log2_pb_h;
+    uint32_t dc_val = 0;
 
     if (log2_pb_w >= log2_pb_h) {
-        for (idx = 0; idx < (1 << log2_pb_w); idx++) {
-            dc_val += ref_abv[1 + idx];
+        for (i = 0; i < pb_w; i++) {
+            dc_val += ref_abv[1 + i];
         }
     }
     if (log2_pb_w <= log2_pb_h) {
-        for (idx = 0; idx < (1 << log2_pb_h); idx++) {
-            dc_val += ref_lft[1 + idx];
+        for (i = 0; i < pb_h; i++) {
+            dc_val += ref_lft[1 + i];
         }
     }
 
     dc_val = (dc_val + offset) >> shift;
 
-    for (int y = 0; y < (1 << log2_pb_h); y++) {
+    for (int y = 0; y < pb_h; y++) {
         int x;
         int l_wgh = pdpc_w[y];
         const int16_t l_val = ref_lft[y + 1];
-        for (x = 0; x < (1 << log2_pb_w); x++) {
+        for (x = 0; x < pb_w; x++) {
             const int16_t t_val = ref_abv[x + 1];
             int t_wgh = pdpc_w[x];
             int val = ((t_wgh * l_val) + (l_wgh * t_val) +
@@ -189,12 +193,9 @@ intra_planar_pdpc(const uint16_t* const ref_abv,
             int32_t t_val = ref_abv[x + 1];
             l_col_y += r_col_y;
             t_row[x] += b_row[x];
-            val = ((l_col_y << h_scale) + (t_row[x] << w_scale) +
-                   offset) >>
-                s_shift;
-            val = ((x_wgh * l_val) + (y_wgh * t_val) +
-                   (64 - (x_wgh + y_wgh)) * val + 32) >>
-                6;
+            val = ((l_col_y << h_scale) + (t_row[x] << w_scale) + offset) >> s_shift;
+            val = ((x_wgh * l_val) + (y_wgh * t_val)
+                   + (64 - (x_wgh + y_wgh)) * val + 32) >> 6;
             _dst[x] = ov_bdclip(val);
         }
         _dst += dst_stride;
@@ -208,7 +209,7 @@ rcn_init_dc_planar_functions(struct RCNFunctions *const rcn_funcs)
     rcn_funcs->dc.func = &intra_dc;
     rcn_funcs->dc.pdpc = &intra_dc_pdpc;
 
-    rcn_funcs->planar.func = &intra_planar;
+    rcn_funcs->planar.func    = &intra_planar;
     rcn_funcs->planar.pdpc[0] = &intra_planar_pdpc;
     rcn_funcs->planar.pdpc[1] = &intra_planar_pdpc;
 }
