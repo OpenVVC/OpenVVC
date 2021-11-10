@@ -100,8 +100,7 @@ intra_planar(const uint16_t* const ref_abv,
             vertPred = top_row[x];
 
             _dst[x] = ((hor_pred << log2_pb_h) +
-                       (vertPred << log2_pb_w) + offset) >>
-                shift;
+                       (vertPred << log2_pb_w) + offset) >> shift;
         }
         _dst += dst_stride;
     }
@@ -143,8 +142,7 @@ intra_dc_pdpc(const uint16_t* const ref_abv,
             const int16_t t_val = ref_abv[x + 1];
             int t_wgh = pdpc_w[x];
             int val = ((t_wgh * l_val) + (l_wgh * t_val) +
-                       (64 - (t_wgh + l_wgh)) * dc_val + 32) >>
-                6;
+                       (64 - (t_wgh + l_wgh)) * dc_val + 32) >> 6;
             _dst[x] = ov_bdclip(val);
         }
         _dst += dst_stride;
@@ -168,27 +166,27 @@ intra_planar_pdpc(const uint16_t* const ref_abv,
     const uint8_t pdpc_scale = (log2_pb_w + log2_pb_h - 2) >> 2;
 
     int32_t t_row[128], b_row[128];
-    const int8_t* pdpc_w = (int8_t *)vvc_pdpc_w[pdpc_scale];
+    const int8_t* pdpc_w = vvc_pdpc_w[pdpc_scale];
     const int16_t bl_val = ref_lft[pb_h + 1];
     const int16_t tr_val = ref_abv[pb_w + 1];
     int y;
 
     for (y = 0; y < pb_w; ++y) {
-        int32_t t_val = (int32_t)ref_abv[y + 1];
+        int32_t t_val = ref_abv[y + 1];
         b_row[y] = bl_val - t_val;
         t_row[y] = t_val << h_scale;
     }
 
     for (y = 0; y < pb_h; ++y) {
         int x;
-        int32_t l_val = (int32_t)ref_lft[y + 1];
+        int32_t l_val = ref_lft[y + 1];
         int y_wgh = pdpc_w[y];
         int32_t r_col_y = tr_val - l_val;
         int32_t l_col_y = l_val << w_scale;
         for (x = 0; x < pb_w; ++x) {
             int32_t val;
             int x_wgh = pdpc_w[x];
-            int32_t t_val = (int32_t)ref_abv[x + 1];
+            int32_t t_val = ref_abv[x + 1];
             l_col_y += r_col_y;
             t_row[x] += b_row[x];
             val = ((l_col_y << h_scale) + (t_row[x] << w_scale) +
