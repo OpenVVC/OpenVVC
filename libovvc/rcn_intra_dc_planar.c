@@ -28,10 +28,10 @@ static const uint8_t vvc_pdpc_w[3][128] = {
           0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 
-void
-vvc_intra_dc(const uint16_t* const ref_abv, const uint16_t* const ref_lft,
-             uint16_t* const dst, ptrdiff_t dst_stride, int log2_pb_w,
-             int log2_pb_h)
+static void
+intra_dc(const uint16_t* const ref_abv, const uint16_t* const ref_lft,
+         uint16_t* const dst, ptrdiff_t dst_stride,
+         int log2_pb_w, int log2_pb_h)
 {
     int idx;
     uint16_t* _dst = dst;
@@ -64,10 +64,10 @@ vvc_intra_dc(const uint16_t* const ref_abv, const uint16_t* const ref_lft,
     }
 }
 
-void
-vvc_intra_planar(const uint16_t* const ref_abv,
-                 const uint16_t* const ref_lft, uint16_t* const dst,
-                 ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h)
+static void
+intra_planar(const uint16_t* const ref_abv,
+             const uint16_t* const ref_lft, uint16_t* const dst,
+             ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h)
 {
 
     uint16_t* _dst = dst;
@@ -110,10 +110,10 @@ vvc_intra_planar(const uint16_t* const ref_abv,
     }
 }
 
-void
-vvc_intra_dc_pdpc(const uint16_t* const ref_abv,
-                  const uint16_t* const ref_lft, uint16_t* const dst,
-                  ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h)
+static void
+intra_dc_pdpc(const uint16_t* const ref_abv,
+              const uint16_t* const ref_lft, uint16_t* const dst,
+              ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h)
 {
     int idx;
     uint16_t* _dst = dst;
@@ -156,10 +156,10 @@ vvc_intra_dc_pdpc(const uint16_t* const ref_abv,
     }
 }
 
-void
-vvc_intra_planar_pdpc(const uint16_t* const ref_abv,
-                      const uint16_t* const ref_lft, uint16_t* const dst,
-                      ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h)
+static void
+intra_planar_pdpc(const uint16_t* const ref_abv,
+                  const uint16_t* const ref_lft, uint16_t* const dst,
+                  ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h)
 {
 
     uint16_t* _dst = dst;
@@ -212,10 +212,10 @@ vvc_intra_planar_pdpc(const uint16_t* const ref_abv,
 void
 rcn_init_dc_planar_functions(struct RCNFunctions *const rcn_funcs)
 {
-    rcn_funcs->dc.func = &vvc_intra_dc;
-    rcn_funcs->dc.pdpc = &vvc_intra_dc_pdpc;
+    rcn_funcs->dc.func = &intra_dc;
+    rcn_funcs->dc.pdpc = &intra_dc_pdpc;
 
-    rcn_funcs->planar.func = &vvc_intra_planar;
-    rcn_funcs->planar.pdpc[0] = &vvc_intra_planar_pdpc;
-    rcn_funcs->planar.pdpc[1] = &vvc_intra_planar_pdpc;
+    rcn_funcs->planar.func = &intra_planar;
+    rcn_funcs->planar.pdpc[0] = &intra_planar_pdpc;
+    rcn_funcs->planar.pdpc[1] = &intra_planar_pdpc;
 }
