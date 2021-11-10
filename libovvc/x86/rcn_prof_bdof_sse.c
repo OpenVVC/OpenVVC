@@ -5,6 +5,7 @@
 #include "ovutils.h"
 
 #define BITDEPTH 10
+
 #define GRAD_SHIFT 6
 #define PROF_DELTA_LIMIT (1 << (BITDEPTH + 3))
 #define SB_H 4
