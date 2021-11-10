@@ -14,7 +14,6 @@
 #include "rcn.h"
 #include "rcn_fill_ref.h"
 #include "rcn_intra_angular.h"
-#include "rcn_intra_dc_planar.h"
 #include "data_rcn_angular.h"
 #include "dbf_utils.h"
 
