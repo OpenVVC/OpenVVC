@@ -5,6 +5,7 @@
 #include "ctudec.h"
 #include "nvcl_structures.h"
 
+#define BITDEPTH 10
 /* FIXME Separate CABAC reading from offset/parmaeters derivation */
 
 static uint8_t

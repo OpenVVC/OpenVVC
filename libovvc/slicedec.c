@@ -18,6 +18,7 @@
 #include "rcn_lmcs.h"
 
 
+#define BITDEPTH 10
 /* TODO define in a header */
 enum SliceType {
      SLICE_B = 0,

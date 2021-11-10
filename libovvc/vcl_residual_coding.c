@@ -24,6 +24,8 @@
 #define VVC_TR_CTX_OFFSET ((VVC_TR_CTX_STRIDE)*2+2)
 #define VVC_TR_CTX_SIZE   (VVC_TR_CTX_STRIDE*VVC_TR_CTX_STRIDE)
 
+#define BITDEPTH 10
+
 enum TBSize
 {
     TB_1x1     = 0,

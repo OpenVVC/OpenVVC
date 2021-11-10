@@ -37,6 +37,7 @@ struct ISPTUInfo {
    struct TBInfo tb_info[4];
 };
 
+#define BITDEPTH 10
 /* FIXME refactor dequant*/
 static void
 derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,

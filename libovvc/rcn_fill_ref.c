@@ -4,6 +4,7 @@
 #include "ovutils.h"
 #include "rcn_fill_ref.h"
 
+#define BITDEPTH 10
 #define AVG_VAL (1 << (BITDEPTH - 1))
 
 // note src2 is only usefull for top_left value filtering

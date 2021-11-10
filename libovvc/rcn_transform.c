@@ -6,6 +6,8 @@
 #include "ovutils.h"
 #include "rcn_structures.h"
 
+#define BITDEPTH 10
+
 static void
 matrix_multiplication(const int16_t* src, const int16_t* const tr_matrix,
                       int16_t* dst, ptrdiff_t src_stride, int tr_size,

@@ -4,6 +4,7 @@
 #include "ovutils.h"
 #include "ctudec.h"
 
+#define BITDEPTH 10
 #define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
 
 #define SWAP(type,a,b) do{type tmp= b; b = a; a = tmp;}while(0)

@@ -6,7 +6,6 @@
 
 #include "ovlog.h"
 
-#define BITDEPTH 10
 
 #define OVMAX(a, b) (((a) > (b)) ? (a) : (b))
 #define OVMIN(a, b) (((a) < (b)) ? (a) : (b))

@@ -7,6 +7,7 @@
 
 #define SMP_RNG (1 << BITDEPTH)
 
+#define BITDEPTH 10
 #define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
 
 #define LOG2_NB_WND 4

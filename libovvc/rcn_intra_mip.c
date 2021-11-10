@@ -10,6 +10,7 @@
 #define MIP_SHIFT 6
 #define MIP_OFFSET (1 << (MIP_SHIFT - 1))
 
+#define BITDEPTH 10
 #define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
 
 static const uint8_t *

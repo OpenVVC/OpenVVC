@@ -36,6 +36,8 @@
 
 #include "dbf_utils.h"
 
+#define BITDEPTH 10
+
 void
 rcn_residual(OVCTUDec *const ctudec,
              int16_t *const dst, int16_t *src,

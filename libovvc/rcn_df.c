@@ -8,6 +8,7 @@
 #define DEFAULT_INTRA_TC_OFFSET 2 ///< Default intra TC offset
 #define MAX_QP 64
 
+#define BITDEPTH 10
 #define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
 
 static const uint16_t tc_lut[MAX_QP + 1 + DEFAULT_INTRA_TC_OFFSET] =

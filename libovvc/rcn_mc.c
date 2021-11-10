@@ -7,6 +7,7 @@
 #include "rcn_mc.h"
 #include "rcn_structures.h"
 
+#define BITDEPTH 10
 #define ov_bdclip(a) ov_clip_uintp2(a, BITDEPTH)
 #define MAX_PB_SIZE 128
 

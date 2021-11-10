@@ -3,6 +3,8 @@
 #include "ovmem.h"
 #include "overror.h"
 
+#define BITDEPTH 10
+
 static void
 attach_rcn_ctu_buff(OVCTUDec *const ctudec)
 {

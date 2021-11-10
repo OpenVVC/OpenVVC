@@ -26,6 +26,7 @@ enum CUMode {
 #define BCW_DEFAULT             ((uint8_t)(BCW_NUM >> 1)) ///< Default weighting index representing for w=0.5
 #define BCW_SIZE_CONSTRAINT     256 ///< disabling Bcw if cu size is smaller than 256
 
+#define BITDEPTH 10
 /* FIXME refactor dequant*/
 static void
 derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,

@@ -42,6 +42,7 @@
 #define BDOF_SHIFT   (14 + 1 - BITDEPTH)
 #define BDOF_OFFSET  ((1 << (BDOF_SHIFT - 1)))
 
+#define BITDEPTH 10
 #define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
 
 static const int8_t dmvr_mv_x[25 + 25] = {
