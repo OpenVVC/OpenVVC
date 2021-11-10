@@ -18,10 +18,10 @@
 #include "data_rcn_angular.h"
 #include "dbf_utils.h"
 
-static void intra_angular_cubic_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
+static void intra_angular_cubic_v(const struct OVRCNCtx *rcn_ctx, uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                                   uint8_t log2_pb_w, uint8_t log2_pb_h, int8_t mode_idx);
 
-static void intra_angular_cubic_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
+static void intra_angular_cubic_h(const struct OVRCNCtx *rcn_ctx, uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                                   uint8_t log2_pb_w, uint8_t log2_pb_h, int8_t mode_idx);
 
 /* Modify angular mode for non square according to w / h
@@ -115,10 +115,10 @@ vvc_intra_pred_isp(const OVCTUDec *const ctudec,
 
         if (is_vertical) {
             int mode_idx = pred_mode - (int)OVINTRA_VER;
-            intra_angular_cubic_v(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
+            intra_angular_cubic_v(rcn_ctx, ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
         } else {
             int mode_idx = -(pred_mode - (int)OVINTRA_HOR);
-            intra_angular_cubic_h(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
+            intra_angular_cubic_h(rcn_ctx, ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
         }
         break;
     }
@@ -141,6 +141,9 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
     const struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
     const struct DCFunctions *dc = &rcn_ctx->rcn_funcs.dc;
     const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
+    const struct IntraMRLFunctions *mrl_func = rcn_ctx->rcn_funcs.intra_mrl;
+    const struct IntraAngularFunctions *nofrac_v = rcn_ctx->rcn_funcs.intra_angular_nofrac_v;
+    const struct IntraAngularFunctions *nofrac_h = rcn_ctx->rcn_funcs.intra_angular_nofrac_h;
 
     fill_ref_left_0_mref(src, dst_stride, ref2,
                          ctudec->rcn_ctx.progress_field.vfield[x0 >> 2],
@@ -166,22 +169,19 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
         break;
     default:
     {
-        extern const struct IntraMRLFunctions mrl_func;
         int pred_mode = derive_wide_angular_mode(log2_pb_w, log2_pb_h, intra_mode);
 
         int is_vertical = pred_mode >= OVINTRA_DIA ? 1 : 0;
 
         if(is_vertical){
-            extern const struct IntraAngularFunctions angular_nofrac_v;
             int mode_idx = pred_mode - OVINTRA_VER ;
             switch (mode_idx) {
             case 0:
-                angular_nofrac_v.pure(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
+                nofrac_v->pure(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
                 break;
             case 16:
-
                 ref1 += mrl_idx;
-                angular_nofrac_v.diagonal(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
+                nofrac_v->diagonal(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
                 break;
             default:
             {
@@ -207,30 +207,26 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
                 }
 
                 if (angle_val & 0x1F) {
-                    mrl_func.angular_v(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
-                                       angle_val, mrl_idx);
+                    mrl_func->angular_v(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                        angle_val, mrl_idx);
                 } else {
-                    extern const struct IntraAngularFunctions angular_nofrac_v;
                     ref1 += (angle_val * mrl_idx) >> 5;
-                    angular_nofrac_v.angular(ref1, dst, dst_stride,
-                                             log2_pb_w, log2_pb_h,
-                                             angle_val);
+                    nofrac_v->angular(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                      angle_val);
                 }
 
                 break;
             }
             }
         } else {
-            extern const struct IntraAngularFunctions angular_nofrac_h;
             int mode_idx = -(pred_mode - OVINTRA_HOR);
             switch (mode_idx) {
             case 0:
-                angular_nofrac_h.pure(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
+                nofrac_h->pure(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
                 break;
             case 16:
-
                 ref2 += mrl_idx;
-                angular_nofrac_h.diagonal(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
+                nofrac_h->diagonal(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
                 break;
             default:
             {
@@ -257,13 +253,12 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
                 }
 
                 if (angle_val & 0x1F) {
-                    mrl_func.angular_h(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
-                                       angle_val, mrl_idx);
+                    mrl_func->angular_h(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                        angle_val, mrl_idx);
                 } else {
                     ref2 += (angle_val * mrl_idx) >> 5;
-                    angular_nofrac_h.angular(ref2, dst, dst_stride,
-                                             log2_pb_w, log2_pb_h,
-                                             angle_val);
+                    nofrac_h->angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                      angle_val);
                 }
                 break;
             }
@@ -629,16 +624,15 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
 }
 
 static void
-intra_angular_gauss_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
+intra_angular_gauss_v(const struct OVRCNCtx *rcn_ctx, uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                       uint8_t log2_pb_w, uint8_t log2_pb_h, int8_t mode_idx)
 {
-    extern const struct IntraAngularFunctions angular_gauss_v;
+    const struct IntraAngularFunctions *gauss_v = rcn_ctx->rcn_funcs.intra_angular_gauss_v;
     uint16_t filtered_ref_abv[(128 << 1) + 128];
     uint16_t filtered_ref_lft[(128 << 1) + 128];
     switch (mode_idx) {
         case 0:
-            angular_gauss_v.pure_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w,
-                                      log2_pb_h);
+            gauss_v->pure_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
             break;
         case (16):
             {
@@ -653,8 +647,7 @@ intra_angular_gauss_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                 ref1 = filtered_ref_abv;
                 ref2 = filtered_ref_lft;
 
-                angular_gauss_v.diagonal_pdpc(ref1, ref2, dst, dst_stride,
-                                              log2_pb_w, log2_pb_h);
+                gauss_v->diagonal_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
             }
             break;
         default:
@@ -665,7 +658,7 @@ intra_angular_gauss_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                 int8_t pdpc_scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inverse_angle_table[OVABS(mode_idx)] - 2) - 8));
 
                 if (!req_frac) {
-                    extern const struct IntraAngularFunctions angular_nofrac_v;
+                    const struct IntraAngularFunctions *nofrac_v = rcn_ctx->rcn_funcs.intra_angular_nofrac_v;
                     if (mode_idx < 0) {
                         int abv_ref_length = 1 << (log2_pb_w + 1);
                         int lft_ref_length = 1 << (log2_pb_h + 1);
@@ -685,9 +678,8 @@ intra_angular_gauss_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                             ref1[k] = ref2[OVMIN(inv_angle_sum >> 9,pu_h)];
                         }
 
-                        angular_nofrac_v.angular(ref1, dst, dst_stride,
-                                                 log2_pb_w, log2_pb_h,
-                                                 -abs_angle_val);
+                        nofrac_v->angular(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                          -abs_angle_val);
 
                     } else if (pdpc_scale < 0) {
                         int abv_ref_length = 1 << (log2_pb_w + 1);
@@ -695,9 +687,8 @@ intra_angular_gauss_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                                            abv_ref_length);
                         ref1 = filtered_ref_abv;
 
-                        angular_nofrac_v.angular(ref1, dst, dst_stride,
-                                                 log2_pb_w, log2_pb_h,
-                                                 abs_angle_val);
+                        nofrac_v->angular(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                          abs_angle_val);
 
                     } else {
                         int abv_ref_length = 1 << (log2_pb_w + 1);
@@ -711,9 +702,8 @@ intra_angular_gauss_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                         ref1 = filtered_ref_abv;
                         ref2 = filtered_ref_lft;
 
-                        angular_nofrac_v.angular_pdpc(ref1, ref2, dst, dst_stride,
-                                                      log2_pb_w, log2_pb_h,
-                                                      mode_idx);
+                        nofrac_v->angular_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                               mode_idx);
                     }
                 } else {
                     if (mode_idx < 0) {
@@ -724,17 +714,19 @@ intra_angular_gauss_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                             ref1[k] = ref2[OVMIN(inv_angle_sum >> 9,pu_h)];
                         }
 
-                        angular_gauss_v.angular(ref1, dst, dst_stride,
-                                              log2_pb_w, log2_pb_h,
-                                              -abs_angle_val);
+                        gauss_v->angular(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                         -abs_angle_val);
+
                     } else if (pdpc_scale < 0) {
-                        angular_gauss_v.angular(ref1, dst, dst_stride,
-                                                log2_pb_w, log2_pb_h,
-                                                abs_angle_val);
+
+                        gauss_v->angular(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                         abs_angle_val);
+
                     } else {
-                        angular_gauss_v.angular_pdpc(ref1, ref2, dst, dst_stride,
-                                                     log2_pb_w, log2_pb_h,
-                                                     mode_idx);
+
+                        gauss_v->angular_pdpc(ref1, ref2, dst, dst_stride,
+                                              log2_pb_w, log2_pb_h,
+                                              mode_idx);
                     }
                 }
             }
@@ -743,16 +735,15 @@ intra_angular_gauss_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
 }
 
 static void
-intra_angular_gauss_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
+intra_angular_gauss_h(const struct OVRCNCtx *rcn_ctx, uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                       uint8_t log2_pb_w, uint8_t log2_pb_h, int8_t mode_idx)
 {
-    extern const struct IntraAngularFunctions angular_gauss_h;
+    const struct IntraAngularFunctions *gauss_h = rcn_ctx->rcn_funcs.intra_angular_gauss_h;
     uint16_t filtered_ref_abv[(128 << 1) + 128];
     uint16_t filtered_ref_lft[(128 << 1) + 128];
     switch (mode_idx) {
         case 0:
-            angular_gauss_h.pure_pdpc(ref1, ref2, dst, dst_stride,
-                                      log2_pb_w, log2_pb_h);
+            gauss_h->pure_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
             break;
 
         case (16):
@@ -766,8 +757,7 @@ intra_angular_gauss_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                 ref1 = filtered_ref_abv;
                 ref2 = filtered_ref_lft;
 
-                angular_gauss_h.diagonal_pdpc(ref1, ref2, dst, dst_stride,
-                                              log2_pb_w, log2_pb_h);
+                gauss_h->diagonal_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
             }
             break;
         default:
@@ -778,7 +768,7 @@ intra_angular_gauss_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                 int8_t pdpc_scale = OVMIN(2, log2_pb_w - (floor_log2(3 * inverse_angle_table[OVABS(mode_idx)] - 2) - 8));
 
                 if (!req_frac) {
-                    extern const struct IntraAngularFunctions angular_nofrac_h;
+                    const struct IntraAngularFunctions *nofrac_h = rcn_ctx->rcn_funcs.intra_angular_nofrac_h;
                     if (mode_idx < 0){
                         int pu_w = 1 << log2_pb_w;
                         int pu_h = 1 << log2_pb_h;
@@ -799,18 +789,16 @@ intra_angular_gauss_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                             ref2[k] = ref1[OVMIN(inv_angle_sum >> 9,pu_w)];
                         }
 
-                        angular_nofrac_h.angular(ref2, dst, dst_stride,
-                                                 log2_pb_w, log2_pb_h,
-                                                 -abs_angle_val);
+                        nofrac_h->angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                          -abs_angle_val);
 
                     } else if (pdpc_scale < 0) {
                         int lft_ref_length = 1 << (log2_pb_h + 1);
                         filter_ref_samples(ref2, filtered_ref_lft,
                                            ref1, lft_ref_length);
                         ref2 = filtered_ref_lft;
-                        angular_nofrac_h.angular(ref2, dst, dst_stride,
-                                                 log2_pb_w, log2_pb_h,
-                                                 abs_angle_val);
+                        nofrac_h->angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                          abs_angle_val);
                     } else {
                         int abv_ref_length = 1 << (log2_pb_w + 1);
                         int lft_ref_length = 1 << (log2_pb_h + 1);
@@ -823,9 +811,9 @@ intra_angular_gauss_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                         ref1 = filtered_ref_abv;
                         ref2 = filtered_ref_lft;
 
-                        angular_nofrac_h.angular_pdpc(ref1, ref2, dst, dst_stride,
-                                                      log2_pb_w, log2_pb_h,
-                                                      mode_idx);
+                        nofrac_h->angular_pdpc(ref1, ref2, dst, dst_stride,
+                                               log2_pb_w, log2_pb_h,
+                                               mode_idx);
                     }
                 } else {
                     if (mode_idx < 0){
@@ -836,18 +824,18 @@ intra_angular_gauss_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                             inv_angle_sum += inv_angle;
                             ref2[k] = ref1[OVMIN(inv_angle_sum >> 9,pu_w)];
                         }
-                        angular_gauss_h.angular(ref2, dst, dst_stride,
-                                                log2_pb_w, log2_pb_h,
-                                                -abs_angle_val);
+                        gauss_h->angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                         -abs_angle_val);
 
                     } else if (pdpc_scale < 0) {
-                        angular_gauss_h.angular(ref2, dst, dst_stride,
-                                                log2_pb_w, log2_pb_h,
-                                                abs_angle_val);
+
+                        gauss_h->angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                         abs_angle_val);
+
                     } else {
-                        angular_gauss_h.angular_pdpc(ref1, ref2, dst, dst_stride,
-                                                     log2_pb_w, log2_pb_h,
-                                                     mode_idx);
+                        gauss_h->angular_pdpc(ref1, ref2, dst, dst_stride,
+                                              log2_pb_w, log2_pb_h,
+                                              mode_idx);
                     }
                 }
             }
@@ -856,31 +844,30 @@ intra_angular_gauss_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
 }
 
 static void
-intra_angular_cubic_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
+intra_angular_cubic_v(const struct OVRCNCtx *rcn_ctx, uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                       uint8_t log2_pb_w, uint8_t log2_pb_h, int8_t mode_idx)
 {
-    extern const struct IntraAngularFunctions angular_cubic_v;
+    const struct IntraAngularFunctions *cubic_v = rcn_ctx->rcn_funcs.intra_angular_cubic_v;
 
     switch (mode_idx) {
         case 0:
             if (log2_pb_h > 1) {
-                angular_cubic_v.pure_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w,
+                cubic_v->pure_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w,
                                           log2_pb_h);
             } else {
-                angular_cubic_v.pure(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
+                cubic_v->pure(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
             }
             break;
         case (16):
             if (log2_pb_h > 1) {
-                angular_cubic_v.diagonal_pdpc(ref1, ref2, dst, dst_stride,
-                                              log2_pb_w, log2_pb_h);
+                cubic_v->diagonal_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
             } else {
-                angular_cubic_v.diagonal(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
+                cubic_v->diagonal(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
             }
             break;
         default:
             {
-                extern const struct IntraAngularFunctions angular_nofrac_v;
+                const struct IntraAngularFunctions *nofrac_v = rcn_ctx->rcn_funcs.intra_angular_nofrac_v;
                 int abs_angle_val = angle_table[OVABS(mode_idx)];
                 int inv_angle = inverse_angle_table[OVABS(mode_idx)];
                 uint8_t req_frac = !!(abs_angle_val & 0x1F);
@@ -895,20 +882,19 @@ intra_angular_cubic_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                             ref1[k] = ref2[OVMIN(inv_angle_sum >> 9,pu_h)];
                         }
 
-                        angular_nofrac_v.angular(ref1, dst, dst_stride,
-                                                 log2_pb_w, log2_pb_h,
-                                                 -abs_angle_val);
+                        nofrac_v->angular(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                          -abs_angle_val);
+
                     } else if (pdpc_scale < 0 || log2_pb_h < 2){
 
-                        angular_nofrac_v.angular(ref1, dst, dst_stride,
-                                                 log2_pb_w, log2_pb_h,
-                                                 abs_angle_val);
+                        nofrac_v->angular(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                          abs_angle_val);
 
                     } else {
 
-                        angular_nofrac_v.angular_pdpc(ref1, ref2, dst, dst_stride,
-                                                      log2_pb_w, log2_pb_h,
-                                                      mode_idx);
+                        nofrac_v->angular_pdpc(ref1, ref2, dst, dst_stride,
+                                               log2_pb_w, log2_pb_h,
+                                               mode_idx);
                     }
                 } else {
                     if (mode_idx < 0) {
@@ -920,19 +906,19 @@ intra_angular_cubic_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                             ref1[k] = ref2[OVMIN(inv_angle_sum >> 9,pu_h)];
                         }
 
-                        angular_cubic_v.angular(ref1, dst, dst_stride,
-                                                log2_pb_w, log2_pb_h,
-                                                -abs_angle_val);
+                        cubic_v->angular(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                         -abs_angle_val);
+
                     } else if (pdpc_scale < 0 || log2_pb_h < 2){
 
-                        angular_cubic_v.angular(ref1, dst, dst_stride,
-                                                log2_pb_w, log2_pb_h,
-                                                abs_angle_val);
+                        cubic_v->angular(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                         abs_angle_val);
+
                     } else {
 
-                        angular_cubic_v.angular_pdpc(ref1, ref2, dst, dst_stride,
-                                                     log2_pb_w, log2_pb_h,
-                                                     mode_idx);
+                        cubic_v->angular_pdpc(ref1, ref2, dst, dst_stride,
+                                              log2_pb_w, log2_pb_h,
+                                              mode_idx);
                     }
                 }
             }
@@ -941,31 +927,29 @@ intra_angular_cubic_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
 }
 
 static void
-intra_angular_cubic_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
+intra_angular_cubic_h(const struct OVRCNCtx *rcn_ctx, uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                       uint8_t log2_pb_w, uint8_t log2_pb_h, int8_t mode_idx)
 {
-    extern const struct IntraAngularFunctions angular_cubic_h;
+    const struct IntraAngularFunctions *cubic_h = rcn_ctx->rcn_funcs.intra_angular_cubic_h;
     switch (mode_idx) {
         case 0:
             if (log2_pb_h > 1){
-                angular_cubic_h.pure_pdpc(ref1, ref2, dst, dst_stride,
-                                          log2_pb_w, log2_pb_h);
+                cubic_h->pure_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
             } else {
-                angular_cubic_h.pure(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
+                cubic_h->pure(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
             }
             break;
 
         case (16):
             if (log2_pb_h > 1){
-                angular_cubic_h.diagonal_pdpc(ref1, ref2, dst, dst_stride,
-                                        log2_pb_w, log2_pb_h);
+                cubic_h->diagonal_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
             } else {
-                angular_cubic_h.diagonal(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
+                cubic_h->diagonal(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
             }
             break;
         default:
             {
-                extern const struct IntraAngularFunctions angular_nofrac_h;
+                const struct IntraAngularFunctions *nofrac_h = rcn_ctx->rcn_funcs.intra_angular_nofrac_h;
                 int abs_angle_val = angle_table[OVABS(mode_idx)];
                 int inv_angle = inverse_angle_table[OVABS(mode_idx)];
                 uint8_t req_frac = !!(abs_angle_val & 0x1F);
@@ -980,19 +964,21 @@ intra_angular_cubic_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                             ref2[k] = ref1[OVMIN(inv_angle_sum >> 9, pu_w)];
                         }
 
-                        angular_nofrac_h.angular(ref2, dst, dst_stride,
-                                                 log2_pb_w, log2_pb_h,
-                                                 -abs_angle_val);
+                        nofrac_h->angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                          -abs_angle_val);
 
                     } else if (pdpc_scale < 0 || log2_pb_h < 2) {
-                        angular_nofrac_h.angular(ref2, dst, dst_stride,
-                                                 log2_pb_w, log2_pb_h,
+
+                        nofrac_h->angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
                                                  abs_angle_val);
+
                     } else {
-                        angular_nofrac_h.angular_pdpc(ref1, ref2, dst, dst_stride,
-                                                      log2_pb_w, log2_pb_h,
-                                                      mode_idx);
+
+                        nofrac_h->angular_pdpc(ref1, ref2, dst, dst_stride,
+                                               log2_pb_w, log2_pb_h,
+                                               mode_idx);
                     }
+
                 } else {
                     if (mode_idx < 0){
                         int pu_w  = 1 << log2_pb_w;
@@ -1003,20 +989,18 @@ intra_angular_cubic_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
                             ref2[k] = ref1[OVMIN(inv_angle_sum >> 9, pu_w)];
                         }
 
-                        angular_cubic_h.angular(ref2, dst, dst_stride,
-                                                log2_pb_w, log2_pb_h,
-                                                -abs_angle_val);
+                        cubic_h->angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                         -abs_angle_val);
 
                     } else if (pdpc_scale < 0 || log2_pb_h < 2) {
 
-                        angular_cubic_h.angular(ref2, dst, dst_stride,
-                                                log2_pb_w, log2_pb_h,
-                                                abs_angle_val);
+                        cubic_h->angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                         abs_angle_val);
                     } else {
 
-                        angular_cubic_h.angular_pdpc(ref1, ref2, dst, dst_stride,
-                                                     log2_pb_w, log2_pb_h,
-                                                     mode_idx);
+                        cubic_h->angular_pdpc(ref1, ref2, dst, dst_stride,
+                                              log2_pb_w, log2_pb_h,
+                                              mode_idx);
                     }
                 }
             }
@@ -1025,7 +1009,7 @@ intra_angular_cubic_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_str
 }
 
 static void
-intra_angular_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
+intra_angular_v(const struct OVRCNCtx *rcn_ctx, uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                 uint8_t log2_pb_w, uint8_t log2_pb_h, int8_t pred_mode)
 {
     int mode_idx = pred_mode - (int)OVINTRA_VER;
@@ -1033,14 +1017,14 @@ intra_angular_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
     uint8_t use_gauss_filter = log2_nb_smp > 5 && OVABS(mode_idx) > intra_filter[log2_nb_smp >> 1];
 
     if (use_gauss_filter) {
-        intra_angular_gauss_v(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
+        intra_angular_gauss_v(rcn_ctx, ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
     } else {
-        intra_angular_cubic_v(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
+        intra_angular_cubic_v(rcn_ctx, ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
     }
 }
 
 static void
-intra_angular_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
+intra_angular_h(const struct OVRCNCtx *rcn_ctx, uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                 uint8_t log2_pb_w, uint8_t log2_pb_h, int8_t pred_mode)
 {
     int mode_idx = -(pred_mode - (int)OVINTRA_HOR);
@@ -1048,9 +1032,9 @@ intra_angular_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
 
     uint8_t use_gauss_filter = log2_nb_smp > 5 && OVABS(mode_idx) > intra_filter[log2_nb_smp >> 1];
     if (use_gauss_filter) {
-        intra_angular_gauss_h(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
+        intra_angular_gauss_h(rcn_ctx, ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
     } else {
-        intra_angular_cubic_h(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
+        intra_angular_cubic_h(rcn_ctx, ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
     }
 }
 
@@ -1115,9 +1099,9 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ct
         int is_vertical = pred_mode >= OVINTRA_DIA;
 
         if (is_vertical) {
-            intra_angular_v(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, pred_mode);
+            intra_angular_v(rcn_ctx, ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, pred_mode);
         } else {
-            intra_angular_h(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, pred_mode);
+            intra_angular_h(rcn_ctx, ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, pred_mode);
         }
         break;
     }
@@ -1126,7 +1110,7 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ct
 
 
 static void
-vvc_intra_chroma_angular(const uint16_t *const src, uint16_t *const dst,
+vvc_intra_chroma_angular(const struct OVRCNCtx *rcn_ctx, const uint16_t *const src, uint16_t *const dst,
                          uint16_t *ref_left, uint16_t *ref_above,
                          uint64_t left_col_map, uint64_t top_row_map,
                          int8_t log2_pb_w, int8_t log2_pb_h,
@@ -1274,11 +1258,11 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
     }
     default://angular
     {
-        vvc_intra_chroma_angular(src_cb, dst_cb, ref_left, ref_above, left_col_map,
+        vvc_intra_chroma_angular(rcn_ctx, src_cb, dst_cb, ref_left, ref_above, left_col_map,
                                  top_row_map, log2_pb_w, log2_pb_h,
                                  x0, y0, intra_mode);
 
-        vvc_intra_chroma_angular(src_cr, dst_cr, ref_left, ref_above, left_col_map,
+        vvc_intra_chroma_angular(rcn_ctx, src_cr, dst_cr, ref_left, ref_above, left_col_map,
                                  top_row_map, log2_pb_w, log2_pb_h,
                                  x0, y0, intra_mode);
         break;
@@ -1291,15 +1275,15 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
 }
 
 static void
-intra_angular_chroma_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
+intra_angular_chroma_v(const struct OVRCNCtx *rcn_ctx, uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                        uint8_t log2_pb_w, uint8_t log2_pb_h, int8_t mode_idx)
 {
-    extern const struct IntraAngularFunctions angular_c_v;
-    extern const struct IntraAngularFunctions angular_nofrac_v;
     int inv_angle = inverse_angle_table[OVABS(mode_idx)];
     int abs_angle = angle_table[OVABS(mode_idx)];
     uint8_t req_frac = !!(abs_angle& 0x1F);
     int8_t pdpc_scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inverse_angle_table[OVABS(mode_idx)] - 2) - 8));
+    const struct IntraAngularFunctions *nofrac_v = rcn_ctx->rcn_funcs.intra_angular_nofrac_v;
+    const struct IntraAngularFunctions *c_v = rcn_ctx->rcn_funcs.intra_angular_c_v;
 
     if (mode_idx < 0) {
         int pb_h = 1 << log2_pb_h;
@@ -1311,61 +1295,61 @@ intra_angular_chroma_v(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_st
         }
 
         if (!req_frac) {
-            angular_nofrac_v.angular(ref1, dst, dst_stride,
-                                     log2_pb_w, log2_pb_h,
-                                     -abs_angle);
+
+            nofrac_v->angular(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
+                              -abs_angle);
+
         } else {
-            angular_c_v.angular(ref1, dst, dst_stride,
-                                log2_pb_w, log2_pb_h,
-                                -abs_angle);
+            c_v->angular(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
+                         -abs_angle);
         }
     } else if (pdpc_scale < 0) {
 
         if (!req_frac) {
-            angular_nofrac_v.angular(ref1, dst, dst_stride,
-                                     log2_pb_w, log2_pb_h,
-                                     abs_angle);
+
+            nofrac_v->angular(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
+                              abs_angle);
+
         } else {
-            angular_c_v.angular(ref1, dst, dst_stride,
-                                log2_pb_w, log2_pb_h,
-                                abs_angle);
+            c_v->angular(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
+                         abs_angle);
         }
 
     } else {
         if (!req_frac) {
             if (log2_pb_h > 1 && log2_pb_w > 1 && pdpc_scale >= 0) {
-                angular_c_v.angular_pdpc(ref1, ref2, dst, dst_stride,
-                                         log2_pb_w, log2_pb_h,
-                                         mode_idx);
+                c_v->angular_pdpc(ref1, ref2, dst, dst_stride,
+                                  log2_pb_w, log2_pb_h,
+                                  mode_idx);
             } else {
-                angular_nofrac_v.angular(ref1, dst, dst_stride,
-                                         log2_pb_w, log2_pb_h,
-                                         abs_angle);
+
+                nofrac_v->angular(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                  abs_angle);
+
             }
         } else {
             if (log2_pb_h > 1 && log2_pb_w > 1 && pdpc_scale >= 0) {
-                angular_c_v.angular_pdpc(ref1, ref2, dst, dst_stride,
+                c_v->angular_pdpc(ref1, ref2, dst, dst_stride,
                                          log2_pb_w, log2_pb_h,
                                          mode_idx);
             } else {
-                angular_c_v.angular(ref1, dst, dst_stride,
-                                    log2_pb_w, log2_pb_h,
-                                    abs_angle);
+                c_v->angular(ref1, dst, dst_stride, log2_pb_w, log2_pb_h,
+                             abs_angle);
             }
         }
     }
 }
 
 static void
-intra_angular_chroma_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
+intra_angular_chroma_h(const struct OVRCNCtx *rcn_ctx, uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_stride,
                        uint8_t log2_pb_w, uint8_t log2_pb_h, int8_t mode_idx)
 {
-    extern const struct IntraAngularFunctions angular_c_h;
-    extern const struct IntraAngularFunctions angular_nofrac_h;
     int inv_angle = inverse_angle_table[OVABS(mode_idx)];
     int abs_angle = angle_table[OVABS(mode_idx)];
     uint8_t req_frac = !!(abs_angle& 0x1F);
     int8_t pdpc_scale = OVMIN(2, log2_pb_w - (floor_log2(3 * inverse_angle_table[OVABS(mode_idx)] - 2) - 8));
+    const struct IntraAngularFunctions *nofrac_h = rcn_ctx->rcn_funcs.intra_angular_nofrac_h;
+    const struct IntraAngularFunctions *c_h = rcn_ctx->rcn_funcs.intra_angular_c_h;
 
     if (mode_idx < 0) {
         int pb_w = 1 << log2_pb_w;
@@ -1377,44 +1361,55 @@ intra_angular_chroma_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_st
         }
 
         if (!req_frac) {
-            angular_nofrac_h.angular(ref2, dst, dst_stride,
-                                     log2_pb_w, log2_pb_h,
-                                     -abs_angle);
-        } else {
-            angular_c_h.angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
+
+            nofrac_h->angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
                               -abs_angle);
+
+        } else {
+
+            c_h->angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
+                              -abs_angle);
+
         }
 
     } else if (mode_idx < 8 && pdpc_scale < 0) {
         if (!req_frac) {
-            angular_nofrac_h.angular(ref2, dst, dst_stride,
-                                     log2_pb_w, log2_pb_h,
-                                     abs_angle);
+
+            nofrac_h->angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
+                              abs_angle);
+
         } else {
-            angular_c_h.angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
-                                abs_angle);
+
+            c_h->angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
+                         abs_angle);
         }
 
     } else {
         if (!req_frac) {
             if (log2_pb_h > 1 && log2_pb_w > 1 && pdpc_scale >= 0) {
-                angular_nofrac_h.angular_pdpc(ref1, ref2, dst, dst_stride,
-                                              log2_pb_w, log2_pb_h,
-                                              mode_idx);
+
+                nofrac_h->angular_pdpc(ref1, ref2, dst, dst_stride,
+                                       log2_pb_w, log2_pb_h,
+                                       mode_idx);
+
             } else {
-                angular_nofrac_h.angular(ref2, dst, dst_stride,
-                                         log2_pb_w, log2_pb_h,
-                                         abs_angle);
+
+                nofrac_h->angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
+                                  abs_angle);
+
             }
         } else {
             if (log2_pb_h > 1 && log2_pb_w > 1 && pdpc_scale >= 0) {
-                angular_c_h.angular_pdpc(ref1, ref2, dst, dst_stride,
-                                         log2_pb_w, log2_pb_h,
-                                         mode_idx);
+
+                c_h->angular_pdpc(ref1, ref2, dst, dst_stride,
+                                  log2_pb_w, log2_pb_h,
+                                  mode_idx);
+
             } else {
-                angular_c_h.angular(ref2, dst, dst_stride,
-                                    log2_pb_w, log2_pb_h,
-                                    abs_angle);
+
+                c_h->angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
+                             abs_angle);
+
             }
 
         }
@@ -1422,7 +1417,7 @@ intra_angular_chroma_h(uint16_t *ref1, uint16_t *ref2, uint16_t *dst, int dst_st
 }
 
 static void
-vvc_intra_chroma_angular(const uint16_t *const src, uint16_t *const dst,
+vvc_intra_chroma_angular(const struct OVRCNCtx *rcn_ctx, const uint16_t *const src, uint16_t *const dst,
                          uint16_t *ref_left, uint16_t *ref_above,
                          uint64_t left_col_map, uint64_t top_row_map,
                          int8_t log2_pb_w, int8_t log2_pb_h,
@@ -1445,62 +1440,60 @@ vvc_intra_chroma_angular(const uint16_t *const src, uint16_t *const dst,
                             top_row_map, left_col_map,
                             x0, y0, log2_pb_w, log2_pb_h);
 
-    if(is_vertical) {
-        extern const struct IntraAngularFunctions angular_c_v;
+    if (is_vertical) {
+        const struct IntraAngularFunctions *c_v = rcn_ctx->rcn_funcs.intra_angular_c_v;
         int mode_idx = pred_mode - (int)OVINTRA_VER;
         switch (mode_idx) {
             case 0:
                 if (log2_pb_h > 1 && log2_pb_w > 1) {
-                    angular_c_v.pure_pdpc(ref1, ref2, dst, dst_stride,
-                                           log2_pb_w, log2_pb_h);
+                    c_v->pure_pdpc(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
                 } else {
-                    angular_c_v.pure(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
+                    c_v->pure(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
                 }
 
                 break;
             case (16):
             {
                 if (log2_pb_h > 1 && log2_pb_w > 1) {
-                    angular_c_v.diagonal_pdpc(ref1, ref2, dst, dst_stride,
-                                              log2_pb_w, log2_pb_h);
+                    c_v->diagonal_pdpc(ref1, ref2, dst, dst_stride,
+                                       log2_pb_w, log2_pb_h);
                 } else {
-                    angular_c_v.diagonal(ref1, dst, dst_stride,
-                                         log2_pb_w, log2_pb_h);
+                    c_v->diagonal(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
                 }
             }
                 break;
             default:
             {
-                intra_angular_chroma_v(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
+                intra_angular_chroma_v(rcn_ctx, ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
             }
             break;
         }
     } else {
-        extern const struct IntraAngularFunctions angular_c_h;
+        const struct IntraAngularFunctions *c_h = rcn_ctx->rcn_funcs.intra_angular_c_h;
         int mode_idx = -(pred_mode - (int)OVINTRA_HOR);
         switch (mode_idx) {
             case 0:
                 if (log2_pb_h > 1 && log2_pb_w > 1) {
-                    angular_c_h.pure_pdpc(ref1, ref2, dst, dst_stride,
+                    c_h->pure_pdpc(ref1, ref2, dst, dst_stride,
                                            log2_pb_w, log2_pb_h);
                 } else {
-                    angular_c_h.pure(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
+                    c_h->pure(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
                 }
 
                 break;
             case (16):
             {
                 if (log2_pb_h > 1 && log2_pb_w > 1) {
-                    angular_c_h.diagonal_pdpc(ref1, ref2, dst, dst_stride,
+                    c_h->diagonal_pdpc(ref1, ref2, dst, dst_stride,
                                               log2_pb_w, log2_pb_h);
                 } else {
-                    angular_c_h.diagonal(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
+                    c_h->diagonal(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
                 }
             }
                 break;
             default:
                 {
-                    intra_angular_chroma_h(ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
+                    intra_angular_chroma_h(rcn_ctx, ref1, ref2, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
                 }
                 break;
         }

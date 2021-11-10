@@ -144,9 +144,85 @@ rcn_residual_c(OVCTUDec *const ctudec,
     }
 }
 
+static void
+rcn_init_intra_angular_functions(struct RCNFunctions *rcn_func, uint8_t bitdepth)
+{
+    switch (bitdepth) {
+        case 8:
+        {
+            extern const struct IntraAngularFunctions angular_gauss_h;
+            extern const struct IntraAngularFunctions angular_gauss_v;
+            extern const struct IntraAngularFunctions angular_cubic_h;
+            extern const struct IntraAngularFunctions angular_cubic_v;
+            extern const struct IntraAngularFunctions angular_c_h;
+            extern const struct IntraAngularFunctions angular_c_v;
+            extern const struct IntraMRLFunctions mrl_func;
+            extern const struct IntraAngularFunctions angular_nofrac_v;
+            extern const struct IntraAngularFunctions angular_nofrac_h;
+
+            rcn_func->intra_angular_gauss_h = &angular_gauss_h;
+            rcn_func->intra_angular_gauss_v = &angular_gauss_v;
+            rcn_func->intra_angular_cubic_h = &angular_cubic_h;
+            rcn_func->intra_angular_cubic_v = &angular_cubic_v;
+            rcn_func->intra_angular_c_h     = &angular_c_h;
+            rcn_func->intra_angular_c_v     = &angular_c_v;
+            rcn_func->intra_angular_nofrac_v = &angular_nofrac_v;
+            rcn_func->intra_angular_nofrac_h = &angular_nofrac_h;
+            rcn_func->intra_mrl = &mrl_func;
+        }
+            break;
+        case 10:
+        {
+            extern const struct IntraAngularFunctions angular_gauss_h;
+            extern const struct IntraAngularFunctions angular_gauss_v;
+            extern const struct IntraAngularFunctions angular_cubic_h;
+            extern const struct IntraAngularFunctions angular_cubic_v;
+            extern const struct IntraAngularFunctions angular_c_h;
+            extern const struct IntraAngularFunctions angular_c_v;
+            extern const struct IntraMRLFunctions mrl_func;
+            extern const struct IntraAngularFunctions angular_nofrac_v;
+            extern const struct IntraAngularFunctions angular_nofrac_h;
+
+            rcn_func->intra_angular_gauss_h = &angular_gauss_h;
+            rcn_func->intra_angular_gauss_v = &angular_gauss_v;
+            rcn_func->intra_angular_cubic_h = &angular_cubic_h;
+            rcn_func->intra_angular_cubic_v = &angular_cubic_v;
+            rcn_func->intra_angular_c_h     = &angular_c_h;
+            rcn_func->intra_angular_c_v     = &angular_c_v;
+            rcn_func->intra_angular_nofrac_v = &angular_nofrac_v;
+            rcn_func->intra_angular_nofrac_h = &angular_nofrac_h;
+            rcn_func->intra_mrl = &mrl_func;
+        }
+            break;
+        default:
+            {
+            extern const struct IntraAngularFunctions angular_gauss_h;
+            extern const struct IntraAngularFunctions angular_gauss_v;
+            extern const struct IntraAngularFunctions angular_cubic_h;
+            extern const struct IntraAngularFunctions angular_cubic_v;
+            extern const struct IntraAngularFunctions angular_c_h;
+            extern const struct IntraAngularFunctions angular_c_v;
+            extern const struct IntraMRLFunctions mrl_func;
+            extern const struct IntraAngularFunctions angular_nofrac_v;
+            extern const struct IntraAngularFunctions angular_nofrac_h;
+
+            rcn_func->intra_angular_gauss_h = &angular_gauss_h;
+            rcn_func->intra_angular_gauss_v = &angular_gauss_v;
+            rcn_func->intra_angular_cubic_h = &angular_cubic_h;
+            rcn_func->intra_angular_cubic_v = &angular_cubic_v;
+            rcn_func->intra_angular_c_h     = &angular_c_h;
+            rcn_func->intra_angular_c_v     = &angular_c_v;
+            rcn_func->intra_angular_nofrac_v = &angular_nofrac_v;
+            rcn_func->intra_angular_nofrac_h = &angular_nofrac_h;
+            rcn_func->intra_mrl = &mrl_func;
+            }
+            break;
+    }
+}
+
 void
 rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled,
-                    uint8_t sps_chroma_vertical_collocated_flag, uint8_t lmcs_flag)
+                    uint8_t sps_chroma_vertical_collocated_flag, uint8_t lmcs_flag, uint8_t bitdepth)
 {
   rcn_init_mc_functions(rcn_func);
   rcn_init_tr_functions(rcn_func);
@@ -162,6 +238,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
   rcn_init_bdof_functions(rcn_func);
   rcn_init_ciip_functions(rcn_func);
   rcn_init_df_functions(rcn_func);
+  rcn_init_intra_angular_functions(rcn_func, bitdepth);
   if (lm_chroma_enabled) {
       /* FIXME add support vertical */
       if (sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {

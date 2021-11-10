@@ -1389,7 +1389,8 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->drv_ctx.inter_ctx.affine_amvr_flag = sps->sps_affine_amvr_enabled_flag;
 
     rcn_init_functions(&ctudec->rcn_ctx.rcn_funcs, ict_type(ph), ctudec->lm_chroma_enabled,
-                        sps->sps_chroma_vertical_collocated_flag, ph->ph_lmcs_enabled_flag);
+                        sps->sps_chroma_vertical_collocated_flag, ph->ph_lmcs_enabled_flag,
+                        sps->sps_bitdepth_minus8 + 8);
 
     return 0;
 }

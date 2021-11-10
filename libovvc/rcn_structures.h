@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "rcn_intra_angular.h"
+
 struct ALFClassifier;
 struct Area;
 struct CCLMParams;
@@ -288,6 +290,16 @@ struct RCNFunctions
 
     /* DF Functions */
     struct DFFunctions df;
+
+    const struct IntraAngularFunctions *intra_angular_gauss_h;
+    const struct IntraAngularFunctions *intra_angular_gauss_v;
+    const struct IntraAngularFunctions *intra_angular_cubic_h;
+    const struct IntraAngularFunctions *intra_angular_cubic_v;
+    const struct IntraAngularFunctions *intra_angular_nofrac_h;
+    const struct IntraAngularFunctions *intra_angular_nofrac_v;
+    const struct IntraAngularFunctions *intra_angular_c_h;
+    const struct IntraAngularFunctions *intra_angular_c_v;
+    const struct IntraMRLFunctions *intra_mrl;
 };
 
 

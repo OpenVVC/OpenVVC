@@ -106,7 +106,7 @@ void rcn_gpm_b(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx, int x0, int y0, i
 
 /* FIXME check vertical / horizontal */
 void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled,
-                        uint8_t sps_chroma_vertical_collocated_flag, uint8_t lmcs_flag);
+                        uint8_t sps_chroma_vertical_collocated_flag, uint8_t lmcs_flag, uint8_t bitdepth);
 
 void rcn_init_cclm_functions(struct RCNFunctions *rcn_func);
 
