@@ -1,7 +1,6 @@
 #include <stdint.h>
 
 #include "data_rcn_mip.h"
-#include "rcn_intra_mip.h"
 #include "rcn_fill_ref.h"
 #include "ovutils.h"
 #include "ctudec.h"
