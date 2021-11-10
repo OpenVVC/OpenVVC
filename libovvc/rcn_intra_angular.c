@@ -7,7 +7,6 @@
 #include "rcn_intra_angular.h"
 #include "data_rcn_angular.h"
 
-#define BITDEPTH 10
 #define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
 
 static const int8_t chroma_filter[4 * 32] =

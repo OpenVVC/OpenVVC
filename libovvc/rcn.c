@@ -152,27 +152,25 @@ rcn_init_intra_angular_functions(struct RCNFunctions *rcn_func, uint8_t bitdepth
     switch (bitdepth) {
         case 8:
         {
-            #if 0
-            extern const struct IntraAngularFunctions angular_gauss_h;
-            extern const struct IntraAngularFunctions angular_gauss_v;
-            extern const struct IntraAngularFunctions angular_cubic_h;
-            extern const struct IntraAngularFunctions angular_cubic_v;
-            extern const struct IntraAngularFunctions angular_c_h;
-            extern const struct IntraAngularFunctions angular_c_v;
-            extern const struct IntraMRLFunctions mrl_func;
-            extern const struct IntraAngularFunctions angular_nofrac_v;
-            extern const struct IntraAngularFunctions angular_nofrac_h;
+            extern const struct IntraAngularFunctions angular_gauss_h_8;
+            extern const struct IntraAngularFunctions angular_gauss_v_8;
+            extern const struct IntraAngularFunctions angular_cubic_h_8;
+            extern const struct IntraAngularFunctions angular_cubic_v_8;
+            extern const struct IntraAngularFunctions angular_c_h_8;
+            extern const struct IntraAngularFunctions angular_c_v_8;
+            extern const struct IntraMRLFunctions mrl_func_8;
+            extern const struct IntraAngularFunctions angular_nofrac_v_8;
+            extern const struct IntraAngularFunctions angular_nofrac_h_8;
 
-            rcn_func->intra_angular_gauss_h = &angular_gauss_h;
-            rcn_func->intra_angular_gauss_v = &angular_gauss_v;
-            rcn_func->intra_angular_cubic_h = &angular_cubic_h;
-            rcn_func->intra_angular_cubic_v = &angular_cubic_v;
-            rcn_func->intra_angular_c_h     = &angular_c_h;
-            rcn_func->intra_angular_c_v     = &angular_c_v;
-            rcn_func->intra_angular_nofrac_v = &angular_nofrac_v;
-            rcn_func->intra_angular_nofrac_h = &angular_nofrac_h;
-            rcn_func->intra_mrl = &mrl_func;
-            #endif
+            rcn_func->intra_angular_gauss_h = &angular_gauss_h_8;
+            rcn_func->intra_angular_gauss_v = &angular_gauss_v_8;
+            rcn_func->intra_angular_cubic_h = &angular_cubic_h_8;
+            rcn_func->intra_angular_cubic_v = &angular_cubic_v_8;
+            rcn_func->intra_angular_c_h     = &angular_c_h_8;
+            rcn_func->intra_angular_c_v     = &angular_c_v_8;
+            rcn_func->intra_angular_nofrac_v = &angular_nofrac_v_8;
+            rcn_func->intra_angular_nofrac_h = &angular_nofrac_h_8;
+            rcn_func->intra_mrl = &mrl_func_8;
         }
             break;
         case 10:
