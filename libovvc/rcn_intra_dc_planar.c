@@ -33,15 +33,12 @@ intra_dc(const uint16_t* const ref_abv, const uint16_t* const ref_lft,
          uint16_t* const dst, ptrdiff_t dst_stride,
          int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t* _dst = dst;
     int dc_val = 0;
+    int idx;
 
-    const int denom = (log2_pb_w == log2_pb_h)
-        ? (log2_pb_w + 1)
-        : OVMAX(log2_pb_w, log2_pb_h);
-    const int shift = denom;
-    const int offset = ((1 << denom) >> 1);
+    const int shift = OVMAX(log2_pb_w, log2_pb_h) + (log2_pb_w == log2_pb_h);
+    const int offset = ((1 << shift) >> 1);
 
     if (log2_pb_w >= log2_pb_h) {
         for (idx = 0; idx < (1 << log2_pb_w); idx++) {
@@ -115,15 +112,13 @@ intra_dc_pdpc(const uint16_t* const ref_abv,
               const uint16_t* const ref_lft, uint16_t* const dst,
               ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h)
 {
-    int idx;
     uint16_t* _dst = dst;
     uint32_t dc_val = 0;
+    int idx;
 
-    const int denom = (log2_pb_w == log2_pb_h)
-        ? (log2_pb_w + 1)
-        : OVMAX(log2_pb_w, log2_pb_h);
-    const int shift = denom;
-    const int offset = ((1 << denom) >> 1);
+    const int shift = OVMAX(log2_pb_w, log2_pb_h) + (log2_pb_w == log2_pb_h);
+    const int offset = ((1 << shift) >> 1);
+
     const int pdpc_scale = (log2_pb_w + log2_pb_h - 2) >> 2;
     const uint8_t* pdpc_w = vvc_pdpc_w[pdpc_scale];
 
