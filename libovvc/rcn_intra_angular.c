@@ -983,7 +983,7 @@ intra_angular_v_cubic_mref(const uint16_t* const ref_abv, uint16_t* const dst,
 #define FUNC2(a, b, c)  FUNC3(a, b, c)
 #define ANGULAR_DECL(a)  FUNC2(a, BITDEPTH, )
 
-const struct IntraAngularFunctions angular_gauss_h =
+ANGULAR_DECL(const struct IntraAngularFunctions angular_gauss_h) =
 {
      .pure = intra_angular_hor,
      .diagonal = intra_angular_hdia,
@@ -994,7 +994,7 @@ const struct IntraAngularFunctions angular_gauss_h =
      .angular_pdpc = intra_angular_h_gauss_pdpc,
 };
 
-const struct IntraAngularFunctions angular_gauss_v =
+ANGULAR_DECL(const struct IntraAngularFunctions angular_gauss_v) =
 {
      .pure = intra_angular_ver,
      .diagonal = intra_angular_vdia,
@@ -1005,7 +1005,7 @@ const struct IntraAngularFunctions angular_gauss_v =
      .angular_pdpc = intra_angular_v_gauss_pdpc,
 };
 
-const struct IntraAngularFunctions angular_cubic_v =
+ANGULAR_DECL(const struct IntraAngularFunctions angular_cubic_v) =
 {
      .pure = intra_angular_ver,
      .diagonal = intra_angular_vdia,
@@ -1016,7 +1016,7 @@ const struct IntraAngularFunctions angular_cubic_v =
      .angular_pdpc = intra_angular_v_cubic_pdpc,
 };
 
-const struct IntraAngularFunctions angular_cubic_h =
+ANGULAR_DECL(const struct IntraAngularFunctions angular_cubic_h) =
 {
      .pure = intra_angular_hor,
      .diagonal = intra_angular_hdia,
@@ -1027,7 +1027,7 @@ const struct IntraAngularFunctions angular_cubic_h =
      .angular_pdpc = intra_angular_h_cubic_pdpc,
 };
 
-const struct IntraAngularFunctions angular_c_h =
+ANGULAR_DECL(const struct IntraAngularFunctions angular_c_h) =
 {
      .pure = intra_angular_hor,
      .diagonal = intra_angular_hdia,
@@ -1038,7 +1038,7 @@ const struct IntraAngularFunctions angular_c_h =
      .angular_pdpc = intra_angular_h_c_pdpc,
 };
 
-const struct IntraAngularFunctions angular_c_v =
+ANGULAR_DECL(const struct IntraAngularFunctions angular_c_v) =
 {
      .pure = intra_angular_ver,
      .diagonal = intra_angular_vdia,
@@ -1049,14 +1049,14 @@ const struct IntraAngularFunctions angular_c_v =
      .angular_pdpc = intra_angular_v_c_pdpc,
 };
 
-const struct IntraMRLFunctions mrl_func =
+ANGULAR_DECL(const struct IntraMRLFunctions mrl_func) =
 {
      .angular_h = intra_angular_h_cubic_mref,
      .angular_v = intra_angular_v_cubic_mref,
 
 };
 
-const struct IntraAngularFunctions angular_nofrac_v =
+ANGULAR_DECL(const struct IntraAngularFunctions angular_nofrac_v) =
 {
      .pure = intra_angular_ver,
      .diagonal = intra_angular_vdia,
@@ -1067,7 +1067,7 @@ const struct IntraAngularFunctions angular_nofrac_v =
      .angular_pdpc = intra_angular_v_nofrac_pdpc,
 };
 
-const struct IntraAngularFunctions angular_nofrac_h =
+ANGULAR_DECL(const struct IntraAngularFunctions angular_nofrac_h) =
 {
      .pure = intra_angular_hor,
      .diagonal = intra_angular_hdia,
