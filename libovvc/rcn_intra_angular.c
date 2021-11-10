@@ -67,7 +67,7 @@ static const uint8_t vvc_pdpc_w[3][128] =
         0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 
-void
+static void
 intra_angular_hdia(const uint16_t* const ref_lft, uint16_t* const dst,
                    ptrdiff_t dst_stride, int8_t log2_pb_w,
                    int8_t log2_pb_h)
@@ -103,7 +103,7 @@ intra_angular_hdia(const uint16_t* const ref_lft, uint16_t* const dst,
     }
 }
 
-void
+static void
 intra_angular_hdia_pdpc(const uint16_t* const ref_abv,
                         const uint16_t* const ref_lft, uint16_t* const dst,
                         ptrdiff_t dst_stride, int8_t log2_pb_w,
@@ -146,7 +146,7 @@ intra_angular_hdia_pdpc(const uint16_t* const ref_abv,
     }
 }
 
-void
+static void
 intra_angular_vdia(const uint16_t* const ref_abv, uint16_t* const dst,
                    ptrdiff_t dst_stride, int8_t log2_pb_w,
                    int8_t log2_pb_h)
@@ -166,7 +166,7 @@ intra_angular_vdia(const uint16_t* const ref_abv, uint16_t* const dst,
     }
 }
 
-void
+static void
 intra_angular_vdia_pdpc(const uint16_t* const ref_abv,
                         const uint16_t* const ref_lft, uint16_t* const dst,
                         ptrdiff_t dst_stride, int8_t log2_pb_w,
@@ -193,7 +193,7 @@ intra_angular_vdia_pdpc(const uint16_t* const ref_abv,
     }
 }
 
-void
+static void
 intra_angular_h_c(const uint16_t* ref_lft, uint16_t* dst,
                   ptrdiff_t dst_stride, int8_t log2_pb_w,
                   int8_t log2_pb_h, int angle_val)
@@ -236,7 +236,7 @@ intra_angular_h_c(const uint16_t* ref_lft, uint16_t* dst,
     }
 }
 
-void
+static void
 intra_angular_v_c(const uint16_t* ref_abv, uint16_t* dst,
                   ptrdiff_t dst_stride, int8_t log2_pb_w,
                   int8_t log2_pb_h, int angle_val)
@@ -262,7 +262,7 @@ intra_angular_v_c(const uint16_t* ref_abv, uint16_t* dst,
     }
 }
 
-void
+static void
 intra_angular_hor_pdpc(const uint16_t* const ref_abv,
                        const uint16_t* const ref_lft, uint16_t* const dst,
                        ptrdiff_t dst_stride, int8_t log2_pb_w,
@@ -287,7 +287,7 @@ intra_angular_hor_pdpc(const uint16_t* const ref_abv,
     }
 }
 
-void
+static void
 intra_angular_ver_pdpc(const uint16_t* const ref_abv,
                        const uint16_t* const ref_lft, uint16_t* const dst,
                        ptrdiff_t dst_stride, int8_t log2_pb_w,
@@ -313,7 +313,7 @@ intra_angular_ver_pdpc(const uint16_t* const ref_abv,
     }
 }
 
-void
+static void
 intra_angular_hor(const uint16_t* const ref_lft, uint16_t* const dst,
                   ptrdiff_t dst_stride, int8_t log2_pb_w, int8_t log2_pb_h)
 {
@@ -329,7 +329,7 @@ intra_angular_hor(const uint16_t* const ref_lft, uint16_t* const dst,
     }
 }
 
-void
+static void
 intra_angular_ver(const uint16_t* const ref_abv, uint16_t* const dst,
                   ptrdiff_t dst_stride, int8_t log2_pb_w, int8_t log2_pb_h)
 {
@@ -343,7 +343,7 @@ intra_angular_ver(const uint16_t* const ref_abv, uint16_t* const dst,
     }
 }
 
-void
+static void
 intra_angular_h_c_pdpc(const uint16_t* const ref_abv,
                        const uint16_t* const ref_lft, uint16_t* const dst,
                        ptrdiff_t dst_stride, int8_t log2_pb_w,
@@ -397,7 +397,7 @@ intra_angular_h_c_pdpc(const uint16_t* const ref_abv,
     }
 }
 
-void
+static void
 intra_angular_v_c_pdpc(const uint16_t* const ref_abv,
                        const uint16_t* const ref_lft, uint16_t* const dst,
                        ptrdiff_t dst_stride, int8_t log2_pb_w,
@@ -436,7 +436,7 @@ intra_angular_v_c_pdpc(const uint16_t* const ref_abv,
     }
 }
 
-void
+static void
 intra_angular_h_nofrac(const uint16_t* ref_lft, uint16_t* dst,
                        ptrdiff_t dst_stride, int8_t log2_pb_w,
                        int8_t log2_pb_h, int angle_val)
@@ -470,7 +470,7 @@ intra_angular_h_nofrac(const uint16_t* ref_lft, uint16_t* dst,
     }
 }
 
-void
+static void
 intra_angular_h_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                             uint16_t* dst, ptrdiff_t dst_stride,
                             int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
@@ -516,7 +516,7 @@ intra_angular_h_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
     }
 }
 
-void
+static void
 intra_angular_h_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                            uint16_t* const dst, ptrdiff_t dst_stride,
                            int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
@@ -569,7 +569,7 @@ intra_angular_h_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
     }
 }
 
-void
+static void
 intra_angular_v_nofrac(const uint16_t* ref_abv, uint16_t* dst,
                        ptrdiff_t dst_stride, int8_t log2_pb_w,
                        int8_t log2_pb_h, int angle_val)
@@ -590,7 +590,7 @@ intra_angular_v_nofrac(const uint16_t* ref_abv, uint16_t* dst,
     }
 }
 
-void
+static void
 intra_angular_v_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                             uint16_t* const dst, ptrdiff_t dst_stride,
                             int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
@@ -624,7 +624,7 @@ intra_angular_v_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
     }
 }
 
-void
+static void
 intra_angular_v_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                            uint16_t* const dst, ptrdiff_t dst_stride,
                            int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
@@ -664,7 +664,7 @@ intra_angular_v_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
     }
 }
 
-void
+static void
 intra_angular_h_cubic(const uint16_t* ref_lft, uint16_t* dst,
                       ptrdiff_t dst_stride, int8_t log2_pb_w,
                       int8_t log2_pb_h, int angle_val)
@@ -708,7 +708,7 @@ intra_angular_h_cubic(const uint16_t* ref_lft, uint16_t* dst,
     }
 }
 
-void
+static void
 intra_angular_h_gauss(const uint16_t* ref_lft, uint16_t* dst,
                       ptrdiff_t dst_stride, int8_t log2_pb_w,
                       int8_t log2_pb_h, int angle_val)
@@ -748,7 +748,7 @@ intra_angular_h_gauss(const uint16_t* ref_lft, uint16_t* dst,
     }
 }
 
-void
+static void
 intra_angular_v_cubic(const uint16_t* ref_abv, uint16_t* dst,
                       ptrdiff_t dst_stride, int8_t log2_pb_w,
                       int8_t log2_pb_h, int angle_val)
@@ -778,7 +778,7 @@ intra_angular_v_cubic(const uint16_t* ref_abv, uint16_t* dst,
     }
 }
 
-void
+static void
 intra_angular_v_gauss(const uint16_t* ref_abv, uint16_t* dst,
                       ptrdiff_t dst_stride, int8_t log2_pb_w,
                       int8_t log2_pb_h, int angle_val)
@@ -806,7 +806,7 @@ intra_angular_v_gauss(const uint16_t* ref_abv, uint16_t* dst,
     }
 }
 
-void
+static void
 intra_angular_h_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                            uint16_t* const dst, ptrdiff_t dst_stride,
                            int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
@@ -863,7 +863,7 @@ intra_angular_h_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
     }
 }
 
-void
+static void
 intra_angular_v_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
                            uint16_t* const dst, ptrdiff_t dst_stride,
                            int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
@@ -906,7 +906,7 @@ intra_angular_v_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
     }
 }
 
-void
+static void
 intra_angular_h_cubic_mref(const uint16_t* const ref_lft, uint16_t* const dst,
                            ptrdiff_t dst_stride,
                            int8_t log2_pb_w, int8_t log2_pb_h,
@@ -950,9 +950,9 @@ intra_angular_h_cubic_mref(const uint16_t* const ref_lft, uint16_t* const dst,
     }
 }
 
-void
+static void
 intra_angular_v_cubic_mref(const uint16_t* const ref_abv, uint16_t* const dst,
-                           int dst_stride, int8_t log2_pb_w,
+                           ptrdiff_t dst_stride, int8_t log2_pb_w,
                            int8_t log2_pb_h, int angle_val,
                            uint8_t mrl_idx)
 {
@@ -978,3 +978,102 @@ intra_angular_v_cubic_mref(const uint16_t* const ref_abv, uint16_t* const dst,
         _dst += dst_stride;
     }
 }
+
+#define FUNC3(a, b, c)  a ## _ ## b ##  c
+#define FUNC2(a, b, c)  FUNC3(a, b, c)
+#define ANGULAR_DECL(a)  FUNC2(a, BITDEPTH, )
+
+const struct IntraAngularFunctions angular_gauss_h =
+{
+     .pure = intra_angular_hor,
+     .diagonal = intra_angular_hdia,
+     .angular = intra_angular_h_gauss,
+
+     .pure_pdpc = intra_angular_hor_pdpc,
+     .diagonal_pdpc = intra_angular_hdia_pdpc,
+     .angular_pdpc = intra_angular_h_gauss_pdpc,
+};
+
+const struct IntraAngularFunctions angular_gauss_v =
+{
+     .pure = intra_angular_ver,
+     .diagonal = intra_angular_vdia,
+     .angular = intra_angular_v_gauss,
+
+     .pure_pdpc = intra_angular_ver_pdpc,
+     .diagonal_pdpc = intra_angular_vdia_pdpc,
+     .angular_pdpc = intra_angular_v_gauss_pdpc,
+};
+
+const struct IntraAngularFunctions angular_cubic_v =
+{
+     .pure = intra_angular_ver,
+     .diagonal = intra_angular_vdia,
+     .angular = intra_angular_v_cubic,
+
+     .pure_pdpc = intra_angular_ver_pdpc,
+     .diagonal_pdpc = intra_angular_vdia_pdpc,
+     .angular_pdpc = intra_angular_v_cubic_pdpc,
+};
+
+const struct IntraAngularFunctions angular_cubic_h =
+{
+     .pure = intra_angular_hor,
+     .diagonal = intra_angular_hdia,
+     .angular = intra_angular_h_cubic,
+
+     .pure_pdpc = intra_angular_hor_pdpc,
+     .diagonal_pdpc = intra_angular_hdia_pdpc,
+     .angular_pdpc = intra_angular_h_cubic_pdpc,
+};
+
+const struct IntraAngularFunctions angular_c_h =
+{
+     .pure = intra_angular_hor,
+     .diagonal = intra_angular_hdia,
+     .angular = intra_angular_h_c,
+
+     .pure_pdpc = intra_angular_hor_pdpc,
+     .diagonal_pdpc = intra_angular_hdia_pdpc,
+     .angular_pdpc = intra_angular_h_c_pdpc,
+};
+
+const struct IntraAngularFunctions angular_c_v =
+{
+     .pure = intra_angular_ver,
+     .diagonal = intra_angular_vdia,
+     .angular = intra_angular_v_c,
+
+     .pure_pdpc = intra_angular_ver_pdpc,
+     .diagonal_pdpc = intra_angular_vdia_pdpc,
+     .angular_pdpc = intra_angular_v_c_pdpc,
+};
+
+const struct IntraMRLFunctions mrl_func =
+{
+     .angular_h = intra_angular_h_cubic_mref,
+     .angular_v = intra_angular_v_cubic_mref,
+
+};
+
+const struct IntraAngularFunctions angular_nofrac_v =
+{
+     .pure = intra_angular_ver,
+     .diagonal = intra_angular_vdia,
+     .angular = intra_angular_v_nofrac,
+
+     .pure_pdpc = intra_angular_ver_pdpc,
+     .diagonal_pdpc = intra_angular_vdia_pdpc,
+     .angular_pdpc = intra_angular_v_nofrac_pdpc,
+};
+
+const struct IntraAngularFunctions angular_nofrac_h =
+{
+     .pure = intra_angular_hor,
+     .diagonal = intra_angular_hdia,
+     .angular = intra_angular_h_nofrac,
+
+     .pure_pdpc = intra_angular_hor_pdpc,
+     .diagonal_pdpc = intra_angular_hdia_pdpc,
+     .angular_pdpc = intra_angular_h_nofrac_pdpc,
+};
