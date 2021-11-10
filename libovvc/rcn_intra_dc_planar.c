@@ -170,7 +170,7 @@ intra_planar_pdpc(const uint16_t* const ref_abv,
     const uint8_t pdpc_scale = (log2_pb_w + log2_pb_h - 2) >> 2;
 
     int32_t t_row[128], b_row[128];
-    const int8_t* pdpc_w = vvc_pdpc_w[pdpc_scale];
+    const uint8_t* pdpc_w = vvc_pdpc_w[pdpc_scale];
     const int16_t bl_val = ref_lft[pb_h + 1];
     const int16_t tr_val = ref_abv[pb_w + 1];
     int y;
