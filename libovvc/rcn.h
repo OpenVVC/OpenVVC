@@ -112,7 +112,7 @@ void rcn_init_cclm_functions(struct RCNFunctions *rcn_func);
 
 void rcn_init_cclm_functions_collocated(struct RCNFunctions *rcn_func);
 
-void rcn_init_ict_functions(struct RCNFunctions *rcn_func, uint8_t type);
+void rcn_init_ict_functions(struct RCNFunctions *rcn_func, uint8_t type, uint8_t bitdepth);
 
 void rcn_init_tr_functions(struct RCNFunctions *const rcn_funcs);
 

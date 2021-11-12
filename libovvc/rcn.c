@@ -229,7 +229,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
   rcn_init_mc_functions(rcn_func);
   rcn_init_tr_functions(rcn_func);
   rcn_init_dc_planar_functions(rcn_func);
-  rcn_init_ict_functions(rcn_func, ict_type);
+  rcn_init_ict_functions(rcn_func, ict_type, bitdepth);
   rcn_init_lfnst_functions(rcn_func);
   rcn_init_mip_functions(rcn_func);
   rcn_init_alf_functions(rcn_func);
