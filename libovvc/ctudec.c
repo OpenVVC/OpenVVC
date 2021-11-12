@@ -3,8 +3,6 @@
 #include "ovmem.h"
 #include "overror.h"
 
-#define BITDEPTH 10
-
 static void
 attach_rcn_ctu_buff(OVCTUDec *const ctudec)
 {
@@ -396,8 +394,6 @@ ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
     const OVSH *const sh = prms->sh;
     const OVPH *const ph = prms->ph;
 
-    const struct OVLMCSData* aps_lmcs_data = &prms->aps_lmcs->aps_lmcs_data;
-
     uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
     uint16_t pic_h = sps->sps_pic_height_max_in_luma_samples;
     uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
@@ -466,22 +462,8 @@ ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
     lmcs_info->lmcs_enabled_flag = ph->ph_lmcs_enabled_flag;
     lmcs_info->scale_c_flag      = ph->ph_chroma_residual_scale_flag;
     if(sh->sh_lmcs_used_flag){
-        if(!lmcs_info->lmcs_lut_inv_luma){
-            lmcs_info->lmcs_lut_inv_luma = ov_malloc(sizeof(uint16_t) << BITDEPTH);
-            lmcs_info->lmcs_lut_fwd_luma = ov_malloc(sizeof(uint16_t) << BITDEPTH);
-        } else {
-            memset(lmcs_info->lmcs_lut_inv_luma, 0, sizeof(uint16_t) << BITDEPTH);
-            memset(lmcs_info->lmcs_lut_fwd_luma, 0, sizeof(uint16_t) << BITDEPTH);
-        }
-
-        lmcs_info->lmcs_chroma_scaling_offset = aps_lmcs_data->lmcs_delta_sign_crs_flag ?
-                                                -aps_lmcs_data->lmcs_delta_abs_crs
-                                                : aps_lmcs_data->lmcs_delta_abs_crs;
-
-        uint16_t *const output_pivot = lmcs_info->lmcs_output_pivot;
-        rcn_derive_lmcs_params(lmcs_info, output_pivot, aps_lmcs_data);
-        rcn_lmcs_compute_lut_luma(lmcs_info, lmcs_info->lmcs_lut_inv_luma, lmcs_info->lmcs_lut_fwd_luma,
-                                lmcs_info->lmcs_output_pivot);
+        const struct OVLMCSData* lmcs_data = &prms->aps_lmcs->aps_lmcs_data;
+        rcn_init_lmcs(lmcs_info, lmcs_data);
     }
 
     return 0;

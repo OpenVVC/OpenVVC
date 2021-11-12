@@ -301,6 +301,26 @@ rcn_lmcs_compute_lut_luma(struct LMCSInfo *lmcs_info, uint16_t* inverse_lut,
     memcpy(wnd_boundaries, &new_luts.wnd_bnd, sizeof(new_luts.wnd_bnd) - 2);
 }
 
+void
+rcn_init_lmcs(struct LMCSInfo *lmcs_info, const struct OVLMCSData *const lmcs_data)
+{
+    if (!lmcs_info->lmcs_lut_inv_luma) {
+        lmcs_info->lmcs_lut_inv_luma = ov_malloc(sizeof(uint16_t) << BITDEPTH);
+        lmcs_info->lmcs_lut_fwd_luma = ov_malloc(sizeof(uint16_t) << BITDEPTH);
+    } else {
+        memset(lmcs_info->lmcs_lut_inv_luma, 0, sizeof(uint16_t) << BITDEPTH);
+        memset(lmcs_info->lmcs_lut_fwd_luma, 0, sizeof(uint16_t) << BITDEPTH);
+    }
+
+    lmcs_info->lmcs_chroma_scaling_offset = lmcs_data->lmcs_delta_sign_crs_flag ?
+        -lmcs_data->lmcs_delta_abs_crs
+        : lmcs_data->lmcs_delta_abs_crs;
+
+    uint16_t *const output_pivot = lmcs_info->lmcs_output_pivot;
+    rcn_derive_lmcs_params(lmcs_info, output_pivot, lmcs_data);
+    rcn_lmcs_compute_lut_luma(lmcs_info, lmcs_info->lmcs_lut_inv_luma, lmcs_info->lmcs_lut_fwd_luma,
+                              lmcs_info->lmcs_output_pivot);
+}
 
 void
 rcn_lmcs_no_reshape(uint16_t *dst, ptrdiff_t stride_dst, uint16_t* lmcs_lut_luma,

@@ -13,4 +13,6 @@ void rcn_lmcs_compute_lut_luma(struct LMCSInfo *lmcs_info, uint16_t* lmcs_lut_in
 
 void rcn_init_lmcs_function(struct RCNFunctions *rcn_func, uint8_t lmcs_flag);
 
+void rcn_init_lmcs(struct LMCSInfo *lmcs_info, const struct OVLMCSData *const lmcs_data);
+
 #endif //RCN_LMCS_H
