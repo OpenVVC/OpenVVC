@@ -8,6 +8,8 @@
 #include "vcl.h"
 
 #define BITDEPTH 10
+#define TR_SHIFT_V (6 + 1)
+#define TR_SHIFT_H ((6 + 15 - 1) - BITDEPTH)
 
 struct TBInfo {
    uint16_t last_pos;
@@ -64,8 +66,6 @@ rcn_residual(OVCTUDec *const ctudec,
 {
     struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
     fill_bs_map(&ctudec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
-    int shift_v = 6 + 1;
-    int shift_h = (6 + 15 - 1) - BITDEPTH;
 
     DECLARE_ALIGNED(32, int16_t, tmp)[64*64];
 
@@ -88,28 +88,26 @@ rcn_residual(OVCTUDec *const ctudec,
         enum DCTType tr_v_idx = log2_tb_h <= 4 ? DST_VII : DCT_II;
 
         /* FIXME use coefficient zeroing in MTS */
-        TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, tb_w, tb_w, tb_h, shift_v);
-        TRFunc->func[tr_h_idx][log2_tb_w](tmp, dst, tb_h, tb_h, tb_w, shift_h);
+        TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, tb_w, tb_w, tb_h, TR_SHIFT_V);
+        TRFunc->func[tr_h_idx][log2_tb_w](tmp, dst, tb_h, tb_h, tb_w, TR_SHIFT_H);
 
     } else if (!cu_mts_flag) {
 
         if (is_dc) {
-
             TRFunc->dc(dst, log2_tb_w, log2_tb_h, src[0]);
-
         } else {
             int nb_row = OVMIN(lim_cg_w, 1 << log2_tb_w);
             int nb_col = OVMIN(lim_cg_w, 1 << log2_tb_h);
 
-            TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, shift_v);
-            TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, shift_h);
+            TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, TR_SHIFT_V);
+            TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, TR_SHIFT_H);
         }
     } else {
         enum DCTType tr_h_idx = cu_mts_idx  & 1;
         enum DCTType tr_v_idx = cu_mts_idx >> 1;
 
-        TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, tb_w, tb_w, tb_h, shift_v);
-        TRFunc->func[tr_h_idx][log2_tb_w](tmp, dst, tb_h, tb_h, tb_w, shift_h);
+        TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, tb_w, tb_w, tb_h, TR_SHIFT_V);
+        TRFunc->func[tr_h_idx][log2_tb_w](tmp, dst, tb_h, tb_h, tb_w, TR_SHIFT_H);
     }
 }
 
@@ -123,8 +121,6 @@ rcn_residual_c(OVCTUDec *const ctudec,
 {
     struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
 
-    const int shift_v = 6 + 1;
-    const int shift_h = (6 + 15 - 1) - BITDEPTH;
 
     DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
 
@@ -156,8 +152,8 @@ rcn_residual_c(OVCTUDec *const ctudec,
         int nb_col =  OVMIN(lim_sb_s, 1 << log2_tb_h);
         /*FIXME might be transform SKIP */
 
-        TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, shift_v);
-        TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, shift_h);
+        TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, TR_SHIFT_V);
+        TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, TR_SHIFT_H);
     }
 }
 
@@ -334,8 +330,6 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
             //fill_bs_map(&ctudec->dbf_info.bs1_map, x0, y0, log2_pb_w, log2_cb_h);
 
             if (log2_pb_w) {
-                int shift_v = 6 + 1;
-                int shift_h = (6 + 15 - 1) - BITDEPTH;
                 DECLARE_ALIGNED(32, int16_t, tmp)[64*64];
                 int16_t *src = coeffs_y;
                 int16_t *dst = ctudec->transform_buff;
@@ -355,16 +349,15 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
                     type_v = type_h = DCT_II;
                 }
 
-                TRFunc->func[type_v][OVMIN(log2_cb_h,6)](src, tmp, pb_w, pb_w, cb_h, shift_v);
-                TRFunc->func[type_h][OVMIN(log2_pb_w,6)](tmp, dst, cb_h, cb_h, pb_w, shift_h);
+                TRFunc->func[type_v][OVMIN(log2_cb_h,6)](src, tmp, pb_w, pb_w, cb_h, TR_SHIFT_V);
+                TRFunc->func[type_h][OVMIN(log2_pb_w,6)](tmp, dst, cb_h, cb_h, pb_w, TR_SHIFT_H);
             } else {
-                int shift_h = (6 + 15 - 1) - BITDEPTH;
                 int cb_h = 1 << log2_cb_h;
                 DECLARE_ALIGNED(32, int16_t, tmp)[64];
 
                 memset(tmp, 0, sizeof(int16_t) << (log2_pb_w + log2_cb_h));
 
-                TRFunc->func[type_v][OVMIN(log2_cb_h,6)](coeffs_y, tmp, pb_w, pb_w, cb_h, shift_h + 1);
+                TRFunc->func[type_v][OVMIN(log2_cb_h,6)](coeffs_y, tmp, pb_w, pb_w, cb_h, TR_SHIFT_H + 1);
 
                 memcpy(ctudec->transform_buff, tmp, sizeof(uint16_t) * (1 << log2_cb_h));
             }
@@ -432,8 +425,6 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
 
             if (log2_pb_h) {
                 DECLARE_ALIGNED(32, int16_t, tmp)[64*64];
-                int shift_v = 6 + 1;
-                int shift_h = (6 + 15 - 1) - BITDEPTH;
                 int16_t *src = coeffs_y;
                 int16_t *dst = ctudec->transform_buff;
                 int cb_w = 1 << log2_cb_w;
@@ -455,16 +446,15 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                     type_v = type_h = DCT_II;
                 }
 
-                TRFunc->func[type_v][OVMIN(log2_pb_h,6)](src, tmp, cb_w, cb_w, pb_h, shift_v);
-                TRFunc->func[type_h][OVMIN(log2_cb_w,6)](tmp, dst, pb_h, pb_h, cb_w, shift_h);
+                TRFunc->func[type_v][OVMIN(log2_pb_h,6)](src, tmp, cb_w, cb_w, pb_h, TR_SHIFT_V);
+                TRFunc->func[type_h][OVMIN(log2_cb_w,6)](tmp, dst, pb_h, pb_h, cb_w, TR_SHIFT_H);
             } else {
-                int shift_h = (6 + 15 - 1) - BITDEPTH;
                 int cb_w = 1 << log2_cb_w;
                 DECLARE_ALIGNED(32, int16_t, tmp)[64];
 
                 memset(tmp, 0, sizeof(int16_t) << (log2_cb_w + log2_pb_h));
 
-                TRFunc->func[type_h][OVMIN(log2_cb_w,6)](coeffs_y, tmp, pb_h, pb_h, cb_w, shift_h + 1);
+                TRFunc->func[type_h][OVMIN(log2_cb_w,6)](coeffs_y, tmp, pb_h, pb_h, cb_w, TR_SHIFT_H + 1);
 
                 memcpy(ctudec->transform_buff, tmp, sizeof(uint16_t) * (1 << log2_cb_w));
             }
