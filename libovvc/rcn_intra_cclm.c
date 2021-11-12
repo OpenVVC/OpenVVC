@@ -9,9 +9,6 @@
 
 #define SWAP(type,a,b) do{type tmp= b; b = a; a = tmp;}while(0)
 
-#define W_SHIFT 1
-#define H_SHIFT 1
-
 #define AVG_VAL (1 << (BITDEPTH - 1))
 
 struct AVGMinMax{
@@ -908,5 +905,3 @@ rcn_init_cclm_functions(struct RCNFunctions *rcn_func)
    cclm->compute_subsample = &compute_lm_subsample;
 }
 
-#undef W_SHIFT
-#undef H_SHIFT
