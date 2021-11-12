@@ -553,7 +553,7 @@ vvc_intra_cclm2(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
                        &lm_params, pb_w, pb_h, lft_avail);
 }
 
-void
+static void
 vvc_intra_cclm2_collocated(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
                            ptrdiff_t lm_src_stride, ptrdiff_t dst_stride_c,
                            int log2_pb_w, int log2_pb_h, uint8_t lft_avail, uint8_t abv_avail,
