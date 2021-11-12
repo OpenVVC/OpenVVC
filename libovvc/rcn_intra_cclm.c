@@ -129,10 +129,10 @@ sub_sample_lm_ref_lft_collocated(const uint16_t *lm_src, const uint16_t *src_cb,
     const uint16_t *_src    = lm_src - 2 + start_pos * lm_src_stride2;
     const uint16_t *_src_cb = src_cb - 1 + start_pos * src_c_stride;
     const uint16_t *_src_cr = src_cr - 1 + start_pos * src_c_stride;
-    int nb_sample;
+    int i;
 
     uint8_t padd_abv = start_pos == 0 && !abv_avail;
-    for (nb_sample = 0; nb_sample < nb_sample_lft; nb_sample++) {
+    for (i = 0; i < nb_sample_lft; i++) {
         int s = 4;
 
         s += _src[-(padd_abv ? 0 : lm_src_stride)];
@@ -141,10 +141,10 @@ sub_sample_lm_ref_lft_collocated(const uint16_t *lm_src, const uint16_t *src_cb,
         s += _src[1];
         s += _src[lm_src_stride];
 
-        lm_dst[nb_sample] = s >> 3;
+        lm_dst[i] = s >> 3;
 
-        dst_cb[nb_sample] = _src_cb[0];
-        dst_cr[nb_sample] = _src_cr[0];
+        dst_cb[i] = _src_cb[0];
+        dst_cr[i] = _src_cr[0];
         padd_abv = 0;
 
         _src    += stride_l;
@@ -163,13 +163,13 @@ sub_sample_lm_ref_abv_collocated(const uint16_t *lm_src, const uint16_t *src_cb,
     const uint16_t *_src = lm_src - (lm_src_stride << 1) + (start_pos << 1);
     const uint16_t *_src_cb = src_cb - src_c_stride + start_pos;
     const uint16_t *_src_cr = src_cr - src_c_stride + start_pos;
-    int nb_sample;
+    int i;
 
     int abv_step_l = abv_step << 1;
 
     uint8_t pad_left = start_pos == 0 && !lft_avail;
 
-    for (nb_sample = 0; nb_sample < nb_sample_abv; nb_sample++) {
+    for (i = 0; i < nb_sample_abv; i++) {
         int s = 4;
 
         s += _src[0 - lm_src_stride];
@@ -178,9 +178,9 @@ sub_sample_lm_ref_abv_collocated(const uint16_t *lm_src, const uint16_t *src_cb,
         s += _src[0 + 1];
         s += _src[0 + lm_src_stride];
 
-        lm_dst[nb_sample] = s >> 3;
-        dst_cb[nb_sample] = _src_cb[0];
-        dst_cr[nb_sample] = _src_cr[0];
+        lm_dst[i] = s >> 3;
+        dst_cb[i] = _src_cb[0];
+        dst_cr[i] = _src_cr[0];
 
         pad_left = 0;
 
@@ -359,9 +359,9 @@ sub_sample_lm_ref_lft(const uint16_t *lm_src, const uint16_t *src_cb, const uint
     const uint16_t *_src    = lm_src - 2 + start_pos * lm_src_stride2;
     const uint16_t *_src_cb = src_cb - 1 + start_pos * src_c_stride;
     const uint16_t *_src_cr = src_cr - 1 + start_pos * src_c_stride;
-    int nb_sample;
+    int i;
 
-    for (nb_sample = 0; nb_sample < nb_sample_lft; nb_sample++) {
+    for (i = 0; i < nb_sample_lft; i++) {
         int s = 4;
         s += _src[ 0] * 2;
         s += _src[ 1];
@@ -370,10 +370,10 @@ sub_sample_lm_ref_lft(const uint16_t *lm_src, const uint16_t *src_cb, const uint
         s += _src[lm_src_stride + 1];
         s += _src[lm_src_stride - 1];
 
-        lm_dst[nb_sample] = s >> 3;
+        lm_dst[i] = s >> 3;
 
-        dst_cb[nb_sample] = _src_cb[0];
-        dst_cr[nb_sample] = _src_cr[0];
+        dst_cb[i] = _src_cb[0];
+        dst_cr[i] = _src_cr[0];
 
         _src    += stride_l;
         _src_cb += stride_c;
@@ -391,21 +391,22 @@ sub_sample_lm_ref_abv0(const uint16_t *lm_src, const uint16_t *src_cb, const uin
     const uint16_t *_src = lm_src - lm_src_stride + (start_pos << 1);
     const uint16_t *_src_cb = src_cb - src_c_stride + start_pos;
     const uint16_t *_src_cr = src_cr - src_c_stride + start_pos;
-    int nb_sample;
+    int i;
 
     int abv_step_l = abv_step << 1;
     uint8_t pad_left = start_pos == 0 && !lft_avail;
 
-    for (nb_sample = 0; nb_sample < nb_sample_abv; nb_sample++) {
+    for (i = 0; i < nb_sample_abv; i++) {
 
         int s = 2;
         s += _src[0              ] * 2;
         s += _src[0 - (!pad_left)];
         s += _src[0 + 1          ];
 
-        lm_dst[nb_sample] = s >> 2;
-        dst_cb[nb_sample] = _src_cb[0];
-        dst_cr[nb_sample] = _src_cr[0];
+        lm_dst[i] = s >> 2;
+        dst_cb[i] = _src_cb[0];
+        dst_cr[i] = _src_cr[0];
+
         _src += abv_step_l;
         _src_cb += abv_step;
         _src_cr += abv_step;
@@ -421,16 +422,16 @@ sub_sample_lm_ref_abv(const uint16_t *lm_src, const uint16_t *src_cb, const uint
 {
 
     int start_pos = abv_step >> 1;
-    const uint16_t *_src = lm_src - (lm_src_stride << 1) + (start_pos << 1);
+    const uint16_t *_src    = lm_src - (lm_src_stride << 1) + (start_pos << 1);
     const uint16_t *_src_cb = src_cb - src_c_stride + start_pos;
     const uint16_t *_src_cr = src_cr - src_c_stride + start_pos;
-    int nb_sample;
+    int i;
 
     int abv_step_l = abv_step << 1;
 
     uint8_t pad_left = start_pos == 0 && !lft_avail;
 
-    for (nb_sample = 0; nb_sample < nb_sample_abv; nb_sample++) {
+    for (i = 0; i < nb_sample_abv; i++) {
         int s = 4;
         s += _src[0] * 2;
         s += _src[0 + 1];
@@ -439,9 +440,9 @@ sub_sample_lm_ref_abv(const uint16_t *lm_src, const uint16_t *src_cb, const uint
         s += _src[0 + 1 + lm_src_stride];
         s += _src[0 + lm_src_stride - (!pad_left)];
 
-        lm_dst[nb_sample] = s >> 3;
-        dst_cb[nb_sample] = _src_cb[0];
-        dst_cr[nb_sample] = _src_cr[0];
+        lm_dst[i] = s >> 3;
+        dst_cb[i] = _src_cb[0];
+        dst_cr[i] = _src_cr[0];
 
         pad_left = 0;
 
@@ -479,6 +480,7 @@ compute_lm_subsample(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
             lm_val += lm_src[2 * i + 1 + lm_src_stride];
             lm_val += lm_src[2 * i + lm_src_stride - (!pad_left)];
             lm_val >>= 3;
+
             dst_cb[i] = ov_bdclip(((lm_val * scale_cb) >> shift_cb) + offset_cb);
             dst_cr[i] = ov_bdclip(((lm_val * scale_cr) >> shift_cr) + offset_cr);
         }
