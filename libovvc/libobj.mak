@@ -46,6 +46,7 @@ LIB_SRC:=																																 \
 					rcn_intra_dc_planar.c                                          \
 					rcn_intra_mip.c																								 \
 					rcn_transform.c                                                \
+					rcn_transform_tree.c                                           \
 					rcn_transform_scale_8.c                                                \
 					rcn_transform_scale_10.c                                                \
 					rcn_residuals.c                                                \
