@@ -172,23 +172,22 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
         uint16_t *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[(x0) + (y0 * RCN_CTB_STRIDE)];
         int16_t scale  =  ctu_dec->lmcs_info.scale_c_flag ? ctu_dec->lmcs_info.lmcs_chroma_scale : 1<< 11;
         int16_t *const coeffs_cb = ctu_dec->residual_cb + tu_info->pos_offset;
+        int16_t *tr_buff;
 
         if (!(tu_info->tr_skip_mask & 0x2)) {
             const struct TBInfo *const tb_info_cb = &tu_info->tb_info[0];
-            rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cb,
+            tr_buff = ctu_dec->transform_buff;
+            rcn_residual_c(ctu_dec, tr_buff, coeffs_cb,
                            x0, y0, log2_tb_w, log2_tb_h,
                            tb_info_cb->last_pos, lfnst_flag, tu_info->lfnst_idx);
-            if (log2_tb_w + log2_tb_h > 2) {
-                rcn_func->ict.ict[log2_tb_w][0](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
-            } else {
-                rcn_func->ict.add[log2_tb_w](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
-            }
         } else {
-            if (log2_tb_w + log2_tb_h > 2) {
-                rcn_func->ict.ict[log2_tb_w][0](coeffs_cb, dst_cb, log2_tb_w, log2_tb_h, scale);
-            } else {
-                rcn_func->ict.add[log2_tb_w](coeffs_cb, dst_cb, log2_tb_w, log2_tb_h, scale);
-            }
+            tr_buff = coeffs_cb;
+        }
+
+        if (log2_tb_w + log2_tb_h > 2) {
+            rcn_func->ict.ict[log2_tb_w][0](tr_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+        } else {
+            rcn_func->ict.add[log2_tb_w](tr_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
         }
 
 
@@ -200,23 +199,22 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
         uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[(x0) + (y0 * RCN_CTB_STRIDE)];
         int16_t scale  =  ctu_dec->lmcs_info.scale_c_flag ? ctu_dec->lmcs_info.lmcs_chroma_scale : 1<< 11;
         int16_t *const coeffs_cr = ctu_dec->residual_cr + tu_info->pos_offset;
+        int16_t *tr_buff;
 
         if (!(tu_info->tr_skip_mask & 0x1)) {
             const struct TBInfo *const tb_info_cr = &tu_info->tb_info[1];
-            rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_cr,
+            tr_buff = ctu_dec->transform_buff;
+            rcn_residual_c(ctu_dec, tr_buff, coeffs_cr,
                            x0, y0, log2_tb_w, log2_tb_h,
                            tb_info_cr->last_pos, lfnst_flag, tu_info->lfnst_idx);
-            if (log2_tb_w + log2_tb_h > 2) {
-                rcn_func->ict.ict[log2_tb_w][0](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
-            } else {
-                rcn_func->ict.add[log2_tb_w](ctu_dec->transform_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
-            }
         } else {
-            if (log2_tb_w + log2_tb_h > 2) {
-                rcn_func->ict.ict[log2_tb_w][0](coeffs_cr, dst_cr, log2_tb_w, log2_tb_h, scale);
-            } else {
-                rcn_func->ict.add[log2_tb_w](coeffs_cr, dst_cr, log2_tb_w, log2_tb_h, scale);
-            }
+            tr_buff = coeffs_cr;
+        }
+
+        if (log2_tb_w + log2_tb_h > 2) {
+            rcn_func->ict.ict[log2_tb_w][0](tr_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+        } else {
+            rcn_func->ict.add[log2_tb_w](tr_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
         }
 
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
