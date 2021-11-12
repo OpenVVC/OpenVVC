@@ -1341,25 +1341,16 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
     recon_isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, &tu_info);
 #endif
 
-    if(ctu_dec->transform_unit == &transform_unit_st) {
+    if (ctu_dec->transform_unit == &transform_unit_st) {
         if (ctu_dec->intra_mode_c >= 67 && ctu_dec->intra_mode_c < 70) {
-            vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1);
+            vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1,
+                                  log2_cb_w - 1, log2_cb_h - 1);
         }
-    }
 
-    if (cbf_mask_c) {
-        uint8_t jcbcr_flag = cbf_mask_c & 0x8;
-        tu_info_c.cbf_mask = cbf_mask_c;
-        cbf_mask_c &= 0x3;
-        if (jcbcr_flag) {
-
-            rcn_jcbcr(ctu_dec, &tu_info_c, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1, cbf_mask_c, 0);
-
-        } else if (cbf_mask_c) {
-
-            rcn_res_c(ctu_dec, &tu_info_c, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1, cbf_mask_c, 0);
-
+        if (cbf_mask_c) {
+            rcn_tu_c(ctu_dec, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1, 0, cbf_mask_c, &tu_info_c);
         }
+
     }
 
     return cbf_flags;
@@ -1518,23 +1509,14 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
 #endif
     if(ctu_dec->transform_unit == &transform_unit_st) {
         if (ctu_dec->intra_mode_c >= 67 && ctu_dec->intra_mode_c < 70) {
-            vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1);
+            vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1,
+                                  log2_cb_w - 1, log2_cb_h - 1);
         }
-    }
 
-    if (cbf_mask_c) {
-        uint8_t jcbcr_flag = cbf_mask_c & 0x8;
-        tu_info_c.cbf_mask = cbf_mask_c;
-        cbf_mask_c &= 0x3;
-        if (jcbcr_flag) {
-
-            rcn_jcbcr(ctu_dec, &tu_info_c, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1, cbf_mask_c, 0);
-
-        } else if (cbf_mask_c) {
-
-            rcn_res_c(ctu_dec, &tu_info_c, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1, cbf_mask_c, 0);
-
+        if (cbf_mask_c) {
+            rcn_tu_c(ctu_dec, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1, 0, cbf_mask_c, &tu_info_c);
         }
+
     }
 
     return cbf_flags;
