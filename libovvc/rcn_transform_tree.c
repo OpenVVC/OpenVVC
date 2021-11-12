@@ -157,7 +157,7 @@ rcn_residual_c(OVCTUDec *const ctudec,
     }
 }
 
-void
+static void
 rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
           uint8_t x0, uint8_t y0,
           uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t cbf_mask, uint8_t lfnst_flag)
@@ -218,7 +218,7 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
     }
 }
 
-void
+static void
 rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
           uint8_t x0, uint8_t y0, uint8_t log2_tb_w, uint8_t log2_tb_h,
           uint8_t cbf_mask, uint8_t lfnst_flag)
