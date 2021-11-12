@@ -52,12 +52,12 @@ typedef void (*LMsubsampleFunc)(const uint16_t *lm_src, uint16_t *dst_cb, uint16
 
 typedef void (*CCLMFunc)( const uint16_t* const src_luma, uint16_t* const dst_cb,
                           uint16_t* const dst_cr, int log2_pb_w, int log2_pb_h, int y0,
-                          int up_available, int left_available, LMsubsampleFunc const *compute_subsample);
+                          int up_available, int left_available, LMsubsampleFunc const compute_subsample);
 
 typedef void (*MDLMFunc)(const uint16_t* const src_luma, uint16_t* const dst_cb,
                          uint16_t* const dst_cr, uint64_t intra_map_rows,
                          int log2_pb_w, int log2_pb_h, int x0, int y0,
-                         uint8_t left_available, uint8_t up_available, LMsubsampleFunc const *compute_subsample);
+                         uint8_t left_available, uint8_t up_available, LMsubsampleFunc const compute_subsample);
 
 typedef void (*ResidualAddScaleFunc)(const int16_t *src, uint16_t *dst,
                                      int log2_tb_w, int log2_tb_h,

@@ -1228,7 +1228,7 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
         uint8_t got_top_ctu  = neighbour & CTU_UP_FLG;
 
         rcn_func->cclm.cclm(src_luma, dst_cb, dst_cr, log2_pb_w, log2_pb_h,
-                            y0, got_top_ctu || y0, got_left_ctu || x0, &(rcn_func->cclm.compute_subsample));
+                            y0, got_top_ctu || y0, got_left_ctu || x0, rcn_func->cclm.compute_subsample);
         break;
     }
     case OVINTRA_MDLM_LEFT:
@@ -1240,7 +1240,7 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
 
         rcn_func->cclm.mdlm_left(src_luma, dst_cb, dst_cr,
                                  left_col_map, log2_pb_w, log2_pb_h,
-                                 x0, y0, x0 || got_left_ctu, y0 || got_top_ctu, &(rcn_func->cclm.compute_subsample));
+                                 x0, y0, x0 || got_left_ctu, y0 || got_top_ctu, rcn_func->cclm.compute_subsample);
         break;
     }
     case OVINTRA_MDLM_TOP:
@@ -1252,7 +1252,7 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
 
         rcn_func->cclm.mdlm_top(src_luma, dst_cb, dst_cr,
                                 top_row_map, log2_pb_w, log2_pb_h,
-                                x0, y0, x0 || got_left_ctu, y0 || got_top_ctu, &(rcn_func->cclm.compute_subsample));
+                                x0, y0, x0 || got_left_ctu, y0 || got_top_ctu, rcn_func->cclm.compute_subsample);
         break;
     }
     default://angular
