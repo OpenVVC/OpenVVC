@@ -313,26 +313,19 @@ sort_average_lm_ref_samples(const uint16_t *const lm_smp, const uint16_t *const 
         avg_min_max.max_cr = smp_cr[max_idx];
 
     } else {
-        /*FIXME better way of sorting LUT ? ?*/
+        /* FIXME better way of sorting LUT */
 
         int8_t idx[4] = { 0, 2, 1, 3 };
 
         int8_t *min_idx = &idx[0];
         int8_t *max_idx = &idx[2];
 
-        #if 0
-        uint8_t min_idxs = 0x20;
-        uint8_t max_idxs = 0x31;
-        #endif
-
-        /* FIXME check if == */
         if (lm_smp[0] > lm_smp[2]) SWAP(int8_t, min_idx[0], min_idx[1]);
         if (lm_smp[1] > lm_smp[3]) SWAP(int8_t, max_idx[0], max_idx[1]);
 
         if (lm_smp[min_idx[0]] > lm_smp[max_idx[1]]) SWAP(int8_t*, min_idx, max_idx);
         if (lm_smp[min_idx[1]] > lm_smp[max_idx[0]]) SWAP(int8_t, min_idx[1], max_idx[0]);
 
-        /* FIXME average should be performed in an other function */
         avg_min_max.min_l = (lm_smp[min_idx[0]] + lm_smp[min_idx[1]] + 1) >> 1;
         avg_min_max.max_l = (lm_smp[max_idx[0]] + lm_smp[max_idx[1]] + 1) >> 1;
 
@@ -517,13 +510,12 @@ vvc_intra_cclm2(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
         int nb_sample;
 
         if (abv_avail) {
-            int ref_length_abv = pb_w;
-            int abv_step = OVMAX(1, (ref_length_abv >> log2_nb_smp_abv));
+            int abv_step = OVMAX(1, (pb_w >> log2_nb_smp_abv));
             uint8_t ctu_first_line = !y0;
 
             /* in case of abv only ref_length might be 2 while nb_sample_lft is 4
                We are forced to reduce nb_smp in this particular case*/
-            nb_sample_abv = OVMIN(ref_length_abv, nb_sample_abv);
+            nb_sample_abv = OVMIN(pb_w, nb_sample_abv);
 
             /*FIXME avoid checking for first_line */
             if (ctu_first_line) {
@@ -538,12 +530,11 @@ vvc_intra_cclm2(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
         }
 
         if (lft_avail) {
-            int ref_length_lft = pb_h;
-            int lft_step = OVMAX(1, (ref_length_lft >> log2_nb_smp_lft));
+            int lft_step = OVMAX(1, (pb_h >> log2_nb_smp_lft));
 
             /* in case of left only ref_length might be 2 while nb_sample_lft is 4
                We are forced to reduce nb_smp in this particular case */
-            nb_sample_lft = OVMIN(ref_length_lft, nb_sample_lft);
+            nb_sample_lft = OVMIN(pb_h, nb_sample_lft);
 
             sub_sample_lm_ref_lft(lm_src, dst_cb, dst_cr, &lm_smp[nb_sample_abv],
                                   &smp_cb[nb_sample_abv], &smp_cr[nb_sample_abv],
@@ -589,13 +580,12 @@ vvc_intra_cclm2_collocated(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *d
         int nb_sample;
 
         if (abv_avail) {
-            int ref_length_abv = pb_w;
-            int abv_step = OVMAX(1, (ref_length_abv >> log2_nb_smp_abv));
+            int abv_step = OVMAX(1, (pb_w >> log2_nb_smp_abv));
             uint8_t ctu_first_line = !y0;
 
             /* in case of abv only ref_length might be 2 while nb_sample_lft is 4
                We are forced to reduce nb_smp in this particular case*/
-            nb_sample_abv = OVMIN(ref_length_abv, nb_sample_abv);
+            nb_sample_abv = OVMIN(pb_w, nb_sample_abv);
 
             /*FIXME avoid checking for first_line */
             if (ctu_first_line) {
@@ -610,12 +600,11 @@ vvc_intra_cclm2_collocated(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *d
         }
 
         if (lft_avail) {
-            int ref_length_lft = pb_h;
-            int lft_step = OVMAX(1, (ref_length_lft >> log2_nb_smp_lft));
+            int lft_step = OVMAX(1, (pb_h >> log2_nb_smp_lft));
 
             /* in case of left only ref_length might be 2 while nb_sample_lft is 4
                We are forced to reduce nb_smp in this particular case */
-            nb_sample_lft = OVMIN(ref_length_lft, nb_sample_lft);
+            nb_sample_lft = OVMIN(pb_h, nb_sample_lft);
 
             sub_sample_lm_ref_lft_collocated(lm_src, dst_cb, dst_cr, &lm_smp[nb_sample_abv],
                                              &smp_cb[nb_sample_abv], &smp_cr[nb_sample_abv],
@@ -663,8 +652,7 @@ vvc_intra_mdlm_t2(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
         uint16_t smp_cb[4];
         uint16_t smp_cr[4];
 
-        /* min 1 << log2 = 1 << ctz ((1 << log2) | (1 << log2)) */
-        int ref_length_abv = pb_w + OVMIN((1 << log2_pb_h), (1 << log2_pb_w));
+        int ref_length_abv = pb_w + OVMIN(pb_h, pb_w);
         int nb_pb_ref_abv = ref_length_abv >> 1;
 
         int x_pb = x0 >> 1;
@@ -722,8 +710,7 @@ vvc_intra_mdlm_t2_collocated(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t 
         uint16_t smp_cb[4];
         uint16_t smp_cr[4];
 
-        /* min 1 << log2 = 1 << ctz ((1 << log2) | (1 << log2)) */
-        int ref_length_abv = pb_w + OVMIN((1 << log2_pb_h), (1 << log2_pb_w));
+        int ref_length_abv = pb_w + OVMIN(pb_h, pb_w);
         int nb_pb_ref_abv = ref_length_abv >> 1;
 
         int x_pb = x0 >> 1;
@@ -793,8 +780,7 @@ vvc_intra_mdlm_l2(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
         uint16_t smp_cb[4];
         uint16_t smp_cr[4];
 
-        /* min 1 << log2 = 1 << ctz ((1 << log2) | (1 << log2)) */
-        int ref_length_lft = pb_h + OVMIN((1 << log2_pb_h), (1 << log2_pb_w));
+        int ref_length_lft = pb_h + OVMIN(pb_h, pb_w);
         int nb_pb_ref_lft = ref_length_lft >> 1;
 
         int y_pb = y0 >> 1;
@@ -844,8 +830,7 @@ vvc_intra_mdlm_l2_collocated(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t 
         uint16_t smp_cb[4];
         uint16_t smp_cr[4];
 
-        /* min 1 << log2 = 1 << ctz ((1 << log2) | (1 << log2)) */
-        int ref_length_lft = pb_h + OVMIN((1 << log2_pb_h), (1 << log2_pb_w));
+        int ref_length_lft = pb_h + OVMIN(pb_h, pb_w);
         int nb_pb_ref_lft = ref_length_lft >> 1;
 
         int y_pb = y0 >> 1;
