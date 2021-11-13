@@ -47,14 +47,21 @@ options:
 ```
 
 ## Compiling OpenVVC
+### Prerequisites
+```
+sudo apt install build-essential curl autoconf automake libtool
+```
 
 ### Minimal Compilation Steps:
 ```
+autoreconf -if
 ./configure
-cd build
 make
 ```
-To test the library, you can perform a `make test`.
+To test the library, you can perform:
+```
+./CI/checkMD5.sh ./CI/test_bitstreams/random_access ./examples/dectest http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/random_access/
+```
 
 ### Configure Parameters:
 ```

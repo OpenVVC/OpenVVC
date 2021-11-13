@@ -14,22 +14,24 @@
 #include "ovconfig.h"
 #include "drv.h"
 
-#if ARCH_X86
-  #if SSE_ENABLED
-    #include "x86/rcn_sse.h"
-  #elif AVX_ENABLED
-    //Link AVX optims
-  #else
-    //Failover x86
+#ifndef NO_SIMD
+  #if __x86_64__
+    #if __SSE4_1__
+      #include "x86/rcn_sse.h"
+    #elif __AVX__
+      //Link AVX optims
+    #else
+      //Failover x86
   #endif
-#elif ARCH_ARM
-  #if NEON_ENABLED
-    #include "arm/rcn_neon.h"
+  #elif __ARM_ARCH
+    #if __ARM_NEON
+      #include "arm/rcn_neon.h"
+    #else
+      //Failover ARM
+    #endif
   #else
-    //Failover ARM
+    //Failover other arch
   #endif
-#else
-  //Failover other arch
 #endif
 
 #include "dbf_utils.h"
@@ -249,61 +251,64 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
           rcn_init_cclm_functions(rcn_func);
       }
   }
-
-  #if ARCH_X86
-    #if SSE_ENABLED
-      rcn_init_mc_functions_sse(rcn_func);
-      rcn_init_tr_functions_sse(rcn_func);
-      rcn_init_dc_planar_functions_sse(rcn_func);
-      rcn_init_ict_functions_sse(rcn_func, ict_type);
-      rcn_init_lfnst_functions_sse(rcn_func);
-      rcn_init_mip_functions_sse(rcn_func);
-      rcn_init_alf_functions_sse(rcn_func);
-      rcn_init_sao_functions_sse(rcn_func);
-      rcn_init_dmvr_functions_sse(rcn_func);
-      rcn_init_prof_functions_sse(rcn_func);
-      rcn_init_bdof_functions_sse(rcn_func);
-      rcn_init_ciip_functions_sse(rcn_func);
-      rcn_init_df_functions_sse(rcn_func);
-      if (lm_chroma_enabled) {
-          if (!sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {
-              rcn_init_cclm_functions_sse(rcn_func);
-          }
+  #ifndef NO_SIMD
+    #if __x86_64__
+      #if __SSE4_1__
+      if (__builtin_cpu_supports ("sse4.1")) {
+        rcn_init_mc_functions_sse(rcn_func);
+        rcn_init_tr_functions_sse(rcn_func);
+        rcn_init_dc_planar_functions_sse(rcn_func);
+        rcn_init_ict_functions_sse(rcn_func, ict_type);
+        rcn_init_lfnst_functions_sse(rcn_func);
+        rcn_init_mip_functions_sse(rcn_func);
+        rcn_init_alf_functions_sse(rcn_func);
+        rcn_init_sao_functions_sse(rcn_func);
+        rcn_init_dmvr_functions_sse(rcn_func);
+        rcn_init_prof_functions_sse(rcn_func);
+        rcn_init_bdof_functions_sse(rcn_func);
+        rcn_init_ciip_functions_sse(rcn_func);
+        rcn_init_df_functions_sse(rcn_func);
+        if (lm_chroma_enabled) {
+            if (!sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {
+                rcn_init_cclm_functions_sse(rcn_func);
+            }
+        }
       }
-    #elif AVX_ENABLED
-      //Link AVX optims
-    #else
-      //Failover x86
-    #endif
-  #elif ARCH_ARM
-    #if NEON_ENABLED
-      // rcn_init_mc_functions_sse(rcn_func);
-      // rcn_init_tr_functions_sse(rcn_func);
-      // rcn_init_dc_planar_functions_sse(rcn_func);
-      // rcn_init_ict_functions_sse(rcn_func, ict_type);
-      // rcn_init_lfnst_functions_sse(rcn_func);
-      // rcn_init_mip_functions_sse(rcn_func);
-      // rcn_init_alf_functions_sse(rcn_func);
-      // rcn_init_sao_functions_sse(rcn_func);
-      // rcn_init_dmvr_functions_sse(rcn_func);
-      // rcn_init_prof_functions_sse(rcn_func);
-      // rcn_init_bdof_functions_sse(rcn_func);
-      // rcn_init_ciip_functions_sse(rcn_func);
-      // rcn_init_df_functions_sse(rcn_func);
-      // if (lm_chroma_enabled) {
-      //     if (!sps_chroma_vertical_collocated_flag ) {
-      //         rcn_init_cclm_functions_sse(rcn_func);
-      //     }
-      // }
+      #elif __AVX__
+        //Link AVX optims
+      #else
+        //Failover x86
+      #endif
+    #elif __ARM_ARCH
+      #if __ARM_NEON
+        // rcn_init_mc_functions_sse(rcn_func);
+        // rcn_init_tr_functions_sse(rcn_func);
+        // rcn_init_dc_planar_functions_sse(rcn_func);
+        // rcn_init_ict_functions_sse(rcn_func, ict_type);
+        // rcn_init_lfnst_functions_sse(rcn_func);
+        // rcn_init_mip_functions_sse(rcn_func);
+        // rcn_init_alf_functions_sse(rcn_func);
+        // rcn_init_sao_functions_sse(rcn_func);
+        // rcn_init_dmvr_functions_sse(rcn_func);
+        // rcn_init_prof_functions_sse(rcn_func);
+        // rcn_init_bdof_functions_sse(rcn_func);
+        // rcn_init_ciip_functions_sse(rcn_func);
+        // rcn_init_df_functions_sse(rcn_func);
+        // if (lm_chroma_enabled) {
+        //     if (!sps_chroma_vertical_collocated_flag ) {
+        //         rcn_init_cclm_functions_sse(rcn_func);
+        //     }
+        // }
 
-      // to enable Assembly optimisation
-      #if ARCH_AARCH64_ASSEMBLY
-        rcn_init_mc_functions_neon(rcn_func);
+        // to enable Assembly optimisation
+        #if ARCH_AARCH64_ASSEMBLY
+          rcn_init_mc_functions_neon(rcn_func);
+        #endif
+      #else
+        //Failover ARM
       #endif
     #else
-      //Failover ARM
+      //Failover other arch
     #endif
-  #else
-    //Failover other arch
   #endif
 }

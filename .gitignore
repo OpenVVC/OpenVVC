@@ -5,6 +5,9 @@ config.h
 libovvc/ovversion.h
 libovvc/ovconfig.h
 libopenvvc.pc
+configure
+*.in
+*~
 
 # Build objects
 *.o
@@ -16,9 +19,11 @@ libopenvvc.pc
 *.exe
 *.cache
 *.annote
+*.m4
 
 # Build folder
 build/*
+build-aux/*
 
 # Editor created objects
 *.sw?

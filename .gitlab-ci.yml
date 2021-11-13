@@ -2,82 +2,58 @@ stages:
   - build
   - test
 # Linux builds
-build_linux_gcc_debug:
+build_linux_gcc:
   stage: build
   tags:
     - x86
   image: ubuntu
   before_script:
-    - apt update && apt install -y build-essential curl
+    - apt update && apt install -y build-essential curl autoconf automake libtool 
   script:
     - gcc --version
-    - ./configure --cc=gcc --debug --build-dir=debug
-    - cd debug
+    - autoreconf -if
+    - ./configure
     - make
 # Files to keep after compilation
   artifacts:
     paths:
-      - debug/libovvc.a
-      - debug/libovvc.so
-      - debug/examples/dectest
+      - libovvc/.libs/libovvc.so.0.0.3
+      - libovvc/.libs/libovvc.so.0
+      - examples/.libs/dectest
+      - examples/dectest
 
-build_linux_gcc_release:
-  stage: build
-  tags:
-    - x86
-  image: ubuntu
-  before_script:
-    - apt update && apt install -y build-essential curl
-  script:
-    - gcc --version
-    - ./configure --cc=gcc --release --build-dir=release
-    - cd release
-    - make
-# Files to keep after compilation
-  artifacts:
-    paths:
-      - release/libovvc.a
-      - release/libovvc.so
-      - release/examples/dectest
-
-AllIntra_CTC_gcc_release:
+AllIntra_CTC_gcc:
   stage: test
   tags:
     - x86
   image: ubuntu
   dependencies:
-    - build_linux_gcc_release
+    - build_linux_gcc
   before_script:
-    - apt update && apt install -y build-essential curl
+    - apt update && apt install -y curl
   script:
-    - ./configure --release --build-dir=release --teststreams-url=http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/all_intra/
-    - cd release
-    - make test
+    - ./CI/checkMD5.sh ./CI/test_bitstreams/all_intra ./examples/dectest http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/all_intra/
 
-LowDelay_CTC_gcc_release:
+LowDelay_CTC_gcc:
   stage: test
   tags:
     - x86
   image: ubuntu
   dependencies:
-    - build_linux_gcc_release
+    - build_linux_gcc
   before_script:
-    - apt update && apt install -y build-essential curl
+    - apt update && apt install -y curl
   script:
-    - ./configure --release --build-dir=release --teststreams-url=http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/low_delay/
-    - cd release
-    - make test
+    - ./CI/checkMD5.sh ./CI/test_bitstreams/low_delay ./examples/dectest http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/low_delay/
 
-RandomAccess_CTC_gcc_release:
+RandomAccess_CTC_gcc:
   stage: test
   tags:
     - x86
   image: ubuntu
   dependencies:
-    - build_linux_gcc_release
+    - build_linux_gcc
   before_script:
-    - apt update && apt install -y build-essential curl
+    - apt update && apt install -y curl
   script:
-    - ./configure --release --build-dir=release --teststreams-url=http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/random_access/
-    - cd release
-    - make test
+    - ./CI/checkMD5.sh ./CI/test_bitstreams/random_access ./examples/dectest http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/random_access/
