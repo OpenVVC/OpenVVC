@@ -1173,8 +1173,8 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
 
-    uint16_t *edge_buff0 = rcn_ctx->data.edge_buff0;
-    uint16_t *edge_buff1 = rcn_ctx->data.edge_buff1;
+    uint16_t edge_buff0[RCN_CTB_SIZE];
+    uint16_t edge_buff1[RCN_CTB_SIZE];
     
     /*FIXME permit smaller stride to reduce tables */
     int16_t ref_dmvr0[(16 + 2 * DMVR_REF_PADD) * (128 + 2 * DMVR_REF_PADD)] = {0};
