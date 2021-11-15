@@ -13,14 +13,10 @@
 #define BITDEPTH 10
 #define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
 
-static inline int
-alf_clip(const int clip, const int32_t ref, const int32_t val0, const int32_t val1)
-{
-    int clip1 = ov_clip(val0 - ref, -clip, clip);
-    int clip2 = ov_clip(val1 - ref, -clip, clip);
-    return clip1 + clip2;
-}
-
+struct ALFilterIdx {
+    uint8_t class_idx;
+    uint8_t tr_idx;
+};
 
 static const int16_t fixed_filter_coeff[ALF_FIXED_FILTER_NUM][MAX_NUM_ALF_LUMA_COEFF] =
 {
@@ -110,12 +106,21 @@ static const int16_t class_to_filter_mapping[NUM_FIXED_FILTER_SETS][MAX_NUM_ALF_
     { 16,  31,  32,  15,  60,  30,   4,  17,  19,  25,  22,  20,   4,  53,  19,  21,  22,  46,  25,  55,  26,  48,  63,  58,  55 },
 };
 
-static const uint8_t shuffle_lut[4][13] = {
+static const uint8_t shuffle_lut[4][13] =
+{
     {  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12},
     {  9,  4, 10,  8,  1,  5, 11,  7,  3,  0,  2,  6, 12},
     {  0,  3,  2,  1,  8,  7,  6,  5,  4,  9, 10, 11, 12},
     {  9,  8, 10,  4,  3,  7, 11,  5,  1,  0,  2,  6, 12}
 };
+
+static inline int
+alf_clip(const int clip, const int32_t ref, const int32_t val0, const int32_t val1)
+{
+    int clip1 = ov_clip(val0 - ref, -clip, clip);
+    int clip2 = ov_clip(val1 - ref, -clip, clip);
+    return clip1 + clip2;
+}
 
 void
 rcn_alf_create(RCNALF* alf)
@@ -149,7 +154,7 @@ rcn_alf_create(RCNALF* alf)
     }
 }
 
-void
+static void
 alf_reconstructCoeff_luma(RCNALF* alf, const struct OVALFData* alf_data)
 {
     int factor = 1 << (NUM_BITS - 1);
@@ -182,7 +187,8 @@ alf_reconstructCoeff_luma(RCNALF* alf, const struct OVALFData* alf_data)
     }
 }
 
-void alf_reconstructCoeff_chroma(RCNALF* alf, const struct OVALFData* alf_data)
+static void
+alf_reconstructCoeff_chroma(RCNALF* alf, const struct OVALFData* alf_data)
 {
     int factor = 1 << (NUM_BITS - 1);
     int num_classes = 1;
@@ -220,16 +226,17 @@ void alf_reconstructCoeff_chroma(RCNALF* alf, const struct OVALFData* alf_data)
     }
 }
 
-void rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t luma_flag, uint8_t chroma_flag)
+void
+rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t luma_flag, uint8_t chroma_flag)
 {
 
-    if (luma_flag){
+    if (luma_flag) {
         for (int i = 0; i < ctudec->alf_info.num_alf_aps_ids_luma; i++) {
             const struct OVALFData* alf_data = ctudec->alf_info.aps_alf_data[i];
 
             alf_reconstructCoeff_luma(alf, alf_data);
 
-            for (int j = 0; j < MAX_NUM_ALF_CLASSES; j++){
+            for (int j = 0; j < MAX_NUM_ALF_CLASSES; j++) {
                 for (int k = 0; k < MAX_NUM_ALF_LUMA_COEFF; k++) {
                     for (int t = 0; t < ALF_CTB_MAX_NUM_TRANSPOSE; t++) {
                         alf->filter_coeff_dec[NUM_FIXED_FILTER_SETS+i][t*MAX_NUM_ALF_CLASSES*MAX_NUM_ALF_LUMA_COEFF+j*MAX_NUM_ALF_LUMA_COEFF+k] = alf->coeff_final[j*MAX_NUM_ALF_LUMA_COEFF+shuffle_lut[t][k]];
@@ -240,16 +247,11 @@ void rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t 
         }
     }
 
-    if (chroma_flag){
+    if (chroma_flag) {
         const struct OVALFData* alf_data_c = ctudec->alf_info.aps_alf_data_c;
         alf_reconstructCoeff_chroma(alf, alf_data_c);
     }
 }
-
-struct ALFilterIdx {
-    uint8_t class_idx;
-    uint8_t tr_idx;
-};
 
 static struct ALFilterIdx
 derive_filter_idx(uint32_t sum_h, uint32_t sum_v, uint32_t sum_d, uint32_t sum_b, uint8_t shift, uint8_t is_vbnd)
@@ -658,7 +660,7 @@ rcn_alf_classif_novbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_id
     }
 }
 
-void
+static void
 rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr,
                                  int16_t *const src, const int stride, const Area blk,
                                  const int shift, const int ctu_s, int virbnd_pos)
@@ -708,7 +710,8 @@ rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const int str
     }
 }
 
-void cc_alf_filterBlk(int16_t * chroma_dst, int16_t * luma_src, const int chr_stride, const int luma_stride,
+static void
+cc_alf_filterBlk(int16_t * chroma_dst, int16_t * luma_src, const int chr_stride, const int luma_stride,
                         const Area blk_dst, const uint8_t c_id, const int16_t *filt_coeff,
                         const int vbCTUHeight, int vbPos)
 {
@@ -773,7 +776,8 @@ void cc_alf_filterBlk(int16_t * chroma_dst, int16_t * luma_src, const int chr_st
     }
 }
 
-void cc_alf_filterBlkVB(int16_t * chroma_dst, int16_t * luma_src, const int chr_stride, const int luma_stride,
+static void
+cc_alf_filterBlkVB(int16_t * chroma_dst, int16_t * luma_src, const int chr_stride, const int luma_stride,
                         const Area blk_dst, const uint8_t c_id, const int16_t *filt_coeff,
                         const int vbCTUHeight, int vbPos)
 {
@@ -927,11 +931,12 @@ alf_filter_c(int16_t *const dst, const int16_t *const src,
     }
 }
 
-static void alf_filter_cVB(int16_t *const dst, const int16_t *const src,
-                  const int dst_stride, const int src_stride,
-                  Area blk_dst,
-                  const int16_t *const filter_set, const int16_t *const clip_set,
-                  const int ctu_height, int virbnd_pos)
+static void
+alf_filter_cVB(int16_t *const dst, const int16_t *const src,
+               const int dst_stride, const int src_stride,
+               Area blk_dst,
+               const int16_t *const filter_set, const int16_t *const clip_set,
+               const int ctu_height, int virbnd_pos)
 {
     const int shift = NUM_BITS - 1;
     const int offset = 1 << (shift - 1);
@@ -1005,7 +1010,6 @@ static void alf_filter_cVB(int16_t *const dst, const int16_t *const src,
                     if (!(isNearVBabove || isNearVBbelow)) {
                         sum = (sum + offset) >> shift;
                     } else {
-                        //Rounding offset fix
                         sum = (sum + (1 << ((shift + 3) - 1))) >> (shift + 3);
                     }
 
@@ -1036,9 +1040,10 @@ static void alf_filter_cVB(int16_t *const dst, const int16_t *const src,
     }
 }
 
-static void alf_filterBlkLuma(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
-                         Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
-                         const int ctu_height, int virbnd_pos)
+static void
+alf_filterBlkLuma(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
+                  Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
+                  const int ctu_height, int virbnd_pos)
 {
     const int16_t *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
 
@@ -1122,9 +1127,10 @@ static void alf_filterBlkLuma(uint8_t * class_idx_arr, uint8_t * transpose_idx_a
     }
 }
 
-static void alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
-                         Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
-                         const int ctu_height, int virbnd_pos)
+static void
+alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
+                    Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
+                    const int ctu_height, int virbnd_pos)
 {
     const int16_t *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
 
@@ -1253,7 +1259,7 @@ void
 rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y)
 {
     struct ALFInfo* alf_info = &ctudec->alf_info;
-    if (!alf_info->alf_luma_enabled_flag && !alf_info->alf_cb_enabled_flag && !alf_info->alf_cr_enabled_flag){
+    if (!alf_info->alf_luma_enabled_flag && !alf_info->alf_cb_enabled_flag && !alf_info->alf_cr_enabled_flag) {
         return;
     }
 
@@ -1393,9 +1399,8 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
     }
 }
 
-
 void
-rcn_init_alf_functions(struct RCNFunctions *rcn_func){
+rcn_init_alf_functions(struct RCNFunctions *rcn_func) {
     rcn_func->alf.classif=&rcn_alf_derive_classificationBlk;
     rcn_func->alf.luma[0]=&alf_filterBlkLuma;
     rcn_func->alf.luma[1]=&alf_filterBlkLumaVB;
