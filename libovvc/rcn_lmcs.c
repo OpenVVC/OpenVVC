@@ -141,7 +141,7 @@ derive_backward_lut(int16_t *const bwd_lut, const struct TMPWindowsInfo *const t
 }
 
 /* Note min_idx and max_bin_idx are supposed < 16 */
-void
+static void
 init_lmcs_lut(struct LMCSLUTs *const lmcs_luts, const struct LMCSInfo2 *const lmcs_info)
 {
     struct TMPWindowsInfo tmp_wnd;
@@ -164,7 +164,7 @@ lmcs_convert_data_to_info(struct LMCSInfo2 *const dst, const struct OVLMCSData *
 {
     int i;
 
-    dst->lmcs_min_bin_idx = src->lmcs_min_bin_idx;
+    dst->lmcs_min_bin_idx       = src->lmcs_min_bin_idx;
     dst->lmcs_delta_max_bin_idx = src->lmcs_delta_max_bin_idx;
 
     memset(dst->lmcs_cw_delta, 0, sizeof(dst->lmcs_cw_delta));
@@ -175,7 +175,7 @@ lmcs_convert_data_to_info(struct LMCSInfo2 *const dst, const struct OVLMCSData *
     }
 }
 
-void
+static void
 rcn_derive_lmcs_params(struct LMCSInfo *lmcs_info, uint16_t *const output_pivot, const OVLMCSData *const lmcs)
 {
     lmcs_info->min_idx = lmcs->lmcs_min_bin_idx;
@@ -286,7 +286,7 @@ rcn_lmcs_reshape_luma_blk_lut(uint16_t *dst, ptrdiff_t stride_dst, uint16_t* lmc
     }
 }
 
-void 
+static void
 rcn_lmcs_compute_lut_luma(struct LMCSInfo *lmcs_info, uint16_t* inverse_lut,
                           uint16_t* forward_lut, uint16_t* wnd_boundaries)
 {
