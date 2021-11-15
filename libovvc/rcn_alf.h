@@ -56,7 +56,6 @@ typedef enum
   NUM_CHROMA_FORMAT = 4
 }ChromaFormat;
 
-
 typedef enum
 {
   CHANNEL_TYPE_LUMA    = 0,
@@ -75,7 +74,8 @@ typedef struct
   int16_t           clip_final[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
   int16_t           chroma_coeff_final[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF];
   int16_t           chroma_clip_final[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF];
-  int16_t           alf_clipping_values[MAX_NUM_CHANNEL_TYPE][MAX_ALF_NUM_CLIP_VAL];
+  int16_t           alf_clip_l[MAX_ALF_NUM_CLIP_VAL];
+  int16_t           alf_clip_c[MAX_ALF_NUM_CLIP_VAL];
 }RCNALF;
 
 void rcn_alf_create(RCNALF* alf);
