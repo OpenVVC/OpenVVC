@@ -126,14 +126,11 @@ void
 rcn_alf_create(RCNALF* alf)
 {
     int shift_luma   = BITDEPTH - 8;
-    int shift_chroma = BITDEPTH - 8;
 
     alf->alf_clip_l[0] = 1 << BITDEPTH;
-    alf->alf_clip_c[0] = 1 << BITDEPTH;
 
     for (int i = 1; i < MAX_ALF_NUM_CLIP_VAL; ++i) {
         alf->alf_clip_l[i] = 1 << (7 - 2 * i + shift_luma);
-        alf->alf_clip_c[i] = 1 << (7 - 2 * i + shift_chroma);
     }
 
     for (int i = 0; i < NUM_FIXED_FILTER_SETS; i++) {
@@ -155,10 +152,11 @@ rcn_alf_create(RCNALF* alf)
 }
 
 static void
-alf_init_filter_l(RCNALF* alf, const struct OVALFData* alf_data)
+alf_init_filter_l(RCNALF* alf, const struct OVALFData* alf_data, int16_t *dst_coeff, int16_t *dst_clip)
 {
+    int16_t coeff_final[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
+    int16_t clip_final[MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
     int factor = 1 << (NUM_BITS - 1);
-    int num_classes =  MAX_NUM_ALF_CLASSES;
     int num_coeff = 13;
     int num_coeff_minus1 = num_coeff - 1;
 
@@ -173,24 +171,34 @@ alf_init_filter_l(RCNALF* alf, const struct OVALFData* alf_data)
         coeff[filter_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = factor;
     }
 
-    for (int class_idx = 0; class_idx < num_classes; class_idx++) {
+    for (int class_idx = 0; class_idx < MAX_NUM_ALF_CLASSES; class_idx++) {
         int filter_idx = alf_data->alf_luma_coeff_delta_idx[class_idx];
         for (int coeffIdx = 0; coeffIdx < num_coeff_minus1; ++coeffIdx) {
-            alf->coeff_final[class_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] = coeff[filter_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx];
+            coeff_final[class_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] = coeff[filter_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx];
         }
-        alf->coeff_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = factor;
-        alf->clip_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = alf->alf_clip_l[0];
+        coeff_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = factor;
+        clip_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = alf->alf_clip_l[0];
         for (int coeffIdx = 0; coeffIdx < num_coeff_minus1; ++coeffIdx) {
             int clipIdx = alf_data->alf_luma_clip_flag ? clip [filter_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] : 0;
-            alf->clip_final[class_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] = alf->alf_clip_l[clipIdx];
+            clip_final[class_idx * MAX_NUM_ALF_LUMA_COEFF + coeffIdx] = alf->alf_clip_l[clipIdx];
         }
-        alf->clip_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = alf->alf_clip_l[0];
+        clip_final[class_idx* MAX_NUM_ALF_LUMA_COEFF + num_coeff_minus1] = alf->alf_clip_l[0];
+    }
+
+    for (int j = 0; j < MAX_NUM_ALF_CLASSES; j++) {
+        for (int k = 0; k < MAX_NUM_ALF_LUMA_COEFF; k++) {
+            for (int t = 0; t < ALF_CTB_MAX_NUM_TRANSPOSE; t++) {
+                dst_coeff[t*MAX_NUM_ALF_CLASSES*MAX_NUM_ALF_LUMA_COEFF+j*MAX_NUM_ALF_LUMA_COEFF+k] = coeff_final[j*MAX_NUM_ALF_LUMA_COEFF+shuffle_lut[t][k]];
+                dst_clip[t*MAX_NUM_ALF_CLASSES*MAX_NUM_ALF_LUMA_COEFF+j*MAX_NUM_ALF_LUMA_COEFF+k] = clip_final[j*MAX_NUM_ALF_LUMA_COEFF+shuffle_lut[t][k]];
+            }
+        }
     }
 }
 
 static void
 alf_init_filter_c(RCNALF* alf, const struct OVALFData* alf_data)
 {
+    int16_t alf_clip_c[MAX_ALF_NUM_CLIP_VAL];
     int factor = 1 << (NUM_BITS - 1);
     int num_coeff = 7 ;
     int num_coeff_minus1 = num_coeff - 1;
@@ -199,16 +207,25 @@ alf_init_filter_c(RCNALF* alf, const struct OVALFData* alf_data)
     int16_t* coeff;
     int16_t* clip;
 
+    int shift_chroma = BITDEPTH - 8;
+
+    alf_clip_c[0] = 1 << BITDEPTH;
+
+    for (int i = 1; i < MAX_ALF_NUM_CLIP_VAL; ++i) {
+        alf_clip_c[i] = 1 << (7 - 2 * i + shift_chroma);
+    }
+
+
     for (int alt_idx = 0; alt_idx < num_alts; ++ alt_idx) {
         coeff = (int16_t*) alf_data->alf_chroma_coeff[alt_idx];
         clip = (int16_t*) alf_data->alf_chroma_clip_idx[alt_idx];
         for (int coeffIdx = 0; coeffIdx < num_coeff_minus1; ++coeffIdx) {
             int clipIdx = alf_data->alf_chroma_clip_flag ? clip[coeffIdx] : 0;
             alf->chroma_coeff_final[alt_idx][coeffIdx] = coeff[coeffIdx];
-            alf->chroma_clip_final[alt_idx][coeffIdx] = alf->alf_clip_c[clipIdx];
+            alf->chroma_clip_final[alt_idx][coeffIdx] = alf_clip_c[clipIdx];
         }
         alf->chroma_coeff_final[alt_idx][num_coeff_minus1] = factor;
-        alf->chroma_clip_final[alt_idx][num_coeff_minus1] = alf->alf_clip_c[0];
+        alf->chroma_clip_final[alt_idx][num_coeff_minus1] = alf_clip_c[0];
     }
 }
 
@@ -219,16 +236,9 @@ rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t luma_
         for (int i = 0; i < ctudec->alf_info.num_alf_aps_ids_luma; i++) {
             const struct OVALFData* alf_data = ctudec->alf_info.aps_alf_data[i];
 
-            alf_init_filter_l(alf, alf_data);
+            alf_init_filter_l(alf, alf_data, alf->filter_coeff_dec[NUM_FIXED_FILTER_SETS + i], 
+                              alf->filter_clip_dec[NUM_FIXED_FILTER_SETS + i]);
 
-            for (int j = 0; j < MAX_NUM_ALF_CLASSES; j++) {
-                for (int k = 0; k < MAX_NUM_ALF_LUMA_COEFF; k++) {
-                    for (int t = 0; t < ALF_CTB_MAX_NUM_TRANSPOSE; t++) {
-                        alf->filter_coeff_dec[NUM_FIXED_FILTER_SETS+i][t*MAX_NUM_ALF_CLASSES*MAX_NUM_ALF_LUMA_COEFF+j*MAX_NUM_ALF_LUMA_COEFF+k] = alf->coeff_final[j*MAX_NUM_ALF_LUMA_COEFF+shuffle_lut[t][k]];
-                        alf->filter_clip_dec[NUM_FIXED_FILTER_SETS+i][t*MAX_NUM_ALF_CLASSES*MAX_NUM_ALF_LUMA_COEFF+j*MAX_NUM_ALF_LUMA_COEFF+k] = alf->clip_final[j*MAX_NUM_ALF_LUMA_COEFF+shuffle_lut[t][k]];
-                    }
-                }
-            }
         }
     }
 
