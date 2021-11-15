@@ -674,7 +674,7 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
 static void
 rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const int stride,
                               Area blk, int ctu_s, int pic_h,
-                              ALFClassifBlkFunc classif_func)
+                              ALFClassifBlkFunc classif_func, uint8_t *class_idx, uint8_t *transpose_idx)
 {
     int ctu_h = blk.height;
     int ctu_w = blk.width;
@@ -698,7 +698,7 @@ rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const int str
                 .height = blk_h
             };
 
-            classif_func(alf->class_idx, alf->transpose_idx, rcn_img_class, stride, blk_class,
+            classif_func(class_idx, transpose_idx, rcn_img_class, stride, blk_class,
                          BITDEPTH + 4, ctu_s,
                          virbnd_pos);
         }
@@ -1258,6 +1258,8 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
         return;
     }
 
+    uint8_t class_idx[CLASSIFICATION_BLK_SIZE*CLASSIFICATION_BLK_SIZE];
+    uint8_t transpose_idx[CLASSIFICATION_BLK_SIZE*CLASSIFICATION_BLK_SIZE];
     struct OVFilterBuffers fb = ctudec->filter_buffers;
     OVFrame *frame = fb.pic_frame;
 
@@ -1308,7 +1310,8 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 
             rcn_alf_derive_classification(alf, src_luma, stride_src, blk_dst,
                                           ctu_s, ctudec->pic_h,
-                                          ctudec->rcn_ctx.rcn_funcs.alf.classif);
+                                          ctudec->rcn_ctx.rcn_funcs.alf.classif,
+                                          class_idx, transpose_idx);
 
             int16_t filter_idx = alf_params_ctu->ctb_alf_idx;
             int16_t *coeff = alf->filter_coeff_dec[filter_idx];
@@ -1319,7 +1322,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 
             uint8_t req_vb = check_virtual_bound(y_pos_pic, ctu_h, virbnd_pos, log2_ctb_s);
 
-            (ctudec->rcn_ctx.rcn_funcs.alf.luma[req_vb])(alf->class_idx, alf->transpose_idx, dst_luma,
+            (ctudec->rcn_ctx.rcn_funcs.alf.luma[req_vb])(class_idx, transpose_idx, dst_luma,
                                                          src_luma, stride_dst, stride_src,
                                                          blk_dst, coeff, clip,
                                                          ctu_s, virbnd_pos);
