@@ -432,9 +432,6 @@ ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
             memset(alf_info->ctb_alf_params, 0, sizeof(ALFParamsCtu) * nb_ctb_pic_w * nb_ctb_pic_h);
         }
 
-        //create the structures for ALF reconstruction
-        rcn_alf_create(&alf_info->rcn_alf);
-
         //Initialization of ALF reconstruction structures
         RCNALF* alf = &alf_info->rcn_alf;
         uint8_t luma_flag = alf_info->alf_luma_enabled_flag;
