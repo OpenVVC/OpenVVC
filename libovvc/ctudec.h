@@ -286,8 +286,10 @@ struct InterDRVCtx
     /* References Pictures Lists */
     OVPicture *rpl0[16];
     OVPicture *rpl1[16];
-    uint16_t scaling_rpl0[16][2];
-    uint16_t scaling_rpl1[16][2];
+    uint16_t scale_fact_rpl0[16][2];
+    uint16_t scale_fact_rpl1[16][2];
+    // uint8_t filter_idx_rpl0[16][2];
+    // uint8_t filter_idx_rpl1[16][2];
 
     uint8_t nb_active_ref0;
     uint8_t nb_active_ref1;

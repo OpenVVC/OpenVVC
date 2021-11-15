@@ -2140,11 +2140,6 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
     uint8_t smvd_flag = 0;
     uint8_t mmvd_flag = 0;
 
-    //TODO print enlever
-    uint8_t log2_ctb_s = ctu_dec->part_ctx->log2_ctu_s;
-    int pos_x = (ctu_dec->ctb_x << log2_ctb_s) + x0;
-    int pos_y = (ctu_dec->ctb_y << log2_ctb_s) + y0;
-    
     /* FIXME Move AMVR precision outside of inter_ctx */
     inter_ctx->prec_amvr = MV_PRECISION_QUARTER;
     ctu_dec->tmp_ciip = 0;

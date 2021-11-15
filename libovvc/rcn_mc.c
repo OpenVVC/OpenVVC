@@ -129,6 +129,64 @@ static const int8_t ov_bilinear_filters_4[15][2] =
   { 1, 15, }
 };
 
+
+static const int8_t ov_mc_filters_rpr[3][16][8] =
+{
+    {{  0, 0,   0, 64,  0,  0,  0,  0 },
+    {   0, 1,  -3, 63,  4,  -2,  1,  0 },
+    {  -1, 2,  -5, 62,  8,  -3,  1,  0 },
+    {  -1, 3,  -8, 60, 13,  -4,  1,  0 },
+    {  -1, 4, -10, 58, 17,  -5,  1,  0 },
+    {  -1, 4, -11, 52, 26,  -8,  3, -1 },
+    {  -1, 3,  -9, 47, 31, -10,  4, -1 },
+    {  -1, 4, -11, 45, 34, -10,  4, -1 },
+    {  -1, 4, -11, 40, 40, -11,  4, -1 },
+    {  -1, 4, -10, 34, 45, -11,  4, -1 },
+    {  -1, 4, -10, 31, 47,  -9,  3, -1 },
+    {  -1, 3,  -8, 26, 52, -11,  4, -1 },
+    {   0, 1,  -5, 17, 58, -10,  4, -1 },
+    {   0, 1,  -4, 13, 60,  -8,  3, -1 },
+    {   0, 1,  -3,  8, 62,  -5,  2, -1 },
+    {   0, 1,  -2,  4, 63,  -3,  1,  0 }},
+
+    // 1.5x
+    {{ -1, -5, 17, 42, 17, -5, -1,  0 },
+    {  0, -5, 15, 41, 19, -5, -1,  0 },
+    {  0, -5, 13, 40, 21, -4, -1,  0 },
+    {  0, -5, 11, 39, 24, -4, -2,  1 },
+    {  0, -5,  9, 38, 26, -3, -2,  1 },
+    {  0, -5,  7, 38, 28, -2, -3,  1 },
+    {  1, -5,  5, 36, 30, -1, -3,  1 },
+    {  1, -4,  3, 35, 32,  0, -4,  1 },
+    {  1, -4,  2, 33, 33,  2, -4,  1 },
+    {  1, -4,  0, 32, 35,  3, -4,  1 },
+    {  1, -3, -1, 30, 36,  5, -5,  1 },
+    {  1, -3, -2, 28, 38,  7, -5,  0 },
+    {  1, -2, -3, 26, 38,  9, -5,  0 },
+    {  1, -2, -4, 24, 39, 11, -5,  0 },
+    {  0, -1, -4, 21, 40, 13, -5,  0 },
+    {  0, -1, -5, 19, 41, 15, -5,  0 }},
+
+    // 2.0x
+    {{ -4,  2, 20, 28, 20,  2, -4,  0 },
+    { -4,  0, 19, 29, 21,  5, -4, -2 },
+    { -4, -1, 18, 29, 22,  6, -4, -2 },
+    { -4, -1, 16, 29, 23,  7, -4, -2 },
+    { -4, -1, 16, 28, 24,  7, -4, -2 },
+    { -4, -1, 14, 28, 25,  8, -4, -2 },
+    { -3, -3, 14, 27, 26,  9, -3, -3 },
+    { -3, -1, 12, 28, 25, 10, -4, -3 },
+    { -3, -3, 11, 27, 27, 11, -3, -3 },
+    { -3, -4, 10, 25, 28, 12, -1, -3 },
+    { -3, -3,  9, 26, 27, 14, -3, -3 },
+    { -2, -4,  8, 25, 28, 14, -1, -4 },
+    { -2, -4,  7, 24, 28, 16, -1, -4 },
+    { -2, -4,  7, 23, 29, 16, -1, -4 },
+    { -2, -4,  6, 22, 29, 18, -1, -4 },
+    { -2, -4,  5, 21, 29, 19,  0, -4 }}
+};
+
+
 static void
 put_vvc_pel_uni_pixels(uint16_t* _dst, ptrdiff_t _dststride,
                        const uint16_t* _src, ptrdiff_t _srcstride, int height,
@@ -278,6 +336,59 @@ put_vvc_qpel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                                 + offset) >> shift);
         }
         tmp += MAX_PB_SIZE;
+        dst += dststride;
+    }
+}
+
+
+static void
+put_vvc_qpel_rpr_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                   ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                   int width, uint8_t filter_idx)
+{
+    int x, y;
+    const uint16_t* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    uint16_t* dst = (uint16_t*)_dst;
+    ptrdiff_t dststride = _dststride;
+    // const int8_t* filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
+    const int8_t* filter = ov_mc_filters_rpr[filter_idx][mx];
+    int shift = 14 - BIT_DEPTH;
+    int offset = 1 << (shift - 1);
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            dst[x] = ov_clip_pixel(
+                                   ((MCP_FILTER_L(src, 1, filter) >> (BIT_DEPTH - 8)) +
+                                    offset) >> shift);
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
+static void
+put_vvc_qpel_rpr_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                   ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                   int width, uint8_t filter_idx)
+{
+    int x, y;
+    const uint16_t* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    uint16_t* dst = (uint16_t*)_dst;
+    ptrdiff_t dststride = _dststride;
+    // const int8_t* filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
+    const int8_t* filter = ov_mc_filters_rpr[filter_idx][my];    
+    int shift = 14 - BIT_DEPTH;
+    int offset = 1 << (shift - 1);
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            dst[x] =
+                ov_clip_pixel(((MCP_FILTER_L(src, srcstride, filter) >>
+                                (BIT_DEPTH - 8)) + offset) >> shift);
+        }
+        src += srcstride;
         dst += dststride;
     }
 }
@@ -1197,6 +1308,10 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_l->bilinear[1][i] = &put_vvc_qpel_bilinear_h;
         mc_l->bilinear[2][i] = &put_vvc_qpel_bilinear_v;
         mc_l->bilinear[3][i] = &put_vvc_qpel_bilinear_hv;
+
+        mc_l->rpr[0][i] = &put_vvc_pel_uni_pixels;
+        mc_l->rpr[1][i] = &put_vvc_qpel_rpr_h;
+        mc_l->rpr[2][i] = &put_vvc_qpel_rpr_v;
 
         /* Chroma functions */
         mc_c->unidir[0][i] = &put_vvc_pel_uni_pixels;

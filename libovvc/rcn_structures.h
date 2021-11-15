@@ -70,6 +70,10 @@ typedef void (*MCBiDirWFunc)(uint8_t* dst, ptrdiff_t dststride, uint8_t* _src,
                              int wx0, int wx1, intptr_t mx,
                              intptr_t my, int width);
 
+typedef void (*MCRPRFunc)(uint16_t *_dst, ptrdiff_t _dststride,
+                             const uint16_t *_src, ptrdiff_t _srcstride,
+                             int height, intptr_t mx, intptr_t my, int width, uint8_t filter_idx);
+
 typedef void (*LMsubsampleFunc)(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
                                 ptrdiff_t lm_src_stride, ptrdiff_t dst_stride_c,
                                 const struct CCLMParams *const lm_params,
@@ -183,6 +187,7 @@ struct MCFunctions{
     MCBiDirWFunc bidir_w[4][8];
 
     MCUniDirFunc bilinear[4][8];
+    MCRPRFunc    rpr[3][8];
 };
 
 struct CCLMFunctions
