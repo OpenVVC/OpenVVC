@@ -123,7 +123,7 @@ rcn_inter_synchronization(OVPicture *ref_pic, int ref_pos_x, int ref_pos_y, int 
     ref_pic->ovdpb_frame_synchro[idx](ref_pic, tl_ctu_x, tl_ctu_y, br_ctu_x, br_ctu_y);
 }
 
-void
+static void
 compute_prof_grad(const uint16_t* src, int src_stride, int sb_w, int sb_h,
                   int grad_stride, int16_t* grad_x, int16_t* grad_y)
 {
@@ -147,7 +147,7 @@ compute_prof_grad(const uint16_t* src, int src_stride, int sb_w, int sb_h,
 }
 
 #define PROF_DELTA_LIMIT (1 << (13))
-void
+static void
 rcn_prof(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
          const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
          const int32_t* dmv_scale_h, const int32_t* dmv_scale_v,
@@ -1813,6 +1813,7 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint8_t prec_y0 = (mv0.y) & 0xF;
     uint8_t prec_x1 = (mv1.x) & 0xF;
     uint8_t prec_y1 = (mv1.y) & 0xF;
+
     if(inter_ctx->prec_amvr == 3){
         prec_x0 += (prec_x0 == 8) ? 8 : 0;
         prec_y0 += (prec_y0 == 8) ? 8 : 0;
@@ -1912,7 +1913,6 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
 
-    
     uint16_t *edge_buff0 = rcn_ctx->data.edge_buff0;
     uint16_t *edge_buff1 = rcn_ctx->data.edge_buff1;
     uint16_t *edge_buff0_1 = rcn_ctx->data.edge_buff0_1;
@@ -2105,7 +2105,7 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
                                                 pu_h >> 1, prec_x_c, prec_y_c, pu_w >> 1);
 }
 
-void
+static void
 rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
           OVMV mv, uint8_t type, uint8_t ref_idx)
 {
@@ -2183,7 +2183,7 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
                                             pu_w, pu_h);
 }
 
-void
+static void
 rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
                int log2_pu_w, int log2_pu_h,
                OVMV mv, uint8_t type,
@@ -2279,7 +2279,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
                                             pu_w, pu_h);
 }
 
-void
+static void
 rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
           OVMV mv, uint8_t type, uint8_t ref_idx)
 {
@@ -2411,12 +2411,12 @@ rcn_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
 
 void
 rcn_prof_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *const inter_ctx,
-            const OVPartInfo *const part_ctx,
-            const OVMV mv0, const OVMV mv1,
-            unsigned int x0, unsigned int y0,
-            unsigned int log2_pb_w, unsigned int log2_pb_h,
-            uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
-            uint8_t prof_dir, const struct PROFInfo *const prof_info)
+                 const OVPartInfo *const part_ctx,
+                 const OVMV mv0, const OVMV mv1,
+                 unsigned int x0, unsigned int y0,
+                 unsigned int log2_pb_w, unsigned int log2_pb_h,
+                 uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
+                 uint8_t prof_dir, const struct PROFInfo *const prof_info)
 {
     if (inter_dir == 3) {
 
@@ -2460,9 +2460,10 @@ rcn_mcp_b_c(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
     }
 }
 
-void rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, struct OVBuffInfo* tmp_inter,
-                            unsigned int x0, unsigned int y0,
-                            unsigned int log2_pb_w, unsigned int log2_pb_h)
+static void
+rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, struct OVBuffInfo* tmp_inter,
+                      unsigned int x0, unsigned int y0,
+                      unsigned int log2_pb_w, unsigned int log2_pb_h)
 {
     struct CIIPFunctions *ciip = &ctudec->rcn_ctx.rcn_funcs.ciip;
     //Compute weight in function of neighboring coding modes
@@ -2653,7 +2654,8 @@ const int16_t g_GeoParams[GEO_NUM_PARTITION_MODE][2] =
     {30, 3}
 };
 
-const int8_t g_Dis[GEO_NUM_ANGLES] = {
+const int8_t g_Dis[GEO_NUM_ANGLES] =
+{
     8,  8,  8,  8,  4,  4,  2,  1,
     0, -1, -2, -4, -4, -8, -8, -8,
 
@@ -2661,7 +2663,8 @@ const int8_t g_Dis[GEO_NUM_ANGLES] = {
     0,  1,  2,  4,  4,  8,  8,  8
 };
 
-static const int8_t g_angle2mask[GEO_NUM_ANGLES] = {
+static const int8_t g_angle2mask[GEO_NUM_ANGLES] =
+{
     0, -1,  1,  2,  3,  4, -1, -1,
     5, -1, -1,  4,  3,  2,  1, -1,
 
@@ -2669,7 +2672,9 @@ static const int8_t g_angle2mask[GEO_NUM_ANGLES] = {
     5, -1, -1,  4,  3,  2,  1, -1
 };
 
-void rcn_init_gpm_params(){
+void
+rcn_init_gpm_params()
+{
   int angle_idx;
   for (angle_idx = 0; angle_idx < (GEO_NUM_ANGLES >> 2) + 1; angle_idx++){
     int x, y;
@@ -2724,12 +2729,12 @@ void rcn_init_gpm_params(){
   }
 }
 
-
 static void
 rcn_gpm_weights_and_steps(int split_dir, int log2_pb_w_l, int log2_pb_h_l, int* step_x, int* step_y,
-                            int16_t** weight, int cr_scale)
+                          int16_t** weight, int cr_scale)
 {
-    static const int8_t g_angle2mirror[GEO_NUM_ANGLES] = {
+    static const int8_t g_angle2mirror[GEO_NUM_ANGLES] =
+    {
         0, 0, 0, 0, 0, 0, 0, 0,
         0, 1, 1, 1, 1, 2, 2, 2,
 
@@ -2767,7 +2772,6 @@ static void
 rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
               uint8_t x0, uint8_t y0, uint8_t log2_pu_w, uint8_t log2_pu_h,
               int type0, OVMV mv0, int type1, OVMV mv1)
-
 {
 
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
@@ -2882,10 +2886,9 @@ rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
                           pu_h >> 1, prec_x1, prec_y1, pu_w >> 1, step_x, step_y, weight);
 }
 
-
 void
 rcn_gpm_b(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
-            int x0, int y0, int log2_pb_w, int log2_pb_h)
+          int x0, int y0, int log2_pb_w, int log2_pb_h)
 {
 
     int type0 = gpm_ctx->inter_dir0 ;
