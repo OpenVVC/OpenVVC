@@ -490,9 +490,8 @@ ctudec_uninit_in_loop_filters(OVCTUDec *const ctudec)
 
     //Uninit LMCS info and output pivots
     struct LMCSInfo* lmcs_info  = &ctudec->lmcs_info;
-    if(lmcs_info->lmcs_lut_inv_luma){
-        ov_free(lmcs_info->lmcs_lut_inv_luma);
-        ov_free(lmcs_info->lmcs_lut_fwd_luma);
+    if (lmcs_info->luts) {
+        ov_free(lmcs_info->luts);
     }
 }
 

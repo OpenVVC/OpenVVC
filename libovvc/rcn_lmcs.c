@@ -26,29 +26,29 @@
 /* Window information */
 struct TMPWindowsInfo
 {
-    int16_t scaled_fwd_step[NB_LMCS_WND];
-    int16_t scaled_bwd_step[NB_LMCS_WND];
-    int16_t wnd_bnd[NB_LMCS_WND + 1];
+    uint16_t scaled_fwd_step[NB_LMCS_WND];
+    uint16_t scaled_bwd_step[NB_LMCS_WND];
+    uint16_t wnd_bnd[NB_LMCS_WND + 1];
     //int16_t wnd_sz[NB_LMCS_WND];
 };
 
-struct LMCSInfo2
+struct LMCSParams
 {
-    uint8_t lmcs_min_bin_idx;
-    uint8_t lmcs_delta_max_bin_idx;
-    int16_t lmcs_cw_delta[NB_LMCS_WND];
+    uint8_t min_bin_idx;
+    uint8_t delta_max_bin_idx;
+    int16_t cw_delta[NB_LMCS_WND];
 };
 
 /* Backward and forward LUTs */
 struct LMCSLUTs
 {
-    int16_t fwd_lut[SMP_RNG];
-    int16_t bwd_lut[SMP_RNG];
-    int16_t wnd_bnd[NB_LMCS_WND + 1];
+    uint16_t fwd_lut[SMP_RNG];
+    uint16_t bwd_lut[SMP_RNG];
+    uint16_t wnd_bnd[NB_LMCS_WND + 1];
 };
 
 static uint8_t
-get_bwd_idx(const int16_t *const wnd_bnd, int16_t val, uint8_t min_idx, uint8_t max_idx_plus1)
+get_bwd_idx(const uint16_t *const wnd_bnd, uint16_t val, uint8_t min_idx, uint8_t max_idx_plus1)
 {
   uint8_t i = min_idx;
   for (; i < max_idx_plus1; i++) {
@@ -60,15 +60,15 @@ get_bwd_idx(const int16_t *const wnd_bnd, int16_t val, uint8_t min_idx, uint8_t 
 }
 
 static void
-compute_windows_scale_steps(struct TMPWindowsInfo *const tmp_wnd_info,
-                            const int16_t *const lmcs_cw_delta,
+compute_windows_scale_steps(struct TMPWindowsInfo *const wnd_info,
+                            const int16_t *const cw_delta,
                             uint8_t min_idx, uint8_t max_idx_plus1)
 {
   uint8_t min_idx_plus1 = min_idx + 1;
 
-  int16_t *const fwd_step = tmp_wnd_info->scaled_fwd_step;
-  int16_t *const bwd_step = tmp_wnd_info->scaled_bwd_step;
-  int16_t *const wnd_bnd = tmp_wnd_info->wnd_bnd;
+  uint16_t *const fwd_step = wnd_info->scaled_fwd_step;
+  uint16_t *const bwd_step = wnd_info->scaled_bwd_step;
+  uint16_t *const wnd_bnd  = wnd_info->wnd_bnd;
 
   int i;
 
@@ -81,7 +81,7 @@ compute_windows_scale_steps(struct TMPWindowsInfo *const tmp_wnd_info,
 
   /* Compute windows */
   for (i = min_idx; i < max_idx_plus1; i++) {
-      int16_t wnd_sz = NB_SMP_WND + lmcs_cw_delta[i];
+      uint16_t wnd_sz = NB_SMP_WND + cw_delta[i];
       if (wnd_sz) {
           fwd_step[i] = ((wnd_sz << LMCS_PREC) + WND_RND) >> LOG2_WND_RNG;
           bwd_step[i] = (NB_SMP_WND << LMCS_PREC) / wnd_sz;
@@ -97,14 +97,12 @@ compute_windows_scale_steps(struct TMPWindowsInfo *const tmp_wnd_info,
 }
 
 static void
-derive_forward_lut(int16_t *const fwd_lut, const struct TMPWindowsInfo *const tmp_wnd_info)
+derive_forward_lut(uint16_t *const fwd_lut, const struct TMPWindowsInfo *const wnd_info)
 {
-    const int16_t *const fwd_step = tmp_wnd_info->scaled_fwd_step;
-    const int16_t *const wnd_bnd  = tmp_wnd_info->wnd_bnd;
-    int16_t val;
-    /* FIXME scaled_fwd/bwd_step[i] = 0 if outside of idx ranges
-     * Find a way to saturate using min and max idx.
-     */
+    const uint16_t *const fwd_step = wnd_info->scaled_fwd_step;
+    const uint16_t *const wnd_bnd  = wnd_info->wnd_bnd;
+    uint16_t val;
+
     for (val = 0; val < SMP_RNG; val++) {
         uint8_t wnd_idx = val >> LOG2_WND_RNG;
         int32_t wnd_lbnd = (int32_t)wnd_idx << LOG2_WND_RNG;
@@ -118,17 +116,14 @@ derive_forward_lut(int16_t *const fwd_lut, const struct TMPWindowsInfo *const tm
 }
 
 static void
-derive_backward_lut(int16_t *const bwd_lut, const struct TMPWindowsInfo *const tmp_wnd_info,
+derive_backward_lut(uint16_t *const bwd_lut, const struct TMPWindowsInfo *const wnd_info,
                     uint8_t min_idx, uint8_t max_idx_plus1)
 {
-    const int16_t *const bwd_step = tmp_wnd_info->scaled_bwd_step;
-    const int16_t *const wnd_bnd  = tmp_wnd_info->wnd_bnd;
-    int16_t val;
-    /* FIXME scaled_fwd/bwd_step[i] = 0 if outside of idx ranges
-     * Find a way to saturate using min and max idx.
-     */
+    const uint16_t *const bwd_step = wnd_info->scaled_bwd_step;
+    const uint16_t *const wnd_bnd  = wnd_info->wnd_bnd;
+    uint16_t val;
+
     for (val = 0; val < SMP_RNG; val++) {
-        /* FIXME also construct an inverse idx LUT ? */
         uint8_t wnd_idx = get_bwd_idx(wnd_bnd, val, min_idx, max_idx_plus1);
         int32_t wnd_lbnd = (int32_t)wnd_idx << LOG2_WND_RNG;
 
@@ -142,14 +137,13 @@ derive_backward_lut(int16_t *const bwd_lut, const struct TMPWindowsInfo *const t
 
 /* Note min_idx and max_bin_idx are supposed < 16 */
 static void
-init_lmcs_lut(struct LMCSLUTs *const lmcs_luts, const struct LMCSInfo2 *const lmcs_info)
+init_lmcs_lut(struct LMCSLUTs *const lmcs_luts, const struct LMCSParams *const params)
 {
     struct TMPWindowsInfo tmp_wnd;
-    uint8_t min_idx = lmcs_info->lmcs_min_bin_idx;
-    uint8_t max_idx_plus1 = NB_LMCS_WND - lmcs_info->lmcs_delta_max_bin_idx;
+    uint8_t min_idx = params->min_bin_idx;
+    uint8_t max_idx_plus1 = NB_LMCS_WND - params->delta_max_bin_idx;
 
-    /* TODO alloc LUTs */
-    compute_windows_scale_steps(&tmp_wnd, lmcs_info->lmcs_cw_delta, min_idx, max_idx_plus1);
+    compute_windows_scale_steps(&tmp_wnd, params->cw_delta, min_idx, max_idx_plus1);
 
     derive_forward_lut(lmcs_luts->fwd_lut, &tmp_wnd);
 
@@ -160,126 +154,106 @@ init_lmcs_lut(struct LMCSLUTs *const lmcs_luts, const struct LMCSInfo2 *const lm
 }
 
 static void
-lmcs_convert_data_to_info(struct LMCSInfo2 *const dst, const struct OVLMCSData *const src)
+lmcs_convert_data_to_info(struct LMCSParams *const dst, const struct OVLMCSData *const src)
 {
     int i;
 
-    dst->lmcs_min_bin_idx       = src->lmcs_min_bin_idx;
-    dst->lmcs_delta_max_bin_idx = src->lmcs_delta_max_bin_idx;
+    dst->min_bin_idx       = src->lmcs_min_bin_idx;
+    dst->delta_max_bin_idx = src->lmcs_delta_max_bin_idx;
 
-    memset(dst->lmcs_cw_delta, 0, sizeof(dst->lmcs_cw_delta));
+    memset(dst->cw_delta, 0, sizeof(dst->cw_delta));
 
-    for (i = dst->lmcs_min_bin_idx; i < NB_LMCS_WND - src->lmcs_delta_max_bin_idx; ++i){
-        dst->lmcs_cw_delta[i] = src->lmcs_delta_sign_cw_flag[i] ? -src->lmcs_delta_abs_cw[i]
-                                                                :  src->lmcs_delta_abs_cw[i];
+    for (i = dst->min_bin_idx; i < NB_LMCS_WND - dst->delta_max_bin_idx; ++i){
+        dst->cw_delta[i] = src->lmcs_delta_sign_cw_flag[i] ? -src->lmcs_delta_abs_cw[i]
+                                                           :  src->lmcs_delta_abs_cw[i];
     }
 }
 
-static void
-rcn_derive_lmcs_params(struct LMCSInfo *lmcs_info, uint16_t *const output_pivot, const OVLMCSData *const lmcs)
-{
-    lmcs_info->min_idx = lmcs->lmcs_min_bin_idx;
-    lmcs_info->max_idx = 16 - lmcs->lmcs_delta_max_bin_idx;
-
-    /* Keep track of associated parameters */
-    lmcs_info->data = lmcs;
-}
-
-void 
+void
 rcn_lmcs_compute_chroma_scale(struct OVCTUDec* ctudec, int x0, int y0)
 {
     struct LMCSInfo* lmcs_info = &ctudec->lmcs_info;
-    uint64_t upper_map = ctudec->rcn_ctx.progress_field.hfield[y0 >> 2];
-    uint64_t left_map  = ctudec->rcn_ctx.progress_field.vfield[x0 >> 2];
+    uint64_t abv_map = ctudec->rcn_ctx.progress_field.hfield[y0 >> 2];
+    uint64_t lft_map  = ctudec->rcn_ctx.progress_field.vfield[x0 >> 2];
     uint64_t needed_mask = (1 << 16) - 1;
-    // uint32_t available_above_mask = ( upper_map & (needed_mask << ((x0 >> 2)+1)) >> ((x0 >> 2)+1));
-    uint32_t available_above_mask = ( upper_map & (needed_mask << ((x0 >> 2)+1))) >> ((x0 >> 2)+1);
-    // uint32_t available_left_mask  = ( left_map & (needed_mask << ((y0 >> 2)+1)) >> ((y0 >> 2)+1));
-    uint32_t available_left_mask  = ( left_map & (needed_mask << ((y0 >> 2)+1)))  >> ((y0 >> 2)+1);
-    // uint16_t *_src = &ctudec->ctu_data_y[RCN_CTB_PADDING + x0 + (y0 - 1) * RCN_CTB_STRIDE];
+    uint32_t abv_mask = (abv_map & (needed_mask << ((x0 >> 2) + 1))) >> ((x0 >> 2) + 1);
+    uint32_t lft_mask = (lft_map & (needed_mask << ((y0 >> 2) + 1))) >> ((y0 >> 2) + 1);
     uint16_t *_src = &ctudec->rcn_ctx.ctu_buff.y[x0 + (y0 - 1) * RCN_CTB_STRIDE];
 
     uint32_t luma_sum1 = 0;
     uint32_t luma_sum2 = 0;
     uint32_t luma_sum3 = 0;
     uint32_t luma_sum4 = 0;
-    uint8_t num_luma_pu = 0;
-    uint32_t log2_num_luma_pu = 0;
+
+    uint8_t nb_units = 0;
+    uint32_t log2_nb_units = 0;
     uint32_t luma_avg = AVG_VAL;
     int idx = lmcs_info->min_idx;
-    
-    uint8_t num_luma_pu_above = 0;
-    while (available_above_mask){
+
+    uint8_t nb_units_abv = 0;
+    while (abv_mask) {
         luma_sum1 += _src[0];
         luma_sum2 += _src[1];
         luma_sum3 += _src[2];
         luma_sum4 += _src[3];
         _src += 4;
-        ++num_luma_pu_above;
-        available_above_mask >>= 1;
-    }
-    //When image border, num_luma_pum may be different from 16.
-    if(num_luma_pu_above){
-        _src -= 4;
-        luma_sum1 += _src[3]*(16-num_luma_pu_above);
-        luma_sum2 += _src[3]*(16-num_luma_pu_above);
-        luma_sum3 += _src[3]*(16-num_luma_pu_above);
-        luma_sum4 += _src[3]*(16-num_luma_pu_above);
-        num_luma_pu_above = 16;
+        ++nb_units_abv;
+        abv_mask >>= 1;
     }
 
-    // _src = &ctudec->ctu_data_y[RCN_CTB_PADDING + x0 - 1 + y0  * RCN_CTB_STRIDE];
+    if (nb_units_abv) {
+        uint32_t pad_val = _src[-1] * (16 - nb_units_abv);
+        luma_sum1 += pad_val;
+        luma_sum2 += pad_val;
+        luma_sum3 += pad_val;
+        luma_sum4 += pad_val;
+        nb_units_abv = 16;
+    }
+
     _src = &ctudec->rcn_ctx.ctu_buff.y[x0 - 1 + y0  * RCN_CTB_STRIDE];
-    uint8_t num_luma_pu_left = 0;
-    while (available_left_mask){
+    uint8_t nb_units_lft = 0;
+    while (lft_mask) {
         luma_sum1 += _src[0];
         luma_sum2 += _src[RCN_CTB_STRIDE];
         luma_sum3 += _src[RCN_CTB_STRIDE << 1];
         luma_sum4 += _src[RCN_CTB_STRIDE * 3];
         _src += RCN_CTB_STRIDE << 2;
-        ++num_luma_pu_left;
-        available_left_mask >>= 1;
-    }
-    //When image border, num_luma_pum may be different from 16.
-    if(num_luma_pu_left){
-        _src -= RCN_CTB_STRIDE << 2;
-        #if 0
-        luma_sum1 += _src[0]*(16-num_luma_pu_left);
-        luma_sum2 += _src[RCN_CTB_STRIDE]*(16-num_luma_pu_left);
-        luma_sum3 += _src[RCN_CTB_STRIDE << 1]*(16-num_luma_pu_left);
-        #endif
-        luma_sum1 += _src[RCN_CTB_STRIDE * 3]*(16-num_luma_pu_left);
-        luma_sum2 += _src[RCN_CTB_STRIDE * 3]*(16-num_luma_pu_left);
-        luma_sum3 += _src[RCN_CTB_STRIDE * 3]*(16-num_luma_pu_left);
-        luma_sum4 += _src[RCN_CTB_STRIDE * 3]*(16-num_luma_pu_left);
-        num_luma_pu_left = 16;
+        ++nb_units_lft;
+        lft_mask >>= 1;
     }
 
-    num_luma_pu = num_luma_pu_left + num_luma_pu_above;
-    while(num_luma_pu){
-        ++log2_num_luma_pu;
-        num_luma_pu >>= 1;
+    if (nb_units_lft) {
+        uint32_t pad_val = _src[-RCN_CTB_STRIDE] * (16 - nb_units_lft);
+        luma_sum1 += pad_val;
+        luma_sum2 += pad_val;
+        luma_sum3 += pad_val;
+        luma_sum4 += pad_val;
+        nb_units_lft = 16;
     }
-    //decrease of 1 if not zero
-    log2_num_luma_pu -= !!log2_num_luma_pu;
 
-    luma_avg = log2_num_luma_pu ? ((luma_sum1 + luma_sum2) + (luma_sum3 + luma_sum4) + (1 << (log2_num_luma_pu + 1))) >> (log2_num_luma_pu + 2) : AVG_VAL;
+    nb_units = nb_units_abv + nb_units_lft;
 
-    idx = get_bwd_idx((int16_t*)lmcs_info->lmcs_output_pivot, luma_avg,
-                      lmcs_info->min_idx, lmcs_info->max_idx);
+    while (nb_units) {
+        ++log2_nb_units;
+        nb_units >>= 1;
+    }
+
+    luma_avg = log2_nb_units ? ((luma_sum1 + luma_sum2) + (luma_sum3 + luma_sum4) + (1 << log2_nb_units)) >> (log2_nb_units + 1) : AVG_VAL;
+
+    idx = get_bwd_idx(lmcs_info->luts->wnd_bnd, luma_avg, lmcs_info->min_idx, lmcs_info->max_idx);
 
     /* FIXME use coded window size instead ? */
-    uint32_t size_interval = (uint32_t)(lmcs_info->lmcs_output_pivot[idx + 1] - lmcs_info->lmcs_output_pivot[idx]);
-    lmcs_info->lmcs_chroma_scale = (size_interval == 0) ? 1 << 11 
-                                                    : (1<< (BITDEPTH - LOG2_NB_WND + 11))/ (size_interval + lmcs_info->lmcs_chroma_scaling_offset);
+    uint32_t wnd_sz = (uint32_t)(lmcs_info->luts->wnd_bnd[idx + 1] - lmcs_info->luts->wnd_bnd[idx]);
+    lmcs_info->lmcs_chroma_scale = (wnd_sz == 0) ? 1 << LMCS_PREC
+                                                 : (1 << (BITDEPTH - LOG2_NB_WND + LMCS_PREC)) / (wnd_sz + lmcs_info->lmcs_chroma_scaling_offset);
 }
 
-static void 
+static void
 rcn_lmcs_reshape_luma_blk_lut(uint16_t *dst, ptrdiff_t stride_dst, uint16_t* lmcs_lut_luma,
                               int width, int height)
 {
     for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++){ 
+        for (int x = 0; x < width; x++){
             dst[x] = lmcs_lut_luma[dst[x]];
         }
         dst += stride_dst;
@@ -287,39 +261,34 @@ rcn_lmcs_reshape_luma_blk_lut(uint16_t *dst, ptrdiff_t stride_dst, uint16_t* lmc
 }
 
 static void
-rcn_lmcs_compute_lut_luma(struct LMCSInfo *lmcs_info, uint16_t* inverse_lut,
-                          uint16_t* forward_lut, uint16_t* wnd_boundaries)
+rcn_lmcs_compute_lut_luma(struct LMCSInfo *lmcs_info, const struct OVLMCSData *const data)
 {
-    struct LMCSInfo2 new_lmcs;
-    struct LMCSLUTs new_luts;
-    lmcs_convert_data_to_info(&new_lmcs, lmcs_info->data);
+    struct LMCSParams params;
 
-    init_lmcs_lut(&new_luts, &new_lmcs);
+    lmcs_convert_data_to_info(&params, data);
 
-    memcpy(forward_lut, new_luts.fwd_lut, sizeof(new_luts.fwd_lut));
-    memcpy(inverse_lut, new_luts.bwd_lut, sizeof(new_luts.bwd_lut));
-    memcpy(wnd_boundaries, &new_luts.wnd_bnd, sizeof(new_luts.wnd_bnd) - 2);
+    init_lmcs_lut(lmcs_info->luts, &params);
 }
 
 void
 rcn_init_lmcs(struct LMCSInfo *lmcs_info, const struct OVLMCSData *const lmcs_data)
 {
-    if (!lmcs_info->lmcs_lut_inv_luma) {
-        lmcs_info->lmcs_lut_inv_luma = ov_malloc(sizeof(uint16_t) << BITDEPTH);
-        lmcs_info->lmcs_lut_fwd_luma = ov_malloc(sizeof(uint16_t) << BITDEPTH);
-    } else {
-        memset(lmcs_info->lmcs_lut_inv_luma, 0, sizeof(uint16_t) << BITDEPTH);
-        memset(lmcs_info->lmcs_lut_fwd_luma, 0, sizeof(uint16_t) << BITDEPTH);
+    if (!lmcs_info->luts) {
+        lmcs_info->luts = ov_malloc(sizeof(struct LMCSLUTs));
     }
+
+    lmcs_info->min_idx = lmcs_data->lmcs_min_bin_idx;
+    lmcs_info->max_idx = NB_LMCS_WND - lmcs_data->lmcs_delta_max_bin_idx;
+
+    rcn_lmcs_compute_lut_luma(lmcs_info, lmcs_data);
+
+    lmcs_info->lmcs_lut_inv_luma = lmcs_info->luts->bwd_lut;
+    lmcs_info->lmcs_lut_fwd_luma = lmcs_info->luts->fwd_lut;
 
     lmcs_info->lmcs_chroma_scaling_offset = lmcs_data->lmcs_delta_sign_crs_flag ?
         -lmcs_data->lmcs_delta_abs_crs
         : lmcs_data->lmcs_delta_abs_crs;
 
-    uint16_t *const output_pivot = lmcs_info->lmcs_output_pivot;
-    rcn_derive_lmcs_params(lmcs_info, output_pivot, lmcs_data);
-    rcn_lmcs_compute_lut_luma(lmcs_info, lmcs_info->lmcs_lut_inv_luma, lmcs_info->lmcs_lut_fwd_luma,
-                              lmcs_info->lmcs_output_pivot);
 }
 
 void
