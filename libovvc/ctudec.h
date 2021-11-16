@@ -161,7 +161,6 @@ struct ALFInfo
 
 struct LMCSInfo
 {
-    /* FIXME use new LMCS structures */
     uint8_t  lmcs_enabled_flag;
     uint8_t  scale_c_flag;
     uint16_t lmcs_chroma_scale;
@@ -169,7 +168,6 @@ struct LMCSInfo
     uint8_t min_idx;
     uint8_t max_idx;
     struct LMCSLUTs *luts;
-    const OVLMCSData *data;
 };
 
 
