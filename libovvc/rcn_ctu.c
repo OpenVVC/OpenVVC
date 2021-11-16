@@ -2,7 +2,6 @@
 #include <string.h>
 
 #include "ctudec.h"
-#include "ovutils.h"
 
 void
 rcn_ctu_copy_left_border(struct OVRCNCtx *rcn_ctx, uint8_t log2_ctb_s)
@@ -115,21 +114,14 @@ rcn_write_ctu_to_frame(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s)
         dst_y += fd->stride;
     }
 
-    #if 1
     for (i = 0; i < 1 << (log2_ctb_s - 1); ++i) {
-        #if 1
         memcpy(dst_cb, src_cb, sizeof(uint16_t) << (log2_ctb_s - 1));
         memcpy(dst_cr, src_cr, sizeof(uint16_t) << (log2_ctb_s - 1));
-        #else
-        memset(dst_cb, 1023, sizeof(uint16_t) << (log2_ctb_s - 1));
-        memset(dst_cr, 0, sizeof(uint16_t) << (log2_ctb_s - 1));
-        #endif
         src_cb += RCN_CTB_STRIDE;
         src_cr += RCN_CTB_STRIDE;
         dst_cb += fd->stride_c;
         dst_cr += fd->stride_c;
     }
-    #endif
 }
 
 void
@@ -145,10 +137,8 @@ rcn_frame_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s)
     uint16_t *dst_cr =  rcn_ctx->ctu_buff.cr - RCN_CTB_STRIDE;
 
     memcpy(dst_y,  src_y , sizeof(uint16_t) * OVMIN(((1 << log2_ctb_s) + (1 << log2_ctb_s)), RCN_CTB_STRIDE - 16));
-    #if 1
     memcpy(dst_cb, src_cb, sizeof(uint16_t) * ((1 << (log2_ctb_s - 1)) + (1 << (log2_ctb_s - 1))));
     memcpy(dst_cr, src_cr, sizeof(uint16_t) * ((1 << (log2_ctb_s - 1)) + (1 << (log2_ctb_s - 1))));
-    #endif
 }
 
 void
@@ -163,10 +153,7 @@ rcn_intra_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log
     uint16_t *dst_cb =  rcn_ctx->ctu_buff.cb - RCN_CTB_STRIDE;
     uint16_t *dst_cr =  rcn_ctx->ctu_buff.cr - RCN_CTB_STRIDE;
 
-    // memcpy(dst_y,  src_y , sizeof(uint16_t) * 1 << log2_ctb_s);
     memcpy(dst_y,  src_y , sizeof(uint16_t) * OVMIN(((1 << log2_ctb_s) + (1 << log2_ctb_s)), RCN_CTB_STRIDE - 16));
-    // memcpy(dst_cb, src_cb, sizeof(uint16_t) * 1 << log2_ctb_s);
-    // memcpy(dst_cr, src_cr, sizeof(uint16_t) * 1 << log2_ctb_s);
     memcpy(dst_cb, src_cb, sizeof(uint16_t) * ((1 << (log2_ctb_s - 1)) + (1 << (log2_ctb_s - 1))));
     memcpy(dst_cr, src_cr, sizeof(uint16_t) * ((1 << (log2_ctb_s - 1)) + (1 << (log2_ctb_s - 1))));
 }
