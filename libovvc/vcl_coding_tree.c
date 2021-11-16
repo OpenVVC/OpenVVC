@@ -240,11 +240,6 @@ coding_quadtree(OVCTUDec *const ctu_dec,
         allow_tt = 0;
     }
 
-    uint8_t compute_chr_scale = (log2_cb_s == 6 && ctu_dec->lmcs_info.lmcs_enabled_flag) ;
-    if (compute_chr_scale){
-        rcn_lmcs_compute_chroma_scale(ctu_dec, x0, y0);
-    }
-
     if (allow_qt | allow_bt | allow_tt) {
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         const struct PartMap *const part_map = ctu_dec->active_part_map;
@@ -393,11 +388,6 @@ coding_quadtree_implicit(OVCTUDec *const ctu_dec,
 
     uint8_t allow_qt = log2_cb_s >  part_ctx->log2_min_qt_s;
     uint8_t allow_bt = log2_cb_s <= part_ctx->log2_max_bt_s && log2_cb_s <= 6;
-
-    uint8_t compute_chr_scale = (log2_cb_s == 6 && ctu_dec->lmcs_info.lmcs_enabled_flag) ;
-    if (compute_chr_scale){
-        rcn_lmcs_compute_chroma_scale(ctu_dec, x0, y0);
-    }
 
     /* FIXME check everything is correct */
     if ((x1 > rem_w || y1 > rem_h)) {
@@ -856,11 +846,6 @@ multi_type_tree(OVCTUDec *const ctu_dec,
         }
 
         can_split = allow_bt_v | allow_bt_h | allow_tt_v | allow_tt_h;
-    }
-
-    uint8_t compute_chr_scale = ((log2_cb_h == 6 && log2_cb_w == 6) && ctu_dec->lmcs_info.lmcs_enabled_flag) ;
-    if (compute_chr_scale){
-        rcn_lmcs_compute_chroma_scale(ctu_dec, x0, y0);
     }
 
     if (can_split) {

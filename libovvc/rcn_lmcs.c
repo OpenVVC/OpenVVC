@@ -173,11 +173,13 @@ void
 rcn_lmcs_compute_chroma_scale(struct OVCTUDec* ctudec, int x0, int y0)
 {
     struct LMCSInfo* lmcs_info = &ctudec->lmcs_info;
-    uint64_t abv_map = ctudec->rcn_ctx.progress_field.hfield[y0 >> 2];
-    uint64_t lft_map  = ctudec->rcn_ctx.progress_field.vfield[x0 >> 2];
+    uint8_t x0_unit = x0 >> 2;
+    uint8_t y0_unit = y0 >> 2;
+    uint64_t abv_map = ctudec->rcn_ctx.progress_field.hfield[y0_unit];
+    uint64_t lft_map  = ctudec->rcn_ctx.progress_field.vfield[x0_unit];
     uint64_t needed_mask = (1 << 16) - 1;
-    uint32_t abv_mask = (abv_map & (needed_mask << ((x0 >> 2) + 1))) >> ((x0 >> 2) + 1);
-    uint32_t lft_mask = (lft_map & (needed_mask << ((y0 >> 2) + 1))) >> ((y0 >> 2) + 1);
+    uint32_t abv_mask = (abv_map >> (x0_unit + 1)) & needed_mask;
+    uint32_t lft_mask = (lft_map >> (y0_unit + 1)) & needed_mask;
     uint16_t *_src = &ctudec->rcn_ctx.ctu_buff.y[x0 + (y0 - 1) * RCN_CTB_STRIDE];
 
     uint32_t luma_sum1 = 0;
