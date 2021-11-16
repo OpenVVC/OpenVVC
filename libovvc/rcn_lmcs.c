@@ -2,12 +2,16 @@
 #include <string.h>
 
 #include "ovutils.h"
+#include "ovmem.h"
 
+#include "nvcl_structures.h"
+#include "rcn_structures.h"
 #include "rcn_lmcs.h"
 
-#define SMP_RNG (1 << BITDEPTH)
 
 #define BITDEPTH 10
+#define SMP_RNG (1 << BITDEPTH)
+
 #define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
 
 #define LOG2_NB_WND 4
@@ -238,7 +242,8 @@ lmcs_compute_luma_average(const uint16_t *src, uint32_t abv_mask, uint32_t lft_m
 }
 
 void
-rcn_lmcs_compute_chroma_scale(struct LMCSInfo *const lmcs_info, const struct CTUBitField *const progress_field,
+rcn_lmcs_compute_chroma_scale(struct LMCSInfo *const lmcs_info,
+                              const struct CTUBitField *const progress_field,
                               const uint16_t *ctu_data_y, uint8_t x0, uint8_t y0)
 {
     uint8_t x0_unit = x0 >> 2;

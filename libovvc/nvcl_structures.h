@@ -80,7 +80,6 @@ struct OVDPBParams
     uint8_t dpb_max_latency_increase_plus1;
 };
 
-
 struct OVSEIFGrain
 {
     uint8_t fg_characteristics_cancel_flag;
@@ -113,7 +112,6 @@ struct OVSEISLHDR
     void* slhdr_context;
     uint8_t payload_array[255];
 };
-
 
 /*Structure containing all SEI structures*/
 struct OVSEI
@@ -605,7 +603,6 @@ struct OVSH
     /* Ref pic list info */
     struct OVHRPL hrpl;
 };
-
 
 typedef struct OVALFData
 {

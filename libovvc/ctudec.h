@@ -9,6 +9,7 @@
 #include "nvcl_structures.h"
 #include "rcn_structures.h"
 #include "rcn_alf.h"
+#include "rcn_lmcs.h"
 #include "dec_structures.h"
 
     /* FIXME COMPAT old
@@ -159,17 +160,6 @@ struct ALFInfo
     RCNALF rcn_alf;
 };
 
-struct LMCSInfo
-{
-    uint8_t  lmcs_enabled_flag;
-    uint8_t  scale_c_flag;
-    uint16_t lmcs_chroma_scale;
-    int16_t  lmcs_chroma_scaling_offset;
-    uint8_t min_idx;
-    uint8_t max_idx;
-    struct LMCSLUTs *luts;
-};
-
 
 typedef struct VVCDeQuantCtx{
     uint8_t qp;
@@ -227,11 +217,6 @@ struct VVCCU
 };
 
 /* FIXME move inter struct definitions somewhere else */
-struct CTUBitField {
-    uint64_t hfield[33];
-    uint64_t vfield[33];
-};
-
 struct OVMV
 {
     /*FIXME move ref_idx, bcw_idx and prec_amvr outside of struct */
@@ -484,31 +469,6 @@ struct TrCoeffData
     int16_t lfnst_subblock[16*2];
 };
 
-/* FIXME
- * We use enum here since its easier when
- * debugging however a const value
- * would probably be a better option
- */
-
-enum RCNSizes
-{
-   /* Stride Used in CTU buffers MAX_CTU_S
-    *     + 64 samples right used for intra
-    *     +  4 samples for intra Multi Ref Lines
-    *     + 12 samples for memory alignement purposes
-    */
-   RCN_CTB_STRIDE  = (128 + 16 + 64),
-
-   /* A padding of 4 upper lines and 16 left
-    * columns from buffer start to be used for
-    * border copy for intra prediction
-    */
-   RCN_CTB_PADDING = (RCN_CTB_STRIDE * 4 + 16),
-
-   /* Size of CTB Buffer in samples */
-   RCN_CTB_SIZE    = (RCN_CTB_STRIDE * RCN_CTB_STRIDE),
-};
-
 struct CTURCNData
 {
     DECLARE_ALIGNED(32, uint16_t, y_buff)[RCN_CTB_SIZE];
@@ -633,7 +593,6 @@ struct OVCTUDec
     struct ALFInfo alf_info;
 
     struct LMCSInfo lmcs_info;
-
 
     struct OVFilterBuffers{
         int16_t* filter_region[3];

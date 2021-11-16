@@ -1,4 +1,6 @@
 #include <string.h>
+#include "ovdefs.h"
+#include "ctudec.h"
 #include "rcn_lmcs.h"
 #include "ovmem.h"
 #include "overror.h"
