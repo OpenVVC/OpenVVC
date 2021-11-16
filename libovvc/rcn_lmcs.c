@@ -24,7 +24,7 @@
 #define AVG_VAL (1 << (BITDEPTH - 1))
 
 /* Window information */
-struct TMPWindowsInfo
+struct WindowsInfo
 {
     uint16_t scaled_fwd_step[NB_LMCS_WND];
     uint16_t scaled_bwd_step[NB_LMCS_WND];
@@ -60,7 +60,7 @@ get_bwd_idx(const uint16_t *const wnd_bnd, uint16_t val, uint8_t min_idx, uint8_
 }
 
 static void
-compute_windows_scale_steps(struct TMPWindowsInfo *const wnd_info,
+compute_windows_scale_steps(struct WindowsInfo *const wnd_info,
                             const int16_t *const cw_delta,
                             uint8_t min_idx, uint8_t max_idx_plus1)
 {
@@ -97,7 +97,7 @@ compute_windows_scale_steps(struct TMPWindowsInfo *const wnd_info,
 }
 
 static void
-derive_forward_lut(uint16_t *const fwd_lut, const struct TMPWindowsInfo *const wnd_info)
+derive_forward_lut(uint16_t *const fwd_lut, const struct WindowsInfo *const wnd_info)
 {
     const uint16_t *const fwd_step = wnd_info->scaled_fwd_step;
     const uint16_t *const wnd_bnd  = wnd_info->wnd_bnd;
@@ -116,7 +116,7 @@ derive_forward_lut(uint16_t *const fwd_lut, const struct TMPWindowsInfo *const w
 }
 
 static void
-derive_backward_lut(uint16_t *const bwd_lut, const struct TMPWindowsInfo *const wnd_info,
+derive_backward_lut(uint16_t *const bwd_lut, const struct WindowsInfo *const wnd_info,
                     uint8_t min_idx, uint8_t max_idx_plus1)
 {
     const uint16_t *const bwd_step = wnd_info->scaled_bwd_step;
@@ -135,11 +135,10 @@ derive_backward_lut(uint16_t *const bwd_lut, const struct TMPWindowsInfo *const 
     }
 }
 
-/* Note min_idx and max_bin_idx are supposed < 16 */
 static void
 init_lmcs_lut(struct LMCSLUTs *const lmcs_luts, const struct LMCSParams *const params)
 {
-    struct TMPWindowsInfo tmp_wnd;
+    struct WindowsInfo tmp_wnd;
     uint8_t min_idx = params->min_bin_idx;
     uint8_t max_idx_plus1 = NB_LMCS_WND - params->delta_max_bin_idx;
 
