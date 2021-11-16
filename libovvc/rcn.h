@@ -146,7 +146,6 @@ uint8_t rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                            uint8_t log2_pu_w, uint8_t log2_pu_h,
                            OVMV *mv0, OVMV *mv1, uint8_t ref_idx0, uint8_t ref_idx1, uint8_t
                            apply_bdof);
-void rcn_lmcs_compute_chroma_scale(struct OVCTUDec* ctudec, int x0, int y0);
 
 void rcn_intra_mip(const struct OVRCNCtx *const rcn_ctx,
                    uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,

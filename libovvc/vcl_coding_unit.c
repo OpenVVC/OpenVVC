@@ -8,6 +8,7 @@
 #include "drv.h"
 #include "drv_utils.h"
 #include "rcn.h"
+#include "rcn_lmcs.h"
 #include "dbf_utils.h"
 
 #define LOG2_MIN_CU_S 2
@@ -650,7 +651,8 @@ coding_unit(OVCTUDec *const ctu_dec,
 
     uint8_t compute_chr_scale = ((!(x0 & 0x3F) && !(y0 & 0x3F)) && ctu_dec->lmcs_info.lmcs_enabled_flag) ;
     if (compute_chr_scale){
-        rcn_lmcs_compute_chroma_scale(ctu_dec, x0, y0);
+        rcn_lmcs_compute_chroma_scale(&ctu_dec->lmcs_info, &ctu_dec->rcn_ctx.progress_field,
+                                      ctu_dec->rcn_ctx.ctu_buff.y, x0, y0);
     }
 
     int pred_qp = ((y0 ? ctu_dec->drv_ctx.qp_map_x[x_cb] : ctu_dec->qp_ctx.current_qp) +
