@@ -9,7 +9,7 @@ struct ALFClassifier;
 struct Area;
 struct CCLMParams;
 struct SAOParamsCtu;
-struct LMCSInfo;
+struct LMCSLUTs;
 
 enum DCTType
 {
@@ -119,7 +119,7 @@ typedef void (*SAOEdgeFilterFunc)(uint8_t* _dst, uint8_t* _src,
                                   struct SAOParamsCtu* sao, int width,
                                   int height, int c_idx);
 
-typedef void (*LMCSReshapeFunc)(uint16_t *_dst, ptrdiff_t stride_dst, uint16_t* lmcs_lut_luma, int width, int height);
+typedef void (*LMCSReshapeFunc)(uint16_t *_dst, ptrdiff_t stride_dst, const struct LMCSLUTs *const luts, int width, int height);
 
 typedef uint64_t (*DMVRSADFunc)(const int16_t *ref0, const int16_t *ref1, int16_t dmvr_stride, int16_t pb_w, int16_t pb_h);
 
@@ -274,7 +274,8 @@ struct RCNFunctions
     struct SAOFunctions sao;
 
     /* LMCS Functions */
-    LMCSReshapeFunc lmcs_reshape;
+    LMCSReshapeFunc lmcs_reshape_forward;
+    LMCSReshapeFunc lmcs_reshape_backward;
 
     /* DMVR Functions */
     struct DMVRFunctions dmvr;

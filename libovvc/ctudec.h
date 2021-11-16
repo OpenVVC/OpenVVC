@@ -168,8 +168,6 @@ struct LMCSInfo
     int16_t  lmcs_chroma_scaling_offset;
     uint8_t min_idx;
     uint8_t max_idx;
-    uint16_t* lmcs_lut_inv_luma;
-    uint16_t* lmcs_lut_fwd_luma;
     struct LMCSLUTs *luts;
     const OVLMCSData *data;
 };

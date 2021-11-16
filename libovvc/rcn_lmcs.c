@@ -249,7 +249,7 @@ rcn_lmcs_compute_chroma_scale(struct OVCTUDec* ctudec, int x0, int y0)
 }
 
 static void
-rcn_lmcs_reshape_luma_blk_lut(uint16_t *dst, ptrdiff_t stride_dst, uint16_t* lmcs_lut_luma,
+rcn_lmcs_reshape_luma_blk_lut(uint16_t *dst, ptrdiff_t stride_dst, const uint16_t *const lmcs_lut_luma,
                               int width, int height)
 {
     for (int y = 0; y < height; y++) {
@@ -258,6 +258,22 @@ rcn_lmcs_reshape_luma_blk_lut(uint16_t *dst, ptrdiff_t stride_dst, uint16_t* lmc
         }
         dst += stride_dst;
     }
+}
+
+static void
+rcn_lmcs_reshape_forward(uint16_t *dst, ptrdiff_t stride_dst,
+                         const struct LMCSLUTs *const luts,
+                         int width, int height)
+{
+    rcn_lmcs_reshape_luma_blk_lut(dst, stride_dst, luts->fwd_lut, width, height);
+}
+
+static void
+rcn_lmcs_reshape_backward(uint16_t *dst, ptrdiff_t stride_dst,
+                          const struct LMCSLUTs *const luts,
+                          int width, int height)
+{
+    rcn_lmcs_reshape_luma_blk_lut(dst, stride_dst, luts->bwd_lut, width, height);
 }
 
 static void
@@ -282,9 +298,6 @@ rcn_init_lmcs(struct LMCSInfo *lmcs_info, const struct OVLMCSData *const lmcs_da
 
     rcn_lmcs_compute_lut_luma(lmcs_info, lmcs_data);
 
-    lmcs_info->lmcs_lut_inv_luma = lmcs_info->luts->bwd_lut;
-    lmcs_info->lmcs_lut_fwd_luma = lmcs_info->luts->fwd_lut;
-
     lmcs_info->lmcs_chroma_scaling_offset = lmcs_data->lmcs_delta_sign_crs_flag ?
         -lmcs_data->lmcs_delta_abs_crs
         : lmcs_data->lmcs_delta_abs_crs;
@@ -292,7 +305,8 @@ rcn_init_lmcs(struct LMCSInfo *lmcs_info, const struct OVLMCSData *const lmcs_da
 }
 
 void
-rcn_lmcs_no_reshape(uint16_t *dst, ptrdiff_t stride_dst, uint16_t* lmcs_lut_luma,
+rcn_lmcs_no_reshape(uint16_t *dst, ptrdiff_t stride_dst,
+                    const struct LMCSLUTs *const luts,
                     int width, int height)
 {
     return;
@@ -302,8 +316,10 @@ void
 rcn_init_lmcs_function(struct RCNFunctions *rcn_func, uint8_t lmcs_flag)
 {
     if(lmcs_flag){
-        rcn_func->lmcs_reshape = &rcn_lmcs_reshape_luma_blk_lut;
+        rcn_func->lmcs_reshape_forward  = &rcn_lmcs_reshape_forward;
+        rcn_func->lmcs_reshape_backward = &rcn_lmcs_reshape_backward;
     } else {
-        rcn_func->lmcs_reshape = &rcn_lmcs_no_reshape;
+        rcn_func->lmcs_reshape_forward  = &rcn_lmcs_no_reshape;
+        rcn_func->lmcs_reshape_backward = &rcn_lmcs_no_reshape;
     }
 }

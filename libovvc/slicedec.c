@@ -703,8 +703,8 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
     const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
     ptrdiff_t stride_out_pic = fbuff->stride;
     uint16_t *out_pic = fbuff->y;
-    ctudec->rcn_ctx.rcn_funcs.lmcs_reshape(out_pic, stride_out_pic, ctudec->lmcs_info.lmcs_lut_inv_luma,
-                                            1 << log2_ctb_s, 1 << log2_ctb_s);
+    ctudec->rcn_ctx.rcn_funcs.lmcs_reshape_backward(out_pic, stride_out_pic, ctudec->lmcs_info.luts,
+                                                    1 << log2_ctb_s, 1 << log2_ctb_s);
 
     if (!ctudec->dbf_disable) {
         uint8_t is_last_x = (ctb_addr_rs + 1) % nb_ctu_w == 0;
@@ -755,7 +755,8 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
     const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
     ptrdiff_t stride_out_pic = fbuff->stride;
     uint16_t *out_pic = fbuff->y;
-    ctudec->rcn_ctx.rcn_funcs.lmcs_reshape(out_pic, stride_out_pic, ctudec->lmcs_info.lmcs_lut_inv_luma, ctu_w, ctu_h);
+    ctudec->rcn_ctx.rcn_funcs.lmcs_reshape_backward(out_pic, stride_out_pic, ctudec->lmcs_info.luts,
+                                                    ctu_w, ctu_h);
 
     if (!ctudec->dbf_disable) {
         uint8_t is_last_x = (ctb_addr_rs + 1) % nb_ctu_w == 0;

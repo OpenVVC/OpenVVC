@@ -769,7 +769,8 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                                                         prec_x1, prec_y1, pu_w);
     }
 
-    rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
+    rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
+                                            pu_w, pu_h);
 
     const struct OVBuffInfo ref0_c = derive_ref_buf_c(ref0, mv0,
                                                       pos_x >> 1, pos_y >> 1,
@@ -892,9 +893,8 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                                                         prec_x1, prec_y1, pu_w);
     }
 
-    rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE,
-                                  ctudec->lmcs_info.lmcs_lut_fwd_luma,
-                                  pu_w, pu_h);
+    rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
+                                            pu_w, pu_h);
 
 }
 
@@ -1330,9 +1330,9 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     }
 
     if (ctudec->lmcs_info.lmcs_enabled_flag){
-        rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE,
-                                        ctudec->lmcs_info.lmcs_lut_fwd_luma,
-                                        pu_w, pu_h);
+        rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE,
+                                                ctudec->lmcs_info.luts,
+                                                pu_w, pu_h);
     }
 
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
@@ -1749,9 +1749,9 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
              ref_stride, grad_x0, grad_y0, grad_x1, grad_y1,
              grad_stride, pb_w, pb_h);
 
-    rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE,
-                                  ctudec->lmcs_info.lmcs_lut_fwd_luma,
-                                  pu_w, pu_h);
+    rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE,
+                                            ctudec->lmcs_info.luts,
+                                            pu_w, pu_h);
 }
 
 
@@ -1888,9 +1888,9 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         }
     }
 
-    rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE,
-                                  ctudec->lmcs_info.lmcs_lut_fwd_luma,
-                                  pu_w, pu_h);
+    rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE,
+                                            ctudec->lmcs_info.luts,
+                                            pu_w, pu_h);
 }
 
 static void
@@ -2066,7 +2066,8 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
                                           src_y, src_stride, pu_h,
                                           prec_x, prec_y, pu_w);
 
-    rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
+    rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
+                                            pu_w, pu_h);
 
 
     emulate_edge = test_for_edge_emulation_c(ref_x >> 1, ref_y >> 1, pic_w >> 1, pic_h >> 1,
@@ -2178,7 +2179,8 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
                                           src_y, src_stride, pu_h,
                                           prec_x, prec_y, pu_w);
 
-    rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
+    rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
+                                            pu_w, pu_h);
 }
 
 void
@@ -2273,7 +2275,8 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
     prof->rcn(dst.y, dst.stride, (uint16_t *)tmp_prof + PROF_BUFF_STRIDE + 1, PROF_BUFF_STRIDE, tmp_grad_x, tmp_grad_y,
              4, dmv_scale_h, dmv_scale_v, 0);
 
-    rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
+    rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
+                                            pu_w, pu_h);
 }
 
 void
@@ -2840,7 +2843,8 @@ rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
     put_weighted_gpm_bi_pixels(dst.y, RCN_CTB_STRIDE, tmp_buff1, MAX_PB_SIZE, tmp_buff0, pu_h, prec_x1, prec_y1, pu_w,
                             step_x, step_y, weight);
 
-    rcn_ctx->rcn_funcs.lmcs_reshape(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.lmcs_lut_fwd_luma, pu_w, pu_h);
+    rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
+                                            pu_w, pu_h);
 
 
     const struct OVBuffInfo ref0_c = derive_ref_buf_c(ref0, mv0,
