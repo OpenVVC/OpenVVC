@@ -662,6 +662,7 @@ coding_unit(OVCTUDec *const ctu_dec,
     ctu_dec->qp_ctx.current_qp = pred_qp;
 
     ctu_dec->tmp_ciip = 0;
+
     cu = ctu_dec->coding_unit(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h);
 
     ctu_dec->dequant_chroma = &ctu_dec->dequant_cb;
@@ -696,6 +697,7 @@ coding_unit(OVCTUDec *const ctu_dec,
         dbf_fill_qp_map(&dbf_info->qp_map_cb, x0, y0, log2_cb_w, log2_cb_h, qp_cb);
         dbf_fill_qp_map(&dbf_info->qp_map_cr, x0, y0, log2_cb_w, log2_cb_h, qp_cr);
     }
+
     /* FIXME move after TU is read so we can reconstruct with or without
      * transform trees
      */
