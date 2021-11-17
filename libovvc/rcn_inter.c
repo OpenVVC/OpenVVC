@@ -741,6 +741,7 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint8_t prec_y0 = (mv0.y) & 0xF;
     uint8_t prec_x1 = (mv1.x) & 0xF;
     uint8_t prec_y1 = (mv1.y) & 0xF;
+
     if(inter_ctx->prec_amvr == 3){
         prec_x0 += (prec_x0 == 8) ? 8 : 0;
         prec_y0 += (prec_y0 == 8) ? 8 : 0;
@@ -872,10 +873,10 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         prec_y1 += (prec_y1 == 8) ? 8 : 0;
     }
 
-    dst.y  += x0 + y0 * dst.stride;
-
     uint8_t prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
     uint8_t prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
+
+    dst.y  += x0 + y0 * dst.stride;
 
     mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride,
                                                 pu_h, prec_x0, prec_y0, pu_w);
@@ -883,8 +884,7 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     if( mv0.bcw_idx_plus1 == 0 || mv0.bcw_idx_plus1 == 3){
         mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride,
                                                     tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
-    }
-    else{
+    } else {
         wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
         wt0 = 8 - wt1;
         int denom = 2;
@@ -1007,7 +1007,6 @@ dmvr_compute_sads_16(const int16_t *ref0, const int16_t *ref1,
     return dmvr_idx;
 }
 
-/*FIXME return min_dmvr_idx; */
 static uint8_t
 dmvr_compute_sads_8(const int16_t *ref0, const int16_t *ref1,
                   uint64_t *sad_array, int sb_w, int sb_h)
@@ -1209,7 +1208,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     /* skip MV refinement if cost is small or zero */
     if (min_cost >= (pu_w * pu_h)) {
         uint64_t sad[25];
-        sad[12]=min_cost;
+        sad[12] = min_cost;
         uint8_t dmvr_idx = dmvr->computeSB[pu_w==16](ref_dmvr0 + 2 + 2 * dmvr_stride,
                                              ref_dmvr1 + 2 + 2 * dmvr_stride,
                                              sad, pu_w, pu_h);
@@ -1638,8 +1637,7 @@ rcn_bdof(struct BDOFFunctions *const bdof, int16_t *dst, int dst_stride,
 
 void
 rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
-               uint8_t x0, uint8_t y0,
-               uint8_t log2_pu_w, uint8_t log2_pu_h,
+               uint8_t x0, uint8_t y0, uint8_t log2_pu_w, uint8_t log2_pu_h,
                OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
@@ -1675,10 +1673,10 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
 
     struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
+                                                log2_pu_w, log2_pu_h, log2_ctb_s);
 
     struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1, pos_x, pos_y, edge_buff1,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
+                                                log2_pu_w, log2_pu_h, log2_ctb_s);
 
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
@@ -1753,7 +1751,6 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                                             ctudec->lmcs_info.luts,
                                             pu_w, pu_h);
 }
-
 
 static void
 rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
@@ -2395,17 +2392,11 @@ rcn_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
             uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1)
 {
     if (inter_dir == 3) {
-
         rcn_motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
-
     } else if (inter_dir & 0x2) {
-
         rcn_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
-
     } else if (inter_dir & 0x1) {
-
         rcn_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
-
     }
 }
 
@@ -2420,21 +2411,15 @@ rcn_prof_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCt
                  uint8_t prof_dir, const struct PROFInfo *const prof_info)
 {
     if (inter_dir == 3) {
-
         rcn_prof_motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, prof_dir, prof_info);
-
     } else if (inter_dir & 0x2) {
-
         rcn_prof_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1,
                        prof_info->dmv_scale_h_1,
                        prof_info->dmv_scale_v_1);
-
     } else if (inter_dir & 0x1) {
-
         rcn_prof_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0,
                        prof_info->dmv_scale_h_0,
                        prof_info->dmv_scale_v_0);
-
     }
 }
 
@@ -2447,17 +2432,11 @@ rcn_mcp_b_c(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
             uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1)
 {
     if (inter_dir == 3) {
-
         rcn_motion_compensation_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
-
     } else if (inter_dir & 0x2) {
-
         rcn_mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
-
     } else if (inter_dir & 0x1) {
-
         rcn_mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
-
     }
 }
 
@@ -2493,7 +2472,7 @@ rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, struc
     tmp_inter->cr += (x0 >> 1) + (y0 >> 1) * tmp_inter->stride_c;
 
     struct MCFunctions *mc_c = &ctudec->rcn_ctx.rcn_funcs.mc_c;
-    if (log2_pb_w <= 2){
+    if (log2_pb_w <= 2) {
         mc_c->unidir[0][0](dst.cb, dst.stride_c, tmp_inter->cb, tmp_inter->stride_c, 1 << (log2_pb_h - 1), 0, 0, 1 << (log2_pb_w - 1));
         mc_c->unidir[0][0](dst.cr, dst.stride_c, tmp_inter->cr, tmp_inter->stride_c, 1 << (log2_pb_h - 1), 0, 0, 1 << (log2_pb_w - 1));
     } else {
@@ -2526,6 +2505,7 @@ rcn_ciip_b(OVCTUDec*const ctudec,
     tmp_inter.cr = &tmp_inter_cr[RCN_CTB_PADDING];
     tmp_inter.stride   = RCN_CTB_STRIDE;
     tmp_inter.stride_c = RCN_CTB_STRIDE;
+
     rcn_mcp_b(ctudec, tmp_inter, inter_ctx, part_ctx, mv0, mv1, x0, y0, log2_pb_w, log2_pb_h,
               inter_dir, ref_idx0, ref_idx1);
 
