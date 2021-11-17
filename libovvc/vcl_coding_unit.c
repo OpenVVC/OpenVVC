@@ -2107,11 +2107,11 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
                     rcn_bdof_mcp_l(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
                                    x0 + j * 16, y0 + i * 16, log2_w, log2_h,
                                    mv0, mv1, ref_idx0, ref_idx1);
-                    rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, ctu_dec->part_ctx,
-                                mv0, mv1, x0 + j * 16, y0 + i * 16,
-                                log2_w, log2_h, mv_info.inter_dir, ref_idx0, ref_idx1);
                 }
             }
+            rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, ctu_dec->part_ctx,
+                        mv0, mv1, x0, y0,
+                        log2_cb_w, log2_cb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
         }
     }
     return cu_type;
@@ -2297,15 +2297,14 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 OVMV mv1 = mv_info.mv1;
                 for (i = 0; i < nb_sb_h; ++i) {
                     for (j = 0; j < nb_sb_w; ++j) {
-
                         rcn_bdof_mcp_l(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
                                        x0 + j * 16, y0 + i * 16, log2_w, log2_h,
                                        mv0, mv1, ref_idx0, ref_idx1);
-                        rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
-                                    mv0, mv1, x0 + j * 16, y0 + i * 16,
-                                    log2_w, log2_h, mv_info.inter_dir, ref_idx0, ref_idx1);
                     }
                 }
+                rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
+                            mv0, mv1, x0, y0,
+                            log2_cb_w, log2_cb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
             }
         }
     } else {
