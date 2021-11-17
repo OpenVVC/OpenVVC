@@ -831,7 +831,6 @@ rcn_dmvr_sad_8(const int16_t *ref0, const int16_t *ref1,
   return sum;
 }
 
-/*FIXME return min_dmvr_idx; */
 static uint8_t
 dmvr_compute_sads_16(const int16_t *ref0, const int16_t *ref1,
                   uint64_t *sad_array, int sb_w, int sb_h)
