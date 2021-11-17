@@ -233,6 +233,7 @@ static const int16_t ov_bilinear_filters_4[15][8] =
   { 1,  15,  1, 15,  1, 15,  1, 15, }
 };
 
+//TODOrpr change 128 in RCN_CTB_STRIDE
 static void
 oh_hevc_put_hevc_bi0_pel_pixels4_10_sse(int16_t* dst,
                                         const uint16_t* _src,
