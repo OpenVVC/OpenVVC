@@ -1403,7 +1403,6 @@ slicedec_update_entry_decoder(OVSliceDec *sldec, OVCTUDec *ctudec)
     const OVPS *const prms = sldec->active_params;
     ctudec->pic_w = sldec->pic->frame->width[0];
     ctudec->pic_h = sldec->pic->frame->height[0];
-    ctudec->cur_poc = sldec->pic->poc;
     slicedec_init_slice_tools(ctudec, prms);
 
     return 0;
