@@ -529,8 +529,8 @@ struct OVCTUDec
             uint16_t *y;
             uint16_t *cb;
             uint16_t *cr;
-            uint32_t stride;
-            uint32_t stride_c;
+            int32_t stride;
+            int32_t stride_c;
         } frame_buff;
 
         /* Pointers to CTU reconstruction buffers to be used
