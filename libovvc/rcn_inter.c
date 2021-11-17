@@ -2290,7 +2290,7 @@ rcn_ciip(OVCTUDec *const ctudec,
     rcn_mcp_c(ctudec, tmp_inter, x0, y0, log2_pb_w, log2_pb_h, mv, 0, ref_idx);
 
     //Intra Planar mode
-    const struct OVBuffInfo tmp_intra = ctudec->rcn_ctx.ctu_buff;
+    struct OVBuffInfo tmp_intra = ctudec->rcn_ctx.ctu_buff;
     vvc_intra_pred(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0, y0, log2_pb_w, log2_pb_h);
     vvc_intra_pred_chroma(&ctudec->rcn_ctx, OVINTRA_PLANAR, x0 >> 1, y0 >> 1, log2_pb_w - 1, log2_pb_h - 1);
 
