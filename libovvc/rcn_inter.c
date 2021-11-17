@@ -684,136 +684,6 @@ derive_dmvr_ref_buf_c(const OVPicture *const ref_pic, OVMV mv, int pos_x, int po
 }
 
 static void
-rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
-                          uint8_t x0, uint8_t y0,
-                          uint8_t log2_pu_w, uint8_t log2_pu_h,
-                          OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1)
-{
-    struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
-    const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-    struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
-    struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
-    /* FIXME derive ref_idx */
-    uint8_t ref_idx_0 = ref_idx0;
-    uint8_t ref_idx_1 = ref_idx1;
-
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
-
-    int16_t bcw_weights[5] = { -2, 3, 4, 5, 10 };
-    int16_t wt0, wt1;
-
-    /* TMP buffers for edge emulation
-     * FIXME use tmp buffers in local contexts
-     */
-    uint16_t *edge_buff0 = rcn_ctx->data.edge_buff0;
-    uint16_t *edge_buff1 = rcn_ctx->data.edge_buff1;
-    uint16_t *edge_buff0_1 = rcn_ctx->data.edge_buff0_1;
-    uint16_t *edge_buff1_1 = rcn_ctx->data.edge_buff1_1;
-    int16_t *tmp_buff = (int16_t *) rcn_ctx->data.tmp_buff;
-
-    /*FIXME we suppose here both refs possess the same size*/
-
-    const int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-
-    /* FIXME we should not need ctb_x/y
-     * it could be retrieved from position in frame buff
-     */
-    int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
-    int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
-
-    mv0 = clip_mv(pos_x, pos_y, ref0->frame->width[0],
-                  ref0->frame->height[0], 1 << log2_pu_w, 1 << log2_pu_h, mv0);
-
-    mv1 = clip_mv(pos_x, pos_y, ref1->frame->width[0],
-                  ref1->frame->height[0], 1 << log2_pu_w, 1 << log2_pu_h, mv1);
-
-    struct OVBuffInfo ref0_b = derive_ref_buf_y(ref0, mv0, pos_x, pos_y, edge_buff0,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
-
-    struct OVBuffInfo ref1_b = derive_ref_buf_y(ref1, mv1, pos_x, pos_y, edge_buff1,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
-
-    const int pu_w = 1 << log2_pu_w;
-    const int pu_h = 1 << log2_pu_h;
-
-    uint8_t prec_x0 = (mv0.x) & 0xF;
-    uint8_t prec_y0 = (mv0.y) & 0xF;
-    uint8_t prec_x1 = (mv1.x) & 0xF;
-    uint8_t prec_y1 = (mv1.y) & 0xF;
-
-    if(inter_ctx->prec_amvr == 3){
-        prec_x0 += (prec_x0 == 8) ? 8 : 0;
-        prec_y0 += (prec_y0 == 8) ? 8 : 0;
-        prec_x1 += (prec_x1 == 8) ? 8 : 0;
-        prec_y1 += (prec_y1 == 8) ? 8 : 0;
-    }
-
-    uint8_t prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
-    uint8_t prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
-
-    dst.y  += x0 + y0 * dst.stride;
-    dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-    dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-
-    mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_buff, ref0_b.y, ref0_b.stride, pu_h, prec_x0, prec_y0, pu_w);
-
-    if( mv0.bcw_idx_plus1 == 0 || mv0.bcw_idx_plus1 == 3){
-        mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE, ref1_b.y, ref1_b.stride, tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
-    }
-    else{
-        wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
-        wt0 = 8 - wt1;
-        int denom = 2;
-        mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.y, RCN_CTB_STRIDE<<1, (uint8_t*)ref1_b.y, ref1_b.stride<<1,
-                                                        tmp_buff,  MAX_PB_SIZE, pu_h, denom, wt0, wt1,
-                                                        prec_x1, prec_y1, pu_w);
-    }
-
-    rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
-                                            pu_w, pu_h);
-
-    const struct OVBuffInfo ref0_c = derive_ref_buf_c(ref0, mv0,
-                                                      pos_x >> 1, pos_y >> 1,
-                                                      edge_buff0, edge_buff0_1,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
-
-    const struct OVBuffInfo ref1_c = derive_ref_buf_c(ref1, mv1,
-                                                      pos_x >> 1, pos_y >> 1,
-                                                      edge_buff1, edge_buff1_1,
-                                                      log2_pu_w, log2_pu_h, log2_ctb_s);
-    prec_x0 = (mv0.x) & 0x1F;
-    prec_y0 = (mv0.y) & 0x1F;
-
-    prec_x1 = (mv1.x) & 0x1F;
-    prec_y1 = (mv1.y) & 0x1F;
-
-    prec_0_mc_type = (prec_x0 > 0) + ((prec_y0 > 0) << 1);
-    prec_1_mc_type = (prec_x1 > 0) + ((prec_y1 > 0) << 1);
-
-    int16_t* ref_data0 = tmp_buff;
-    int16_t* ref_data1 = tmp_buff + MAX_PB_SIZE / 2;
-
-    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 2](ref_data0, ref0_c.cb, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
-    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 2](ref_data1, ref0_c.cr, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
-
-    if( mv0.bcw_idx_plus1 == 0 || mv0.bcw_idx_plus1 == 3 ){
-        mc_c->bidir1[prec_1_mc_type][log2_pu_w - 2](dst.cb, RCN_CTB_STRIDE, ref1_c.cb, ref1_c.stride_c, ref_data0, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
-        mc_c->bidir1[prec_1_mc_type][log2_pu_w - 2](dst.cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride_c, ref_data1, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
-    }
-    else{
-        int denom = 2;
-        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cb, RCN_CTB_STRIDE<<1, (uint8_t*)ref1_c.cb, ref1_c.stride_c<<1,
-                                                    ref_data0,  MAX_PB_SIZE, pu_h >> 1, denom, wt0, wt1,
-                                                    prec_x1, prec_y1, pu_w >> 1);
-        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cr, RCN_CTB_STRIDE<<1, (uint8_t*)ref1_c.cr, ref1_c.stride_c<<1,
-                                                        ref_data1,  MAX_PB_SIZE, pu_h >> 1, denom, wt0, wt1,
-                                                        prec_x1, prec_y1, pu_w >> 1);
-    }
-
-}
-
-static void
 rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                             uint8_t x0, uint8_t y0,
                             uint8_t log2_pu_w, uint8_t log2_pu_h,
@@ -1980,128 +1850,6 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     }
 }
 
-void
-rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-        OVMV mv, uint8_t type, uint8_t ref_idx)
-{
-    struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
-    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-
-    struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
-    struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
-
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
-    OVPicture *ref_pic =  type ? ref1 : ref0;
-
-    dst.y  += x0 + y0 * dst.stride;
-    dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-    dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
-    uint16_t *tmp_buff = rcn_ctx->data.tmp_buff;
-    const OVFrame *const frame0 = ref_pic->frame;
-
-    const uint16_t *const ref0_y  = (uint16_t *) frame0->data[0];
-    const uint16_t *const ref0_cb = (uint16_t *) frame0->data[1];
-    const uint16_t *const ref0_cr = (uint16_t *) frame0->data[2];
-
-    int src_stride   = frame0->linesize[0] >> 1;
-    int src_stride_c = frame0->linesize[1] >> 1;
-
-    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-    int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
-    int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
-
-    const int pu_w = 1 << log2_pu_w;
-    const int pu_h = 1 << log2_pu_h;
-
-    const int pic_w = frame0->width[0];
-    const int pic_h = frame0->height[0];
-    mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv);
-
-    int ref_x = pos_x + (mv.x >> 4);
-    int ref_y = pos_y + (mv.y >> 4);
-
-    uint8_t prec_x   = (mv.x) & 0xF;
-    uint8_t prec_y   = (mv.y) & 0xF;
-    if(inter_ctx->prec_amvr == 3){
-        prec_x += (prec_x == 8) ? 8 : 0;
-        prec_y += (prec_y == 8) ? 8 : 0;
-    }
-    uint8_t prec_x_c = (mv.x) & 0x1F;
-    uint8_t prec_y_c = (mv.y) & 0x1F;
-
-    int prec_mc_type   = (prec_x  > 0) + ((prec_y > 0)   << 1);
-    int prec_c_mc_type = (prec_x_c > 0) + ((prec_y_c > 0) << 1);
-
-    uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, pic_w, pic_h,
-                                                   pu_w, pu_h);;
-
-    const uint16_t *src_y  = &ref0_y [ ref_x       + ref_y        * src_stride];
-    const uint16_t *src_cb = &ref0_cb[(ref_x >> 1) + (ref_y >> 1) * src_stride_c];
-    const uint16_t *src_cr = &ref0_cr[(ref_x >> 1) + (ref_y >> 1) * src_stride_c];
-
-    /*
-     * Thread synchronization to ensure data is available before usage
-     */
-    rcn_inter_synchronization(ref_pic, ref_x, ref_y, pu_w, pu_h, log2_ctb_s);
-
-    if (emulate_edge){
-        int src_off  = REF_PADDING_L * (src_stride) + (REF_PADDING_L);
-        int buff_off = REF_PADDING_L * (RCN_CTB_STRIDE) + (REF_PADDING_L);
-
-        emulate_block_border(tmp_buff, (src_y - src_off),
-                             RCN_CTB_STRIDE, src_stride,
-                             pu_w + QPEL_EXTRA, pu_h + QPEL_EXTRA,
-                             ref_x - REF_PADDING_L, ref_y - REF_PADDING_L,
-                             pic_w, pic_h);
-
-        src_y = tmp_buff + buff_off;
-        src_stride = RCN_CTB_STRIDE;
-    }
-
-    mc_l->unidir[prec_mc_type][log2_pu_w - 1](dst.y, RCN_CTB_STRIDE,
-                                          src_y, src_stride, pu_h,
-                                          prec_x, prec_y, pu_w);
-
-    rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
-                                            pu_w, pu_h);
-
-
-    emulate_edge = test_for_edge_emulation_c(ref_x >> 1, ref_y >> 1, pic_w >> 1, pic_h >> 1,
-                                             pu_w >> 1, pu_h >> 1);;
-
-    if (emulate_edge){
-        int src_off  = REF_PADDING_C * (src_stride_c) + (REF_PADDING_C);
-        int buff_off = REF_PADDING_C * (RCN_CTB_STRIDE) + (REF_PADDING_C);
-        emulate_block_border(tmp_buff, (src_cb - src_off),
-                             RCN_CTB_STRIDE, src_stride_c,
-                             (pu_w >> 1)  + EPEL_EXTRA, (pu_h >> 1) + EPEL_EXTRA,
-                             (pos_x >> 1) + (mv.x >> 5) - REF_PADDING_C, (pos_y >> 1) + (mv.y >> 5) - REF_PADDING_C,
-                             (pic_w >> 1), (pic_h >> 1));
-        src_cb = tmp_buff + buff_off;
-        src_stride_c = RCN_CTB_STRIDE;
-    }
-
-    mc_c->unidir[prec_c_mc_type][log2_pu_w - 2](dst.cb, RCN_CTB_STRIDE,
-                                                src_cb, src_stride_c,
-                                                pu_h >> 1, prec_x_c, prec_y_c, pu_w >> 1);
-
-    if (emulate_edge){
-        int src_off  = REF_PADDING_C * (frame0->linesize[1] >> 1) + (REF_PADDING_C);
-        int buff_off = REF_PADDING_C * (RCN_CTB_STRIDE) + (REF_PADDING_C);
-        emulate_block_border(tmp_buff, (src_cr - src_off),
-                             RCN_CTB_STRIDE, frame0->linesize[1] >> 1,
-                             (pu_w >> 1) + EPEL_EXTRA, (pu_h >> 1) + EPEL_EXTRA,
-                             (pos_x >> 1) + (mv.x >> 5) - REF_PADDING_C, (pos_y >> 1) + (mv.y >> 5) - REF_PADDING_C,
-                             (pic_w >> 1), (pic_h >> 1));
-        src_cr = tmp_buff + buff_off;
-        src_stride_c = RCN_CTB_STRIDE;
-    }
-    mc_c->unidir[prec_c_mc_type][log2_pu_w - 2](dst.cr, RCN_CTB_STRIDE,
-                                                src_cr, src_stride_c,
-                                                pu_h >> 1, prec_x_c, prec_y_c, pu_w >> 1);
-}
-
 static void
 rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
           OVMV mv, uint8_t type, uint8_t ref_idx)
@@ -2358,6 +2106,14 @@ rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
     mc_c->unidir[prec_c_mc_type][log2_pu_w - 2](dst.cr, RCN_CTB_STRIDE,
                                                 src_cr, src_stride_c,
                                                 pu_h >> 1, prec_x_c, prec_y_c, pu_w >> 1);
+}
+
+void
+rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
+        OVMV mv, uint8_t type, uint8_t ref_idx)
+{
+    rcn_mcp_l(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, type, ref_idx);
+    rcn_mcp_c(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, type, ref_idx);
 }
 
 void
