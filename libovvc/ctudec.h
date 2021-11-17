@@ -498,9 +498,6 @@ struct OVCTUDec
      * parent decoder error handling
      */
     const struct OVDec *parent_dec;
-    /* TODO decide whether or not we should add thread info
-     * here
-     */
 
     /* Associated cabac_context
      * Contains context tables, cabac status and position in the
@@ -508,19 +505,11 @@ struct OVCTUDec
      */
     struct OVCABACCtx *cabac_ctx;
 
-    /* List of flag/modes to match activated tools */
-    struct {
-        uint8_t flag;
-        uint8_t status;
-    } tools_status;
-
     /* Derivations context according to activated tools
     */
     struct OVDrvCtx {
         struct IntraDRVInfo intra_info;
         struct InterDRVCtx  inter_ctx;
-        struct DeltaQPDRVCtx *delta_qp_ctx;
-        struct FiltersDRVCtx *loop_filters_ctx;
         int8_t qp_map_x[32];
         int8_t qp_map_y[32];
     } drv_ctx;
@@ -528,15 +517,10 @@ struct OVCTUDec
     /* Reconstruction context */
     struct OVRCNCtx
     {
-        /*FIXME tmp*/
+        /*FIXME convenience pointer to retrieve ctudec from rcn_ctx */
         struct OVCTUDec *ctudec;
 
-        /* FIXME
-         * decide where we should store / alloc init this
-         * since this should be used by ctudec
-         */
         struct CTURCNData data;
-
 
         /* Pointers to the first sample data of CTU in the current
          * picture
@@ -558,13 +542,6 @@ struct OVCTUDec
 
         /*Pointers to intra line reconstruction buffers*/
         struct OVBuffInfo intra_line_buff;
-
-        /* Side Buffer to be used by reconstruction functions
-         * when needed
-         */
-        struct {
-            uint16_t *data;
-        } tmp_buff;
 
         /* Bit fields corresponding to the decoding progress in
          * current CTU, and its borders those are used for example
@@ -606,7 +583,7 @@ struct OVCTUDec
 
         //TODO: change alf/sao to use ctudec buffer instead of frame buffer.
         struct Frame* pic_frame; 
-    }filter_buffers;
+    } filter_buffers;
 
     /* CTU neighbours availability flags
      * An aggregation of flag used to tell the decoder if
