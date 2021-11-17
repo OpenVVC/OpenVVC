@@ -793,19 +793,19 @@ rcn_motion_compensation_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int16_t* ref_data0 = tmp_buff;
     int16_t* ref_data1 = tmp_buff + MAX_PB_SIZE / 2;
 
-    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data0, ref0_c.cb, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
-    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data1, ref0_c.cr, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
+    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 2](ref_data0, ref0_c.cb, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
+    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 2](ref_data1, ref0_c.cr, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
 
     if( mv0.bcw_idx_plus1 == 0 || mv0.bcw_idx_plus1 == 3 ){
-        mc_c->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.cb, RCN_CTB_STRIDE, ref1_c.cb, ref1_c.stride_c, ref_data0, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
-        mc_c->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride_c, ref_data1, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
+        mc_c->bidir1[prec_1_mc_type][log2_pu_w - 2](dst.cb, RCN_CTB_STRIDE, ref1_c.cb, ref1_c.stride_c, ref_data0, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
+        mc_c->bidir1[prec_1_mc_type][log2_pu_w - 2](dst.cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride_c, ref_data1, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
     }
     else{
         int denom = 2;
-        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.cb, RCN_CTB_STRIDE<<1, (uint8_t*)ref1_c.cb, ref1_c.stride_c<<1,
+        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cb, RCN_CTB_STRIDE<<1, (uint8_t*)ref1_c.cb, ref1_c.stride_c<<1,
                                                     ref_data0,  MAX_PB_SIZE, pu_h >> 1, denom, wt0, wt1,
                                                     prec_x1, prec_y1, pu_w >> 1);
-        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.cr, RCN_CTB_STRIDE<<1, (uint8_t*)ref1_c.cr, ref1_c.stride_c<<1,
+        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cr, RCN_CTB_STRIDE<<1, (uint8_t*)ref1_c.cr, ref1_c.stride_c<<1,
                                                         ref_data1,  MAX_PB_SIZE, pu_h >> 1, denom, wt0, wt1,
                                                         prec_x1, prec_y1, pu_w >> 1);
     }
@@ -1963,21 +1963,21 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int16_t* ref_data0 = tmp_buff;
     int16_t* ref_data1 = tmp_buff + MAX_PB_SIZE / 2;
 
-    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data0, ref0_c.cb, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
-    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data1, ref0_c.cr, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
+    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 2](ref_data0, ref0_c.cb, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
+    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 2](ref_data1, ref0_c.cr, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
 
     if( mv0.bcw_idx_plus1 == 0 || mv0.bcw_idx_plus1 == 3 ){
-        mc_c->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.cb, RCN_CTB_STRIDE, ref1_c.cb, ref1_c.stride_c, ref_data0, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
-        mc_c->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride_c, ref_data1, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
+        mc_c->bidir1[prec_1_mc_type][log2_pu_w - 2](dst.cb, RCN_CTB_STRIDE, ref1_c.cb, ref1_c.stride_c, ref_data0, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
+        mc_c->bidir1[prec_1_mc_type][log2_pu_w - 2](dst.cr, RCN_CTB_STRIDE, ref1_c.cr, ref1_c.stride_c, ref_data1, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
     }
     else{
         wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
         wt0 = 8 - wt1;
         int denom = 2;
-        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.cb, RCN_CTB_STRIDE<<1, (uint8_t*)ref1_c.cb, ref1_c.stride_c<<1,
+        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cb, RCN_CTB_STRIDE<<1, (uint8_t*)ref1_c.cb, ref1_c.stride_c<<1,
                                                     ref_data0,  MAX_PB_SIZE, pu_h >> 1, denom, wt0, wt1,
                                                     prec_x1, prec_y1, pu_w >> 1);
-        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.cr, RCN_CTB_STRIDE<<1, (uint8_t*)ref1_c.cr, ref1_c.stride_c<<1,
+        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cr, RCN_CTB_STRIDE<<1, (uint8_t*)ref1_c.cr, ref1_c.stride_c<<1,
                                                         ref_data1,  MAX_PB_SIZE, pu_h >> 1, denom, wt0, wt1,
                                                         prec_x1, prec_y1, pu_w >> 1);
     }
@@ -2085,7 +2085,7 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
         src_stride_c = RCN_CTB_STRIDE;
     }
 
-    mc_c->unidir[prec_c_mc_type][log2_pu_w - 1](dst.cb, RCN_CTB_STRIDE,
+    mc_c->unidir[prec_c_mc_type][log2_pu_w - 2](dst.cb, RCN_CTB_STRIDE,
                                                 src_cb, src_stride_c,
                                                 pu_h >> 1, prec_x_c, prec_y_c, pu_w >> 1);
 
@@ -2100,7 +2100,7 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
         src_cr = tmp_buff + buff_off;
         src_stride_c = RCN_CTB_STRIDE;
     }
-    mc_c->unidir[prec_c_mc_type][log2_pu_w - 1](dst.cr, RCN_CTB_STRIDE,
+    mc_c->unidir[prec_c_mc_type][log2_pu_w - 2](dst.cr, RCN_CTB_STRIDE,
                                                 src_cr, src_stride_c,
                                                 pu_h >> 1, prec_x_c, prec_y_c, pu_w >> 1);
 }
@@ -2342,7 +2342,7 @@ rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
         src_stride_c = RCN_CTB_STRIDE;
     }
 
-    mc_c->unidir[prec_c_mc_type][log2_pu_w - 1](dst.cb, RCN_CTB_STRIDE,
+    mc_c->unidir[prec_c_mc_type][log2_pu_w - 2](dst.cb, RCN_CTB_STRIDE,
                                                 src_cb, src_stride_c,
                                                 pu_h >> 1, prec_x_c, prec_y_c, pu_w >> 1);
 
@@ -2357,7 +2357,8 @@ rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
         src_cr = tmp_buff + buff_off;
         src_stride_c = RCN_CTB_STRIDE;
     }
-    mc_c->unidir[prec_c_mc_type][log2_pu_w - 1](dst.cr, RCN_CTB_STRIDE,
+
+    mc_c->unidir[prec_c_mc_type][log2_pu_w - 2](dst.cr, RCN_CTB_STRIDE,
                                                 src_cr, src_stride_c,
                                                 pu_h >> 1, prec_x_c, prec_y_c, pu_w >> 1);
 }
@@ -2871,13 +2872,13 @@ rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
 
     int16_t* ref_data0 = tmp_buff0;
     int16_t* ref_data1 = tmp_buff0 + MAX_PB_SIZE / 2;
-    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data0, ref0_c.cb, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
-    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_data1, ref0_c.cr, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
+    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 2](ref_data0, ref0_c.cb, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
+    mc_c->bidir0[prec_0_mc_type][log2_pu_w - 2](ref_data1, ref0_c.cr, ref0_c.stride_c, pu_h >> 1, prec_x0, prec_y0, pu_w >> 1);
 
     int16_t* ref_data01 = tmp_buff1;
     int16_t* ref_data11 = tmp_buff1 + MAX_PB_SIZE / 2;
-    mc_c->bidir0[prec_1_mc_type][log2_pu_w - 1](ref_data01, ref1_c.cb, ref1_c.stride_c, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
-    mc_c->bidir0[prec_1_mc_type][log2_pu_w - 1](ref_data11, ref1_c.cr, ref1_c.stride_c, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
+    mc_c->bidir0[prec_1_mc_type][log2_pu_w - 2](ref_data01, ref1_c.cb, ref1_c.stride_c, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
+    mc_c->bidir0[prec_1_mc_type][log2_pu_w - 2](ref_data11, ref1_c.cr, ref1_c.stride_c, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
 
     rcn_gpm_weights_and_steps(split_dir, log2_pu_w, log2_pu_h, &step_x, &step_y, &weight, 1);
     put_weighted_gpm_bi_pixels(dst.cb, RCN_CTB_STRIDE, ref_data01, MAX_PB_SIZE, ref_data0,
