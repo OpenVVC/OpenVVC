@@ -4044,7 +4044,6 @@ rcn_affine_prof_mcp_b_l(OVCTUDec *const ctudec,
     OVMV *tmvp_mv0 = &inter_ctx->tmvp_mv[0].mvs[0];
     OVMV *tmvp_mv1 = &inter_ctx->tmvp_mv[1].mvs[0];
 
-    // inter_ctx->prec_amvr = inter_dir & 0x1 ? mv_buff0[0].prec_amvr : mv1.prec_amvr;
     for (i = 0; i < nb_sb_h; ++i) {
         for (j = 0; j < nb_sb_w; ++j) {
             OVMV mv0 = mv_buff0[j];
@@ -4059,16 +4058,7 @@ rcn_affine_prof_mcp_b_l(OVCTUDec *const ctudec,
                              mv0, mv1, x0 + 4*j, y0 + 4*i,
                              2, 2, inter_dir, ref_idx0, ref_idx1,
                              prof_dir, &prof_info);
-            // rcn_mcp_b_l(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
-            //             mv0, mv1, x0 + 4*j, y0 + 4*i,
-            //             2, 2, inter_dir, ref_idx0, ref_idx1);
         }
-        #if 0
-        if (((i + start_y) & 0x1)) {
-            tmvp_mv0 += 16;
-            tmvp_mv1 += 16;
-        }
-        #endif
 
         mv_buff0 += 34;
         mv_buff1 += 34;
