@@ -288,8 +288,6 @@ struct InterDRVCtx
     OVPicture *rpl1[16];
     uint16_t scale_fact_rpl0[16][2];
     uint16_t scale_fact_rpl1[16][2];
-    // uint8_t filter_idx_rpl0[16][2];
-    // uint8_t filter_idx_rpl1[16][2];
 
     uint8_t nb_active_ref0;
     uint8_t nb_active_ref1;
@@ -771,7 +769,7 @@ struct OVCTUDec
 };
 
 int ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec);
-void ctudec_compute_refs_scaling(OVCTUDec *const ctudec);
+void ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic);
 
 void ctudec_alloc_filter_buffers(OVCTUDec *const ctudec, int nb_ctu_w, int margin);
 void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect);

@@ -173,9 +173,9 @@ typedef void (*CIIPWeightedFuntion)(uint16_t* dst, int dststride, const uint16_t
 typedef void (*DFFilterFunction)(int16_t *src, const int stride, const int tc);
 
 void put_vvc_qpel_rpr_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
-                      const uint16_t* _src0, ptrdiff_t _srcstride,
-                      const uint16_t* _src1, int height, intptr_t mx,
-                      intptr_t my, int width);
+                      const uint16_t* _src0, ptrdiff_t _src0stride,
+                      const uint16_t* _src1, ptrdiff_t _src1stride,
+                      int height, intptr_t mx, intptr_t my, int width);
 
 /**
  * The Context put together all functions used by strategies.

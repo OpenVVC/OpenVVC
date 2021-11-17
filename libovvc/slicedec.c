@@ -1223,7 +1223,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     ctudec->drv_ctx.inter_ctx.nb_active_ref0 = prms->sh->hrpl.rpl_h0.rpl_data.num_ref_active_entries;
     ctudec->drv_ctx.inter_ctx.nb_active_ref1 = prms->sh->hrpl.rpl_h1.rpl_data.num_ref_active_entries;
 
-    ctudec_compute_refs_scaling(ctudec);
+    ctudec_compute_refs_scaling(ctudec, sldec->pic);
 
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 1;
     for (int i = 0; i < ctudec->drv_ctx.inter_ctx.nb_active_ref0; ++i) {

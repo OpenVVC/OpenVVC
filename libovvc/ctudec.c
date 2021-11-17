@@ -56,49 +56,51 @@ void ctudec_free_intra_line_buff(OVCTUDec *const ctudec)
 
 
 void
-ctudec_compute_refs_scaling(OVCTUDec *const ctudec)
+ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
 {
-    // pps->pps_scaling_window_explicit_signalling_flag = nvcl_read_flag(rdr);
-    // if (pps->pps_scaling_window_explicit_signalling_flag) {
-    //     pps->pps_scaling_win_left_offset   = nvcl_read_s_expgolomb(rdr);
-    //     pps->pps_scaling_win_right_offset  = nvcl_read_s_expgolomb(rdr);
-    //     pps->pps_scaling_win_top_offset    = nvcl_read_s_expgolomb(rdr);
-    //     pps->pps_scaling_win_bottom_offset = nvcl_read_s_expgolomb(rdr);
-    // }
+    struct Frame *frame = pic->frame;
+    /*FIXME only 420*/
+    uint16_t add_w = (frame->scaling_win_left + frame->scaling_win_right) << 1;
+    uint16_t add_h = (frame->scaling_win_top + frame->scaling_win_bottom) << 1;
+    uint16_t pic_w = frame->width[0]  - add_w;
+    uint16_t pic_h = frame->height[0] - add_h;
 
     int scaling_hor, scaling_ver;
     int ref_pic_w, ref_pic_h;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-    const int pic_w = ctudec->pic_w;
-    const int pic_h = ctudec->pic_h;
-
     for (int i = 0;  i < inter_ctx->nb_active_ref0; ++i){
-        OVPicture *ref_pic = inter_ctx->rpl0[i];
-        if (!ref_pic->frame)
+        OVPicture *ref_pic  = inter_ctx->rpl0[i];
+        frame = ref_pic->frame;
+        if (!frame)
             continue;
-        ref_pic_w = ref_pic->frame->width[0];
-        ref_pic_h = ref_pic->frame->height[0];
+        /*FIXME only 420*/
+        add_w = (frame->scaling_win_left + frame->scaling_win_right) << 1;
+        add_h = (frame->scaling_win_top + frame->scaling_win_bottom) << 1;
+        ref_pic_w = frame->width[0]  - add_w;
+        ref_pic_h = frame->height[0] - add_h;
+
         scaling_hor = (ref_pic_w << RPR_SCALE_BITS) / pic_w;
         scaling_ver = (ref_pic_h << RPR_SCALE_BITS) / pic_h;
-        scaling_ver = (scaling_ver + 1) / 16 * 16;
+        //scaling_ver = (scaling_ver + 1) / 16 * 16;
         inter_ctx->scale_fact_rpl0[i][0] = scaling_hor;
         inter_ctx->scale_fact_rpl0[i][1] = scaling_ver;
-        // inter_ctx->filter_idx_rpl0[i][0] = compute_filter_idx(scaling_hor);
-        // inter_ctx->filter_idx_rpl0[i][1] = compute_filter_idx(scaling_ver);
     }
     for (int i = 0;  i < inter_ctx->nb_active_ref1; ++i){
         OVPicture *ref_pic = inter_ctx->rpl1[i];
-        if (!ref_pic->frame)
+        frame = ref_pic->frame;
+        if (!frame)
             continue;
-        ref_pic_w = ref_pic->frame->width[0];
-        ref_pic_h = ref_pic->frame->height[0];
+        /*FIXME only 420*/
+        add_w = (frame->scaling_win_left + frame->scaling_win_right) << 1;
+        add_h = (frame->scaling_win_top + frame->scaling_win_bottom) << 1;
+        ref_pic_w = frame->width[0]  - add_w;
+        ref_pic_h = frame->height[0] - add_h;
+
         scaling_hor = (ref_pic_w << RPR_SCALE_BITS) / pic_w;
         scaling_ver = (ref_pic_h << RPR_SCALE_BITS) / pic_h;
-        scaling_ver = (scaling_ver + 1) / 16 * 16;
+        // scaling_ver = (scaling_ver + 1) / 16 * 16;
         inter_ctx->scale_fact_rpl1[i][0] = scaling_hor;
         inter_ctx->scale_fact_rpl1[i][1] = scaling_ver;
-        // inter_ctx->filter_idx_rpl1[i][0] = compute_filter_idx(scaling_hor);
-        // inter_ctx->filter_idx_rpl1[i][1] = compute_filter_idx(scaling_ver);
     }
 }
 

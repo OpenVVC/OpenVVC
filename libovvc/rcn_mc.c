@@ -186,6 +186,112 @@ static const int8_t ov_mc_filters_rpr[3][16][8] =
     { -2, -4,  5, 21, 29, 19,  0, -4 }}
 };
 
+static const int8_t ov_mc_filters_rpr_c[3][32][4] =
+{
+    {
+        {  0, 64,  0,  0 },
+        { -1, 63,  2,  0 },
+        { -2, 62,  4,  0 },
+        { -2, 60,  7, -1 },
+        { -2, 58, 10, -2 },
+        { -3, 57, 12, -2 },
+        { -4, 56, 14, -2 },
+        { -4, 55, 15, -2 },
+        { -4, 54, 16, -2 },
+        { -5, 53, 18, -2 },
+        { -6, 52, 20, -2 },
+        { -6, 49, 24, -3 },
+        { -6, 46, 28, -4 },
+        { -5, 44, 29, -4 },
+        { -4, 42, 30, -4 },
+        { -4, 39, 33, -4 },
+        { -4, 36, 36, -4 },
+        { -4, 33, 39, -4 },
+        { -4, 30, 42, -4 },
+        { -4, 29, 44, -5 },
+        { -4, 28, 46, -6 },
+        { -3, 24, 49, -6 },
+        { -2, 20, 52, -6 },
+        { -2, 18, 53, -5 },
+        { -2, 16, 54, -4 },
+        { -2, 15, 55, -4 },
+        { -2, 14, 56, -4 },
+        { -2, 12, 57, -3 },
+        { -2, 10, 58, -2 },
+        { -1,  7, 60, -2 },
+        {  0,  4, 62, -2 },
+        {  0,  2, 63, -1 }
+    },
+    {
+        { 12, 40, 12,  0 },
+        { 11, 40, 13,  0 },
+        { 10, 40, 15, -1 },
+        {  9, 40, 16, -1 },
+        {  8, 40, 17, -1 },
+        {  8, 39, 18, -1 },
+        {  7, 39, 19, -1 },
+        {  6, 38, 21, -1 },
+        {  5, 38, 22, -1 },
+        {  4, 38, 23, -1 },
+        {  4, 37, 24, -1 },
+        {  3, 36, 25,  0 },
+        {  3, 35, 26,  0 },
+        {  2, 34, 28,  0 },
+        {  2, 33, 29,  0 },
+        {  1, 33, 30,  0 },
+        {  1, 31, 31,  1 },
+        {  0, 30, 33,  1 },
+        {  0, 29, 33,  2 },
+        {  0, 28, 34,  2 },
+        {  0, 26, 35,  3 },
+        {  0, 25, 36,  3 },
+        { -1, 24, 37,  4 },
+        { -1, 23, 38,  4 },
+        { -1, 22, 38,  5 },
+        { -1, 21, 38,  6 },
+        { -1, 19, 39,  7 },
+        { -1, 18, 39,  8 },
+        { -1, 17, 40,  8 },
+        { -1, 16, 40,  9 },
+        { -1, 15, 40, 10 },
+        {  0, 13, 40, 11 }
+    },
+
+    {
+        { 17, 30, 17,  0 },
+        { 17, 30, 18, -1 },
+        { 16, 30, 18,  0 },
+        { 16, 30, 18,  0 },
+        { 15, 30, 18,  1 },
+        { 14, 30, 18,  2 },
+        { 13, 29, 19,  3 },
+        { 13, 29, 19,  3 },
+        { 12, 29, 20,  3 },
+        { 11, 28, 21,  4 },
+        { 10, 28, 22,  4 },
+        { 10, 27, 22,  5 },
+        {  9, 27, 23,  5 },
+        {  9, 26, 24,  5 },
+        {  8, 26, 24,  6 },
+        {  7, 26, 25,  6 },
+        {  7, 25, 25,  7 },
+        {  6, 25, 26,  7 },
+        {  6, 24, 26,  8 },
+        {  5, 24, 26,  9 },
+        {  5, 23, 27,  9 },
+        {  5, 22, 27, 10 },
+        {  4, 22, 28, 10 },
+        {  4, 21, 28, 11 },
+        {  3, 20, 29, 12 },
+        {  3, 19, 29, 13 },
+        {  3, 19, 29, 13 },
+        {  2, 18, 30, 14 },
+        {  1, 18, 30, 15 },
+        {  0, 18, 30, 16 },
+        {  0, 18, 30, 16 },
+        { -1, 18, 30, 17 }
+    }
+};
 
 static void
 put_vvc_pel_uni_pixels(uint16_t* _dst, ptrdiff_t _dststride,
@@ -419,14 +525,15 @@ put_vvc_qpel_rpr_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src
 //TODOrpr: change name and pointer
 void
 put_vvc_qpel_rpr_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
-                      const uint16_t* _src0, ptrdiff_t _srcstride,
-                      const uint16_t* _src1, int height, intptr_t mx,
-                      intptr_t my, int width)
+                      const uint16_t* _src0, ptrdiff_t _src0stride,
+                      const uint16_t* _src1, ptrdiff_t _src1stride,
+                      int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
     const int16_t* src0 = (int16_t*)_src0;
     const int16_t* src1 = (int16_t*)_src1;
-    ptrdiff_t srcstride = _srcstride;
+    ptrdiff_t src0stride = _src0stride;
+    ptrdiff_t src1stride = _src1stride;
     uint16_t* dst = (uint16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     int shift = 14 - BITDEPTH + 1;
@@ -438,11 +545,78 @@ put_vvc_qpel_rpr_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
             dst[x] = ov_bdclip((src0[x] + src1[x] + offset) >>
                                    shift);
         }
-        src0 += srcstride;
-        src1 += srcstride;
+        src0 += src0stride;
+        src1 += src1stride;
         dst += dststride;
     }
 }
+
+static void
+put_vvc_epel_rpr_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                   ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                   int width, uint8_t filter_idx)
+{
+    int x, y;
+    const uint16_t* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    int16_t* dst = (int16_t*)_dst;
+    ptrdiff_t dststride = _dststride;
+    const int8_t* filter = ov_mc_filters_rpr_c[filter_idx][mx];
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            dst[x] = MCP_FILTER_C(src, 1, filter) >> (BITDEPTH - 8);
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
+static void
+put_vvc_epel_rpr_uni_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                   ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                   int width, uint8_t filter_idx)
+{
+    int x, y;
+    const int16_t* src =  (int16_t*)_src;
+    ptrdiff_t srcstride = _srcstride;
+    uint16_t* dst = (uint16_t*)_dst;
+    ptrdiff_t dststride = _dststride;
+    const int8_t* filter = ov_mc_filters_rpr_c[filter_idx][my];    
+    int shift = 14 - BITDEPTH;
+    int offset = 1 << (shift - 1);
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            dst[x] = ov_bdclip(((MCP_FILTER_C(src, srcstride, filter) >> 6) +
+                                offset) >> shift);
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
+static void
+put_vvc_epel_rpr_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                   ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                   int width, uint8_t filter_idx)
+{
+    int x, y;
+    const int16_t* src =  (int16_t*)_src;
+    ptrdiff_t srcstride = _srcstride;
+    int16_t* dst = (int16_t*)_dst;
+    ptrdiff_t dststride = _dststride;
+    const int8_t* filter = ov_mc_filters_rpr_c[filter_idx][my];    
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            dst[x] = MCP_FILTER_C(src, srcstride, filter) >> 6;
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
 
 static void
 put_vvc_pel_bilinear_pixels(uint16_t* _dst, ptrdiff_t _dststride,
@@ -1360,7 +1534,7 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_l->bilinear[2][i] = &put_vvc_qpel_bilinear_v;
         mc_l->bilinear[3][i] = &put_vvc_qpel_bilinear_hv;
 
-        //TODOrpr: check rpr_uni[0][i] ? not needed.
+        //TODOrpr: rpr_uni[0][i] create function when no filter applied.
         mc_l->rpr_uni[0][i] = &put_vvc_qpel_rpr_h;
         mc_l->rpr_uni[1][i] = &put_vvc_qpel_rpr_h;
         mc_l->rpr_uni[2][i] = &put_vvc_qpel_rpr_uni_v;
@@ -1389,6 +1563,15 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_c->bidir_w[1][i] = &put_weighted_epel_bi_h;
         mc_c->bidir_w[2][i] = &put_weighted_epel_bi_v;
         mc_c->bidir_w[3][i] = &put_weighted_epel_bi_hv;
+
+        //TODOrpr: rpr_uni[0][i] create function when no filter applied.
+        mc_c->rpr_uni[0][i] = &put_vvc_epel_rpr_h;
+        mc_c->rpr_uni[1][i] = &put_vvc_epel_rpr_h;
+        mc_c->rpr_uni[2][i] = &put_vvc_epel_rpr_uni_v;
+
+        mc_c->rpr_bi[0][i] = &put_vvc_epel_rpr_h;
+        mc_c->rpr_bi[1][i] = &put_vvc_epel_rpr_h;
+        mc_c->rpr_bi[2][i] = &put_vvc_epel_rpr_bi_v;
     }
 }
 

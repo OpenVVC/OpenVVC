@@ -55,6 +55,11 @@ struct Frame
     size_t width[3];
     size_t height[3];
 
+    uint16_t scaling_win_left;
+    uint16_t scaling_win_right;
+    uint16_t scaling_win_top;
+    uint16_t scaling_win_bottom;
+    
     /* Picture Order Count
      */
     uint32_t poc;
