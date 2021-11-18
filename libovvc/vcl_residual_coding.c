@@ -3593,15 +3593,27 @@ nb_sig_sb_ngh(uint64_t sig_sb_map, int16_t sb_x, int16_t sb_y)
     return  !!sig_sb_abv + !!sig_sb_lft;
 }
 
+static void
+init_sb_map_ts(uint8_t *nb_sig, uint8_t *sign_map, uint16_t *abs_val, uint8_t log2_tb_w, uint8_t log2_tb_h)
+{
+    for (int i = 0; i < (1 << log2_tb_h) + 2; ++i) {
+        memset(nb_sig,   0, sizeof(*nb_sig)   * 4 + (sizeof(*nb_sig)   << log2_tb_w));
+        memset(sign_map, 0, sizeof(*sign_map) * 4 + (sizeof(*sign_map) << log2_tb_w));
+
+        nb_sig += VVC_TR_CTX_STRIDE;
+        sign_map += VVC_TR_CTX_STRIDE;
+    }
+}
+
 int
 residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
                    uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     /* FIXME smaller reset tables */
-    uint8_t nb_significant[VVC_TR_CTX_SIZE]={0};
-    uint8_t sign_map[VVC_TR_CTX_SIZE]={0};
-    uint16_t abs_coeffs[VVC_TR_CTX_SIZE]={0};
+    uint8_t nb_significant[VVC_TR_CTX_SIZE];
+    uint8_t sign_map[VVC_TR_CTX_SIZE];
+    uint16_t abs_coeffs[VVC_TR_CTX_SIZE] = {0};
 
     int16_t sb_coeffs[16] = {0};
 
@@ -3628,6 +3640,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
 
     int nb_sig_c = 0;
 
+    init_sb_map_ts(nb_significant, sign_map, abs_coeffs, log2_tb_w, log2_tb_h);
     memset(dst, 0, sizeof(uint16_t) << log2_tb_s);
 
     if (nb_sb == 1) {
