@@ -442,6 +442,8 @@ derive_ref_buf_c(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
     uint16_t *const ref_cr  = (uint16_t *) ref_pic->frame->data[2];
 
     int src_stride = ref_pic->frame->linesize[1] >> 1;
+    const int pic_w = ref_pic->frame->width[1];
+    const int pic_h = ref_pic->frame->height[1];
 
     /*FIXME check buff side derivation */
     int ref_pos_x = pos_x + (mv.x >> 5);
@@ -449,9 +451,6 @@ derive_ref_buf_c(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
 
     const int pu_w = (1 << log2_pu_w) >> 1;
     const int pu_h = (1 << log2_pu_h) >> 1;
-
-    const int pic_w = ref_pic->frame->width[0]  >> 1;
-    const int pic_h = ref_pic->frame->height[0] >> 1;
 
     uint16_t *src_cb  = &ref_cb[ref_pos_x + ref_pos_y * src_stride];
     uint16_t *src_cr  = &ref_cr[ref_pos_x + ref_pos_y * src_stride];
@@ -1608,8 +1607,8 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     /* Reference padding overwrite for weights derivation */
     extend_bdof_grad((uint16_t *)ref_bdof0, ref_stride, pb_w, pb_h);
     extend_bdof_grad((uint16_t *)ref_bdof1, ref_stride, pb_w, pb_h);
-    dst.y += x0;
-    dst.y += y0 * RCN_CTB_STRIDE;
+
+    dst.y += x0 + y0 * RCN_CTB_STRIDE;
 
     /* Split into 4x4 subblocks for BDOF computation */
     rcn_bdof(bdof, (int16_t *)dst.y, dst.stride, ref_bdof0 + 128 + 1, ref_bdof1 + 128 + 1,
