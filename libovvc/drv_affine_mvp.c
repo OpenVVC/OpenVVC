@@ -3978,12 +3978,7 @@ rcn_affine_mcp_b_l(OVCTUDec *const ctudec,
             OVMV mv0 = mv_buff0[j];
             OVMV mv1 = mv_buff1[j];
 
-            #if 0
-            if (!((j + start_x) & 0x1) && !((i + start_y) & 0x1)) {
-            #else
-
-               if (!(((x0+4*j)>>2)& 0x1) && !((((y0+4*i)>>2)& 0x1))) {
-            #endif
+            if (!(((x0+4*j)>>2)& 0x1) && !((((y0+4*i)>>2)& 0x1))) {
                tmvp_mv0[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv0;
                tmvp_mv1[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv1;
             }
@@ -3992,13 +3987,6 @@ rcn_affine_mcp_b_l(OVCTUDec *const ctudec,
                         mv0, mv1, x0 + 4*j, y0 + 4*i,
                         2, 2, inter_dir, ref_idx0, ref_idx1);
         }
-
-        #if 0
-        if (((i + start_y) & 0x1)) {
-            tmvp_mv0 += 16;
-            tmvp_mv1 += 16;
-        }
-        #endif
 
         mv_buff0 += 34;
         mv_buff1 += 34;
@@ -4050,8 +4038,8 @@ rcn_affine_prof_mcp_b_l(OVCTUDec *const ctudec,
             OVMV mv1 = mv_buff1[j];
 
             if (!(((x0+4*j)>>2)& 0x1) && !((((y0+4*i)>>2)& 0x1))) {
-               tmvp_mv0[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv0;
-               tmvp_mv1[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv1;
+                tmvp_mv0[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv0;
+                tmvp_mv1[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv1;
             }
 
             rcn_prof_mcp_b_l(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
