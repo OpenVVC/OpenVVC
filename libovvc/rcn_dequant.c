@@ -6,6 +6,12 @@
 
 #define BITDEPTH 10
 
+static const int inverse_quant_scale_lut[2][6] =
+{
+    { 40, 45, 51, 57, 64,  72},
+    { 57, 64, 72, 80, 90, 102}
+};
+
 void
 derive_dequant_ctx(OVCTUDec *const ctudec, const struct VVCQPCTX *const qp_ctx,
                   int cu_qp_delta)
@@ -14,21 +20,16 @@ derive_dequant_ctx(OVCTUDec *const ctudec, const struct VVCQPCTX *const qp_ctx,
     int base_qp = (qp_ctx->current_qp + cu_qp_delta + 64) & 63;
     ctudec->dequant_luma.qp = ((base_qp + qp_bd_offset) & 63);
 
-    ctudec->dequant_luma_skip.qp = OVMAX(ctudec->dequant_luma.qp, qp_ctx->min_qp_prime_ts);
-    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[(base_qp + qp_ctx->cb_offset + 64) & 63] + qp_bd_offset;
-    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[(base_qp + qp_ctx->cr_offset + 64) & 63] + qp_bd_offset;
+    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[(base_qp + 64) & 63] + qp_ctx->cb_offset + qp_bd_offset;
+    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[(base_qp + 64) & 63] + qp_ctx->cr_offset + qp_bd_offset;
     ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[(base_qp + 64) & 63] + qp_ctx->jcbcr_offset + qp_bd_offset;
-    ctudec->dequant_cb_skip.qp = OVMAX(ctudec->dequant_cb.qp, qp_ctx->min_qp_prime_ts);
-    ctudec->dequant_cr_skip.qp = OVMAX(ctudec->dequant_cr.qp, qp_ctx->min_qp_prime_ts);
+    ctudec->dequant_luma_skip.qp = OVMAX(ctudec->dequant_luma.qp, qp_ctx->min_qp_prime_ts);
+    ctudec->dequant_cb_skip.qp   = OVMAX(ctudec->dequant_cb.qp, qp_ctx->min_qp_prime_ts);
+    ctudec->dequant_cr_skip.qp   = OVMAX(ctudec->dequant_cr.qp, qp_ctx->min_qp_prime_ts);
     ctudec->dequant_jcbcr_skip.qp = OVMAX(ctudec->dequant_joint_cb_cr.qp, qp_ctx->min_qp_prime_ts);
+
     ctudec->qp_ctx.current_qp = base_qp;
 }
-
-static const int inverse_quant_scale_lut[2][6] ={
-    { 40, 45, 51, 57, 64,  72},
-    { 57, 64, 72, 80, 90, 102}
-};
-
 
 static void
 dequant_sb_neg(int16_t *const sb_coeffs, int scale, int shift)
