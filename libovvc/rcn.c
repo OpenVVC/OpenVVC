@@ -2,7 +2,6 @@
 #include <string.h>
 #include "nvcl_utils.h"
 #include "ovutils.h"
-#include "rcn_fill_ref.h"
 #include "rcn_intra_angular.h"
 #include "data_rcn_angular.h"
 #include "ctudec.h"
