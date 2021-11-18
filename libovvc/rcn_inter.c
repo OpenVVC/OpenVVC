@@ -1151,12 +1151,12 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pb_h = 1 << log2_pu_h;
 
     mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](ref_bdof0 + 128 + 1,
-                                            ref0_b.y, ref0_b.stride, pu_h,
-                                            prec_x0, prec_y0, pu_w);
+                                                ref0_b.y, ref0_b.stride, pu_h,
+                                                prec_x0, prec_y0, pu_w);
 
     mc_l->bidir0[prec_1_mc_type][log2_pu_w - 1](ref_bdof1 + 128 + 1,
-                                            ref1_b.y, ref1_b.stride, pu_h,
-                                            prec_x1, prec_y1, pu_w);
+                                                ref1_b.y, ref1_b.stride, pu_h,
+                                                prec_x1, prec_y1, pu_w);
 
     /* Padding for grad derivation */
     extend_bdof_buff(ref0_b.y, (uint16_t *)ref_bdof0, ref0_b.stride, pb_w, pb_h, prec_x0 >> 3, prec_y0 >> 3);
@@ -1267,8 +1267,8 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         int16_t tmp_grad_x[16];
         int16_t tmp_grad_y[16];
         mc_l->bidir0[prec_0_mc_type][log2_pu_w - 1](tmp_prof + PROF_BUFF_STRIDE + 1,
-                                              ref0_b.y, ref0_b.stride, pu_h,
-                                              prec_x0, prec_y0, pu_w);
+                                                    ref0_b.y, ref0_b.stride, pu_h,
+                                                    prec_x0, prec_y0, pu_w);
 
         extend_prof_buff(ref0_b.y, (uint16_t *)tmp_prof, ref0_b.stride, prec_x0 >> 3, prec_y0 >> 3);
 
