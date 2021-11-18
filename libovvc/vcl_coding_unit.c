@@ -34,7 +34,7 @@ derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
                   int cu_qp_delta)
 {
     /*FIXME avoid negative values especiallly in chroma_map derivation*/
-    int qp_bd_offset = 6 * (BITDEPTH - 8);
+    int qp_bd_offset = qp_ctx->qp_bd_offset;
     int base_qp = (qp_ctx->current_qp + cu_qp_delta + 64) & 63;
     ctudec->dequant_luma.qp = ((base_qp + qp_bd_offset) & 63);
 
@@ -658,7 +658,7 @@ coding_unit(OVCTUDec *const ctu_dec,
     int pred_qp = ((y0 ? ctu_dec->drv_ctx.qp_map_x[x_cb] : ctu_dec->qp_ctx.current_qp) +
                    (x0 ? ctu_dec->drv_ctx.qp_map_y[y_cb] : ctu_dec->qp_ctx.current_qp) + 1) >> 1;
 
-    int qp_bd_offset = 6 * (BITDEPTH - 8);
+    int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
     ctu_dec->qp_ctx.current_qp = pred_qp;
 
     ctu_dec->tmp_ciip = 0;

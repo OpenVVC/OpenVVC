@@ -172,6 +172,7 @@ typedef struct VVCQPCTX
     int8_t cb_offset;
     int8_t cr_offset;
     int8_t jcbcr_offset;
+    uint8_t qp_bd_offset;
     const int8_t *chroma_qp_map_cb;
     const int8_t *chroma_qp_map_cr;
     const int8_t *chroma_qp_map_jcbcr;

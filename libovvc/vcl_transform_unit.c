@@ -38,14 +38,13 @@ struct ISPTUInfo {
    struct TBInfo tb_info[4];
 };
 
-#define BITDEPTH 10
 /* FIXME refactor dequant*/
 static void
 derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
                   int cu_qp_delta)
 {
     /*FIXME avoid negative values especiallly in chroma_map derivation*/
-    int qp_bd_offset = 6 * (BITDEPTH - 8);
+    int qp_bd_offset = qp_ctx->qp_bd_offset;
     int base_qp = (qp_ctx->current_qp + cu_qp_delta + 64) & 63;
     ctudec->dequant_luma.qp = ((base_qp + qp_bd_offset) & 63);
 

@@ -18,7 +18,6 @@
 #include "rcn_lmcs.h"
 
 
-#define BITDEPTH 10
 /* TODO define in a header */
 enum SliceType {
      SLICE_B = 0,
@@ -247,16 +246,14 @@ slicedec_alloc_cabac_lines(OVSliceDec *const sldec, const struct OVPS *const prm
 static void
 slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
 {
-    #if 0
     const OVSPS *const sps = prms->sps;
-    #endif
     const OVPPS *const pps = prms->pps;
     const OVSH *const sh = prms->sh;
     const OVPH *const ph = prms->ph;
     VVCQPCTX *const qp_ctx = &ctudec->qp_ctx;
 
     /*FIXME check if not done in dec init */
-    const uint8_t qp_bd_offset = 6 * (BITDEPTH - 8);
+    const uint8_t qp_bd_offset = 6 * sps->sps_bitdepth_minus8;
     uint8_t pic_base_qp = pps->pps_init_qp_minus26 + 26;
     uint8_t pic_qp = pic_base_qp + ph->ph_qp_delta;
     int8_t slice_qp = pic_qp + sh->sh_qp_delta;
@@ -277,6 +274,7 @@ slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
     qp_ctx->cb_offset = cb_qp_offset;
     qp_ctx->cr_offset = cr_qp_offset;
     qp_ctx->jcbcr_offset = jcbcr_qp_offset;
+    qp_ctx->qp_bd_offset = qp_bd_offset;
 
     ctudec->dequant_luma.qp = slice_qp + qp_bd_offset;
     ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[slice_qp + cb_qp_offset] + qp_bd_offset;
@@ -1567,7 +1565,7 @@ static void
 derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
                   int cu_qp_delta)
 {
-    int qp_bd_offset = 6 * (BITDEPTH - 8);
+    int qp_bd_offset = qp_ctx->qp_bd_offset;
     /*FIXME avoid negative values especiallly in chroma_map derivation*/
     int base_qp = (qp_ctx->current_qp + cu_qp_delta + 64) & 63;
     ctudec->dequant_luma.qp = ((base_qp + qp_bd_offset) & 63);
