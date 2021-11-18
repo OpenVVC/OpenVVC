@@ -14,6 +14,7 @@
 #include "data_scan_lut.h"
 #include "cabac_internal.h"
 #include "ctudec.h"
+#include "rcn_dequant.h"
 #include "vcl.h"
 
 #define IQUANT_SHIFT 6
@@ -22,8 +23,6 @@
 #define VVC_TR_CTX_STRIDE (64+2)
 #define VVC_TR_CTX_OFFSET ((VVC_TR_CTX_STRIDE)*2+2)
 #define VVC_TR_CTX_SIZE   (VVC_TR_CTX_STRIDE*VVC_TR_CTX_STRIDE)
-
-#define BITDEPTH 10
 
 enum TBSize
 {
@@ -2423,105 +2422,6 @@ ovcabac_read_ae_sb_2x8_far_sdh(OVCABACCtx *const cabac_ctx,
                                  &luma_ctx_offsets,
                                  &inv_diag_2x8_scan);
     return 0;
-}
-
-static const int inverse_quant_scale_lut[2][6] ={
-    { 40, 45, 51, 57, 64,  72},
-    { 57, 64, 72, 80, 90, 102}
-};
-
-struct IQScale{
-    int scale;
-    int shift;
-    void (*dequant_sb)(int16_t *const sb_coeffs, int scale, int shift);
-};
-
-static void
-dequant_sb_neg(int16_t *const sb_coeffs, int scale, int shift)
-{
-    for( int i = 0; i < 16 ; i++ ){
-        sb_coeffs[i] = ov_clip_intp2((int32_t)sb_coeffs[i] * (scale << shift) ,
-                MAX_LOG2_TR_RANGE + 1);
-    }
-}
-
-static void
-dequant_sb(int16_t *const sb_coeffs, int scale, int shift)
-{
-    int add = (1 << shift) >> 1;
-    for( int i = 0; i < 16 ; i++ ){
-        sb_coeffs[i] = ov_clip_intp2((int32_t)(sb_coeffs[i] * scale + add) >> shift ,
-                MAX_LOG2_TR_RANGE + 1);
-    }
-}
-
-
-static struct IQScale
-derive_dequant_sdh(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
-{
-    const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
-    struct IQScale dequant_params;
-    int shift = IQUANT_SHIFT - (MAX_LOG2_TR_RANGE - BITDEPTH)
-        - (qp / 6) + (log2_tb_s >> 1) + (log2_tb_s & 1);
-
-    int scale = inverse_quant_scale_lut[log2_tb_s & 1][qp % 6];
-
-    if (shift >= 0){
-        dequant_params.shift = shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb;
-    } else {
-        dequant_params.shift = -shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb_neg;
-    }
-
-    return dequant_params;
-}
-
-static struct IQScale
-derive_dequant_dpq(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
-{
-    const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
-    struct IQScale dequant_params;
-
-    int shift = IQUANT_SHIFT + 1 - (MAX_LOG2_TR_RANGE - BITDEPTH)
-        - ((qp + 1) / 6) + (log2_tb_s >> 1) + (log2_tb_s & 1);
-
-    int scale  = inverse_quant_scale_lut[log2_tb_s & 1][(qp + 1) % 6];
-
-    if (shift >= 0){
-        dequant_params.shift = shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb;
-    } else {
-        dequant_params.shift = -shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb_neg;
-    }
-
-    return dequant_params;
-}
-
-static struct IQScale
-derive_dequant_ts(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
-{
-    struct IQScale dequant_params;
-
-    int shift = IQUANT_SHIFT - (qp / 6) ;
-    int scale  = inverse_quant_scale_lut[0][qp % 6];
-
-    if (shift >= 0){
-        dequant_params.shift = shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb;
-    } else {
-        dequant_params.shift = -shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb_neg;
-    }
-
-    return dequant_params;
 }
 
 static void

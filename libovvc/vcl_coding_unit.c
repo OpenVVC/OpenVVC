@@ -10,9 +10,11 @@
 #include "rcn.h"
 #include "rcn_lmcs.h"
 #include "dbf_utils.h"
+#include "rcn_dequant.h"
 
 #define LOG2_MIN_CU_S 2
 /*FIXME find a more global location for these defintions */
+
 enum CUMode {
     OV_NA = 0xFF,
     OV_INTER = 1,
@@ -26,25 +28,6 @@ enum CUMode {
 #define BCW_NUM                 5 ///< the number of weight options
 #define BCW_DEFAULT             ((uint8_t)(BCW_NUM >> 1)) ///< Default weighting index representing for w=0.5
 #define BCW_SIZE_CONSTRAINT     256 ///< disabling Bcw if cu size is smaller than 256
-
-#define BITDEPTH 10
-/* FIXME refactor dequant*/
-static void
-derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
-                  int cu_qp_delta)
-{
-    /*FIXME avoid negative values especiallly in chroma_map derivation*/
-    int qp_bd_offset = qp_ctx->qp_bd_offset;
-    int base_qp = (qp_ctx->current_qp + cu_qp_delta + 64) & 63;
-    ctudec->dequant_luma.qp = ((base_qp + qp_bd_offset) & 63);
-
-    /*FIXME update transform skip ctx to VTM-10.0 */
-    ctudec->dequant_luma_skip.qp = OVMAX(ctudec->dequant_luma.qp, qp_ctx->min_qp_prime_ts);
-    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[(base_qp + qp_ctx->cb_offset + 64) & 63] + qp_bd_offset;
-    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[(base_qp + qp_ctx->cr_offset + 64) & 63] + qp_bd_offset;
-    ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[(base_qp + 64) & 63] + qp_ctx->jcbcr_offset + qp_bd_offset;
-    ctudec->qp_ctx.current_qp = base_qp;
-}
 
 /* skip_abv + skip_lft */
 static uint8_t
