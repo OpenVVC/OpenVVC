@@ -1736,7 +1736,7 @@ check_sbtmvp_cand(const uint64_t *v_map0, const uint64_t *v_map1,
     return cand_msk;
 }
 
-uint8_t
+static uint8_t
 derive_sub_pu_merge_cand(const struct InterDRVCtx *inter_ctx,
                          uint8_t x0, uint8_t y0,
                          uint8_t log2_pu_w, uint8_t log2_pu_h,
@@ -1797,7 +1797,7 @@ derive_sub_pu_merge_cand(const struct InterDRVCtx *inter_ctx,
     return !!inter_dir;
 }
 
-void
+static void
 set_zero_mvs_p(struct InterDRVCtx *inter_ctx,
                const struct VVCTMVP *tmvp,
                uint8_t x0, uint8_t y0,
@@ -1943,7 +1943,7 @@ derive_sub_block_mvs_p(struct InterDRVCtx *inter_ctx,
     }
 }
 
-void
+static void
 set_zero_mvs_b(struct InterDRVCtx *inter_ctx,
                const struct VVCTMVP *tmvp,
                uint8_t x0, uint8_t y0, uint8_t log2_pu_w, uint8_t log2_pu_h)
@@ -2002,7 +2002,7 @@ set_zero_mvs_b(struct InterDRVCtx *inter_ctx,
               log2_pu_w, log2_pu_h, inter_dir, 0, 0);
 }
 
-void
+static void
 derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
                      const struct VVCTMVP *tmvp,
                      uint8_t x0, uint8_t y0,
@@ -2513,7 +2513,7 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
     return 1;
 }
 
-void
+static void
 derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
                        struct AffineDRVInfo *affine_ctx,
                        struct AffineMergeInfo *const aff_mrg_ctx,
@@ -2891,7 +2891,7 @@ broadcast_mv(struct AffineDeltaMV delta_mv, uint8_t inter_dir)
     return 0;
 }
 
-void
+static void
 compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
                      const struct AffineDeltaMV delta_mv,
                      OVMV *mv_buff,
@@ -3854,7 +3854,7 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     return 0;
 }
 
-void
+static void
 store_affine_info(struct AffineDRVInfo *const affine_ctx, struct AffineInfo aff_info, uint8_t x_pb, uint8_t y_pb, uint8_t nb_pb_w, uint8_t nb_pb_h)
 {
     int i, j;
@@ -3892,7 +3892,7 @@ struct OVDMV {
     int32_t y;
 };
 
-struct OVDMV
+static struct OVDMV
 round_prof_dmv_scale(struct OVDMV dmv)
 {
     dmv.x += PROF_MV_RND - (dmv.x >= 0);
@@ -4066,7 +4066,7 @@ rcn_affine_prof_mcp_b_l(OVCTUDec *const ctudec,
 }
 
 
-void
+static void
 rcn_affine_mcp_b_c(OVCTUDec *const ctudec,
                    struct InterDRVCtx *const inter_ctx,
                    uint8_t x0, uint8_t y0,
@@ -4116,13 +4116,6 @@ rcn_affine_mcp_b_c(OVCTUDec *const ctudec,
     }
 }
 
-
-/* TODO P slices functions */
-void
-drv_affine_merge_mvp()
-{
-}
-
 static inline uint8_t
 mv_cmp(const OVMV a, const OVMV b)
 {
@@ -4132,7 +4125,8 @@ mv_cmp(const OVMV a, const OVMV b)
      return is_eq;
 }
 
-uint8_t check_affine_prof(const struct AffineMergeInfo *const affine_info, uint8_t rpl_idx)
+static uint8_t
+check_affine_prof(const struct AffineMergeInfo *const affine_info, uint8_t rpl_idx)
 {
     uint8_t prof_enabled = 1;
     const struct AffineControlInfo *const cpinfo = &affine_info->cinfo[rpl_idx];
@@ -4271,11 +4265,6 @@ drv_affine_mvp_p(struct InterDRVCtx *const inter_ctx,
     };
 
     store_affine_info(affine_ctx, aff_info, x_pb, y_pb, nb_pb_w, nb_pb_h);
-}
-
-void
-drv_affine_mvp_mvd()
-{
 }
 
 /* Derive motion vectors and update motion maps */
