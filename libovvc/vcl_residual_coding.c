@@ -17,8 +17,7 @@
 #include "vcl.h"
 
 #define IQUANT_SHIFT 6
-#define ADJ_QUANT_SHIFT 7
-#define ADJ_DEQUANT_SHIFT ADJ_QUANT_SHIFT + 1
+#define MAX_LOG2_TR_RANGE 15
 
 #define VVC_TR_CTX_STRIDE (64+2)
 #define VVC_TR_CTX_OFFSET ((VVC_TR_CTX_STRIDE)*2+2)
@@ -2440,27 +2439,19 @@ struct IQScale{
 static void
 dequant_sb_neg(int16_t *const sb_coeffs, int scale, int shift)
 {
-    const int     max_log2_tr_range = 15;
-    const int32_t min_coeff_value   = -(1 << max_log2_tr_range);
-    const int32_t max_coeff_value   =  (1 << max_log2_tr_range) - 1;
-
     for( int i = 0; i < 16 ; i++ ){
-        sb_coeffs[i] = ov_clip((int32_t)sb_coeffs[i] * (scale << shift) ,
-                min_coeff_value, max_coeff_value);
+        sb_coeffs[i] = ov_clip_intp2((int32_t)sb_coeffs[i] * (scale << shift) ,
+                MAX_LOG2_TR_RANGE + 1);
     }
 }
 
 static void
 dequant_sb(int16_t *const sb_coeffs, int scale, int shift)
 {
-    const int     max_log2_tr_range = 15;
-    const int32_t min_coeff_value   = -(1 << max_log2_tr_range);
-    const int32_t max_coeff_value   =  (1 << max_log2_tr_range) - 1;
-
     int add = (1 << shift) >> 1;
     for( int i = 0; i < 16 ; i++ ){
-        sb_coeffs[i] = ov_clip((int32_t)(sb_coeffs[i] * scale + add) >> shift ,
-                min_coeff_value, max_coeff_value);
+        sb_coeffs[i] = ov_clip_intp2((int32_t)(sb_coeffs[i] * scale + add) >> shift ,
+                MAX_LOG2_TR_RANGE + 1);
     }
 }
 
@@ -2468,19 +2459,12 @@ dequant_sb(int16_t *const sb_coeffs, int scale, int shift)
 static struct IQScale
 derive_dequant_sdh(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
-    /*FIXME derive from ctx for range extentions*/
-    const uint8_t max_log2_tr_range = 15;
-    const int dep_quant_qp  = qp;
     const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
     struct IQScale dequant_params;
-    int shift;
-    int scale;
-    /*FIXME non size dependent prefix could be derived from earlier ctx
-      as soon as we know of bitdepth and tr range*/
-    shift = IQUANT_SHIFT - (dep_quant_qp / 6)
-              - (max_log2_tr_range - BITDEPTH - (log2_tb_s >> 1) - (log2_tb_s & 1));
+    int shift = IQUANT_SHIFT - (MAX_LOG2_TR_RANGE - BITDEPTH)
+        - (qp / 6) + (log2_tb_s >> 1) + (log2_tb_s & 1);
 
-    scale  = inverse_quant_scale_lut[log2_tb_s & 1][dep_quant_qp % 6];
+    int scale = inverse_quant_scale_lut[log2_tb_s & 1][qp % 6];
 
     if (shift >= 0){
         dequant_params.shift = shift;
@@ -2491,24 +2475,20 @@ derive_dequant_sdh(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
         dequant_params.scale = scale;
         dequant_params.dequant_sb = &dequant_sb_neg;
     }
+
     return dequant_params;
 }
 
 static struct IQScale
 derive_dequant_dpq(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
-    /*FIXME derive from ctx for range extentions*/
-    const uint8_t max_log2_tr_range = 15;
-    const int dep_quant_qp  = qp + 1;
     const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
     struct IQScale dequant_params;
-    int shift;
-    int scale;
-    /*FIXME non size dependent prefix could be derived from earlier ctx
-      as soon as we know of bitdepth and tr range*/
-    shift = IQUANT_SHIFT + 1 - (dep_quant_qp / 6)
-              - (max_log2_tr_range - BITDEPTH - (log2_tb_s >> 1) - (log2_tb_s & 1));
-    scale  = inverse_quant_scale_lut[log2_tb_s & 1][dep_quant_qp % 6];
+
+    int shift = IQUANT_SHIFT + 1 - (MAX_LOG2_TR_RANGE - BITDEPTH)
+        - ((qp + 1) / 6) + (log2_tb_s >> 1) + (log2_tb_s & 1);
+
+    int scale  = inverse_quant_scale_lut[log2_tb_s & 1][(qp + 1) % 6];
 
     if (shift >= 0){
         dequant_params.shift = shift;
@@ -2519,24 +2499,17 @@ derive_dequant_dpq(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
         dequant_params.scale = scale;
         dequant_params.dequant_sb = &dequant_sb_neg;
     }
+
     return dequant_params;
 }
 
 static struct IQScale
 derive_dequant_ts(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
-    /*FIXME derive from ctx for range extentions*/
-    #if 0
-    const uint8_t max_log2_tr_range = 15;
-    #endif
-    const int dep_quant_qp  = qp;
     struct IQScale dequant_params;
-    int shift;
-    int scale;
-    /*FIXME non size dependent prefix could be derived from earlier ctx
-      as soon as we know of bitdepth and tr range*/
-    shift = IQUANT_SHIFT - (dep_quant_qp / 6) ;
-    scale  = inverse_quant_scale_lut[0][dep_quant_qp % 6];
+
+    int shift = IQUANT_SHIFT - (qp / 6) ;
+    int scale  = inverse_quant_scale_lut[0][qp % 6];
 
     if (shift >= 0){
         dequant_params.shift = shift;
@@ -2547,6 +2520,7 @@ derive_dequant_ts(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
         dequant_params.scale = scale;
         dequant_params.dequant_sb = &dequant_sb_neg;
     }
+
     return dequant_params;
 }
 
