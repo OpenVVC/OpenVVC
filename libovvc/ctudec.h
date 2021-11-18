@@ -706,24 +706,24 @@ struct OVCTUDec
                            uint8_t skip_flag, uint8_t cu_merge_flag);
 
     int (*residual_coding_isp_h)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
-                                 unsigned int log2_tb_w, unsigned int log2_tb_h,
+                                 uint8_t log2_tb_w, uint8_t log2_tb_h,
                                  uint16_t last_pos);
 
     int (*residual_coding_isp_v)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
-                                 unsigned int log2_tb_w, unsigned int log2_tb_h,
+                                 uint8_t log2_tb_w, uint8_t log2_tb_h,
                                  uint16_t last_pos);
 
     int (*residual_coding_ts)(struct OVCTUDec *const lc_ctx,
-                              unsigned int log2_tb_w,
-                              unsigned int log2_tb_h);
+                              uint8_t log2_tb_w,
+                              uint8_t log2_tb_h);
 
-    uint64_t (*residual_coding)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
-                                unsigned int log2_tb_w, unsigned int log2_tb_h,
-                                uint16_t last_pos);
-
-    int (*residual_coding_chroma)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
-                                  unsigned int log2_tb_w, unsigned int log2_tb_h,
+    uint64_t (*residual_coding_l)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
+                                  uint8_t log2_tb_w, uint8_t log2_tb_h,
                                   uint16_t last_pos);
+
+    int (*residual_coding_c)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
+                             uint8_t log2_tb_w, uint8_t log2_tb_h,
+                             uint16_t last_pos);
 
     /* FIXME
      *    -Reduce residual buff to 32x32
@@ -734,7 +734,9 @@ struct OVCTUDec
     DECLARE_ALIGNED(32, int16_t, residual_y)[128*128];
     DECLARE_ALIGNED(32, int16_t, residual_cb)[128*128];
     DECLARE_ALIGNED(32, int16_t, residual_cr)[128*128];
+
     int16_t lfnst_subblock[16*2];
+
     DECLARE_ALIGNED(32, int16_t, transform_buff)[64*64];
 
     int8_t slice_qp;

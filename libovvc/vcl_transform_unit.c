@@ -568,8 +568,8 @@ residual_coding_l(OVCTUDec *const ctu_dec,
             last_pos = ovcabac_read_ae_last_sig_pos(cabac_ctx, log2_tb_w, log2_tb_h);
         }
 
-        uint64_t sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_tb_w, log2_tb_h,
-                                                       last_pos);
+        uint64_t sig_sb_map = ctu_dec->residual_coding_l(ctu_dec, coeffs_y, log2_tb_w, log2_tb_h,
+                                                         last_pos);
 
         ctu_dec->tmp_red  = 0;
         tb_info->sig_sb_map = sig_sb_map;
@@ -621,9 +621,9 @@ residual_coding_c(OVCTUDec *const ctu_dec,
 
             last_pos_cb = ovcabac_read_ae_last_sig_pos_c(cabac_ctx, log2_tb_w, log2_tb_h);
 
-            sig_sb_map_cb = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_cb,
-                                                            log2_tb_w, log2_tb_h,
-                                                            last_pos_cb);
+            sig_sb_map_cb = ctu_dec->residual_coding_c(ctu_dec, coeffs_cb,
+                                                       log2_tb_w, log2_tb_h,
+                                                       last_pos_cb);
 
         }  else {
             /* FIXME Chroma TS */
@@ -647,9 +647,9 @@ residual_coding_c(OVCTUDec *const ctu_dec,
 
             last_pos_cr = ovcabac_read_ae_last_sig_pos_c(cabac_ctx, log2_tb_w, log2_tb_h);
 
-            sig_sb_map_cr = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_cr,
-                                                            log2_tb_w, log2_tb_h,
-                                                            last_pos_cr);
+            sig_sb_map_cr = ctu_dec->residual_coding_c(ctu_dec, coeffs_cr,
+                                                       log2_tb_w, log2_tb_h,
+                                                       last_pos_cr);
         } else {
             ctu_dec->dequant_skip = &ctu_dec->dequant_cr_skip;
             residual_coding_ts(ctu_dec, coeffs_cr, log2_tb_w, log2_tb_h);
@@ -702,8 +702,8 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
     if (!transform_skip_flag) {
         last_pos = ovcabac_read_ae_last_sig_pos_c(cabac_ctx, log2_tb_w, log2_tb_h);
 
-        sig_sb_map = ctu_dec->residual_coding_chroma(ctu_dec, coeffs_jcbcr, log2_tb_w, log2_tb_h,
-                                                     last_pos);
+        sig_sb_map = ctu_dec->residual_coding_c(ctu_dec, coeffs_jcbcr, log2_tb_w, log2_tb_h,
+                                                last_pos);
         tb_info->last_pos   = last_pos;
     } else {
         residual_coding_ts(ctu_dec, ctu_dec->residual_cb + tu_info->pos_offset, log2_tb_w, log2_tb_h);
@@ -1225,7 +1225,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
                 tb_info->sig_sb_map = 2;
                 ctu_dec->residual_coding_isp_v(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
             }else {
-                tb_info->sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
+                tb_info->sig_sb_map = ctu_dec->residual_coding_l(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
             }
         }
     }
@@ -1256,7 +1256,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
             ctu_dec->residual_coding_isp_v(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
         } else {
             tb_info->last_pos = last_pos;
-            tb_info->sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
+            tb_info->sig_sb_map = ctu_dec->residual_coding_l(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
         }
     }
 
@@ -1394,7 +1394,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
                 ctu_dec->residual_coding_isp_h(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
             } else {
                 tb_info->last_pos = last_pos;
-                tb_info->sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
+                tb_info->sig_sb_map = ctu_dec->residual_coding_l(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
             }
         }
         coeffs_y += tb_s;
@@ -1425,7 +1425,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
             ctu_dec->residual_coding_isp_h(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
         } else {
             tb_info->last_pos = last_pos;
-            tb_info->sig_sb_map = ctu_dec->residual_coding(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
+            tb_info->sig_sb_map = ctu_dec->residual_coding_l(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
         }
     }
 

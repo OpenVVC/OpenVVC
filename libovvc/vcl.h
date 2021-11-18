@@ -92,35 +92,35 @@ int dual_tree_implicit(OVCTUDec *const ctu_dec,
                        unsigned int rem_h);
 
 int residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
-                              unsigned int log2_tb_w, unsigned int log2_tb_h,
+                              uint8_t log2_tb_w, uint8_t log2_tb_h,
                               uint16_t last_pos);
 
 int residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
-                              unsigned int log2_tb_w, unsigned int log2_tb_h,
+                              uint8_t log2_tb_w, uint8_t log2_tb_h,
                               uint16_t last_pos);
 
 int residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
-                              unsigned int log2_tb_w, unsigned int log2_tb_h,
+                              uint8_t log2_tb_w, uint8_t log2_tb_h,
                               uint16_t last_pos);
 
 int residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
-                              unsigned int log2_tb_w, unsigned int log2_tb_h,
+                              uint8_t log2_tb_w, uint8_t log2_tb_h,
                               uint16_t last_pos);
 
 uint64_t residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
-                             unsigned int log2_tb_w, unsigned int log2_tb_h,
+                             uint8_t log2_tb_w, uint8_t log2_tb_h,
                              uint16_t last_pos);
 
 int residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
-                                    unsigned int log2_tb_w, unsigned int log2_tb_h,
+                                    uint8_t log2_tb_w, uint8_t log2_tb_h,
                                     uint16_t last_pos);
 
 uint64_t residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
-                             unsigned int log2_tb_w, unsigned int log2_tb_h,
+                             uint8_t log2_tb_w, uint8_t log2_tb_h,
                              uint16_t last_pos);
 
 int residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
-                                    unsigned int log2_tb_w, unsigned int log2_tb_h,
+                                    uint8_t log2_tb_w, uint8_t log2_tb_h,
                                     uint16_t last_pos);
 
 int residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst, uint8_t log2_tb_w, uint8_t log2_tb_h);

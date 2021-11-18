@@ -333,7 +333,7 @@ update_coeff_nbgh_other_pass(const VVCCoeffCodingCtx *const coef_nbh_ctx,
 }
 
 static int inline
-decode_truncated_rice(OVCABACCtx *const cabac_ctx, unsigned int rice_param){
+decode_truncated_rice(OVCABACCtx *const cabac_ctx, uint8_t rice_param){
 
     unsigned int prefix = 0;
     unsigned int length = rice_param;
@@ -2542,7 +2542,7 @@ reset_ctx_buffers (const VVCCoeffCodingCtx *ctx, int log2_w, int log2_h)
 
 int
 residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
-                          unsigned int log2_tb_w, unsigned int log2_tb_h,
+                          uint8_t log2_tb_w, uint8_t log2_tb_h,
                           uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -2729,7 +2729,7 @@ residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
 int
 residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
-                          unsigned int log2_tb_w, unsigned int log2_tb_h,
+                          uint8_t log2_tb_w, uint8_t log2_tb_h,
                           uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -2920,7 +2920,7 @@ has_sig_sb_neighbour(uint64_t sig_sb_map, uint16_t sb_x, uint16_t sb_y)
 
 uint64_t
 residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
-                    unsigned int log2_tb_w, unsigned int log2_tb_h,
+                    uint8_t log2_tb_w, uint8_t log2_tb_h,
                     uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -3093,7 +3093,7 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
 int
 residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
-                          unsigned int log2_tb_w, unsigned int log2_tb_h,
+                          uint8_t log2_tb_w, uint8_t log2_tb_h,
                           uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx =  ctu_dec->cabac_ctx;
@@ -3287,7 +3287,7 @@ residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
 int
 residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
-                          unsigned int log2_tb_w, unsigned int log2_tb_h,
+                          uint8_t log2_tb_w, uint8_t log2_tb_h,
                           uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -3748,7 +3748,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
 
 uint64_t
 residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
-                    unsigned int log2_tb_w, unsigned int log2_tb_h,
+                    uint8_t log2_tb_w, uint8_t log2_tb_h,
                     uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -4097,7 +4097,7 @@ static const struct SBReader chroma_2x2_reader_dqp = {
 
 static int
 decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
-                        unsigned int log2_tb_w, unsigned int log2_tb_h,
+                        uint8_t log2_tb_w, uint8_t log2_tb_h,
                         uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -4237,7 +4237,7 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
 
 static int
 decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
-                        unsigned int log2_tb_w, unsigned int log2_tb_h,
+                        uint8_t log2_tb_w, uint8_t log2_tb_h,
                         uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -4497,7 +4497,7 @@ read_tb_inv_diag_scan(const struct SBReader *const sb_rdr, const struct IQScale 
 
 int
 residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
-                           unsigned int log2_tb_w, unsigned int log2_tb_h,
+                           uint8_t log2_tb_w, uint8_t log2_tb_h,
                            uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -4645,7 +4645,7 @@ static const struct SBReader chroma_2x2_reader_sdh = {
 
 static int
 decode_dpq_small_h_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
-                        unsigned int log2_tb_w, unsigned int log2_tb_h,
+                        uint8_t log2_tb_w, uint8_t log2_tb_h,
                         uint16_t last_pos, struct IQScale deq_prms)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -4782,7 +4782,7 @@ decode_dpq_small_h_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
 static int
 decode_dpq_small_w_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
-                        unsigned int log2_tb_w, unsigned int log2_tb_h,
+                        uint8_t log2_tb_w, uint8_t log2_tb_h,
                         uint16_t last_pos, const struct IQScale const deq_prms)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -5018,7 +5018,7 @@ read_tb_inv_diag_scan_sdh(const struct SBReader *const sb_rdr, const OVCTUDec *c
 
 int
 residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
-                           unsigned int log2_tb_w, unsigned int log2_tb_h,
+                           uint8_t log2_tb_w, uint8_t log2_tb_h,
                            uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;

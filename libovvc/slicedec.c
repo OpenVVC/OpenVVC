@@ -172,15 +172,15 @@ init_coding_coeff_coding_ctx(OVCTUDec *ctudec, const OVPS *prms)
     ctudec->mts_implicit = sps->sps_mts_enabled_flag && !sps->sps_explicit_mts_intra_enabled_flag;
 
     if (sh->sh_dep_quant_used_flag) {
-        ctudec->residual_coding = residual_coding_dpq;
-        ctudec->residual_coding_chroma = residual_coding_chroma_dpq;
+        ctudec->residual_coding_l = residual_coding_dpq;
+        ctudec->residual_coding_c = residual_coding_chroma_dpq;
         ctudec->residual_coding_isp_h = residual_coding_isp_h_dpq;
         ctudec->residual_coding_isp_v = residual_coding_isp_v_dpq;
     } else {
         ctudec->residual_coding_isp_h = residual_coding_isp_h_sdh;
         ctudec->residual_coding_isp_v = residual_coding_isp_v_sdh;
-        ctudec->residual_coding_chroma = residual_coding_chroma_sdh;
-        ctudec->residual_coding = residual_coding_sdh;
+        ctudec->residual_coding_c = residual_coding_chroma_sdh;
+        ctudec->residual_coding_l = residual_coding_sdh;
         ctudec->enable_sdh = sh->sh_sign_data_hiding_used_flag;
     }
 }
