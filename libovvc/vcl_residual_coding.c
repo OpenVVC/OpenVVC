@@ -4646,15 +4646,12 @@ static const struct SBReader chroma_2x2_reader_sdh = {
 static int
 decode_dpq_small_h_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
                         unsigned int log2_tb_w, unsigned int log2_tb_h,
-                        uint16_t last_pos)
+                        uint16_t last_pos, struct IQScale deq_prms)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     int16_t sb_coeffs[16];
     int nb_sig_c;
     int16_t *const _dst = dst;
-
-    int qp = ctu_dec->dequant_chroma->qp;
-    const struct IQScale deq_prms = derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
 
     uint8_t buff[VVC_TR_CTX_SIZE * 3];
 
@@ -4786,16 +4783,13 @@ decode_dpq_small_h_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 static int
 decode_dpq_small_w_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
                         unsigned int log2_tb_w, unsigned int log2_tb_h,
-                        uint16_t last_pos)
+                        uint16_t last_pos, const struct IQScale const deq_prms)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     int16_t sb_coeffs[16] = {0}; //temporary table to store sb_coeffs in process
     uint8_t sig_sb_flg = 1;
     int nb_sig_c;
     int16_t *const _dst = dst;
-
-    int qp = ctu_dec->dequant_chroma->qp;
-    const struct IQScale deq_prms = derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
 
     /* FIXME reduce */
     uint8_t buff[VVC_TR_CTX_SIZE * 3];
@@ -5051,9 +5045,9 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         const struct SBReader *const sb_rdr = &chroma_4x4_reader_sdh;
         return read_tb_inv_diag_scan_sdh(sb_rdr, ctu_dec, &deq_prms, cabac_ctx, dst, log2_tb_w, log2_tb_h, last_pos);
     } else if (log2_tb_h == 1) {
-        return decode_dpq_small_h_tu_c_sdh(ctu_dec, dst, log2_tb_w, log2_tb_h, last_pos);
+        return decode_dpq_small_h_tu_c_sdh(ctu_dec, dst, log2_tb_w, log2_tb_h, last_pos, deq_prms);
     } else if (log2_tb_w == 1) {
-        return decode_dpq_small_w_tu_c_sdh(ctu_dec, dst, log2_tb_w, log2_tb_h, last_pos);
+        return decode_dpq_small_w_tu_c_sdh(ctu_dec, dst, log2_tb_w, log2_tb_h, last_pos, deq_prms);
     }
     return 0;
 }
