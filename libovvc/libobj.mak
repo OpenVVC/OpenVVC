@@ -32,6 +32,7 @@ LIB_SRC:=																																 \
 					ovframe.c                                                      \
 					ovframepool.c                                                  \
 					pp_film_grain.c                                                 \
+					pp_pic_scale.c                                                 \
 					post_proc.c                                                 \
 					ovthreads.c                                                    \
 					drv_affine_mvp.c                                                    \

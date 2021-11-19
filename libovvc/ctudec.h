@@ -298,9 +298,6 @@ struct InterDRVCtx
     int16_t dist_ref_0[16];
     int16_t dist_ref_1[16];
 
-    uint8_t chroma_hor_col_flag;
-    uint8_t chroma_ver_col_flag;
-
     /* CTU Local Map Motion Vectors */
     struct OVMVCtx mv_ctx0;
     struct OVMVCtx mv_ctx1;

@@ -12,6 +12,7 @@
 #include "ovdpb.h"
 #include "ovutils.h"
 #include "ovversion.h"
+#include "ovmem.h"
 
 typedef struct OVVCHdl
 {
@@ -322,12 +323,35 @@ write_decoded_frame_to_file(OVFrame *const frame, FILE *fp, int* max_frame_h)
 {
     uint8_t component = 0;
     int ret = 0;
+    struct ScalingInfo scale_info = frame->scale_info;
 
+    uint8_t * zeros = ov_mallocz(frame->linesize[0] * sizeof(uint8_t));
     for (component = 0; component < 3; component++) {
-        max_frame_h[component] = OVMAX(max_frame_h[component], frame->height[component]);
-        int frame_size = max_frame_h[component] * frame->linesize[component];
-        ret += fwrite(frame->data[component], frame_size, sizeof(uint8_t), fp);
+        uint16_t add_w = (scale_info.scaling_win_left + scale_info.scaling_win_right);
+        uint16_t add_h = (scale_info.scaling_win_top  + scale_info.scaling_win_bottom);
+        add_w = component ? add_w : add_w << 1; 
+        add_h = component ? add_h : add_h << 1;
+        uint16_t win_top  =  component ? scale_info.scaling_win_top  : scale_info.scaling_win_top  << 1;
+        uint16_t win_left =  component ? scale_info.scaling_win_left : scale_info.scaling_win_left << 1;
+        int frame_h = frame->height[component] - add_h;
+        int frame_w = frame->width[component]  - add_w;
+        max_frame_h[component] = OVMAX(max_frame_h[component], frame_h);
+
+        for (int j = win_top; j < frame_h + win_top; j++){
+            int offset_h = j * frame->linesize[component] ;
+            int offset   = offset_h + (win_left << 1) ;
+            ret += fwrite(&frame->data[component][offset], frame_w << 1, sizeof(uint8_t), fp);            
+            ret += fwrite(zeros, frame->linesize[component] - (frame_w<<1), sizeof(uint8_t), fp);
+        }
+        for (int j = frame_h ; j < max_frame_h[component]; j++){
+            ret += fwrite(zeros, frame->linesize[component], sizeof(uint8_t), fp);
+        }
     }
+    ov_freep(&zeros);
+    // for (component = 0; component < 3; component++) {
+    //     int frame_size = max_frame_h[component] * frame->linesize[component];
+    //     ret += fwrite(frame->data[component], frame_size, sizeof(uint8_t), fp);
+    // }
 
     return ret;
 }

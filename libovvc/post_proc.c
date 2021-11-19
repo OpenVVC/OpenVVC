@@ -46,9 +46,12 @@ pp_process_frame(const OVSEI* sei, OVFrame **frame_p)
     int ret=0;
     struct PostProcFunctions pp_funcs;
     pp_init_functions(sei, &pp_funcs);
+    uint16_t max_width[3];
+    uint16_t max_height[3];
 
     //TODOpp: switch buffers src and dst when 2 or more post process are applied
     if (pp_funcs.pp_apply_flag){
+    // if (1){
         OVFrame* frame = *frame_p;
         /* Request a writable picture from same frame pool */
         OVFrame* frame_post_proc = ovframepool_request_frame(frame->internal.frame_pool);
@@ -56,26 +59,39 @@ pp_process_frame(const OVSEI* sei, OVFrame **frame_p)
             ov_log(NULL, OVLOG_ERROR, "Could not get a writable picture for post processing\n");
             goto no_writable_pic;
         }
-        //TODOrpr: put width and height as parameters of ovframepool_request_frame
-        for(int i = 0; i < 3; i++){
-            frame_post_proc->width[i] = frame->width[i];
-            frame_post_proc->height[i] = frame->height[i];
+
+        for(int comp = 0; comp < 3; comp++){
+            max_width[comp]  = frame_post_proc->width[comp];
+            max_height[comp] = frame_post_proc->height[comp];
+            frame_post_proc->width[comp] = frame->width[comp];
+            frame_post_proc->height[comp] = frame->height[comp];
         }
 
         int16_t* srcComp[3] = {(int16_t*)frame->data[0], (int16_t*)frame->data[1], (int16_t*)frame->data[2]};
         int16_t* dstComp[3] = {(int16_t*)frame_post_proc->data[0], (int16_t*)frame_post_proc->data[1], 
                                 (int16_t*)frame_post_proc->data[2]};
 
-        uint8_t enable_deblock = 1;
-        pp_funcs.pp_film_grain(dstComp, srcComp, sei->sei_fg, 
-            frame->width[0], frame->height[0], frame->poc, 0, enable_deblock);
+//         uint8_t enable_deblock = 1;
+//         pp_funcs.pp_film_grain(dstComp, srcComp, sei->sei_fg, 
+//             frame->width[0], frame->height[0], frame->poc, 0, enable_deblock);
 
-#if ENABLE_SLHDR
-        if(sei->sei_slhdr){
-            pp_funcs.pp_sdr_to_hdr(sei->sei_slhdr->slhdr_context, srcComp, dstComp, 
-                                    sei->sei_slhdr->payload_array, frame->width[0], frame->height[0]);
-        }
-#endif
+// #if ENABLE_SLHDR
+//         if(sei->sei_slhdr){
+//             pp_funcs.pp_sdr_to_hdr(sei->sei_slhdr->slhdr_context, srcComp, dstComp, 
+//                                     sei->sei_slhdr->payload_array, frame->width[0], frame->height[0]);
+//         }
+// #endif
+
+        // for(int comp = 0; comp < 3; comp++){
+        //     frame_post_proc->width[comp]  = max_width[comp];
+        //     frame_post_proc->height[comp] = max_height[comp];
+        //     pp_sample_rate_conv((uint16_t*)frame_post_proc->data[comp], frame_post_proc->linesize[comp]>>1, 
+        //                         max_width[comp], max_height[comp], 
+        //                         (uint16_t*)frame->data[comp], frame->linesize[comp]>>1, 
+        //                         frame->width[comp], frame->height[comp], 
+        //                         frame->scale_info, comp == 0 );
+        // }
+
         ovframe_unref(frame_p);
         *frame_p = frame_post_proc;
     }

@@ -60,8 +60,8 @@ ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
 {
     struct Frame *frame = pic->frame;
     /*FIXME only 420*/
-    uint16_t add_w = (frame->scaling_win_left + frame->scaling_win_right) << 1;
-    uint16_t add_h = (frame->scaling_win_top + frame->scaling_win_bottom) << 1;
+    uint16_t add_w = (frame->scale_info.scaling_win_left + frame->scale_info.scaling_win_right) << 1;
+    uint16_t add_h = (frame->scale_info.scaling_win_top + frame->scale_info.scaling_win_bottom) << 1;
     uint16_t pic_w = frame->width[0]  - add_w;
     uint16_t pic_h = frame->height[0] - add_h;
 
@@ -74,14 +74,13 @@ ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
         if (!frame)
             continue;
         /*FIXME only 420*/
-        add_w = (frame->scaling_win_left + frame->scaling_win_right) << 1;
-        add_h = (frame->scaling_win_top + frame->scaling_win_bottom) << 1;
+        add_w = (frame->scale_info.scaling_win_left + frame->scale_info.scaling_win_right) << 1;
+        add_h = (frame->scale_info.scaling_win_top + frame->scale_info.scaling_win_bottom) << 1;
         ref_pic_w = frame->width[0]  - add_w;
         ref_pic_h = frame->height[0] - add_h;
 
         scaling_hor = (ref_pic_w << RPR_SCALE_BITS) / pic_w;
         scaling_ver = (ref_pic_h << RPR_SCALE_BITS) / pic_h;
-        //scaling_ver = (scaling_ver + 1) / 16 * 16;
         inter_ctx->scale_fact_rpl0[i][0] = scaling_hor;
         inter_ctx->scale_fact_rpl0[i][1] = scaling_ver;
     }
@@ -91,14 +90,13 @@ ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
         if (!frame)
             continue;
         /*FIXME only 420*/
-        add_w = (frame->scaling_win_left + frame->scaling_win_right) << 1;
-        add_h = (frame->scaling_win_top + frame->scaling_win_bottom) << 1;
+        add_w = (frame->scale_info.scaling_win_left + frame->scale_info.scaling_win_right) << 1;
+        add_h = (frame->scale_info.scaling_win_top + frame->scale_info.scaling_win_bottom) << 1;
         ref_pic_w = frame->width[0]  - add_w;
         ref_pic_h = frame->height[0] - add_h;
 
         scaling_hor = (ref_pic_w << RPR_SCALE_BITS) / pic_w;
         scaling_ver = (ref_pic_h << RPR_SCALE_BITS) / pic_h;
-        // scaling_ver = (scaling_ver + 1) / 16 * 16;
         inter_ctx->scale_fact_rpl1[i][0] = scaling_hor;
         inter_ctx->scale_fact_rpl1[i][1] = scaling_ver;
     }

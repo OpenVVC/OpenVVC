@@ -252,7 +252,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
 
   #if ARCH_X86
     #if SSE_ENABLED
-      // rcn_init_mc_functions_sse(rcn_func);
+      rcn_init_mc_functions_sse(rcn_func);
       rcn_init_tr_functions_sse(rcn_func);
       rcn_init_dc_planar_functions_sse(rcn_func);
       rcn_init_ict_functions_sse(rcn_func, ict_type);

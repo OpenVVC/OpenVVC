@@ -385,7 +385,6 @@ update_pps_info(struct PPSInfo *const pps_info, const OVPPS *const pps,
          */
         const int log2_ctu_s = sps->sps_log2_ctu_size_minus5 + 5;
 
-        /* FIXME use SPS max pic size or pps ?  */
         const int pic_w = pps->pps_pic_width_in_luma_samples;
         const int pic_h = pps->pps_pic_height_in_luma_samples;
 
