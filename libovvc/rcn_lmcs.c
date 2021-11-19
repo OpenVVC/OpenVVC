@@ -276,6 +276,14 @@ rcn_lmcs_compute_lut_luma(struct LMCSInfo *lmcs_info, const struct OVLMCSData *c
     init_lmcs_lut(lmcs_info->luts, &params);
 }
 
+static void
+rcn_lmcs_no_reshape(uint16_t *dst, ptrdiff_t stride_dst,
+                    const struct LMCSLUTs *const luts,
+                    int width, int height)
+{
+    return;
+}
+
 void
 rcn_lmcs_compute_chroma_scale(struct LMCSInfo *const lmcs_info,
                               const struct CTUBitField *const progress_field,
@@ -317,14 +325,6 @@ rcn_init_lmcs(struct LMCSInfo *lmcs_info, const struct OVLMCSData *const lmcs_da
         -lmcs_data->lmcs_delta_abs_crs
         : lmcs_data->lmcs_delta_abs_crs;
 
-}
-
-static void
-rcn_lmcs_no_reshape(uint16_t *dst, ptrdiff_t stride_dst,
-                    const struct LMCSLUTs *const luts,
-                    int width, int height)
-{
-    return;
 }
 
 void
