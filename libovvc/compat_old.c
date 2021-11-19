@@ -4,39 +4,12 @@
 #include "data_rcn_transform.h"
 #include "rcn_transform.h"
 #include "ovutils.h"
-#include "rcn_structures.h"
 
-#include "bitdepth.h"
+#define BITDEPTH 10
+#define ov_bdclip(a) ov_clip_uintp2(a, BITDEPTH)
 
-static void
-matrix_multiplication(const int16_t* src, const int16_t* const tr_matrix,
-                      int16_t* dst, ptrdiff_t src_stride, int tr_size,
-                      int num_lines, int num_columns, int shift)
-{
-    const int round_factor = 1 << (shift - 1);
-#if 0
-    const int cut_off = tr_size - num_columns;
-#endif
-    int clip_min = -(1 << 15);
-    int clip_max = (1 << 15) - 1;
-
-    for (int i = 0; i < num_lines; i++) {
-        for (int j = 0; j < tr_size; j++) {
-            int sum = 0;
-            for (int k = 0; k < tr_size; k++) {
-                sum += (int)src[k * src_stride + i] *
-                    tr_matrix[k * tr_size + j];
-            }
-            dst[i * tr_size + j] =
-                ov_clip((int)(sum + round_factor) >> shift,
-                        clip_min,
-                        clip_max);
-        }
-    }
-}
-
-static void
-inverse_dct_ii_2(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+void
+vvc_inverse_dct_ii_2(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                      int num_lines, int num_columns, int shift)
 {
     int j;
@@ -63,8 +36,8 @@ inverse_dct_ii_2(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
     }
 }
 
-static void
-inverse_dct_ii_4(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+void
+vvc_inverse_dct_ii_4(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                      int num_lines, int num_columns, int shift)
 {
     int j;
@@ -98,8 +71,8 @@ inverse_dct_ii_4(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
     }
 }
 
-static void
-inverse_dct_ii_8(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+void
+vvc_inverse_dct_ii_8(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                      int num_lines, int num_columns, int shift)
 {
     int j, k;
@@ -147,8 +120,8 @@ inverse_dct_ii_8(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
     }
 }
 
-static void
-inverse_dct_ii_16(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+void
+vvc_inverse_dct_ii_16(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                       int num_lines, int num_columns, int shift)
 {
     int j, k;
@@ -211,8 +184,8 @@ inverse_dct_ii_16(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
     }
 }
 
-static void
-inverse_dct_ii_32(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+void
+vvc_inverse_dct_ii_32(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                       int num_lines, int num_columns, int shift)
 {
     int j, k;
@@ -298,8 +271,8 @@ inverse_dct_ii_32(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
     }
 }
 
-static void
-inverse_dct_ii_64(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+void
+vvc_inverse_dct_ii_64(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                       int num_lines, int num_columns, int shift)
 {
     int round_factor = 1 << (shift - 1);
@@ -399,152 +372,8 @@ inverse_dct_ii_64(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
     }
 }
 
-static void
-inverse_dct_viii_4(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
-                       int num_lines, int num_columns, int shift)
-{
-    int i;
-    int clip_min = -(1 << 15);
-    int clip_max = (1 << 15) - 1;
-    int round_factor = 1 << (shift - 1);
-
-    int c[4];
-    //    const int  reducedLine = line - iSkipLine;
-    for (i = 0; i < num_lines; i++) {
-        // Intermediate Variables
-        c[0] = src[0 * src_stride] + src[3 * src_stride];
-        c[1] = src[2 * src_stride] + src[0 * src_stride];
-        c[2] = src[3 * src_stride] - src[2 * src_stride];
-        c[3] = (int)DCT_VIII_4[1] * src[1 * src_stride];
-
-        dst[0] =
-            ov_clip(((int)DCT_VIII_4[3] * c[0] +
-                     (int)DCT_VIII_4[2] * c[1] + c[3] + round_factor) >>
-                    shift,
-                    clip_min,
-                    clip_max);
-        dst[1] = ov_clip(((int)DCT_VIII_4[1] *
-                          (src[0 * src_stride] - src[2 * src_stride] -
-                           src[3 * src_stride]) +
-                          round_factor) >>
-                         shift,
-                         clip_min,
-                         clip_max);
-        dst[2] =
-            ov_clip(((int)DCT_VIII_4[3] * c[2] +
-                     (int)DCT_VIII_4[2] * c[0] - c[3] + round_factor) >>
-                    shift,
-                    clip_min,
-                    clip_max);
-        dst[3] =
-            ov_clip(((int)DCT_VIII_4[3] * c[1] -
-                     (int)DCT_VIII_4[2] * c[2] - c[3] + round_factor) >>
-                    shift,
-                    clip_min,
-                    clip_max);
-
-        dst += 4;
-        src++;
-    }
-}
-
-static void
-inverse_dct_viii_8(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
-                       int num_lines, int num_columns, int shift)
-{
-    matrix_multiplication(
-                          src, DCT_VIII_8, dst, src_stride, 8, num_lines, num_columns, shift);
-}
-
-static void
-inverse_dct_viii_16(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
-                        int num_lines, int num_columns, int shift)
-{
-    matrix_multiplication(
-                          src, DCT_VIII_16, dst, src_stride, 16, num_lines, num_columns, shift);
-}
-
-static void
-inverse_dct_viii_32(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
-                        int num_lines, int num_columns, int shift)
-{
-    matrix_multiplication(
-                          src, DCT_VIII_32, dst, src_stride, 32, num_lines, num_columns, shift);
-}
-
-static void
-inverse_dst_vii_4(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
-                      int num_lines, int num_columns, int shift)
-{
-    int i;
-    int clip_min = -(1 << 15);
-    int clip_max = (1 << 15) - 1;
-    int round_factor = 1 << (shift - 1);
-
-    int c[4];
-    //    const int  reducedLine = line - iSkipLine;
-    for (i = 0; i < num_lines; i++) {
-        // Intermediate Variables
-        c[0] = src[0 * src_stride] + src[2 * src_stride];
-        c[1] = src[2 * src_stride] + src[3 * src_stride];
-        c[2] = src[0 * src_stride] - src[3 * src_stride];
-        c[3] = DST_VII_4[2] * src[1 * src_stride];
-
-        dst[0] = ov_clip((DST_VII_4[0] * c[0] + DST_VII_4[1] * c[1] +
-                          c[3] + round_factor) >>
-                         shift,
-                         clip_min,
-                         clip_max);
-        dst[1] = ov_clip((DST_VII_4[1] * c[2] - DST_VII_4[0] * c[1] +
-                          c[3] + round_factor) >>
-                         shift,
-                         clip_min,
-                         clip_max);
-        dst[2] = ov_clip(
-                         (DST_VII_4[2] * (src[0 * src_stride] - src[2 * src_stride] +
-                                          src[3 * src_stride]) +
-                          round_factor) >>
-                         shift,
-                         clip_min,
-                         clip_max);
-        dst[3] = ov_clip((DST_VII_4[1] * c[0] + DST_VII_4[0] * c[2] -
-                          c[3] + round_factor) >>
-                         shift,
-                         clip_min,
-                         clip_max);
-
-        dst += 4;
-        src++;
-    }
-}
-
-static void
-inverse_dst_vii_8(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
-                      int num_lines, int num_columns, int shift)
-{
-
-    matrix_multiplication(
-                          src, DST_VII_8, dst, src_stride, 8, num_lines, num_columns, shift);
-}
-
-static void
-inverse_dst_vii_16(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
-                       int num_lines, int num_columns, int shift)
-{
-    matrix_multiplication(
-                          src, DST_VII_16, dst, src_stride, 16, num_lines, num_columns, shift);
-}
-
-static void
-inverse_dst_vii_32(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
-                       int num_lines, int num_columns, int shift)
-{
-    matrix_multiplication(
-                          src, DST_VII_32, dst, src_stride, 32, num_lines, num_columns, shift);
-}
-
-static void
-inverse_dct_ii_dc(int16_t* const dst, int log2_tb_w, int log2_tb_h,
+void
+vvc_inverse_dct_ii_dc(int16_t* const dst, int log2_tb_w, int log2_tb_h,
                       int dc_val)
 {
     int i, j;
@@ -565,31 +394,186 @@ inverse_dct_ii_dc(int16_t* const dst, int log2_tb_w, int log2_tb_h,
 }
 
 void
-BD_DECL(rcn_init_tr_functions)(struct RCNFunctions *const rcn_funcs)
+vvc_scale_add_residual(const int16_t *src, uint16_t *dst,
+                      int log2_tb_w, int log2_tb_h,
+                      int scale)
 {
-    rcn_funcs->tr.func[DST_VII][0] = NULL;
-    rcn_funcs->tr.func[DST_VII][1] = NULL;
-    rcn_funcs->tr.func[DST_VII][2] = &inverse_dst_vii_4;
-    rcn_funcs->tr.func[DST_VII][3] = &inverse_dst_vii_8;
-    rcn_funcs->tr.func[DST_VII][4] = &inverse_dst_vii_16;
-    rcn_funcs->tr.func[DST_VII][5] = &inverse_dst_vii_32;
-    rcn_funcs->tr.func[DST_VII][6] = NULL;
-
-    rcn_funcs->tr.func[DCT_VIII][0] = NULL;
-    rcn_funcs->tr.func[DCT_VIII][1] = NULL;
-    rcn_funcs->tr.func[DCT_VIII][2] = &inverse_dct_viii_4;
-    rcn_funcs->tr.func[DCT_VIII][3] = &inverse_dct_viii_8;
-    rcn_funcs->tr.func[DCT_VIII][4] = &inverse_dct_viii_16;
-    rcn_funcs->tr.func[DCT_VIII][5] = &inverse_dct_viii_32;
-    rcn_funcs->tr.func[DCT_VIII][6] = NULL;
-
-    rcn_funcs->tr.func[DCT_II][0] = NULL;
-    rcn_funcs->tr.func[DCT_II][1] = &inverse_dct_ii_2;
-    rcn_funcs->tr.func[DCT_II][2] = &inverse_dct_ii_4;
-    rcn_funcs->tr.func[DCT_II][3] = &inverse_dct_ii_8;
-    rcn_funcs->tr.func[DCT_II][4] = &inverse_dct_ii_16;
-    rcn_funcs->tr.func[DCT_II][5] = &inverse_dct_ii_32;
-    rcn_funcs->tr.func[DCT_II][6] = &inverse_dct_ii_64;
-
-    rcn_funcs->tr.dc = &inverse_dct_ii_dc;
+    int i, j;
+    int32_t value;
+    uint16_t sign;
+    const int16_t *_src = src;
+    uint16_t       *_dst = dst;
+    const int tb_w = 1 << log2_tb_w;
+    const int tb_h = 1 << log2_tb_h;
+    for (i = 0; i < tb_h; ++i){
+        for (j = 0; j < tb_w; ++j){
+            value = _src[j];
+            sign  = value & (1 << 15);
+            value = (abs(value) * scale + (1 << (11 - 1))) >> 11;
+            value = (ov_clip(sign ? -value : value ,-(1 << 15),1 << 15));
+            _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
+        }
+        _dst += RCN_CTB_STRIDE;
+        _src += tb_w;
+    }
 }
+
+void
+vvc_scale_sub_residual(const int16_t *src, uint16_t *dst,
+                      int log2_tb_w, int log2_tb_h,
+                      int scale)
+{
+    int i, j;
+    int32_t value;
+    uint16_t sign;
+    const int16_t *_src = src;
+    uint16_t       *_dst = dst;
+    const int tb_w = 1 << log2_tb_w;
+    const int tb_h = 1 << log2_tb_h;
+    for (i = 0; i < tb_h; ++i){
+        for (j = 0; j < tb_w; ++j){
+            value = -_src[j];
+            sign  = value & (1 << 15);
+            value = (abs(value) * scale + (1 << (11 - 1))) >> 11;
+            value = (ov_clip(sign ? -value : value ,-(1 << 15),1 << 15));
+            _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
+        }
+        _dst += RCN_CTB_STRIDE;
+        _src += tb_w;
+    }
+}
+
+void
+vvc_scale_add_half_residual(const int16_t *src, uint16_t *dst,
+                           int log2_tb_w, int log2_tb_h,
+                           int scale)
+{
+    int i, j;
+    int32_t value;
+    uint16_t sign;
+    const int16_t *_src = src;
+    uint16_t       *_dst = dst;
+    const int tb_w = 1 << log2_tb_w;
+    const int tb_h = 1 << log2_tb_h;
+    for (i = 0; i < tb_h; ++i){
+        for (j = 0; j < tb_w; ++j){
+            value = _src[j] >> 1;
+            sign  = value & (1 << 15);
+            value = (abs(value) * scale + (1 << (11 - 1))) >> 11;
+            value = (ov_clip(sign ? -value : value ,-(1 << 15),1 << 15));
+            _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
+        }
+        _dst += RCN_CTB_STRIDE;
+        _src += tb_w;
+    }
+}
+
+void
+vvc_scale_sub_half_residual(const int16_t *src, uint16_t *dst,
+                           int log2_tb_w, int log2_tb_h,
+                           int scale)
+{
+    int i, j;
+    int32_t value;
+    uint16_t sign;
+    const int16_t *_src = src;
+    uint16_t       *_dst = dst;
+    const int tb_w = 1 << log2_tb_w;
+    const int tb_h = 1 << log2_tb_h;
+    for (i = 0; i < tb_h; ++i){
+        for (j = 0; j < tb_w; ++j){
+            value = (-_src[j]) >> 1;
+            sign  = value & (1 << 15);
+            value = (abs(value) * scale + (1 << (11 - 1))) >> 11;
+            value = (ov_clip(sign ? -value : value ,-(1 << 15),1 << 15));
+            _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
+        }
+        _dst += RCN_CTB_STRIDE;
+        _src += tb_w;
+    }
+}
+
+void
+vvc_add_residual(const int16_t *src, uint16_t *dst,
+                 int log2_tb_w, int log2_tb_h,
+                 int scale)
+{
+    int i, j;
+    int32_t value;
+    const int16_t *_src = src;
+    uint16_t       *_dst = dst;
+    const int tb_w = 1 << log2_tb_w;
+    const int tb_h = 1 << log2_tb_h;
+    for (i = 0; i < tb_h; ++i){
+        for (j = 0; j < tb_w; ++j){
+            value   = _src[j];
+            _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
+        }
+        _dst += RCN_CTB_STRIDE;
+        _src += tb_w;
+    }
+}
+
+void
+vvc_sub_residual(const int16_t *src, uint16_t *dst,
+                 int log2_tb_w, int log2_tb_h,
+                 int scale)
+{
+    int i, j;
+    int32_t value;
+    const int16_t *_src = src;
+    uint16_t       *_dst = dst;
+    const int tb_w = 1 << log2_tb_w;
+    const int tb_h = 1 << log2_tb_h;
+    for (i = 0; i < tb_h; ++i){
+        for (j = 0; j < tb_w; ++j){
+            value   = -_src[j];
+            _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
+        }
+        _dst += RCN_CTB_STRIDE;
+        _src += tb_w;
+    }
+}
+
+void
+vvc_add_half_residual(const int16_t *src, uint16_t *dst,
+                      int log2_tb_w, int log2_tb_h,
+                      int scale)
+{
+    int i, j;
+    int32_t value;
+    const int16_t *_src = src;
+    uint16_t       *_dst = dst;
+    const int tb_w = 1 << log2_tb_w;
+    const int tb_h = 1 << log2_tb_h;
+    for (i = 0; i < tb_h; ++i){
+        for (j = 0; j < tb_w; ++j){
+            value   = _src[j] >> 1;
+            _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
+        }
+        _dst += RCN_CTB_STRIDE;
+        _src += tb_w;
+    }
+}
+
+void
+vvc_sub_half_residual(const int16_t *src, uint16_t *dst,
+                      int log2_tb_w, int log2_tb_h,
+                      int scale)
+{
+    int i, j;
+    int32_t value;
+    const int16_t *_src = src;
+    int16_t       *_dst = (int16_t *)dst;
+    const int tb_w = 1 << log2_tb_w;
+    const int tb_h = 1 << log2_tb_h;
+    for (i = 0; i < tb_h; ++i){
+        for (j = 0; j < tb_w; ++j){
+            value   = (-_src[j]) >> 1;
+            _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
+        }
+        _dst += RCN_CTB_STRIDE;
+        _src += tb_w;
+    }
+}
+

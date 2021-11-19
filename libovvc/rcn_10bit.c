@@ -7,12 +7,10 @@
 #include "rcn_prof_bdof.c"
 #include "rcn_transform.c"
 
-#include "rcn_ctu.c"
 #include "rcn_fill_ref.c"
 #include "rcn_intra_dc_planar.c"
 #include "rcn_lmcs.c"
 #include "rcn_residuals.c"
-#include "rcn_transform_tree.c"
 
 #include "rcn_dequant.c"
 #include "rcn_intra_mip.c"
