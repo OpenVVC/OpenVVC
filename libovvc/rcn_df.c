@@ -1717,8 +1717,12 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *con
 }
 #endif
 
+#define FUNC3(a, b, c)  a ## _ ## b ##  c
+#define FUNC2(a, b, c)  FUNC3(a, b, c)
+#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
+
 void
-rcn_init_df_functions(struct RCNFunctions *const rcn_funcs)
+BD_DECL(rcn_init_df_functions)(struct RCNFunctions *const rcn_funcs)
 {
   rcn_funcs->df.filter_h[0] = NULL;
   rcn_funcs->df.filter_h[1] = &filter_h_3_5;

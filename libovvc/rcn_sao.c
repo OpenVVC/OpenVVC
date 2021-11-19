@@ -258,8 +258,12 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
     }
 }
 
+#define FUNC3(a, b, c)  a ## _ ## b ##  c
+#define FUNC2(a, b, c)  FUNC3(a, b, c)
+#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
+
 void
-rcn_init_sao_functions(struct RCNFunctions *const rcn_funcs)
+BD_DECL(rcn_init_sao_functions)(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->sao.band= &sao_band_filter;
     rcn_funcs->sao.edge[0]= &sao_edge_filter;

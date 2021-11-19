@@ -1389,8 +1389,13 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
     }
 }
 
+#define FUNC3(a, b, c)  a ## _ ## b ##  c
+#define FUNC2(a, b, c)  FUNC3(a, b, c)
+#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
+
 void
-rcn_init_alf_functions(struct RCNFunctions *rcn_func) {
+BD_DECL(rcn_init_alf_functions)(struct RCNFunctions *rcn_func)
+{
     rcn_func->alf.classif=&rcn_alf_derive_classificationBlk;
     rcn_func->alf.luma[0]=&alf_filterBlkLuma;
     rcn_func->alf.luma[1]=&alf_filterBlkLumaVB;

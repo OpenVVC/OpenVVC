@@ -330,8 +330,12 @@ rcn_lmcs_no_reshape(uint16_t *dst, ptrdiff_t stride_dst,
     return;
 }
 
+#define FUNC3(a, b, c)  a ## _ ## b ##  c
+#define FUNC2(a, b, c)  FUNC3(a, b, c)
+#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
+
 void
-rcn_init_lmcs_function(struct RCNFunctions *rcn_func, uint8_t lmcs_flag)
+BD_DECL(rcn_init_lmcs_function)(struct RCNFunctions *rcn_func, uint8_t lmcs_flag)
 {
     if(lmcs_flag){
         rcn_func->lmcs_reshape_forward  = &rcn_lmcs_reshape_forward;

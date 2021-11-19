@@ -371,8 +371,12 @@ rcn_intra_mip(const struct OVRCNCtx *const rcn_ctx,
     }
 }
 
+#define FUNC3(a, b, c)  a ## _ ## b ##  c
+#define FUNC2(a, b, c)  FUNC3(a, b, c)
+#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
+
 void
-rcn_init_mip_functions(struct RCNFunctions *const rcn_funcs)
+BD_DECL(rcn_init_mip_functions)(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->mip.upsample_h[0][0]= &up_sample;
     rcn_funcs->mip.upsample_h[0][1]= &up_sample;

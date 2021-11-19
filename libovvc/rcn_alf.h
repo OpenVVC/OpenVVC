@@ -71,6 +71,5 @@ void rcn_alf_filter_line(struct OVCTUDec *const ctudec, const struct RectEntryIn
 
 void rcn_alf_reconstruct_coeff_APS(RCNALF* alf, struct OVCTUDec *const ctudec, uint8_t luma_flag, uint8_t chroma_flag);
 
-void rcn_init_alf_functions(struct RCNFunctions *rcn_func);
 
 #endif

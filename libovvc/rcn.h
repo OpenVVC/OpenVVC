@@ -81,31 +81,31 @@ void rcn_gpm_b(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx, int x0, int y0, i
 void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled,
                         uint8_t sps_chroma_vertical_collocated_flag, uint8_t lmcs_flag, uint8_t bitdepth);
 
-void rcn_init_cclm_functions(struct RCNFunctions *rcn_func);
+void rcn_init_cclm_functions_10(struct RCNFunctions *rcn_func);
 
-void rcn_init_cclm_functions_collocated(struct RCNFunctions *rcn_func);
+void rcn_init_cclm_functions_collocated_10(struct RCNFunctions *rcn_func);
 
 void rcn_init_ict_functions(struct RCNFunctions *rcn_func, uint8_t type, uint8_t bitdepth);
 
 void rcn_init_tr_functions(struct RCNFunctions *const rcn_funcs);
 
-void rcn_init_dc_planar_functions(struct RCNFunctions *const rcn_funcs);
+void rcn_init_dc_planar_functions_10(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_lfnst_functions(struct RCNFunctions *rcn_func);
 
-void rcn_init_mip_functions(struct RCNFunctions *const rcn_funcs);
+void rcn_init_mip_functions_10(struct RCNFunctions *const rcn_funcs);
 
-void rcn_init_sao_functions(struct RCNFunctions *const rcn_funcs);
+void rcn_init_sao_functions_10(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_dmvr_functions(struct RCNFunctions *const rcn_funcs);
 
-void rcn_init_prof_functions(struct RCNFunctions *const rcn_funcs);
+void rcn_init_prof_functions_10(struct RCNFunctions *const rcn_funcs);
 
-void rcn_init_bdof_functions(struct RCNFunctions *const rcn_funcs);
+void rcn_init_bdof_functions_10(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_ciip_functions_10(struct RCNFunctions *const rcn_funcs);
 
-void rcn_init_df_functions(struct RCNFunctions *const rcn_funcs);
+void rcn_init_df_functions_10(struct RCNFunctions *const rcn_funcs);
 
 void rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
                  uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y);
@@ -113,6 +113,8 @@ void rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const db
 void rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
                            uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y,
                            uint8_t ctu_w, uint8_t ctu_h);
+
+void rcn_init_alf_functions_10(struct RCNFunctions *rcn_func);
 
 uint8_t rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                            uint8_t x0, uint8_t y0,

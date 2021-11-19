@@ -227,8 +227,12 @@ rcn_prof(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
     }
 }
 
+#define FUNC3(a, b, c)  a ## _ ## b ##  c
+#define FUNC2(a, b, c)  FUNC3(a, b, c)
+#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
+
 void
-rcn_init_prof_functions(struct RCNFunctions *const rcn_funcs)
+BD_DECL(rcn_init_prof_functions)(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->prof.grad = &compute_prof_grad;
     rcn_funcs->prof.rcn  = &rcn_prof;
@@ -435,7 +439,7 @@ rcn_bdof(struct BDOFFunctions *const bdof, int16_t *dst, int dst_stride,
 }
 
 void
-rcn_init_bdof_functions(struct RCNFunctions *const rcn_funcs)
+BD_DECL(rcn_init_bdof_functions)(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->bdof.grad     = &compute_prof_grad;
     rcn_funcs->bdof.subblock = &rcn_apply_bdof_subblock;

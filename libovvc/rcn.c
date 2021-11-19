@@ -119,25 +119,25 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
 {
   rcn_init_mc_functions_10(rcn_func);
   rcn_init_tr_functions(rcn_func);
-  rcn_init_dc_planar_functions(rcn_func);
+  rcn_init_dc_planar_functions_10(rcn_func);
   rcn_init_ict_functions(rcn_func, ict_type, bitdepth);
-  rcn_init_lfnst_functions(rcn_func);
-  rcn_init_mip_functions(rcn_func);
-  rcn_init_alf_functions(rcn_func);
-  rcn_init_sao_functions(rcn_func);
-  rcn_init_lmcs_function(rcn_func, lmcs_flag);
-  rcn_init_dmvr_functions(rcn_func);
-  rcn_init_prof_functions(rcn_func);
-  rcn_init_bdof_functions(rcn_func);
-  rcn_init_ciip_functions_10(rcn_func);
-  rcn_init_df_functions(rcn_func);
   rcn_init_intra_angular_functions(rcn_func, bitdepth);
+  rcn_init_lfnst_functions(rcn_func);
+  rcn_init_mip_functions_10(rcn_func);
+  rcn_init_alf_functions_10(rcn_func);
+  rcn_init_sao_functions_10(rcn_func);
+  rcn_init_lmcs_function_10(rcn_func, lmcs_flag);
+  rcn_init_dmvr_functions(rcn_func);
+  rcn_init_prof_functions_10(rcn_func);
+  rcn_init_bdof_functions_10(rcn_func);
+  rcn_init_ciip_functions_10(rcn_func);
+  rcn_init_df_functions_10(rcn_func);
   if (lm_chroma_enabled) {
       /* FIXME add support vertical */
       if (sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {
-          rcn_init_cclm_functions_collocated(rcn_func);
+          rcn_init_cclm_functions_collocated_10(rcn_func);
       } else {
-          rcn_init_cclm_functions(rcn_func);
+          rcn_init_cclm_functions_10(rcn_func);
       }
   }
 

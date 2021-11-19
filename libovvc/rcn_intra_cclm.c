@@ -811,8 +811,12 @@ vvc_intra_mdlm_left_cl(const uint16_t *const src_luma,
                       y0, x0, intra_map_cols);
 }
 
+#define FUNC3(a, b, c)  a ## _ ## b ##  c
+#define FUNC2(a, b, c)  FUNC3(a, b, c)
+#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
+
 void
-rcn_init_cclm_functions_collocated(struct RCNFunctions *rcn_func)
+BD_DECL(rcn_init_cclm_functions_collocated)(struct RCNFunctions *rcn_func)
 {
    struct CCLMFunctions *const cclm = &rcn_func->cclm; 
    cclm->cclm = &vvc_intra_cclm_cl;
@@ -822,7 +826,7 @@ rcn_init_cclm_functions_collocated(struct RCNFunctions *rcn_func)
 
 /* FIXME check vertical / horizontal */
 void
-rcn_init_cclm_functions(struct RCNFunctions *rcn_func)
+BD_DECL(rcn_init_cclm_functions)(struct RCNFunctions *rcn_func)
 {
    struct CCLMFunctions *const cclm = &rcn_func->cclm; 
    cclm->cclm              = &vvc_intra_cclm;

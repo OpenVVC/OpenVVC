@@ -203,8 +203,12 @@ intra_planar_pdpc(const uint16_t* const ref_abv,
 
 }
 
+#define FUNC3(a, b, c)  a ## _ ## b ##  c
+#define FUNC2(a, b, c)  FUNC3(a, b, c)
+#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
+
 void
-rcn_init_dc_planar_functions(struct RCNFunctions *const rcn_funcs)
+BD_DECL(rcn_init_dc_planar_functions)(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->dc.func = &intra_dc;
     rcn_funcs->dc.pdpc = &intra_dc_pdpc;
