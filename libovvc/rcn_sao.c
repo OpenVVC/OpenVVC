@@ -83,7 +83,7 @@ sao_edge_filter(uint8_t *_dst, uint8_t *_src,
     }
 }
 
-void
+static void
 rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_start_pic, int y_start_pic, int y_end_pic, int fb_offset, uint8_t is_border)
 {   
     struct OVFilterBuffers* fb   = &ctudec->filter_buffers;
