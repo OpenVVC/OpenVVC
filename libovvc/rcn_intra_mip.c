@@ -354,7 +354,7 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
 
 void
 rcn_intra_mip(const struct OVRCNCtx *const rcn_ctx,
-              int x0, int y0, int log2_pb_w, int log2_pb_h,
+              uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,
               uint8_t mip_opaque)
 {
     /* FIXME use an assert or ensure it cannot be called */
