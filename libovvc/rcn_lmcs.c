@@ -241,31 +241,6 @@ lmcs_compute_luma_average(const uint16_t *src, uint32_t abv_mask, uint32_t lft_m
     return luma_avg;
 }
 
-void
-rcn_lmcs_compute_chroma_scale(struct LMCSInfo *const lmcs_info,
-                              const struct CTUBitField *const progress_field,
-                              const uint16_t *ctu_data_y, uint8_t x0, uint8_t y0)
-{
-    uint8_t x0_unit = x0 >> 2;
-    uint8_t y0_unit = y0 >> 2;
-    uint64_t abv_map = progress_field->hfield[y0_unit];
-    uint64_t lft_map = progress_field->vfield[x0_unit];
-    uint64_t needed_mask = (1 << 16) - 1;
-    uint32_t abv_mask = (abv_map >> (x0_unit + 1)) & needed_mask;
-    uint32_t lft_mask = (lft_map >> (y0_unit + 1)) & needed_mask;
-
-    const uint16_t *src = &ctu_data_y[x0 + y0 * RCN_CTB_STRIDE];
-
-    uint32_t luma_avg = lmcs_compute_luma_average(src, abv_mask, lft_mask);
-
-    int idx = get_bwd_idx(lmcs_info->luts->wnd_bnd, luma_avg, lmcs_info->min_idx, lmcs_info->max_idx);
-
-    uint32_t wnd_sz = (uint32_t)(lmcs_info->luts->wnd_bnd[idx + 1] - lmcs_info->luts->wnd_bnd[idx]);
-
-    lmcs_info->lmcs_chroma_scale = (wnd_sz == 0) ? 1 << LMCS_PREC
-                                                 : (1 << (BITDEPTH - LOG2_NB_WND + LMCS_PREC)) / (wnd_sz + lmcs_info->lmcs_chroma_scaling_offset);
-}
-
 static void
 rcn_lmcs_reshape_luma_blk_lut(uint16_t *dst, ptrdiff_t stride_dst, const uint16_t *const lmcs_lut_luma,
                               int width, int height)
@@ -305,6 +280,31 @@ rcn_lmcs_compute_lut_luma(struct LMCSInfo *lmcs_info, const struct OVLMCSData *c
 }
 
 void
+rcn_lmcs_compute_chroma_scale(struct LMCSInfo *const lmcs_info,
+                              const struct CTUBitField *const progress_field,
+                              const uint16_t *ctu_data_y, uint8_t x0, uint8_t y0)
+{
+    uint8_t x0_unit = x0 >> 2;
+    uint8_t y0_unit = y0 >> 2;
+    uint64_t abv_map = progress_field->hfield[y0_unit];
+    uint64_t lft_map = progress_field->vfield[x0_unit];
+    uint64_t needed_mask = (1 << 16) - 1;
+    uint32_t abv_mask = (abv_map >> (x0_unit + 1)) & needed_mask;
+    uint32_t lft_mask = (lft_map >> (y0_unit + 1)) & needed_mask;
+
+    const uint16_t *src = &ctu_data_y[x0 + y0 * RCN_CTB_STRIDE];
+
+    uint32_t luma_avg = lmcs_compute_luma_average(src, abv_mask, lft_mask);
+
+    int idx = get_bwd_idx(lmcs_info->luts->wnd_bnd, luma_avg, lmcs_info->min_idx, lmcs_info->max_idx);
+
+    uint32_t wnd_sz = (uint32_t)(lmcs_info->luts->wnd_bnd[idx + 1] - lmcs_info->luts->wnd_bnd[idx]);
+
+    lmcs_info->lmcs_chroma_scale = (wnd_sz == 0) ? 1 << LMCS_PREC
+                                                 : (1 << (BITDEPTH - LOG2_NB_WND + LMCS_PREC)) / (wnd_sz + lmcs_info->lmcs_chroma_scaling_offset);
+}
+
+void
 rcn_init_lmcs(struct LMCSInfo *lmcs_info, const struct OVLMCSData *const lmcs_data)
 {
     if (!lmcs_info->luts) {
@@ -322,7 +322,7 @@ rcn_init_lmcs(struct LMCSInfo *lmcs_info, const struct OVLMCSData *const lmcs_da
 
 }
 
-void
+static void
 rcn_lmcs_no_reshape(uint16_t *dst, ptrdiff_t stride_dst,
                     const struct LMCSLUTs *const luts,
                     int width, int height)
