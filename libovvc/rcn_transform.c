@@ -67,7 +67,6 @@ void
 vvc_inverse_dct_ii_4(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                      int num_lines, int num_columns, int shift)
 {
-
     int j;
     int E[2], O[2];
     int add = 1 << (shift - 1);
@@ -400,8 +399,8 @@ vvc_inverse_dct_ii_64(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
     }
 }
 
-void
-vvc_inverse_dct_viii_4(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+static void
+inverse_dct_viii_4(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                        int num_lines, int num_columns, int shift)
 {
     int i;
@@ -449,32 +448,32 @@ vvc_inverse_dct_viii_4(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
     }
 }
 
-void
-vvc_inverse_dct_viii_8(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+static void
+inverse_dct_viii_8(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                        int num_lines, int num_columns, int shift)
 {
     matrix_multiplication(
                           src, DCT_VIII_8, dst, src_stride, 8, num_lines, num_columns, shift);
 }
 
-void
-vvc_inverse_dct_viii_16(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+static void
+inverse_dct_viii_16(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                         int num_lines, int num_columns, int shift)
 {
     matrix_multiplication(
                           src, DCT_VIII_16, dst, src_stride, 16, num_lines, num_columns, shift);
 }
 
-void
-vvc_inverse_dct_viii_32(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+static void
+inverse_dct_viii_32(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                         int num_lines, int num_columns, int shift)
 {
     matrix_multiplication(
                           src, DCT_VIII_32, dst, src_stride, 32, num_lines, num_columns, shift);
 }
 
-void
-vvc_inverse_dst_vii_4(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+static void
+inverse_dst_vii_4(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                       int num_lines, int num_columns, int shift)
 {
     int i;
@@ -519,8 +518,8 @@ vvc_inverse_dst_vii_4(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
     }
 }
 
-void
-vvc_inverse_dst_vii_8(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+static void
+inverse_dst_vii_8(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                       int num_lines, int num_columns, int shift)
 {
 
@@ -528,16 +527,16 @@ vvc_inverse_dst_vii_8(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                           src, DST_VII_8, dst, src_stride, 8, num_lines, num_columns, shift);
 }
 
-void
-vvc_inverse_dst_vii_16(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+static void
+inverse_dst_vii_16(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                        int num_lines, int num_columns, int shift)
 {
     matrix_multiplication(
                           src, DST_VII_16, dst, src_stride, 16, num_lines, num_columns, shift);
 }
 
-void
-vvc_inverse_dst_vii_32(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+static void
+inverse_dst_vii_32(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
                        int num_lines, int num_columns, int shift)
 {
     matrix_multiplication(
@@ -570,18 +569,18 @@ rcn_init_tr_functions(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->tr.func[DST_VII][0] = NULL;
     rcn_funcs->tr.func[DST_VII][1] = NULL;
-    rcn_funcs->tr.func[DST_VII][2] = &vvc_inverse_dst_vii_4;
-    rcn_funcs->tr.func[DST_VII][3] = &vvc_inverse_dst_vii_8;
-    rcn_funcs->tr.func[DST_VII][4] = &vvc_inverse_dst_vii_16;
-    rcn_funcs->tr.func[DST_VII][5] = &vvc_inverse_dst_vii_32;
+    rcn_funcs->tr.func[DST_VII][2] = &inverse_dst_vii_4;
+    rcn_funcs->tr.func[DST_VII][3] = &inverse_dst_vii_8;
+    rcn_funcs->tr.func[DST_VII][4] = &inverse_dst_vii_16;
+    rcn_funcs->tr.func[DST_VII][5] = &inverse_dst_vii_32;
     rcn_funcs->tr.func[DST_VII][6] = NULL;
 
     rcn_funcs->tr.func[DCT_VIII][0] = NULL;
     rcn_funcs->tr.func[DCT_VIII][1] = NULL;
-    rcn_funcs->tr.func[DCT_VIII][2] = &vvc_inverse_dct_viii_4;
-    rcn_funcs->tr.func[DCT_VIII][3] = &vvc_inverse_dct_viii_8;
-    rcn_funcs->tr.func[DCT_VIII][4] = &vvc_inverse_dct_viii_16;
-    rcn_funcs->tr.func[DCT_VIII][5] = &vvc_inverse_dct_viii_32;
+    rcn_funcs->tr.func[DCT_VIII][2] = &inverse_dct_viii_4;
+    rcn_funcs->tr.func[DCT_VIII][3] = &inverse_dct_viii_8;
+    rcn_funcs->tr.func[DCT_VIII][4] = &inverse_dct_viii_16;
+    rcn_funcs->tr.func[DCT_VIII][5] = &inverse_dct_viii_32;
     rcn_funcs->tr.func[DCT_VIII][6] = NULL;
 
     rcn_funcs->tr.func[DCT_II][0] = NULL;
