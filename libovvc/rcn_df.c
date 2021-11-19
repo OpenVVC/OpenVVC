@@ -1641,7 +1641,6 @@ vvc_dbf_ctu_ver(const struct DFFunctions *df, uint16_t *src, int stride, const s
     }
 }
 
-#if 1
 void
 rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
             uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y)
@@ -1668,7 +1667,6 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_inf
     aff_edg_map[16] = -1ll;
 
 
-    #if 1
     if (!dbf_info->disable_h)
     vvc_dbf_ctu_hor(df, fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_y, nb_unit, ctu_lft);
     if (!dbf_info->disable_v)
@@ -1681,7 +1679,6 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_inf
     if (!dbf_info->disable_v)
     vvc_dbf_chroma_ver(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
                        nb_unit, !!last_x, nb_unit, !!last_y, ctu_abv);
-                       #endif
 
 }
 
@@ -1698,7 +1695,6 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *con
     uint8_t ctu_lft = rcn_ctx->ctudec->ctu_ngh_flags & CTU_LFT_FLG;
     uint8_t ctu_abv = rcn_ctx->ctudec->ctu_ngh_flags & CTU_UP_FLG;
 
-    #if 1
     if (!dbf_info->disable_h)
     vvc_dbf_ctu_hor(df, fbuff->y, fbuff->stride, dbf_info, nb_unit_h, !!last_y, nb_unit_w, ctu_lft);
     if (!dbf_info->disable_v)
@@ -1711,10 +1707,8 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *con
     if (!dbf_info->disable_v)
     vvc_dbf_chroma_ver(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
                        nb_unit_w, !!last_x, nb_unit_h, !!last_y, ctu_abv);
-                       #endif
 
 }
-#endif
 
 void
 BD_DECL(rcn_init_df_functions)(struct RCNFunctions *const rcn_funcs)
