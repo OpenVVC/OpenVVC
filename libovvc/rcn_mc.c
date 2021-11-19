@@ -980,7 +980,7 @@ put_weighted_epel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
     }
 }
 
-void
+static void
 put_weighted_pel_bi_pixels(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdiff_t _srcstride,
                   int16_t* src2, ptrdiff_t src2stride, int height, int denom,
                   int wx0, int wx1, intptr_t mx, intptr_t my, int width)
