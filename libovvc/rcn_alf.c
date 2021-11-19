@@ -9,9 +9,7 @@
 #include "rcn_alf.h"
 #include "rcn_structures.h"
 
-
-#define BITDEPTH 10
-#define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
+#include "bitdepth.h"
 
 struct ALFilterIdx {
     uint8_t class_idx;
@@ -1388,10 +1386,6 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
         ctudec_save_last_cols(ctudec, x_pos_pic, y_pos_pic, is_border);
     }
 }
-
-#define FUNC3(a, b, c)  a ## _ ## b ##  c
-#define FUNC2(a, b, c)  FUNC3(a, b, c)
-#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
 
 void
 BD_DECL(rcn_init_alf_functions)(struct RCNFunctions *rcn_func)

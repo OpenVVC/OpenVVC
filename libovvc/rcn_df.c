@@ -8,8 +8,7 @@
 #define DEFAULT_INTRA_TC_OFFSET 2 ///< Default intra TC offset
 #define MAX_QP 64
 
-#define BITDEPTH 10
-#define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
+#include "bitdepth.h"
 
 static const uint16_t tc_lut[MAX_QP + 1 + DEFAULT_INTRA_TC_OFFSET] =
 {
@@ -1716,10 +1715,6 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *con
 
 }
 #endif
-
-#define FUNC3(a, b, c)  a ## _ ## b ##  c
-#define FUNC2(a, b, c)  FUNC3(a, b, c)
-#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
 
 void
 BD_DECL(rcn_init_df_functions)(struct RCNFunctions *const rcn_funcs)

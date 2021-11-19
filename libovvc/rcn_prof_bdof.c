@@ -4,8 +4,8 @@
 #include "rcn_structures.h"
 #include "ovutils.h"
 
-#define BITDEPTH 10
-#define ov_bdclip(a) ov_clip_uintp2(a, BITDEPTH)
+#include "bitdepth.h"
+
 #define MAX_PB_SIZE 128
 
 #define PROF_SMP_SHIFT (14 - BITDEPTH)
@@ -226,10 +226,6 @@ rcn_prof(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
         src += src_stride;
     }
 }
-
-#define FUNC3(a, b, c)  a ## _ ## b ##  c
-#define FUNC2(a, b, c)  FUNC3(a, b, c)
-#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
 
 void
 BD_DECL(rcn_init_prof_functions)(struct RCNFunctions *const rcn_funcs)

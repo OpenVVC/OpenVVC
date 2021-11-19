@@ -8,8 +8,7 @@
 #include "ovdpb.h"
 #include "slicedec.h"
 
-#define BITDEPTH 10
-#define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
+#include "bitdepth.h"
 
 static void
 sao_band_filter(uint8_t *_dst, uint8_t *_src,
@@ -257,10 +256,6 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
         ctudec_save_last_cols(ctudec, x_pos_pic, y_start_pic, is_border);
     }
 }
-
-#define FUNC3(a, b, c)  a ## _ ## b ##  c
-#define FUNC2(a, b, c)  FUNC3(a, b, c)
-#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
 
 void
 BD_DECL(rcn_init_sao_functions)(struct RCNFunctions *const rcn_funcs)

@@ -4,12 +4,10 @@
 #include "ovutils.h"
 #include "ctudec.h"
 
-#define BITDEPTH 10
-#define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
+#include "bitdepth.h"
 
 #define SWAP(type,a,b) do{type tmp= b; b = a; a = tmp;}while(0)
 
-#define AVG_VAL (1 << (BITDEPTH - 1))
 
 struct AVGMinMax{
     uint16_t min_l;
@@ -810,10 +808,6 @@ vvc_intra_mdlm_left_cl(const uint16_t *const src_luma,
                       log2_pb_w, log2_pb_h, left_available, up_available,
                       y0, x0, intra_map_cols);
 }
-
-#define FUNC3(a, b, c)  a ## _ ## b ##  c
-#define FUNC2(a, b, c)  FUNC3(a, b, c)
-#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
 
 void
 BD_DECL(rcn_init_cclm_functions_collocated)(struct RCNFunctions *rcn_func)

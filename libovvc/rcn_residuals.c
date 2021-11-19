@@ -7,8 +7,7 @@
 #include "ovutils.h"
 #include "ctudec.h"
 
-#define BITDEPTH 10
-#define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
+#include "bitdepth.h"
 
 void
 vvc_scale_add_residual(const int16_t *src, uint16_t *dst,

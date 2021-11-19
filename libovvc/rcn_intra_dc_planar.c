@@ -4,8 +4,7 @@
 #include "ovutils.h"
 #include "rcn_structures.h"
 
-#define BITDEPTH 10
-#define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
+#include "bitdepth.h"
 
 static const uint8_t vvc_pdpc_w[3][128] = {
         { 32, 8, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -202,10 +201,6 @@ intra_planar_pdpc(const uint16_t* const ref_abv,
     }
 
 }
-
-#define FUNC3(a, b, c)  a ## _ ## b ##  c
-#define FUNC2(a, b, c)  FUNC3(a, b, c)
-#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
 
 void
 BD_DECL(rcn_init_dc_planar_functions)(struct RCNFunctions *const rcn_funcs)

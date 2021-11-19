@@ -7,8 +7,8 @@
 #include "rcn_mc.h"
 #include "rcn_structures.h"
 
-#define BITDEPTH 10
-#define ov_bdclip(a) ov_clip_uintp2(a, BITDEPTH)
+#include "bitdepth.h"
+
 #define MAX_PB_SIZE 128
 
 #define EPEL_EXTRA_BEFORE 1
@@ -1163,10 +1163,6 @@ put_weighted_gpm_bi_pixels(uint16_t* _dst, int _dststride, const int16_t* _src0,
         weight += step_y;
     }
 }
-
-#define FUNC3(a, b, c)  a ## _ ## b ##  c
-#define FUNC2(a, b, c)  FUNC3(a, b, c)
-#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
 
 void
 BD_DECL(rcn_init_mc_functions)(struct RCNFunctions *const rcn_funcs)

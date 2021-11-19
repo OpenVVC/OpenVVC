@@ -9,10 +9,9 @@
 #include "rcn_lmcs.h"
 
 
-#define BITDEPTH 10
 #define SMP_RNG (1 << BITDEPTH)
 
-#define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
+#include "bitdepth.h"
 
 #define LOG2_NB_WND 4
 #define NB_LMCS_WND (1 << LOG2_NB_WND)
@@ -24,8 +23,6 @@
 
 #define LMCS_PREC 11
 #define LMCS_RND (1 << (LMCS_PREC - 1))
-
-#define AVG_VAL (1 << (BITDEPTH - 1))
 
 /* Window information */
 struct WindowsInfo
@@ -329,10 +326,6 @@ rcn_lmcs_no_reshape(uint16_t *dst, ptrdiff_t stride_dst,
 {
     return;
 }
-
-#define FUNC3(a, b, c)  a ## _ ## b ##  c
-#define FUNC2(a, b, c)  FUNC3(a, b, c)
-#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
 
 void
 BD_DECL(rcn_init_lmcs_function)(struct RCNFunctions *rcn_func, uint8_t lmcs_flag)

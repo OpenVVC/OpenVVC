@@ -9,8 +9,7 @@
 #define MIP_SHIFT 6
 #define MIP_OFFSET (1 << (MIP_SHIFT - 1))
 
-#define BITDEPTH 10
-#define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
+#include "bitdepth.h"
 
 static const uint8_t *
 derive_mip_ctx(int log2_pb_w, int log2_pb_h, uint8_t mip_mode)
@@ -370,10 +369,6 @@ rcn_intra_mip(const struct OVRCNCtx *const rcn_ctx,
         vvc_intra_pred_mip_tr(rcn_ctx, x0, y0, log2_pb_w, log2_pb_h, mip_mode);
     }
 }
-
-#define FUNC3(a, b, c)  a ## _ ## b ##  c
-#define FUNC2(a, b, c)  FUNC3(a, b, c)
-#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
 
 void
 BD_DECL(rcn_init_mip_functions)(struct RCNFunctions *const rcn_funcs)
