@@ -158,7 +158,8 @@ rcn_intra_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log
     memcpy(dst_cr, src_cr, sizeof(uint16_t) * ((1 << (log2_ctb_s - 1)) + (1 << (log2_ctb_s - 1))));
 }
 
-void rcn_ctu_to_intra_line(OVCTUDec *const ctudec, int x_l)
+void
+rcn_ctu_to_intra_line(OVCTUDec *const ctudec, int x_l)
 {
     struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
     struct OVBuffInfo *intra_line_binfo = &rcn_ctx->intra_line_buff;
@@ -170,13 +171,13 @@ void rcn_ctu_to_intra_line(OVCTUDec *const ctudec, int x_l)
     uint16_t *_src;
 
     _src = &ctudec->rcn_ctx.ctu_buff.y[(max_cu_width_l - 1) * RCN_CTB_STRIDE];
-    memcpy(&intra_line_binfo->y[x_l], _src, sizeof(int16_t) << log2_ctb_size);
+    memcpy(&intra_line_binfo->y[x_l], _src, sizeof(*_src) << log2_ctb_size);
 
     _src = &ctudec->rcn_ctx.ctu_buff.cb[(max_cu_width_c - 1) * RCN_CTB_STRIDE ];
-    memcpy(&intra_line_binfo->cb[x_l>>1], _src, sizeof(int16_t) << (log2_ctb_size-1));
+    memcpy(&intra_line_binfo->cb[x_l>>1], _src, sizeof(*_src) << (log2_ctb_size - 1));
 
     _src = &ctudec->rcn_ctx.ctu_buff.cr[(max_cu_width_c - 1) * RCN_CTB_STRIDE ];
-    memcpy(&intra_line_binfo->cr[x_l>>1], _src, sizeof(int16_t) << (log2_ctb_size-1));
+    memcpy(&intra_line_binfo->cr[x_l>>1], _src, sizeof(*_src) << (log2_ctb_size - 1));
 }
 
 void
@@ -193,14 +194,14 @@ rcn_write_ctu_to_frame_border(const struct OVRCNCtx *const rcn_ctx,
     uint16_t *dst_cr = fd->cr;
 
     for (int i = 0; i < last_ctu_h; ++i) {
-        memcpy(dst_y, src_y, sizeof(uint16_t) * last_ctu_w);
+        memcpy(dst_y, src_y, sizeof(*src_y) * last_ctu_w);
         dst_y += fd->stride;
         src_y += RCN_CTB_STRIDE;
     }
 
     for (int i = 0; i < (last_ctu_h >> 1); i++) {
-        memcpy(dst_cb, src_cb,  sizeof(uint16_t) * (last_ctu_w >> 1));
-        memcpy(dst_cr, src_cr,  sizeof(uint16_t) * (last_ctu_w >> 1));
+        memcpy(dst_cb, src_cb,  sizeof(*src_cb) * (last_ctu_w >> 1));
+        memcpy(dst_cr, src_cr,  sizeof(*src_cr) * (last_ctu_w >> 1));
         dst_cb += fd->stride_c;
         dst_cr += fd->stride_c;
         src_cb += RCN_CTB_STRIDE;
