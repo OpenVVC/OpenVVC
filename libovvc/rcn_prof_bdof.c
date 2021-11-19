@@ -8,11 +8,9 @@
 #define ov_bdclip(a) ov_clip_uintp2(a, BITDEPTH)
 #define MAX_PB_SIZE 128
 
-#define PROF_MV_SHIFT 8
-#define PROF_MV_RND (1 << (PROF_MV_SHIFT - 1))
-
 #define PROF_SMP_SHIFT (14 - BITDEPTH)
-#define PROF_SMP_RND (1 << (14 - 1))
+#define PROF_PREC_RND (1 << (14 - 1))
+#define PROF_DELTA_LIMIT (1 << 13)
 
 #define BDOF_WGT_LIMIT ((1 << 4) - 1)
 #define BDOF_SHIFT   (14 + 1 - BITDEPTH)
@@ -20,7 +18,6 @@
 
 #define GRAD_SHIFT 6
 
-#define PROF_DELTA_LIMIT (1 << (13))
 
 #define SB_H 4
 #define SB_W 4
@@ -130,10 +127,10 @@ compute_prof_grad(const uint16_t* src, int src_stride, int sb_w, int sb_h,
 
     for (y = 0; y < nb_smp_h; ++y) {
         for (x = 0; x < nb_smp_w; ++x) {
-            grad_y[x]  = (((int16_t)src[x + src_stride] - (1 << 13)) >> GRAD_SHIFT);
-            grad_y[x] -= (((int16_t)src[x - src_stride] - (1 << 13)) >> GRAD_SHIFT);
-            grad_x[x]  = (((int16_t)src[x + 1]          - (1 << 13)) >> GRAD_SHIFT);
-            grad_x[x] -= (((int16_t)src[x - 1]          - (1 << 13)) >> GRAD_SHIFT);
+            grad_y[x]  = (((int16_t)src[x + src_stride] - PROF_PREC_RND) >> GRAD_SHIFT);
+            grad_y[x] -= (((int16_t)src[x - src_stride] - PROF_PREC_RND) >> GRAD_SHIFT);
+            grad_x[x]  = (((int16_t)src[x + 1]          - PROF_PREC_RND) >> GRAD_SHIFT);
+            grad_x[x] -= (((int16_t)src[x - 1]          - PROF_PREC_RND) >> GRAD_SHIFT);
         }
         grad_x += grad_stride;
         grad_y += grad_stride;
@@ -315,12 +312,12 @@ derive_bdof_weights(const int16_t* ref0, const int16_t* ref1,
 
     int i, j;
 
-    for (i = 0; i < 6; i++) {
-        for (j = 0; j < 6; j++) {
+    for (i = 0; i < SB_H + 2; i++) {
+        for (j = 0; j < SB_W + 2; j++) {
             int32_t avg_grad_x = (grad_x0[j] + grad_x1[j]) >> 1;
             int32_t avg_grad_y = (grad_y0[j] + grad_y1[j]) >> 1;
 
-            int32_t delta_ref = ((ref1[j] -(1<<13)) >> 4) - ((ref0[j] -(1<<13)) >> 4);
+            int32_t delta_ref = ((ref1[j] - PROF_PREC_RND) >> 4) - ((ref0[j] - PROF_PREC_RND) >> 4);
 
             sum_avg_x += abs(avg_grad_x);
             sum_avg_y += abs(avg_grad_y);
