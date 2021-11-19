@@ -183,6 +183,11 @@ struct MCFunctions{
     MCBiDirWFunc bidir_w[4][8];
 
     MCUniDirFunc bilinear[4][8];
+
+    void (*gpm_weighted)(uint16_t* _dst, int _dststride, const int16_t* _src0,
+                         int _srcstride, const int16_t* _src1, int height,
+                         intptr_t mx, intptr_t my, int width,
+                         int step_x, int step_y, int16_t* weight);
 };
 
 struct CCLMFunctions

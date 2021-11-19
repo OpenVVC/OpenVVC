@@ -1072,7 +1072,6 @@ struct PROFInfo
     int32_t dmv_scale_v_1[16];
 };
 
-
 void
 rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                uint8_t x0, uint8_t y0, uint8_t log2_pu_w, uint8_t log2_pu_h,
@@ -2147,8 +2146,8 @@ rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
     int16_t* weight;
     int step_x, step_y;
     rcn_gpm_weights_and_steps(split_dir, log2_pu_w, log2_pu_h, &step_x, &step_y, &weight, 0);
-    put_weighted_gpm_bi_pixels(dst.y, RCN_CTB_STRIDE, tmp_buff1, MAX_PB_SIZE, tmp_buff0, pu_h, prec_x1, prec_y1, pu_w,
-                            step_x, step_y, weight);
+    mc_l->gpm_weighted(dst.y, RCN_CTB_STRIDE, tmp_buff1, MAX_PB_SIZE, tmp_buff0, pu_h, prec_x1, prec_y1, pu_w,
+                       step_x, step_y, weight);
 
     rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
                                             pu_w, pu_h);
@@ -2183,10 +2182,11 @@ rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
     mc_c->bidir0[prec_1_mc_type][log2_pu_w - 2](ref_data11, ref1_c.cr, ref1_c.stride_c, pu_h >> 1, prec_x1, prec_y1, pu_w >> 1);
 
     rcn_gpm_weights_and_steps(split_dir, log2_pu_w, log2_pu_h, &step_x, &step_y, &weight, 1);
-    put_weighted_gpm_bi_pixels(dst.cb, RCN_CTB_STRIDE, ref_data01, MAX_PB_SIZE, ref_data0,
-                            pu_h >> 1, prec_x1, prec_y1, pu_w >> 1, step_x, step_y, weight);
-    put_weighted_gpm_bi_pixels(dst.cr, RCN_CTB_STRIDE, ref_data11, MAX_PB_SIZE, ref_data1,
-                          pu_h >> 1, prec_x1, prec_y1, pu_w >> 1, step_x, step_y, weight);
+
+    mc_c->gpm_weighted(dst.cb, RCN_CTB_STRIDE, ref_data01, MAX_PB_SIZE, ref_data0,
+                       pu_h >> 1, prec_x1, prec_y1, pu_w >> 1, step_x, step_y, weight);
+    mc_c->gpm_weighted(dst.cr, RCN_CTB_STRIDE, ref_data11, MAX_PB_SIZE, ref_data1,
+                       pu_h >> 1, prec_x1, prec_y1, pu_w >> 1, step_x, step_y, weight);
 }
 
 void
