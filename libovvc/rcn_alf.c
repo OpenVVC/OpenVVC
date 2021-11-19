@@ -239,7 +239,7 @@ rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t luma_
 }
 
 static struct ALFilterIdx
-derive_filter_idx(uint32_t sum_h, uint32_t sum_v, uint32_t sum_d, uint32_t sum_b, uint8_t shift, uint8_t is_vbnd)
+alf_derive_filter_idx(uint32_t sum_h, uint32_t sum_v, uint32_t sum_d, uint32_t sum_b, uint8_t shift, uint8_t is_vbnd)
 {
     static const int th[16] = { 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4 };
     static const uint8_t tr_lut[8] = { 0, 1, 0, 2, 2, 3, 1, 3 };
@@ -401,7 +401,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
             int sb_y = (i >> 1) + (blk.y >> 2);
             int sb_x = j + (blk.x >> 2);
 
-            struct ALFilterIdx fidx = derive_filter_idx(sum_h, sum_v, sum_d, sum_b, shift, 0);
+            struct ALFilterIdx fidx = alf_derive_filter_idx(sum_h, sum_v, sum_d, sum_b, shift, 0);
 
             class_idx_arr    [sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = fidx.class_idx;
             transpose_idx_arr[sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = fidx.tr_idx;
@@ -498,7 +498,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
 
                 int sb_x = j + (blk.x >> 2);
 
-                struct ALFilterIdx fidx = derive_filter_idx(sum_h, sum_v, sum_d, sum_b, shift, 1);
+                struct ALFilterIdx fidx = alf_derive_filter_idx(sum_h, sum_v, sum_d, sum_b, shift, 1);
 
                 class_idx_arr    [sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = fidx.class_idx;
                 transpose_idx_arr[sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = fidx.tr_idx;
@@ -530,7 +530,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
                 int sum_d =             lpl_d1[j] + lpl_d2[j] + lpl_d3[j];
                 int sum_b =             lpl_b1[j] + lpl_b2[j] + lpl_b3[j];
 
-                struct ALFilterIdx fidx = derive_filter_idx(sum_h, sum_v, sum_d, sum_b, shift, 1);
+                struct ALFilterIdx fidx = alf_derive_filter_idx(sum_h, sum_v, sum_d, sum_b, shift, 1);
 
                 class_idx_arr    [sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = fidx.class_idx;
                 transpose_idx_arr[sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = fidx.tr_idx;
@@ -637,7 +637,7 @@ rcn_alf_classif_novbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_id
             int sb_y = i + (blk.y >> 2);
             int sb_x = j + (blk.x >> 2);
 
-            struct ALFilterIdx fidx = derive_filter_idx(sum_h, sum_v, sum_d, sum_b, shift, 0);
+            struct ALFilterIdx fidx = alf_derive_filter_idx(sum_h, sum_v, sum_d, sum_b, shift, 0);
 
             class_idx_arr    [sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = fidx.class_idx;
             transpose_idx_arr[sb_y * CLASSIFICATION_BLK_SIZE + sb_x] = fidx.tr_idx;

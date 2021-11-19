@@ -6,7 +6,7 @@
 #include "ovutils.h"
 #include "rcn_structures.h"
 
-#define BITDEPTH 10
+#include "bitdepth.h"
 
 static void
 matrix_multiplication(const int16_t* src, const int16_t* const tr_matrix,

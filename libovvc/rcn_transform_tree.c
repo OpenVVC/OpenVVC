@@ -6,6 +6,7 @@
 #include "dbf_utils.h"
 #include "drv.h"
 #include "vcl.h"
+#include "rcn_dequant.h"
 
 #define BITDEPTH 10
 #define TR_SHIFT_V (6 + 1)
@@ -37,23 +38,6 @@ struct ISPTUInfo {
    uint8_t lfnst_idx;
    struct TBInfo tb_info[4];
 };
-
-static void
-derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
-                  int cu_qp_delta)
-{
-    /*FIXME avoid negative values especiallly in chroma_map derivation*/
-    int qp_bd_offset = qp_ctx->qp_bd_offset;
-    int base_qp = (qp_ctx->current_qp + cu_qp_delta + 64) & 63;
-    ctudec->dequant_luma.qp = ((base_qp + qp_bd_offset) & 63);
-
-    /*FIXME update transform skip ctx to VTM-10.0 */
-    ctudec->dequant_luma_skip.qp = OVMAX(ctudec->dequant_luma.qp, qp_ctx->min_qp_prime_ts);
-    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[(base_qp + qp_ctx->cb_offset + 64) & 63] + qp_bd_offset;
-    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[(base_qp + qp_ctx->cr_offset + 64) & 63] + qp_bd_offset;
-    ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[(base_qp + 64) & 63] + qp_ctx->jcbcr_offset + qp_bd_offset;
-    ctudec->qp_ctx.current_qp = base_qp;
-}
 
 static void
 rcn_residual(OVCTUDec *const ctudec,

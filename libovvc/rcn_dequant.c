@@ -1,10 +1,9 @@
 #include "rcn_dequant.h"
 #include "ctudec.h"
+#include "bitdepth.h"
 
 #define IQUANT_SHIFT 6
 #define MAX_LOG2_TR_RANGE 15
-
-#define BITDEPTH 10
 
 static const int inverse_quant_scale_lut[2][6] =
 {

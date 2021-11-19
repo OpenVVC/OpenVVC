@@ -7,7 +7,7 @@
 #include "rcn_transform_scale.h"
 #include "ovutils.h"
 #include "ctudec.h"
-
+#include "bitdepth.h"
 
 static void
 scale_add_residual(const int16_t *src, uint16_t *dst,
@@ -194,11 +194,7 @@ sub_half_residual(const int16_t *src, uint16_t *dst,
 }
 
 
-#define FUNC3(a, b, c)  a ## _ ## b ##  c
-#define FUNC2(a, b, c)  FUNC3(a, b, c)
-#define TRSCALE_DECL(a)  FUNC2(a, BITDEPTH, )
-
-TRSCALE_DECL(const struct ResidualScaleFunctions scale_add_resid) =
+BD_DECL(const struct ResidualScaleFunctions scale_add_resid) =
 {
     .add_residual            = add_residual,
     .sub_residual            = sub_residual,

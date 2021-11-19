@@ -1,7 +1,6 @@
 #ifndef BITDEPTH_H
 #define BITDEPTH_H
 
-#define BITDEPTH 10
 #define ov_bdclip(a) ov_clip_uintp2(a, BITDEPTH)
 #define AVG_VAL ((1 << (BITDEPTH)) >> 1)
 
