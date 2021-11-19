@@ -1325,6 +1325,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->enable_lfnst  = sps->sps_lfnst_enabled_flag;
     ctudec->isp_enabled   = sps->sps_isp_enabled_flag;
     ctudec->enable_mrl    = sps->sps_mrl_enabled_flag;
+    ctudec->bitdepth_minus8  = sps->sps_bitdepth_minus8;
 
     ctudec->transform_skip_enabled   = sps->sps_transform_skip_enabled_flag && !sh->sh_ts_residual_coding_disabled_flag;
     ctudec->max_num_merge_candidates = 6 - sps->sps_six_minus_max_num_merge_cand;

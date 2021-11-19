@@ -5,7 +5,6 @@
 #include "ctudec.h"
 #include "nvcl_structures.h"
 
-#define BITDEPTH 10
 /* FIXME Separate CABAC reading from offset/parmaeters derivation */
 
 static uint8_t
@@ -174,7 +173,7 @@ ovcabac_read_ae_sao_ctu(OVCTUDec *const ctudec, int ctb_rs, uint16_t nb_ctu_w)
         uint8_t merge_type = ovcabac_read_ae_sao_merge_type(cabac_ctx, cabac_state, ctu_neighbour_flags);
 
         if (!merge_type) {
-            uint8_t bitdepth_minus8 = BITDEPTH - 8;
+            uint8_t bitdepth_minus8 = ctudec->bitdepth_minus8;
             ovcabac_read_ae_sao_type_idx(cabac_ctx, cabac_state, sao_ctu,
                                          sao_enabled_l, sao_enabled_c, bitdepth_minus8);
         } else {
