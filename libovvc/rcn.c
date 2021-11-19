@@ -115,9 +115,9 @@ rcn_init_intra_angular_functions(struct RCNFunctions *rcn_func, uint8_t bitdepth
 
 void
 rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled,
-                    uint8_t sps_chroma_vertical_collocated_flag, uint8_t lmcs_flag, uint8_t bitdepth)
+                   uint8_t sps_chroma_vertical_collocated_flag, uint8_t lmcs_flag, uint8_t bitdepth)
 {
-  rcn_init_mc_functions(rcn_func);
+  rcn_init_mc_functions_10(rcn_func);
   rcn_init_tr_functions(rcn_func);
   rcn_init_dc_planar_functions(rcn_func);
   rcn_init_ict_functions(rcn_func, ict_type, bitdepth);
@@ -129,7 +129,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
   rcn_init_dmvr_functions(rcn_func);
   rcn_init_prof_functions(rcn_func);
   rcn_init_bdof_functions(rcn_func);
-  rcn_init_ciip_functions(rcn_func);
+  rcn_init_ciip_functions_10(rcn_func);
   rcn_init_df_functions(rcn_func);
   rcn_init_intra_angular_functions(rcn_func, bitdepth);
   if (lm_chroma_enabled) {

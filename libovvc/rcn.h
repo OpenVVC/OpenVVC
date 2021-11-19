@@ -103,7 +103,7 @@ void rcn_init_prof_functions(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_bdof_functions(struct RCNFunctions *const rcn_funcs);
 
-void rcn_init_ciip_functions(struct RCNFunctions *const rcn_funcs);
+void rcn_init_ciip_functions_10(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_df_functions(struct RCNFunctions *const rcn_funcs);
 

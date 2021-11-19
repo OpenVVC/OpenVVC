@@ -1163,7 +1163,12 @@ put_weighted_gpm_bi_pixels(uint16_t* _dst, int _dststride, const int16_t* _src0,
     }
 }
 
-void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
+#define FUNC3(a, b, c)  a ## _ ## b ##  c
+#define FUNC2(a, b, c)  FUNC3(a, b, c)
+#define BD_DECL(a)  FUNC2(a, BITDEPTH, )
+
+void
+BD_DECL(rcn_init_mc_functions)(struct RCNFunctions *const rcn_funcs)
 {
     struct MCFunctions *const mc_l = &rcn_funcs->mc_l;
     struct MCFunctions *const mc_c = &rcn_funcs->mc_c;
@@ -1219,9 +1224,12 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_c->bidir_w[2][i] = &put_weighted_epel_bi_v;
         mc_c->bidir_w[3][i] = &put_weighted_epel_bi_hv;
     }
+    mc_l->gpm_weighted = &put_weighted_gpm_bi_pixels;
+    mc_c->gpm_weighted = &put_weighted_gpm_bi_pixels;
 }
 
-void rcn_init_ciip_functions(struct RCNFunctions *const rcn_funcs)
+void
+BD_DECL(rcn_init_ciip_functions)(struct RCNFunctions *const rcn_funcs)
 {
     struct CIIPFunctions *const ciip = &rcn_funcs->ciip;
     ciip->weighted = &put_weighted_ciip_pixels;
