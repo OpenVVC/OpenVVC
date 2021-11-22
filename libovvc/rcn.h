@@ -83,8 +83,6 @@ void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t
 
 
 
-void rcn_init_ict_functions(struct RCNFunctions *rcn_func, uint8_t type, uint8_t bitdepth);
-
 void rcn_init_tr_functions(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_cclm_functions_collocated_10(struct RCNFunctions *rcn_func);
@@ -111,12 +109,6 @@ void rcn_init_df_functions_10(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_lmcs_function_10(struct RCNFunctions *rcn_func, uint8_t lmcs_flag);
 
-void rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
-                 uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y);
-
-void rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
-                           uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y,
-                           uint8_t ctu_w, uint8_t ctu_h);
 
 void rcn_init_alf_functions_10(struct RCNFunctions *rcn_func);
 
@@ -125,10 +117,6 @@ uint8_t rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                            uint8_t log2_pu_w, uint8_t log2_pu_h,
                            OVMV *mv0, OVMV *mv1, uint8_t ref_idx0, uint8_t ref_idx1, uint8_t
                            apply_bdof);
-
-void rcn_intra_mip(const struct OVRCNCtx *const rcn_ctx,
-                   uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,
-                   uint8_t mip_opaque);
 
 void
 vvc_add_residual(const int16_t *src, uint16_t *dst,

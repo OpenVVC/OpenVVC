@@ -11,6 +11,13 @@ struct CCLMParams;
 struct SAOParamsCtu;
 struct LMCSLUTs;
 
+struct CTUBitField;
+struct RCNFunctions;
+struct OVLMCSData;
+struct LMCSInfo;
+struct ISPTUInfo;
+struct TUInfo;
+
 enum RCNSizes
 {
    /* Stride Used in CTU buffers MAX_CTU_S
@@ -227,23 +234,46 @@ struct LFNSTFunctions
   LFNSTFunc func[2][2];
 };
 
+struct OVRCNCtx;
 struct MIPFunctions
 {
   MIPUpSample upsample_h[2][3];
   MIPUpSample upsample_v[2][3];
   MIPMatMult matmult;
+
+  void (*rcn_intra_mip)(const struct OVRCNCtx *const rcn_ctx,
+                        uint8_t x0, uint8_t y0,
+                        uint8_t log2_pb_w, uint8_t log2_pb_h,
+                        uint8_t mip_opaque);
 };
+
+struct RectEntryInfo;
+struct OVCTUDec;
+struct RCNALF;
 
 struct ALFFunctions{
-  ALFClassifBlkFunc classif;
-  ALFFilterBlkFunc luma[2];
-  ALFChromaFilterBlkFunc chroma[2];
-  CCALFFilterBlkFunc ccalf[2];
+    ALFClassifBlkFunc classif;
+    ALFFilterBlkFunc luma[2];
+    ALFChromaFilterBlkFunc chroma[2];
+    CCALFFilterBlkFunc ccalf[2];
+    void (*rcn_alf_filter_line)(struct OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y);
+
+    void (*rcn_alf_reconstruct_coeff_APS)(struct RCNALF* alf, struct OVCTUDec *const ctudec, uint8_t luma_flag, uint8_t chroma_flag);
+
 };
 
+struct OVCTUDec;
 struct SAOFunctions{
     SAOBandFilterFunc band;
     SAOEdgeFilterFunc edge[2];
+
+    void (*rcn_sao_filter_line)(struct OVCTUDec *const ctudec,
+                                const struct RectEntryInfo *const einfo,
+                                uint16_t ctb_y);
+
+    void (*rcn_sao_first_pix_rows)(struct OVCTUDec *const ctudec,
+                                   const struct RectEntryInfo *const einfo,
+                                   uint16_t ctb_y);
 };
 
 struct DMVRFunctions{
@@ -254,20 +284,124 @@ struct DMVRFunctions{
 struct PROFFunctions{
     PROFGradFunction grad;
     PROFFunction rcn;
+    void (*tmp_prof_mrg)(uint16_t* _dst, ptrdiff_t _dststride,
+                         const uint16_t* _src0, ptrdiff_t _srcstride,
+                         const int16_t* _src1, int height, intptr_t mx,
+                         intptr_t my, int width);
+
+    void (*tmp_prof_mrg_w)(uint16_t* _dst, ptrdiff_t _dststride,
+                           const uint16_t* _src0, ptrdiff_t _srcstride,
+                           const int16_t* _src1, int height, intptr_t mx,
+                           intptr_t my, int width, int wt0, int wt1);
+
+    void (*extend_prof_buff)(const uint16_t *const src, uint16_t *dst_prof, int16_t ref_stride,
+                             uint8_t ext_x, uint8_t ext_y);
+
+
 };
 
 struct BDOFFunctions{
     PROFGradFunction grad;
     BDOFSBFunction subblock;
+
+    void (*rcn_bdof)(struct BDOFFunctions *const bdof, int16_t *dst, int dst_stride,
+                     const int16_t *ref_bdof0, const int16_t *ref_bdof1, int ref_stride,
+                     const int16_t *grad_x0, const int16_t *grad_y0,
+                     const int16_t *grad_x1, const int16_t *grad_y1,
+                     int grad_stride, uint8_t pb_w, uint8_t pb_h);
+
+    void (*extend_bdof_buff)(const uint16_t *const src, uint16_t *dst_prof,
+                             int16_t ref_stride, int16_t pb_w, int16_t pb_h,
+                             uint8_t ext_x, uint8_t ext_y);
+
 };
 
 struct CIIPFunctions{
     CIIPWeightedFuntion weighted;
 };
 
+struct DBFInfo;
 struct DFFunctions{
     DFFilterFunction filter_h[11];
     DFFilterFunction filter_v[11];
+
+    void (*rcn_dbf_ctu)(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
+                        uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y);
+
+    void (*rcn_dbf_truncated_ctu)(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
+                                  uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y,
+                                  uint8_t ctu_w, uint8_t ctu_h);
+};
+
+#include "rcn_dequant.h"
+struct TMPBDCompat
+{
+    void (*filter_ref_samples)(const uint16_t* const src, uint16_t* const dst,
+                               const uint16_t* src2, int length);
+
+    void (*fill_ref_left_0)(const uint16_t* const src, int src_stride,
+                            uint16_t* const ref_left, uint64_t intra_map_cols,
+                            uint64_t intra_map_rows, int8_t x0, int8_t y0, int log2_pb_w,
+                            int log2_pb_h, int offset_y);
+
+    void (*fill_ref_left_0_chroma)(const uint16_t* const src, int src_stride,
+                                   uint16_t* const ref_left, uint64_t intra_map_cols,
+                                   uint64_t intra_map_rows, int8_t x0, int8_t y0,
+                                   int log2_pb_w, int log2_pb_h);
+
+    void (*fill_ref_left_0_mref)(const uint16_t* const src, int src_stride,
+                                 uint16_t* const ref_left, uint64_t intra_map_cols,
+                                 uint64_t intra_map_rows, int mref_idx, int8_t x0,
+                                 int8_t y0, int log2_pb_w, int log2_pb_h);
+
+    void (*fill_ref_above_0)(const uint16_t* const src, int src_stride,
+                             uint16_t* const ref_above, uint64_t intra_map_rows,
+                             uint64_t intra_map_cols, int8_t x0, int8_t y0, int log2_pb_w,
+                             int log2_pb_h, int offset_x);
+
+    void (*fill_ref_above_0_chroma)(const uint16_t* const src, int src_stride,
+                                    uint16_t* const ref_above, uint64_t intra_map_rows,
+                                    uint64_t intra_map_cols, int8_t x0, int8_t y0,
+                                    int log2_pb_w, int log2_pb_h);
+
+    void (*fill_ref_above_0_mref)(const uint16_t* const src, int src_stride,
+                                  uint16_t* const ref_above, uint64_t intra_map_rows,
+                                  uint64_t intra_map_cols, int mref_idx, int8_t x0,
+                                  int8_t y0, int log2_pb_w, int log2_pb_h);
+
+    struct IQScale (*derive_dequant_sdh)(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h);
+
+    struct IQScale (*derive_dequant_dpq)(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h);
+
+    struct IQScale (*derive_dequant_ts)(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h);
+
+    void (*rcn_transform_tree)(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
+                               uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t log2_max_tb_s,
+                               uint8_t cu_flags, const struct TUInfo *const tu_info);
+
+
+    void (*rcn_tu_c)(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
+                     uint8_t log2_tb_w, uint8_t log2_tb_h,
+                     uint8_t cu_flags, uint8_t cbf_mask,
+                     const struct TUInfo *const tu_info);
+
+    void (*rcn_tu_st)(OVCTUDec *const ctu_dec,
+                      uint8_t x0, uint8_t y0,
+                      uint8_t log2_tb_w, uint8_t log2_tb_h,
+                      uint8_t cu_flags, uint8_t cbf_mask,
+                      const struct TUInfo *const tu_info);
+
+    void (*recon_isp_subtree_h)(OVCTUDec *const ctudec,
+                                unsigned int x0, unsigned int y0,
+                                unsigned int log2_cb_w, unsigned int log2_cb_h,
+                                uint8_t intra_mode,
+                                const struct ISPTUInfo *const tu_info);
+
+    void (*recon_isp_subtree_v)(OVCTUDec *const ctudec,
+                                unsigned int x0, unsigned int y0,
+                                unsigned int log2_cb_w, unsigned int log2_cb_h,
+                                uint8_t intra_mode,
+                                const struct ISPTUInfo *const tu_info);
 };
 
 struct RCNFunctions
@@ -307,6 +441,13 @@ struct RCNFunctions
     LMCSReshapeFunc lmcs_reshape_forward;
     LMCSReshapeFunc lmcs_reshape_backward;
 
+    void (*rcn_lmcs_compute_chroma_scale)(struct LMCSInfo *const lmcs_info,
+                                          const struct CTUBitField *const progress_field,
+                                          const uint16_t *ctu_data_y, uint8_t x0, uint8_t y0);
+
+    void (*rcn_init_lmcs)(struct LMCSInfo *lmcs_info, const struct OVLMCSData *const lmcs_data);
+
+
     /* DMVR Functions */
     struct DMVRFunctions dmvr;
 
@@ -331,6 +472,8 @@ struct RCNFunctions
     const struct IntraAngularFunctions *intra_angular_c_h;
     const struct IntraAngularFunctions *intra_angular_c_v;
     const struct IntraMRLFunctions *intra_mrl;
+
+    struct TMPBDCompat tmp;
 };
 
 

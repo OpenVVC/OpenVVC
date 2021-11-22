@@ -1641,7 +1641,7 @@ vvc_dbf_ctu_ver(const struct DFFunctions *df, uint16_t *src, int stride, const s
     }
 }
 
-void
+static void
 rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
             uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y)
 {
@@ -1682,7 +1682,7 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_inf
 
 }
 
-void
+static void
 rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
                       uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y, uint8_t ctu_w, uint8_t ctu_h)
 {
@@ -1736,4 +1736,7 @@ BD_DECL(rcn_init_df_functions)(struct RCNFunctions *const rcn_funcs)
   rcn_funcs->df.filter_v[8] = &filter_v_7_3;
   rcn_funcs->df.filter_v[9] = &filter_v_7_5;
   rcn_funcs->df.filter_v[10]= &filter_v_7_7;
+
+  rcn_funcs->df.rcn_dbf_ctu = &rcn_dbf_ctu;
+  rcn_funcs->df.rcn_dbf_truncated_ctu = &rcn_dbf_truncated_ctu;
 }

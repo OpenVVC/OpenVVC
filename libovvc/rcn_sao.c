@@ -152,7 +152,7 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_start_pic, int y_st
     }
 }
 
-void
+static void
 rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y)
 {
     if (!ctudec->sao_info.sao_luma_flag && !ctudec->sao_info.sao_chroma_flag){
@@ -200,7 +200,7 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
     }
 }
 
-void
+static void
 rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y)
 {
     if (!ctudec->sao_info.sao_luma_flag && !ctudec->sao_info.sao_chroma_flag){
@@ -263,4 +263,6 @@ BD_DECL(rcn_init_sao_functions)(struct RCNFunctions *const rcn_funcs)
     rcn_funcs->sao.band= &sao_band_filter;
     rcn_funcs->sao.edge[0]= &sao_edge_filter;
     rcn_funcs->sao.edge[1]= &sao_edge_filter;
+    rcn_funcs->sao.rcn_sao_filter_line = &rcn_sao_filter_line;
+    rcn_funcs->sao.rcn_sao_first_pix_rows = &rcn_sao_first_pix_rows;
 }

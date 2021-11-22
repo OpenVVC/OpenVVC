@@ -64,7 +64,7 @@ rcn_apply_bdof_subblock(const int16_t* src0, int src0_stride,
     }
 }
 
-void
+static void
 tmp_prof_mrg(uint16_t* _dst, ptrdiff_t _dststride,
              const uint16_t* _src0, ptrdiff_t _srcstride,
              const int16_t* _src1, int height, intptr_t mx,
@@ -89,7 +89,7 @@ tmp_prof_mrg(uint16_t* _dst, ptrdiff_t _dststride,
     }
 }
 
-void
+static void
 tmp_prof_mrg_w(uint16_t* _dst, ptrdiff_t _dststride,
                const uint16_t* _src0, ptrdiff_t _srcstride,
                const int16_t* _src1, int height, intptr_t mx,
@@ -138,7 +138,7 @@ compute_prof_grad(const uint16_t* src, int src_stride, int sb_w, int sb_h,
     }
 }
 
-void
+static void
 extend_prof_buff(const uint16_t *const src, uint16_t *dst_prof, int16_t ref_stride, uint8_t ext_x, uint8_t ext_y)
 {
     const uint16_t *ref = src  - ref_stride  - 1;
@@ -232,9 +232,12 @@ BD_DECL(rcn_init_prof_functions)(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->prof.grad = &compute_prof_grad;
     rcn_funcs->prof.rcn  = &rcn_prof;
+    rcn_funcs->prof.tmp_prof_mrg = &tmp_prof_mrg;
+    rcn_funcs->prof.tmp_prof_mrg_w = &tmp_prof_mrg_w;
+    rcn_funcs->prof.extend_prof_buff = &extend_prof_buff;
 }
 
-void
+static void
 extend_bdof_buff(const uint16_t *const src, uint16_t *dst_prof,
                  int16_t ref_stride, int16_t pb_w, int16_t pb_h,
                  uint8_t ext_x, uint8_t ext_y)
@@ -363,7 +366,7 @@ derive_bdof_weights(const int16_t* ref0, const int16_t* ref1,
     }
 }
 
-void
+static void
 rcn_bdof(struct BDOFFunctions *const bdof, int16_t *dst, int dst_stride,
          const int16_t *ref_bdof0, const int16_t *ref_bdof1, int ref_stride,
          const int16_t *grad_x0, const int16_t *grad_y0,
@@ -439,4 +442,6 @@ BD_DECL(rcn_init_bdof_functions)(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->bdof.grad     = &compute_prof_grad;
     rcn_funcs->bdof.subblock = &rcn_apply_bdof_subblock;
+    rcn_funcs->bdof.rcn_bdof = &rcn_bdof;
+    rcn_funcs->bdof.extend_bdof_buff = &extend_bdof_buff;
 }

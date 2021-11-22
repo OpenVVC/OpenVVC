@@ -10,7 +10,7 @@
 // WARNING src and dst cannot be aliased
 // FIXME we could probably merge this part with ref filling
 // FIXME length should be an uint
-void
+static void
 filter_ref_samples(const uint16_t* const src, uint16_t* const dst,
                    const uint16_t* src2, int length)
 {
@@ -33,7 +33,7 @@ filter_ref_samples(const uint16_t* const src, uint16_t* const dst,
 }
 
 // Filling a map of available neighbours for intra process
-void
+static void
 fill_ref_left_0(const uint16_t* const src, int src_stride,
                 uint16_t* const ref_left, uint64_t intra_map_cols,
                 uint64_t intra_map_rows, int8_t x0, int8_t y0, int log2_pb_w,
@@ -108,7 +108,7 @@ fill_ref_left_0(const uint16_t* const src, int src_stride,
     }
 }
 
-void
+static void
 fill_ref_left_0_chroma(const uint16_t* const src, int src_stride,
                        uint16_t* const ref_left, uint64_t intra_map_cols,
                        uint64_t intra_map_rows, int8_t x0, int8_t y0,
@@ -186,7 +186,7 @@ fill_ref_left_0_chroma(const uint16_t* const src, int src_stride,
     }
 }
 
-void
+static void
 fill_ref_left_0_mref(const uint16_t* const src, int src_stride,
                      uint16_t* const ref_left, uint64_t intra_map_cols,
                      uint64_t intra_map_rows, int mref_idx, int8_t x0,
@@ -278,7 +278,7 @@ fill_ref_left_0_mref(const uint16_t* const src, int src_stride,
     }
 }
 
-void
+static void
 fill_ref_above_0(const uint16_t* const src, int src_stride,
                  uint16_t* const ref_above, uint64_t intra_map_rows,
                  uint64_t intra_map_cols, int8_t x0, int8_t y0, int log2_pb_w,
@@ -349,7 +349,7 @@ fill_ref_above_0(const uint16_t* const src, int src_stride,
     }
 }
 
-void
+static void
 fill_ref_above_0_chroma(const uint16_t* const src, int src_stride,
                         uint16_t* const ref_above, uint64_t intra_map_rows,
                         uint64_t intra_map_cols, int8_t x0, int8_t y0,
@@ -442,7 +442,7 @@ fill_ref_above_0_chroma(const uint16_t* const src, int src_stride,
     }
 }
 
-void
+static void
 fill_ref_above_0_mref(const uint16_t* const src, int src_stride,
                       uint16_t* const ref_above, uint64_t intra_map_rows,
                       uint64_t intra_map_cols, int mref_idx, int8_t x0,
@@ -549,4 +549,16 @@ fill_ref_above_0_mref(const uint16_t* const src, int src_stride,
         ref_above[(1 << (log2_pb_w + 1)) + (mref_idx + 1) + i] =
             ref_above[(1 << (log2_pb_w + 1)) + (mref_idx) + i];
     }
+}
+
+void
+BD_DECL(rcn_init_fill_ref)(struct RCNFunctions *rcn_funcs)
+{
+    rcn_funcs->tmp.filter_ref_samples      = &filter_ref_samples;
+    rcn_funcs->tmp.fill_ref_left_0         = &fill_ref_left_0;
+    rcn_funcs->tmp.fill_ref_left_0_chroma  = &fill_ref_left_0_chroma;
+    rcn_funcs->tmp.fill_ref_left_0_mref    = &fill_ref_left_0_mref;
+    rcn_funcs->tmp.fill_ref_above_0        = &fill_ref_above_0;
+    rcn_funcs->tmp.fill_ref_above_0_chroma = &fill_ref_above_0_chroma;
+    rcn_funcs->tmp.fill_ref_above_0_mref   = &fill_ref_above_0_mref;
 }

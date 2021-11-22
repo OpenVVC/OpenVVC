@@ -219,7 +219,7 @@ alf_init_filter_c(RCNALF* alf, const struct OVALFData* alf_data)
     }
 }
 
-void
+static void
 rcn_alf_reconstruct_coeff_APS(RCNALF* alf, OVCTUDec *const ctudec, uint8_t luma_flag, uint8_t chroma_flag)
 {
     if (luma_flag) {
@@ -1240,7 +1240,7 @@ check_virtual_bound(int y_pos_pic, int height, int virbnd_pos, uint8_t log2_ctb_
     return req_vb;
 }
 
-void
+static void
 rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y)
 {
     struct ALFInfo* alf_info = &ctudec->alf_info;
@@ -1397,4 +1397,6 @@ BD_DECL(rcn_init_alf_functions)(struct RCNFunctions *rcn_func)
     rcn_func->alf.chroma[1]=&alf_filter_cVB;
     rcn_func->alf.ccalf[0]=&cc_alf_filterBlk;
     rcn_func->alf.ccalf[1]=&cc_alf_filterBlkVB;
+    rcn_func->alf.rcn_alf_reconstruct_coeff_APS = &rcn_alf_reconstruct_coeff_APS;
+    rcn_func->alf.rcn_alf_filter_line = &rcn_alf_filter_line;
 }

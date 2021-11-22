@@ -284,7 +284,7 @@ rcn_lmcs_no_reshape(uint16_t *dst, ptrdiff_t stride_dst,
     return;
 }
 
-void
+static void
 rcn_lmcs_compute_chroma_scale(struct LMCSInfo *const lmcs_info,
                               const struct CTUBitField *const progress_field,
                               const uint16_t *ctu_data_y, uint8_t x0, uint8_t y0)
@@ -309,7 +309,7 @@ rcn_lmcs_compute_chroma_scale(struct LMCSInfo *const lmcs_info,
                                                  : (1 << (BITDEPTH - LOG2_NB_WND + LMCS_PREC)) / (wnd_sz + lmcs_info->lmcs_chroma_scaling_offset);
 }
 
-void
+static void
 rcn_init_lmcs(struct LMCSInfo *lmcs_info, const struct OVLMCSData *const lmcs_data)
 {
     if (!lmcs_info->luts) {
@@ -333,8 +333,12 @@ BD_DECL(rcn_init_lmcs_function)(struct RCNFunctions *rcn_func, uint8_t lmcs_flag
     if(lmcs_flag){
         rcn_func->lmcs_reshape_forward  = &rcn_lmcs_reshape_forward;
         rcn_func->lmcs_reshape_backward = &rcn_lmcs_reshape_backward;
+        rcn_func->rcn_lmcs_compute_chroma_scale = &rcn_lmcs_compute_chroma_scale;
+        rcn_func->rcn_init_lmcs = &rcn_init_lmcs;
     } else {
         rcn_func->lmcs_reshape_forward  = &rcn_lmcs_no_reshape;
         rcn_func->lmcs_reshape_backward = &rcn_lmcs_no_reshape;
+        rcn_func->rcn_lmcs_compute_chroma_scale = &rcn_lmcs_compute_chroma_scale;
+        rcn_func->rcn_init_lmcs = &rcn_init_lmcs;
     }
 }

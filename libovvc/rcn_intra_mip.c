@@ -352,7 +352,7 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
     }
 }
 
-void
+static void
 rcn_intra_mip(const struct OVRCNCtx *const rcn_ctx,
               uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,
               uint8_t mip_opaque)
@@ -390,4 +390,5 @@ BD_DECL(rcn_init_mip_functions)(struct RCNFunctions *const rcn_funcs)
     rcn_funcs->mip.upsample_v[1][2]= &up_sample;
 
     rcn_funcs->mip.matmult= &mip_matmult;
+    rcn_funcs->mip.rcn_intra_mip = rcn_intra_mip;
 }

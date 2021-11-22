@@ -11,6 +11,7 @@ static const int inverse_quant_scale_lut[2][6] =
     { 57, 64, 72, 80, 90, 102}
 };
 
+#if BITDEPTH == 10
 void
 derive_dequant_ctx(OVCTUDec *const ctudec, const struct VVCQPCTX *const qp_ctx,
                   int cu_qp_delta)
@@ -29,6 +30,7 @@ derive_dequant_ctx(OVCTUDec *const ctudec, const struct VVCQPCTX *const qp_ctx,
 
     ctudec->qp_ctx.current_qp = base_qp;
 }
+#endif
 
 static void
 dequant_sb_neg(int16_t *const sb_coeffs, int scale, int shift)
@@ -50,7 +52,7 @@ dequant_sb(int16_t *const sb_coeffs, int scale, int shift)
 }
 
 
-struct IQScale
+static struct IQScale
 derive_dequant_sdh(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
     const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
@@ -73,7 +75,7 @@ derive_dequant_sdh(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
     return dequant_params;
 }
 
-struct IQScale
+static struct IQScale
 derive_dequant_dpq(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
     const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
@@ -97,7 +99,7 @@ derive_dequant_dpq(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
     return dequant_params;
 }
 
-struct IQScale
+static struct IQScale
 derive_dequant_ts(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
     struct IQScale dequant_params;
@@ -118,3 +120,10 @@ derive_dequant_ts(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
     return dequant_params;
 }
 
+void
+BD_DECL(rcn_init_dequant)(struct RCNFunctions *rcn_funcs)
+{
+     rcn_funcs->tmp.derive_dequant_sdh = &derive_dequant_sdh;
+     rcn_funcs->tmp.derive_dequant_ts = &derive_dequant_ts;
+     rcn_funcs->tmp.derive_dequant_dpq = &derive_dequant_dpq;
+}

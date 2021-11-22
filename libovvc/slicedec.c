@@ -707,7 +707,7 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
         uint8_t is_last_y = einfo->nb_ctu_h == (ctb_addr_rs / nb_ctu_w) + 1;
         #if 1
 
-        rcn_dbf_ctu(&ctudec->rcn_ctx, &ctudec->dbf_info, log2_ctb_s,
+        ctudec->rcn_ctx.rcn_funcs.df.rcn_dbf_ctu(&ctudec->rcn_ctx, &ctudec->dbf_info, log2_ctb_s,
                     is_last_x, is_last_y);
                     #endif
     }
@@ -757,7 +757,7 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
     if (!ctudec->dbf_disable) {
         uint8_t is_last_x = (ctb_addr_rs + 1) % nb_ctu_w == 0;
         uint8_t is_last_y = einfo->nb_ctu_h == (ctb_addr_rs / nb_ctu_w) + 1;
-        rcn_dbf_truncated_ctu(&ctudec->rcn_ctx, &ctudec->dbf_info, log2_ctb_s,
+        ctudec->rcn_ctx.rcn_funcs.df.rcn_dbf_truncated_ctu(&ctudec->rcn_ctx, &ctudec->dbf_info, log2_ctb_s,
                               is_last_x, is_last_y, ctu_w, ctu_h);
     }
 
@@ -870,25 +870,25 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     //Apply in-loop filters on the available pixels of CTU line
     int ctb_y = ctudec->ctb_y - einfo->ctb_y;
     if(ctb_y == 0){
-        rcn_sao_first_pix_rows(ctudec, einfo, ctb_y);
+        ctudec->rcn_ctx.rcn_funcs.sao.rcn_sao_first_pix_rows(ctudec, einfo, ctb_y);
         if(einfo->nb_ctu_h == 1){
-            rcn_sao_filter_line(ctudec, einfo, ctb_y);
-            rcn_alf_filter_line(ctudec, einfo, ctb_y);
+            ctudec->rcn_ctx.rcn_funcs.sao.rcn_sao_filter_line(ctudec, einfo, ctb_y);
+            ctudec->rcn_ctx.rcn_funcs.alf.rcn_alf_filter_line(ctudec, einfo, ctb_y);
             ovdpb_report_decoded_ctu_line(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
         } 
     }    
     else if(ctb_y == einfo->nb_ctu_h - 1){
-        rcn_sao_filter_line(ctudec, einfo, ctb_y-1);
-        rcn_sao_filter_line(ctudec, einfo, ctb_y);
+        ctudec->rcn_ctx.rcn_funcs.sao.rcn_sao_filter_line(ctudec, einfo, ctb_y-1);
+        ctudec->rcn_ctx.rcn_funcs.sao.rcn_sao_filter_line(ctudec, einfo, ctb_y);
 
-        rcn_alf_filter_line(ctudec, einfo, ctb_y-1);
+        ctudec->rcn_ctx.rcn_funcs.alf.rcn_alf_filter_line(ctudec, einfo, ctb_y-1);
         ovdpb_report_decoded_ctu_line(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
-        rcn_alf_filter_line(ctudec, einfo, ctb_y);
+        ctudec->rcn_ctx.rcn_funcs.alf.rcn_alf_filter_line(ctudec, einfo, ctb_y);
         ovdpb_report_decoded_ctu_line(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
     }
     else{
-        rcn_sao_filter_line(ctudec, einfo, ctb_y-1);
-        rcn_alf_filter_line(ctudec, einfo, ctb_y-1);
+        ctudec->rcn_ctx.rcn_funcs.sao.rcn_sao_filter_line(ctudec, einfo, ctb_y-1);
+        ctudec->rcn_ctx.rcn_funcs.alf.rcn_alf_filter_line(ctudec, einfo, ctb_y-1);
         ovdpb_report_decoded_ctu_line(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
     }
 
@@ -978,18 +978,18 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     int ctb_y = ctudec->ctb_y - einfo->ctb_y;
     if(ctb_y == 0){
-        rcn_sao_first_pix_rows(ctudec, einfo, ctb_y);
-        rcn_sao_filter_line(ctudec, einfo, ctb_y);
-        rcn_alf_filter_line(ctudec, einfo, ctb_y);
+        ctudec->rcn_ctx.rcn_funcs.sao.rcn_sao_first_pix_rows(ctudec, einfo, ctb_y);
+        ctudec->rcn_ctx.rcn_funcs.sao.rcn_sao_filter_line(ctudec, einfo, ctb_y);
+        ctudec->rcn_ctx.rcn_funcs.alf.rcn_alf_filter_line(ctudec, einfo, ctb_y);
         ovdpb_report_decoded_ctu_line(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + nb_ctu_w - 1);
     }    
     else{
-        rcn_sao_filter_line(ctudec, einfo, ctb_y-1);
-        rcn_sao_filter_line(ctudec, einfo, ctb_y);
+        ctudec->rcn_ctx.rcn_funcs.sao.rcn_sao_filter_line(ctudec, einfo, ctb_y-1);
+        ctudec->rcn_ctx.rcn_funcs.sao.rcn_sao_filter_line(ctudec, einfo, ctb_y);
 
-        rcn_alf_filter_line(ctudec, einfo, ctb_y-1);
+        ctudec->rcn_ctx.rcn_funcs.alf.rcn_alf_filter_line(ctudec, einfo, ctb_y-1);
         ovdpb_report_decoded_ctu_line(sldec->pic, ctudec->ctb_y-1, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
-        rcn_alf_filter_line(ctudec, einfo, ctb_y);
+        ctudec->rcn_ctx.rcn_funcs.alf.rcn_alf_filter_line(ctudec, einfo, ctb_y);
         ovdpb_report_decoded_ctu_line(sldec->pic, ctudec->ctb_y, einfo->ctb_x, einfo->ctb_x + einfo->nb_ctu_w - 1);
     }
 
@@ -1366,9 +1366,6 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     init_part_info(ctudec, prms);
 
-    //In loop filter information for CTU reconstruction
-    ctudec_init_in_loop_filters(ctudec, prms);
-
     init_slice_tree_ctx(ctudec, prms);
 
     ctudec->drv_ctx.inter_ctx.mmvd_shift = ph->ph_mmvd_fullpel_only_flag << 1;
@@ -1390,6 +1387,9 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     rcn_init_functions(&ctudec->rcn_ctx.rcn_funcs, ict_type(ph), ctudec->lm_chroma_enabled,
                         sps->sps_chroma_vertical_collocated_flag, ph->ph_lmcs_enabled_flag,
                         sps->sps_bitdepth_minus8 + 8);
+
+    //In loop filter information for CTU reconstruction
+    ctudec_init_in_loop_filters(ctudec, prms);
 
     return 0;
 }

@@ -7,8 +7,8 @@
 #include "drv.h"
 #include "vcl.h"
 #include "rcn_dequant.h"
+#include "bitdepth.h"
 
-#define BITDEPTH 10
 #define TR_SHIFT_V (6 + 1)
 #define TR_SHIFT_H ((6 + 15 - 1) - BITDEPTH)
 
@@ -251,7 +251,7 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
 
 }
 
-void
+static void
 recon_isp_subtree_v(OVCTUDec *const ctudec,
                     unsigned int x0, unsigned int y0,
                     unsigned int log2_cb_w, unsigned int log2_cb_h,
@@ -355,7 +355,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
     }
 }
 
-void
+static void
 recon_isp_subtree_h(OVCTUDec *const ctudec,
                     unsigned int x0, unsigned int y0,
                     unsigned int log2_cb_w, unsigned int log2_cb_h,
@@ -452,7 +452,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
     }
 }
 
-void
+static void
 rcn_tu_st(OVCTUDec *const ctu_dec,
           uint8_t x0, uint8_t y0,
           uint8_t log2_tb_w, uint8_t log2_tb_h,
@@ -550,7 +550,7 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
     }
 }
 
-void
+static void
 rcn_tu_c(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
          uint8_t log2_tb_w, uint8_t log2_tb_h,
          uint8_t cu_flags, uint8_t cbf_mask,
@@ -585,7 +585,7 @@ rcn_res_wrap(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
     }
 }
 
-void
+static void
 rcn_transform_tree(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
                    uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t log2_max_tb_s,
                    uint8_t cu_flags, const struct TUInfo *const tu_info)
@@ -626,3 +626,17 @@ rcn_transform_tree(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
     }
 }
 
+void
+BD_DECL(rcn_init_transform_trees)(struct RCNFunctions *rcn_funcs)
+{
+
+    rcn_funcs->tmp.rcn_transform_tree = &rcn_transform_tree;
+
+    rcn_funcs->tmp.rcn_tu_c = &rcn_tu_c;
+
+    rcn_funcs->tmp.rcn_tu_st = &rcn_tu_st;
+
+    rcn_funcs->tmp.recon_isp_subtree_h = &recon_isp_subtree_h;
+
+    rcn_funcs->tmp.recon_isp_subtree_v = &recon_isp_subtree_v;
+}

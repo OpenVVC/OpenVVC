@@ -1,4 +1,4 @@
-#define BITDEPTH 10
+#define BITDEPTH 8
 
 #include "rcn_alf.c"
 #include "rcn_df.c"

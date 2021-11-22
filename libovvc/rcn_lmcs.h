@@ -3,9 +3,6 @@
 
 #include <stdint.h>
 
-struct CTUBitField;
-struct RCNFunctions;
-struct OVLMCSData;
 
 struct LMCSInfo
 {
@@ -18,10 +15,5 @@ struct LMCSInfo
     struct LMCSLUTs *luts;
 };
 
-void rcn_lmcs_compute_chroma_scale(struct LMCSInfo *const lmcs_info,
-                                   const struct CTUBitField *const progress_field,
-                                   const uint16_t *ctu_data_y, uint8_t x0, uint8_t y0);
-
-void rcn_init_lmcs(struct LMCSInfo *lmcs_info, const struct OVLMCSData *const lmcs_data);
 
 #endif //RCN_LMCS_H

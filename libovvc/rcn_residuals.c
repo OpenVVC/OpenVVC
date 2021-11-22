@@ -195,7 +195,7 @@ sub_half_residual(const int16_t *src, uint16_t *dst,
 
 /* TYPE :  (sub_flag << 1)| scale_flag */
 void
-rcn_init_ict_functions(struct RCNFunctions *rcn_func, uint8_t type, uint8_t bitdepth)
+BD_DECL(rcn_init_ict_functions)(struct RCNFunctions *rcn_func, uint8_t type, uint8_t bitdepth)
 {
     rcn_func->ict.add[0] = &add_residual;
     rcn_func->ict.add[1] = &add_residual;
