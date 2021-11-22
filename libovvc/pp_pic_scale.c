@@ -1,5 +1,6 @@
 #include "ovframe.h"
 #include "ovutils.h"
+#include "ovmem.h"
 #include "dec_structures.h"
 
 #define BITDEPTH 10
@@ -215,161 +216,144 @@ static const int16_t DownsamplingFilterSRC[8][16][12] =
 void pp_sample_rate_conv(uint16_t* scaled_dst, uint16_t scaled_stride, int scaledWidth, int scaledHeight, 
                         uint16_t* orgSrc, uint16_t org_stride, int orgWidth, int orgHeight, 
                         struct ScalingInfo scale_info, uint8_t luma_flag )
-
-// void Picture::sampleRateConv( const std::pair<int, int> scalingRatio, const std::pair<int, int> compScale,
-//                               const CPelBuf&  beforeScale, const int beforeScaleLeftOffset, const int beforeScaleTopOffset,
-//                               const PelBuf& afterScale, const int afterScaleLeftOffset, const int afterScaleTopOffset,
-//                               const int BITDEPTH, const bool luma_flag, const bool downsampling,
-//                               const bool scale_info.chroma_hor_col_flag, const bool scale_info.chroma_ver_col_flag )
 {
-    uint16_t add_w = (scale_info.scaling_win_left + scale_info.scaling_win_right) << 1;
-    uint16_t add_h = (scale_info.scaling_win_top + scale_info.scaling_win_bottom) << 1;
-    orgWidth  = orgWidth  - add_w;
-    orgHeight = orgHeight - add_h;
+    uint16_t extra_w = (scale_info.scaling_win_left + scale_info.scaling_win_right) << 1;
+    uint16_t extra_h = (scale_info.scaling_win_left + scale_info.scaling_win_right) << 1;
+    extra_w = luma_flag ? extra_w << 1 : extra_w;
+    extra_h = luma_flag ? extra_h << 1 : extra_h;
 
-    int scale_hor = (scaledWidth << RPR_SCALE_BITS) / orgWidth;
-    int scale_ver = (scaledHeight << RPR_SCALE_BITS) / orgHeight;
-    uint8_t downsampling = scale_hor > (1<<RPR_SCALE_BITS) || scale_ver > (1<<RPR_SCALE_BITS);
+    const int scale_bits = luma_flag ? RPR_SCALE_BITS - 1 : RPR_SCALE_BITS;
+    int scale_hor = ((orgWidth - extra_w) << scale_bits) / scaledWidth;
+    int scale_ver = ((orgHeight- extra_h) << scale_bits) / scaledHeight;
+    uint8_t downsampling = scale_hor > (1<<scale_bits) || scale_ver > (1<<scale_bits);
+  // int add_x = ( 1 << ( posShiftX - 1 ) ) + ( beforeScaleLeftOffset << scale_bits ) + ( ( int( 1 - scale_info.chroma_hor_col_flag ) * 8 * ( scale_hor - SCALE_1X.first ) + ( 1 << ( 2 + comp_shift ) ) ) >> ( 3 + comp_shift ) );
+  // int add_y = ( 1 << ( posShiftY - 1 ) ) + ( beforeScaleTopOffset << scale_bits ) + ( ( int( 1 - scale_info.chroma_ver_col_flag ) * 8 * ( scale_ver - SCALE_1X.second ) + ( 1 << ( 2 + comp_shift ) ) ) >> ( 3 + comp_shift ) );
     int add_x = 0;
     int add_y = 0;
-    uint8_t comp_shift = 0;
     if(!luma_flag){
-        comp_shift = 1;
-        add_x = (1 - scale_info.chroma_hor_col_flag) * 8 * ( scale_hor - (1<<RPR_SCALE_BITS));
-        add_y = (1 - scale_info.chroma_ver_col_flag) * 8 * ( scale_ver - (1<<RPR_SCALE_BITS));
+        add_x = (1 - scale_info.chroma_hor_col_flag) * 8 * ( scale_hor - (1<<scale_bits));
+        add_x = (add_x + (1 << (scale_bits-1))) >> scale_bits ;
+        add_y = (1 - scale_info.chroma_ver_col_flag) * 8 * ( scale_ver - (1<<scale_bits));
+        add_y = (add_y + (1 << (scale_bits-1))) >> scale_bits ;
     }
 
-  const int16_t* filterHor = luma_flag ? &ov_mc_filters[0][0] : &ov_mcp_filters_c[0][0];
-  const int16_t* filterVer = luma_flag ? &ov_mc_filters[0][0] : &ov_mcp_filters_c[0][0];
-  const int numFracPositions = luma_flag ? 0xF : 0x1F;
-  const int scale_bits = luma_flag ? RPR_SCALE_BITS - 1 : RPR_SCALE_BITS;
-  const int posShiftX = RPR_SCALE_BITS - scale_bits ;
-  const int posShiftY = RPR_SCALE_BITS - scale_bits ;
+    const int16_t* filterHor = luma_flag ? &ov_mc_filters[0][0] : &ov_mcp_filters_c[0][0];
+    const int16_t* filterVer = luma_flag ? &ov_mc_filters[0][0] : &ov_mcp_filters_c[0][0];
+    const int num_prec_pos = luma_flag ? 0xF : 0x1F;
 
-  // int add_x = ( 1 << ( posShiftX - 1 ) ) + ( beforeScaleLeftOffset << RPR_SCALE_BITS ) + ( ( int( 1 - scale_info.chroma_hor_col_flag ) * 8 * ( scale_hor - SCALE_1X.first ) + ( 1 << ( 2 + comp_shift ) ) ) >> ( 3 + comp_shift ) );
-  // int add_y = ( 1 << ( posShiftY - 1 ) ) + ( beforeScaleTopOffset << RPR_SCALE_BITS ) + ( ( int( 1 - scale_info.chroma_ver_col_flag ) * 8 * ( scale_ver - SCALE_1X.second ) + ( 1 << ( 2 + comp_shift ) ) ) >> ( 3 + comp_shift ) );
-  if( downsampling )
-  {
-    int verFilter = 0;
-    int horFilter = 0;
+    if( downsampling ){
+        int verFilter = 0;
+        int horFilter = 0;
 
-    if (scale_hor > (15 << RPR_SCALE_BITS) / 4)
-    {
-      horFilter = 7;
-    }
-    else if (scale_hor > (20 << RPR_SCALE_BITS) / 7)
-    {
-      horFilter = 6;
-    }
-    else if (scale_hor > (5 << RPR_SCALE_BITS) / 2)
-    {
-      horFilter = 5;
-    }
-    else if (scale_hor > (2 << RPR_SCALE_BITS))
-    {
-      horFilter = 4;
-    }
-    else if (scale_hor > (5 << RPR_SCALE_BITS) / 3)
-    {
-      horFilter = 3;
-    }
-    else if (scale_hor > (5 << RPR_SCALE_BITS) / 4)
-    {
-      horFilter = 2;
-    }
-    else if (scale_hor > (20 << RPR_SCALE_BITS) / 19)
-    {
-      horFilter = 1;
-    }
+        if (scale_hor > (15 << scale_bits) / 4){
+            horFilter = 7;
+        }
+        else if (scale_hor > (20 << scale_bits) / 7){
+            horFilter = 6;
+        }
+        else if (scale_hor > (5 << scale_bits) / 2){
+            horFilter = 5;
+        }
+        else if (scale_hor > (2 << scale_bits)){
+            horFilter = 4;
+        }
+        else if (scale_hor > (5 << scale_bits) / 3){
+            horFilter = 3;
+        }
+        else if (scale_hor > (5 << scale_bits) / 4){
+            horFilter = 2;
+        }
+        else if (scale_hor > (20 << scale_bits) / 19){
+            horFilter = 1;
+        }
 
-    if (scale_ver > (15 << RPR_SCALE_BITS) / 4)
-    {
-      verFilter = 7;
-    }
-    else if (scale_ver > (20 << RPR_SCALE_BITS) / 7)
-    {
-      verFilter = 6;
-    }
-    else if (scale_ver > (5 << RPR_SCALE_BITS) / 2)
-    {
-      verFilter = 5;
-    }
-    else if (scale_ver > (2 << RPR_SCALE_BITS))
-    {
-      verFilter = 4;
-    }
-    else if (scale_ver > (5 << RPR_SCALE_BITS) / 3)
-    {
-      verFilter = 3;
-    }
-    else if (scale_ver > (5 << RPR_SCALE_BITS) / 4)
-    {
-      verFilter = 2;
-    }
-    else if (scale_ver > (20 << RPR_SCALE_BITS) / 19)
-    {
-      verFilter = 1;
+        if (scale_ver > (15 << scale_bits) / 4){
+            verFilter = 7;
+        }
+        else if (scale_ver > (20 << scale_bits) / 7){
+            verFilter = 6;
+        }
+        else if (scale_ver > (5 << scale_bits) / 2){
+            verFilter = 5;
+        }
+        else if (scale_ver > (2 << scale_bits)){
+            verFilter = 4;
+        }
+        else if (scale_ver > (5 << scale_bits) / 3){
+            verFilter = 3;
+        }
+        else if (scale_ver > (5 << scale_bits) / 4){
+            verFilter = 2;
+        }
+        else if (scale_ver > (20 << scale_bits) / 19){
+            verFilter = 1;
+        }
+
+        filterHor = &DownsamplingFilterSRC[horFilter][0][0];
+        filterVer = &DownsamplingFilterSRC[verFilter][0][0];
     }
 
-    filterHor = &DownsamplingFilterSRC[horFilter][0][0];
-    filterVer = &DownsamplingFilterSRC[verFilter][0][0];
-  }
+    const int filterLength = downsampling ? 12 : ( luma_flag ? 8 : 4 );
+    const int log2Norm = downsampling ? 14 : 12;
 
-  const int filterLength = downsampling ? 12 : ( luma_flag ? 8 : 4 );
-  const int log2Norm = downsampling ? 14 : 12;
+    // int buf[scaledWidth*orgHeight];
+    int* buf = ov_mallocz(scaledWidth*orgHeight*sizeof(int));
+    int* tmp;
 
-  int16_t buf[scaledWidth*orgHeight];
-
-  int maxVal = ( 1 << BITDEPTH ) - 1;
-  for( int i = 0; i < scaledWidth; i++ )
-  {
+    int xInt, yInt, sum;
+    int maxVal = ( 1 << BITDEPTH ) - 1;
     const uint16_t* org = orgSrc;
-    int refPos = ( i  * scale_hor + add_x );
-    int integer = refPos >> scale_bits;
-    int frac = refPos & numFracPositions;
-    int16_t* tmp = buf + i;
-
-    for( int j = 0; j < orgHeight; j++ )
-    {
-      int sum = 0;
-      const int16_t* f = filterHor + frac * filterLength;
-
-      for( int k = 0; k < filterLength; k++ )
-      {
-        int xInt = OVMIN( OVMAX( 0, integer + k - filterLength / 2 + 1 ), orgWidth - 1 );
-        sum += f[k] * org[xInt]; // postpone horizontal filtering gain removal after vertical filtering
-      }
-
-      *tmp = sum;
-
-      tmp += scaledWidth;
-      org += org_stride;
-    }
-  }
-
-  uint16_t* dst = scaled_dst;
-
-  for( int j = 0; j < scaledHeight; j++ )
-  {
-    int refPos  = j * scale_ver + add_y ;
-    int integer = refPos >> scale_bits;
-    int frac = refPos & numFracPositions;
-
+    const int16_t* f;
+    int ref_pos, pos_integer, prec; 
     for( int i = 0; i < scaledWidth; i++ )
     {
-      int sum = 0;
-      int* tmp = buf + i;
-      const int16_t* f = filterVer + frac * filterLength;
+        org = orgSrc;
+        ref_pos = ( i  * scale_hor + add_x );
+        pos_integer = ref_pos >> scale_bits;
+        prec = ref_pos & num_prec_pos;
+        tmp = buf + i;
 
-      for( int k = 0; k < filterLength; k++ )
-      {
-        int yInt = OVMIN( OVMAX( 0, integer + k - filterLength / 2 + 1 ), orgHeight - 1 );
-        sum += f[k] * tmp[yInt*scaledWidth];
-      }
+        for( int j = 0; j < orgHeight; j++ ){
+            sum = 0;
+            f = filterHor + prec * filterLength;
 
-      dst[i] = OVMIN( OVMAX( 0, ( sum + ( 1 << ( log2Norm - 1 ) ) ) >> log2Norm ), maxVal );
+            for( int k = 0; k < filterLength; k++ )
+            {
+                xInt = OVMIN( OVMAX( 0, pos_integer + k - filterLength / 2 + 1 ), orgWidth - 1 );
+                sum += f[k] * org[xInt]; // postpone horizontal filtering gain removal after vertical filtering
+            }
+
+            *tmp = sum;
+
+            tmp += scaledWidth;
+            org += org_stride;
+        }
     }
 
-    dst += scaled_stride;
-  }
+    uint16_t* dst = scaled_dst;
+    for( int j = 0; j < scaledHeight; j++ )
+    {
+        ref_pos  = j * scale_ver + add_y ;
+        pos_integer = ref_pos >> scale_bits;
+        prec = ref_pos & num_prec_pos;
+
+        for( int i = 0; i < scaledWidth; i++ ){
+            sum = 0;
+            tmp = buf + i;
+            f = filterVer + prec * filterLength;
+
+            for( int k = 0; k < filterLength; k++ )
+            {
+                yInt = OVMIN( OVMAX( 0, pos_integer + k - filterLength / 2 + 1 ), orgHeight - 1 );
+                sum += f[k] * tmp[yInt*scaledWidth];
+            }
+
+            dst[i] = OVMIN( OVMAX( 0, ( sum + ( 1 << ( log2Norm - 1 ) ) ) >> log2Norm ), maxVal );
+        }
+
+        dst += scaled_stride;
+    }
+
+    ov_freep(&buf);
+
 }
