@@ -100,11 +100,11 @@ rcn_residual(OVCTUDec *const ctudec,
 
 void
 rcn_residual_c(OVCTUDec *const ctudec,
-               int16_t *const dst, int16_t *src,
-               uint8_t x0, uint8_t y0,
-               uint8_t log2_tb_w, uint8_t log2_tb_h,
-               uint16_t last_pos,
-               uint8_t lfnst_flag, uint8_t lfnst_idx)
+                int16_t *const dst, int16_t *src,
+                uint8_t x0, uint8_t y0,
+                uint8_t log2_tb_w, uint8_t log2_tb_h,
+                uint16_t last_pos,
+                uint8_t lfnst_flag, uint8_t lfnst_idx)
 {
     struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
 

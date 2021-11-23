@@ -19,8 +19,8 @@ libovvc_la_SOURCES = 	ctudec.c                     \
 						dec_init.c                   \
 						dpb.c                        \
 						dpb_internal.c               \
-       					mempool.c                    \
-       					mvpool.c                     \
+						mempool.c                    \
+						mvpool.c                     \
 						nvcl.c                       \
 						nvcl_dpb.c                   \
 						nvcl_nal_ph.c                \

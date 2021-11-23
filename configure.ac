@@ -5,8 +5,9 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([foreign -Wall])
-AC_PROG_CC
-AM_PROG_AS
+AM_SILENT_RULES([yes])
+AC_PROG_CC(gcc, clang)
+AM_PROG_AS(gcc, clang)
 AM_PROG_AR
 
 # Enable Libtool
@@ -36,13 +37,13 @@ AC_ARG_ENABLE([werror], [AS_HELP_STRING([--enable-werror], [treat warnings as er
 
 # --disable-simd
 AC_ARG_ENABLE([simd], [AS_HELP_STRING([--disable-simd], [disable all simd optimisations [no]])],
-              [flag_disable_simd="true" CFLAGS="-DNO_SIMD $CFLAGS"], [flag_disable_simd="false"]
+              [flag_disable_simd="true" CPPFLAGS="$CPPFLAGS -DNO_SIMD"], [flag_disable_simd="false"]
 )
 
 
 # --enable-arm-asm
 AC_ARG_ENABLE([arm-asm], [AS_HELP_STRING([--enable-arm-asm], [enables arm assembly optimisation [no]])],
-              [CFLAGS="-DARCH_AARCH64_ASSEMBLY=1 $CFLAGS"], []
+              [CPPFLAGS="$CPPFLAGS -DARCH_AARCH64_ASSEMBLY=1"], []
 )
 
 # host and cpu specific settings
@@ -55,18 +56,18 @@ AS_CASE([$host_cpu],
 
 AS_CASE([$host_os],
         [darwin*], [
-                CFLAGS="$CFLAGS -DHAVE_POSIX_MEMALIGN -DPREFIX=1"
+                CPPFLAGS="$CPPFLAGS -DPREFIX=1 -DHAVE_POSIX_MEMALIGN"
         ],
         [cygwin*|msys*|mingw*], [
-                CFLAGS="$CFLAGS -DHAVE_ALIGNED_MALLOC"
+                CPPFLAGS="$CPPFLAGS -DHAVE_ALIGNED_MALLOC"
         ],
         [*android*], [
-                CFLAGS="$CFLAGS -DHAVE_POSIX_MEMALIGN"
+                CPPFLAGS="$CPPFLAGS -DHAVE_POSIX_MEMALIGN"
         ],
         [linux*], [
-                CFLAGS="$CFLAGS -DHAVE_POSIX_MEMALIGN"
+                CPPFLAGS="$CPPFLAGS -DHAVE_POSIX_MEMALIGN"
         ], [
-                CFLAGS="$CFLAGS -DHAVE_POSIX_MEMALIGN"
+                CPPFLAGS="$CPPFLAGS -DHAVE_POSIX_MEMALIGN"
         ]
 )
 
