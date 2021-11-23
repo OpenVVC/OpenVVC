@@ -1,6 +1,9 @@
 lib_LTLIBRARIES = libovvc.la
 libovvc_la_LDFLAGS = -version-info 0:3:0
 
+pkgconfigdir = $(libdir)/pkgconfig
+nodist_pkgconfig_DATA = libopenvvc.pc
+
 if HAVE_SSE4_1
 SUBDIRS = x86/
 libovvc_la_LDFLAGS += ./x86/libx86optim.la

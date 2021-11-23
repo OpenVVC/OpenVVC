@@ -14,7 +14,7 @@ AM_PROG_AR
 LT_INIT
 
 AC_CONFIG_HEADERS([ovconfig.h])
-AC_CONFIG_FILES([Makefile libovvc/Makefile libovvc/x86/Makefile libovvc/arm/Makefile examples/Makefile libovvc/ovvc.pc])
+AC_CONFIG_FILES([Makefile libovvc/Makefile libovvc/x86/Makefile libovvc/arm/Makefile examples/Makefile libovvc/libopenvvc.pc])
 
 # We need to force AX_PTHREAD to check -pthread -lpthread since otherwise
 # it only outputs -pthread for GCC. Without -lpthread GCC does not link the
