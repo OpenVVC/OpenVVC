@@ -316,6 +316,9 @@ struct OVVCDec
 
     //Boolean that indicates if the video is displayed
     uint8_t display_output;
+
+    //Boolean: output video upscaled to max resolution
+    uint8_t upscale_flag;
     
     OVDPB *dpb;
 

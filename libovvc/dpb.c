@@ -1121,7 +1121,8 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     (*pic_p)->frame->scale_info.chroma_ver_col_flag = ps->sps->sps_chroma_vertical_collocated_flag;
 
     copy_sei_params(&(*pic_p)->sei, ovdec->active_params.sei);
-    
+    (*pic_p)->sei->upscale_flag = ovdec->upscale_flag;
+
     ov_log(NULL, OVLOG_TRACE, "DPB start new picture POC: %d\n", (*pic_p)->poc);
 
     /* If the picture is not an IDR Picture we set all flags to

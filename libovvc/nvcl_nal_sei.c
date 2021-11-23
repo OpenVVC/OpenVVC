@@ -68,6 +68,10 @@ copy_sei_params(OVSEI **dst_p, OVSEI *src)
         }
 #endif
     }
+    else{
+        if(!(*dst_p))
+            *dst_p = ov_mallocz(sizeof(struct OVSEI));
+    }
 }
 
 void
@@ -159,39 +163,6 @@ nvcl_film_grain_read(OVNVCLReader *const rdr, struct OVSEIFGrain *const fg, OVNV
 }
 
 #if ENABLE_SLHDR
-void
-nvcl_slhdr_read_complet(OVNVCLReader *const rdr,  uint32_t payloadSize)
-{
-  // sei_read_code(pDecodedMessageOutputStream, 8, code, "itu_t_t35_country_code"); payloadSize--;
-  uint32_t code = nvcl_read_bits(rdr, 8);
-  payloadSize--;
-
-  if (code == 255){
-    // sei_read_code(pDecodedMessageOutputStream, 8, code, "itu_t_t35_country_code_extension_byte"); 
-    code = nvcl_read_bits(rdr, 8);
-    payloadSize--;
-    code += 255;
-  }
-  uint32_t ituCountryCode = code;
-
-  // sei.m_userData.resize(payloadSize);
-  uint32_t* slhdr_data = ov_mallocz(sizeof(uint32_t) * (payloadSize + 1));
-
-  for (int i = 0; i < payloadSize; i++){
-    // sei_read_code(NULL, 8, code, "itu_t_t35_payload_byte");
-    slhdr_data[i] = nvcl_read_bits(rdr, 8);
-  }
-
-    // SLHDR detected - reinsert country code at beginning of payload
-  if (ituCountryCode==0xB5 && slhdr_data[0] == 0x00 && slhdr_data[1] == 0x3A) {
-    // sei.m_userData.resize(payloadSize+1);
-    for (int i= payloadSize; i>0; i--){
-      slhdr_data[i] = slhdr_data[i-1];
-    }
-    slhdr_data[0] = (uint8_t)ituCountryCode;
-  }
-}
-
 void
 nvcl_slhdr_read(OVNVCLReader *const rdr, struct OVSEISLHDR* sei_slhdr, uint32_t payloadSize)
 {

@@ -118,6 +118,8 @@ struct OVSEI
 {
     struct OVSEIFGrain* sei_fg;
     struct OVSEISLHDR* sei_slhdr;
+
+    uint8_t upscale_flag;
 };
 
 struct OVVUI

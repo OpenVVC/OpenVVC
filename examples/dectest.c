@@ -23,7 +23,7 @@ typedef struct OVVCHdl
 
 static int dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name);
 
-static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_frame_th, int nb_entry_th);
+static int init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_frame_th, int nb_entry_th, int upscale_flag);
 
 static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
@@ -47,6 +47,7 @@ main(int argc, char** argv)
     FILE *fout = NULL;
     int nb_frame_th = 0;
     int nb_entry_th = 0;
+    int upscale_flag = 0;
 
     uint8_t options_flag=0;
 
@@ -64,11 +65,12 @@ main(int argc, char** argv)
             {"outfile",   required_argument, 0, 'o'},
             {"framethr",  required_argument, 0, 't'},
             {"entrythr",  required_argument, 0, 'e'},
+            {"upscale",   required_argument, 0, 'u'},
         };
 
         int option_index = 0;
 
-        c = getopt_long(argc, argv, "vhl:i:o:t:e:", long_options,
+        c = getopt_long(argc, argv, "vhl:i:o:t:e:u:", long_options,
                         &option_index);
         if (c == -1){
             break;
@@ -96,6 +98,10 @@ main(int argc, char** argv)
             case 'o':
                 /*TODO: Sanitize filename*/
                 output_file_name = optarg;
+                break;
+
+            case 'u':
+                upscale_flag = atoi(optarg);
                 break;
 
             case 't':
@@ -148,7 +154,7 @@ main(int argc, char** argv)
         ov_log(NULL, OVLOG_INFO, "Decoded stream will be written to '%s'.\n", output_file_name);
     }
 
-    ret = init_openvvc_hdl(&ovvc_hdl, output_file_name, nb_frame_th, nb_entry_th);
+    ret = init_openvvc_hdl(&ovvc_hdl, output_file_name, nb_frame_th, nb_entry_th, upscale_flag);
 
     if (ret < 0) goto failinit;
 
@@ -188,7 +194,7 @@ dmx_attach_file(OVVCHdl *const vvc_hdl, const char *const input_file_name)
 }
 
 static int
-init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_frame_th, int nb_entry_th)
+init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_frame_th, int nb_entry_th, int upscale_flag)
 {
     OVVCDec **vvcdec = &ovvc_hdl->dec;
     OVVCDmx **vvcdmx = &ovvc_hdl->dmx;
@@ -196,7 +202,7 @@ init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_f
 
     int display_output = !!strcmp(output_file_name, "/dev/null");
 
-    ret = ovdec_init(vvcdec, display_output, nb_frame_th, nb_entry_th);
+    ret = ovdec_init(vvcdec, display_output, nb_frame_th, nb_entry_th, upscale_flag);
 
     if (ret < 0) goto faildec;
 
