@@ -748,7 +748,7 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint8_t prec_y0 = (mv0.y) & 0xF;
     uint8_t prec_x1 = (mv1.x) & 0xF;
     uint8_t prec_y1 = (mv1.y) & 0xF;
-    if(inter_ctx->prec_amvr == 3){
+    if(inter_ctx->prec_amvr == MV_PRECISION_HALF){
         prec_x0 += (prec_x0 == 8) ? 8 : 0;
         prec_y0 += (prec_y0 == 8) ? 8 : 0;
         prec_x1 += (prec_x1 == 8) ? 8 : 0;
@@ -1135,7 +1135,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     prec_x1 = (mv1->x) & 0xF;
     prec_y1 = (mv1->y) & 0xF;
 
-    if(inter_ctx->prec_amvr == 3){
+    if(inter_ctx->prec_amvr == MV_PRECISION_HALF){
         prec_x0 += (prec_x0 == 8) ? 8 : 0;
         prec_y0 += (prec_y0 == 8) ? 8 : 0;
         prec_x1 += (prec_x1 == 8) ? 8 : 0;
@@ -1565,7 +1565,7 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint8_t prec_x1 = (mv1.x) & 0xF;
     uint8_t prec_y1 = (mv1.y) & 0xF;
 
-    if (inter_ctx->prec_amvr == 3) {
+    if (inter_ctx->prec_amvr == MV_PRECISION_HALF) {
         prec_x0 += (prec_x0 == 8) ? 8 : 0;
         prec_y0 += (prec_y0 == 8) ? 8 : 0;
         prec_x1 += (prec_x1 == 8) ? 8 : 0;
@@ -1690,7 +1690,7 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint8_t prec_x1 = (mv1.x) & 0xF;
     uint8_t prec_y1 = (mv1.y) & 0xF;
 
-    if(inter_ctx->prec_amvr == 3){
+    if(inter_ctx->prec_amvr == MV_PRECISION_HALF){
         prec_x0 += (prec_x0 == 8) ? 8 : 0;
         prec_y0 += (prec_y0 == 8) ? 8 : 0;
         prec_x1 += (prec_x1 == 8) ? 8 : 0;
@@ -1898,7 +1898,7 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
     uint8_t prec_x   = (mv.x) & 0xF;
     uint8_t prec_y   = (mv.y) & 0xF;
-    if(inter_ctx->prec_amvr == 3){
+    if(inter_ctx->prec_amvr == MV_PRECISION_HALF){
         prec_x += (prec_x == 8) ? 8 : 0;
         prec_y += (prec_y == 8) ? 8 : 0;
     }
@@ -1977,7 +1977,7 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, 
 
     uint8_t prec_x   = (mv.x) & 0xF;
     uint8_t prec_y   = (mv.y) & 0xF;
-    if(inter_ctx->prec_amvr == 3){
+    if(inter_ctx->prec_amvr == MV_PRECISION_HALF){
         prec_x += (prec_x == 8) ? 8 : 0;
         prec_y += (prec_y == 8) ? 8 : 0;
     }
@@ -2056,7 +2056,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
 
     uint8_t prec_x   = (mv.x) & 0xF;
     uint8_t prec_y   = (mv.y) & 0xF;
-    if(inter_ctx->prec_amvr == 3){
+    if(inter_ctx->prec_amvr == MV_PRECISION_HALF){
         prec_x += (prec_x == 8) ? 8 : 0;
         prec_y += (prec_y == 8) ? 8 : 0;
     }
@@ -2380,7 +2380,7 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
 /*  TODOrpr: check if needed  
     uint8_t prec_x   = (mv.x) & 0xF;
     uint8_t prec_y   = (mv.y) & 0xF;
-    if(inter_ctx->prec_amvr == 3){
+    if(inter_ctx->prec_amvr == MV_PRECISION_HALF){
         prec_x += (prec_x == 8) ? 8 : 0;
         prec_y += (prec_y == 8) ? 8 : 0;
     }
@@ -2611,27 +2611,30 @@ rcn_mc_rpr_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct OVBuffInfo tmp_rpl0;
     uint16_t tmp_rpl0_l [RCN_CTB_SIZE];
     tmp_rpl0.y = tmp_rpl0_l ;//[RCN_CTB_PADDING];
+    for (int i = 0 ; i< RCN_CTB_SIZE ; i++)
+        tmp_rpl0.y[i] = 0;
     if(no_scale_rpl0){
         tmp_rpl0.stride = MAX_PB_SIZE;
         rcn_mcp_bidir0_l(ctudec, tmp_rpl0, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
-        int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-        printf("\nbidir0 %i %i %i %i",  (ctudec->ctb_x << log2_ctb_s) + x0, (ctudec->ctb_y << log2_ctb_s) + y0, 1<<log2_pb_w, 1<<log2_pb_h);
+        // int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+        // printf("\nbidir0 %i %i %i %i",  (ctudec->ctb_x << log2_ctb_s) + x0, (ctudec->ctb_y << log2_ctb_s) + y0, 1<<log2_pb_w, 1<<log2_pb_h);
     }
     else{
         uint8_t bidir   = 1;
         tmp_rpl0.stride = RCN_CTB_STRIDE;
-        rcn_mcp_rpr_l(ctudec, tmp_rpl0, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0, scale_rpl0_hor, scale_rpl0_ver, bidir);
         rcn_mcp_rpr_l(ctudec, tmp_rpl0, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0, scale_rpl0_hor, scale_rpl0_ver, bidir);
     }
 
     struct OVBuffInfo tmp_rpl1;
     uint16_t tmp_rpl1_l [RCN_CTB_SIZE];
     tmp_rpl1.y  = tmp_rpl1_l ;//[RCN_CTB_PADDING];
+    for (int i = 0 ; i< RCN_CTB_SIZE ; i++)
+        tmp_rpl1.y[i] = 0;
     if(no_scale_rpl1){
         tmp_rpl1.stride = MAX_PB_SIZE;
         rcn_mcp_bidir0_l(ctudec, tmp_rpl1, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
-        int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-        printf("\nbidir0 %i %i %i %i",  (ctudec->ctb_x << log2_ctb_s) + x0, (ctudec->ctb_y << log2_ctb_s) + y0, 1<<log2_pb_w, 1<<log2_pb_h);
+        // int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+        // printf("\nbidir0 %i %i %i %i",  (ctudec->ctb_x << log2_ctb_s) + x0, (ctudec->ctb_y << log2_ctb_s) + y0, 1<<log2_pb_w, 1<<log2_pb_h);
     }
     else{
         uint8_t bidir   = 1;
@@ -3255,7 +3258,7 @@ rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
     uint8_t prec_x1 = (mv1.x) & 0xF;
     uint8_t prec_y1 = (mv1.y) & 0xF;
 
-    if(inter_ctx->prec_amvr == 3){
+    if(inter_ctx->prec_amvr == MV_PRECISION_HALF){
         prec_x0 += (prec_x0 == 8) ? 8 : 0;
         prec_y0 += (prec_y0 == 8) ? 8 : 0;
         prec_x1 += (prec_x1 == 8) ? 8 : 0;
