@@ -434,9 +434,12 @@ test_for_edge_emulation(int pb_x, int pb_y, int pic_w, int pic_h,
 
 
 static uint8_t
-check_identical_motion(struct InterDRVCtx *const inter_ctx, const OVMV mv0, const OVMV mv1,
+check_identical_motion(struct InterDRVCtx *const inter_ctx, int inter_dir, const OVMV mv0, const OVMV mv1,
                         uint8_t ref_idx0, uint8_t ref_idx1)
 {
+    if(inter_dir != 3)
+        return 0;
+
     uint16_t poc0 = inter_ctx->rpl0[ref_idx0]->poc;
     uint16_t poc1 = inter_ctx->rpl1[ref_idx1]->poc;
 
@@ -2282,6 +2285,7 @@ compute_rpr_filter_idx(int scale_factor)
     const int rpr_thres_1 = ( 1 << RPR_SCALE_BITS ) * 5 / 4;
     const int rpr_thres_2 = ( 1 << RPR_SCALE_BITS ) * 7 / 4;
 
+    //TODOrpr: use MC filtre 4x4 for affine (and use RPR affine filters)
     int filter_idx = 0;
     if( scale_factor > rpr_thres_2 ){
         filter_idx = 2;
@@ -2347,10 +2351,10 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     const int ref_pu_w = (pu_w * scaling_hor) >> scale_bits;
     const int ref_pu_h = (pu_h * scaling_ver) >> scale_bits;
 
-    int64_t ref_pos_x = ((( pos_x << 4)  + mv.x ) * (int64_t)scaling_hor) >> 4 ;
+    int32_t ref_pos_x = ((( pos_x << 4)  + mv.x ) * (int32_t)scaling_hor) >> 4 ;
     int     ref_x     = ref_pos_x  >> scale_bits;
-    int64_t ref_pos_y = ((( pos_y << 4 ) + mv.y ) * (int64_t)scaling_ver) >> 4 ;
-    int     ref_y     = ref_pos_y  >> scale_bits;
+    int32_t ref_pos_y = ((( pos_y << 4 ) + mv.y ) * (int32_t)scaling_ver) >> 4 ;
+    int     ref_y     = ref_pos_y >> scale_bits;
  
     /*
      * Thread synchronization to ensure data is available before usage
@@ -2360,21 +2364,21 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, ref_pic_w, ref_pic_h,
                                                    ref_pu_w, ref_pu_h);;
 
-    const uint16_t *src_y  = &ref0_y [ ref_x + ref_y * src_stride];
+    const uint16_t *src  = &ref0_y [ ref_x + ref_y * src_stride];
     int buff_off = REF_PADDING_L * (RCN_CTB_STRIDE) + (REF_PADDING_L);
     int src_off  = REF_PADDING_L * (src_stride) + (REF_PADDING_L);
     if (emulate_edge){
-        emulate_block_border(tmp_emul, (src_y - src_off),
+        emulate_block_border(tmp_emul, (src - src_off),
                              RCN_CTB_STRIDE, src_stride,
                              ref_pu_w + QPEL_EXTRA, ref_pu_h + QPEL_EXTRA,
                              ref_x - REF_PADDING_L, ref_y - REF_PADDING_L,
                              ref_pic_w, ref_pic_h);
 
-        src_y = tmp_emul + REF_PADDING_L;
+        src = tmp_emul + REF_PADDING_L;
         src_stride = RCN_CTB_STRIDE;
     }
     else{
-        src_y = src_y - src_off + REF_PADDING_L ;
+        src = src - src_off + REF_PADDING_L ;
     }
 
 /*  TODOrpr: check if needed  
@@ -2384,9 +2388,12 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         prec_x += (prec_x == 8) ? 8 : 0;
         prec_y += (prec_y == 8) ? 8 : 0;
     }
-*/
-    int16_t   add_x, add_y;
-    uint16_t* p_src = src_y ;
+*/  
+/*    if (pu_w<64 && pu_h<64)
+*//*    printf("\n %i, %i, %i, %i", pos_x, pos_y, ref_x, ref_y);
+*/  
+    int32_t   add_x, add_y;
+    uint16_t* p_src = src ;
     uint16_t* p_tmp_rpr = tmp_rpr + REF_PADDING_L;
     uint8_t   prec_x, prec_y, prec_type;
     for(int col = 0; col < pu_w; col++)
@@ -2394,19 +2401,19 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         add_x     = (col * scaling_hor) ;
         prec_x    = (ref_pos_x + add_x) & 0xF;
         prec_y    = 0;
-        // if (pu_w < 64 && pu_h < 64)
-            // printf("\nHor %i %i %i %i", pos_x, pos_y, col, prec_x);        
+        //if (pu_w < 64 && pu_h < 64)
+         //   printf("\nHor %i %i", col, prec_x);        
         // TODOrpr: prec_type = 0 when filter_idx=0 and prec_x=0
         // prec_type = (prec_x  > 0) + ((prec_y > 0) << 1);
         prec_type = 1;
-        p_src     = src_y + (col * scaling_hor >> scale_bits);
+        p_src     = src + ((ref_pos_x + add_x) >> scale_bits) - ref_x;
 
         if (bidir){
-            mc_l->rpr_bi[prec_type][1](p_tmp_rpr, RCN_CTB_STRIDE, p_src, src_stride, ref_pu_h + QPEL_EXTRA,
+            mc_l->rpr_bi[prec_type][1](p_tmp_rpr, RCN_CTB_STRIDE, p_src, src_stride, ref_pu_h + QPEL_EXTRA + 1,
                                                     prec_x, prec_y, 1, filter_idx_h);
         }
         else{
-            mc_l->rpr_uni[prec_type][1](p_tmp_rpr, RCN_CTB_STRIDE, p_src, src_stride, ref_pu_h + QPEL_EXTRA,
+            mc_l->rpr_uni[prec_type][1](p_tmp_rpr, RCN_CTB_STRIDE, p_src, src_stride, ref_pu_h + QPEL_EXTRA + 1,
                                                         prec_x, prec_y, 1, filter_idx_h);
         }
         p_tmp_rpr   +=  1;
@@ -2417,12 +2424,12 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         add_y     = (row * scaling_ver) ;
         prec_x    = 0;
         prec_y    = (ref_pos_y + add_y) & 0xF;
-        // if (pu_w < 64 && pu_h < 64)
-            // printf("\nVer %i %i %i %i", pos_x, pos_y, row, prec_y);  
-        // TODOrpr: prec_type = 0 when filter_idx=0 and prec_y=0
+/*        if ( pu_w < 64 && pu_h < 64)
+*//*           printf("\nVer %i %i",row, prec_y);  
+*/        // TODOrpr: prec_type = 0 when filter_idx=0 and prec_y=0
         // prec_type = (prec_x  > 0) + ((prec_y > 0) << 1);
         prec_type = 2;
-        p_tmp_rpr = tmp_rpr + buff_off + ((row * scaling_ver) >> scale_bits) * RCN_CTB_STRIDE;
+        p_tmp_rpr = tmp_rpr + buff_off + (((ref_pos_y + add_y) >> scale_bits) - ref_y) * RCN_CTB_STRIDE;
 
         if (bidir){
             mc_l->rpr_bi[prec_type][log2_pu_w-1](p_dst, RCN_CTB_STRIDE, p_tmp_rpr, RCN_CTB_STRIDE, 1,
@@ -2500,11 +2507,11 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     const int ref_pu_w = (pu_w * scaling_hor) >> RPR_SCALE_BITS;
     const int ref_pu_h = (pu_h * scaling_ver) >> RPR_SCALE_BITS;
 
-    int16_t add_x = (1 - frame0->scale_info.chroma_hor_col_flag) * 8 * ( scaling_hor - (1<<RPR_SCALE_BITS));
-    int16_t add_y = (1 - frame0->scale_info.chroma_ver_col_flag) * 8 * ( scaling_ver - (1<<RPR_SCALE_BITS));
-    int64_t ref_pos_x = ((( pos_x << 5)  + mv.x ) * (int64_t)scaling_hor + add_x) >> 5 ;
+    int32_t add_x = (1 - frame0->scale_info.chroma_hor_col_flag) * 8 * ( scaling_hor - (1<<RPR_SCALE_BITS));
+    int32_t add_y = (1 - frame0->scale_info.chroma_ver_col_flag) * 8 * ( scaling_ver - (1<<RPR_SCALE_BITS));
+    int32_t ref_pos_x = ((( pos_x << 5)  + mv.x ) * (int32_t)scaling_hor + add_x) >> 5 ;
     int     ref_x     = ref_pos_x  >> RPR_SCALE_BITS;
-    int64_t ref_pos_y = ((( pos_y << 5 ) + mv.y ) * (int64_t)scaling_ver + add_y) >> 5 ;
+    int32_t ref_pos_y = ((( pos_y << 5 ) + mv.y ) * (int32_t)scaling_ver + add_y) >> 5 ;
     int     ref_y     = ref_pos_y  >> RPR_SCALE_BITS;
 
     const uint16_t *src_cb = &ref0_cb[ref_x + ref_y * src_stride_c];
@@ -2545,12 +2552,13 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         uint8_t  filter_idx = compute_rpr_filter_idx(scaling_hor);
         for(int col = 0; col < pu_w; col++)
         {
-            prec_x    = (ref_pos_x + col * scaling_hor) & 0x1F;
+            add_x     = col * scaling_hor;
+            prec_x    = (ref_pos_x + add_x) & 0x1F;
             prec_y    = 0;
             // printf("\nHor %i %i %i %i", pos_x, pos_y, col, prec_x);  
             // prec_type = (prec_x  > 0) + ((prec_y > 0) << 1);
             prec_type = 1;
-            p_src     = src_c + (col * scaling_hor >> RPR_SCALE_BITS);
+            p_src     = src_c + ((ref_pos_x + add_x) >> RPR_SCALE_BITS) - ref_x;
 
             if (bidir){
                 mc_c->rpr_bi[prec_type][1](p_tmp_rpr, RCN_CTB_STRIDE,p_src, src_stride_c,
@@ -2568,12 +2576,13 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         p_dst        = dst_c;
         for(int row = 0; row < pu_h; row++ )
         {
+            add_y     = row * scaling_ver; 
             prec_x    = 0;
-            prec_y    = (ref_pos_y + row * scaling_ver) & 0x1F;
+            prec_y    = (ref_pos_y + add_y) & 0x1F;
             // printf("\nVer %i %i %i %i", pos_x, pos_y, row, prec_y);  
             // prec_type = (prec_x  > 0) + ((prec_y > 0) << 1);
             prec_type = 2;
-            p_src     = tmp_rpr + buff_off + ((row * scaling_ver) >> RPR_SCALE_BITS) * src_stride_c;
+            p_src     = tmp_rpr + buff_off + (((ref_pos_y + add_y) >> RPR_SCALE_BITS) - ref_y) * src_stride_c;
 
             if (bidir){
                 mc_c->rpr_bi[prec_type][log2_pu_w-2](p_dst, RCN_CTB_STRIDE, p_src, src_stride_c,
@@ -2728,8 +2737,20 @@ void
 rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
         OVMV mv, uint8_t type, uint8_t ref_idx)
 {
-    rcn_mcp_l(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, type, ref_idx);
-    rcn_mcp_c(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, type, ref_idx);
+    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    int scale_rpl0_hor = inter_ctx->scale_fact_rpl0[ref_idx][0];
+    int scale_rpl0_ver = inter_ctx->scale_fact_rpl0[ref_idx][1];
+    uint8_t no_scale_rpl0 = scale_rpl0_hor == (1<<RPR_SCALE_BITS) && scale_rpl0_ver == (1<<RPR_SCALE_BITS);
+
+    if(no_scale_rpl0){
+        rcn_mcp_l(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, type, ref_idx);
+        rcn_mcp_c(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, type, ref_idx);
+    }
+    else
+    {
+        rcn_mcp_rpr(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, type, ref_idx, scale_rpl0_hor, scale_rpl0_ver);
+    }
+
 }
 
 void
@@ -2747,7 +2768,7 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *cons
     int scale_rpl1_ver = inter_ctx->scale_fact_rpl1[ref_idx1][1];
     uint8_t no_scale_rpl1 = scale_rpl1_hor == (1<<RPR_SCALE_BITS) && scale_rpl1_ver == (1<<RPR_SCALE_BITS);
 
-    uint8_t identical_motion = check_identical_motion(inter_ctx, mv0, mv1, ref_idx0, ref_idx1);
+    uint8_t identical_motion = check_identical_motion(inter_ctx, inter_dir, mv0, mv1, ref_idx0, ref_idx1);
     if (inter_dir == 3 && !identical_motion) {
         if(no_scale_rpl0 && no_scale_rpl1){
             rcn_motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
@@ -2758,7 +2779,7 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *cons
                             scale_rpl0_hor, scale_rpl0_ver, scale_rpl1_hor, scale_rpl1_ver);
         }
 
-    } else if (inter_dir & 0x2) {
+    } else if (inter_dir & 0x2 || identical_motion) {
         if(no_scale_rpl1){
             rcn_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
             rcn_mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
@@ -2795,7 +2816,7 @@ rcn_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
     int scale_rpl1_ver = inter_ctx->scale_fact_rpl1[ref_idx1][1];
     uint8_t no_scale_rpl1 = scale_rpl1_hor == (1<<RPR_SCALE_BITS) && scale_rpl1_ver == (1<<RPR_SCALE_BITS);
 
-    uint8_t identical_motion = check_identical_motion(inter_ctx, mv0, mv1, ref_idx0, ref_idx1);
+    uint8_t identical_motion = check_identical_motion(inter_ctx, inter_dir, mv0, mv1, ref_idx0, ref_idx1);
     if (inter_dir == 3 && !identical_motion) {
         if(no_scale_rpl0 && no_scale_rpl1){
             rcn_motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
@@ -2864,7 +2885,7 @@ rcn_mcp_b_c(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
     int scale_rpl1_ver = inter_ctx->scale_fact_rpl1[ref_idx1][1];
     uint8_t no_scale_rpl1 = scale_rpl1_hor == (1<<RPR_SCALE_BITS) && scale_rpl1_ver == (1<<RPR_SCALE_BITS);
     
-    uint8_t identical_motion = check_identical_motion(inter_ctx, mv0, mv1, ref_idx0, ref_idx1);
+    uint8_t identical_motion = check_identical_motion(inter_ctx, inter_dir, mv0, mv1, ref_idx0, ref_idx1);
     if (inter_dir == 3 && !identical_motion) {
         if(no_scale_rpl0 && no_scale_rpl1){
             rcn_motion_compensation_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);

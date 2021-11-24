@@ -639,5 +639,6 @@ ovdec_version()
 
 const char* ovdec_get_version()
 {
+  //return "0.3.0";
   return OV_VERSION;
 }
