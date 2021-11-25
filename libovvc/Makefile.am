@@ -1,17 +1,18 @@
 lib_LTLIBRARIES = libovvc.la
 libovvc_la_LDFLAGS = -version-info 0:3:0
+libovvc_la_LIBADD=
 
 pkgconfigdir = $(libdir)/pkgconfig
 nodist_pkgconfig_DATA = libopenvvc.pc
 
 if HAVE_SSE4_1
 SUBDIRS = x86/
-libovvc_la_LDFLAGS += ./x86/libx86optim.la
+libovvc_la_LIBADD += ./x86/libx86optim.la
 endif
 
 if HAVE_NEON
 SUBDIRS = arm/
-libovvc_la_LDFLAGS += ./arm/libarmoptim.la
+libovvc_la_LIBADD += ./arm/libarmoptim.la
 endif
 
 libovvc_la_SOURCES = 	ctudec.c                     \
