@@ -283,14 +283,14 @@ put_vvc_qpel_uni_hv(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
 }
 
 static void
-put_vvc_pel_bilinear_pixels(OVSample* _dst, ptrdiff_t _dststride,
+put_vvc_pel_bilinear_pixels(int16_t* _dst, ptrdiff_t _dststride,
                             const OVSample* _src, ptrdiff_t _srcstride, int height,
                             intptr_t mx, intptr_t my, int width)
 {
     int y;
     const OVSample* src = _src;
     ptrdiff_t srcstride = _srcstride;
-    OVSample* dst = (OVSample*)_dst;
+    int16_t* dst = (int16_t*)_dst;
     ptrdiff_t dststride = _dststride;
 
     for (y = 0; y < height; y++) {
@@ -308,14 +308,14 @@ put_vvc_pel_bilinear_pixels(OVSample* _dst, ptrdiff_t _dststride,
 }
 
 static void
-put_vvc_qpel_bilinear_h(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
+put_vvc_qpel_bilinear_h(int16_t* _dst, ptrdiff_t _dststride, const OVSample* _src,
                         ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                         int width)
 {
     int x, y;
     const OVSample* src = _src;
     ptrdiff_t srcstride = _srcstride;
-    OVSample* dst = (OVSample*)_dst;
+    int16_t* dst = (int16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     const int8_t* filter = ov_bilinear_filters_4[mx - 1];
     int shift = 4 - (10 - BITDEPTH);
@@ -332,14 +332,14 @@ put_vvc_qpel_bilinear_h(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _s
 }
 
 static void
-put_vvc_qpel_bilinear_v(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
+put_vvc_qpel_bilinear_v(int16_t* _dst, ptrdiff_t _dststride, const OVSample* _src,
                         ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                         int width)
 {
     int x, y;
     const OVSample* src = _src;
     ptrdiff_t srcstride = _srcstride;
-    OVSample* dst = (OVSample*)_dst;
+    int16_t* dst = (int16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     const int8_t* filter = ov_bilinear_filters_4[my - 1];
     int shift = 4 - (10 - BITDEPTH);
@@ -356,7 +356,7 @@ put_vvc_qpel_bilinear_v(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _s
 }
 
 static void
-put_vvc_qpel_bilinear_hv(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
+put_vvc_qpel_bilinear_hv(int16_t* _dst, ptrdiff_t _dststride, const OVSample* _src,
                          ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                          int width)
 {
@@ -364,7 +364,7 @@ put_vvc_qpel_bilinear_hv(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _
     const int8_t* filter;
     const OVSample* src = _src;
     ptrdiff_t srcstride = _srcstride;
-    OVSample* dst = (OVSample*)_dst;
+    int16_t* dst = (int16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
