@@ -2349,7 +2349,7 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv);
     
     const int ref_pu_w = (pu_w * scaling_hor) >> scale_bits;
-    const int ref_pu_h = (pu_h * scaling_ver) >> scale_bits;
+    const int ref_pu_h = ((pu_h * scaling_ver) >> scale_bits) + 1;
 
     int32_t ref_pos_x = ((( pos_x << 4)  + mv.x ) * (int32_t)scaling_hor) >> 4 ;
     int     ref_x     = ref_pos_x  >> scale_bits;
@@ -2505,7 +2505,7 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     const int ref_pic_w = frame0->width[1];
     const int ref_pic_h = frame0->height[1];
     const int ref_pu_w = (pu_w * scaling_hor) >> RPR_SCALE_BITS;
-    const int ref_pu_h = (pu_h * scaling_ver) >> RPR_SCALE_BITS;
+    const int ref_pu_h = ((pu_h * scaling_ver) >> RPR_SCALE_BITS) + 1;
 
     int32_t add_x = (1 - frame0->scale_info.chroma_hor_col_flag) * 8 * ( scaling_hor - (1<<RPR_SCALE_BITS));
     int32_t add_y = (1 - frame0->scale_info.chroma_ver_col_flag) * 8 * ( scaling_ver - (1<<RPR_SCALE_BITS));
@@ -2562,11 +2562,11 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
 
             if (bidir){
                 mc_c->rpr_bi[prec_type][1](p_tmp_rpr, RCN_CTB_STRIDE,p_src, src_stride_c,
-                                                    ref_pu_h + EPEL_EXTRA, prec_x, prec_y, 1, filter_idx);
+                                                    ref_pu_h + EPEL_EXTRA + 2, prec_x, prec_y, 1, filter_idx);
             }
             else{
                 mc_c->rpr_uni[prec_type][1](p_tmp_rpr, RCN_CTB_STRIDE,p_src, src_stride_c,
-                                                    ref_pu_h + EPEL_EXTRA, prec_x, prec_y, 1, filter_idx);
+                                                    ref_pu_h + EPEL_EXTRA + 2, prec_x, prec_y, 1, filter_idx);
             }
             p_tmp_rpr   +=  1;
         }
@@ -3007,8 +3007,7 @@ rcn_ciip(OVCTUDec *const ctudec,
     tmp_inter.cr = &tmp_inter_cr[RCN_CTB_PADDING];
     tmp_inter.stride   = RCN_CTB_STRIDE;
     tmp_inter.stride_c = RCN_CTB_STRIDE;
-    rcn_mcp_l(ctudec, tmp_inter, x0, y0, log2_pb_w, log2_pb_h, mv, 0, ref_idx);
-    rcn_mcp_c(ctudec, tmp_inter, x0, y0, log2_pb_w, log2_pb_h, mv, 0, ref_idx);
+    rcn_mcp(ctudec, tmp_inter, x0, y0, log2_pb_w, log2_pb_h, mv, 0, ref_idx);
 
     //Intra Planar mode
     struct OVBuffInfo tmp_intra = ctudec->rcn_ctx.ctu_buff;
