@@ -2337,24 +2337,23 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     const int ref_pic_w = frame0->width[0];
     const int ref_pic_h = frame0->height[0];
 
-    //MV precision in 4 bits for luma
-    uint8_t scale_bits = 4;
-    uint8_t filter_idx_h = compute_rpr_filter_idx(scaling_hor);
-    uint8_t filter_idx_v = compute_rpr_filter_idx(scaling_ver);
-    scaling_hor        = scaling_hor >> (RPR_SCALE_BITS-scale_bits);
-    scaling_ver        = scaling_ver >> (RPR_SCALE_BITS-scale_bits);
-
     int pic_w = ctudec->pic_w;
     int pic_h = ctudec->pic_h;
     mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv);
     
-    const int ref_pu_w = (pu_w * scaling_hor) >> scale_bits;
-    const int ref_pu_h = ((pu_h * scaling_ver) >> scale_bits) + 1;
+    //MV precision in 4 bits for luma
+    int shift_mv  = 4;
+    int offset    = 1 << (RPR_SCALE_BITS - 1);
+    uint8_t filter_idx_h = compute_rpr_filter_idx(scaling_hor);
+    uint8_t filter_idx_v = compute_rpr_filter_idx(scaling_ver);
 
-    int32_t ref_pos_x = ((( pos_x << 4)  + mv.x ) * (int32_t)scaling_hor) >> 4 ;
-    int     ref_x     = ref_pos_x  >> scale_bits;
-    int32_t ref_pos_y = ((( pos_y << 4 ) + mv.y ) * (int32_t)scaling_ver) >> 4 ;
-    int     ref_y     = ref_pos_y >> scale_bits;
+    const int ref_pu_w = (pu_w * scaling_hor) >> RPR_SCALE_BITS;
+    const int ref_pu_h = ((pu_h * scaling_ver) >> RPR_SCALE_BITS) + 1;
+
+    int32_t ref_pos_x = ((( pos_x << shift_mv)  + mv.x ) * (int32_t)scaling_hor);
+    int     ref_x     = ref_pos_x  >> (RPR_SCALE_BITS + shift_mv);
+    int32_t ref_pos_y = ((( pos_y << shift_mv ) + mv.y ) * (int32_t)scaling_ver);
+    int     ref_y     = ref_pos_y >> (RPR_SCALE_BITS + shift_mv);
  
     /*
      * Thread synchronization to ensure data is available before usage
@@ -2392,21 +2391,20 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
 /*    if (pu_w<64 && pu_h<64)
 *//*    printf("\n %i, %i, %i, %i", pos_x, pos_y, ref_x, ref_y);
 */  
-    int32_t   add_x, add_y;
+    int32_t   pos_mv_x, pos_mv_y;
     uint16_t* p_src = src ;
     uint16_t* p_tmp_rpr = tmp_rpr + REF_PADDING_L;
     uint8_t   prec_x, prec_y, prec_type;
     for(int col = 0; col < pu_w; col++)
     {
-        add_x     = (col * scaling_hor) ;
-        prec_x    = (ref_pos_x + add_x) & 0xF;
+        pos_mv_x  = (ref_pos_x + ((col * scaling_hor) << shift_mv) + offset) >>  RPR_SCALE_BITS ;
+        prec_x    = pos_mv_x & 0xF;
         prec_y    = 0;
         //if (pu_w < 64 && pu_h < 64)
          //   printf("\nHor %i %i", col, prec_x);        
         // TODOrpr: prec_type = 0 when filter_idx=0 and prec_x=0
-        // prec_type = (prec_x  > 0) + ((prec_y > 0) << 1);
         prec_type = 1;
-        p_src     = src + ((ref_pos_x + add_x) >> scale_bits) - ref_x;
+        p_src     = src + (pos_mv_x >> shift_mv) - ref_x;
 
         if (bidir){
             mc_l->rpr_bi[prec_type][1](p_tmp_rpr, RCN_CTB_STRIDE, p_src, src_stride, ref_pu_h + QPEL_EXTRA + 1,
@@ -2421,15 +2419,14 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
 
     uint16_t* p_dst     = dst.y;
     for(int row = 0; row < pu_h; row++ ){
-        add_y     = (row * scaling_ver) ;
+        pos_mv_y  = ( ref_pos_y + ((row * scaling_ver) << shift_mv) + offset ) >> RPR_SCALE_BITS;
         prec_x    = 0;
-        prec_y    = (ref_pos_y + add_y) & 0xF;
+        prec_y    = pos_mv_y & 0xF;
 /*        if ( pu_w < 64 && pu_h < 64)
 *//*           printf("\nVer %i %i",row, prec_y);  
 */        // TODOrpr: prec_type = 0 when filter_idx=0 and prec_y=0
-        // prec_type = (prec_x  > 0) + ((prec_y > 0) << 1);
         prec_type = 2;
-        p_tmp_rpr = tmp_rpr + buff_off + (((ref_pos_y + add_y) >> scale_bits) - ref_y) * RCN_CTB_STRIDE;
+        p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * RCN_CTB_STRIDE;
 
         if (bidir){
             mc_l->rpr_bi[prec_type][log2_pu_w-1](p_dst, RCN_CTB_STRIDE, p_tmp_rpr, RCN_CTB_STRIDE, 1,
@@ -2504,15 +2501,22 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
 
     const int ref_pic_w = frame0->width[1];
     const int ref_pic_h = frame0->height[1];
-    const int ref_pu_w = (pu_w * scaling_hor) >> RPR_SCALE_BITS;
-    const int ref_pu_h = ((pu_h * scaling_ver) >> RPR_SCALE_BITS) + 1;
+
+    //MV precision in 5 bits for chroma
+    int shift_mv  = 5;
+    int offset    = 1 << (RPR_SCALE_BITS - 1);
+    uint8_t filter_idx_h = compute_rpr_filter_idx(scaling_hor);
+    uint8_t filter_idx_v = compute_rpr_filter_idx(scaling_ver);
 
     int32_t add_x = (1 - frame0->scale_info.chroma_hor_col_flag) * 8 * ( scaling_hor - (1<<RPR_SCALE_BITS));
     int32_t add_y = (1 - frame0->scale_info.chroma_ver_col_flag) * 8 * ( scaling_ver - (1<<RPR_SCALE_BITS));
-    int32_t ref_pos_x = ((( pos_x << 5)  + mv.x ) * (int32_t)scaling_hor + add_x) >> 5 ;
-    int     ref_x     = ref_pos_x  >> RPR_SCALE_BITS;
-    int32_t ref_pos_y = ((( pos_y << 5 ) + mv.y ) * (int32_t)scaling_ver + add_y) >> 5 ;
-    int     ref_y     = ref_pos_y  >> RPR_SCALE_BITS;
+    const int ref_pu_w = (pu_w * scaling_hor) >> RPR_SCALE_BITS;
+    const int ref_pu_h = ((pu_h * scaling_ver) >> RPR_SCALE_BITS) + 1;
+
+    int32_t ref_pos_x = ((( pos_x << shift_mv)  + mv.x ) * (int32_t)scaling_hor + add_x);
+    int     ref_x     = ref_pos_x  >> (RPR_SCALE_BITS + shift_mv);
+    int32_t ref_pos_y = ((( pos_y << shift_mv ) + mv.y ) * (int32_t)scaling_ver + add_y);
+    int     ref_y     = ref_pos_y >> (RPR_SCALE_BITS + shift_mv);
 
     const uint16_t *src_cb = &ref0_cb[ref_x + ref_y * src_stride_c];
     const uint16_t *src_cr = &ref0_cr[ref_x + ref_y * src_stride_c];
@@ -2548,49 +2552,44 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
             src_c = src_c - src_off + REF_PADDING_C ;
         }
 
+        int pos_mv_x, pos_mv_y;
         uint16_t* p_tmp_rpr = tmp_rpr + REF_PADDING_C;
-        uint8_t  filter_idx = compute_rpr_filter_idx(scaling_hor);
         for(int col = 0; col < pu_w; col++)
         {
-            add_x     = col * scaling_hor;
-            prec_x    = (ref_pos_x + add_x) & 0x1F;
+            pos_mv_x  = ( ref_pos_x + ((col * scaling_hor) << shift_mv) + offset ) >> RPR_SCALE_BITS;
+            prec_x    = pos_mv_x & 0x1F;
             prec_y    = 0;
-            // printf("\nHor %i %i %i %i", pos_x, pos_y, col, prec_x);  
-            // prec_type = (prec_x  > 0) + ((prec_y > 0) << 1);
             prec_type = 1;
-            p_src     = src_c + ((ref_pos_x + add_x) >> RPR_SCALE_BITS) - ref_x;
+            p_src     = src_c + (pos_mv_x >> shift_mv) - ref_x;
 
             if (bidir){
                 mc_c->rpr_bi[prec_type][1](p_tmp_rpr, RCN_CTB_STRIDE,p_src, src_stride_c,
-                                                    ref_pu_h + EPEL_EXTRA + 2, prec_x, prec_y, 1, filter_idx);
+                                                    ref_pu_h + EPEL_EXTRA + 2, prec_x, prec_y, 1, filter_idx_h);
             }
             else{
                 mc_c->rpr_uni[prec_type][1](p_tmp_rpr, RCN_CTB_STRIDE,p_src, src_stride_c,
-                                                    ref_pu_h + EPEL_EXTRA + 2, prec_x, prec_y, 1, filter_idx);
+                                                    ref_pu_h + EPEL_EXTRA + 2, prec_x, prec_y, 1, filter_idx_h);
             }
             p_tmp_rpr   +=  1;
         }
 
         src_stride_c = RCN_CTB_STRIDE;
-        filter_idx   = compute_rpr_filter_idx(scaling_hor);
         p_dst        = dst_c;
         for(int row = 0; row < pu_h; row++ )
         {
-            add_y     = row * scaling_ver; 
+            pos_mv_y  = ( ref_pos_y + ((row * scaling_ver) << shift_mv) + offset ) >> RPR_SCALE_BITS;
             prec_x    = 0;
-            prec_y    = (ref_pos_y + add_y) & 0x1F;
-            // printf("\nVer %i %i %i %i", pos_x, pos_y, row, prec_y);  
-            // prec_type = (prec_x  > 0) + ((prec_y > 0) << 1);
+            prec_y    = pos_mv_y & 0x1F;
             prec_type = 2;
-            p_src     = tmp_rpr + buff_off + (((ref_pos_y + add_y) >> RPR_SCALE_BITS) - ref_y) * src_stride_c;
+            p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * RCN_CTB_STRIDE;
 
             if (bidir){
-                mc_c->rpr_bi[prec_type][log2_pu_w-2](p_dst, RCN_CTB_STRIDE, p_src, src_stride_c,
-                                                    1, prec_x, prec_y, pu_w, filter_idx); 
+                mc_c->rpr_bi[prec_type][log2_pu_w-2](p_dst, RCN_CTB_STRIDE, p_tmp_rpr, RCN_CTB_STRIDE,
+                                                    1, prec_x, prec_y, pu_w, filter_idx_v); 
             }
             else{
-                mc_c->rpr_uni[prec_type][log2_pu_w-2](p_dst, RCN_CTB_STRIDE, p_src, src_stride_c,
-                                                    1, prec_x, prec_y, pu_w, filter_idx); 
+                mc_c->rpr_uni[prec_type][log2_pu_w-2](p_dst, RCN_CTB_STRIDE, p_tmp_rpr, RCN_CTB_STRIDE,
+                                                    1, prec_x, prec_y, pu_w, filter_idx_v); 
             }
             p_dst    +=  RCN_CTB_STRIDE;
         }
