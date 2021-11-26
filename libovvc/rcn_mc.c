@@ -1544,13 +1544,12 @@ put_weighted_ciip_pixels(uint16_t* dst, int dststride,
 
 void
 put_weighted_gpm_bi_pixels(uint16_t* _dst, int _dststride, const int16_t* _src0,
-                  int _srcstride, const int16_t* _src1, int height,
-                  intptr_t mx, intptr_t my, int width, int step_x, int step_y, int16_t* weight)
+                  int srcstride0, const int16_t* _src1, int srcstride1, int height,
+                  int width, int step_x, int step_y, int16_t* weight)
 {
     int x, y;
     const int16_t* src0 = _src0;
     const int16_t* src1 = _src1;
-    ptrdiff_t srcstride = _srcstride;
     uint16_t* dst = (uint16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     int shift = 14 - BITDEPTH + 3;
@@ -1562,8 +1561,8 @@ put_weighted_gpm_bi_pixels(uint16_t* _dst, int _dststride, const int16_t* _src0,
             dst[x] = ov_bdclip(((src1[x] * w1 + src0[x] * w0 + offset) >> shift));
             weight += step_x;
         }
-        src1 += srcstride;
-        src0 += srcstride;
+        src1 += srcstride0;
+        src0 += srcstride1;
         dst += dststride;
         weight += step_y;
     }
