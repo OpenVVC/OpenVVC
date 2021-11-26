@@ -2280,18 +2280,19 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, 
 }
 
 static uint8_t
-compute_rpr_filter_idx(int scale_factor)
+compute_rpr_filter_idx(int scale_factor, int flag_4x4)
 {
     const int rpr_thres_1 = ( 1 << RPR_SCALE_BITS ) * 5 / 4;
     const int rpr_thres_2 = ( 1 << RPR_SCALE_BITS ) * 7 / 4;
 
     //TODOrpr: use MC filtre 4x4 for affine (and use RPR affine filters)
-    int filter_idx = 0;
+    int filter_idx = flag_4x4 ? 3 : 0 ;
+
     if( scale_factor > rpr_thres_2 ){
-        filter_idx = 2;
+        filter_idx += 2;
     }
     else if( scale_factor > rpr_thres_1 ){
-        filter_idx = 1;
+        filter_idx += 1;
     }
     return filter_idx;
 }
@@ -2344,8 +2345,9 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     //MV precision in 4 bits for luma
     int shift_mv  = 4;
     int offset    = 1 << (RPR_SCALE_BITS - 1);
-    uint8_t filter_idx_h = compute_rpr_filter_idx(scaling_hor);
-    uint8_t filter_idx_v = compute_rpr_filter_idx(scaling_ver);
+    uint8_t flag_4x4     = (log2_pu_w == 2 && log2_pu_h == 2);
+    uint8_t filter_idx_h = compute_rpr_filter_idx(scaling_hor, flag_4x4);
+    uint8_t filter_idx_v = compute_rpr_filter_idx(scaling_ver, flag_4x4);
 
     const int ref_pu_w = (pu_w * scaling_hor) >> RPR_SCALE_BITS;
     const int ref_pu_h = ((pu_h * scaling_ver) >> RPR_SCALE_BITS) + 1;
@@ -2509,8 +2511,9 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     //MV precision in 5 bits for chroma
     int shift_mv  = 5;
     int offset    = 1 << (RPR_SCALE_BITS - 1);
-    uint8_t filter_idx_h = compute_rpr_filter_idx(scaling_hor);
-    uint8_t filter_idx_v = compute_rpr_filter_idx(scaling_ver);
+    uint8_t flag_4x4     = (log2_pu_w == 2 && log2_pu_h == 2);
+    uint8_t filter_idx_h = compute_rpr_filter_idx(scaling_hor, flag_4x4);
+    uint8_t filter_idx_v = compute_rpr_filter_idx(scaling_ver, flag_4x4);
 
     int32_t add_x = (1 - frame0->scale_info.chroma_hor_col_flag) * 8 * ( scaling_hor - (1<<RPR_SCALE_BITS));
     int32_t add_y = (1 - frame0->scale_info.chroma_ver_col_flag) * 8 * ( scaling_ver - (1<<RPR_SCALE_BITS));
