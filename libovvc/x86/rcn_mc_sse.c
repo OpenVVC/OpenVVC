@@ -4061,7 +4061,7 @@ put_vvc_bi_w_qpel_v8_14_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10;
+  const int log2Wd = denom + 14 - 10 - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -4161,7 +4161,7 @@ put_vvc_bi_w_qpel_v4_14_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10;
+  const int log2Wd = denom + 14 - 10 - 1;
   const int shift2 = log2Wd + 1;
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
@@ -4472,7 +4472,7 @@ put_vvc_bi_w_pel_pixels4_10_sse(uint8_t* _dst,
   __m128i x1;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10;
+  const int log2Wd = denom + 14 - 10 - 1;
   const int shift2 = log2Wd + 1;
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
@@ -4577,7 +4577,7 @@ put_vvc_bi_w_pel_pixels8_10_sse(uint8_t* _dst,
   __m128i x1;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10;
+  const int log2Wd = denom + 14 - 10 - 1;
   const int shift2 = log2Wd + 1;
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
@@ -4698,7 +4698,7 @@ put_vvc_bi_w_epel_h4_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, t1, t2, f1, f2;
   uint16_t* src = ((uint16_t*)_src) - 1;
   ptrdiff_t srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10;
+  const int log2Wd = denom + 14 - 10 - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -4839,7 +4839,7 @@ put_vvc_bi_w_epel_h8_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, t1, t2, f1, f2;
   uint16_t* src = ((uint16_t*)_src) - 1;
   ptrdiff_t srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10;
+  const int log2Wd = denom + 14 - 10 - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -4979,7 +4979,7 @@ put_vvc_bi_w_epel_v4_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, t1, t2, f1, f2;
   ptrdiff_t srcstride = _srcstride >> 1;
   uint16_t* src = ((uint16_t*)_src) - srcstride;
-  const int log2Wd = denom + 14 - 10;
+  const int log2Wd = denom + 14 - 10 - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -5120,7 +5120,7 @@ put_vvc_bi_w_epel_v8_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, t1, t2, f1, f2;
   ptrdiff_t srcstride = _srcstride >> 1;
   uint16_t* src = ((uint16_t*)_src) - srcstride;
-  const int log2Wd = denom + 14 - 10;
+  const int log2Wd = denom + 14 - 10 - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -5336,7 +5336,7 @@ put_vvc_bi_w_epel_hv4_10_sse(uint8_t* _dst,
 {
   int x, y;
   __m128i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;
-  const int log2Wd = denom + 14 - 10;
+  const int log2Wd = denom + 14 - 10 - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -5634,7 +5634,7 @@ put_vvc_bi_w_epel_hv8_10_sse(uint8_t* _dst,
 {
   int x, y;
   __m128i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;
-  const int log2Wd = denom + 14 - 10;
+  const int log2Wd = denom + 14 - 10 - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -5873,7 +5873,7 @@ put_vvc_bi_w_qpel_h4_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, r1, r3, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10;
+  const int log2Wd = denom + 14 - 10 - 1;
   const int shift2 = log2Wd + 1;
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
@@ -6049,7 +6049,7 @@ put_vvc_bi_w_qpel_h8_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10;
+  const int log2Wd = denom + 14 - 10 - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -6223,7 +6223,7 @@ put_vvc_bi_w_qpel_v4_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10;
+  const int log2Wd = denom + 14 - 10 - 1;
   const int shift2 = log2Wd + 1;
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
@@ -6397,7 +6397,7 @@ put_vvc_bi_w_qpel_v8_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10;
+  const int log2Wd = denom + 14 - 10 - 1;
   const int shift2 = log2Wd + 1;
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);

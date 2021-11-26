@@ -604,6 +604,35 @@ put_vvc_qpel_rpr_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
     }
 }
 
+//TODOrpr: change name and pointer
+void
+put_vvc_qpel_rpr_weighted(uint16_t* _dst, ptrdiff_t _dststride,
+                      const uint16_t* _src0, ptrdiff_t _src0stride,
+                      const uint16_t* _src1, ptrdiff_t _src1stride,
+                      int height, int denom, int wx0, int wx1,
+                      intptr_t mx, intptr_t my, int width)
+{
+    int x, y;
+    const int16_t* src0 = (int16_t*)_src0;
+    const int16_t* src1 = (int16_t*)_src1;
+    ptrdiff_t src0stride = _src0stride;
+    ptrdiff_t src1stride = _src1stride;
+    uint16_t* dst = (uint16_t*)_dst;
+    ptrdiff_t dststride = _dststride;
+    int shift = 14 - BITDEPTH + denom;
+    int offset = 1 << (shift - 1);
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; ++x) {
+            dst[x] = ov_bdclip((src0[x]*wx0 + src1[x]*wx1 + offset) >>
+                                   shift);
+        }
+        src0 += src0stride;
+        src1 += src1stride;
+        dst += dststride;
+    }
+}
+
 static void
 put_vvc_epel_rpr_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
@@ -1275,8 +1304,6 @@ put_weighted_epel_bi_h(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
     ptrdiff_t dststride = _dststride >> 1;
 
     const int8_t* filter = ov_mcp_filters_c[mx - 1];
-
-    denom = floor_log2(wx0 + wx1);
     int shift = 14 + denom -BITDEPTH;
     int offset = 1 << (shift - 1);
 
@@ -1306,8 +1333,6 @@ put_weighted_epel_bi_v(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
     ptrdiff_t dststride = _dststride >> 1;
 
     const int8_t* filter = ov_mcp_filters_c[my - 1];
-
-    denom = floor_log2(wx0 + wx1);
     int shift = 14 + denom -BITDEPTH;
     int offset = 1 << (shift - 1);
 
@@ -1340,8 +1365,6 @@ put_weighted_epel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
     int16_t* tmp = tmp_array;
 
     const int8_t* filter = ov_mcp_filters_c[mx - 1];
-
-    denom = floor_log2(wx0 + wx1);
     int shift = 14 + denom -BITDEPTH;
     int offset = 1 << (shift - 1);
 
@@ -1380,7 +1403,7 @@ put_weighted_pel_bi_pixels(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, p
     ptrdiff_t srcstride = _srcstride >> 1;
     uint16_t* dst = (uint16_t*)_dst;
     ptrdiff_t dststride = _dststride >> 1;
-    int shift = 14 - BITDEPTH + 3;
+    int shift = 14 - BITDEPTH + denom ;
     int offset = (1 << (shift - 1)) ;
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
@@ -1409,8 +1432,6 @@ put_weighted_qpel_bi_h(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
 
     const int8_t* filter;
     filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
-
-    denom = floor_log2(wx0 + wx1);
     int shift = 14 + denom -BITDEPTH;
     int offset = 1 << (shift - 1);
 
@@ -1441,8 +1462,6 @@ put_weighted_qpel_bi_v(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
 
     const int8_t* filter;
     filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
-
-    denom = floor_log2(wx0 + wx1);
     int shift = 14 + denom -BITDEPTH;
     int offset = 1 << (shift - 1);
 
@@ -1476,8 +1495,6 @@ put_weighted_qpel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
 
     const int8_t* filter;
     filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
-
-    denom = floor_log2(wx0 + wx1);
     int shift = 14 + denom -BITDEPTH;
     int offset = 1 << (shift - 1);
 
