@@ -2349,10 +2349,12 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
 
     const int ref_pu_w = (pu_w * scaling_hor) >> RPR_SCALE_BITS;
     const int ref_pu_h = ((pu_h * scaling_ver) >> RPR_SCALE_BITS) + 1;
+    int stepX = (( scaling_hor + 8 ) >> 4) << 4;
+    int stepY = (( scaling_ver + 8 ) >> 4) << 4;
 
-    int32_t ref_pos_x = ((( pos_x << shift_mv)  + mv.x ) * (int32_t)scaling_hor);
+    int32_t ref_pos_x = ((( pos_x << shift_mv)  + mv.x ) * (int32_t)scaling_hor) + (1<<7);
     int     ref_x     = ref_pos_x  >> (RPR_SCALE_BITS + shift_mv);
-    int32_t ref_pos_y = ((( pos_y << shift_mv ) + mv.y ) * (int32_t)scaling_ver);
+    int32_t ref_pos_y = ((( pos_y << shift_mv ) + mv.y ) * (int32_t)scaling_ver) + (1<<7);
     int     ref_y     = ref_pos_y >> (RPR_SCALE_BITS + shift_mv);
  
     /*
@@ -2388,20 +2390,21 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         prec_y += (prec_y == 8) ? 8 : 0;
     }
 */  
-/*    if (pu_w<64 && pu_h<64)
-*//*    printf("\n %i, %i, %i, %i", pos_x, pos_y, ref_x, ref_y);
-*/  
+    if (pu_w<128 || pu_h<128)
+    printf("\n %i, %i, %i, %i", pos_x, pos_y, ref_x, ref_y);
+  
     int32_t   pos_mv_x, pos_mv_y;
     uint16_t* p_src = src ;
     uint16_t* p_tmp_rpr = tmp_rpr + REF_PADDING_L;
     uint8_t   prec_x, prec_y, prec_type;
     for(int col = 0; col < pu_w; col++)
     {
-        pos_mv_x  = (ref_pos_x + ((col * scaling_hor) << shift_mv) + offset) >>  RPR_SCALE_BITS ;
+        pos_mv_x  = (ref_pos_x + ((col * stepX) << shift_mv) + offset) >>  RPR_SCALE_BITS ;
+        //pos_mv_x  = (ref_pos_x + ((col * scaling_hor) << shift_mv) + offset) >>  RPR_SCALE_BITS ;
         prec_x    = pos_mv_x & 0xF;
         prec_y    = 0;
-        //if (pu_w < 64 && pu_h < 64)
-         //   printf("\nHor %i %i", col, prec_x);        
+        if (pu_w < 128 || pu_h < 128)
+           printf("\nHor %i %i", col, prec_x);        
         // TODOrpr: prec_type = 0 when filter_idx=0 and prec_x=0
         prec_type = 1;
         p_src     = src + (pos_mv_x >> shift_mv) - ref_x;
@@ -2419,12 +2422,13 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
 
     uint16_t* p_dst     = dst.y;
     for(int row = 0; row < pu_h; row++ ){
-        pos_mv_y  = ( ref_pos_y + ((row * scaling_ver) << shift_mv) + offset ) >> RPR_SCALE_BITS;
+        pos_mv_y  = ( ref_pos_y + ((row * stepY) << shift_mv) + offset ) >> RPR_SCALE_BITS;
+        //pos_mv_y  = ( ref_pos_y + ((row * scaling_ver) << shift_mv) + offset ) >> RPR_SCALE_BITS;
         prec_x    = 0;
         prec_y    = pos_mv_y & 0xF;
-/*        if ( pu_w < 64 && pu_h < 64)
-*//*           printf("\nVer %i %i",row, prec_y);  
-*/        // TODOrpr: prec_type = 0 when filter_idx=0 and prec_y=0
+        if ( pu_w < 128 || pu_h < 128)
+           printf("\nVer %i %i",row, prec_y);  
+        // TODOrpr: prec_type = 0 when filter_idx=0 and prec_y=0
         prec_type = 2;
         p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * RCN_CTB_STRIDE;
 

@@ -79,8 +79,8 @@ ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
         ref_pic_w = frame->width[0]  - add_w;
         ref_pic_h = frame->height[0] - add_h;
 
-        scaling_hor = (ref_pic_w << RPR_SCALE_BITS) / pic_w;
-        scaling_ver = (ref_pic_h << RPR_SCALE_BITS) / pic_h;
+        scaling_hor = ((ref_pic_w << RPR_SCALE_BITS) + (pic_w >> 1)) / pic_w;
+        scaling_ver = ((ref_pic_h << RPR_SCALE_BITS) + (pic_h >> 1)) / pic_h;
         inter_ctx->scale_fact_rpl0[i][0] = scaling_hor;
         inter_ctx->scale_fact_rpl0[i][1] = scaling_ver;
     }
@@ -95,8 +95,8 @@ ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
         ref_pic_w = frame->width[0]  - add_w;
         ref_pic_h = frame->height[0] - add_h;
 
-        scaling_hor = (ref_pic_w << RPR_SCALE_BITS) / pic_w;
-        scaling_ver = (ref_pic_h << RPR_SCALE_BITS) / pic_h;
+        scaling_hor = ((ref_pic_w << RPR_SCALE_BITS) + (pic_w >> 1)) / pic_w;
+        scaling_ver = ((ref_pic_h << RPR_SCALE_BITS) + (pic_h >> 1)) / pic_h;
         inter_ctx->scale_fact_rpl1[i][0] = scaling_hor;
         inter_ctx->scale_fact_rpl1[i][1] = scaling_ver;
     }
