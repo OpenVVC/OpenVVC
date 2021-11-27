@@ -1556,13 +1556,13 @@ put_weighted_gpm_bi_pixels(uint16_t* _dst, int _dststride, const int16_t* _src0,
     int offset = (1 << (shift - 1)) ;
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
-            int w1 = weight[0];
-            int w0 = 8 - w1;
+            int w0 = weight[0];
+            int w1 = 8 - w0;
             dst[x] = ov_bdclip(((src1[x] * w1 + src0[x] * w0 + offset) >> shift));
             weight += step_x;
         }
-        src1 += srcstride0;
-        src0 += srcstride1;
+        src1 += srcstride1;
+        src0 += srcstride0;
         dst += dststride;
         weight += step_y;
     }
