@@ -142,8 +142,8 @@ static void
 extend_prof_buff(const OVSample *const src, int16_t *dst_prof, int16_t ref_stride, uint8_t ext_x, uint8_t ext_y)
 {
     const OVSample *ref = src  - ref_stride  - 1;
-    uint16_t       *dst = dst_prof;
-    uint16_t *dst_lst = dst_prof + (SB_H + 1) * PROF_BUFF_STRIDE;
+    int16_t     *dst = dst_prof;
+    int16_t *dst_lst = dst_prof + (SB_H + 1) * PROF_BUFF_STRIDE;
     int i, j;
 
     /* Position ref according to precision */
@@ -200,7 +200,7 @@ rcn_prof(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
     int x, y;
 
     if (bidir) {
-        int16_t *_dst = (int16_t *)dst;
+        int16_t *_dst = dst;
         for (y = 0; y < SB_H; ++y) {
             for (x = 0; x < SB_W; ++x) {
                 int32_t add = dmv_scale_h[idx] * grad_x[x] + dmv_scale_v[idx] * grad_y[x];
