@@ -2019,8 +2019,7 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, 
 void
 rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
                int log2_pu_w, int log2_pu_h,
-               OVMV mv, uint8_t type,
-               uint8_t ref_idx,
+               OVMV mv, uint8_t type, uint8_t ref_idx,
                const int32_t *dmv_scale_h, const int32_t *dmv_scale_v)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
@@ -2385,16 +2384,8 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         src = src - src_off + REF_PADDING_L ;
     }
 
-/*  TODOrpr: check if needed  
-    uint8_t prec_x   = (mv.x) & 0xF;
-    uint8_t prec_y   = (mv.y) & 0xF;
-    if(inter_ctx->prec_amvr == MV_PRECISION_HALF){
-        prec_x += (prec_x == 8) ? 8 : 0;
-        prec_y += (prec_y == 8) ? 8 : 0;
-    }
-*/  
-    if (pu_w<128 || pu_h<128)
-    printf("\n %i, %i, %i, %i", pos_x, pos_y, ref_x, ref_y);
+    // if (pu_w<128 || pu_h<128)
+    // printf("\n %i, %i, %i, %i", pos_x, pos_y, ref_x, ref_y);
   
     int32_t   pos_mv_x, pos_mv_y;
     const uint16_t* p_src = src ;
@@ -2406,8 +2397,8 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         //pos_mv_x  = (ref_pos_x + ((col * scaling_hor) << shift_mv) + offset) >>  RPR_SCALE_BITS ;
         prec_x    = pos_mv_x & 0xF;
         prec_y    = 0;
-        if (pu_w < 128 || pu_h < 128)
-           printf("\nHor %i %i", col, prec_x);        
+        // if (pu_w < 128 || pu_h < 128)
+        //    printf("\nHor %i %i", col, prec_x);        
         // TODOrpr: prec_type = 0 when filter_idx=0 and prec_x=0
         prec_type = 1;
         p_src     = src + (pos_mv_x >> shift_mv) - ref_x;
@@ -2429,8 +2420,8 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         //pos_mv_y  = ( ref_pos_y + ((row * scaling_ver) << shift_mv) + offset ) >> RPR_SCALE_BITS;
         prec_x    = 0;
         prec_y    = pos_mv_y & 0xF;
-        if ( pu_w < 128 || pu_h < 128)
-           printf("\nVer %i %i",row, prec_y);  
+        // if ( pu_w < 128 || pu_h < 128)
+        //    printf("\nVer %i %i",row, prec_y);  
         // TODOrpr: prec_type = 0 when filter_idx=0 and prec_y=0
         prec_type = 2;
         p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * RCN_CTB_STRIDE;
@@ -2914,16 +2905,47 @@ rcn_prof_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCt
                  uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
                  uint8_t prof_dir, const struct PROFInfo *const prof_info)
 {
+    int scale_rpl0_hor = inter_ctx->scale_fact_rpl0[ref_idx0][0];
+    int scale_rpl0_ver = inter_ctx->scale_fact_rpl0[ref_idx0][1];
+    uint8_t no_scale_rpl0 = scale_rpl0_hor == (1<<RPR_SCALE_BITS) && scale_rpl0_ver == (1<<RPR_SCALE_BITS);
+    int scale_rpl1_hor = inter_ctx->scale_fact_rpl1[ref_idx1][0];
+    int scale_rpl1_ver = inter_ctx->scale_fact_rpl1[ref_idx1][1];
+    uint8_t no_scale_rpl1 = scale_rpl1_hor == (1<<RPR_SCALE_BITS) && scale_rpl1_ver == (1<<RPR_SCALE_BITS);
+
+    uint8_t bidir = 0;
     if (inter_dir == 3) {
-        rcn_prof_motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, prof_dir, prof_info);
-    } else if (inter_dir & 0x2) {
-        rcn_prof_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1,
+        bidir = 1;
+        if(no_scale_rpl0 && no_scale_rpl1){
+            rcn_prof_motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, 
+                                                ref_idx0, ref_idx1, prof_dir, prof_info);
+        }
+        else{
+            struct VVCGPM* gpm_ctx = 0;
+            rcn_mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, 
+                            scale_rpl0_hor, scale_rpl0_ver, scale_rpl1_hor, scale_rpl1_ver, gpm_ctx);
+        }
+
+    } else if (inter_dir & 0x2 ) {
+        if(no_scale_rpl1){
+            rcn_prof_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1,
                        prof_info->dmv_scale_h_1,
                        prof_info->dmv_scale_v_1);
+        }
+        else{
+            rcn_mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1, 
+                        scale_rpl1_hor, scale_rpl1_ver, bidir);
+        }
+
     } else if (inter_dir & 0x1) {
-        rcn_prof_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0,
+        if(no_scale_rpl0){
+            rcn_prof_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0,
                        prof_info->dmv_scale_h_0,
                        prof_info->dmv_scale_v_0);
+        }
+        else{
+            rcn_mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0, 
+                        scale_rpl0_hor, scale_rpl0_ver, bidir);
+        }
     }
 }
 
