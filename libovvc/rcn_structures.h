@@ -155,19 +155,19 @@ typedef void (*SAOEdgeFilterFunc)(uint8_t* _dst, uint8_t* _src,
 
 typedef void (*LMCSReshapeFunc)(OVSample *_dst, ptrdiff_t stride_dst, const struct LMCSLUTs *const luts, int width, int height);
 
-typedef uint64_t (*DMVRSADFunc)(const int16_t *ref0, const int16_t *ref1, int16_t dmvr_stride, int16_t pb_w, int16_t pb_h);
+typedef uint64_t (*DMVRSADFunc)(const uint16_t *ref0, const uint16_t *ref1, int16_t dmvr_stride, int16_t pb_w, int16_t pb_h);
 
-typedef uint8_t (*DMVRComputeSADsFunc)(const int16_t *ref0, const int16_t *ref1, uint64_t *sad_array, int sb_w, int sb_h);
+typedef uint8_t (*DMVRComputeSADsFunc)(const uint16_t *ref0, const uint16_t *ref1, uint64_t *sad_array, int sb_w, int sb_h);
 
-typedef void (*PROFGradFunction)(const OVSample* src, int src_stride, int sb_w, int sb_h, int grad_stride, int16_t* grad_x, int16_t* grad_y);
+typedef void (*PROFGradFunction)(const int16_t* src, int src_stride, int sb_w, int sb_h, int grad_stride, int16_t* grad_x, int16_t* grad_y);
 
-typedef void (*PROFFunction)(OVSample* dst, int dst_stride, const OVSample* src, int src_stride,
+typedef void (*PROFFunction)(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
                              const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
                              const int32_t* dmv_scale_h, const int32_t* dmv_scale_v, uint8_t bidir);
 
 typedef void (*BDOFSBFunction)(const int16_t* src0, int src0_stride,
                                const int16_t* src1, int src1_stride,
-                               int16_t *dst, int dst_stride,
+                               OVSample *dst, int dst_stride,
                                const int16_t *gradX0, const int16_t *gradX1,
                                const int16_t *gradY0, const int16_t *gradY1, int grad_stride,
                                int wgt_x, int wgt_y);
@@ -287,16 +287,16 @@ struct PROFFunctions{
     PROFGradFunction grad;
     PROFFunction rcn;
     void (*tmp_prof_mrg)(OVSample* _dst, ptrdiff_t _dststride,
-                         const OVSample* _src0, ptrdiff_t _srcstride,
+                         const int16_t* _src0, ptrdiff_t _srcstride,
                          const int16_t* _src1, int height, intptr_t mx,
                          intptr_t my, int width);
 
     void (*tmp_prof_mrg_w)(OVSample* _dst, ptrdiff_t _dststride,
-                           const OVSample* _src0, ptrdiff_t _srcstride,
+                           const int16_t* _src0, ptrdiff_t _srcstride,
                            const int16_t* _src1, int height, intptr_t mx,
                            intptr_t my, int width, int wt0, int wt1);
 
-    void (*extend_prof_buff)(const OVSample *const src, OVSample *dst_prof, int16_t ref_stride,
+    void (*extend_prof_buff)(const OVSample *const src, int16_t *dst_prof, int16_t ref_stride,
                              uint8_t ext_x, uint8_t ext_y);
 
 
@@ -306,13 +306,13 @@ struct BDOFFunctions{
     PROFGradFunction grad;
     BDOFSBFunction subblock;
 
-    void (*rcn_bdof)(struct BDOFFunctions *const bdof, int16_t *dst, int dst_stride,
+    void (*rcn_bdof)(struct BDOFFunctions *const bdof, OVSample *dst, int dst_stride,
                      const int16_t *ref_bdof0, const int16_t *ref_bdof1, int ref_stride,
                      const int16_t *grad_x0, const int16_t *grad_y0,
                      const int16_t *grad_x1, const int16_t *grad_y1,
                      int grad_stride, uint8_t pb_w, uint8_t pb_h);
 
-    void (*extend_bdof_buff)(const OVSample *const src, OVSample *dst_prof,
+    void (*extend_bdof_buff)(const OVSample *const src, int16_t *dst_prof,
                              int16_t ref_stride, int16_t pb_w, int16_t pb_h,
                              uint8_t ext_x, uint8_t ext_y);
 
