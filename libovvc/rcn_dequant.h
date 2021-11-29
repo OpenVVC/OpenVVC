@@ -14,7 +14,4 @@ struct VVCQPCTX;
 void derive_dequant_ctx(OVCTUDec *const ctudec, const struct VVCQPCTX *const qp_ctx,
                         int cu_qp_delta);
 
-struct RCNFunctions;
-void rcn_init_dequant_10(struct RCNFunctions *rcn_funcs);
-
 #endif

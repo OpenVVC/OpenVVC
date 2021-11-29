@@ -99,6 +99,8 @@ void rcn_init_sao_functions_10(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_dmvr_functions(struct RCNFunctions *const rcn_funcs);
 
+void rcn_init_mc_functions_10(struct RCNFunctions *const rcn_funcs);
+
 void rcn_init_prof_functions_10(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_bdof_functions_10(struct RCNFunctions *const rcn_funcs);
@@ -111,7 +113,16 @@ void rcn_init_lmcs_function_10(struct RCNFunctions *rcn_func, uint8_t lmcs_flag)
 
 void rcn_init_alf_functions_10(struct RCNFunctions *rcn_func);
 
+void rcn_init_tr_functions_10(struct RCNFunctions *const rcn_funcs);
 
+void rcn_init_ict_functions_10(struct RCNFunctions *const rcn_funcs, uint8_t ict_type,
+                               uint8_t bitdepth);
+
+void rcn_init_fill_ref_10(struct RCNFunctions *const rcn_funcs);
+
+void rcn_init_dequant_10(struct RCNFunctions *rcn_funcs);
+
+void rcn_init_transform_trees_10(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_cclm_functions_collocated_8(struct RCNFunctions *rcn_func);
 
@@ -124,6 +135,8 @@ void rcn_init_lfnst_functions(struct RCNFunctions *rcn_func);
 void rcn_init_mip_functions_8(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_sao_functions_8(struct RCNFunctions *const rcn_funcs);
+
+void rcn_init_mc_functions_8(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_dmvr_functions(struct RCNFunctions *const rcn_funcs);
 
@@ -138,6 +151,17 @@ void rcn_init_df_functions_8(struct RCNFunctions *const rcn_funcs);
 void rcn_init_lmcs_function_8(struct RCNFunctions *rcn_func, uint8_t lmcs_flag);
 
 void rcn_init_alf_functions_8(struct RCNFunctions *rcn_func);
+
+void rcn_init_tr_functions_8(struct RCNFunctions *const rcn_funcs);
+
+void rcn_init_ict_functions_8(struct RCNFunctions *const rcn_funcs, uint8_t ict_type,
+                              uint8_t bitdepth);
+
+void rcn_init_fill_ref_8(struct RCNFunctions *const rcn_funcs);
+
+void rcn_init_transform_trees_8(struct RCNFunctions *const rcn_funcs);
+
+void rcn_init_dequant_8(struct RCNFunctions *rcn_funcs);
 
 uint8_t rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                            uint8_t x0, uint8_t y0,
