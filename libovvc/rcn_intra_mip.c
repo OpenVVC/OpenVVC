@@ -58,7 +58,7 @@ mip_matmult(const int16_t *bndy_line, OVSample *dst,
     }
 }
 
-static inline void
+static void
 up_sample(OVSample *const dst, const OVSample *const src,
           const OVSample *ref,
           int log2_upsampled_size_src, int log2_opposite_size,
