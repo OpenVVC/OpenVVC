@@ -1181,7 +1181,7 @@ ovdpb_synchro_ref_decoded_ctus(const OVPicture *const ref_pic, int tl_ctu_x, int
     //TODOpar: store previous decoded_ctus of ref_pic in local memory.
     //Avoid to fetch decoded_ctus variable when not needed.
     int mask_w = decoded_ctus->mask_w;
-    uint64_t wanted_mask[mask_w];
+    uint64_t wanted_mask[4];
     xctu_to_mask(wanted_mask, mask_w, tl_ctu_x, br_ctu_x);
 
     //TODOpar: create a mutex + ref_cnd by ctu line ?
