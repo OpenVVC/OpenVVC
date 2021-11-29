@@ -113,7 +113,7 @@ typedef void (*LFNSTFunc)(const int16_t* const src, int16_t* const dst,
                      const int8_t* const lfnst_matrix, int log2_tb_w,
                      int log2_tb_h);
 
-typedef void (*MIPUpSample)(OVSample *const dst, const int16_t *const src,
+typedef void (*MIPUpSample)(OVSample *const dst, const OVSample *const src,
                             const OVSample *ref,
                             int log2_upsampled_size_src, int log2_opposite_size,
                             int src_step, int src_stride,
