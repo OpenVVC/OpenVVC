@@ -41,9 +41,9 @@ AC_ARG_ENABLE([simd], [AS_HELP_STRING([--disable-simd], [disable all simd optimi
 )
 
 
-# --enable-arm-asm
-AC_ARG_ENABLE([arm-asm], [AS_HELP_STRING([--enable-arm-asm], [enables arm assembly optimisation [no]])],
-              [flag_arm_asm="true" CPPFLAGS="$CPPFLAGS -DARCH_AARCH64_ASSEMBLY=1"], [flag_arm_asm="false"]
+# --disable-arm-asm
+AC_ARG_ENABLE([arm-asm], [AS_HELP_STRING([--disable-arm-asm], [disables arm assembly optimisation [no]])],
+              [flag_arm_asm="false"], [flag_arm_asm="true" CPPFLAGS="$CPPFLAGS -DARCH_AARCH64_ASSEMBLY=1"]
 )
 
 # --enable-arm-simde
