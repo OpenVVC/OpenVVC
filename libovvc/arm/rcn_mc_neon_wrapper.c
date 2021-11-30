@@ -657,7 +657,7 @@ rcn_init_mc_functions_neon(struct RCNFunctions* const rcn_funcs)
 
   // /* Chroma functions */
   mc_c->bidir0[0][SIZE_BLOCK_4] = &ov_put_vvc_bi0_pel_pixels_10_4_neon;
-  mc_c->bidir1[0][SIZE_BLOCK_4] = &ov_put_vvc_bi1_pel_pixels_10_8_neon;
+  mc_c->bidir1[0][SIZE_BLOCK_4] = &ov_put_vvc_bi1_pel_pixels_10_4_neon;
   //
   mc_c->unidir[1][SIZE_BLOCK_4] = &ov_put_vvc_uni_epel_h_10_8_neon_wrapper;
   mc_c->bidir0[1][SIZE_BLOCK_4] = &ov_put_vvc_bi0_epel_h_10_8_neon_wrapper;

@@ -85,8 +85,8 @@ function put_vvc_bi1_pel_pixels_10_4_neon, export=1
       lsl    x1, x1, #1 //_dststride
       lsl    x3, x3, #1 //_srcstride
       DUP    V0.4H, w11 //offset vector
-      DUP    V3.4H, wzr //min val vector
-      DUP    V4.4H, w10 //max val vector
+      DUP    V1.4H, wzr //min val vector
+      DUP    V2.4H, w10 //max val vector
 0:
       subs x5, x5, #2
       LD1   {V3.4H}, [x2], x3
