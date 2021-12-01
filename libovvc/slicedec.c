@@ -693,8 +693,9 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
 
     ret = ctudec->coding_tree(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s, 0);
 
-    rcn_write_ctu_to_frame(&ctudec->rcn_ctx, log2_ctb_s);
     rcn_ctu_to_intra_line(&ctudec->rcn_ctx, ctb_addr_rs % nb_ctu_w << log2_ctb_s, log2_ctb_s);
+
+    rcn_write_ctu_to_frame(&ctudec->rcn_ctx, log2_ctb_s);
 
     const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
     ptrdiff_t stride_out_pic = fbuff->stride;
@@ -744,8 +745,9 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
     ret = ctudec->coding_tree_implicit(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s,
                                        0, ctu_w, ctu_h);
 
-    rcn_write_ctu_to_frame_border(&ctudec->rcn_ctx, ctu_w, ctu_h);
     rcn_ctu_to_intra_line(&ctudec->rcn_ctx, ctb_addr_rs % nb_ctu_w << log2_ctb_s, log2_ctb_s);
+
+    rcn_write_ctu_to_frame_border(&ctudec->rcn_ctx, ctu_w, ctu_h);
 
     const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
     ptrdiff_t stride_out_pic = fbuff->stride;
@@ -1180,17 +1182,18 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
 
     struct DRVLines drv_lines;
     struct CCLines cc_lines[2] = {sldec->cabac_lines[0], sldec->cabac_lines[1]};
+    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
 
     const int nb_ctu_w = einfo.nb_ctu_w;
     const int nb_ctu_h = einfo.nb_ctu_h;
     
-    struct OVFilterBuffers* fb = &ctudec->rcn_ctx.filter_buffers;
     ctudec->rcn_ctx.frame_start = sldec->pic->frame;
+
     if(nb_ctu_w > ctudec->prev_nb_ctu_w_rect_entry)
     {
         int margin = 3;
-        ctudec_alloc_filter_buffers(ctudec, einfo.nb_ctu_w, margin);
-        ctudec_alloc_intra_line_buff(ctudec, einfo.nb_ctu_w + 2);
+        ctudec_alloc_filter_buffers(&ctudec->rcn_ctx, einfo.nb_ctu_w, margin, log2_ctb_s);
+        ctudec_alloc_intra_line_buff(&ctudec->rcn_ctx, einfo.nb_ctu_w + 2, log2_ctb_s);
         ctudec->prev_nb_ctu_w_rect_entry = nb_ctu_w;
     }
 
@@ -1253,7 +1256,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     tmp_fbuff = ctudec->rcn_ctx.frame_buff;
 
     while (ctb_y < nb_ctu_h - 1) {
-        uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
 
         ctudec->ctb_y = einfo.ctb_y + ctb_y;
 

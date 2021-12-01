@@ -32,33 +32,30 @@ ctudec_free_intra_line_buff(struct OVRCNCtx *const rcn_ctx)
 }
 
 void
-ctudec_alloc_intra_line_buff(OVCTUDec *const ctudec, int nb_ctu_w)
+ctudec_alloc_intra_line_buff(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uint8_t log2_ctb_s)
 {
-    struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
     struct OVBuffInfo *intra_line_b = &rcn_ctx->intra_line_buff;
 
-    const OVPartInfo *const pinfo = ctudec->part_ctx;
-    uint8_t log2_ctb_size = pinfo->log2_ctu_s;
-    int max_cu_width_l = 1 << log2_ctb_size;
-    intra_line_b->stride    = nb_ctu_w*max_cu_width_l ;
-    intra_line_b->stride_c  = nb_ctu_w*max_cu_width_l / 2 ;
+    intra_line_b->stride   = nb_ctu_w << log2_ctb_s;
+    intra_line_b->stride_c = (nb_ctu_w << log2_ctb_s) >> 1;
 
     //Free and re-alloc when new ctu width for rectangular entry. 
-    ctudec_free_intra_line_buff(&ctudec->rcn_ctx);
-    intra_line_b->y = ov_malloc(intra_line_b->stride * sizeof(uint16_t));
-    intra_line_b->cb = ov_malloc(intra_line_b->stride_c * sizeof(uint16_t));
-    intra_line_b->cr = ov_malloc(intra_line_b->stride_c * sizeof(uint16_t));
+    ctudec_free_intra_line_buff(rcn_ctx);
+
+    intra_line_b->y  = ov_malloc(intra_line_b->stride   * sizeof(*intra_line_b->y));
+    intra_line_b->cb = ov_malloc(intra_line_b->stride_c * sizeof(*intra_line_b->cb));
+    intra_line_b->cr = ov_malloc(intra_line_b->stride_c * sizeof(*intra_line_b->cr));
 }
 
 void
-ctudec_save_last_cols(OVCTUDec *const ctudec, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
+ctudec_save_last_cols(struct OVRCNCtx *const rcn_ctx, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
 {
     if (is_border_rect & OV_BOUNDARY_RIGHT_RECT)
         return;
     
-    struct OVFilterBuffers* fb = &ctudec->rcn_ctx.filter_buffers;
-    const int width_l = ( x_pic_l + fb->filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_pic_l ) : fb->filter_region_w[0];
-    const int height_l = ( y_pic_l + fb->filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_pic_l ) : fb->filter_region_h[0];
+    struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
+    const int width_l = ( x_pic_l + fb->filter_region_w[0] > rcn_ctx->frame_start->width[0] ) ? ( rcn_ctx->frame_start->width[0] - x_pic_l ) : fb->filter_region_w[0];
+    const int height_l = ( y_pic_l + fb->filter_region_h[0] > rcn_ctx->frame_start->height[0] ) ? ( rcn_ctx->frame_start->height[0] - y_pic_l ) : fb->filter_region_h[0];
     const int margin = fb->margin;
 
     for(int comp = 0; comp < 3; comp++) {
@@ -81,11 +78,11 @@ ctudec_save_last_cols(OVCTUDec *const ctudec, int x_pic_l, int y_pic_l, uint8_t 
 }
 
 void
-ctudec_save_last_rows(OVCTUDec *const ctudec, OVSample** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
+ctudec_save_last_rows(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
 {
-    struct OVFilterBuffers* fb = &ctudec->rcn_ctx.filter_buffers;
-    const int width_l = ( x_pic_l + fb->filter_region_w[0] > ctudec->pic_w ) ? ( ctudec->pic_w - x_pic_l ) : fb->filter_region_w[0];
-    const int height_l = ( y_pic_l + fb->filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_pic_l ) : fb->filter_region_h[0];
+    struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
+    const int width_l = ( x_pic_l + fb->filter_region_w[0] > rcn_ctx->frame_start->width[0] ) ? ( rcn_ctx->frame_start->width[0] - x_pic_l ) : fb->filter_region_w[0];
+    const int height_l = ( y_pic_l + fb->filter_region_h[0] > rcn_ctx->frame_start->height[0] ) ? ( rcn_ctx->frame_start->height[0] - y_pic_l ) : fb->filter_region_h[0];
     const int margin = fb->margin;
 
     for(int comp = 0; comp < 3; comp++) {
@@ -121,16 +118,15 @@ ctudec_save_last_rows(OVCTUDec *const ctudec, OVSample** saved_rows, int x_l, in
 }
 
 void
-ctudec_extend_filter_region(OVCTUDec *const ctudec, OVSample** saved_rows, int x_l,
+ctudec_extend_filter_region(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l,
                             int x_pic_l, int y_pic_l, uint8_t bnd_msk)
 {   
 
-    struct OVFilterBuffers* fb = &ctudec->rcn_ctx.filter_buffers;
-    struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
+    struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
 
-    const int width_l = (x_pic_l + fb->filter_region_w[0] > ctudec->pic_w) ? (ctudec->pic_w - x_pic_l)
+    const int width_l = (x_pic_l + fb->filter_region_w[0] > rcn_ctx->frame_start->width[0]) ? (rcn_ctx->frame_start->width[0] - x_pic_l)
                                                                            : fb->filter_region_w[0];
-    const int height_l = (y_pic_l + fb->filter_region_h[0] > ctudec->pic_h) ? (ctudec->pic_h - y_pic_l)
+    const int height_l = (y_pic_l + fb->filter_region_h[0] > rcn_ctx->frame_start->height[0]) ? (rcn_ctx->frame_start->height[0] - y_pic_l)
                                                                             : fb->filter_region_h[0];
     const int margin = fb->margin;
 
@@ -319,13 +315,11 @@ ctudec_extend_filter_region(OVCTUDec *const ctudec, OVSample** saved_rows, int x
 }
 
 void
-ctudec_alloc_filter_buffers(OVCTUDec *const ctudec, int nb_ctu_w, int margin)
+ctudec_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int margin, uint8_t log2_ctb_s)
 {   
-    const OVPartInfo *const pinfo = ctudec->part_ctx;
-    uint8_t log2_ctb_size = pinfo->log2_ctu_s;
-    int ctu_s = 1 << log2_ctb_size;
+    int ctu_s = 1 << log2_ctb_s;
 
-    struct OVFilterBuffers* fb = &ctudec->rcn_ctx.filter_buffers;
+    struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
     OVSample** saved_rows_sao = fb->saved_rows_sao;
     OVSample** saved_rows_alf = fb->saved_rows_alf;
     OVSample** saved_cols    = fb->saved_cols;
@@ -361,13 +355,13 @@ ctudec_alloc_filter_buffers(OVCTUDec *const ctudec, int nb_ctu_w, int margin)
 
 }
 
-void
-ctudec_free_filter_buffers(OVCTUDec *const ctudec)
+static void
+ctudec_free_filter_buffers(struct OVRCNCtx *const rcn_ctx)
 {
-    OVSample** saved_rows_sao    = ctudec->rcn_ctx.filter_buffers.saved_rows_sao;
-    OVSample** saved_rows_alf    = ctudec->rcn_ctx.filter_buffers.saved_rows_alf;
-    OVSample** saved_cols        = ctudec->rcn_ctx.filter_buffers.saved_cols;
-    OVSample** filter_region     = ctudec->rcn_ctx.filter_buffers.filter_region;
+    OVSample** saved_rows_sao    = rcn_ctx->filter_buffers.saved_rows_sao;
+    OVSample** saved_rows_alf    = rcn_ctx->filter_buffers.saved_rows_alf;
+    OVSample** saved_cols        = rcn_ctx->filter_buffers.saved_cols;
+    OVSample** filter_region     = rcn_ctx->filter_buffers.filter_region;
 
     for(int comp = 0; comp < 3; comp++)
     {
@@ -507,7 +501,7 @@ ctudec_uninit(OVCTUDec *ctudec)
 {
     ctudec_uninit_in_loop_filters(ctudec);
 
-    ctudec_free_filter_buffers(ctudec);    
+    ctudec_free_filter_buffers(&ctudec->rcn_ctx);
     ctudec_free_intra_line_buff(&ctudec->rcn_ctx);
 
     ov_freep(&ctudec);
