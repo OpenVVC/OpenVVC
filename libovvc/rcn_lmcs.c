@@ -110,7 +110,7 @@ derive_forward_lut(OVSample *const fwd_lut, const struct WindowsInfo *const wnd_
 
         int32_t nb_step = val - wnd_lbnd;
 
-        int fwd_val = (uint16_t)wnd_bnd[wnd_idx] + ((uint16_t)((uint16_t)fwd_step[wnd_idx] * nb_step + LMCS_RND) >> LMCS_PREC);
+        int fwd_val = (uint16_t)wnd_bnd[wnd_idx] + ((fwd_step[wnd_idx] * nb_step + LMCS_RND) >> LMCS_PREC);
 
         fwd_lut[val] = ov_bdclip(fwd_val);
     }
@@ -130,7 +130,7 @@ derive_backward_lut(OVSample *const bwd_lut, const struct WindowsInfo *const wnd
 
         int32_t nb_step = val - wnd_bnd[wnd_idx];
 
-        int bwd_val = wnd_lbnd + ((uint16_t)((uint16_t)bwd_step[wnd_idx] * nb_step + LMCS_RND) >> LMCS_PREC);
+        int bwd_val = wnd_lbnd + ((bwd_step[wnd_idx] * nb_step + LMCS_RND) >> LMCS_PREC);
 
         bwd_lut[val] = ov_bdclip(bwd_val);
     }
