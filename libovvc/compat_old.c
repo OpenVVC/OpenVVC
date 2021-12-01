@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "data_rcn_transform.h"
 #include "rcn_transform.h"
