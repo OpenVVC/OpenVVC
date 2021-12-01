@@ -1185,7 +1185,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     const int nb_ctu_h = einfo.nb_ctu_h;
     
     struct OVFilterBuffers* fb = &ctudec->rcn_ctx.filter_buffers;
-    fb->pic_frame = sldec->pic->frame;
+    ctudec->rcn_ctx.frame_start = sldec->pic->frame;
     if(nb_ctu_w > ctudec->prev_nb_ctu_w_rect_entry)
     {
         int margin = 3;

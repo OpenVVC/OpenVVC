@@ -126,6 +126,7 @@ ctudec_extend_filter_region(OVCTUDec *const ctudec, OVSample** saved_rows, int x
 {   
 
     struct OVFilterBuffers* fb = &ctudec->rcn_ctx.filter_buffers;
+    struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
 
     const int width_l = (x_pic_l + fb->filter_region_w[0] > ctudec->pic_w) ? (ctudec->pic_w - x_pic_l)
                                                                            : fb->filter_region_w[0];
@@ -148,8 +149,8 @@ ctudec_extend_filter_region(OVCTUDec *const ctudec, OVSample** saved_rows, int x
         OVSample* filter_region = fb->filter_region[comp];
         int stride_filter = fb->filter_region_stride[comp];
 
-        int stride_pic = fb->pic_frame->linesize[comp]/sizeof(OVSample);
-        OVSample* frame = (OVSample*) fb->pic_frame->data[comp] + y_pic*stride_pic + x_pic;
+        int stride_pic = rcn_ctx->frame_start->linesize[comp]/sizeof(OVSample);
+        OVSample* frame = (OVSample*) rcn_ctx->frame_start->data[comp] + y_pic*stride_pic + x_pic;
         int stride_rows = fb->saved_rows_stride[comp];
         int filter_region_offset = fb->filter_region_offset[comp];
 
