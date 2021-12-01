@@ -5,20 +5,6 @@
 #include "ovmem.h"
 #include "overror.h"
 
-static void
-attach_rcn_ctu_buff(struct OVRCNCtx *const rcn_ctx)
-{
-     struct CTURCNData *rcn_data = &rcn_ctx->data;
-     struct OVBuffInfo *ctu_binfo = &rcn_ctx->ctu_buff;
-
-     ctu_binfo->y  = &rcn_data->y_buff [RCN_CTB_PADDING];
-     ctu_binfo->cb = &rcn_data->cb_buff[RCN_CTB_PADDING];
-     ctu_binfo->cr = &rcn_data->cr_buff[RCN_CTB_PADDING];
-
-     ctu_binfo->stride   = RCN_CTB_STRIDE;
-     ctu_binfo->stride_c = RCN_CTB_STRIDE;
-}
-
 int
 ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
 {
@@ -136,8 +122,6 @@ ctudec_init(OVCTUDec **ctudec_p)
 
      *ctudec_p = ctudec;
 
-     attach_rcn_ctu_buff(&ctudec->rcn_ctx);
-     
      ctudec->prev_nb_ctu_w_rect_entry = 0;
 
      return 0;
