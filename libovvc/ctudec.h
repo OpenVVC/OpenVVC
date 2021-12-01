@@ -534,6 +534,7 @@ struct OVCTUDec
          * picture
          */
         OVBuffInfo frame_buff;
+        OVBuffInfo line_start;
 
         /* Pointers to CTU reconstruction buffers to be used
          * to reconstruct current CTU.
@@ -786,7 +787,7 @@ void rcn_alloc_intra_line_buff(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uin
 
 void rcn_attach_ctu_buff(struct OVRCNCtx *const rcn_ctx);
 
-void rcn_fbuff_new_line(struct OVBuffInfo *fbuff, uint8_t log2_ctb_s);
+void rcn_next_buff_line(struct OVRCNCtx *const rcn_ctx,  uint8_t log2_ctb_s);
 
 void rcn_attach_frame_buff(struct OVRCNCtx *const rcn_ctx, const OVFrame *const f,
                            const struct RectEntryInfo *const einfo, uint8_t log2_ctb_s);

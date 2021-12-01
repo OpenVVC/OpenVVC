@@ -590,6 +590,9 @@ rcn_attach_frame_buff(struct OVRCNCtx *const rcn_ctx, const OVFrame *const f,
     uint32_t entry_start_offset   = ((uint32_t)einfo->ctb_x << (log2_ctb_s));
     uint32_t entry_start_offset_c = ((uint32_t)einfo->ctb_x << (log2_ctb_s - 1));
 
+    /* keep track of actual frame start */
+    rcn_ctx->frame_start = f;
+
     entry_start_offset   += ((uint32_t)einfo->ctb_y << log2_ctb_s)       * (f->linesize[0]/sizeof(OVSample));
     entry_start_offset_c += ((uint32_t)einfo->ctb_y << (log2_ctb_s - 1)) * (f->linesize[1]/sizeof(OVSample));
 
@@ -600,13 +603,19 @@ rcn_attach_frame_buff(struct OVRCNCtx *const rcn_ctx, const OVFrame *const f,
 
     fbuff->stride   = f->linesize[0]/sizeof(OVSample);
     fbuff->stride_c = f->linesize[1]/sizeof(OVSample);
+
+    rcn_ctx->line_start = *fbuff;
 }
 
 void
-rcn_fbuff_new_line(struct OVBuffInfo *fbuff, uint8_t log2_ctb_s)
+rcn_next_buff_line(struct OVRCNCtx *const rcn_ctx,  uint8_t log2_ctb_s)
 {
+    struct OVBuffInfo *fbuff = &rcn_ctx->line_start;
+
     fbuff->y  += fbuff->stride << log2_ctb_s;
     fbuff->cb += fbuff->stride_c << (log2_ctb_s - 1);
     fbuff->cr += fbuff->stride_c << (log2_ctb_s - 1);
+
+    rcn_ctx->frame_buff = *fbuff;
 }
 

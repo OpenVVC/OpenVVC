@@ -1145,8 +1145,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
 
     struct RectEntryInfo einfo;
 
-    rcn_attach_ctu_buff(&ctudec->rcn_ctx);
-
     /*FIXME handle cabac alloc or keep it on the stack ? */
     OVCABACCtx cabac_ctx;
     slicedec_init_rect_entry(&einfo, prms, entry_idx);
@@ -1158,14 +1156,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     const int nb_ctu_w = einfo.nb_ctu_w;
     const int nb_ctu_h = einfo.nb_ctu_h;
     
-    if (nb_ctu_w > ctudec->prev_nb_ctu_w_rect_entry) {
-        int margin = 3;
-        rcn_alloc_filter_buffers(&ctudec->rcn_ctx, einfo.nb_ctu_w, margin, log2_ctb_s);
-        rcn_alloc_intra_line_buff(&ctudec->rcn_ctx, einfo.nb_ctu_w + 2, log2_ctb_s);
-        ctudec->prev_nb_ctu_w_rect_entry = nb_ctu_w;
-    }
-
-    struct OVBuffInfo tmp_fbuff;
     ctudec->cabac_ctx = &cabac_ctx;
 
     ctudec->qp_ctx.current_qp = ctudec->slice_qp;
@@ -1220,11 +1210,16 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     init_lines(ctudec, sldec, &einfo, prms, ctudec->part_ctx,
                &drv_lines, cc_lines);
 
+    rcn_attach_ctu_buff(&ctudec->rcn_ctx);
+
     rcn_attach_frame_buff(&ctudec->rcn_ctx, sldec->pic->frame, &einfo, log2_ctb_s);
 
-    ctudec->rcn_ctx.frame_start = sldec->pic->frame;
-
-    tmp_fbuff = ctudec->rcn_ctx.frame_buff;
+    if (nb_ctu_w > ctudec->prev_nb_ctu_w_rect_entry) {
+        int margin = 3;
+        rcn_alloc_filter_buffers(&ctudec->rcn_ctx, einfo.nb_ctu_w, margin, log2_ctb_s);
+        rcn_alloc_intra_line_buff(&ctudec->rcn_ctx, einfo.nb_ctu_w + 2, log2_ctb_s);
+        ctudec->prev_nb_ctu_w_rect_entry = nb_ctu_w;
+    }
 
     while (ctb_y < nb_ctu_h - 1) {
 
@@ -1237,11 +1232,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
 
         drv_line_next_line(ctudec, &drv_lines);
 
-        /*TODO
-         * CLeaner Next CTU Line
-         */
-        rcn_fbuff_new_line(&tmp_fbuff, log2_ctb_s);
-        ctudec->rcn_ctx.frame_buff = tmp_fbuff;
+        rcn_next_buff_line(&ctudec->rcn_ctx, log2_ctb_s);
 
         ctb_addr_rs += nb_ctu_w;
         ctb_y++;
