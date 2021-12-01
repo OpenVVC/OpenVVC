@@ -59,6 +59,10 @@ typedef void (*MCUniDirFunc)(OVSample *_dst, ptrdiff_t _dststride,
                              const OVSample *_src, ptrdiff_t _srcstride,
                              int height, intptr_t mx, intptr_t my, int width);
 
+typedef void (*MCBilinear)(uint16_t *_dst, ptrdiff_t _dststride,
+                           const OVSample *_src, ptrdiff_t _srcstride,
+                           int height, intptr_t mx, intptr_t my, int width);
+
 typedef void (*MCBiDir0Func)(int16_t *_dst,
                              const OVSample *_src, ptrdiff_t _srcstride,
                              int height, intptr_t mx, intptr_t my, int width);
@@ -125,30 +129,30 @@ typedef void (*MIPMatMult)(const int16_t *src, OVSample *dst,
                            uint8_t log2_src, uint8_t log2_red_w, uint8_t log2_red_h);
 
 typedef void (*ALFClassifBlkFunc)(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr,
-                                  int16_t *const src, const int stride, const struct Area blk,
+                                  OVSample *const src, const int stride, const struct Area blk,
                                   const int shift, const int ctu_height, int virbnd_pos);
 
-typedef void (*ALFFilterBlkFunc)(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
+typedef void (*ALFFilterBlkFunc)(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample *const dst, OVSample *const src, const int dstStride, const int srcStride,
                         struct Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                         const int ctu_height, int virbnd_pos);
 
 
-typedef void (*ALFChromaFilterBlkFunc)(int16_t *const dst, const int16_t *const src,
+typedef void (*ALFChromaFilterBlkFunc)(OVSample *const dst, const OVSample *const src,
                                        const int dstStride, const int srcStride,
                                        struct Area blk_dst,
                                        const int16_t *const filter_set, const int16_t *const clip_set,
                                        const int ctu_height, int virbnd_pos);
 
-typedef void (*CCALFFilterBlkFunc)(int16_t * chroma_dst, int16_t * luma_src, const int chr_stride, const int luma_stride,
+typedef void (*CCALFFilterBlkFunc)(OVSample * chroma_dst, OVSample * luma_src, const int chr_stride, const int luma_stride,
                         const struct Area blk_dst, const uint8_t c_id, const int16_t *filt_coeff,
                         const int vbCTUHeight, int vbPos);
 
-typedef void (*SAOBandFilterFunc)(uint8_t* _dst, uint8_t* _src,
+typedef void (*SAOBandFilterFunc)(OVSample* _dst, OVSample* _src,
                                   ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                                   struct SAOParamsCtu* sao, int width,
                                   int height, int c_idx);
 
-typedef void (*SAOEdgeFilterFunc)(uint8_t* _dst, uint8_t* _src,
+typedef void (*SAOEdgeFilterFunc)(OVSample* _dst, OVSample* _src,
                                   ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                                   struct SAOParamsCtu* sao, int width,
                                   int height, int c_idx);
@@ -175,7 +179,7 @@ typedef void (*BDOFSBFunction)(const int16_t* src0, int src0_stride,
 typedef void (*CIIPWeightedFuntion)(OVSample* dst, int dststride, const OVSample* src_intra,
                                     const OVSample* src_inter, int srcstride, int width, int height, int wt);
 
-typedef void (*DFFilterFunction)(int16_t *src, const int stride, const int tc);
+typedef void (*DFFilterFunction)(OVSample *src, const int stride, const int tc);
 
 /**
  * The Context put together all functions used by strategies.
@@ -191,7 +195,7 @@ struct MCFunctions{
     MCUniDirWFunc unidir_w[4][8];
     MCBiDirWFunc bidir_w[4][8];
 
-    MCUniDirFunc bilinear[4][8];
+    MCBilinear bilinear[4][8];
 
     void (*gpm_weighted)(OVSample* _dst, int _dststride, const int16_t* _src0,
                          int _srcstride, const int16_t* _src1, int height,
