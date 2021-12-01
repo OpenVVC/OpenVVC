@@ -8,7 +8,7 @@ typedef uint8_t OVSample;
 #endif
 
 #define ov_bdclip(a) ov_clip_uintp2(a, BITDEPTH)
-#define AVG_VAL ((1 << (BITDEPTH)) >> 1)
+#define AVG_VAL (OVSample)((1 << (BITDEPTH)) >> 1)
 
 #define FUNC3(a, b, c)  a ## _ ## b ##  c
 #define FUNC2(a, b, c)  FUNC3(a, b, c)
