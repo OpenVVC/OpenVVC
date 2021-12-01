@@ -283,7 +283,7 @@ put_vvc_qpel_uni_hv(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
 }
 
 static void
-put_vvc_pel_bilinear_pixels(int16_t* _dst, ptrdiff_t _dststride,
+put_vvc_pel_bilinear_pixels(uint16_t* _dst, ptrdiff_t _dststride,
                             const OVSample* _src, ptrdiff_t _srcstride, int height,
                             intptr_t mx, intptr_t my, int width)
 {
@@ -308,7 +308,7 @@ put_vvc_pel_bilinear_pixels(int16_t* _dst, ptrdiff_t _dststride,
 }
 
 static void
-put_vvc_qpel_bilinear_h(int16_t* _dst, ptrdiff_t _dststride, const OVSample* _src,
+put_vvc_qpel_bilinear_h(uint16_t* _dst, ptrdiff_t _dststride, const OVSample* _src,
                         ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                         int width)
 {
@@ -332,7 +332,7 @@ put_vvc_qpel_bilinear_h(int16_t* _dst, ptrdiff_t _dststride, const OVSample* _sr
 }
 
 static void
-put_vvc_qpel_bilinear_v(int16_t* _dst, ptrdiff_t _dststride, const OVSample* _src,
+put_vvc_qpel_bilinear_v(uint16_t* _dst, ptrdiff_t _dststride, const OVSample* _src,
                         ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                         int width)
 {
@@ -356,7 +356,7 @@ put_vvc_qpel_bilinear_v(int16_t* _dst, ptrdiff_t _dststride, const OVSample* _sr
 }
 
 static void
-put_vvc_qpel_bilinear_hv(int16_t* _dst, ptrdiff_t _dststride, const OVSample* _src,
+put_vvc_qpel_bilinear_hv(uint16_t* _dst, ptrdiff_t _dststride, const OVSample* _src,
                          ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                          int width)
 {
