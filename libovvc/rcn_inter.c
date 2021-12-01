@@ -475,8 +475,8 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
     
-    OVSample *edge_buff0 = rcn_ctx->data.edge_buff0;
-    OVSample *edge_buff1 = rcn_ctx->data.edge_buff1;
+    OVSample *edge_buff0 = (OVSample *)rcn_ctx->data.edge_buff0;
+    OVSample *edge_buff1 = (OVSample *)rcn_ctx->data.edge_buff1;
     int16_t *tmp_buff = (int16_t *) rcn_ctx->data.tmp_buff;
 
     /*FIXME we suppose here both refs possess the same size*/
@@ -1015,8 +1015,8 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
 
-    OVSample *edge_buff0_1 = rcn_ctx->data.edge_buff0;
-    OVSample *edge_buff1_1 = rcn_ctx->data.edge_buff1;
+    OVSample *edge_buff0_1 = (OVSample *)rcn_ctx->data.edge_buff0;
+    OVSample *edge_buff1_1 = (OVSample *)rcn_ctx->data.edge_buff1;
     
     struct OVBuffInfo ref0_c = derive_dmvr_ref_buf_c(ref0, tmp0,
                                                      pos_x >> 1, pos_y >> 1,
@@ -1213,8 +1213,8 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
 
         
-    OVSample *edge_buff0 = rcn_ctx->data.edge_buff0;
-    OVSample *edge_buff1 = rcn_ctx->data.edge_buff1;
+    OVSample *edge_buff0 = (OVSample *)rcn_ctx->data.edge_buff0;
+    OVSample *edge_buff1 = (OVSample *)rcn_ctx->data.edge_buff1;
 
     int16_t *tmp_buff1 = (int16_t*) rcn_ctx->data.tmp_buff1;
     
@@ -1352,10 +1352,10 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
 
-    OVSample *edge_buff0 = rcn_ctx->data.edge_buff0;
-    OVSample *edge_buff1 = rcn_ctx->data.edge_buff1;
-    OVSample *edge_buff0_1 = rcn_ctx->data.edge_buff0_1;
-    OVSample *edge_buff1_1 = rcn_ctx->data.edge_buff1_1;
+    OVSample *edge_buff0 = (OVSample *)rcn_ctx->data.edge_buff0;
+    OVSample *edge_buff1 = (OVSample *)rcn_ctx->data.edge_buff1;
+    OVSample *edge_buff0_1 = (OVSample *)rcn_ctx->data.edge_buff0_1;
+    OVSample *edge_buff1_1 = (OVSample *)rcn_ctx->data.edge_buff1_1;
     int16_t *tmp_buff = (int16_t *) rcn_ctx->data.tmp_buff;
 
     /*FIXME we suppose here both refs possess the same size*/
@@ -1436,7 +1436,7 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
     dst.y  += x0 + y0 * dst.stride;
 
-    OVSample *tmp_buff = rcn_ctx->data.tmp_buff;
+    OVSample *tmp_buff = (OVSample *)rcn_ctx->data.tmp_buff;
     OVPicture *ref_pic =  type ? ref1 : ref0;
     const OVFrame *const frame0 = ref_pic->frame;
 
@@ -1518,7 +1518,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
 
     dst.y  += x0 + y0 * dst.stride;
 
-    OVSample *tmp_buff = rcn_ctx->data.tmp_buff;
+    OVSample *tmp_buff = (OVSample *)rcn_ctx->data.tmp_buff;
 
     OVPicture *ref_pic =  type ? ref1 : ref0;
     const OVFrame *const frame0 = ref_pic->frame;
@@ -1612,7 +1612,7 @@ rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
 
-    OVSample *tmp_buff = rcn_ctx->data.tmp_buff;
+    OVSample *tmp_buff = (OVSample *)rcn_ctx->data.tmp_buff;
     
     OVPicture *ref_pic =  type ? ref1 : ref0;
     const OVFrame *const frame0 = ref_pic->frame;
@@ -1822,9 +1822,9 @@ rcn_ciip_b(OVCTUDec*const ctudec,
     struct OVBuffInfo tmp_inter;
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     
-    OVSample * tmp_inter_l = rcn_ctx->data.tmp_inter_l;
-    OVSample *tmp_inter_cb = rcn_ctx->data.tmp_inter_cb;
-    OVSample *tmp_inter_cr = rcn_ctx->data.tmp_inter_cr;
+    OVSample * tmp_inter_l = (OVSample *)rcn_ctx->data.tmp_inter_l;
+    OVSample *tmp_inter_cb = (OVSample *)rcn_ctx->data.tmp_inter_cb;
+    OVSample *tmp_inter_cr = (OVSample *)rcn_ctx->data.tmp_inter_cr;
     
     tmp_inter.y  = &tmp_inter_l [RCN_CTB_PADDING];
     tmp_inter.cb = &tmp_inter_cb[RCN_CTB_PADDING];
@@ -1851,7 +1851,7 @@ rcn_ciip(OVCTUDec *const ctudec,
     //Inter merge mode
     struct OVBuffInfo tmp_inter;
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
-    OVSample * tmp_inter_l = rcn_ctx->data.tmp_inter_l;
+    OVSample * tmp_inter_l = (OVSample *)rcn_ctx->data.tmp_inter_l;
     OVSample *tmp_inter_cb = rcn_ctx->data.tmp_inter_cb;
     OVSample *tmp_inter_cr = rcn_ctx->data.tmp_inter_cr;
     
@@ -2094,10 +2094,10 @@ rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
     OVPicture *ref1 = type1 == 1 ? inter_ctx->rpl0[ref_idx_1]: inter_ctx->rpl1[ref_idx_1];
 
   
-    OVSample *edge_buff0 = rcn_ctx->data.edge_buff0;
-    OVSample *edge_buff1 = rcn_ctx->data.edge_buff1;
-    OVSample *edge_buff0_1 = rcn_ctx->data.edge_buff0_1;
-    OVSample *edge_buff1_1 = rcn_ctx->data.edge_buff1_1;
+    OVSample *edge_buff0 = (OVSample *)rcn_ctx->data.edge_buff0;
+    OVSample *edge_buff1 = (OVSample *)rcn_ctx->data.edge_buff1;
+    OVSample *edge_buff0_1 = (OVSample *)rcn_ctx->data.edge_buff0_1;
+    OVSample *edge_buff1_1 = (OVSample *)rcn_ctx->data.edge_buff1_1;
     int16_t *tmp_buff0 = (int16_t*) rcn_ctx->data.tmp_buff0;
     int16_t *tmp_buff1 = (int16_t*) rcn_ctx->data.tmp_buff1;
 
