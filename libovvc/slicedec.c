@@ -694,7 +694,7 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
     ret = ctudec->coding_tree(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s, 0);
 
     rcn_write_ctu_to_frame(&ctudec->rcn_ctx, log2_ctb_s);
-    rcn_ctu_to_intra_line(ctudec, ctb_addr_rs % nb_ctu_w << log2_ctb_s);
+    rcn_ctu_to_intra_line(&ctudec->rcn_ctx, ctb_addr_rs % nb_ctu_w << log2_ctb_s, log2_ctb_s);
 
     const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
     ptrdiff_t stride_out_pic = fbuff->stride;
@@ -745,7 +745,7 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
                                        0, ctu_w, ctu_h);
 
     rcn_write_ctu_to_frame_border(&ctudec->rcn_ctx, ctu_w, ctu_h);
-    rcn_ctu_to_intra_line(ctudec, ctb_addr_rs % nb_ctu_w << log2_ctb_s);
+    rcn_ctu_to_intra_line(&ctudec->rcn_ctx, ctb_addr_rs % nb_ctu_w << log2_ctb_s, log2_ctb_s);
 
     const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
     ptrdiff_t stride_out_pic = fbuff->stride;

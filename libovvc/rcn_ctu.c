@@ -159,25 +159,23 @@ rcn_intra_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log
 }
 
 void
-rcn_ctu_to_intra_line(OVCTUDec *const ctudec, int x_l)
+rcn_ctu_to_intra_line(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log2_ctu_s)
 {
-    struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
     struct OVBuffInfo *intra_line_binfo = &rcn_ctx->intra_line_buff;
 
-    const OVPartInfo *const pinfo = ctudec->part_ctx;
-    uint8_t log2_ctb_size = pinfo->log2_ctu_s;
-    int max_cu_width_l = 1 << log2_ctb_size;
-    int max_cu_width_c = 1 << (log2_ctb_size-1);
+    int max_cu_width_l = 1 << log2_ctu_s;
+    int max_cu_width_c = 1 << (log2_ctu_s - 1);
+
     OVSample *_src;
 
-    _src = &ctudec->rcn_ctx.ctu_buff.y[(max_cu_width_l - 1) * RCN_CTB_STRIDE];
-    memcpy(&intra_line_binfo->y[x_l], _src, sizeof(*_src) << log2_ctb_size);
+    _src = &rcn_ctx->ctu_buff.y[(max_cu_width_l - 1) * RCN_CTB_STRIDE];
+    memcpy(&intra_line_binfo->y[x_l], _src, sizeof(*_src) << log2_ctu_s);
 
-    _src = &ctudec->rcn_ctx.ctu_buff.cb[(max_cu_width_c - 1) * RCN_CTB_STRIDE ];
-    memcpy(&intra_line_binfo->cb[x_l>>1], _src, sizeof(*_src) << (log2_ctb_size - 1));
+    _src = &rcn_ctx->ctu_buff.cb[(max_cu_width_c - 1) * RCN_CTB_STRIDE ];
+    memcpy(&intra_line_binfo->cb[x_l>>1], _src, sizeof(*_src) << (log2_ctu_s - 1));
 
-    _src = &ctudec->rcn_ctx.ctu_buff.cr[(max_cu_width_c - 1) * RCN_CTB_STRIDE ];
-    memcpy(&intra_line_binfo->cr[x_l>>1], _src, sizeof(*_src) << (log2_ctb_size - 1));
+    _src = &rcn_ctx->ctu_buff.cr[(max_cu_width_c - 1) * RCN_CTB_STRIDE ];
+    memcpy(&intra_line_binfo->cr[x_l>>1], _src, sizeof(*_src) << (log2_ctu_s - 1));
 }
 
 void

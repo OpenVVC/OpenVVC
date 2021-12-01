@@ -6,10 +6,9 @@
 #include "overror.h"
 
 static void
-attach_rcn_ctu_buff(OVCTUDec *const ctudec)
+attach_rcn_ctu_buff(struct OVRCNCtx *const rcn_ctx)
 {
-     struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
-     struct CTURCNData *rcn_data = &ctudec->rcn_ctx.data;
+     struct CTURCNData *rcn_data = &rcn_ctx->data;
      struct OVBuffInfo *ctu_binfo = &rcn_ctx->ctu_buff;
 
      ctu_binfo->y  = &rcn_data->y_buff [RCN_CTB_PADDING];
@@ -18,6 +17,18 @@ attach_rcn_ctu_buff(OVCTUDec *const ctudec)
 
      ctu_binfo->stride   = RCN_CTB_STRIDE;
      ctu_binfo->stride_c = RCN_CTB_STRIDE;
+}
+
+static void
+ctudec_free_intra_line_buff(struct OVRCNCtx *const rcn_ctx)
+{
+    struct OVBuffInfo *intra_line_b = &rcn_ctx->intra_line_buff;
+
+    if (intra_line_b->y) {
+        ov_freep(&intra_line_b->y);
+        ov_freep(&intra_line_b->cb);
+        ov_freep(&intra_line_b->cr);
+    }
 }
 
 void
@@ -33,29 +44,10 @@ ctudec_alloc_intra_line_buff(OVCTUDec *const ctudec, int nb_ctu_w)
     intra_line_b->stride_c  = nb_ctu_w*max_cu_width_l / 2 ;
 
     //Free and re-alloc when new ctu width for rectangular entry. 
-    ctudec_free_intra_line_buff(ctudec);
+    ctudec_free_intra_line_buff(&ctudec->rcn_ctx);
     intra_line_b->y = ov_malloc(intra_line_b->stride * sizeof(uint16_t));
     intra_line_b->cb = ov_malloc(intra_line_b->stride_c * sizeof(uint16_t));
     intra_line_b->cr = ov_malloc(intra_line_b->stride_c * sizeof(uint16_t));
-}
-
-void
-ctudec_free_intra_line_buff(OVCTUDec *const ctudec)
-{
-    struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
-    struct OVBuffInfo *intra_line_b = &rcn_ctx->intra_line_buff;
-
-   if(intra_line_b->y){
-        ov_freep(&intra_line_b->y);
-        ov_freep(&intra_line_b->cb);
-        ov_freep(&intra_line_b->cr);
-    }
-}
-
-int
-ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec)
-{
-    return 0;
 }
 
 void
@@ -502,7 +494,7 @@ ctudec_init(OVCTUDec **ctudec_p)
 
      *ctudec_p = ctudec;
 
-     attach_rcn_ctu_buff(ctudec);
+     attach_rcn_ctu_buff(&ctudec->rcn_ctx);
      
      ctudec->prev_nb_ctu_w_rect_entry = 0;
 
@@ -515,7 +507,7 @@ ctudec_uninit(OVCTUDec *ctudec)
     ctudec_uninit_in_loop_filters(ctudec);
 
     ctudec_free_filter_buffers(ctudec);    
-    ctudec_free_intra_line_buff(ctudec);
+    ctudec_free_intra_line_buff(&ctudec->rcn_ctx);
 
     ov_freep(&ctudec);
 

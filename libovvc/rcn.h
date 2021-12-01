@@ -15,7 +15,8 @@ struct VVCGPM;
 void rcn_frame_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s);
 
 void rcn_intra_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log2_ctb_s);
-void rcn_ctu_to_intra_line(OVCTUDec *const ctudec, int x_l);
+
+void rcn_ctu_to_intra_line(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log2_ctb_s);
 
 void ctu_copy_left_border(struct OVRCNCtx *rcn_ctx, uint8_t log2_ctb_s);
 

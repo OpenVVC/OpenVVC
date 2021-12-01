@@ -772,8 +772,6 @@ struct OVCTUDec
     uint8_t tmp_red;
 };
 
-int ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec);
-
 void ctudec_alloc_filter_buffers(OVCTUDec *const ctudec, int nb_ctu_w, int margin);
 void ctudec_extend_filter_region(OVCTUDec *const ctudec, OVSample** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect);
 void ctudec_save_last_rows(OVCTUDec *const ctudec, OVSample** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect);
@@ -781,7 +779,6 @@ void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_pic_l, int y_pic_l, uin
 void ctudec_free_filter_buffers(OVCTUDec *const ctudec);
 
 void ctudec_alloc_intra_line_buff(OVCTUDec *const ctudec, int nb_ctu_w);
-void ctudec_free_intra_line_buff(OVCTUDec *const ctudec);
 
 int ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms);
 
