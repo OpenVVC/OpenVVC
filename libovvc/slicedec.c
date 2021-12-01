@@ -1004,37 +1004,6 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 }
 
 static void
-slicedec_attach_frame_buff(OVCTUDec *const ctudec, OVSliceDec *sldec,
-                           const struct RectEntryInfo *const einfo)
-{
-    OVFrame *f = sldec->pic->frame;
-    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-    struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
-
-    uint32_t entry_start_offset   = ((uint32_t)einfo->ctb_x << (log2_ctb_s));
-    uint32_t entry_start_offset_c = ((uint32_t)einfo->ctb_x << (log2_ctb_s - 1));
-
-    entry_start_offset   += ((uint32_t)einfo->ctb_y << log2_ctb_s)       * (f->linesize[0]/sizeof(OVSample));
-    entry_start_offset_c += ((uint32_t)einfo->ctb_y << (log2_ctb_s - 1)) * (f->linesize[1]/sizeof(OVSample));
-
-    /*FIXME clean offset */
-    fbuff->y  = (OVSample *)f->data[0] + entry_start_offset;
-    fbuff->cb = (OVSample *)f->data[1] + entry_start_offset_c;
-    fbuff->cr = (OVSample *)f->data[2] + entry_start_offset_c;
-
-    fbuff->stride   = f->linesize[0]/sizeof(OVSample);
-    fbuff->stride_c = f->linesize[1]/sizeof(OVSample);
-}
-
-static void
-fbuff_new_line(struct OVBuffInfo *fbuff, uint8_t log2_ctb_s)
-{
-    fbuff->y  += fbuff->stride << log2_ctb_s;
-    fbuff->cb += fbuff->stride_c << (log2_ctb_s - 1);
-    fbuff->cr += fbuff->stride_c << (log2_ctb_s - 1);
-}
-
-static void
 tmvp_entry_init(OVCTUDec *ctudec, OVPicture *active_pic)
 {
     /* FIXME try to remove ctu decoder reference from inter context */
@@ -1166,20 +1135,6 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
     }
 }
 
-static void
-attach_rcn_ctu_buff(struct OVRCNCtx *const rcn_ctx)
-{
-     struct CTURCNData *rcn_data = &rcn_ctx->data;
-     struct OVBuffInfo *ctu_binfo = &rcn_ctx->ctu_buff;
-
-     ctu_binfo->y  = &rcn_data->y_buff [RCN_CTB_PADDING];
-     ctu_binfo->cb = &rcn_data->cb_buff[RCN_CTB_PADDING];
-     ctu_binfo->cr = &rcn_data->cr_buff[RCN_CTB_PADDING];
-
-     ctu_binfo->stride   = RCN_CTB_STRIDE;
-     ctu_binfo->stride_c = RCN_CTB_STRIDE;
-}
-
 static int
 slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms,
                            uint16_t entry_idx)
@@ -1190,7 +1145,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
 
     struct RectEntryInfo einfo;
 
-    attach_rcn_ctu_buff(&ctudec->rcn_ctx);
+    rcn_attach_ctu_buff(&ctudec->rcn_ctx);
 
     /*FIXME handle cabac alloc or keep it on the stack ? */
     OVCABACCtx cabac_ctx;
@@ -1265,7 +1220,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     init_lines(ctudec, sldec, &einfo, prms, ctudec->part_ctx,
                &drv_lines, cc_lines);
 
-    slicedec_attach_frame_buff(ctudec, sldec, &einfo);
+    rcn_attach_frame_buff(&ctudec->rcn_ctx, sldec->pic->frame, &einfo, log2_ctb_s);
 
     ctudec->rcn_ctx.frame_start = sldec->pic->frame;
 
@@ -1285,7 +1240,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
         /*TODO
          * CLeaner Next CTU Line
          */
-        fbuff_new_line(&tmp_fbuff, log2_ctb_s);
+        rcn_fbuff_new_line(&tmp_fbuff, log2_ctb_s);
         ctudec->rcn_ctx.frame_buff = tmp_fbuff;
 
         ctb_addr_rs += nb_ctu_w;

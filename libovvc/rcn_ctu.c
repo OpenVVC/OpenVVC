@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "dec_structures.h"
 #include "ctudec.h"
 
 void
@@ -564,5 +565,48 @@ rcn_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int margi
         saved_rows_alf[comp] = ov_mallocz(margin * fb->saved_rows_stride[comp] * sizeof(OVSample));
     }
 
+}
+
+void
+rcn_attach_ctu_buff(struct OVRCNCtx *const rcn_ctx)
+{
+     struct CTURCNData *rcn_data = &rcn_ctx->data;
+     struct OVBuffInfo *ctu_binfo = &rcn_ctx->ctu_buff;
+
+     ctu_binfo->y  = &rcn_data->y_buff [RCN_CTB_PADDING];
+     ctu_binfo->cb = &rcn_data->cb_buff[RCN_CTB_PADDING];
+     ctu_binfo->cr = &rcn_data->cr_buff[RCN_CTB_PADDING];
+
+     ctu_binfo->stride   = RCN_CTB_STRIDE;
+     ctu_binfo->stride_c = RCN_CTB_STRIDE;
+}
+
+void
+rcn_attach_frame_buff(struct OVRCNCtx *const rcn_ctx, const OVFrame *const f,
+                      const struct RectEntryInfo *const einfo, uint8_t log2_ctb_s)
+{
+    struct OVBuffInfo *const fbuff = &rcn_ctx->frame_buff;
+
+    uint32_t entry_start_offset   = ((uint32_t)einfo->ctb_x << (log2_ctb_s));
+    uint32_t entry_start_offset_c = ((uint32_t)einfo->ctb_x << (log2_ctb_s - 1));
+
+    entry_start_offset   += ((uint32_t)einfo->ctb_y << log2_ctb_s)       * (f->linesize[0]/sizeof(OVSample));
+    entry_start_offset_c += ((uint32_t)einfo->ctb_y << (log2_ctb_s - 1)) * (f->linesize[1]/sizeof(OVSample));
+
+    /*FIXME clean offset */
+    fbuff->y  = (OVSample *)f->data[0] + entry_start_offset;
+    fbuff->cb = (OVSample *)f->data[1] + entry_start_offset_c;
+    fbuff->cr = (OVSample *)f->data[2] + entry_start_offset_c;
+
+    fbuff->stride   = f->linesize[0]/sizeof(OVSample);
+    fbuff->stride_c = f->linesize[1]/sizeof(OVSample);
+}
+
+void
+rcn_fbuff_new_line(struct OVBuffInfo *fbuff, uint8_t log2_ctb_s)
+{
+    fbuff->y  += fbuff->stride << log2_ctb_s;
+    fbuff->cb += fbuff->stride_c << (log2_ctb_s - 1);
+    fbuff->cr += fbuff->stride_c << (log2_ctb_s - 1);
 }
 
