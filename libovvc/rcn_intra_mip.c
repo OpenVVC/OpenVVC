@@ -195,7 +195,7 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
 
         if (log2_scale_x) {
             OVSample *_dst = dst + ((1 << log2_scale_y) - 1) * RCN_CTB_STRIDE;
-            rcn_funcs->mip.upsample_h[log2_red_w == 3][log2_scale_x - 1](_dst, (int16_t *)mip_pred, ref_lft, log2_red_w, log2_red_h,
+            rcn_funcs->mip.upsample_h[log2_red_w == 3][log2_scale_x - 1](_dst, mip_pred, ref_lft, log2_red_w, log2_red_h,
                                                                          1, (1 << log2_red_w),
                                                                          1, (1 << log2_scale_y) * RCN_CTB_STRIDE,
                                                                          (1 << log2_scale_y), log2_scale_x);
@@ -209,7 +209,7 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
         }
 
         if (log2_scale_y) {
-            rcn_funcs->mip.upsample_v[log2_red_h == 3][log2_scale_y - 1](dst, (int16_t *)src, ref_abv, log2_red_h, log2_pu_w,
+            rcn_funcs->mip.upsample_v[log2_red_h == 3][log2_scale_y - 1](dst, src, ref_abv, log2_red_h, log2_pu_w,
                                                                          src_step, src_stride,
                                                                          RCN_CTB_STRIDE, 1,
                                                                          1, log2_scale_y);
@@ -322,7 +322,7 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
 
         if (log2_scale_x) {
             OVSample *_dst = dst + ((1 << log2_scale_y) - 1) * RCN_CTB_STRIDE;
-            rcn_funcs->mip.upsample_h[log2_red_w == 3][log2_scale_x - 1](_dst, (int16_t *)mip_pred2, ref_lft, log2_red_w, log2_red_h,
+            rcn_funcs->mip.upsample_h[log2_red_w == 3][log2_scale_x - 1](_dst, mip_pred2, ref_lft, log2_red_w, log2_red_h,
                                                                          1, (1 << log2_red_w),
                                                                          1, (1 << log2_scale_y) * RCN_CTB_STRIDE,
                                                                          (1 << log2_scale_y), log2_scale_x);
@@ -336,7 +336,7 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
         }
 
         if (log2_scale_y) {
-            rcn_funcs->mip.upsample_v[log2_red_h == 3][log2_scale_y - 1](dst, (int16_t *)src, ref_abv, log2_red_h, log2_pu_w,
+            rcn_funcs->mip.upsample_v[log2_red_h == 3][log2_scale_y - 1](dst, src, ref_abv, log2_red_h, log2_pu_w,
                                                                          src_step, src_stride,
                                                                          RCN_CTB_STRIDE, 1,
                                                                          1, log2_scale_y);
