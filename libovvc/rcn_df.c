@@ -907,10 +907,10 @@ filter_veritcal_edge_c(const struct DBFInfo *const dbf_info, OVSample *src, ptrd
         uint8_t is_strong = 0;
 
         if (is_large) {
-            const int dp0 = compute_dp((int16_t *)src0, 1);
-            const int dq0 = compute_dq((int16_t *)src0, 1);
-            const int dp3 = compute_dp((int16_t *)src1, 1);
-            const int dq3 = compute_dq((int16_t *)src1, 1);
+            const int dp0 = compute_dp(src0, 1);
+            const int dq0 = compute_dq(src0, 1);
+            const int dp3 = compute_dp(src1, 1);
+            const int dq3 = compute_dq(src1, 1);
 
             const int d0 = dp0 + dq0;
             const int d3 = dp3 + dq3;
@@ -1088,10 +1088,10 @@ filter_horizontal_edge_c(const struct DBFInfo *const dbf_info, OVSample *src, pt
         uint8_t is_strong = 0;
 
         if (is_large) {
-            const int dp0 = compute_dp_c((int16_t *)src0, stride, is_ctb_b);
-            const int dq0 = compute_dq((int16_t *)src0, stride);
-            const int dp3 = compute_dp_c((int16_t *)src1, stride, is_ctb_b);
-            const int dq3 = compute_dq((int16_t *)src1, stride);
+            const int dp0 = compute_dp_c(src0, stride, is_ctb_b);
+            const int dq0 = compute_dq(src0, stride);
+            const int dp3 = compute_dp_c(src1, stride, is_ctb_b);
+            const int dq3 = compute_dq(src1, stride);
 
             const int d0 = dp0 + dq0;
             const int d3 = dp3 + dq3;
