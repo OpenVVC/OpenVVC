@@ -48,7 +48,7 @@ AC_ARG_ENABLE([arm-asm], [AS_HELP_STRING([--disable-arm-asm], [disables arm asse
 
 # --enable-arm-simde
 AC_ARG_ENABLE([arm-simde], [AS_HELP_STRING([--enable-arm-simde], [enables arm simde optimisation [no]])],
-              [flag_arm_simde="true" CPPFLAGS="$CPPFLAGS -DARM_SIMDE=1"], [flag_arm_simde="false"]
+              [flag_arm_simde="true" CPPFLAGS="$CPPFLAGS -DARM_SIMDE=1 -DSIMDE_NO_CHECK_IMMEDIATE_CONSTANT"], [flag_arm_simde="false"]
 )
 
 # host and cpu specific settings
@@ -67,7 +67,8 @@ AS_CASE([$host_os],
                 CPPFLAGS="$CPPFLAGS -DHAVE_ALIGNED_MALLOC"
         ],
         [*android*], [
-                CPPFLAGS="$CPPFLAGS -DHAVE_POSIX_MEMALIGN"
+                CPPFLAGS="$CPPFLAGS -DHAVE_POSIX_MEMALIGN -DEXCLUDE_FOR_ANDROID=1"
+                isAndroid="true"
         ],
         [linux*], [
                 CPPFLAGS="$CPPFLAGS -DHAVE_POSIX_MEMALIGN"
@@ -88,4 +89,5 @@ AM_CONDITIONAL([HAVE_NEON_ASM], [test x"$ARM" = x"true" -a x"$flag_disable_simd"
 
 AM_CONDITIONAL([HAVE_NEON_SIMDE], [test x"$ARM" = x"true" -a x"$flag_disable_simd" = x"false" -a x"$flag_arm_simde" = x"true"])
 
+AM_CONDITIONAL([HAVE_EXCLUDE_ANDROID], [test x"$ARM" = x"true" -a x"$isAndroid" = x"true"])
 AC_OUTPUT
