@@ -1395,64 +1395,6 @@ slicedec_init_lines(OVSliceDec *const sldec, const OVPS *const prms)
     return 0;
 }
 
-// static void
-// uninit_ctudec_list(OVSliceDec *const sldec, int nb_threads)
-// {
-//     int nb_ctudec = nb_threads;
-//     int i;
-
-//     if(sldec->active_params)
-//     {    const OVSPS *const sps = sldec->active_params->sps;
-//         uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
-
-
-//         for (i = 0; i < nb_ctudec; ++i) {
-//             OVCTUDec *ctudec = sldec->ctudec_list[i];
-//             slicedec_uninit_in_loop_filters(ctudec, (1<<log2_ctb_s));
-//         }
-//     }
-
-//     for (i = 0; i < nb_ctudec; ++i) {
-//         OVCTUDec *ctudec = sldec->ctudec_list[i];
-//         ctudec_uninit(ctudec);
-//     }
-//     ov_freep(&sldec->ctudec_list);
-//     #if 0
-//     ctudec_uninit(sldec->ctudec_list);
-//     #endif
-// }
-
-// static int
-// init_ctudec_list(OVSliceDec *const sldec, int nb_threads)
-// {
-//      int nb_ctudec = nb_threads;
-//      int i;
-
-//      sldec->ctudec_list = ov_mallocz(sizeof(*sldec->ctudec_list) * nb_ctudec);
-//      if (!sldec->ctudec_list) {
-//          return OVVC_ENOMEM;
-//      }
-
-//      for (i = 0; i < nb_ctudec; ++i) {
-//          int ret;
-//          OVCTUDec **ctudec_p = &sldec->ctudec_list[i];
-//          ret = ctudec_init(ctudec_p);
-//          if (ret < 0) {
-//              goto failctudec;
-//          }
-//      }
-
-//      #if 0
-//      ctudec_uninit(sldec->ctudec_list);
-//      #endif
-//      return 0;
-// failctudec:
-//      ov_log(NULL, OVLOG_ERROR, "Failed line decoder initialisation\n");
-//      uninit_ctudec_list(sldec, nb_ctudec);
-
-//      return OVVC_ENOMEM;
-// }
-
 int
 slicedec_init(OVSliceDec *sldec)
 {
