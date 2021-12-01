@@ -208,7 +208,7 @@ rcn_write_ctu_to_frame_border(const struct OVRCNCtx *const rcn_ctx,
 }
 
 static void
-ctudec_free_intra_line_buff(struct OVRCNCtx *const rcn_ctx)
+free_intra_line_buff(struct OVRCNCtx *const rcn_ctx)
 {
     struct OVBuffInfo *intra_line_b = &rcn_ctx->intra_line_buff;
 
@@ -220,7 +220,7 @@ ctudec_free_intra_line_buff(struct OVRCNCtx *const rcn_ctx)
 }
 
 static void
-ctudec_free_filter_buffers(struct OVRCNCtx *const rcn_ctx)
+free_filter_buffers(struct OVRCNCtx *const rcn_ctx)
 {
     OVSample** saved_rows_sao    = rcn_ctx->filter_buffers.saved_rows_sao;
     OVSample** saved_rows_alf    = rcn_ctx->filter_buffers.saved_rows_alf;
@@ -239,12 +239,12 @@ ctudec_free_filter_buffers(struct OVRCNCtx *const rcn_ctx)
 void
 rcn_buff_uninit(struct OVRCNCtx *const rcn_ctx)
 {
-    ctudec_free_filter_buffers(rcn_ctx);
-    ctudec_free_intra_line_buff(rcn_ctx);
+    free_filter_buffers(rcn_ctx);
+    free_intra_line_buff(rcn_ctx);
 }
 
 void
-ctudec_alloc_intra_line_buff(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uint8_t log2_ctb_s)
+rcn_alloc_intra_line_buff(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uint8_t log2_ctb_s)
 {
     struct OVBuffInfo *intra_line_b = &rcn_ctx->intra_line_buff;
 
@@ -252,7 +252,7 @@ ctudec_alloc_intra_line_buff(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uint8
     intra_line_b->stride_c = (nb_ctu_w << log2_ctb_s) >> 1;
 
     //Free and re-alloc when new ctu width for rectangular entry.
-    ctudec_free_intra_line_buff(rcn_ctx);
+    free_intra_line_buff(rcn_ctx);
 
     intra_line_b->y  = ov_malloc(intra_line_b->stride   * sizeof(*intra_line_b->y));
     intra_line_b->cb = ov_malloc(intra_line_b->stride_c * sizeof(*intra_line_b->cb));
@@ -260,7 +260,7 @@ ctudec_alloc_intra_line_buff(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uint8
 }
 
 void
-ctudec_save_last_cols(struct OVRCNCtx *const rcn_ctx, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
+rcn_save_last_cols(struct OVRCNCtx *const rcn_ctx, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
 {
     if (is_border_rect & OV_BOUNDARY_RIGHT_RECT)
         return;
@@ -289,7 +289,7 @@ ctudec_save_last_cols(struct OVRCNCtx *const rcn_ctx, int x_pic_l, int y_pic_l, 
 }
 
 void
-ctudec_save_last_rows(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
+rcn_save_last_rows(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
 {
     struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
     const int width_l = ( x_pic_l + fb->filter_region_w[0] > rcn_ctx->frame_start->width[0] ) ? ( rcn_ctx->frame_start->width[0] - x_pic_l ) : fb->filter_region_w[0];
@@ -329,7 +329,7 @@ ctudec_save_last_rows(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int
 }
 
 void
-ctudec_extend_filter_region(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l,
+rcn_extend_filter_region(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l,
                             int x_pic_l, int y_pic_l, uint8_t bnd_msk)
 {
 
@@ -526,7 +526,7 @@ ctudec_extend_filter_region(struct OVRCNCtx *const rcn_ctx, OVSample** saved_row
 }
 
 void
-ctudec_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int margin, uint8_t log2_ctb_s)
+rcn_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int margin, uint8_t log2_ctb_s)
 {
     int ctu_s = 1 << log2_ctb_s;
 

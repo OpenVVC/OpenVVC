@@ -1205,8 +1205,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     
     if (nb_ctu_w > ctudec->prev_nb_ctu_w_rect_entry) {
         int margin = 3;
-        ctudec_alloc_filter_buffers(&ctudec->rcn_ctx, einfo.nb_ctu_w, margin, log2_ctb_s);
-        ctudec_alloc_intra_line_buff(&ctudec->rcn_ctx, einfo.nb_ctu_w + 2, log2_ctb_s);
+        rcn_alloc_filter_buffers(&ctudec->rcn_ctx, einfo.nb_ctu_w, margin, log2_ctb_s);
+        rcn_alloc_intra_line_buff(&ctudec->rcn_ctx, einfo.nb_ctu_w + 2, log2_ctb_s);
         ctudec->prev_nb_ctu_w_rect_entry = nb_ctu_w;
     }
 
