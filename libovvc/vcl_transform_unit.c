@@ -1324,7 +1324,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
 
     if (ctu_dec->transform_unit == &transform_unit_st) {
         if (ctu_dec->intra_mode_c >= 67 && ctu_dec->intra_mode_c < 70) {
-            vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1,
+            ctu_dec->rcn_ctx.rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1,
                                   log2_cb_w - 1, log2_cb_h - 1);
         }
 
@@ -1490,7 +1490,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
 #endif
     if(ctu_dec->transform_unit == &transform_unit_st) {
         if (ctu_dec->intra_mode_c >= 67 && ctu_dec->intra_mode_c < 70) {
-            vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1,
+            ctu_dec->rcn_ctx.rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1,
                                   log2_cb_w - 1, log2_cb_h - 1);
         }
 

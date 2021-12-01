@@ -329,13 +329,13 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
         if (!isp_flag) {
             uint8_t mrl_flag = !!(cu.cu_flags & flg_mrl_flag);
             if (!mrl_flag){
-                vvc_intra_pred(&ctudec->rcn_ctx, &ctudec->rcn_ctx.ctu_buff, intra_mode, x0, y0,
+                ctudec->rcn_ctx.rcn_funcs.intra_pred(&ctudec->rcn_ctx, &ctudec->rcn_ctx.ctu_buff, intra_mode, x0, y0,
                                log2_cb_w, log2_cb_h);
             }
 
             if (mrl_flag){
                 uint8_t mrl_idx = cu.cu_opaque;
-                vvc_intra_pred_multi_ref(ctudec, ctudec->rcn_ctx.ctu_buff.y,
+                ctudec->rcn_ctx.rcn_funcs.intra_pred_mrl(ctudec, ctudec->rcn_ctx.ctu_buff.y,
                                          RCN_CTB_STRIDE, intra_mode, x0, y0,
                                          log2_cb_w, log2_cb_h,
                                          mrl_idx);

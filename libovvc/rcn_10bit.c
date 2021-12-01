@@ -2,6 +2,7 @@
 
 #include "rcn_alf.c"
 #include "rcn_df.c"
+#include "rcn_intra.c"
 #include "rcn_intra_cclm.c"
 #include "rcn_prof_bdof.c"
 #include "rcn_transform.c"

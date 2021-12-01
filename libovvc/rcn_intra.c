@@ -1,11 +1,12 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "ovutils.h"
-#include "drv.h"
 #include "rcn.h"
 #include "rcn_fill_ref.h"
 #include "rcn_intra_angular.h"
 #include "data_rcn_angular.h"
+#include "ctudec.h"
+#include "drv.h"
 #include "dbf_utils.h"
 
 
@@ -446,7 +447,7 @@ intra_angular_h(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *ref2, 
     }
 }
 
-void
+static void
 vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ctu_buff,
                uint8_t intra_mode, int x0, int y0,
                int log2_pb_w, int log2_pb_h)
@@ -516,7 +517,7 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ct
     }
 }
 
-void
+static void
 vvc_intra_pred_isp(const OVCTUDec *const ctudec,
                    OVSample *const src,
                    ptrdiff_t dst_stride,
@@ -595,7 +596,7 @@ vvc_intra_pred_isp(const OVCTUDec *const ctudec,
     }
 }
 
-void
+static void
 vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
                          OVSample *const src,
                          ptrdiff_t dst_stride,
@@ -965,7 +966,7 @@ vvc_intra_chroma_angular(const struct OVRCNCtx *rcn_ctx, const OVSample *const s
     }
 }
 
-void
+static void
 vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
                       uint8_t intra_mode, int x0, int y0,
                       int log2_pb_w, int log2_pb_h)
@@ -1122,3 +1123,12 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
 
 }
 
+void
+BD_DECL(rcn_init_intra_functions)(struct RCNFunctions *const rcn_funcs)
+{
+    rcn_funcs->intra_pred   = &vvc_intra_pred;
+    rcn_funcs->intra_pred_c = &vvc_intra_pred_chroma;
+
+    rcn_funcs->intra_pred_isp = &vvc_intra_pred_isp;
+    rcn_funcs->intra_pred_mrl = &vvc_intra_pred_multi_ref;
+}

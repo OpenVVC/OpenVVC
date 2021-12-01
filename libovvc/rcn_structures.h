@@ -410,6 +410,8 @@ struct TMPBDCompat
                                 const struct ISPTUInfo *const tu_info);
 };
 
+struct OVBuffInfo;
+
 struct RCNFunctions
 {
     /* Motion Compensation Luma */
@@ -480,6 +482,31 @@ struct RCNFunctions
     const struct IntraMRLFunctions *intra_mrl;
 
     struct TMPBDCompat tmp;
+
+    void (*intra_pred)(const struct OVRCNCtx *const rcn_ctx,
+                       const struct OVBuffInfo* ctu_buff,
+                       uint8_t intra_mode, int x0, int y0,
+                       int log2_pb_w, int log2_pb_h);
+
+    void (*intra_pred_c)(const struct OVRCNCtx *const rcn_ctx,
+                         uint8_t intra_mode, int x0, int y0,
+                         int log2_pb_w, int log2_pb_h);
+
+    void (*intra_pred_isp)(const OVCTUDec *const ctudec,
+                           OVSample *const src,
+                           ptrdiff_t dst_stride,
+                           uint8_t intra_mode,
+                           int x0, int y0,
+                           int log2_pb_w, int log2_pb_h,
+                           int log2_cb_w, int log2_cb_h,
+                           int offset_x, int offset_y);
+
+    void (*intra_pred_mrl)(const OVCTUDec *const ctudec,
+                           OVSample *const src,
+                           ptrdiff_t dst_stride,
+                           uint8_t intra_mode, int x0, int y0,
+                           int log2_pb_w, int log2_pb_h,
+                           int mrl_idx);
 };
 
 
