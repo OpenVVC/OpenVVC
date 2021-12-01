@@ -11,14 +11,14 @@
 #include "bitdepth.h"
 
 static void
-sao_band_filter(uint8_t *_dst, uint8_t *_src,
+sao_band_filter(OVSample *_dst, OVSample *_src,
                 ptrdiff_t stride_dst, ptrdiff_t stride_src,
                 SAOParamsCtu *sao,
                 int width, int height,
                 int c_idx)
 {
-    OVSample *dst = (OVSample *)_dst;
-    OVSample *src = (OVSample *)_src;
+    OVSample *dst = _dst;
+    OVSample *src = _src;
     int offset_table[32] = { 0 };
     int k, y, x;
     int shift  = BITDEPTH - 5;
@@ -44,7 +44,7 @@ sao_band_filter(uint8_t *_dst, uint8_t *_src,
 
 #define CMP(a, b) ((a) > (b) ? 1 : ((a) == (b) ? 0 : -1))
 static void
-sao_edge_filter(uint8_t *_dst, uint8_t *_src,
+sao_edge_filter(OVSample *_dst, OVSample *_src,
                 ptrdiff_t stride_dst, ptrdiff_t stride_src,
                 SAOParamsCtu *sao, int width, int height,
                 int c_idx)
@@ -59,8 +59,8 @@ sao_edge_filter(uint8_t *_dst, uint8_t *_src,
 
     int16_t *sao_offset_val = sao->offset_val[c_idx];
     uint8_t eo = sao->eo_class[c_idx];
-    OVSample *dst = (OVSample *)_dst;
-    OVSample *src = (OVSample *)_src;
+    OVSample *dst = _dst;
+    OVSample *src = _src;
 
     //stride_src /= sizeof(OVSample);
     //stride_dst /= sizeof(OVSample);
@@ -109,7 +109,7 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_start_pic, int y_st
         int height   = OVMIN(ctb_size_v, f_height - y0);
 
         ptrdiff_t stride_out_pic = frame->linesize[c_idx] / sizeof(OVSample);
-        OVSample *out_pic = frame->data[c_idx];
+        OVSample *out_pic = (OVSample *)frame->data[c_idx];
         out_pic = &out_pic[ y0 * stride_out_pic + x0];
 
         OVSample *filtered =  (OVSample *) fb->filter_region[c_idx];
