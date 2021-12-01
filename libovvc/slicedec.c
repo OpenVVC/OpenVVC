@@ -1203,10 +1203,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     const int nb_ctu_w = einfo.nb_ctu_w;
     const int nb_ctu_h = einfo.nb_ctu_h;
     
-    ctudec->rcn_ctx.frame_start = sldec->pic->frame;
-
-    if(nb_ctu_w > ctudec->prev_nb_ctu_w_rect_entry)
-    {
+    if (nb_ctu_w > ctudec->prev_nb_ctu_w_rect_entry) {
         int margin = 3;
         ctudec_alloc_filter_buffers(&ctudec->rcn_ctx, einfo.nb_ctu_w, margin, log2_ctb_s);
         ctudec_alloc_intra_line_buff(&ctudec->rcn_ctx, einfo.nb_ctu_w + 2, log2_ctb_s);
@@ -1269,6 +1266,9 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
                &drv_lines, cc_lines);
 
     slicedec_attach_frame_buff(ctudec, sldec, &einfo);
+
+    ctudec->rcn_ctx.frame_start = sldec->pic->frame;
+
     tmp_fbuff = ctudec->rcn_ctx.frame_buff;
 
     while (ctb_y < nb_ctu_h - 1) {
@@ -1287,9 +1287,6 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
          */
         fbuff_new_line(&tmp_fbuff, log2_ctb_s);
         ctudec->rcn_ctx.frame_buff = tmp_fbuff;
-        #if 0
-        ctudec->ctu_ngh_flags = CTU_UP_FLG|CTU_UPRGT_FLG;
-        #endif
 
         ctb_addr_rs += nb_ctu_w;
         ctb_y++;
