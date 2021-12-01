@@ -419,8 +419,8 @@ test_for_edge_emulation_c(int pb_x, int pb_y, int pic_w, int pic_h,
     emulate_edge |= 2 * (pb_y - REF_PADDING_C < 0);
     emulate_edge |= 4 * (pb_x >= pic_w);
     emulate_edge |= 8 * (pb_y >= pic_h);
-    emulate_edge |= 4 * ((pb_x + pb_w + EPEL_EXTRA_AFTER) >= pic_w);
-    emulate_edge |= 8 * ((pb_y + pb_h + EPEL_EXTRA_AFTER) >= pic_h);
+    emulate_edge |= 4 * ((pb_x + pb_w + EPEL_EXTRA_AFTER) > pic_w);
+    emulate_edge |= 8 * ((pb_y + pb_h + EPEL_EXTRA_AFTER) > pic_h);
     return emulate_edge;
 }
 
@@ -433,8 +433,8 @@ test_for_edge_emulation(int pb_x, int pb_y, int pic_w, int pic_h,
     emulate_edge |= 2 * (pb_y - REF_PADDING_L < 0);
     emulate_edge |= 4 * (pb_x >= pic_w);
     emulate_edge |= 8 * (pb_y >= pic_h);
-    emulate_edge |= 4 * ((pb_x + pu_w + QPEL_EXTRA_AFTER) >= pic_w);
-    emulate_edge |= 8 * ((pb_y + pu_h + QPEL_EXTRA_AFTER) >= pic_h);
+    emulate_edge |= 4 * ((pb_x + pu_w + QPEL_EXTRA_AFTER) > pic_w);
+    emulate_edge |= 8 * ((pb_y + pu_h + QPEL_EXTRA_AFTER) > pic_h);
     return emulate_edge;
 }
 
@@ -2342,23 +2342,25 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     int pic_h = ctudec->pic_h;
     mv = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv);
     
-    //MV precision in 4 bits for luma
+    //MV precision is 4 bits for luma
     int shift_mv  = 4;
+    int shit_pos  = RPR_SCALE_BITS + shift_mv;
     int offset    = 1 << (RPR_SCALE_BITS - 1);
     uint8_t flag_4x4     = (log2_pu_w == 2 && log2_pu_h == 2);
     uint8_t filter_idx_h = compute_rpr_filter_idx(scaling_hor, flag_4x4);
     uint8_t filter_idx_v = compute_rpr_filter_idx(scaling_ver, flag_4x4);
-
-    const int ref_pu_w = (pu_w * scaling_hor) >> RPR_SCALE_BITS;
-    const int ref_pu_h = ((pu_h * scaling_ver) >> RPR_SCALE_BITS) + 1;
     int stepX = (( scaling_hor + 8 ) >> 4) << 4;
     int stepY = (( scaling_ver + 8 ) >> 4) << 4;
 
     int32_t ref_pos_x = ((( pos_x << shift_mv)  + mv.x ) * (int32_t)scaling_hor) + (1<<7);
-    int     ref_x     = ref_pos_x  >> (RPR_SCALE_BITS + shift_mv);
+    int     ref_x     = (ref_pos_x + offset)  >> shit_pos;
     int32_t ref_pos_y = ((( pos_y << shift_mv ) + mv.y ) * (int32_t)scaling_ver) + (1<<7);
-    int     ref_y     = ref_pos_y >> (RPR_SCALE_BITS + shift_mv);
- 
+    int     ref_y     = (ref_pos_y + offset) >> shit_pos;
+    int ref_pu_w = (pu_w * scaling_hor) >> RPR_SCALE_BITS;
+    int ref_pu_h = ((ref_pos_y + (((pu_h-1) * stepY) << shift_mv) + offset) >> shit_pos) - ref_y + 1;
+    ref_pu_h = OVMAX(1, ref_pu_h);
+
+
     /*
      * Thread synchronization to ensure data is available before usage
      */
@@ -2394,7 +2396,6 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     for(int col = 0; col < pu_w; col++)
     {
         pos_mv_x  = (ref_pos_x + ((col * stepX) << shift_mv) + offset) >>  RPR_SCALE_BITS ;
-        //pos_mv_x  = (ref_pos_x + ((col * scaling_hor) << shift_mv) + offset) >>  RPR_SCALE_BITS ;
         prec_x    = pos_mv_x & 0xF;
         prec_y    = 0;
         // if (pu_w < 128 || pu_h < 128)
@@ -2417,7 +2418,6 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     uint16_t* p_dst     = dst.y;
     for(int row = 0; row < pu_h; row++ ){
         pos_mv_y  = ( ref_pos_y + ((row * stepY) << shift_mv) + offset ) >> RPR_SCALE_BITS;
-        //pos_mv_y  = ( ref_pos_y + ((row * scaling_ver) << shift_mv) + offset ) >> RPR_SCALE_BITS;
         prec_x    = 0;
         prec_y    = pos_mv_y & 0xF;
         // if ( pu_w < 128 || pu_h < 128)
@@ -2502,20 +2502,24 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
 
     //MV precision in 5 bits for chroma
     int shift_mv  = 5;
+    int shit_pos  = RPR_SCALE_BITS + shift_mv;
     int offset    = 1 << (RPR_SCALE_BITS - 1);
     uint8_t flag_4x4     = (log2_pu_w == 2 && log2_pu_h == 2);
     uint8_t filter_idx_h = compute_rpr_filter_idx(scaling_hor, flag_4x4);
     uint8_t filter_idx_v = compute_rpr_filter_idx(scaling_ver, flag_4x4);
+    int stepX = (( scaling_hor + 8 ) >> 4) << 4;
+    int stepY = (( scaling_ver + 8 ) >> 4) << 4;
 
     int32_t add_x = (1 - frame0->scale_info.chroma_hor_col_flag) * 8 * ( scaling_hor - (1<<RPR_SCALE_BITS));
     int32_t add_y = (1 - frame0->scale_info.chroma_ver_col_flag) * 8 * ( scaling_ver - (1<<RPR_SCALE_BITS));
-    const int ref_pu_w = (pu_w * scaling_hor) >> RPR_SCALE_BITS;
-    const int ref_pu_h = ((pu_h * scaling_ver) >> RPR_SCALE_BITS) + 1;
-
     int32_t ref_pos_x = ((( pos_x << shift_mv)  + mv.x ) * (int32_t)scaling_hor + add_x);
-    int     ref_x     = ref_pos_x  >> (RPR_SCALE_BITS + shift_mv);
+    int     ref_x     = (ref_pos_x + offset)  >> shit_pos;
     int32_t ref_pos_y = ((( pos_y << shift_mv ) + mv.y ) * (int32_t)scaling_ver + add_y);
-    int     ref_y     = ref_pos_y >> (RPR_SCALE_BITS + shift_mv);
+    int     ref_y     = (ref_pos_y + offset) >> shit_pos;
+
+    int ref_pu_w = (pu_w * scaling_hor) >> RPR_SCALE_BITS;
+    int ref_pu_h = ((ref_pos_y + (((pu_h-1) * stepY) << shift_mv) + offset) >> shit_pos) - ref_y + 1;
+    ref_pu_h = OVMAX(1, ref_pu_h);
 
     const uint16_t *src_cb = &ref0_cb[ref_x + ref_y * src_stride_c];
     const uint16_t *src_cr = &ref0_cr[ref_x + ref_y * src_stride_c];
@@ -2555,7 +2559,7 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         uint16_t* p_tmp_rpr = tmp_rpr + REF_PADDING_C;
         for(int col = 0; col < pu_w; col++)
         {
-            pos_mv_x  = ( ref_pos_x + ((col * scaling_hor) << shift_mv) + offset ) >> RPR_SCALE_BITS;
+            pos_mv_x  = ( ref_pos_x + ((col * stepX) << shift_mv) + offset ) >> RPR_SCALE_BITS;
             prec_x    = pos_mv_x & 0x1F;
             prec_y    = 0;
             prec_type = 1;
@@ -2576,7 +2580,7 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         p_dst        = dst_c;
         for(int row = 0; row < pu_h; row++ )
         {
-            pos_mv_y  = ( ref_pos_y + ((row * scaling_ver) << shift_mv) + offset ) >> RPR_SCALE_BITS;
+            pos_mv_y  = ( ref_pos_y + ((row * stepY) << shift_mv) + offset ) >> RPR_SCALE_BITS;
             prec_x    = 0;
             prec_y    = pos_mv_y & 0x1F;
             prec_type = 2;
