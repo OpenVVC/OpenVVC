@@ -18,7 +18,7 @@ libarmoptim_la_SOURCES +=	rcn_transform_sse.c         \
 							rcn_dmvr_sse.c              \
 							rcn_prof_bdof_sse.c         \
 							rcn_df_sse.c                
-if !HAVE_NEON_SIMDE
+if !HAVE_EXCLUDE_ANDROID
 libarmoptim_la_SOURCES +=	rcn_intra_dc_planar_sse.c
 endif
 endif
