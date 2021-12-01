@@ -86,7 +86,7 @@ sao_edge_filter(OVSample *_dst, OVSample *_src,
 static void
 rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_start_pic, int y_start_pic, int y_end_pic, int fb_offset, uint8_t is_border)
 {   
-    struct OVFilterBuffers* fb   = &ctudec->filter_buffers;
+    struct OVFilterBuffers* fb   = &ctudec->rcn_ctx.filter_buffers;
     const OVPartInfo *const pinfo = ctudec->part_ctx;
     uint8_t log2_ctb_s = pinfo->log2_ctu_s;
 
@@ -165,7 +165,7 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
     uint8_t log2_ctb_s = pinfo->log2_ctu_s;
     int ctu_width  = 1 << log2_ctb_s;
 
-    struct OVFilterBuffers* fb = &ctudec->filter_buffers;
+    struct OVFilterBuffers* fb = &ctudec->rcn_ctx.filter_buffers;
     int margin = 2*fb->margin;
 
     for (int ctb_x = 0; ctb_x < einfo->nb_ctu_w; ctb_x++) {
@@ -214,7 +214,7 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
     int ctu_width  = 1 << log2_ctb_s;
     int ctb_y_pic = ctb_y + einfo->ctb_y;
 
-    struct OVFilterBuffers* fb = &ctudec->filter_buffers;
+    struct OVFilterBuffers* fb = &ctudec->rcn_ctx.filter_buffers;
     int margin = 2 * fb->margin;
 
     for (int ctb_x = 0; ctb_x < einfo->nb_ctu_w; ctb_x++) {

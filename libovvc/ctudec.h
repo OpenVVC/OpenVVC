@@ -545,6 +545,24 @@ struct OVCTUDec
         /*Pointers to intra line reconstruction buffers*/
         OVBuffInfo intra_line_buff;
 
+        struct OVFilterBuffers
+        {
+            OVSample* filter_region[3];
+            int16_t  filter_region_h[3];
+            int16_t  filter_region_w[3];
+            int16_t  filter_region_stride[3];
+            int16_t  filter_region_offset[3];
+
+            OVSample* saved_rows_sao[3];
+            OVSample* saved_rows_alf[3];
+            OVSample* saved_cols[3];
+            int16_t  saved_rows_stride[3];
+
+            uint8_t  margin;
+
+            struct Frame* pic_frame;
+        } filter_buffers;
+
         /* Bit fields corresponding to the decoding progress in
          * current CTU, and its borders those are used for example
          * in order to derive references samples for intra prediction
@@ -568,24 +586,6 @@ struct OVCTUDec
     struct ALFInfo alf_info;
 
     struct LMCSInfo lmcs_info;
-
-    struct OVFilterBuffers{
-        OVSample* filter_region[3];
-        int16_t  filter_region_h[3];
-        int16_t  filter_region_w[3];
-        int16_t  filter_region_stride[3];
-        int16_t  filter_region_offset[3];
-
-        OVSample* saved_rows_sao[3];
-        OVSample* saved_rows_alf[3];
-        OVSample* saved_cols[3];
-        int16_t  saved_rows_stride[3];
-
-        uint8_t  margin;
-
-        //TODO: change alf/sao to use ctudec buffer instead of frame buffer.
-        struct Frame* pic_frame; 
-    } filter_buffers;
 
     /* CTU neighbours availability flags
      * An aggregation of flag used to tell the decoder if
