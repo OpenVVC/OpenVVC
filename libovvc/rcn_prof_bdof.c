@@ -200,7 +200,7 @@ rcn_prof(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
     int x, y;
 
     if (bidir) {
-        int16_t *_dst = dst;
+        int16_t *_dst = (int16_t *)dst;
         for (y = 0; y < SB_H; ++y) {
             for (x = 0; x < SB_W; ++x) {
                 int32_t add = dmv_scale_h[idx] * grad_x[x] + dmv_scale_v[idx] * grad_y[x];
@@ -208,7 +208,7 @@ rcn_prof(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
 
                 add = ov_clip(add, -PROF_DELTA_LIMIT, PROF_DELTA_LIMIT - 1);
 
-                val = (int16_t)src[x] + add;
+                val = src[x] + add;
 
                 _dst[x] = val;
 
@@ -229,7 +229,7 @@ rcn_prof(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
 
                 add = ov_clip(add, -PROF_DELTA_LIMIT, PROF_DELTA_LIMIT - 1);
 
-                val = (int16_t)src[x] + add;
+                val = src[x] + add;
 
                 /* Clipping if not bi directional */
                 val = (val + (1 << (13 - BITDEPTH))) >> PROF_SMP_SHIFT;
@@ -264,8 +264,8 @@ extend_bdof_buff(const OVSample *const src, int16_t *dst_prof,
 {
     const OVSample *ref = src  - ref_stride  - 1;
 
-    uint16_t     *dst = dst_prof;
-    uint16_t *dst_lst = dst_prof + (pb_h + 1) * PROF_BUFF_STRIDE;
+    int16_t     *dst = dst_prof;
+    int16_t *dst_lst = dst_prof + (pb_h + 1) * PROF_BUFF_STRIDE;
     int i, j;
 
     /* Position ref according to precision */
