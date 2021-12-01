@@ -1646,7 +1646,7 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_inf
             uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y)
 {
     const struct OVBuffInfo *const fbuff = &rcn_ctx->frame_buff;
-    const struct DFFunctions *df = &rcn_ctx->rcn_funcs.df;
+    const struct DFFunctions *df = &rcn_ctx->ctudec->rcn_funcs.df;
     uint8_t nb_unit = (1 << log2_ctu_s) >> 2;
     /* FIXME give as argument */
     uint8_t ctu_lft = rcn_ctx->ctudec->ctu_ngh_flags & CTU_LFT_FLG;
@@ -1687,7 +1687,7 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *con
                       uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y, uint8_t ctu_w, uint8_t ctu_h)
 {
     const struct OVBuffInfo *const fbuff = &rcn_ctx->frame_buff;
-    const struct DFFunctions *df = &rcn_ctx->rcn_funcs.df;
+    const struct DFFunctions *df = &rcn_ctx->ctudec->rcn_funcs.df;
 
     uint8_t nb_unit_w = (ctu_w) >> 2;
     uint8_t nb_unit_h = (ctu_h) >> 2;

@@ -312,7 +312,7 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
 
     if (mip_flag){
         const struct OVRCNCtx *rcn = &ctudec->rcn_ctx;
-        ctudec->rcn_ctx.rcn_funcs.mip.rcn_intra_mip(rcn, x0, y0, log2_cb_w, log2_cb_h, cu.cu_opaque);
+        ctudec->rcn_funcs.mip.rcn_intra_mip(rcn, x0, y0, log2_cb_w, log2_cb_h, cu.cu_opaque);
     } else {
         uint8_t isp_flag = !!(cu.cu_flags & flg_isp_flag);
 
@@ -329,13 +329,13 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
         if (!isp_flag) {
             uint8_t mrl_flag = !!(cu.cu_flags & flg_mrl_flag);
             if (!mrl_flag){
-                ctudec->rcn_ctx.rcn_funcs.intra_pred(&ctudec->rcn_ctx, &ctudec->rcn_ctx.ctu_buff, intra_mode, x0, y0,
+                ctudec->rcn_funcs.intra_pred(&ctudec->rcn_ctx, &ctudec->rcn_ctx.ctu_buff, intra_mode, x0, y0,
                                log2_cb_w, log2_cb_h);
             }
 
             if (mrl_flag){
                 uint8_t mrl_idx = cu.cu_opaque;
-                ctudec->rcn_ctx.rcn_funcs.intra_pred_mrl(ctudec, ctudec->rcn_ctx.ctu_buff.y,
+                ctudec->rcn_funcs.intra_pred_mrl(ctudec, ctudec->rcn_ctx.ctu_buff.y,
                                          RCN_CTB_STRIDE, intra_mode, x0, y0,
                                          log2_cb_w, log2_cb_h,
                                          mrl_idx);

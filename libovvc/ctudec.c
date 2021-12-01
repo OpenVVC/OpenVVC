@@ -54,7 +54,7 @@ ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
         RCNALF* alf = &alf_info->rcn_alf;
         uint8_t luma_flag = alf_info->alf_luma_enabled_flag;
         uint8_t chroma_flag = alf_info->alf_cb_enabled_flag || alf_info->alf_cr_enabled_flag;
-        ctudec->rcn_ctx.rcn_funcs.alf.rcn_alf_reconstruct_coeff_APS(alf, ctudec, luma_flag, chroma_flag);
+        ctudec->rcn_funcs.alf.rcn_alf_reconstruct_coeff_APS(alf, ctudec, luma_flag, chroma_flag);
     }
 
     //Init CC ALF ctu params
@@ -78,7 +78,7 @@ ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
     lmcs_info->scale_c_flag      = ph->ph_chroma_residual_scale_flag;
     if(sh->sh_lmcs_used_flag){
         const struct OVLMCSData* lmcs_data = &prms->aps_lmcs->aps_lmcs_data;
-        ctudec->rcn_ctx.rcn_funcs.rcn_init_lmcs(lmcs_info, lmcs_data);
+        ctudec->rcn_funcs.rcn_init_lmcs(lmcs_info, lmcs_data);
     }
 
     return 0;

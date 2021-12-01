@@ -36,7 +36,7 @@ static void
 intra_angular_gauss_v(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *ref2, OVSample *dst, int dst_stride,
                       uint8_t log2_pb_w, uint8_t log2_pb_h, int8_t mode_idx)
 {
-    const struct IntraAngularFunctions *gauss_v = rcn_ctx->rcn_funcs.intra_angular_gauss_v;
+    const struct IntraAngularFunctions *gauss_v = rcn_ctx->ctudec->rcn_funcs.intra_angular_gauss_v;
     OVSample filtered_ref_abv[(128 << 1) + 128];
     OVSample filtered_ref_lft[(128 << 1) + 128];
     switch (mode_idx) {
@@ -48,9 +48,9 @@ intra_angular_gauss_v(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *
                 int abv_ref_length = 1 << (log2_pb_w + 1);
                 int lft_ref_length = 1 << (log2_pb_h + 1);
 
-                rcn_ctx->rcn_funcs.tmp.filter_ref_samples(ref1, filtered_ref_abv, ref2,
+                rcn_ctx->ctudec->rcn_funcs.tmp.filter_ref_samples(ref1, filtered_ref_abv, ref2,
                                                           abv_ref_length);
-                rcn_ctx->rcn_funcs.tmp.filter_ref_samples(ref2, filtered_ref_lft, ref1,
+                rcn_ctx->ctudec->rcn_funcs.tmp.filter_ref_samples(ref2, filtered_ref_lft, ref1,
                                                           lft_ref_length);
 
                 ref1 = filtered_ref_abv;
@@ -67,7 +67,7 @@ intra_angular_gauss_v(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *
                 int8_t pdpc_scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inverse_angle_table[OVABS(mode_idx)] - 2) - 8));
 
                 if (!req_frac) {
-                    const struct IntraAngularFunctions *nofrac_v = rcn_ctx->rcn_funcs.intra_angular_nofrac_v;
+                    const struct IntraAngularFunctions *nofrac_v = rcn_ctx->ctudec->rcn_funcs.intra_angular_nofrac_v;
                     if (mode_idx < 0) {
                         int abv_ref_length = 1 << (log2_pb_w + 1);
                         int lft_ref_length = 1 << (log2_pb_h + 1);
@@ -75,9 +75,9 @@ intra_angular_gauss_v(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *
                         int pu_h = 1 << log2_pb_h;
                         int inv_angle_sum = 256;
 
-                        rcn_ctx->rcn_funcs.tmp.filter_ref_samples(ref1, filtered_ref_abv + pu_h,
+                        rcn_ctx->ctudec->rcn_funcs.tmp.filter_ref_samples(ref1, filtered_ref_abv + pu_h,
                                                                   ref2, abv_ref_length);
-                        rcn_ctx->rcn_funcs.tmp.filter_ref_samples(ref2, filtered_ref_lft + pu_w,
+                        rcn_ctx->ctudec->rcn_funcs.tmp.filter_ref_samples(ref2, filtered_ref_lft + pu_w,
                                                                   ref1, lft_ref_length);
                         ref1 = filtered_ref_abv + pu_h;
                         ref2 = filtered_ref_lft + pu_w;
@@ -92,7 +92,7 @@ intra_angular_gauss_v(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *
 
                     } else if (pdpc_scale < 0) {
                         int abv_ref_length = 1 << (log2_pb_w + 1);
-                        rcn_ctx->rcn_funcs.tmp.filter_ref_samples(ref1, filtered_ref_abv, ref2,
+                        rcn_ctx->ctudec->rcn_funcs.tmp.filter_ref_samples(ref1, filtered_ref_abv, ref2,
                                                                   abv_ref_length);
                         ref1 = filtered_ref_abv;
 
@@ -103,9 +103,9 @@ intra_angular_gauss_v(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *
                         int abv_ref_length = 1 << (log2_pb_w + 1);
                         int lft_ref_length = 1 << (log2_pb_h + 1);
 
-                        rcn_ctx->rcn_funcs.tmp.filter_ref_samples(ref1, filtered_ref_abv, ref2,
+                        rcn_ctx->ctudec->rcn_funcs.tmp.filter_ref_samples(ref1, filtered_ref_abv, ref2,
                                            abv_ref_length);
-                        rcn_ctx->rcn_funcs.tmp.filter_ref_samples(ref2, filtered_ref_lft, ref1,
+                        rcn_ctx->ctudec->rcn_funcs.tmp.filter_ref_samples(ref2, filtered_ref_lft, ref1,
                                            lft_ref_length);
 
                         ref1 = filtered_ref_abv;
@@ -147,7 +147,7 @@ static void
 intra_angular_gauss_h(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *ref2, OVSample *dst, int dst_stride,
                       uint8_t log2_pb_w, uint8_t log2_pb_h, int8_t mode_idx)
 {
-    const struct IntraAngularFunctions *gauss_h = rcn_ctx->rcn_funcs.intra_angular_gauss_h;
+    const struct IntraAngularFunctions *gauss_h = rcn_ctx->ctudec->rcn_funcs.intra_angular_gauss_h;
     OVSample filtered_ref_abv[(128 << 1) + 128];
     OVSample filtered_ref_lft[(128 << 1) + 128];
     switch (mode_idx) {
@@ -159,9 +159,9 @@ intra_angular_gauss_h(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *
             {
                 int abv_ref_length = 1 << (log2_pb_w + 1);
                 int lft_ref_length = 1 << (log2_pb_h + 1);
-                rcn_ctx->rcn_funcs.tmp.filter_ref_samples(ref1, filtered_ref_abv, ref2,
+                rcn_ctx->ctudec->rcn_funcs.tmp.filter_ref_samples(ref1, filtered_ref_abv, ref2,
                                                           abv_ref_length);
-                rcn_ctx->rcn_funcs.tmp.filter_ref_samples(ref2, filtered_ref_lft, ref1,
+                rcn_ctx->ctudec->rcn_funcs.tmp.filter_ref_samples(ref2, filtered_ref_lft, ref1,
                                                           lft_ref_length);
                 ref1 = filtered_ref_abv;
                 ref2 = filtered_ref_lft;
@@ -177,7 +177,7 @@ intra_angular_gauss_h(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *
                 int8_t pdpc_scale = OVMIN(2, log2_pb_w - (floor_log2(3 * inverse_angle_table[OVABS(mode_idx)] - 2) - 8));
 
                 if (!req_frac) {
-                    const struct IntraAngularFunctions *nofrac_h = rcn_ctx->rcn_funcs.intra_angular_nofrac_h;
+                    const struct IntraAngularFunctions *nofrac_h = rcn_ctx->ctudec->rcn_funcs.intra_angular_nofrac_h;
                     if (mode_idx < 0){
                         int pu_w = 1 << log2_pb_w;
                         int pu_h = 1 << log2_pb_h;
@@ -186,9 +186,9 @@ intra_angular_gauss_h(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *
                         int lft_ref_length = 1 << (log2_pb_h + 1);
                         int inv_angle_sum  = 256;
 
-                        rcn_ctx->rcn_funcs.tmp.filter_ref_samples(ref1, filtered_ref_abv + pu_h,
+                        rcn_ctx->ctudec->rcn_funcs.tmp.filter_ref_samples(ref1, filtered_ref_abv + pu_h,
                                                                   ref2, abv_ref_length);
-                        rcn_ctx->rcn_funcs.tmp.filter_ref_samples(ref2, filtered_ref_lft + pu_w,
+                        rcn_ctx->ctudec->rcn_funcs.tmp.filter_ref_samples(ref2, filtered_ref_lft + pu_w,
                                                                   ref1, lft_ref_length);
                         ref1 = filtered_ref_abv + pu_h;
                         ref2 = filtered_ref_lft + pu_w;
@@ -203,7 +203,7 @@ intra_angular_gauss_h(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *
 
                     } else if (pdpc_scale < 0) {
                         int lft_ref_length = 1 << (log2_pb_h + 1);
-                        rcn_ctx->rcn_funcs.tmp.filter_ref_samples(ref2, filtered_ref_lft,
+                        rcn_ctx->ctudec->rcn_funcs.tmp.filter_ref_samples(ref2, filtered_ref_lft,
                                                                   ref1, lft_ref_length);
                         ref2 = filtered_ref_lft;
                         nofrac_h->angular(ref2, dst, dst_stride, log2_pb_w, log2_pb_h,
@@ -212,9 +212,9 @@ intra_angular_gauss_h(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *
                         int abv_ref_length = 1 << (log2_pb_w + 1);
                         int lft_ref_length = 1 << (log2_pb_h + 1);
 
-                        rcn_ctx->rcn_funcs.tmp.filter_ref_samples(ref1, filtered_ref_abv,
+                        rcn_ctx->ctudec->rcn_funcs.tmp.filter_ref_samples(ref1, filtered_ref_abv,
                                                                   ref2, abv_ref_length);
-                        rcn_ctx->rcn_funcs.tmp.filter_ref_samples(ref2, filtered_ref_lft,
+                        rcn_ctx->ctudec->rcn_funcs.tmp.filter_ref_samples(ref2, filtered_ref_lft,
                                                                   ref1, lft_ref_length);
 
                         ref1 = filtered_ref_abv;
@@ -256,7 +256,7 @@ static void
 intra_angular_cubic_v(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *ref2, OVSample *dst, int dst_stride,
                       uint8_t log2_pb_w, uint8_t log2_pb_h, int8_t mode_idx)
 {
-    const struct IntraAngularFunctions *cubic_v = rcn_ctx->rcn_funcs.intra_angular_cubic_v;
+    const struct IntraAngularFunctions *cubic_v = rcn_ctx->ctudec->rcn_funcs.intra_angular_cubic_v;
 
     switch (mode_idx) {
         case 0:
@@ -276,7 +276,7 @@ intra_angular_cubic_v(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *
             break;
         default:
             {
-                const struct IntraAngularFunctions *nofrac_v = rcn_ctx->rcn_funcs.intra_angular_nofrac_v;
+                const struct IntraAngularFunctions *nofrac_v = rcn_ctx->ctudec->rcn_funcs.intra_angular_nofrac_v;
                 int abs_angle_val = angle_table[OVABS(mode_idx)];
                 int inv_angle = inverse_angle_table[OVABS(mode_idx)];
                 uint8_t req_frac = !!(abs_angle_val & 0x1F);
@@ -339,7 +339,7 @@ static void
 intra_angular_cubic_h(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *ref2, OVSample *dst, int dst_stride,
                       uint8_t log2_pb_w, uint8_t log2_pb_h, int8_t mode_idx)
 {
-    const struct IntraAngularFunctions *cubic_h = rcn_ctx->rcn_funcs.intra_angular_cubic_h;
+    const struct IntraAngularFunctions *cubic_h = rcn_ctx->ctudec->rcn_funcs.intra_angular_cubic_h;
     switch (mode_idx) {
         case 0:
             if (log2_pb_h > 1){
@@ -358,7 +358,7 @@ intra_angular_cubic_h(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *
             break;
         default:
             {
-                const struct IntraAngularFunctions *nofrac_h = rcn_ctx->rcn_funcs.intra_angular_nofrac_h;
+                const struct IntraAngularFunctions *nofrac_h = rcn_ctx->ctudec->rcn_funcs.intra_angular_nofrac_h;
                 int abs_angle_val = angle_table[OVABS(mode_idx)];
                 int inv_angle = inverse_angle_table[OVABS(mode_idx)];
                 uint8_t req_frac = !!(abs_angle_val & 0x1F);
@@ -452,8 +452,8 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ct
                uint8_t intra_mode, int x0, int y0,
                int log2_pb_w, int log2_pb_h)
 {
-    const struct DCFunctions *dc = &rcn_ctx->rcn_funcs.dc;
-    const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
+    const struct DCFunctions *dc = &rcn_ctx->ctudec->rcn_funcs.dc;
+    const struct PlanarFunctions *planar = &rcn_ctx->ctudec->rcn_funcs.planar;
 
     OVSample ref_above[(128 << 1) + 128];
     OVSample ref_left [(128 << 1) + 128];
@@ -466,12 +466,12 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ct
     OVSample *ref1 = ref_above + (1 << log2_pb_h);
     OVSample *ref2 = ref_left + (1 << log2_pb_w);
 
-    rcn_ctx->rcn_funcs.tmp.fill_ref_left_0(src,dst_stride,ref2,
+    rcn_ctx->ctudec->rcn_funcs.tmp.fill_ref_left_0(src,dst_stride,ref2,
                                            rcn_ctx->progress_field.vfield[x0 >> 2],
                                            rcn_ctx->progress_field.hfield[y0 >> 2],
                                            x0, y0, log2_pb_w, log2_pb_h, 0);
 
-    rcn_ctx->rcn_funcs.tmp.fill_ref_above_0(src, dst_stride, ref1,
+    rcn_ctx->ctudec->rcn_funcs.tmp.fill_ref_above_0(src, dst_stride, ref1,
                                             rcn_ctx->progress_field.hfield[y0 >> 2],
                                             rcn_ctx->progress_field.vfield[x0 >> 2],
                                             x0, y0, log2_pb_w, log2_pb_h, 0);
@@ -483,9 +483,9 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ct
         OVSample filtered_ref_lft[(128 << 1) + 128];
 
         if ((log2_pb_h + log2_pb_w) > 5) {
-            rcn_ctx->rcn_funcs.tmp.filter_ref_samples(ref1, filtered_ref_abv, ref2,
+            rcn_ctx->ctudec->rcn_funcs.tmp.filter_ref_samples(ref1, filtered_ref_abv, ref2,
                                                       (1 << log2_pb_w) + 4);
-            rcn_ctx->rcn_funcs.tmp.filter_ref_samples(ref2, filtered_ref_lft, ref1,
+            rcn_ctx->ctudec->rcn_funcs.tmp.filter_ref_samples(ref2, filtered_ref_lft, ref1,
                                                       (1 << log2_pb_h) + 4);
             ref1 = filtered_ref_abv;
             ref2 = filtered_ref_lft;
@@ -534,15 +534,15 @@ vvc_intra_pred_isp(const OVCTUDec *const ctudec,
     OVSample *ref1 = ref_abv + (1 << log2_pb_h);
     OVSample *ref2 = ref_lft + (1 << log2_pb_w);
     const struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
-    const struct DCFunctions *dc = &rcn_ctx->rcn_funcs.dc;
-    const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
+    const struct DCFunctions *dc = &ctudec->rcn_funcs.dc;
+    const struct PlanarFunctions *planar = &ctudec->rcn_funcs.planar;
 
-    ctudec->rcn_ctx.rcn_funcs.tmp.fill_ref_left_0(src, dst_stride, ref2,
+    ctudec->rcn_funcs.tmp.fill_ref_left_0(src, dst_stride, ref2,
                                                   ctudec->rcn_ctx.progress_field.vfield[(x0 >> 2) + !!(offset_x % 4)],
                     ctudec->rcn_ctx.progress_field.hfield[((y0 ) >> 2) + !!(y0 % 4)],
                     x0, y0 - offset_y, log2_cb_w, log2_cb_h, offset_y);
 
-    ctudec->rcn_ctx.rcn_funcs.tmp.fill_ref_above_0(src, dst_stride, ref1,
+    ctudec->rcn_funcs.tmp.fill_ref_above_0(src, dst_stride, ref1,
                      ctudec->rcn_ctx.progress_field.hfield[(y0 >> 2) + !!(offset_y % 4)],
                      ctudec->rcn_ctx.progress_field.vfield[((x0 ) >> 2) + !!(x0 % 4)],
                      x0 - offset_x, y0, log2_cb_w, log2_cb_h, offset_x);
@@ -609,20 +609,19 @@ vvc_intra_pred_multi_ref(const OVCTUDec *const ctudec,
     OVSample *dst = &src[x0 + (y0 * dst_stride)];
     OVSample *ref1 = ref_abv + (1 << log2_pb_h);
     OVSample *ref2 = ref_lft  + (1 << log2_pb_w);
-    const struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
-    const struct DCFunctions *dc = &rcn_ctx->rcn_funcs.dc;
-    const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
-    const struct IntraMRLFunctions *mrl_func = rcn_ctx->rcn_funcs.intra_mrl;
-    const struct IntraAngularFunctions *nofrac_v = rcn_ctx->rcn_funcs.intra_angular_nofrac_v;
-    const struct IntraAngularFunctions *nofrac_h = rcn_ctx->rcn_funcs.intra_angular_nofrac_h;
+    const struct DCFunctions *dc = &ctudec->rcn_funcs.dc;
+    const struct PlanarFunctions *planar = &ctudec->rcn_funcs.planar;
+    const struct IntraMRLFunctions *mrl_func = ctudec->rcn_funcs.intra_mrl;
+    const struct IntraAngularFunctions *nofrac_v = ctudec->rcn_funcs.intra_angular_nofrac_v;
+    const struct IntraAngularFunctions *nofrac_h = ctudec->rcn_funcs.intra_angular_nofrac_h;
 
-    ctudec->rcn_ctx.rcn_funcs.tmp.fill_ref_left_0_mref(src, dst_stride, ref2,
+    ctudec->rcn_funcs.tmp.fill_ref_left_0_mref(src, dst_stride, ref2,
                          ctudec->rcn_ctx.progress_field.vfield[x0 >> 2],
                          ctudec->rcn_ctx.progress_field.hfield[y0 >> 2],
                          mrl_idx, x0, y0,
                          log2_pb_w, log2_pb_h);
 
-    ctudec->rcn_ctx.rcn_funcs.tmp.fill_ref_above_0_mref(src, dst_stride, ref1,
+    ctudec->rcn_funcs.tmp.fill_ref_above_0_mref(src, dst_stride, ref1,
                           ctudec->rcn_ctx.progress_field.hfield[y0 >> 2],
                           ctudec->rcn_ctx.progress_field.vfield[x0 >> 2],
                           mrl_idx, x0 , y0,
@@ -748,8 +747,8 @@ intra_angular_chroma_v(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample 
     int abs_angle = angle_table[OVABS(mode_idx)];
     uint8_t req_frac = !!(abs_angle& 0x1F);
     int8_t pdpc_scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inverse_angle_table[OVABS(mode_idx)] - 2) - 8));
-    const struct IntraAngularFunctions *nofrac_v = rcn_ctx->rcn_funcs.intra_angular_nofrac_v;
-    const struct IntraAngularFunctions *c_v = rcn_ctx->rcn_funcs.intra_angular_c_v;
+    const struct IntraAngularFunctions *nofrac_v = rcn_ctx->ctudec->rcn_funcs.intra_angular_nofrac_v;
+    const struct IntraAngularFunctions *c_v = rcn_ctx->ctudec->rcn_funcs.intra_angular_c_v;
 
     if (mode_idx < 0) {
         int pb_h = 1 << log2_pb_h;
@@ -814,8 +813,8 @@ intra_angular_chroma_h(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample 
     int abs_angle = angle_table[OVABS(mode_idx)];
     uint8_t req_frac = !!(abs_angle& 0x1F);
     int8_t pdpc_scale = OVMIN(2, log2_pb_w - (floor_log2(3 * inverse_angle_table[OVABS(mode_idx)] - 2) - 8));
-    const struct IntraAngularFunctions *nofrac_h = rcn_ctx->rcn_funcs.intra_angular_nofrac_h;
-    const struct IntraAngularFunctions *c_h = rcn_ctx->rcn_funcs.intra_angular_c_h;
+    const struct IntraAngularFunctions *nofrac_h = rcn_ctx->ctudec->rcn_funcs.intra_angular_nofrac_h;
+    const struct IntraAngularFunctions *c_h = rcn_ctx->ctudec->rcn_funcs.intra_angular_c_h;
 
     if (mode_idx < 0) {
         int pb_w = 1 << log2_pb_w;
@@ -898,16 +897,16 @@ vvc_intra_chroma_angular(const struct OVRCNCtx *rcn_ctx, const OVSample *const s
     OVSample *ref2 = ref_left + (1 << log2_pb_w);
     int is_vertical = pred_mode >= OVINTRA_DIA ? 1 : 0;
 
-    rcn_ctx->rcn_funcs.tmp.fill_ref_left_0_chroma(src, dst_stride, ref2,
+    rcn_ctx->ctudec->rcn_funcs.tmp.fill_ref_left_0_chroma(src, dst_stride, ref2,
                                                   left_col_map, top_row_map,
                                                   x0, y0, log2_pb_w, log2_pb_h);
 
-    rcn_ctx->rcn_funcs.tmp.fill_ref_above_0_chroma(src, dst_stride, ref1,
+    rcn_ctx->ctudec->rcn_funcs.tmp.fill_ref_above_0_chroma(src, dst_stride, ref1,
                                                    top_row_map, left_col_map,
                                                    x0, y0, log2_pb_w, log2_pb_h);
 
     if (is_vertical) {
-        const struct IntraAngularFunctions *c_v = rcn_ctx->rcn_funcs.intra_angular_c_v;
+        const struct IntraAngularFunctions *c_v = rcn_ctx->ctudec->rcn_funcs.intra_angular_c_v;
         int mode_idx = pred_mode - (int)OVINTRA_VER;
         switch (mode_idx) {
             case 0:
@@ -935,7 +934,7 @@ vvc_intra_chroma_angular(const struct OVRCNCtx *rcn_ctx, const OVSample *const s
             break;
         }
     } else {
-        const struct IntraAngularFunctions *c_h = rcn_ctx->rcn_funcs.intra_angular_c_h;
+        const struct IntraAngularFunctions *c_h = rcn_ctx->ctudec->rcn_funcs.intra_angular_c_h;
         int mode_idx = -(pred_mode - (int)OVINTRA_HOR);
         switch (mode_idx) {
             case 0:
@@ -971,9 +970,9 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
                       uint8_t intra_mode, int x0, int y0,
                       int log2_pb_w, int log2_pb_h)
 {
-    const struct RCNFunctions *rcn_func = &rcn_ctx->rcn_funcs;
-    const struct DCFunctions *dc = &rcn_ctx->rcn_funcs.dc;
-    const struct PlanarFunctions *planar = &rcn_ctx->rcn_funcs.planar;
+    const struct RCNFunctions *rcn_func = &rcn_ctx->ctudec->rcn_funcs;
+    const struct DCFunctions *dc = &rcn_ctx->ctudec->rcn_funcs.dc;
+    const struct PlanarFunctions *planar = &rcn_ctx->ctudec->rcn_funcs.planar;
     OVCTUDec *const ctudec = rcn_ctx->ctudec;
 
     const struct OVBuffInfo *ctu_buff = &rcn_ctx->ctu_buff;
@@ -998,11 +997,11 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
     switch (intra_mode) {
     case OVINTRA_PLANAR://PLANAR
     {
-        ctudec->rcn_ctx.rcn_funcs.tmp.fill_ref_left_0_chroma(src_cb, dst_stride, ref_left,
+        ctudec->rcn_funcs.tmp.fill_ref_left_0_chroma(src_cb, dst_stride, ref_left,
                                left_col_map, top_row_map,
                                x0, y0, log2_pb_w, log2_pb_h);
 
-        ctudec->rcn_ctx.rcn_funcs.tmp.fill_ref_above_0_chroma(src_cb, dst_stride, ref_above,
+        ctudec->rcn_funcs.tmp.fill_ref_above_0_chroma(src_cb, dst_stride, ref_above,
                                 top_row_map, left_col_map,
                                 x0, y0, log2_pb_w, log2_pb_h);
 
@@ -1015,11 +1014,11 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
 
         }
 
-        ctudec->rcn_ctx.rcn_funcs.tmp.fill_ref_left_0_chroma(src_cr, dst_stride, ref_left,
+        ctudec->rcn_funcs.tmp.fill_ref_left_0_chroma(src_cr, dst_stride, ref_left,
                                left_col_map, top_row_map,
                                x0, y0, log2_pb_w, log2_pb_h);
 
-        ctudec->rcn_ctx.rcn_funcs.tmp.fill_ref_above_0_chroma(src_cr, dst_stride, ref_above,
+        ctudec->rcn_funcs.tmp.fill_ref_above_0_chroma(src_cr, dst_stride, ref_above,
                                 top_row_map, left_col_map,
                                 x0, y0, log2_pb_w, log2_pb_h);
 
@@ -1034,11 +1033,11 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
     }
     case OVINTRA_DC://DC
     {
-        ctudec->rcn_ctx.rcn_funcs.tmp.fill_ref_left_0_chroma(src_cb, dst_stride, ref_left,
+        ctudec->rcn_funcs.tmp.fill_ref_left_0_chroma(src_cb, dst_stride, ref_left,
                                left_col_map, top_row_map,
                                x0, y0, log2_pb_w, log2_pb_h);
 
-        ctudec->rcn_ctx.rcn_funcs.tmp.fill_ref_above_0_chroma(src_cb, dst_stride, ref_above,
+        ctudec->rcn_funcs.tmp.fill_ref_above_0_chroma(src_cb, dst_stride, ref_above,
                                 top_row_map, left_col_map,
                                 x0, y0, log2_pb_w, log2_pb_h);
 
@@ -1051,11 +1050,11 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
                          log2_pb_h);
         }
 
-        ctudec->rcn_ctx.rcn_funcs.tmp.fill_ref_left_0_chroma(src_cr, dst_stride, ref_left,
+        ctudec->rcn_funcs.tmp.fill_ref_left_0_chroma(src_cr, dst_stride, ref_left,
                                left_col_map, top_row_map,
                                x0, y0, log2_pb_w, log2_pb_h);
 
-        ctudec->rcn_ctx.rcn_funcs.tmp.fill_ref_above_0_chroma(src_cr, dst_stride, ref_above,
+        ctudec->rcn_funcs.tmp.fill_ref_above_0_chroma(src_cr, dst_stride, ref_above,
                                 top_row_map, left_col_map,
                                 x0, y0, log2_pb_w, log2_pb_h);
 

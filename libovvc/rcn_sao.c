@@ -90,7 +90,7 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_start_pic, int y_st
     const OVPartInfo *const pinfo = ctudec->part_ctx;
     uint8_t log2_ctb_s = pinfo->log2_ctu_s;
 
-    const struct SAOFunctions *saofunc = &ctudec->rcn_ctx.rcn_funcs.sao;
+    const struct SAOFunctions *saofunc = &ctudec->rcn_funcs.sao;
     OVFrame *frame = ctudec->rcn_ctx.frame_start;
 
     for (int c_idx = 0; c_idx < (ctudec->sao_info.chroma_format_idc ? 3 : 1); c_idx++) {

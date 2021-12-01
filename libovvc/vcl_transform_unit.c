@@ -978,7 +978,7 @@ sbt_half_ver(OVCTUDec *const ctu_dec,
         uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w - 1, log2_tb_h,
                                                    1, cu_flags, 0, tu_info);
 
-        ctu_dec->rcn_ctx.rcn_funcs.tmp.rcn_tu_st(ctu_dec, x0, y0, log2_tb_w - 1, log2_tb_h, cu_flags, cbf_mask, tu_info);
+        ctu_dec->rcn_funcs.tmp.rcn_tu_st(ctu_dec, x0, y0, log2_tb_w - 1, log2_tb_h, cu_flags, cbf_mask, tu_info);
         fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w - 1, log2_tb_h);
         fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w - 1, log2_tb_h);
 
@@ -991,7 +991,7 @@ sbt_half_ver(OVCTUDec *const ctu_dec,
         uint8_t x1 = x0 + (1 << (log2_tb_w - 1));
         uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w - 1, log2_tb_h,
                                                    1, cu_flags, 0, tu_info);
-        ctu_dec->rcn_ctx.rcn_funcs.tmp.rcn_tu_st(ctu_dec, x1, y0, log2_tb_w - 1, log2_tb_h, cu_flags, cbf_mask, tu_info);
+        ctu_dec->rcn_funcs.tmp.rcn_tu_st(ctu_dec, x1, y0, log2_tb_w - 1, log2_tb_h, cu_flags, cbf_mask, tu_info);
         fill_ctb_bound(&ctu_dec->dbf_info, x1, y0, log2_tb_w - 1, log2_tb_h);
         fill_ctb_bound_c(&ctu_dec->dbf_info, x1, y0, log2_tb_w - 1, log2_tb_h);
     }
@@ -1018,7 +1018,7 @@ sbt_half_hor(OVCTUDec *const ctu_dec,
         uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 1,
                                                    1, cu_flags, 0, tu_info);
 
-        ctu_dec->rcn_ctx.rcn_funcs.tmp.rcn_tu_st(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 1, cu_flags, cbf_mask, tu_info);
+        ctu_dec->rcn_funcs.tmp.rcn_tu_st(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 1, cu_flags, cbf_mask, tu_info);
         fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h - 1);
         fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h - 1);
 
@@ -1034,7 +1034,7 @@ sbt_half_hor(OVCTUDec *const ctu_dec,
                                                    1, cu_flags, 0, tu_info);
 
 
-        ctu_dec->rcn_ctx.rcn_funcs.tmp.rcn_tu_st(ctu_dec, x0, y1, log2_tb_w, log2_tb_h - 1, cu_flags, cbf_mask, tu_info);
+        ctu_dec->rcn_funcs.tmp.rcn_tu_st(ctu_dec, x0, y1, log2_tb_w, log2_tb_h - 1, cu_flags, cbf_mask, tu_info);
         fill_ctb_bound(&ctu_dec->dbf_info, x0, y3, log2_tb_w, log2_tb_h - 1);
         fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y3, log2_tb_w, log2_tb_h - 1);
     }
@@ -1062,7 +1062,7 @@ sbt_quad_ver(OVCTUDec *const ctu_dec,
                                                    1, cu_flags, 0, tu_info);
 
 
-        ctu_dec->rcn_ctx.rcn_funcs.tmp.rcn_tu_st(ctu_dec, x0, y0, log2_tb_w - 2, log2_tb_h, cu_flags, cbf_mask, tu_info);
+        ctu_dec->rcn_funcs.tmp.rcn_tu_st(ctu_dec, x0, y0, log2_tb_w - 2, log2_tb_h, cu_flags, cbf_mask, tu_info);
         fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w - 2, log2_tb_h);
         fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w - 2, log2_tb_h);
 
@@ -1078,7 +1078,7 @@ sbt_quad_ver(OVCTUDec *const ctu_dec,
         uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w - 2, log2_tb_h,
                                                    1, cu_flags, 0, tu_info);
 
-        ctu_dec->rcn_ctx.rcn_funcs.tmp.rcn_tu_st(ctu_dec, x3, y0, log2_tb_w - 2, log2_tb_h, cu_flags, cbf_mask, tu_info);
+        ctu_dec->rcn_funcs.tmp.rcn_tu_st(ctu_dec, x3, y0, log2_tb_w - 2, log2_tb_h, cu_flags, cbf_mask, tu_info);
         fill_ctb_bound(&ctu_dec->dbf_info, x3, y0, log2_tb_w - 2, log2_tb_h);
         fill_ctb_bound_c(&ctu_dec->dbf_info, x3, y0, log2_tb_w - 2, log2_tb_h);
     }
@@ -1105,7 +1105,7 @@ sbt_quad_hor(OVCTUDec *const ctu_dec,
         uint8_t cbf_mask = ctu_dec->transform_unit(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 2,
                                                    1, cu_flags, 0, tu_info);
 
-        ctu_dec->rcn_ctx.rcn_funcs.tmp.rcn_tu_st(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 2, cu_flags, cbf_mask, tu_info);
+        ctu_dec->rcn_funcs.tmp.rcn_tu_st(ctu_dec, x0, y0, log2_tb_w, log2_tb_h - 2, cu_flags, cbf_mask, tu_info);
         fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h - 2);
         fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h - 2);
 
@@ -1122,7 +1122,7 @@ sbt_quad_hor(OVCTUDec *const ctu_dec,
                                                    1, cu_flags, 0, tu_info);
 
 
-        ctu_dec->rcn_ctx.rcn_funcs.tmp.rcn_tu_st(ctu_dec, x0, y3, log2_tb_w, log2_tb_h - 2, cu_flags, cbf_mask, tu_info);
+        ctu_dec->rcn_funcs.tmp.rcn_tu_st(ctu_dec, x0, y3, log2_tb_w, log2_tb_h - 2, cu_flags, cbf_mask, tu_info);
 
         fill_ctb_bound(&ctu_dec->dbf_info, x0, y3, log2_tb_w, log2_tb_h - 2);
         fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y3, log2_tb_w, log2_tb_h - 2);
@@ -1319,17 +1319,17 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
     tu_info.cbf_mask = cbf_flags;
 
 #if 1
-    ctu_dec->rcn_ctx.rcn_funcs.tmp.recon_isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, &tu_info);
+    ctu_dec->rcn_funcs.tmp.recon_isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, &tu_info);
 #endif
 
     if (ctu_dec->transform_unit == &transform_unit_st) {
         if (ctu_dec->intra_mode_c >= 67 && ctu_dec->intra_mode_c < 70) {
-            ctu_dec->rcn_ctx.rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1,
+            ctu_dec->rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1,
                                   log2_cb_w - 1, log2_cb_h - 1);
         }
 
         if (cbf_mask_c) {
-            ctu_dec->rcn_ctx.rcn_funcs.tmp.rcn_tu_c(ctu_dec, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1, 0, cbf_mask_c, &tu_info_c);
+            ctu_dec->rcn_funcs.tmp.rcn_tu_c(ctu_dec, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1, 0, cbf_mask_c, &tu_info_c);
         }
 
     }
@@ -1486,16 +1486,16 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
     tu_info.cbf_mask = cbf_flags;
 
 #if 1
-    ctu_dec->rcn_ctx.rcn_funcs.tmp.recon_isp_subtree_h(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, &tu_info);
+    ctu_dec->rcn_funcs.tmp.recon_isp_subtree_h(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, &tu_info);
 #endif
     if(ctu_dec->transform_unit == &transform_unit_st) {
         if (ctu_dec->intra_mode_c >= 67 && ctu_dec->intra_mode_c < 70) {
-            ctu_dec->rcn_ctx.rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1,
+            ctu_dec->rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1,
                                   log2_cb_w - 1, log2_cb_h - 1);
         }
 
         if (cbf_mask_c) {
-            ctu_dec->rcn_ctx.rcn_funcs.tmp.rcn_tu_c(ctu_dec, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1, 0, cbf_mask_c, &tu_info_c);
+            ctu_dec->rcn_funcs.tmp.rcn_tu_c(ctu_dec, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1, 0, cbf_mask_c, &tu_info_c);
         }
 
     }
@@ -1570,7 +1570,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
 
             lfnst_mts(ctu_dec, log2_cb_w, log2_cb_h, cu.cu_flags, tu_info);
 
-            ctu_dec->rcn_ctx.rcn_funcs.tmp.rcn_transform_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, part_ctx->log2_max_tb_s,
+            ctu_dec->rcn_funcs.tmp.rcn_transform_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, part_ctx->log2_max_tb_s,
                                cu.cu_flags, tu_info);
         } else {
             uint8_t isp_mode = cu.cu_opaque;
@@ -1624,7 +1624,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
 
             lfnst_mts(ctu_dec, log2_cb_w, log2_cb_h, cu.cu_flags, tu_info);
 
-            ctu_dec->rcn_ctx.rcn_funcs.tmp.rcn_transform_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, part_ctx->log2_max_tb_s,
+            ctu_dec->rcn_funcs.tmp.rcn_transform_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, part_ctx->log2_max_tb_s,
                                cu.cu_flags, tu_info);
         }
     }

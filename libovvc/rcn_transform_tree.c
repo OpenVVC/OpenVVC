@@ -48,7 +48,7 @@ rcn_residual(OVCTUDec *const ctudec,
              uint8_t cu_mts_flag, uint8_t cu_mts_idx,
              uint8_t is_dc, uint8_t lfnst_flag, uint8_t is_mip, uint8_t lfnst_idx)
 {
-    struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
+    struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
     fill_bs_map(&ctudec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
 
     DECLARE_ALIGNED(32, int16_t, tmp)[64*64];
@@ -103,7 +103,7 @@ rcn_residual_c(OVCTUDec *const ctudec,
                uint16_t last_pos,
                uint8_t lfnst_flag, uint8_t lfnst_idx)
 {
-    struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
+    struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
 
     DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
 
@@ -145,7 +145,7 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
           uint8_t x0, uint8_t y0,
           uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t cbf_mask, uint8_t lfnst_flag)
 {
-    const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
+    const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_funcs;
 
     if (cbf_mask & 0x2) {
         OVSample *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[(x0) + (y0 * RCN_CTB_STRIDE)];
@@ -206,7 +206,7 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
           uint8_t x0, uint8_t y0, uint8_t log2_tb_w, uint8_t log2_tb_h,
           uint8_t cbf_mask, uint8_t lfnst_flag)
 {
-    const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
+    const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_funcs;
     OVSample *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[x0 + (y0 * RCN_CTB_STRIDE)];
     OVSample *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[x0 + (y0 * RCN_CTB_STRIDE)];
     if (!(tu_info->tr_skip_mask & 0x1)) {
@@ -261,8 +261,8 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
     #if 0
     struct OVDrvCtx *const pred_ctx = &ctudec->drv_ctx;
     #endif
-    const struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
-    const struct RCNFunctions *const rcn_func = &ctudec->rcn_ctx.rcn_funcs;
+    const struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
+    const struct RCNFunctions *const rcn_func = &ctudec->rcn_funcs;
     uint8_t cbf_flags = tu_info->cbf_mask;
     uint8_t lfnst_flag = tu_info->lfnst_flag;
 
@@ -291,7 +291,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
          */
          /*FIXME separate small cases */
         if (!(offset_x & 0x3)) {
-            ctudec->rcn_ctx.rcn_funcs.intra_pred_isp(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
+            ctudec->rcn_funcs.intra_pred_isp(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
                                RCN_CTB_STRIDE, intra_mode, x0, y0,
                                log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h,
                                log2_cb_w, log2_cb_h, offset_x, 0);
@@ -362,8 +362,8 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                     uint8_t intra_mode,
                     const struct ISPTUInfo *const tu_info)
 {
-    const struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
-    const struct RCNFunctions *const rcn_func = &ctudec->rcn_ctx.rcn_funcs;
+    const struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
+    const struct RCNFunctions *const rcn_func = &ctudec->rcn_funcs;
 
     int log2_pb_h = log2_cb_h - 2;
     int nb_pb;
@@ -398,7 +398,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
         //fill_ctb_bound(&ctudec->dbf_info, x0, y0, log2_cb_w, log2_pb_h);
         #endif
 
-        ctudec->rcn_ctx.rcn_funcs.intra_pred_isp(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
+        ctudec->rcn_funcs.intra_pred_isp(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
                            RCN_CTB_STRIDE, intra_mode, x0, y0,
                            log2_cb_w, log2_pb_h, log2_cb_w, log2_cb_h, 0, offset_y);
         if (cbf) {
@@ -465,7 +465,7 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
 
     if (cbf_flag_l) {
         const struct TBInfo *const tb_info = &tu_info->tb_info[2];
-        const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
+        const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_funcs;
 
         if (!(tu_info->tr_skip_mask & 0x10)) {
             int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;
@@ -486,7 +486,7 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
         rcn_func->ict.add[log2_tb_w](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
         /* FIXME Avoid reprocessing CCLM from here by recontructing at the end of transform tree */
         if (ctu_dec->intra_mode_c >= 67 && ctu_dec->intra_mode_c < 70) {
-            ctu_dec->rcn_ctx.rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1);
+            ctu_dec->rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1);
         }
         fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
         fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
@@ -525,7 +525,7 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
 {
     const struct TBInfo *const tb_info = &tu_info->tb_info[2];
     if (cbf_mask) {
-        const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
+        const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_funcs;
 
         if (!(tu_info->tr_skip_mask & 0x10)) {
             int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;

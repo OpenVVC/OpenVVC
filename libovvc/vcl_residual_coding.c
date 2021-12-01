@@ -2475,7 +2475,7 @@ residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     int qp = ctu_dec->dequant_luma.qp;
 
-    struct IQScale deq_prms = ctu_dec->rcn_ctx.rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
+    struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
 
     memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
 
@@ -2660,7 +2660,7 @@ residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     int qp = ctu_dec->dequant_luma.qp;
 
-    struct IQScale deq_prms = ctu_dec->rcn_ctx.rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
+    struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
 
     memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
 
@@ -2871,7 +2871,7 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     int qp = ctu_dec->dequant_luma.qp;
 
-    struct IQScale deq_prms = ctu_dec->rcn_ctx.rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
+    struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
 
     memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
 
@@ -3020,7 +3020,7 @@ residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     int qp = ctu_dec->dequant_luma.qp;
 
-    struct IQScale deq_prms = ctu_dec->rcn_ctx.rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+    struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
 
     VVCCoeffCodingCtx c_coding_ctx = {
         .sum_abs_lvl  = &sum_abs_level[VVC_TR_CTX_OFFSET],
@@ -3221,7 +3221,7 @@ residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     int qp = ctu_dec->dequant_luma.qp;
 
-    struct IQScale deq_prms = ctu_dec->rcn_ctx.rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+    struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
 
     memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
 
@@ -3520,7 +3520,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
     /* FIXME if called from chroma ? */
     int qp = ctu_dec->dequant_skip->qp;
 
-    const struct IQScale deq_prms = ctu_dec->rcn_ctx.rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
+    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
 
     TSCoeffCodingCtx cctx = {
         .nb_sig_ngh = &nb_significant   [0],
@@ -3697,7 +3697,7 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     int qp = ctu_dec->dequant_luma.qp;
 
-    struct IQScale deq_prms = ctu_dec->rcn_ctx.rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+    struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
 
     memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
 
@@ -4006,7 +4006,7 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
     int16_t *const _dst = dst;
 
     int qp = ctu_dec->dequant_chroma->qp;
-    const struct IQScale deq_prms = ctu_dec->rcn_ctx.rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
 
     uint8_t buff[VVC_TR_CTX_SIZE * 3];
 
@@ -4147,7 +4147,7 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
     int16_t *const _dst = dst;
 
     int qp = ctu_dec->dequant_chroma->qp;
-    const struct IQScale deq_prms = ctu_dec->rcn_ctx.rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
 
     /* FIXME reduce */
     uint8_t buff[VVC_TR_CTX_SIZE * 3];
@@ -4403,7 +4403,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
     int qp = ctu_dec->dequant_chroma->qp;
-    const struct IQScale deq_prms = ctu_dec->rcn_ctx.rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
 
     /* FIXME this is a bit wasteful if we only read a few sub blocks */
     memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
@@ -4924,7 +4924,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
     int qp = ctu_dec->dequant_chroma->qp;
-    const struct IQScale deq_prms = ctu_dec->rcn_ctx.rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
+    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
 
     /* FIXME this is a bit wasteful if we only read a few sub blocks */
     memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));

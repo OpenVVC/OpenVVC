@@ -634,7 +634,7 @@ coding_unit(OVCTUDec *const ctu_dec,
 
     uint8_t compute_chr_scale = ((!(x0 & 0x3F) && !(y0 & 0x3F)) && ctu_dec->lmcs_info.lmcs_enabled_flag) ;
     if (compute_chr_scale){
-        ctu_dec->rcn_ctx.rcn_funcs.rcn_lmcs_compute_chroma_scale(&ctu_dec->lmcs_info, &ctu_dec->rcn_ctx.progress_field,
+        ctu_dec->rcn_funcs.rcn_lmcs_compute_chroma_scale(&ctu_dec->lmcs_info, &ctu_dec->rcn_ctx.progress_field,
                                       ctu_dec->rcn_ctx.ctu_buff.y, x0, y0);
     }
 
@@ -692,7 +692,7 @@ coding_unit(OVCTUDec *const ctu_dec,
             cu.cu_mode_idx = luma_mode;
 
             ctu_dec->intra_mode_c = drv_intra_mode_c(cu, luma_mode);
-            ctu_dec->rcn_ctx.rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1);
+            ctu_dec->rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1);
         } else {
             /* FIXME inter */
             if (ctu_dec->coding_unit == &coding_unit_intra) {
@@ -712,7 +712,7 @@ coding_unit(OVCTUDec *const ctu_dec,
                 ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x0_unit,
                                             y0_unit, nb_unit_w, nb_unit_h);
 
-                ctu_dec->rcn_ctx.rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0, y0, log2_cb_w, log2_cb_h);
+                ctu_dec->rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0, y0, log2_cb_w, log2_cb_h);
             }
         }
     }

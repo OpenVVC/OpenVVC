@@ -464,7 +464,7 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-    struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
+    struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     /* FIXME derive ref_idx */
     uint8_t ref_idx_0 = ref_idx0;
     uint8_t ref_idx_1 = ref_idx1;
@@ -536,7 +536,7 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                                                         prec_x1, prec_y1, pu_w);
     }
 
-    rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
+    ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
                                             pu_w, pu_h);
 
 }
@@ -818,9 +818,9 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 {
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
-    struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
-    struct DMVRFunctions *dmvr = &rcn_ctx->rcn_funcs.dmvr;
-    struct BDOFFunctions *bdof = &rcn_ctx->rcn_funcs.bdof;
+    struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
+    struct DMVRFunctions *dmvr = &ctudec->rcn_funcs.dmvr;
+    struct BDOFFunctions *bdof = &ctudec->rcn_funcs.bdof;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
@@ -1005,7 +1005,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     }
 
     if (ctudec->lmcs_info.lmcs_enabled_flag){
-        rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE,
+        ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE,
                                                 ctudec->lmcs_info.luts,
                                                 pu_w, pu_h);
     }
@@ -1013,7 +1013,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
 
-    struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
+    struct MCFunctions *mc_c = &ctudec->rcn_funcs.mc_c;
 
     OVSample *edge_buff0_1 = (OVSample *)rcn_ctx->data.edge_buff0;
     OVSample *edge_buff1_1 = (OVSample *)rcn_ctx->data.edge_buff1;
@@ -1080,10 +1080,9 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                uint8_t x0, uint8_t y0, uint8_t log2_pu_w, uint8_t log2_pu_h,
                OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1)
 {
-    struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-    struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
-    struct BDOFFunctions *bdof = &rcn_ctx->rcn_funcs.bdof;
+    struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
+    struct BDOFFunctions *bdof = &ctudec->rcn_funcs.bdof;
     /* FIXME derive ref_idx */
     uint8_t ref_idx_0 = ref_idx0;
     uint8_t ref_idx_1 = ref_idx1;
@@ -1187,7 +1186,7 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                    ref_stride, grad_x0, grad_y0, grad_x1, grad_y1,
                    grad_stride, pb_w, pb_h);
 
-    rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE,
+    ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE,
                                             ctudec->lmcs_info.luts,
                                             pu_w, pu_h);
 }
@@ -1201,8 +1200,8 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-    struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
-    struct PROFFunctions *prof = &rcn_ctx->rcn_funcs.prof;
+    struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
+    struct PROFFunctions *prof = &ctudec->rcn_funcs.prof;
     /* FIXME derive ref_idx */
     uint8_t ref_idx_0 = ref_idx0;
     uint8_t ref_idx_1 = ref_idx1;
@@ -1328,7 +1327,7 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         }
     }
 
-    rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE,
+    ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE,
                                             ctudec->lmcs_info.luts,
                                             pu_w, pu_h);
 }
@@ -1341,7 +1340,7 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-    struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
+    struct MCFunctions *mc_c = &ctudec->rcn_funcs.mc_c;
     /* FIXME derive ref_idx */
     uint8_t ref_idx_0 = ref_idx0;
     uint8_t ref_idx_1 = ref_idx1;
@@ -1429,7 +1428,7 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
-    struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
+    struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
@@ -1496,7 +1495,7 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
                                           src_y, src_stride, pu_h,
                                           prec_x, prec_y, pu_w);
 
-    rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
+    ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
                                             pu_w, pu_h);
 }
 
@@ -1510,8 +1509,8 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
-    struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
-    struct PROFFunctions *prof = &rcn_ctx->rcn_funcs.prof;
+    struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
+    struct PROFFunctions *prof = &ctudec->rcn_funcs.prof;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
@@ -1593,7 +1592,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
               tmp_grad_x, tmp_grad_y,
               4, dmv_scale_h, dmv_scale_v, 0);
 
-    rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
+    ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
                                             pu_w, pu_h);
 }
 
@@ -1604,7 +1603,7 @@ rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
-    struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
+    struct MCFunctions *mc_c = &ctudec->rcn_funcs.mc_c;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
@@ -1771,7 +1770,7 @@ rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, struc
                       unsigned int x0, unsigned int y0,
                       unsigned int log2_pb_w, unsigned int log2_pb_h)
 {
-    struct CIIPFunctions *ciip = &ctudec->rcn_ctx.rcn_funcs.ciip;
+    struct CIIPFunctions *ciip = &ctudec->rcn_funcs.ciip;
     //Compute weight in function of neighboring coding modes
     int x_right  = x0 + (1 << log2_pb_w) - 1;
     int y_bottom = y0 + (1 << log2_pb_h) - 1;
@@ -1797,7 +1796,7 @@ rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, struc
     tmp_intra->cr += (x0 >> 1) + (y0 >> 1) * tmp_intra->stride_c;
     tmp_inter->cr += (x0 >> 1) + (y0 >> 1) * tmp_inter->stride_c;
 
-    struct MCFunctions *mc_c = &ctudec->rcn_ctx.rcn_funcs.mc_c;
+    struct MCFunctions *mc_c = &ctudec->rcn_funcs.mc_c;
     if (log2_pb_w <= 2) {
         mc_c->unidir[0][0](dst.cb, dst.stride_c, tmp_inter->cb, tmp_inter->stride_c, 1 << (log2_pb_h - 1), 0, 0, 1 << (log2_pb_w - 1));
         mc_c->unidir[0][0](dst.cr, dst.stride_c, tmp_inter->cr, tmp_inter->stride_c, 1 << (log2_pb_h - 1), 0, 0, 1 << (log2_pb_w - 1));
@@ -1837,8 +1836,8 @@ rcn_ciip_b(OVCTUDec*const ctudec,
 
     //Intra Planar mode
     struct OVBuffInfo tmp_intra = ctudec->rcn_ctx.ctu_buff;
-    ctudec->rcn_ctx.rcn_funcs.intra_pred(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0, y0, log2_pb_w, log2_pb_h);
-    ctudec->rcn_ctx.rcn_funcs.intra_pred_c(&ctudec->rcn_ctx, OVINTRA_PLANAR, x0 >> 1, y0 >> 1, log2_pb_w - 1, log2_pb_h - 1);
+    ctudec->rcn_funcs.intra_pred(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0, y0, log2_pb_w, log2_pb_h);
+    ctudec->rcn_funcs.intra_pred_c(&ctudec->rcn_ctx, OVINTRA_PLANAR, x0 >> 1, y0 >> 1, log2_pb_w - 1, log2_pb_h - 1);
 
     rcn_ciip_weighted_sum(ctudec, &tmp_intra, &tmp_inter, x0, y0, log2_pb_w, log2_pb_h);
 }
@@ -1865,8 +1864,8 @@ rcn_ciip(OVCTUDec *const ctudec,
 
     //Intra Planar mode
     struct OVBuffInfo tmp_intra = ctudec->rcn_ctx.ctu_buff;
-    ctudec->rcn_ctx.rcn_funcs.intra_pred(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0, y0, log2_pb_w, log2_pb_h);
-    ctudec->rcn_ctx.rcn_funcs.intra_pred_c(&ctudec->rcn_ctx, OVINTRA_PLANAR, x0 >> 1, y0 >> 1, log2_pb_w - 1, log2_pb_h - 1);
+    ctudec->rcn_funcs.intra_pred(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0, y0, log2_pb_w, log2_pb_h);
+    ctudec->rcn_funcs.intra_pred_c(&ctudec->rcn_ctx, OVINTRA_PLANAR, x0 >> 1, y0 >> 1, log2_pb_w - 1, log2_pb_h - 1);
 
     rcn_ciip_weighted_sum(ctudec, &tmp_intra, &tmp_inter, x0, y0, log2_pb_w, log2_pb_h);
 
@@ -2084,8 +2083,8 @@ rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
 
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-    struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
-    struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
+    struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
+    struct MCFunctions *mc_c = &ctudec->rcn_funcs.mc_c;
     /* FIXME derive ref_idx */
     uint8_t ref_idx_0 = mv0.ref_idx;
     uint8_t ref_idx_1 = mv1.ref_idx;
@@ -2155,7 +2154,7 @@ rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
     mc_l->gpm_weighted(dst.y, RCN_CTB_STRIDE, tmp_buff1, MAX_PB_SIZE, tmp_buff0, pu_h, prec_x1, prec_y1, pu_w,
                        step_x, step_y, weight);
 
-    rcn_ctx->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
+    ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
                                             pu_w, pu_h);
 
 

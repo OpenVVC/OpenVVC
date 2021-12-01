@@ -573,12 +573,12 @@ struct OVCTUDec
 
         struct CTUBitField progress_field_c;
 
-        /* A structure containing various functions pointers
-         * to block reconstruction function
-         */
-        struct RCNFunctions rcn_funcs;
     } rcn_ctx;
 
+    /* A structure containing various functions pointers
+     * to block reconstruction function
+     */
+    struct RCNFunctions rcn_funcs;
 
     struct DBFInfo dbf_info;
     

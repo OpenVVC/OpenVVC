@@ -85,7 +85,7 @@ process_lfnst(OVCTUDec *const ctudec,
               int log2_tb_w, int log2_tb_h,
               int x0, int y0, uint8_t lfnst_idx)
 {
-    struct RCNFunctions *const rcnFunc = &ctudec->rcn_ctx.rcn_funcs;
+    struct RCNFunctions *const rcnFunc = &ctudec->rcn_funcs;
 
     int8_t intra_mode = derive_lfnst_mode_c(ctudec, log2_tb_w, log2_tb_h,
                                             x0, y0, ctudec->intra_mode_c);
@@ -116,7 +116,7 @@ process_lfnst_luma(OVCTUDec *const ctudec,
                    int log2_tb_w, int log2_tb_h,
                    int x0, int y0, uint8_t lfnst_idx)
 {
-    struct RCNFunctions *const rcnFunc = &ctudec->rcn_ctx.rcn_funcs;
+    struct RCNFunctions *const rcnFunc = &ctudec->rcn_funcs;
 
     int8_t intra_mode = derive_lfnst_mode_l(ctudec, log2_tb_w, log2_tb_h, x0, y0);
 
@@ -145,7 +145,7 @@ process_lfnst_luma_isp(OVCTUDec *const ctudec,
                    int log2_cb_w, int log2_cb_h,
                    int x0, int y0, uint8_t lfnst_idx)
 {
-    struct RCNFunctions *const rcnFunc = &ctudec->rcn_ctx.rcn_funcs;
+    struct RCNFunctions *const rcnFunc = &ctudec->rcn_funcs;
 
     int8_t intra_mode = derive_lfnst_mode_l(ctudec, log2_cb_w, log2_cb_h, x0, y0);
 

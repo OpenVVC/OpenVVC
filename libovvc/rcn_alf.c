@@ -1301,7 +1301,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 
             rcn_alf_derive_classification(alf, src_luma, stride_src, blk_dst,
                                           ctu_s, ctudec->pic_h,
-                                          ctudec->rcn_ctx.rcn_funcs.alf.classif,
+                                          ctudec->rcn_funcs.alf.classif,
                                           class_idx, transpose_idx);
 
             int16_t filter_idx = alf_params_ctu->ctb_alf_idx;
@@ -1313,7 +1313,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 
             uint8_t req_vb = check_virtual_bound(y_pos_pic, ctu_h, virbnd_pos, log2_ctb_s);
 
-            (ctudec->rcn_ctx.rcn_funcs.alf.luma[req_vb])(class_idx, transpose_idx, dst_luma,
+            (ctudec->rcn_funcs.alf.luma[req_vb])(class_idx, transpose_idx, dst_luma,
                                                          src_luma, stride_dst, stride_src,
                                                          blk_dst, coeff, clip,
                                                          ctu_s, virbnd_pos);
@@ -1343,7 +1343,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                 yVb = yVb & (ctu_s/chr_scale - 1);
 
                 uint8_t isVB = (yVb < virbnd_pos && (yVb >= virbnd_pos - 2)) || (yVb >= virbnd_pos && (yVb <= virbnd_pos + 1));
-                ctudec->rcn_ctx.rcn_funcs.alf.chroma[isVB](dst_chroma, src_chroma,
+                ctudec->rcn_funcs.alf.chroma[isVB](dst_chroma, src_chroma,
                                                            stride_dst, stride_src, blk_dst,
                                                            alf->chroma_coeff_final[alt_num],
                                                            alf->chroma_clip_final[alt_num],
@@ -1376,7 +1376,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 
                     uint8_t isVB = 1;
 
-                    ctudec->rcn_ctx.rcn_funcs.alf.ccalf[isVB](dst_chroma, src_chroma, stride_dst, stride_src, blk_dst, c_idx, filt_coeff,
+                    ctudec->rcn_funcs.alf.ccalf[isVB](dst_chroma, src_chroma, stride_dst, stride_src, blk_dst, c_idx, filt_coeff,
                                                               ctu_s, virbnd_pos);
 
                 }
