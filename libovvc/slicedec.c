@@ -1166,6 +1166,20 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
     }
 }
 
+static void
+attach_rcn_ctu_buff(struct OVRCNCtx *const rcn_ctx)
+{
+     struct CTURCNData *rcn_data = &rcn_ctx->data;
+     struct OVBuffInfo *ctu_binfo = &rcn_ctx->ctu_buff;
+
+     ctu_binfo->y  = &rcn_data->y_buff [RCN_CTB_PADDING];
+     ctu_binfo->cb = &rcn_data->cb_buff[RCN_CTB_PADDING];
+     ctu_binfo->cr = &rcn_data->cr_buff[RCN_CTB_PADDING];
+
+     ctu_binfo->stride   = RCN_CTB_STRIDE;
+     ctu_binfo->stride_c = RCN_CTB_STRIDE;
+}
+
 static int
 slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms,
                            uint16_t entry_idx)
@@ -1175,6 +1189,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     int ret;
 
     struct RectEntryInfo einfo;
+
+    attach_rcn_ctu_buff(&ctudec->rcn_ctx);
 
     /*FIXME handle cabac alloc or keep it on the stack ? */
     OVCABACCtx cabac_ctx;

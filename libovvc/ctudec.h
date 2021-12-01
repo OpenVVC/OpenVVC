@@ -772,6 +772,8 @@ struct OVCTUDec
     uint8_t tmp_red;
 };
 
+void rcn_buff_uninit(struct OVRCNCtx *const rcn_ctx);
+
 void ctudec_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int margin, uint8_t log2_ctb_s);
 void ctudec_extend_filter_region(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect);
 void ctudec_save_last_rows(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect);

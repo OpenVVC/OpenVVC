@@ -219,6 +219,30 @@ ctudec_free_intra_line_buff(struct OVRCNCtx *const rcn_ctx)
     }
 }
 
+static void
+ctudec_free_filter_buffers(struct OVRCNCtx *const rcn_ctx)
+{
+    OVSample** saved_rows_sao    = rcn_ctx->filter_buffers.saved_rows_sao;
+    OVSample** saved_rows_alf    = rcn_ctx->filter_buffers.saved_rows_alf;
+    OVSample** saved_cols        = rcn_ctx->filter_buffers.saved_cols;
+    OVSample** filter_region     = rcn_ctx->filter_buffers.filter_region;
+
+    for(int comp = 0; comp < 3; comp++)
+    {
+        if(filter_region[comp])     ov_freep(&filter_region[comp]);
+        if(saved_rows_sao[comp])    ov_freep(&saved_rows_sao[comp]);
+        if(saved_rows_alf[comp])    ov_freep(&saved_rows_alf[comp]);
+        if(saved_cols[comp])        ov_freep(&saved_cols[comp]);
+    }
+}
+
+void
+rcn_buff_uninit(struct OVRCNCtx *const rcn_ctx)
+{
+    ctudec_free_filter_buffers(rcn_ctx);
+    ctudec_free_intra_line_buff(rcn_ctx);
+}
+
 void
 ctudec_alloc_intra_line_buff(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uint8_t log2_ctb_s)
 {
@@ -542,19 +566,3 @@ ctudec_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int ma
 
 }
 
-static void
-ctudec_free_filter_buffers(struct OVRCNCtx *const rcn_ctx)
-{
-    OVSample** saved_rows_sao    = rcn_ctx->filter_buffers.saved_rows_sao;
-    OVSample** saved_rows_alf    = rcn_ctx->filter_buffers.saved_rows_alf;
-    OVSample** saved_cols        = rcn_ctx->filter_buffers.saved_cols;
-    OVSample** filter_region     = rcn_ctx->filter_buffers.filter_region;
-
-    for(int comp = 0; comp < 3; comp++)
-    {
-        if(filter_region[comp])     ov_freep(&filter_region[comp]);
-        if(saved_rows_sao[comp])    ov_freep(&saved_rows_sao[comp]);
-        if(saved_rows_alf[comp])    ov_freep(&saved_rows_alf[comp]);
-        if(saved_cols[comp])        ov_freep(&saved_cols[comp]);
-    }
-}
