@@ -1,6 +1,7 @@
 #define BITDEPTH 10
 
 #include "rcn_alf.c"
+#include "rcn_ctu.c"
 #include "rcn_df.c"
 #include "rcn_intra.c"
 #include "rcn_intra_cclm.c"

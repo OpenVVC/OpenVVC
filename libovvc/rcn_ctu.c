@@ -4,7 +4,7 @@
 #include "dec_structures.h"
 #include "ctudec.h"
 
-void
+static void
 rcn_update_ctu_border(struct OVRCNCtx *rcn_ctx, uint8_t log2_ctb_s)
 {
      uint8_t ctu_s = 1 << log2_ctb_s;
@@ -52,7 +52,7 @@ rcn_update_ctu_border(struct OVRCNCtx *rcn_ctx, uint8_t log2_ctb_s)
      }
 }
 
-void
+static void
 rcn_write_ctu_to_frame(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s)
 {
     int i;
@@ -81,7 +81,7 @@ rcn_write_ctu_to_frame(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s)
     }
 }
 
-void
+static void
 rcn_intra_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log2_ctb_s)
 {
     const struct OVBuffInfo *const il = &rcn_ctx->intra_line_buff;
@@ -98,7 +98,7 @@ rcn_intra_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log
     memcpy(dst_cr, src_cr, sizeof(OVSample) * ((1 << (log2_ctb_s - 1)) + (1 << (log2_ctb_s - 1))));
 }
 
-void
+static void
 rcn_ctu_to_intra_line(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log2_ctu_s)
 {
     struct OVBuffInfo *intra_line_binfo = &rcn_ctx->intra_line_buff;
@@ -118,7 +118,7 @@ rcn_ctu_to_intra_line(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log
     memcpy(&intra_line_binfo->cr[x_l>>1], _src, sizeof(*_src) << (log2_ctu_s - 1));
 }
 
-void
+static void
 rcn_write_ctu_to_frame_border(const struct OVRCNCtx *const rcn_ctx,
                               int last_ctu_w, int last_ctu_h)
 {
@@ -176,14 +176,14 @@ free_filter_buffers(struct OVRCNCtx *const rcn_ctx)
     }
 }
 
-void
+static void
 rcn_buff_uninit(struct OVRCNCtx *const rcn_ctx)
 {
     free_filter_buffers(rcn_ctx);
     free_intra_line_buff(rcn_ctx);
 }
 
-void
+static void
 rcn_alloc_intra_line_buff(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uint8_t log2_ctb_s)
 {
     struct OVBuffInfo *intra_line_b = &rcn_ctx->intra_line_buff;
@@ -199,7 +199,7 @@ rcn_alloc_intra_line_buff(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uint8_t 
     intra_line_b->cr = ov_malloc(intra_line_b->stride_c * sizeof(*intra_line_b->cr));
 }
 
-void
+static void
 rcn_save_last_cols(struct OVRCNCtx *const rcn_ctx, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
 {
     if (is_border_rect & OV_BOUNDARY_RIGHT_RECT)
@@ -228,7 +228,7 @@ rcn_save_last_cols(struct OVRCNCtx *const rcn_ctx, int x_pic_l, int y_pic_l, uin
     }
 }
 
-void
+static void
 rcn_save_last_rows(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
 {
     struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
@@ -268,7 +268,7 @@ rcn_save_last_rows(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_
     }
 }
 
-void
+static void
 rcn_extend_filter_region(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l,
                             int x_pic_l, int y_pic_l, uint8_t bnd_msk)
 {
@@ -465,7 +465,7 @@ rcn_extend_filter_region(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, 
     }
 }
 
-void
+static void
 rcn_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int margin, uint8_t log2_ctb_s)
 {
     int ctu_s = 1 << log2_ctb_s;
@@ -506,7 +506,7 @@ rcn_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int margi
 
 }
 
-void
+static void
 rcn_attach_ctu_buff(struct OVRCNCtx *const rcn_ctx)
 {
      struct CTURCNData *rcn_data = &rcn_ctx->data;
@@ -520,7 +520,7 @@ rcn_attach_ctu_buff(struct OVRCNCtx *const rcn_ctx)
      ctu_binfo->stride_c = RCN_CTB_STRIDE;
 }
 
-void
+static void
 rcn_attach_frame_buff(struct OVRCNCtx *const rcn_ctx, const OVFrame *const f,
                       const struct RectEntryInfo *const einfo, uint8_t log2_ctb_s)
 {
@@ -546,7 +546,7 @@ rcn_attach_frame_buff(struct OVRCNCtx *const rcn_ctx, const OVFrame *const f,
     rcn_ctx->line_start = *fbuff;
 }
 
-void
+static void
 rcn_next_buff_line(struct OVRCNCtx *const rcn_ctx,  uint8_t log2_ctb_s)
 {
     struct OVBuffInfo *fbuff = &rcn_ctx->line_start;
@@ -558,3 +558,21 @@ rcn_next_buff_line(struct OVRCNCtx *const rcn_ctx,  uint8_t log2_ctb_s)
     rcn_ctx->frame_buff = *fbuff;
 }
 
+void
+BD_DECL(rcn_init_ctu_buffs)(struct RCNFunctions *const rcn_funcs)
+{
+    rcn_funcs->rcn_update_ctu_border         = &rcn_update_ctu_border;
+    rcn_funcs->rcn_write_ctu_to_frame        = &rcn_write_ctu_to_frame;
+    rcn_funcs->rcn_intra_line_to_ctu         = &rcn_intra_line_to_ctu;
+    rcn_funcs->rcn_ctu_to_intra_line         = &rcn_ctu_to_intra_line;
+    rcn_funcs->rcn_write_ctu_to_frame_border = &rcn_write_ctu_to_frame_border;
+    rcn_funcs->rcn_buff_uninit               = &rcn_buff_uninit;
+    rcn_funcs->rcn_alloc_intra_line_buff     = &rcn_alloc_intra_line_buff;
+    rcn_funcs->rcn_save_last_cols            = &rcn_save_last_cols;
+    rcn_funcs->rcn_save_last_rows            = &rcn_save_last_rows;
+    rcn_funcs->rcn_extend_filter_region      = &rcn_extend_filter_region;
+    rcn_funcs->rcn_alloc_filter_buffers      = &rcn_alloc_filter_buffers;
+    rcn_funcs->rcn_attach_ctu_buff           = &rcn_attach_ctu_buff;
+    rcn_funcs->rcn_attach_frame_buff         = &rcn_attach_frame_buff;
+    rcn_funcs->rcn_next_buff_line            = &rcn_next_buff_line;
+}

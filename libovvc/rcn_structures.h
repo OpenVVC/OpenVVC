@@ -507,6 +507,38 @@ struct RCNFunctions
                            uint8_t intra_mode, int x0, int y0,
                            int log2_pb_w, int log2_pb_h,
                            int mrl_idx);
+
+    void (*rcn_update_ctu_border)(struct OVRCNCtx *rcn_ctx, uint8_t log2_ctb_s);
+
+    void (*rcn_write_ctu_to_frame)(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s);
+
+    void (*rcn_intra_line_to_ctu)(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log2_ctb_s);
+
+    void (*rcn_ctu_to_intra_line)(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log2_ctu_s);
+
+    void (*rcn_write_ctu_to_frame_border)(const struct OVRCNCtx *const rcn_ctx,
+                                          int last_ctu_w, int last_ctu_h);
+
+    void (*rcn_buff_uninit)(struct OVRCNCtx *const rcn_ctx);
+
+    void (*rcn_alloc_intra_line_buff)(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uint8_t log2_ctb_s);
+
+    void (*rcn_save_last_cols)(struct OVRCNCtx *const rcn_ctx, int x_pic_l, int y_pic_l, uint8_t is_border_rect);
+
+    void (*rcn_save_last_rows)(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect);
+
+    void (*rcn_extend_filter_region)(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l,
+                                     int x_pic_l, int y_pic_l, uint8_t bnd_msk);
+
+    void (*rcn_alloc_filter_buffers)(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int margin, uint8_t log2_ctb_s);
+
+    void (*rcn_attach_ctu_buff)(struct OVRCNCtx *const rcn_ctx);
+
+    void (*rcn_attach_frame_buff)(struct OVRCNCtx *const rcn_ctx, const OVFrame *const f,
+                                  const struct RectEntryInfo *const einfo, uint8_t log2_ctb_s);
+
+    void (*rcn_next_buff_line)(struct OVRCNCtx *const rcn_ctx,  uint8_t log2_ctb_s);
+
 };
 
 

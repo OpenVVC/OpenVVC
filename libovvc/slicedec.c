@@ -695,9 +695,9 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
 
     ret = ctudec->coding_tree(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s, 0);
 
-    rcn_ctu_to_intra_line(rcn_ctx, ctb_addr_rs % nb_ctu_w << log2_ctb_s, log2_ctb_s);
+    ctudec->rcn_funcs.rcn_ctu_to_intra_line(rcn_ctx, ctb_addr_rs % nb_ctu_w << log2_ctb_s, log2_ctb_s);
 
-    rcn_write_ctu_to_frame(rcn_ctx, log2_ctb_s);
+    ctudec->rcn_funcs.rcn_write_ctu_to_frame(rcn_ctx, log2_ctb_s);
 
     /*FIXME call LMCS in write function instead */
     const struct OVBuffInfo *const fbuff = &rcn_ctx->frame_buff;
@@ -749,9 +749,9 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
     ret = ctudec->coding_tree_implicit(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s,
                                        0, ctu_w, ctu_h);
 
-    rcn_ctu_to_intra_line(rcn_ctx, ctb_addr_rs % nb_ctu_w << log2_ctb_s, log2_ctb_s);
+    ctudec->rcn_funcs.rcn_ctu_to_intra_line(rcn_ctx, ctb_addr_rs % nb_ctu_w << log2_ctb_s, log2_ctb_s);
 
-    rcn_write_ctu_to_frame_border(rcn_ctx, ctu_w, ctu_h);
+    ctudec->rcn_funcs.rcn_write_ctu_to_frame_border(rcn_ctx, ctu_w, ctu_h);
 
     const struct OVBuffInfo *const fbuff = &rcn_ctx->frame_buff;
     ptrdiff_t stride_out_pic = fbuff->stride;
@@ -791,7 +791,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     /* Do not copy on first line */
     if (ctb_addr_rs >= nb_ctu_w) {
-        rcn_intra_line_to_ctu(rcn_ctx, 0, log2_ctb_s);
+        ctudec->rcn_funcs.rcn_intra_line_to_ctu(rcn_ctx, 0, log2_ctb_s);
     }
 
     while (ctb_x < nb_ctu_w - 1) {
@@ -810,7 +810,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
             backup_qp = ctudec->drv_ctx.qp_map_x[0];
         }
 
-        rcn_update_ctu_border(rcn_ctx, log2_ctb_s);
+        ctudec->rcn_funcs.rcn_update_ctu_border(rcn_ctx, log2_ctb_s);
 
         if (slice_type != SLICE_I) {
             store_inter_maps(drv_lines, ctudec, ctb_x, 0);
@@ -831,7 +831,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
        */
         if (ctb_addr_rs >= nb_ctu_w) {
             // rcn_frame_line_to_ctu(&ctudec->rcn_ctx, log2_ctb_s);
-            rcn_intra_line_to_ctu(rcn_ctx, ctb_x << log2_ctb_s, log2_ctb_s);
+            ctudec->rcn_funcs.rcn_intra_line_to_ctu(rcn_ctx, ctb_x << log2_ctb_s, log2_ctb_s);
         }
     }
 
@@ -934,7 +934,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     uint8_t slice_type = sldec->slice_type;
     int ctb_x = 0;
 
-    rcn_intra_line_to_ctu(rcn_ctx, 0, log2_ctb_s);
+    ctudec->rcn_funcs.rcn_intra_line_to_ctu(rcn_ctx, 0, log2_ctb_s);
 
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctu_w = 1 << log2_ctb_s;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctu_h = ctu_h;
@@ -953,7 +953,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
             store_inter_maps(drv_lines, ctudec, ctb_x, 0);
         }
 
-        rcn_update_ctu_border(rcn_ctx, log2_ctb_s);
+        ctudec->rcn_funcs.rcn_update_ctu_border(rcn_ctx, log2_ctb_s);
 
         if (!ctudec->dbf_disable) {
             const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
@@ -966,7 +966,7 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         ctb_x++;
 
         /* FIXME is first line check if only one line? */
-        rcn_intra_line_to_ctu(rcn_ctx, ctb_x << log2_ctb_s, log2_ctb_s);
+        ctudec->rcn_funcs.rcn_intra_line_to_ctu(rcn_ctx, ctb_x << log2_ctb_s, log2_ctb_s);
     }
 
     ctudec->ctb_x = einfo->ctb_x + ctb_x;
@@ -1215,14 +1215,14 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     init_lines(ctudec, sldec, &einfo, prms, ctudec->part_ctx,
                &drv_lines, cc_lines);
 
-    rcn_attach_ctu_buff(rcn_ctx);
+    ctudec->rcn_funcs.rcn_attach_ctu_buff(rcn_ctx);
 
-    rcn_attach_frame_buff(rcn_ctx, sldec->pic->frame, &einfo, log2_ctb_s);
+    ctudec->rcn_funcs.rcn_attach_frame_buff(rcn_ctx, sldec->pic->frame, &einfo, log2_ctb_s);
 
     if (nb_ctu_w > ctudec->prev_nb_ctu_w_rect_entry) {
         int margin = 3;
-        rcn_alloc_filter_buffers(rcn_ctx, einfo.nb_ctu_w, margin, log2_ctb_s);
-        rcn_alloc_intra_line_buff(rcn_ctx, einfo.nb_ctu_w + 2, log2_ctb_s);
+        ctudec->rcn_funcs.rcn_alloc_filter_buffers(rcn_ctx, einfo.nb_ctu_w, margin, log2_ctb_s);
+        ctudec->rcn_funcs.rcn_alloc_intra_line_buff(rcn_ctx, einfo.nb_ctu_w + 2, log2_ctb_s);
         ctudec->prev_nb_ctu_w_rect_entry = nb_ctu_w;
     }
 
@@ -1237,7 +1237,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
 
         drv_line_next_line(ctudec, &drv_lines);
 
-        rcn_next_buff_line(rcn_ctx, log2_ctb_s);
+        ctudec->rcn_funcs.rcn_next_buff_line(rcn_ctx, log2_ctb_s);
 
         ctb_addr_rs += nb_ctu_w;
         ctb_y++;
