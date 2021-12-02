@@ -1835,11 +1835,6 @@ set_zero_mvs_p(struct InterDRVCtx *inter_ctx,
             mv_buff0[34 + j * 2]     = mv0;
             mv_buff0[34 + j * 2 + 1] = mv0;
 
-            ctudec->rcn_funcs.rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
-                                        inter_ctx, tmvp->ctudec->part_ctx,
-                                        mv0, mv0, x0 + 8 * j, y0 + 8 * i,
-                                        3, 3, 0x1, 0, 0);
-
         }
         mv_buff0 += 34 * 2;
         tmvp_mv0 += 16;
