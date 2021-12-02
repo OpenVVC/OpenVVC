@@ -809,7 +809,7 @@ extend_bdof_grad(int16_t *dst_grad, int16_t grad_stride, int16_t pb_w, int16_t p
     memcpy(dst_lst, ref_lst, sizeof(*ref) * (pb_w + 2));
 }
 
-uint8_t
+static uint8_t
 rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                    uint8_t x0, uint8_t y0,
                    uint8_t log2_pu_w, uint8_t log2_pu_h,
@@ -1075,7 +1075,7 @@ struct PROFInfo
     int32_t dmv_scale_v_1[16];
 };
 
-void
+static void
 rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                uint8_t x0, uint8_t y0, uint8_t log2_pu_w, uint8_t log2_pu_h,
                OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1)
@@ -1680,7 +1680,7 @@ rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
                                                 pu_h >> 1, prec_x_c, prec_y_c, pu_w >> 1);
 }
 
-void
+static void
 rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
         OVMV mv, uint8_t type, uint8_t ref_idx)
 {
@@ -1688,7 +1688,7 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
     rcn_mcp_c(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, type, ref_idx);
 }
 
-void
+static void
 rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *const inter_ctx,
           const OVPartInfo *const part_ctx,
           const OVMV mv0, const OVMV mv1,
@@ -1708,7 +1708,7 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *cons
     }
 }
 
-void
+static void
 rcn_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *const inter_ctx,
             const OVPartInfo *const part_ctx,
             const OVMV mv0, const OVMV mv1,
@@ -1726,7 +1726,7 @@ rcn_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
 }
 
 
-void
+static void
 rcn_prof_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *const inter_ctx,
                  const OVPartInfo *const part_ctx,
                  const OVMV mv0, const OVMV mv1,
@@ -1748,7 +1748,7 @@ rcn_prof_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCt
     }
 }
 
-void
+static void
 rcn_mcp_b_c(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *const inter_ctx,
             const OVPartInfo *const part_ctx,
             const OVMV mv0, const OVMV mv1,
@@ -1808,7 +1808,7 @@ rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, struc
     }
 }
 
-void
+static void
 rcn_ciip_b(OVCTUDec*const ctudec,
            const OVMV mv0, const OVMV mv1,
            unsigned int x0, unsigned int y0,
@@ -1842,7 +1842,7 @@ rcn_ciip_b(OVCTUDec*const ctudec,
     rcn_ciip_weighted_sum(ctudec, &tmp_intra, &tmp_inter, x0, y0, log2_pb_w, log2_pb_h);
 }
 
-void
+static void
 rcn_ciip(OVCTUDec *const ctudec,
          int x0, int y0, int log2_pb_w, int log2_pb_h,
          OVMV mv, uint8_t ref_idx)
@@ -1893,8 +1893,7 @@ rcn_gpm_weights_and_steps(int split_dir, int log2_pb_w_l, int log2_pb_h_l, int* 
         0, 0, 0, 0, 0, 0, 0, 0,
         0, 1, 1, 1, 2, 2, 2, 2
     };
-
-  int16_t angle = g_GeoParams[split_dir][0];
+    int16_t angle = g_GeoParams[split_dir][0];
   int16_t wIdx = log2_pb_w_l - GEO_MIN_CU_LOG2;
   int16_t hIdx = log2_pb_h_l - GEO_MIN_CU_LOG2;
   *step_x = 1 << cr_scale;
@@ -1995,7 +1994,9 @@ rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
 
     int16_t* weight;
     int step_x, step_y;
+
     rcn_gpm_weights_and_steps(split_dir, log2_pu_w, log2_pu_h, &step_x, &step_y, &weight, 0);
+
     mc_l->gpm_weighted(dst.y, RCN_CTB_STRIDE, tmp_buff1, MAX_PB_SIZE, tmp_buff0, pu_h, prec_x1, prec_y1, pu_w,
                        step_x, step_y, weight);
 
@@ -2039,7 +2040,7 @@ rcn_gpm_mc(OVCTUDec *const ctudec, struct OVBuffInfo dst, int split_dir,
                        pu_h >> 1, prec_x1, prec_y1, pu_w >> 1, step_x, step_y, weight);
 }
 
-void
+static void
 rcn_gpm_b(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
           int x0, int y0, int log2_pb_w, int log2_pb_h)
 {
@@ -2049,17 +2050,32 @@ rcn_gpm_b(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
     struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
 
     rcn_gpm_mc(ctudec, dst, gpm_ctx->split_dir, x0, y0, log2_pb_w, log2_pb_h,
-                          type0, gpm_ctx->mv0, type1, gpm_ctx->mv1);
+               type0, gpm_ctx->mv0, type1, gpm_ctx->mv1);
 
 }
 
 void
-rcn_init_dmvr_functions(struct RCNFunctions *const rcn_funcs)
+BD_DECL(rcn_init_dmvr_functions)(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->dmvr.sad[0] = &rcn_dmvr_sad_8;
     rcn_funcs->dmvr.sad[1] = &rcn_dmvr_sad_16;
 
     rcn_funcs->dmvr.computeSB[0] = &dmvr_compute_sads_8;
     rcn_funcs->dmvr.computeSB[1] = &dmvr_compute_sads_16;
+}
+
+void
+BD_DECL(rcn_init_inter_functions)(struct RCNFunctions *const rcn_funcs)
+{
+    rcn_funcs->rcn_dmvr_mv_refine = &rcn_dmvr_mv_refine;
+    rcn_funcs->rcn_bdof_mcp_l     = &rcn_bdof_mcp_l;
+    rcn_funcs->rcn_mcp            = &rcn_mcp;
+    rcn_funcs->rcn_mcp_b          = &rcn_mcp_b;
+    rcn_funcs->rcn_mcp_b_l        = &rcn_mcp_b_l;
+    rcn_funcs->rcn_prof_mcp_b_l   = &rcn_prof_mcp_b_l;
+    rcn_funcs->rcn_mcp_b_c        = &rcn_mcp_b_c;
+    rcn_funcs->rcn_ciip_b         = &rcn_ciip_b;
+    rcn_funcs->rcn_ciip           = &rcn_ciip;
+    rcn_funcs->rcn_gpm_b          = &rcn_gpm_b;
 }
 

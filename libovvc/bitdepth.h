@@ -2,7 +2,7 @@
 #define BITDEPTH_H
 
 #if BITDEPTH > 8
-typedef uint8_t OVSample;
+typedef uint16_t OVSample;
 #else
 typedef uint8_t OVSample;
 #endif

@@ -412,6 +412,10 @@ struct TMPBDCompat
 
 struct OVBuffInfo;
 
+struct InterDRVCtx;
+struct PROFInfo;
+struct VVCGPM;
+
 struct RCNFunctions
 {
     /* Motion Compensation Luma */
@@ -539,6 +543,60 @@ struct RCNFunctions
 
     void (*rcn_next_buff_line)(struct OVRCNCtx *const rcn_ctx,  uint8_t log2_ctb_s);
 
+    uint8_t (*rcn_dmvr_mv_refine)(OVCTUDec *const ctudec, struct OVBuffInfo dst,
+                                  uint8_t x0, uint8_t y0,
+                                  uint8_t log2_pu_w, uint8_t log2_pu_h,
+                                  OVMV *mv0, OVMV *mv1, uint8_t ref_idx0, uint8_t ref_idx1, uint8_t
+                                  apply_bdof);
+
+    void (*rcn_bdof_mcp_l)(OVCTUDec *const ctudec, struct OVBuffInfo dst,
+                           uint8_t x0, uint8_t y0, uint8_t log2_pu_w, uint8_t log2_pu_h,
+                           OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1);
+
+    void (*rcn_mcp)(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
+                    OVMV mv, uint8_t type, uint8_t ref_idx);
+
+    void (*rcn_mcp_b)(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *const inter_ctx,
+                      const OVPartInfo *const part_ctx,
+                      const OVMV mv0, const OVMV mv1,
+                      unsigned int x0, unsigned int y0,
+                      unsigned int log2_pb_w, unsigned int log2_pb_h,
+                      uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1);
+
+    void (*rcn_mcp_b_l)(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *const inter_ctx,
+                        const OVPartInfo *const part_ctx,
+                        const OVMV mv0, const OVMV mv1,
+                        unsigned int x0, unsigned int y0,
+                        unsigned int log2_pb_w, unsigned int log2_pb_h,
+                        uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1);
+
+    void (*rcn_prof_mcp_b_l)(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *const inter_ctx,
+                             const OVPartInfo *const part_ctx,
+                             const OVMV mv0, const OVMV mv1,
+                             unsigned int x0, unsigned int y0,
+                             unsigned int log2_pb_w, unsigned int log2_pb_h,
+                             uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
+                             uint8_t prof_dir, const struct PROFInfo *const prof_info);
+
+    void (*rcn_mcp_b_c)(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *const inter_ctx,
+                        const OVPartInfo *const part_ctx,
+                        const OVMV mv0, const OVMV mv1,
+                        unsigned int x0, unsigned int y0,
+                        unsigned int log2_pb_w, unsigned int log2_pb_h,
+                        uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1);
+
+    void (*rcn_ciip_b)(OVCTUDec*const ctudec,
+                       const OVMV mv0, const OVMV mv1,
+                       unsigned int x0, unsigned int y0,
+                       unsigned int log2_pb_w, unsigned int log2_pb_h,
+                       uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1);
+
+    void (*rcn_ciip)(OVCTUDec *const ctudec,
+                     int x0, int y0, int log2_pb_w, int log2_pb_h,
+                     OVMV mv, uint8_t ref_idx);
+
+    void (*rcn_gpm_b)(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
+                      int x0, int y0, int log2_pb_w, int log2_pb_h);
 };
 
 

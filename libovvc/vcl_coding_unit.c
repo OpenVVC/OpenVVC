@@ -1549,11 +1549,9 @@ drv_rcn_wrap_mvp_p(OVCTUDec *const ctu_dec,
         }
     }
 
-    #if 1
-    rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
-              mv_info.mv0, mv_info.mv1, x0, y0,
-              log2_cb_w, log2_cb_h, inter_dir, ref_idx0, ref_idx1);
-              #endif
+    ctu_dec->rcn_funcs.rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
+                                 mv_info.mv0, mv_info.mv1, x0, y0,
+                                 log2_cb_w, log2_cb_h, inter_dir, ref_idx0, ref_idx1);
 
 end:
     reset_intra_map(ctu_dec, i_info, x0, y0, log2_cb_w, log2_cb_h, log2_min_cb_s);
@@ -1612,7 +1610,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
         inter_ctx->prec_amvr = mv0.prec_amvr;
 
         if (mrg_data.merge_type == CIIP_MERGE) {
-            rcn_ciip(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, mv0, ref_idx);
+            ctu_dec->rcn_funcs.rcn_ciip(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, mv0, ref_idx);
             goto end;
         }
     }
@@ -1625,7 +1623,7 @@ prediction_unit_inter_p(OVCTUDec *const ctu_dec,
         goto end;
     }
 
-    rcn_mcp(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, x0, y0,
+    ctu_dec->rcn_funcs.rcn_mcp(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, x0, y0,
             log2_cb_w, log2_cb_h, mv0, 0, ref_idx);
 
 end:
@@ -2075,7 +2073,7 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
         }
 
         if (!bdof_enable) {
-            rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, ctu_dec->part_ctx,
+            ctu_dec->rcn_funcs.rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, ctu_dec->part_ctx,
                       mv_info.mv0, mv_info.mv1, x0, y0,
                       log2_cb_w, log2_cb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
         } else {
@@ -2089,12 +2087,12 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
             OVMV mv1 = mv_info.mv1;
             for (i = 0; i < nb_sb_h; ++i) {
                 for (j = 0; j < nb_sb_w; ++j) {
-                    rcn_bdof_mcp_l(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
+                    ctu_dec->rcn_funcs.rcn_bdof_mcp_l(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
                                    x0 + j * 16, y0 + i * 16, log2_w, log2_h,
                                    mv0, mv1, ref_idx0, ref_idx1);
                 }
             }
-            rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, ctu_dec->part_ctx,
+            ctu_dec->rcn_funcs.rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, ctu_dec->part_ctx,
                         mv0, mv1, x0, y0,
                         log2_cb_w, log2_cb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
         }
@@ -2155,7 +2153,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             drv_gpm_merge_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h, max_nb_cand,
                                 log2_cb_w + log2_cb_h <= 5);
 
-            rcn_gpm_b(ctu_dec, &inter_ctx->gpm_ctx, x0, y0, log2_cb_w, log2_cb_h);
+            ctu_dec->rcn_funcs.rcn_gpm_b(ctu_dec, &inter_ctx->gpm_ctx, x0, y0, log2_cb_w, log2_cb_h);
 
             goto end;
 
@@ -2177,7 +2175,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             mv_info.mv0.bcw_idx_plus1 = 0;
             mv_info.mv1.bcw_idx_plus1 = 0;
 
-            rcn_ciip_b(ctu_dec, mv_info.mv0, mv_info.mv1, x0, y0,
+            ctu_dec->rcn_funcs.rcn_ciip_b(ctu_dec, mv_info.mv0, mv_info.mv1, x0, y0,
                        log2_cb_w, log2_cb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
 
             ctu_dec->tmp_ciip = 1;
@@ -2224,7 +2222,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             }
 
             if (!bdof_enable && !dmvr_enable) {
-                rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
+                ctu_dec->rcn_funcs.rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
                           mv_info.mv0, mv_info.mv1, x0, y0,
                           log2_cb_w, log2_cb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
             } else if (dmvr_enable) {
@@ -2242,7 +2240,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                         if (dmvr_enable) {
                             OVMV *tmvp_mv0 = inter_ctx->tmvp_mv[0].mvs;
                             OVMV *tmvp_mv1 = inter_ctx->tmvp_mv[1].mvs;
-                            rcn_dmvr_mv_refine(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
+                            ctu_dec->rcn_funcs.rcn_dmvr_mv_refine(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
                                                x0 + j * 16, y0 + i * 16,
                                                log2_w, log2_h,
                                                &mv0, &mv1,
@@ -2282,12 +2280,12 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 OVMV mv1 = mv_info.mv1;
                 for (i = 0; i < nb_sb_h; ++i) {
                     for (j = 0; j < nb_sb_w; ++j) {
-                        rcn_bdof_mcp_l(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
+                        ctu_dec->rcn_funcs.rcn_bdof_mcp_l(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
                                        x0 + j * 16, y0 + i * 16, log2_w, log2_h,
                                        mv0, mv1, ref_idx0, ref_idx1);
                     }
                 }
-                rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
+                ctu_dec->rcn_funcs.rcn_mcp_b_c(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
                             mv0, mv1, x0, y0,
                             log2_cb_w, log2_cb_h, mv_info.inter_dir, ref_idx0, ref_idx1);
             }
@@ -2366,7 +2364,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                                 mvp_data.mvd, mvp_data.mvd, inter_ctx->prec_amvr, mvp_data.mvp_idx, mvp_data.mvp_idx, BCW_DEFAULT,
                                 inter_dir, mvp_data.ref_idx, mvp_data.ref_idx, log2_cb_w + log2_cb_h <= 5);
 
-            rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
+            ctu_dec->rcn_funcs.rcn_mcp_b(ctu_dec, ctu_dec->rcn_ctx.ctu_buff, inter_ctx, part_ctx,
                       mv_info.mv0, mv_info.mv1, x0, y0,
                       log2_cb_w, log2_cb_h, inter_dir, mvp_data.ref_idx, mvp_data.ref_idx);
         }

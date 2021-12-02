@@ -1813,6 +1813,7 @@ set_zero_mvs_p(struct InterDRVCtx *inter_ctx,
 
     OVMV *mv_buff0 = &inter_ctx->mv_ctx0.mvs[35 + x_unit + y_unit * 34];
     OVMV *tmvp_mv0 = &inter_ctx->tmvp_mv[0].mvs[((x0 + 4) >> 3) + (((y0 + 4) >> 3) << 4)];
+    OVCTUDec *const ctudec = tmvp->ctudec;
 
     int i, j;
 
@@ -1834,19 +1835,19 @@ set_zero_mvs_p(struct InterDRVCtx *inter_ctx,
             mv_buff0[34 + j * 2]     = mv0;
             mv_buff0[34 + j * 2 + 1] = mv0;
 
-            rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
-                      inter_ctx, tmvp->ctudec->part_ctx,
-                      mv0, mv0, x0 + 8 * j, y0 + 8 * i,
-                      3, 3, 0x1, 0, 0);
+            ctudec->rcn_funcs.rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
+                                        inter_ctx, tmvp->ctudec->part_ctx,
+                                        mv0, mv0, x0 + 8 * j, y0 + 8 * i,
+                                        3, 3, 0x1, 0, 0);
 
         }
         mv_buff0 += 34 * 2;
         tmvp_mv0 += 16;
     }
 
-    rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
-              inter_ctx, tmvp->ctudec->part_ctx, mv0, mv0, x0, y0,
-              log2_pu_w, log2_pu_h, 0x1, 0, 0);
+    ctudec->rcn_funcs.rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
+                                inter_ctx, tmvp->ctudec->part_ctx, mv0, mv0, x0, y0,
+                                log2_pu_w, log2_pu_h, 0x1, 0, 0);
 }
 
 void
@@ -1875,6 +1876,7 @@ derive_sub_block_mvs_p(struct InterDRVCtx *inter_ctx,
     /* FIXME check start_x , start_y */
     int start_x = x0 + (sb_w >> 1) + mv_offset.x;
     int start_y = y0 + (sb_h >> 1) + mv_offset.y;
+    OVCTUDec *const ctudec = tmvp->ctudec;
 
     int x, y;
 
@@ -1932,10 +1934,10 @@ derive_sub_block_mvs_p(struct InterDRVCtx *inter_ctx,
             mv_buff0[34 + j * 2 + 1] = mv0;
 
             /* FIXME Move somewhere else */
-            rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
-                      inter_ctx, tmvp->ctudec->part_ctx,
-                      mv0, mv0, x0 + 8 * j, y0 + 8 * i,
-                      3, 3, 0x1, 0, 0);
+            ctudec->rcn_funcs.rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
+                                        inter_ctx, tmvp->ctudec->part_ctx,
+                                        mv0, mv0, x0 + 8 * j, y0 + 8 * i,
+                                        3, 3, 0x1, 0, 0);
 
         }
         mv_buff0 += 34 * 2;
@@ -1955,6 +1957,7 @@ set_zero_mvs_b(struct InterDRVCtx *inter_ctx,
     uint8_t y_unit = y0 >> LOG2_MIN_CU_S;
     uint8_t nb_units_w = (1 << log2_pu_w) >> LOG2_MIN_CU_S;
     uint8_t nb_units_h = (1 << log2_pu_h) >> LOG2_MIN_CU_S;
+    OVCTUDec *const ctudec = tmvp->ctudec;
 
     OVMV *mv_buff0 = &inter_ctx->mv_ctx0.mvs[35 + x_unit + y_unit * 34];
     OVMV *mv_buff1 = &inter_ctx->mv_ctx1.mvs[35 + x_unit + y_unit * 34];
@@ -1996,10 +1999,10 @@ set_zero_mvs_b(struct InterDRVCtx *inter_ctx,
         tmvp_mv1 += 16;
     }
 
-    rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
-              inter_ctx, tmvp->ctudec->part_ctx,
-              mv0, mv1, x0, y0,
-              log2_pu_w, log2_pu_h, inter_dir, 0, 0);
+    ctudec->rcn_funcs.rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
+                                inter_ctx, tmvp->ctudec->part_ctx,
+                                mv0, mv1, x0, y0,
+                                log2_pu_w, log2_pu_h, inter_dir, 0, 0);
 }
 
 static void
@@ -2014,6 +2017,7 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
     uint16_t ctu_w = tmvp->ctu_w;
     uint16_t ctu_h = tmvp->ctu_h;
     uint8_t is_bnd = tmvp->ctudec->ctb_x == tmvp->ctudec->nb_ctb_pic_w - 1;
+    OVCTUDec *const ctudec = tmvp->ctudec;
 
     /* FIXME check if this clipping is needed */
     int sb_h = nb_sb_h == 1 ? 1 << log2_pu_h : 1 << LOG2_SBTMVP_S;
@@ -2112,10 +2116,10 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
             }
 
             /* FIXME Move somewhere else */
-            rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
-                      inter_ctx, tmvp->ctudec->part_ctx,
-                      mv0, mv1, x0 + 8 * j, y0 + 8 * i,
-                      3, 3, inter_dir, 0, 0);
+            ctudec->rcn_funcs.rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
+                                        inter_ctx, tmvp->ctudec->part_ctx,
+                                        mv0, mv1, x0 + 8 * j, y0 + 8 * i,
+                                        3, 3, inter_dir, 0, 0);
 
         }
         mv_buff0 += 34 * 2;
@@ -3979,7 +3983,7 @@ rcn_affine_mcp_b_l(OVCTUDec *const ctudec,
                tmvp_mv1[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv1;
             }
 
-            rcn_mcp_b_l(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
+            ctudec->rcn_funcs.rcn_mcp_b_l(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
                         mv0, mv1, x0 + 4*j, y0 + 4*i,
                         2, 2, inter_dir, ref_idx0, ref_idx1);
         }
@@ -4038,7 +4042,7 @@ rcn_affine_prof_mcp_b_l(OVCTUDec *const ctudec,
                 tmvp_mv1[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv1;
             }
 
-            rcn_prof_mcp_b_l(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
+            ctudec->rcn_funcs.rcn_prof_mcp_b_l(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
                              mv0, mv1, x0 + 4*j, y0 + 4*i,
                              2, 2, inter_dir, ref_idx0, ref_idx1,
                              prof_dir, &prof_info);
@@ -4090,7 +4094,7 @@ rcn_affine_mcp_b_c(OVCTUDec *const ctudec,
             mv1.x >>= 1;
             mv1.y >>= 1;
             
-            rcn_mcp_b_c(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
+            ctudec->rcn_funcs.rcn_mcp_b_c(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
                         mv0, mv1, x0+ 4*j, y0 + 4*i,
                         3, 3, inter_dir, ref_idx0, ref_idx1);
         }
