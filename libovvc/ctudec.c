@@ -132,7 +132,9 @@ ctudec_uninit(OVCTUDec *ctudec)
 {
     ctudec_uninit_in_loop_filters(ctudec);
 
-    ctudec->rcn_funcs.rcn_buff_uninit(&ctudec->rcn_ctx);
+    if (ctudec->rcn_funcs.rcn_buff_uninit) {
+        ctudec->rcn_funcs.rcn_buff_uninit(&ctudec->rcn_ctx);
+    }
 
     ov_freep(&ctudec);
 
