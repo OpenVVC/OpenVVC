@@ -5,50 +5,6 @@
 #include "ctudec.h"
 
 void
-rcn_ctu_copy_left_border(struct OVRCNCtx *rcn_ctx, uint8_t log2_ctb_s)
-{
-     uint8_t ctu_s = 1 << log2_ctb_s;
-     struct OVBuffInfo *binfo = &rcn_ctx->ctu_buff;
-     const OVSample *src = binfo->y + ctu_s - 4;
-     OVSample *dst = binfo->y - 4;
-     int i;
-
-     /* Note we also copy border of above line for top left sample
-      */
-     src -= binfo->stride_c;
-     dst -= binfo->stride_c;
-
-     /* Copy 4 left samples because of MRL */
-     for (i = 0; i < ctu_s + 1; ++i) {
-         memcpy(dst, src, sizeof(*dst) * 4);
-         dst += binfo->stride;
-         src += binfo->stride;
-     }
-
-     src = binfo->cb + (ctu_s >> 1) - 1;
-     dst = binfo->cb - 1;
-     src -= binfo->stride_c;
-     dst -= binfo->stride_c;
-
-     for (i = 0; i < (ctu_s >> 1) + 1; ++i) {
-         memcpy(dst, src, sizeof(*dst));
-         dst += binfo->stride_c;
-         src += binfo->stride_c;
-     }
-
-     src = binfo->cr + (ctu_s >> 1) - 1;
-     dst = binfo->cr - 1;
-     src -= binfo->stride_c;
-     dst -= binfo->stride_c;
-
-     for (i = 0; i < (ctu_s >> 1) + 1; ++i) {
-         memcpy(dst, src, sizeof(*dst));
-         dst += binfo->stride_c;
-         src += binfo->stride_c;
-     }
-}
-
-void
 rcn_update_ctu_border(struct OVRCNCtx *rcn_ctx, uint8_t log2_ctb_s)
 {
      uint8_t ctu_s = 1 << log2_ctb_s;
@@ -123,23 +79,6 @@ rcn_write_ctu_to_frame(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s)
         dst_cb += fd->stride_c;
         dst_cr += fd->stride_c;
     }
-}
-
-void
-rcn_frame_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s)
-{
-    const struct OVBuffInfo *const fd = &rcn_ctx->frame_buff;
-    const OVSample *src_y  =fd->y  - fd->stride;
-    const OVSample *src_cb =fd->cb - fd->stride_c;
-    const OVSample *src_cr =fd->cr - fd->stride_c;
-
-    OVSample *dst_y  =  rcn_ctx->ctu_buff.y  - RCN_CTB_STRIDE;
-    OVSample *dst_cb =  rcn_ctx->ctu_buff.cb - RCN_CTB_STRIDE;
-    OVSample *dst_cr =  rcn_ctx->ctu_buff.cr - RCN_CTB_STRIDE;
-
-    memcpy(dst_y,  src_y , sizeof(OVSample) * OVMIN(((1 << log2_ctb_s) + (1 << log2_ctb_s)), RCN_CTB_STRIDE - 16));
-    memcpy(dst_cb, src_cb, sizeof(OVSample) * ((1 << (log2_ctb_s - 1)) + (1 << (log2_ctb_s - 1))));
-    memcpy(dst_cr, src_cr, sizeof(OVSample) * ((1 << (log2_ctb_s - 1)) + (1 << (log2_ctb_s - 1))));
 }
 
 void
