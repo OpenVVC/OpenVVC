@@ -34,6 +34,14 @@ enum CTUNGHFlags
      CTU_UPRGT_FLG = 1 << 3,
 };
 
+typedef struct OVBuffInfo{
+    OVSample *y;
+    OVSample *cb;
+    OVSample *cr;
+    int32_t stride;
+    int32_t stride_c;
+} OVBuffInfo;
+
 enum VVCCUFlag
 {
      DECL_FLG(cu_skip_flag,0),
@@ -525,23 +533,17 @@ struct OVCTUDec
         /* Pointers to the first sample data of CTU in the current
          * picture
          */
-        struct OVBuffInfo{
-            uint16_t *y;
-            uint16_t *cb;
-            uint16_t *cr;
-            int32_t stride;
-            int32_t stride_c;
-        } frame_buff;
+        OVBuffInfo frame_buff;
 
         /* Pointers to CTU reconstruction buffers to be used
          * to reconstruct current CTU.
          * These buffers will be written to the destination picture
          * before filtering operation
          */
-        struct OVBuffInfo ctu_buff;
+        OVBuffInfo ctu_buff;
 
         /*Pointers to intra line reconstruction buffers*/
-        struct OVBuffInfo intra_line_buff;
+        OVBuffInfo intra_line_buff;
 
         /* Bit fields corresponding to the decoding progress in
          * current CTU, and its borders those are used for example
