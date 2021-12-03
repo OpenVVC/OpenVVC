@@ -65,8 +65,8 @@ rcn_apply_bdof_subblock(const int16_t* src0, int src0_stride,
 }
 
 static void
-tmp_prof_mrg(uint16_t* _dst, ptrdiff_t _dststride,
-             const uint16_t* _src0, ptrdiff_t _srcstride,
+tmp_prof_mrg(OVSample* _dst, ptrdiff_t _dststride,
+             const OVSample* _src0, ptrdiff_t _srcstride,
              const int16_t* _src1, int height, intptr_t mx,
              intptr_t my, int width)
 {
@@ -74,7 +74,7 @@ tmp_prof_mrg(uint16_t* _dst, ptrdiff_t _dststride,
     const int16_t* src0 = (int16_t *)_src0;
     const int16_t* src1 = (int16_t *)_src1;
     ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
     int shift = 14 - BITDEPTH + 1;
     int offset = 2*((1 << (13 - BITDEPTH)));
@@ -90,8 +90,8 @@ tmp_prof_mrg(uint16_t* _dst, ptrdiff_t _dststride,
 }
 
 static void
-tmp_prof_mrg_w(uint16_t* _dst, ptrdiff_t _dststride,
-               const uint16_t* _src0, ptrdiff_t _srcstride,
+tmp_prof_mrg_w(OVSample* _dst, ptrdiff_t _dststride,
+               const OVSample* _src0, ptrdiff_t _srcstride,
                const int16_t* _src1, int height, intptr_t mx,
                intptr_t my, int width, int wt0, int wt1)
 {
@@ -99,7 +99,7 @@ tmp_prof_mrg_w(uint16_t* _dst, ptrdiff_t _dststride,
     const int16_t* src0 = (int16_t *)_src0;
     const int16_t* src1 = (int16_t *)_src1;
     ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
     int log_weights = floor_log2(wt0 + wt1);
     int shift = 14 - BITDEPTH + log_weights;
@@ -116,7 +116,7 @@ tmp_prof_mrg_w(uint16_t* _dst, ptrdiff_t _dststride,
 }
 
 static void
-compute_prof_grad(const uint16_t* src, int src_stride, int sb_w, int sb_h,
+compute_prof_grad(const OVSample* src, int src_stride, int sb_w, int sb_h,
                   int grad_stride, int16_t* grad_x, int16_t* grad_y)
 {
     int y, x;
@@ -139,11 +139,11 @@ compute_prof_grad(const uint16_t* src, int src_stride, int sb_w, int sb_h,
 }
 
 static void
-extend_prof_buff(const uint16_t *const src, uint16_t *dst_prof, int16_t ref_stride, uint8_t ext_x, uint8_t ext_y)
+extend_prof_buff(const OVSample *const src, OVSample *dst_prof, int16_t ref_stride, uint8_t ext_x, uint8_t ext_y)
 {
-    const uint16_t *ref = src  - ref_stride  - 1;
-    uint16_t       *dst = dst_prof;
-    uint16_t *dst_lst = dst_prof + (SB_H + 1) * PROF_BUFF_STRIDE;
+    const OVSample *ref = src  - ref_stride  - 1;
+    OVSample       *dst = dst_prof;
+    OVSample *dst_lst = dst_prof + (SB_H + 1) * PROF_BUFF_STRIDE;
     int i, j;
 
     /* Position ref according to precision */
@@ -155,7 +155,7 @@ extend_prof_buff(const uint16_t *const src, uint16_t *dst_prof, int16_t ref_stri
         ref += ref_stride;
     }
 
-    const uint16_t *ref_lst = ref + (SB_H + 1) * ref_stride;
+    const OVSample *ref_lst = ref + (SB_H + 1) * ref_stride;
 
     /* Copy or extend upper and lower ref_line */
     for (i = 0; i < SB_W + 2; ++i) {
@@ -191,7 +191,7 @@ extend_prof_buff(const uint16_t *const src, uint16_t *dst_prof, int16_t ref_stri
 }
 
 static void
-rcn_prof(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
+rcn_prof(OVSample* dst, int dst_stride, const OVSample* src, int src_stride,
          const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
          const int32_t* dmv_scale_h, const int32_t* dmv_scale_v,
          uint8_t bidir)
@@ -238,14 +238,14 @@ BD_DECL(rcn_init_prof_functions)(struct RCNFunctions *const rcn_funcs)
 }
 
 static void
-extend_bdof_buff(const uint16_t *const src, uint16_t *dst_prof,
+extend_bdof_buff(const OVSample *const src, OVSample *dst_prof,
                  int16_t ref_stride, int16_t pb_w, int16_t pb_h,
                  uint8_t ext_x, uint8_t ext_y)
 {
-    const uint16_t *ref = src  - ref_stride  - 1;
+    const OVSample *ref = src  - ref_stride  - 1;
 
-    uint16_t     *dst = dst_prof;
-    uint16_t *dst_lst = dst_prof + (pb_h + 1) * PROF_BUFF_STRIDE;
+    OVSample     *dst = dst_prof;
+    OVSample *dst_lst = dst_prof + (pb_h + 1) * PROF_BUFF_STRIDE;
     int i, j;
 
     /* Position ref according to precision */
@@ -257,7 +257,7 @@ extend_bdof_buff(const uint16_t *const src, uint16_t *dst_prof,
         ref += ref_stride;
     }
 
-    const uint16_t *ref_lst = ref + (pb_h + 1) * ref_stride;
+    const OVSample *ref_lst = ref + (pb_h + 1) * ref_stride;
 
     /* Copy or extend upper and lower ref_line */
     for (i = 0; i < pb_w + 2; ++i) {
