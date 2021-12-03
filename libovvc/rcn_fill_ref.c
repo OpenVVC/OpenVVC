@@ -11,13 +11,13 @@
 // FIXME we could probably merge this part with ref filling
 // FIXME length should be an uint
 static void
-filter_ref_samples(const uint16_t* const src, uint16_t* const dst,
-                   const uint16_t* src2, int length)
+filter_ref_samples(const OVSample* const src, OVSample* const dst,
+                   const OVSample* src2, int length)
 {
 
     // Regular reference sample filter
-    const uint16_t* _src = src;
-    uint16_t* _dst = dst;
+    const OVSample* _src = src;
+    OVSample* _dst = dst;
 
     // WARNING top left uses above and left values top-left
     // FIXME: implicit conversion
@@ -34,12 +34,12 @@ filter_ref_samples(const uint16_t* const src, uint16_t* const dst,
 
 // Filling a map of available neighbours for intra process
 static void
-fill_ref_left_0(const uint16_t* const src, int src_stride,
-                uint16_t* const ref_left, uint64_t intra_map_cols,
+fill_ref_left_0(const OVSample* const src, int src_stride,
+                OVSample* const ref_left, uint64_t intra_map_cols,
                 uint64_t intra_map_rows, int8_t x0, int8_t y0, int log2_pb_w,
                 int log2_pb_h, int offset_y)
 {
-    const uint16_t* _src = &src[(x0 - 1) + (y0 - 1) * src_stride];
+    const OVSample* _src = &src[(x0 - 1) + (y0 - 1) * src_stride];
     uint64_t  avl_map_l =     available_units_map(intra_map_cols, y0, log2_pb_h);
     uint64_t navl_map_l = non_available_units_map(intra_map_cols, y0, log2_pb_h);
     const int ref_length_l = (1 << (log2_pb_h + 1)) + 1;
@@ -54,8 +54,8 @@ fill_ref_left_0(const uint16_t* const src, int src_stride,
 
     } else if (avl_map_l) {
         int nb_pb_avl = 64 - __builtin_clzll(avl_map_l);
-        uint16_t padding_val = AVG_VAL;
-        uint16_t* _dst = ref_left;
+        OVSample padding_val = AVG_VAL;
+        OVSample* _dst = ref_left;
         int i;
 
         if (avl_map_l & 0x1) {
@@ -90,7 +90,7 @@ fill_ref_left_0(const uint16_t* const src, int src_stride,
         /* Pad with first available sample in above ref */
         uint64_t avl_map_a = available_units_map(intra_map_rows, x0, log2_pb_w);
 
-        uint16_t padding_val = AVG_VAL;
+        OVSample padding_val = AVG_VAL;
         int i;
 
         if (avl_map_a) {
@@ -109,12 +109,12 @@ fill_ref_left_0(const uint16_t* const src, int src_stride,
 }
 
 static void
-fill_ref_left_0_chroma(const uint16_t* const src, int src_stride,
-                       uint16_t* const ref_left, uint64_t intra_map_cols,
+fill_ref_left_0_chroma(const OVSample* const src, int src_stride,
+                       OVSample* const ref_left, uint64_t intra_map_cols,
                        uint64_t intra_map_rows, int8_t x0, int8_t y0,
                        int log2_pb_w, int log2_pb_h)
 {
-    const uint16_t* _src = &src[(x0 - 1) + (y0 - 1) * src_stride];
+    const OVSample* _src = &src[(x0 - 1) + (y0 - 1) * src_stride];
     int y_pb = y0 >> 1;
     int nb_pb_ref_l = ((1 << (log2_pb_h + 1)) >> 1) + 1;
 
@@ -131,8 +131,8 @@ fill_ref_left_0_chroma(const uint16_t* const src, int src_stride,
         }
     } else if (avl_map_l) {
         int nb_pb_avl = 64 - __builtin_clzll(avl_map_l);
-        uint16_t padding_val = AVG_VAL;
-        uint16_t* _dst = ref_left;
+        OVSample padding_val = AVG_VAL;
+        OVSample* _dst = ref_left;
         int i;
 
         if (avl_map_l & 0x1) {
@@ -167,7 +167,7 @@ fill_ref_left_0_chroma(const uint16_t* const src, int src_stride,
         uint64_t avl_map_a = (intra_map_rows >> x_pb) & ref_map_a;
 
         const int ref_length_l = (1 << (log2_pb_h + 1)) + 1;
-        uint16_t padding_val = AVG_VAL;
+        OVSample padding_val = AVG_VAL;
         int i;
 
         if (avl_map_a) {
@@ -187,12 +187,12 @@ fill_ref_left_0_chroma(const uint16_t* const src, int src_stride,
 }
 
 static void
-fill_ref_left_0_mref(const uint16_t* const src, int src_stride,
-                     uint16_t* const ref_left, uint64_t intra_map_cols,
+fill_ref_left_0_mref(const OVSample* const src, int src_stride,
+                     OVSample* const ref_left, uint64_t intra_map_cols,
                      uint64_t intra_map_rows, int mref_idx, int8_t x0,
                      int8_t y0, int log2_pb_w, int log2_pb_h)
 {
-    const uint16_t* _src =
+    const OVSample* _src =
         &src[(x0 - (mref_idx + 1)) + (y0 - (mref_idx + 1)) * src_stride];
     int y_pb = y0 >> 2;
     int nb_pb_ref_l = ((1 << (log2_pb_h + 1)) >> 2) + 1;
@@ -213,8 +213,8 @@ fill_ref_left_0_mref(const uint16_t* const src, int src_stride,
         }
     } else if (avl_map_l) {
         int nb_pb_avl = 64 - __builtin_clzll(avl_map_l);
-        uint16_t padding_val = AVG_VAL;
-        uint16_t* _dst = ref_left;
+        OVSample padding_val = AVG_VAL;
+        OVSample* _dst = ref_left;
         int i;
 
         if (avl_map_l & 0x1) {
@@ -259,7 +259,7 @@ fill_ref_left_0_mref(const uint16_t* const src, int src_stride,
 
         const int ref_length_l =
             (1 << (log2_pb_h + 1)) + 1 + (mref_idx + 1);
-        uint16_t padding_val = AVG_VAL;
+        OVSample padding_val = AVG_VAL;
         int i;
 
         if (avl_map_a) {
@@ -279,12 +279,12 @@ fill_ref_left_0_mref(const uint16_t* const src, int src_stride,
 }
 
 static void
-fill_ref_above_0(const uint16_t* const src, int src_stride,
-                 uint16_t* const ref_above, uint64_t intra_map_rows,
+fill_ref_above_0(const OVSample* const src, int src_stride,
+                 OVSample* const ref_above, uint64_t intra_map_rows,
                  uint64_t intra_map_cols, int8_t x0, int8_t y0, int log2_pb_w,
                  int log2_pb_h, int offset_x)
 {
-    const uint16_t *_src = &src[(x0 - 1) + (y0 - 1) * src_stride];
+    const OVSample *_src = &src[(x0 - 1) + (y0 - 1) * src_stride];
 
     uint64_t  avl_map_a =     available_units_map(intra_map_rows, x0, log2_pb_w);
     uint64_t navl_map_a = non_available_units_map(intra_map_rows, x0, log2_pb_w);
@@ -297,10 +297,10 @@ fill_ref_above_0(const uint16_t* const src, int src_stride,
             ++_src;
         }
     } else {
-        uint16_t padding_value = AVG_VAL;
+        OVSample padding_value = AVG_VAL;
 
         if (avl_map_a) {
-            uint16_t *_dst = ref_above + 1;
+            OVSample *_dst = ref_above + 1;
             int nb_pb_avl = 64 - __builtin_clzll(avl_map_a);
 
             memcpy(_dst, _src + 1, (nb_pb_avl - 1) * (sizeof(*_dst) << LOG2_UNIT_S));
@@ -350,8 +350,8 @@ fill_ref_above_0(const uint16_t* const src, int src_stride,
 }
 
 static void
-fill_ref_above_0_chroma(const uint16_t* const src, int src_stride,
-                        uint16_t* const ref_above, uint64_t intra_map_rows,
+fill_ref_above_0_chroma(const OVSample* const src, int src_stride,
+                        OVSample* const ref_above, uint64_t intra_map_rows,
                         uint64_t intra_map_cols, int8_t x0, int8_t y0,
                         int log2_pb_w, int log2_pb_h)
 {
@@ -362,7 +362,7 @@ fill_ref_above_0_chroma(const uint16_t* const src, int src_stride,
     uint64_t avl_map_a = (intra_map_rows >> x_pb) & ref_map_a;
     uint64_t navl_map_a = avl_map_a ^ ref_map_a;
 
-    const uint16_t* _src = &src[(x0 - 1) + (y0 - 1) * src_stride];
+    const OVSample* _src = &src[(x0 - 1) + (y0 - 1) * src_stride];
 
     if (!navl_map_a) {
         const int ref_length_a = (1 << (log2_pb_w + 1)) + 1;
@@ -372,14 +372,14 @@ fill_ref_above_0_chroma(const uint16_t* const src, int src_stride,
             ++_src;
         }
     } else {
-        uint16_t padding_value = AVG_VAL;
+        OVSample padding_value = AVG_VAL;
         if (avl_map_a) {
 
             // FIXME: int nb_pb_usable = 64 -
             // __builtin_clzll(avl_map_a);
             // FIXME: int nb_pb_missing = nb_pb_ref_a -
             // nb_pb_usable;
-            uint16_t* _dst = ref_above;
+            OVSample* _dst = ref_above;
 
             if (avl_map_a & 0x1) {
                 *_dst = _src[0];
@@ -443,8 +443,8 @@ fill_ref_above_0_chroma(const uint16_t* const src, int src_stride,
 }
 
 static void
-fill_ref_above_0_mref(const uint16_t* const src, int src_stride,
-                      uint16_t* const ref_above, uint64_t intra_map_rows,
+fill_ref_above_0_mref(const OVSample* const src, int src_stride,
+                      OVSample* const ref_above, uint64_t intra_map_rows,
                       uint64_t intra_map_cols, int mref_idx, int8_t x0,
                       int8_t y0, int log2_pb_w, int log2_pb_h)
 {
@@ -456,7 +456,7 @@ fill_ref_above_0_mref(const uint16_t* const src, int src_stride,
     uint64_t avl_map_a = (intra_map_rows >> x_pb) & ref_map_a;
     uint64_t navl_map_a = avl_map_a ^ ref_map_a;
 
-    const uint16_t* _src =
+    const OVSample* _src =
         &src[(x0 - (1 + mref_idx)) + (y0 - (1 + mref_idx)) * src_stride];
 
     if (!navl_map_a) {
@@ -468,14 +468,14 @@ fill_ref_above_0_mref(const uint16_t* const src, int src_stride,
             ++_src;
         }
     } else {
-        uint16_t padding_value = AVG_VAL;
+        OVSample padding_value = AVG_VAL;
         if (avl_map_a) {
 
             // FIXME: int nb_pb_usable = 64 -
             // __builtin_clzll(avl_map_a);
             // FIXME: int nb_pb_missing = nb_pb_ref_a -
             // nb_pb_usable;
-            uint16_t* _dst = ref_above;
+            OVSample* _dst = ref_above;
             int i;
 
             if (avl_map_a & 0x1) {
@@ -530,7 +530,7 @@ fill_ref_above_0_mref(const uint16_t* const src, int src_stride,
                 (intra_map_cols >> y_pb) & needed_mask_l;
 
             int i;
-            const uint16_t* _src = &src[(x0 - 1) + y0 * src_stride];
+            const OVSample* _src = &src[(x0 - 1) + y0 * src_stride];
 
             padding_value = AVG_VAL;
 
