@@ -156,7 +156,7 @@ ctudec_extend_filter_region(OVCTUDec *const ctudec, OVSample** saved_rows, int x
         OVSample* filter_region = fb->filter_region[comp];
         int stride_filter = fb->filter_region_stride[comp];
 
-        int stride_pic = fb->pic_frame->linesize[comp]/2;
+        int stride_pic = fb->pic_frame->linesize[comp]/sizeof(OVSample);
         OVSample* frame = (OVSample*) fb->pic_frame->data[comp] + y_pic*stride_pic + x_pic;
         int stride_rows = fb->saved_rows_stride[comp];
         int filter_region_offset = fb->filter_region_offset[comp];

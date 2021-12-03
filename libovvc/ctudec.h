@@ -570,15 +570,15 @@ struct OVCTUDec
     struct LMCSInfo lmcs_info;
 
     struct OVFilterBuffers{
-        int16_t* filter_region[3];
+        OVSample* filter_region[3];
         int16_t  filter_region_h[3];
         int16_t  filter_region_w[3];
         int16_t  filter_region_stride[3];
         int16_t  filter_region_offset[3];
 
-        int16_t* saved_rows_sao[3];
-        int16_t* saved_rows_alf[3];
-        int16_t* saved_cols[3];
+        OVSample* saved_rows_sao[3];
+        OVSample* saved_rows_alf[3];
+        OVSample* saved_cols[3];
         int16_t  saved_rows_stride[3];
 
         uint8_t  margin;
