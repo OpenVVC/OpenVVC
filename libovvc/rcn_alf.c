@@ -304,7 +304,7 @@ alf_derive_filter_idx(uint32_t sum_h, uint32_t sum_v, uint32_t sum_d, uint32_t s
 
 static void
 rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_arr,
-                     int16_t *const src, const int stride, const Area blk,
+                     OVSample *const src, const int stride, const Area blk,
                      const int shift, int virbnd_pos)
 {
     int laplacian[NUM_DIRECTIONS][CLASSIFICATION_BLK_SIZE + 5][(32 >> 2)];
@@ -318,19 +318,19 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
     int blk_h = blk.height;
     int blk_w = blk.width;
 
-    const int16_t *_src = src - 3 * stride - 3;
+    const OVSample *_src = src - 3 * stride - 3;
     int i;
 
     for (i = 0; i + blk.y < virbnd_pos; i += 2) {
-        const int16_t *src0 = &_src[0         ];
-        const int16_t *src1 = &_src[stride    ];
-        const int16_t *src2 = &_src[stride * 2];
-        const int16_t *src3 = &_src[stride * 3];
+        const OVSample *src0 = &_src[0         ];
+        const OVSample *src1 = &_src[stride    ];
+        const OVSample *src2 = &_src[stride * 2];
+        const OVSample *src3 = &_src[stride * 3];
 
-        const int16_t *l0 = &src0[1];
-        const int16_t *l1 = &src1[1];
-        const int16_t *l2 = &src2[1];
-        const int16_t *l3 = &src3[1];
+        const OVSample *l0 = &src0[1];
+        const OVSample *l1 = &src1[1];
+        const OVSample *l2 = &src2[1];
+        const OVSample *l3 = &src3[1];
 
         int j;
 
@@ -411,10 +411,10 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
     i = virbnd_pos - blk.y;
 
     for (; i < blk_h + 4; i += 2) {
-        const int16_t *src0 = &_src[0         ];
-        const int16_t *src1 = &_src[stride    ];
-        const int16_t *src2 = &_src[stride * 2];
-        const int16_t *src3 = &_src[stride * 3];
+        const OVSample *src0 = &_src[0         ];
+        const OVSample *src1 = &_src[stride    ];
+        const OVSample *src2 = &_src[stride * 2];
+        const OVSample *src3 = &_src[stride * 3];
 
         const int y = blk.y + i;
         int j;
@@ -425,10 +425,10 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
             src0 = src1;
         }
 
-        const int16_t *l0 = &src0[1];
-        const int16_t *l1 = &src1[1];
-        const int16_t *l2 = &src2[1];
-        const int16_t *l3 = &src3[1];
+        const OVSample *l0 = &src0[1];
+        const OVSample *l1 = &src1[1];
+        const OVSample *l2 = &src2[1];
+        const OVSample *l3 = &src3[1];
 
         for (j = 0; j < (blk_w >> 2) + 1; ++j) {
             int16_t y1  = l1[0] << 1;
@@ -541,7 +541,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
 
 static void
 rcn_alf_classif_novbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_arr,
-                       int16_t *const src, const int stride, const Area blk,
+                       OVSample *const src, const int stride, const Area blk,
                        const int shift)
 {
     int laplacian[NUM_DIRECTIONS][CLASSIFICATION_BLK_SIZE + 5][(32 >> 2)];
@@ -554,14 +554,14 @@ rcn_alf_classif_novbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_id
     int tmp_d[(32 + 4) >> 1];
     int tmp_b[(32 + 4) >> 1];
 
-    const int16_t *_src = src - 3 * stride - 3;
+    const OVSample *_src = src - 3 * stride - 3;
     int i;
 
     for (i = 0; i < (blk_h >> 1) + 2; ++i) {
-        const int16_t *l0 = &_src[1             ];
-        const int16_t *l1 = &_src[1 + stride    ];
-        const int16_t *l2 = &_src[1 + stride * 2];
-        const int16_t *l3 = &_src[1 + stride * 3];
+        const OVSample *l0 = &_src[1             ];
+        const OVSample *l1 = &_src[1 + stride    ];
+        const OVSample *l2 = &_src[1 + stride * 2];
+        const OVSample *l3 = &_src[1 + stride * 3];
 
         int j;
 
@@ -647,7 +647,7 @@ rcn_alf_classif_novbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_id
 
 static void
 rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr,
-                                 int16_t *const src, const int stride, const Area blk,
+                                 OVSample *const src, const int stride, const Area blk,
                                  const int shift, const int ctu_s, int virbnd_pos)
 {
     if (blk.height + blk.y >= virbnd_pos) {
@@ -662,7 +662,7 @@ rcn_alf_derive_classificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_id
 
 
 static void
-rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const int stride,
+rcn_alf_derive_classification(RCNALF *alf, OVSample *const rcn_img, const int stride,
                               Area blk, int ctu_s, int pic_h,
                               ALFClassifBlkFunc classif_func, uint8_t *class_idx, uint8_t *transpose_idx)
 {
@@ -677,7 +677,7 @@ rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const int str
 
         for (j = 0; j < ctu_w; j += CLASSIFICATION_BLK_SIZE) {
             int blk_w = OVMIN(CLASSIFICATION_BLK_SIZE, ctu_w - j);
-            int16_t* rcn_img_class = rcn_img + i * stride + j;
+            OVSample* rcn_img_class = rcn_img + i * stride + j;
 
             int virbnd_pos = (ctu_h < ctu_s) ? pic_h : ctu_h - ALF_VB_POS_ABOVE_CTUROW_LUMA;
 
@@ -696,7 +696,7 @@ rcn_alf_derive_classification(RCNALF *alf, int16_t *const rcn_img, const int str
 }
 
 static void
-cc_alf_filterBlk(int16_t * chroma_dst, int16_t * luma_src, const int chr_stride, const int luma_stride,
+cc_alf_filterBlk(OVSample * chroma_dst, OVSample * luma_src, const int chr_stride, const int luma_stride,
                         const Area blk_dst, const uint8_t c_id, const int16_t *filt_coeff,
                         const int vbCTUHeight, int vbPos)
 {
@@ -710,14 +710,14 @@ cc_alf_filterBlk(int16_t * chroma_dst, int16_t * luma_src, const int chr_stride,
             for (int ii = 0; ii < clsSizeY; ii++) {
                 int row       = ii;
                 int col       = j;
-                int16_t *srcSelf  = chroma_dst + col + row * chr_stride;
+                OVSample *srcSelf  = chroma_dst + col + row * chr_stride;
 
                 int offset1 = luma_stride;
                 int offset2 = -luma_stride;
                 int offset3 = 2 * luma_stride;
                 row <<= scaleY;
                 col <<= scaleX;
-                const int16_t *srcCross = luma_src + col + row * luma_stride;
+                const OVSample *srcCross = luma_src + col + row * luma_stride;
 
                 int pos = ((blk_dst.y + i + ii) << scaleY) & (vbCTUHeight - 1);
 
@@ -762,7 +762,7 @@ cc_alf_filterBlk(int16_t * chroma_dst, int16_t * luma_src, const int chr_stride,
 }
 
 static void
-cc_alf_filterBlkVB(int16_t * chroma_dst, int16_t * luma_src, const int chr_stride, const int luma_stride,
+cc_alf_filterBlkVB(OVSample * chroma_dst, OVSample * luma_src, const int chr_stride, const int luma_stride,
                         const Area blk_dst, const uint8_t c_id, const int16_t *filt_coeff,
                         const int vbCTUHeight, int vbPos)
 {
@@ -777,14 +777,14 @@ cc_alf_filterBlkVB(int16_t * chroma_dst, int16_t * luma_src, const int chr_strid
             for (int ii = 0; ii < clsSizeY; ii++) {
                 int row       = ii;
                 int col       = j;
-                int16_t *srcSelf  = chroma_dst + col + row * chr_stride;
+                OVSample *srcSelf  = chroma_dst + col + row * chr_stride;
 
                 int offset1 = luma_stride;
                 int offset2 = -luma_stride;
                 int offset3 = 2 * luma_stride;
                 row <<= scaleY;
                 col <<= scaleX;
-                const int16_t *srcCross = luma_src + col + row * luma_stride;
+                const OVSample *srcCross = luma_src + col + row * luma_stride;
 
                 int pos = ((blk_dst.y + i + ii) << scaleY) & (vbCTUHeight - 1);
                 if (!(scaleY == 0 && (pos == vbPos || pos == vbPos + 1))) {
@@ -834,7 +834,7 @@ cc_alf_filterBlkVB(int16_t * chroma_dst, int16_t * luma_src, const int chr_strid
 // blk_dst: location and dimension of destination block in frame
 // blk   : location and dimension of destination block in filter buffer
 static void
-alf_filter_c(int16_t *const dst, const int16_t *const src,
+alf_filter_c(OVSample *const dst, const OVSample *const src,
              const int dst_stride, const int src_stride,
              Area blk_dst,
              const int16_t *const filter_set, const int16_t *const clip_set,
@@ -849,17 +849,17 @@ alf_filter_c(int16_t *const dst, const int16_t *const src,
     int dst_blk_stride = dst_stride * blk_h;
     int src_blk_stride = src_stride * blk_h;
 
-    int16_t* dst0 = dst ;
-    int16_t* dst1 = dst + dst_stride;
+    OVSample* dst0 = dst ;
+    OVSample* dst1 = dst + dst_stride;
     int i;
 
-    const int16_t *lm_src0 = src;
-    const int16_t *lm_src1 = lm_src0 + src_stride;
-    const int16_t *lm_src2 = lm_src0 - src_stride;
-    const int16_t *lm_src3 = lm_src1 + src_stride;
-    const int16_t *lm_src4 = lm_src2 - src_stride;
-    const int16_t *lm_src5 = lm_src3 + src_stride;
-    const int16_t *lm_src6 = lm_src4 - src_stride;
+    const OVSample *lm_src0 = src;
+    const OVSample *lm_src1 = lm_src0 + src_stride;
+    const OVSample *lm_src2 = lm_src0 - src_stride;
+    const OVSample *lm_src3 = lm_src1 + src_stride;
+    const OVSample *lm_src4 = lm_src2 - src_stride;
+    const OVSample *lm_src5 = lm_src3 + src_stride;
+    const OVSample *lm_src6 = lm_src4 - src_stride;
 
     for (i = 0; i < blk_dst.height; i += blk_h) {
         int j;
@@ -867,13 +867,13 @@ alf_filter_c(int16_t *const dst, const int16_t *const src,
             int k;
             for (k = 0; k < blk_h; k++) {
                 int l;
-                const int16_t *src_0 = lm_src0 + j + k * src_stride;
-                const int16_t *src_1 = lm_src1 + j + k * src_stride;
-                const int16_t *src_2 = lm_src2 + j + k * src_stride;
-                const int16_t *src_3 = lm_src3 + j + k * src_stride;
-                const int16_t *src_4 = lm_src4 + j + k * src_stride;
-                const int16_t *src_5 = lm_src5 + j + k * src_stride;
-                const int16_t *src_6 = lm_src6 + j + k * src_stride;
+                const OVSample *src_0 = lm_src0 + j + k * src_stride;
+                const OVSample *src_1 = lm_src1 + j + k * src_stride;
+                const OVSample *src_2 = lm_src2 + j + k * src_stride;
+                const OVSample *src_3 = lm_src3 + j + k * src_stride;
+                const OVSample *src_4 = lm_src4 + j + k * src_stride;
+                const OVSample *src_5 = lm_src5 + j + k * src_stride;
+                const OVSample *src_6 = lm_src6 + j + k * src_stride;
 
                 dst1 = dst0 + j + k * dst_stride;
 
@@ -917,7 +917,7 @@ alf_filter_c(int16_t *const dst, const int16_t *const src,
 }
 
 static void
-alf_filter_cVB(int16_t *const dst, const int16_t *const src,
+alf_filter_cVB(OVSample *const dst, const OVSample *const src,
                const int dst_stride, const int src_stride,
                Area blk_dst,
                const int16_t *const filter_set, const int16_t *const clip_set,
@@ -932,17 +932,17 @@ alf_filter_cVB(int16_t *const dst, const int16_t *const src,
     int dst_blk_stride = dst_stride * blk_h;
     int src_blk_stride = src_stride * blk_h;
 
-    int16_t* dst0 = dst ;
-    int16_t* dst1 = dst + dst_stride;
+    OVSample* dst0 = dst ;
+    OVSample* dst1 = dst + dst_stride;
     int i;
 
-    const int16_t *lm_src0 = src;
-    const int16_t *lm_src1 = lm_src0 + src_stride;
-    const int16_t *lm_src2 = lm_src0 - src_stride;
-    const int16_t *lm_src3 = lm_src1 + src_stride;
-    const int16_t *lm_src4 = lm_src2 - src_stride;
-    const int16_t *lm_src5 = lm_src3 + src_stride;
-    const int16_t *lm_src6 = lm_src4 - src_stride;
+    const OVSample *lm_src0 = src;
+    const OVSample *lm_src1 = lm_src0 + src_stride;
+    const OVSample *lm_src2 = lm_src0 - src_stride;
+    const OVSample *lm_src3 = lm_src1 + src_stride;
+    const OVSample *lm_src4 = lm_src2 - src_stride;
+    const OVSample *lm_src5 = lm_src3 + src_stride;
+    const OVSample *lm_src6 = lm_src4 - src_stride;
 
     for (i = 0; i < blk_dst.height; i += blk_h) {
         int j;
@@ -950,13 +950,13 @@ alf_filter_cVB(int16_t *const dst, const int16_t *const src,
             int k;
             for (k = 0; k < blk_h; k++) {
                 int l;
-                const int16_t *src_0 = lm_src0 + j + k * src_stride;
-                const int16_t *src_1 = lm_src1 + j + k * src_stride;
-                const int16_t *src_2 = lm_src2 + j + k * src_stride;
-                const int16_t *src_3 = lm_src3 + j + k * src_stride;
-                const int16_t *src_4 = lm_src4 + j + k * src_stride;
-                const int16_t *src_5 = lm_src5 + j + k * src_stride;
-                const int16_t *src_6 = lm_src6 + j + k * src_stride;
+                const OVSample *src_0 = lm_src0 + j + k * src_stride;
+                const OVSample *src_1 = lm_src1 + j + k * src_stride;
+                const OVSample *src_2 = lm_src2 + j + k * src_stride;
+                const OVSample *src_3 = lm_src3 + j + k * src_stride;
+                const OVSample *src_4 = lm_src4 + j + k * src_stride;
+                const OVSample *src_5 = lm_src5 + j + k * src_stride;
+                const OVSample *src_6 = lm_src6 + j + k * src_stride;
 
                 dst1 = dst0 + j + k * dst_stride;
 
@@ -1026,11 +1026,11 @@ alf_filter_cVB(int16_t *const dst, const int16_t *const src,
 }
 
 static void
-alf_filterBlkLuma(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
+alf_filterBlkLuma(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample *const dst, OVSample *const src, const int dstStride, const int srcStride,
                   Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                   const int ctu_height, int virbnd_pos)
 {
-    const int16_t *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
+    const OVSample *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
 
     const int shift = NUM_BITS - 1;
     const int offset = 1 << (shift - 1);
@@ -1043,11 +1043,11 @@ alf_filterBlkLuma(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t 
     int dstStride2 = dstStride * clsSizeY;
     int srcStride2 = srcStride * clsSizeY;
 
-    int16_t * _src = src;
-    int16_t * _dst = dst;
+    OVSample * _src = src;
+    OVSample * _dst = dst;
 
-    int16_t* pRec0 = dst ;
-    int16_t* pRec1 = pRec0 + dstStride;
+    OVSample* pRec0 = dst ;
+    OVSample* pRec1 = pRec0 + dstStride;
 
     for (int i = 0; i < blk_dst.height; i += clsSizeY) {
         for (int j = 0; j < blk_dst.width; j += clsSizeX) {
@@ -1113,11 +1113,11 @@ alf_filterBlkLuma(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t 
 }
 
 static void
-alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
+alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample *const dst, OVSample *const src, const int dstStride, const int srcStride,
                     Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                     const int ctu_height, int virbnd_pos)
 {
-    const int16_t *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
+    const OVSample *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
 
     const int shift = NUM_BITS - 1;
     const int offset = 1 << (shift - 1);
@@ -1130,11 +1130,11 @@ alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_
     int dstStride2 = dstStride * clsSizeY;
     int srcStride2 = srcStride * clsSizeY;
 
-    int16_t * _src = src;
-    int16_t * _dst = dst;
+    OVSample * _src = src;
+    OVSample * _dst = dst;
 
-    int16_t* pRec0 = dst ;
-    int16_t* pRec1 = pRec0 + dstStride;
+    OVSample* pRec0 = dst ;
+    OVSample* pRec1 = pRec0 + dstStride;
 
     for (int i = 0; i < blk_dst.height; i += clsSizeY) {
         for (int j = 0; j < blk_dst.width; j += clsSizeX) {
@@ -1277,8 +1277,8 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 
         ALFParamsCtu* alf_params_ctu = &alf_info->ctb_alf_params[ctu_rs_addr];
 
-        int16_t **src        = fb.filter_region;
-        int16_t **saved_rows = fb.saved_rows_alf;
+        OVSample **src        = fb.filter_region;
+        OVSample **saved_rows = fb.saved_rows_alf;
 
         int x_pos = ctu_s * ctb_x;
 
@@ -1288,8 +1288,8 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
             uint8_t c_idx = 0;
             int stride_src = fb.filter_region_stride[c_idx];
             int stride_dst = frame->linesize[c_idx] / 2;
-            int16_t *src_luma = &src[c_idx][fb.filter_region_offset[c_idx]];
-            int16_t *dst_luma = (int16_t *) frame->data[c_idx] + y_pos_pic * stride_dst + x_pos_pic;
+            OVSample *src_luma = &src[c_idx][fb.filter_region_offset[c_idx]];
+            OVSample *dst_luma = (OVSample *) frame->data[c_idx] + y_pos_pic * stride_dst + x_pos_pic;
 
             Area blk_dst = {
                 .x = x_pos_pic,
@@ -1324,7 +1324,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
             if ((c_idx==1 && (alf_params_ctu->ctb_alf_flag & 2)) || (c_idx==2 && (alf_params_ctu->ctb_alf_flag & 1))) {
                 Area blk_dst;
                 int stride_src = fb.filter_region_stride[c_idx];
-                int16_t*  src_chroma = &src[c_idx][fb.filter_region_offset[c_idx]];
+                OVSample*  src_chroma = &src[c_idx][fb.filter_region_offset[c_idx]];
                 //Destination block in the final image
                 blk_dst.x = x_pos_pic/chr_scale;
                 blk_dst.y = y_pos_pic/chr_scale;
@@ -1333,7 +1333,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                 blk_dst.height = ctu_h/chr_scale;
 
                 int stride_dst = frame->linesize[c_idx]/2;
-                int16_t*  dst_chroma = (int16_t*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
+                OVSample*  dst_chroma = (OVSample*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
 
                 uint8_t alt_num = (c_idx == 1) ? alf_params_ctu->cb_alternative : alf_params_ctu->cr_alternative;
 
@@ -1359,14 +1359,14 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                     Area blk_dst;
                     //Source block in the filter buffers image
                     int stride_src = fb.filter_region_stride[0];
-                    int16_t*  src_chroma = &src[0][fb.filter_region_offset[0]];
+                    OVSample*  src_chroma = &src[0][fb.filter_region_offset[0]];
 
                     //Destination block in the final image
                     blk_dst.x=x_pos_pic/chr_scale; blk_dst.y=y_pos_pic/chr_scale;
                     blk_dst.width=ctu_w/chr_scale; blk_dst.height=ctu_h/chr_scale;
 
                     int stride_dst = frame->linesize[c_idx]/2;
-                    int16_t*  dst_chroma = (int16_t*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
+                    OVSample*  dst_chroma = (OVSample*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
 
                     const int16_t *filt_coeff = alf_data->alf_cc_mapped_coeff[c_idx - 1][filt_idx - 1];
 
