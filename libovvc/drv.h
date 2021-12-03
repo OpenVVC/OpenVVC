@@ -33,6 +33,7 @@ uint8_t derive_intra_mode_c(uint8_t cclm_flag, uint8_t mpm_flag,
 /* FIXME vvc_intra functions deal with both reconstruction
  * and derivation this has to be clarified
  */
+#if 0
 void vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ctu_buff,
                     uint8_t intra_mode, int x0, int y0,
                     int log2_pb_width, int log2_pb_height);
@@ -56,6 +57,7 @@ void vvc_intra_pred_multi_ref( const OVCTUDec *const ctudec,
                                uint8_t intra_mode, int x0, int y0,
                                int log2_pb_width, int log2_pb_height,
                                int multi_ref_idx);
+#endif
 
 
 uint8_t drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
