@@ -39,7 +39,8 @@ ctudec_alloc_intra_line_buff(OVCTUDec *const ctudec, int nb_ctu_w)
     intra_line_b->cr = ov_malloc(intra_line_b->stride_c * sizeof(uint16_t));
 }
 
-void ctudec_free_intra_line_buff(OVCTUDec *const ctudec)
+void
+ctudec_free_intra_line_buff(OVCTUDec *const ctudec)
 {
     struct OVRCNCtx *rcn_ctx = &ctudec->rcn_ctx;
     struct OVBuffInfo *intra_line_b = &rcn_ctx->intra_line_buff;
@@ -57,7 +58,8 @@ ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec)
     return 0;
 }
 
-void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
+void
+ctudec_save_last_cols(OVCTUDec *const ctudec, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
 {
     if (is_border_rect & OV_BOUNDARY_RIGHT_RECT)
         return;
