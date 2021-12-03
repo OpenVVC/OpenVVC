@@ -1287,7 +1287,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
         if (alf_params_ctu->ctb_alf_flag & 0x4) {
             uint8_t c_idx = 0;
             int stride_src = fb.filter_region_stride[c_idx];
-            int stride_dst = frame->linesize[c_idx] / 2;
+            int stride_dst = frame->linesize[c_idx] / sizeof(OVSample);
             OVSample *src_luma = &src[c_idx][fb.filter_region_offset[c_idx]];
             OVSample *dst_luma = (OVSample *) frame->data[c_idx] + y_pos_pic * stride_dst + x_pos_pic;
 
@@ -1332,7 +1332,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                 blk_dst.width  = ctu_w /chr_scale;
                 blk_dst.height = ctu_h/chr_scale;
 
-                int stride_dst = frame->linesize[c_idx]/2;
+                int stride_dst = frame->linesize[c_idx]/sizeof(OVSample);
                 OVSample*  dst_chroma = (OVSample*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
 
                 uint8_t alt_num = (c_idx == 1) ? alf_params_ctu->cb_alternative : alf_params_ctu->cr_alternative;
@@ -1365,7 +1365,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                     blk_dst.x=x_pos_pic/chr_scale; blk_dst.y=y_pos_pic/chr_scale;
                     blk_dst.width=ctu_w/chr_scale; blk_dst.height=ctu_h/chr_scale;
 
-                    int stride_dst = frame->linesize[c_idx]/2;
+                    int stride_dst = frame->linesize[c_idx]/sizeof(OVSample);
                     OVSample*  dst_chroma = (OVSample*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
 
                     const int16_t *filt_coeff = alf_data->alf_cc_mapped_coeff[c_idx - 1][filt_idx - 1];
