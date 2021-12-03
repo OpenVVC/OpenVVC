@@ -2560,7 +2560,6 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
             p_tmp_rpr   +=  1;
         }
 
-        src_stride_c = RCN_CTB_STRIDE;
         p_dst        = dst_c;
         for(int row = 0; row < pu_h; row++ )
         {
@@ -2611,7 +2610,7 @@ rcn_mc_rpr_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
     struct OVBuffInfo tmp_rpl0;
-    tmp_rpl0.y  = rcn_ctx->data.tmp_mrg0_l;
+    tmp_rpl0.y  = rcn_ctx->data.tmp_bi_mrg0;
     if(no_scale_rpl0){
         tmp_rpl0.stride = MAX_PB_SIZE;
         rcn_mcp_bidir0_l(ctudec, tmp_rpl0, x0, y0, log2_pb_w, log2_pb_h, mv0, type0, ref_idx0);
@@ -2624,7 +2623,7 @@ rcn_mc_rpr_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     }
 
     struct OVBuffInfo tmp_rpl1;
-    tmp_rpl1.y  = rcn_ctx->data.tmp_mrg1_l;
+    tmp_rpl1.y  = rcn_ctx->data.tmp_bi_mrg1;
     if(no_scale_rpl1){
         tmp_rpl1.stride = MAX_PB_SIZE;
         rcn_mcp_bidir0_l(ctudec, tmp_rpl1, x0, y0, log2_pb_w, log2_pb_h, mv1, type1, ref_idx1);
@@ -2682,7 +2681,7 @@ rcn_mc_rpr_prof_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
     struct OVBuffInfo tmp_rpl0;
-    tmp_rpl0.y      = rcn_ctx->data.tmp_mrg0_l;
+    tmp_rpl0.y      = &rcn_ctx->data.tmp_bi_mrg0[0];
     tmp_rpl0.stride = RCN_CTB_STRIDE;
     uint8_t bidir = 1;
     if(no_scale_rpl0){
@@ -2696,7 +2695,7 @@ rcn_mc_rpr_prof_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     }
 
     struct OVBuffInfo tmp_rpl1;
-    tmp_rpl1.y      = rcn_ctx->data.tmp_mrg1_l;
+    tmp_rpl1.y      = &rcn_ctx->data.tmp_bi_mrg1[0];
     tmp_rpl1.stride = RCN_CTB_STRIDE;
     if(no_scale_rpl1){
         rcn_prof_mcp_l(ctudec, tmp_rpl1, x0, y0, log2_pb_w, log2_pb_h, mv1, type1, ref_idx1,
@@ -2748,8 +2747,8 @@ rcn_mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     struct OVRCNCtx *const rcn_ctx   = &ctudec->rcn_ctx;
     struct OVBuffInfo tmp_rpl0;
-    tmp_rpl0.cb = rcn_ctx->data.tmp_mrg0_cb;
-    tmp_rpl0.cr = rcn_ctx->data.tmp_mrg0_cr;
+    tmp_rpl0.cb = &rcn_ctx->data.tmp_bi_mrg0[0];
+    tmp_rpl0.cr = &rcn_ctx->data.tmp_bi_mrg1[0];
     if(no_scale_rpl0){
         tmp_rpl0.stride_c = MAX_PB_SIZE;
         rcn_mcp_bidir0_c(ctudec, tmp_rpl0, x0, y0, log2_pb_w, log2_pb_h, mv0, type0, ref_idx0);
@@ -2761,8 +2760,9 @@ rcn_mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     }
 
     struct OVBuffInfo tmp_rpl1;
-    tmp_rpl1.cb = rcn_ctx->data.tmp_mrg1_cb;
-    tmp_rpl1.cr = rcn_ctx->data.tmp_mrg1_cr;
+    tmp_rpl1.cb = rcn_ctx->data.tmp_bi_mrg2;
+    // tmp_rpl1.cr = rcn_ctx->data.tmp_bi_mrg3;
+    tmp_rpl1.cr = rcn_ctx->data.tmp_buff0;
     if(no_scale_rpl1){
         tmp_rpl1.stride_c = MAX_PB_SIZE;
         rcn_mcp_bidir0_c(ctudec, tmp_rpl1, x0, y0, log2_pb_w, log2_pb_h, mv1, type1, ref_idx1);
@@ -3104,12 +3104,11 @@ rcn_ciip_b(OVCTUDec*const ctudec,
     struct OVBuffInfo tmp_inter;
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
        
-    tmp_inter.y  = &rcn_ctx->data.tmp_mrg0_l[RCN_CTB_PADDING];
-    tmp_inter.cb = &rcn_ctx->data.tmp_mrg0_cb[RCN_CTB_PADDING];
-    tmp_inter.cr = &rcn_ctx->data.tmp_mrg0_cr[RCN_CTB_PADDING];
+    tmp_inter.y  = &rcn_ctx->data.tmp_inter_l[RCN_CTB_PADDING];
+    tmp_inter.cb = &rcn_ctx->data.tmp_inter_cb[RCN_CTB_PADDING];
+    tmp_inter.cr = &rcn_ctx->data.tmp_inter_cr[RCN_CTB_PADDING];
     tmp_inter.stride   = RCN_CTB_STRIDE;
     tmp_inter.stride_c = RCN_CTB_STRIDE;
-
     rcn_mcp_b(ctudec, tmp_inter, inter_ctx, part_ctx, mv0, mv1, x0, y0, log2_pb_w, log2_pb_h,
               inter_dir, ref_idx0, ref_idx1);
 
@@ -3128,13 +3127,14 @@ rcn_ciip(OVCTUDec *const ctudec,
 {
     //Inter merge mode
     struct OVBuffInfo tmp_inter;
-    struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
+    struct OVRCNCtx   *const rcn_ctx   = &ctudec->rcn_ctx;
 
-    tmp_inter.y  = &rcn_ctx->data.tmp_mrg0_l[RCN_CTB_PADDING];
-    tmp_inter.cb = &rcn_ctx->data.tmp_mrg0_cb[RCN_CTB_PADDING];
-    tmp_inter.cr = &rcn_ctx->data.tmp_mrg0_cr[RCN_CTB_PADDING];
+    tmp_inter.y  = &rcn_ctx->data.tmp_bi_mrg0[RCN_CTB_PADDING];
+    tmp_inter.cb = &rcn_ctx->data.tmp_bi_mrg1[RCN_CTB_PADDING];
+    tmp_inter.cr = &rcn_ctx->data.tmp_bi_mrg2[RCN_CTB_PADDING];
     tmp_inter.stride   = RCN_CTB_STRIDE;
     tmp_inter.stride_c = RCN_CTB_STRIDE;
+
     rcn_mcp(ctudec, tmp_inter, x0, y0, log2_pb_w, log2_pb_h, mv, 0, ref_idx);
 
     //Intra Planar mode
