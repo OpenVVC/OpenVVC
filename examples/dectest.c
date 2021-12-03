@@ -323,7 +323,7 @@ write_decoded_frame_to_file(OVFrame *const frame, FILE *fp)
     int ret = 0;
 
     for (component = 0; component < 3; component++) {
-        int frame_size = frame->height[component] * frame->width[component];
+        int frame_size = frame->height[component] * frame->linesize[component];
         ret += fwrite(frame->data[component], frame_size, sizeof(uint8_t), fp);
     }
 
