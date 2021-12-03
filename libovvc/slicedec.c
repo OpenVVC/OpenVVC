@@ -698,7 +698,7 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
 
     const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
     ptrdiff_t stride_out_pic = fbuff->stride;
-    uint16_t *out_pic = fbuff->y;
+    OVSample *out_pic = fbuff->y;
     ctudec->rcn_ctx.rcn_funcs.lmcs_reshape_backward(out_pic, stride_out_pic, ctudec->lmcs_info.luts,
                                                     1 << log2_ctb_s, 1 << log2_ctb_s);
 
@@ -750,7 +750,7 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
 
     const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
     ptrdiff_t stride_out_pic = fbuff->stride;
-    uint16_t *out_pic = fbuff->y;
+    OVSample *out_pic = fbuff->y;
     ctudec->rcn_ctx.rcn_funcs.lmcs_reshape_backward(out_pic, stride_out_pic, ctudec->lmcs_info.luts,
                                                     ctu_w, ctu_h);
 
@@ -1017,9 +1017,9 @@ slicedec_attach_frame_buff(OVCTUDec *const ctudec, OVSliceDec *sldec,
     entry_start_offset_c += ((uint32_t)einfo->ctb_y << (log2_ctb_s - 1)) * (f->linesize[1]);
 
     /*FIXME clean offset */
-    fbuff->y  = (uint16_t *)&f->data[0][entry_start_offset];
-    fbuff->cb = (uint16_t *)&f->data[1][entry_start_offset_c];
-    fbuff->cr = (uint16_t *)&f->data[2][entry_start_offset_c];
+    fbuff->y  = (OVSample *)&f->data[0][entry_start_offset];
+    fbuff->cb = (OVSample *)&f->data[1][entry_start_offset_c];
+    fbuff->cr = (OVSample *)&f->data[2][entry_start_offset_c];
 
     fbuff->stride   = f->linesize[0] >> 1;
     fbuff->stride_c = f->linesize[1] >> 1;
