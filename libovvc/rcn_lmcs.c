@@ -27,8 +27,8 @@
 /* Window information */
 struct WindowsInfo
 {
-    OVSample scaled_fwd_step[NB_LMCS_WND];
-    OVSample scaled_bwd_step[NB_LMCS_WND];
+    uint16_t scaled_fwd_step[NB_LMCS_WND];
+    uint16_t scaled_bwd_step[NB_LMCS_WND];
     OVSample wnd_bnd[NB_LMCS_WND + 1];
     //int16_t wnd_sz[NB_LMCS_WND];
 };
@@ -67,8 +67,8 @@ compute_windows_scale_steps(struct WindowsInfo *const wnd_info,
 {
   uint8_t min_idx_plus1 = min_idx + 1;
 
-  OVSample *const fwd_step = wnd_info->scaled_fwd_step;
-  OVSample *const bwd_step = wnd_info->scaled_bwd_step;
+  uint16_t *const fwd_step = wnd_info->scaled_fwd_step;
+  uint16_t *const bwd_step = wnd_info->scaled_bwd_step;
   OVSample *const wnd_bnd  = wnd_info->wnd_bnd;
 
   int i;
@@ -82,7 +82,7 @@ compute_windows_scale_steps(struct WindowsInfo *const wnd_info,
 
   /* Compute windows */
   for (i = min_idx; i < max_idx_plus1; i++) {
-      OVSample wnd_sz = NB_SMP_WND + cw_delta[i];
+      uint16_t wnd_sz = NB_SMP_WND + cw_delta[i];
       if (wnd_sz) {
           fwd_step[i] = ((wnd_sz << LMCS_PREC) + WND_RND) >> LOG2_WND_RNG;
           bwd_step[i] = (NB_SMP_WND << LMCS_PREC) / wnd_sz;
@@ -100,7 +100,7 @@ compute_windows_scale_steps(struct WindowsInfo *const wnd_info,
 static void
 derive_forward_lut(OVSample *const fwd_lut, const struct WindowsInfo *const wnd_info)
 {
-    const OVSample *const fwd_step = wnd_info->scaled_fwd_step;
+    const uint16_t *const fwd_step = wnd_info->scaled_fwd_step;
     const OVSample *const wnd_bnd  = wnd_info->wnd_bnd;
     uint16_t val;
 
@@ -110,7 +110,7 @@ derive_forward_lut(OVSample *const fwd_lut, const struct WindowsInfo *const wnd_
 
         int32_t nb_step = val - wnd_lbnd;
 
-        int fwd_val = wnd_bnd[wnd_idx] + ((fwd_step[wnd_idx] * nb_step + LMCS_RND) >> LMCS_PREC);
+        int fwd_val = (uint16_t)wnd_bnd[wnd_idx] + ((uint16_t)((uint16_t)fwd_step[wnd_idx] * nb_step + LMCS_RND) >> LMCS_PREC);
 
         fwd_lut[val] = ov_bdclip(fwd_val);
     }
@@ -120,7 +120,7 @@ static void
 derive_backward_lut(OVSample *const bwd_lut, const struct WindowsInfo *const wnd_info,
                     uint8_t min_idx, uint8_t max_idx_plus1)
 {
-    const OVSample *const bwd_step = wnd_info->scaled_bwd_step;
+    const uint16_t *const bwd_step = wnd_info->scaled_bwd_step;
     const OVSample *const wnd_bnd  = wnd_info->wnd_bnd;
     uint16_t val;
 
@@ -130,7 +130,7 @@ derive_backward_lut(OVSample *const bwd_lut, const struct WindowsInfo *const wnd
 
         int32_t nb_step = val - wnd_bnd[wnd_idx];
 
-        int bwd_val = wnd_lbnd + ((bwd_step[wnd_idx] * nb_step + LMCS_RND) >> LMCS_PREC);
+        int bwd_val = wnd_lbnd + ((uint16_t)((uint16_t)bwd_step[wnd_idx] * nb_step + LMCS_RND) >> LMCS_PREC);
 
         bwd_lut[val] = ov_bdclip(bwd_val);
     }
