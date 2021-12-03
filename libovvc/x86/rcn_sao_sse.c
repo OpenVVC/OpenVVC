@@ -25,8 +25,8 @@ sao_band_filter_0_10_sse(uint8_t* _dst,
   __m128i src0, src2;
   uint16_t* dst = (uint16_t*)_dst;
   uint16_t* src = (uint16_t*)_src;
-  ptrdiff_t stride_dst = _stride_dst >> 1;
-  ptrdiff_t stride_src = _stride_src >> 1;
+  ptrdiff_t stride_dst = _stride_dst;
+  ptrdiff_t stride_src = _stride_src;
   r0 = _mm_set1_epi16((sao_left_class)&31);
   r1 = _mm_set1_epi16((sao_left_class + 1) & 31);
   r2 = _mm_set1_epi16((sao_left_class + 2) & 31);
@@ -83,8 +83,8 @@ sao_edge_filter_10_sse(uint8_t* _dst,
   __m128i cmp0, cmp1, r0, r1, r2, r3, r4;
   uint16_t* dst = (uint16_t*)_dst;
   uint16_t* src = (uint16_t*)_src;
-  ptrdiff_t stride_dst = _stride_dst >> 1;
-  ptrdiff_t stride_src = _stride_src >> 1;
+  ptrdiff_t stride_dst = _stride_dst;
+  ptrdiff_t stride_src = _stride_src;
   {
     int a_stride = pos[eo][0][0] + pos[eo][0][1] * stride_src;
     int b_stride = pos[eo][1][0] + pos[eo][1][1] * stride_src;
@@ -156,8 +156,8 @@ sao_edge_filter_7_10_sse(uint8_t* _dst,
   __m128i cmp0, cmp1, r0, r1, r2, r3, r4;
   uint16_t* dst = (uint16_t*)_dst;
   uint16_t* src = (uint16_t*)_src;
-  ptrdiff_t stride_dst = _stride_dst >> 1;
-  ptrdiff_t stride_src = _stride_src >> 1;
+  ptrdiff_t stride_dst = _stride_dst;
+  ptrdiff_t stride_src = _stride_src;
   {
     int a_stride = pos[eo][0][0] + pos[eo][0][1] * stride_src;
     int b_stride = pos[eo][1][0] + pos[eo][1][1] * stride_src;
