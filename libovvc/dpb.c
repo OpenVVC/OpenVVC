@@ -1114,7 +1114,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         (*pic_p)->frame->height[i] = ps->pps->pps_pic_height_in_luma_samples >> scale;
     }
     (*pic_p)->frame->scale_info.scaling_win_left = ps->pps->pps_scaling_win_left_offset;
-    (*pic_p)->frame->scale_info.scaling_win_right = ps->pps->pps_scaling_win_left_offset;
+    (*pic_p)->frame->scale_info.scaling_win_right = ps->pps->pps_scaling_win_right_offset;
     (*pic_p)->frame->scale_info.scaling_win_top = ps->pps->pps_scaling_win_top_offset;
     (*pic_p)->frame->scale_info.scaling_win_bottom = ps->pps->pps_scaling_win_bottom_offset;
     (*pic_p)->frame->scale_info.chroma_hor_col_flag = ps->sps->sps_chroma_horizontal_collocated_flag;

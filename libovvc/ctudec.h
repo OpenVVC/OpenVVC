@@ -476,9 +476,12 @@ struct CTURCNData
     DECLARE_ALIGNED(32, uint16_t, cb_buff)[RCN_CTB_SIZE];
     DECLARE_ALIGNED(32, uint16_t, cr_buff)[RCN_CTB_SIZE];
 
-    DECLARE_ALIGNED(32, uint16_t, tmp_inter_l)[RCN_CTB_SIZE];
-    DECLARE_ALIGNED(32, uint16_t, tmp_inter_cb)[RCN_CTB_SIZE];
-    DECLARE_ALIGNED(32, uint16_t, tmp_inter_cr)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, tmp_mrg0_l)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, tmp_mrg0_cb)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, tmp_mrg0_cr)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, tmp_mrg1_l)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, tmp_mrg1_cb)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, tmp_mrg1_cr)[RCN_CTB_SIZE];
     /* To be used for temporary storage when we needed
      */
     DECLARE_ALIGNED(32, uint16_t, edge_buff0)[RCN_CTB_SIZE];
@@ -488,7 +491,8 @@ struct CTURCNData
     DECLARE_ALIGNED(32, uint16_t, tmp_buff0)[RCN_CTB_SIZE];
     DECLARE_ALIGNED(32, uint16_t, tmp_buff1)[RCN_CTB_SIZE];
     
-    DECLARE_ALIGNED(32, uint16_t, tmp_buff)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, tmp_buff)[4*RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, tmp_rpr)[4*RCN_CTB_SIZE];
 };
 
 struct OVCTUDec

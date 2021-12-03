@@ -44,6 +44,7 @@
 
 #define BITDEPTH 10
 #define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
+#define RCN_CTB_SIZE_4 (4*RCN_CTB_SIZE)
 
 static const int8_t dmvr_mv_x[25 + 25] = {
     -2, -1, 0, 1, 2,
@@ -1955,7 +1956,7 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, 
 
     dst.y  += x0 + y0 * dst.stride;
 
-    uint16_t tmp_buff [RCN_CTB_SIZE];
+    uint16_t* tmp_buff = rcn_ctx->data.tmp_buff;
 
     OVPicture *ref_pic =  type ? ref1 : ref0;
     const OVFrame *const frame0 = ref_pic->frame;
@@ -2309,29 +2310,18 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
-    //Case when the ref block is larger than max CTU size
-    if( ((scaling_hor * pu_w) >> RPR_SCALE_BITS) > MAX_PB_SIZE || 
-        ((scaling_ver * pu_h) >> RPR_SCALE_BITS) > MAX_PB_SIZE ){
-        for(int i = 0; i < 2; i++){
-            for(int j = 0; j < 2; j++){
-                int x = x0 + (i*pu_w>>1);
-                int y = y0 + (j*pu_h>>1);
-                rcn_mcp_rpr_l(ctudec, dst, x, y, log2_pu_w-1, log2_pu_h-1, mv, type, ref_idx, scaling_hor, scaling_ver, bidir);
-            }
-        }
-        return;
-    }
 
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
+    uint16_t* tmp_emul = rcn_ctx->data.tmp_buff;
+    uint16_t* tmp_rpr  = rcn_ctx->data.tmp_rpr;
+    uint16_t tmp_emul_str = 2*RCN_CTB_STRIDE;
+    uint16_t tmp_rpr_str  = 2*RCN_CTB_STRIDE;
+ 
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
-
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
     OVPicture *ref_pic =  type ? ref1 : ref0;
-
-    uint16_t tmp_emul [RCN_CTB_SIZE];
-    uint16_t tmp_rpr  [RCN_CTB_SIZE];
 
     const OVFrame *const frame0 = ref_pic->frame;
     const uint16_t *const ref0_y  = (uint16_t *) frame0->data[0];
@@ -2376,17 +2366,17 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
                                                    ref_pu_w, ref_pu_h);;
 
     const uint16_t *src  = &ref0_y [ ref_x + ref_y * src_stride];
-    int buff_off = REF_PADDING_L * (RCN_CTB_STRIDE) + (REF_PADDING_L);
+    int buff_off = REF_PADDING_L * (tmp_emul_str) + (REF_PADDING_L);
     int src_off  = REF_PADDING_L * (src_stride) + (REF_PADDING_L);
     if (emulate_edge){
         emulate_block_border(tmp_emul, (src - src_off),
-                             RCN_CTB_STRIDE, src_stride,
+                             tmp_emul_str, src_stride,
                              ref_pu_w + QPEL_EXTRA, ref_pu_h + QPEL_EXTRA,
                              ref_x - REF_PADDING_L, ref_y - REF_PADDING_L,
                              ref_pic_w, ref_pic_h);
 
         src = tmp_emul + REF_PADDING_L;
-        src_stride = RCN_CTB_STRIDE;
+        src_stride = tmp_emul_str;
     }
     else{
         src = src - src_off + REF_PADDING_L ;
@@ -2409,11 +2399,11 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         p_src     = src + (pos_mv_x >> shift_mv) - ref_x;
 
         if (bidir){
-            mc_l->rpr_bi[prec_type][1](p_tmp_rpr, RCN_CTB_STRIDE, p_src, src_stride, ref_pu_h + QPEL_EXTRA + 1,
+            mc_l->rpr_bi[prec_type][1](p_tmp_rpr, tmp_rpr_str, p_src, src_stride, ref_pu_h + QPEL_EXTRA + 1,
                                                     prec_x, prec_y, 1, filter_idx_h);
         }
         else{
-            mc_l->rpr_uni[prec_type][1](p_tmp_rpr, RCN_CTB_STRIDE, p_src, src_stride, ref_pu_h + QPEL_EXTRA + 1,
+            mc_l->rpr_uni[prec_type][1](p_tmp_rpr, tmp_rpr_str, p_src, src_stride, ref_pu_h + QPEL_EXTRA + 1,
                                                         prec_x, prec_y, 1, filter_idx_h);
         }
         p_tmp_rpr   +=  1;
@@ -2427,14 +2417,14 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
            // printf("\nVer %i %i",row, prec_y);  
         // TODOrpr: prec_type = 0 when filter_idx=0 and prec_y=0
         prec_type = 2;
-        p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * RCN_CTB_STRIDE;
+        p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * tmp_rpr_str;
 
         if (bidir){
-            mc_l->rpr_bi[prec_type][log2_pu_w-1](p_dst, RCN_CTB_STRIDE, p_tmp_rpr, RCN_CTB_STRIDE, 1,
+            mc_l->rpr_bi[prec_type][log2_pu_w-1](p_dst, RCN_CTB_STRIDE, p_tmp_rpr, tmp_rpr_str, 1,
                                                 prec_x, prec_y, pu_w, filter_idx_v);
         }
         else{
-            mc_l->rpr_uni[prec_type][log2_pu_w-1](p_dst, RCN_CTB_STRIDE, p_tmp_rpr, RCN_CTB_STRIDE, 1,
+            mc_l->rpr_uni[prec_type][log2_pu_w-1](p_dst, RCN_CTB_STRIDE, p_tmp_rpr, tmp_rpr_str, 1,
                                                 prec_x, prec_y, pu_w, filter_idx_v);
         }
         p_dst    +=  RCN_CTB_STRIDE;
@@ -2458,22 +2448,14 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
     int pu_w = 1 << log2_pu_w;
     int pu_h = 1 << log2_pu_h;
-    //Case when the ref block is larger than max CTU size
-    if( ((scaling_hor * pu_w) >> RPR_SCALE_BITS) > MAX_PB_SIZE || 
-        ((scaling_ver * pu_h) >> RPR_SCALE_BITS) > MAX_PB_SIZE ){
-        for(int i = 0; i < 2; i++){
-            for(int j = 0; j < 2; j++){
-                int x = x0 + (i*pu_w>>1);
-                int y = y0 + (j*pu_h>>1);
-                rcn_mcp_rpr_c(ctudec, dst, x, y, log2_pu_w-1, log2_pu_h-1, mv, type, ref_idx, scaling_hor, scaling_ver, bidir);
-            }
-        }
-        return;
-    }
 
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
-    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    uint16_t* tmp_emul = rcn_ctx->data.tmp_buff;
+    uint16_t* tmp_rpr  = rcn_ctx->data.tmp_rpr;
+    uint16_t tmp_emul_str = 2*RCN_CTB_STRIDE;
+    uint16_t tmp_rpr_str  = 2*RCN_CTB_STRIDE;
 
+    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_c = &rcn_ctx->rcn_funcs.mc_c;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
@@ -2487,9 +2469,6 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     const uint16_t *const ref0_cb = (uint16_t *) frame0->data[1];
     const uint16_t *const ref0_cr = (uint16_t *) frame0->data[2];
     int src_stride_c = frame0->linesize[1] >> 1;
-
-    uint16_t tmp_emul [RCN_CTB_SIZE];
-    uint16_t tmp_rpr  [RCN_CTB_SIZE];
 
     int ref_pic_w = frame0->width[0];
     int ref_pic_h = frame0->height[0];
@@ -2545,16 +2524,16 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         uint8_t emulate_edge = test_for_edge_emulation_c(ref_x, ref_y, ref_pic_w, ref_pic_h,
                                                  ref_pu_w, ref_pu_h);;
 
-        int buff_off = REF_PADDING_C * (RCN_CTB_STRIDE) + (REF_PADDING_C);
+        int buff_off = REF_PADDING_C * (tmp_emul_str) + (REF_PADDING_C);
         int src_off  = REF_PADDING_C * (src_stride_c) + (REF_PADDING_C);
         if (emulate_edge){
             emulate_block_border(tmp_emul, (src_c - src_off),
-                                 RCN_CTB_STRIDE, src_stride_c,
+                                 tmp_emul_str, src_stride_c,
                                  (ref_pu_w)  + EPEL_EXTRA, (ref_pu_h) + EPEL_EXTRA,
                                  (ref_x) - REF_PADDING_C, (ref_y) - REF_PADDING_C,
                                  (ref_pic_w), (ref_pic_h));
             src_c = tmp_emul + REF_PADDING_C;
-            src_stride_c = RCN_CTB_STRIDE ;
+            src_stride_c = tmp_emul_str ;
         }
         else{
             src_c = src_c - src_off + REF_PADDING_C ;
@@ -2571,11 +2550,11 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
             p_src     = src_c + (pos_mv_x >> shift_mv) - ref_x;
 
             if (bidir){
-                mc_c->rpr_bi[prec_type][1](p_tmp_rpr, RCN_CTB_STRIDE,p_src, src_stride_c,
+                mc_c->rpr_bi[prec_type][1](p_tmp_rpr, tmp_rpr_str, p_src, src_stride_c,
                                                     ref_pu_h + EPEL_EXTRA + 2, prec_x, prec_y, 1, filter_idx_h);
             }
             else{
-                mc_c->rpr_uni[prec_type][1](p_tmp_rpr, RCN_CTB_STRIDE,p_src, src_stride_c,
+                mc_c->rpr_uni[prec_type][1](p_tmp_rpr, tmp_rpr_str, p_src, src_stride_c,
                                                     ref_pu_h + EPEL_EXTRA + 2, prec_x, prec_y, 1, filter_idx_h);
             }
             p_tmp_rpr   +=  1;
@@ -2589,14 +2568,14 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
             prec_x    = 0;
             prec_y    = pos_mv_y & 0x1F;
             prec_type = 2;
-            p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * RCN_CTB_STRIDE;
+            p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * tmp_rpr_str;
 
             if (bidir){
-                mc_c->rpr_bi[prec_type][log2_pu_w-2](p_dst, RCN_CTB_STRIDE, p_tmp_rpr, RCN_CTB_STRIDE,
+                mc_c->rpr_bi[prec_type][log2_pu_w-2](p_dst, RCN_CTB_STRIDE, p_tmp_rpr, tmp_rpr_str,
                                                     1, prec_x, prec_y, pu_w, filter_idx_v); 
             }
             else{
-                mc_c->rpr_uni[prec_type][log2_pu_w-2](p_dst, RCN_CTB_STRIDE, p_tmp_rpr, RCN_CTB_STRIDE,
+                mc_c->rpr_uni[prec_type][log2_pu_w-2](p_dst, RCN_CTB_STRIDE, p_tmp_rpr, tmp_rpr_str,
                                                     1, prec_x, prec_y, pu_w, filter_idx_v); 
             }
             p_dst    +=  RCN_CTB_STRIDE;
@@ -2630,9 +2609,9 @@ rcn_mc_rpr_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         type1 = gpm_ctx->inter_dir1 - 1;
     }
 
+    struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
     struct OVBuffInfo tmp_rpl0;
-    uint16_t tmp_rpl0_l [RCN_CTB_SIZE];
-    tmp_rpl0.y = tmp_rpl0_l;
+    tmp_rpl0.y  = rcn_ctx->data.tmp_mrg0_l;
     if(no_scale_rpl0){
         tmp_rpl0.stride = MAX_PB_SIZE;
         rcn_mcp_bidir0_l(ctudec, tmp_rpl0, x0, y0, log2_pb_w, log2_pb_h, mv0, type0, ref_idx0);
@@ -2645,8 +2624,7 @@ rcn_mc_rpr_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     }
 
     struct OVBuffInfo tmp_rpl1;
-    uint16_t tmp_rpl1_l [RCN_CTB_SIZE];
-    tmp_rpl1.y  = tmp_rpl1_l;
+    tmp_rpl1.y  = rcn_ctx->data.tmp_mrg1_l;
     if(no_scale_rpl1){
         tmp_rpl1.stride = MAX_PB_SIZE;
         rcn_mcp_bidir0_l(ctudec, tmp_rpl1, x0, y0, log2_pb_w, log2_pb_h, mv1, type1, ref_idx1);
@@ -2664,7 +2642,6 @@ rcn_mc_rpr_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pu_w = 1 <<log2_pb_w;
     int pu_h = 1 <<log2_pb_h;
 
-    struct OVRCNCtx *const rcn_ctx   = &ctudec->rcn_ctx;
     // struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
     if( mv0.bcw_idx_plus1 == 0 || mv0.bcw_idx_plus1 == 3){
         if(gpm_ctx){
@@ -2703,11 +2680,11 @@ rcn_mc_rpr_prof_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int type0 = 0;
     int type1 = 1;
 
+    struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
     struct OVBuffInfo tmp_rpl0;
-    uint16_t tmp_rpl0_l [RCN_CTB_SIZE];
-    tmp_rpl0.y = tmp_rpl0_l;
-    uint8_t bidir = 1;
+    tmp_rpl0.y      = rcn_ctx->data.tmp_mrg0_l;
     tmp_rpl0.stride = RCN_CTB_STRIDE;
+    uint8_t bidir = 1;
     if(no_scale_rpl0){
         rcn_prof_mcp_l(ctudec, tmp_rpl0, x0, y0, log2_pb_w, log2_pb_h, mv0, type0, ref_idx0,
                        prof_info->dmv_scale_h_0,
@@ -2719,8 +2696,7 @@ rcn_mc_rpr_prof_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     }
 
     struct OVBuffInfo tmp_rpl1;
-    uint16_t tmp_rpl1_l [RCN_CTB_SIZE];
-    tmp_rpl1.y  = tmp_rpl1_l;
+    tmp_rpl1.y      = rcn_ctx->data.tmp_mrg1_l;
     tmp_rpl1.stride = RCN_CTB_STRIDE;
     if(no_scale_rpl1){
         rcn_prof_mcp_l(ctudec, tmp_rpl1, x0, y0, log2_pb_w, log2_pb_h, mv1, type1, ref_idx1,
@@ -2738,10 +2714,8 @@ rcn_mc_rpr_prof_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int pu_w = 1 <<log2_pb_w;
     int pu_h = 1 <<log2_pb_h;
 
-    struct OVRCNCtx *const rcn_ctx   = &ctudec->rcn_ctx;
     // struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
-    // if( mv0.bcw_idx_plus1 == 0 || mv0.bcw_idx_plus1 == 3){
-    if( 1){
+    if( mv0.bcw_idx_plus1 == 0 || mv0.bcw_idx_plus1 == 3){
         put_vvc_qpel_rpr_bi_sum(dst.y, RCN_CTB_STRIDE, tmp_rpl0.y, tmp_rpl0.stride, 
                                 tmp_rpl1.y, tmp_rpl1.stride, pu_h, 0, 0, pu_w);
     } else {
@@ -2772,10 +2746,10 @@ rcn_mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         type1 = gpm_ctx->inter_dir1 - 1;
     }
 
+    struct OVRCNCtx *const rcn_ctx   = &ctudec->rcn_ctx;
     struct OVBuffInfo tmp_rpl0;
-    uint16_t tmp_rpl0_cb[RCN_CTB_SIZE], tmp_rpl0_cr[RCN_CTB_SIZE] ;
-    tmp_rpl0.cb = tmp_rpl0_cb;
-    tmp_rpl0.cr = tmp_rpl0_cr;
+    tmp_rpl0.cb = rcn_ctx->data.tmp_mrg0_cb;
+    tmp_rpl0.cr = rcn_ctx->data.tmp_mrg0_cr;
     if(no_scale_rpl0){
         tmp_rpl0.stride_c = MAX_PB_SIZE;
         rcn_mcp_bidir0_c(ctudec, tmp_rpl0, x0, y0, log2_pb_w, log2_pb_h, mv0, type0, ref_idx0);
@@ -2787,9 +2761,8 @@ rcn_mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     }
 
     struct OVBuffInfo tmp_rpl1;
-    uint16_t tmp_rpl1_cb[RCN_CTB_SIZE], tmp_rpl1_cr[RCN_CTB_SIZE] ;
-    tmp_rpl1.cb = tmp_rpl1_cb;
-    tmp_rpl1.cr = tmp_rpl1_cr;
+    tmp_rpl1.cb = rcn_ctx->data.tmp_mrg1_cb;
+    tmp_rpl1.cr = rcn_ctx->data.tmp_mrg1_cr;
     if(no_scale_rpl1){
         tmp_rpl1.stride_c = MAX_PB_SIZE;
         rcn_mcp_bidir0_c(ctudec, tmp_rpl1, x0, y0, log2_pb_w, log2_pb_h, mv1, type1, ref_idx1);
@@ -2809,7 +2782,6 @@ rcn_mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     tmp_rpl1.cr += (x0 >> 1) + (y0 >> 1) * tmp_rpl1.stride_c;
     int pu_w = 1 << (log2_pb_w-1);
     int pu_h = 1 << (log2_pb_h-1);
-    // struct OVRCNCtx *const rcn_ctx   = &ctudec->rcn_ctx;
     // struct MCFunctions *mc_l = &rcn_ctx->rcn_funcs.mc_l;
     if( mv0.bcw_idx_plus1 == 0 || mv0.bcw_idx_plus1 == 3){
         if(gpm_ctx){
@@ -3131,14 +3103,10 @@ rcn_ciip_b(OVCTUDec*const ctudec,
     const OVPartInfo *const part_ctx = ctudec->part_ctx;
     struct OVBuffInfo tmp_inter;
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
-    
-    uint16_t * tmp_inter_l = rcn_ctx->data.tmp_inter_l;
-    uint16_t *tmp_inter_cb = rcn_ctx->data.tmp_inter_cb;
-    uint16_t *tmp_inter_cr = rcn_ctx->data.tmp_inter_cr;
-    
-    tmp_inter.y  = &tmp_inter_l [RCN_CTB_PADDING];
-    tmp_inter.cb = &tmp_inter_cb[RCN_CTB_PADDING];
-    tmp_inter.cr = &tmp_inter_cr[RCN_CTB_PADDING];
+       
+    tmp_inter.y  = &rcn_ctx->data.tmp_mrg0_l[RCN_CTB_PADDING];
+    tmp_inter.cb = &rcn_ctx->data.tmp_mrg0_cb[RCN_CTB_PADDING];
+    tmp_inter.cr = &rcn_ctx->data.tmp_mrg0_cr[RCN_CTB_PADDING];
     tmp_inter.stride   = RCN_CTB_STRIDE;
     tmp_inter.stride_c = RCN_CTB_STRIDE;
 
@@ -3161,13 +3129,10 @@ rcn_ciip(OVCTUDec *const ctudec,
     //Inter merge mode
     struct OVBuffInfo tmp_inter;
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
-    uint16_t * tmp_inter_l = rcn_ctx->data.tmp_inter_l;
-    uint16_t *tmp_inter_cb = rcn_ctx->data.tmp_inter_cb;
-    uint16_t *tmp_inter_cr = rcn_ctx->data.tmp_inter_cr;
-    
-    tmp_inter.y  = &tmp_inter_l [RCN_CTB_PADDING];
-    tmp_inter.cb = &tmp_inter_cb[RCN_CTB_PADDING];
-    tmp_inter.cr = &tmp_inter_cr[RCN_CTB_PADDING];
+
+    tmp_inter.y  = &rcn_ctx->data.tmp_mrg0_l[RCN_CTB_PADDING];
+    tmp_inter.cb = &rcn_ctx->data.tmp_mrg0_cb[RCN_CTB_PADDING];
+    tmp_inter.cr = &rcn_ctx->data.tmp_mrg0_cr[RCN_CTB_PADDING];
     tmp_inter.stride   = RCN_CTB_STRIDE;
     tmp_inter.stride_c = RCN_CTB_STRIDE;
     rcn_mcp(ctudec, tmp_inter, x0, y0, log2_pb_w, log2_pb_h, mv, 0, ref_idx);
