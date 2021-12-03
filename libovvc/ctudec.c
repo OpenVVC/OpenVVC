@@ -69,8 +69,7 @@ ctudec_save_last_cols(OVCTUDec *const ctudec, int x_pic_l, int y_pic_l, uint8_t 
     const int height_l = ( y_pic_l + fb->filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_pic_l ) : fb->filter_region_h[0];
     const int margin = fb->margin;
 
-    for(int comp = 0; comp < 3; comp++)
-    {
+    for(int comp = 0; comp < 3; comp++) {
         OVSample* saved_cols = fb->saved_cols[comp];
         OVSample* filter_region = fb->filter_region[comp];
         int stride_filter = fb->filter_region_stride[comp];
@@ -80,10 +79,8 @@ ctudec_save_last_cols(OVCTUDec *const ctudec, int x_pic_l, int y_pic_l, uint8_t 
         const int width = width_l/ratio;
         const int height = height_l/ratio;
 
-        for(int ii=0; ii < height; ii++)
-        {
-            for(int jj=0; jj < margin; jj++)
-            {
+        for(int ii=0; ii < height; ii++) {
+            for(int jj=0; jj < margin; jj++) {
                 saved_cols[ii*margin + jj] = filter_region[(ii+margin)*stride_filter + width + jj];
             }
         }
@@ -99,8 +96,7 @@ ctudec_save_last_rows(OVCTUDec *const ctudec, OVSample** saved_rows, int x_l, in
     const int height_l = ( y_pic_l + fb->filter_region_h[0] > ctudec->pic_h ) ? ( ctudec->pic_h - y_pic_l ) : fb->filter_region_h[0];
     const int margin = fb->margin;
 
-    for(int comp = 0; comp < 3; comp++)
-    {
+    for(int comp = 0; comp < 3; comp++) {
         OVSample* saved_rows_comp = saved_rows[comp];
         OVSample* filter_region = fb->filter_region[comp];
         int stride_filter = fb->filter_region_stride[comp];
@@ -113,10 +109,8 @@ ctudec_save_last_rows(OVCTUDec *const ctudec, OVSample** saved_rows, int x_l, in
 
         int stride_rows = fb->saved_rows_stride[comp];
         //save pixels in top left corner of ctu filter
-        for(int ii=0; ii < margin; ii++)
-        {
-            for(int jj=0; jj < margin; jj++)
-            {
+        for(int ii=0; ii < margin; ii++) {
+            for(int jj=0; jj < margin; jj++) {
                 // if ( is_border_rect & VVC_BOUNDARY_RIGHT_TILE)
                 if ( 0 )
                     filter_region[ii*stride_filter + jj] = saved_rows_comp[ii*stride_rows];
@@ -128,8 +122,7 @@ ctudec_save_last_rows(OVCTUDec *const ctudec, OVSample** saved_rows, int x_l, in
         if ( is_border_rect & OV_BOUNDARY_BOTTOM_RECT)
             continue;
 
-        for(int ii=0 ; ii < margin; ii++)
-        {
+        for(int ii=0 ; ii < margin; ii++) {
             memcpy(&saved_rows_comp[ii*stride_rows + x], &filter_region[(height+ii)*stride_filter + margin], width * sizeof(OVSample));
         }
     } 
@@ -474,27 +467,23 @@ ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
 void
 ctudec_uninit_in_loop_filters(OVCTUDec *const ctudec)
 {
-    //Uninit SAO info and ctu params
     struct SAOInfo* sao_info  = &ctudec->sao_info;
-    if(sao_info->sao_params){
+    struct ALFInfo* alf_info  = &ctudec->alf_info;
+    struct LMCSInfo* lmcs_info  = &ctudec->lmcs_info;
+
+    if (sao_info->sao_params) {
         ov_free(sao_info->sao_params);
     }
 
-    //Uninit ALF info and ctu params
-    struct ALFInfo* alf_info  = &ctudec->alf_info;
-    if(alf_info->ctb_alf_params){
+    if (alf_info->ctb_alf_params) {
         ov_free(alf_info->ctb_alf_params);
-        // rcn_alf_destroy(&alf_info->rcn_alf, ctb_size);
     }
 
-    //Uninit CC ALF ctu params
-    if(alf_info->ctb_cc_alf_filter_idx[0]){
+    if (alf_info->ctb_cc_alf_filter_idx[0]) {
         ov_free(alf_info->ctb_cc_alf_filter_idx[0]);
         ov_free(alf_info->ctb_cc_alf_filter_idx[1]);
     }
 
-    //Uninit LMCS info and output pivots
-    struct LMCSInfo* lmcs_info  = &ctudec->lmcs_info;
     if (lmcs_info->luts) {
         ov_free(lmcs_info->luts);
     }
