@@ -53,16 +53,16 @@ enum DCTType
 
 #define NB_TR_SIZES 7
 
-typedef void (*MCUniDirFunc)(uint16_t *_dst, ptrdiff_t _dststride,
-                             const uint16_t *_src, ptrdiff_t _srcstride,
+typedef void (*MCUniDirFunc)(OVSample *_dst, ptrdiff_t _dststride,
+                             const OVSample *_src, ptrdiff_t _srcstride,
                              int height, intptr_t mx, intptr_t my, int width);
 
 typedef void (*MCBiDir0Func)(int16_t *_dst,
-                             const uint16_t *_src, ptrdiff_t _srcstride,
+                             const OVSample *_src, ptrdiff_t _srcstride,
                              int height, intptr_t mx, intptr_t my, int width);
 
-typedef void (*MCBiDir1Func)(uint16_t *_dst, ptrdiff_t _dststride,
-                             const uint16_t *_src0, ptrdiff_t _srcstride,
+typedef void (*MCBiDir1Func)(OVSample *_dst, ptrdiff_t _dststride,
+                             const OVSample *_src0, ptrdiff_t _srcstride,
                              const int16_t *_src1,
                              int height, intptr_t mx, intptr_t my, int width);
 
@@ -77,21 +77,21 @@ typedef void (*MCBiDirWFunc)(uint8_t* dst, ptrdiff_t dststride, uint8_t* _src,
                              int wx0, int wx1, intptr_t mx,
                              intptr_t my, int width);
 
-typedef void (*LMsubsampleFunc)(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
+typedef void (*LMsubsampleFunc)(const OVSample *lm_src, OVSample *dst_cb, OVSample *dst_cr,
                                 ptrdiff_t lm_src_stride, ptrdiff_t dst_stride_c,
                                 const struct CCLMParams *const lm_params,
                                 int pb_w, int pb_h, uint8_t lft_avail);
 
-typedef void (*CCLMFunc)( const uint16_t* const src_luma, uint16_t* const dst_cb,
-                          uint16_t* const dst_cr, int log2_pb_w, int log2_pb_h, int y0,
+typedef void (*CCLMFunc)( const OVSample* const src_luma, OVSample* const dst_cb,
+                          OVSample* const dst_cr, int log2_pb_w, int log2_pb_h, int y0,
                           int up_available, int left_available, LMsubsampleFunc const compute_subsample);
 
-typedef void (*MDLMFunc)(const uint16_t* const src_luma, uint16_t* const dst_cb,
-                         uint16_t* const dst_cr, uint64_t intra_map_rows,
+typedef void (*MDLMFunc)(const OVSample* const src_luma, OVSample* const dst_cb,
+                         OVSample* const dst_cr, uint64_t intra_map_rows,
                          int log2_pb_w, int log2_pb_h, int x0, int y0,
                          uint8_t left_available, uint8_t up_available, LMsubsampleFunc const compute_subsample);
 
-typedef void (*ResidualAddScaleFunc)(const int16_t *src, uint16_t *dst,
+typedef void (*ResidualAddScaleFunc)(const int16_t *src, OVSample *dst,
                                      int log2_tb_w, int log2_tb_h,
                                      int scale);
 
@@ -99,26 +99,26 @@ typedef void (*TrFunc)(const int16_t *src, int16_t *dst,
                  ptrdiff_t src_stride,
                  int num_lines, int num_columns, int shift);
 
-typedef void (*DCFunc)(const uint16_t* const src_above,
-                 const uint16_t* const src_left, uint16_t* const dst,
+typedef void (*DCFunc)(const OVSample* const src_above,
+                 const OVSample* const src_left, OVSample* const dst,
                  ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h);
 
-typedef void (*PlanarFunc)(const uint16_t* const src_above,
-                     const uint16_t* const src_left, uint16_t* const dst,
+typedef void (*PlanarFunc)(const OVSample* const src_above,
+                     const OVSample* const src_left, OVSample* const dst,
                      ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h);
 
 typedef void (*LFNSTFunc)(const int16_t* const src, int16_t* const dst,
                      const int8_t* const lfnst_matrix, int log2_tb_w,
                      int log2_tb_h);
 
-typedef void (*MIPUpSample)(uint16_t *const dst, const int16_t *const src,
-                            const uint16_t *ref,
+typedef void (*MIPUpSample)(OVSample *const dst, const int16_t *const src,
+                            const OVSample *ref,
                             int log2_upsampled_size_src, int log2_opposite_size,
                             int src_step, int src_stride,
                             int dst_step, int dst_stride,
                             int ref_step, int log2_scale);
 
-typedef void (*MIPMatMult)(const int16_t *src, uint16_t *dst,
+typedef void (*MIPMatMult)(const int16_t *src, OVSample *dst,
                            const uint8_t *matrix, int16_t offset, int rnd,
                            uint8_t log2_src, uint8_t log2_red_w, uint8_t log2_red_h);
 
@@ -151,15 +151,15 @@ typedef void (*SAOEdgeFilterFunc)(uint8_t* _dst, uint8_t* _src,
                                   struct SAOParamsCtu* sao, int width,
                                   int height, int c_idx);
 
-typedef void (*LMCSReshapeFunc)(uint16_t *_dst, ptrdiff_t stride_dst, const struct LMCSLUTs *const luts, int width, int height);
+typedef void (*LMCSReshapeFunc)(OVSample *_dst, ptrdiff_t stride_dst, const struct LMCSLUTs *const luts, int width, int height);
 
 typedef uint64_t (*DMVRSADFunc)(const int16_t *ref0, const int16_t *ref1, int16_t dmvr_stride, int16_t pb_w, int16_t pb_h);
 
 typedef uint8_t (*DMVRComputeSADsFunc)(const int16_t *ref0, const int16_t *ref1, uint64_t *sad_array, int sb_w, int sb_h);
 
-typedef void (*PROFGradFunction)(const uint16_t* src, int src_stride, int sb_w, int sb_h, int grad_stride, int16_t* grad_x, int16_t* grad_y);
+typedef void (*PROFGradFunction)(const OVSample* src, int src_stride, int sb_w, int sb_h, int grad_stride, int16_t* grad_x, int16_t* grad_y);
 
-typedef void (*PROFFunction)(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
+typedef void (*PROFFunction)(OVSample* dst, int dst_stride, const OVSample* src, int src_stride,
                              const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
                              const int32_t* dmv_scale_h, const int32_t* dmv_scale_v, uint8_t bidir);
 
@@ -170,8 +170,8 @@ typedef void (*BDOFSBFunction)(const int16_t* src0, int src0_stride,
                                const int16_t *gradY0, const int16_t *gradY1, int grad_stride,
                                int wgt_x, int wgt_y);
 
-typedef void (*CIIPWeightedFuntion)(uint16_t* dst, int dststride, const uint16_t* src_intra,
-                                    const uint16_t* src_inter, int srcstride, int width, int height, int wt);
+typedef void (*CIIPWeightedFuntion)(OVSample* dst, int dststride, const OVSample* src_intra,
+                                    const OVSample* src_inter, int srcstride, int width, int height, int wt);
 
 typedef void (*DFFilterFunction)(int16_t *src, const int stride, const int tc);
 
@@ -191,7 +191,7 @@ struct MCFunctions{
 
     MCUniDirFunc bilinear[4][8];
 
-    void (*gpm_weighted)(uint16_t* _dst, int _dststride, const int16_t* _src0,
+    void (*gpm_weighted)(OVSample* _dst, int _dststride, const int16_t* _src0,
                          int _srcstride, const int16_t* _src1, int height,
                          intptr_t mx, intptr_t my, int width,
                          int step_x, int step_y, int16_t* weight);
@@ -284,17 +284,17 @@ struct DMVRFunctions{
 struct PROFFunctions{
     PROFGradFunction grad;
     PROFFunction rcn;
-    void (*tmp_prof_mrg)(uint16_t* _dst, ptrdiff_t _dststride,
-                         const uint16_t* _src0, ptrdiff_t _srcstride,
+    void (*tmp_prof_mrg)(OVSample* _dst, ptrdiff_t _dststride,
+                         const OVSample* _src0, ptrdiff_t _srcstride,
                          const int16_t* _src1, int height, intptr_t mx,
                          intptr_t my, int width);
 
-    void (*tmp_prof_mrg_w)(uint16_t* _dst, ptrdiff_t _dststride,
-                           const uint16_t* _src0, ptrdiff_t _srcstride,
+    void (*tmp_prof_mrg_w)(OVSample* _dst, ptrdiff_t _dststride,
+                           const OVSample* _src0, ptrdiff_t _srcstride,
                            const int16_t* _src1, int height, intptr_t mx,
                            intptr_t my, int width, int wt0, int wt1);
 
-    void (*extend_prof_buff)(const uint16_t *const src, uint16_t *dst_prof, int16_t ref_stride,
+    void (*extend_prof_buff)(const OVSample *const src, OVSample *dst_prof, int16_t ref_stride,
                              uint8_t ext_x, uint8_t ext_y);
 
 
@@ -310,7 +310,7 @@ struct BDOFFunctions{
                      const int16_t *grad_x1, const int16_t *grad_y1,
                      int grad_stride, uint8_t pb_w, uint8_t pb_h);
 
-    void (*extend_bdof_buff)(const uint16_t *const src, uint16_t *dst_prof,
+    void (*extend_bdof_buff)(const OVSample *const src, OVSample *dst_prof,
                              int16_t ref_stride, int16_t pb_w, int16_t pb_h,
                              uint8_t ext_x, uint8_t ext_y);
 
@@ -336,36 +336,36 @@ struct DFFunctions{
 #include "rcn_dequant.h"
 struct TMPBDCompat
 {
-    void (*filter_ref_samples)(const uint16_t* const src, uint16_t* const dst,
-                               const uint16_t* src2, int length);
+    void (*filter_ref_samples)(const OVSample* const src, OVSample* const dst,
+                               const OVSample* src2, int length);
 
-    void (*fill_ref_left_0)(const uint16_t* const src, int src_stride,
-                            uint16_t* const ref_left, uint64_t intra_map_cols,
+    void (*fill_ref_left_0)(const OVSample* const src, int src_stride,
+                            OVSample* const ref_left, uint64_t intra_map_cols,
                             uint64_t intra_map_rows, int8_t x0, int8_t y0, int log2_pb_w,
                             int log2_pb_h, int offset_y);
 
-    void (*fill_ref_left_0_chroma)(const uint16_t* const src, int src_stride,
-                                   uint16_t* const ref_left, uint64_t intra_map_cols,
+    void (*fill_ref_left_0_chroma)(const OVSample* const src, int src_stride,
+                                   OVSample* const ref_left, uint64_t intra_map_cols,
                                    uint64_t intra_map_rows, int8_t x0, int8_t y0,
                                    int log2_pb_w, int log2_pb_h);
 
-    void (*fill_ref_left_0_mref)(const uint16_t* const src, int src_stride,
-                                 uint16_t* const ref_left, uint64_t intra_map_cols,
+    void (*fill_ref_left_0_mref)(const OVSample* const src, int src_stride,
+                                 OVSample* const ref_left, uint64_t intra_map_cols,
                                  uint64_t intra_map_rows, int mref_idx, int8_t x0,
                                  int8_t y0, int log2_pb_w, int log2_pb_h);
 
-    void (*fill_ref_above_0)(const uint16_t* const src, int src_stride,
-                             uint16_t* const ref_above, uint64_t intra_map_rows,
+    void (*fill_ref_above_0)(const OVSample* const src, int src_stride,
+                             OVSample* const ref_above, uint64_t intra_map_rows,
                              uint64_t intra_map_cols, int8_t x0, int8_t y0, int log2_pb_w,
                              int log2_pb_h, int offset_x);
 
-    void (*fill_ref_above_0_chroma)(const uint16_t* const src, int src_stride,
-                                    uint16_t* const ref_above, uint64_t intra_map_rows,
+    void (*fill_ref_above_0_chroma)(const OVSample* const src, int src_stride,
+                                    OVSample* const ref_above, uint64_t intra_map_rows,
                                     uint64_t intra_map_cols, int8_t x0, int8_t y0,
                                     int log2_pb_w, int log2_pb_h);
 
-    void (*fill_ref_above_0_mref)(const uint16_t* const src, int src_stride,
-                                  uint16_t* const ref_above, uint64_t intra_map_rows,
+    void (*fill_ref_above_0_mref)(const OVSample* const src, int src_stride,
+                                  OVSample* const ref_above, uint64_t intra_map_rows,
                                   uint64_t intra_map_cols, int mref_idx, int8_t x0,
                                   int8_t y0, int log2_pb_w, int log2_pb_h);
 
@@ -443,7 +443,7 @@ struct RCNFunctions
 
     void (*rcn_lmcs_compute_chroma_scale)(struct LMCSInfo *const lmcs_info,
                                           const struct CTUBitField *const progress_field,
-                                          const uint16_t *ctu_data_y, uint8_t x0, uint8_t y0);
+                                          const OVSample *ctu_data_y, uint8_t x0, uint8_t y0);
 
     void (*rcn_init_lmcs)(struct LMCSInfo *lmcs_info, const struct OVLMCSData *const lmcs_data);
 
