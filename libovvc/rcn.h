@@ -109,8 +109,35 @@ void rcn_init_df_functions_10(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_lmcs_function_10(struct RCNFunctions *rcn_func, uint8_t lmcs_flag);
 
-
 void rcn_init_alf_functions_10(struct RCNFunctions *rcn_func);
+
+
+
+void rcn_init_cclm_functions_collocated_8(struct RCNFunctions *rcn_func);
+
+void rcn_init_dc_planar_functions_8(struct RCNFunctions *const rcn_funcs);
+
+void rcn_init_cclm_functions_8(struct RCNFunctions *rcn_func);
+
+void rcn_init_lfnst_functions(struct RCNFunctions *rcn_func);
+
+void rcn_init_mip_functions_8(struct RCNFunctions *const rcn_funcs);
+
+void rcn_init_sao_functions_8(struct RCNFunctions *const rcn_funcs);
+
+void rcn_init_dmvr_functions(struct RCNFunctions *const rcn_funcs);
+
+void rcn_init_prof_functions_8(struct RCNFunctions *const rcn_funcs);
+
+void rcn_init_bdof_functions_8(struct RCNFunctions *const rcn_funcs);
+
+void rcn_init_ciip_functions_8(struct RCNFunctions *const rcn_funcs);
+
+void rcn_init_df_functions_8(struct RCNFunctions *const rcn_funcs);
+
+void rcn_init_lmcs_function_8(struct RCNFunctions *rcn_func, uint8_t lmcs_flag);
+
+void rcn_init_alf_functions_8(struct RCNFunctions *rcn_func);
 
 uint8_t rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                            uint8_t x0, uint8_t y0,
