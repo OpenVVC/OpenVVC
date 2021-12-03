@@ -95,19 +95,22 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_start_pic, int y_st
 
     for (int c_idx = 0; c_idx < (ctudec->sao_info.chroma_format_idc ? 3 : 1); c_idx++) {
         int shift_chr = c_idx == 0 ? 0 : 1;
+
         int x0       = x_start_pic >> shift_chr;
         int y0       = y_start_pic >> shift_chr;
+
         int f_width  = (ctudec->pic_w) >> shift_chr;
         int f_height = (ctudec->pic_h) >> shift_chr;
 
         int ctb_size_h = (1 << log2_ctb_s) >> shift_chr;
         int ctb_size_v = (y_end_pic - y_start_pic) >> shift_chr;
+
         int width    = OVMIN(ctb_size_h, f_width - x0);
         int height   = OVMIN(ctb_size_v, f_height - y0);
 
-        ptrdiff_t stride_out_pic = frame->linesize[c_idx]/2;
+        ptrdiff_t stride_out_pic = frame->linesize[c_idx] / sizeof(OVSample);
         OVSample *out_pic = frame->data[c_idx];
-        out_pic = &out_pic[ y0 * stride_out_pic + (x0)];
+        out_pic = &out_pic[ y0 * stride_out_pic + x0];
 
         OVSample *filtered =  (OVSample *) fb->filter_region[c_idx];
         int stride_filtered = fb->filter_region_stride[c_idx];
@@ -140,8 +143,8 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_start_pic, int y_st
                     height  = height-1;
                 }
 
-                int src_offset = y_start*stride_out_pic + x_start*sizeof(OVSample);
-                int dst_offset = y_start*stride_filtered + x_start*sizeof(OVSample);
+                int src_offset = y_start*stride_out_pic + x_start;
+                int dst_offset = y_start*stride_filtered + x_start;
 
                 saofunc->edge[!(width % 8)](out_pic + src_offset, filtered + dst_offset, stride_out_pic, stride_filtered, sao, width, height, c_idx);
 
@@ -240,12 +243,11 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
             OVSample* filter_region = fb->filter_region[comp];
             int stride_filter = fb->filter_region_stride[comp];
 
-            int ratio_luma_chroma = 2;
-            int ratio = comp==0 ? 1 : ratio_luma_chroma;        
+            int ratio = comp == 0 ? 1 : 2;        
             const int width = width_l/ratio;
             const int x = x_pos/ratio;
             int stride_rows = fb->saved_rows_stride[comp];
-            int offset_y = comp==0 ? 2 * fb->margin : fb->margin;
+            int offset_y = comp == 0 ? 2 * fb->margin : fb->margin;
    
             for (int ii=0; ii < fb->margin; ii++) {
                 memcpy(&saved_rows[ii*stride_rows + x], &filter_region[(offset_y+ii)*stride_filter + fb->margin], width * sizeof(OVSample));
