@@ -54,25 +54,15 @@ libovvc_la_SOURCES = 	ctudec.c                     \
 						drv_intra.c                  \
 						drv_mvp.c                    \
 						rcn.c                        \
-						rcn_ctu.c                    \
-						rcn_inter.c                  \
-						rcn_fill_ref.c               \
-						rcn_intra_dc_planar.c        \
-						rcn_intra_mip.c              \
-						rcn_transform.c              \
-						rcn_transform_tree.c         \
+						rcn_lfnst.c                  \
+						rcn_gpm.c                    \
+						rcn_10bit.c                  \
+						rcn_8bit.c                   \
 						rcn_transform_scale_8.c      \
 						rcn_transform_scale_10.c     \
-						rcn_residuals.c              \
+						compat_old.c                 \
 						rcn_intra_angular_8.c        \
 						rcn_intra_angular_10.c       \
-						rcn_intra_cclm.c             \
-						rcn_lfnst.c                  \
-						rcn_mc.c                     \
-						rcn_df.c                     \
-						rcn_sao.c                    \
-						rcn_alf.c                    \
-						rcn_lmcs.c                   \
 						slicedec.c                   \
 						vcl_alf.c                    \
 						vcl_sao.c                    \
