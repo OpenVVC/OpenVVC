@@ -215,7 +215,7 @@ derive_ref_buf_c(const OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
     OVSample *const ref_cb  = (OVSample *) ref_pic->frame->data[1];
     OVSample *const ref_cr  = (OVSample *) ref_pic->frame->data[2];
 
-    int src_stride = ref_pic->frame->linesize[1] >> 1;
+    int src_stride = ref_pic->frame->linesize[1]/sizeof(OVSample);
     const int pic_w = ref_pic->frame->width[1];
     const int pic_h = ref_pic->frame->height[1];
 
@@ -323,7 +323,7 @@ derive_ref_buf_y(OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
     struct OVBuffInfo ref_buff;
     OVSample *const ref_y  = (OVSample *) ref_pic->frame->data[0];
 
-    int src_stride = ref_pic->frame->linesize[0] >> 1;
+    int src_stride = ref_pic->frame->linesize[0]/sizeof(OVSample);
 
     int ref_pos_x = pos_x + (mv.x >> 4);
     int ref_pos_y = pos_y + (mv.y >> 4);
@@ -377,7 +377,7 @@ derive_dmvr_ref_buf_y(const OVPicture *const ref_pic, OVMV mv, int pos_x, int po
     const int pic_w = ref_pic->frame->width[0];
     const int pic_h = ref_pic->frame->height[0];
 
-    int src_stride = ref_pic->frame->linesize[0] >> 1;
+    int src_stride = ref_pic->frame->linesize[0]/sizeof(OVSample);
 
     OVMV mv_clipped = clip_mv(pos_x, pos_y, pic_w, pic_h, pu_w, pu_h, mv);
 
@@ -420,7 +420,7 @@ derive_dmvr_ref_buf_c(const OVPicture *const ref_pic, OVMV mv, int pos_x, int po
     const int pic_w = ref_pic->frame->width[1];
     const int pic_h = ref_pic->frame->height[1];
 
-    int src_stride = ref_pic->frame->linesize[1] >> 1;
+    int src_stride = ref_pic->frame->linesize[1]/sizeof(OVSample);
 
     OVMV mv_clipped = clip_mv(pos_x << 1, pos_y << 1, pic_w << 1, pic_h << 1, pu_w << 1, pu_h << 1, mv);
 
@@ -1442,7 +1442,7 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
     const OVSample *const ref0_y  = (OVSample *) frame0->data[0];
 
-    int src_stride   = frame0->linesize[0] >> 1;
+    int src_stride   = frame0->linesize[0]/sizeof(OVSample);
 
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
@@ -1525,7 +1525,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
 
     const OVSample *const ref0_y  = (OVSample *) frame0->data[0];
 
-    int src_stride   = frame0->linesize[0] >> 1;
+    int src_stride   = frame0->linesize[0]/sizeof(OVSample);
 
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
@@ -1620,7 +1620,7 @@ rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
     const OVSample *const ref0_cb = (OVSample *) frame0->data[1];
     const OVSample *const ref0_cr = (OVSample *) frame0->data[2];
 
-    int src_stride_c = frame0->linesize[1] >> 1;
+    int src_stride_c = frame0->linesize[1]/sizeof(OVSample);
 
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
@@ -1665,10 +1665,10 @@ rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
                                                 pu_h >> 1, prec_x_c, prec_y_c, pu_w >> 1);
 
     if (emulate_edge){
-        int src_off  = REF_PADDING_C * (frame0->linesize[1] >> 1) + (REF_PADDING_C);
+        int src_off  = REF_PADDING_C * (frame0->linesize[1]/sizeof(OVSample)) + (REF_PADDING_C);
         int buff_off = REF_PADDING_C * (RCN_CTB_STRIDE) + (REF_PADDING_C);
         emulate_block_border(tmp_buff, (src_cr - src_off),
-                             RCN_CTB_STRIDE, frame0->linesize[1] >> 1,
+                             RCN_CTB_STRIDE, frame0->linesize[1]/sizeof(OVSample),
                              (pu_w >> 1) + EPEL_EXTRA, (pu_h >> 1) + EPEL_EXTRA,
                              (pos_x >> 1) + (mv.x >> 5) - REF_PADDING_C, (pos_y >> 1) + (mv.y >> 5) - REF_PADDING_C,
                              (pic_w >> 1), (pic_h >> 1));
