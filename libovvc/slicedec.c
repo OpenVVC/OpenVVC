@@ -1010,19 +1010,19 @@ slicedec_attach_frame_buff(OVCTUDec *const ctudec, OVSliceDec *sldec,
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
 
-    uint32_t entry_start_offset   = ((uint32_t)einfo->ctb_x << (log2_ctb_s + 1));
-    uint32_t entry_start_offset_c = ((uint32_t)einfo->ctb_x << (log2_ctb_s));
+    uint32_t entry_start_offset   = ((uint32_t)einfo->ctb_x << (log2_ctb_s));
+    uint32_t entry_start_offset_c = ((uint32_t)einfo->ctb_x << (log2_ctb_s - 1));
 
-    entry_start_offset   += ((uint32_t)einfo->ctb_y << log2_ctb_s)       * (f->linesize[0]);
-    entry_start_offset_c += ((uint32_t)einfo->ctb_y << (log2_ctb_s - 1)) * (f->linesize[1]);
+    entry_start_offset   += ((uint32_t)einfo->ctb_y << log2_ctb_s)       * (f->linesize[0]/sizeof(OVSample));
+    entry_start_offset_c += ((uint32_t)einfo->ctb_y << (log2_ctb_s - 1)) * (f->linesize[1]/sizeof(OVSample));
 
     /*FIXME clean offset */
-    fbuff->y  = (OVSample *)&f->data[0][entry_start_offset];
-    fbuff->cb = (OVSample *)&f->data[1][entry_start_offset_c];
-    fbuff->cr = (OVSample *)&f->data[2][entry_start_offset_c];
+    fbuff->y  = (OVSample *)f->data[0] + entry_start_offset;
+    fbuff->cb = (OVSample *)f->data[1] + entry_start_offset_c;
+    fbuff->cr = (OVSample *)f->data[2] + entry_start_offset_c;
 
-    fbuff->stride   = f->linesize[0] >> 1;
-    fbuff->stride_c = f->linesize[1] >> 1;
+    fbuff->stride   = f->linesize[0]/sizeof(OVSample);
+    fbuff->stride_c = f->linesize[1]/sizeof(OVSample);
 }
 
 static void
