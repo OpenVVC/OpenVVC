@@ -35,6 +35,13 @@ struct ChromaFmtInfo
    uint8_t shift_v[3];
 };
 
+static const struct ChromaFmtInfo yuv420_8 = {
+  .nb_comp = 3,
+  .bd_shift = 0,
+  .shift_h = {0, 1, 1},
+  .shift_v = {0, 1, 1},
+};
+
 static const struct ChromaFmtInfo yuv420_10 = {
   .nb_comp = 3,
   .bd_shift = 1,
@@ -42,9 +49,13 @@ static const struct ChromaFmtInfo yuv420_10 = {
   .shift_v = {0, 1, 1},
 };
 
-static const struct ChromaFmtInfo *const select_frame_format(enum ChromaFmt fmt)
+static const struct ChromaFmtInfo *const select_frame_format(enum ChromaFmt fmt, uint8_t bitdepth_min8)
 {
-    return &yuv420_10;
+    if (bitdepth_min8) {
+        return &yuv420_10;
+    } else {
+        return &yuv420_8;
+    }
 }
 
 static void set_plane_properties(struct PlaneProp *const pln, const struct ChromaFmtInfo *const fmt_info,
@@ -76,9 +87,9 @@ ovframepool_uninit(struct FramePool **fpool_p)
 }
 
 int
-ovframepool_init(struct FramePool **fpool_p, uint8_t fmt, uint16_t pic_w, uint16_t pic_h)
+ovframepool_init(struct FramePool **fpool_p, uint8_t fmt, uint8_t bitdepth_min8, uint16_t pic_w, uint16_t pic_h)
 {
-    const struct ChromaFmtInfo *const fmt_info = select_frame_format(fmt);
+    const struct ChromaFmtInfo *const fmt_info = select_frame_format(fmt, bitdepth_min8);
 
     /* FIXME allocation size overflow */
     size_t pic_size = (pic_w * pic_h) << fmt_info->bd_shift;

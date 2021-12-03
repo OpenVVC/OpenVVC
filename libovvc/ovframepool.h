@@ -6,7 +6,7 @@ struct FramePool;
 
 void ovframepool_uninit(struct FramePool **fpool_p);
 
-int ovframepool_init(struct FramePool **fpool_p, uint8_t fmt, uint16_t pic_w, uint16_t pic_h);
+int ovframepool_init(struct FramePool **fpool_p, uint8_t fmt, uint8_t bitdepth, uint16_t pic_w, uint16_t pic_h);
 
 OVFrame *ovframepool_request_frame(struct FramePool *fpool);
 
