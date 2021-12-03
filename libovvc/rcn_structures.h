@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "rcn_intra_angular.h"
+#include "bitdepth.h"
 
 struct ALFClassifier;
 struct Area;
@@ -17,6 +18,7 @@ struct OVLMCSData;
 struct LMCSInfo;
 struct ISPTUInfo;
 struct TUInfo;
+
 
 enum RCNSizes
 {
