@@ -28,11 +28,11 @@ static const uint8_t vvc_pdpc_w[3][128] = {
 };
 
 static void
-intra_dc(const uint16_t* const ref_abv, const uint16_t* const ref_lft,
-         uint16_t* const dst, ptrdiff_t dst_stride,
+intra_dc(const OVSample* const ref_abv, const OVSample* const ref_lft,
+         OVSample* const dst, ptrdiff_t dst_stride,
          int log2_pb_w, int log2_pb_h)
 {
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     int dc_val = 0;
     int i, j;
 
@@ -63,12 +63,12 @@ intra_dc(const uint16_t* const ref_abv, const uint16_t* const ref_lft,
 }
 
 static void
-intra_planar(const uint16_t* const ref_abv,
-             const uint16_t* const ref_lft, uint16_t* const dst,
+intra_planar(const OVSample* const ref_abv,
+             const OVSample* const ref_lft, OVSample* const dst,
              ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h)
 {
 
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     const uint32_t pb_w = 1 << log2_pb_w;
     const uint32_t pb_h = 1 << log2_pb_h;
     const uint32_t shift = 1 + log2_pb_w + log2_pb_h;
@@ -108,11 +108,11 @@ intra_planar(const uint16_t* const ref_abv,
 }
 
 static void
-intra_dc_pdpc(const uint16_t* const ref_abv,
-              const uint16_t* const ref_lft, uint16_t* const dst,
+intra_dc_pdpc(const OVSample* const ref_abv,
+              const OVSample* const ref_lft, OVSample* const dst,
               ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h)
 {
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     int i;
 
     const int shift = OVMAX(log2_pb_w, log2_pb_h) + (log2_pb_w == log2_pb_h);
@@ -153,12 +153,12 @@ intra_dc_pdpc(const uint16_t* const ref_abv,
 }
 
 static void
-intra_planar_pdpc(const uint16_t* const ref_abv,
-                  const uint16_t* const ref_lft, uint16_t* const dst,
+intra_planar_pdpc(const OVSample* const ref_abv,
+                  const OVSample* const ref_lft, OVSample* const dst,
                   ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h)
 {
 
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     const uint32_t pb_w = 1 << log2_pb_w;
     const uint32_t pb_h = 1 << log2_pb_h;
     const uint32_t w_scale = OVMAX(1, log2_pb_w);
