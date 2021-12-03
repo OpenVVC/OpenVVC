@@ -17,8 +17,8 @@ sao_band_filter(uint8_t *_dst, uint8_t *_src,
                 int width, int height,
                 int c_idx)
 {
-    int16_t *dst = (int16_t *)_dst;
-    int16_t *src = (int16_t *)_src;
+    OVSample *dst = (OVSample *)_dst;
+    OVSample *src = (OVSample *)_src;
     int offset_table[32] = { 0 };
     int k, y, x;
     int shift  = BITDEPTH - 5;
@@ -26,8 +26,8 @@ sao_band_filter(uint8_t *_dst, uint8_t *_src,
     int16_t *sao_offset_val = sao->offset_val[c_idx];
     uint8_t sao_left_class  = sao->band_position[c_idx];
 
-    stride_src /= sizeof(int16_t);
-    stride_dst /= sizeof(int16_t);
+    //stride_src /= sizeof(OVSample);
+    //stride_dst /= sizeof(OVSample);
 
     for (k = 0; k < 4; k++) {
         offset_table[(k + sao_left_class) & 31] = sao_offset_val[k];
@@ -59,11 +59,11 @@ sao_edge_filter(uint8_t *_dst, uint8_t *_src,
 
     int16_t *sao_offset_val = sao->offset_val[c_idx];
     uint8_t eo = sao->eo_class[c_idx];
-    int16_t *dst = (int16_t *)_dst;
-    int16_t *src = (int16_t *)_src;
+    OVSample *dst = (OVSample *)_dst;
+    OVSample *src = (OVSample *)_src;
 
-    stride_src /= sizeof(int16_t);
-    stride_dst /= sizeof(int16_t);
+    //stride_src /= sizeof(OVSample);
+    //stride_dst /= sizeof(OVSample);
     int a_stride, b_stride;
     int src_offset = 0;
     int dst_offset = 0;
@@ -105,14 +105,13 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_start_pic, int y_st
         int width    = OVMIN(ctb_size_h, f_width - x0);
         int height   = OVMIN(ctb_size_v, f_height - y0);
 
-        int int16_t_shift = 1;
-        ptrdiff_t stride_out_pic = frame->linesize[c_idx];
-        uint8_t *out_pic = frame->data[c_idx];
-        out_pic = &out_pic[ y0 * stride_out_pic + (x0<<int16_t_shift)];
+        ptrdiff_t stride_out_pic = frame->linesize[c_idx]/2;
+        OVSample *out_pic = frame->data[c_idx];
+        out_pic = &out_pic[ y0 * stride_out_pic + (x0)];
 
-        uint8_t *filtered = (uint8_t *) fb->filter_region[c_idx];
-        int stride_filtered = fb->filter_region_stride[c_idx]<<int16_t_shift;
-        filtered = &filtered[(fb->filter_region_offset[c_idx]<<int16_t_shift) + stride_filtered*(fb_offset>> shift_chr)];  
+        OVSample *filtered =  (OVSample *) fb->filter_region[c_idx];
+        int stride_filtered = fb->filter_region_stride[c_idx];
+        filtered = &filtered[(fb->filter_region_offset[c_idx]) + stride_filtered*(fb_offset>> shift_chr)];  
 
         switch (sao->type_idx[c_idx]) {
             case SAO_BAND:
@@ -141,8 +140,8 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_start_pic, int y_st
                     height  = height-1;
                 }
 
-                int src_offset = y_start*stride_out_pic + x_start*sizeof(uint16_t);
-                int dst_offset = y_start*stride_filtered + x_start*sizeof(uint16_t);
+                int src_offset = y_start*stride_out_pic + x_start*sizeof(OVSample);
+                int dst_offset = y_start*stride_filtered + x_start*sizeof(OVSample);
 
                 saofunc->edge[!(width % 8)](out_pic + src_offset, filtered + dst_offset, stride_out_pic, stride_filtered, sao, width, height, c_idx);
 
@@ -237,8 +236,8 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
 
         const int width_l = fb->filter_region_w[0];
         for (int comp = 0; comp < 3; comp++) {
-            int16_t* saved_rows = fb->saved_rows_sao[comp];
-            int16_t* filter_region = fb->filter_region[comp];
+            OVSample* saved_rows = fb->saved_rows_sao[comp];
+            OVSample* filter_region = fb->filter_region[comp];
             int stride_filter = fb->filter_region_stride[comp];
 
             int ratio_luma_chroma = 2;
@@ -249,7 +248,7 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
             int offset_y = comp==0 ? 2 * fb->margin : fb->margin;
    
             for (int ii=0; ii < fb->margin; ii++) {
-                memcpy(&saved_rows[ii*stride_rows + x], &filter_region[(offset_y+ii)*stride_filter + fb->margin], width * sizeof(int16_t));
+                memcpy(&saved_rows[ii*stride_rows + x], &filter_region[(offset_y+ii)*stride_filter + fb->margin], width * sizeof(OVSample));
             }
         }
 
