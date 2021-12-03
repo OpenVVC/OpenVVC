@@ -744,8 +744,7 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
     ret = ctudec->coding_tree_implicit(ctudec, ctudec->part_ctx, 0, 0, log2_ctb_s,
                                        0, ctu_w, ctu_h);
 
-    rcn_write_ctu_to_frame_border(&ctudec->rcn_ctx,
-                                  ctu_w, ctu_h);
+    rcn_write_ctu_to_frame_border(&ctudec->rcn_ctx, ctu_w, ctu_h);
     rcn_ctu_to_intra_line(ctudec, ctb_addr_rs % nb_ctu_w << log2_ctb_s);
 
     const struct OVBuffInfo *const fbuff = &ctudec->rcn_ctx.frame_buff;
