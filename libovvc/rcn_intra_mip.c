@@ -125,12 +125,12 @@ vvc_intra_pred_mip(const struct OVRCNCtx *const rcn_ctx,
     uint8_t red_size = log2_pu_h == 2 || log2_pu_w == 2 || (log2_pu_h <= 3 && log2_pu_w <= 3);
     int16_t input_offset;
 
-    fill_ref_left_0(src, dst_stride, ref_lft,
+    rcn_ctx->ctudec->rcn_funcs.tmp.fill_ref_left_0(src, dst_stride, ref_lft,
                     rcn_ctx->progress_field.vfield[x0 >> 2],
                     rcn_ctx->progress_field.hfield[y0 >> 2],
                     x0, y0, log2_pu_w, log2_pu_h, 0);
 
-    fill_ref_above_0(src, dst_stride, ref_abv,
+    rcn_ctx->ctudec->rcn_funcs.tmp.fill_ref_above_0(src, dst_stride, ref_abv,
                      rcn_ctx->progress_field.hfield[y0 >> 2],
                      rcn_ctx->progress_field.vfield[x0 >> 2],
                      x0, y0, log2_pu_w, log2_pu_h, 0);
@@ -248,12 +248,12 @@ vvc_intra_pred_mip_tr(const struct OVRCNCtx *const rcn_ctx,
 
     int dst_stride = RCN_CTB_STRIDE;
 
-    fill_ref_left_0(src, dst_stride, ref_lft,
+    rcn_ctx->ctudec->rcn_funcs.tmp.fill_ref_left_0(src, dst_stride, ref_lft,
                     rcn_ctx->progress_field.vfield[x0 >> 2],
                     rcn_ctx->progress_field.hfield[y0 >> 2],
                     x0, y0, log2_pu_w, log2_pu_h, 0);
 
-    fill_ref_above_0(src, dst_stride, ref_abv,
+    rcn_ctx->ctudec->rcn_funcs.tmp.fill_ref_above_0(src, dst_stride, ref_abv,
                      rcn_ctx->progress_field.hfield[y0 >> 2],
                      rcn_ctx->progress_field.vfield[x0 >> 2],
                      x0, y0, log2_pu_w, log2_pu_h, 0);

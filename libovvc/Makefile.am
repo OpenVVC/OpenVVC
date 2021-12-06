@@ -15,6 +15,39 @@ SUBDIRS = arm/
 libovvc_la_LIBADD += ./arm/libarmoptim.la
 endif
 
+dsp_template_SOURCES = \
+							rcn_alf.c                \
+							rcn_ctu.c                \
+							rcn_df.c                 \
+							rcn_intra.c              \
+							rcn_inter.c              \
+							rcn_intra_cclm.c         \
+							rcn_prof_bdof.c          \
+							rcn_transform.c          \
+							rcn_transform_scale.c    \
+							rcn_transform_tree.c     \
+							rcn_fill_ref.c           \
+							rcn_intra_angular.c      \
+							rcn_intra_dc_planar.c    \
+							rcn_lmcs.c               \
+							rcn_residuals.c          \
+							rcn_dequant.c            \
+							rcn_intra_mip.c          \
+							rcn_mc.c                 \
+							rcn_sao.c
+
+noinst_LTLIBRARIES = libovvc8bit.la
+libovvc_la_LIBADD += libovvc8bit.la
+libovvc8bit_la_CPPFLAGS = -DBITDEPTH=8
+libovvc8bit_la_SOURCES = $(dsp_template_SOURCES)
+
+
+noinst_LTLIBRARIES += libovvc10bit.la
+libovvc_la_LIBADD += libovvc10bit.la
+libovvc10bit_la_CPPFLAGS = -DBITDEPTH=10
+libovvc10bit_la_SOURCES = $(dsp_template_SOURCES)
+
+
 libovvc_la_SOURCES = 	ctudec.c                     \
 						data_rcn_angular.c           \
 						data_rcn_mip.c               \
@@ -56,13 +89,7 @@ libovvc_la_SOURCES = 	ctudec.c                     \
 						rcn.c                        \
 						rcn_lfnst.c                  \
 						rcn_gpm.c                    \
-						rcn_10bit.c                  \
-						rcn_8bit.c                   \
-						rcn_transform_scale_8.c      \
-						rcn_transform_scale_10.c     \
 						compat_old.c                 \
-						rcn_intra_angular_8.c        \
-						rcn_intra_angular_10.c       \
 						slicedec.c                   \
 						vcl_alf.c                    \
 						vcl_sao.c                    \

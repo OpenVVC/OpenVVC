@@ -182,7 +182,7 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 
         int y_start_pic = y_pos_pic + margin;
 
-        rcn_extend_filter_region(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pos, x_pos_pic, y_start_pic, is_border);
+        ctudec->rcn_funcs.rcn_extend_filter_region(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pos, x_pos_pic, y_start_pic, is_border);
 
         int fb_offset = 0;
         int ctb_addr_rs = ctb_y * einfo->nb_ctu_w + ctb_x;
@@ -197,8 +197,8 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
             rcn_sao_ctu(ctudec, sao, x_pos_pic, y_pos_pic, y_pos_pic + margin, fb_offset, is_border);
         }
 
-        rcn_save_last_rows(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pos, x_pos_pic, y_start_pic, is_border);
-        rcn_save_last_cols(&ctudec->rcn_ctx, x_pos_pic, y_start_pic, is_border);
+        ctudec->rcn_funcs.rcn_save_last_rows(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pos, x_pos_pic, y_start_pic, is_border);
+        ctudec->rcn_funcs.rcn_save_last_cols(&ctudec->rcn_ctx, x_pos_pic, y_start_pic, is_border);
     }
 }
 
@@ -230,7 +230,7 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
 
         //Apply SAO of previous ctu line
         int y_start_pic = ctu_width * ctb_y_pic;
-        rcn_extend_filter_region(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pos, x_pos_pic, y_start_pic, is_border);
+        ctudec->rcn_funcs.rcn_extend_filter_region(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pos, x_pos_pic, y_start_pic, is_border);
 
         int fb_offset = 0;
         int ctb_addr_rs    = ctb_y * einfo->nb_ctu_w + ctb_x;
@@ -254,7 +254,7 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
             }
         }
 
-        rcn_save_last_cols(&ctudec->rcn_ctx, x_pos_pic, y_start_pic, is_border);
+        ctudec->rcn_funcs.rcn_save_last_cols(&ctudec->rcn_ctx, x_pos_pic, y_start_pic, is_border);
     }
 }
 

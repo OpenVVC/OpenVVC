@@ -3,6 +3,7 @@
 
 #include "ovutils.h"
 #include "rcn_fill_ref.h"
+#include "ctudec.h"
 
 #include "bitdepth.h"
 
