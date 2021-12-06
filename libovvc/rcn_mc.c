@@ -499,6 +499,27 @@ put_vvc_qpel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     }
 }
 
+static void
+put_vvc_pel_rpr(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                   ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                   int width, uint8_t filter_idx)
+{
+    int x, y;
+    const uint16_t* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    int16_t* dst = (int16_t*)_dst;
+    ptrdiff_t dststride = _dststride;
+    const int8_t* filter = ov_mc_filters_rpr[filter_idx][mx];
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            dst[x] = src[x] << (14 - BITDEPTH);
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
 
 static void
 put_vvc_qpel_rpr_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
@@ -510,13 +531,10 @@ put_vvc_qpel_rpr_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     ptrdiff_t srcstride = _srcstride;
     int16_t* dst = (int16_t*)_dst;
     ptrdiff_t dststride = _dststride;
-    // const int8_t* filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
     const int8_t* filter = ov_mc_filters_rpr[filter_idx][mx];
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            // int a = MCP_FILTER_L(src, 1, filter);
-            // printf("\n%i", a);
             dst[x] = MCP_FILTER_L(src, 1, filter) >> (BITDEPTH - 8);
         }
         src += srcstride;
@@ -525,7 +543,7 @@ put_vvc_qpel_rpr_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 }
 
 static void
-put_vvc_qpel_rpr_uni_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_qpel_rpr_clip_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
@@ -541,8 +559,6 @@ put_vvc_qpel_rpr_uni_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _sr
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            // int a = MCP_FILTER_L(src, srcstride, filter);
-            // printf("\n%i", a);
             dst[x] = ov_bdclip(((MCP_FILTER_L(src, srcstride, filter) >> 6) +
                                 offset) >> shift);
         }
@@ -550,6 +566,7 @@ put_vvc_qpel_rpr_uni_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _sr
         dst += dststride;
     }
 }
+
 
 static void
 put_vvc_qpel_rpr_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
@@ -566,14 +583,58 @@ put_vvc_qpel_rpr_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            // int a = MCP_FILTER_L(src, srcstride, filter);
-            // printf("\n%i", a);
-            dst[x] = MCP_FILTER_L(src, srcstride, filter) >> 6;
+             dst[x] = MCP_FILTER_L(src, srcstride, filter) >> 6;
         }
         src += srcstride;
         dst += dststride;
     }
 }
+
+
+static void
+put_vvc_pel_rpr_clip(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                   ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                   int width, uint8_t filter_idx)
+{
+    int x, y;
+    const uint16_t* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    int16_t* dst = (int16_t*)_dst;
+    ptrdiff_t dststride = _dststride;
+    int shift = 14 - BITDEPTH;
+    int offset = 1 << (shift - 1);
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            dst[x] = ov_bdclip((src[x] + offset) >> shift);
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
+
+static void
+put_vvc_pel_rpr_bi(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                   ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                   int width, uint8_t filter_idx)
+{
+    int x, y;
+    const uint16_t* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    int16_t* dst = (int16_t*)_dst;
+    ptrdiff_t dststride = _dststride;
+    const int8_t* filter = ov_mc_filters_rpr[filter_idx][mx];
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            dst[x] = src[x] ;
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
 
 //TODOrpr: change name and pointer
 void
@@ -1604,13 +1665,15 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_l->bilinear[3][i] = &put_vvc_qpel_bilinear_hv;
 
         //TODOrpr: rpr_uni[0][i] create function when no filter applied.
-        mc_l->rpr_uni[0][i] = &put_vvc_qpel_rpr_h;
+        mc_l->rpr_uni[0][i] = &put_vvc_pel_rpr;
         mc_l->rpr_uni[1][i] = &put_vvc_qpel_rpr_h;
-        mc_l->rpr_uni[2][i] = &put_vvc_qpel_rpr_uni_v;
+        mc_l->rpr_uni[2][i] = &put_vvc_pel_rpr_clip;
+        mc_l->rpr_uni[3][i] = &put_vvc_qpel_rpr_clip_v;
 
-        mc_l->rpr_bi[0][i] = &put_vvc_qpel_rpr_h;
+        mc_l->rpr_bi[0][i] = &put_vvc_pel_rpr;
         mc_l->rpr_bi[1][i] = &put_vvc_qpel_rpr_h;
-        mc_l->rpr_bi[2][i] = &put_vvc_qpel_rpr_bi_v;
+        mc_l->rpr_bi[2][i] = &put_vvc_pel_rpr_bi;
+        mc_l->rpr_bi[3][i] = &put_vvc_qpel_rpr_bi_v;
 
         /* Chroma functions */
         mc_c->unidir[0][i] = &put_vvc_pel_uni_pixels;
@@ -1634,13 +1697,15 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_c->bidir_w[3][i] = &put_weighted_epel_bi_hv;
 
         //TODOrpr: rpr_uni[0][i] create function when no filter applied.
-        mc_c->rpr_uni[0][i] = &put_vvc_epel_rpr_h;
+        mc_c->rpr_uni[0][i] = &put_vvc_pel_rpr;
         mc_c->rpr_uni[1][i] = &put_vvc_epel_rpr_h;
-        mc_c->rpr_uni[2][i] = &put_vvc_epel_rpr_uni_v;
+        mc_c->rpr_uni[2][i] = &put_vvc_pel_rpr_clip;
+        mc_c->rpr_uni[3][i] = &put_vvc_epel_rpr_uni_v;
 
-        mc_c->rpr_bi[0][i] = &put_vvc_epel_rpr_h;
+        mc_c->rpr_bi[0][i] = &put_vvc_pel_rpr;
         mc_c->rpr_bi[1][i] = &put_vvc_epel_rpr_h;
-        mc_c->rpr_bi[2][i] = &put_vvc_epel_rpr_bi_v;
+        mc_c->rpr_bi[2][i] = &put_vvc_pel_rpr_bi;
+        mc_c->rpr_bi[3][i] = &put_vvc_epel_rpr_bi_v;
     }
 }
 

@@ -198,8 +198,8 @@ struct MCFunctions{
     MCBiDirWFunc bidir_w[4][8];
 
     MCUniDirFunc bilinear[4][8];
-    MCRPRFunc    rpr_uni[3][8];
-    MCRPRFunc    rpr_bi[3][8];
+    MCRPRFunc    rpr_uni[4][8];
+    MCRPRFunc    rpr_bi[4][8];
 };
 
 struct CCLMFunctions

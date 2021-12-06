@@ -2395,7 +2395,7 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         prec_y    = 0;
            // printf("\nHor %i %i", col, prec_x);        
         // TODOrpr: prec_type = 0 when filter_idx=0 and prec_x=0
-        prec_type = 1;
+        prec_type = 0 + (filter_idx_h || prec_x );
         p_src     = src + (pos_mv_x >> shift_mv) - ref_x;
 
         if (bidir){
@@ -2416,7 +2416,7 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         prec_y    = pos_mv_y & 0xF;
            // printf("\nVer %i %i",row, prec_y);  
         // TODOrpr: prec_type = 0 when filter_idx=0 and prec_y=0
-        prec_type = 2;
+        prec_type = 2 + (filter_idx_v || prec_y );
         p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * tmp_rpr_str;
 
         if (bidir){
@@ -2546,7 +2546,7 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
             pos_mv_x  = ( ref_pos_x + ((col * stepX) << shift_mv) + offset ) >> RPR_SCALE_BITS;
             prec_x    = pos_mv_x & 0x1F;
             prec_y    = 0;
-            prec_type = 1;
+            prec_type = 0 + (filter_idx_h || prec_x );
             p_src     = src_c + (pos_mv_x >> shift_mv) - ref_x;
 
             if (bidir){
@@ -2566,7 +2566,7 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
             pos_mv_y  = ( ref_pos_y + ((row * stepY) << shift_mv) + offset ) >> RPR_SCALE_BITS;
             prec_x    = 0;
             prec_y    = pos_mv_y & 0x1F;
-            prec_type = 2;
+            prec_type = 2 + (filter_idx_v || prec_y );
             p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * tmp_rpr_str;
 
             if (bidir){
