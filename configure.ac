@@ -6,6 +6,10 @@ AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([foreign -Wall])
 AM_SILENT_RULES([yes])
+
+# Force default CFLAGS
+${CFLAGS="-O3 -g"}
+
 AC_PROG_CC(gcc, clang)
 AM_PROG_AS(gcc, clang)
 AM_PROG_AR
