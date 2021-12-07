@@ -1,6 +1,6 @@
 if HAVE_SSE4_1
 noinst_LTLIBRARIES = libx86optim.la
-libx86optim_la_CPPFLAGS = -I${srcdir}/../
+libx86optim_la_CPPFLAGS = -I${srcdir}/../ -DBITDEPTH=10
 libx86optim_la_SOURCES =	rcn_transform_sse.c         \
 							vvc_utils_sse.c             \
 							rcn_intra_dc_planar_sse.c   \

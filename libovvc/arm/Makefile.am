@@ -1,6 +1,6 @@
 if HAVE_NEON
 noinst_LTLIBRARIES = libarmoptim.la
-libarmoptim_la_CPPFLAGS = -I${srcdir}/../
+libarmoptim_la_CPPFLAGS = -I${srcdir}/../ -DBITDEPTH=10
 
 libarmoptim_la_SOURCES =
 
