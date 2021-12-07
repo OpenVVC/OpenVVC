@@ -552,7 +552,6 @@ put_vvc_qpel_rpr_clip_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _s
     ptrdiff_t srcstride = _srcstride;
     uint16_t* dst = (uint16_t*)_dst;
     ptrdiff_t dststride = _dststride;
-    // const int8_t* filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
     const int8_t* filter = ov_mc_filters_rpr[filter_idx][my];    
     int shift = 14 - BITDEPTH;
     int offset = 1 << (shift - 1);
@@ -1664,7 +1663,6 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_l->bilinear[2][i] = &put_vvc_qpel_bilinear_v;
         mc_l->bilinear[3][i] = &put_vvc_qpel_bilinear_hv;
 
-        //TODOrpr: rpr_uni[0][i] create function when no filter applied.
         mc_l->rpr_uni[0][i] = &put_vvc_pel_rpr;
         mc_l->rpr_uni[1][i] = &put_vvc_qpel_rpr_h;
         mc_l->rpr_uni[2][i] = &put_vvc_pel_rpr_clip;
@@ -1696,7 +1694,6 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_c->bidir_w[2][i] = &put_weighted_epel_bi_v;
         mc_c->bidir_w[3][i] = &put_weighted_epel_bi_hv;
 
-        //TODOrpr: rpr_uni[0][i] create function when no filter applied.
         mc_c->rpr_uni[0][i] = &put_vvc_pel_rpr;
         mc_c->rpr_uni[1][i] = &put_vvc_epel_rpr_h;
         mc_c->rpr_uni[2][i] = &put_vvc_pel_rpr_clip;

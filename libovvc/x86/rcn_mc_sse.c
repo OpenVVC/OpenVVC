@@ -25,6 +25,223 @@
 
 #define BIT_DEPTH 10
 
+
+DECLARE_ALIGNED(16, static const int16_t, ov_mc_filters_rpr_sse[6][16][8]) =
+{
+    {{  0, 0,   0, 64,  0,  0,  0,  0 },
+    {   0, 1,  -3, 63,  4,  -2,  1,  0 },
+    {  -1, 2,  -5, 62,  8,  -3,  1,  0 },
+    {  -1, 3,  -8, 60, 13,  -4,  1,  0 },
+    {  -1, 4, -10, 58, 17,  -5,  1,  0 },
+    {  -1, 4, -11, 52, 26,  -8,  3, -1 },
+    {  -1, 3,  -9, 47, 31, -10,  4, -1 },
+    {  -1, 4, -11, 45, 34, -10,  4, -1 },
+    {  -1, 4, -11, 40, 40, -11,  4, -1 },
+    {  -1, 4, -10, 34, 45, -11,  4, -1 },
+    {  -1, 4, -10, 31, 47,  -9,  3, -1 },
+    {  -1, 3,  -8, 26, 52, -11,  4, -1 },
+    {   0, 1,  -5, 17, 58, -10,  4, -1 },
+    {   0, 1,  -4, 13, 60,  -8,  3, -1 },
+    {   0, 1,  -3,  8, 62,  -5,  2, -1 },
+    {   0, 1,  -2,  4, 63,  -3,  1,  0 }},
+
+    // 1.5x
+    {{ -1, -5, 17, 42, 17, -5, -1,  0 },
+    {  0, -5, 15, 41, 19, -5, -1,  0 },
+    {  0, -5, 13, 40, 21, -4, -1,  0 },
+    {  0, -5, 11, 39, 24, -4, -2,  1 },
+    {  0, -5,  9, 38, 26, -3, -2,  1 },
+    {  0, -5,  7, 38, 28, -2, -3,  1 },
+    {  1, -5,  5, 36, 30, -1, -3,  1 },
+    {  1, -4,  3, 35, 32,  0, -4,  1 },
+    {  1, -4,  2, 33, 33,  2, -4,  1 },
+    {  1, -4,  0, 32, 35,  3, -4,  1 },
+    {  1, -3, -1, 30, 36,  5, -5,  1 },
+    {  1, -3, -2, 28, 38,  7, -5,  0 },
+    {  1, -2, -3, 26, 38,  9, -5,  0 },
+    {  1, -2, -4, 24, 39, 11, -5,  0 },
+    {  0, -1, -4, 21, 40, 13, -5,  0 },
+    {  0, -1, -5, 19, 41, 15, -5,  0 }},
+
+    // 2.0x
+    {{ -4,  2, 20, 28, 20,  2, -4,  0 },
+    { -4,  0, 19, 29, 21,  5, -4, -2 },
+    { -4, -1, 18, 29, 22,  6, -4, -2 },
+    { -4, -1, 16, 29, 23,  7, -4, -2 },
+    { -4, -1, 16, 28, 24,  7, -4, -2 },
+    { -4, -1, 14, 28, 25,  8, -4, -2 },
+    { -3, -3, 14, 27, 26,  9, -3, -3 },
+    { -3, -1, 12, 28, 25, 10, -4, -3 },
+    { -3, -3, 11, 27, 27, 11, -3, -3 },
+    { -3, -4, 10, 25, 28, 12, -1, -3 },
+    { -3, -3,  9, 26, 27, 14, -3, -3 },
+    { -2, -4,  8, 25, 28, 14, -1, -4 },
+    { -2, -4,  7, 24, 28, 16, -1, -4 },
+    { -2, -4,  7, 23, 29, 16, -1, -4 },
+    { -2, -4,  6, 22, 29, 18, -1, -4 },
+    { -2, -4,  5, 21, 29, 19,  0, -4 }},
+
+    // Affine
+    {{  0, 0,  0, 64,  0,   0,  0,  0 },
+    {  0, 1,  -3, 63,  4,  -2,  1,  0 },
+    {  0, 1,  -5, 62,  8,  -3,  1,  0 },
+    {  0, 2,  -8, 60, 13,  -4,  1,  0 },
+    {  0, 3, -10, 58, 17,  -5,  1,  0 }, //1/4
+    {  0, 3, -11, 52, 26,  -8,  2,  0 },
+    {  0, 2,  -9, 47, 31, -10,  3,  0 },
+    {  0, 3, -11, 45, 34, -10,  3,  0 },
+    {  0, 3, -11, 40, 40, -11,  3,  0 }, //1/2
+    {  0, 3, -10, 34, 45, -11,  3,  0 },
+    {  0, 3, -10, 31, 47,  -9,  2,  0 },
+    {  0, 2,  -8, 26, 52, -11,  3,  0 },
+    {  0, 1,  -5, 17, 58, -10,  3,  0 }, //3/4
+    {  0, 1,  -4, 13, 60,  -8,  2,  0 },
+    {  0, 1,  -3,  8, 62,  -5,  1,  0 },
+    {  0, 1,  -2,  4, 63,  -3,  1,  0 }},
+    // 1.5x
+    {{  0, -6, 17, 42, 17, -5, -1,  0 },
+      {  0, -5, 15, 41, 19, -5, -1,  0 },
+      {  0, -5, 13, 40, 21, -4, -1,  0 },
+      {  0, -5, 11, 39, 24, -4, -1,  0 },
+      {  0, -5,  9, 38, 26, -3, -1,  0 },
+      {  0, -5,  7, 38, 28, -2, -2,  0 },
+      {  0, -4,  5, 36, 30, -1, -2,  0 },
+      {  0, -3,  3, 35, 32,  0, -3,  0 },
+      {  0, -3,  2, 33, 33,  2, -3,  0 },
+      {  0, -3,  0, 32, 35,  3, -3,  0 },
+      {  0, -2, -1, 30, 36,  5, -4,  0 },
+      {  0, -2, -2, 28, 38,  7, -5,  0 },
+      {  0, -1, -3, 26, 38,  9, -5,  0 },
+      {  0, -1, -4, 24, 39, 11, -5,  0 },
+      {  0, -1, -4, 21, 40, 13, -5,  0 },
+      {  0, -1, -5, 19, 41, 15, -5,  0 }},
+
+    // 2x
+    {{  0, -2, 20, 28, 20,  2, -4,  0 },
+      {  0, -4, 19, 29, 21,  5, -6,  0 },
+      {  0, -5, 18, 29, 22,  6, -6,  0 },
+      {  0, -5, 16, 29, 23,  7, -6,  0 },
+      {  0, -5, 16, 28, 24,  7, -6,  0 },
+      {  0, -5, 14, 28, 25,  8, -6,  0 },
+      {  0, -6, 14, 27, 26,  9, -6,  0 },
+      {  0, -4, 12, 28, 25, 10, -7,  0 },
+      {  0, -6, 11, 27, 27, 11, -6,  0 },
+      {  0, -7, 10, 25, 28, 12, -4,  0 },
+      {  0, -6,  9, 26, 27, 14, -6,  0 },
+      {  0, -6,  8, 25, 28, 14, -5,  0 },
+      {  0, -6,  7, 24, 28, 16, -5,  0 },
+      {  0, -6,  7, 23, 29, 16, -5,  0 },
+      {  0, -6,  6, 22, 29, 18, -5,  0 },
+      {  0, -6,  5, 21, 29, 19, -4,  0 }}
+};
+
+DECLARE_ALIGNED(16, static const int16_t, ov_mc_filters_rpr_sse_c[3][32][4]) =
+{
+    {
+        {  0, 64,  0,  0 },
+        { -1, 63,  2,  0 },
+        { -2, 62,  4,  0 },
+        { -2, 60,  7, -1 },
+        { -2, 58, 10, -2 },
+        { -3, 57, 12, -2 },
+        { -4, 56, 14, -2 },
+        { -4, 55, 15, -2 },
+        { -4, 54, 16, -2 },
+        { -5, 53, 18, -2 },
+        { -6, 52, 20, -2 },
+        { -6, 49, 24, -3 },
+        { -6, 46, 28, -4 },
+        { -5, 44, 29, -4 },
+        { -4, 42, 30, -4 },
+        { -4, 39, 33, -4 },
+        { -4, 36, 36, -4 },
+        { -4, 33, 39, -4 },
+        { -4, 30, 42, -4 },
+        { -4, 29, 44, -5 },
+        { -4, 28, 46, -6 },
+        { -3, 24, 49, -6 },
+        { -2, 20, 52, -6 },
+        { -2, 18, 53, -5 },
+        { -2, 16, 54, -4 },
+        { -2, 15, 55, -4 },
+        { -2, 14, 56, -4 },
+        { -2, 12, 57, -3 },
+        { -2, 10, 58, -2 },
+        { -1,  7, 60, -2 },
+        {  0,  4, 62, -2 },
+        {  0,  2, 63, -1 }
+    },
+    {
+        { 12, 40, 12,  0 },
+        { 11, 40, 13,  0 },
+        { 10, 40, 15, -1 },
+        {  9, 40, 16, -1 },
+        {  8, 40, 17, -1 },
+        {  8, 39, 18, -1 },
+        {  7, 39, 19, -1 },
+        {  6, 38, 21, -1 },
+        {  5, 38, 22, -1 },
+        {  4, 38, 23, -1 },
+        {  4, 37, 24, -1 },
+        {  3, 36, 25,  0 },
+        {  3, 35, 26,  0 },
+        {  2, 34, 28,  0 },
+        {  2, 33, 29,  0 },
+        {  1, 33, 30,  0 },
+        {  1, 31, 31,  1 },
+        {  0, 30, 33,  1 },
+        {  0, 29, 33,  2 },
+        {  0, 28, 34,  2 },
+        {  0, 26, 35,  3 },
+        {  0, 25, 36,  3 },
+        { -1, 24, 37,  4 },
+        { -1, 23, 38,  4 },
+        { -1, 22, 38,  5 },
+        { -1, 21, 38,  6 },
+        { -1, 19, 39,  7 },
+        { -1, 18, 39,  8 },
+        { -1, 17, 40,  8 },
+        { -1, 16, 40,  9 },
+        { -1, 15, 40, 10 },
+        {  0, 13, 40, 11 }
+    },
+
+    {
+        { 17, 30, 17,  0 },
+        { 17, 30, 18, -1 },
+        { 16, 30, 18,  0 },
+        { 16, 30, 18,  0 },
+        { 15, 30, 18,  1 },
+        { 14, 30, 18,  2 },
+        { 13, 29, 19,  3 },
+        { 13, 29, 19,  3 },
+        { 12, 29, 20,  3 },
+        { 11, 28, 21,  4 },
+        { 10, 28, 22,  4 },
+        { 10, 27, 22,  5 },
+        {  9, 27, 23,  5 },
+        {  9, 26, 24,  5 },
+        {  8, 26, 24,  6 },
+        {  7, 26, 25,  6 },
+        {  7, 25, 25,  7 },
+        {  6, 25, 26,  7 },
+        {  6, 24, 26,  8 },
+        {  5, 24, 26,  9 },
+        {  5, 23, 27,  9 },
+        {  5, 22, 27, 10 },
+        {  4, 22, 28, 10 },
+        {  4, 21, 28, 11 },
+        {  3, 20, 29, 12 },
+        {  3, 19, 29, 13 },
+        {  3, 19, 29, 13 },
+        {  2, 18, 30, 14 },
+        {  1, 18, 30, 15 },
+        {  0, 18, 30, 16 },
+        {  0, 18, 30, 16 },
+        { -1, 18, 30, 17 }
+    }
+};
+
 DECLARE_ALIGNED(16, const int16_t, oh_hevc_epel_filters_sse[31][2][8]) = {
   //{  0, 64,  0,  0 },
   { { -1, 63, -1, 63, -1, 63, -1, 63 }, { 2, 0, 2, 0, 2, 0, 2, 0 } },
@@ -60,11 +277,11 @@ DECLARE_ALIGNED(16, const int16_t, oh_hevc_epel_filters_sse[31][2][8]) = {
   { { 0, 2, 0, 2, 0, 2, 0, 2 }, { 63, -1, 63, -1, 63, -1, 63, -1 } },
 };
 
-DECLARE_ALIGNED(16, const int16_t, ov_mc_filters_rpr_sse_c[3][32][2][8]) =
+DECLARE_ALIGNED(16, const int16_t, ov_mc_filters_rpr_sse_sse_c[3][32][2][8]) =
 {
   {
-  {{ 0, 64, 0, 64, 0, 64, 0, 64 }, { 0, 0, 0, 0, 0, 0, 0, 0 } },
-  {{ -1, 63, -1, 63, -1, 63, -1, 63 }, { 2, 0, 2, 0, 2, 0, 2, 0 } },
+  { { 0, 64, 0, 64, 0, 64, 0, 64 }, { 0, 0, 0, 0, 0, 0, 0, 0 } },
+  { { -1, 63, -1, 63, -1, 63, -1, 63 }, { 2, 0, 2, 0, 2, 0, 2, 0 } },
   { { -2, 62, -2, 62, -2, 62, -2, 62 }, { 4, 0, 4, 0, 4, 0, 4, 0 } },
   { { -2, 60, -2, 60, -2, 60, -2, 60 }, { 7, -1, 7, -1, 7, -1, 7, -1 } },
   { { -2, 58, -2, 58, -2, 58, -2, 58 }, { 10, -2, 10, -2, 10, -2, 10, -2 } },
@@ -167,7 +384,7 @@ DECLARE_ALIGNED(16, const int16_t, ov_mc_filters_rpr_sse_c[3][32][2][8]) =
     }
 };
 
-DECLARE_ALIGNED(16, const int16_t, ov_mc_filters_rpr_sse[6][16][4][8]) =
+DECLARE_ALIGNED(16, const int16_t, ov_mc_filters_rpr_sse_sse[6][16][4][8]) =
 {
     {{{  0, 0,  0, 0,  0, 0,  0, 0},{   0, 64,   0, 64,   0, 64,   0, 64},{  0,  0,  0,  0,   0,  0,  0,  0},{  0,  0,   0,  0, 0,  0, 0,  0  }},
     {{   0, 1,   0, 1,   0, 1,   0, 1},{  -3, 63,-3, 63,-3, 63,-3, 63},{  4,  -2,  4,  -2,   4,  -2,  4,  -2},{  1,  0,   1,  0, 1,  0, 1,  0  }},
@@ -454,7 +671,7 @@ static const int16_t ov_bilinear_filters_4[15][8] =
 
 
 static void
-put_vvc_pel_rpr(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_pel_rpr_sse(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
@@ -478,7 +695,7 @@ put_vvc_pel_rpr(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 
 
 static void
-put_vvc_qpel_rpr_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_qpel_rpr_sse_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
@@ -490,35 +707,39 @@ put_vvc_qpel_rpr_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 
   int shift = BIT_DEPTH - 8;
   const __m128i c0 = _mm_setzero_si128();
+  int32_t to_add[4];
   __m128i x1, x2, x3, x4, r1, r3, c1, c2, c3, c4;
-  c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][mx][0]);
-  c2 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][mx][1]);
-  c3 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][mx][2]);
-  c4 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][mx][3]);
+  c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][mx]);
+  // c2 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][mx][1]);
+  // c3 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][mx][2]);
+  // c4 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][mx][3]);
   for (y = 0; y < height; y++) {
-    for (x = 0; x < width; x += 4) {
-      x1 = _mm_loadl_epi64((__m128i*)&src[x - 3 * 1]);
-      x2 = _mm_loadl_epi64((__m128i*)&src[x - 2 * 1]);
-      x3 = _mm_loadl_epi64((__m128i*)&src[x - 1 * 1]);
-      x4 = _mm_loadl_epi64((__m128i*)&src[x]);
-      x1 = _mm_unpacklo_epi16(x1, x2);
-      x2 = _mm_unpacklo_epi16(x3, x4);
+    for (x = 0; x < width; x = 4) {
+      x1 = _mm_loadu_si128((__m128i*)&src[x - 3 * 1]);
       x1 = _mm_madd_epi16(x1, c1);
-      x2 = _mm_madd_epi16(x2, c2);
-      r1 = _mm_add_epi32(x1, x2);
-      x1 = _mm_loadl_epi64((__m128i*)&src[x + 1]);
-      x2 = _mm_loadl_epi64((__m128i*)&src[x + 2 * 1]);
-      x3 = _mm_loadl_epi64((__m128i*)&src[x + 3 * 1]);
-      x4 = _mm_loadl_epi64((__m128i*)&src[x + 4 * 1]);
-      x1 = _mm_unpacklo_epi16(x1, x2);
-      x2 = _mm_unpacklo_epi16(x3, x4);
-      x1 = _mm_madd_epi16(x1, c3);
-      x2 = _mm_madd_epi16(x2, c4);
-      r3 = _mm_add_epi32(x1, x2);
-      x1 = _mm_add_epi32(r1, r3);
-      x1 = _mm_srai_epi32(x1, shift);
-      x1 = _mm_packs_epi32(x1, c0);
-      _mm_storel_epi64((__m128i*)&dst[x], x1);
+      _mm_storeu_si128((__m128i*)to_add, x1);
+      dst[x] = (int16_t)((to_add[0]+to_add[1]+to_add[2]+to_add[3]) >> shift);
+      // x2 = _mm_loadl_epi64((__m128i*)&src[x - 2 * 1]);
+      // x3 = _mm_loadl_epi64((__m128i*)&src[x - 1 * 1]);
+      // x4 = _mm_loadl_epi64((__m128i*)&src[x]);
+      // x1 = _mm_unpacklo_epi16(x1, x2);
+      // x2 = _mm_unpacklo_epi16(x3, x4);
+      // x2 = _mm_madd_epi16(x2, c2);
+      // r1 = _mm_add_epi32(x1, x2);
+      // x1 = _mm_loadl_epi64((__m128i*)&src[x + 1]);
+      // x2 = _mm_loadl_epi64((__m128i*)&src[x + 2 * 1]);
+      // x3 = _mm_loadl_epi64((__m128i*)&src[x + 3 * 1]);
+      // x4 = _mm_loadl_epi64((__m128i*)&src[x + 4 * 1]);
+      // x1 = _mm_unpacklo_epi16(x1, x2);
+      // x2 = _mm_unpacklo_epi16(x3, x4);
+      // x1 = _mm_madd_epi16(x1, c3);
+      // x2 = _mm_madd_epi16(x2, c4);
+      // r3 = _mm_add_epi32(x1, x2);
+      // x1 = _mm_add_epi32(r1, r3);
+      // x1 = _mm_srai_epi32(x1, shift);
+      // x1 = _mm_packs_epi32(x1, c0);
+      // _mm_storel_epi64((__m128i*)&dst[x], x1);
+      // _mm_storeu_si128((__m128i*)&dst[x], x1);
     }
     src += srcstride;
     dst += dststride;
@@ -526,7 +747,7 @@ put_vvc_qpel_rpr_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 }
 
 static void
-put_vvc_qpel_rpr_clip_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_qpel_rpr_sse_clip_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
@@ -544,15 +765,15 @@ put_vvc_qpel_rpr_clip_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _s
       int x, y;
   const __m128i c0 = _mm_setzero_si128();
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
-  const int16_t* src = _src;
+  const int16_t* src = (int16_t*) _src;
   const int srcstride = _srcstride;
   const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
-    c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][my][0]);
-    c2 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][my][1]);
-    c3 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][my][2]);
-    c4 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][my][3]);
+  c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_sse[filter_idx][my][0]);
+  c2 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_sse[filter_idx][my][1]);
+  c3 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_sse[filter_idx][my][2]);
+  c4 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_sse[filter_idx][my][3]);
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadu_si128((__m128i*)&src[x - 3 * srcstride]);
@@ -588,7 +809,7 @@ put_vvc_qpel_rpr_clip_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _s
 
 
 static void
-put_vvc_qpel_rpr_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_qpel_rpr_sse_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
@@ -598,7 +819,7 @@ put_vvc_qpel_rpr_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src
     int16_t* dst = (int16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     // const int8_t* filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
-    const int8_t* filter = ov_mc_filters_rpr_sse[filter_idx][my];    
+    const int8_t* filter = ov_mc_filters_rpr_sse_sse[filter_idx][my];    
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
@@ -607,16 +828,16 @@ put_vvc_qpel_rpr_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src
         src += srcstride;
         dst += dststride;
     }*/
-  const __m128i c0 = _mm_setzero_si128();
+  // const __m128i c0 = _mm_setzero_si128();
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
-  const int16_t* src = _src;
+  const int16_t* src = (int16_t*)_src;
   const int srcstride = _srcstride;
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
-    c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][my][0]);
-    c2 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][my][1]);
-    c3 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][my][2]);
-    c4 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][my][3]);
+    c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_sse[filter_idx][my][0]);
+    c2 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_sse[filter_idx][my][1]);
+    c3 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_sse[filter_idx][my][2]);
+    c4 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_sse[filter_idx][my][3]);
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadu_si128((__m128i*)&src[x - 3 * srcstride]);
@@ -639,6 +860,7 @@ put_vvc_qpel_rpr_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src
       x2 = _mm_add_epi32(x3, x4);
       x1 = _mm_add_epi32(x1, x2);
       x1 = _mm_srai_epi32(x1, 6);
+      x1 = _mm_packs_epi32(x1, x1);
       _mm_storel_epi64((__m128i*)&dst[x], x1);
     }
     src += srcstride;
@@ -646,13 +868,13 @@ put_vvc_qpel_rpr_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src
   }
 }
 
-/*
+
 static void
-put_vvc_pel_rpr_clip(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_pel_rpr_sse_clip(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
-    int x, y;
+    /*int x, y;
     const uint16_t* src = _src;
     ptrdiff_t srcstride = _srcstride;
     int16_t* dst = (int16_t*)_dst;
@@ -667,23 +889,20 @@ put_vvc_pel_rpr_clip(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
         src += srcstride;
         dst += dststride;
     }
+    */
   int x, y;
   const __m128i c0 = _mm_setzero_si128();
-  __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
-  const int16_t* src = _src;
+  __m128i x1;
+  const int16_t* src = (int16_t*)_src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (14 - BIT_DEPTH));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
-    c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][my][0]);
-    c2 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][my][1]);
-    c3 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][my][2]);
-    c4 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][my][3]);
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadu_si128((__m128i*)&src[x]);
       x1 = _mm_packs_epi32(x1, c0);
-      x1 = _mm_mulhrs_epi16(x1, offset);
+      x1 = _mm_add_epi16(x1, offset);
       x1 = _mm_srai_epi32(x1, 6);
       x1 = _mm_max_epi16(x1, _mm_setzero_si128());
       x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03FF));
@@ -696,30 +915,48 @@ put_vvc_pel_rpr_clip(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 
 
 static void
-put_vvc_pel_rpr_bi(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_pel_rpr_sse_bi(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
-    int x, y;
-    const uint16_t* src = _src;
-    ptrdiff_t srcstride = _srcstride;
-    int16_t* dst = (int16_t*)_dst;
-    ptrdiff_t dststride = _dststride;
-    const int8_t* filter = ov_mc_filters_rpr_sse[filter_idx][mx];
+    // int x, y;
+    // const uint16_t* src = _src;
+    // ptrdiff_t srcstride = _srcstride;
+    // int16_t* dst = (int16_t*)_dst;
+    // ptrdiff_t dststride = _dststride;
+    // const int8_t* filter = ov_mc_filters_rpr_sse_sse[filter_idx][mx];
 
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
-            dst[x] = src[x] ;
-        }
-        src += srcstride;
-        dst += dststride;
+    // for (y = 0; y < height; y++) {
+    //     for (x = 0; x < width; x++) {
+    //         dst[x] = src[x] ;
+    //     }
+    //     src += srcstride;
+    //     dst += dststride;
+    // }
+  int x, y;
+  const __m128i c0 = _mm_setzero_si128();
+  __m128i x1;
+  const int16_t* src = (int16_t*)_src;
+  const int srcstride = _srcstride;
+  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  uint16_t* dst = (uint16_t*)_dst;
+  const int dststride = _dststride;
+  for (y = 0; y < height; y++) {
+    for (x = 0; x < width; x += 4) {
+      x1 = _mm_loadu_si128((__m128i*)&src[x]);
+      x1 = _mm_packs_epi32(x1, c0);
+      x1 = _mm_mulhrs_epi16(x1, offset);
+      _mm_storel_epi64((__m128i*)&dst[x], x1);
     }
+    src += srcstride;
+    dst += dststride;
+  }
 }
 
-
+/*
 //TODOrpr: change name and pointer
 void
-put_vvc_qpel_rpr_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
+put_vvc_qpel_rpr_sse_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
                       const uint16_t* _src0, ptrdiff_t _src0stride,
                       const uint16_t* _src1, ptrdiff_t _src1stride,
                       int height, intptr_t mx, intptr_t my, int width)
@@ -748,7 +985,7 @@ put_vvc_qpel_rpr_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
 
 //TODOrpr: change name and pointer
 void
-put_vvc_qpel_rpr_weighted(uint16_t* _dst, ptrdiff_t _dststride,
+put_vvc_qpel_rpr_sse_weighted(uint16_t* _dst, ptrdiff_t _dststride,
                       const uint16_t* _src0, ptrdiff_t _src0stride,
                       const uint16_t* _src1, ptrdiff_t _src1stride,
                       int height, int denom, int wx0, int wx1,
@@ -8318,6 +8555,17 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
 {
   struct MCFunctions* const mc_l = &rcn_funcs->mc_l;
   struct MCFunctions* const mc_c = &rcn_funcs->mc_c;
+    for (int i = 0; i < 8; ++i) {
+        mc_l->rpr_uni[0][i] = &put_vvc_pel_rpr_sse;
+        mc_l->rpr_uni[1][i] = &put_vvc_qpel_rpr_sse_h;
+        mc_l->rpr_uni[2][i] = &put_vvc_pel_rpr_sse_clip;
+        mc_l->rpr_uni[3][i] = &put_vvc_qpel_rpr_sse_clip_v;
+
+        mc_l->rpr_bi[0][i] = &put_vvc_pel_rpr_sse;
+        mc_l->rpr_bi[1][i] = &put_vvc_qpel_rpr_sse_h;
+        mc_l->rpr_bi[2][i] = &put_vvc_pel_rpr_sse_bi;
+        mc_l->rpr_bi[3][i] = &put_vvc_qpel_rpr_sse_bi_v;
+    }
 
   /* Luma functions */
   mc_l->unidir[0][SIZE_BLOCK_4] = &oh_hevc_put_hevc_uni_pel_pixels4_10_sse;
