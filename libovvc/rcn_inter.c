@@ -2861,8 +2861,8 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *cons
     int scale_rpl1_hor = inter_ctx->scale_fact_rpl1[ref_idx1][0];
     int scale_rpl1_ver = inter_ctx->scale_fact_rpl1[ref_idx1][1];
     uint8_t no_scale_rpl1 = scale_rpl1_hor == (1<<RPR_SCALE_BITS) && scale_rpl1_ver == (1<<RPR_SCALE_BITS);
-
     uint8_t identical_motion = check_identical_motion(inter_ctx, inter_dir, mv0, mv1, ref_idx0, ref_idx1);
+
     if (inter_dir == 3 && !identical_motion) {
         if(no_scale_rpl0 && no_scale_rpl1){
             rcn_motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
