@@ -233,6 +233,7 @@ coding_quadtree(OVCTUDec *const ctu_dec,
     /* Disable splits if less than 16 samples */
     allow_tt &= log2_cb_s > 2;
     allow_bt &= log2_cb_s > 2;
+    allow_qt &= log2_cb_s > 2;
 
     if (ctu_dec->share == 2 && log2_cb_s + log2_cb_s == 5) {
         allow_bt = 0;
