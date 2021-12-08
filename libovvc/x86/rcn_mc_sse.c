@@ -277,7 +277,7 @@ DECLARE_ALIGNED(16, const int16_t, oh_hevc_epel_filters_sse[31][2][8]) = {
   { { 0, 2, 0, 2, 0, 2, 0, 2 }, { 63, -1, 63, -1, 63, -1, 63, -1 } },
 };
 
-DECLARE_ALIGNED(16, const int16_t, ov_mc_filters_rpr_sse_sse_c[3][32][2][8]) =
+DECLARE_ALIGNED(16, const int16_t, ov_mc_filters_rpr_sse_v_c[3][32][2][8]) =
 {
   {
   { { 0, 64, 0, 64, 0, 64, 0, 64 }, { 0, 0, 0, 0, 0, 0, 0, 0 } },
@@ -316,7 +316,7 @@ DECLARE_ALIGNED(16, const int16_t, ov_mc_filters_rpr_sse_sse_c[3][32][2][8]) =
     {
         {{ 12, 40, 12, 40, 12, 40, 12, 40},{12,  0, 12,  0, 12,  0, 12,  0 }},
         {{ 11, 40, 11, 40, 11, 40, 11, 40}, {13,  0, 13,  0, 13,  0, 13,  0 }},
-        {{ 10, 40,  10, 40,  10, 40,  10, 40}, { 15, -1, 15, -1, 15, -1 }},
+        {{ 10, 40,  10, 40,  10, 40,  10, 40}, { 15, -1, 15, -1, 15, -1, 15, -1 }},
         {{  9, 40,  9, 40,  9, 40,  9, 40} , { 16, -1, 16, -1, 16, -1, 16, -1 }},
         {{  8, 40,  8, 40,  8, 40,  8, 40}, { 17, -1, 17, -1, 17, -1, 17, -1 }},
         {{  8, 39,  8, 39,  8, 39, 8, 39},  { 18, -1, 18, -1, 18, -1, 18, -1 }},
@@ -384,7 +384,7 @@ DECLARE_ALIGNED(16, const int16_t, ov_mc_filters_rpr_sse_sse_c[3][32][2][8]) =
     }
 };
 
-DECLARE_ALIGNED(16, const int16_t, ov_mc_filters_rpr_sse_sse[6][16][4][8]) =
+DECLARE_ALIGNED(16, const int16_t, ov_mc_filters_rpr_sse_v[6][16][4][8]) =
 {
     {{{  0, 0,  0, 0,  0, 0,  0, 0},{   0, 64,   0, 64,   0, 64,   0, 64},{  0,  0,  0,  0,   0,  0,  0,  0},{  0,  0,   0,  0, 0,  0, 0,  0  }},
     {{   0, 1,   0, 1,   0, 1,   0, 1},{  -3, 63,-3, 63,-3, 63,-3, 63},{  4,  -2,  4,  -2,   4,  -2,  4,  -2},{  1,  0,   1,  0, 1,  0, 1,  0  }},
@@ -676,6 +676,7 @@ put_vvc_pel_rpr_sse(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    int width, uint8_t filter_idx)
 {
     int x, y;
+    x = 0;
     const uint16_t* src = _src;
     ptrdiff_t srcstride = _srcstride;
     int16_t* dst = (int16_t*)_dst;
@@ -683,11 +684,9 @@ put_vvc_pel_rpr_sse(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 
   __m128i x1;
   for (y = 0; y < height; y++) {
-    for (x = 0; x < width; x += 4) {
-      x1 = _mm_loadu_si128((__m128i*)&src[x]);
-      x1 = _mm_slli_epi16(x1, 14 - BIT_DEPTH);
-      _mm_storel_epi64((__m128i*)&dst[x], x1);
-    }
+    x1 = _mm_loadu_si128((__m128i*)&src[x]);
+    x1 = _mm_slli_epi16(x1, 14 - BIT_DEPTH);
+    _mm_storel_epi64((__m128i*)&dst[x], x1);
     src += srcstride;
     dst += dststride;
   }
@@ -699,48 +698,46 @@ put_vvc_qpel_rpr_sse_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _sr
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
-    int x, y;
-    const uint16_t* src = _src;
-    ptrdiff_t srcstride = _srcstride;
-    int16_t* dst = (int16_t*)_dst;
-    ptrdiff_t dststride = _dststride;
-
+  int x, y;
+  x = 0;
+  const uint16_t* src = _src;
+  ptrdiff_t srcstride = _srcstride;
+  int16_t* dst = (int16_t*)_dst;
+  ptrdiff_t dststride = _dststride;
   int shift = BIT_DEPTH - 8;
-  const __m128i c0 = _mm_setzero_si128();
   int32_t to_add[4];
-  __m128i x1, x2, x3, x4, r1, r3, c1, c2, c3, c4;
+  __m128i x1, c1;
   c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][mx]);
-  // c2 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][mx][1]);
-  // c3 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][mx][2]);
-  // c4 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][mx][3]);
   for (y = 0; y < height; y++) {
-    for (x = 0; x < width; x = 4) {
-      x1 = _mm_loadu_si128((__m128i*)&src[x - 3 * 1]);
-      x1 = _mm_madd_epi16(x1, c1);
-      _mm_storeu_si128((__m128i*)to_add, x1);
-      dst[x] = (int16_t)((to_add[0]+to_add[1]+to_add[2]+to_add[3]) >> shift);
-      // x2 = _mm_loadl_epi64((__m128i*)&src[x - 2 * 1]);
-      // x3 = _mm_loadl_epi64((__m128i*)&src[x - 1 * 1]);
-      // x4 = _mm_loadl_epi64((__m128i*)&src[x]);
-      // x1 = _mm_unpacklo_epi16(x1, x2);
-      // x2 = _mm_unpacklo_epi16(x3, x4);
-      // x2 = _mm_madd_epi16(x2, c2);
-      // r1 = _mm_add_epi32(x1, x2);
-      // x1 = _mm_loadl_epi64((__m128i*)&src[x + 1]);
-      // x2 = _mm_loadl_epi64((__m128i*)&src[x + 2 * 1]);
-      // x3 = _mm_loadl_epi64((__m128i*)&src[x + 3 * 1]);
-      // x4 = _mm_loadl_epi64((__m128i*)&src[x + 4 * 1]);
-      // x1 = _mm_unpacklo_epi16(x1, x2);
-      // x2 = _mm_unpacklo_epi16(x3, x4);
-      // x1 = _mm_madd_epi16(x1, c3);
-      // x2 = _mm_madd_epi16(x2, c4);
-      // r3 = _mm_add_epi32(x1, x2);
-      // x1 = _mm_add_epi32(r1, r3);
-      // x1 = _mm_srai_epi32(x1, shift);
-      // x1 = _mm_packs_epi32(x1, c0);
-      // _mm_storel_epi64((__m128i*)&dst[x], x1);
-      // _mm_storeu_si128((__m128i*)&dst[x], x1);
-    }
+    x1 = _mm_loadu_si128((__m128i*)&src[x - 3 * 1]);
+    x1 = _mm_madd_epi16(x1, c1);
+    _mm_storeu_si128((__m128i*)to_add, x1);
+    dst[x] = (int16_t)((to_add[0]+to_add[1]+to_add[2]+to_add[3]) >> shift);
+    src += srcstride;
+    dst += dststride;
+  }
+}
+
+static void
+put_vvc_epel_rpr_sse_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                   ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                   int width, uint8_t filter_idx)
+{
+  int x, y;
+  x = 0;
+  const uint16_t* src = _src;
+  ptrdiff_t srcstride = _srcstride;
+  int16_t* dst = (int16_t*)_dst;
+  ptrdiff_t dststride = _dststride;
+  int shift = BIT_DEPTH - 8;
+  int32_t to_add[4];
+  __m128i x1, c1;
+  c1 = _mm_loadl_epi64((__m128i*)ov_mc_filters_rpr_sse_c[filter_idx][mx]);
+  for (y = 0; y < height; y++) {
+    x1 = _mm_loadl_epi64((__m128i*)&src[x - 1 * 1]);
+    x1 = _mm_madd_epi16(x1, c1);
+    _mm_storel_epi64((__m128i*)to_add, x1);
+    dst[x] = (int16_t)((to_add[0]+to_add[1]) >> shift);
     src += srcstride;
     dst += dststride;
   }
@@ -751,18 +748,7 @@ put_vvc_qpel_rpr_sse_clip_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
-/*    int shift = 14 - BIT_DEPTH;
-    int offset = 1 << (shift - 1);
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
-            dst[x] = ov_bdclip(((MCP_FILTER_L(src, srcstride, filter) >> 6) +
-                                offset) >> shift);
-        }
-        src += srcstride;
-        dst += dststride;
-    }*/
-      int x, y;
+  int x, y;
   const __m128i c0 = _mm_setzero_si128();
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
   const int16_t* src = (int16_t*) _src;
@@ -770,10 +756,10 @@ put_vvc_qpel_rpr_sse_clip_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t
   const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
-  c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_sse[filter_idx][my][0]);
-  c2 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_sse[filter_idx][my][1]);
-  c3 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_sse[filter_idx][my][2]);
-  c4 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_sse[filter_idx][my][3]);
+  c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v[filter_idx][my][0]);
+  c2 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v[filter_idx][my][1]);
+  c3 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v[filter_idx][my][2]);
+  c4 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v[filter_idx][my][3]);
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadu_si128((__m128i*)&src[x - 3 * srcstride]);
@@ -807,6 +793,43 @@ put_vvc_qpel_rpr_sse_clip_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t
   }
 }
 
+static void
+put_vvc_epel_rpr_sse_clip_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                   ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                   int width, uint8_t filter_idx)
+{
+  int x, y;
+  __m128i x1, x2, x3, x4, c1, c2;
+  const int16_t* src = (int16_t*) _src;
+  const int srcstride = _srcstride;
+  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  uint16_t* dst = (uint16_t*)_dst;
+  const int dststride = _dststride;
+  c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v_c[filter_idx][my][0]);
+  c2 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v_c[filter_idx][my][1]);
+  for (y = 0; y < height; y++) {
+    for (x = 0; x < width; x += 4) {
+      x1 = _mm_loadu_si128((__m128i*)&src[x - 1 * srcstride]);
+      x2 = _mm_loadu_si128((__m128i*)&src[x]                );
+      x3 = _mm_loadu_si128((__m128i*)&src[x + 1 * srcstride]);
+      x4 = _mm_loadu_si128((__m128i*)&src[x + 2 * srcstride]);
+      x1 = _mm_unpacklo_epi16(x1, x2);
+      x2 = _mm_unpacklo_epi16(x3, x4);
+      x1 = _mm_madd_epi16(x1, c1);
+      x2 = _mm_madd_epi16(x2, c2);
+      x1 = _mm_add_epi32(x1, x2);
+      x1 = _mm_srai_epi32(x1, 6);
+      x1 = _mm_packs_epi32(x1, x1);
+      x1 = _mm_mulhrs_epi16(x1, offset);
+      x1 = _mm_max_epi16(x1, _mm_setzero_si128());
+      x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03FF));
+      _mm_storel_epi64((__m128i*)&dst[x], x1);
+    }
+    src += srcstride;
+    dst += dststride;
+  }
+}
+
 
 static void
 put_vvc_qpel_rpr_sse_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
@@ -814,30 +837,15 @@ put_vvc_qpel_rpr_sse_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* 
                    int width, uint8_t filter_idx)
 {
     int x, y;
-/*    const int16_t* src =  (int16_t*)_src;
-    ptrdiff_t srcstride = _srcstride;
-    int16_t* dst = (int16_t*)_dst;
-    ptrdiff_t dststride = _dststride;
-    // const int8_t* filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
-    const int8_t* filter = ov_mc_filters_rpr_sse_sse[filter_idx][my];    
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
-             dst[x] = MCP_FILTER_L(src, srcstride, filter) >> 6;
-        }
-        src += srcstride;
-        dst += dststride;
-    }*/
-  // const __m128i c0 = _mm_setzero_si128();
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
   const int16_t* src = (int16_t*)_src;
   const int srcstride = _srcstride;
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
-    c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_sse[filter_idx][my][0]);
-    c2 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_sse[filter_idx][my][1]);
-    c3 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_sse[filter_idx][my][2]);
-    c4 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_sse[filter_idx][my][3]);
+  c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v[filter_idx][my][0]);
+  c2 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v[filter_idx][my][1]);
+  c3 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v[filter_idx][my][2]);
+  c4 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v[filter_idx][my][3]);
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadu_si128((__m128i*)&src[x - 3 * srcstride]);
@@ -870,40 +878,55 @@ put_vvc_qpel_rpr_sse_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* 
 
 
 static void
+put_vvc_epel_rpr_sse_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+                   ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
+                   int width, uint8_t filter_idx)
+{
+    int x, y;
+  __m128i x1, x2, x3, x4, c1, c2;
+  const int16_t* src = (int16_t*)_src;
+  const int srcstride = _srcstride;
+  uint16_t* dst = (uint16_t*)_dst;
+  const int dststride = _dststride;
+  c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v_c[filter_idx][my][0]);
+  c2 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v_c[filter_idx][my][1]);
+  for (y = 0; y < height; y++) {
+    for (x = 0; x < width; x += 4) {
+      x1 = _mm_loadu_si128((__m128i*)&src[x - 1 * srcstride]);
+      x2 = _mm_loadu_si128((__m128i*)&src[x]);
+      x3 = _mm_loadu_si128((__m128i*)&src[x + 1 * srcstride]);
+      x4 = _mm_loadu_si128((__m128i*)&src[x + 2 * srcstride]);
+      x1 = _mm_unpacklo_epi16(x1, x2);
+      x2 = _mm_unpacklo_epi16(x3, x4);
+      x1 = _mm_madd_epi16(x1, c1);
+      x2 = _mm_madd_epi16(x2, c2);
+      x1 = _mm_add_epi32(x1, x2);
+      x1 = _mm_srai_epi32(x1, 6);
+      x1 = _mm_packs_epi32(x1, x1);
+      _mm_storel_epi64((__m128i*)&dst[x], x1);
+    }
+    src += srcstride;
+    dst += dststride;
+  }
+}
+
+
+static void
 put_vvc_pel_rpr_sse_clip(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
-    /*int x, y;
-    const uint16_t* src = _src;
-    ptrdiff_t srcstride = _srcstride;
-    int16_t* dst = (int16_t*)_dst;
-    ptrdiff_t dststride = _dststride;
-    int shift = 14 - BIT_DEPTH;
-    int offset = 1 << (shift - 1);
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
-            dst[x] = ov_bdclip((src[x] + offset) >> shift);
-        }
-        src += srcstride;
-        dst += dststride;
-    }
-    */
   int x, y;
-  const __m128i c0 = _mm_setzero_si128();
   __m128i x1;
   const int16_t* src = (int16_t*)_src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (14 - BIT_DEPTH));
+  const __m128i offset = _mm_set1_epi16(1 << (10 + 1) );
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadu_si128((__m128i*)&src[x]);
-      x1 = _mm_packs_epi32(x1, c0);
-      x1 = _mm_add_epi16(x1, offset);
-      x1 = _mm_srai_epi32(x1, 6);
+      x1 = _mm_mulhrs_epi16(x1, offset);
       x1 = _mm_max_epi16(x1, _mm_setzero_si128());
       x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03FF));
       _mm_storel_epi64((__m128i*)&dst[x], x1);
@@ -919,33 +942,15 @@ put_vvc_pel_rpr_sse_bi(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _sr
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
-    // int x, y;
-    // const uint16_t* src = _src;
-    // ptrdiff_t srcstride = _srcstride;
-    // int16_t* dst = (int16_t*)_dst;
-    // ptrdiff_t dststride = _dststride;
-    // const int8_t* filter = ov_mc_filters_rpr_sse_sse[filter_idx][mx];
-
-    // for (y = 0; y < height; y++) {
-    //     for (x = 0; x < width; x++) {
-    //         dst[x] = src[x] ;
-    //     }
-    //     src += srcstride;
-    //     dst += dststride;
-    // }
   int x, y;
-  const __m128i c0 = _mm_setzero_si128();
   __m128i x1;
   const int16_t* src = (int16_t*)_src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadu_si128((__m128i*)&src[x]);
-      x1 = _mm_packs_epi32(x1, c0);
-      x1 = _mm_mulhrs_epi16(x1, offset);
       _mm_storel_epi64((__m128i*)&dst[x], x1);
     }
     src += srcstride;
@@ -8565,6 +8570,16 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
         mc_l->rpr_bi[1][i] = &put_vvc_qpel_rpr_sse_h;
         mc_l->rpr_bi[2][i] = &put_vvc_pel_rpr_sse_bi;
         mc_l->rpr_bi[3][i] = &put_vvc_qpel_rpr_sse_bi_v;
+
+        mc_c->rpr_uni[0][i] = &put_vvc_pel_rpr_sse;
+        mc_c->rpr_uni[1][i] = &put_vvc_epel_rpr_sse_h;
+        mc_c->rpr_uni[2][i] = &put_vvc_pel_rpr_sse_clip;
+        mc_c->rpr_uni[3][i] = &put_vvc_epel_rpr_sse_clip_v;
+
+        mc_c->rpr_bi[0][i] = &put_vvc_pel_rpr_sse;
+        mc_c->rpr_bi[1][i] = &put_vvc_epel_rpr_sse_h;
+        mc_c->rpr_bi[2][i] = &put_vvc_pel_rpr_sse_bi;
+        mc_c->rpr_bi[3][i] = &put_vvc_epel_rpr_sse_bi_v;
     }
 
   /* Luma functions */

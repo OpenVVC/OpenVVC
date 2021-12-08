@@ -509,7 +509,6 @@ put_vvc_pel_rpr(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     ptrdiff_t srcstride = _srcstride;
     int16_t* dst = (int16_t*)_dst;
     ptrdiff_t dststride = _dststride;
-    const int8_t* filter = ov_mc_filters_rpr[filter_idx][mx];
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
@@ -623,7 +622,6 @@ put_vvc_pel_rpr_bi(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     ptrdiff_t srcstride = _srcstride;
     int16_t* dst = (int16_t*)_dst;
     ptrdiff_t dststride = _dststride;
-    const int8_t* filter = ov_mc_filters_rpr[filter_idx][mx];
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
