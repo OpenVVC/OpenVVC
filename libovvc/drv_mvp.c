@@ -470,7 +470,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
         int c1_y = pb_y + (nb_pb_h >> 1);
         int c0_x = pb_x + nb_pb_w;
         int c0_y = pb_y + nb_pb_h;
-        uint8_t pos_8x8 = tmvp->ctudec->part_ctx->log2_min_cb_s == 2;
+        uint8_t pos_8x8 = 1;
 
         if (!inter_ctx->tmvp_avail) {
             /*FIXME dirty ref to ctudec */
@@ -716,7 +716,7 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
         int c1_y = pb_y + (nb_pb_h >> 1);
         int c0_x = pb_x + nb_pb_w;
         int c0_y = pb_y + nb_pb_h;
-        uint8_t pos_8x8 = tmvp->ctudec->part_ctx->log2_min_cb_s == 2;
+        uint8_t pos_8x8 = 1;
 
         if (!inter_ctx->tmvp_avail) {
             /*FIXME dirty ref to ctudec */
@@ -977,7 +977,7 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         int c0_x = pb_x + nb_pb_w;
         int c0_y = pb_y + nb_pb_h;
 
-        uint8_t pos_8x8 = tmvp->ctudec->part_ctx->log2_min_cb_s == 2;
+        uint8_t pos_8x8 = 1;
 
         if (!inter_ctx->tmvp_avail) {
             /*FIXME dirty ref to ctudec */

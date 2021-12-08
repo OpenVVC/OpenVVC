@@ -340,8 +340,7 @@ static void
 load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
 {
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-    uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
-    uint8_t nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
+    uint8_t nb_pb_ctb_w = (1 << log2_ctb_s) >> LOG2_MIN_CU_S;
     uint16_t nb_ctb_w = ctudec->nb_ctb_pic_w;
     uint16_t ctb_addr_rs = ctb_x + ctb_y * nb_ctb_w;
     uint8_t is_border_pic = nb_ctb_w - 1 == ctb_x;
@@ -432,10 +431,10 @@ derive_tmvp_scale(int32_t dist_ref, int32_t dist_col)
 }
 
 struct TMVPPos
-compute_tmpv_coord(struct PBInfo pb, uint8_t log2_min_cb_s)
+compute_tmpv_coord(struct PBInfo pb)
 {
     struct TMVPPos pos;
-    uint8_t pos_8x8 = log2_min_cb_s == 2;
+    uint8_t pos_8x8 = 1;
 
     pos.c0_x = (pb.x_pb + pb.nb_pb_w) & (~pos_8x8);
     pos.c0_y = (pb.y_pb + pb.nb_pb_h) & (~pos_8x8);
@@ -1351,7 +1350,7 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
     /* TMVP candidate */
     if (nb_cand < 2 && inter_ctx->tmvp_enabled) {
         const struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
-        const struct TMVPPos pos = compute_tmpv_coord(pb_info, 2);
+        const struct TMVPPos pos = compute_tmpv_coord(pb_info);
 
         if (!inter_ctx->tmvp_avail) {
             /*FIXME dirty ref to ctudec */
@@ -2713,7 +2712,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
         /* FIXME test if affine type enabled so we skip TMVP when not needed ? */
         if (inter_ctx->tmvp_enabled) {
             const struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
-            const struct TMVPPos pos = compute_tmpv_coord(pb_info, 2);
+            const struct TMVPPos pos = compute_tmpv_coord(pb_info);
 
             if (!inter_ctx->tmvp_avail) {
                 OVCTUDec *ctudec = inter_ctx->tmvp_ctx.ctudec;
