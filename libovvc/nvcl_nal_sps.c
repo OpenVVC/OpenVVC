@@ -215,6 +215,86 @@ vui_payload(OVNVCLReader *const rdr, struct OVVUI *vui)
     }
 }
 
+struct HRDTiming
+{
+    uint32_t num_units_in_tick;
+    uint32_t time_scale;
+    uint8_t general_nal_hrd_params_present_flag;
+    uint8_t general_vcl_hrd_params_present_flag;
+    uint8_t general_same_pic_timing_in_all_ols_flag;
+    uint8_t general_du_hrd_params_present_flag;
+    uint8_t tick_divisor_minus2;
+    uint8_t bit_rate_scale;
+    uint8_t cpb_size_scale;
+    uint8_t cpb_size_du_scale;
+    uint16_t hrd_cpb_cnt_minus1;
+};
+
+static void
+general_timing_hrd_parameters(OVNVCLReader *const rdr, struct HRDTiming *hrd)
+{
+    hrd->num_units_in_tick = nvcl_read_bits(rdr, 32);
+    hrd->time_scale = nvcl_read_bits(rdr, 32);
+    hrd->general_nal_hrd_params_present_flag = nvcl_read_flag(rdr);
+    hrd->general_vcl_hrd_params_present_flag = nvcl_read_flag(rdr);
+    if (hrd->general_nal_hrd_params_present_flag || hrd->general_vcl_hrd_params_present_flag) {
+        hrd->general_same_pic_timing_in_all_ols_flag = nvcl_read_flag(rdr);
+        hrd->general_du_hrd_params_present_flag = nvcl_read_flag(rdr);
+        if (hrd->general_du_hrd_params_present_flag) {
+            hrd->tick_divisor_minus2 = nvcl_read_bits(rdr, 8);
+            hrd->bit_rate_scale = nvcl_read_bits(rdr, 4);
+            hrd->cpb_size_scale = nvcl_read_bits(rdr, 4);
+        }
+
+        if (hrd->general_du_hrd_params_present_flag) {
+            hrd->cpb_size_du_scale  = nvcl_read_bits(rdr,4);
+            hrd->hrd_cpb_cnt_minus1 = nvcl_read_u_expgolomb(rdr);
+        }
+    }
+}
+
+static void
+sublayer_hrd_parameters(OVNVCLReader *const rdr, const struct HRDTiming *const hrd, uint8_t i) {
+    int j;
+    for (j = 0; j <= hrd->hrd_cpb_cnt_minus1; ++j) {
+        uint16_t bit_rate_value_minus1 = nvcl_read_u_expgolomb(rdr);
+        uint16_t cpb_size_value_minus1 = nvcl_read_u_expgolomb(rdr);
+        if (hrd->general_du_hrd_params_present_flag) {
+            uint16_t cpb_size_du_value_minus1 = nvcl_read_u_expgolomb(rdr);
+            uint16_t bit_rate_du_value_minus1 = nvcl_read_u_expgolomb(rdr);
+        }
+        uint8_t cbr_flag = nvcl_read_flag(rdr);
+    }
+}
+
+static void
+ols_timing_hrd_parameters(OVNVCLReader *const rdr, const struct HRDTiming *const hrd, uint8_t first_sublayer, uint8_t max_sublayer)
+{
+    int i;
+    for (i = first_sublayer; i <= max_sublayer; ++i) {
+        uint8_t fixed_pic_rate_general_flag = nvcl_read_flag(rdr);
+
+        uint8_t fixed_pic_rate_within_cvs_flag = 0;;
+        if (fixed_pic_rate_general_flag) {
+            fixed_pic_rate_within_cvs_flag = nvcl_read_flag(rdr);
+        }
+
+        if (fixed_pic_rate_within_cvs_flag) {
+            uint32_t elemental_duration_in_tc_minus1 = nvcl_read_s_expgolomb(rdr);
+        } else if ((hrd->general_nal_hrd_params_present_flag || hrd->general_vcl_hrd_params_present_flag)
+                   && !hrd->hrd_cpb_cnt_minus1) {
+            uint8_t low_delay_hrd_flag = nvcl_read_flag(rdr);
+        }
+
+        if (hrd->general_nal_hrd_params_present_flag) {
+            sublayer_hrd_parameters(rdr, hrd, i);
+        }
+
+        if (hrd->general_vcl_hrd_params_present_flag) {
+            sublayer_hrd_parameters(rdr, hrd, i);
+        }
+    }
+}
 
 int
 nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
@@ -542,22 +622,15 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
     if (sps->sps_ptl_dpb_hrd_params_present_flag) {
         sps->sps_timing_hrd_params_present_flag = nvcl_read_flag(rdr);
-        if (sps->sps_explicit_scaling_list_enabled_flag) {
-            ov_log(NULL, OVLOG_ERROR, "Unsupported HRD timing params\n");
-            return OVVC_EINDATA;
-        }
         if (sps->sps_timing_hrd_params_present_flag) {
-            #if 0
-            general_timing_hrd_parameters();
-            #endif
+            struct HRDTiming hrd_timing = {0};
+            general_timing_hrd_parameters(rdr, &hrd_timing);
             if (sps->sps_max_sublayers_minus1 > 0) {
                 sps->sps_sublayer_cpb_params_present_flag = nvcl_read_flag(rdr);
             }
 
-            #if 0
-            int firstSubLayer = sps->sps_sublayer_cpb_params_present_flag ? 0 : sps->sps_max_sublayers_minus1;
-            ols_timing_hrd_parameters(firstSubLayer, sps_max_sublayers_minus1)
-            #endif
+            int first_sublayer = sps->sps_sublayer_cpb_params_present_flag ? 0 : sps->sps_max_sublayers_minus1 + 1;
+            ols_timing_hrd_parameters(rdr, &hrd_timing, first_sublayer, sps->sps_max_sublayers_minus1 + 1);
         }
     }
 
