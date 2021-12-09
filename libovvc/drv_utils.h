@@ -54,6 +54,8 @@ ctu_field_set_rect_bitfield(struct CTUBitField *const ctu_map,
 
 extern const int16_t   g_GeoParams[GEO_NUM_PARTITION_MODE][2];
 extern const int8_t    g_Dis[GEO_NUM_ANGLES];
+extern int16_t g_globalGeoWeights [GEO_NUM_PRESTORED_MASK][GEO_WEIGHT_MASK_SIZE * GEO_WEIGHT_MASK_SIZE];
+extern int16_t g_weightOffset     [GEO_NUM_PARTITION_MODE][GEO_NUM_CU_SIZE][GEO_NUM_CU_SIZE][2];
 
 
 #define MMVD_REFINE_STEP        8 ///< max number of distance step

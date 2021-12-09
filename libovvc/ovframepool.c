@@ -20,6 +20,7 @@ struct FramePool
     struct MemPool *plane_pool[4];
     struct PlaneProp plane_prop[4];
     const struct ChromaFmtInfo *fmt_info;
+    enum ChromaFmt fmt_c;
 };
 
 struct FrameProperties
@@ -35,6 +36,13 @@ struct ChromaFmtInfo
    uint8_t shift_v[3];
 };
 
+static const struct ChromaFmtInfo yuv420_8 = {
+  .nb_comp = 3,
+  .bd_shift = 0,
+  .shift_h = {0, 1, 1},
+  .shift_v = {0, 1, 1},
+};
+
 static const struct ChromaFmtInfo yuv420_10 = {
   .nb_comp = 3,
   .bd_shift = 1,
@@ -42,9 +50,13 @@ static const struct ChromaFmtInfo yuv420_10 = {
   .shift_v = {0, 1, 1},
 };
 
-static const struct ChromaFmtInfo *const select_frame_format(enum ChromaFmt fmt)
+static const struct ChromaFmtInfo *const select_frame_format(enum ChromaFmt fmt, uint8_t bitdepth_min8)
 {
-    return &yuv420_10;
+    if (bitdepth_min8) {
+        return &yuv420_10;
+    } else {
+        return &yuv420_8;
+    }
 }
 
 static void set_plane_properties(struct PlaneProp *const pln, const struct ChromaFmtInfo *const fmt_info,
@@ -76,9 +88,9 @@ ovframepool_uninit(struct FramePool **fpool_p)
 }
 
 int
-ovframepool_init(struct FramePool **fpool_p, uint8_t fmt, uint16_t pic_w, uint16_t pic_h)
+ovframepool_init(struct FramePool **fpool_p, uint8_t fmt, uint8_t bitdepth_min8, uint16_t pic_w, uint16_t pic_h)
 {
-    const struct ChromaFmtInfo *const fmt_info = select_frame_format(fmt);
+    const struct ChromaFmtInfo *const fmt_info = select_frame_format(fmt, bitdepth_min8);
 
     /* FIXME allocation size overflow */
     size_t pic_size = (pic_w * pic_h) << fmt_info->bd_shift;
@@ -94,6 +106,7 @@ ovframepool_init(struct FramePool **fpool_p, uint8_t fmt, uint16_t pic_w, uint16
     fpool = *fpool_p;
 
     fpool->fmt_info = fmt_info;
+    fpool->fmt_c = bitdepth_min8 ? OV_YUV_420_P10 : OV_YUV_420_P8;
 
     fpool->frame_pool = ovmempool_init(sizeof(OVFrame));
     if (!fpool->frame_pool) {
@@ -127,7 +140,7 @@ fail_alloc:
 static void
 ovframepool_release_planes(OVFrame *const frame)
 {
-    const int nb_comp = frame->internal.frame_pool->fmt_info->nb_comp;
+    const int nb_comp = 3;//frame->internal.frame_pool->fmt_info->nb_comp;
     int i;
 
     for (i = 0; i < nb_comp; ++i) {
@@ -168,6 +181,7 @@ ovframepool_request_planes(OVFrame *const frame, struct FramePool *const fpool)
         frame->width[i]    = prop->width;
         frame->height[i]   = prop->height;
         frame->linesize[i] = prop->stride;
+        frame->frame_info.chroma_format = fpool->fmt_c;
     }
 
     atomic_init(&frame->internal.ref_count, 0);

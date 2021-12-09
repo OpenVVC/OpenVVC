@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=@libdir@
+includedir=${prefix}/include
+
+Name: OpenVVC Library
+Description: Open Source VVC Decoder Library
+Version: @VERSION@
+Requires:
+Conflicts:
+Libs: -L${libdir} -lovvc
+Libs.private: @LIBS@
+Cflags: -I${includedir}

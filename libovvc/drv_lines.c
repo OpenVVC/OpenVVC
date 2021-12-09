@@ -899,8 +899,8 @@ offset_drv_lines(struct DRVLines *const lns, uint8_t tile_x, uint8_t tile_y,
 
      offset_inter_drv_lines(lns, (ctb_offset << log2_ctb_s) >> LOG2_UNIT_S, log2_ctb_s, LOG2_UNIT_S);
 
-     ctb_offset -= tile_x;
-     ctb_offset -= tile_y * nb_tile_cols;
+     //ctb_offset -= tile_x;
+     //ctb_offset -= tile_y * nb_tile_cols;
      /* FIXME return */
      offset_dbf_lines(&lns->dbf_lines, ctb_offset, log2_ctb_s, LOG2_UNIT_S);
 }

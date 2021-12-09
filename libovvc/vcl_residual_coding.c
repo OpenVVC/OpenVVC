@@ -14,17 +14,15 @@
 #include "data_scan_lut.h"
 #include "cabac_internal.h"
 #include "ctudec.h"
+#include "rcn_dequant.h"
 #include "vcl.h"
 
 #define IQUANT_SHIFT 6
-#define ADJ_QUANT_SHIFT 7
-#define ADJ_DEQUANT_SHIFT ADJ_QUANT_SHIFT + 1
+#define MAX_LOG2_TR_RANGE 15
 
 #define VVC_TR_CTX_STRIDE (64+2)
 #define VVC_TR_CTX_OFFSET ((VVC_TR_CTX_STRIDE)*2+2)
 #define VVC_TR_CTX_SIZE   (VVC_TR_CTX_STRIDE*VVC_TR_CTX_STRIDE)
-
-#define BITDEPTH 10
 
 enum TBSize
 {
@@ -334,7 +332,7 @@ update_coeff_nbgh_other_pass(const VVCCoeffCodingCtx *const coef_nbh_ctx,
 }
 
 static int inline
-decode_truncated_rice(OVCABACCtx *const cabac_ctx, unsigned int rice_param){
+decode_truncated_rice(OVCABACCtx *const cabac_ctx, uint8_t rice_param){
 
     unsigned int prefix = 0;
     unsigned int length = rice_param;
@@ -2426,130 +2424,6 @@ ovcabac_read_ae_sb_2x8_far_sdh(OVCABACCtx *const cabac_ctx,
     return 0;
 }
 
-static const int inverse_quant_scale_lut[2][6] ={
-    { 40, 45, 51, 57, 64,  72},
-    { 57, 64, 72, 80, 90, 102}
-};
-
-struct IQScale{
-    int scale;
-    int shift;
-    void (*dequant_sb)(int16_t *const sb_coeffs, int scale, int shift);
-};
-
-static void
-dequant_sb_neg(int16_t *const sb_coeffs, int scale, int shift)
-{
-    const int     max_log2_tr_range = 15;
-    const int32_t min_coeff_value   = -(1 << max_log2_tr_range);
-    const int32_t max_coeff_value   =  (1 << max_log2_tr_range) - 1;
-
-    for( int i = 0; i < 16 ; i++ ){
-        sb_coeffs[i] = ov_clip((int32_t)sb_coeffs[i] * (scale << shift) ,
-                min_coeff_value, max_coeff_value);
-    }
-}
-
-static void
-dequant_sb(int16_t *const sb_coeffs, int scale, int shift)
-{
-    const int     max_log2_tr_range = 15;
-    const int32_t min_coeff_value   = -(1 << max_log2_tr_range);
-    const int32_t max_coeff_value   =  (1 << max_log2_tr_range) - 1;
-
-    int add = (1 << shift) >> 1;
-    for( int i = 0; i < 16 ; i++ ){
-        sb_coeffs[i] = ov_clip((int32_t)(sb_coeffs[i] * scale + add) >> shift ,
-                min_coeff_value, max_coeff_value);
-    }
-}
-
-
-static struct IQScale
-derive_dequant_sdh(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
-{
-    /*FIXME derive from ctx for range extentions*/
-    const uint8_t max_log2_tr_range = 15;
-    const int dep_quant_qp  = qp;
-    const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
-    struct IQScale dequant_params;
-    int shift;
-    int scale;
-    /*FIXME non size dependent prefix could be derived from earlier ctx
-      as soon as we know of bitdepth and tr range*/
-    shift = IQUANT_SHIFT - (dep_quant_qp / 6)
-              - (max_log2_tr_range - BITDEPTH - (log2_tb_s >> 1) - (log2_tb_s & 1));
-
-    scale  = inverse_quant_scale_lut[log2_tb_s & 1][dep_quant_qp % 6];
-
-    if (shift >= 0){
-        dequant_params.shift = shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb;
-    } else {
-        dequant_params.shift = -shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb_neg;
-    }
-    return dequant_params;
-}
-
-static struct IQScale
-derive_dequant_dpq(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
-{
-    /*FIXME derive from ctx for range extentions*/
-    const uint8_t max_log2_tr_range = 15;
-    const int dep_quant_qp  = qp + 1;
-    const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
-    struct IQScale dequant_params;
-    int shift;
-    int scale;
-    /*FIXME non size dependent prefix could be derived from earlier ctx
-      as soon as we know of bitdepth and tr range*/
-    shift = IQUANT_SHIFT + 1 - (dep_quant_qp / 6)
-              - (max_log2_tr_range - BITDEPTH - (log2_tb_s >> 1) - (log2_tb_s & 1));
-    scale  = inverse_quant_scale_lut[log2_tb_s & 1][dep_quant_qp % 6];
-
-    if (shift >= 0){
-        dequant_params.shift = shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb;
-    } else {
-        dequant_params.shift = -shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb_neg;
-    }
-    return dequant_params;
-}
-
-static struct IQScale
-derive_dequant_ts(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
-{
-    /*FIXME derive from ctx for range extentions*/
-    #if 0
-    const uint8_t max_log2_tr_range = 15;
-    #endif
-    const int dep_quant_qp  = qp;
-    struct IQScale dequant_params;
-    int shift;
-    int scale;
-    /*FIXME non size dependent prefix could be derived from earlier ctx
-      as soon as we know of bitdepth and tr range*/
-    shift = IQUANT_SHIFT - (dep_quant_qp / 6) ;
-    scale  = inverse_quant_scale_lut[0][dep_quant_qp % 6];
-
-    if (shift >= 0){
-        dequant_params.shift = shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb;
-    } else {
-        dequant_params.shift = -shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb_neg;
-    }
-    return dequant_params;
-}
-
 static void
 reset_ctx_buffers (const VVCCoeffCodingCtx *ctx, int log2_w, int log2_h)
 {
@@ -2568,7 +2442,7 @@ reset_ctx_buffers (const VVCCoeffCodingCtx *ctx, int log2_w, int log2_h)
 
 int
 residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
-                          unsigned int log2_tb_w, unsigned int log2_tb_h,
+                          uint8_t log2_tb_w, uint8_t log2_tb_h,
                           uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -2601,7 +2475,7 @@ residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     int qp = ctu_dec->dequant_luma.qp;
 
-    struct IQScale deq_prms = derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
+    struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
 
     memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
 
@@ -2755,7 +2629,7 @@ residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
 int
 residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
-                          unsigned int log2_tb_w, unsigned int log2_tb_h,
+                          uint8_t log2_tb_w, uint8_t log2_tb_h,
                           uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -2786,7 +2660,7 @@ residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     int qp = ctu_dec->dequant_luma.qp;
 
-    struct IQScale deq_prms = derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
+    struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
 
     memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
 
@@ -2946,7 +2820,7 @@ has_sig_sb_neighbour(uint64_t sig_sb_map, uint16_t sb_x, uint16_t sb_y)
 
 uint64_t
 residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
-                    unsigned int log2_tb_w, unsigned int log2_tb_h,
+                    uint8_t log2_tb_w, uint8_t log2_tb_h,
                     uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -2997,7 +2871,7 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     int qp = ctu_dec->dequant_luma.qp;
 
-    struct IQScale deq_prms = derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
+    struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
 
     memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
 
@@ -3119,7 +2993,7 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
 int
 residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
-                          unsigned int log2_tb_w, unsigned int log2_tb_h,
+                          uint8_t log2_tb_w, uint8_t log2_tb_h,
                           uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx =  ctu_dec->cabac_ctx;
@@ -3146,7 +3020,7 @@ residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     int qp = ctu_dec->dequant_luma.qp;
 
-    struct IQScale deq_prms = derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+    struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
 
     VVCCoeffCodingCtx c_coding_ctx = {
         .sum_abs_lvl  = &sum_abs_level[VVC_TR_CTX_OFFSET],
@@ -3313,7 +3187,7 @@ residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
 int
 residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
-                          unsigned int log2_tb_w, unsigned int log2_tb_h,
+                          uint8_t log2_tb_w, uint8_t log2_tb_h,
                           uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -3347,7 +3221,7 @@ residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     int qp = ctu_dec->dequant_luma.qp;
 
-    struct IQScale deq_prms = derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+    struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
 
     memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
 
@@ -3619,22 +3493,34 @@ nb_sig_sb_ngh(uint64_t sig_sb_map, int16_t sb_x, int16_t sb_y)
     return  !!sig_sb_abv + !!sig_sb_lft;
 }
 
+static void
+init_sb_map_ts(uint8_t *nb_sig, uint8_t *sign_map, uint16_t *abs_val, uint8_t log2_tb_w, uint8_t log2_tb_h)
+{
+    for (int i = 0; i < (1 << log2_tb_h) + 2; ++i) {
+        memset(nb_sig,   0, sizeof(*nb_sig)   * 4 + (sizeof(*nb_sig)   << log2_tb_w));
+        memset(sign_map, 0, sizeof(*sign_map) * 4 + (sizeof(*sign_map) << log2_tb_w));
+
+        nb_sig += VVC_TR_CTX_STRIDE;
+        sign_map += VVC_TR_CTX_STRIDE;
+    }
+}
+
 int
 residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
                    uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     /* FIXME smaller reset tables */
-    uint8_t nb_significant[VVC_TR_CTX_SIZE]={0};
-    uint8_t sign_map[VVC_TR_CTX_SIZE]={0};
-    uint16_t abs_coeffs[VVC_TR_CTX_SIZE]={0};
+    uint8_t nb_significant[VVC_TR_CTX_SIZE];
+    uint8_t sign_map[VVC_TR_CTX_SIZE];
+    uint16_t abs_coeffs[VVC_TR_CTX_SIZE] = {0};
 
     int16_t sb_coeffs[16] = {0};
 
     /* FIXME if called from chroma ? */
     int qp = ctu_dec->dequant_skip->qp;
 
-    const struct IQScale deq_prms = derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
+    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
 
     TSCoeffCodingCtx cctx = {
         .nb_sig_ngh = &nb_significant   [0],
@@ -3654,6 +3540,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
 
     int nb_sig_c = 0;
 
+    init_sb_map_ts(nb_significant, sign_map, abs_coeffs, log2_tb_w, log2_tb_h);
     memset(dst, 0, sizeof(uint16_t) << log2_tb_s);
 
     if (nb_sb == 1) {
@@ -3761,7 +3648,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
 
 uint64_t
 residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
-                    unsigned int log2_tb_w, unsigned int log2_tb_h,
+                    uint8_t log2_tb_w, uint8_t log2_tb_h,
                     uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -3810,7 +3697,7 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     int qp = ctu_dec->dequant_luma.qp;
 
-    struct IQScale deq_prms = derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+    struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
 
     memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
 
@@ -4110,7 +3997,7 @@ static const struct SBReader chroma_2x2_reader_dqp = {
 
 static int
 decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
-                        unsigned int log2_tb_w, unsigned int log2_tb_h,
+                        uint8_t log2_tb_w, uint8_t log2_tb_h,
                         uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -4119,7 +4006,7 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
     int16_t *const _dst = dst;
 
     int qp = ctu_dec->dequant_chroma->qp;
-    const struct IQScale deq_prms = derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
 
     uint8_t buff[VVC_TR_CTX_SIZE * 3];
 
@@ -4250,7 +4137,7 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
 
 static int
 decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
-                        unsigned int log2_tb_w, unsigned int log2_tb_h,
+                        uint8_t log2_tb_w, uint8_t log2_tb_h,
                         uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -4260,7 +4147,7 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
     int16_t *const _dst = dst;
 
     int qp = ctu_dec->dequant_chroma->qp;
-    const struct IQScale deq_prms = derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
 
     /* FIXME reduce */
     uint8_t buff[VVC_TR_CTX_SIZE * 3];
@@ -4510,13 +4397,13 @@ read_tb_inv_diag_scan(const struct SBReader *const sb_rdr, const struct IQScale 
 
 int
 residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
-                           unsigned int log2_tb_w, unsigned int log2_tb_h,
+                           uint8_t log2_tb_w, uint8_t log2_tb_h,
                            uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
     int qp = ctu_dec->dequant_chroma->qp;
-    const struct IQScale deq_prms = derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
 
     /* FIXME this is a bit wasteful if we only read a few sub blocks */
     memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
@@ -4658,16 +4545,13 @@ static const struct SBReader chroma_2x2_reader_sdh = {
 
 static int
 decode_dpq_small_h_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
-                        unsigned int log2_tb_w, unsigned int log2_tb_h,
-                        uint16_t last_pos)
+                        uint8_t log2_tb_w, uint8_t log2_tb_h,
+                        uint16_t last_pos, struct IQScale deq_prms)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     int16_t sb_coeffs[16];
     int nb_sig_c;
     int16_t *const _dst = dst;
-
-    int qp = ctu_dec->dequant_chroma->qp;
-    const struct IQScale deq_prms = derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
 
     uint8_t buff[VVC_TR_CTX_SIZE * 3];
 
@@ -4798,17 +4682,14 @@ decode_dpq_small_h_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
 static int
 decode_dpq_small_w_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
-                        unsigned int log2_tb_w, unsigned int log2_tb_h,
-                        uint16_t last_pos)
+                        uint8_t log2_tb_w, uint8_t log2_tb_h,
+                        uint16_t last_pos, const struct IQScale const deq_prms)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     int16_t sb_coeffs[16] = {0}; //temporary table to store sb_coeffs in process
     uint8_t sig_sb_flg = 1;
     int nb_sig_c;
     int16_t *const _dst = dst;
-
-    int qp = ctu_dec->dequant_chroma->qp;
-    const struct IQScale deq_prms = derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
 
     /* FIXME reduce */
     uint8_t buff[VVC_TR_CTX_SIZE * 3];
@@ -5037,13 +4918,13 @@ read_tb_inv_diag_scan_sdh(const struct SBReader *const sb_rdr, const OVCTUDec *c
 
 int
 residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
-                           unsigned int log2_tb_w, unsigned int log2_tb_h,
+                           uint8_t log2_tb_w, uint8_t log2_tb_h,
                            uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
     int qp = ctu_dec->dequant_chroma->qp;
-    const struct IQScale deq_prms = derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
+    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
 
     /* FIXME this is a bit wasteful if we only read a few sub blocks */
     memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
@@ -5064,9 +4945,9 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         const struct SBReader *const sb_rdr = &chroma_4x4_reader_sdh;
         return read_tb_inv_diag_scan_sdh(sb_rdr, ctu_dec, &deq_prms, cabac_ctx, dst, log2_tb_w, log2_tb_h, last_pos);
     } else if (log2_tb_h == 1) {
-        return decode_dpq_small_h_tu_c_sdh(ctu_dec, dst, log2_tb_w, log2_tb_h, last_pos);
+        return decode_dpq_small_h_tu_c_sdh(ctu_dec, dst, log2_tb_w, log2_tb_h, last_pos, deq_prms);
     } else if (log2_tb_w == 1) {
-        return decode_dpq_small_w_tu_c_sdh(ctu_dec, dst, log2_tb_w, log2_tb_h, last_pos);
+        return decode_dpq_small_w_tu_c_sdh(ctu_dec, dst, log2_tb_w, log2_tb_h, last_pos, deq_prms);
     }
     return 0;
 }

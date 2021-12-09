@@ -83,90 +83,132 @@ void ov_put_vvc_uni_qpel_h_10_8_neon();
 void ov_put_vvc_uni_qpel_h_10_16_neon();
 void ov_put_vvc_uni_qpel_h_10_32_neon();
 
-void ov_put_vvc_uni_qpel_v_10_8_neon();
-void ov_put_vvc_uni_qpel_v_10_16_neon();
-void ov_put_vvc_uni_qpel_v_10_32_neon();
+void ov_put_vvc_uni_qpel_v_10_8_neon_8lines();
+void ov_put_vvc_uni_qpel_v_10_8_neon_4lines();
+void ov_put_vvc_uni_qpel_v_10_16_neon_8lines();
+void ov_put_vvc_uni_qpel_v_10_16_neon_4lines();
+void ov_put_vvc_uni_qpel_v_10_32_neon_8lines();
+void ov_put_vvc_uni_qpel_v_10_32_neon_4lines();
 
-void ov_put_vvc_uni_qpel_hv_10_8_neon();
-void ov_put_vvc_uni_qpel_hv_10_16_neon();
-void ov_put_vvc_uni_qpel_hv_10_32_neon();
+void ov_put_vvc_uni_qpel_hv_10_8_neon_8lines();
+void ov_put_vvc_uni_qpel_hv_10_8_neon_4lines();
+void ov_put_vvc_uni_qpel_hv_10_16_neon_8lines();
+void ov_put_vvc_uni_qpel_hv_10_16_neon_4lines();
+void ov_put_vvc_uni_qpel_hv_10_32_neon_8lines();
+void ov_put_vvc_uni_qpel_hv_10_32_neon_4lines();
 
 void ov_put_vvc_bi0_qpel_h_10_8_neon();
 void ov_put_vvc_bi0_qpel_h_10_16_neon();
 void ov_put_vvc_bi0_qpel_h_10_32_neon();
 
-void ov_put_vvc_bi0_qpel_v_10_8_neon();
-void ov_put_vvc_bi0_qpel_v_10_16_neon();
-void ov_put_vvc_bi0_qpel_v_10_32_neon();
+void ov_put_vvc_bi0_qpel_v_10_8_neon_8lines();
+void ov_put_vvc_bi0_qpel_v_10_8_neon_4lines();
+void ov_put_vvc_bi0_qpel_v_10_16_neon_8lines();
+void ov_put_vvc_bi0_qpel_v_10_16_neon_4lines();
+void ov_put_vvc_bi0_qpel_v_10_32_neon_8lines();
+void ov_put_vvc_bi0_qpel_v_10_32_neon_4lines();
 
-void ov_put_vvc_bi0_qpel_hv_10_8_neon();
-void ov_put_vvc_bi0_qpel_hv_10_16_neon();
-void ov_put_vvc_bi0_qpel_hv_10_32_neon();
+void ov_put_vvc_bi0_qpel_hv_10_8_neon_8lines();
+void ov_put_vvc_bi0_qpel_hv_10_8_neon_4lines();
+void ov_put_vvc_bi0_qpel_hv_10_16_neon_8lines();
+void ov_put_vvc_bi0_qpel_hv_10_16_neon_4lines();
+void ov_put_vvc_bi0_qpel_hv_10_32_neon_8lines();
+void ov_put_vvc_bi0_qpel_hv_10_32_neon_4lines();
 
 void ov_put_vvc_bi1_qpel_h_10_8_neon();
 void ov_put_vvc_bi1_qpel_h_10_16_neon();
 void ov_put_vvc_bi1_qpel_h_10_32_neon();
 
-void ov_put_vvc_bi1_qpel_v_10_8_neon();
-void ov_put_vvc_bi1_qpel_v_10_16_neon();
-void ov_put_vvc_bi1_qpel_v_10_32_neon();
+void ov_put_vvc_bi1_qpel_v_10_8_neon_8lines();
+void ov_put_vvc_bi1_qpel_v_10_8_neon_4lines();
+void ov_put_vvc_bi1_qpel_v_10_16_neon_8lines();
+void ov_put_vvc_bi1_qpel_v_10_16_neon_4lines();
+void ov_put_vvc_bi1_qpel_v_10_32_neon_8lines();
+void ov_put_vvc_bi1_qpel_v_10_32_neon_4lines();
 
-void ov_put_vvc_bi1_qpel_hv_10_8_neon();
-void ov_put_vvc_bi1_qpel_hv_10_16_neon();
-void ov_put_vvc_bi1_qpel_hv_10_32_neon();
+void ov_put_vvc_bi1_qpel_hv_10_8_neon_8lines();
+void ov_put_vvc_bi1_qpel_hv_10_8_neon_4lines();
+void ov_put_vvc_bi1_qpel_hv_10_16_neon_8lines();
+void ov_put_vvc_bi1_qpel_hv_10_16_neon_4lines();
+void ov_put_vvc_bi1_qpel_hv_10_32_neon_8lines();
+void ov_put_vvc_bi1_qpel_hv_10_32_neon_4lines();
 
 void ov_put_vvc_uni_qpel_h_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
-                   const uint16_t* _src, ptrdiff_t _srcstride,
-                   int height, intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_uni_qpel_h_10_8_neon(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[mx-1], width);
-                   }
+                  const uint16_t* _src, ptrdiff_t _srcstride,
+                  int height, intptr_t mx, intptr_t my, int width){
+                    ov_put_vvc_uni_qpel_h_10_8_neon(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[mx-1], width);
+                  }
 void ov_put_vvc_uni_qpel_h_10_16_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
-                   const uint16_t* _src, ptrdiff_t _srcstride,
-                   int height, intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_uni_qpel_h_10_16_neon(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[mx-1], width);
-                   }
+                  const uint16_t* _src, ptrdiff_t _srcstride,
+                  int height, intptr_t mx, intptr_t my, int width){
+                    ov_put_vvc_uni_qpel_h_10_16_neon(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[mx-1], width);
+                  }
 void ov_put_vvc_uni_qpel_h_10_32_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
-                   const uint16_t* _src, ptrdiff_t _srcstride,
-                   int height, intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_uni_qpel_h_10_32_neon(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[mx-1], width);
-                   }
+                  const uint16_t* _src, ptrdiff_t _srcstride,
+                  int height, intptr_t mx, intptr_t my, int width){
+                    ov_put_vvc_uni_qpel_h_10_32_neon(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[mx-1], width);
+                  }
 
 void ov_put_vvc_uni_qpel_v_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
-                    const uint16_t* _src, ptrdiff_t _srcstride,
-                    int height, intptr_t mx, intptr_t my, int width){
-                      ov_put_vvc_uni_qpel_v_10_8_neon(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                  const uint16_t* _src, ptrdiff_t _srcstride,
+                  int height, intptr_t mx, intptr_t my, int width){
+                    if (height >= 8){
+                      ov_put_vvc_uni_qpel_v_10_8_neon_8lines(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_uni_qpel_v_10_8_neon_4lines(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
                     }
+                  }
 void ov_put_vvc_uni_qpel_v_10_16_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
-                    const uint16_t* _src, ptrdiff_t _srcstride,
-                    int height, intptr_t mx, intptr_t my, int width){
-                      ov_put_vvc_uni_qpel_v_10_16_neon(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                  const uint16_t* _src, ptrdiff_t _srcstride,
+                  int height, intptr_t mx, intptr_t my, int width){
+                    if (height >= 8){
+                      ov_put_vvc_uni_qpel_v_10_16_neon_8lines(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_uni_qpel_v_10_16_neon_4lines(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
                     }
+                  }
 void ov_put_vvc_uni_qpel_v_10_32_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
-                    const uint16_t* _src, ptrdiff_t _srcstride,
-                    int height, intptr_t mx, intptr_t my, int width){
-                      ov_put_vvc_uni_qpel_v_10_32_neon(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                  const uint16_t* _src, ptrdiff_t _srcstride,
+                  int height, intptr_t mx, intptr_t my, int width){
+                    if (height >= 8){
+                      ov_put_vvc_uni_qpel_v_10_32_neon_8lines(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_uni_qpel_v_10_32_neon_4lines(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
                     }
+                  }
 
 void ov_put_vvc_uni_qpel_hv_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
-                   const uint16_t* _src, ptrdiff_t _srcstride,
-                   int height, intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_uni_qpel_hv_10_8_neon(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
-                   }
+                  const uint16_t* _src, ptrdiff_t _srcstride,
+                  int height, intptr_t mx, intptr_t my, int width){
+                    if(height >=8){
+                      ov_put_vvc_uni_qpel_hv_10_8_neon_8lines(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_uni_qpel_hv_10_8_neon_4lines(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }
+                  }
 void ov_put_vvc_uni_qpel_hv_10_16_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
-                   const uint16_t* _src, ptrdiff_t _srcstride,
-                   int height, intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_uni_qpel_hv_10_16_neon(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
-                   }
+                  const uint16_t* _src, ptrdiff_t _srcstride,
+                  int height, intptr_t mx, intptr_t my, int width){
+                    if(height >=8){
+                      ov_put_vvc_uni_qpel_hv_10_16_neon_8lines(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_uni_qpel_hv_10_16_neon_4lines(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }
+                  }
 void ov_put_vvc_uni_qpel_hv_10_32_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
-                   const uint16_t* _src, ptrdiff_t _srcstride,
-                   int height, intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_uni_qpel_hv_10_32_neon(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
-                   }
+                  const uint16_t* _src, ptrdiff_t _srcstride,
+                  int height, intptr_t mx, intptr_t my, int width){
+                    if(height >=8){
+                      ov_put_vvc_uni_qpel_hv_10_32_neon_8lines(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_uni_qpel_hv_10_32_neon_4lines(_dst, _dststride, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }
+                  }
 
 void ov_put_vvc_bi0_qpel_h_10_8_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_bi0_qpel_h_10_8_neon(_dst, _src, _srcstride, height, ov_mc_filters_neon[mx-1], width);
-                   }
+                    ov_put_vvc_bi0_qpel_h_10_8_neon(_dst, _src, _srcstride, height, ov_mc_filters_neon[mx-1], width);
+                  }
 void ov_put_vvc_bi0_qpel_h_10_16_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
                     ov_put_vvc_bi0_qpel_h_10_16_neon(_dst, _src, _srcstride, height, ov_mc_filters_neon[mx-1], width);
@@ -178,119 +220,185 @@ void ov_put_vvc_bi0_qpel_h_10_32_neon_wrapper(int16_t* _dst, const uint16_t* _sr
 
 void ov_put_vvc_bi0_qpel_v_10_8_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_bi0_qpel_v_10_8_neon(_dst, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
-                   }
+                    if(height >=8){
+                      ov_put_vvc_bi0_qpel_v_10_8_neon_8lines(_dst, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_bi0_qpel_v_10_8_neon_4lines(_dst, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                    }
+                  }
 void ov_put_vvc_bi0_qpel_v_10_16_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_bi0_qpel_v_10_16_neon(_dst, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                    if(height >=8){
+                      ov_put_vvc_bi0_qpel_v_10_16_neon_8lines(_dst, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_bi0_qpel_v_10_16_neon_4lines(_dst, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                    }
                   }
 void ov_put_vvc_bi0_qpel_v_10_32_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_bi0_qpel_v_10_32_neon(_dst, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                    if(height >=8){
+                      ov_put_vvc_bi0_qpel_v_10_32_neon_8lines(_dst, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_bi0_qpel_v_10_32_neon_4lines(_dst, _src, _srcstride, height, ov_mc_filters_neon[my-1], width);
+                    }
                   }
 
 void ov_put_vvc_bi0_qpel_hv_10_8_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_bi0_qpel_hv_10_8_neon(_dst, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
-                   }
+                    if(height >=8){
+                      ov_put_vvc_bi0_qpel_hv_10_8_neon_8lines(_dst, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_bi0_qpel_hv_10_8_neon_4lines(_dst, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }
+                  }
 void ov_put_vvc_bi0_qpel_hv_10_16_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_bi0_qpel_hv_10_16_neon(_dst, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    if(height >=8){
+                      ov_put_vvc_bi0_qpel_hv_10_16_neon_8lines(_dst, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_bi0_qpel_hv_10_16_neon_4lines(_dst, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }
                   }
 void ov_put_vvc_bi0_qpel_hv_10_32_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_bi0_qpel_hv_10_32_neon(_dst, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    if(height >=8){
+                      ov_put_vvc_bi0_qpel_hv_10_32_neon_8lines(_dst, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_bi0_qpel_hv_10_32_neon_4lines(_dst, _src, _srcstride, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }
                   }
 
- void ov_put_vvc_bi1_qpel_h_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
-                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
-                   intptr_t mx, intptr_t my, int width){
-                      ov_put_vvc_bi1_qpel_h_10_8_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[mx-1], width);
-                    }
- void ov_put_vvc_bi1_qpel_h_10_16_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
-                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
-                   intptr_t mx, intptr_t my, int width){
-                      ov_put_vvc_bi1_qpel_h_10_16_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[mx-1], width);
-                    }
- void ov_put_vvc_bi1_qpel_h_10_32_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
-                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
-                   intptr_t mx, intptr_t my, int width){
-                      ov_put_vvc_bi1_qpel_h_10_32_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[mx-1], width);
-                    }
+void ov_put_vvc_bi1_qpel_h_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
+                  ptrdiff_t _srcstride, const int16_t* _src1, int height,
+                  intptr_t mx, intptr_t my, int width){
+                    ov_put_vvc_bi1_qpel_h_10_8_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[mx-1], width);
+                  }
+void ov_put_vvc_bi1_qpel_h_10_16_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
+                  ptrdiff_t _srcstride, const int16_t* _src1, int height,
+                  intptr_t mx, intptr_t my, int width){
+                    ov_put_vvc_bi1_qpel_h_10_16_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[mx-1], width);
+                  }
+void ov_put_vvc_bi1_qpel_h_10_32_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
+                  ptrdiff_t _srcstride, const int16_t* _src1, int height,
+                  intptr_t mx, intptr_t my, int width){
+                    ov_put_vvc_bi1_qpel_h_10_32_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[mx-1], width);
+                  }
 
 void ov_put_vvc_bi1_qpel_v_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
                   intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_bi1_qpel_v_10_8_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[my-1], width);
-                   }
+                    if(height >= 8){
+                      ov_put_vvc_bi1_qpel_v_10_8_neon_8lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_bi1_qpel_v_10_8_neon_4lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[my-1], width);
+                    }
+                  }
 void ov_put_vvc_bi1_qpel_v_10_16_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
                   intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_bi1_qpel_v_10_16_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[my-1], width);
-                   }
+                    if(height >= 8){
+                      ov_put_vvc_bi1_qpel_v_10_16_neon_8lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_bi1_qpel_v_10_16_neon_4lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[my-1], width);
+                    }
+                  }
 void ov_put_vvc_bi1_qpel_v_10_32_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
                   intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_bi1_qpel_v_10_32_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[my-1], width);
-                   }
+                    if(height >= 8){
+                      ov_put_vvc_bi1_qpel_v_10_32_neon_8lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_bi1_qpel_v_10_32_neon_4lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[my-1], width);
+                    }
+                  }
 
 void ov_put_vvc_bi1_qpel_hv_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
-                 ptrdiff_t _srcstride, const int16_t* _src1, int height,
-                 intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_bi1_qpel_hv_10_8_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                  ptrdiff_t _srcstride, const int16_t* _src1, int height,
+                  intptr_t mx, intptr_t my, int width){
+                    if(height >= 8){
+                      ov_put_vvc_bi1_qpel_hv_10_8_neon_8lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_bi1_qpel_hv_10_8_neon_4lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }
                   }
 void ov_put_vvc_bi1_qpel_hv_10_16_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
-                 ptrdiff_t _srcstride, const int16_t* _src1, int height,
-                 intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_bi1_qpel_hv_10_16_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                  ptrdiff_t _srcstride, const int16_t* _src1, int height,
+                  intptr_t mx, intptr_t my, int width){
+                    if(height >= 8){
+                      ov_put_vvc_bi1_qpel_hv_10_16_neon_8lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_bi1_qpel_hv_10_16_neon_4lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }
                   }
 void ov_put_vvc_bi1_qpel_hv_10_32_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
-                 ptrdiff_t _srcstride, const int16_t* _src1, int height,
-                 intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_bi1_qpel_hv_10_32_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                  ptrdiff_t _srcstride, const int16_t* _src1, int height,
+                  intptr_t mx, intptr_t my, int width){
+                    if(height >= 8){
+                      ov_put_vvc_bi1_qpel_hv_10_32_neon_8lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }else{
+                      ov_put_vvc_bi1_qpel_hv_10_32_neon_4lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mc_filters_neon[mx-1], ov_mc_filters_neon[my-1], width);
+                    }
                   }
 
 void ov_put_vvc_uni_epel_h_10_8_neon();
 void ov_put_vvc_uni_epel_h_10_16_neon();
 void ov_put_vvc_uni_epel_h_10_32_neon();
 
-void ov_put_vvc_uni_epel_v_10_8_neon();
-void ov_put_vvc_uni_epel_v_10_16_neon();
-void ov_put_vvc_uni_epel_v_10_32_neon();
+void ov_put_vvc_uni_epel_v_10_8_neon_4lines();
+void ov_put_vvc_uni_epel_v_10_8_neon_2lines();
+void ov_put_vvc_uni_epel_v_10_16_neon_4lines();
+void ov_put_vvc_uni_epel_v_10_16_neon_2lines();
+void ov_put_vvc_uni_epel_v_10_32_neon_4lines();
+void ov_put_vvc_uni_epel_v_10_32_neon_2lines();
 
-void ov_put_vvc_uni_epel_hv_10_8_neon();
-void ov_put_vvc_uni_epel_hv_10_16_neon();
-void ov_put_vvc_uni_epel_hv_10_32_neon();
+void ov_put_vvc_uni_epel_hv_10_8_neon_4lines();
+void ov_put_vvc_uni_epel_hv_10_8_neon_2lines();
+void ov_put_vvc_uni_epel_hv_10_16_neon_4lines();
+void ov_put_vvc_uni_epel_hv_10_16_neon_2lines();
+void ov_put_vvc_uni_epel_hv_10_32_neon_4lines();
+void ov_put_vvc_uni_epel_hv_10_32_neon_2lines();
 
 void ov_put_vvc_bi0_epel_h_10_8_neon();
 void ov_put_vvc_bi0_epel_h_10_16_neon();
 void ov_put_vvc_bi0_epel_h_10_32_neon();
 
-void ov_put_vvc_bi0_epel_v_10_8_neon();
-void ov_put_vvc_bi0_epel_v_10_16_neon();
-void ov_put_vvc_bi0_epel_v_10_32_neon();
+void ov_put_vvc_bi0_epel_v_10_8_neon_4lines();
+void ov_put_vvc_bi0_epel_v_10_8_neon_2lines();
+void ov_put_vvc_bi0_epel_v_10_16_neon_4lines();
+void ov_put_vvc_bi0_epel_v_10_16_neon_2lines();
+void ov_put_vvc_bi0_epel_v_10_32_neon_4lines();
+void ov_put_vvc_bi0_epel_v_10_32_neon_2lines();
 
-void ov_put_vvc_bi0_epel_hv_10_8_neon();
-void ov_put_vvc_bi0_epel_hv_10_16_neon();
-void ov_put_vvc_bi0_epel_hv_10_32_neon();
+void ov_put_vvc_bi0_epel_hv_10_8_neon_4lines();
+void ov_put_vvc_bi0_epel_hv_10_8_neon_2lines();
+void ov_put_vvc_bi0_epel_hv_10_16_neon_4lines();
+void ov_put_vvc_bi0_epel_hv_10_16_neon_2lines();
+void ov_put_vvc_bi0_epel_hv_10_32_neon_4lines();
+void ov_put_vvc_bi0_epel_hv_10_32_neon_2lines();
 
 void ov_put_vvc_bi1_epel_h_10_8_neon();
 void ov_put_vvc_bi1_epel_h_10_16_neon();
 void ov_put_vvc_bi1_epel_h_10_32_neon();
 
-void ov_put_vvc_bi1_epel_v_10_8_neon();
-void ov_put_vvc_bi1_epel_v_10_16_neon();
-void ov_put_vvc_bi1_epel_v_10_32_neon();
+void ov_put_vvc_bi1_epel_v_10_8_neon_4lines();
+void ov_put_vvc_bi1_epel_v_10_8_neon_2lines();
+void ov_put_vvc_bi1_epel_v_10_16_neon_4lines();
+void ov_put_vvc_bi1_epel_v_10_16_neon_2lines();
+void ov_put_vvc_bi1_epel_v_10_32_neon_4lines();
+void ov_put_vvc_bi1_epel_v_10_32_neon_2lines();
 
-void ov_put_vvc_bi1_epel_hv_10_8_neon();
-void ov_put_vvc_bi1_epel_hv_10_16_neon();
-void ov_put_vvc_bi1_epel_hv_10_32_neon();
+void ov_put_vvc_bi1_epel_hv_10_8_neon_4lines();
+void ov_put_vvc_bi1_epel_hv_10_8_neon_2lines();
+void ov_put_vvc_bi1_epel_hv_10_16_neon_4lines();
+void ov_put_vvc_bi1_epel_hv_10_16_neon_2lines();
+void ov_put_vvc_bi1_epel_hv_10_32_neon_4lines();
+void ov_put_vvc_bi1_epel_hv_10_32_neon_2lines();
 
 void ov_put_vvc_uni_epel_h_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
-                   const uint16_t* _src, ptrdiff_t _srcstride,
-                   int height, intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_uni_epel_h_10_8_neon(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[mx - 1], width);
-                   }
+                  const uint16_t* _src, ptrdiff_t _srcstride,
+                  int height, intptr_t mx, intptr_t my, int width){
+                    ov_put_vvc_uni_epel_h_10_8_neon(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[mx - 1], width);
+                  }
 void ov_put_vvc_uni_epel_h_10_16_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
                   const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
@@ -303,123 +411,195 @@ void ov_put_vvc_uni_epel_h_10_32_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststri
                   }
 
 void ov_put_vvc_uni_epel_v_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
-                   const uint16_t* _src, ptrdiff_t _srcstride,
-                   int height, intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_uni_epel_v_10_8_neon(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[my - 1], width);
-                   }
+                  const uint16_t* _src, ptrdiff_t _srcstride,
+                  int height, intptr_t mx, intptr_t my, int width){
+                    if(height >= 4){
+                      ov_put_vvc_uni_epel_v_10_8_neon_4lines(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[my - 1], width);
+                    }else{
+                      ov_put_vvc_uni_epel_v_10_8_neon_2lines(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[my - 1], width);
+                    }
+                  }
 void ov_put_vvc_uni_epel_v_10_16_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
                   const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_uni_epel_v_10_16_neon(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[my - 1], width);
+                    if(height >= 4){
+                      ov_put_vvc_uni_epel_v_10_16_neon_4lines(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[my - 1], width);
+                    }else{
+                      ov_put_vvc_uni_epel_v_10_16_neon_2lines(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[my - 1], width);
+                    }
                   }
 void ov_put_vvc_uni_epel_v_10_32_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
                   const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_uni_epel_v_10_32_neon(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[my - 1], width);
+                    if(height >= 4){
+                      ov_put_vvc_uni_epel_v_10_32_neon_4lines(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[my - 1], width);
+                    }else{
+                      ov_put_vvc_uni_epel_v_10_32_neon_2lines(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[my - 1], width);
+                    }
                   }
 
 void ov_put_vvc_uni_epel_hv_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
-                   const uint16_t* _src, ptrdiff_t _srcstride,
-                   int height, intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_uni_epel_hv_10_8_neon(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[mx - 1], ov_mcp_filters_c[my - 1], width);
-                   }
+                  const uint16_t* _src, ptrdiff_t _srcstride,
+                  int height, intptr_t mx, intptr_t my, int width){
+                    if(height >= 4){
+                      ov_put_vvc_uni_epel_hv_10_8_neon_4lines(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[mx - 1], ov_mcp_filters_c[my - 1], width);
+                    }else{
+                      ov_put_vvc_uni_epel_hv_10_8_neon_2lines(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[mx - 1], ov_mcp_filters_c[my - 1], width);
+                    }
+                  }
 void ov_put_vvc_uni_epel_hv_10_16_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
                   const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_uni_epel_hv_10_16_neon(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[mx - 1], ov_mcp_filters_c[my - 1], width);
+                    if(height >= 4){
+                      ov_put_vvc_uni_epel_hv_10_16_neon_4lines(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[mx - 1], ov_mcp_filters_c[my - 1], width);
+                    }else{
+                      ov_put_vvc_uni_epel_hv_10_16_neon_2lines(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[mx - 1], ov_mcp_filters_c[my - 1], width);
+                    }
                   }
 void ov_put_vvc_uni_epel_hv_10_32_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride,
                   const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_uni_epel_hv_10_32_neon(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[mx - 1], ov_mcp_filters_c[my - 1], width);
+                    if(height >= 4){
+                      ov_put_vvc_uni_epel_hv_10_32_neon_4lines(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[mx - 1], ov_mcp_filters_c[my - 1], width);
+                    }else{
+                      ov_put_vvc_uni_epel_hv_10_32_neon_2lines(_dst, _dststride, _src, _srcstride, height, ov_mcp_filters_c[mx - 1], ov_mcp_filters_c[my - 1], width);
+                    }
                   }
 
 
 void ov_put_vvc_bi0_epel_h_10_8_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_bi0_epel_h_10_8_neon(_dst, _src, _srcstride, height, ov_mcp_filters_c[mx-1], width);
-                   }
+                    ov_put_vvc_bi0_epel_h_10_8_neon(_dst, _src, _srcstride, height, ov_mcp_filters_c[mx-1], width);
+                  }
 void ov_put_vvc_bi0_epel_h_10_16_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
-                 int height, intptr_t mx, intptr_t my, int width){
-                   ov_put_vvc_bi0_epel_h_10_16_neon(_dst, _src, _srcstride, height, ov_mcp_filters_c[mx-1], width);
-                 }
+                  int height, intptr_t mx, intptr_t my, int width){
+                    ov_put_vvc_bi0_epel_h_10_16_neon(_dst, _src, _srcstride, height, ov_mcp_filters_c[mx-1], width);
+                  }
 void ov_put_vvc_bi0_epel_h_10_32_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
-                 int height, intptr_t mx, intptr_t my, int width){
-                   ov_put_vvc_bi0_epel_h_10_32_neon(_dst, _src, _srcstride, height, ov_mcp_filters_c[mx-1], width);
-                 }
+                  int height, intptr_t mx, intptr_t my, int width){
+                    ov_put_vvc_bi0_epel_h_10_32_neon(_dst, _src, _srcstride, height, ov_mcp_filters_c[mx-1], width);
+                  }
 
 void ov_put_vvc_bi0_epel_v_10_8_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_bi0_epel_v_10_8_neon(_dst, _src, _srcstride, height, ov_mcp_filters_c[my-1], width);
-                   }
+                    if(height >= 4){
+                      ov_put_vvc_bi0_epel_v_10_8_neon_4lines(_dst, _src, _srcstride, height, ov_mcp_filters_c[my-1], width);
+                    }else{
+                      ov_put_vvc_bi0_epel_v_10_8_neon_2lines(_dst, _src, _srcstride, height, ov_mcp_filters_c[my-1], width);
+                    }
+                  }
 void ov_put_vvc_bi0_epel_v_10_16_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_bi0_epel_v_10_16_neon(_dst, _src, _srcstride, height, ov_mcp_filters_c[my-1], width);
+                    if(height >= 4){
+                      ov_put_vvc_bi0_epel_v_10_16_neon_4lines(_dst, _src, _srcstride, height, ov_mcp_filters_c[my-1], width);
+                    }else{
+                      ov_put_vvc_bi0_epel_v_10_16_neon_2lines(_dst, _src, _srcstride, height, ov_mcp_filters_c[my-1], width);
+                    }
                   }
 void ov_put_vvc_bi0_epel_v_10_32_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_bi0_epel_v_10_32_neon(_dst, _src, _srcstride, height, ov_mcp_filters_c[my-1], width);
+                    if(height >= 4){
+                      ov_put_vvc_bi0_epel_v_10_32_neon_4lines(_dst, _src, _srcstride, height, ov_mcp_filters_c[my-1], width);
+                    }else{
+                      ov_put_vvc_bi0_epel_v_10_32_neon_2lines(_dst, _src, _srcstride, height, ov_mcp_filters_c[my-1], width);
+                    }
                   }
 
 void ov_put_vvc_bi0_epel_hv_10_8_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_bi0_epel_hv_10_8_neon(_dst, _src, _srcstride, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
-                   }
+                    if(height >= 4){
+                      ov_put_vvc_bi0_epel_hv_10_8_neon_4lines(_dst, _src, _srcstride, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                    }else{
+                      ov_put_vvc_bi0_epel_hv_10_8_neon_2lines(_dst, _src, _srcstride, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                    }
+                  }
 void ov_put_vvc_bi0_epel_hv_10_16_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_bi0_epel_hv_10_16_neon(_dst, _src, _srcstride, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                    if(height >= 4){
+                      ov_put_vvc_bi0_epel_hv_10_16_neon_4lines(_dst, _src, _srcstride, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                    }else{
+                      ov_put_vvc_bi0_epel_hv_10_16_neon_2lines(_dst, _src, _srcstride, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                    }
                   }
 void ov_put_vvc_bi0_epel_hv_10_32_neon_wrapper(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
                   int height, intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_bi0_epel_hv_10_32_neon(_dst, _src, _srcstride, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                    if(height >= 4){
+                      ov_put_vvc_bi0_epel_hv_10_32_neon_4lines(_dst, _src, _srcstride, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                    }else{
+                      ov_put_vvc_bi0_epel_hv_10_32_neon_2lines(_dst, _src, _srcstride, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                    }
                   }
 
- void ov_put_vvc_bi1_epel_h_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
-                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
-                   intptr_t mx, intptr_t my, int width){
-                      ov_put_vvc_bi1_epel_h_10_8_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[mx-1], width);
-                    }
- void ov_put_vvc_bi1_epel_h_10_16_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
-                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
-                   intptr_t mx, intptr_t my, int width){
-                      ov_put_vvc_bi1_epel_h_10_16_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[mx-1], width);
-                    }
+void ov_put_vvc_bi1_epel_h_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
+                  ptrdiff_t _srcstride, const int16_t* _src1, int height,
+                  intptr_t mx, intptr_t my, int width){
+                    ov_put_vvc_bi1_epel_h_10_8_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[mx-1], width);
+                  }
+void ov_put_vvc_bi1_epel_h_10_16_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
+                  ptrdiff_t _srcstride, const int16_t* _src1, int height,
+                  intptr_t mx, intptr_t my, int width){
+                    ov_put_vvc_bi1_epel_h_10_16_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[mx-1], width);
+                  }
 void ov_put_vvc_bi1_epel_h_10_32_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
                   intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_bi1_epel_h_10_32_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[mx-1], width);
-                   }
+                    ov_put_vvc_bi1_epel_h_10_32_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[mx-1], width);
+                  }
 
 void ov_put_vvc_bi1_epel_v_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
                   intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_bi1_epel_v_10_8_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[my-1], width);
-                   }
+                    if(height >= 4){
+                      ov_put_vvc_bi1_epel_v_10_8_neon_4lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[my-1], width);
+                    }else{
+                      ov_put_vvc_bi1_epel_v_10_8_neon_2lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[my-1], width);
+                    }
+                  }
 void ov_put_vvc_bi1_epel_v_10_16_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
                   intptr_t mx, intptr_t my, int width){
-                     ov_put_vvc_bi1_epel_v_10_16_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[my-1], width);
-                   }
+                    if(height >= 4){
+                      ov_put_vvc_bi1_epel_v_10_16_neon_4lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[my-1], width);
+                    }else{
+                      ov_put_vvc_bi1_epel_v_10_16_neon_2lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[my-1], width);
+                    }
+                  }
 void ov_put_vvc_bi1_epel_v_10_32_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
-                 ptrdiff_t _srcstride, const int16_t* _src1, int height,
-                 intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_bi1_epel_v_10_32_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[my-1], width);
+                  ptrdiff_t _srcstride, const int16_t* _src1, int height,
+                  intptr_t mx, intptr_t my, int width){
+                    if(height >= 4){
+                      ov_put_vvc_bi1_epel_v_10_32_neon_4lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[my-1], width);
+                    }else{
+                      ov_put_vvc_bi1_epel_v_10_32_neon_2lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[my-1], width);
+                    }
                   }
 
 void ov_put_vvc_bi1_epel_hv_10_8_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
-                 ptrdiff_t _srcstride, const int16_t* _src1, int height,
-                 intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_bi1_epel_hv_10_8_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                  ptrdiff_t _srcstride, const int16_t* _src1, int height,
+                  intptr_t mx, intptr_t my, int width){
+                    if(height >= 4){
+                      ov_put_vvc_bi1_epel_hv_10_8_neon_4lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                    }else{
+                      ov_put_vvc_bi1_epel_hv_10_8_neon_2lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                    }
                   }
 void ov_put_vvc_bi1_epel_hv_10_16_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
-                 ptrdiff_t _srcstride, const int16_t* _src1, int height,
-                 intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_bi1_epel_hv_10_16_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                  ptrdiff_t _srcstride, const int16_t* _src1, int height,
+                  intptr_t mx, intptr_t my, int width){
+                    if(height >= 4){
+                      ov_put_vvc_bi1_epel_hv_10_16_neon_4lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                    }else{
+                      ov_put_vvc_bi1_epel_hv_10_16_neon_2lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                    }
                   }
 void ov_put_vvc_bi1_epel_hv_10_32_neon_wrapper(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
-                 ptrdiff_t _srcstride, const int16_t* _src1, int height,
-                 intptr_t mx, intptr_t my, int width){
-                    ov_put_vvc_bi1_epel_hv_10_32_neon(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                  ptrdiff_t _srcstride, const int16_t* _src1, int height,
+                  intptr_t mx, intptr_t my, int width){
+                    if(height >= 4){
+                      ov_put_vvc_bi1_epel_hv_10_32_neon_4lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                    }else{
+                      ov_put_vvc_bi1_epel_hv_10_32_neon_2lines(_dst, _dststride, _src0, _srcstride, _src1, height, ov_mcp_filters_c[mx-1], ov_mcp_filters_c[my-1], width);
+                    }
                   }
 
 void
@@ -432,106 +612,106 @@ rcn_init_mc_functions_neon(struct RCNFunctions* const rcn_funcs)
 
   mc_l->bidir0[0][SIZE_BLOCK_8] = &ov_put_vvc_bi0_pel_pixels_10_8_neon;
   mc_l->bidir1[0][SIZE_BLOCK_8] = &ov_put_vvc_bi1_pel_pixels_10_8_neon;
-  //
+  
   mc_l->unidir[1][SIZE_BLOCK_8] = &ov_put_vvc_uni_qpel_h_10_8_neon_wrapper;
   mc_l->bidir0[1][SIZE_BLOCK_8] = &ov_put_vvc_bi0_qpel_h_10_8_neon_wrapper;
   mc_l->bidir1[1][SIZE_BLOCK_8] = &ov_put_vvc_bi1_qpel_h_10_8_neon_wrapper;
-  //
+  
   mc_l->unidir[2][SIZE_BLOCK_8] = &ov_put_vvc_uni_qpel_v_10_8_neon_wrapper;
   mc_l->bidir0[2][SIZE_BLOCK_8] = &ov_put_vvc_bi0_qpel_v_10_8_neon_wrapper;
   mc_l->bidir1[2][SIZE_BLOCK_8] = &ov_put_vvc_bi1_qpel_v_10_8_neon_wrapper;
-  //
+  
   mc_l->unidir[3][SIZE_BLOCK_8] = &ov_put_vvc_uni_qpel_hv_10_8_neon_wrapper;
   mc_l->bidir0[3][SIZE_BLOCK_8] = &ov_put_vvc_bi0_qpel_hv_10_8_neon_wrapper;
-  // mc_l->bidir0[3][SIZE_BLOCK_8] = &ov_put_vvc_bi1_qpel_hv_10_8_neon_wrapper;
-  //
+  mc_l->bidir1[3][SIZE_BLOCK_8] = &ov_put_vvc_bi1_qpel_hv_10_8_neon_wrapper;
+  
   mc_l->bidir0[0][SIZE_BLOCK_16] = &ov_put_vvc_bi0_pel_pixels_10_16_neon;
   mc_l->bidir1[0][SIZE_BLOCK_16] = &ov_put_vvc_bi1_pel_pixels_10_16_neon;
-  //
+  
   mc_l->unidir[1][SIZE_BLOCK_16] = &ov_put_vvc_uni_qpel_h_10_16_neon_wrapper;
   mc_l->bidir0[1][SIZE_BLOCK_16] = &ov_put_vvc_bi0_qpel_h_10_16_neon_wrapper;
   mc_l->bidir1[1][SIZE_BLOCK_16] = &ov_put_vvc_bi1_qpel_h_10_16_neon_wrapper;
-  //
+  
   mc_l->unidir[2][SIZE_BLOCK_16] = &ov_put_vvc_uni_qpel_v_10_16_neon_wrapper;
   mc_l->bidir0[2][SIZE_BLOCK_16] = &ov_put_vvc_bi0_qpel_v_10_16_neon_wrapper;
   mc_l->bidir1[2][SIZE_BLOCK_16] = &ov_put_vvc_bi1_qpel_v_10_16_neon_wrapper;
-  //
+  
   mc_l->unidir[3][SIZE_BLOCK_16] = &ov_put_vvc_uni_qpel_hv_10_16_neon_wrapper;
   mc_l->bidir0[3][SIZE_BLOCK_16] = &ov_put_vvc_bi0_qpel_hv_10_16_neon_wrapper;
   mc_l->bidir1[3][SIZE_BLOCK_16] = &ov_put_vvc_bi1_qpel_hv_10_16_neon_wrapper;
-  //
+  
   mc_l->bidir0[0][SIZE_BLOCK_32] = &ov_put_vvc_bi0_pel_pixels_10_32_neon;
   mc_l->bidir1[0][SIZE_BLOCK_32] = &ov_put_vvc_bi1_pel_pixels_10_32_neon;
-  //
+  
   mc_l->unidir[1][SIZE_BLOCK_32] = &ov_put_vvc_uni_qpel_h_10_32_neon_wrapper;
   mc_l->bidir0[1][SIZE_BLOCK_32] = &ov_put_vvc_bi0_qpel_h_10_32_neon_wrapper;
   mc_l->bidir1[1][SIZE_BLOCK_32] = &ov_put_vvc_bi1_qpel_h_10_32_neon_wrapper;
-  //
+  
   mc_l->unidir[2][SIZE_BLOCK_32] = &ov_put_vvc_uni_qpel_v_10_32_neon_wrapper;
   mc_l->bidir0[2][SIZE_BLOCK_32] = &ov_put_vvc_bi0_qpel_v_10_32_neon_wrapper;
   mc_l->bidir1[2][SIZE_BLOCK_32] = &ov_put_vvc_bi1_qpel_v_10_32_neon_wrapper;
-  //
+  
   mc_l->unidir[3][SIZE_BLOCK_32] = &ov_put_vvc_uni_qpel_hv_10_32_neon_wrapper;
   mc_l->bidir0[3][SIZE_BLOCK_32] = &ov_put_vvc_bi0_qpel_hv_10_32_neon_wrapper;
   mc_l->bidir1[3][SIZE_BLOCK_32] = &ov_put_vvc_bi1_qpel_hv_10_32_neon_wrapper;
 
-  /* Chroma functions */
+  // /* Chroma functions */
   mc_c->bidir0[0][SIZE_BLOCK_4] = &ov_put_vvc_bi0_pel_pixels_10_4_neon;
   mc_c->bidir1[0][SIZE_BLOCK_4] = &ov_put_vvc_bi1_pel_pixels_10_4_neon;
   //
-  // mc_c->unidir[1][SIZE_BLOCK_4] = &ov_put_vvc_uni_epel_h_10_8_neon_wrapper;
-  // mc_c->bidir0[1][SIZE_BLOCK_4] = &ov_put_vvc_bi0_epel_h_10_8_neon_wrapper;
-  // mc_c->bidir1[1][SIZE_BLOCK_4] = &ov_put_vvc_bi1_epel_h_10_8_neon_wrapper;
+  mc_c->unidir[1][SIZE_BLOCK_4] = &ov_put_vvc_uni_epel_h_10_8_neon_wrapper;
+  mc_c->bidir0[1][SIZE_BLOCK_4] = &ov_put_vvc_bi0_epel_h_10_8_neon_wrapper;
+  mc_c->bidir1[1][SIZE_BLOCK_4] = &ov_put_vvc_bi1_epel_h_10_8_neon_wrapper;
   //
-  // mc_c->unidir[2][SIZE_BLOCK_4] = &dav1d_ff_hevc_transform_4x4_neon_8;
-  // mc_c->bidir0[2][SIZE_BLOCK_4] = &dav1d_ff_hevc_transform_4x4_neon_8;
-  // mc_c->bidir1[2][SIZE_BLOCK_4] = &dav1d_ff_hevc_transform_4x4_neon_8;
+  mc_c->unidir[2][SIZE_BLOCK_4] = &ov_put_vvc_uni_epel_v_10_8_neon_wrapper;
+  mc_c->bidir0[2][SIZE_BLOCK_4] = &ov_put_vvc_bi0_epel_v_10_8_neon_wrapper;
+  mc_c->bidir1[2][SIZE_BLOCK_4] = &ov_put_vvc_bi1_epel_v_10_8_neon_wrapper;
   //
-  // mc_c->unidir[3][SIZE_BLOCK_4] = &dav1d_ff_hevc_transform_4x4_neon_8;
-  // mc_c->bidir0[3][SIZE_BLOCK_4] = &dav1d_ff_hevc_transform_4x4_neon_8;
-  // mc_c->bidir1[3][SIZE_BLOCK_4] = &dav1d_ff_hevc_transform_4x4_neon_8;
+  mc_c->unidir[3][SIZE_BLOCK_4] = &ov_put_vvc_uni_epel_hv_10_8_neon_wrapper;
+  mc_c->bidir0[3][SIZE_BLOCK_4] = &ov_put_vvc_bi0_epel_hv_10_8_neon_wrapper;
+  mc_c->bidir1[3][SIZE_BLOCK_4] = &ov_put_vvc_bi1_epel_hv_10_8_neon_wrapper;
   //
   mc_c->bidir0[0][SIZE_BLOCK_8] = &ov_put_vvc_bi0_pel_pixels_10_8_neon;
   mc_c->bidir1[0][SIZE_BLOCK_8] = &ov_put_vvc_bi1_pel_pixels_10_8_neon;
-  //
+  
   mc_c->unidir[1][SIZE_BLOCK_8] = &ov_put_vvc_uni_epel_h_10_8_neon_wrapper;
   mc_c->bidir0[1][SIZE_BLOCK_8] = &ov_put_vvc_bi0_epel_h_10_8_neon_wrapper;
   mc_c->bidir1[1][SIZE_BLOCK_8] = &ov_put_vvc_bi1_epel_h_10_8_neon_wrapper;
-  //
+  
   mc_c->unidir[2][SIZE_BLOCK_8] = &ov_put_vvc_uni_epel_v_10_8_neon_wrapper;
   mc_c->bidir0[2][SIZE_BLOCK_8] = &ov_put_vvc_bi0_epel_v_10_8_neon_wrapper;
   mc_c->bidir1[2][SIZE_BLOCK_8] = &ov_put_vvc_bi1_epel_v_10_8_neon_wrapper;
-  //
+  
   mc_c->unidir[3][SIZE_BLOCK_8] = &ov_put_vvc_uni_epel_hv_10_8_neon_wrapper;
   mc_c->bidir0[3][SIZE_BLOCK_8] = &ov_put_vvc_bi0_epel_hv_10_8_neon_wrapper;
   mc_c->bidir1[3][SIZE_BLOCK_8] = &ov_put_vvc_bi1_epel_hv_10_8_neon_wrapper;
-  //
+  
   mc_c->bidir0[0][SIZE_BLOCK_16] = &ov_put_vvc_bi0_pel_pixels_10_16_neon;
   mc_c->bidir1[0][SIZE_BLOCK_16] = &ov_put_vvc_bi1_pel_pixels_10_16_neon;
-  //
+  
   mc_c->unidir[1][SIZE_BLOCK_16] = &ov_put_vvc_uni_epel_h_10_16_neon_wrapper;
   mc_c->bidir0[1][SIZE_BLOCK_16] = &ov_put_vvc_bi0_epel_h_10_16_neon_wrapper;
   mc_c->bidir1[1][SIZE_BLOCK_16] = &ov_put_vvc_bi1_epel_h_10_16_neon_wrapper;
-  //
+  
   mc_c->unidir[2][SIZE_BLOCK_16] = &ov_put_vvc_uni_epel_v_10_16_neon_wrapper;
   mc_c->bidir0[2][SIZE_BLOCK_16] = &ov_put_vvc_bi0_epel_v_10_16_neon_wrapper;
   mc_c->bidir1[2][SIZE_BLOCK_16] = &ov_put_vvc_bi1_epel_v_10_16_neon_wrapper;
-  //
+  
   mc_c->unidir[3][SIZE_BLOCK_16] = &ov_put_vvc_uni_epel_hv_10_16_neon_wrapper;
   mc_c->bidir0[3][SIZE_BLOCK_16] = &ov_put_vvc_bi0_epel_hv_10_16_neon_wrapper;
   mc_c->bidir1[3][SIZE_BLOCK_16] = &ov_put_vvc_bi1_epel_hv_10_16_neon_wrapper;
 
-  // mc_c->bidir0[0][SIZE_BLOCK_32] = &ov_put_vvc_bi0_pel_pixels_10_16_neon;
-  // mc_c->bidir1[0][SIZE_BLOCK_32] = &ov_put_vvc_bi1_pel_pixels_10_16_neon;
-  //
+  mc_c->bidir0[0][SIZE_BLOCK_32] = &ov_put_vvc_bi0_pel_pixels_10_32_neon;
+  mc_c->bidir1[0][SIZE_BLOCK_32] = &ov_put_vvc_bi1_pel_pixels_10_32_neon;
+  
   mc_c->unidir[1][SIZE_BLOCK_32] = &ov_put_vvc_uni_epel_h_10_32_neon_wrapper;
   mc_c->bidir0[1][SIZE_BLOCK_32] = &ov_put_vvc_bi0_epel_h_10_32_neon_wrapper;
   mc_c->bidir1[1][SIZE_BLOCK_32] = &ov_put_vvc_bi1_epel_h_10_32_neon_wrapper;
-  //
+  
   mc_c->unidir[2][SIZE_BLOCK_32] = &ov_put_vvc_uni_epel_v_10_32_neon_wrapper;
   mc_c->bidir0[2][SIZE_BLOCK_32] = &ov_put_vvc_bi0_epel_v_10_32_neon_wrapper;
   mc_c->bidir1[2][SIZE_BLOCK_32] = &ov_put_vvc_bi1_epel_v_10_32_neon_wrapper;
-  //
+  
   mc_c->unidir[3][SIZE_BLOCK_32] = &ov_put_vvc_uni_epel_hv_10_32_neon_wrapper;
   mc_c->bidir0[3][SIZE_BLOCK_32] = &ov_put_vvc_bi0_epel_hv_10_32_neon_wrapper;
   mc_c->bidir1[3][SIZE_BLOCK_32] = &ov_put_vvc_bi1_epel_hv_10_32_neon_wrapper;

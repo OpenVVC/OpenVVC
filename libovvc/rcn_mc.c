@@ -7,8 +7,8 @@
 #include "rcn_mc.h"
 #include "rcn_structures.h"
 
-#define BITDEPTH 10
-#define ov_bdclip(a) ov_clip_uintp2(a, BITDEPTH)
+#include "bitdepth.h"
+
 #define MAX_PB_SIZE 128
 
 #define EPEL_EXTRA_BEFORE 1
@@ -347,18 +347,18 @@ static const int8_t ov_mc_filters_rpr_c[3][32][4] =
 };
 
 static void
-put_vvc_pel_uni_pixels(uint16_t* _dst, ptrdiff_t _dststride,
-                       const uint16_t* _src, ptrdiff_t _srcstride, int height,
+put_vvc_pel_uni_pixels(OVSample* _dst, ptrdiff_t _dststride,
+                       const OVSample* _src, ptrdiff_t _srcstride, int height,
                        intptr_t mx, intptr_t my, int width)
 {
     int y;
-    const uint16_t* src = _src;
+    const OVSample* src = _src;
     ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
 
     for (y = 0; y < height; y++) {
-        memcpy(dst, src, width * sizeof(uint16_t));
+        memcpy(dst, src, width * sizeof(OVSample));
         src += srcstride;
         dst += dststride;
     }
@@ -367,11 +367,11 @@ put_vvc_pel_uni_pixels(uint16_t* _dst, ptrdiff_t _dststride,
 /*FIXME It might actually be better to use one function for bi pred instead of
  * 2*/
 static void
-put_vvc_pel_pixels(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
+put_vvc_pel_pixels(int16_t* _dst, const OVSample* _src, ptrdiff_t _srcstride,
                    int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    const uint16_t* src = _src;
+    const OVSample* src = _src;
 
     int16_t* dst = (int16_t*)_dst;
 
@@ -387,16 +387,16 @@ put_vvc_pel_pixels(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 }
 
 static void
-put_vvc_pel_bi_pixels(uint16_t* _dst, ptrdiff_t _dststride,
-                      const uint16_t* _src0, ptrdiff_t _srcstride,
+put_vvc_pel_bi_pixels(OVSample* _dst, ptrdiff_t _dststride,
+                      const OVSample* _src0, ptrdiff_t _srcstride,
                       const int16_t* _src1, int height, intptr_t mx,
                       intptr_t my, int width)
 {
     int x, y;
-    const uint16_t* src0 = _src0;
+    const OVSample* src0 = _src0;
     const int16_t* src1 = _src1;
     ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
     int shift = 14 - BITDEPTH + 1;
     int offset = 1 << (shift - 1);
@@ -413,14 +413,14 @@ put_vvc_pel_bi_pixels(uint16_t* _dst, ptrdiff_t _dststride,
 }
 
 static void
-put_vvc_qpel_uni_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_qpel_uni_h(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width)
 {
     int x, y;
-    const uint16_t* src = _src;
+    const OVSample* src = _src;
     ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
     const int8_t* filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
     int shift = 14 - BITDEPTH;
@@ -437,14 +437,14 @@ put_vvc_qpel_uni_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 }
 
 static void
-put_vvc_qpel_uni_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_qpel_uni_v(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width)
 {
     int x, y;
-    const uint16_t* src = _src;
+    const OVSample* src = _src;
     ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
     const int8_t* filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
     int shift = 14 - BITDEPTH;
@@ -461,15 +461,15 @@ put_vvc_qpel_uni_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 }
 
 static void
-put_vvc_qpel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_qpel_uni_hv(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
                     ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                     int width)
 {
     int x, y;
     const int8_t* filter;
-    const uint16_t* src = _src;
+    const OVSample* src = _src;
     ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
     int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
@@ -500,12 +500,12 @@ put_vvc_qpel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 }
 
 static void
-put_vvc_pel_rpr(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_pel_rpr(uint16_t* _dst, ptrdiff_t _dststride, const OVSample* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
     int x, y;
-    const uint16_t* src = _src;
+    const OVSample* src = (OVSample*) _src;
     ptrdiff_t srcstride = _srcstride;
     int16_t* dst = (int16_t*)_dst;
     ptrdiff_t dststride = _dststride;
@@ -521,12 +521,12 @@ put_vvc_pel_rpr(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 
 
 static void
-put_vvc_qpel_rpr_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_qpel_rpr_h(uint16_t* _dst, ptrdiff_t _dststride, const OVSample* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
     int x, y;
-    const uint16_t* src = _src;
+    const OVSample* src = (OVSample*)_src;
     ptrdiff_t srcstride = _srcstride;
     int16_t* dst = (int16_t*)_dst;
     ptrdiff_t dststride = _dststride;
@@ -542,14 +542,14 @@ put_vvc_qpel_rpr_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 }
 
 static void
-put_vvc_qpel_rpr_clip_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_qpel_rpr_clip_v(OVSample* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
     int x, y;
     const int16_t* src =  (int16_t*)_src;
     ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
     const int8_t* filter = ov_mc_filters_rpr[filter_idx][my];    
     int shift = 14 - BITDEPTH;
@@ -576,7 +576,6 @@ put_vvc_qpel_rpr_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src
     ptrdiff_t srcstride = _srcstride;
     int16_t* dst = (int16_t*)_dst;
     ptrdiff_t dststride = _dststride;
-    // const int8_t* filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
     const int8_t* filter = ov_mc_filters_rpr[filter_idx][my];    
 
     for (y = 0; y < height; y++) {
@@ -590,14 +589,14 @@ put_vvc_qpel_rpr_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src
 
 
 static void
-put_vvc_pel_rpr_clip(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_pel_rpr_clip(OVSample* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
     int x, y;
     const uint16_t* src = _src;
     ptrdiff_t srcstride = _srcstride;
-    int16_t* dst = (int16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
     int shift = 14 - BITDEPTH;
     int offset = 1 << (shift - 1);
@@ -633,7 +632,7 @@ put_vvc_pel_rpr_bi(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 }
 
 static void
-put_vvc_qpel_rpr_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
+put_vvc_qpel_rpr_bi_sum(OVSample* _dst, ptrdiff_t _dststride,
                       const uint16_t* _src0, ptrdiff_t _src0stride,
                       const uint16_t* _src1, ptrdiff_t _src1stride,
                       int height, intptr_t mx, intptr_t my, int width)
@@ -643,14 +642,13 @@ put_vvc_qpel_rpr_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
     const int16_t* src1 = (int16_t*)_src1;
     ptrdiff_t src0stride = _src0stride;
     ptrdiff_t src1stride = _src1stride;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
     int shift = 14 - BITDEPTH + 1;
     int offset = 1 << (shift - 1);
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
-            // printf("%i %i %i %i \n", x, y, src0[x], src1[x]);
             dst[x] = ov_bdclip((src0[x] + src1[x] + offset) >>
                                    shift);
         }
@@ -660,9 +658,8 @@ put_vvc_qpel_rpr_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
     }
 }
 
-//TODOrpr: change name and pointer
-void
-put_vvc_qpel_rpr_weighted(uint16_t* _dst, ptrdiff_t _dststride,
+static void
+put_vvc_qpel_rpr_weighted(OVSample* _dst, ptrdiff_t _dststride,
                       const uint16_t* _src0, ptrdiff_t _src0stride,
                       const uint16_t* _src1, ptrdiff_t _src1stride,
                       int height, int denom, int wx0, int wx1,
@@ -673,7 +670,7 @@ put_vvc_qpel_rpr_weighted(uint16_t* _dst, ptrdiff_t _dststride,
     const int16_t* src1 = (int16_t*)_src1;
     ptrdiff_t src0stride = _src0stride;
     ptrdiff_t src1stride = _src1stride;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
     int shift = 14 - BITDEPTH + denom;
     int offset = 1 << (shift - 1);
@@ -690,14 +687,14 @@ put_vvc_qpel_rpr_weighted(uint16_t* _dst, ptrdiff_t _dststride,
 }
 
 static void
-put_vvc_epel_rpr_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_epel_rpr_h(uint16_t* _dst, ptrdiff_t _dststride, const OVSample* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
     int x, y;
-    const uint16_t* src = _src;
+    const OVSample* src = (OVSample*) _src;
     ptrdiff_t srcstride = _srcstride;
-    int16_t* dst = (int16_t*)_dst;
+    uint16_t* dst = (uint16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     const int8_t* filter = ov_mc_filters_rpr_c[filter_idx][mx];
 
@@ -711,14 +708,14 @@ put_vvc_epel_rpr_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 }
 
 static void
-put_vvc_epel_rpr_uni_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_epel_rpr_clip_v(OVSample* _dst, ptrdiff_t _dststride, const uint16_t* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
 {
     int x, y;
     const int16_t* src =  (int16_t*)_src;
     ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
     const int8_t* filter = ov_mc_filters_rpr_c[filter_idx][my];    
     int shift = 14 - BITDEPTH;
@@ -758,13 +755,13 @@ put_vvc_epel_rpr_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src
 
 static void
 put_vvc_pel_bilinear_pixels(uint16_t* _dst, ptrdiff_t _dststride,
-                            const uint16_t* _src, ptrdiff_t _srcstride, int height,
+                            const OVSample* _src, ptrdiff_t _srcstride, int height,
                             intptr_t mx, intptr_t my, int width)
 {
     int y;
-    const uint16_t* src = _src;
+    const OVSample* src = _src;
     ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
+    int16_t* dst = (int16_t*)_dst;
     ptrdiff_t dststride = _dststride;
 
     for (y = 0; y < height; y++) {
@@ -782,14 +779,14 @@ put_vvc_pel_bilinear_pixels(uint16_t* _dst, ptrdiff_t _dststride,
 }
 
 static void
-put_vvc_qpel_bilinear_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_qpel_bilinear_h(uint16_t* _dst, ptrdiff_t _dststride, const OVSample* _src,
                         ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                         int width)
 {
     int x, y;
-    const uint16_t* src = _src;
+    const OVSample* src = _src;
     ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
+    int16_t* dst = (int16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     const int8_t* filter = ov_bilinear_filters_4[mx - 1];
     int shift = 4 - (10 - BITDEPTH);
@@ -806,14 +803,14 @@ put_vvc_qpel_bilinear_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _s
 }
 
 static void
-put_vvc_qpel_bilinear_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_qpel_bilinear_v(uint16_t* _dst, ptrdiff_t _dststride, const OVSample* _src,
                         ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                         int width)
 {
     int x, y;
-    const uint16_t* src = _src;
+    const OVSample* src = _src;
     ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
+    int16_t* dst = (int16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     const int8_t* filter = ov_bilinear_filters_4[my - 1];
     int shift = 4 - (10 - BITDEPTH);
@@ -830,15 +827,15 @@ put_vvc_qpel_bilinear_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _s
 }
 
 static void
-put_vvc_qpel_bilinear_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_qpel_bilinear_hv(uint16_t* _dst, ptrdiff_t _dststride, const OVSample* _src,
                          ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                          int width)
 {
     int x, y;
     const int8_t* filter;
-    const uint16_t* src = _src;
+    const OVSample* src = _src;
     ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
+    int16_t* dst = (int16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
@@ -871,11 +868,11 @@ put_vvc_qpel_bilinear_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _
 }
 
 static void
-put_vvc_qpel_h(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
+put_vvc_qpel_h(int16_t* _dst, const OVSample* _src, ptrdiff_t _srcstride,
                int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    const uint16_t* src = _src;
+    const OVSample* src = _src;
 
     int16_t* dst = (int16_t*)_dst;
 
@@ -894,11 +891,11 @@ put_vvc_qpel_h(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 }
 
 static void
-put_vvc_qpel_v(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
+put_vvc_qpel_v(int16_t* _dst, const OVSample* _src, ptrdiff_t _srcstride,
                int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    const uint16_t* src = (uint16_t*)_src;
+    const OVSample* src = (OVSample*)_src;
 
     int16_t* dst = (int16_t*)_dst;
 
@@ -918,12 +915,12 @@ put_vvc_qpel_v(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 }
 
 static void
-put_vvc_qpel_hv(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
+put_vvc_qpel_hv(int16_t* _dst, const OVSample* _src, ptrdiff_t _srcstride,
                 int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
 
-    const uint16_t* src = (uint16_t*)_src;
+    const OVSample* src = (OVSample*)_src;
 
     int16_t* dst = (int16_t*)_dst;
 
@@ -959,15 +956,15 @@ put_vvc_qpel_hv(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 }
 
 static void
-put_vvc_qpel_bi_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
+put_vvc_qpel_bi_h(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src0,
                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
                   intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    const uint16_t* src0 = _src0;
+    const OVSample* src0 = _src0;
     const int16_t* src1 = _src1;
 
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
 
     ptrdiff_t srcstride = _srcstride;
     ptrdiff_t dststride = _dststride;
@@ -990,15 +987,15 @@ put_vvc_qpel_bi_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
 }
 
 static void
-put_vvc_qpel_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
+put_vvc_qpel_bi_v(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src0,
                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
                   intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    const uint16_t* src0 = _src0;
+    const OVSample* src0 = _src0;
     const int16_t* src1 = _src1;
 
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
 
     ptrdiff_t srcstride = _srcstride;
     ptrdiff_t dststride = _dststride;
@@ -1021,15 +1018,15 @@ put_vvc_qpel_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
 }
 
 static void
-put_vvc_qpel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
+put_vvc_qpel_bi_hv(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src0,
                    ptrdiff_t _srcstride, const int16_t* _src1, int height,
                    intptr_t mx, intptr_t my, int width)
 {
     int x, y;
 
-    const uint16_t* src0 = _src0;
+    const OVSample* src0 = _src0;
     const int16_t* src1 = _src1;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
 
     ptrdiff_t srcstride = _srcstride;
     ptrdiff_t dststride = _dststride;
@@ -1069,14 +1066,14 @@ put_vvc_qpel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
 }
 
 static void
-put_vvc_epel_uni_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_epel_uni_h(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width)
 {
     int x, y;
-    const uint16_t* src = _src;
+    const OVSample* src = _src;
     ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
     const int8_t* filter = ov_mcp_filters_c[mx - 1];
     int shift = 14 - BITDEPTH;
@@ -1093,14 +1090,14 @@ put_vvc_epel_uni_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 }
 
 static void
-put_vvc_epel_uni_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_epel_uni_v(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width)
 {
     int x, y;
-    const uint16_t* src = _src;
+    const OVSample* src = _src;
     ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
     const int8_t* filter = ov_mcp_filters_c[my - 1];
     int shift = 14 - BITDEPTH;
@@ -1117,14 +1114,14 @@ put_vvc_epel_uni_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 }
 
 static void
-put_vvc_epel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
+put_vvc_epel_uni_hv(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
                     ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                     int width)
 {
     int x, y;
-    const uint16_t* src = _src;
+    const OVSample* src = _src;
     ptrdiff_t srcstride = _srcstride;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
     const int8_t* filter = ov_mcp_filters_c[mx - 1];
     int16_t tmp_array[(MAX_PB_SIZE + EPEL_EXTRA) * MAX_PB_SIZE];
@@ -1156,12 +1153,12 @@ put_vvc_epel_uni_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
 }
 
 static void
-put_vvc_epel_h(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
+put_vvc_epel_h(int16_t* _dst, const OVSample* _src, ptrdiff_t _srcstride,
                int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
 
-    const uint16_t* src = _src;
+    const OVSample* src = _src;
 
     int16_t* dst = (int16_t*)_dst;
 
@@ -1179,12 +1176,12 @@ put_vvc_epel_h(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 }
 
 static void
-put_vvc_epel_v(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
+put_vvc_epel_v(int16_t* _dst, const OVSample* _src, ptrdiff_t _srcstride,
                int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
 
-    const uint16_t* src = _src;
+    const OVSample* src = _src;
 
     int16_t* dst = (int16_t*)_dst;
 
@@ -1202,11 +1199,11 @@ put_vvc_epel_v(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 }
 
 static void
-put_vvc_epel_hv(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
+put_vvc_epel_hv(int16_t* _dst, const OVSample* _src, ptrdiff_t _srcstride,
                 int height, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    const uint16_t* src = _src;
+    const OVSample* src = _src;
 
     int16_t* dst = (int16_t*)_dst;
 
@@ -1240,15 +1237,15 @@ put_vvc_epel_hv(int16_t* _dst, const uint16_t* _src, ptrdiff_t _srcstride,
 }
 
 static void
-put_vvc_epel_bi_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
+put_vvc_epel_bi_h(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src0,
                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
                   intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    const uint16_t* src0 = _src0;
+    const OVSample* src0 = _src0;
     const int16_t* src1 = (int16_t*)_src1;
 
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
 
     ptrdiff_t srcstride = _srcstride;
     ptrdiff_t dststride = _dststride;
@@ -1271,15 +1268,15 @@ put_vvc_epel_bi_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
 
 
 static void
-put_vvc_epel_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
+put_vvc_epel_bi_v(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src0,
                   ptrdiff_t _srcstride, const int16_t* _src1, int height,
                   intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    const uint16_t* src0 = _src0;
+    const OVSample* src0 = _src0;
     const int16_t* src1 = _src1;
 
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
 
     ptrdiff_t srcstride = _srcstride;
     ptrdiff_t dststride = _dststride;
@@ -1301,15 +1298,15 @@ put_vvc_epel_bi_v(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
 }
 
 static void
-put_vvc_epel_bi_hv(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src0,
+put_vvc_epel_bi_hv(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src0,
                    ptrdiff_t _srcstride, const int16_t* _src1, int height,
                    intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    const uint16_t* src0 = _src0;
+    const OVSample* src0 = _src0;
     const int16_t* src1 = _src1;
 
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
 
     ptrdiff_t srcstride = _srcstride;
     ptrdiff_t dststride = _dststride;
@@ -1353,8 +1350,8 @@ put_weighted_epel_bi_h(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
                   int wx0, int wx1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    const uint16_t* src = (uint16_t*) _src;
-    uint16_t* dst = (uint16_t*)_dst;
+    const OVSample* src = (OVSample*) _src;
+    OVSample* dst = (OVSample*)_dst;
 
     ptrdiff_t srcstride = _srcstride >> 1;
     ptrdiff_t dststride = _dststride >> 1;
@@ -1380,10 +1377,10 @@ put_weighted_epel_bi_v(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
                   int wx0, int wx1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    const uint16_t* src = (uint16_t*) _src;
+    const OVSample* src = (OVSample*) _src;
 
 
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
 
     ptrdiff_t srcstride = _srcstride >> 1;
     ptrdiff_t dststride = _dststride >> 1;
@@ -1409,10 +1406,10 @@ put_weighted_epel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
                    int wx0, int wx1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    const uint16_t* src = (uint16_t*) _src;
+    const OVSample* src = (OVSample*) _src;
 
 
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
 
     ptrdiff_t srcstride = _srcstride >> 1;
     ptrdiff_t dststride = _dststride >> 1;
@@ -1448,16 +1445,16 @@ put_weighted_epel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
     }
 }
 
-void
+static void
 put_weighted_pel_bi_pixels(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdiff_t _srcstride,
                   int16_t* src2, ptrdiff_t src2stride, int height, int denom,
                   int wx0, int wx1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    const uint16_t* src = (uint16_t*) _src;
+    const OVSample* src = (OVSample*) _src;
 
     ptrdiff_t srcstride = _srcstride >> 1;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride >> 1;
     int shift = 14 - BITDEPTH + denom ;
     int offset = (1 << (shift - 1)) ;
@@ -1478,10 +1475,10 @@ put_weighted_qpel_bi_h(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
                   int wx0, int wx1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    const uint16_t* src = (uint16_t*) _src;
+    const OVSample* src = (OVSample*) _src;
 
 
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
 
     ptrdiff_t srcstride = _srcstride >> 1;
     ptrdiff_t dststride = _dststride >> 1;
@@ -1509,9 +1506,9 @@ put_weighted_qpel_bi_v(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
                   int wx0, int wx1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
-    const uint16_t* src = (uint16_t*) _src;
+    const OVSample* src = (OVSample*) _src;
 
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
 
     ptrdiff_t srcstride = _srcstride >> 1;
     ptrdiff_t dststride = _dststride >> 1;
@@ -1539,9 +1536,9 @@ put_weighted_qpel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
 {
     int x, y;
 
-    const uint16_t* src = (uint16_t*) _src;
+    const OVSample* src = (OVSample*) _src;
 
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
 
     ptrdiff_t srcstride = _srcstride >> 1;
     ptrdiff_t dststride = _dststride >> 1;
@@ -1580,8 +1577,8 @@ put_weighted_qpel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
 
 
 static void
-put_weighted_ciip_pixels(uint16_t* dst, int dststride,
-                      const uint16_t* src_intra, const uint16_t* src_inter, int srcstride,
+put_weighted_ciip_pixels(OVSample* dst, int dststride,
+                      const OVSample* src_intra, const OVSample* src_inter, int srcstride,
                       int width, int height, int wt)
 {
     int x, y;
@@ -1598,7 +1595,7 @@ put_weighted_ciip_pixels(uint16_t* dst, int dststride,
 }
 
 
-void
+static void
 put_weighted_gpm_bi_pixels(uint16_t* _dst, int _dststride, const int16_t* _src0,
                   int srcstride0, const int16_t* _src1, int srcstride1, int height,
                   int width, int step_x, int step_y, int16_t* weight)
@@ -1606,7 +1603,7 @@ put_weighted_gpm_bi_pixels(uint16_t* _dst, int _dststride, const int16_t* _src0,
     int x, y;
     const int16_t* src0 = _src0;
     const int16_t* src1 = _src1;
-    uint16_t* dst = (uint16_t*)_dst;
+    OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
     int shift = 14 - BITDEPTH + 3;
     int offset = (1 << (shift - 1)) ;
@@ -1624,7 +1621,8 @@ put_weighted_gpm_bi_pixels(uint16_t* _dst, int _dststride, const int16_t* _src0,
     }
 }
 
-void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
+void
+BD_DECL(rcn_init_mc_functions)(struct RCNFunctions *const rcn_funcs)
 {
     struct MCFunctions *const mc_l = &rcn_funcs->mc_l;
     struct MCFunctions *const mc_c = &rcn_funcs->mc_c;
@@ -1666,15 +1664,12 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_l->bilinear[2][i] = &put_vvc_qpel_bilinear_v;
         mc_l->bilinear[3][i] = &put_vvc_qpel_bilinear_hv;
 
-        mc_l->rpr_uni[0][i] = &put_vvc_pel_rpr;
-        mc_l->rpr_uni[1][i] = &put_vvc_qpel_rpr_h;
-        mc_l->rpr_uni[2][i] = &put_vvc_pel_rpr_clip;
-        mc_l->rpr_uni[3][i] = &put_vvc_qpel_rpr_clip_v;
-
-        mc_l->rpr_bi[0][i] = &put_vvc_pel_rpr;
-        mc_l->rpr_bi[1][i] = &put_vvc_qpel_rpr_h;
-        mc_l->rpr_bi[2][i] = &put_vvc_pel_rpr_bi;
-        mc_l->rpr_bi[3][i] = &put_vvc_qpel_rpr_bi_v;
+        mc_l->rpr_h[0][i] = &put_vvc_pel_rpr;
+        mc_l->rpr_h[1][i] = &put_vvc_qpel_rpr_h;
+        mc_l->rpr_v_uni[0][i] = &put_vvc_pel_rpr_clip;
+        mc_l->rpr_v_uni[1][i] = &put_vvc_qpel_rpr_clip_v;
+        mc_l->rpr_v_bi[0][i] = &put_vvc_pel_rpr_bi;
+        mc_l->rpr_v_bi[1][i] = &put_vvc_qpel_rpr_bi_v;
 
         /* Chroma functions */
         mc_c->unidir[0][i] = &put_vvc_pel_uni_pixels;
@@ -1697,19 +1692,19 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
         mc_c->bidir_w[2][i] = &put_weighted_epel_bi_v;
         mc_c->bidir_w[3][i] = &put_weighted_epel_bi_hv;
 
-        mc_c->rpr_uni[0][i] = &put_vvc_pel_rpr;
-        mc_c->rpr_uni[1][i] = &put_vvc_epel_rpr_h;
-        mc_c->rpr_uni[2][i] = &put_vvc_pel_rpr_clip;
-        mc_c->rpr_uni[3][i] = &put_vvc_epel_rpr_uni_v;
-
-        mc_c->rpr_bi[0][i] = &put_vvc_pel_rpr;
-        mc_c->rpr_bi[1][i] = &put_vvc_epel_rpr_h;
-        mc_c->rpr_bi[2][i] = &put_vvc_pel_rpr_bi;
-        mc_c->rpr_bi[3][i] = &put_vvc_epel_rpr_bi_v;
+        mc_c->rpr_h[0][i] = &put_vvc_pel_rpr;
+        mc_c->rpr_h[1][i] = &put_vvc_epel_rpr_h;
+        mc_c->rpr_v_uni[0][i] = &put_vvc_pel_rpr_clip;
+        mc_c->rpr_v_uni[1][i] = &put_vvc_epel_rpr_clip_v;
+        mc_c->rpr_v_bi[0][i] = &put_vvc_pel_rpr_bi;
+        mc_c->rpr_v_bi[1][i] = &put_vvc_epel_rpr_bi_v;
     }
+    mc_l->gpm_weighted = &put_weighted_gpm_bi_pixels;
+    mc_c->gpm_weighted = &put_weighted_gpm_bi_pixels;
 }
 
-void rcn_init_ciip_functions(struct RCNFunctions *const rcn_funcs)
+void
+BD_DECL(rcn_init_ciip_functions)(struct RCNFunctions *const rcn_funcs)
 {
     struct CIIPFunctions *const ciip = &rcn_funcs->ciip;
     ciip->weighted = &put_weighted_ciip_pixels;

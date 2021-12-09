@@ -1,0 +1,27 @@
+name: OpenVVC CI
+on: [push, pull_request]
+jobs:
+  Generic:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install dependency
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install autoconf automake libtool
+      - name: Autoconf
+        run: autoreconf -if
+      - name: Configure
+        run: ./configure
+      - name: Compilation
+        run: make
+      - name: Test All Intra
+        run: ./CI/checkMD5.sh ./CI/test_bitstreams/all_intra ./examples/dectest http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/all_intra/
+      - name: Test Low Delay
+        run: ./CI/checkMD5.sh ./CI/test_bitstreams/low_delay ./examples/dectest http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/low_delay/
+      - name: Test Random Access
+        run: ./CI/checkMD5.sh ./CI/test_bitstreams/random_access ./examples/dectest http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/random_access/

@@ -23,7 +23,7 @@ struct ColorDescription
 /* Miscelaneous information on Picture */
 struct FrameInfo
 {
-    enum ChromaFmt chromat_format;
+    enum ChromaFmt chroma_format;
     struct ColorDescription color_desc;
 };
 

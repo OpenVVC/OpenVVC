@@ -340,8 +340,7 @@ static void
 load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
 {
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
-    uint8_t log2_min_cb_s = ctudec->part_ctx->log2_min_cb_s;
-    uint8_t nb_pb_ctb_w = (1 << log2_ctb_s) >> log2_min_cb_s;
+    uint8_t nb_pb_ctb_w = (1 << log2_ctb_s) >> LOG2_MIN_CU_S;
     uint16_t nb_ctb_w = ctudec->nb_ctb_pic_w;
     uint16_t ctb_addr_rs = ctb_x + ctb_y * nb_ctb_w;
     uint8_t is_border_pic = nb_ctb_w - 1 == ctb_x;
@@ -432,10 +431,10 @@ derive_tmvp_scale(int32_t dist_ref, int32_t dist_col)
 }
 
 struct TMVPPos
-compute_tmpv_coord(struct PBInfo pb, uint8_t log2_min_cb_s)
+compute_tmpv_coord(struct PBInfo pb)
 {
     struct TMVPPos pos;
-    uint8_t pos_8x8 = log2_min_cb_s == 2;
+    uint8_t pos_8x8 = 1;
 
     pos.c0_x = (pb.x_pb + pb.nb_pb_w) & (~pos_8x8);
     pos.c0_y = (pb.y_pb + pb.nb_pb_h) & (~pos_8x8);
@@ -1351,7 +1350,7 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
     /* TMVP candidate */
     if (nb_cand < 2 && inter_ctx->tmvp_enabled) {
         const struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
-        const struct TMVPPos pos = compute_tmpv_coord(pb_info, 2);
+        const struct TMVPPos pos = compute_tmpv_coord(pb_info);
 
         if (!inter_ctx->tmvp_avail) {
             /*FIXME dirty ref to ctudec */
@@ -1736,7 +1735,7 @@ check_sbtmvp_cand(const uint64_t *v_map0, const uint64_t *v_map1,
     return cand_msk;
 }
 
-uint8_t
+static uint8_t
 derive_sub_pu_merge_cand(const struct InterDRVCtx *inter_ctx,
                          uint8_t x0, uint8_t y0,
                          uint8_t log2_pu_w, uint8_t log2_pu_h,
@@ -1797,7 +1796,7 @@ derive_sub_pu_merge_cand(const struct InterDRVCtx *inter_ctx,
     return !!inter_dir;
 }
 
-void
+static void
 set_zero_mvs_p(struct InterDRVCtx *inter_ctx,
                const struct VVCTMVP *tmvp,
                uint8_t x0, uint8_t y0,
@@ -1813,6 +1812,7 @@ set_zero_mvs_p(struct InterDRVCtx *inter_ctx,
 
     OVMV *mv_buff0 = &inter_ctx->mv_ctx0.mvs[35 + x_unit + y_unit * 34];
     OVMV *tmvp_mv0 = &inter_ctx->tmvp_mv[0].mvs[((x0 + 4) >> 3) + (((y0 + 4) >> 3) << 4)];
+    OVCTUDec *const ctudec = tmvp->ctudec;
 
     int i, j;
 
@@ -1834,19 +1834,14 @@ set_zero_mvs_p(struct InterDRVCtx *inter_ctx,
             mv_buff0[34 + j * 2]     = mv0;
             mv_buff0[34 + j * 2 + 1] = mv0;
 
-            rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
-                      inter_ctx, tmvp->ctudec->part_ctx,
-                      mv0, mv0, x0 + 8 * j, y0 + 8 * i,
-                      3, 3, 0x1, 0, 0);
-
         }
         mv_buff0 += 34 * 2;
         tmvp_mv0 += 16;
     }
 
-    rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
-              inter_ctx, tmvp->ctudec->part_ctx, mv0, mv0, x0, y0,
-              log2_pu_w, log2_pu_h, 0x1, 0, 0);
+    ctudec->rcn_funcs.rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
+                                inter_ctx, tmvp->ctudec->part_ctx, mv0, mv0, x0, y0,
+                                log2_pu_w, log2_pu_h, 0x1, 0, 0);
 }
 
 void
@@ -1875,6 +1870,7 @@ derive_sub_block_mvs_p(struct InterDRVCtx *inter_ctx,
     /* FIXME check start_x , start_y */
     int start_x = x0 + (sb_w >> 1) + mv_offset.x;
     int start_y = y0 + (sb_h >> 1) + mv_offset.y;
+    OVCTUDec *const ctudec = tmvp->ctudec;
 
     int x, y;
 
@@ -1932,10 +1928,10 @@ derive_sub_block_mvs_p(struct InterDRVCtx *inter_ctx,
             mv_buff0[34 + j * 2 + 1] = mv0;
 
             /* FIXME Move somewhere else */
-            rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
-                      inter_ctx, tmvp->ctudec->part_ctx,
-                      mv0, mv0, x0 + 8 * j, y0 + 8 * i,
-                      3, 3, 0x1, 0, 0);
+            ctudec->rcn_funcs.rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
+                                        inter_ctx, tmvp->ctudec->part_ctx,
+                                        mv0, mv0, x0 + 8 * j, y0 + 8 * i,
+                                        3, 3, 0x1, 0, 0);
 
         }
         mv_buff0 += 34 * 2;
@@ -1943,7 +1939,7 @@ derive_sub_block_mvs_p(struct InterDRVCtx *inter_ctx,
     }
 }
 
-void
+static void
 set_zero_mvs_b(struct InterDRVCtx *inter_ctx,
                const struct VVCTMVP *tmvp,
                uint8_t x0, uint8_t y0, uint8_t log2_pu_w, uint8_t log2_pu_h)
@@ -1955,6 +1951,7 @@ set_zero_mvs_b(struct InterDRVCtx *inter_ctx,
     uint8_t y_unit = y0 >> LOG2_MIN_CU_S;
     uint8_t nb_units_w = (1 << log2_pu_w) >> LOG2_MIN_CU_S;
     uint8_t nb_units_h = (1 << log2_pu_h) >> LOG2_MIN_CU_S;
+    OVCTUDec *const ctudec = tmvp->ctudec;
 
     OVMV *mv_buff0 = &inter_ctx->mv_ctx0.mvs[35 + x_unit + y_unit * 34];
     OVMV *mv_buff1 = &inter_ctx->mv_ctx1.mvs[35 + x_unit + y_unit * 34];
@@ -1996,13 +1993,13 @@ set_zero_mvs_b(struct InterDRVCtx *inter_ctx,
         tmvp_mv1 += 16;
     }
 
-    rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
-              inter_ctx, tmvp->ctudec->part_ctx,
-              mv0, mv1, x0, y0,
-              log2_pu_w, log2_pu_h, inter_dir, 0, 0);
+    ctudec->rcn_funcs.rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
+                                inter_ctx, tmvp->ctudec->part_ctx,
+                                mv0, mv1, x0, y0,
+                                log2_pu_w, log2_pu_h, inter_dir, 0, 0);
 }
 
-void
+static void
 derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
                      const struct VVCTMVP *tmvp,
                      uint8_t x0, uint8_t y0,
@@ -2014,6 +2011,7 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
     uint16_t ctu_w = tmvp->ctu_w;
     uint16_t ctu_h = tmvp->ctu_h;
     uint8_t is_bnd = tmvp->ctudec->ctb_x == tmvp->ctudec->nb_ctb_pic_w - 1;
+    OVCTUDec *const ctudec = tmvp->ctudec;
 
     /* FIXME check if this clipping is needed */
     int sb_h = nb_sb_h == 1 ? 1 << log2_pu_h : 1 << LOG2_SBTMVP_S;
@@ -2112,10 +2110,10 @@ derive_sub_block_mvs(struct InterDRVCtx *inter_ctx,
             }
 
             /* FIXME Move somewhere else */
-            rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
-                      inter_ctx, tmvp->ctudec->part_ctx,
-                      mv0, mv1, x0 + 8 * j, y0 + 8 * i,
-                      3, 3, inter_dir, 0, 0);
+            ctudec->rcn_funcs.rcn_mcp_b(tmvp->ctudec, tmvp->ctudec->rcn_ctx.ctu_buff,
+                                        inter_ctx, tmvp->ctudec->part_ctx,
+                                        mv0, mv1, x0 + 8 * j, y0 + 8 * i,
+                                        3, 3, inter_dir, 0, 0);
 
         }
         mv_buff0 += 34 * 2;
@@ -2513,7 +2511,7 @@ derive_affine_control_point_1(struct ControlPointMVCand mi, int model_idx,
     return 1;
 }
 
-void
+static void
 derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
                        struct AffineDRVInfo *affine_ctx,
                        struct AffineMergeInfo *const aff_mrg_ctx,
@@ -2714,7 +2712,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
         /* FIXME test if affine type enabled so we skip TMVP when not needed ? */
         if (inter_ctx->tmvp_enabled) {
             const struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
-            const struct TMVPPos pos = compute_tmpv_coord(pb_info, 2);
+            const struct TMVPPos pos = compute_tmpv_coord(pb_info);
 
             if (!inter_ctx->tmvp_avail) {
                 OVCTUDec *ctudec = inter_ctx->tmvp_ctx.ctudec;
@@ -2891,7 +2889,7 @@ broadcast_mv(struct AffineDeltaMV delta_mv, uint8_t inter_dir)
     return 0;
 }
 
-void
+static void
 compute_subblock_mvs(const struct AffineControlInfo *const cinfo,
                      const struct AffineDeltaMV delta_mv,
                      OVMV *mv_buff,
@@ -3854,7 +3852,7 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     return 0;
 }
 
-void
+static void
 store_affine_info(struct AffineDRVInfo *const affine_ctx, struct AffineInfo aff_info, uint8_t x_pb, uint8_t y_pb, uint8_t nb_pb_w, uint8_t nb_pb_h)
 {
     int i, j;
@@ -3880,10 +3878,6 @@ store_affine_info(struct AffineDRVInfo *const affine_ctx, struct AffineInfo aff_
 #define PROF_MV_SHIFT 8
 #define PROF_MV_RND (1 << (PROF_MV_SHIFT - 1))
 
-#define PROF_SMP_SHIFT (14 - BITDEPTH)
-#define PROF_SMP_RND (1 << (14 - 1))
-#define PROF_SMP_OFFSET (1 << (PROF_SMP_SHIFT - 1)) + PROF_SMP_RND
-
 #define PROF_BUFF_PADD_H 1
 #define PROF_BUFF_PADD_W 1
 
@@ -3892,7 +3886,7 @@ struct OVDMV {
     int32_t y;
 };
 
-struct OVDMV
+static struct OVDMV
 round_prof_dmv_scale(struct OVDMV dmv)
 {
     dmv.x += PROF_MV_RND - (dmv.x >= 0);
@@ -3978,27 +3972,15 @@ rcn_affine_mcp_b_l(OVCTUDec *const ctudec,
             OVMV mv0 = mv_buff0[j];
             OVMV mv1 = mv_buff1[j];
 
-            #if 0
-            if (!((j + start_x) & 0x1) && !((i + start_y) & 0x1)) {
-            #else
-
-               if (!(((x0+4*j)>>2)& 0x1) && !((((y0+4*i)>>2)& 0x1))) {
-            #endif
+            if (!(((x0+4*j)>>2)& 0x1) && !((((y0+4*i)>>2)& 0x1))) {
                tmvp_mv0[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv0;
                tmvp_mv1[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv1;
             }
 
-            rcn_mcp_b_l(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
+            ctudec->rcn_funcs.rcn_mcp_b_l(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
                         mv0, mv1, x0 + 4*j, y0 + 4*i,
                         2, 2, inter_dir, ref_idx0, ref_idx1);
         }
-
-        #if 0
-        if (((i + start_y) & 0x1)) {
-            tmvp_mv0 += 16;
-            tmvp_mv1 += 16;
-        }
-        #endif
 
         mv_buff0 += 34;
         mv_buff1 += 34;
@@ -4050,11 +4032,11 @@ rcn_affine_prof_mcp_b_l(OVCTUDec *const ctudec,
             OVMV mv1 = mv_buff1[j];
 
             if (!(((x0+4*j)>>2)& 0x1) && !((((y0+4*i)>>2)& 0x1))) {
-               tmvp_mv0[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv0;
-               tmvp_mv1[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv1;
+                tmvp_mv0[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv0;
+                tmvp_mv1[((x0+4*j)>>3) + ((y0+4*i)>>3) *16] = mv1;
             }
 
-            rcn_prof_mcp_b_l(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
+            ctudec->rcn_funcs.rcn_prof_mcp_b_l(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
                              mv0, mv1, x0 + 4*j, y0 + 4*i,
                              2, 2, inter_dir, ref_idx0, ref_idx1,
                              prof_dir, &prof_info);
@@ -4066,7 +4048,7 @@ rcn_affine_prof_mcp_b_l(OVCTUDec *const ctudec,
 }
 
 
-void
+static void
 rcn_affine_mcp_b_c(OVCTUDec *const ctudec,
                    struct InterDRVCtx *const inter_ctx,
                    uint8_t x0, uint8_t y0,
@@ -4106,7 +4088,7 @@ rcn_affine_mcp_b_c(OVCTUDec *const ctudec,
             mv1.x >>= 1;
             mv1.y >>= 1;
             
-            rcn_mcp_b_c(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
+            ctudec->rcn_funcs.rcn_mcp_b_c(ctudec, ctudec->rcn_ctx.ctu_buff, inter_ctx, ctudec->part_ctx,
                         mv0, mv1, x0+ 4*j, y0 + 4*i,
                         3, 3, inter_dir, ref_idx0, ref_idx1);
         }
@@ -4114,13 +4096,6 @@ rcn_affine_mcp_b_c(OVCTUDec *const ctudec,
         mv_buff0 += 34 * 2;
         mv_buff1 += 34 * 2;
     }
-}
-
-
-/* TODO P slices functions */
-void
-drv_affine_merge_mvp()
-{
 }
 
 static inline uint8_t
@@ -4132,7 +4107,8 @@ mv_cmp(const OVMV a, const OVMV b)
      return is_eq;
 }
 
-uint8_t check_affine_prof(const struct AffineMergeInfo *const affine_info, uint8_t rpl_idx)
+static uint8_t
+check_affine_prof(const struct AffineMergeInfo *const affine_info, uint8_t rpl_idx)
 {
     uint8_t prof_enabled = 1;
     const struct AffineControlInfo *const cpinfo = &affine_info->cinfo[rpl_idx];
@@ -4271,11 +4247,6 @@ drv_affine_mvp_p(struct InterDRVCtx *const inter_ctx,
     };
 
     store_affine_info(affine_ctx, aff_info, x_pb, y_pb, nb_pb_w, nb_pb_h);
-}
-
-void
-drv_affine_mvp_mvd()
-{
 }
 
 /* Derive motion vectors and update motion maps */

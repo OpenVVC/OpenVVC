@@ -7,8 +7,6 @@
 #include "rcn_intra_angular.h"
 #include "data_rcn_angular.h"
 
-#define ov_bdclip(val) ov_clip_uintp2(val, BITDEPTH);
-
 static const int8_t chroma_filter[4 * 32] =
 {
      0, 64,  0,  0,
@@ -68,15 +66,15 @@ static const uint8_t vvc_pdpc_w[3][128] =
 };
 
 static void
-intra_angular_hdia(const uint16_t* const ref_lft, uint16_t* const dst,
+intra_angular_hdia(const OVSample* const ref_lft, OVSample* const dst,
                    ptrdiff_t dst_stride, int8_t log2_pb_w,
                    int8_t log2_pb_h)
 {
 
-    int16_t tmp_dst[128 * 128];
+    OVSample tmp_dst[128 * 128];
     const int tmp_stride = 128;
-    int16_t* _tmp = tmp_dst;
-    uint16_t* _dst = dst;
+    OVSample* _tmp = tmp_dst;
+    OVSample* _dst = dst;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
 
@@ -104,16 +102,16 @@ intra_angular_hdia(const uint16_t* const ref_lft, uint16_t* const dst,
 }
 
 static void
-intra_angular_hdia_pdpc(const uint16_t* const ref_abv,
-                        const uint16_t* const ref_lft, uint16_t* const dst,
+intra_angular_hdia_pdpc(const OVSample* const ref_abv,
+                        const OVSample* const ref_lft, OVSample* const dst,
                         ptrdiff_t dst_stride, int8_t log2_pb_w,
                         int8_t log2_pb_h)
 {
 
-    int16_t tmp_dst[128 * 128];
+    OVSample tmp_dst[128 * 128];
     const int tmp_stride = 128;
-    int16_t* _tmp = tmp_dst;
-    uint16_t* _dst = dst;
+    OVSample* _tmp = tmp_dst;
+    OVSample* _dst = dst;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
     int scale = OVMIN(2, log2_pb_w - 2);
@@ -147,12 +145,12 @@ intra_angular_hdia_pdpc(const uint16_t* const ref_abv,
 }
 
 static void
-intra_angular_vdia(const uint16_t* const ref_abv, uint16_t* const dst,
+intra_angular_vdia(const OVSample* const ref_abv, OVSample* const dst,
                    ptrdiff_t dst_stride, int8_t log2_pb_w,
                    int8_t log2_pb_h)
 {
     int delta_pos = 32;
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
 
@@ -167,13 +165,13 @@ intra_angular_vdia(const uint16_t* const ref_abv, uint16_t* const dst,
 }
 
 static void
-intra_angular_vdia_pdpc(const uint16_t* const ref_abv,
-                        const uint16_t* const ref_lft, uint16_t* const dst,
+intra_angular_vdia_pdpc(const OVSample* const ref_abv,
+                        const OVSample* const ref_lft, OVSample* const dst,
                         ptrdiff_t dst_stride, int8_t log2_pb_w,
                         int8_t log2_pb_h)
 {
     int delta_pos = 32;
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
     int scale = OVMIN(2, log2_pb_h - 2);
@@ -194,13 +192,13 @@ intra_angular_vdia_pdpc(const uint16_t* const ref_abv,
 }
 
 static void
-intra_angular_h_c(const uint16_t* ref_lft, uint16_t* dst,
+intra_angular_h_c(const OVSample* ref_lft, OVSample* dst,
                   ptrdiff_t dst_stride, int8_t log2_pb_w,
                   int8_t log2_pb_h, int angle_val)
 {
-    int16_t tmp_dst[128 * 128];
-    int16_t* _tmp = tmp_dst;
-    uint16_t* _dst = dst;
+    OVSample tmp_dst[128 * 128];
+    OVSample* _tmp = tmp_dst;
+    OVSample* _dst = dst;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
     const int tmp_stride = 128;
@@ -210,7 +208,7 @@ intra_angular_h_c(const uint16_t* ref_lft, uint16_t* dst,
     for (int y = 0; y < pb_w; y++) {
         const int delta_int = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
-        const uint16_t* ref = ref_lft + delta_int + 1;
+        const OVSample* ref = ref_lft + delta_int + 1;
         int last_ref_val = *ref++;
         for (int x = 0; x < pb_h; x++) {
             int curr_ref_val = *ref;
@@ -237,18 +235,18 @@ intra_angular_h_c(const uint16_t* ref_lft, uint16_t* dst,
 }
 
 static void
-intra_angular_v_c(const uint16_t* ref_abv, uint16_t* dst,
+intra_angular_v_c(const OVSample* ref_abv, OVSample* dst,
                   ptrdiff_t dst_stride, int8_t log2_pb_w,
                   int8_t log2_pb_h, int angle_val)
 {
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
 
     for (int y = 0, delta_pos = angle_val; y < pb_h; y++) {
         const int delta_int = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
-        const uint16_t* ref = ref_abv + delta_int + 1;
+        const OVSample* ref = ref_abv + delta_int + 1;
         int last_ref_val = *ref++;
         for (int x = 0; x < pb_w; ref++, x++) {
             int curr_ref_val = *ref;
@@ -263,12 +261,12 @@ intra_angular_v_c(const uint16_t* ref_abv, uint16_t* dst,
 }
 
 static void
-intra_angular_hor_pdpc(const uint16_t* const ref_abv,
-                       const uint16_t* const ref_lft, uint16_t* const dst,
+intra_angular_hor_pdpc(const OVSample* const ref_abv,
+                       const OVSample* const ref_lft, OVSample* const dst,
                        ptrdiff_t dst_stride, int8_t log2_pb_w,
                        int8_t log2_pb_h)
 {
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     int pb_width = 1 << log2_pb_w;
     int pb_height = 1 << log2_pb_h;
     int pdpc_scale = (log2_pb_w + log2_pb_h - 2) >> 2;
@@ -288,12 +286,12 @@ intra_angular_hor_pdpc(const uint16_t* const ref_abv,
 }
 
 static void
-intra_angular_ver_pdpc(const uint16_t* const ref_abv,
-                       const uint16_t* const ref_lft, uint16_t* const dst,
+intra_angular_ver_pdpc(const OVSample* const ref_abv,
+                       const OVSample* const ref_lft, OVSample* const dst,
                        ptrdiff_t dst_stride, int8_t log2_pb_w,
                        int8_t log2_pb_h)
 {
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     const uint16_t tl_val = ref_abv[0];
     int pdpc_scale = (log2_pb_w + log2_pb_h - 2) >> 2;
     const uint8_t* pdpc_w = vvc_pdpc_w[pdpc_scale];
@@ -314,10 +312,10 @@ intra_angular_ver_pdpc(const uint16_t* const ref_abv,
 }
 
 static void
-intra_angular_hor(const uint16_t* const ref_lft, uint16_t* const dst,
+intra_angular_hor(const OVSample* const ref_lft, OVSample* const dst,
                   ptrdiff_t dst_stride, int8_t log2_pb_w, int8_t log2_pb_h)
 {
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     int pb_width = 1 << log2_pb_w;
     int pb_height = 1 << log2_pb_h;
 
@@ -330,29 +328,29 @@ intra_angular_hor(const uint16_t* const ref_lft, uint16_t* const dst,
 }
 
 static void
-intra_angular_ver(const uint16_t* const ref_abv, uint16_t* const dst,
+intra_angular_ver(const OVSample* const ref_abv, OVSample* const dst,
                   ptrdiff_t dst_stride, int8_t log2_pb_w, int8_t log2_pb_h)
 {
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     int pb_width = 1 << log2_pb_w;
     int pb_height = 1 << log2_pb_h;
 
     for (int y = 0; y < pb_height; y++) {
-        memcpy(_dst, &ref_abv[1], sizeof(uint16_t) * pb_width);
+        memcpy(_dst, &ref_abv[1], sizeof(OVSample) * pb_width);
         _dst += dst_stride;
     }
 }
 
 static void
-intra_angular_h_c_pdpc(const uint16_t* const ref_abv,
-                       const uint16_t* const ref_lft, uint16_t* const dst,
+intra_angular_h_c_pdpc(const OVSample* const ref_abv,
+                       const OVSample* const ref_lft, OVSample* const dst,
                        ptrdiff_t dst_stride, int8_t log2_pb_w,
                        int8_t log2_pb_h, int mode_idx)
 {
-    int16_t tmp_dst[128 * 128];
+    OVSample tmp_dst[128 * 128];
     const int tmp_stride = 128;
-    int16_t* _tmp = tmp_dst;
-    uint16_t* _dst = dst;
+    OVSample* _tmp = tmp_dst;
+    OVSample* _dst = dst;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
     int angle_val = angle_table[mode_idx];
@@ -365,7 +363,7 @@ intra_angular_h_c_pdpc(const uint16_t* const ref_abv,
         const int delta_frac = delta_pos & 0x1F;
         int inv_angle_sum = 256 + inv_angle;
 
-        const uint16_t* ref = ref_lft + delta_int + 1;
+        const OVSample* ref = ref_lft + delta_int + 1;
         int last_ref_val = *ref++;
         for (int x = 0; x < pb_h; ref++, x++) {
             int curr_ref_val = *ref;
@@ -375,7 +373,7 @@ intra_angular_h_c_pdpc(const uint16_t* const ref_abv,
 
         for (int x = 0; x < OVMIN(3 << scale, pb_h); x++) {
             int wL = 32 >> ((x << 1) >> scale);
-            const uint16_t* p = ref_abv + y + (inv_angle_sum >> 9) + 1;
+            const OVSample* p = ref_abv + y + (inv_angle_sum >> 9) + 1;
 
             int32_t left = p[0];
             _tmp[x] = ov_bdclip(_tmp[x] + ((wL * (left - _tmp[x]) + 32) >> 6));
@@ -398,12 +396,12 @@ intra_angular_h_c_pdpc(const uint16_t* const ref_abv,
 }
 
 static void
-intra_angular_v_c_pdpc(const uint16_t* const ref_abv,
-                       const uint16_t* const ref_lft, uint16_t* const dst,
+intra_angular_v_c_pdpc(const OVSample* const ref_abv,
+                       const OVSample* const ref_lft, OVSample* const dst,
                        ptrdiff_t dst_stride, int8_t log2_pb_w,
                        int8_t log2_pb_h, int mode_idx)
 {
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     int angle_val = angle_table[mode_idx];
     int inv_angle = inverse_angle_table[mode_idx];
     int delta_pos = angle_val;
@@ -416,7 +414,7 @@ intra_angular_v_c_pdpc(const uint16_t* const ref_abv,
         const int delta_frac = delta_pos & 0x1F;
         int inv_angle_sum = 256 + inv_angle;
 
-        const uint16_t* ref = ref_abv + delta_int + 1;
+        const OVSample* ref = ref_abv + delta_int + 1;
         int last_ref_val = *ref++;
         for (int x = 0; x < pb_w; ref++, x++) {
             int curr_ref_val = *ref;
@@ -425,7 +423,7 @@ intra_angular_v_c_pdpc(const uint16_t* const ref_abv,
         }
         for (int x = 0; x < OVMIN(3 << scale, pb_w); x++) {
             int wL = 32 >> ((x << 1) >> scale);
-            const uint16_t* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
+            const OVSample* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
 
             int32_t left = p[0];
             _dst[x] = ov_bdclip(_dst[x] + ((wL * (left - _dst[x]) + 32) >> 6));
@@ -437,14 +435,14 @@ intra_angular_v_c_pdpc(const uint16_t* const ref_abv,
 }
 
 static void
-intra_angular_h_nofrac(const uint16_t* ref_lft, uint16_t* dst,
+intra_angular_h_nofrac(const OVSample* ref_lft, OVSample* dst,
                        ptrdiff_t dst_stride, int8_t log2_pb_w,
                        int8_t log2_pb_h, int angle_val)
 {
-    uint16_t tmp_dst[128 * 128];
+    OVSample tmp_dst[128 * 128];
     const int tmp_stride = 128;
-    uint16_t* _tmp = tmp_dst;
-    uint16_t* _dst = dst;
+    OVSample* _tmp = tmp_dst;
+    OVSample* _dst = dst;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
     int delta_pos = angle_val >> 5;
@@ -471,14 +469,14 @@ intra_angular_h_nofrac(const uint16_t* ref_lft, uint16_t* dst,
 }
 
 static void
-intra_angular_h_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
-                            uint16_t* dst, ptrdiff_t dst_stride,
+intra_angular_h_nofrac_pdpc(const OVSample* ref_abv, const OVSample* ref_lft,
+                            OVSample* dst, ptrdiff_t dst_stride,
                             int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
 {
-    int16_t tmp_dst[128 * 128];
+    OVSample tmp_dst[128 * 128];
     const int tmp_stride = 128;
-    int16_t* _tmp = tmp_dst;
-    uint16_t* _dst = dst;
+    OVSample* _tmp = tmp_dst;
+    OVSample* _dst = dst;
     int angle_val = angle_table[mode_idx];
     int inv_angle = inverse_angle_table[mode_idx];
     int pb_w = 1 << log2_pb_w;
@@ -494,7 +492,7 @@ intra_angular_h_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
         }
         for (int x = 0; x < OVMIN(3 << scale, pb_h); x++) {
             int wL = 32 >> ((x << 1) >> scale);
-            const uint16_t* p = ref_abv + y + (inv_angle_sum >> 9) + 1;
+            const OVSample* p = ref_abv + y + (inv_angle_sum >> 9) + 1;
 
             int16_t left = p[0];
             _tmp[x] = ov_bdclip(_tmp[x] + ((wL * (left - _tmp[x]) + 32) >> 6));
@@ -517,14 +515,14 @@ intra_angular_h_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
 }
 
 static void
-intra_angular_h_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
-                           uint16_t* const dst, ptrdiff_t dst_stride,
+intra_angular_h_gauss_pdpc(const OVSample* ref_abv, const OVSample* ref_lft,
+                           OVSample* const dst, ptrdiff_t dst_stride,
                            int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
 {
-    uint16_t tmp_dst[128 * 128];
+    OVSample tmp_dst[128 * 128];
     const int tmp_stride = 128;
-    uint16_t* _tmp = tmp_dst;
-    uint16_t* _dst = dst;
+    OVSample* _tmp = tmp_dst;
+    OVSample* _dst = dst;
     int angle_val = angle_table[mode_idx];
     int inv_angle = inverse_angle_table[mode_idx];
     int pb_w = 1 << log2_pb_w;
@@ -536,7 +534,7 @@ intra_angular_h_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
         const int delta_int = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
         int inv_angle_sum = 256 + inv_angle;
-        const int16_t* ref = (int16_t *)ref_lft + delta_int;
+        const OVSample* ref = (OVSample *)ref_lft + delta_int;
         for (int x = 0; x < pb_h; x++) {
             _tmp[x] = ((int32_t)(ref[0] * (16 - (delta_frac >> 1))) +
                        (int32_t)(ref[1] * (32 - (delta_frac >> 1))) +
@@ -546,7 +544,7 @@ intra_angular_h_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
         }
         for (int x = 0; x < OVMIN(3 << scale, pb_h); x++) {
             int wL = 32 >> ((x << 1) >> scale);
-            const uint16_t* p = ref_abv + y + (inv_angle_sum >> 9) + 1;
+            const OVSample* p = ref_abv + y + (inv_angle_sum >> 9) + 1;
 
             int16_t left = p[0];
             _tmp[x] = ov_bdclip(_tmp[x] + ((wL * (left - _tmp[x]) + 32) >> 6));
@@ -570,11 +568,11 @@ intra_angular_h_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
 }
 
 static void
-intra_angular_v_nofrac(const uint16_t* ref_abv, uint16_t* dst,
+intra_angular_v_nofrac(const OVSample* ref_abv, OVSample* dst,
                        ptrdiff_t dst_stride, int8_t log2_pb_w,
                        int8_t log2_pb_h, int angle_val)
 {
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
     int delta_pos = angle_val;
@@ -591,11 +589,11 @@ intra_angular_v_nofrac(const uint16_t* ref_abv, uint16_t* dst,
 }
 
 static void
-intra_angular_v_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
-                            uint16_t* const dst, ptrdiff_t dst_stride,
+intra_angular_v_nofrac_pdpc(const OVSample* ref_abv, const OVSample* ref_lft,
+                            OVSample* const dst, ptrdiff_t dst_stride,
                             int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
 {
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     int angle_val = angle_table[mode_idx];
     int inv_angle = inverse_angle_table[mode_idx];
     int pb_w = 1 << log2_pb_w;
@@ -612,7 +610,7 @@ intra_angular_v_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
         }
         for (x = 0; x < OVMIN(3 << scale, pb_w); ++x) {
             int wL = 32 >> ((x << 1) >> scale);
-            const uint16_t* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
+            const OVSample* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
             int16_t left = p[0];
 
             _dst[x] = ov_bdclip(_dst[x] + ((wL * (left - _dst[x]) + 32) >> 6));
@@ -625,11 +623,11 @@ intra_angular_v_nofrac_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
 }
 
 static void
-intra_angular_v_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
-                           uint16_t* const dst, ptrdiff_t dst_stride,
+intra_angular_v_gauss_pdpc(const OVSample* ref_abv, const OVSample* ref_lft,
+                           OVSample* const dst, ptrdiff_t dst_stride,
                            int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
 {
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     int angle_val = angle_table[mode_idx];
     int inv_angle = inverse_angle_table[mode_idx];
     int pb_w = 1 << log2_pb_w;
@@ -641,7 +639,7 @@ intra_angular_v_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
         const int delta_int  = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
         int inv_angle_sum = 256 + inv_angle;
-        const int16_t* ref = (int16_t*)ref_abv + delta_int;
+        const OVSample* ref = (OVSample*)ref_abv + delta_int;
 
         for (int x = 0; x < pb_w; x++) {
             _dst[x] = ((int32_t)(ref[0] * (16 - (delta_frac >> 1))) +
@@ -652,7 +650,7 @@ intra_angular_v_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
         }
         for (int x = 0; x < OVMIN(3 << scale, pb_w); x++) {
             int wL = 32 >> ((x << 1) >> scale);
-            const uint16_t* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
+            const OVSample* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
 
             int16_t left = p[0];
             _dst[x] =
@@ -665,22 +663,22 @@ intra_angular_v_gauss_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
 }
 
 static void
-intra_angular_h_cubic(const uint16_t* ref_lft, uint16_t* dst,
+intra_angular_h_cubic(const OVSample* ref_lft, OVSample* dst,
                       ptrdiff_t dst_stride, int8_t log2_pb_w,
                       int8_t log2_pb_h, int angle_val)
 {
-    uint16_t tmp_dst[128 * 128];
+    OVSample tmp_dst[128 * 128];
     const int tmp_stride = 128;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
-    uint16_t* _tmp = tmp_dst;
-    uint16_t* _dst = dst;
+    OVSample* _tmp = tmp_dst;
+    OVSample* _dst = dst;
 
     int delta_pos = angle_val;
     for (int y = 0; y < pb_w; y++) {
         const int delta_int = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
-        const int16_t* ref = (int16_t*)ref_lft + delta_int;
+        const OVSample* ref = (OVSample*)ref_lft + delta_int;
         const int8_t* filter = &chroma_filter[delta_frac << 2];
         for (int x = 0; x < pb_h; x++) {
 
@@ -709,22 +707,22 @@ intra_angular_h_cubic(const uint16_t* ref_lft, uint16_t* dst,
 }
 
 static void
-intra_angular_h_gauss(const uint16_t* ref_lft, uint16_t* dst,
+intra_angular_h_gauss(const OVSample* ref_lft, OVSample* dst,
                       ptrdiff_t dst_stride, int8_t log2_pb_w,
                       int8_t log2_pb_h, int angle_val)
 {
-    uint16_t tmp_dst[128 * 128];
+    OVSample tmp_dst[128 * 128];
     const int tmp_stride = 128;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
-    uint16_t* _tmp = tmp_dst;
-    uint16_t* _dst = dst;
+    OVSample* _tmp = tmp_dst;
+    OVSample* _dst = dst;
 
     int delta_pos = angle_val;
     for (int y = 0; y < pb_w; y++) {
         const int delta_int  = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
-        const int16_t* ref = (int16_t*)ref_lft + delta_int;
+        const OVSample* ref = (OVSample*)ref_lft + delta_int;
         for (int x = 0; x < pb_h; x++) {
             _tmp[x] = ((int32_t)(ref[0] * (16 - (delta_frac >> 1))) +
                        (int32_t)(ref[1] * (32 - (delta_frac >> 1))) +
@@ -749,20 +747,20 @@ intra_angular_h_gauss(const uint16_t* ref_lft, uint16_t* dst,
 }
 
 static void
-intra_angular_v_cubic(const uint16_t* ref_abv, uint16_t* dst,
+intra_angular_v_cubic(const OVSample* ref_abv, OVSample* dst,
                       ptrdiff_t dst_stride, int8_t log2_pb_w,
                       int8_t log2_pb_h, int angle_val)
 {
     int delta_pos = angle_val;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
 
     for (int y = 0; y < pb_h; y++) {
         const int delta_int  = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
 
-        const int16_t* ref = (int16_t*)ref_abv + delta_int;
+        const OVSample* ref = (OVSample*)ref_abv + delta_int;
         const int8_t* filter = &chroma_filter[delta_frac << 2];
 
         for (int x = 0; x < pb_w; x++) {
@@ -779,20 +777,20 @@ intra_angular_v_cubic(const uint16_t* ref_abv, uint16_t* dst,
 }
 
 static void
-intra_angular_v_gauss(const uint16_t* ref_abv, uint16_t* dst,
+intra_angular_v_gauss(const OVSample* ref_abv, OVSample* dst,
                       ptrdiff_t dst_stride, int8_t log2_pb_w,
                       int8_t log2_pb_h, int angle_val)
 {
     int delta_pos = angle_val;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
 
     for (int y = 0; y < pb_h; y++) {
         const int delta_int = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
 
-        const int16_t* ref = (int16_t*)ref_abv + delta_int;
+        const OVSample* ref = (OVSample*)ref_abv + delta_int;
 
         for (int x = 0; x < pb_w; x++) {
             _dst[x] = ((int32_t)(ref[0] * (16 - (delta_frac >> 1))) +
@@ -807,14 +805,14 @@ intra_angular_v_gauss(const uint16_t* ref_abv, uint16_t* dst,
 }
 
 static void
-intra_angular_h_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
-                           uint16_t* const dst, ptrdiff_t dst_stride,
+intra_angular_h_cubic_pdpc(const OVSample* ref_abv, const OVSample* ref_lft,
+                           OVSample* const dst, ptrdiff_t dst_stride,
                            int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
 {
-    uint16_t tmp_dst[128 * 128];
+    OVSample tmp_dst[128 * 128];
     const int tmp_stride = 128;
-    uint16_t* _tmp = tmp_dst;
-    uint16_t* _dst = dst;
+    OVSample* _tmp = tmp_dst;
+    OVSample* _dst = dst;
     int angle_val = angle_table[mode_idx];
     int inv_angle = inverse_angle_table[mode_idx];
     int pb_w = 1 << log2_pb_w;
@@ -826,7 +824,7 @@ intra_angular_h_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
         const int delta_int = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
         int inv_angle_sum = 256 + inv_angle;
-        const int16_t* ref = (int16_t*)ref_lft + delta_int;
+        const OVSample* ref = (OVSample*)ref_lft + delta_int;
         const int8_t* filter = &chroma_filter[delta_frac << 2];
 
         for (int x = 0; x < pb_h; x++) {
@@ -840,7 +838,7 @@ intra_angular_h_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
 
         for (int x = 0; x < OVMIN(3 << scale, pb_h); x++) {
             int wL = 32 >> ((x << 1) >> scale);
-            const uint16_t* p = ref_abv + y + (inv_angle_sum >> 9) + 1;
+            const OVSample* p = ref_abv + y + (inv_angle_sum >> 9) + 1;
             int16_t left = p[0];
 
             _tmp[x] = ov_bdclip(_tmp[x] + ((wL * (left - _tmp[x]) + 32) >> 6));
@@ -864,11 +862,11 @@ intra_angular_h_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
 }
 
 static void
-intra_angular_v_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
-                           uint16_t* const dst, ptrdiff_t dst_stride,
+intra_angular_v_cubic_pdpc(const OVSample* ref_abv, const OVSample* ref_lft,
+                           OVSample* const dst, ptrdiff_t dst_stride,
                            int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
 {
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
     int angle_val = angle_table[mode_idx];
@@ -880,7 +878,7 @@ intra_angular_v_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
         const int delta_int = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
         int inv_angle_sum = 256 + inv_angle;
-        const int16_t* ref = (int16_t *)ref_abv + delta_int;
+        const OVSample* ref = (OVSample *)ref_abv + delta_int;
         const int8_t* filter = &chroma_filter[delta_frac << 2];
         for (int x = 0; x < pb_w; x++) {
             int val = ((int32_t)(ref[0] * filter[0]) +
@@ -894,7 +892,7 @@ intra_angular_v_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
 
         for (int x = 0; x < OVMIN(3 << scale, pb_w); x++) {
             int wL = 32 >> ((x << 1) >> scale);
-            const uint16_t* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
+            const OVSample* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
 
             int16_t left = p[0];
 
@@ -907,15 +905,15 @@ intra_angular_v_cubic_pdpc(const uint16_t* ref_abv, const uint16_t* ref_lft,
 }
 
 static void
-intra_angular_h_cubic_mref(const uint16_t* const ref_lft, uint16_t* const dst,
+intra_angular_h_cubic_mref(const OVSample* const ref_lft, OVSample* const dst,
                            ptrdiff_t dst_stride,
                            int8_t log2_pb_w, int8_t log2_pb_h,
                            int angle_val, uint8_t mrl_idx)
 {
-    uint16_t tmp_dst[128 * 128];
+    OVSample tmp_dst[128 * 128];
     const int tmp_stride = 128;
-    uint16_t* _tmp = tmp_dst;
-    uint16_t* _dst = dst;
+    OVSample* _tmp = tmp_dst;
+    OVSample* _dst = dst;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
     int delta_pos = angle_val * (mrl_idx + 1);
@@ -923,7 +921,7 @@ intra_angular_h_cubic_mref(const uint16_t* const ref_lft, uint16_t* const dst,
     for (int y = 0; y < pb_w; y++) {
         const int delta_int  = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
-        const int16_t* ref = (int16_t *)ref_lft + delta_int;
+        const OVSample* ref = (OVSample *)ref_lft + delta_int;
         const int8_t* filter = &chroma_filter[delta_frac << 2];
 
         for (int x = 0; x < pb_h; x++) {
@@ -951,20 +949,20 @@ intra_angular_h_cubic_mref(const uint16_t* const ref_lft, uint16_t* const dst,
 }
 
 static void
-intra_angular_v_cubic_mref(const uint16_t* const ref_abv, uint16_t* const dst,
+intra_angular_v_cubic_mref(const OVSample* const ref_abv, OVSample* const dst,
                            ptrdiff_t dst_stride, int8_t log2_pb_w,
                            int8_t log2_pb_h, int angle_val,
                            uint8_t mrl_idx)
 {
     int delta_pos = angle_val * (mrl_idx + 1);
-    uint16_t* _dst = dst;
+    OVSample* _dst = dst;
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
 
     for (int y = 0; y < pb_h; y++) {
         const int delta_int  = delta_pos >> 5;
         const int delta_frac = delta_pos & 0x1F;
-        const int16_t* ref = (int16_t *)ref_abv + delta_int;
+        const OVSample* ref = (OVSample *)ref_abv + delta_int;
         const int8_t* filter = &chroma_filter[delta_frac << 2];
         for (int x = 0; x < pb_w; x++) {
             int val = ((int32_t)(ref[0] * filter[0]) +

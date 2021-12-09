@@ -1,5 +1,6 @@
 #ifndef DBF_UTILS_H
 #define DBF_UTILS_H
+#include <string.h>
 
 /*FIXME harmonize notations */
 /* Store average qp between two CB into line */

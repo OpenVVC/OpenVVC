@@ -8661,50 +8661,38 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
     mc_l->rpr_w[i]      = &put_vvc_qpel_rpr_sse_weighted_4;
     mc_c->rpr_w[i]      = &put_vvc_qpel_rpr_sse_weighted_4;
 
-    mc_l->rpr_uni[0][i] = &put_vvc_pel_rpr_sse;
-    mc_l->rpr_uni[1][i] = &put_vvc_qpel_rpr_sse_h;
-    mc_l->rpr_uni[2][i] = &put_vvc_pel_rpr_sse_clip;
-    mc_l->rpr_uni[3][i] = &put_vvc_qpel_rpr_sse_clip_v4;
+    mc_l->rpr_h[0][i] = &put_vvc_pel_rpr_sse;
+    mc_l->rpr_h[1][i] = &put_vvc_qpel_rpr_sse_h;
+    mc_l->rpr_v_uni[0][i] = &put_vvc_pel_rpr_sse_clip;
+    mc_l->rpr_v_uni[1][i] = &put_vvc_qpel_rpr_sse_clip_v4;
+    mc_l->rpr_v_bi[0][i] = &put_vvc_pel_rpr_sse_bi;
+    mc_l->rpr_v_bi[1][i] = &put_vvc_qpel_rpr_sse_bi_v4;
 
-    mc_l->rpr_bi[0][i] = &put_vvc_pel_rpr_sse;
-    mc_l->rpr_bi[1][i] = &put_vvc_qpel_rpr_sse_h;
-    mc_l->rpr_bi[2][i] = &put_vvc_pel_rpr_sse_bi;
-    mc_l->rpr_bi[3][i] = &put_vvc_qpel_rpr_sse_bi_v4;
-
-    mc_c->rpr_uni[0][i] = &put_vvc_pel_rpr_sse;
-    mc_c->rpr_uni[1][i] = &put_vvc_epel_rpr_sse_h;
-    mc_c->rpr_uni[2][i] = &put_vvc_pel_rpr_sse_clip;
-    mc_c->rpr_uni[3][i] = &put_vvc_epel_rpr_sse_clip_v4;
-
-    mc_c->rpr_bi[0][i] = &put_vvc_pel_rpr_sse;
-    mc_c->rpr_bi[1][i] = &put_vvc_epel_rpr_sse_h;
-    mc_c->rpr_bi[2][i] = &put_vvc_pel_rpr_sse_bi;
-    mc_c->rpr_bi[3][i] = &put_vvc_epel_rpr_sse_bi_v4;
+    mc_c->rpr_h[0][i] = &put_vvc_pel_rpr_sse;
+    mc_c->rpr_h[1][i] = &put_vvc_epel_rpr_sse_h;
+    mc_c->rpr_v_uni[0][i] = &put_vvc_pel_rpr_sse_clip;
+    mc_c->rpr_v_uni[1][i] = &put_vvc_epel_rpr_sse_clip_v4;
+    mc_c->rpr_v_bi[0][i] = &put_vvc_pel_rpr_sse_bi;
+    mc_c->rpr_v_bi[1][i] = &put_vvc_epel_rpr_sse_bi_v4;
   }
 
   for (i = 2; i < 8; ++i) {
     mc_l->rpr_w[i]      = &put_vvc_qpel_rpr_sse_weighted_8;
     mc_c->rpr_w[i]      = &put_vvc_qpel_rpr_sse_weighted_8;
 
-    mc_l->rpr_uni[0][i] = &put_vvc_pel_rpr_sse;
-    mc_l->rpr_uni[1][i] = &put_vvc_qpel_rpr_sse_h;
-    mc_l->rpr_uni[2][i] = &put_vvc_pel_rpr_sse_clip;
-    mc_l->rpr_uni[3][i] = &put_vvc_qpel_rpr_sse_clip_v8;
+    mc_l->rpr_h[0][i] = &put_vvc_pel_rpr_sse;
+    mc_l->rpr_h[1][i] = &put_vvc_qpel_rpr_sse_h;
+    mc_l->rpr_v_uni[0][i] = &put_vvc_pel_rpr_sse_clip;
+    mc_l->rpr_v_uni[1][i] = &put_vvc_qpel_rpr_sse_clip_v8;
+    mc_l->rpr_v_bi[0][i] = &put_vvc_pel_rpr_sse_bi;
+    mc_l->rpr_v_bi[1][i] = &put_vvc_qpel_rpr_sse_bi_v8;
 
-    mc_l->rpr_bi[0][i] = &put_vvc_pel_rpr_sse;
-    mc_l->rpr_bi[1][i] = &put_vvc_qpel_rpr_sse_h;
-    mc_l->rpr_bi[2][i] = &put_vvc_pel_rpr_sse_bi;
-    mc_l->rpr_bi[3][i] = &put_vvc_qpel_rpr_sse_bi_v8;
-
-    mc_c->rpr_uni[0][i] = &put_vvc_pel_rpr_sse;
-    mc_c->rpr_uni[1][i] = &put_vvc_epel_rpr_sse_h;
-    mc_c->rpr_uni[2][i] = &put_vvc_pel_rpr_sse_clip;
-    mc_c->rpr_uni[3][i] = &put_vvc_epel_rpr_sse_clip_v8;
-
-    mc_c->rpr_bi[0][i] = &put_vvc_pel_rpr_sse;
-    mc_c->rpr_bi[1][i] = &put_vvc_epel_rpr_sse_h;
-    mc_c->rpr_bi[2][i] = &put_vvc_pel_rpr_sse_bi;
-    mc_c->rpr_bi[3][i] = &put_vvc_epel_rpr_sse_bi_v8;
+    mc_c->rpr_h[0][i] = &put_vvc_pel_rpr_sse;
+    mc_c->rpr_h[1][i] = &put_vvc_epel_rpr_sse_h;
+    mc_c->rpr_v_uni[0][i] = &put_vvc_pel_rpr_sse_clip;
+    mc_c->rpr_v_uni[1][i] = &put_vvc_epel_rpr_sse_clip_v8;
+    mc_c->rpr_v_bi[0][i] = &put_vvc_pel_rpr_sse_bi;
+    mc_c->rpr_v_bi[1][i] = &put_vvc_epel_rpr_sse_bi_v8;
   }
 
   /* Luma functions */

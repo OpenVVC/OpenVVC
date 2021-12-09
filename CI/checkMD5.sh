@@ -1,5 +1,16 @@
 #!/bin/sh
 
+case $(uname -s) in
+      Darwin|darwin|macos|macOS)
+        MD5SUM="md5 -r"
+    ;;
+      *)
+        MD5SUM="md5sum"
+    ;;
+esac
+
+
+
 print_usage(){
     cat <<EOF
 USAGE ./checkMD5.sh <bitstreams folder> <decoder> [<url>]
@@ -122,7 +133,7 @@ find_md5_file() {
 }
 
 check_md5sum(){
-  out_md5=$(md5sum ${yuv_file} | cut -f 1 -d ' ')
+  out_md5=$(${MD5SUM} ${yuv_file} | cut -f 1 -d ' ')
   ref_md5=$(cat    ${md5_file} | cut -f 1 -d ' ' | tr ABCDEF abcdef | sed 's/[^a-f0-9]//g')
   test "${out_md5}" = "${ref_md5}" || on_md5sum_mismatch
 }

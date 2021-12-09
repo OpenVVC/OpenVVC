@@ -6,8 +6,9 @@
 #include "dbf_utils.h"
 #include "drv.h"
 #include "vcl.h"
+#include "rcn_dequant.h"
+#include "bitdepth.h"
 
-#define BITDEPTH 10
 #define TR_SHIFT_V (6 + 1)
 #define TR_SHIFT_H ((6 + 15 - 1) - BITDEPTH)
 
@@ -39,23 +40,6 @@ struct ISPTUInfo {
 };
 
 static void
-derive_dequant_ctx(OVCTUDec *const ctudec, const VVCQPCTX *const qp_ctx,
-                  int cu_qp_delta)
-{
-    /*FIXME avoid negative values especiallly in chroma_map derivation*/
-    int qp_bd_offset = 6 * (BITDEPTH - 8);
-    int base_qp = (qp_ctx->current_qp + cu_qp_delta + 64) & 63;
-    ctudec->dequant_luma.qp = ((base_qp + qp_bd_offset) & 63);
-
-    /*FIXME update transform skip ctx to VTM-10.0 */
-    ctudec->dequant_luma_skip.qp = OVMAX(ctudec->dequant_luma.qp, qp_ctx->min_qp_prime_ts);
-    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[(base_qp + qp_ctx->cb_offset + 64) & 63] + qp_bd_offset;
-    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[(base_qp + qp_ctx->cr_offset + 64) & 63] + qp_bd_offset;
-    ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[(base_qp + 64) & 63] + qp_ctx->jcbcr_offset + qp_bd_offset;
-    ctudec->qp_ctx.current_qp = base_qp;
-}
-
-static void
 rcn_residual(OVCTUDec *const ctudec,
              int16_t *const dst, int16_t *src,
              uint8_t x0, uint8_t y0,
@@ -64,7 +48,7 @@ rcn_residual(OVCTUDec *const ctudec,
              uint8_t cu_mts_flag, uint8_t cu_mts_idx,
              uint8_t is_dc, uint8_t lfnst_flag, uint8_t is_mip, uint8_t lfnst_idx)
 {
-    struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
+    struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
     fill_bs_map(&ctudec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
 
     DECLARE_ALIGNED(32, int16_t, tmp)[64*64];
@@ -119,7 +103,7 @@ rcn_residual_c(OVCTUDec *const ctudec,
                uint16_t last_pos,
                uint8_t lfnst_flag, uint8_t lfnst_idx)
 {
-    struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
+    struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
 
     DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
 
@@ -161,10 +145,10 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
           uint8_t x0, uint8_t y0,
           uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t cbf_mask, uint8_t lfnst_flag)
 {
-    const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
+    const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_funcs;
 
     if (cbf_mask & 0x2) {
-        uint16_t *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[(x0) + (y0 * RCN_CTB_STRIDE)];
+        OVSample *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[(x0) + (y0 * RCN_CTB_STRIDE)];
         int16_t scale  =  ctu_dec->lmcs_info.scale_c_flag ? ctu_dec->lmcs_info.lmcs_chroma_scale : 1<< 11;
         int16_t *const coeffs_cb = ctu_dec->residual_cb + tu_info->pos_offset;
         int16_t *tr_buff;
@@ -191,7 +175,7 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
     }
 
     if (cbf_mask & 0x1) {
-        uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[(x0) + (y0 * RCN_CTB_STRIDE)];
+        OVSample *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[(x0) + (y0 * RCN_CTB_STRIDE)];
         int16_t scale  =  ctu_dec->lmcs_info.scale_c_flag ? ctu_dec->lmcs_info.lmcs_chroma_scale : 1<< 11;
         int16_t *const coeffs_cr = ctu_dec->residual_cr + tu_info->pos_offset;
         int16_t *tr_buff;
@@ -222,9 +206,9 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
           uint8_t x0, uint8_t y0, uint8_t log2_tb_w, uint8_t log2_tb_h,
           uint8_t cbf_mask, uint8_t lfnst_flag)
 {
-    const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
-    uint16_t *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[x0 + (y0 * RCN_CTB_STRIDE)];
-    uint16_t *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[x0 + (y0 * RCN_CTB_STRIDE)];
+    const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_funcs;
+    OVSample *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[x0 + (y0 * RCN_CTB_STRIDE)];
+    OVSample *const dst_cr = &ctu_dec->rcn_ctx.ctu_buff.cr[x0 + (y0 * RCN_CTB_STRIDE)];
     if (!(tu_info->tr_skip_mask & 0x1)) {
         const struct TBInfo *const tb_info = &tu_info->tb_info[0];
         int16_t *const coeffs_jcbcr = ctu_dec->residual_cb + tu_info->pos_offset;
@@ -240,7 +224,7 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
     fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
     fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
     if ((cbf_mask & 0x3) == 0x3) {
-        const uint8_t qp_bd_offset = 6 * (BITDEPTH - 8);
+        int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
         uint8_t    qp = ctu_dec->dequant_joint_cb_cr.qp - qp_bd_offset;
         dbf_fill_qp_map(&ctu_dec->dbf_info.qp_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1, qp);
         dbf_fill_qp_map(&ctu_dec->dbf_info.qp_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1, qp);
@@ -267,7 +251,7 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
 
 }
 
-void
+static void
 recon_isp_subtree_v(OVCTUDec *const ctudec,
                     unsigned int x0, unsigned int y0,
                     unsigned int log2_cb_w, unsigned int log2_cb_h,
@@ -277,8 +261,8 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
     #if 0
     struct OVDrvCtx *const pred_ctx = &ctudec->drv_ctx;
     #endif
-    const struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
-    const struct RCNFunctions *const rcn_func = &ctudec->rcn_ctx.rcn_funcs;
+    const struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
+    const struct RCNFunctions *const rcn_func = &ctudec->rcn_funcs;
     uint8_t cbf_flags = tu_info->cbf_mask;
     uint8_t lfnst_flag = tu_info->lfnst_flag;
 
@@ -307,7 +291,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
          */
          /*FIXME separate small cases */
         if (!(offset_x & 0x3)) {
-            vvc_intra_pred_isp(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
+            ctudec->rcn_funcs.intra_pred_isp(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
                                RCN_CTB_STRIDE, intra_mode, x0, y0,
                                log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h,
                                log2_cb_w, log2_cb_h, offset_x, 0);
@@ -361,7 +345,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
                 memcpy(ctudec->transform_buff, tmp, sizeof(uint16_t) * (1 << log2_cb_h));
             }
 
-            uint16_t *dst  = &ctudec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
+            OVSample *dst  = &ctudec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
             int16_t *src  = ctudec->transform_buff;
 
             rcn_func->ict.add[log2_pb_w](src, dst, log2_pb_w, log2_cb_h, 0);
@@ -371,15 +355,15 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
     }
 }
 
-void
+static void
 recon_isp_subtree_h(OVCTUDec *const ctudec,
                     unsigned int x0, unsigned int y0,
                     unsigned int log2_cb_w, unsigned int log2_cb_h,
                     uint8_t intra_mode,
                     const struct ISPTUInfo *const tu_info)
 {
-    const struct TRFunctions *TRFunc = &ctudec->rcn_ctx.rcn_funcs.tr;
-    const struct RCNFunctions *const rcn_func = &ctudec->rcn_ctx.rcn_funcs;
+    const struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
+    const struct RCNFunctions *const rcn_func = &ctudec->rcn_funcs;
 
     int log2_pb_h = log2_cb_h - 2;
     int nb_pb;
@@ -414,7 +398,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
         //fill_ctb_bound(&ctudec->dbf_info, x0, y0, log2_cb_w, log2_pb_h);
         #endif
 
-        vvc_intra_pred_isp(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
+        ctudec->rcn_funcs.intra_pred_isp(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
                            RCN_CTB_STRIDE, intra_mode, x0, y0,
                            log2_cb_w, log2_pb_h, log2_cb_w, log2_cb_h, 0, offset_y);
         if (cbf) {
@@ -458,7 +442,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                 memcpy(ctudec->transform_buff, tmp, sizeof(uint16_t) * (1 << log2_cb_w));
             }
 
-            uint16_t *dst  = &ctudec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
+            OVSample *dst  = &ctudec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
             int16_t *src  = ctudec->transform_buff;
 
             rcn_func->ict.add[log2_cb_w](src, dst, log2_cb_w, log2_pb_h, 0);
@@ -468,7 +452,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
     }
 }
 
-void
+static void
 rcn_tu_st(OVCTUDec *const ctu_dec,
           uint8_t x0, uint8_t y0,
           uint8_t log2_tb_w, uint8_t log2_tb_h,
@@ -481,7 +465,7 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
 
     if (cbf_flag_l) {
         const struct TBInfo *const tb_info = &tu_info->tb_info[2];
-        const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
+        const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_funcs;
 
         if (!(tu_info->tr_skip_mask & 0x10)) {
             int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;
@@ -502,7 +486,7 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
         rcn_func->ict.add[log2_tb_w](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
         /* FIXME Avoid reprocessing CCLM from here by recontructing at the end of transform tree */
         if (ctu_dec->intra_mode_c >= 67 && ctu_dec->intra_mode_c < 70) {
-            vvc_intra_pred_chroma(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1);
+            ctu_dec->rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1);
         }
         fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
         fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
@@ -518,7 +502,7 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
 
     }
 
-    const uint8_t qp_bd_offset = 6 * (BITDEPTH - 8);
+    int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
     derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
     struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
     uint8_t qp_l  = ctu_dec->qp_ctx.current_qp;
@@ -541,7 +525,7 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
 {
     const struct TBInfo *const tb_info = &tu_info->tb_info[2];
     if (cbf_mask) {
-        const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_ctx.rcn_funcs;
+        const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_funcs;
 
         if (!(tu_info->tr_skip_mask & 0x10)) {
             int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;
@@ -566,7 +550,7 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
     }
 }
 
-void
+static void
 rcn_tu_c(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
          uint8_t log2_tb_w, uint8_t log2_tb_h,
          uint8_t cu_flags, uint8_t cbf_mask,
@@ -601,7 +585,7 @@ rcn_res_wrap(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
     }
 }
 
-void
+static void
 rcn_transform_tree(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
                    uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t log2_max_tb_s,
                    uint8_t cu_flags, const struct TUInfo *const tu_info)
@@ -642,3 +626,17 @@ rcn_transform_tree(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
     }
 }
 
+void
+BD_DECL(rcn_init_transform_trees)(struct RCNFunctions *rcn_funcs)
+{
+
+    rcn_funcs->tmp.rcn_transform_tree = &rcn_transform_tree;
+
+    rcn_funcs->tmp.rcn_tu_c = &rcn_tu_c;
+
+    rcn_funcs->tmp.rcn_tu_st = &rcn_tu_st;
+
+    rcn_funcs->tmp.recon_isp_subtree_h = &recon_isp_subtree_h;
+
+    rcn_funcs->tmp.recon_isp_subtree_v = &recon_isp_subtree_v;
+}

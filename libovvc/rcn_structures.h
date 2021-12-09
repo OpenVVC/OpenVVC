@@ -4,12 +4,21 @@
 #include <stdint.h>
 
 #include "rcn_intra_angular.h"
+#include "bitdepth.h"
 
 struct ALFClassifier;
 struct Area;
 struct CCLMParams;
 struct SAOParamsCtu;
 struct LMCSLUTs;
+
+struct CTUBitField;
+struct RCNFunctions;
+struct OVLMCSData;
+struct LMCSInfo;
+struct ISPTUInfo;
+struct TUInfo;
+
 
 enum RCNSizes
 {
@@ -46,16 +55,20 @@ enum DCTType
 
 #define NB_TR_SIZES 7
 
-typedef void (*MCUniDirFunc)(uint16_t *_dst, ptrdiff_t _dststride,
-                             const uint16_t *_src, ptrdiff_t _srcstride,
+typedef void (*MCUniDirFunc)(OVSample *_dst, ptrdiff_t _dststride,
+                             const OVSample *_src, ptrdiff_t _srcstride,
                              int height, intptr_t mx, intptr_t my, int width);
+
+typedef void (*MCBilinear)(uint16_t *_dst, ptrdiff_t _dststride,
+                           const OVSample *_src, ptrdiff_t _srcstride,
+                           int height, intptr_t mx, intptr_t my, int width);
 
 typedef void (*MCBiDir0Func)(int16_t *_dst,
-                             const uint16_t *_src, ptrdiff_t _srcstride,
+                             const OVSample *_src, ptrdiff_t _srcstride,
                              int height, intptr_t mx, intptr_t my, int width);
 
-typedef void (*MCBiDir1Func)(uint16_t *_dst, ptrdiff_t _dststride,
-                             const uint16_t *_src0, ptrdiff_t _srcstride,
+typedef void (*MCBiDir1Func)(OVSample *_dst, ptrdiff_t _dststride,
+                             const OVSample *_src0, ptrdiff_t _srcstride,
                              const int16_t *_src1,
                              int height, intptr_t mx, intptr_t my, int width);
 
@@ -70,36 +83,44 @@ typedef void (*MCBiDirWFunc)(uint8_t* dst, ptrdiff_t dststride, uint8_t* _src,
                              int wx0, int wx1, intptr_t mx,
                              intptr_t my, int width);
 
-typedef void (*MCRPRFunc)(uint16_t *_dst, ptrdiff_t _dststride,
+typedef void (*MCRPRHor)(uint16_t *_dst, ptrdiff_t _dststride,
+                             const OVSample *_src, ptrdiff_t _srcstride,
+                             int height, intptr_t mx, intptr_t my, int width, uint8_t filter_idx);
+
+typedef void (*MCRPRVerUni)(OVSample *_dst, ptrdiff_t _dststride,
                              const uint16_t *_src, ptrdiff_t _srcstride,
                              int height, intptr_t mx, intptr_t my, int width, uint8_t filter_idx);
 
-typedef void (*MCRPRSum)(uint16_t* _dst, ptrdiff_t _dststride,
+typedef void (*MCRPRVerBi)(uint16_t *_dst, ptrdiff_t _dststride,
+                             const uint16_t *_src, ptrdiff_t _srcstride,
+                             int height, intptr_t mx, intptr_t my, int width, uint8_t filter_idx);
+
+typedef void (*MCRPRSum)(OVSample* _dst, ptrdiff_t _dststride,
                           const uint16_t* _src0, ptrdiff_t _src0stride,
                           const uint16_t* _src1, ptrdiff_t _src1stride,
                           int height, intptr_t mx, intptr_t my, int width);
 
-typedef void (*MCRPRWeighted)(uint16_t* _dst, ptrdiff_t _dststride,
+typedef void (*MCRPRWeighted)(OVSample* _dst, ptrdiff_t _dststride,
                       const uint16_t* _src, ptrdiff_t _srcstride,
                       const uint16_t* _src2, ptrdiff_t _src2stride,
                       int height, int denom, int wx0, int wx1,
                       intptr_t mx, intptr_t my, int width);
 
-typedef void (*LMsubsampleFunc)(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
+typedef void (*LMsubsampleFunc)(const OVSample *lm_src, OVSample *dst_cb, OVSample *dst_cr,
                                 ptrdiff_t lm_src_stride, ptrdiff_t dst_stride_c,
                                 const struct CCLMParams *const lm_params,
                                 int pb_w, int pb_h, uint8_t lft_avail);
 
-typedef void (*CCLMFunc)( const uint16_t* const src_luma, uint16_t* const dst_cb,
-                          uint16_t* const dst_cr, int log2_pb_w, int log2_pb_h, int y0,
+typedef void (*CCLMFunc)( const OVSample* const src_luma, OVSample* const dst_cb,
+                          OVSample* const dst_cr, int log2_pb_w, int log2_pb_h, int y0,
                           int up_available, int left_available, LMsubsampleFunc const compute_subsample);
 
-typedef void (*MDLMFunc)(const uint16_t* const src_luma, uint16_t* const dst_cb,
-                         uint16_t* const dst_cr, uint64_t intra_map_rows,
+typedef void (*MDLMFunc)(const OVSample* const src_luma, OVSample* const dst_cb,
+                         OVSample* const dst_cr, uint64_t intra_map_rows,
                          int log2_pb_w, int log2_pb_h, int x0, int y0,
                          uint8_t left_available, uint8_t up_available, LMsubsampleFunc const compute_subsample);
 
-typedef void (*ResidualAddScaleFunc)(const int16_t *src, uint16_t *dst,
+typedef void (*ResidualAddScaleFunc)(const int16_t *src, OVSample *dst,
                                      int log2_tb_w, int log2_tb_h,
                                      int scale);
 
@@ -107,87 +128,82 @@ typedef void (*TrFunc)(const int16_t *src, int16_t *dst,
                  ptrdiff_t src_stride,
                  int num_lines, int num_columns, int shift);
 
-typedef void (*DCFunc)(const uint16_t* const src_above,
-                 const uint16_t* const src_left, uint16_t* const dst,
+typedef void (*DCFunc)(const OVSample* const src_above,
+                 const OVSample* const src_left, OVSample* const dst,
                  ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h);
 
-typedef void (*PlanarFunc)(const uint16_t* const src_above,
-                     const uint16_t* const src_left, uint16_t* const dst,
+typedef void (*PlanarFunc)(const OVSample* const src_above,
+                     const OVSample* const src_left, OVSample* const dst,
                      ptrdiff_t dst_stride, int log2_pb_w, int log2_pb_h);
 
 typedef void (*LFNSTFunc)(const int16_t* const src, int16_t* const dst,
                      const int8_t* const lfnst_matrix, int log2_tb_w,
                      int log2_tb_h);
 
-typedef void (*MIPUpSample)(uint16_t *const dst, const int16_t *const src,
-                            const uint16_t *ref,
+typedef void (*MIPUpSample)(OVSample *const dst, const OVSample *const src,
+                            const OVSample *ref,
                             int log2_upsampled_size_src, int log2_opposite_size,
                             int src_step, int src_stride,
                             int dst_step, int dst_stride,
                             int ref_step, int log2_scale);
 
-typedef void (*MIPMatMult)(const int16_t *src, uint16_t *dst,
+typedef void (*MIPMatMult)(const int16_t *src, OVSample *dst,
                            const uint8_t *matrix, int16_t offset, int rnd,
                            uint8_t log2_src, uint8_t log2_red_w, uint8_t log2_red_h);
 
 typedef void (*ALFClassifBlkFunc)(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr,
-                                  int16_t *const src, const int stride, const struct Area blk,
+                                  OVSample *const src, const int stride, const struct Area blk,
                                   const int shift, const int ctu_height, int virbnd_pos);
 
-typedef void (*ALFFilterBlkFunc)(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
+typedef void (*ALFFilterBlkFunc)(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample *const dst, OVSample *const src, const int dstStride, const int srcStride,
                         struct Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                         const int ctu_height, int virbnd_pos);
 
 
-typedef void (*ALFChromaFilterBlkFunc)(int16_t *const dst, const int16_t *const src,
+typedef void (*ALFChromaFilterBlkFunc)(OVSample *const dst, const OVSample *const src,
                                        const int dstStride, const int srcStride,
                                        struct Area blk_dst,
                                        const int16_t *const filter_set, const int16_t *const clip_set,
                                        const int ctu_height, int virbnd_pos);
 
-typedef void (*CCALFFilterBlkFunc)(int16_t * chroma_dst, int16_t * luma_src, const int chr_stride, const int luma_stride,
+typedef void (*CCALFFilterBlkFunc)(OVSample * chroma_dst, OVSample * luma_src, const int chr_stride, const int luma_stride,
                         const struct Area blk_dst, const uint8_t c_id, const int16_t *filt_coeff,
                         const int vbCTUHeight, int vbPos);
 
-typedef void (*SAOBandFilterFunc)(uint8_t* _dst, uint8_t* _src,
+typedef void (*SAOBandFilterFunc)(OVSample* _dst, OVSample* _src,
                                   ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                                   struct SAOParamsCtu* sao, int width,
                                   int height, int c_idx);
 
-typedef void (*SAOEdgeFilterFunc)(uint8_t* _dst, uint8_t* _src,
+typedef void (*SAOEdgeFilterFunc)(OVSample* _dst, OVSample* _src,
                                   ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
                                   struct SAOParamsCtu* sao, int width,
                                   int height, int c_idx);
 
-typedef void (*LMCSReshapeFunc)(uint16_t *_dst, ptrdiff_t stride_dst, const struct LMCSLUTs *const luts, int width, int height);
+typedef void (*LMCSReshapeFunc)(OVSample *_dst, ptrdiff_t stride_dst, const struct LMCSLUTs *const luts, int width, int height);
 
-typedef uint64_t (*DMVRSADFunc)(const int16_t *ref0, const int16_t *ref1, int16_t dmvr_stride, int16_t pb_w, int16_t pb_h);
+typedef uint64_t (*DMVRSADFunc)(const uint16_t *ref0, const uint16_t *ref1, int16_t dmvr_stride, int16_t pb_w, int16_t pb_h);
 
-typedef uint8_t (*DMVRComputeSADsFunc)(const int16_t *ref0, const int16_t *ref1, uint64_t *sad_array, int sb_w, int sb_h);
+typedef uint8_t (*DMVRComputeSADsFunc)(const uint16_t *ref0, const uint16_t *ref1, uint64_t *sad_array, int sb_w, int sb_h);
 
-typedef void (*PROFGradFunction)(const uint16_t* src, int src_stride, int sb_w, int sb_h, int grad_stride, int16_t* grad_x, int16_t* grad_y);
+typedef void (*PROFGradFunction)(const int16_t* src, int src_stride, int sb_w, int sb_h, int grad_stride, int16_t* grad_x, int16_t* grad_y);
 
-typedef void (*PROFFunction)(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
+typedef void (*PROFFunction)(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
                              const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
                              const int32_t* dmv_scale_h, const int32_t* dmv_scale_v, uint8_t bidir);
 
 typedef void (*BDOFSBFunction)(const int16_t* src0, int src0_stride,
                                const int16_t* src1, int src1_stride,
-                               int16_t *dst, int dst_stride,
+                               OVSample *dst, int dst_stride,
                                const int16_t *gradX0, const int16_t *gradX1,
                                const int16_t *gradY0, const int16_t *gradY1, int grad_stride,
                                int wgt_x, int wgt_y);
 
-typedef void (*CIIPWeightedFuntion)(uint16_t* dst, int dststride, const uint16_t* src_intra,
-                                    const uint16_t* src_inter, int srcstride, int width, int height, int wt);
+typedef void (*CIIPWeightedFuntion)(OVSample* dst, int dststride, const OVSample* src_intra,
+                                    const OVSample* src_inter, int srcstride, int width, int height, int wt);
 
-typedef void (*DFFilterFunction)(int16_t *src, const int stride, const int tc);
+typedef void (*DFFilterFunction)(OVSample *src, const int stride, const int tc);
 
-void put_vvc_qpel_rpr_weighted(uint16_t* _dst, ptrdiff_t _dststride,
-                      const uint16_t* _src0, ptrdiff_t _src0stride,
-                      const uint16_t* _src1, ptrdiff_t _src1stride,
-                      int height, int denom, int wx0, int wx1,
-                      intptr_t mx, intptr_t my, int width);
 
 /**
  * The Context put together all functions used by strategies.
@@ -203,11 +219,16 @@ struct MCFunctions{
     MCUniDirWFunc unidir_w[4][8];
     MCBiDirWFunc bidir_w[4][8];
 
-    MCUniDirFunc bilinear[4][8];
-    MCRPRFunc    rpr_uni[4][8];
-    MCRPRFunc    rpr_bi[4][8];
-    MCRPRSum     rpr_sum;
+    MCBilinear    bilinear[4][8];
+    MCRPRHor      rpr_h[2][8];
+    MCRPRVerUni   rpr_v_uni[2][8];
+    MCRPRVerBi    rpr_v_bi[2][8];
+    MCRPRSum      rpr_sum;
     MCRPRWeighted rpr_w[8];
+
+    void (*gpm_weighted)(OVSample* _dst, int _dststride, const int16_t* _src0,
+                  int srcstride0, const int16_t* _src1, int srcstride1, int height,
+                  int width, int step_x, int step_y, int16_t* weight);
 };
 
 struct CCLMFunctions
@@ -247,23 +268,46 @@ struct LFNSTFunctions
   LFNSTFunc func[2][2];
 };
 
+struct OVRCNCtx;
 struct MIPFunctions
 {
   MIPUpSample upsample_h[2][3];
   MIPUpSample upsample_v[2][3];
   MIPMatMult matmult;
+
+  void (*rcn_intra_mip)(const struct OVRCNCtx *const rcn_ctx,
+                        uint8_t x0, uint8_t y0,
+                        uint8_t log2_pb_w, uint8_t log2_pb_h,
+                        uint8_t mip_opaque);
 };
+
+struct RectEntryInfo;
+struct OVCTUDec;
+struct RCNALF;
 
 struct ALFFunctions{
-  ALFClassifBlkFunc classif;
-  ALFFilterBlkFunc luma[2];
-  ALFChromaFilterBlkFunc chroma[2];
-  CCALFFilterBlkFunc ccalf[2];
+    ALFClassifBlkFunc classif;
+    ALFFilterBlkFunc luma[2];
+    ALFChromaFilterBlkFunc chroma[2];
+    CCALFFilterBlkFunc ccalf[2];
+    void (*rcn_alf_filter_line)(struct OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y);
+
+    void (*rcn_alf_reconstruct_coeff_APS)(struct RCNALF* alf, struct OVCTUDec *const ctudec, uint8_t luma_flag, uint8_t chroma_flag);
+
 };
 
+struct OVCTUDec;
 struct SAOFunctions{
     SAOBandFilterFunc band;
     SAOEdgeFilterFunc edge[2];
+
+    void (*rcn_sao_filter_line)(struct OVCTUDec *const ctudec,
+                                const struct RectEntryInfo *const einfo,
+                                uint16_t ctb_y);
+
+    void (*rcn_sao_first_pix_rows)(struct OVCTUDec *const ctudec,
+                                   const struct RectEntryInfo *const einfo,
+                                   uint16_t ctb_y);
 };
 
 struct DMVRFunctions{
@@ -274,21 +318,131 @@ struct DMVRFunctions{
 struct PROFFunctions{
     PROFGradFunction grad;
     PROFFunction rcn;
+    void (*tmp_prof_mrg)(OVSample* _dst, ptrdiff_t _dststride,
+                         const int16_t* _src0, ptrdiff_t _srcstride,
+                         const int16_t* _src1, int height, intptr_t mx,
+                         intptr_t my, int width);
+
+    void (*tmp_prof_mrg_w)(OVSample* _dst, ptrdiff_t _dststride,
+                           const int16_t* _src0, ptrdiff_t _srcstride,
+                           const int16_t* _src1, int height, intptr_t mx,
+                           intptr_t my, int width, int wt0, int wt1);
+
+    void (*extend_prof_buff)(const OVSample *const src, int16_t *dst_prof, int16_t ref_stride,
+                             uint8_t ext_x, uint8_t ext_y);
+
+
 };
 
 struct BDOFFunctions{
     PROFGradFunction grad;
     BDOFSBFunction subblock;
+
+    void (*rcn_bdof)(struct BDOFFunctions *const bdof, OVSample *dst, int dst_stride,
+                     const int16_t *ref_bdof0, const int16_t *ref_bdof1, int ref_stride,
+                     const int16_t *grad_x0, const int16_t *grad_y0,
+                     const int16_t *grad_x1, const int16_t *grad_y1,
+                     int grad_stride, uint8_t pb_w, uint8_t pb_h);
+
+    void (*extend_bdof_buff)(const OVSample *const src, int16_t *dst_prof,
+                             int16_t ref_stride, int16_t pb_w, int16_t pb_h,
+                             uint8_t ext_x, uint8_t ext_y);
+
 };
 
 struct CIIPFunctions{
     CIIPWeightedFuntion weighted;
 };
 
+struct DBFInfo;
 struct DFFunctions{
     DFFilterFunction filter_h[11];
     DFFilterFunction filter_v[11];
+
+    void (*rcn_dbf_ctu)(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
+                        uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y);
+
+    void (*rcn_dbf_truncated_ctu)(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
+                                  uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y,
+                                  uint8_t ctu_w, uint8_t ctu_h);
 };
+
+#include "rcn_dequant.h"
+struct TMPBDCompat
+{
+    void (*filter_ref_samples)(const OVSample* const src, OVSample* const dst,
+                               const OVSample* src2, int length);
+
+    void (*fill_ref_left_0)(const OVSample* const src, int src_stride,
+                            OVSample* const ref_left, uint64_t intra_map_cols,
+                            uint64_t intra_map_rows, int8_t x0, int8_t y0, int log2_pb_w,
+                            int log2_pb_h, int offset_y);
+
+    void (*fill_ref_left_0_chroma)(const OVSample* const src, int src_stride,
+                                   OVSample* const ref_left, uint64_t intra_map_cols,
+                                   uint64_t intra_map_rows, int8_t x0, int8_t y0,
+                                   int log2_pb_w, int log2_pb_h);
+
+    void (*fill_ref_left_0_mref)(const OVSample* const src, int src_stride,
+                                 OVSample* const ref_left, uint64_t intra_map_cols,
+                                 uint64_t intra_map_rows, int mref_idx, int8_t x0,
+                                 int8_t y0, int log2_pb_w, int log2_pb_h);
+
+    void (*fill_ref_above_0)(const OVSample* const src, int src_stride,
+                             OVSample* const ref_above, uint64_t intra_map_rows,
+                             uint64_t intra_map_cols, int8_t x0, int8_t y0, int log2_pb_w,
+                             int log2_pb_h, int offset_x);
+
+    void (*fill_ref_above_0_chroma)(const OVSample* const src, int src_stride,
+                                    OVSample* const ref_above, uint64_t intra_map_rows,
+                                    uint64_t intra_map_cols, int8_t x0, int8_t y0,
+                                    int log2_pb_w, int log2_pb_h);
+
+    void (*fill_ref_above_0_mref)(const OVSample* const src, int src_stride,
+                                  OVSample* const ref_above, uint64_t intra_map_rows,
+                                  uint64_t intra_map_cols, int mref_idx, int8_t x0,
+                                  int8_t y0, int log2_pb_w, int log2_pb_h);
+
+    struct IQScale (*derive_dequant_sdh)(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h);
+
+    struct IQScale (*derive_dequant_dpq)(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h);
+
+    struct IQScale (*derive_dequant_ts)(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h);
+
+    void (*rcn_transform_tree)(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
+                               uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t log2_max_tb_s,
+                               uint8_t cu_flags, const struct TUInfo *const tu_info);
+
+
+    void (*rcn_tu_c)(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
+                     uint8_t log2_tb_w, uint8_t log2_tb_h,
+                     uint8_t cu_flags, uint8_t cbf_mask,
+                     const struct TUInfo *const tu_info);
+
+    void (*rcn_tu_st)(OVCTUDec *const ctu_dec,
+                      uint8_t x0, uint8_t y0,
+                      uint8_t log2_tb_w, uint8_t log2_tb_h,
+                      uint8_t cu_flags, uint8_t cbf_mask,
+                      const struct TUInfo *const tu_info);
+
+    void (*recon_isp_subtree_h)(OVCTUDec *const ctudec,
+                                unsigned int x0, unsigned int y0,
+                                unsigned int log2_cb_w, unsigned int log2_cb_h,
+                                uint8_t intra_mode,
+                                const struct ISPTUInfo *const tu_info);
+
+    void (*recon_isp_subtree_v)(OVCTUDec *const ctudec,
+                                unsigned int x0, unsigned int y0,
+                                unsigned int log2_cb_w, unsigned int log2_cb_h,
+                                uint8_t intra_mode,
+                                const struct ISPTUInfo *const tu_info);
+};
+
+struct OVBuffInfo;
+
+struct InterDRVCtx;
+struct PROFInfo;
+struct VVCGPM;
 
 struct RCNFunctions
 {
@@ -327,6 +481,13 @@ struct RCNFunctions
     LMCSReshapeFunc lmcs_reshape_forward;
     LMCSReshapeFunc lmcs_reshape_backward;
 
+    void (*rcn_lmcs_compute_chroma_scale)(struct LMCSInfo *const lmcs_info,
+                                          const struct CTUBitField *const progress_field,
+                                          const OVSample *ctu_data_y, uint8_t x0, uint8_t y0);
+
+    void (*rcn_init_lmcs)(struct LMCSInfo *lmcs_info, const struct OVLMCSData *const lmcs_data);
+
+
     /* DMVR Functions */
     struct DMVRFunctions dmvr;
 
@@ -351,6 +512,119 @@ struct RCNFunctions
     const struct IntraAngularFunctions *intra_angular_c_h;
     const struct IntraAngularFunctions *intra_angular_c_v;
     const struct IntraMRLFunctions *intra_mrl;
+
+    struct TMPBDCompat tmp;
+
+    void (*intra_pred)(const struct OVRCNCtx *const rcn_ctx,
+                       const struct OVBuffInfo* ctu_buff,
+                       uint8_t intra_mode, int x0, int y0,
+                       int log2_pb_w, int log2_pb_h);
+
+    void (*intra_pred_c)(const struct OVRCNCtx *const rcn_ctx,
+                         uint8_t intra_mode, int x0, int y0,
+                         int log2_pb_w, int log2_pb_h);
+
+    void (*intra_pred_isp)(const OVCTUDec *const ctudec,
+                           OVSample *const src,
+                           ptrdiff_t dst_stride,
+                           uint8_t intra_mode,
+                           int x0, int y0,
+                           int log2_pb_w, int log2_pb_h,
+                           int log2_cb_w, int log2_cb_h,
+                           int offset_x, int offset_y);
+
+    void (*intra_pred_mrl)(const OVCTUDec *const ctudec,
+                           OVSample *const src,
+                           ptrdiff_t dst_stride,
+                           uint8_t intra_mode, int x0, int y0,
+                           int log2_pb_w, int log2_pb_h,
+                           int mrl_idx);
+
+    void (*rcn_update_ctu_border)(struct OVRCNCtx *rcn_ctx, uint8_t log2_ctb_s);
+
+    void (*rcn_write_ctu_to_frame)(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s);
+
+    void (*rcn_intra_line_to_ctu)(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log2_ctb_s);
+
+    void (*rcn_ctu_to_intra_line)(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log2_ctu_s);
+
+    void (*rcn_write_ctu_to_frame_border)(const struct OVRCNCtx *const rcn_ctx,
+                                          int last_ctu_w, int last_ctu_h);
+
+    void (*rcn_buff_uninit)(struct OVRCNCtx *const rcn_ctx);
+
+    void (*rcn_alloc_intra_line_buff)(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uint8_t log2_ctb_s);
+
+    void (*rcn_save_last_cols)(struct OVRCNCtx *const rcn_ctx, int x_pic_l, int y_pic_l, uint8_t is_border_rect);
+
+    void (*rcn_save_last_rows)(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect);
+
+    void (*rcn_extend_filter_region)(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l,
+                                     int x_pic_l, int y_pic_l, uint8_t bnd_msk);
+
+    void (*rcn_alloc_filter_buffers)(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int margin, uint8_t log2_ctb_s);
+
+    void (*rcn_attach_ctu_buff)(struct OVRCNCtx *const rcn_ctx);
+
+    void (*rcn_attach_frame_buff)(struct OVRCNCtx *const rcn_ctx, const OVFrame *const f,
+                                  const struct RectEntryInfo *const einfo, uint8_t log2_ctb_s);
+
+    void (*rcn_next_buff_line)(struct OVRCNCtx *const rcn_ctx,  uint8_t log2_ctb_s);
+
+    uint8_t (*rcn_dmvr_mv_refine)(OVCTUDec *const ctudec, struct OVBuffInfo dst,
+                                  uint8_t x0, uint8_t y0,
+                                  uint8_t log2_pu_w, uint8_t log2_pu_h,
+                                  OVMV *mv0, OVMV *mv1, uint8_t ref_idx0, uint8_t ref_idx1, uint8_t
+                                  apply_bdof);
+
+    void (*rcn_bdof_mcp_l)(OVCTUDec *const ctudec, struct OVBuffInfo dst,
+                           uint8_t x0, uint8_t y0, uint8_t log2_pu_w, uint8_t log2_pu_h,
+                           OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1);
+
+    void (*rcn_mcp)(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
+                    OVMV mv, uint8_t type, uint8_t ref_idx);
+
+    void (*rcn_mcp_b)(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *const inter_ctx,
+                      const OVPartInfo *const part_ctx,
+                      const OVMV mv0, const OVMV mv1,
+                      unsigned int x0, unsigned int y0,
+                      unsigned int log2_pb_w, unsigned int log2_pb_h,
+                      uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1);
+
+    void (*rcn_mcp_b_l)(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *const inter_ctx,
+                        const OVPartInfo *const part_ctx,
+                        const OVMV mv0, const OVMV mv1,
+                        unsigned int x0, unsigned int y0,
+                        unsigned int log2_pb_w, unsigned int log2_pb_h,
+                        uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1);
+
+    void (*rcn_prof_mcp_b_l)(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *const inter_ctx,
+                             const OVPartInfo *const part_ctx,
+                             const OVMV mv0, const OVMV mv1,
+                             unsigned int x0, unsigned int y0,
+                             unsigned int log2_pb_w, unsigned int log2_pb_h,
+                             uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
+                             uint8_t prof_dir, const struct PROFInfo *const prof_info);
+
+    void (*rcn_mcp_b_c)(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *const inter_ctx,
+                        const OVPartInfo *const part_ctx,
+                        const OVMV mv0, const OVMV mv1,
+                        unsigned int x0, unsigned int y0,
+                        unsigned int log2_pb_w, unsigned int log2_pb_h,
+                        uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1);
+
+    void (*rcn_ciip_b)(OVCTUDec*const ctudec,
+                       const OVMV mv0, const OVMV mv1,
+                       unsigned int x0, unsigned int y0,
+                       unsigned int log2_pb_w, unsigned int log2_pb_h,
+                       uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1);
+
+    void (*rcn_ciip)(OVCTUDec *const ctudec,
+                     int x0, int y0, int log2_pb_w, int log2_pb_h,
+                     OVMV mv, uint8_t ref_idx);
+
+    void (*rcn_gpm_b)(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
+                      int x0, int y0, int log2_pb_w, int log2_pb_h);
 };
 
 

@@ -59,18 +59,12 @@ typedef enum
   MAX_NUM_CHANNEL_TYPE = 2
 }ChannelType;
 
-typedef struct
+typedef struct RCNALF
 {
   int16_t           filter_coeff_dec[NUM_FIXED_FILTER_SETS+ALF_CTB_MAX_NUM_APS][ALF_CTB_MAX_NUM_TRANSPOSE*MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
   int16_t           filter_clip_dec[NUM_FIXED_FILTER_SETS+ALF_CTB_MAX_NUM_APS][ALF_CTB_MAX_NUM_TRANSPOSE*MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF];
   int16_t           chroma_coeff_final[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF];
   int16_t           chroma_clip_final[MAX_NUM_ALF_ALTERNATIVES_CHROMA][MAX_NUM_ALF_CHROMA_COEFF];
 }RCNALF;
-
-void rcn_alf_filter_line(struct OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y);
-
-void rcn_alf_reconstruct_coeff_APS(RCNALF* alf, struct OVCTUDec *const ctudec, uint8_t luma_flag, uint8_t chroma_flag);
-
-void rcn_init_alf_functions(struct RCNFunctions *rcn_func);
 
 #endif

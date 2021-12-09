@@ -1,24 +1,38 @@
 # Configuration object
+ovconfig.h
+config.status
 config.mak
 config.sh
 config.h
+stamp-h1
 libovvc/ovversion.h
 libovvc/ovconfig.h
 libopenvvc.pc
+configure
+*.in
+*~
+**/Makefile
 
 # Build objects
 *.o
+*.lo
 *.d
 *.a
+*.la
 *.so
 *.dll
 *.lib
 *.exe
 *.cache
 *.annote
+*.m4
+libtool
 
 # Build folder
 build/*
+build-aux/*
+**/.deps/*
+**/.libs/*
 
 # Editor created objects
 *.sw?

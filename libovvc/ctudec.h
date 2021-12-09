@@ -34,6 +34,14 @@ enum CTUNGHFlags
      CTU_UPRGT_FLG = 1 << 3,
 };
 
+typedef struct OVBuffInfo{
+    OVSample *y;
+    OVSample *cb;
+    OVSample *cr;
+    int32_t stride;
+    int32_t stride_c;
+} OVBuffInfo;
+
 enum VVCCUFlag
 {
      DECL_FLG(cu_skip_flag,0),
@@ -172,6 +180,7 @@ typedef struct VVCQPCTX
     int8_t cb_offset;
     int8_t cr_offset;
     int8_t jcbcr_offset;
+    uint8_t qp_bd_offset;
     const int8_t *chroma_qp_map_cb;
     const int8_t *chroma_qp_map_cr;
     const int8_t *chroma_qp_map_jcbcr;
@@ -534,24 +543,37 @@ struct OVCTUDec
         /* Pointers to the first sample data of CTU in the current
          * picture
          */
-        struct OVBuffInfo{
-            uint16_t *y;
-            uint16_t *cb;
-            uint16_t *cr;
-            int32_t stride;
-            int32_t stride_c;
-        } frame_buff;
+        OVBuffInfo frame_buff;
+        OVBuffInfo line_start;
 
         /* Pointers to CTU reconstruction buffers to be used
          * to reconstruct current CTU.
          * These buffers will be written to the destination picture
          * before filtering operation
          */
-        struct OVBuffInfo ctu_buff;
+        OVBuffInfo ctu_buff;
 
         /*Pointers to intra line reconstruction buffers*/
-        struct OVBuffInfo intra_line_buff;
+        OVBuffInfo intra_line_buff;
 
+        struct OVFilterBuffers
+        {
+            OVSample* filter_region[3];
+            int16_t  filter_region_h[3];
+            int16_t  filter_region_w[3];
+            int16_t  filter_region_stride[3];
+            int16_t  filter_region_offset[3];
+
+            OVSample* saved_rows_sao[3];
+            OVSample* saved_rows_alf[3];
+            OVSample* saved_cols[3];
+            int16_t  saved_rows_stride[3];
+
+            uint8_t  margin;
+
+        } filter_buffers;
+
+        struct Frame *frame_start;
         /* Bit fields corresponding to the decoding progress in
          * current CTU, and its borders those are used for example
          * in order to derive references samples for intra prediction
@@ -561,12 +583,12 @@ struct OVCTUDec
 
         struct CTUBitField progress_field_c;
 
-        /* A structure containing various functions pointers
-         * to block reconstruction function
-         */
-        struct RCNFunctions rcn_funcs;
     } rcn_ctx;
 
+    /* A structure containing various functions pointers
+     * to block reconstruction function
+     */
+    struct RCNFunctions rcn_funcs;
 
     struct DBFInfo dbf_info;
     
@@ -575,24 +597,6 @@ struct OVCTUDec
     struct ALFInfo alf_info;
 
     struct LMCSInfo lmcs_info;
-
-    struct OVFilterBuffers{
-        int16_t* filter_region[3];
-        int16_t  filter_region_h[3];
-        int16_t  filter_region_w[3];
-        int16_t  filter_region_stride[3];
-        int16_t  filter_region_offset[3];
-
-        int16_t* saved_rows_sao[3];
-        int16_t* saved_rows_alf[3];
-        int16_t* saved_cols[3];
-        int16_t  saved_rows_stride[3];
-
-        uint8_t  margin;
-
-        //TODO: change alf/sao to use ctudec buffer instead of frame buffer.
-        struct Frame* pic_frame; 
-    } filter_buffers;
 
     /* CTU neighbours availability flags
      * An aggregation of flag used to tell the decoder if
@@ -715,24 +719,24 @@ struct OVCTUDec
                            uint8_t skip_flag, uint8_t cu_merge_flag);
 
     int (*residual_coding_isp_h)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
-                                 unsigned int log2_tb_w, unsigned int log2_tb_h,
+                                 uint8_t log2_tb_w, uint8_t log2_tb_h,
                                  uint16_t last_pos);
 
     int (*residual_coding_isp_v)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
-                                 unsigned int log2_tb_w, unsigned int log2_tb_h,
+                                 uint8_t log2_tb_w, uint8_t log2_tb_h,
                                  uint16_t last_pos);
 
     int (*residual_coding_ts)(struct OVCTUDec *const lc_ctx,
-                              unsigned int log2_tb_w,
-                              unsigned int log2_tb_h);
+                              uint8_t log2_tb_w,
+                              uint8_t log2_tb_h);
 
-    uint64_t (*residual_coding)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
-                                unsigned int log2_tb_w, unsigned int log2_tb_h,
-                                uint16_t last_pos);
-
-    int (*residual_coding_chroma)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
-                                  unsigned int log2_tb_w, unsigned int log2_tb_h,
+    uint64_t (*residual_coding_l)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
+                                  uint8_t log2_tb_w, uint8_t log2_tb_h,
                                   uint16_t last_pos);
+
+    int (*residual_coding_c)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
+                             uint8_t log2_tb_w, uint8_t log2_tb_h,
+                             uint16_t last_pos);
 
     /* FIXME
      *    -Reduce residual buff to 32x32
@@ -743,7 +747,9 @@ struct OVCTUDec
     DECLARE_ALIGNED(32, int16_t, residual_y)[128*128];
     DECLARE_ALIGNED(32, int16_t, residual_cb)[128*128];
     DECLARE_ALIGNED(32, int16_t, residual_cr)[128*128];
+
     int16_t lfnst_subblock[16*2];
+
     DECLARE_ALIGNED(32, int16_t, transform_buff)[64*64];
 
     int8_t slice_qp;
@@ -771,23 +777,13 @@ struct OVCTUDec
     uint16_t pic_h;
     uint16_t pic_w;
     /* FIXME to be removed */
+    uint8_t bitdepth_minus8;
     uint8_t intra_mode_c;
     uint8_t tmp_ciip;
     uint8_t tmp_red;
 };
 
-int ovdec_decode_ctu(OVVCDec *dec, OVCTUDec *ctu_dec);
 void ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic);
-
-void ctudec_alloc_filter_buffers(OVCTUDec *const ctudec, int nb_ctu_w, int margin);
-void ctudec_extend_filter_region(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect);
-void ctudec_save_last_rows(OVCTUDec *const ctudec, int16_t** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect);
-void ctudec_save_last_cols(OVCTUDec *const ctudec, int x_pic_l, int y_pic_l, uint8_t is_border_rect);
-void ctudec_free_filter_buffers(OVCTUDec *const ctudec);
-
-void ctudec_alloc_intra_line_buff(OVCTUDec *const ctudec, int nb_ctu_w);
-void ctudec_free_intra_line_buff(OVCTUDec *const ctudec);
-
 int ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms);
 
 int ctudec_init(OVCTUDec **ctudec_p);

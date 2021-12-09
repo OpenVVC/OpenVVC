@@ -223,6 +223,8 @@ coding_quadtree(OVCTUDec *const ctu_dec,
     uint8_t allow_tt = log2_cb_s <= part_ctx->log2_max_tt_s;
     uint8_t allow_bt = log2_cb_s <= part_ctx->log2_max_bt_s;
 
+    allow_qt &= log2_cb_s > part_ctx->log2_min_cb_s;
+
     allow_tt &= !!part_ctx->max_mtt_depth;
     allow_bt &= !!part_ctx->max_mtt_depth;
 
@@ -231,6 +233,7 @@ coding_quadtree(OVCTUDec *const ctu_dec,
     /* Disable splits if less than 16 samples */
     allow_tt &= log2_cb_s > 2;
     allow_bt &= log2_cb_s > 2;
+    allow_qt &= log2_cb_s > 2;
 
     if (ctu_dec->share == 2 && log2_cb_s + log2_cb_s == 5) {
         allow_bt = 0;
@@ -310,10 +313,35 @@ coding_quadtree(OVCTUDec *const ctu_dec,
                     ctu_dec->active_part_map = &ctu_dec->part_map_c;
                     ctu_dec->enable_cclm = 0;
 
-                    coding_quadtree(ctu_dec, part_ctx, x0 >> 1, y0 >> 1, log2_cb_s - 2, qt_depth + 1);
-                    coding_quadtree(ctu_dec, part_ctx, x1 >> 1, y0 >> 1, log2_cb_s - 2, qt_depth + 1);
-                    coding_quadtree(ctu_dec, part_ctx, x0 >> 1, y1 >> 1, log2_cb_s - 2, qt_depth + 1);
-                    coding_quadtree(ctu_dec, part_ctx, x1 >> 1, y1 >> 1, log2_cb_s - 2, qt_depth + 1);
+                    if (log2_cb_s - 2 > ctu_dec->part_ctx_c->log2_min_qt_s) {
+                        coding_quadtree(ctu_dec, part_ctx, x0 >> 1, y0 >> 1, log2_cb_s - 2, qt_depth + 1);
+                        coding_quadtree(ctu_dec, part_ctx, x1 >> 1, y0 >> 1, log2_cb_s - 2, qt_depth + 1);
+                        coding_quadtree(ctu_dec, part_ctx, x0 >> 1, y1 >> 1, log2_cb_s - 2, qt_depth + 1);
+                        coding_quadtree(ctu_dec, part_ctx, x1 >> 1, y1 >> 1, log2_cb_s - 2, qt_depth + 1);
+                    } else {
+                        /* FIXME CCLM henadling */
+                        if (log2_cb_s <= 5) {
+                            /* Last split before 32x32 was at least QT or 32x 32 did not split
+                             * => permit CCLM
+                             */
+                            ctu_dec->enable_cclm = 1;
+                        }
+
+                        coding_unit(ctu_dec, part_ctx, x0 >> 1, y0 >> 1, log2_cb_s - 1, log2_cb_s - 1);
+
+                        /* FIXME determine if we could store qt_depth before calling
+                         * coding_unit function
+                         */
+                        if (!ctu_dec->share && ctu_dec->coding_tree != &dual_tree &&
+                            ctu_dec->coding_tree_implicit != &dual_tree_implicit) {
+                            int log2_nb_pb_s = log2_cb_s - part_ctx->log2_min_cb_s;
+                            int x_cb = x0 >> ctu_dec->part_ctx->log2_min_cb_s;
+                            int y_cb = y0 >> ctu_dec->part_ctx->log2_min_cb_s;
+                            struct PartMap *const part_map_c = &ctu_dec->part_map_c;
+                            memset(&part_map_c->qt_depth_map_x[x_cb], qt_depth, sizeof(uint8_t) << log2_nb_pb_s);
+                            memset(&part_map_c->qt_depth_map_y[y_cb], qt_depth, sizeof(uint8_t) << log2_nb_pb_s);
+                        }
+                    }
 
                     ctu_dec->coding_unit = root_tree.coding_unit;
                     ctu_dec->transform_unit = root_tree.transform_unit;

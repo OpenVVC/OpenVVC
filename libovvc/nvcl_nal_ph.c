@@ -87,6 +87,7 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         ph->ph_gdr_pic_flag = nvcl_read_flag(rdr);
     }
 
+    ph->ph_intra_slice_allowed_flag = 1;
     ph->ph_inter_slice_allowed_flag = nvcl_read_flag(rdr);
     if (ph->ph_inter_slice_allowed_flag) {
         ph->ph_intra_slice_allowed_flag = nvcl_read_flag(rdr);

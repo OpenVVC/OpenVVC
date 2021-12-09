@@ -22,7 +22,9 @@ int
 dpbpriv_init_framepool(struct DPBInternal *dpb_priv, const OVSPS *const sps)
 {
     int ret;
+
     ret = ovframepool_init(&dpb_priv->frame_pool, sps->sps_chroma_format_idc,
+                           sps->sps_bitdepth_minus8,
                            sps->sps_pic_width_max_in_luma_samples,
                            sps->sps_pic_height_max_in_luma_samples);
     if (ret < 0) {
