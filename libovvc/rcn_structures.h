@@ -74,6 +74,17 @@ typedef void (*MCRPRFunc)(uint16_t *_dst, ptrdiff_t _dststride,
                              const uint16_t *_src, ptrdiff_t _srcstride,
                              int height, intptr_t mx, intptr_t my, int width, uint8_t filter_idx);
 
+typedef void (*MCRPRSum)(uint16_t* _dst, ptrdiff_t _dststride,
+                          const uint16_t* _src0, ptrdiff_t _src0stride,
+                          const uint16_t* _src1, ptrdiff_t _src1stride,
+                          int height, intptr_t mx, intptr_t my, int width);
+
+typedef void (*MCRPRWeighted)(uint16_t* _dst, ptrdiff_t _dststride,
+                      const uint16_t* _src, ptrdiff_t _srcstride,
+                      const uint16_t* _src2, ptrdiff_t _src2stride,
+                      int height, int denom, int wx0, int wx1,
+                      intptr_t mx, intptr_t my, int width);
+
 typedef void (*LMsubsampleFunc)(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
                                 ptrdiff_t lm_src_stride, ptrdiff_t dst_stride_c,
                                 const struct CCLMParams *const lm_params,
@@ -172,11 +183,6 @@ typedef void (*CIIPWeightedFuntion)(uint16_t* dst, int dststride, const uint16_t
 
 typedef void (*DFFilterFunction)(int16_t *src, const int stride, const int tc);
 
-void put_vvc_qpel_rpr_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
-                      const uint16_t* _src0, ptrdiff_t _src0stride,
-                      const uint16_t* _src1, ptrdiff_t _src1stride,
-                      int height, intptr_t mx, intptr_t my, int width);
-
 void put_vvc_qpel_rpr_weighted(uint16_t* _dst, ptrdiff_t _dststride,
                       const uint16_t* _src0, ptrdiff_t _src0stride,
                       const uint16_t* _src1, ptrdiff_t _src1stride,
@@ -200,6 +206,8 @@ struct MCFunctions{
     MCUniDirFunc bilinear[4][8];
     MCRPRFunc    rpr_uni[4][8];
     MCRPRFunc    rpr_bi[4][8];
+    MCRPRSum     rpr_sum;
+    MCRPRWeighted rpr_w[8];
 };
 
 struct CCLMFunctions

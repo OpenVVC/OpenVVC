@@ -26,6 +26,19 @@
 
 #define BIT_DEPTH 10
 
+#define WEIGHTED 1
+#if WEIGHTED
+static __m128i
+_MM_PACKUS_EPI32(__m128i a, __m128i b)
+{
+  a = _mm_slli_epi32(a, 16);
+  a = _mm_srai_epi32(a, 16);
+  b = _mm_slli_epi32(b, 16);
+  b = _mm_srai_epi32(b, 16);
+  a = _mm_packs_epi32(a, b);
+  return a;
+}
+
 
 DECLARE_ALIGNED(16, static const int16_t, ov_mc_filters_rpr_sse[6][16][8]) =
 {
@@ -1175,8 +1188,6 @@ put_vvc_pel_rpr_sse_bi(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _sr
   }
 }
 
-/*
-//TODOrpr: change name and pointer
 void
 put_vvc_qpel_rpr_sse_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
                       const uint16_t* _src0, ptrdiff_t _src0stride,
@@ -1190,14 +1201,20 @@ put_vvc_qpel_rpr_sse_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
     ptrdiff_t src1stride = _src1stride;
     uint16_t* dst = (uint16_t*)_dst;
     ptrdiff_t dststride = _dststride;
-    int shift = 14 - BIT_DEPTH + 1;
-    int offset = 1 << (shift - 1);
+    __m128i x1, x2;
+    const __m128i offset = _mm_set1_epi16(1 << 10);
 
     for (y = 0; y < height; y++) {
-        for (x = 0; x < width; ++x) {
-            // printf("%i %i %i %i \n", x, y, src0[x], src1[x]);
-            dst[x] = ov_bdclip((src0[x] + src1[x] + offset) >>
-                                   shift);
+        for (x = 0; x < width; x+=8) {
+            // dst[x] = ov_bdclip((src0[x] + src1[x] + offset) >>
+                                   // shift);
+            x1 = _mm_loadu_si128((__m128i*)&src0[x]);
+            x2 = _mm_loadu_si128((__m128i*)&src1[x]);
+            x1 = _mm_adds_epi16(x1, x2);
+            x1 = _mm_mulhrs_epi16(x1, offset);
+            x1 = _mm_max_epi16(x1, _mm_setzero_si128());
+            x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03FF));
+            _mm_storeu_si128((__m128i*)&dst[x], x1);
         }
         src0 += src0stride;
         src1 += src1stride;
@@ -1205,34 +1222,97 @@ put_vvc_qpel_rpr_sse_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
     }
 }
 
-//TODOrpr: change name and pointer
-void
-put_vvc_qpel_rpr_sse_weighted(uint16_t* _dst, ptrdiff_t _dststride,
-                      const uint16_t* _src0, ptrdiff_t _src0stride,
-                      const uint16_t* _src1, ptrdiff_t _src1stride,
-                      int height, int denom, int wx0, int wx1,
+static void
+put_vvc_qpel_rpr_sse_weighted_4(uint16_t* dst, ptrdiff_t dststride,
+                      const uint16_t* src, ptrdiff_t srcstride,
+                      const uint16_t* src2, ptrdiff_t src2stride,
+                      int height, int denom, int _wx0, int _wx1,
                       intptr_t mx, intptr_t my, int width)
 {
-    int x, y;
-    const int16_t* src0 = (int16_t*)_src0;
-    const int16_t* src1 = (int16_t*)_src1;
-    ptrdiff_t src0stride = _src0stride;
-    ptrdiff_t src1stride = _src1stride;
-    uint16_t* dst = (uint16_t*)_dst;
-    ptrdiff_t dststride = _dststride;
-    int shift = 14 - BIT_DEPTH + denom;
-    int offset = 1 << (shift - 1);
-
-    for (y = 0; y < height; y++) {
-        for (x = 0; x < width; ++x) {
-            dst[x] = ov_bdclip((src0[x]*wx0 + src1[x]*wx1 + offset) >>
-                                   shift);
-        }
-        src0 += src0stride;
-        src1 += src1stride;
-        dst += dststride;
+  int x, y;
+  __m128i x1;
+  const int log2Wd = denom + 14 - 10 - 1;
+  const int shift2 = log2Wd + 1;
+  const __m128i wx0 = _mm_set1_epi16(_wx0);
+  const __m128i wx1 = _mm_set1_epi16(_wx1);
+  const __m128i offset = _mm_set1_epi32(1 << log2Wd);
+  __m128i x3, x4, r7, r8;
+  for (y = 0; y < height; y++) {
+    for (x = 0; x < width; x += 4) {
+      __m128i r5;
+      x1 = _mm_loadu_si128((__m128i*)&src[x]);
+      r5 = _mm_loadu_si128((__m128i*)&src2[x]);
+      {
+        x3 = _mm_mulhi_epi16(x1, wx0);
+        x1 = _mm_mullo_epi16(x1, wx0);
+        r7 = _mm_mulhi_epi16(r5, wx1);
+        r5 = _mm_mullo_epi16(r5, wx1);
+        x4 = _mm_unpackhi_epi16(x1, x3);
+        x1 = _mm_unpacklo_epi16(x1, x3);
+        r8 = _mm_unpackhi_epi16(r5, r7);
+        r5 = _mm_unpacklo_epi16(r5, r7);
+        x4 = _mm_add_epi32(x4, r8);
+        x1 = _mm_add_epi32(x1, r5);
+        x4 = _mm_srai_epi32(_mm_add_epi32(x4, offset), shift2);
+        x1 = _mm_srai_epi32(_mm_add_epi32(x1, offset), shift2);
+        x1 = _MM_PACKUS_EPI32(x1, x4);
+      };
+      x1 = _mm_max_epi16(x1, _mm_setzero_si128());
+      x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03FF));
+      _mm_storel_epi64((__m128i*)&dst[x], x1);
     }
-}*/
+    src += srcstride;
+    src2 += src2stride;
+    dst += dststride;
+  }
+}
+
+static void
+put_vvc_qpel_rpr_sse_weighted_8(uint16_t* dst, ptrdiff_t dststride,
+                      const uint16_t* src, ptrdiff_t srcstride,
+                      const uint16_t* src2, ptrdiff_t src2stride,
+                      int height, int denom, int _wx0, int _wx1,
+                      intptr_t mx, intptr_t my, int width)
+{
+  int x, y;
+  __m128i x1;
+  const int log2Wd = denom + 14 - 10 - 1;
+  const int shift2 = log2Wd + 1;
+  const __m128i wx0 = _mm_set1_epi16(_wx0);
+  const __m128i wx1 = _mm_set1_epi16(_wx1);
+  const __m128i offset = _mm_set1_epi32(1 << log2Wd);
+  __m128i x3, x4, r7, r8;
+  for (y = 0; y < height; y++) {
+    for (x = 0; x < width; x += 8) {
+      __m128i r5;
+      x1 = _mm_loadu_si128((__m128i*)&src[x]);
+      r5 = _mm_loadu_si128((__m128i*)&src2[x]);
+      {
+        x3 = _mm_mulhi_epi16(x1, wx0);
+        x1 = _mm_mullo_epi16(x1, wx0);
+        r7 = _mm_mulhi_epi16(r5, wx1);
+        r5 = _mm_mullo_epi16(r5, wx1);
+        x4 = _mm_unpackhi_epi16(x1, x3);
+        x1 = _mm_unpacklo_epi16(x1, x3);
+        r8 = _mm_unpackhi_epi16(r5, r7);
+        r5 = _mm_unpacklo_epi16(r5, r7);
+        x4 = _mm_add_epi32(x4, r8);
+        x1 = _mm_add_epi32(x1, r5);
+        x4 = _mm_srai_epi32(_mm_add_epi32(x4, offset), shift2);
+        x1 = _mm_srai_epi32(_mm_add_epi32(x1, offset), shift2);
+        x1 = _MM_PACKUS_EPI32(x1, x4);
+      };
+      x1 = _mm_max_epi16(x1, _mm_setzero_si128());
+      x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03FF));
+      _mm_storeu_si128((__m128i*)&dst[x], x1);
+    }
+    src += srcstride;
+    src2 += src2stride;
+    dst += dststride;
+  }
+}
+
+
 
 static void
 oh_hevc_put_hevc_bi0_pel_pixels4_10_sse(int16_t* dst,
@@ -4799,19 +4879,6 @@ oh_hevc_put_hevc_uni_epel_hv64_10_sse(uint16_t* dst,
 {
   oh_hevc_put_hevc_uni_epel_hv8_10_sse(
     dst, dststride, _src, _srcstride, height, mx, my, width);
-}
-
-#define WEIGHTED 1
-#if WEIGHTED
-static __m128i
-_MM_PACKUS_EPI32(__m128i a, __m128i b)
-{
-  a = _mm_slli_epi32(a, 16);
-  a = _mm_srai_epi32(a, 16);
-  b = _mm_slli_epi32(b, 16);
-  b = _mm_srai_epi32(b, 16);
-  a = _mm_packs_epi32(a, b);
-  return a;
 }
 
 static void
@@ -8588,27 +8655,37 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   /* RPR functions */
   int i;
   i = 1;
-  mc_l->rpr_uni[0][i] = &put_vvc_pel_rpr_sse;
-  mc_l->rpr_uni[1][i] = &put_vvc_qpel_rpr_sse_h;
-  mc_l->rpr_uni[2][i] = &put_vvc_pel_rpr_sse_clip;
-  mc_l->rpr_uni[3][i] = &put_vvc_qpel_rpr_sse_clip_v4;
+  mc_l->rpr_sum       = &put_vvc_qpel_rpr_sse_bi_sum;
+  mc_c->rpr_sum       = &put_vvc_qpel_rpr_sse_bi_sum;
+  for (i = 0; i < 2; ++i) {
+    mc_l->rpr_w[i]      = &put_vvc_qpel_rpr_sse_weighted_4;
+    mc_c->rpr_w[i]      = &put_vvc_qpel_rpr_sse_weighted_4;
 
-  mc_l->rpr_bi[0][i] = &put_vvc_pel_rpr_sse;
-  mc_l->rpr_bi[1][i] = &put_vvc_qpel_rpr_sse_h;
-  mc_l->rpr_bi[2][i] = &put_vvc_pel_rpr_sse_bi;
-  mc_l->rpr_bi[3][i] = &put_vvc_qpel_rpr_sse_bi_v4;
+    mc_l->rpr_uni[0][i] = &put_vvc_pel_rpr_sse;
+    mc_l->rpr_uni[1][i] = &put_vvc_qpel_rpr_sse_h;
+    mc_l->rpr_uni[2][i] = &put_vvc_pel_rpr_sse_clip;
+    mc_l->rpr_uni[3][i] = &put_vvc_qpel_rpr_sse_clip_v4;
 
-  mc_c->rpr_uni[0][i] = &put_vvc_pel_rpr_sse;
-  mc_c->rpr_uni[1][i] = &put_vvc_epel_rpr_sse_h;
-  mc_c->rpr_uni[2][i] = &put_vvc_pel_rpr_sse_clip;
-  mc_c->rpr_uni[3][i] = &put_vvc_epel_rpr_sse_clip_v4;
+    mc_l->rpr_bi[0][i] = &put_vvc_pel_rpr_sse;
+    mc_l->rpr_bi[1][i] = &put_vvc_qpel_rpr_sse_h;
+    mc_l->rpr_bi[2][i] = &put_vvc_pel_rpr_sse_bi;
+    mc_l->rpr_bi[3][i] = &put_vvc_qpel_rpr_sse_bi_v4;
 
-  mc_c->rpr_bi[0][i] = &put_vvc_pel_rpr_sse;
-  mc_c->rpr_bi[1][i] = &put_vvc_epel_rpr_sse_h;
-  mc_c->rpr_bi[2][i] = &put_vvc_pel_rpr_sse_bi;
-  mc_c->rpr_bi[3][i] = &put_vvc_epel_rpr_sse_bi_v4;
+    mc_c->rpr_uni[0][i] = &put_vvc_pel_rpr_sse;
+    mc_c->rpr_uni[1][i] = &put_vvc_epel_rpr_sse_h;
+    mc_c->rpr_uni[2][i] = &put_vvc_pel_rpr_sse_clip;
+    mc_c->rpr_uni[3][i] = &put_vvc_epel_rpr_sse_clip_v4;
+
+    mc_c->rpr_bi[0][i] = &put_vvc_pel_rpr_sse;
+    mc_c->rpr_bi[1][i] = &put_vvc_epel_rpr_sse_h;
+    mc_c->rpr_bi[2][i] = &put_vvc_pel_rpr_sse_bi;
+    mc_c->rpr_bi[3][i] = &put_vvc_epel_rpr_sse_bi_v4;
+  }
 
   for (i = 2; i < 8; ++i) {
+    mc_l->rpr_w[i]      = &put_vvc_qpel_rpr_sse_weighted_8;
+    mc_c->rpr_w[i]      = &put_vvc_qpel_rpr_sse_weighted_8;
+
     mc_l->rpr_uni[0][i] = &put_vvc_pel_rpr_sse;
     mc_l->rpr_uni[1][i] = &put_vvc_qpel_rpr_sse_h;
     mc_l->rpr_uni[2][i] = &put_vvc_pel_rpr_sse_clip;

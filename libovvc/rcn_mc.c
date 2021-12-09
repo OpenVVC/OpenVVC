@@ -632,9 +632,7 @@ put_vvc_pel_rpr_bi(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     }
 }
 
-
-//TODOrpr: change name and pointer
-void
+static void
 put_vvc_qpel_rpr_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
                       const uint16_t* _src0, ptrdiff_t _src0stride,
                       const uint16_t* _src1, ptrdiff_t _src1stride,
@@ -1632,6 +1630,13 @@ void rcn_init_mc_functions(struct RCNFunctions *const rcn_funcs)
     struct MCFunctions *const mc_c = &rcn_funcs->mc_c;
 
     int i;
+    mc_l->rpr_sum = &put_vvc_qpel_rpr_bi_sum;
+    mc_c->rpr_sum = &put_vvc_qpel_rpr_bi_sum;
+
+    mc_l->rpr_w[0] = &put_vvc_qpel_rpr_weighted;
+    mc_l->rpr_w[1] = &put_vvc_qpel_rpr_weighted;
+    mc_c->rpr_w[0] = &put_vvc_qpel_rpr_weighted;
+    mc_c->rpr_w[1] = &put_vvc_qpel_rpr_weighted;
 
     for (i = 0; i < 8; ++i) {
 
