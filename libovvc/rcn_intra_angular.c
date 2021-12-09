@@ -449,9 +449,7 @@ intra_angular_h_nofrac(const OVSample* ref_lft, OVSample* dst,
     int y, x;
 
     for (y = 0; y < pb_w; ++y) {
-        for (x = 0; x < pb_h; ++x) {
-            _tmp[x] = ref_lft[x + delta_pos + 1];
-        }
+        memcpy(_tmp, &ref_lft[delta_pos + 1], sizeof(OVSample) * pb_h);
         delta_pos += angle_val >> 5;
         _tmp += tmp_stride;
     }
@@ -487,9 +485,7 @@ intra_angular_h_nofrac_pdpc(const OVSample* ref_abv, const OVSample* ref_lft,
 
     for (y = 0; y < pb_w; ++y) {
         int inv_angle_sum = 256 + inv_angle;
-        for (int x = 0; x < pb_h; x++) {
-            _tmp[x] = ref_lft[x + delta_pos + 1];
-        }
+        memcpy(_tmp, &ref_lft[delta_pos + 1], sizeof(OVSample) * pb_h);
         for (int x = 0; x < OVMIN(3 << scale, pb_h); x++) {
             int wL = 32 >> ((x << 1) >> scale);
             const OVSample* p = ref_abv + y + (inv_angle_sum >> 9) + 1;
@@ -580,9 +576,7 @@ intra_angular_v_nofrac(const OVSample* ref_abv, OVSample* dst,
     int y, x;
     for (y = 0; y < pb_h; y++) {
         const int delta_int = delta_pos >> 5;
-        for (x = 0; x < pb_w; x++) {
-            _dst[x] = ref_abv[x + delta_int + 1];
-        }
+        memcpy(_dst, &ref_abv[delta_int + 1], sizeof(OVSample) * pb_w);
         delta_pos += angle_val;
         _dst += dst_stride;
     }
@@ -605,9 +599,7 @@ intra_angular_v_nofrac_pdpc(const OVSample* ref_abv, const OVSample* ref_lft,
     for (y = 0; y < pb_h; ++y) {
         const int delta_int = delta_pos >> 5;
         int inv_angle_sum = 256 + inv_angle;
-        for (x = 0; x < pb_w; x++) {
-            _dst[x] = ref_abv[x + delta_int + 1];
-        }
+        memcpy(_dst, &ref_abv[delta_int + 1], sizeof(OVSample) * pb_w);
         for (x = 0; x < OVMIN(3 << scale, pb_w); ++x) {
             int wL = 32 >> ((x << 1) >> scale);
             const OVSample* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
