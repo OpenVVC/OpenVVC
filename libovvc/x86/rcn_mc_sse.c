@@ -1168,7 +1168,7 @@ put_vvc_pel_rpr_sse_bi(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _sr
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 8) {
       x1 = _mm_loadu_si128((__m128i*)&src[x]);
-      _mm_storel_epi64((__m128i*)&dst[x], x1);
+      _mm_storeu_si128((__m128i*)&dst[x], x1);
     }
     src += srcstride;
     dst += dststride;
@@ -8586,7 +8586,8 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   struct MCFunctions* const mc_c = &rcn_funcs->mc_c;
 
   /* RPR functions */
-  int i = 0;
+  int i;
+  i = 1;
   mc_l->rpr_uni[0][i] = &put_vvc_pel_rpr_sse;
   mc_l->rpr_uni[1][i] = &put_vvc_qpel_rpr_sse_h;
   mc_l->rpr_uni[2][i] = &put_vvc_pel_rpr_sse_clip;
@@ -8607,7 +8608,7 @@ rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
   mc_c->rpr_bi[2][i] = &put_vvc_pel_rpr_sse_bi;
   mc_c->rpr_bi[3][i] = &put_vvc_epel_rpr_sse_bi_v4;
 
-  for (i = 1; i < 8; ++i) {
+  for (i = 2; i < 8; ++i) {
     mc_l->rpr_uni[0][i] = &put_vvc_pel_rpr_sse;
     mc_l->rpr_uni[1][i] = &put_vvc_qpel_rpr_sse_h;
     mc_l->rpr_uni[2][i] = &put_vvc_pel_rpr_sse_clip;
