@@ -10,6 +10,7 @@ libx86optim_la_SOURCES =	rcn_transform_sse.c         \
 							rcn_intra_cclm_sse.c        \
 							rcn_lfnst_sse.c             \
 							rcn_intra_mip_sse.c         \
+							rcn_intra_angular_sse.c     \
 							rcn_sao_sse.c               \
 							rcn_dmvr_sse.c              \
 							rcn_prof_bdof_sse.c         \
