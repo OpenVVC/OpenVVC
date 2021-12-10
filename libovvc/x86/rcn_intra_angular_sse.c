@@ -5,7 +5,7 @@
 #include "rcn_structures.h"
 #include "bitdepth.h"
 #include "ovutils.h"
-
+#include "data_rcn_angular.h"
 
 #define LOAD_GAUSS_FILTER() \
         __m128i filter01 = _mm_set1_epi32((16 - (delta_frac >> 1))&0xFFFF | ((int32_t)(32 - (delta_frac >> 1))<<16)); \
@@ -326,6 +326,238 @@ intra_angular_h_cubic_sse(const OVSample* ref_lft, OVSample* dst,
 }
 
 static void
+intra_angular_v_gauss_pdpc_sse_8(const OVSample* ref_abv, const OVSample* ref_lft,
+                           OVSample* const dst, ptrdiff_t dst_stride,
+                           int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
+{
+    OVSample* _dst = dst;
+    int angle_val = angle_table[mode_idx];
+    int inv_angle = inverse_angle_table[mode_idx];
+    int pb_w = 1 << log2_pb_w;
+    int pb_h = 1 << log2_pb_h;
+    int delta_pos = angle_val;
+    int scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inv_angle - 2) - 8));
+    __m128i offset = _mm_set1_epi32(32);
+    for (int y = 0; y < pb_h; y++) {
+        const int delta_int  = delta_pos >> 5;
+        const int delta_frac = delta_pos & 0x1F;
+        int inv_angle_sum = 256 + inv_angle;
+        const OVSample* ref = (OVSample*)ref_abv + delta_int;
+        LOAD_GAUSS_FILTER();
+        for (int x = 0; x < pb_w; x+=8) {
+            FILTER_8_SAMPLES();
+            ref+=8;
+        }
+        for (int x = 0; x < OVMIN(3 << scale, pb_w); x++) {
+            int wL = 32 >> ((x << 1) >> scale);
+            const OVSample* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
+
+            int16_t left = p[0];
+            _dst[x] =
+                ov_bdclip(_dst[x] + ((wL * (left - _dst[x]) + 32) >> 6));
+            inv_angle_sum += inv_angle;
+        }
+        delta_pos += angle_val;
+        _dst += dst_stride;
+    }
+}
+
+static void
+intra_angular_v_gauss_pdpc_sse_4(const OVSample* ref_abv, const OVSample* ref_lft,
+                           OVSample* const dst, ptrdiff_t dst_stride,
+                           int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
+{
+    OVSample* _dst = dst;
+    int angle_val = angle_table[mode_idx];
+    int inv_angle = inverse_angle_table[mode_idx];
+    int pb_w = 1 << log2_pb_w;
+    int pb_h = 1 << log2_pb_h;
+    int delta_pos = angle_val;
+    int scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inv_angle - 2) - 8));
+    __m128i offset = _mm_set1_epi32(32);
+    for (int y = 0; y < pb_h; y++) {
+        const int delta_int  = delta_pos >> 5;
+        const int delta_frac = delta_pos & 0x1F;
+        int inv_angle_sum = 256 + inv_angle;
+        const OVSample* ref = (OVSample*)ref_abv + delta_int;
+        LOAD_GAUSS_FILTER();
+        FILTER_4_SAMPLES();
+        for (int x = 0; x < OVMIN(3 << scale, pb_w); x++) {
+            int wL = 32 >> ((x << 1) >> scale);
+            const OVSample* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
+
+            int16_t left = p[0];
+            _dst[x] =
+                ov_bdclip(_dst[x] + ((wL * (left - _dst[x]) + 32) >> 6));
+            inv_angle_sum += inv_angle;
+        }
+        delta_pos += angle_val;
+        _dst += dst_stride;
+    }
+}
+
+
+static void
+intra_angular_v_gauss_pdpc_sse(const OVSample* ref_abv, const OVSample* ref_lft,
+                           OVSample* const dst, ptrdiff_t dst_stride,
+                           int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
+{
+    if (log2_pb_w >=3){
+        intra_angular_v_gauss_pdpc_sse_8(ref_abv, ref_lft, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
+    }
+    else{
+        intra_angular_v_gauss_pdpc_sse_4(ref_abv, ref_lft, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
+    }
+    
+}
+
+static void
+intra_angular_h_gauss_pdpc_sse(const OVSample* ref_abv, const OVSample* ref_lft,
+                           OVSample* const dst, ptrdiff_t dst_stride,
+                           int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
+{
+    OVSample tmp_dst[128 * 128];
+    const int tmp_stride = 128;
+    OVSample* _tmp = tmp_dst;
+    OVSample* _dst = dst;
+    int pb_w = 1 << log2_pb_w;
+    int pb_h = 1 << log2_pb_h;
+
+    if (log2_pb_h >=3){
+        intra_angular_v_gauss_pdpc_sse_8(ref_lft, ref_abv, _tmp, tmp_stride, log2_pb_h, log2_pb_w, mode_idx);
+    }
+    else{
+        intra_angular_v_gauss_pdpc_sse_4(ref_lft, ref_abv, _tmp, tmp_stride, log2_pb_h, log2_pb_w, mode_idx);
+    }
+
+    for (int y = 0; y < pb_w; y++) {
+        _dst = &dst[y];
+        for (int x = 0; x < pb_h; x++) {
+            _dst[0] = _tmp[x];
+            _dst += dst_stride;
+        }
+        _tmp += tmp_stride;
+    }
+}
+
+static void
+intra_angular_v_cubic_pdpc_sse_8(const OVSample* ref_abv, const OVSample* ref_lft,
+                           OVSample* const dst, ptrdiff_t dst_stride,
+                           int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
+{
+    OVSample* _dst = dst;
+    int angle_val = angle_table[mode_idx];
+    int inv_angle = inverse_angle_table[mode_idx];
+    int pb_w = 1 << log2_pb_w;
+    int pb_h = 1 << log2_pb_h;
+    int delta_pos = angle_val;
+    int scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inv_angle - 2) - 8));
+    __m128i offset = _mm_set1_epi32(32);
+    for (int y = 0; y < pb_h; y++) {
+        const int delta_int  = delta_pos >> 5;
+        const int delta_frac = delta_pos & 0x1F;
+        int inv_angle_sum = 256 + inv_angle;
+        const OVSample* ref = (OVSample*)ref_abv + delta_int;
+        const int8_t* filter = &chroma_filter[delta_frac << 2];
+        LOAD_CUBIC_FILTER();
+        for (int x = 0; x < pb_w; x+=8) {
+            FILTER_8_SAMPLES();
+            ref+=8;
+        }
+        for (int x = 0; x < OVMIN(3 << scale, pb_w); x++) {
+            int wL = 32 >> ((x << 1) >> scale);
+            const OVSample* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
+
+            int16_t left = p[0];
+            _dst[x] =
+                ov_bdclip(_dst[x] + ((wL * (left - _dst[x]) + 32) >> 6));
+            inv_angle_sum += inv_angle;
+        }
+        delta_pos += angle_val;
+        _dst += dst_stride;
+    }
+}
+
+static void
+intra_angular_v_cubic_pdpc_sse_4(const OVSample* ref_abv, const OVSample* ref_lft,
+                           OVSample* const dst, ptrdiff_t dst_stride,
+                           int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
+{
+    OVSample* _dst = dst;
+    int angle_val = angle_table[mode_idx];
+    int inv_angle = inverse_angle_table[mode_idx];
+    int pb_w = 1 << log2_pb_w;
+    int pb_h = 1 << log2_pb_h;
+    int delta_pos = angle_val;
+    int scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inv_angle - 2) - 8));
+    __m128i offset = _mm_set1_epi32(32);
+    for (int y = 0; y < pb_h; y++) {
+        const int delta_int  = delta_pos >> 5;
+        const int delta_frac = delta_pos & 0x1F;
+        int inv_angle_sum = 256 + inv_angle;
+        const OVSample* ref = (OVSample*)ref_abv + delta_int;
+        const int8_t* filter = &chroma_filter[delta_frac << 2];
+        LOAD_CUBIC_FILTER();
+        FILTER_4_SAMPLES();
+        for (int x = 0; x < OVMIN(3 << scale, pb_w); x++) {
+            int wL = 32 >> ((x << 1) >> scale);
+            const OVSample* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
+
+            int16_t left = p[0];
+            _dst[x] =
+                ov_bdclip(_dst[x] + ((wL * (left - _dst[x]) + 32) >> 6));
+            inv_angle_sum += inv_angle;
+        }
+        delta_pos += angle_val;
+        _dst += dst_stride;
+    }
+}
+
+
+static void
+intra_angular_v_cubic_pdpc_sse(const OVSample* ref_abv, const OVSample* ref_lft,
+                           OVSample* const dst, ptrdiff_t dst_stride,
+                           int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
+{
+    if (log2_pb_w >=3){
+        intra_angular_v_cubic_pdpc_sse_8(ref_abv, ref_lft, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
+    }
+    else{
+        intra_angular_v_cubic_pdpc_sse_4(ref_abv, ref_lft, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
+    }
+    
+}
+
+static void
+intra_angular_h_cubic_pdpc_sse(const OVSample* ref_abv, const OVSample* ref_lft,
+                           OVSample* const dst, ptrdiff_t dst_stride,
+                           int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
+{
+    OVSample tmp_dst[128 * 128];
+    const int tmp_stride = 128;
+    OVSample* _tmp = tmp_dst;
+    OVSample* _dst = dst;
+    int pb_w = 1 << log2_pb_w;
+    int pb_h = 1 << log2_pb_h;
+
+    if (log2_pb_h >=3){
+        intra_angular_v_cubic_pdpc_sse_8(ref_lft, ref_abv, _tmp, tmp_stride, log2_pb_h, log2_pb_w, mode_idx);
+    }
+    else{
+        intra_angular_v_cubic_pdpc_sse_4(ref_lft, ref_abv, _tmp, tmp_stride, log2_pb_h, log2_pb_w, mode_idx);
+    }
+
+    for (int y = 0; y < pb_w; y++) {
+        _dst = &dst[y];
+        for (int x = 0; x < pb_h; x++) {
+            _dst[0] = _tmp[x];
+            _dst += dst_stride;
+        }
+        _tmp += tmp_stride;
+    }
+}
+
+static void
 intra_angular_v_cubic_mref_sse_8(const OVSample* const ref_abv, OVSample* const dst,
                            ptrdiff_t dst_stride, int8_t log2_pb_w,
                            int8_t log2_pb_h, int angle_val,
@@ -441,7 +673,7 @@ rcn_init_intra_angular_functions_10_sse(struct RCNFunctions *rcn_func)
 
     angular_gauss_h_10_sse.pure_pdpc = rcn_func->intra_angular_gauss_h->pure_pdpc;
     angular_gauss_h_10_sse.diagonal_pdpc = rcn_func->intra_angular_gauss_h->diagonal_pdpc;
-    angular_gauss_h_10_sse.angular_pdpc = rcn_func->intra_angular_gauss_h->angular_pdpc;
+    angular_gauss_h_10_sse.angular_pdpc = intra_angular_h_gauss_pdpc_sse;
 
 
     angular_gauss_v_10_sse.pure = rcn_func->intra_angular_gauss_v->pure;
@@ -450,7 +682,7 @@ rcn_init_intra_angular_functions_10_sse(struct RCNFunctions *rcn_func)
 
     angular_gauss_v_10_sse.pure_pdpc = rcn_func->intra_angular_gauss_v->pure_pdpc;
     angular_gauss_v_10_sse.diagonal_pdpc = rcn_func->intra_angular_gauss_v->diagonal_pdpc;
-    angular_gauss_v_10_sse.angular_pdpc = rcn_func->intra_angular_gauss_v->angular_pdpc;
+    angular_gauss_v_10_sse.angular_pdpc = intra_angular_v_gauss_pdpc_sse;
 
 
     angular_cubic_v_10_sse.pure = rcn_func->intra_angular_cubic_v->pure;
@@ -459,7 +691,7 @@ rcn_init_intra_angular_functions_10_sse(struct RCNFunctions *rcn_func)
 
     angular_cubic_v_10_sse.pure_pdpc = rcn_func->intra_angular_cubic_v->pure_pdpc;
     angular_cubic_v_10_sse.diagonal_pdpc = rcn_func->intra_angular_cubic_v->diagonal_pdpc;
-    angular_cubic_v_10_sse.angular_pdpc = rcn_func->intra_angular_cubic_v->angular_pdpc;
+    angular_cubic_v_10_sse.angular_pdpc = intra_angular_v_cubic_pdpc_sse;
 
 
     angular_cubic_h_10_sse.pure = rcn_func->intra_angular_cubic_h->pure;
@@ -468,7 +700,7 @@ rcn_init_intra_angular_functions_10_sse(struct RCNFunctions *rcn_func)
 
     angular_cubic_h_10_sse.pure_pdpc = rcn_func->intra_angular_cubic_h->pure_pdpc;
     angular_cubic_h_10_sse.diagonal_pdpc = rcn_func->intra_angular_cubic_h->diagonal_pdpc;
-    angular_cubic_h_10_sse.angular_pdpc = rcn_func->intra_angular_cubic_h->angular_pdpc;
+    angular_cubic_h_10_sse.angular_pdpc = intra_angular_h_cubic_pdpc_sse;
 
 
     angular_c_h_10_sse.pure = rcn_func->intra_angular_c_h->pure;
