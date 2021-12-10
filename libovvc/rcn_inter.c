@@ -1534,7 +1534,7 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, 
 
     const OVSample *const ref0_y  = (OVSample *) frame0->data[0];
 
-    int src_stride   = frame0->linesize[0] >> 1;
+    int src_stride   = frame0->linesize[0] /sizeof(OVSample);
 
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
@@ -1885,7 +1885,7 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int
     const OVSample *const ref0_cb = (OVSample *) frame0->data[1];
     const OVSample *const ref0_cr = (OVSample *) frame0->data[2];
 
-    int src_stride_c = frame0->linesize[1] >> 1;
+    int src_stride_c = frame0->linesize[1] /sizeof(OVSample);
 
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
@@ -1929,11 +1929,12 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int
                                                 src_cb, src_stride_c,
                                                 pu_h >> 1, prec_x_c, prec_y_c, pu_w >> 1);
 
+    src_stride_c = frame0->linesize[1] /sizeof(OVSample);
     if (emulate_edge){
-        int src_off  = REF_PADDING_C * (frame0->linesize[1] >> 1) + (REF_PADDING_C);
+        int src_off  = REF_PADDING_C * src_stride_c + (REF_PADDING_C);
         int buff_off = REF_PADDING_C * (RCN_CTB_STRIDE) + (REF_PADDING_C);
         emulate_block_border(tmp_buff, (src_cr - src_off),
-                             RCN_CTB_STRIDE, frame0->linesize[1] >> 1,
+                             RCN_CTB_STRIDE, src_stride_c,
                              (pu_w >> 1) + EPEL_EXTRA, (pu_h >> 1) + EPEL_EXTRA,
                              (pos_x >> 1) + (mv.x >> 5) - REF_PADDING_C, (pos_y >> 1) + (mv.y >> 5) - REF_PADDING_C,
                              (pic_w >> 1), (pic_h >> 1));
@@ -1989,7 +1990,7 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     const OVFrame *const frame0 = ref_pic->frame;
     const OVSample *const ref0_y  = (OVSample *) frame0->data[0];
     dst.y  += x0 + y0 * dst.stride;
-    int src_stride   = frame0->linesize[0] >> 1;
+    int src_stride   = frame0->linesize[0] /sizeof(OVSample);
 
     const int ref_pic_w = frame0->width[0];
     const int ref_pic_h = frame0->height[0];
@@ -2109,7 +2110,7 @@ rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int
     const OVFrame *const frame0 = ref_pic->frame;
     const OVSample *const ref0_y  = (OVSample *) frame0->data[0];
     dst  += x0 + y0 * dst_stride;
-    int src_stride   = frame0->linesize[0] >> 1;
+    int src_stride   = frame0->linesize[0] /sizeof(OVSample);
 
     const int ref_pic_w = frame0->width[0];
     const int ref_pic_h = frame0->height[0];
@@ -2227,7 +2228,7 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     const OVFrame *const frame0 = ref_pic->frame;
     const OVSample *const ref0_cb = (OVSample *) frame0->data[1];
     const OVSample *const ref0_cr = (OVSample *) frame0->data[2];
-    int src_stride_c = frame0->linesize[1] >> 1;
+    int src_stride_c = frame0->linesize[1] /sizeof(OVSample);
 
     int ref_pic_w = frame0->width[0];
     int ref_pic_h = frame0->height[0];
@@ -2272,7 +2273,7 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     OVSample* p_dst;
     for(int comp_c = 0;  comp_c < 2; comp_c ++)
     {   
-        src_stride_c = frame0->linesize[1] >> 1;
+        src_stride_c = frame0->linesize[1] /sizeof(OVSample);
         const OVSample * src_c = src_cb;
         OVSample* dst_c = dst.cb;
         if (comp_c == 1){
@@ -2359,7 +2360,7 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
     const OVFrame *const frame0 = ref_pic->frame;
     const OVSample *const ref0_cb = (OVSample *) frame0->data[1];
     const OVSample *const ref0_cr = (OVSample *) frame0->data[2];
-    int src_stride_c = frame0->linesize[1] >> 1;
+    int src_stride_c = frame0->linesize[1] /sizeof(OVSample);
 
     int ref_pic_w = frame0->width[0];
     int ref_pic_h = frame0->height[0];
@@ -2404,7 +2405,7 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
     uint16_t* p_dst;
     for(int comp_c = 0;  comp_c < 2; comp_c ++)
     {   
-        src_stride_c = frame0->linesize[1] >> 1;
+        src_stride_c = frame0->linesize[1]/sizeof(OVSample);
         const OVSample * src_c = src_cb;
         uint16_t * dst_c = dst_cb;
         if (comp_c == 1){
@@ -2437,7 +2438,7 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
             pos_mv_x  = ( ref_pos_x + ((col * stepX) << shift_mv) + offset ) >> RPR_SCALE_BITS;
             prec_x    = pos_mv_x & 0x1F;
             prec_y    = 0;
-            prec_type = 0 + (filter_idx_h || prec_x );
+            prec_type = filter_idx_h || prec_x;
             p_src     = src_c + (pos_mv_x >> shift_mv) - ref_x;
 
             mc_c->rpr_h[prec_type][1](p_tmp_rpr, tmp_rpr_str, p_src, src_stride_c,
@@ -2451,7 +2452,7 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
             pos_mv_y  = ( ref_pos_y + ((row * stepY) << shift_mv) + offset ) >> RPR_SCALE_BITS;
             prec_x    = 0;
             prec_y    = pos_mv_y & 0x1F;
-            prec_type = 2 + (filter_idx_v || prec_y );
+            prec_type = filter_idx_v || prec_y ;
             p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * tmp_rpr_str;
 
             mc_c->rpr_v_bi[prec_type][log2_pu_w-2](p_dst, RCN_CTB_STRIDE, p_tmp_rpr, tmp_rpr_str,
@@ -2460,6 +2461,7 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
         }
     }
 }
+
 
 static void
 rcn_mcp_rpr(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
@@ -2624,23 +2626,19 @@ rcn_mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                         log2_pb_w, log2_pb_h, mv0, type0, ref_idx0);
     }
     else{
-        uint8_t bidir = 1;
         rcn_mcp_rpr_bi_c(ctudec, tmp_rpl0_cb, tmp_rpl0_cr, tmp_rpl0_stride, x0, y0, 
                         log2_pb_w, log2_pb_h, mv0, type0, ref_idx0, scale_rpl0_hor, scale_rpl0_ver);
     }
 
-    struct OVBuffInfo tmp_rpl1;
     uint16_t* tmp_rpl1_cb = rcn_ctx->data.tmp_bi_mrg2;
     uint16_t* tmp_rpl1_cr = rcn_ctx->data.tmp_buff0;
     uint16_t tmp_rpl1_stride = RCN_CTB_STRIDE;
     if(no_scale_rpl1){
-        tmp_rpl1.stride_c = MAX_PB_SIZE;
+        tmp_rpl1_stride = MAX_PB_SIZE;
         rcn_mcp_bidir0_c(ctudec, tmp_rpl1_cb, tmp_rpl1_cr, tmp_rpl1_stride, x0, y0, 
                         log2_pb_w, log2_pb_h, mv1, type1, ref_idx1);
     }
     else{
-        uint8_t bidir = 1;
-        tmp_rpl1.stride_c = RCN_CTB_STRIDE;
         rcn_mcp_rpr_bi_c(ctudec, tmp_rpl1_cb, tmp_rpl1_cr, tmp_rpl1_stride, x0, y0,
                          log2_pb_w, log2_pb_h, mv1, type1, ref_idx1, scale_rpl1_hor, scale_rpl1_ver);
     }
@@ -3071,19 +3069,18 @@ static void
 rcn_gpm_b(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
           int x0, int y0, int log2_pb_w, int log2_pb_h)
 {
-
     struct OVBuffInfo dst = ctudec->rcn_ctx.ctu_buff;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     OVMV mv0 = gpm_ctx->mv0;
     OVMV mv1 = gpm_ctx->mv1;
 
     const uint16_t* scale_fact_rpl ;
-    scale_fact_rpl = gpm_ctx->inter_dir0 == 0 ? inter_ctx->scale_fact_rpl0[mv0.ref_idx]
+    scale_fact_rpl = gpm_ctx->inter_dir0 == 1 ? inter_ctx->scale_fact_rpl0[mv0.ref_idx]
                                               : inter_ctx->scale_fact_rpl1[mv0.ref_idx];
     int scale_rpl0_hor = scale_fact_rpl[0];
     int scale_rpl0_ver = scale_fact_rpl[1];
 
-    scale_fact_rpl = gpm_ctx->inter_dir1 == 0 ? inter_ctx->scale_fact_rpl0[mv1.ref_idx]
+    scale_fact_rpl = gpm_ctx->inter_dir1 == 1 ? inter_ctx->scale_fact_rpl0[mv1.ref_idx]
                                               : inter_ctx->scale_fact_rpl1[mv1.ref_idx];
     int scale_rpl1_hor = scale_fact_rpl[0];
     int scale_rpl1_ver = scale_fact_rpl[1];

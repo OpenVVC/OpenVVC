@@ -330,6 +330,7 @@ write_decoded_frame_to_file(OVFrame *const frame, FILE *fp, int* max_frame_h)
     uint8_t component = 0;
     int ret = 0;
     struct ScalingInfo scale_info = frame->scale_info;
+    int bd_shift = (frame->frame_info.chroma_format == OV_YUV_420_P8) ? 0: 1;
 
     uint8_t * zeros = ov_mallocz(frame->linesize[0] * sizeof(uint8_t));
     for (component = 0; component < 3; component++) {
@@ -346,8 +347,8 @@ write_decoded_frame_to_file(OVFrame *const frame, FILE *fp, int* max_frame_h)
         for (int j = win_top; j < frame_h + win_top; j++){
             int offset_h = j * frame->linesize[component] ;
             int offset   = offset_h + (win_left << 1) ;
-            ret += fwrite(&frame->data[component][offset], frame_w << 1, sizeof(uint8_t), fp);            
-            ret += fwrite(zeros, frame->linesize[component] - (frame_w<<1), sizeof(uint8_t), fp);
+            ret += fwrite(&frame->data[component][offset], frame_w << bd_shift, sizeof(uint8_t), fp);
+            ret += fwrite(zeros, frame->linesize[component] - (frame_w << bd_shift), sizeof(uint8_t), fp);
         }
         for (int j = frame_h ; j < max_frame_h[component]; j++){
             ret += fwrite(zeros, frame->linesize[component], sizeof(uint8_t), fp);
@@ -355,6 +356,7 @@ write_decoded_frame_to_file(OVFrame *const frame, FILE *fp, int* max_frame_h)
     }
     ov_freep(&zeros);
     // for (component = 0; component < 3; component++) {
+    //     max_frame_h[component] = OVMAX(max_frame_h[component], frame->height[component]);
     //     int frame_size = max_frame_h[component] * frame->linesize[component];
     //     ret += fwrite(frame->data[component], frame_size, sizeof(uint8_t), fp);
     // }

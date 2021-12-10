@@ -1596,7 +1596,7 @@ put_weighted_ciip_pixels(OVSample* dst, int dststride,
 
 
 static void
-put_weighted_gpm_bi_pixels(uint16_t* _dst, int _dststride, const int16_t* _src0,
+put_weighted_gpm_bi_pixels(OVSample* _dst, int _dststride, const int16_t* _src0,
                   int srcstride0, const int16_t* _src1, int srcstride1, int height,
                   int width, int step_x, int step_y, int16_t* weight)
 {
@@ -1610,6 +1610,7 @@ put_weighted_gpm_bi_pixels(uint16_t* _dst, int _dststride, const int16_t* _src0,
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
             int w0 = weight[0];
+            // int w0 = 0;
             int w1 = 8 - w0;
             dst[x] = ov_bdclip(((src1[x] * w1 + src0[x] * w0 + offset) >> shift));
             weight += step_x;
@@ -1631,12 +1632,9 @@ BD_DECL(rcn_init_mc_functions)(struct RCNFunctions *const rcn_funcs)
     mc_l->rpr_sum = &put_vvc_qpel_rpr_bi_sum;
     mc_c->rpr_sum = &put_vvc_qpel_rpr_bi_sum;
 
-    mc_l->rpr_w[0] = &put_vvc_qpel_rpr_weighted;
-    mc_l->rpr_w[1] = &put_vvc_qpel_rpr_weighted;
-    mc_c->rpr_w[0] = &put_vvc_qpel_rpr_weighted;
-    mc_c->rpr_w[1] = &put_vvc_qpel_rpr_weighted;
-
     for (i = 0; i < 8; ++i) {
+        mc_l->rpr_w[i] = &put_vvc_qpel_rpr_weighted;
+        mc_c->rpr_w[i] = &put_vvc_qpel_rpr_weighted;
 
         /* Luma functions */
         mc_l->unidir[0][i] = &put_vvc_pel_uni_pixels;
