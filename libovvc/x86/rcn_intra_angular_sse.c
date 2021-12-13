@@ -326,6 +326,136 @@ intra_angular_h_cubic_sse(const OVSample* ref_lft, OVSample* dst,
 }
 
 static void
+intra_angular_v_c_sse_8(const OVSample* ref_abv, OVSample* dst,
+                  ptrdiff_t dst_stride, int8_t log2_pb_w,
+                  int8_t log2_pb_h, int angle_val)
+{
+    OVSample* _dst = dst;
+    int pb_w = 1 << log2_pb_w;
+    int pb_h = 1 << log2_pb_h;
+    __m128i offset = _mm_set1_epi32(16);
+
+    for (int y = 0, delta_pos = angle_val; y < pb_h; y++) {
+        const int delta_int = delta_pos >> 5;
+        __m128i delta_frac = _mm_set1_epi16(delta_pos & 0x1F);
+        const OVSample* ref = ref_abv + delta_int + 1;
+        for (int x = 0; x < pb_w; ref+=8, x+=8) {
+            __m128i last_ref_val = _mm_loadu_si128((__m128i *)&ref[0]);
+            __m128i curr_ref_val = _mm_loadu_si128((__m128i *)&ref[1]);
+            __m128i val = _mm_sub_epi16(curr_ref_val, last_ref_val);
+            
+            __m128i valL = _mm_mullo_epi16(delta_frac, val);
+            __m128i valH = _mm_mulhi_epi16(delta_frac, val);
+
+            __m128i val03 = _mm_unpacklo_epi16(valL, valH);
+            __m128i val47 = _mm_unpackhi_epi16(valL, valH);
+
+            val03 = _mm_add_epi32(val03, offset);
+            val47 = _mm_add_epi32(val47, offset);
+
+            val03 = _mm_srai_epi32(val03, 5);
+            val47 = _mm_srai_epi32(val47, 5);
+
+            // FIXME PACKS before clipping might cause errors
+            val = _mm_packs_epi32(val03, val47);
+
+            val = _mm_add_epi16(val, last_ref_val);
+
+            val = _mm_min_epi16(val, _mm_set1_epi16(1023));
+            val = _mm_max_epi16(val, _mm_setzero_si128());
+            _mm_storeu_si128((__m128i *) &_dst[x], val);
+        }
+        delta_pos += angle_val;
+        _dst += dst_stride;
+    }
+}
+
+static void
+intra_angular_v_c_sse_4(const OVSample* ref_abv, OVSample* dst,
+                  ptrdiff_t dst_stride, int8_t log2_pb_w,
+                  int8_t log2_pb_h, int angle_val)
+{
+    OVSample* _dst = dst;
+    int pb_w = 1 << log2_pb_w;
+    int pb_h = 1 << log2_pb_h;
+    __m128i offset = _mm_set1_epi32(16);
+
+    for (int y = 0, delta_pos = angle_val; y < pb_h; y++) {
+        const int delta_int = delta_pos >> 5;
+        __m128i delta_frac = _mm_set1_epi16(delta_pos & 0x1F);
+        const OVSample* ref = ref_abv + delta_int + 1;
+        __m128i last_ref_val = _mm_loadl_epi64((__m128i *)&ref[0]);
+        __m128i curr_ref_val = _mm_loadl_epi64((__m128i *)&ref[1]);
+        __m128i val = _mm_sub_epi16(curr_ref_val, last_ref_val);
+        
+        __m128i valL = _mm_mullo_epi16(delta_frac, val);
+        __m128i valH = _mm_mulhi_epi16(delta_frac, val);
+
+        __m128i val03 = _mm_unpacklo_epi16(valL, valH);
+
+        val03 = _mm_add_epi32(val03, offset);
+
+        val03 = _mm_srai_epi32(val03, 5);
+
+        // FIXME PACKS before clipping might cause errors
+        val = _mm_packs_epi32(val03, _mm_setzero_si128());
+
+        val = _mm_add_epi16(val, last_ref_val);
+
+        val = _mm_min_epi16(val, _mm_set1_epi16(1023));
+        val = _mm_max_epi16(val, _mm_setzero_si128());
+        _mm_storel_epi64((__m128i *) &_dst[0], val);
+        delta_pos += angle_val;
+        _dst += dst_stride;
+    }
+}
+
+static void
+intra_angular_v_c_sse(const OVSample* ref_abv, OVSample* dst,
+                  ptrdiff_t dst_stride, int8_t log2_pb_w,
+                  int8_t log2_pb_h, int angle_val)
+{
+    OVSample* _dst = dst;
+    int pb_w = 1 << log2_pb_w;
+    int pb_h = 1 << log2_pb_h;
+
+    if (pb_w >=8){
+        intra_angular_v_c_sse_8(ref_abv, dst, dst_stride, log2_pb_w, log2_pb_h, angle_val);
+    } else {
+        intra_angular_v_c_sse_4(ref_abv, dst, dst_stride, log2_pb_w, log2_pb_h, angle_val);
+    }
+}
+
+static void
+intra_angular_h_c_sse(const OVSample* ref_lft, OVSample* dst,
+                  ptrdiff_t dst_stride, int8_t log2_pb_w,
+                  int8_t log2_pb_h, int angle_val)
+{
+    OVSample tmp_dst[128 * 128];
+    OVSample* _tmp = tmp_dst;
+    OVSample* _dst = dst;
+    int pb_w = 1 << log2_pb_w;
+    int pb_h = 1 << log2_pb_h;
+    const int tmp_stride = 128;
+
+    if (pb_h >=8){
+        intra_angular_v_c_sse_8(ref_lft, tmp_dst, tmp_stride, log2_pb_h, log2_pb_w, angle_val);
+    } else {
+        intra_angular_v_c_sse_4(ref_lft, tmp_dst, tmp_stride, log2_pb_h, log2_pb_w, angle_val);
+    }
+
+    for (int y = 0; y < pb_w; y++) {
+        _dst = &dst[y];
+        for (int x = 0; x < pb_h; x++) {
+            _dst[0] = _tmp[x];
+            _dst += dst_stride;
+        }
+        _tmp += tmp_stride;
+    }
+
+}
+
+static void
 intra_angular_v_gauss_pdpc_sse_8(const OVSample* ref_abv, const OVSample* ref_lft,
                            OVSample* const dst, ptrdiff_t dst_stride,
                            int8_t log2_pb_w, int8_t log2_pb_h, int mode_idx)
@@ -558,6 +688,163 @@ intra_angular_h_cubic_pdpc_sse(const OVSample* ref_abv, const OVSample* ref_lft,
 }
 
 static void
+intra_angular_v_c_pdpc_sse_8(const OVSample* const ref_abv,
+                       const OVSample* const ref_lft, OVSample* const dst,
+                       ptrdiff_t dst_stride, int8_t log2_pb_w,
+                       int8_t log2_pb_h, int mode_idx)
+{
+    OVSample* _dst = dst;
+    int angle_val = angle_table[mode_idx];
+    int inv_angle = inverse_angle_table[mode_idx];
+    int delta_pos = angle_val;
+    int pb_w = 1 << log2_pb_w;
+    int pb_h = 1 << log2_pb_h;
+    int scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inv_angle - 2) - 8));
+    __m128i offset = _mm_set1_epi32(16);
+
+    for (int y = 0, delta_pos = angle_val; y < pb_h; y++) {
+        const int delta_int = delta_pos >> 5;
+        int inv_angle_sum = 256 + inv_angle;
+        __m128i delta_frac = _mm_set1_epi16(delta_pos & 0x1F);
+        const OVSample* ref = ref_abv + delta_int + 1;
+        for (int x = 0; x < pb_w; ref+=8, x+=8) {
+            __m128i last_ref_val = _mm_loadu_si128((__m128i *)&ref[0]);
+            __m128i curr_ref_val = _mm_loadu_si128((__m128i *)&ref[1]);
+            __m128i val = _mm_sub_epi16(curr_ref_val, last_ref_val);
+            
+            __m128i valL = _mm_mullo_epi16(delta_frac, val);
+            __m128i valH = _mm_mulhi_epi16(delta_frac, val);
+
+            __m128i val03 = _mm_unpacklo_epi16(valL, valH);
+            __m128i val47 = _mm_unpackhi_epi16(valL, valH);
+
+            val03 = _mm_add_epi32(val03, offset);
+            val47 = _mm_add_epi32(val47, offset);
+
+            val03 = _mm_srai_epi32(val03, 5);
+            val47 = _mm_srai_epi32(val47, 5);
+
+            // FIXME PACKS before clipping might cause errors
+            val = _mm_packs_epi32(val03, val47);
+
+            val = _mm_add_epi16(val, last_ref_val);
+
+            _mm_storeu_si128((__m128i *) &_dst[x], val);
+        }
+        for (int x = 0; x < OVMIN(3 << scale, pb_w); x++) {
+            int wL = 32 >> ((x << 1) >> scale);
+            const OVSample* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
+
+            int32_t left = p[0];
+            _dst[x] = ov_bdclip(_dst[x] + ((wL * (left - _dst[x]) + 32) >> 6));
+            inv_angle_sum += inv_angle;
+        }
+        delta_pos += angle_val;
+        _dst += dst_stride;
+    }
+}
+
+static void
+intra_angular_v_c_pdpc_sse_4(const OVSample* const ref_abv,
+                       const OVSample* const ref_lft, OVSample* const dst,
+                       ptrdiff_t dst_stride, int8_t log2_pb_w,
+                       int8_t log2_pb_h, int mode_idx)
+{
+    OVSample* _dst = dst;
+    int angle_val = angle_table[mode_idx];
+    int inv_angle = inverse_angle_table[mode_idx];
+    int delta_pos = angle_val;
+    int pb_w = 1 << log2_pb_w;
+    int pb_h = 1 << log2_pb_h;
+    int scale = OVMIN(2, log2_pb_h - (floor_log2(3 * inv_angle - 2) - 8));
+    __m128i offset = _mm_set1_epi32(16);
+
+    for (int y = 0, delta_pos = angle_val; y < pb_h; y++) {
+        const int delta_int = delta_pos >> 5;
+        int inv_angle_sum = 256 + inv_angle;
+        __m128i delta_frac = _mm_set1_epi16(delta_pos & 0x1F);
+        const OVSample* ref = ref_abv + delta_int + 1;
+        __m128i last_ref_val = _mm_loadl_epi64((__m128i *)&ref[0]);
+        __m128i curr_ref_val = _mm_loadl_epi64((__m128i *)&ref[1]);
+        __m128i val = _mm_sub_epi16(curr_ref_val, last_ref_val);
+        
+        __m128i valL = _mm_mullo_epi16(delta_frac, val);
+        __m128i valH = _mm_mulhi_epi16(delta_frac, val);
+
+        __m128i val03 = _mm_unpacklo_epi16(valL, valH);
+
+        val03 = _mm_add_epi32(val03, offset);
+
+        val03 = _mm_srai_epi32(val03, 5);
+
+        // FIXME PACKS before clipping might cause errors
+        val = _mm_packs_epi32(val03, _mm_setzero_si128());
+
+        val = _mm_add_epi16(val, last_ref_val);
+
+        _mm_storel_epi64((__m128i *) &_dst[0], val);
+
+        for (int x = 0; x < OVMIN(3 << scale, pb_w); x++) {
+            int wL = 32 >> ((x << 1) >> scale);
+            const OVSample* p = ref_lft + y + (inv_angle_sum >> 9) + 1;
+
+            int32_t left = p[0];
+            _dst[x] = ov_bdclip(_dst[x] + ((wL * (left - _dst[x]) + 32) >> 6));
+            inv_angle_sum += inv_angle;
+        }
+        delta_pos += angle_val;
+        _dst += dst_stride;
+    }
+}
+
+static void
+intra_angular_v_c_pdpc_sse(const OVSample* const ref_abv,
+                       const OVSample* const ref_lft, OVSample* const dst,
+                       ptrdiff_t dst_stride, int8_t log2_pb_w,
+                       int8_t log2_pb_h, int mode_idx)
+{
+    OVSample* _dst = dst;
+    int pb_w = 1 << log2_pb_w;
+    int pb_h = 1 << log2_pb_h;
+
+    if (pb_w >=8){
+        intra_angular_v_c_pdpc_sse_8(ref_abv, ref_lft, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
+    } else {
+        intra_angular_v_c_pdpc_sse_4(ref_abv, ref_lft, dst, dst_stride, log2_pb_w, log2_pb_h, mode_idx);
+    }
+}
+
+static void
+intra_angular_h_c_pdpc_sse(const OVSample* const ref_abv,
+                       const OVSample* const ref_lft, OVSample* const dst,
+                       ptrdiff_t dst_stride, int8_t log2_pb_w,
+                       int8_t log2_pb_h, int mode_idx)
+{
+    OVSample tmp_dst[128 * 128];
+    OVSample* _tmp = tmp_dst;
+    OVSample* _dst = dst;
+    int pb_w = 1 << log2_pb_w;
+    int pb_h = 1 << log2_pb_h;
+    const int tmp_stride = 128;
+
+    if (pb_h >=8){
+        intra_angular_v_c_pdpc_sse_8(ref_lft, ref_abv, tmp_dst, tmp_stride, log2_pb_h, log2_pb_w, mode_idx);
+    } else {
+        intra_angular_v_c_pdpc_sse_4(ref_lft, ref_abv, tmp_dst, tmp_stride, log2_pb_h, log2_pb_w, mode_idx);
+    }
+
+    for (int y = 0; y < pb_w; y++) {
+        _dst = &dst[y];
+        for (int x = 0; x < pb_h; x++) {
+            _dst[0] = _tmp[x];
+            _dst += dst_stride;
+        }
+        _tmp += tmp_stride;
+    }
+
+}
+
+static void
 intra_angular_v_cubic_mref_sse_8(const OVSample* const ref_abv, OVSample* const dst,
                            ptrdiff_t dst_stride, int8_t log2_pb_w,
                            int8_t log2_pb_h, int angle_val,
@@ -705,20 +992,20 @@ rcn_init_intra_angular_functions_10_sse(struct RCNFunctions *rcn_func)
 
     angular_c_h_10_sse.pure = rcn_func->intra_angular_c_h->pure;
     angular_c_h_10_sse.diagonal = rcn_func->intra_angular_c_h->diagonal;
-    angular_c_h_10_sse.angular = rcn_func->intra_angular_c_h->angular;
+    angular_c_h_10_sse.angular = intra_angular_h_c_sse;
 
     angular_c_h_10_sse.pure_pdpc = rcn_func->intra_angular_c_h->pure_pdpc;
     angular_c_h_10_sse.diagonal_pdpc = rcn_func->intra_angular_c_h->diagonal_pdpc;
-    angular_c_h_10_sse.angular_pdpc = rcn_func->intra_angular_c_h->angular_pdpc;
+    angular_c_h_10_sse.angular_pdpc = intra_angular_h_c_pdpc_sse;
 
 
     angular_c_v_10_sse.pure = rcn_func->intra_angular_c_v->pure;
     angular_c_v_10_sse.diagonal = rcn_func->intra_angular_c_v->diagonal;
-    angular_c_v_10_sse.angular = rcn_func->intra_angular_c_v->angular;
+    angular_c_v_10_sse.angular = intra_angular_v_c_sse;
 
     angular_c_v_10_sse.pure_pdpc = rcn_func->intra_angular_c_v->pure_pdpc;
     angular_c_v_10_sse.diagonal_pdpc = rcn_func->intra_angular_c_v->diagonal_pdpc;
-    angular_c_v_10_sse.angular_pdpc = rcn_func->intra_angular_c_v->angular_pdpc;
+    angular_c_v_10_sse.angular_pdpc = intra_angular_v_c_pdpc_sse;
 
 
     angular_nofrac_v_10_sse.pure = rcn_func->intra_angular_nofrac_v->pure;
