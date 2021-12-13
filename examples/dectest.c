@@ -29,7 +29,7 @@ static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
 static int read_write_stream(OVVCHdl *const hdl, FILE *fout);
 
-static int write_decoded_frame_to_file(OVFrame *const frame, FILE *fp, int* max_frame_h);
+static int write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
 
 static void print_version(void);
 
@@ -265,7 +265,6 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
     OVVCDec *const dec = hdl->dec;
     int nb_pic = 0;
     int ret;
-    int max_frame_h[3] = {0};
 
     do {
         OVPictureUnit *pu = NULL;
@@ -285,7 +284,7 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
                 nb_pic2 = ovdec_receive_picture(dec, &frame);
 
                 if (frame) {
-                    write_decoded_frame_to_file(frame, fout, max_frame_h);
+                    write_decoded_frame_to_file(frame, fout);
 
                     ov_log(NULL, OVLOG_DEBUG, "Got output picture with POC %d.\n", frame->poc);
 
@@ -309,7 +308,7 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
         ret = ovdec_drain_picture(dec, &frame);
 
         if (frame) {
-            write_decoded_frame_to_file(frame, fout, max_frame_h);
+            write_decoded_frame_to_file(frame, fout);
 
             ov_log(NULL, OVLOG_DEBUG, "Drain picture with POC %d.\n", frame->poc);
 
@@ -325,12 +324,16 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
 }
 
 static int
-write_decoded_frame_to_file(OVFrame *const frame, FILE *fp, int* max_frame_h)
+write_decoded_frame_to_file(OVFrame *const frame, FILE *fp)
 {
     uint8_t component = 0;
     int ret = 0;
     struct ScalingInfo scale_info = frame->scale_info;
     int bd_shift = (frame->frame_info.chroma_format == OV_YUV_420_P8) ? 0: 1;
+
+    /*FIXME: only 420*/
+    int max_height_l   = frame->max_height_l;
+    int max_frame_h[3] = {max_height_l, max_height_l>>1, max_height_l>>1};
 
     uint8_t * zeros = ov_mallocz(frame->linesize[0] * sizeof(uint8_t));
     for (component = 0; component < 3; component++) {
@@ -342,7 +345,6 @@ write_decoded_frame_to_file(OVFrame *const frame, FILE *fp, int* max_frame_h)
         uint16_t win_left =  component ? scale_info.scaling_win_left : scale_info.scaling_win_left << 1;
         int frame_h = frame->height[component] - add_h;
         int frame_w = frame->width[component]  - add_w;
-        max_frame_h[component] = OVMAX(max_frame_h[component], frame_h);
 
         for (int j = win_top; j < frame_h + win_top; j++){
             int offset_h = j * frame->linesize[component] ;

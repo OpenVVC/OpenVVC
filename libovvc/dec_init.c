@@ -514,6 +514,36 @@ set_pic_part_info(struct PicPartInfo *pic_info, const OVSPS *const sps, const OV
 
      pic_info->nb_pb_w = nb_pb_pic_w;
      pic_info->nb_pb_h = nb_pb_pic_h;
+}
+
+static void
+set_max_pic_part_info(struct PicPartInfo *pic_info, const OVSPS *const sps, const OVPPS *const pps)
+{
+     /* Masks are to ensure log2_size does not exceed standard requirements */
+     uint8_t log2_ctb_s    = (sps->sps_log2_ctu_size_minus5 + 5) & 0x7;
+     uint8_t log2_min_cb_s = (sps->sps_log2_min_luma_coding_block_size_minus2 + 2) & 0x7;
+     /* FIXME assert log2_min < log2_ctb */
+
+     uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
+     uint16_t pic_h = sps->sps_pic_height_max_in_luma_samples;
+
+     uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+     uint16_t nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+
+     uint16_t nb_pb_pic_w = (nb_ctb_pic_w << log2_ctb_s) >> log2_min_cb_s;
+     uint16_t nb_pb_pic_h = (nb_ctb_pic_h << log2_ctb_s) >> log2_min_cb_s;
+
+     pic_info->log2_ctu_s = log2_ctb_s;
+     pic_info->log2_min_cb_s = log2_min_cb_s;
+
+     pic_info->pic_w = pic_w;
+     pic_info->pic_h = pic_h;
+
+     pic_info->nb_ctb_w = nb_ctb_pic_w;
+     pic_info->nb_ctb_h = nb_ctb_pic_h;
+
+     pic_info->nb_pb_w = nb_pb_pic_w;
+     pic_info->nb_pb_h = nb_pb_pic_h;
 
 }
 
@@ -604,6 +634,7 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
         ps->aps_lmcs = aps_lmcs;
     }
     set_pic_part_info(&ps->pic_info, ps->sps, ps->pps);
+    set_max_pic_part_info(&ps->pic_info_max, ps->sps, ps->pps);
 
     return 0;
 

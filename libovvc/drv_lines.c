@@ -671,9 +671,7 @@ init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
       * in the decoding process
       */
 
-     const OVPPS *const pps = prms->pps;
-     uint16_t pic_w = pps->pps_pic_width_in_luma_samples;
-
+     uint16_t pic_w = prms->sps->sps_pic_width_max_in_luma_samples;
      uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
 
      nb_ctb_pic_w += tinfo->nb_tile_cols * 2;

@@ -312,6 +312,8 @@ struct OVVCDec
             uint8_t log2_ctu_s;
         } pic_info;
 
+        struct PicPartInfo pic_info_max;
+
     } active_params;
 
     //Boolean that indicates if the video is displayed

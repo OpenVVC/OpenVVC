@@ -81,7 +81,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
 
     //TODOpar: protect mv pool when more than one thread ?
     if (!dec->mv_pool) {
-        ret = mvpool_init(&dec->mv_pool, &dec->active_params.pic_info);
+        ret = mvpool_init(&dec->mv_pool, &dec->active_params.pic_info_max);
     }
 
     //Temporary: copy active parameters

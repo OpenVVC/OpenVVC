@@ -1221,10 +1221,17 @@ ovdpb_synchro_ref_decoded_ctus(const OVPicture *const ref_pic, int tl_ctu_x, int
 void
 ovdpb_init_decoded_ctus(OVPicture *const pic, const OVPS *const ps)
 {   
+    int pic_w = ps->sps->sps_pic_width_max_in_luma_samples;
+    int pic_h = ps->sps->sps_pic_width_max_in_luma_samples;
+    uint8_t log2_ctb_s    = (ps->sps->sps_log2_ctu_size_minus5 + 5) & 0x7;
+    uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+    uint16_t nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+
     struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
+    decoded_ctus->mask_h = nb_ctb_pic_h;
+    decoded_ctus->mask_w = (nb_ctb_pic_w >> SIZE_INT64) + 1;
+
     if(!decoded_ctus->mask){
-        decoded_ctus->mask_h = ps->pic_info.nb_ctb_h;
-        decoded_ctus->mask_w = (ps->pic_info.nb_ctb_w >> SIZE_INT64) + 1;
         decoded_ctus->mask = ov_mallocz(decoded_ctus->mask_h * sizeof(uint64_t*));
         for(int i = 0; i < decoded_ctus->mask_h; i++)
             decoded_ctus->mask[i] = ov_mallocz(decoded_ctus->mask_w * sizeof(uint64_t));

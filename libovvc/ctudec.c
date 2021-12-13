@@ -61,8 +61,8 @@ ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
     const OVSH *const sh = prms->sh;
     const OVPH *const ph = prms->ph;
 
-    uint16_t pic_w = pps->pps_pic_width_in_luma_samples;
-    uint16_t pic_h = pps->pps_pic_height_in_luma_samples;
+    uint16_t pic_w = sps->sps_pic_width_max_in_luma_samples;
+    uint16_t pic_h = sps->sps_pic_height_max_in_luma_samples;
     uint8_t log2_ctb_s = sps->sps_log2_ctu_size_minus5 + 5;
     int nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
     int nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
