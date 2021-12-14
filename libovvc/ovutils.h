@@ -17,7 +17,7 @@
 #define ov_clz64(x) __builtin_clzl(x)
 #define ov_ctz64(x) __builtin_ctzl(x)
 
-#define ov_ceil_log2(x) 32 - __builtin_clz(x)
+#define ov_ceil_log2(x) 32 - __builtin_clz((x - !!x) + !(x - !!x))
 
 /* FIXME
  * Add specific clip for unsigned */
@@ -69,7 +69,7 @@ floor_log2(unsigned x)
     }
     return bits;
 #else
-    return 32 - ov_clz(x) - 1;
+    return 31 - ov_clz(x + !x);
 #endif
 }
 
