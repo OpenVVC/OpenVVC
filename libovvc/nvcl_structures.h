@@ -633,7 +633,7 @@ typedef struct OVLMCSData
     uint8_t lmcs_min_bin_idx;
     uint8_t lmcs_delta_max_bin_idx;
     uint8_t lmcs_delta_cw_prec_minus1;
-    uint8_t lmcs_delta_abs_cw[PIC_CODE_CW_BINS];
+    uint16_t lmcs_delta_abs_cw[PIC_CODE_CW_BINS];
     uint8_t lmcs_delta_sign_cw_flag[PIC_CODE_CW_BINS];
     uint8_t lmcs_delta_abs_crs;
     uint8_t lmcs_delta_sign_crs_flag;

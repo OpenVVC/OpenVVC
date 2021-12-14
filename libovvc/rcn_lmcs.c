@@ -82,7 +82,7 @@ compute_windows_scale_steps(struct WindowsInfo *const wnd_info,
 
   /* Compute windows */
   for (i = min_idx; i < max_idx_plus1; i++) {
-      uint16_t wnd_sz = NB_SMP_WND + cw_delta[i];
+      int32_t wnd_sz = NB_SMP_WND + cw_delta[i];
       if (wnd_sz) {
           fwd_step[i] = ((wnd_sz << LMCS_PREC) + WND_RND) >> LOG2_WND_RNG;
           bwd_step[i] = (NB_SMP_WND << LMCS_PREC) / wnd_sz;
@@ -110,7 +110,7 @@ derive_forward_lut(OVSample *const fwd_lut, const struct WindowsInfo *const wnd_
 
         int32_t nb_step = val - wnd_lbnd;
 
-        int fwd_val = (uint16_t)wnd_bnd[wnd_idx] + ((fwd_step[wnd_idx] * nb_step + LMCS_RND) >> LMCS_PREC);
+        int fwd_val = (int16_t)wnd_bnd[wnd_idx] + (((int32_t)fwd_step[wnd_idx] * nb_step + LMCS_RND) >> LMCS_PREC);
 
         fwd_lut[val] = ov_bdclip(fwd_val);
     }
@@ -130,7 +130,7 @@ derive_backward_lut(OVSample *const bwd_lut, const struct WindowsInfo *const wnd
 
         int32_t nb_step = val - wnd_bnd[wnd_idx];
 
-        int bwd_val = wnd_lbnd + ((bwd_step[wnd_idx] * nb_step + LMCS_RND) >> LMCS_PREC);
+        int bwd_val = wnd_lbnd + (((int32_t)bwd_step[wnd_idx] * nb_step + LMCS_RND) >> LMCS_PREC);
 
         bwd_lut[val] = ov_bdclip(bwd_val);
     }
@@ -303,7 +303,7 @@ rcn_lmcs_compute_chroma_scale(struct LMCSInfo *const lmcs_info,
 
     int idx = get_bwd_idx(lmcs_info->luts->wnd_bnd, luma_avg, lmcs_info->min_idx, lmcs_info->max_idx);
 
-    uint32_t wnd_sz = (uint32_t)(lmcs_info->luts->wnd_bnd[idx + 1] - lmcs_info->luts->wnd_bnd[idx]);
+    int32_t wnd_sz = (int32_t)(lmcs_info->luts->wnd_bnd[idx + 1] - lmcs_info->luts->wnd_bnd[idx]);
 
     lmcs_info->lmcs_chroma_scale = (wnd_sz == 0) ? 1 << LMCS_PREC
                                                  : (1 << (BITDEPTH - LOG2_NB_WND + LMCS_PREC)) / (wnd_sz + lmcs_info->lmcs_chroma_scaling_offset);
