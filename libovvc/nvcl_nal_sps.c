@@ -35,6 +35,11 @@ validate_sps(OVNVCLReader *rdr, const union HLSData *const data)
     /* TODO various check on limitation and max sizes */
     const OVSPS *const sps =  (const OVSPS *)data;
 
+    if (sps->sps_weighted_pred_flag || sps->sps_weighted_bipred_flag) {
+        ov_log(NULL, OVLOG_ERROR, "Unsupported weighted pred\n");
+        return OVVC_EINDATA;
+    }
+
     if (sps->sps_subpic_info_present_flag) {
         ov_log(NULL, OVLOG_ERROR, "Unsupported subpicture\n");
         return OVVC_EINDATA;
@@ -52,6 +57,11 @@ validate_sps(OVNVCLReader *rdr, const union HLSData *const data)
 
     if (sps->sps_long_term_ref_pics_flag) {
         ov_log(NULL, OVLOG_ERROR, "Unsupported long term references\n");
+        return OVVC_EINDATA;
+    }
+
+    if (sps->sps_ibc_enabled_flag) {
+        ov_log(NULL, OVLOG_ERROR, "Unsupported IBC\n");
         return OVVC_EINDATA;
     }
 
