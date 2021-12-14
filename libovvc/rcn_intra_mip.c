@@ -376,18 +376,22 @@ BD_DECL(rcn_init_mip_functions)(struct RCNFunctions *const rcn_funcs)
     rcn_funcs->mip.upsample_h[0][0]= &up_sample;
     rcn_funcs->mip.upsample_h[0][1]= &up_sample;
     rcn_funcs->mip.upsample_h[0][2]= &up_sample;
+    rcn_funcs->mip.upsample_h[0][3]= &up_sample;
 
     rcn_funcs->mip.upsample_h[1][0]= &up_sample;
     rcn_funcs->mip.upsample_h[1][1]= &up_sample;
     rcn_funcs->mip.upsample_h[1][2]= &up_sample;
+    rcn_funcs->mip.upsample_h[1][3]= &up_sample;
 
     rcn_funcs->mip.upsample_v[0][0]= &up_sample;
     rcn_funcs->mip.upsample_v[0][1]= &up_sample;
     rcn_funcs->mip.upsample_v[0][2]= &up_sample;
+    rcn_funcs->mip.upsample_v[0][3]= &up_sample;
 
     rcn_funcs->mip.upsample_v[1][0]= &up_sample;
     rcn_funcs->mip.upsample_v[1][1]= &up_sample;
     rcn_funcs->mip.upsample_v[1][2]= &up_sample;
+    rcn_funcs->mip.upsample_v[1][3]= &up_sample;
 
     rcn_funcs->mip.matmult= &mip_matmult;
     rcn_funcs->mip.rcn_intra_mip = rcn_intra_mip;

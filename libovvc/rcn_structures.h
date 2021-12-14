@@ -271,8 +271,8 @@ struct LFNSTFunctions
 struct OVRCNCtx;
 struct MIPFunctions
 {
-  MIPUpSample upsample_h[2][3];
-  MIPUpSample upsample_v[2][3];
+  MIPUpSample upsample_h[2][4];
+  MIPUpSample upsample_v[2][4];
   MIPMatMult matmult;
 
   void (*rcn_intra_mip)(const struct OVRCNCtx *const rcn_ctx,
