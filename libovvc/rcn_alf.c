@@ -1308,7 +1308,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
             int16_t *coeff = alf->filter_coeff_dec[filter_idx];
             int16_t *clip  = alf->filter_clip_dec [filter_idx];
 
-            int virbnd_pos = (y_pos_pic + ctu_s >= ctudec->pic_h) ? ctudec->pic_h
+            int virbnd_pos = (y_pos_pic + ctu_s > ctudec->pic_h) ? ctudec->pic_h
                 : ctu_h - ALF_VB_POS_ABOVE_CTUROW_LUMA;
 
             uint8_t req_vb = check_virtual_bound(y_pos_pic, ctu_h, virbnd_pos, log2_ctb_s);
@@ -1338,7 +1338,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 
                 uint8_t alt_num = (c_idx == 1) ? alf_params_ctu->cb_alternative : alf_params_ctu->cr_alternative;
 
-                int virbnd_pos = ((y_pos_pic + ctu_s >= ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA)/chr_scale);
+                int virbnd_pos = ((y_pos_pic + ctu_s > ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA)/chr_scale);
                 int yVb = (blk_dst.y + blk_dst.height - 1);// & (ctu_s - 1);
                 yVb = yVb & (ctu_s/chr_scale - 1);
 
@@ -1372,7 +1372,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                     const int16_t *filt_coeff = alf_data->alf_cc_mapped_coeff[c_idx - 1][filt_idx - 1];
 
                     // FIXME: CC ALF seems to be applied only on border block
-                    int virbnd_pos = ((y_pos_pic + ctu_s >= ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA));
+                    int virbnd_pos = ((y_pos_pic + ctu_s > ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA));
 
                     uint8_t isVB = 1;
 
