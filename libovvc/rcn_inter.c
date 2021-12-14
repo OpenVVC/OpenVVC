@@ -83,6 +83,22 @@ clip_mv(int pos_x, int pos_y, int pic_w, int pic_h, int pb_w, int pb_h, OVMV mv)
     return mv;
 }
 
+static OVMV
+clip_mv_rpr(int pos_x, int pos_y, int pic_w, int pic_h, int pb_w, int pb_h, OVMV mv)
+{
+    int prec_x = mv.x & 0xF;
+    int prec_y = mv.y & 0xF;
+    int x_max  = (pic_w + 3 - pos_x) << 4;
+    int y_max  = (pic_h + 3 - pos_y) << 4;
+    int x_min  = -((pb_w + 3 + pos_x) << 4);
+    int y_min  = -((pb_h + 3 + pos_y) << 4);
+
+    mv.x = ov_clip(mv.x, x_min + prec_x, x_max + prec_x);
+    mv.y = ov_clip(mv.y, y_min + prec_y, y_max + prec_y);
+
+    return mv;
+}
+
 static void
 rcn_gpm_weights_and_steps(int split_dir, int log2_pb_w_l, int log2_pb_h_l, int* step_x, int* step_y,
                           int16_t** weight, int cr_scale);
@@ -1995,15 +2011,15 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     const int ref_pic_w = frame0->width[0];
     const int ref_pic_h = frame0->height[0];
 
+    int offset          = 1 << (RPR_SCALE_BITS - 1);
     int inv_scaling_hor = (1 << (2*RPR_SCALE_BITS)) / scaling_hor;
     int inv_scaling_ver = (1 << (2*RPR_SCALE_BITS)) / scaling_ver;
-    mv = clip_mv(pos_x, pos_y, (ref_pic_w*inv_scaling_hor)>>RPR_SCALE_BITS, (ref_pic_h*inv_scaling_ver)>>RPR_SCALE_BITS, 
-                pu_w, pu_h, mv);
+    mv = clip_mv_rpr(pos_x, pos_y, (ref_pic_w*inv_scaling_hor + offset)>>RPR_SCALE_BITS, 
+                (ref_pic_h*inv_scaling_ver + offset)>>RPR_SCALE_BITS, pu_w, pu_h, mv);
 
     //MV precision is 4 bits for luma
     int shift_mv  = 4;
     int shit_pos  = RPR_SCALE_BITS + shift_mv;
-    int offset    = 1 << (RPR_SCALE_BITS - 1);
     uint8_t flag_4x4     = (log2_pu_w == 2 && log2_pu_h == 2);
     uint8_t filter_idx_h = compute_rpr_filter_idx(scaling_hor, flag_4x4);
     uint8_t filter_idx_v = compute_rpr_filter_idx(scaling_ver, flag_4x4);
@@ -2115,15 +2131,15 @@ rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int
     const int ref_pic_w = frame0->width[0];
     const int ref_pic_h = frame0->height[0];
 
+    int offset          = 1 << (RPR_SCALE_BITS - 1);
     int inv_scaling_hor = (1 << (2*RPR_SCALE_BITS)) / scaling_hor;
     int inv_scaling_ver = (1 << (2*RPR_SCALE_BITS)) / scaling_ver;
-    mv = clip_mv(pos_x, pos_y, (ref_pic_w*inv_scaling_hor)>>RPR_SCALE_BITS, (ref_pic_h*inv_scaling_ver)>>RPR_SCALE_BITS, 
-                pu_w, pu_h, mv);
+    mv = clip_mv_rpr(pos_x, pos_y, (ref_pic_w*inv_scaling_hor + offset)>>RPR_SCALE_BITS, 
+                (ref_pic_h*inv_scaling_ver + offset)>>RPR_SCALE_BITS, pu_w, pu_h, mv);
 
     //MV precision is 4 bits for luma
     int shift_mv  = 4;
     int shit_pos  = RPR_SCALE_BITS + shift_mv;
-    int offset    = 1 << (RPR_SCALE_BITS - 1);
     uint8_t flag_4x4     = (log2_pu_w == 2 && log2_pu_h == 2);
     uint8_t filter_idx_h = compute_rpr_filter_idx(scaling_hor, flag_4x4);
     uint8_t filter_idx_v = compute_rpr_filter_idx(scaling_ver, flag_4x4);
@@ -2232,10 +2248,11 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
 
     int ref_pic_w = frame0->width[0];
     int ref_pic_h = frame0->height[0];
+    int offset    = 1 << (RPR_SCALE_BITS - 1);
     int inv_scaling_hor = (1 << (2*RPR_SCALE_BITS)) / scaling_hor;
     int inv_scaling_ver = (1 << (2*RPR_SCALE_BITS)) / scaling_ver;
-    mv = clip_mv(pos_x, pos_y, (ref_pic_w*inv_scaling_hor)>>RPR_SCALE_BITS, (ref_pic_h*inv_scaling_ver)>>RPR_SCALE_BITS, 
-                pu_w, pu_h, mv);
+    mv = clip_mv_rpr(pos_x, pos_y, (ref_pic_w*inv_scaling_hor + offset)>>RPR_SCALE_BITS, 
+                (ref_pic_h*inv_scaling_ver + offset)>>RPR_SCALE_BITS, pu_w, pu_h, mv);
 
     ref_pic_w = frame0->width[1];
     ref_pic_h = frame0->height[1];
@@ -2247,7 +2264,6 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     //MV precision in 5 bits for chroma
     int shift_mv  = 5;
     int shit_pos  = RPR_SCALE_BITS + shift_mv;
-    int offset    = 1 << (RPR_SCALE_BITS - 1);
     uint8_t flag_4x4     = (log2_pu_w == 2 && log2_pu_h == 2);
     uint8_t filter_idx_h = compute_rpr_filter_idx(scaling_hor, flag_4x4);
     uint8_t filter_idx_v = compute_rpr_filter_idx(scaling_ver, flag_4x4);
@@ -2364,10 +2380,11 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
 
     int ref_pic_w = frame0->width[0];
     int ref_pic_h = frame0->height[0];
+    int offset    = 1 << (RPR_SCALE_BITS - 1);
     int inv_scaling_hor = (1 << (2*RPR_SCALE_BITS)) / scaling_hor;
     int inv_scaling_ver = (1 << (2*RPR_SCALE_BITS)) / scaling_ver;
-    mv = clip_mv(pos_x, pos_y, (ref_pic_w*inv_scaling_hor)>>RPR_SCALE_BITS, (ref_pic_h*inv_scaling_ver)>>RPR_SCALE_BITS, 
-                pu_w, pu_h, mv);
+    mv = clip_mv_rpr(pos_x, pos_y, (ref_pic_w*inv_scaling_hor + offset)>>RPR_SCALE_BITS, 
+                (ref_pic_h*inv_scaling_ver + offset)>>RPR_SCALE_BITS, pu_w, pu_h, mv);
 
     ref_pic_w = frame0->width[1];
     ref_pic_h = frame0->height[1];
@@ -2379,7 +2396,6 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
     //MV precision in 5 bits for chroma
     int shift_mv  = 5;
     int shit_pos  = RPR_SCALE_BITS + shift_mv;
-    int offset    = 1 << (RPR_SCALE_BITS - 1);
     uint8_t flag_4x4     = (log2_pu_w == 2 && log2_pu_h == 2);
     uint8_t filter_idx_h = compute_rpr_filter_idx(scaling_hor, flag_4x4);
     uint8_t filter_idx_v = compute_rpr_filter_idx(scaling_ver, flag_4x4);
