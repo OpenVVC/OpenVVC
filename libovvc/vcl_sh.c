@@ -212,7 +212,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
         }
     }
 
-    sh->sh_lmcs_used_flag = ph->ph_lmcs_enabled_flag;
+    sh->sh_lmcs_used_flag = ph->ph_lmcs_enabled_flag && sh->sh_picture_header_in_slice_header_flag;
     if (ph->ph_lmcs_enabled_flag && !sh->sh_picture_header_in_slice_header_flag) {
         sh->sh_lmcs_used_flag = nvcl_read_flag(rdr);
     }
