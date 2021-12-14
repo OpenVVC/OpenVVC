@@ -266,6 +266,8 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
     }
     /* FIXME do this in Info structures ?*/
     if (sh->sh_slice_type != I) {
+        ph->hrpl.rpl0 = &ph->hrpl.rpl_h0.rpl_data;
+        ph->hrpl.rpl1 = &ph->hrpl.rpl_h1.rpl_data;
         sh->hrpl.rpl_h0.rpl_data.num_ref_active_entries = nb_ref_entries0;
         ph->hrpl.rpl_h0.rpl_data.num_ref_active_entries = nb_ref_entries0;
         if (sh->sh_slice_type == B) {

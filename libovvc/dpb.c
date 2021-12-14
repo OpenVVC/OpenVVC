@@ -950,6 +950,7 @@ tmvp_set_mv_scales(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic,
 static int
 init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS *const ps, const OVVCDec *ovdec)
 {
+    const OVPPS *pps = ps->pps;
     const OVPH *ph = ps->ph;
     const OVSH *sh = ps->sh;
 
@@ -978,7 +979,7 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
         /* Find collocated ref and associate MV fields info */
         if (ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag || sh->sh_slice_type == SLICE_P) {
             /* FIXME idx can be ph */
-            int ref_idx = sh->sh_collocated_ref_idx;
+            int ref_idx = pps->pps_rpl_info_in_ph_flag ? ph->ph_collocated_ref_idx : sh->sh_collocated_ref_idx;
             const OVPicture *col_pic = pic->rpl0[ref_idx];
             tmvp_ctx->col_info.ref_idx_rpl0 = ref_idx;
             tmvp_ctx->col_info.ref_idx_rpl1 = -1;
@@ -994,7 +995,7 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
 
         } else if (sh->sh_slice_type != SLICE_I) {
             /* FIXME idx can be ph */
-            int ref_idx = sh->sh_collocated_ref_idx;
+            int ref_idx = pps->pps_rpl_info_in_ph_flag ? ph->ph_collocated_ref_idx : sh->sh_collocated_ref_idx;
             const OVPicture *col_pic = pic->rpl1[ref_idx];
             tmvp_ctx->col_info.ref_idx_rpl1 = ref_idx;
             tmvp_ctx->col_info.ref_idx_rpl0 = -1;
@@ -1032,6 +1033,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
 {
 
     const OVSH  *const sh  = ps->sh;
+    const OVPH  *const ph  = ps->ph;
     int ret = 0;
     uint32_t poc = dpb->poc;
     uint8_t cra_flag = 0;
@@ -1131,8 +1133,9 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
      * or not
      */
     if (!idr_flag) {
-        const OVRPL *rpl0 = sh->hrpl.rpl0;
-        const OVRPL *rpl1 = sh->hrpl.rpl1;
+        const OVPPS *const pps = ps->pps;
+        const OVRPL *rpl0 = !pps->pps_rpl_info_in_ph_flag ? sh->hrpl.rpl0 : ph->hrpl.rpl0;
+        const OVRPL *rpl1 = !pps->pps_rpl_info_in_ph_flag ? sh->hrpl.rpl1 : ph->hrpl.rpl1;
         uint8_t slice_type = sh->sh_slice_type;
         mark_ref_pic_lists(dpb, slice_type, rpl0, rpl1, sldec);
     }

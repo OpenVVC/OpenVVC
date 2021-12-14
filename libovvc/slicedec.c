@@ -1180,8 +1180,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
 
     ctudec->drv_ctx.inter_ctx.rpl_info0 = &sldec->pic->rpl_info0;
     ctudec->drv_ctx.inter_ctx.rpl_info1 = &sldec->pic->rpl_info1;
-    ctudec->drv_ctx.inter_ctx.nb_active_ref0 = prms->sh->hrpl.rpl_h0.rpl_data.num_ref_active_entries;
-    ctudec->drv_ctx.inter_ctx.nb_active_ref1 = prms->sh->hrpl.rpl_h1.rpl_data.num_ref_active_entries;
+    ctudec->drv_ctx.inter_ctx.nb_active_ref0 = prms->pps->pps_rpl_info_in_ph_flag ? prms->ph->hrpl.rpl_h0.rpl_data.num_ref_active_entries : prms->sh->hrpl.rpl_h0.rpl_data.num_ref_active_entries;
+    ctudec->drv_ctx.inter_ctx.nb_active_ref1 = prms->pps->pps_rpl_info_in_ph_flag ? prms->ph->hrpl.rpl_h1.rpl_data.num_ref_active_entries : prms->sh->hrpl.rpl_h1.rpl_data.num_ref_active_entries;
 
     ctudec_compute_refs_scaling(ctudec, sldec->pic);
 
