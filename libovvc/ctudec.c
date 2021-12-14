@@ -125,7 +125,7 @@ ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
     struct LMCSInfo* lmcs_info   = &ctudec->lmcs_info;
     lmcs_info->lmcs_enabled_flag = ph->ph_lmcs_enabled_flag;
     lmcs_info->scale_c_flag      = ph->ph_chroma_residual_scale_flag;
-    if(sh->sh_lmcs_used_flag){
+    if(sh->sh_lmcs_used_flag || lmcs_info->lmcs_enabled_flag || lmcs_info->scale_c_flag){
         const struct OVLMCSData* lmcs_data = &prms->aps_lmcs->aps_lmcs_data;
         ctudec->rcn_funcs.rcn_init_lmcs(lmcs_info, lmcs_data);
     }
