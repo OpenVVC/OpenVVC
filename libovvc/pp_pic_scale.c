@@ -215,10 +215,10 @@ static const int16_t DownsamplingFilterSRC[8][16][12] =
 
 void pp_sample_rate_conv(uint16_t* scaled_dst, uint16_t scaled_stride, int scaledWidth, int scaledHeight, 
                         uint16_t* orgSrc, uint16_t org_stride, int orgWidth, int orgHeight, 
-                        struct ScalingInfo scale_info, uint8_t luma_flag )
+                        const struct ScalingInfo *const scale_info, uint8_t luma_flag )
 {
-    uint16_t extra_w = (scale_info.scaling_win_left + scale_info.scaling_win_right) << 1;
-    uint16_t extra_h = (scale_info.scaling_win_left + scale_info.scaling_win_right) << 1;
+    uint16_t extra_w = (scale_info->scaling_win_left + scale_info->scaling_win_right) << 1;
+    uint16_t extra_h = (scale_info->scaling_win_top + scale_info->scaling_win_bottom) << 1;
 
     extra_w = luma_flag ? extra_w << 1 : extra_w;
     extra_h = luma_flag ? extra_h << 1 : extra_h;
@@ -233,9 +233,9 @@ void pp_sample_rate_conv(uint16_t* scaled_dst, uint16_t scaled_stride, int scale
     int add_y = 0;
 
     if (!luma_flag) {
-        add_x = (1 - scale_info.chroma_hor_col_flag) * 8 * (scale_hor - (1 << scale_bits));
+        add_x = (1 - scale_info->chroma_hor_col_flag) * 8 * (scale_hor - (1 << scale_bits));
         add_x = (add_x + (1 << (scale_bits - 1))) >> scale_bits ;
-        add_y = (1 - scale_info.chroma_ver_col_flag) * 8 * (scale_ver - (1 << scale_bits));
+        add_y = (1 - scale_info->chroma_ver_col_flag) * 8 * (scale_ver - (1 << scale_bits));
         add_y = (add_y + (1 << (scale_bits - 1))) >> scale_bits ;
     }
 
