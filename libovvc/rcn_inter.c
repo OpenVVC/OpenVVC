@@ -2297,7 +2297,7 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     const OVSample *src_cr = &ref0_cr[ref_x + ref_y * src_stride_c];
 
     uint8_t prec_x, prec_y, prec_type;
-    OVSample* p_src;
+    const OVSample* p_src;
     OVSample* p_dst;
     for(int comp_c = 0;  comp_c < 2; comp_c ++)
     {   
@@ -2426,7 +2426,7 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
     const OVSample *src_cr = &ref0_cr[ref_x + ref_y * src_stride_c];
 
     uint8_t prec_x, prec_y, prec_type;
-    OVSample* p_src;
+    const OVSample* p_src;
     uint16_t* p_dst;
     for(int comp_c = 0;  comp_c < 2; comp_c ++)
     {   
