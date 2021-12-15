@@ -1252,7 +1252,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
     uint8_t class_idx[CLASSIFICATION_BLK_SIZE*CLASSIFICATION_BLK_SIZE];
     uint8_t transpose_idx[CLASSIFICATION_BLK_SIZE*CLASSIFICATION_BLK_SIZE];
     struct OVFilterBuffers fb = ctudec->rcn_ctx.filter_buffers;
-    OVFrame *frame = rcn_ctx->frame_start;
+    const OVFrame *frame = rcn_ctx->frame_start;
 
     const OVPartInfo *const pinfo = ctudec->part_ctx;
     uint8_t log2_ctb_s = pinfo->log2_ctu_s;

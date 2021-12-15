@@ -573,7 +573,7 @@ struct OVCTUDec
 
         } filter_buffers;
 
-        struct Frame *frame_start;
+        const struct Frame *frame_start;
         /* Bit fields corresponding to the decoding progress in
          * current CTU, and its borders those are used for example
          * in order to derive references samples for intra prediction

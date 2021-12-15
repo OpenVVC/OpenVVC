@@ -101,7 +101,7 @@ rcn_intra_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log
 static void
 rcn_ctu_to_intra_line(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log2_ctu_s)
 {
-    struct OVBuffInfo *intra_line_binfo = &rcn_ctx->intra_line_buff;
+    const struct OVBuffInfo *intra_line_binfo = &rcn_ctx->intra_line_buff;
 
     int max_cu_width_l = 1 << log2_ctu_s;
     int max_cu_width_c = 1 << (log2_ctu_s - 1);
