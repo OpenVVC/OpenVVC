@@ -357,11 +357,6 @@ write_decoded_frame_to_file(OVFrame *const frame, FILE *out_file)
         }
     }
     ov_freep(&zeros);
-    // for (component = 0; component < 3; component++) {
-    //     max_frame_h[component] = OVMAX(max_frame_h[component], frame->height[component]);
-    //     int frame_size = max_frame_h[component] * frame->linesize[component];
-    //     ret += fwrite(frame->data[component], frame_size, sizeof(uint8_t), fp);
-    // }
 
     return ret;
 }
