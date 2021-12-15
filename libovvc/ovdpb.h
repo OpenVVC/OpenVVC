@@ -67,8 +67,8 @@ struct OVPicture
         uint64_t** mask;
         int mask_h;
         int mask_w;
-        pthread_mutex_t ref_mtx;
-        pthread_cond_t  ref_cnd;
+        pthread_mutex_t *ref_mtx;
+        pthread_cond_t  *ref_cnd;
     } decoded_ctus;
 
     atomic_uint idx_function;
@@ -105,6 +105,13 @@ struct OVPicture
     } tmvp;
 
     OVSEI *sei;
+
+    struct ScalingInfo scale_info;
+    struct PictureInternal
+    {
+        pthread_mutex_t ref_mtx;
+        pthread_cond_t  ref_cnd;
+    } internal;
 
     int32_t poc;
 

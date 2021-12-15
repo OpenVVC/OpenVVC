@@ -1205,7 +1205,7 @@ ovdpb_synchro_ref_decoded_ctus(const OVPicture *const ref_pic, int tl_ctu_x, int
     //TODOpar: create a mutex + ref_cnd by ctu line ?
     uint8_t all_ctus_available;
     do {
-        pthread_mutex_lock(&decoded_ctus->ref_mtx);
+        pthread_mutex_lock(decoded_ctus->ref_mtx);
 
         all_ctus_available = 1;
         for (int ctu_y = tl_ctu_y; ctu_y <= br_ctu_y; ctu_y++ ) {
@@ -1214,9 +1214,9 @@ ovdpb_synchro_ref_decoded_ctus(const OVPicture *const ref_pic, int tl_ctu_x, int
         }
         if (!all_ctus_available) {
             // ov_log(NULL, OVLOG_DEBUG, "Wait ref POC %d lines %d,%d \n", ref_pic->poc, tl_ctu_x, tl_ctu_y);
-            pthread_cond_wait(&decoded_ctus->ref_cnd, &decoded_ctus->ref_mtx);
+            pthread_cond_wait(decoded_ctus->ref_cnd, decoded_ctus->ref_mtx);
         }
-        pthread_mutex_unlock(&decoded_ctus->ref_mtx);
+        pthread_mutex_unlock(decoded_ctus->ref_mtx);
 
     } while (!all_ctus_available);
 }
@@ -1243,6 +1243,8 @@ ovdpb_init_decoded_ctus(OVPicture *const pic, const OVPS *const ps)
     atomic_init(&pic->idx_function, 1);
     pic->ovdpb_frame_synchro[0] = ovdpb_no_synchro;
     pic->ovdpb_frame_synchro[1] = ovdpb_synchro_ref_decoded_ctus;
+    decoded_ctus->ref_mtx = &pic->internal.ref_mtx;
+    decoded_ctus->ref_cnd = &pic->internal.ref_cnd;
 }
 
 void
@@ -1264,11 +1266,11 @@ ovdpb_report_decoded_ctu_line(OVPicture *const pic, int y_ctu, int xmin_ctu, int
     uint64_t mask[mask_w];
     xctu_to_mask(mask, mask_w, xmin_ctu, xmax_ctu);
 
-    pthread_mutex_lock(&decoded_ctus->ref_mtx);
+    pthread_mutex_lock(decoded_ctus->ref_mtx);
     for(int i = 0; i < mask_w; i++)
         decoded_ctus->mask[y_ctu][i] |= mask[i];
-    pthread_cond_broadcast(&decoded_ctus->ref_cnd);
-    pthread_mutex_unlock(&decoded_ctus->ref_mtx);
+    pthread_cond_broadcast(decoded_ctus->ref_cnd);
+    pthread_mutex_unlock(decoded_ctus->ref_mtx);
     // ov_log(NULL, OVLOG_TRACE, "update_decoded_ctus POC %d line %d\n", pic->poc, y_ctu);
 }
 
@@ -1276,12 +1278,12 @@ void
 ovdpb_report_decoded_frame(OVPicture *const pic)
 {
     struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
-    pthread_mutex_lock(&decoded_ctus->ref_mtx);
+    pthread_mutex_lock(decoded_ctus->ref_mtx);
     for(int i = 0; i < decoded_ctus->mask_h; i++){
         memset(decoded_ctus->mask[i], 0xFF, decoded_ctus->mask_w * sizeof(int64_t));
     }
-    pthread_cond_broadcast(&decoded_ctus->ref_cnd);
-    pthread_mutex_unlock(&decoded_ctus->ref_mtx);
+    pthread_cond_broadcast(decoded_ctus->ref_cnd);
+    pthread_mutex_unlock(decoded_ctus->ref_mtx);
 
     atomic_store(&pic->idx_function, 0);
 }
@@ -1290,12 +1292,12 @@ static void
 ovdpb_reset_decoded_ctus(OVPicture *const pic)
 {
     struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
-    pthread_mutex_lock(&decoded_ctus->ref_mtx);
+    pthread_mutex_lock(decoded_ctus->ref_mtx);
     for(int i = 0; i < decoded_ctus->mask_h; i++){
         if (decoded_ctus->mask)
         memset(decoded_ctus->mask[i], 0, decoded_ctus->mask_w * sizeof(int64_t));
     }
-    pthread_mutex_unlock(&decoded_ctus->ref_mtx);
+    pthread_mutex_unlock(decoded_ctus->ref_mtx);
 
     atomic_store(&pic->idx_function, 1);
 }
