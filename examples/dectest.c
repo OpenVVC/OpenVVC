@@ -29,7 +29,7 @@ static int close_openvvc_hdl(OVVCHdl *const ovvc_hdl);
 
 static int read_write_stream(OVVCHdl *const hdl, FILE *fout);
 
-static int write_decoded_frame_to_file(OVFrame *const frame, FILE *fp);
+static int write_decoded_frame_to_file(OVFrame *const frame, FILE *out_file);
 
 static void print_version(void);
 
@@ -324,7 +324,7 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
 }
 
 static int
-write_decoded_frame_to_file(OVFrame *const frame, FILE *fp)
+write_decoded_frame_to_file(OVFrame *const frame, FILE *out_file)
 {
     uint8_t component = 0;
     int ret = 0;
@@ -349,11 +349,11 @@ write_decoded_frame_to_file(OVFrame *const frame, FILE *fp)
         for (int j = win_top; j < frame_h + win_top; j++){
             int offset_h = j * frame->linesize[component] ;
             int offset   = offset_h + (win_left << 1) ;
-            ret += fwrite(&frame->data[component][offset], frame_w << bd_shift, sizeof(uint8_t), fp);
-            ret += fwrite(zeros, frame->linesize[component] - (frame_w << bd_shift), sizeof(uint8_t), fp);
+            ret += fwrite(&frame->data[component][offset], frame_w << bd_shift, sizeof(uint8_t), out_file);
+            ret += fwrite(zeros, frame->linesize[component] - (frame_w << bd_shift), sizeof(uint8_t), out_file);
         }
         for (int j = frame_h ; j < max_frame_h[component]; j++){
-            ret += fwrite(zeros, frame->linesize[component], sizeof(uint8_t), fp);
+            ret += fwrite(zeros, frame->linesize[component], sizeof(uint8_t), out_file);
         }
     }
     ov_freep(&zeros);
