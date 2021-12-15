@@ -500,6 +500,9 @@ ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value)
 {
 
     switch (opt_id) {
+        case OVDEC_RPR_UPSCALE:
+            ovdec->upscale_flag = !!value;
+            break;
         case OVDEC_NB_ENTRY_THREADS:
             set_nb_entry_threads(ovdec, value);
             break;
@@ -522,7 +525,7 @@ ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value)
 }
 
 int
-ovdec_init(OVVCDec **vvcdec, int display_output, int nb_frame_th, int nb_entry_th, int upscale_flag)
+ovdec_init(OVVCDec **vvcdec, int display_output, int nb_frame_th, int nb_entry_th)
 {
 #if USE_THREADS
     if (nb_entry_th < 1) {
@@ -555,8 +558,6 @@ ovdec_init(OVVCDec **vvcdec, int display_output, int nb_frame_th, int nb_entry_t
     ovdec_set_option(*vvcdec, OVDEC_DISPLAY_OUTPUT, display_output);
 
     (*vvcdec)->display_output = !!display_output;
-
-    (*vvcdec)->upscale_flag = !!upscale_flag;
 
     ovdec_init_subdec_list(*vvcdec);
 

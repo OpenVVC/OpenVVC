@@ -202,7 +202,9 @@ init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_f
 
     int display_output = !!strcmp(output_file_name, "/dev/null");
 
-    ret = ovdec_init(vvcdec, display_output, nb_frame_th, nb_entry_th, upscale_flag);
+    ret = ovdec_init(vvcdec, display_output, nb_frame_th, nb_entry_th);
+
+    ovdec_set_option(*vvcdec, OVDEC_RPR_UPSCALE, upscale_flag);
 
     if (ret < 0) goto faildec;
 
