@@ -12,6 +12,12 @@ void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t
 
 void rcn_init_tr_functions(struct RCNFunctions *const rcn_funcs);
 
+void rcn_init_ctu_buffs_10(struct RCNFunctions *rcn_func);
+
+void rcn_init_intra_functions_10(struct RCNFunctions *rcn_func);
+
+void rcn_init_inter_functions_10(struct RCNFunctions *rcn_func);
+
 void rcn_init_cclm_functions_collocated_10(struct RCNFunctions *rcn_func);
 
 void rcn_init_dc_planar_functions_10(struct RCNFunctions *const rcn_funcs);
@@ -51,6 +57,12 @@ void rcn_init_fill_ref_10(struct RCNFunctions *const rcn_funcs);
 void rcn_init_dequant_10(struct RCNFunctions *rcn_funcs);
 
 void rcn_init_transform_trees_10(struct RCNFunctions *const rcn_funcs);
+
+void rcn_init_ctu_buffs_8(struct RCNFunctions *rcn_func);
+
+void rcn_init_intra_functions_8(struct RCNFunctions *rcn_func);
+
+void rcn_init_inter_functions_8(struct RCNFunctions *rcn_func);
 
 void rcn_init_cclm_functions_collocated_8(struct RCNFunctions *rcn_func);
 
