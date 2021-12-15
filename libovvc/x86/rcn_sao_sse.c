@@ -8,14 +8,14 @@
 #include "rcn_structures.h"
 
 static void
-sao_band_filter_0_10_sse(uint8_t* _dst,
-                                uint8_t* _src,
-                                ptrdiff_t _stride_dst,
-                                ptrdiff_t _stride_src,
-                                struct SAOParamsCtu* sao,
-                                int width,
-                                int height,
-                                int c_idx)
+sao_band_filter_0_10_sse(OVSample* _dst,
+                         OVSample* _src,
+                         ptrdiff_t _stride_dst,
+                         ptrdiff_t _stride_src,
+                         struct SAOParamsCtu* sao,
+                         int width,
+                         int height,
+                         int c_idx)
 {
   int y, x;
   int shift = 10 - 5;
@@ -61,14 +61,14 @@ sao_band_filter_0_10_sse(uint8_t* _dst,
 }
 
 static void
-sao_edge_filter_10_sse(uint8_t* _dst,
-                              uint8_t* _src,
-                              ptrdiff_t _stride_dst,
-                              ptrdiff_t _stride_src,
-                              SAOParamsCtu* sao,
-                              int width,
-                              int height,
-                              int c_idx)
+sao_edge_filter_10_sse(OVSample* _dst,
+                       OVSample* _src,
+                       ptrdiff_t _stride_dst,
+                       ptrdiff_t _stride_src,
+                       SAOParamsCtu* sao,
+                       int width,
+                       int height,
+                       int c_idx)
 {
   int x, y;
   int16_t* sao_offset_val = sao->offset_val[c_idx];
@@ -134,14 +134,14 @@ sao_edge_filter_10_sse(uint8_t* _dst,
 }
 
 static void
-sao_edge_filter_7_10_sse(uint8_t* _dst,
-                              uint8_t* _src,
-                              ptrdiff_t _stride_dst,
-                              ptrdiff_t _stride_src,
-                              SAOParamsCtu* sao,
-                              int width,
-                              int height,
-                              int c_idx)
+sao_edge_filter_7_10_sse(OVSample* _dst,
+                         OVSample* _src,
+                         ptrdiff_t _stride_dst,
+                         ptrdiff_t _stride_src,
+                         SAOParamsCtu* sao,
+                         int width,
+                         int height,
+                         int c_idx)
 {
   int x, y;
   int16_t* sao_offset_val = sao->offset_val[c_idx];

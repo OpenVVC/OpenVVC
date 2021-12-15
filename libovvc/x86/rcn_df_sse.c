@@ -6,7 +6,7 @@
 #include "rcn_structures.h"
 
 static void
-filter_v_7_7(int16_t *src, const int stride, const int tc)
+filter_v_7_7(OVSample *src, const int stride, const int tc)
 {
     static const int dbCoeffs7[7] = { 59, 50, 41, 32, 23, 14, 5 };
     static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
@@ -114,7 +114,7 @@ filter_v_7_7(int16_t *src, const int stride, const int tc)
 }
 
 static void
-filter_v_7_5(int16_t *src, const int stride, const int tc)
+filter_v_7_5(OVSample *src, const int stride, const int tc)
 {
       static const int dbCoeffs7[7] = { 59, 50, 41, 32, 23, 14, 5 };
       static const int dbCoeffs5[5] = { 58, 45, 32, 19, 6};
@@ -217,7 +217,7 @@ filter_v_7_5(int16_t *src, const int stride, const int tc)
 }
 
 static void
-filter_v_5_7(int16_t *src, const int stride, const int tc)
+filter_v_5_7(OVSample *src, const int stride, const int tc)
 {
   static const int dbCoeffs7[7] = { 59, 50, 41, 32, 23, 14, 5 };
   static const int dbCoeffs5[5] = { 58, 45, 32, 19, 6};
@@ -321,7 +321,7 @@ filter_v_5_7(int16_t *src, const int stride, const int tc)
 }
 
 static void
-filter_v_5_5(int16_t *src, const int stride, const int tc)
+filter_v_5_5(OVSample *src, const int stride, const int tc)
 {
   static const int dbCoeffs5[5] = { 58, 45, 32, 19, 6};
   static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
@@ -417,7 +417,7 @@ filter_v_5_5(int16_t *src, const int stride, const int tc)
 }
 
 static void
-filter_v_7_3(int16_t *src, const int stride, const int tc)
+filter_v_7_3(OVSample *src, const int stride, const int tc)
 {
   static const int dbCoeffs7[7] = { 59, 50, 41, 32, 23, 14, 5 };
   static const int dbCoeffs3[3] = { 53, 32, 11 };
@@ -519,7 +519,7 @@ filter_v_7_3(int16_t *src, const int stride, const int tc)
 }
 
 static void
-filter_v_3_7(int16_t *src, const int stride, const int tc)
+filter_v_3_7(OVSample *src, const int stride, const int tc)
 {
   static const int dbCoeffs7[7] = { 59, 50, 41, 32, 23, 14, 5 };
   static const int dbCoeffs3[3] = { 53, 32, 11 };
@@ -621,7 +621,7 @@ filter_v_3_7(int16_t *src, const int stride, const int tc)
 }
 
 static void
-filter_v_5_3(int16_t *src, const int stride, const int tc)
+filter_v_5_3(OVSample *src, const int stride, const int tc)
 {
   static const int dbCoeffs3[3] = { 53, 32, 11 };
   static const int dbCoeffs5[5] = { 58, 45, 32, 19, 6};
@@ -713,7 +713,7 @@ filter_v_5_3(int16_t *src, const int stride, const int tc)
 }
 
 static void
-filter_v_3_5(int16_t *src, const int stride, const int tc)
+filter_v_3_5(OVSample *src, const int stride, const int tc)
 {
   static const int dbCoeffs3[3] = { 53, 32, 11 };
   static const int dbCoeffs5[5] = { 58, 45, 32, 19, 6};

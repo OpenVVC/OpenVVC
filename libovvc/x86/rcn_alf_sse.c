@@ -81,7 +81,7 @@
 
 
 static void
-simdFilter5x5Blk(int16_t *const dst, const int16_t *const src,
+simdFilter5x5Blk(OVSample *const dst, const OVSample *const src,
                  const int dstStride, const int srcStride,
                  Area blk_dst,
                  const int16_t *const filter_set, const int16_t *const clip_set,
@@ -152,7 +152,7 @@ simdFilter5x5Blk(int16_t *const dst, const int16_t *const src,
 }
 
 static void
-simdFilter5x5BlkVB(int16_t *const dst, const int16_t *const src,
+simdFilter5x5BlkVB(OVSample *const dst, const OVSample *const src,
                  const int dstStride, const int srcStride,
                  Area blk_dst,
                  const int16_t *const filter_set, const int16_t *const clip_set,
@@ -261,7 +261,7 @@ simdFilter5x5BlkVB(int16_t *const dst, const int16_t *const src,
 }
 
 static void
-simdFilter7x7Blk(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
+simdFilter7x7Blk(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample *const dst, OVSample *const src, const int dstStride, const int srcStride,
                          Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                          const int ctu_height, int virbnd_pos)
 {
@@ -355,7 +355,7 @@ simdFilter7x7Blk(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t *
 }
 
 static void
-simdFilter7x7BlkVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t *const dst, int16_t *const src, const int dstStride, const int srcStride,
+simdFilter7x7BlkVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample *const dst, OVSample *const src, const int dstStride, const int srcStride,
                          Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                          const int ctu_height, int virbnd_pos)
 {
@@ -529,7 +529,7 @@ simdFilter7x7BlkVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, int16_t
   odd = _mm_unpackhi_epi32(b0, b1);\
 }
 
-void cc_alf_filterBlkVB_sse(int16_t * chroma_dst, int16_t * luma_src, const int chr_stride, const int luma_stride,
+void cc_alf_filterBlkVB_sse(OVSample * chroma_dst, OVSample * luma_src, const int chr_stride, const int luma_stride,
                             const Area blk_dst, const uint8_t c_id, const int16_t *filt_coeff,
                             const int vbCTUHeight, int vbPos)
 {
@@ -671,7 +671,7 @@ void cc_alf_filterBlkVB_sse(int16_t * chroma_dst, int16_t * luma_src, const int 
 }
 
 static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr,
-                                        int16_t *const src, const int stride, const Area blk,
+                                        OVSample *const src, const int stride, const Area blk,
                                         const int shift, const int ctu_s, int virbnd_pos)
 {
     int blk_h = blk.height;

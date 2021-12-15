@@ -18,7 +18,7 @@
 #define BDOF_OFFSET  ((1 << (BDOF_SHIFT - 1)))
 
 
-static void rcn_prof_sse(uint16_t* dst, int dst_stride, const uint16_t* src, int src_stride,
+static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
          const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
          const int32_t* dmv_scale_h, const int32_t* dmv_scale_v,
          uint8_t bidir)
@@ -361,7 +361,7 @@ compute_prof_grad_16_sse(const uint16_t* src, int src_stride, int sb_w, int sb_h
 }
 
 static void
-compute_prof_grad_sse(const uint16_t* src, int src_stride, int sb_w, int sb_h,
+compute_prof_grad_sse(const int16_t* src, int src_stride, int sb_w, int sb_h,
                   int grad_stride, int16_t* grad_x, int16_t* grad_y)
 {
     if (sb_w == 16) {
@@ -518,7 +518,7 @@ tmp_prof_mrg_w_sse(OVSample* _dst, ptrdiff_t _dststride,
 static void
 rcn_apply_bdof_subblock_sse(const int16_t* src0, int src0_stride,
                         const int16_t* src1, int src1_stride,
-                        int16_t *dst, int dst_stride,
+                        OVSample *dst, int dst_stride,
                         const int16_t *gradX0, const int16_t *gradX1,
                         const int16_t *gradY0, const int16_t *gradY1, int grad_stride,
                         int wgt_x, int wgt_y)

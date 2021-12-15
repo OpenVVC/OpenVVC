@@ -208,12 +208,12 @@ mip_matmult(const int16_t *bndy_line, uint16_t *dst,
 }
 
 static inline void
-up_sample_h_4_2(uint16_t *const dst, const int16_t *const src,
-          const uint16_t *ref,
-          int log2_upsampled_size_src, int log2_opposite_size,
-          int src_step, int src_stride,
-          int dst_step, int dst_stride,
-          int ref_step, int log2_scale)
+up_sample_h_4_2(OVSample *const dst, const OVSample *const src,
+                const OVSample *ref,
+                int log2_upsampled_size_src, int log2_opposite_size,
+                int src_step, int src_stride,
+                int dst_step, int dst_stride,
+                int ref_step, int log2_scale)
 {
     const int16_t *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
@@ -252,12 +252,12 @@ up_sample_h_4_2(uint16_t *const dst, const int16_t *const src,
 }
 
 static inline void
-up_sample_h_8_2(uint16_t *const dst, const int16_t *const src,
-          const uint16_t *ref,
-          int log2_upsampled_size_src, int log2_opposite_size,
-          int src_step, int src_stride,
-          int dst_step, int dst_stride,
-          int ref_step, int log2_scale)
+up_sample_h_8_2(OVSample *const dst, const OVSample *const src,
+                const OVSample *ref,
+                int log2_upsampled_size_src, int log2_opposite_size,
+                int src_step, int src_stride,
+                int dst_step, int dst_stride,
+                int ref_step, int log2_scale)
 {
     const int16_t *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
@@ -296,12 +296,12 @@ up_sample_h_8_2(uint16_t *const dst, const int16_t *const src,
 }
 
 static inline void
-up_sample_h_4_4(uint16_t *const dst, const int16_t *const src,
-          const uint16_t *ref,
-          int log2_upsampled_size_src, int log2_opposite_size,
-          int src_step, int src_stride,
-          int dst_step, int dst_stride,
-          int ref_step, int log2_scale)
+up_sample_h_4_4(OVSample *const dst, const OVSample *const src,
+                const OVSample *ref,
+                int log2_upsampled_size_src, int log2_opposite_size,
+                int src_step, int src_stride,
+                int dst_step, int dst_stride,
+                int ref_step, int log2_scale)
 {
     const int16_t *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
@@ -360,12 +360,12 @@ up_sample_h_4_4(uint16_t *const dst, const int16_t *const src,
 }
 
 static inline void
-up_sample_h_8_4(uint16_t *const dst, const int16_t *const src,
-          const uint16_t *ref,
-          int log2_upsampled_size_src, int log2_opposite_size,
-          int src_step, int src_stride,
-          int dst_step, int dst_stride,
-          int ref_step, int log2_scale)
+up_sample_h_8_4(OVSample *const dst, const OVSample *const src,
+                const OVSample *ref,
+                int log2_upsampled_size_src, int log2_opposite_size,
+                int src_step, int src_stride,
+                int dst_step, int dst_stride,
+                int ref_step, int log2_scale)
 {
     const int16_t *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
@@ -424,12 +424,12 @@ up_sample_h_8_4(uint16_t *const dst, const int16_t *const src,
 }
 
 static inline void
-up_sample_h_4_8(uint16_t *const dst, const int16_t *const src,
-          const uint16_t *ref,
-          int log2_upsampled_size_src, int log2_opposite_size,
-          int src_step, int src_stride,
-          int dst_step, int dst_stride,
-          int ref_step, int log2_scale)
+up_sample_h_4_8(OVSample *const dst, const OVSample *const src,
+                const OVSample *ref,
+                int log2_upsampled_size_src, int log2_opposite_size,
+                int src_step, int src_stride,
+                int dst_step, int dst_stride,
+                int ref_step, int log2_scale)
 {
     const int16_t *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
@@ -495,12 +495,12 @@ up_sample_h_4_8(uint16_t *const dst, const int16_t *const src,
 }
 
 static inline void
-up_sample_h_8_8(uint16_t *const dst, const int16_t *const src,
-          const uint16_t *ref,
-          int log2_upsampled_size_src, int log2_opposite_size,
-          int src_step, int src_stride,
-          int dst_step, int dst_stride,
-          int ref_step, int log2_scale)
+up_sample_h_8_8(OVSample *const dst, const OVSample *const src,
+                const OVSample *ref,
+                int log2_upsampled_size_src, int log2_opposite_size,
+                int src_step, int src_stride,
+                int dst_step, int dst_stride,
+                int ref_step, int log2_scale)
 {
     const int16_t *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
@@ -566,12 +566,12 @@ up_sample_h_8_8(uint16_t *const dst, const int16_t *const src,
 }
 
 static inline void
-up_sample_v_4_2(uint16_t *const dst, const int16_t *const src,
-          const uint16_t *ref,
-          int log2_upsampled_size_src, int log2_opposite_size,
-          int src_step, int src_stride,
-          int dst_step, int dst_stride,
-          int ref_step, int log2_scale)
+up_sample_v_4_2(OVSample *const dst, const OVSample *const src,
+                const OVSample *ref,
+                int log2_upsampled_size_src, int log2_opposite_size,
+                int src_step, int src_stride,
+                int dst_step, int dst_stride,
+                int ref_step, int log2_scale)
 {
     const int16_t *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
@@ -600,13 +600,13 @@ up_sample_v_4_2(uint16_t *const dst, const int16_t *const src,
     _mm_storeu_si128((__m128i *)(dst_line + 7 * dst_step), r[7]);
   }
 
-  static inline void
-  up_sample_v_4_4(uint16_t *const dst, const int16_t *const src,
-            const uint16_t *ref,
-            int log2_upsampled_size_src, int log2_opposite_size,
-            int src_step, int src_stride,
-            int dst_step, int dst_stride,
-            int ref_step, int log2_scale)
+static inline void
+up_sample_v_4_4(OVSample *const dst, const OVSample *const src,
+                const OVSample *ref,
+                int log2_upsampled_size_src, int log2_opposite_size,
+                int src_step, int src_stride,
+                int dst_step, int dst_stride,
+                int ref_step, int log2_scale)
   {
       const int16_t *src_line   = src;
       const uint16_t *bndy_line = ref + ref_step;
@@ -651,13 +651,13 @@ up_sample_v_4_2(uint16_t *const dst, const int16_t *const src,
       _mm_storeu_si128((__m128i *)(dst_line + 15 * dst_step), r[15]);
     }
 
-    static inline void
-    up_sample_v_4_8(uint16_t *const dst, const int16_t *const src,
-              const uint16_t *ref,
-              int log2_upsampled_size_src, int log2_opposite_size,
-              int src_step, int src_stride,
-              int dst_step, int dst_stride,
-              int ref_step, int log2_scale)
+static inline void
+up_sample_v_4_8(OVSample *const dst, const OVSample *const src,
+                const OVSample *ref,
+                int log2_upsampled_size_src, int log2_opposite_size,
+                int src_step, int src_stride,
+                int dst_step, int dst_stride,
+                int ref_step, int log2_scale)
     {
         const int16_t *src_line   = src;
         const uint16_t *bndy_line = ref + ref_step;
@@ -732,13 +732,13 @@ up_sample_v_4_2(uint16_t *const dst, const int16_t *const src,
         _mm_storeu_si128((__m128i *)(dst_line + 30 * dst_step), r[30]);
         _mm_storeu_si128((__m128i *)(dst_line + 31 * dst_step), r[31]);
       }
-  static inline void
-  up_sample_v_8_2(uint16_t *const dst, const int16_t *const src,
-            const uint16_t *ref,
-            int log2_upsampled_size_src, int log2_opposite_size,
-            int src_step, int src_stride,
-            int dst_step, int dst_stride,
-            int ref_step, int log2_scale)
+static inline void
+up_sample_v_8_2(OVSample *const dst, const OVSample *const src,
+                const OVSample *ref,
+                int log2_upsampled_size_src, int log2_opposite_size,
+                int src_step, int src_stride,
+                int dst_step, int dst_stride,
+                int ref_step, int log2_scale)
   {
     const int16_t *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
@@ -784,13 +784,13 @@ up_sample_v_4_2(uint16_t *const dst, const int16_t *const src,
     }
   }
 
-  static inline void
-  up_sample_v_8_4(uint16_t *const dst, const int16_t *const src,
-            const uint16_t *ref,
-            int log2_upsampled_size_src, int log2_opposite_size,
-            int src_step, int src_stride,
-            int dst_step, int dst_stride,
-            int ref_step, int log2_scale)
+static inline void
+up_sample_v_8_4(OVSample *const dst, const OVSample *const src,
+                const OVSample *ref,
+                int log2_upsampled_size_src, int log2_opposite_size,
+                int src_step, int src_stride,
+                int dst_step, int dst_stride,
+                int ref_step, int log2_scale)
   {
     const int16_t *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
@@ -860,13 +860,13 @@ up_sample_v_4_2(uint16_t *const dst, const int16_t *const src,
     }
   }
 
-  static inline void
-  up_sample_v_8_8(uint16_t *const dst, const int16_t *const src,
-            const uint16_t *ref,
-            int log2_upsampled_size_src, int log2_opposite_size,
-            int src_step, int src_stride,
-            int dst_step, int dst_stride,
-            int ref_step, int log2_scale)
+static inline void
+up_sample_v_8_8(OVSample *const dst, const OVSample *const src,
+                const OVSample *ref,
+                int log2_upsampled_size_src, int log2_opposite_size,
+                int src_step, int src_stride,
+                int dst_step, int dst_stride,
+                int ref_step, int log2_scale)
   {
     const int16_t *src_line   = src;
     const uint16_t *bndy_line = ref + ref_step;
