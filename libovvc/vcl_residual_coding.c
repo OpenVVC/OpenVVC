@@ -4001,7 +4001,7 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
                         uint16_t last_pos)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    int16_t sb_coeffs[16];
+    int16_t sb_coeffs[16] = {0};
     int nb_sig_c;
     int16_t *const _dst = dst;
 
@@ -4299,7 +4299,7 @@ read_tb_inv_diag_scan(const struct SBReader *const sb_rdr, const struct IQScale 
                       uint16_t last_pos)
 {
         VVCCoeffCodingCtx c_coding_ctx;
-        int16_t sb_coeffs[16];// = {0}; //temporary table to store sb_coeffs in process
+        int16_t sb_coeffs[16] = {0};// = {0}; //temporary table to store sb_coeffs in process
 
         uint8_t buff[VVC_TR_CTX_SIZE * 3];
 
@@ -4409,7 +4409,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
 
     if (!last_pos){
-        int16_t sb_coeffs[16];
+        int16_t sb_coeffs[16] = {0};
 
         ovcabac_read_ae_sb_dc_coeff_c_dpq(cabac_ctx, sb_coeffs);
 
@@ -4549,7 +4549,7 @@ decode_dpq_small_h_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
                         uint16_t last_pos, struct IQScale deq_prms)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    int16_t sb_coeffs[16];
+    int16_t sb_coeffs[16] = {0};
     int nb_sig_c;
     int16_t *const _dst = dst;
 
@@ -4822,7 +4822,7 @@ read_tb_inv_diag_scan_sdh(const struct SBReader *const sb_rdr, const OVCTUDec *c
                           uint16_t last_pos)
 {
         VVCCoeffCodingCtx c_coding_ctx;
-        int16_t sb_coeffs[16];// = {0}; //temporary table to store sb_coeffs in process
+        int16_t sb_coeffs[16] = {0};// = {0}; //temporary table to store sb_coeffs in process
 
         uint8_t buff[VVC_TR_CTX_SIZE * 3];
 
@@ -4930,7 +4930,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
 
     if (!last_pos){
-        int16_t sb_coeffs[16];
+        int16_t sb_coeffs[16] = {0};
 
         ovcabac_read_ae_sb_dc_coeff_c_sdh(cabac_ctx, sb_coeffs);
 
