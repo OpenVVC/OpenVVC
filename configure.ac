@@ -31,25 +31,20 @@ CFLAGS="$PTHREAD_CFLAGS $CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
 CC="$PTHREAD_CC"
 
-
 # --disable-slhdr
-AC_ARG_ENABLE([slhdr], [AS_HELP_STRING([--disable-slhdr], [disable all simd optimisations [no]])],
-              [flag_disable_slhdr="true"], [flag_disable_slhdr="false"]
-)
+AC_ARG_ENABLE([slhdr], [AS_HELP_STRING([--disable-slhdr], [disable slhdr [no]])], [], [enable_slhdr=yes])
 
 #Check for SLHDR lib
-if test "x$flag_disable_slhdr" = "xfalse"
-then
-if pkg-config --version &>/dev/null
+if test "x$enable_slhdr" = "xyes"
 then
 PKG_CHECK_MODULES([SLHDR], [slhdr_cwrap],[
         CPPFLAGS="$CPPFLAGS -DENABLE_SLHDR"
         CFLAGS="$SLHDR_CFLAGS $CFLAGS"
         LIBS="$SLHDR_LIBS $LIBS"
-], [])
-else
-AC_MSG_WARN([pkg-config not installed. SLHDR will not be used.])
-fi
+],
+[
+        AC_MSG_WARN([SLHDR library not found. SLHDR will be deactivated.])
+])
 fi
 
 # --enable-werror
@@ -59,18 +54,18 @@ AC_ARG_ENABLE([werror], [AS_HELP_STRING([--enable-werror], [treat warnings as er
 
 # --disable-simd
 AC_ARG_ENABLE([simd], [AS_HELP_STRING([--disable-simd], [disable all simd optimisations [no]])],
-              [flag_disable_simd="true" CPPFLAGS="$CPPFLAGS -DNO_SIMD"], [flag_disable_simd="false"]
+              [AS_IF([test $enable_simd = "yes"], [CPPFLAGS="$CPPFLAGS -DNO_SIMD"])], [enable_simd="yes" CPPFLAGS="$CPPFLAGS -DNO_SIMD"]
 )
 
 
 # --disable-arm-asm
 AC_ARG_ENABLE([arm-asm], [AS_HELP_STRING([--disable-arm-asm], [disables arm assembly optimisation [no]])],
-              [flag_arm_asm="false"], [flag_arm_asm="true" CPPFLAGS="$CPPFLAGS -DARCH_AARCH64_ASSEMBLY=1"]
+              [AS_IF([test $enable_arm_asm = "yes"], [CPPFLAGS="$CPPFLAGS -DARCH_AARCH64_ASSEMBLY=1"])], [enable_arm_asm="yes" CPPFLAGS="$CPPFLAGS -DARCH_AARCH64_ASSEMBLY=1"]
 )
 
 # --enable-arm-simde
 AC_ARG_ENABLE([arm-simde], [AS_HELP_STRING([--enable-arm-simde], [enables arm simde optimisation [no]])],
-              [flag_arm_simde="true" CPPFLAGS="$CPPFLAGS -DARM_SIMDE=1 -DSIMDE_NO_CHECK_IMMEDIATE_CONSTANT"], [flag_arm_simde="false"]
+              [AS_IF([test $enable_arm_simde = "yes"], [CPPFLAGS="$CPPFLAGS -DARM_SIMDE=1 -DSIMDE_NO_CHECK_IMMEDIATE_CONSTANT"])], [$enable_arm_simde = "yes" CPPFLAGS="$CPPFLAGS -DARM_SIMDE=1 -DSIMDE_NO_CHECK_IMMEDIATE_CONSTANT"]
 )
 
 # host and cpu specific settings
@@ -103,13 +98,13 @@ AS_CASE([$host_os],
 AS_IF([test x"$X86" = x"true"], [AX_CHECK_COMPILE_FLAG([-msse4.1], [flag_sse4_1="true" CFLAGS="-msse4.1 $CFLAGS"])],[])
 
 # Define Makefile Conditionals
-AM_CONDITIONAL([HAVE_SSE4_1], [test x"$flag_sse4_1" = x"true" -a x"$X86" = x"true" -a x"$flag_disable_simd" = x"false"])
+AM_CONDITIONAL([HAVE_SSE4_1], [test x"$flag_sse4_1" = x"true" -a x"$X86" = x"true" -a x"$enable_simd" = x"yes"])
 
-AM_CONDITIONAL([HAVE_NEON], [test x"$ARM" = x"true" -a x"$flag_disable_simd" = x"false"])
+AM_CONDITIONAL([HAVE_NEON], [test x"$ARM" = x"true" -a x"$enable_simd" = x"yes"])
 
-AM_CONDITIONAL([HAVE_NEON_ASM], [test x"$ARM" = x"true" -a x"$flag_disable_simd" = x"false" -a x"$flag_arm_asm" = x"true"])
+AM_CONDITIONAL([HAVE_NEON_ASM], [test x"$ARM" = x"true" -a x"$enable_simd" = x"yes" -a x"$enable_arm_asm" = x"yes"])
 
-AM_CONDITIONAL([HAVE_NEON_SIMDE], [test x"$ARM" = x"true" -a x"$flag_disable_simd" = x"false" -a x"$flag_arm_simde" = x"true"])
+AM_CONDITIONAL([HAVE_NEON_SIMDE], [test x"$ARM" = x"true" -a x"$enable_simd" = x"yes" -a x"$enable_arm_simde" = x"yes"])
 
 AM_CONDITIONAL([HAVE_EXCLUDE_ANDROID], [test x"$ARM" = x"true" -a x"$isAndroid" = x"true"])
 AC_OUTPUT
