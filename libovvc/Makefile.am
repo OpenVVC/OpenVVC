@@ -111,5 +111,52 @@ include_HEADERS = 	ovdefs.h               \
 					ovdmx.h                \
 					ovversion.h
 
+noinst_HEADERS = 	bitdepth.h            \
+									cabac_internal.h      \
+									ctudec.h              \
+									data_rcn_angular.h    \
+									data_rcn_mip.h        \
+									data_rcn_transform.h  \
+									data_scan_lut.h       \
+									dbf_utils.h           \
+									decinit.h             \
+									dec_structures.h      \
+									drv.h                 \
+									drv_lines.h           \
+									drv_utils.h           \
+									hls_structures.h      \
+									mempool.h             \
+									mempool_internal.h    \
+									nvcl.h                \
+									nvcl_private.h        \
+									nvcl_structures.h     \
+									nvcl_utils.h          \
+									ovannexb.h            \
+									ovdec_internal.h      \
+									ovdpb.h               \
+									ovdpb_internal.h      \
+									overror.h             \
+									ovframepool.h         \
+									ovmem.h               \
+									ovthreads.h           \
+									ovutils.h             \
+									post_proc.h           \
+									rcn_alf.h             \
+									rcn_dequant.h         \
+									rcn_fill_ref.h        \
+									rcn.h                 \
+									rcn_intra_angular.h   \
+									rcn_lmcs.h            \
+									rcn_mc.h              \
+									rcn_prof_bdof.h       \
+									rcn_sao.h             \
+									rcn_structures.h      \
+									rcn_transform.h       \
+									rcn_transform_scale.h \
+									rcn_transform_tree.h  \
+									slicedec.h            \
+									vcl_cabac.h           \
+									vcl.h
+
 ovversion.h:
 	$(AM_V_GEN)$(srcdir)/../version.sh $(srcdir)/../VERSION ovversion.h ./
