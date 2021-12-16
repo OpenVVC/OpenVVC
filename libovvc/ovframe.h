@@ -62,8 +62,6 @@ struct Frame
      */
     size_t width[3];
     size_t height[3];
-    size_t max_width_l;
-    size_t max_height_l;
 
     struct Window output_window;
 

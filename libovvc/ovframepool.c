@@ -164,8 +164,6 @@ ovframepool_request_planes(OVFrame *const frame, struct FramePool *const fpool)
     int i;
 
     frame->internal.frame_pool = fpool;
-    frame->max_width_l         = fpool->plane_prop[0].width;
-    frame->max_height_l        = fpool->plane_prop[0].height;
 
     for (i = 0; i < nb_comp; ++i) {
         MemPool *pool = fpool->plane_pool[i];
