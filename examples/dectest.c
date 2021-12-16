@@ -345,10 +345,13 @@ write_decoded_frame_to_file(OVFrame *const frame, FILE *out_file)
         int frame_h = frame->height[component] - add_h;
         int frame_w = frame->width[component]  - add_w;
 
-        for (int j = win_top; j < frame_h + win_top; j++){
-            int offset_h = j * frame->linesize[component] ;
-            int offset   = offset_h + (win_left << bd_shift) ;
-            ret += fwrite(&frame->data[component][offset], frame_w << bd_shift, sizeof(uint8_t), out_file);
+        int offset_h = win_top * frame->linesize[component] ;
+        int offset   = offset_h + (win_left << bd_shift) ;
+        const uint8_t *data = (uint8_t*)frame->data[component] + offset;
+
+        for (int j = 0; j < frame_h; j++) {
+            ret += fwrite(data, frame_w << bd_shift, sizeof(uint8_t), out_file);
+            data += frame->linesize[component];
         }
     }
 
