@@ -120,46 +120,48 @@ nvcl_sei_payload(OVNVCLReader *const rdr) {
 void
 nvcl_film_grain_read(OVNVCLReader *const rdr, struct OVSEIFGrain *const fg, OVNVCLCtx *const nvcl_ctx)
 {
-  fg->fg_characteristics_cancel_flag = nvcl_read_flag(rdr);
-  if (!fg->fg_characteristics_cancel_flag )
-  {
-    fg->fg_model_id = nvcl_read_bits(rdr,2);
-    fg->fg_separate_colour_description_present_flag = nvcl_read_flag(rdr);
-    if (fg->fg_separate_colour_description_present_flag)
-    {
-        fg->fg_bit_depth_luma_minus8 = nvcl_read_bits(rdr, 3);
-        fg->fg_bit_depth_chroma_minus8 = nvcl_read_bits(rdr, 3);
-        fg->fg_full_range_flag = nvcl_read_flag(rdr);
-        fg->fg_colour_primaries = nvcl_read_bits(rdr, 8);
-        fg->fg_transfer_characteristics = nvcl_read_bits(rdr, 8);
-        fg->fg_matrix_coeffs = nvcl_read_bits(rdr, 8);
-    }
-    fg->fg_blending_mode_id = nvcl_read_bits(rdr, 2);
-    fg->fg_log2_scale_factor = nvcl_read_bits(rdr, 4);
-    for (int c = 0; c<3; c++)
-    {
-      fg->fg_comp_model_present_flag[c] = nvcl_read_flag(rdr);
-    }
-    for (int c = 0; c<3; c++)
-    {
-      if (fg->fg_comp_model_present_flag[c])
-      {
-        fg->fg_num_intensity_intervals_minus1[c] = nvcl_read_bits(rdr, 8);
-        fg->fg_num_model_values_minus1[c] = nvcl_read_bits(rdr, 3);
+    fg->fg_characteristics_cancel_flag = nvcl_read_flag(rdr);
 
-        for (uint32_t i = 0; i< fg->fg_num_intensity_intervals_minus1[c] + 1 ; i++)
-        {
-          fg->fg_intensity_interval_lower_bound[c][i] = nvcl_read_bits(rdr, 8);
-          fg->fg_intensity_interval_upper_bound[c][i] = nvcl_read_bits(rdr, 8);
-          for (uint32_t j = 0; j < fg->fg_num_model_values_minus1[c] + 1; j++)
-          {
-            fg->fg_comp_model_value[c][i][j] = nvcl_read_s_expgolomb(rdr);
-          }
+    if (!fg->fg_characteristics_cancel_flag) {
+
+        fg->fg_model_id = nvcl_read_bits(rdr, 2);
+
+        fg->fg_separate_colour_description_present_flag = nvcl_read_flag(rdr);
+        if (fg->fg_separate_colour_description_present_flag) {
+
+            fg->fg_bit_depth_luma_minus8   = nvcl_read_bits(rdr, 3);
+            fg->fg_bit_depth_chroma_minus8 = nvcl_read_bits(rdr, 3);
+
+            fg->fg_full_range_flag         = nvcl_read_flag(rdr);
+
+            fg->fg_colour_primaries         = nvcl_read_bits(rdr, 8);
+            fg->fg_transfer_characteristics = nvcl_read_bits(rdr, 8);
+            fg->fg_matrix_coeffs            = nvcl_read_bits(rdr, 8);
         }
-      }
-    } // for c
-    fg->fg_characteristics_persistence_flag = nvcl_read_flag(rdr);
-  } // cancel flag
+
+        fg->fg_blending_mode_id = nvcl_read_bits(rdr, 2);
+        fg->fg_log2_scale_factor = nvcl_read_bits(rdr, 4);
+
+        for (int c = 0; c < 3; c++) {
+            fg->fg_comp_model_present_flag[c] = nvcl_read_flag(rdr);
+        }
+
+        for (int c = 0; c < 3; c++) {
+            if (fg->fg_comp_model_present_flag[c]) {
+                fg->fg_num_intensity_intervals_minus1[c] = nvcl_read_bits(rdr, 8);
+                fg->fg_num_model_values_minus1[c]        = nvcl_read_bits(rdr, 3);
+
+                for (uint32_t i = 0; i< fg->fg_num_intensity_intervals_minus1[c] + 1 ; i++) {
+                    fg->fg_intensity_interval_lower_bound[c][i] = nvcl_read_bits(rdr, 8);
+                    fg->fg_intensity_interval_upper_bound[c][i] = nvcl_read_bits(rdr, 8);
+                    for (uint32_t j = 0; j < fg->fg_num_model_values_minus1[c] + 1; j++) {
+                        fg->fg_comp_model_value[c][i][j] = nvcl_read_s_expgolomb(rdr);
+                    }
+                }
+            }
+        }
+        fg->fg_characteristics_persistence_flag = nvcl_read_flag(rdr);
+    }
 }
 
 #if ENABLE_SLHDR
@@ -179,6 +181,7 @@ nvcl_decode_nalu_sei(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr, uint8_t
 {   
     if(!nvcl_ctx->sei)
         nvcl_ctx->sei = ov_mallocz(sizeof(struct OVSEI));    
+
     struct OVSEI* sei = nvcl_ctx->sei;
     
     struct OVSEIPayload payload = nvcl_sei_payload(rdr);
