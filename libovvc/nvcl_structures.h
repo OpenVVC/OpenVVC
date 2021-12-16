@@ -2,8 +2,6 @@
 #define NVCL_STRUCTURES_H
 
 #include <stdint.h>
-#include "nvcl_utils.h"
-#include "rcn_alf.h"
 #include "ovdpb.h"
 
 #define OV_MAX_NB_RP 16
@@ -607,6 +605,13 @@ struct OVSH
     /* Ref pic list info */
     struct OVHRPL hrpl;
 };
+
+#define MAX_NUM_ALF_CLASSES                            25
+#define MAX_NUM_ALF_LUMA_COEFF                         13
+#define MAX_NUM_ALF_CHROMA_COEFF                        7
+#define MAX_NUM_ALF_ALTERNATIVES_CHROMA                8
+#define MAX_NUM_CC_ALF_CHROMA_COEFF                    8
+#define MAX_NUM_CC_ALF_FILTERS                         4
 
 typedef struct OVALFData
 {

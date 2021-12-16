@@ -14,6 +14,7 @@
 #include "ovunits.h"
 
 #include "nvcl.h"
+#include "nvcl_utils.h"
 #include "ovdec.h"
 #include "ctudec.h"
 #include "decinit.h"

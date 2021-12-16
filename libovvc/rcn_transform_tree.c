@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "ovutils.h"
 #include "ovmem.h"
 #include "ctudec.h"
 #include "dbf_utils.h"

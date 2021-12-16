@@ -1,3 +1,4 @@
+#include "ovutils.h"
 #include "rcn_dequant.h"
 #include "ctudec.h"
 #include "bitdepth.h"

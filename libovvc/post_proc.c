@@ -1,4 +1,5 @@
 #include "overror.h"
+#include "ovlog.h"
 #include "ovdpb.h"
 #include "ovconfig.h"
 

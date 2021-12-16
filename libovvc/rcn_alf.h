@@ -1,31 +1,21 @@
 #ifndef RCN_ALF_H
 #define RCN_ALF_H
 
+#include "nvcl_structures.h"
+
 struct OVCTUDec;
 struct RCNFunctions;
 struct RectEntryInfo;
 
-#define MAX_ALF_NUM_CLIP_VAL  4
 #define NUM_BITS  8
 #define CLASSIFICATION_BLK_SIZE  32  //non-normative, local buffer size
 #define ALF_VB_POS_ABOVE_CTUROW_LUMA   4
 #define ALF_VB_POS_ABOVE_CTUROW_CHMA   2
 
-#define MAX_NUM_ALF_CLASSES                            25
-#define MAX_NUM_ALF_LUMA_COEFF                         13
-#define MAX_NUM_ALF_CHROMA_COEFF                        7
-#define MAX_ALF_FILTER_LENGTH                           7
-
 #define ALF_FIXED_FILTER_NUM                           64
 #define ALF_CTB_MAX_NUM_APS                             8
 #define ALF_CTB_MAX_NUM_TRANSPOSE                       4
 #define NUM_FIXED_FILTER_SETS                          16
-#define NUM_TOTAL_FILTER_SETS                          NUM_FIXED_FILTER_SETS + ALF_CTB_MAX_NUM_APS
-#define MAX_NUM_ALF_ALTERNATIVES_CHROMA                8
-#define MAX_NUM_CC_ALF_FILTERS                         4
-#define MAX_NUM_CC_ALF_CHROMA_COEFF                    8
-#define CCALF_DYNAMIC_RANGE                            6
-#define CCALF_BITS_PER_COEFF_LEVEL                     3
 
 
 typedef struct Area

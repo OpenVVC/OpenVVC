@@ -1,5 +1,6 @@
 #include <stdint.h>
 
+#include "ovutils.h"
 #include "rcn.h"
 #include "ctudec.h"
 #include "drv_utils.h"

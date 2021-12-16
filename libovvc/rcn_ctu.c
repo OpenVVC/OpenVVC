@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "ovutils.h"
 #include "dec_structures.h"
 #include "ctudec.h"
 
