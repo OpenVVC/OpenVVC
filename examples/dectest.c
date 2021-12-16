@@ -347,7 +347,7 @@ write_decoded_frame_to_file(OVFrame *const frame, FILE *out_file)
 
         for (int j = win_top; j < frame_h + win_top; j++){
             int offset_h = j * frame->linesize[component] ;
-            int offset   = offset_h + (win_left << 1) ;
+            int offset   = offset_h + (win_left << bd_shift) ;
             ret += fwrite(&frame->data[component][offset], frame_w << bd_shift, sizeof(uint8_t), out_file);
         }
     }
