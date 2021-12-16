@@ -39,6 +39,8 @@ enum OVOptions {
    OVDEC_NB_OPTIONS,
 };
 
+typedef OVVCDec OVDec;
+
 /**
  * Submit a new Picture Unit to the decoder.
  *
@@ -57,7 +59,7 @@ enum OVOptions {
  * Notes:
  *    - Multiple Slices in same PU are currently unsupported.
  */
-int ovdec_submit_picture_unit(OVVCDec *ovdec, const OVPictureUnit *pu);
+int ovdec_submit_picture_unit(OVDec *ovdec, const OVPictureUnit *pu);
 
 /**
  * Request a reference to a picture from the decoder
@@ -69,9 +71,8 @@ int ovdec_submit_picture_unit(OVVCDec *ovdec, const OVPictureUnit *pu);
  *     - Once the user has finished working with current frame
  *     the frame must be unreferenced by calling ovframe_unref().
  */
-int ovdec_receive_picture(OVVCDec *ovdec, OVFrame **frame_p);
+int ovdec_receive_picture(OVDec *ovdec, OVFrame **frame_p);
 
-typedef OVVCDec OVDec;
 /**
  * Drain the last pictures from the decoder output.
  *
@@ -99,7 +100,7 @@ int ovdec_drain_picture(OVDec *ovdec, OVFrame **frame_p);
  * Notes:
  *    - Multiple Slices in same PU are currently unsupported.
  */
-int ovdec_init(OVVCDec **ovdec_p, int display_output, int nb_frame_th, int nb_entry_th);
+int ovdec_init(OVDec **ovdec_p, int display_output, int nb_frame_th, int nb_entry_th);
 
 /**
  * Close OpenVVC decoder
@@ -110,7 +111,7 @@ int ovdec_init(OVVCDec **ovdec_p, int display_output, int nb_frame_th, int nb_en
  * Notes:
  *    - Multiple Slices in same PU are currently unsupported.
  */
-int ovdec_close(OVVCDec *ovvcdec);
+int ovdec_close(OVDec *ovdec);
 
 /**
  * Attempt to set a decoder options
@@ -123,7 +124,7 @@ int ovdec_close(OVVCDec *ovvcdec);
  *    received its first Picture Unit will not have any effect.
  *    See OVOptions for more details.
  */
-int ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value);
+int ovdec_set_option(OVDec *ovdec, enum OVOptions opt_id, int value);
 
 void ovdec_set_log_callback(void (*log_function)(void* ctx, int log_level, const char* log_content, va_list vl));
 
