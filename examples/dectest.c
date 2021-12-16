@@ -335,11 +335,6 @@ write_decoded_frame_to_file(OVFrame *const frame, FILE *out_file)
     struct Window output_window = frame->output_window;
     int bd_shift = (frame->frame_info.chroma_format == OV_YUV_420_P8) ? 0: 1;
 
-    /*FIXME: only 420*/
-    int max_height_l   = frame->max_height_l;
-    int max_frame_h[3] = {max_height_l, max_height_l>>1, max_height_l>>1};
-
-    uint8_t * zeros = ov_mallocz(frame->linesize[0] * sizeof(uint8_t));
     for (component = 0; component < 3; component++) {
         uint16_t add_w = (output_window.offset_lft + output_window.offset_rgt);
         uint16_t add_h = (output_window.offset_abv + output_window.offset_blw);
@@ -354,13 +349,8 @@ write_decoded_frame_to_file(OVFrame *const frame, FILE *out_file)
             int offset_h = j * frame->linesize[component] ;
             int offset   = offset_h + (win_left << 1) ;
             ret += fwrite(&frame->data[component][offset], frame_w << bd_shift, sizeof(uint8_t), out_file);
-            ret += fwrite(zeros, frame->linesize[component] - (frame_w << bd_shift), sizeof(uint8_t), out_file);
-        }
-        for (int j = frame_h ; j < max_frame_h[component]; j++){
-            ret += fwrite(zeros, frame->linesize[component], sizeof(uint8_t), out_file);
         }
     }
-    ov_freep(&zeros);
 
     return ret;
 }
