@@ -7,9 +7,6 @@ AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign -Wall])
 AM_SILENT_RULES([yes])
 
-# Force default CFLAGS
-${CFLAGS="-O3 -g"}
-
 AC_PROG_CC(gcc, clang)
 AM_PROG_AS(gcc, clang)
 AM_PROG_AR
@@ -33,6 +30,27 @@ AX_PTHREAD([],[AC_MSG_ERROR([POSIX threads not found])])
 CFLAGS="$PTHREAD_CFLAGS $CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
 CC="$PTHREAD_CC"
+
+
+# --disable-slhdr
+AC_ARG_ENABLE([slhdr], [AS_HELP_STRING([--disable-slhdr], [disable all simd optimisations [no]])],
+              [flag_disable_slhdr="true"], [flag_disable_slhdr="false"]
+)
+
+#Check for SLHDR lib
+if test "x$flag_disable_slhdr" = "xfalse"
+then
+if pkg-config --version &>/dev/null
+then
+PKG_CHECK_MODULES([SLHDR], [slhdr_cwrap],[
+        CPPFLAGS="$CPPFLAGS -DENABLE_SLHDR"
+        CFLAGS="$SLHDR_CFLAGS $CFLAGS"
+        LIBS="$SLHDR_LIBS $LIBS"
+])
+else
+AC_MSG_WARN([pkg-config not installed. SLHDR will not be used.])
+fi
+fi
 
 # --enable-werror
 AC_ARG_ENABLE([werror], [AS_HELP_STRING([--enable-werror], [treat warnings as errors [no]])],
