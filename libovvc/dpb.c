@@ -1127,14 +1127,15 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         (*pic_p)->frame->output_window.offset_blw = ps->sps->sps_conf_win_bottom_offset;
     }
 
-    (*pic_p)->scale_info.scaling_win_left = ps->pps->pps_scaling_win_left_offset;
-    (*pic_p)->scale_info.scaling_win_right = ps->pps->pps_scaling_win_right_offset;
-    (*pic_p)->scale_info.scaling_win_top = ps->pps->pps_scaling_win_top_offset;
+    (*pic_p)->scale_info.scaling_win_left   = ps->pps->pps_scaling_win_left_offset;
+    (*pic_p)->scale_info.scaling_win_right  = ps->pps->pps_scaling_win_right_offset;
+    (*pic_p)->scale_info.scaling_win_top    = ps->pps->pps_scaling_win_top_offset;
     (*pic_p)->scale_info.scaling_win_bottom = ps->pps->pps_scaling_win_bottom_offset;
     (*pic_p)->scale_info.chroma_hor_col_flag = ps->sps->sps_chroma_horizontal_collocated_flag;
     (*pic_p)->scale_info.chroma_ver_col_flag = ps->sps->sps_chroma_vertical_collocated_flag;
 
     copy_sei_params(&(*pic_p)->sei, ovdec->active_params.sei);
+
     (*pic_p)->sei->upscale_flag = ovdec->upscale_flag;
     (*pic_p)->sei->scaling_info = (*pic_p)->scale_info;
 
