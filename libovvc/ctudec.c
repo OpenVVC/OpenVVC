@@ -11,8 +11,8 @@ ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
 {
     struct Frame *frame = pic->frame;
     /*FIXME only 420*/
-    uint16_t add_w = (frame->scale_info.scaling_win_left + frame->scale_info.scaling_win_right) << 1;
-    uint16_t add_h = (frame->scale_info.scaling_win_top + frame->scale_info.scaling_win_bottom) << 1;
+    uint16_t add_w = (pic->scale_info.scaling_win_left + pic->scale_info.scaling_win_right) << 1;
+    uint16_t add_h = (pic->scale_info.scaling_win_top + pic->scale_info.scaling_win_bottom) << 1;
     uint16_t pic_w = frame->width[0]  - add_w;
     uint16_t pic_h = frame->height[0] - add_h;
 
@@ -25,8 +25,8 @@ ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
         if (!frame)
             continue;
         /*FIXME only 420*/
-        add_w = (frame->scale_info.scaling_win_left + frame->scale_info.scaling_win_right) << 1;
-        add_h = (frame->scale_info.scaling_win_top + frame->scale_info.scaling_win_bottom) << 1;
+        add_w = (ref_pic->scale_info.scaling_win_left + ref_pic->scale_info.scaling_win_right) << 1;
+        add_h = (ref_pic->scale_info.scaling_win_top + ref_pic->scale_info.scaling_win_bottom) << 1;
         ref_pic_w = frame->width[0]  - add_w;
         ref_pic_h = frame->height[0] - add_h;
 
@@ -41,8 +41,8 @@ ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
         if (!frame)
             continue;
         /*FIXME only 420*/
-        add_w = (frame->scale_info.scaling_win_left + frame->scale_info.scaling_win_right) << 1;
-        add_h = (frame->scale_info.scaling_win_top + frame->scale_info.scaling_win_bottom) << 1;
+        add_w = (ref_pic->scale_info.scaling_win_left + ref_pic->scale_info.scaling_win_right) << 1;
+        add_h = (ref_pic->scale_info.scaling_win_top  + ref_pic->scale_info.scaling_win_bottom) << 1;
         ref_pic_w = frame->width[0]  - add_w;
         ref_pic_h = frame->height[0] - add_h;
 

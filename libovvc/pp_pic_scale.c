@@ -2,6 +2,7 @@
 #include "ovutils.h"
 #include "ovmem.h"
 #include "dec_structures.h"
+#include "ovdpb.h"
 
 #define BITDEPTH 10
 

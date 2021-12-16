@@ -49,6 +49,16 @@ struct RPLInfo
 typedef void (*FrameSynchroFunction)(const OVPicture *const ref_pic, int tl_ctu_x, 
                                     int tl_ctu_y, int br_ctu_x, int br_ctu_y);
 
+struct ScalingInfo
+{
+    uint16_t scaling_win_left;
+    uint16_t scaling_win_right;
+    uint16_t scaling_win_top;
+    uint16_t scaling_win_bottom;
+    uint8_t chroma_hor_col_flag;
+    uint8_t chroma_ver_col_flag;
+};
+
 struct OVPicture
 {
    /* Associated frame */

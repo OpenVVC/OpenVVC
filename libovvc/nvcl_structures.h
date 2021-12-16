@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "nvcl_utils.h"
 #include "rcn_alf.h"
+#include "ovdpb.h"
 
 #define OV_MAX_NB_RP 16
 #define PIC_CODE_CW_BINS 16
@@ -120,6 +121,7 @@ struct OVSEI
     struct OVSEISLHDR* sei_slhdr;
 
     uint8_t upscale_flag;
+    struct ScalingInfo scaling_info;
 };
 
 struct OVVUI

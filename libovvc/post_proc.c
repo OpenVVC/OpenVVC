@@ -90,7 +90,7 @@ pp_process_frame(const OVSEI* sei, OVFrame **frame_p)
                                     max_width[comp], max_height[comp], 
                                     (uint16_t*)frame->data[comp], frame->linesize[comp]>>1, 
                                     frame->width[comp], frame->height[comp], 
-                                    &frame->scale_info, comp == 0 );
+                                    &sei->scaling_info, comp == 0 );
             }
         }
 

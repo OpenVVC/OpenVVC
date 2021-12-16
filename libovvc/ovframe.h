@@ -40,14 +40,12 @@ struct FrameInternal
     void *pool_elem[4];
 };
 
-struct ScalingInfo
+struct Window
 {
-    uint16_t scaling_win_left;
-    uint16_t scaling_win_right;
-    uint16_t scaling_win_top;
-    uint16_t scaling_win_bottom;
-    uint8_t chroma_hor_col_flag;
-    uint8_t chroma_ver_col_flag;
+    uint16_t offset_lft;
+    uint16_t offset_rgt;
+    uint16_t offset_abv;
+    uint16_t offset_blw;
 };
 
 struct Frame
@@ -67,8 +65,7 @@ struct Frame
     size_t max_width_l;
     size_t max_height_l;
 
-    struct ScalingInfo scale_info;
-
+    struct Window output_window;
 
     /* Picture Order Count
      */

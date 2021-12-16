@@ -1115,15 +1115,28 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         (*pic_p)->frame->width[i] = ps->pps->pps_pic_width_in_luma_samples >> scale;
         (*pic_p)->frame->height[i] = ps->pps->pps_pic_height_in_luma_samples >> scale;
     }
-    (*pic_p)->frame->scale_info.scaling_win_left = ps->pps->pps_scaling_win_left_offset;
-    (*pic_p)->frame->scale_info.scaling_win_right = ps->pps->pps_scaling_win_right_offset;
-    (*pic_p)->frame->scale_info.scaling_win_top = ps->pps->pps_scaling_win_top_offset;
-    (*pic_p)->frame->scale_info.scaling_win_bottom = ps->pps->pps_scaling_win_bottom_offset;
-    (*pic_p)->frame->scale_info.chroma_hor_col_flag = ps->sps->sps_chroma_horizontal_collocated_flag;
-    (*pic_p)->frame->scale_info.chroma_ver_col_flag = ps->sps->sps_chroma_vertical_collocated_flag;
+    if (ps->pps->pps_conformance_window_flag) {
+        (*pic_p)->frame->output_window.offset_lft = ps->pps->pps_conf_win_left_offset;
+        (*pic_p)->frame->output_window.offset_rgt = ps->pps->pps_conf_win_right_offset;
+        (*pic_p)->frame->output_window.offset_abv = ps->pps->pps_conf_win_top_offset;
+        (*pic_p)->frame->output_window.offset_blw = ps->pps->pps_conf_win_bottom_offset;
+    } else {
+        (*pic_p)->frame->output_window.offset_lft = ps->sps->sps_conf_win_left_offset;
+        (*pic_p)->frame->output_window.offset_rgt = ps->sps->sps_conf_win_right_offset;
+        (*pic_p)->frame->output_window.offset_abv = ps->sps->sps_conf_win_top_offset;
+        (*pic_p)->frame->output_window.offset_blw = ps->sps->sps_conf_win_bottom_offset;
+    }
+
+    (*pic_p)->scale_info.scaling_win_left = ps->pps->pps_scaling_win_left_offset;
+    (*pic_p)->scale_info.scaling_win_right = ps->pps->pps_scaling_win_right_offset;
+    (*pic_p)->scale_info.scaling_win_top = ps->pps->pps_scaling_win_top_offset;
+    (*pic_p)->scale_info.scaling_win_bottom = ps->pps->pps_scaling_win_bottom_offset;
+    (*pic_p)->scale_info.chroma_hor_col_flag = ps->sps->sps_chroma_horizontal_collocated_flag;
+    (*pic_p)->scale_info.chroma_ver_col_flag = ps->sps->sps_chroma_vertical_collocated_flag;
 
     copy_sei_params(&(*pic_p)->sei, ovdec->active_params.sei);
     (*pic_p)->sei->upscale_flag = ovdec->upscale_flag;
+    (*pic_p)->sei->scaling_info = (*pic_p)->scale_info;
 
     ov_log(NULL, OVLOG_TRACE, "DPB start new picture POC: %d\n", (*pic_p)->poc);
 
