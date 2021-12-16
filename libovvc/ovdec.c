@@ -430,6 +430,7 @@ ovdec_submit_picture_unit(OVVCDec *vvcdec, const OVPictureUnit *const pu)
 int
 ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
 {
+    struct OVSEI *sei;
     OVDPB *dpb = dec->dpb;
     int ret = 0;
 
@@ -438,7 +439,21 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
         return 0;
     }
 
-    ret = ovdpb_output_pic(dpb, frame_p);
+    ret = ovdpb_output_pic(dpb, frame_p, &sei);
+
+    if (*frame_p) {
+        pp_process_frame(sei, frame_p);
+
+        if (sei->sei_fg) {
+            ov_freep(&sei->sei_fg);
+        }
+
+        if (sei->sei_slhdr) {
+            ov_freep(&sei->sei_slhdr);
+        }
+
+        ov_freep(&sei);
+    }
 
     if (*frame_p) {
         (*frame_p)->frame_info.color_desc.colour_primaries = dec->active_params.sps_info.color_desc.colour_primaries;
@@ -453,6 +468,7 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
 int
 ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
 {
+    struct OVSEI *sei;
     OVDPB *dpb = dec->dpb;
     int ret;
 
@@ -467,7 +483,21 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
         return 0;
     }
 
-    ret = ovdpb_drain_frame(dpb, frame_p);
+    ret = ovdpb_drain_frame(dpb, frame_p, &sei);
+
+    if (*frame_p) {
+        pp_process_frame(sei, frame_p);
+
+        if (sei->sei_fg) {
+            ov_freep(&sei->sei_fg);
+        }
+
+        if (sei->sei_slhdr) {
+            ov_freep(&sei->sei_slhdr);
+        }
+
+        ov_freep(&sei);
+    }
 
     return ret;
 }

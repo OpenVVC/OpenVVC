@@ -182,11 +182,11 @@ void ovdpb_unref_pic(OVPicture *pic, int flags);
 
 void ovdpb_release_pic(OVDPB *dpb, OVPicture *pic);
 
-int ovdpb_drain_frame(OVDPB *dpb, OVFrame **out);
+int ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVSEI **sei_p);
 
 int16_t tmvp_compute_scale(int32_t dist_current, int32_t dist_colocated);
 
-int ovdpb_output_pic(OVDPB *dpb, OVFrame **out);
+int ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVSEI **sei_p);
 
 int ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVPicture * current_pic);
 

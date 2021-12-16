@@ -567,21 +567,21 @@ vvc_unmark_refs(struct RPLInfo *rpl_info, OVPicture **dst_rpl, OVPicture **dst_r
 }
 
 static void
-dpb_pic_to_frame_ref(OVPicture *pic, OVFrame **dst)
+dpb_pic_to_frame_ref(OVPicture *pic, OVFrame **dst, struct OVSEI **sei_p)
 {
     ovframe_new_ref(dst, pic->frame);
-    /* FIXME this should not be called inside of DPB
-     * but the SEI  information are attached to the picture
-     * + we might need to request some new planes to the frame pool
-     * if we need to work on the picture data.
+
+    /* Move sei from pic to output
+     * FIXME use ref/unref instead
      */
-    pp_process_frame(pic->sei, dst);
+    *sei_p = pic->sei;
+    pic->sei = NULL;
 
     ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG | (pic->flags & OV_BUMPED_PIC_FLAG));
 }
 
 int
-ovdpb_drain_frame(OVDPB *dpb, OVFrame **out)
+ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVSEI **sei_p)
 {
     int output_cvs_id = find_min_cvs_id(dpb);
 
@@ -632,7 +632,7 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out)
             OVPicture *pic = &dpb->pictures[min_idx];
             dpb->pts += dpb->nb_units_in_ticks;
             pic->frame->pts = dpb->pts;
-            dpb_pic_to_frame_ref(pic, out);
+            dpb_pic_to_frame_ref(pic, out, sei_p);
             return nb_output;
         }
 
@@ -652,7 +652,7 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out)
 }
 
 int
-ovdpb_output_pic(OVDPB *dpb, OVFrame **out)
+ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVSEI **sei_p)
 {
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
     int i;
@@ -714,7 +714,7 @@ ovdpb_output_pic(OVDPB *dpb, OVFrame **out)
             OVPicture *pic = &dpb->pictures[min_idx];
             dpb->pts += dpb->nb_units_in_ticks;
             pic->frame->pts = dpb->pts;
-            dpb_pic_to_frame_ref(pic, out);
+            dpb_pic_to_frame_ref(pic, out, sei_p);
             return nb_output;
         }
 
