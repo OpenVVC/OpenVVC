@@ -46,7 +46,7 @@ PKG_CHECK_MODULES([SLHDR], [slhdr_cwrap],[
         CPPFLAGS="$CPPFLAGS -DENABLE_SLHDR"
         CFLAGS="$SLHDR_CFLAGS $CFLAGS"
         LIBS="$SLHDR_LIBS $LIBS"
-])
+], [])
 else
 AC_MSG_WARN([pkg-config not installed. SLHDR will not be used.])
 fi
