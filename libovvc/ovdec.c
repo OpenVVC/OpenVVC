@@ -299,7 +299,8 @@ int
 ovdec_init_main_thread(OVVCDec *vvcdec)
 {
     struct MainThread* main_thread = &vvcdec->main_thread;
-    int nb_entry_th = main_thread->nb_entry_th;
+    int nb_entry_th = vvcdec->nb_entry_th;
+    main_thread->nb_entry_th = nb_entry_th;
 
     pthread_mutex_init(&main_thread->entry_threads_mtx, NULL);
     pthread_cond_init(&main_thread->entry_threads_cnd,  NULL);
