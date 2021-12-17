@@ -34,7 +34,8 @@ static const char *option_names[OVDEC_NB_OPTIONS] =
 {
     "frame threads",
     "entry threads",
-    "display_output"
+    "display_output",
+    "upscale_rpr"
 };
 
 static void ovdec_uninit_subdec_list(OVVCDec *vvcdec);
