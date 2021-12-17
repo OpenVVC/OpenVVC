@@ -300,6 +300,7 @@ ovdec_init_main_thread(OVVCDec *vvcdec)
 {
     struct MainThread* main_thread = &vvcdec->main_thread;
     int nb_entry_th = vvcdec->nb_entry_th;
+
     main_thread->nb_entry_th = nb_entry_th;
 
     pthread_mutex_init(&main_thread->entry_threads_mtx, NULL);
@@ -557,22 +558,9 @@ ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value)
     return 0;
 }
 
-int
-ovdec_config(OVDec *ovdec, int nb_frame_th, int nb_entry_th)
+static void
+derive_thread_ctx(OVDec *ovdec)
 {
-    ovdec_set_option(ovdec, OVDEC_NB_FRAME_THREADS, nb_frame_th);
-
-    ovdec_set_option(ovdec, OVDEC_NB_ENTRY_THREADS, nb_entry_th);
-
-    ovdec->display_output = 1;
-
-    return 0;
-}
-
-int
-ovdec_start(OVDec *ovdec)
-{
-    int ret;
 
 #if USE_THREADS
     if (ovdec->nb_entry_th < 1) {
@@ -582,15 +570,32 @@ ovdec_start(OVDec *ovdec)
 
     if (ovdec->nb_frame_th < 1) {
         ovdec->nb_frame_th = ovdec->nb_entry_th;
-    }
-
-    else{
+    } else {
         ovdec->nb_frame_th = OVMIN(ovdec->nb_frame_th, ovdec->nb_entry_th);
     }
 #else
     ovdec->nb_entry_th = 1;
     ovdec->nb_frame_th = 1;
 #endif
+
+}
+
+int
+ovdec_config_threads(OVDec *ovdec, int nb_frame_th, int nb_entry_th)
+{
+    ovdec_set_option(ovdec, OVDEC_NB_FRAME_THREADS, nb_frame_th);
+
+    ovdec_set_option(ovdec, OVDEC_NB_ENTRY_THREADS, nb_entry_th);
+
+    return 0;
+}
+
+int
+ovdec_start(OVDec *ovdec)
+{
+    int ret;
+
+    derive_thread_ctx(ovdec);
 
     ret = ovdec_init_subdec_list(ovdec);
     if (ret < 0) {

@@ -102,7 +102,7 @@ int ovdec_drain_picture(OVDec *ovdec, OVFrame **frame_p);
  */
 int ovdec_init(OVDec **ovdec_p);
 
-int ovdec_config(OVDec *ovdec, int nb_frame_th, int nb_entry_th);
+int ovdec_config_threads(OVDec *ovdec, int nb_entry_th, int max_nb_frame_th);
 
 int ovdec_start(OVDec *ovdec);
 
