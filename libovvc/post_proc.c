@@ -60,11 +60,11 @@ pp_process_frame(const OVSEI* sei, OVFrame **frame_p)
         }
 
         for(int comp = 0; comp < 3; comp++){
-            max_width[comp]  = frame_post_proc->width[comp];
-            max_height[comp] = frame_post_proc->height[comp];
-            frame_post_proc->width[comp] = frame->width[comp];
-            frame_post_proc->height[comp] = frame->height[comp];
+            max_width[comp]  = frame_post_proc->width >> !!comp;
+            max_height[comp] = frame_post_proc->height >> !!comp;
         }
+        frame_post_proc->width = frame->width;
+        frame_post_proc->height = frame->height;
 
         int16_t* srcComp[3] = {(int16_t*)frame->data[0], (int16_t*)frame->data[1], (int16_t*)frame->data[2]};
         int16_t* dstComp[3] = {(int16_t*)frame_post_proc->data[0], (int16_t*)frame_post_proc->data[1], 
@@ -72,7 +72,7 @@ pp_process_frame(const OVSEI* sei, OVFrame **frame_p)
 
         uint8_t enable_deblock = 1;
         pp_funcs.pp_film_grain(dstComp, srcComp, sei->sei_fg, 
-                               frame->width[0], frame->height[0], frame->poc, 0, enable_deblock);
+                               frame->width, frame->height, frame->poc, 0, enable_deblock);
 
 #if ENABLE_SLHDR
         if(sei->sei_slhdr){
@@ -81,13 +81,13 @@ pp_process_frame(const OVSEI* sei, OVFrame **frame_p)
         }
 #endif
         if (sei->upscale_flag){
+            frame_post_proc->width = max_width[0];
+            frame_post_proc->height = max_height[0];
             for(int comp = 0; comp < 3; comp++){
-                frame_post_proc->width[comp]  = max_width[comp];
-                frame_post_proc->height[comp] = max_height[comp];
                 pp_sample_rate_conv((uint16_t*)frame_post_proc->data[comp], frame_post_proc->linesize[comp]>>1, 
                                     max_width[comp], max_height[comp], 
                                     (uint16_t*)frame->data[comp], frame->linesize[comp]>>1, 
-                                    frame->width[comp], frame->height[comp], 
+                                    frame->width >> (!!comp), frame->height >> (!!comp), 
                                     &sei->scaling_info, comp == 0 );
             }
         }

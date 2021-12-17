@@ -207,8 +207,8 @@ rcn_save_last_cols(struct OVRCNCtx *const rcn_ctx, int x_pic_l, int y_pic_l, uin
         return;
 
     struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
-    const int width_l = ( x_pic_l + fb->filter_region_w[0] > rcn_ctx->frame_start->width[0] ) ? ( rcn_ctx->frame_start->width[0] - x_pic_l ) : fb->filter_region_w[0];
-    const int height_l = ( y_pic_l + fb->filter_region_h[0] > rcn_ctx->frame_start->height[0] ) ? ( rcn_ctx->frame_start->height[0] - y_pic_l ) : fb->filter_region_h[0];
+    const int width_l = ( x_pic_l + fb->filter_region_w[0] > rcn_ctx->frame_start->width ) ? ( rcn_ctx->frame_start->width - x_pic_l ) : fb->filter_region_w[0];
+    const int height_l = ( y_pic_l + fb->filter_region_h[0] > rcn_ctx->frame_start->height ) ? ( rcn_ctx->frame_start->height - y_pic_l ) : fb->filter_region_h[0];
     const int margin = fb->margin;
 
     for(int comp = 0; comp < 3; comp++) {
@@ -233,8 +233,8 @@ static void
 rcn_save_last_rows(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
 {
     struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
-    const int width_l = ( x_pic_l + fb->filter_region_w[0] > rcn_ctx->frame_start->width[0] ) ? ( rcn_ctx->frame_start->width[0] - x_pic_l ) : fb->filter_region_w[0];
-    const int height_l = ( y_pic_l + fb->filter_region_h[0] > rcn_ctx->frame_start->height[0] ) ? ( rcn_ctx->frame_start->height[0] - y_pic_l ) : fb->filter_region_h[0];
+    const int width_l = ( x_pic_l + fb->filter_region_w[0] > rcn_ctx->frame_start->width ) ? ( rcn_ctx->frame_start->width - x_pic_l ) : fb->filter_region_w[0];
+    const int height_l = ( y_pic_l + fb->filter_region_h[0] > rcn_ctx->frame_start->height ) ? ( rcn_ctx->frame_start->height - y_pic_l ) : fb->filter_region_h[0];
     const int margin = fb->margin;
 
     for(int comp = 0; comp < 3; comp++) {
@@ -276,9 +276,9 @@ rcn_extend_filter_region(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, 
 
     struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
 
-    const int width_l = (x_pic_l + fb->filter_region_w[0] > rcn_ctx->frame_start->width[0]) ? (rcn_ctx->frame_start->width[0] - x_pic_l)
+    const int width_l = (x_pic_l + fb->filter_region_w[0] > rcn_ctx->frame_start->width) ? (rcn_ctx->frame_start->width - x_pic_l)
                                                                            : fb->filter_region_w[0];
-    const int height_l = (y_pic_l + fb->filter_region_h[0] > rcn_ctx->frame_start->height[0]) ? (rcn_ctx->frame_start->height[0] - y_pic_l)
+    const int height_l = (y_pic_l + fb->filter_region_h[0] > rcn_ctx->frame_start->height) ? (rcn_ctx->frame_start->height - y_pic_l)
                                                                             : fb->filter_region_h[0];
     const int margin = fb->margin;
 

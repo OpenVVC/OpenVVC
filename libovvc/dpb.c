@@ -1109,12 +1109,9 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         goto fail;
     }
     //TODOrpr: put width and height as parameters of ovdpb_init_current_pic
-    for(int i = 0; i < 3; i++){
-        //FIXME: only 420
-        int scale = i==0 ? 0 : 1;
-        (*pic_p)->frame->width[i] = ps->pps->pps_pic_width_in_luma_samples >> scale;
-        (*pic_p)->frame->height[i] = ps->pps->pps_pic_height_in_luma_samples >> scale;
-    }
+    (*pic_p)->frame->width  = ps->pps->pps_pic_width_in_luma_samples;
+    (*pic_p)->frame->height = ps->pps->pps_pic_height_in_luma_samples;
+
     if (ps->pps->pps_conformance_window_flag) {
         (*pic_p)->frame->output_window.offset_lft = ps->pps->pps_conf_win_left_offset;
         (*pic_p)->frame->output_window.offset_rgt = ps->pps->pps_conf_win_right_offset;

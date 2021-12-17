@@ -246,8 +246,8 @@ hmvp_update_lut_b(struct HMVPLUT *const hmvp_lut, OVMV mv0, OVMV mv1, uint8_t in
 void
 tmvp_inter_synchronization(const OVPicture *ref_pic, int ctb_x, int ctb_y, int log2_ctu_s)
 {
-    const int pic_w = ref_pic->frame->width[0];
-    const int pic_h = ref_pic->frame->height[0];
+    const int pic_w = ref_pic->frame->width;
+    const int pic_h = ref_pic->frame->height;
     
     /*Frame thread synchronization to ensure data is available
     */

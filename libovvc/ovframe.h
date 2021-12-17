@@ -58,10 +58,10 @@ struct Frame
      */
     size_t linesize[3];
 
-    /* Per components width and height in samples
+    /* Picture width and height in samples
      */
-    size_t width[3];
-    size_t height[3];
+    size_t width;
+    size_t height;
 
     struct Window output_window;
 

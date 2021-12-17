@@ -342,8 +342,8 @@ write_decoded_frame_to_file(OVFrame *const frame, FILE *out_file)
         add_h = component ? add_h : add_h << 1;
         uint16_t win_left  =  component ? output_window.offset_lft : output_window.offset_lft << 1;
         uint16_t win_top   =  component ? output_window.offset_abv : output_window.offset_abv << 1;
-        int frame_h = frame->height[component] - add_h;
-        int frame_w = frame->width[component]  - add_w;
+        int frame_h = (frame->height >> (!!component)) - add_h;
+        int frame_w = (frame->width  >> (!!component)) - add_w;
 
         int offset_h = win_top * frame->linesize[component] ;
         int offset   = offset_h + (win_left << bd_shift) ;
