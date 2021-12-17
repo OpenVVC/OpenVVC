@@ -34,7 +34,6 @@ static const char *option_names[OVDEC_NB_OPTIONS] =
 {
     "frame threads",
     "entry threads",
-    "display_output",
     "upscale_rpr"
 };
 
@@ -75,7 +74,6 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
 
     if (!dec->dpb) {
          ret = ovdpb_init(&dec->dpb, &dec->active_params);
-         dec->dpb->display_output = dec->display_output;
          if (ret < 0) {
              return ret;
          }
@@ -506,13 +504,6 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
 }
 
 static int
-set_display_output(OVVCDec *ovdec, int on_off)
-{
-    ovdec->display_output = !!on_off;
-    return 0;
-}
-
-static int
 set_nb_entry_threads(OVVCDec *ovdec, int nb_threads)
 {
     ovdec->nb_entry_th = nb_threads;
@@ -542,9 +533,6 @@ ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value)
             break;
         case OVDEC_NB_FRAME_THREADS:
             set_nb_frame_threads(ovdec, value);
-            break;
-        case OVDEC_DISPLAY_OUTPUT:
-            set_display_output(ovdec, value);
             break;
         default :
             if (opt_id < OVDEC_NB_OPTIONS) {

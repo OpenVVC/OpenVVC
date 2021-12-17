@@ -159,9 +159,6 @@ struct DPB
     */
    uint8_t state;
 
-    //Boolean that indicates if the video is displayed
-    uint8_t display_output;
-    
    struct DPBInternal internal;
    uint64_t nb_units_in_ticks;
    uint64_t pts;
@@ -170,8 +167,6 @@ struct DPB
 int ovdpb_init(OVDPB **dpb_p, const OVPS *ps);
 
 void ovdpb_uninit(OVDPB **dpb_p);
-
-int ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc);
 
 int ovdpb_init_picture(OVDPB *dpb, OVPicture **pic, const OVPS *const ps, uint8_t nalu_type, 
                    OVSliceDec *const sldec, const OVVCDec *ovdec);

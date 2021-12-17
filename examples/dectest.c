@@ -200,8 +200,6 @@ init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_f
     OVVCDmx **vvcdmx = &ovvc_hdl->dmx;
     int ret;
 
-    int display_output = !!strcmp(output_file_name, "/dev/null");
-
     ret = ovdec_init(vvcdec);
 
     if (ret < 0) goto faildec;

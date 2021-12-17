@@ -24,17 +24,7 @@ enum OVOptions {
     */
    OVDEC_NB_ENTRY_THREADS = 1,
 
-   /* A value of zero will disable the decoder output.
-    *
-    * Note:
-    *    - When enabled a call to ovdec_receive_picture() is guaranted
-    *    to always set ovframe_p to NULL.
-    *    This option only exist for memory usage test purposes.
-    *    The value you want to use is most likely always one.
-    */
-   OVDEC_DISPLAY_OUTPUT = 2,
-
-   OVDEC_RPR_UPSCALE = 3,
+   OVDEC_RPR_UPSCALE = 2,
 
    OVDEC_NB_OPTIONS,
 };
