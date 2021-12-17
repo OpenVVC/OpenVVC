@@ -66,6 +66,8 @@ struct Frame
     size_t width;
     size_t height;
 
+    /* Picture conformance window information
+     */
     struct Window output_window;
 
     /* Picture Order Count
@@ -73,6 +75,7 @@ struct Frame
     uint32_t poc;
 
     /* Presentation Time Stamp
+     * (Experimental)
      */
     uint64_t pts;
 
@@ -82,6 +85,9 @@ struct Frame
      * Do not modify.
      */
     struct FrameInternal internal;
+
+    /* Opaque Data */
+    void *opaque;
 };
 
 /* Reference an OVFrame pointer
