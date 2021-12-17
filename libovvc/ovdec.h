@@ -100,7 +100,11 @@ int ovdec_drain_picture(OVDec *ovdec, OVFrame **frame_p);
  * Notes:
  *    - Multiple Slices in same PU are currently unsupported.
  */
-int ovdec_init(OVDec **ovdec_p, int display_output, int nb_frame_th, int nb_entry_th);
+int ovdec_init(OVDec **ovdec_p);
+
+int ovdec_config(OVDec *ovdec, int nb_frame_th, int nb_entry_th);
+
+int ovdec_start(OVDec *ovdec);
 
 /**
  * Close OpenVVC decoder

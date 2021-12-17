@@ -202,11 +202,18 @@ init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_f
 
     int display_output = !!strcmp(output_file_name, "/dev/null");
 
-    ret = ovdec_init(vvcdec, display_output, nb_frame_th, nb_entry_th);
+    ret = ovdec_init(vvcdec);
+
+    if (ret < 0) goto faildec;
+
+    ret = ovdec_config(*vvcdec, nb_frame_th, nb_entry_th);
 
     ovdec_set_option(*vvcdec, OVDEC_RPR_UPSCALE, upscale_flag);
 
-    if (ret < 0) goto faildec;
+    ret = ovdec_start(*vvcdec);
+
+    if (ret < 0) goto failstart;
+
 
     ov_log(vvcdec, OVLOG_TRACE, "Decoder init.\n");
 
@@ -218,6 +225,7 @@ init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_f
 
     return 0;
 
+failstart:
 faildec:
     ov_log(NULL, OVLOG_ERROR, "Decoder failed at init.\n");
     return ret;

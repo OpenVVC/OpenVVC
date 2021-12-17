@@ -556,45 +556,64 @@ ovdec_set_option(OVVCDec *ovdec, enum OVOptions opt_id, int value)
 }
 
 int
-ovdec_init(OVVCDec **vvcdec, int display_output, int nb_frame_th, int nb_entry_th)
+ovdec_config(OVDec *ovdec, int nb_frame_th, int nb_entry_th)
 {
+    ovdec_set_option(ovdec, OVDEC_NB_FRAME_THREADS, nb_frame_th);
+
+    ovdec_set_option(ovdec, OVDEC_NB_ENTRY_THREADS, nb_entry_th);
+
+    ovdec->display_output = 1;
+
+    return 0;
+}
+
+int
+ovdec_start(OVDec *ovdec)
+{
+    int ret;
+
 #if USE_THREADS
-    if (nb_entry_th < 1) {
-        nb_entry_th = get_number_of_cores();
-        ov_log(NULL, OVLOG_DEBUG, "Physical cores in platform: %i\n", nb_entry_th);
+    if (ovdec->nb_entry_th < 1) {
+        ovdec->nb_entry_th = get_number_of_cores();
+        ov_log(NULL, OVLOG_DEBUG, "Physical cores in platform: %i\n", ovdec->nb_entry_th);
     }
 
-    if (nb_frame_th < 1) {
-        nb_frame_th = nb_entry_th;
+    if (ovdec->nb_frame_th < 1) {
+        ovdec->nb_frame_th = ovdec->nb_entry_th;
     }
 
     else{
-        nb_frame_th = OVMIN(nb_frame_th, nb_entry_th);
+        ovdec->nb_frame_th = OVMIN(ovdec->nb_frame_th, ovdec->nb_entry_th);
     }
 #else
-    nb_entry_th = 1;
-    nb_frame_th = 1;
+    ovdec->nb_entry_th = 1;
+    ovdec->nb_frame_th = 1;
 #endif
 
-    *vvcdec = ov_mallocz(sizeof(OVVCDec));
+    ret = ovdec_init_subdec_list(ovdec);
+    if (ret < 0) {
+        return ret;
+    }
 
-    if (*vvcdec == NULL) goto fail;
+    ret = ovdec_init_main_thread(ovdec);
+    if (ret < 0) {
+        return ret;
+    }
 
-    (*vvcdec)->name = decname;
+    return 0;
+}
 
-    ovdec_set_option(*vvcdec, OVDEC_NB_FRAME_THREADS, nb_frame_th);
+int
+ovdec_init(OVVCDec **ovdec_p)
+{
 
-    ovdec_set_option(*vvcdec, OVDEC_NB_ENTRY_THREADS, nb_entry_th);
+    *ovdec_p = ov_mallocz(sizeof(OVVCDec));
 
-    ovdec_set_option(*vvcdec, OVDEC_DISPLAY_OUTPUT, display_output);
+    if (*ovdec_p == NULL) goto fail;
 
-    (*vvcdec)->display_output = !!display_output;
+    (*ovdec_p)->name = decname;
 
-    ovdec_init_subdec_list(*vvcdec);
-
-    ovdec_init_main_thread(*vvcdec);
-
-    ov_log(NULL, OVLOG_TRACE, "OpenVVC init at %p\n", *vvcdec);
+    ov_log(NULL, OVLOG_TRACE, "OpenVVC init at %p\n", *ovdec_p);
     return 0;
 
 fail:
