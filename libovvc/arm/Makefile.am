@@ -28,3 +28,5 @@ libarmoptim_la_SOURCES +=	rcn_mc_neon.S               \
 							rcn_mc_neon_wrapper.c       
 endif
 endif
+
+noinst_HEADERS = rcn_neon.h
