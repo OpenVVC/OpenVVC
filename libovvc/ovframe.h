@@ -58,6 +58,9 @@ struct Frame
      */
     size_t linesize[3];
 
+    /* Per component size in bytes of allocated plane data */
+    size_t size[3];
+
     /* Picture width and height in samples
      */
     size_t width;

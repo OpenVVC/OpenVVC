@@ -182,6 +182,9 @@ ovframepool_request_planes(OVFrame *const frame, struct FramePool *const fpool)
         frame->data[i]     = pool_elem->data;
 
         frame->linesize[i] = prop->stride;
+
+        frame->size[i]     = pool->elem_size;
+
         frame->frame_info.chroma_format = fpool->fmt_c;
     }
 
