@@ -17,6 +17,8 @@ LT_INIT
 AC_CONFIG_HEADERS([ovconfig.h])
 AC_CONFIG_FILES([Makefile libovvc/Makefile libovvc/x86/Makefile libovvc/arm/Makefile examples/Makefile libovvc/libopenvvc.pc])
 
+AC_SUBST([LIB_VERSION], m4_esyscmd([printf $(cat VERSION | sed  's/\./:/g' )]))
+
 # We need to force AX_PTHREAD to check -pthread -lpthread since otherwise
 # it only outputs -pthread for GCC. Without -lpthread GCC does not link the
 # shared library against the pthread library (even though it does link the

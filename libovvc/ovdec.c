@@ -664,13 +664,11 @@ ovdec_set_log_callback(void (*log_function)(void* ctx, int log_level, const char
 const char *
 ovdec_version()
 {
-    //static const char *ov_version = OV_VERSION_STR(VER_MAJOR,VER_MINOR,VER_REVISION,VER_BUILD);
-    static const char *ov_version = "0.3.0";
+    static const char *ov_version = OV_VERSION_STR(VER_MAJOR,VER_MINOR,VER_REVISION,VER_BUILD);
     return ov_version;
 }
 
 const char* ovdec_get_version()
 {
-  return "0.3.0";
-  //return OV_VERSION;
+    return OV_VERSION;
 }

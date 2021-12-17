@@ -1,5 +1,5 @@
 lib_LTLIBRARIES = libovvc.la
-libovvc_la_LDFLAGS = -version-info 0:3:0
+libovvc_la_LDFLAGS = -version-info $(LIB_VERSION)
 libovvc_la_LIBADD=
 
 pkgconfigdir = $(libdir)/pkgconfig
