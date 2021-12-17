@@ -52,7 +52,7 @@ struct Frame
 {
     /* Pointer to Picture data planes per component
      */
-    uint8_t *data[3];
+    void *data[3];
 
     /* Per component line size in bytes
      */
