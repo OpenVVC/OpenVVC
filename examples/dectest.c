@@ -204,7 +204,7 @@ init_openvvc_hdl(OVVCHdl *const ovvc_hdl, const char *output_file_name, int nb_f
 
     if (ret < 0) goto faildec;
 
-    ret = ovdec_config_threads(*vvcdec, nb_frame_th, nb_entry_th);
+    ret = ovdec_config_threads(*vvcdec, nb_entry_th, nb_frame_th);
 
     ovdec_set_option(*vvcdec, OVDEC_RPR_UPSCALE, upscale_flag);
 

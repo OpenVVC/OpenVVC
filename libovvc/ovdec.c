@@ -569,9 +569,9 @@ derive_thread_ctx(OVDec *ovdec)
 }
 
 int
-ovdec_config_threads(OVDec *ovdec, int nb_frame_th, int nb_entry_th)
+ovdec_config_threads(OVDec *ovdec, int nb_entry_th, int max_nb_frame_th)
 {
-    ovdec_set_option(ovdec, OVDEC_NB_FRAME_THREADS, nb_frame_th);
+    ovdec_set_option(ovdec, OVDEC_NB_FRAME_THREADS, max_nb_frame_th);
 
     ovdec_set_option(ovdec, OVDEC_NB_ENTRY_THREADS, nb_entry_th);
 
