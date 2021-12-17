@@ -568,7 +568,11 @@ vvc_unmark_refs(struct RPLInfo *rpl_info, OVPicture **dst_rpl, OVPicture **dst_r
 static void
 dpb_pic_to_frame_ref(OVPicture *pic, OVFrame **dst, struct OVSEI **sei_p)
 {
-    ovframe_new_ref(dst, pic->frame);
+    if (pic->flags & OV_OUTPUT_PIC_FLAG) {
+        ovframe_new_ref(dst, pic->frame);
+    } else {
+       *dst = NULL;
+    }
 
     /* Move sei from pic to output
      * FIXME use ref/unref instead
@@ -1103,7 +1107,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     /* Find an available place in DPB and allocate/retrieve available memory
      * for the current picture data from the Frame Pool
      */
-    ret = ovdpb_init_current_pic(dpb, pic_p, poc,1);
+    ret = ovdpb_init_current_pic(dpb, pic_p, poc, ps->ph->ph_pic_output_flag);
     if (ret < 0) {
         goto fail;
     }
