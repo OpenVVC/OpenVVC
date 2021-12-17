@@ -34,13 +34,13 @@ LIBS="$PTHREAD_LIBS $LIBS"
 CC="$PTHREAD_CC"
 
 # --disable-slhdr
-AC_ARG_ENABLE([slhdr], [AS_HELP_STRING([--disable-slhdr], [disable slhdr [no]])], [], [enable_slhdr=yes])
+AC_ARG_ENABLE([slhdr], [AS_HELP_STRING([--disable-slhdr], [disable slhdr [no]])], [], [enable_slhdr="yes"])
 
 #Check for SLHDR lib
 if test "x$enable_slhdr" = "xyes"
 then
 PKG_CHECK_MODULES([SLHDR], [slhdr_cwrap],[
-        CPPFLAGS="$CPPFLAGS -DENABLE_SLHDR"
+        AC_DEFINE([ENABLE_SLHDR],[1], [Define the use of SLHDR])
         CFLAGS="$SLHDR_CFLAGS $CFLAGS"
         LIBS="$SLHDR_LIBS $LIBS"
 ],
@@ -51,23 +51,48 @@ fi
 
 # --enable-werror
 AC_ARG_ENABLE([werror], [AS_HELP_STRING([--enable-werror], [treat warnings as errors [no]])],
-              [CFLAGS="-Werror $CFLAGS"], []
+                [CFLAGS="-Werror $CFLAGS"], []
 )
 
 # --disable-simd
 AC_ARG_ENABLE([simd], [AS_HELP_STRING([--disable-simd], [disable all simd optimisations [no]])],
-              [AS_IF([test $enable_simd = "yes"], [CPPFLAGS="$CPPFLAGS -DNO_SIMD"])], [enable_simd="yes" CPPFLAGS="$CPPFLAGS -DNO_SIMD"]
+                [
+                AS_IF([test $enable_simd = "no"], [
+                                AC_DEFINE([NO_SIMD],[1], [If define, it will remove SIMD compilation])
+                        ]
+                )
+                ], 
+                [enable_simd="yes"]
 )
 
 
 # --disable-arm-asm
 AC_ARG_ENABLE([arm-asm], [AS_HELP_STRING([--disable-arm-asm], [disables arm assembly optimisation [no]])],
-              [AS_IF([test $enable_arm_asm = "yes"], [CPPFLAGS="$CPPFLAGS -DARCH_AARCH64_ASSEMBLY=1"])], [enable_arm_asm="yes" CPPFLAGS="$CPPFLAGS -DARCH_AARCH64_ASSEMBLY=1"]
+                [
+                AS_IF([test $enable_arm_asm = "yes"], [
+                                AC_DEFINE([ARCH_AARCH64_ASSEMBLY],[1], [Define the use of AARCH64 ASSEMBLY optimisation])
+                        ]
+                )
+                ],
+                [
+                        enable_arm_asm="yes"
+                        AC_DEFINE([ARCH_AARCH64_ASSEMBLY],[1], [Define the use of AARCH64 ASSEMBLY optimisation])
+                ]
 )
 
 # --enable-arm-simde
 AC_ARG_ENABLE([arm-simde], [AS_HELP_STRING([--enable-arm-simde], [enables arm simde optimisation [no]])],
-              [AS_IF([test $enable_arm_simde = "yes"], [CPPFLAGS="$CPPFLAGS -DARM_SIMDE=1 -DSIMDE_NO_CHECK_IMMEDIATE_CONSTANT"])], [$enable_arm_simde = "yes" CPPFLAGS="$CPPFLAGS -DARM_SIMDE=1 -DSIMDE_NO_CHECK_IMMEDIATE_CONSTANT"]
+                [
+                AS_IF([test $enable_arm_simde = "yes"], [
+                                AC_DEFINE([ARM_SIMDE],[1], [Define the use of SIMDE optimisation conversion])
+                                AC_DEFINE([SIMDE_NO_CHECK_IMMEDIATE_CONSTANT],[1], [Define SIMDE_NO_CHECK_IMMEDIATE_CONSTANT])
+                        ])
+                ], 
+                [
+                        enable_arm_simde="yes" 
+                        AC_DEFINE([ARM_SIMDE],[1], [Define the use of SIMDE optimisation conversion])
+                        AC_DEFINE([SIMDE_NO_CHECK_IMMEDIATE_CONSTANT],[1], [Define SIMDE_NO_CHECK_IMMEDIATE_CONSTANT])
+                ]
 )
 
 # host and cpu specific settings
@@ -80,19 +105,21 @@ AS_CASE([$host_cpu],
 
 AS_CASE([$host_os],
         [darwin*], [
-                CPPFLAGS="$CPPFLAGS -DPREFIX=1 -DHAVE_POSIX_MEMALIGN"
+                AC_DEFINE([PREFIX],[1], [Define if assembly function should be prefixed])
+                AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
         ],
         [cygwin*|msys*|mingw*], [
-                CPPFLAGS="$CPPFLAGS -DHAVE_ALIGNED_MALLOC"
+                AC_DEFINE([HAVE_ALIGNED_MALLOC],[1], [Define the use of align malloc])
+                
         ],
         [*android*], [
-                CPPFLAGS="$CPPFLAGS -DHAVE_POSIX_MEMALIGN -DEXCLUDE_FOR_ANDROID=1"
+                AC_DEFINE([EXCLUDE_FOR_ANDROID],[1], [Exclude files from android compilation])
                 isAndroid="true"
         ],
         [linux*], [
-                CPPFLAGS="$CPPFLAGS -DHAVE_POSIX_MEMALIGN"
+                AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
         ], [
-                CPPFLAGS="$CPPFLAGS -DHAVE_POSIX_MEMALIGN"
+                AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
         ]
 )
 
