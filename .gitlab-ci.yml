@@ -17,8 +17,7 @@ build_linux_gcc:
 # Files to keep after compilation
   artifacts:
     paths:
-      - libovvc/.libs/libovvc.so.0.0.3
-      - libovvc/.libs/libovvc.so.0
+      - libovvc/.libs/libovvc.so*
       - examples/.libs/dectest
       - examples/dectest
 
