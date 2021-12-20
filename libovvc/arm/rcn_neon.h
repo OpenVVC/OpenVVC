@@ -1,6 +1,7 @@
 #ifndef RCN_NEON_H
 #define RCN_NEON_H
 #include "rcn_structures.h"
+#include "ovconfig.h"
 
 #define SIMDE_ENABLE_NATIVE_ALIASES
 
