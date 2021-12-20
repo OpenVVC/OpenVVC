@@ -44,7 +44,7 @@ static const int8_t dmvr_mv_y[25 + 25] = {
 };
 
 static uint64_t
-rcn_dmvr_sad_16(const int16_t *ref0, const int16_t *ref1,
+rcn_dmvr_sad_16(const uint16_t *ref0, const uint16_t *ref1,
              int16_t dmvr_stride, int16_t pb_w, int16_t pb_h)
 {
   uint64_t sum = 0;
@@ -72,7 +72,7 @@ rcn_dmvr_sad_16(const int16_t *ref0, const int16_t *ref1,
 }
 
 static uint64_t
-rcn_dmvr_sad_8(const int16_t *ref0, const int16_t *ref1,
+rcn_dmvr_sad_8(const uint16_t *ref0, const uint16_t *ref1,
              int16_t dmvr_stride, int16_t pb_w, int16_t pb_h)
 {
   uint64_t sum = 0;
@@ -97,7 +97,7 @@ rcn_dmvr_sad_8(const int16_t *ref0, const int16_t *ref1,
 
 /*FIXME return min_dmvr_idx; */
 static uint8_t
-dmvr_compute_sads_16(const int16_t *ref0, const int16_t *ref1,
+dmvr_compute_sads_16(const uint16_t *ref0, const uint16_t *ref1,
                   uint64_t *sad_array, int sb_w, int sb_h)
 {
     const int32_t stride_l0 = 128 + 4;
@@ -143,7 +143,7 @@ dmvr_compute_sads_16(const int16_t *ref0, const int16_t *ref1,
 
 /*FIXME return min_dmvr_idx; */
 static uint8_t
-dmvr_compute_sads_8(const int16_t *ref0, const int16_t *ref1,
+dmvr_compute_sads_8(const uint16_t *ref0, const uint16_t *ref1,
                   uint64_t *sad_array, int sb_w, int sb_h)
 {
     const int32_t stride_l0 = 128 + 4;
