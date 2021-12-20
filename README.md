@@ -7,6 +7,8 @@ An open-source VVC decoder library licensed under LGPLv2.1. OpenVVC is still und
 | x86 | Supported | Supported | Supported |  -          |
 | ARM | -         | Supported | Supported |  Supported  |
 
+A detailed list of supported tools is available on our [website](https://openvvc.github.io/#supported-tools).
+
 ## Table of Contents
 - [Changelog](#changelog)
 - [Using OpenVVC](#using-openvvc-test-program)
@@ -17,10 +19,11 @@ An open-source VVC decoder library licensed under LGPLv2.1. OpenVVC is still und
   - [Configure Parameters](#configure-parameters)
 
 ## Changelog
-### v0.3.0
-* Support the all intra, low delay and random access configuration with JVET CTCs.
-* Support frame and tile parallelism.
-* Support multiple build configuration.
+### v1.0.0
+* Support decoding of 8-bit bitstreams.
+* Support Frame + Tile parallelism.
+* Support RPR.
+* Build system was changed to use Autotool.
 
 ## Using OpenVVC Test Program
 
@@ -35,13 +38,14 @@ This library includes a simple executable to test the library. The executable ca
 ```
 usage: dectest [options]
 options:
-	-h, --help				                         Show this message.
-	-v, --version				                       Show version information.
-	-l <level>, --log-level=<level>		         Define the level of verbosity. Value between 0 and 6. (Default: 2)
-	-i <file>, --infile=<file>		             Path to the file to be decoded (Default: test.266).
-	-o <file>, --outfile=<file>		             Path to the output file (Default: test.yuv).
-	-f <nbthreads>, --framethr=<nbthreads>		 Number of simultaneous frames decoded (Default: 1).
-	-e <nbthreads>, --entrythr=<nbthreads>		 Number of simultaneous entries decoded per frame (Default: 1).
+	-h, --help                                Show this message.
+	-v, --version                             Show version information.
+	-l <level>, --log-level=<level>           Define the level of verbosity. Value between 0 and 6. (Default: 2)
+	-i <file>, --infile=<file>                Path to the file to be decoded (Default: test.266).
+	-o <file>, --outfile=<file>               Path to the output file (Default: test.yuv).
+	-t <nbthreads>, --framethr=<nbthreads>    Number of simultaneous frames decoded (Default: 0).
+	-e <nbthreads>, --entrythr=<nbthreads>    Number of simultaneous entries decoded per frame (Default: 0).
+
 ```
 
 ## Compiling OpenVVC
@@ -63,9 +67,9 @@ To test the library, you can perform:
 
 ### Configure Parameters:
 ```
-`configure' configures openVVC 0.3.0 to adapt to many kinds of systems.
+`configure' configures openVVC 1.0.0 to adapt to many kinds of systems.
 
-Usage: ./configure [OPTION]... [VAR=VALUE]...
+Usage: ../../configure [OPTION]... [VAR=VALUE]...
 
 To assign environment variables (e.g., CC, CFLAGS...), specify them as
 VAR=VALUE.  See below for descriptions of some of the useful variables.
