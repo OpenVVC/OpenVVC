@@ -16,6 +16,7 @@ A detailed list of supported tools is available on our [website](https://openvvc
   - [Parameters](#parameters)
 - [Compiling OpenVVC](#compiling-openvvc)
   - [Minimal Compilation Steps](#minimal-compilation-steps)
+  - [For Windows](#for-windows)
   - [Configure Parameters](#configure-parameters)
 
 ## Changelog
@@ -64,6 +65,9 @@ To test the library, you can perform:
 ```
 ./CI/checkMD5.sh ./CI/test_bitstreams/random_access ./examples/dectest http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/random_access/
 ```
+
+### For Windows
+Build on windows was tested using Cygwin and MSYS2. After installing the dependencies, the compilation steps are identical to previous [section](#minimal-compilation-steps).
 
 ### Configure Parameters:
 ```

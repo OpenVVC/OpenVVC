@@ -108,7 +108,7 @@ AS_CASE([$host_os],
                 AC_DEFINE([PREFIX],[1], [Define if assembly function should be prefixed])
                 AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
         ],
-        [cygwin*|msys*|mingw*], [
+        [mingw*], [
                 AC_DEFINE([HAVE_ALIGNED_MALLOC],[1], [Define the use of align malloc])
                 
         ],
@@ -116,7 +116,7 @@ AS_CASE([$host_os],
                 AC_DEFINE([EXCLUDE_FOR_ANDROID],[1], [Exclude files from android compilation])
                 isAndroid="true"
         ],
-        [linux*], [
+        [linux*|cygwin*|msys*], [
                 AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
         ], [
                 AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
