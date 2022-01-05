@@ -92,11 +92,11 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu
     const uint8_t up_ctb_alf_flag   = (ctb_rs - nb_ctu_w) >= 0 ? alf_info->ctb_alf_flag_line[ctb_col] : 0;
    
     uint8_t tile_group_num_aps  = alf_info->num_alf_aps_ids_luma;
-    if (alf_luma_flag) {
+    if(alf_luma_flag){
         ctx  = ctu_neighbour_flags & CTU_LFT_FLG  ? ((left_ctb_alf_flag & 4) >> 2) : 0;
         ctx += ctu_neighbour_flags & CTU_UP_FLG   ? ((up_ctb_alf_flag   & 4) >> 2) : 0;
         ret_luma = ovcabac_ae_read(cabac_ctx,&cabac_state[CTB_ALF_FLAG_CTX_OFFSET + ctx]);
-        if (ret_luma) {
+        if(ret_luma){
             alf_idx = ovcabac_read_ae_alf_idx(cabac_ctx, cabac_state, tile_group_num_aps);
         }
     }
@@ -104,31 +104,31 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu
     uint8_t cb_alternative = 0;
     uint8_t cr_alternative = 0;
     uint8_t num_alf_chroma_alternative;
-
-    if (alf_cb_flag) {
+    if(alf_cb_flag){
         num_alf_chroma_alternative = alf_info->aps_alf_data_c->alf_chroma_num_alt_filters_minus1 + 1;
+        int decoded = 0;
         ctx  = ctu_neighbour_flags & CTU_LFT_FLG ? ((left_ctb_alf_flag & 2) >> 1) : 0;
         ctx += ctu_neighbour_flags & CTU_UP_FLG   ? ((up_ctb_alf_flag   & 2) >> 1) : 0;
         ret_cb = ovcabac_ae_read(cabac_ctx,&cabac_state[CTB_ALF_FLAG_CTX_OFFSET + 3 + ctx]);
-        while (ret_cb && cb_alternative < num_alf_chroma_alternative - 1 && ovcabac_ae_read(cabac_ctx,
+        while (ret_cb && decoded < num_alf_chroma_alternative - 1 && ovcabac_ae_read(cabac_ctx,
                                                                          &cabac_state[CTB_ALF_ALTERNATIVE_CTX_OFFSET])){
-            ++cb_alternative;
+            ++decoded;
         }
+        cb_alternative = decoded;
     }
-
-    if (alf_cr_flag) {
+    if(alf_cr_flag){
         num_alf_chroma_alternative = alf_info->aps_alf_data_c->alf_chroma_num_alt_filters_minus1 + 1;
+        int decoded = 0;
         ctx  = ctu_neighbour_flags & CTU_LFT_FLG ? (left_ctb_alf_flag & 1) : 0;
-        ctx += ctu_neighbour_flags & CTU_UP_FLG  ? (up_ctb_alf_flag   & 1) : 0;
+        ctx += ctu_neighbour_flags & CTU_UP_FLG   ? (up_ctb_alf_flag   & 1) : 0;
         ret_cr = ovcabac_ae_read(cabac_ctx,&cabac_state[CTB_ALF_FLAG_CTX_OFFSET + 6 + ctx]);
-        while (ret_cr && cr_alternative < num_alf_chroma_alternative - 1 && ovcabac_ae_read(cabac_ctx,
+        while (ret_cr && decoded < num_alf_chroma_alternative - 1 && ovcabac_ae_read(cabac_ctx,
                                                                          &cabac_state[CTB_ALF_ALTERNATIVE_CTX_OFFSET + 1])){
-            ++cr_alternative;
+            ++decoded;
         }
+        cr_alternative = decoded;
     }
-
     ret = (ret_luma << 2) | (ret_cb << 1) | ret_cr;
-
     alf_info->left_ctb_alf_flag           = ret;
     alf_info->ctb_alf_flag_line[ctb_col]  = ret; 
 
@@ -146,60 +146,39 @@ ovcabac_read_ae_cc_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_
     uint8_t cc_alf_cb_flag     = alf_info->cc_alf_cb_enabled_flag;
     uint8_t cc_alf_cr_flag     = alf_info->cc_alf_cr_enabled_flag;
 
+    OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
     const uint8_t ctu_neighbour_flags = ctudec->ctu_ngh_flags;
 
-    if (cc_alf_cb_flag) {
-        OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
-        uint64_t *const cabac_state = cabac_ctx->ctx_table;
-        const OVALFData* alf_data = alf_info->aps_cc_alf_data_cb;
+    for ( int comp_id = 0; comp_id < 2; comp_id++){
 
-        const uint8_t left_ctb_cc_alf_flag = alf_info->left_ctb_cc_alf_flag[0];
-        int           ctb_col              = ctb_rs % nb_ctu_w;
-        const uint8_t up_ctb_cc_alf_flag   = (ctb_rs - nb_ctu_w) >= 0 ? alf_info->ctb_cc_alf_flag_line[0][ctb_col] : 0;
+        if ((comp_id==0 && cc_alf_cb_flag) || (comp_id==1 && cc_alf_cr_flag)){
+            const OVALFData* alf_data = (comp_id==0) ? alf_info->aps_cc_alf_data_cb : alf_info->aps_cc_alf_data_cr;
 
-        const int filters_signalled = alf_data->alf_cc_cb_filters_signalled_minus1 + 1;
+            const uint8_t left_ctb_cc_alf_flag = alf_info->left_ctb_cc_alf_flag[comp_id];
+            int           ctb_col              = ctb_rs % nb_ctu_w;
+            const uint8_t up_ctb_cc_alf_flag   = (ctb_rs - nb_ctu_w) >= 0 ? alf_info->ctb_cc_alf_flag_line[comp_id][ctb_col] : 0;
 
-        uint8_t ctx  = (!!left_ctb_cc_alf_flag) & !!(ctu_neighbour_flags & CTU_LFT_FLG);
-                ctx += (!!up_ctb_cc_alf_flag) & !!(ctu_neighbour_flags & CTU_UP_FLG);
-
-        int ret_cc_alf = ovcabac_ae_read(cabac_ctx,&cabac_state[CC_ALF_FILTER_CONTROL_FLAG_CTX_OFFSET + ctx]);
-
-        if (ret_cc_alf) {
-            while ((ret_cc_alf != filters_signalled) && ovcabac_bypass_read(cabac_ctx)) {
-                ret_cc_alf++;
+            const int filters_signalled = (comp_id == 0) ? alf_data->alf_cc_cb_filters_signalled_minus1 + 1
+                                                            : alf_data->alf_cc_cr_filters_signalled_minus1 + 1;
+            uint8_t  ctx = 0;
+            if (ctu_neighbour_flags & CTU_LFT_FLG){
+                ctx += left_ctb_cc_alf_flag ? 1 : 0;
             }
-        }
-
-        alf_info->left_ctb_cc_alf_flag[0]          = ret_cc_alf;
-        alf_info->ctb_cc_alf_flag_line[0][ctb_col] = ret_cc_alf;
-        alf_info->ctb_cc_alf_filter_idx[0][ctb_rs] = ret_cc_alf;
-    }
-
-    if (cc_alf_cr_flag) {
-        OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
-        uint64_t *const cabac_state = cabac_ctx->ctx_table;
-        const OVALFData* alf_data = alf_info->aps_cc_alf_data_cr;
-
-        const uint8_t left_ctb_cc_alf_flag = alf_info->left_ctb_cc_alf_flag[1];
-        int           ctb_col              = ctb_rs % nb_ctu_w;
-        const uint8_t up_ctb_cc_alf_flag   = (ctb_rs - nb_ctu_w) >= 0 ? alf_info->ctb_cc_alf_flag_line[1][ctb_col] : 0;
-
-        const int filters_signalled = alf_data->alf_cc_cr_filters_signalled_minus1 + 1;
-
-        uint8_t ctx  = 3;
-                ctx += (!!left_ctb_cc_alf_flag) & !!(ctu_neighbour_flags & CTU_LFT_FLG);
-                ctx += (!!up_ctb_cc_alf_flag) & !!(ctu_neighbour_flags & CTU_UP_FLG);
-
-        int ret_cc_alf = ovcabac_ae_read(cabac_ctx,&cabac_state[CC_ALF_FILTER_CONTROL_FLAG_CTX_OFFSET + ctx]);
-
-        if (ret_cc_alf) {
-            while ((ret_cc_alf != filters_signalled) && ovcabac_bypass_read(cabac_ctx)) {
-                ret_cc_alf++;
+            if (ctu_neighbour_flags & CTU_UP_FLG){
+                ctx += up_ctb_cc_alf_flag ? 1 : 0;
             }
-        }
+            ctx += ( comp_id == 1 ) ? 3 : 0;
 
-        alf_info->left_ctb_cc_alf_flag[1]           = ret_cc_alf;
-        alf_info->ctb_cc_alf_flag_line[1][ctb_col]  = ret_cc_alf;
-        alf_info->ctb_cc_alf_filter_idx[1][ctb_rs]  = ret_cc_alf;
+            int ret_cc_alf = ovcabac_ae_read(cabac_ctx,&cabac_state[CC_ALF_FILTER_CONTROL_FLAG_CTX_OFFSET + ctx]);
+            if ( ret_cc_alf ){
+                while ( ( ret_cc_alf != filters_signalled ) && ovcabac_bypass_read(cabac_ctx)){
+                  ret_cc_alf++;
+                }
+            }
+            alf_info->left_ctb_cc_alf_flag[comp_id]              = ret_cc_alf;
+            alf_info->ctb_cc_alf_flag_line[comp_id][ctb_col]     = ret_cc_alf;
+            alf_info->ctb_cc_alf_filter_idx[comp_id][ctb_rs]  = ret_cc_alf;
+        }
     }
 }
