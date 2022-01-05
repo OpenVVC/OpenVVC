@@ -3862,6 +3862,577 @@ vvc_inverse_dct_ii_64_sse_8lines(const int16_t* src, int16_t* dst, ptrdiff_t src
                 }
 }
 
+void
+vvc_inverse_dct_ii_64_sse_4lines_red8(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+                      int num_lines, int num_columns, int shift)
+{
+  __m128i add = _mm_set1_epi32(1 << (shift - 1));
+
+  int j, k;
+        /* Utilizing symmetry properties to the maximum to minimize
+        the
+         * number of multiplications */
+         __m128i x[4], d[4], di[2];
+         __m128i m[4], a[4], r[128], r2[128], r3[128];
+
+         //EEE
+         uint16_t DCT_II_64_EEE[8] ={64,  64,  64,  64, 64,  64,  64,  64};
+         x[0 ]=_mm_loadl_epi64((__m128i*)(src));
+         for (k = 0; k < 8; k++) {
+           d[ 0] = _mm_set1_epi16(DCT_II_64_EEE[k]);
+
+           m[0] = _mm_mullo_epi16(x[0], d[0]);
+           m[1] = _mm_mulhi_epi16(x[0], d[0]);
+
+           r[k*2] = _mm_unpacklo_epi16(m[0], m[1]);
+         }
+
+         //EEO
+         x[0 ]=_mm_loadl_epi64((__m128i*)(src +  4 * src_stride));
+         for (k = 0; k < 8; k++) {
+           d[ 0] = _mm_set1_epi16(DCT_II_64_EEOT[k * 4 + 0]);
+
+           m[0] = _mm_mullo_epi16(x[0], d[0]);
+           m[1] = _mm_mulhi_epi16(x[0], d[0]);
+
+           r2[k*2] = _mm_unpacklo_epi16(m[0], m[1]);
+         }
+         //EE
+         /* Combining even and odd terms at each hierarchy levels to
+          * calculate the final spatial domain vector */
+         for (k = 0; k < 8; k++) {
+           r3[k*2] = _mm_add_epi32(r2[k*2], r[k*2]);
+
+           r3[k*2+16] = _mm_sub_epi32(r[14-k*2], r2[14-k*2]);
+         }
+
+/**/
+         //EO
+         x[0]=_mm_loadl_epi64((__m128i*)(src +  2 * src_stride));
+         x[1]=_mm_loadl_epi64((__m128i*)(src +  6 * src_stride));
+         for (k = 0; k < 16; k++) {
+           d[0] = _mm_set1_epi16(DCT_II_64_EOT[k * 8 + 0]);
+           d[1] = _mm_set1_epi16(DCT_II_64_EOT[k * 8 + 1]);
+
+           m[0] = _mm_unpacklo_epi16(x[0],  x[1]);
+
+           di[0] = _mm_unpacklo_epi16(d[0],  d[1]);
+
+           r[k*2] = _mm_madd_epi16(m[0], di[0]);
+         }
+
+         //E
+         /* Combining even and odd terms at each hierarchy levels to
+          * calculate the final spatial domain vector */
+         for (k = 0; k < 16; k++) {
+           r2[k*2] = _mm_add_epi32(r[k*2], r3[k*2]);
+
+           r2[k*2+32] = _mm_sub_epi32(r3[30-k*2], r[30-k*2]);
+         }
+         //O
+         x[0]=_mm_loadl_epi64((__m128i*)(src +  src_stride));
+         x[1]=_mm_loadl_epi64((__m128i*)(src +  3  * src_stride));
+         x[2]=_mm_loadl_epi64((__m128i*)(src +  5  * src_stride));
+         x[3]=_mm_loadl_epi64((__m128i*)(src +  7  * src_stride));
+         for (k = 0; k < 32; k++) {
+           d[0] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 0 ]);
+           d[1] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 1 ]);
+           d[2] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 2 ]);
+           d[3] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 3 ]);
+
+           m[0] = _mm_unpacklo_epi16(x[0],  x[1]);
+           m[1] = _mm_unpacklo_epi16(x[2],  x[3]);
+
+           di[0] = _mm_unpacklo_epi16(d[0],  d[1]);
+           di[1] = _mm_unpacklo_epi16(d[2],  d[3]);
+
+           a[0] = _mm_madd_epi16(m[0], di[0]);
+           a[1] = _mm_madd_epi16(m[1], di[1]);
+
+           r3[k*2] = _mm_add_epi32(a[0], a[1]);
+         }
+
+         //Result
+         for (k = 0; k < 32; k++) {
+           r[k*2] =   _mm_add_epi32(r3[k*2], r2[k*2]);
+           r[k*2] =   _mm_add_epi32(r[k*2],add);
+           r[k*2] =   _mm_srai_epi32(r[k*2],shift);
+           r[k*2] =_mm_packs_epi32(r[k*2], _mm_setzero_si128());
+
+           r[k*2+64] = _mm_sub_epi32(r2[62-k*2], r3[62-k*2]);
+           r[k*2+64] = _mm_add_epi32(r[k*2+64],add);
+           r[k*2+64] = _mm_srai_epi32(r[k*2+64],shift);
+           r[k*2+64] =_mm_packs_epi32(r[k*2+64], _mm_setzero_si128());
+         }
+
+        for (k = 0; k < 8; k++) {
+              __m128i tmp[4]; __m128i tmp2[4];
+              tmp[0] = _mm_unpacklo_epi16(r[k*16 + 0], r[k*16 + 2]);
+              tmp[1] = _mm_unpacklo_epi16(r[k*16 + 4], r[k*16 + 6]);
+              tmp[2] = _mm_unpacklo_epi16(r[k*16 + 8], r[k*16 + 10]);
+              tmp[3] = _mm_unpacklo_epi16(r[k*16 + 12], r[k*16 + 14]);
+
+              tmp2[0] = _mm_unpacklo_epi32(tmp[0], tmp[1]);
+              tmp2[1] = _mm_unpackhi_epi32(tmp[0], tmp[1]);
+              tmp2[2] = _mm_unpacklo_epi32(tmp[2], tmp[3]);
+              tmp2[3] = _mm_unpackhi_epi32(tmp[2], tmp[3]);
+
+              tmp[0] = _mm_unpacklo_epi64(tmp2[0], tmp2[2]);
+              tmp[1] = _mm_unpackhi_epi64(tmp2[0], tmp2[2]);
+              tmp[2] = _mm_unpacklo_epi64(tmp2[1], tmp2[3]);
+              tmp[3] = _mm_unpackhi_epi64(tmp2[1], tmp2[3]);
+
+              _mm_store_si128((__m128i *) (dst+k*8+0), tmp[0]);
+              _mm_store_si128((__m128i *) (dst+k*8+64), tmp[1]);
+              _mm_store_si128((__m128i *) (dst+k*8+128), tmp[2]);
+              _mm_store_si128((__m128i *) (dst+k*8+192), tmp[3]);
+            }
+              src+=8;
+              dst += 512;
+}
+
+void
+vvc_inverse_dct_ii_64_sse_4lines_red16(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+                      int num_lines, int num_columns, int shift)
+{
+  __m128i add = _mm_set1_epi32(1 << (shift - 1));
+
+  int j, k;
+        /* Utilizing symmetry properties to the maximum to minimize
+        the
+         * number of multiplications */
+         __m128i x[8], d[8], di[4];
+         __m128i m[8], a[8], b[4], r[128], r2[128], r3[128];
+
+         //EEEE
+         uint16_t DCT_II_64_EEEE[4] ={64,  64,  64,  64};
+         x[0 ]=_mm_loadl_epi64((__m128i*)(src));
+         for (k = 0; k < 4; k++) {
+           d[ 0] = _mm_set1_epi16(DCT_II_64_EEEE[k]);
+
+           m[0] = _mm_mullo_epi16(x[0], d[0]);
+           m[1] = _mm_mulhi_epi16(x[0], d[0]);
+
+           a[k*2] = _mm_unpacklo_epi16(m[0], m[1]);
+         }
+
+         //EEEO
+         x[0 ]=_mm_loadl_epi64((__m128i*)(src +  8 * src_stride));
+         for (k = 0; k < 4; k++) {
+           d[ 0] = _mm_set1_epi16(DCT_II_64_EEEOT[k * 2 + 0]);
+
+           m[0] = _mm_mullo_epi16(x[0], d[0]);
+           m[1] = _mm_mulhi_epi16(x[0], d[0]);
+
+           r3[k*2] = _mm_unpacklo_epi16(m[0], m[1]);
+         }
+         //EEE
+         /* Combining even and odd terms at each hierarchy levels to
+          * calculate the final spatial domain vector */
+          for (k = 0; k < 4; k++) {
+            r[k*2] = _mm_add_epi32(r3[k*2], a[k*2]);
+
+            r[k*2+8] = _mm_sub_epi32(a[6-k*2], r3[6-k*2]);
+          }
+         //EEO
+         x[0 ]=_mm_loadl_epi64((__m128i*)(src +  4 * src_stride));
+         x[1 ]=_mm_loadl_epi64((__m128i*)(src +  12 * src_stride));
+         for (k = 0; k < 8; k++) {
+           d[ 0] = _mm_set1_epi16(DCT_II_64_EEOT[k * 4 + 0]);
+           d[ 1] = _mm_set1_epi16(DCT_II_64_EEOT[k * 4 + 1]);
+
+           m[0] = _mm_unpacklo_epi16(x[0],  x[1]);
+
+           di[0] = _mm_unpacklo_epi16(d[0],  d[1]);
+
+           r2[k*2] = _mm_madd_epi16(m[0], di[0]);
+
+         }
+         //EE
+         /* Combining even and odd terms at each hierarchy levels to
+          * calculate the final spatial domain vector */
+         for (k = 0; k < 8; k++) {
+           r3[k*2] = _mm_add_epi32(r2[k*2], r[k*2]);
+
+           r3[k*2+16] = _mm_sub_epi32(r[14-k*2], r2[14-k*2]);
+         }
+
+         //EO
+         x[0]=_mm_loadl_epi64((__m128i*)(src +  2 * src_stride));
+         x[1]=_mm_loadl_epi64((__m128i*)(src +  6 * src_stride));
+         x[2]=_mm_loadl_epi64((__m128i*)(src +  10 * src_stride));
+         x[3]=_mm_loadl_epi64((__m128i*)(src +  14 * src_stride));
+         for (k = 0; k < 16; k++) {
+           d[0] = _mm_set1_epi16(DCT_II_64_EOT[k * 8 + 0]);
+           d[1] = _mm_set1_epi16(DCT_II_64_EOT[k * 8 + 1]);
+           d[2] = _mm_set1_epi16(DCT_II_64_EOT[k * 8 + 2]);
+           d[3] = _mm_set1_epi16(DCT_II_64_EOT[k * 8 + 3]);
+
+           m[0] = _mm_unpacklo_epi16(x[0],  x[1]);
+           m[1] = _mm_unpacklo_epi16(x[2],  x[3]);
+
+           di[0] = _mm_unpacklo_epi16(d[0],  d[1]);
+           di[1] = _mm_unpacklo_epi16(d[2],  d[3]);
+
+           a[0] = _mm_madd_epi16(m[0], di[0]);
+           a[1] = _mm_madd_epi16(m[1], di[1]);
+
+           r[k*2] = _mm_add_epi32(a[0], a[1]);
+         }
+
+         //E
+         /* Combining even and odd terms at each hierarchy levels to
+          * calculate the final spatial domain vector */
+         for (k = 0; k < 16; k++) {
+           r2[k*2] = _mm_add_epi32(r[k*2], r3[k*2]);
+
+           r2[k*2+32] = _mm_sub_epi32(r3[30-k*2], r[30-k*2]);
+         }
+         //O
+         x[0]=_mm_loadl_epi64((__m128i*)(src +  src_stride));
+         x[1]=_mm_loadl_epi64((__m128i*)(src +  3  * src_stride));
+         x[2]=_mm_loadl_epi64((__m128i*)(src +  5  * src_stride));
+         x[3]=_mm_loadl_epi64((__m128i*)(src +  7  * src_stride));
+         x[4]=_mm_loadl_epi64((__m128i*)(src +  9  * src_stride));
+         x[5]=_mm_loadl_epi64((__m128i*)(src +  11 * src_stride));
+         x[6]=_mm_loadl_epi64((__m128i*)(src +  13 * src_stride));
+         x[7]=_mm_loadl_epi64((__m128i*)(src +  15 * src_stride));
+         for (k = 0; k < 32; k++) {
+           d[0] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 0 ]);
+           d[1] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 1 ]);
+           d[2] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 2 ]);
+           d[3] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 3 ]);
+           d[4] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 4 ]);
+           d[5] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 5 ]);
+           d[6] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 6 ]);
+           d[7] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 7 ]);
+
+           m[ 0] = _mm_unpacklo_epi16(x[0],  x[1]);
+           m[ 1] = _mm_unpacklo_epi16(x[2],  x[3]);
+           m[ 2] = _mm_unpacklo_epi16(x[4],  x[5]);
+           m[ 3] = _mm_unpacklo_epi16(x[6],  x[7]);
+
+           di[0] = _mm_unpacklo_epi16(d[0],  d[1]);
+           di[1] = _mm_unpacklo_epi16(d[2],  d[3]);
+           di[2] = _mm_unpacklo_epi16(d[4],  d[5]);
+           di[3] = _mm_unpacklo_epi16(d[6],  d[7]);
+
+           a[0] = _mm_madd_epi16(m[0], di[0]);
+           a[1] = _mm_madd_epi16(m[1], di[1]);
+           a[2] = _mm_madd_epi16(m[2], di[2]);
+           a[3] = _mm_madd_epi16(m[3], di[3]);
+
+           b[0] = _mm_add_epi32(a[0], a[1]);
+           b[1] = _mm_add_epi32(a[2], a[3]);
+
+
+           r3[k*2] = _mm_add_epi32(b[0], b[1]);
+         }
+
+         //Result
+         for (k = 0; k < 32; k++) {
+           r[k*2] =   _mm_add_epi32(r3[k*2], r2[k*2]);
+           r[k*2] =   _mm_add_epi32(r[k*2],add);
+           r[k*2] =   _mm_srai_epi32(r[k*2],shift);
+           r[k*2] =_mm_packs_epi32(r[k*2], _mm_setzero_si128());
+
+           r[k*2+64] = _mm_sub_epi32(r2[62-k*2], r3[62-k*2]);
+           r[k*2+64] = _mm_add_epi32(r[k*2+64],add);
+           r[k*2+64] = _mm_srai_epi32(r[k*2+64],shift);
+           r[k*2+64] =_mm_packs_epi32(r[k*2+64], _mm_setzero_si128());
+         }
+
+        for (k = 0; k < 8; k++) {
+              __m128i tmp[4]; __m128i tmp2[4];
+              tmp[0] = _mm_unpacklo_epi16(r[k*16 + 0], r[k*16 + 2]);
+              tmp[1] = _mm_unpacklo_epi16(r[k*16 + 4], r[k*16 + 6]);
+              tmp[2] = _mm_unpacklo_epi16(r[k*16 + 8], r[k*16 + 10]);
+              tmp[3] = _mm_unpacklo_epi16(r[k*16 + 12], r[k*16 + 14]);
+
+              tmp2[0] = _mm_unpacklo_epi32(tmp[0], tmp[1]);
+              tmp2[1] = _mm_unpackhi_epi32(tmp[0], tmp[1]);
+              tmp2[2] = _mm_unpacklo_epi32(tmp[2], tmp[3]);
+              tmp2[3] = _mm_unpackhi_epi32(tmp[2], tmp[3]);
+
+              tmp[0] = _mm_unpacklo_epi64(tmp2[0], tmp2[2]);
+              tmp[1] = _mm_unpackhi_epi64(tmp2[0], tmp2[2]);
+              tmp[2] = _mm_unpacklo_epi64(tmp2[1], tmp2[3]);
+              tmp[3] = _mm_unpackhi_epi64(tmp2[1], tmp2[3]);
+
+              _mm_store_si128((__m128i *) (dst+k*8+0), tmp[0]);
+              _mm_store_si128((__m128i *) (dst+k*8+64), tmp[1]);
+              _mm_store_si128((__m128i *) (dst+k*8+128), tmp[2]);
+              _mm_store_si128((__m128i *) (dst+k*8+192), tmp[3]);
+            }
+              src+=8;
+              dst += 512;
+}
+
+void
+vvc_inverse_dct_ii_64_sse_4lines(const int16_t* src, int16_t* dst, ptrdiff_t src_stride,
+                      int num_lines, int num_columns, int shift)
+{
+        __m128i add = _mm_set1_epi32(1 << (shift - 1));
+
+        int j, k;
+        /* Utilizing symmetry properties to the maximum to minimize
+        the number of multiplications */
+                __m128i x[16], d[16], di[8];
+                __m128i m[8], a[8], b[8], c[4], r[128], r2[128], r3[128];
+                //EEEEO
+                x[0 ]=_mm_loadl_epi64((__m128i*)(src +  16 * src_stride));
+                d[0] = _mm_set1_epi16(DCT_II_64_EEEEO[0]);
+                d[1] = _mm_set1_epi16(DCT_II_64_EEEEO[1]);
+
+                m[0] = _mm_mullo_epi16(x[0], d[0]);
+                m[1] = _mm_mulhi_epi16(x[0], d[0]);
+                m[2] = _mm_mullo_epi16(x[0], d[1]);
+                m[3] = _mm_mulhi_epi16(x[0], d[1]);
+
+                b[0] = _mm_unpacklo_epi16(m[0], m[1]);
+
+                b[2] = _mm_unpacklo_epi16(m[2], m[3]);
+
+                //EEEEE
+                x[0]=_mm_loadl_epi64((__m128i*)(src));
+                d[0] = _mm_set1_epi16(DCT_II_64_EEEEE[0]);
+                d[1] = _mm_set1_epi16(DCT_II_64_EEEEE[1]);
+
+                m[0] = _mm_mullo_epi16(x[0], d[0]);
+                m[1] = _mm_mulhi_epi16(x[0], d[0]);
+                m[2] = _mm_mullo_epi16(x[0], d[1]);
+                m[3] = _mm_mulhi_epi16(x[0], d[1]);
+
+                c[0] = _mm_unpacklo_epi16(m[0], m[1]);
+
+                c[2] = _mm_unpacklo_epi16(m[2], m[3]);
+
+                /* Combining even and odd terms at each hierarchy levels to
+                * calculate the final spatial domain vector */
+                //EEEE
+                for (k = 0; k < 2; k++) {
+                a[k*2] = _mm_add_epi32(b[k*2], c[k*2]);
+
+                a[k*2+4] = _mm_sub_epi32(c[2-k*2], b[2-k*2]);
+                }
+
+                //EEEO
+                x[0 ]=_mm_loadl_epi64((__m128i*)(src +  8 * src_stride));
+                x[1 ]=_mm_loadl_epi64((__m128i*)(src +  24 * src_stride));
+                for (k = 0; k < 4; k++) {
+                d[ 0] = _mm_set1_epi16(DCT_II_64_EEEOT[k * 2 + 0]);
+                d[ 1] = _mm_set1_epi16(DCT_II_64_EEEOT[k * 2 + 1]);
+
+                m[ 0] = _mm_unpacklo_epi16(x[0],  x[1]);
+
+                di[0] = _mm_unpacklo_epi16(d[0],  d[1]);
+
+                r3[k*2] = _mm_madd_epi16(m[0], di[0]);
+                }
+                //EEE
+                /* Combining even and odd terms at each hierarchy levels to
+                * calculate the final spatial domain vector */
+                for (k = 0; k < 4; k++) {
+                r[k*2] = _mm_add_epi32(r3[k*2], a[k*2]);
+
+                r[k*2+8] = _mm_sub_epi32(a[6-k*2], r3[6-k*2]);
+                }
+
+                //EEO
+                x[0 ]=_mm_loadl_epi64((__m128i*)(src +  4 * src_stride));
+                x[1 ]=_mm_loadl_epi64((__m128i*)(src +  12 * src_stride));
+                x[2 ]=_mm_loadl_epi64((__m128i*)(src +  20 * src_stride));
+                x[3 ]=_mm_loadl_epi64((__m128i*)(src +  28 * src_stride));
+                for (k = 0; k < 8; k++) {
+                d[ 0] = _mm_set1_epi16(DCT_II_64_EEOT[k * 4 + 0]);
+                d[ 1] = _mm_set1_epi16(DCT_II_64_EEOT[k * 4 + 1]);
+                d[ 2] = _mm_set1_epi16(DCT_II_64_EEOT[k * 4 + 2]);
+                d[ 3] = _mm_set1_epi16(DCT_II_64_EEOT[k * 4 + 3]);
+
+                m[ 0] = _mm_unpacklo_epi16(x[0],  x[1]);
+                m[ 1] = _mm_unpacklo_epi16(x[2],  x[3]);
+
+                di[0] = _mm_unpacklo_epi16(d[0],  d[1]);
+                di[1] = _mm_unpacklo_epi16(d[2],  d[3]);
+
+
+                a[0] = _mm_madd_epi16(m[0], di[0]);
+                a[1] = _mm_madd_epi16(m[1], di[1]);
+
+
+                r2[k*2] = _mm_add_epi32(a[0], a[1]);
+                }
+                //EE
+                /* Combining even and odd terms at each hierarchy levels to
+                * calculate the final spatial domain vector */
+                for (k = 0; k < 8; k++) {
+                r3[k*2] = _mm_add_epi32(r2[k*2], r[k*2]);
+
+                r3[k*2+16] = _mm_sub_epi32(r[14-k*2], r2[14-k*2]);
+                }
+
+                //EO
+                x[0 ]=_mm_loadl_epi64((__m128i*)(src +  2 * src_stride));
+                x[1 ]=_mm_loadl_epi64((__m128i*)(src +  6 * src_stride));
+                x[2 ]=_mm_loadl_epi64((__m128i*)(src +  10 * src_stride));
+                x[3 ]=_mm_loadl_epi64((__m128i*)(src +  14 * src_stride));
+                x[4 ]=_mm_loadl_epi64((__m128i*)(src +  18 * src_stride));
+                x[5 ]=_mm_loadl_epi64((__m128i*)(src +  22 * src_stride));
+                x[6 ]=_mm_loadl_epi64((__m128i*)(src +  26 * src_stride));
+                x[7 ]=_mm_loadl_epi64((__m128i*)(src +  30 * src_stride));
+                for (k = 0; k < 16; k++) {
+                d[ 0] = _mm_set1_epi16(DCT_II_64_EOT[k * 8 + 0]);
+                d[ 1] = _mm_set1_epi16(DCT_II_64_EOT[k * 8 + 1]);
+                d[ 2] = _mm_set1_epi16(DCT_II_64_EOT[k * 8 + 2]);
+                d[ 3] = _mm_set1_epi16(DCT_II_64_EOT[k * 8 + 3]);
+                d[ 4] = _mm_set1_epi16(DCT_II_64_EOT[k * 8 + 4]);
+                d[ 5] = _mm_set1_epi16(DCT_II_64_EOT[k * 8 + 5]);
+                d[ 6] = _mm_set1_epi16(DCT_II_64_EOT[k * 8 + 6]);
+                d[ 7] = _mm_set1_epi16(DCT_II_64_EOT[k * 8 + 7]);
+
+                m[ 0] = _mm_unpacklo_epi16(x[0],  x[1]);
+                m[ 1] = _mm_unpacklo_epi16(x[2],  x[3]);
+                m[ 2] = _mm_unpacklo_epi16(x[4],  x[5]);
+                m[ 3] = _mm_unpacklo_epi16(x[6],  x[7]);
+
+                di[0] = _mm_unpacklo_epi16(d[0],  d[1]);
+                di[1] = _mm_unpacklo_epi16(d[2],  d[3]);
+                di[2] = _mm_unpacklo_epi16(d[4],  d[5]);
+                di[3] = _mm_unpacklo_epi16(d[6],  d[7]);
+
+                a[0] = _mm_madd_epi16(m[0], di[0]);
+                a[1] = _mm_madd_epi16(m[1], di[1]);
+                a[2] = _mm_madd_epi16(m[2], di[2]);
+                a[3] = _mm_madd_epi16(m[3], di[3]);
+
+                b[0] = _mm_add_epi32(a[0], a[1]);
+                b[1] = _mm_add_epi32(a[2], a[3]);
+
+
+
+                r[k*2] = _mm_add_epi32(b[0], b[1]);
+
+                }
+
+                //E
+                /* Combining even and odd terms at each hierarchy levels to
+                * calculate the final spatial domain vector */
+                for (k = 0; k < 16; k++) {
+                r2[k*2] = _mm_add_epi32(r[k*2], r3[k*2]);
+
+                r2[k*2+32] = _mm_sub_epi32(r3[30-k*2], r[30-k*2]);
+                }
+                //O
+                x[0 ]=_mm_loadl_epi64((__m128i*)(src +  src_stride));
+                x[1 ]=_mm_loadl_epi64((__m128i*)(src +  3  * src_stride));
+                x[2 ]=_mm_loadl_epi64((__m128i*)(src +  5  * src_stride));
+                x[3 ]=_mm_loadl_epi64((__m128i*)(src +  7  * src_stride));
+                x[4 ]=_mm_loadl_epi64((__m128i*)(src +  9  * src_stride));
+                x[5 ]=_mm_loadl_epi64((__m128i*)(src +  11 * src_stride));
+                x[6 ]=_mm_loadl_epi64((__m128i*)(src +  13 * src_stride));
+                x[7 ]=_mm_loadl_epi64((__m128i*)(src +  15 * src_stride));
+                x[8 ]=_mm_loadl_epi64((__m128i*)(src +  17 * src_stride));
+                x[9 ]=_mm_loadl_epi64((__m128i*)(src +  19 * src_stride));
+                x[10]=_mm_loadl_epi64((__m128i*)(src +  21 * src_stride));
+                x[11]=_mm_loadl_epi64((__m128i*)(src +  23 * src_stride));
+                x[12]=_mm_loadl_epi64((__m128i*)(src +  25 * src_stride));
+                x[13]=_mm_loadl_epi64((__m128i*)(src +  27 * src_stride));
+                x[14]=_mm_loadl_epi64((__m128i*)(src +  29 * src_stride));
+                x[15]=_mm_loadl_epi64((__m128i*)(src +  31 * src_stride));
+                for (k = 0; k < 32; k++) {
+                d[ 0] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 0 ]);
+                d[ 1] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 1 ]);
+                d[ 2] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 2 ]);
+                d[ 3] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 3 ]);
+                d[ 4] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 4 ]);
+                d[ 5] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 5 ]);
+                d[ 6] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 6 ]);
+                d[ 7] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 7 ]);
+                d[ 8] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 8 ]);
+                d[ 9] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 9 ]);
+                d[10] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 10]);
+                d[11] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 11]);
+                d[12] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 12]);
+                d[13] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 13]);
+                d[14] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 14]);
+                d[15] = _mm_set1_epi16(DCT_II_64_OT[k * 16 + 15]);
+
+                m[ 0] = _mm_unpacklo_epi16(x[0],  x[1]);
+                m[ 1] = _mm_unpacklo_epi16(x[2],  x[3]);
+                m[ 2] = _mm_unpacklo_epi16(x[4],  x[5]);
+                m[ 3] = _mm_unpacklo_epi16(x[6],  x[7]);
+                m[ 4] = _mm_unpacklo_epi16(x[8],  x[9]);
+                m[ 5] = _mm_unpacklo_epi16(x[10], x[11]);
+                m[ 6] = _mm_unpacklo_epi16(x[12], x[13]);
+                m[ 7] = _mm_unpacklo_epi16(x[14], x[15]);
+
+                di[0] = _mm_unpacklo_epi16(d[0],  d[1]);
+                di[1] = _mm_unpacklo_epi16(d[2],  d[3]);
+                di[2] = _mm_unpacklo_epi16(d[4],  d[5]);
+                di[3] = _mm_unpacklo_epi16(d[6],  d[7]);
+                di[4] = _mm_unpacklo_epi16(d[8],  d[9]);
+                di[5] = _mm_unpacklo_epi16(d[10], d[11]);
+                di[6] = _mm_unpacklo_epi16(d[12], d[13]);
+                di[7] = _mm_unpacklo_epi16(d[14], d[15]);
+
+                a[0] = _mm_madd_epi16(m[0], di[0]);
+                a[1] = _mm_madd_epi16(m[1], di[1]);
+                a[2] = _mm_madd_epi16(m[2], di[2]);
+                a[3] = _mm_madd_epi16(m[3], di[3]);
+                a[4] = _mm_madd_epi16(m[4], di[4]);
+                a[5] = _mm_madd_epi16(m[5], di[5]);
+                a[6] = _mm_madd_epi16(m[6], di[6]);
+                a[7] = _mm_madd_epi16(m[7], di[7]);
+
+                b[0] = _mm_add_epi32(a[0], a[1]);
+                b[1] = _mm_add_epi32(a[2], a[3]);
+                b[2] = _mm_add_epi32(a[4], a[5]);
+                b[3] = _mm_add_epi32(a[6], a[7]);
+
+                c[0] = _mm_add_epi32(b[0], b[1]);
+                c[1] = _mm_add_epi32(b[2], b[3]);
+
+                r3[k*2] = _mm_add_epi32(c[0], c[1]);
+                }
+
+                //Result
+                for (k = 0; k < 32; k++) {
+                r[k*2] =   _mm_add_epi32(r3[k*2], r2[k*2]);
+                r[k*2] =   _mm_add_epi32(r[k*2],add);
+                r[k*2] =   _mm_srai_epi32(r[k*2],shift);
+                r[k*2] =_mm_packs_epi32(r[k*2], _mm_setzero_si128());
+
+                r[k*2+64] = _mm_sub_epi32(r2[62-k*2], r3[62-k*2]);
+                r[k*2+64] = _mm_add_epi32(r[k*2+64],add);
+                r[k*2+64] = _mm_srai_epi32(r[k*2+64],shift);
+                r[k*2+64] =_mm_packs_epi32(r[k*2+64], _mm_setzero_si128());
+                }
+
+            for (k = 0; k < 8; k++) {
+                    __m128i tmp[4]; __m128i tmp2[4];
+                    tmp[0] = _mm_unpacklo_epi16(r[k*16 + 0], r[k*16 + 2]);
+                    tmp[1] = _mm_unpacklo_epi16(r[k*16 + 4], r[k*16 + 6]);
+                    tmp[2] = _mm_unpacklo_epi16(r[k*16 + 8], r[k*16 + 10]);
+                    tmp[3] = _mm_unpacklo_epi16(r[k*16 + 12], r[k*16 + 14]);
+
+                    tmp2[0] = _mm_unpacklo_epi32(tmp[0], tmp[1]);
+                    tmp2[1] = _mm_unpackhi_epi32(tmp[0], tmp[1]);
+                    tmp2[2] = _mm_unpacklo_epi32(tmp[2], tmp[3]);
+                    tmp2[3] = _mm_unpackhi_epi32(tmp[2], tmp[3]);
+
+                    tmp[0] = _mm_unpacklo_epi64(tmp2[0], tmp2[2]);
+                    tmp[1] = _mm_unpackhi_epi64(tmp2[0], tmp2[2]);
+                    tmp[2] = _mm_unpacklo_epi64(tmp2[1], tmp2[3]);
+                    tmp[3] = _mm_unpackhi_epi64(tmp2[1], tmp2[3]);
+
+                    _mm_store_si128((__m128i *) (dst+k*8+0), tmp[0]);
+                    _mm_store_si128((__m128i *) (dst+k*8+64), tmp[1]);
+                    _mm_store_si128((__m128i *) (dst+k*8+128), tmp[2]);
+                    _mm_store_si128((__m128i *) (dst+k*8+192), tmp[3]);
+                }
+                    src+=8;
+                    dst += 512;
+            }
 
 void
 vvc_inverse_dct_ii_64_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
@@ -3870,37 +4441,37 @@ vvc_inverse_dct_ii_64_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride
     /*FIXME it would be more efficient to get per reduced lines speialised
       functions instead off checking */
     if (num_lines>>3){
-      if (line_brk > 16) {
-          vvc_inverse_dct_ii_64_sse_8lines(src, dst, src_stride, num_lines&0xF8, line_brk, shift);
-      }
-      else if (line_brk > 8){
-          vvc_inverse_dct_ii_64_sse_8lines_red16(src, dst, src_stride, num_lines&0xF8, line_brk, shift);
-      }
-      else {
-          vvc_inverse_dct_ii_64_sse_8lines_red8(src, dst, src_stride, num_lines&0xF8, line_brk, shift);
-      }
+        if (line_brk > 16) {
+            vvc_inverse_dct_ii_64_sse_8lines(src, dst, src_stride, num_lines&0xF8, line_brk, shift);
+        }
+        else if (line_brk > 8){
+            vvc_inverse_dct_ii_64_sse_8lines_red16(src, dst, src_stride, num_lines&0xF8, line_brk, shift);
+        }
+        else {
+            vvc_inverse_dct_ii_64_sse_8lines_red8(src, dst, src_stride, num_lines&0xF8, line_brk, shift);
+        }
         src += (num_lines & 0xF8);
         dst += (num_lines >> 3) << 9;
     }
 
     if (!(num_lines & 0x7)) return;
-    vvc_inverse_dct_ii_64(src, dst, src_stride, num_lines & 0x7, line_brk, shift);
 
-    // if (num_lines & 0x4){
-    //   vvc_inverse_dct_ii_64(src, dst, src_stride, num_lines & 0x4, line_brk, shift);
-    //   src += 4;
-    //   dst += 256;
-    // }
-    //
-    // if (num_lines & 0x2){
-    //   vvc_inverse_dct_ii_64(src, dst, src_stride, num_lines & 0x2, line_brk, shift);
-    //   src += 2;
-    //   dst += 128;
-    // }
-    //
-    // if (num_lines & 0x1){
-    //     vvc_inverse_dct_ii_64(src, dst, src_stride, num_lines & 0x1, line_brk, shift);
-    // }
+    if (num_lines & 0x4){
+        if (line_brk > 16) {
+            vvc_inverse_dct_ii_64_sse_4lines(src, dst, src_stride, num_lines&0x4, line_brk, shift);
+        }
+        else if (line_brk > 8){
+            vvc_inverse_dct_ii_64_sse_4lines_red16(src, dst, src_stride, num_lines&0x4, line_brk, shift);
+        }
+        else {
+            vvc_inverse_dct_ii_64_sse_4lines_red8(src, dst, src_stride, num_lines&0x4, line_brk, shift);
+        }
+        src += 4;
+        dst += 256;
+    }
+    
+    if (!(num_lines & 0x3)) return;
+    vvc_inverse_dct_ii_64(src, dst, src_stride, num_lines & 0x3, line_brk, shift);
 }
 
 
