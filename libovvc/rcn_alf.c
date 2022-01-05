@@ -44,6 +44,15 @@
 
 #include "bitdepth.h"
 
+enum Direction
+{
+  HOR,
+  VER,
+  DIAG0,
+  DIAG1,
+  NUM_DIRECTIONS
+};
+
 struct ALFilterIdx {
     uint8_t class_idx;
     uint8_t tr_idx;
