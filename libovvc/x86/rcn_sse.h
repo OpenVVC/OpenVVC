@@ -1,6 +1,7 @@
 #ifndef RCN_SSE_H
 #define RCN_SSE_H
 #include "rcn_structures.h"
+#include "ovconfig.h"
 
 void rcn_init_mc_functions_sse(struct RCNFunctions *const rcn_funcs);
 void rcn_init_tr_functions_sse(struct RCNFunctions *const rcn_funcs);
@@ -16,5 +17,9 @@ void rcn_init_prof_functions_sse(struct RCNFunctions *const rcn_funcs);
 void rcn_init_bdof_functions_sse(struct RCNFunctions *const rcn_funcs);
 void rcn_init_ciip_functions_sse(struct RCNFunctions *const rcn_funcs);
 void rcn_init_df_functions_sse(struct RCNFunctions *const rcn_funcs);
+
+#if USE_AVX2
+void rcn_init_alf_functions_avx2(struct RCNFunctions *rcn_func);
+#endif
 
 #endif//RCN_SSE_H

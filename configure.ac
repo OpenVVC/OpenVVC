@@ -125,6 +125,7 @@ AS_CASE([$host_os],
 
 # Check compiler build capability
 AS_IF([test x"$X86" = x"true"], [AX_CHECK_COMPILE_FLAG([-msse4.1], [flag_sse4_1="true" CFLAGS="-msse4.1 $CFLAGS"])],[])
+AS_IF([test x"$X86" = x"true"], [AX_CHECK_COMPILE_FLAG([-mavx2], [flag_avx="true" CFLAGS="-mavx2 $CFLAGS" AC_DEFINE([USE_AVX2],[1], [Define the use of AVX2 optimisation])])],[])
 
 # Define Makefile Conditionals
 AM_CONDITIONAL([HAVE_SSE4_1], [test x"$flag_sse4_1" = x"true" -a x"$X86" = x"true" -a x"$enable_simd" = x"yes"])

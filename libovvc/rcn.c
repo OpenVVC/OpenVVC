@@ -17,8 +17,8 @@
   #if __x86_64__
     #if __SSE4_1__
       #include "x86/rcn_sse.h"
-    #elif __AVX__
-      //Link AVX optims
+    #elif __AVX2__
+
     #else
       //Failover x86
   #endif
@@ -181,7 +181,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
   #ifndef NO_SIMD
     #if __x86_64__
       #if __SSE4_1__
-      if (__builtin_cpu_supports ("sse4.1") && bitdepth == 10) {
+      if (__builtin_cpu_supports("sse4.1") && bitdepth == 10) {
           rcn_init_mc_functions_sse(rcn_func);
           rcn_init_tr_functions_sse(rcn_func);
           rcn_init_dc_planar_functions_sse(rcn_func);
@@ -203,10 +203,13 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
               }
           }
       }
-      #elif __AVX__
-        //Link AVX optims
-      #else
-        //Failover x86
+      #endif
+      #if __AVX2__
+        #if USE_AVX2
+          if (__builtin_cpu_supports("avx2") && bitdepth == 10) {
+            rcn_init_alf_functions_avx2(rcn_func);
+          }
+        #endif
       #endif
     #elif __ARM_ARCH
       #if __ARM_NEON
