@@ -20,6 +20,8 @@ void rcn_init_df_functions_sse(struct RCNFunctions *const rcn_funcs);
 
 #if USE_AVX2
 void rcn_init_alf_functions_avx2(struct RCNFunctions *rcn_func);
+void rcn_init_sao_functions_avx2(struct RCNFunctions *rcn_func);
+
 #endif
 
 #endif//RCN_SSE_H

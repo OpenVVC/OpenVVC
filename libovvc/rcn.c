@@ -198,9 +198,9 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
           rcn_init_intra_angular_functions_10_sse(rcn_func);
 
           if (lm_chroma_enabled) {
-              if (!sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {
-                  rcn_init_cclm_functions_sse(rcn_func);
-              }
+            if (!sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {
+              rcn_init_cclm_functions_sse(rcn_func);
+            }
           }
       }
       #endif
@@ -208,6 +208,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
         #if USE_AVX2
           if (__builtin_cpu_supports("avx2") && bitdepth == 10) {
             rcn_init_alf_functions_avx2(rcn_func);
+            rcn_init_sao_functions_avx2(rcn_func);
           }
         #endif
       #endif
