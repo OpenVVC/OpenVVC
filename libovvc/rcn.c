@@ -14,14 +14,13 @@
 #include "drv.h"
 
 #ifndef NO_SIMD
-  #if __x86_64__
-    #if __SSE4_1__
+  #if HAVE_X86_OPTIM
+    #if HAVE_SSE4_1
       #include "x86/rcn_sse.h"
-    #elif __AVX2__
-
-    #else
-      //Failover x86
-  #endif
+    #endif
+    #if HAVE_AVX2
+      #include "x86/rcn_avx2.h"
+    #endif
   #elif __ARM_ARCH
     #if __ARM_NEON
       #include "arm/rcn_neon.h"
@@ -179,8 +178,8 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
   }
 
   #ifndef NO_SIMD
-    #if __x86_64__
-      #if __SSE4_1__
+    #if HAVE_X86_OPTIM
+      #if HAVE_SSE4_1
       if (__builtin_cpu_supports("sse4.1") && bitdepth == 10) {
           rcn_init_mc_functions_sse(rcn_func);
           rcn_init_tr_functions_sse(rcn_func);
@@ -204,13 +203,11 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
           }
       }
       #endif
-      #if __AVX2__
-        #if USE_AVX2
-          if (__builtin_cpu_supports("avx2") && bitdepth == 10) {
-            rcn_init_alf_functions_avx2(rcn_func);
-            rcn_init_sao_functions_avx2(rcn_func);
-          }
-        #endif
+      #if HAVE_AVX2
+        if (__builtin_cpu_supports("avx2") && bitdepth == 10) {
+          rcn_init_alf_functions_avx2(rcn_func);
+          rcn_init_sao_functions_avx2(rcn_func);
+        }
       #endif
     #elif __ARM_ARCH
       #if __ARM_NEON

@@ -124,11 +124,28 @@ AS_CASE([$host_os],
 )
 
 # Check compiler build capability
-AS_IF([test x"$X86" = x"true"], [AX_CHECK_COMPILE_FLAG([-msse4.1], [flag_sse4_1="true" CFLAGS="-msse4.1 $CFLAGS"])],[])
-AS_IF([test x"$X86" = x"true"], [AX_CHECK_COMPILE_FLAG([-mavx2], [flag_avx="true" CFLAGS="-mavx2 $CFLAGS" AC_DEFINE([USE_AVX2],[1], [Define the use of AVX2 optimisation])])],[])
+AS_IF([test x"$X86" = x"true"], [
+                AX_CHECK_COMPILE_FLAG([-msse4.1], [
+                        flag_sse4_1="true" CFLAGS="-msse4.1 $CFLAGS"
+                        AC_DEFINE([HAVE_SSE4_1],[1], [Define the use of SSE4_1 optimisation])
+                        AM_CONDITIONAL([HAVE_SSE4_1], [test x"$enable_simd" = x"yes"])
+                ])
+        ])
+
+AS_IF([test x"$X86" = x"true"], [
+                AX_CHECK_COMPILE_FLAG([-mavx2], [
+                        flag_avx2="true" CFLAGS="-mavx2 $CFLAGS"
+                        AC_DEFINE([HAVE_AVX2],[1], [Define the use of AVX2 optimisation])
+                        AM_CONDITIONAL([HAVE_AVX2], [test x"$enable_simd" = x"yes"])
+                ])
+        ])
+
+AS_IF([test x"$flag_sse4_1" = x"true" -o x"$flag_avx2" = x"true"], [
+                AC_DEFINE([HAVE_X86_OPTIM],[1], [Define the use of X86 optimisation])
+                AM_CONDITIONAL([HAVE_X86_OPTIM], [test x"$enable_simd" = x"yes"])
+        ]);
 
 # Define Makefile Conditionals
-AM_CONDITIONAL([HAVE_SSE4_1], [test x"$flag_sse4_1" = x"true" -a x"$X86" = x"true" -a x"$enable_simd" = x"yes"])
 
 AM_CONDITIONAL([HAVE_NEON], [test x"$ARM" = x"true" -a x"$enable_simd" = x"yes"])
 
@@ -137,4 +154,5 @@ AM_CONDITIONAL([HAVE_NEON_ASM], [test x"$ARM" = x"true" -a x"$enable_simd" = x"y
 AM_CONDITIONAL([HAVE_NEON_SIMDE], [test x"$ARM" = x"true" -a x"$enable_simd" = x"yes" -a x"$enable_arm_simde" = x"yes"])
 
 AM_CONDITIONAL([HAVE_EXCLUDE_ANDROID], [test x"$ARM" = x"true" -a x"$isAndroid" = x"true"])
+
 AC_OUTPUT
