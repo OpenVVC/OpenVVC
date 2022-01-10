@@ -355,7 +355,7 @@ static inline void
 ovvc_transform_sub_half_sse_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
                               const int16_t *src, ptrdiff_t src_stride)
 {
-   __m128i l0, l1, l2, l3, r0, r1, r2, r3, s0, s1, s2, s3;
+   __m128i l0, l1, l2, l3, r0, r1, r2, r3;
 
    l0 = _mm_loadu_si128((__m128i *)&dst[0 * dst_stride]);
    l1 = _mm_loadu_si128((__m128i *)&dst[1 * dst_stride]);
@@ -365,17 +365,6 @@ ovvc_transform_sub_half_sse_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
    r1 = _mm_loadu_si128((__m128i *)&src[1 * src_stride]);
    r2 = _mm_loadu_si128((__m128i *)&src[2 * src_stride]);
    r3 = _mm_loadu_si128((__m128i *)&src[3 * src_stride]);
-
-   //         sign  = value & (1 << 15);
-   s0 = _mm_srai_epi16(_mm_and_si128(r0, _mm_set1_epi16(SIGN_16)), 15);
-   s1 = _mm_srai_epi16(_mm_and_si128(r1, _mm_set1_epi16(SIGN_16)), 15);
-   s2 = _mm_srai_epi16(_mm_and_si128(r2, _mm_set1_epi16(SIGN_16)), 15);
-   s3 = _mm_srai_epi16(_mm_and_si128(r3, _mm_set1_epi16(SIGN_16)), 15);
-
-   s0 = _mm_andnot_si128(_mm_abs_epi16(s0), _mm_set1_epi16(1));
-   s1 = _mm_andnot_si128(_mm_abs_epi16(s1), _mm_set1_epi16(1));
-   s2 = _mm_andnot_si128(_mm_abs_epi16(s2), _mm_set1_epi16(1));
-   s3 = _mm_andnot_si128(_mm_abs_epi16(s3), _mm_set1_epi16(1));
 
    //         value = (-value);
    r0 = _mm_xor_si128(r0, _mm_set1_epi16((int16_t)0xFFFF));
