@@ -5,5 +5,6 @@
 void rcn_init_alf_functions_avx2(struct RCNFunctions *rcn_func);
 void rcn_init_sao_functions_avx2(struct RCNFunctions *rcn_func);
 void rcn_init_ict_functions_avx2(struct RCNFunctions *rcn_func, uint8_t type);
+void rcn_init_mip_functions_avx2(struct RCNFunctions *const rcn_funcs);
 
 #endif//RCN_AVX2_H

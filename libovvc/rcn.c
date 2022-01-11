@@ -208,6 +208,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
           rcn_init_alf_functions_avx2(rcn_func);
           rcn_init_sao_functions_avx2(rcn_func);
           rcn_init_ict_functions_avx2(rcn_func, ict_type);
+          rcn_init_mip_functions_avx2(rcn_func);
         }
       #endif
     #elif __ARM_ARCH
