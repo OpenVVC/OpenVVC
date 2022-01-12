@@ -11,5 +11,6 @@ void rcn_init_bdof_functions_avx2(struct RCNFunctions *const rcn_funcs);
 void rcn_init_dmvr_functions_avx2(struct RCNFunctions *const rcn_funcs);
 void rcn_init_ciip_functions_avx2(struct RCNFunctions *const rcn_funcs);
 void rcn_init_mc_functions_avx2(struct RCNFunctions *const rcn_funcs);
+void rcn_init_intra_angular_functions_10_avx2(struct RCNFunctions *rcn_func);
 
 #endif//RCN_AVX2_H

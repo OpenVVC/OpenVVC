@@ -30,6 +30,7 @@ libx86optim_la_SOURCES +=	rcn_alf_avx2.c              \
 							rcn_prof_bdof_avx2.c        \
 							rcn_dmvr_avx2.c             \
 							rcn_mc_avx2.c               \
+							rcn_intra_angular_avx2.c    \
 							rcn_transform_add_avx2.c
 
 

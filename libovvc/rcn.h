@@ -50,8 +50,7 @@ void rcn_init_tr_functions_10(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_ict_functions_10(struct RCNFunctions *const rcn_funcs, uint8_t ict_type,
                                uint8_t bitdepth);
-void rcn_init_intra_angular_functions_10_sse(struct RCNFunctions *rcn_func);
-
+                               
 void rcn_init_fill_ref_10(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_dequant_10(struct RCNFunctions *rcn_funcs);

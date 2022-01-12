@@ -214,6 +214,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
           rcn_init_dmvr_functions_avx2(rcn_func);
           rcn_init_prof_functions_avx2(rcn_func);
           rcn_init_bdof_functions_avx2(rcn_func);
+          rcn_init_intra_angular_functions_10_avx2(rcn_func);
         }
       #endif
     #elif __ARM_ARCH
