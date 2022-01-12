@@ -27,6 +27,7 @@ if HAVE_AVX2
 libx86optim_la_SOURCES +=	rcn_alf_avx2.c              \
 							rcn_sao_avx2.c              \
 							rcn_intra_mip_avx2.c        \
+							rcn_dmvr_avx2.c             \
 							rcn_mc_avx2.c               \
 							rcn_transform_add_avx2.c
 
