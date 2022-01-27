@@ -1876,7 +1876,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
         struct TUInfo tu_info[16] = {0};
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         uint8_t merge_flag   = !!(cu.cu_flags & flg_merge_flag);
-        uint8_t rqt_root_cbf = merge_flag || ovcabac_read_ae_root_cbf(cabac_ctx);
+        uint8_t rqt_root_cbf = !(cu.cu_flags & flg_cu_skip_flag) && (merge_flag || ovcabac_read_ae_root_cbf(cabac_ctx));
         if (ctu_dec->tmp_ciip) {
         fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_cb_w, log2_cb_h);
         fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0, y0, log2_cb_w, log2_cb_h);
