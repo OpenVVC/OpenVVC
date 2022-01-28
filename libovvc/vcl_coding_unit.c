@@ -2159,6 +2159,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                                       max_nb_cand, log2_cb_w + log2_cb_h <= 5);
 
             fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_cb_w, log2_cb_h);
+            fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0, y0, log2_cb_w, log2_cb_h);
 
             inter_ctx->prec_amvr = mv_info.inter_dir & 0x1 ? mv_info.mv0.prec_amvr
                                                            : mv_info.mv1.prec_amvr;

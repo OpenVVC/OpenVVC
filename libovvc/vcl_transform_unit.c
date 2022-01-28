@@ -779,10 +779,6 @@ transform_unit_st(OVCTUDec *const ctu_dec,
 
             residual_coding_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, tu_info);
 
-            if (ctu_dec->tmp_ciip) {
-                fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_tb_w, log2_tb_h);
-            }
-
         }
 
         if (jcbcr_flag) {
@@ -790,18 +786,11 @@ transform_unit_st(OVCTUDec *const ctu_dec,
             residual_coding_jcbcr(ctu_dec, x0 >> 1, y0 >> 1, log2_tb_w - 1,
                                   log2_tb_h - 1, cbf_mask_c, tu_info);
 
-            if (ctu_dec->tmp_ciip) {
-                fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0, y0, log2_tb_w, log2_tb_h);
-            }
-
         } else if (cbf_mask_c) {
 
             residual_coding_c(ctu_dec, x0 >> 1, y0 >> 1, log2_tb_w - 1,
                               log2_tb_h - 1, cbf_mask_c, tu_info);
 
-            if (ctu_dec->tmp_ciip) {
-                fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0, y0, log2_tb_w, log2_tb_h);
-            }
         }
 
     }
@@ -1877,10 +1866,6 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         uint8_t merge_flag   = !!(cu.cu_flags & flg_merge_flag);
         uint8_t rqt_root_cbf = !(cu.cu_flags & flg_cu_skip_flag) && (merge_flag || ovcabac_read_ae_root_cbf(cabac_ctx));
-        if (ctu_dec->tmp_ciip) {
-        fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_cb_w, log2_cb_h);
-        fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0, y0, log2_cb_w, log2_cb_h);
-        }
         if (rqt_root_cbf) {
             uint8_t sbt_flag = 0;
             uint8_t sbt_type = 0;
