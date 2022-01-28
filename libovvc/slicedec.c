@@ -1357,8 +1357,16 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->drv_ctx.inter_ctx.ciip_flag = sps->sps_ciip_enabled_flag;
     ctudec->drv_ctx.inter_ctx.mmvd_flag = sps->sps_mmvd_enabled_flag;
     ctudec->drv_ctx.inter_ctx.gpm_flag  = sps->sps_gpm_enabled_flag;
-    ctudec->drv_ctx.inter_ctx.max_gpm_cand = ctudec->max_num_merge_candidates
-                            - sps->sps_max_num_merge_cand_minus_max_num_gpm_cand;
+    if (sps->sps_gpm_enabled_flag) {
+        if (ctudec->max_num_merge_candidates >= 3) {
+            ctudec->drv_ctx.inter_ctx.max_gpm_cand = ctudec->max_num_merge_candidates
+                - sps->sps_max_num_merge_cand_minus_max_num_gpm_cand;
+        } else if (ctudec->max_num_merge_candidates == 2) {
+            ctudec->drv_ctx.inter_ctx.max_gpm_cand = 2;
+        } else {
+            ctudec->drv_ctx.inter_ctx.max_gpm_cand = 0;
+        }
+    }
     ctudec->drv_ctx.inter_ctx.bcw_flag = sps->sps_bcw_enabled_flag;
     ctudec->drv_ctx.inter_ctx.amvr_flag = sps->sps_amvr_enabled_flag;
     ctudec->drv_ctx.inter_ctx.affine_amvr_flag = sps->sps_affine_amvr_enabled_flag;
