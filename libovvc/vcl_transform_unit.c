@@ -1716,15 +1716,12 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
 static uint8_t
 sbt_allowed(uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
-  uint8_t sbt_status = 0;
   uint8_t allow_half_v = log2_tb_w >= 3;
   uint8_t allow_half_h = log2_tb_h >= 3;
   uint8_t allow_quad_v = log2_tb_w >= 4;
   uint8_t allow_quad_h = log2_tb_h >= 4;
 
-  if (log2_tb_w > 6 || log2_tb_h > 6) {
-      return 0;
-  }
+  uint8_t sbt_status = 0;
 
   sbt_status |= allow_half_h;
   sbt_status |= allow_half_v << 1;
@@ -1872,32 +1869,38 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
         uint8_t rqt_root_cbf = !(cu.cu_flags & flg_cu_skip_flag) && (merge_flag || ovcabac_read_ae_root_cbf(cabac_ctx));
         if (rqt_root_cbf) {
             uint8_t sbt_flag = 0;
-            uint8_t sbt_type = 0;
-            if (ctu_dec->sbt_enabled && !ctu_dec->tmp_ciip && log2_cb_w <= part_ctx->log2_max_tb_s && log2_cb_h <= part_ctx->log2_max_tb_s) {
-                uint8_t sbt_mask = sbt_allowed(log2_cb_w, log2_cb_h);
-                if (sbt_mask) {
-                    sbt_flag = ovcabac_read_ae_sbt_flag(cabac_ctx, log2_cb_w, log2_cb_h);
-                    if (sbt_flag) {
-                        sbt_type = sbt_mode(cabac_ctx, log2_cb_w, log2_cb_h, sbt_mask);
+            if (!split_tu) {
+                if (ctu_dec->sbt_enabled && !ctu_dec->tmp_ciip) {
+                    uint8_t sbt_mask = sbt_allowed(log2_cb_w, log2_cb_h);
+                    if (sbt_mask) {
+                        sbt_flag = ovcabac_read_ae_sbt_flag(cabac_ctx, log2_cb_w, log2_cb_h);
+                        if (sbt_flag) {
+                            uint8_t sbt_type = sbt_mode(cabac_ctx, log2_cb_w, log2_cb_h, sbt_mask);
+                            uint8_t sbt_pos = !!(sbt_type & 0x80);
+
+                            sbt_type &= 0x7F;
+
+                            sbt_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
+                                     sbt_type, !!sbt_pos, cu.cu_flags, tu_info);
+                        }
                     }
                 }
-            }
 
-            if (!sbt_flag) {
-                transform_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                               part_ctx->log2_max_tb_s, 1, cu.cu_flags, 0, tu_info);
-            } else {
-                /* SBT tree */
-                uint8_t sbt_pos = !!(sbt_type & 0x80);
-                sbt_type &= 0x7F;
-                sbt_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                         sbt_type, !!sbt_pos, cu.cu_flags, tu_info);
-            }
+                if (!sbt_flag) {
+                    uint8_t cbf_mask = transform_unit_st(ctu_dec, x0, y0, log2_cb_w, log2_cb_h,
+                                                         1, cu.cu_flags, 0, tu_info);
 
-            if (!sbt_flag) {
-                if (!split_tu) {
+                    tu_info->cbf_mask = cbf_mask;
+
                     lfnst_mts(ctu_dec, log2_cb_w, log2_cb_h, cu.cu_flags, tu_info);
                 }
+
+            } else {
+                transform_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
+                               part_ctx->log2_max_tb_s, 1, cu.cu_flags, 0, tu_info);
+            }
+
+            if (!sbt_flag) {
 
                 int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
                 struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
@@ -1912,8 +1915,8 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
                 dbf_fill_qp_map(&dbf_info->qp_map_cb, x0, y0, log2_cb_w, log2_cb_h, qp_cb);
                 dbf_fill_qp_map(&dbf_info->qp_map_cr, x0, y0, log2_cb_w, log2_cb_h, qp_cr);
 
-            ctu_dec->rcn_funcs.tmp.rcn_transform_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, part_ctx->log2_max_tb_s,
-                               cu.cu_flags, tu_info);
+                ctu_dec->rcn_funcs.tmp.rcn_transform_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, part_ctx->log2_max_tb_s,
+                                                          cu.cu_flags, tu_info);
             }
         } else {
                 int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
