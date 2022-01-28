@@ -1869,7 +1869,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
         if (rqt_root_cbf) {
             uint8_t sbt_flag = 0;
             uint8_t sbt_type = 0;
-            if (ctu_dec->sbt_enabled && !ctu_dec->tmp_ciip) {
+            if (ctu_dec->sbt_enabled && !ctu_dec->tmp_ciip && log2_cb_w <= part_ctx->log2_max_tb_s && log2_cb_h <= part_ctx->log2_max_tb_s) {
                 uint8_t sbt_mask = sbt_allowed(log2_cb_w, log2_cb_h);
                 if (sbt_mask) {
                     sbt_flag = ovcabac_read_ae_sbt_flag(cabac_ctx, log2_cb_w, log2_cb_h);
