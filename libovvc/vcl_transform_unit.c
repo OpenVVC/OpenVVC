@@ -1017,7 +1017,7 @@ sbt_half_ver(OVCTUDec *const ctu_dec,
     int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
     if (!sbt_pos) {
         tu_info[0].is_sbt = 1;
-        if (log2_tb_w - 1 <= 5 && log2_tb_h <= 5) {
+        if (ctu_dec->mts_enabled && log2_tb_w - 1 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x1;
         }
@@ -1036,7 +1036,7 @@ sbt_half_ver(OVCTUDec *const ctu_dec,
 
     } else {
         tu_info[0].is_sbt = 1;
-        if (log2_tb_w - 1 <= 5 && log2_tb_h <= 5) {
+        if (ctu_dec->mts_enabled && log2_tb_w - 1 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x0;
         }
@@ -1069,7 +1069,7 @@ sbt_half_hor(OVCTUDec *const ctu_dec,
     fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
     if (!sbt_pos) {
         tu_info[0].is_sbt = 1;
-        if (log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
+        if (ctu_dec->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x2;
         }
@@ -1091,7 +1091,7 @@ sbt_half_hor(OVCTUDec *const ctu_dec,
         tu_info[0].is_sbt = 1;
         uint8_t y1 = y0 + (1 << (log2_tb_h - 1));
         uint8_t y3 = y0 + (1 << (log2_tb_h - 1));
-        if (log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
+        if (ctu_dec->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 1 <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x0;
         }
@@ -1125,7 +1125,7 @@ sbt_quad_ver(OVCTUDec *const ctu_dec,
     if (!sbt_pos) {
         tu_info[0].is_sbt = 1;
 
-        if (log2_tb_w - 2 <= 5 && log2_tb_h <= 5) {
+        if (ctu_dec->mts_enabled && log2_tb_w - 2 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x1;
         }
@@ -1148,7 +1148,7 @@ sbt_quad_ver(OVCTUDec *const ctu_dec,
         tu_info[0].is_sbt = 1;
         uint8_t x3 = x0 + (3 << (log2_tb_w - 2));
 
-        if (log2_tb_w - 2 <= 5 && log2_tb_h <= 5) {
+        if (ctu_dec->mts_enabled && log2_tb_w - 2 <= 5 && log2_tb_h <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x0;
         }
@@ -1182,7 +1182,7 @@ sbt_quad_hor(OVCTUDec *const ctu_dec,
     if (!sbt_pos) {
         tu_info[0].is_sbt = 1;
 
-        if (log2_tb_w <= 5 && log2_tb_h - 2 <= 5) {
+        if (ctu_dec->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 2 <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x2;
         }
@@ -1204,7 +1204,7 @@ sbt_quad_hor(OVCTUDec *const ctu_dec,
         tu_info[0].is_sbt = 1;
         uint8_t y3 = y0 + (3 << (log2_tb_h - 2));
 
-        if (log2_tb_w <= 5 && log2_tb_h - 2 <= 5) {
+        if (ctu_dec->mts_enabled && log2_tb_w <= 5 && log2_tb_h - 2 <= 5) {
             tu_info->cu_mts_flag = 1;
             tu_info->cu_mts_idx = 0x0;
         }
