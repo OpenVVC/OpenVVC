@@ -114,7 +114,7 @@ ovcabac_read_ae_mvp_merge_idx(OVCABACCtx *const cabac_ctx,
                               uint8_t max_num_merge_cand)
 {
     uint8_t merge_idx = 0;
-    if (max_num_merge_cand) {
+    if (max_num_merge_cand > 1) {
         uint64_t *const cabac_state = cabac_ctx->ctx_table;
         if (ovcabac_ae_read(cabac_ctx, &cabac_state[MERGE_IDX_CTX_OFFSET])) {
             merge_idx++;
