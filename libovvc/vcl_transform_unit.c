@@ -1770,15 +1770,19 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
                     uint8_t log2_cb_w, uint8_t log2_cb_h,
                     VVCCU cu)
 {
+    uint8_t split_tu = ((log2_cb_w > part_ctx->log2_max_tb_s) | (log2_cb_h > part_ctx->log2_max_tb_s));
     if (cu.cu_flags & flg_pred_mode_flag) {
         /* INTRA */
         if (!(cu.cu_flags & flg_isp_flag)) {
             /*FIXME check if part_ctx mandatory for transform_tree */
             struct TUInfo tu_info[16] = {0};
+
             transform_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
                            part_ctx->log2_max_tb_s, 0, cu.cu_flags, 0, tu_info);
 
-            lfnst_mts(ctu_dec, log2_cb_w, log2_cb_h, cu.cu_flags, tu_info);
+            if (!split_tu) {
+                lfnst_mts(ctu_dec, log2_cb_w, log2_cb_h, cu.cu_flags, tu_info);
+            }
 
             if (ctu_dec->coding_unit == coding_unit_intra_c) {
                 int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
@@ -1891,7 +1895,9 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
             }
 
             if (!sbt_flag) {
-                lfnst_mts(ctu_dec, log2_cb_w, log2_cb_h, cu.cu_flags, tu_info);
+                if (!split_tu) {
+                    lfnst_mts(ctu_dec, log2_cb_w, log2_cb_h, cu.cu_flags, tu_info);
+                }
 
                 int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
                 struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
