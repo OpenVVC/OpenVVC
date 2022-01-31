@@ -1863,12 +1863,14 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
             }
         }
     } else {
-        /* INTER (should probably be default in a swicth*/
-        /*FIXME move root_cbf_read into transform_tree */
-        struct TUInfo tu_info[16] = {0};
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-        uint8_t merge_flag   = !!(cu.cu_flags & flg_merge_flag);
-        uint8_t rqt_root_cbf = !(cu.cu_flags & flg_cu_skip_flag) && (merge_flag || ovcabac_read_ae_root_cbf(cabac_ctx));
+        uint8_t cu_merge_flag = !!(cu.cu_flags & flg_merge_flag);
+        uint8_t cu_skip_flag  = !!(cu.cu_flags & flg_cu_skip_flag);
+
+        struct TUInfo tu_info[16] = {0};
+
+        uint8_t rqt_root_cbf = !cu_skip_flag && (cu_merge_flag || ovcabac_read_ae_root_cbf(cabac_ctx));
+
         if (rqt_root_cbf) {
             uint8_t sbt_flag = 0;
             if (!split_tu) {
