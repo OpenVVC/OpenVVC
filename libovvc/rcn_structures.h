@@ -411,7 +411,7 @@ struct TMPBDCompat
 
     void (*rcn_transform_tree)(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
                                uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t log2_max_tb_s,
-                               uint8_t cu_flags, const struct TUInfo *const tu_info);
+                               uint8_t tr_depth, uint8_t cu_flags, const struct TUInfo *const tu_info);
 
 
     void (*rcn_tu_c)(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,

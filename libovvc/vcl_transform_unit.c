@@ -945,7 +945,6 @@ lfnst_mts(const OVCTUDec *const ctu_dec, uint8_t log2_tb_w, uint8_t log2_tb_h,
 
 static int
 transform_tree(OVCTUDec *const ctu_dec,
-               const OVPartInfo *const part_ctx,
                unsigned int x0, unsigned int y0,
                unsigned int log2_tb_w, unsigned int log2_tb_h,
                unsigned int log2_max_tb_s, uint8_t rqt_root_cbf,
@@ -953,6 +952,7 @@ transform_tree(OVCTUDec *const ctu_dec,
 {
     uint8_t split_v = log2_tb_w > log2_max_tb_s;
     uint8_t split_h = log2_tb_h > log2_max_tb_s;
+    uint8_t nb_subtrees = tr_depth ? 1 : (1 << (split_v + split_h));
     uint8_t cbf_mask = 0;
 
     if (split_v || split_h) {
@@ -961,37 +961,38 @@ transform_tree(OVCTUDec *const ctu_dec,
 
         unsigned int log2_tb_w1 = log2_tb_w - split_v;
         unsigned int log2_tb_h1 = log2_tb_h - split_h;
-        int residual_offset = 0;
 
-        transform_tree(ctu_dec, part_ctx, x0, y0,
-                       log2_tb_w1, log2_tb_h1,
-                       log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1, &tu_info[0]);
+        int residual_offset = tu_info[0].pos_offset;
+
+        transform_tree(ctu_dec, x0, y0, log2_tb_w1, log2_tb_h1,
+                       log2_max_tb_s, rqt_root_cbf, cu_flags,
+                       tr_depth + 1, &tu_info[0 * nb_subtrees]);
 
         residual_offset += 1 << (log2_tb_w1 + log2_tb_h1);
 
         if (split_v) {
-            tu_info[1].pos_offset = residual_offset;
-            transform_tree(ctu_dec, part_ctx, x0 + tb_w1, y0,
-                           log2_tb_w1, log2_tb_h1,
-                           log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1, &tu_info[1]);
+            tu_info[1 * nb_subtrees].pos_offset = residual_offset;
+            transform_tree(ctu_dec, x0 + tb_w1, y0, log2_tb_w1, log2_tb_h1,
+                           log2_max_tb_s, rqt_root_cbf, cu_flags,
+                           tr_depth + 1, &tu_info[1 * nb_subtrees]);
 
             residual_offset += 1 << (log2_tb_w1 + log2_tb_h1);
         }
 
         if (split_h) {
-            tu_info[2].pos_offset = residual_offset;
-            transform_tree(ctu_dec, part_ctx, x0, y0 + tb_h1,
-                           log2_tb_w1, log2_tb_h1,
-                           log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1, &tu_info[2]);
+            tu_info[2 * nb_subtrees].pos_offset = residual_offset;
+            transform_tree(ctu_dec, x0, y0 + tb_h1, log2_tb_w1, log2_tb_h1,
+                           log2_max_tb_s, rqt_root_cbf, cu_flags,
+                           tr_depth + 1, &tu_info[2 * nb_subtrees]);
 
             residual_offset += 1 << (log2_tb_w1 + log2_tb_h1);
         }
 
         if (split_h && split_v) {
-            tu_info[3].pos_offset = residual_offset;
-            transform_tree(ctu_dec, part_ctx, x0 + tb_w1, y0 + tb_h1,
-                           log2_tb_w1, log2_tb_h1,
-                           log2_max_tb_s, rqt_root_cbf, cu_flags, tr_depth + 1, &tu_info[3]);
+            tu_info[3 * nb_subtrees].pos_offset = residual_offset;
+            transform_tree(ctu_dec, x0 + tb_w1, y0 + tb_h1, log2_tb_w1, log2_tb_h1,
+                           log2_max_tb_s, rqt_root_cbf, cu_flags,
+                           tr_depth + 1, &tu_info[3 * nb_subtrees]);
         }
 
 
@@ -1007,7 +1008,6 @@ transform_tree(OVCTUDec *const ctu_dec,
 
 static int
 sbt_half_ver(OVCTUDec *const ctu_dec,
-             const OVPartInfo *const part_ctx,
              unsigned int x0, unsigned int y0,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
              uint8_t sbt_pos, uint8_t cu_flags, struct TUInfo *tu_info)
@@ -1059,7 +1059,6 @@ sbt_half_ver(OVCTUDec *const ctu_dec,
 
 static int
 sbt_half_hor(OVCTUDec *const ctu_dec,
-             const OVPartInfo *const part_ctx,
              unsigned int x0, unsigned int y0,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
              uint8_t sbt_pos, uint8_t cu_flags, struct TUInfo *tu_info)
@@ -1114,7 +1113,6 @@ sbt_half_hor(OVCTUDec *const ctu_dec,
 
 static int
 sbt_quad_ver(OVCTUDec *const ctu_dec,
-             const OVPartInfo *const part_ctx,
              unsigned int x0, unsigned int y0,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
              uint8_t sbt_pos, uint8_t cu_flags, struct TUInfo *tu_info)
@@ -1171,7 +1169,6 @@ sbt_quad_ver(OVCTUDec *const ctu_dec,
 
 static int
 sbt_quad_hor(OVCTUDec *const ctu_dec,
-             const OVPartInfo *const part_ctx,
              unsigned int x0, unsigned int y0,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
              uint8_t sbt_pos, uint8_t cu_flags, struct TUInfo *tu_info)
@@ -1229,7 +1226,6 @@ sbt_quad_hor(OVCTUDec *const ctu_dec,
 
 static int
 sbt_tree(OVCTUDec *const ctu_dec,
-         const OVPartInfo *const part_ctx,
          unsigned int x0, unsigned int y0,
          unsigned int log2_tb_w, unsigned int log2_tb_h,
          uint8_t sbt_mode,
@@ -1239,22 +1235,22 @@ sbt_tree(OVCTUDec *const ctu_dec,
     switch (sbt_mode) {
     case 0x1:
          /*sbt_ver*/
-         sbt_half_hor(ctu_dec, part_ctx, x0, y0, log2_tb_w, log2_tb_h,
+         sbt_half_hor(ctu_dec, x0, y0, log2_tb_w, log2_tb_h,
                       sbt_pos, cu_flags, tu_info);
          break;
     case 0x2:
          /*sbt_hor*/
-         sbt_half_ver(ctu_dec, part_ctx, x0, y0, log2_tb_w, log2_tb_h,
+         sbt_half_ver(ctu_dec, x0, y0, log2_tb_w, log2_tb_h,
                       sbt_pos, cu_flags, tu_info);
          break;
     case 0x4:
          /*sbt_ver/quad*/
-         sbt_quad_hor(ctu_dec, part_ctx, x0, y0, log2_tb_w, log2_tb_h,
+         sbt_quad_hor(ctu_dec, x0, y0, log2_tb_w, log2_tb_h,
                       sbt_pos, cu_flags, tu_info);
          break;
     case 0x8:
          /*sbt_hor/quad*/
-         sbt_quad_ver(ctu_dec, part_ctx, x0, y0, log2_tb_w, log2_tb_h,
+         sbt_quad_ver(ctu_dec, x0, y0, log2_tb_w, log2_tb_h,
                       sbt_pos, cu_flags, tu_info);
          break;
     }
@@ -1774,7 +1770,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
             /*FIXME check if part_ctx mandatory for transform_tree */
             struct TUInfo tu_info[16] = {0};
 
-            transform_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
+            transform_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h,
                            part_ctx->log2_max_tb_s, 0, cu.cu_flags, 0, tu_info);
 
             if (!split_tu) {
@@ -1812,7 +1808,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
             }
 
             ctu_dec->rcn_funcs.tmp.rcn_transform_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, part_ctx->log2_max_tb_s,
-                                                      cu.cu_flags, tu_info);
+                                                      0, cu.cu_flags, tu_info);
         } else {
             uint8_t isp_mode = cu.cu_opaque;
             uint8_t intra_mode = cu.cu_mode_idx;
@@ -1880,7 +1876,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
 
                             sbt_type &= 0x7F;
 
-                            sbt_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
+                            sbt_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h,
                                      sbt_type, !!sbt_pos, cu.cu_flags, tu_info);
                         }
                     }
@@ -1896,7 +1892,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
                 }
 
             } else {
-                transform_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
+                transform_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h,
                                part_ctx->log2_max_tb_s, 1, cu.cu_flags, 0, tu_info);
             }
 
@@ -1916,7 +1912,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
                 dbf_fill_qp_map(&dbf_info->qp_map_cr, x0, y0, log2_cb_w, log2_cb_h, qp_cr);
 
                 ctu_dec->rcn_funcs.tmp.rcn_transform_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, part_ctx->log2_max_tb_s,
-                                                          cu.cu_flags, tu_info);
+                                                          0, cu.cu_flags, tu_info);
             }
         } else {
                 int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
@@ -1931,6 +1927,8 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
                 dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_cb_w, log2_cb_h, qp_l);
                 dbf_fill_qp_map(&dbf_info->qp_map_cb, x0, y0, log2_cb_w, log2_cb_h, qp_cb);
                 dbf_fill_qp_map(&dbf_info->qp_map_cr, x0, y0, log2_cb_w, log2_cb_h, qp_cr);
+                ctu_dec->rcn_funcs.tmp.rcn_transform_tree(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, part_ctx->log2_max_tb_s,
+                                                          0, cu.cu_flags, tu_info);
         }
     }
     return 0;
