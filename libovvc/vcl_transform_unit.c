@@ -369,7 +369,7 @@ decode_cbf_st(OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, u
     uint8_t cbf_mask = (tu_cbf_cb << 1) | tu_cbf_cr;
     uint8_t tu_cbf_luma = rqt_root_cbf;
 
-    if (!rqt_root_cbf || (cbf_mask && rqt_root_cbf) || (tr_depth == 1 && rqt_root_cbf)){
+    if (!rqt_root_cbf || (cbf_mask && rqt_root_cbf) || tr_depth){
         tu_cbf_luma = ovcabac_read_ae_tu_cbf_luma(cabac_ctx);
     }
 
