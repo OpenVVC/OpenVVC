@@ -107,14 +107,16 @@ AS_CASE([$host_os],
         [darwin*], [
                 AC_DEFINE([PREFIX],[1], [Define if assembly function should be prefixed])
                 AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
+                AC_DEFINE([EXCLUDE_FOR_CLANG],[1], [Exclude files from clang compilation])
+                isClang="true"
         ],
         [mingw*], [
                 AC_DEFINE([HAVE_ALIGNED_MALLOC],[1], [Define the use of align malloc])
                 
         ],
         [*android*], [
-                AC_DEFINE([EXCLUDE_FOR_ANDROID],[1], [Exclude files from android compilation])
-                isAndroid="true"
+                AC_DEFINE([EXCLUDE_FOR_CLANG],[1], [Exclude files from clang compilation])
+                isClang="true"
         ],
         [linux*|cygwin*|msys*], [
                 AC_DEFINE([HAVE_POSIX_MEMALIGN],[1], [Define the use of posix memalign malloc])
@@ -128,22 +130,24 @@ AS_IF([test x"$X86" = x"true"], [
                 AX_CHECK_COMPILE_FLAG([-msse4.1], [
                         flag_sse4_1="true" CFLAGS="-msse4.1 $CFLAGS"
                         AC_DEFINE([HAVE_SSE4_1],[1], [Define the use of SSE4_1 optimisation])
-                        AM_CONDITIONAL([HAVE_SSE4_1], [test x"$enable_simd" = x"yes"])
                 ])
         ])
+AM_CONDITIONAL([HAVE_SSE4_1], [test x"$enable_simd" = x"yes" -a x"$flag_sse4_1" = x"true"])
 
 AS_IF([test x"$X86" = x"true"], [
                 AX_CHECK_COMPILE_FLAG([-mavx2], [
                         flag_avx2="true" CFLAGS="-mavx2 $CFLAGS"
                         AC_DEFINE([HAVE_AVX2],[1], [Define the use of AVX2 optimisation])
-                        AM_CONDITIONAL([HAVE_AVX2], [test x"$enable_simd" = x"yes"])
                 ])
         ])
+AM_CONDITIONAL([HAVE_AVX2], [test x"$enable_simd" = x"yes" -a x"$flag_avx2" = x"true"])
 
 AS_IF([test x"$flag_sse4_1" = x"true" -o x"$flag_avx2" = x"true"], [
                 AC_DEFINE([HAVE_X86_OPTIM],[1], [Define the use of X86 optimisation])
-                AM_CONDITIONAL([HAVE_X86_OPTIM], [test x"$enable_simd" = x"yes"])
-        ]);
+        ])
+AM_CONDITIONAL([HAVE_X86_OPTIM], [test x"$X86" = x"true" -a x"$enable_simd" = x"yes"])
+
+
 
 # Define Makefile Conditionals
 
@@ -153,6 +157,6 @@ AM_CONDITIONAL([HAVE_NEON_ASM], [test x"$ARM" = x"true" -a x"$enable_simd" = x"y
 
 AM_CONDITIONAL([HAVE_NEON_SIMDE], [test x"$ARM" = x"true" -a x"$enable_simd" = x"yes" -a x"$enable_arm_simde" = x"yes"])
 
-AM_CONDITIONAL([HAVE_EXCLUDE_ANDROID], [test x"$ARM" = x"true" -a x"$isAndroid" = x"true"])
+AM_CONDITIONAL([HAVE_EXCLUDE_CLANG], [test x"$ARM" = x"true" -a x"$isClang" = x"true"])
 
 AC_OUTPUT
