@@ -327,6 +327,7 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
          */
 
         if (!isp_flag) {
+            if (!(log2_cb_w < 7 && log2_cb_h < 7)) return intra_mode;
             uint8_t mrl_flag = !!(cu.cu_flags & flg_mrl_flag);
             if (!mrl_flag){
                 ctudec->rcn_funcs.intra_pred(&ctudec->rcn_ctx, &ctudec->rcn_ctx.ctu_buff, intra_mode, x0, y0,
