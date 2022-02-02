@@ -172,9 +172,7 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
             rcn_func->ict.add[log2_tb_w](tr_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
         }
 
-
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
-        fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
     }
 
     if (cbf_mask & 0x1) {
@@ -200,8 +198,8 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
         }
 
         fill_bs_map(&ctu_dec->dbf_info.bs1_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
-        fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
     }
+    fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
 }
 
 static void
@@ -480,7 +478,6 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
         if (cu_flags & 0x2) {
             fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_tb_w, log2_tb_h);
         }
-        fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
     }
 
     /* FIXME Avoid reprocessing CCLM from here by recontructing at the end of transform tree */
@@ -543,7 +540,6 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
             fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_tb_w, log2_tb_h);
         }
         fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
-        fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
 
         /* FIXME use transform add optimization */
         rcn_func->ict.add[log2_tb_w](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
