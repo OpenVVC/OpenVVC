@@ -675,6 +675,27 @@ rcn_transform_tree(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
     uint8_t split_h = log2_tb_h > log2_max_tb_s;
     uint8_t nb_subtrees = tr_depth ? 1 : (1 << (split_v + split_h));
 
+    if (log2_tb_w > 6 && log2_tb_h < 7) {
+
+        rcn_transform_tree(ctu_dec, x0, y0, 6, log2_tb_h,
+                       log2_max_tb_s, tr_depth + 1, cu_flags,
+                        &tu_info[0]);
+
+        rcn_transform_tree(ctu_dec, x0 + 64, y0, 6, log2_tb_h,
+                       log2_max_tb_s, tr_depth + 1, cu_flags,
+                        &tu_info[8]);
+        return;
+    } else if (log2_tb_h > 6 && log2_tb_w < 7) {
+        rcn_transform_tree(ctu_dec, x0, y0, log2_tb_w, 6,
+                       log2_max_tb_s, tr_depth + 1, cu_flags,
+                        &tu_info[0]);
+
+        rcn_transform_tree(ctu_dec, x0, y0 + 64, log2_tb_w, 6,
+                       log2_max_tb_s, tr_depth + 1, cu_flags,
+                        &tu_info[8]);
+        return;
+    }
+
     if (split_v || split_h) {
         unsigned int tb_w1 = ((1 << log2_tb_w) >> split_v);
         unsigned int tb_h1 = ((1 << log2_tb_h) >> split_h);

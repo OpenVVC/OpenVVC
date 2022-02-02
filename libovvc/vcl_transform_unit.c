@@ -960,6 +960,31 @@ transform_tree(OVCTUDec *const ctu_dec,
     uint8_t split_v = log2_tb_w > log2_max_tb_s;
     uint8_t split_h = log2_tb_h > log2_max_tb_s;
     uint8_t nb_subtrees = tr_depth ? 1 : (1 << (split_v + split_h));
+    if (log2_tb_w > 6 && log2_tb_h < 7) {
+
+        transform_tree(ctu_dec, x0, y0, 6, log2_tb_h,
+                       log2_max_tb_s, rqt_root_cbf, cu_flags,
+                       tr_depth + 1, &tu_info[0]);
+
+        tu_info[8].pos_offset = 1 << (log2_tb_h + 6);
+        transform_tree(ctu_dec, x0 + 64, y0, 6, log2_tb_h,
+                       log2_max_tb_s, rqt_root_cbf, cu_flags,
+                       tr_depth + 1, &tu_info[8]);
+        return 0;
+    } else if (log2_tb_h > 6 && log2_tb_w < 7) {
+        int residual_offset = tu_info[0].pos_offset;
+
+        transform_tree(ctu_dec, x0, y0, log2_tb_w, 6,
+                       log2_max_tb_s, rqt_root_cbf, cu_flags,
+                       tr_depth + 1, &tu_info[0]);
+
+        tu_info[8].pos_offset = 1 << (log2_tb_w + 6);
+        transform_tree(ctu_dec, x0, y0 + 64, log2_tb_w, 6,
+                       log2_max_tb_s, rqt_root_cbf, cu_flags,
+                       tr_depth + 1, &tu_info[8]);
+        return 0;
+    }
+
     uint8_t cbf_mask = 0;
 
     if (split_v || split_h) {
