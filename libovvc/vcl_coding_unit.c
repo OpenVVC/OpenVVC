@@ -638,11 +638,27 @@ coding_unit(OVCTUDec *const ctu_dec,
                                       ctu_dec->rcn_ctx.ctu_buff.y, x0, y0);
     }
 
-    int pred_qp = ((y0 ? ctu_dec->drv_ctx.qp_map_x[x_cb] : ctu_dec->qp_ctx.current_qp) +
-                   (x0 ? ctu_dec->drv_ctx.qp_map_y[y_cb] : ctu_dec->qp_ctx.current_qp) + 1) >> 1;
+    if (ctu_dec->coding_unit != &coding_unit_intra_c) {
+        uint8_t cu_qp_delta_subdiv = ctu_dec->cu_qp_delta_subdiv;
+
+        uint8_t qp_grp_msk = (1 << (part_ctx->log2_ctu_s + 1 - cu_qp_delta_subdiv))  - 1;
+        uint8_t qp_grp_start = !((x0 & qp_grp_msk) | (y0 & qp_grp_msk));
+
+        if (qp_grp_start) {
+            uint8_t qp_grp_x0 = x0 & (~qp_grp_msk);
+            uint8_t qp_grp_y0 = y0 & (~qp_grp_msk);
+            int pred_qp = ((y0 ? ctu_dec->drv_ctx.qp_map_x[qp_grp_x0 >> log2_min_cb_s] : ctu_dec->qp_ctx.current_qp) +
+                           (x0 ? ctu_dec->drv_ctx.qp_map_y[qp_grp_y0 >> log2_min_cb_s] : ctu_dec->qp_ctx.current_qp) + 1) >> 1;
+            ctu_dec->read_qp = 1;
+            ctu_dec->qp_ctx.current_qp = pred_qp;
+            derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
+        }
+    }
+    if (ctu_dec->coding_unit !=coding_unit_intra_c) {
+            derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
+    }
 
     int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
-    ctu_dec->qp_ctx.current_qp = pred_qp;
 
     ctu_dec->tmp_ciip = 0;
 
@@ -668,7 +684,6 @@ coding_unit(OVCTUDec *const ctu_dec,
             dbf_fill_qp_map(&dbf_info->qp_map_cb, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1, qp_cb);
             dbf_fill_qp_map(&dbf_info->qp_map_cr, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1, qp_cr);
         } else {
-            derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
             struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
             uint8_t qp_l  = ctu_dec->qp_ctx.current_qp;
             uint8_t qp_cb = ctu_dec->dequant_cb.qp - qp_bd_offset;

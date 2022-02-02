@@ -349,7 +349,7 @@ ovcabac_read_ae_sbt_pos_flag(OVCABACCtx *const cabac_ctx)
 
 
 static uint8_t
-decode_cbf_st(const OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, uint8_t cu_flags)
+decode_cbf_st(OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, uint8_t cu_flags)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t tu_cbf_cb = ovcabac_read_ae_tu_cbf_cb(cabac_ctx);
@@ -359,6 +359,14 @@ decode_cbf_st(const OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_de
 
     if (!rqt_root_cbf || (cbf_mask && rqt_root_cbf) || (tr_depth == 1 && rqt_root_cbf)){
         tu_cbf_luma = ovcabac_read_ae_tu_cbf_luma(cabac_ctx);
+    }
+
+    /* FIXME delta_qp is only read on first significant TU in CU */
+    if (ctu_dec->delta_qp_enabled && (rqt_root_cbf | cbf_mask | tu_cbf_luma) && ctu_dec->read_qp) {
+        OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+        int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
+        derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
+        ctu_dec->read_qp = 0;
     }
 
     /* FIXME intra if inter we only check for cbf_mask == 3*/
@@ -371,7 +379,7 @@ decode_cbf_st(const OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_de
 }
 
 static uint8_t
-decode_cbf_c(const OVCTUDec *const ctu_dec)
+decode_cbf_c(OVCTUDec *const ctu_dec)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t tu_cbf_cb = ovcabac_read_ae_tu_cbf_cb(cabac_ctx);
@@ -710,12 +718,6 @@ transform_unit_st(OVCTUDec *const ctu_dec,
     uint8_t cbf_mask_c = cbf_mask & 0x3;
 
     if (cbf_mask) {
-        /* FIXME delta_qp is only read on first significant TU in CU */
-        if (ctu_dec->delta_qp_enabled && cbf_mask) {
-            OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-            int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
-            derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
-        }
 
         if (cbf_flag_l) {
 
@@ -761,9 +763,10 @@ transform_unit_l(OVCTUDec *const ctu_dec,
     uint8_t cbf_mask = ovcabac_read_ae_tu_cbf_luma(cabac_ctx);
 
     if (cbf_mask) {
-        if (ctu_dec->delta_qp_enabled && cbf_mask) {
+        if (ctu_dec->delta_qp_enabled && cbf_mask && ctu_dec->read_qp) {
             int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
             derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
+            ctu_dec->read_qp = 0;
         }
 
         residual_coding_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, tu_info);
@@ -786,11 +789,6 @@ transform_unit_c(OVCTUDec *const ctu_dec,
     uint8_t cbf_mask_c = cbf_mask & 0x3;
 
     if (cbf_mask) {
-        /* FIXME Read only on first TU */
-        if (ctu_dec->delta_qp_enabled && cbf_mask) {
-            int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
-            derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
-        }
 
         if (jcbcr_flag) {
 
@@ -1254,6 +1252,12 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
         cbf_flags |= cbf;
 
         if (cbf) {
+            if (ctu_dec->delta_qp_enabled && ctu_dec->read_qp) {
+                OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+                int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
+                derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
+                ctu_dec->read_qp = 0;
+            }
             uint16_t last_pos = ovcabac_read_ae_last_sig_pos(cabac_ctx, log2_pb_w, log2_cb_h);
             int16_t *coeffs_y = ctu_dec->residual_y + i * (1 << (log2_pb_w + log2_cb_h));
 
@@ -1277,6 +1281,13 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
     cbf = !cbf_flags ? 1 : ovcabac_read_ae_tu_cbf_luma_isp(cabac_ctx, cbf);
     cbf_flags <<= 1;
     cbf_flags |= cbf;
+
+    if (ctu_dec->delta_qp_enabled && cbf && ctu_dec->read_qp) {
+        OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+        int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
+        derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
+        ctu_dec->read_qp = 0;
+    }
 
     if (ctu_dec->jcbcr_enabled && cbf_mask_c) {
         uint8_t joint_cb_cr = ovcabac_read_ae_joint_cb_cr_flag(cabac_ctx,
@@ -1434,6 +1445,12 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
         cbf_flags <<= 1;
         cbf_flags |= cbf;
         if (cbf) {
+            if (ctu_dec->delta_qp_enabled && ctu_dec->read_qp) {
+                OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+                int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
+                derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
+                ctu_dec->read_qp = 0;
+            }
             uint16_t last_pos = ovcabac_read_ae_last_sig_pos(cabac_ctx, log2_cb_w, log2_pb_h);
 
             if (log2_pb_h <= 1) {
@@ -1456,6 +1473,13 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
     cbf = !cbf_flags ? 1 : ovcabac_read_ae_tu_cbf_luma_isp(cabac_ctx, cbf);
     cbf_flags <<= 1;
     cbf_flags |= cbf;
+
+    if (ctu_dec->delta_qp_enabled && cbf && ctu_dec->read_qp) {
+        OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
+        int cu_qp_delta = ovcabac_read_ae_cu_delta_qp(cabac_ctx);
+        derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, cu_qp_delta);
+        ctu_dec->read_qp = 0;
+    }
 
     if (ctu_dec->jcbcr_enabled && cbf_mask_c) {
         uint8_t joint_cb_cr = ovcabac_read_ae_joint_cb_cr_flag(cabac_ctx,
