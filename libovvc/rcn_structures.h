@@ -359,10 +359,10 @@ struct DFFunctions{
     DFFilterFunction filter_h[11];
     DFFilterFunction filter_v[11];
 
-    void (*rcn_dbf_ctu)(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
+    void (*rcn_dbf_ctu)(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInfo *const dbf_info,
                         uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y);
 
-    void (*rcn_dbf_truncated_ctu)(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
+    void (*rcn_dbf_truncated_ctu)(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInfo *const dbf_info,
                                   uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y,
                                   uint8_t ctu_w, uint8_t ctu_h);
 };

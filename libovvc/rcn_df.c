@@ -1642,7 +1642,7 @@ vvc_dbf_ctu_ver(const struct DFFunctions *df, OVSample *src, int stride, const s
 }
 
 static void
-rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
+rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInfo *const dbf_info,
             uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y)
 {
     const struct OVBuffInfo *const fbuff = &rcn_ctx->frame_buff;
@@ -1651,21 +1651,6 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_inf
     /* FIXME give as argument */
     uint8_t ctu_lft = rcn_ctx->ctudec->ctu_ngh_flags & CTU_LFT_FLG;
     uint8_t ctu_abv = rcn_ctx->ctudec->ctu_ngh_flags & CTU_UP_FLG;
-
-    /* Force transform_edges on implicit transform trees */
-    uint64_t *edg_map_tab = &dbf_info->ctb_bound_ver_c[8];
-    edg_map_tab[16] = -1ll;
-    edg_map_tab = &dbf_info->ctb_bound_ver[8];
-    edg_map_tab[16] = -1ll;
-    edg_map_tab = &dbf_info->ctb_bound_hor[8];
-    edg_map_tab[16] = -1ll;
-    edg_map_tab = &dbf_info->ctb_bound_hor_c[8];
-    edg_map_tab[16] = -1ll;
-    uint64_t *aff_edg_map = &dbf_info->aff_edg_hor[8];
-    aff_edg_map[16] = -1ll;
-    aff_edg_map = &dbf_info->aff_edg_ver[8];
-    aff_edg_map[16] = -1ll;
-
 
     if (!dbf_info->disable_h)
     vvc_dbf_ctu_hor(df, fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_y, nb_unit, ctu_lft);
@@ -1683,7 +1668,7 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_inf
 }
 
 static void
-rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
+rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInfo *const dbf_info,
                       uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y, uint8_t ctu_w, uint8_t ctu_h)
 {
     const struct OVBuffInfo *const fbuff = &rcn_ctx->frame_buff;
