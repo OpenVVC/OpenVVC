@@ -344,9 +344,9 @@ struct OVSPS
     uint8_t sps_virtual_boundaries_enabled_flag;
     uint8_t sps_virtual_boundaries_present_flag;
     uint8_t sps_num_ver_virtual_boundaries;
-    uint8_t sps_virtual_boundary_pos_x_minus1[16]; /* max_num_virtual_boundaries_ver */
+    uint8_t sps_virtual_boundary_pos_x_minus1[1024]; /* max_num_virtual_boundaries_ver */
     uint8_t sps_num_hor_virtual_boundaries;
-    uint8_t sps_virtual_boundary_pos_y_minus1[16]; /* max_num_virtual_boundaries_hor */
+    uint8_t sps_virtual_boundary_pos_y_minus1[1024]; /* max_num_virtual_boundaries_hor */
 
     uint8_t sps_timing_hrd_params_present_flag;
     struct OVGHRDTiming * general_timing_hrd_parameters;
