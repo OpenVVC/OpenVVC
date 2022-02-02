@@ -343,6 +343,9 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
             }
         }
     }
+
+    /* Store derived actual intra mode */
+
     memset(&i_info->luma_mode_x[x_pu], intra_mode, sizeof(uint8_t) * nb_pb_w);
     memset(&i_info->luma_mode_y[y_pu], intra_mode, sizeof(uint8_t) * nb_pb_h);
 
@@ -351,7 +354,6 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
                sizeof(uint8_t) * nb_pb_w);
     }
 
-    /* Store derived actual intra mode */
 
     /* FIXME  can we update it befor ref is filled ? */
     ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field, x_pu<<pu_shift,
