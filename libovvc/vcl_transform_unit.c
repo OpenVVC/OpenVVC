@@ -866,7 +866,9 @@ lfnst_mts(const OVCTUDec *const ctu_dec, uint8_t log2_tb_w, uint8_t log2_tb_h,
 {
     uint8_t cbf_mask = tu_info->cbf_mask;
     if (ctu_dec->transform_unit == &transform_unit_st && cbf_mask) {
-        if (ctu_dec->enable_lfnst && cu_flags & 0x2) {
+                uint8_t is_mip = (cu_flags & 0x2) && !!(cu_flags & flg_mip_flag);
+                uint8_t allow_mip_lfnst = !is_mip || (log2_tb_h >= 4 && log2_tb_w >= 4);
+        if ((cu_flags & 0x2) && allow_mip_lfnst && ctu_dec->enable_lfnst && cu_flags & 0x2) {
             uint8_t can_lfnst = lfnst_check_st(tu_info, log2_tb_w, log2_tb_h,
                                                cbf_mask, cu_flags);
             if (can_lfnst) {
