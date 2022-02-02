@@ -18,16 +18,18 @@ derive_dequant_ctx(OVCTUDec *const ctudec, const struct VVCQPCTX *const qp_ctx,
                   int cu_qp_delta)
 {
     int qp_bd_offset = qp_ctx->qp_bd_offset;
-    int base_qp = (qp_ctx->current_qp + cu_qp_delta + 64) & 63;
-    ctudec->dequant_luma.qp = (base_qp + qp_bd_offset);
+    int min_qp_prime_ts = qp_ctx->min_qp_prime_ts;
+    int base_qp = ((qp_ctx->current_qp + cu_qp_delta + 64 + 2 * qp_bd_offset) % (64 + qp_bd_offset)) - qp_bd_offset;
+    int base_qp_c = ov_clip(base_qp, 0, 63);
+    ctudec->dequant_luma.qp = base_qp + qp_bd_offset;
 
-    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[(base_qp + 64) & 63] + qp_ctx->cb_offset + qp_bd_offset;
-    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[(base_qp + 64) & 63] + qp_ctx->cr_offset + qp_bd_offset;
-    ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[(base_qp + 64) & 63] + qp_ctx->jcbcr_offset + qp_bd_offset;
-    ctudec->dequant_luma_skip.qp = OVMAX(ctudec->dequant_luma.qp, qp_ctx->min_qp_prime_ts);
-    ctudec->dequant_cb_skip.qp   = OVMAX(ctudec->dequant_cb.qp, qp_ctx->min_qp_prime_ts);
-    ctudec->dequant_cr_skip.qp   = OVMAX(ctudec->dequant_cr.qp, qp_ctx->min_qp_prime_ts);
-    ctudec->dequant_jcbcr_skip.qp = OVMAX(ctudec->dequant_joint_cb_cr.qp, qp_ctx->min_qp_prime_ts);
+    ctudec->dequant_cb.qp = ov_clip(qp_ctx->chroma_qp_map_cb[base_qp_c] + qp_ctx->cb_offset + qp_ctx->dqp_cb, -qp_bd_offset, 63) + qp_bd_offset;
+    ctudec->dequant_cr.qp = ov_clip(qp_ctx->chroma_qp_map_cr[base_qp_c] + qp_ctx->cr_offset + qp_ctx->dqp_cr, -qp_bd_offset, 63) + qp_bd_offset;
+    ctudec->dequant_joint_cb_cr.qp = ov_clip(qp_ctx->chroma_qp_map_jcbcr[base_qp_c] + qp_ctx->jcbcr_offset + qp_ctx->dqp_jcbcr, -qp_bd_offset, 63) + qp_bd_offset;
+    ctudec->dequant_luma_skip.qp = OVMAX(ctudec->dequant_luma.qp, min_qp_prime_ts);
+    ctudec->dequant_cb_skip.qp   = OVMAX(ctudec->dequant_cb.qp, min_qp_prime_ts);
+    ctudec->dequant_cr_skip.qp   = OVMAX(ctudec->dequant_cr.qp, min_qp_prime_ts);
+    ctudec->dequant_jcbcr_skip.qp = OVMAX(ctudec->dequant_joint_cb_cr.qp, min_qp_prime_ts);
 
     ctudec->qp_ctx.current_qp = base_qp;
 }
