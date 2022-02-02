@@ -1638,7 +1638,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
         /* INTRA */
         if (!(cu.cu_flags & flg_isp_flag)) {
             /*FIXME check if part_ctx mandatory for transform_tree */
-            struct TUInfo tu_info[4] = {0};
+            struct TUInfo tu_info[16] = {0};
             transform_tree(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h,
                            part_ctx->log2_max_tb_s, 0, cu.cu_flags, 0, tu_info);
 
@@ -1722,7 +1722,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
     } else {
         /* INTER (should probably be default in a swicth*/
         /*FIXME move root_cbf_read into transform_tree */
-        struct TUInfo tu_info[4] = {0};
+        struct TUInfo tu_info[16] = {0};
         OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
         uint8_t merge_flag   = !!(cu.cu_flags & flg_merge_flag);
         uint8_t rqt_root_cbf = merge_flag || ovcabac_read_ae_root_cbf(cabac_ctx);
@@ -1730,7 +1730,6 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
         fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_cb_w, log2_cb_h);
         fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0, y0, log2_cb_w, log2_cb_h);
         }
-
         if (rqt_root_cbf) {
             uint8_t sbt_flag = 0;
             uint8_t sbt_type = 0;
