@@ -693,38 +693,6 @@ coding_unit(OVCTUDec *const ctu_dec,
 
     ctu_dec->dequant_chroma = &ctu_dec->dequant_cb;
 
-    /* FIXME check separate tree */
-    if (!ctu_dec->dbf_disable) {
-        if (ctu_dec->coding_unit == &coding_unit_intra) {
-            struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
-            uint8_t qp_l  = ctu_dec->qp_ctx.current_qp;
-
-            fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
-            dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_cb_w, log2_cb_h, qp_l);
-        } else if (ctu_dec->coding_unit == &coding_unit_intra_c) {
-            struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
-            uint8_t qp_cb = ctu_dec->dequant_cb.qp - qp_bd_offset;
-            uint8_t qp_cr = ctu_dec->dequant_cr.qp - qp_bd_offset;
-
-            fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1);
-
-            dbf_fill_qp_map(&dbf_info->qp_map_cb, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1, qp_cb);
-            dbf_fill_qp_map(&dbf_info->qp_map_cr, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1, qp_cr);
-        } else {
-            struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
-            uint8_t qp_l  = ctu_dec->qp_ctx.current_qp;
-            uint8_t qp_cb = ctu_dec->dequant_cb.qp - qp_bd_offset;
-            uint8_t qp_cr = ctu_dec->dequant_cr.qp - qp_bd_offset;
-
-            fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
-            fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_cb_w, log2_cb_h);
-
-            dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_cb_w, log2_cb_h, qp_l);
-            dbf_fill_qp_map(&dbf_info->qp_map_cb, x0, y0, log2_cb_w, log2_cb_h, qp_cb);
-            dbf_fill_qp_map(&dbf_info->qp_map_cr, x0, y0, log2_cb_w, log2_cb_h, qp_cr);
-        }
-    }
-
     /* FIXME move after TU is read so we can reconstruct with or without
      * transform trees
      */
