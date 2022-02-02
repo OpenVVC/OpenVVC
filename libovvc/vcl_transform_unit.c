@@ -11,6 +11,7 @@
 #include "drv.h"
 #include "rcn_transform_tree.h"
 
+#define LOG2_MIN_CU_S 2
 struct TBInfo {
    uint16_t last_pos;
    uint64_t sig_sb_map;
@@ -1851,6 +1852,15 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
             if (isp_mode) {
                 /* Disable CCLM in 64x64 ISP CU*/
                 ctu_dec->tmp_disable_cclm |= log2_cb_h == log2_cb_w && log2_cb_h == 6;
+
+                uint8_t x0_unit = x0 >> LOG2_MIN_CU_S;
+                uint8_t y0_unit = y0 >> LOG2_MIN_CU_S;
+                uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
+                uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
+
+                ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field,
+                                            x0_unit, y0_unit,
+                                            nb_unit_w, nb_unit_h);
 
                 if (isp_mode == 2) {
                     isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode);

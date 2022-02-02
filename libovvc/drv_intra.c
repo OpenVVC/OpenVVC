@@ -308,44 +308,18 @@ drv_intra_cu(OVCTUDec *const ctudec, const OVPartInfo *const part_ctx,
 
     /* Note PLANAR is the default for other modes derivaion */
     uint8_t intra_mode = OVINTRA_PLANAR;
-    
 
-    if (mip_flag){
-        const struct OVRCNCtx *rcn = &ctudec->rcn_ctx;
-        ctudec->rcn_funcs.mip.rcn_intra_mip(rcn, x0, y0, log2_cb_w, log2_cb_h, cu.cu_opaque);
-    } else {
-        uint8_t isp_flag = !!(cu.cu_flags & flg_isp_flag);
+    if (!mip_flag){
 
         intra_mode = derive_intra_angular_mode(i_info, cu.cu_flags, cu.cu_mode_info,
                                                x_pu, y_pu, nb_pb_w, nb_pb_h);
 
         cu.cu_mode_idx = intra_mode;
-
-        /* FIXME
-         * we do not reconstruct ISP here this will be removed when we 
-         * will cal CU reconstruction after TUs of current CU are read
-         */
-
-        if (!isp_flag) {
-            if (!(log2_cb_w < 7 && log2_cb_h < 7)) goto end;
-            uint8_t mrl_flag = !!(cu.cu_flags & flg_mrl_flag);
-            if (!mrl_flag){
-                ctudec->rcn_funcs.intra_pred(&ctudec->rcn_ctx, &ctudec->rcn_ctx.ctu_buff, intra_mode, x0, y0,
-                               log2_cb_w, log2_cb_h);
-            }
-
-            if (mrl_flag){
-                uint8_t mrl_idx = cu.cu_opaque;
-                ctudec->rcn_funcs.intra_pred_mrl(ctudec, ctudec->rcn_ctx.ctu_buff.y,
-                                         RCN_CTB_STRIDE, intra_mode, x0, y0,
-                                         log2_cb_w, log2_cb_h,
-                                         mrl_idx);
-            }
-        }
     }
 
     /* Store derived actual intra mode */
-end:
+    ctudec->intra_mode = intra_mode;
+    ctudec->cu_opaque = cu.cu_opaque;
 
     memset(&i_info->luma_mode_x[x_pu], intra_mode, sizeof(uint8_t) * nb_pb_w);
     memset(&i_info->luma_mode_y[y_pu], intra_mode, sizeof(uint8_t) * nb_pb_h);
@@ -354,12 +328,6 @@ end:
         memset(&i_info->luma_modes[x_pu + (i << 5) + (y_pu << 5)], intra_mode,
                sizeof(uint8_t) * nb_pb_w);
     }
-
-
-    /* FIXME  can we update it befor ref is filled ? */
-    ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field, x_pu<<pu_shift,
-                                y_pu<<pu_shift, nb_pb_w<<pu_shift, nb_pb_h<<pu_shift);
-
 
     fill_bs_map(&ctudec->dbf_info.bs2_map, x0, y0, log2_cb_w, log2_cb_h);
 

@@ -791,6 +791,8 @@ struct OVCTUDec
     /* FIXME to be removed */
     uint8_t bitdepth_minus8;
     uint8_t intra_mode_c;
+    uint8_t intra_mode;
+    uint8_t cu_opaque;
     uint8_t tmp_ciip;
     uint8_t tmp_red;
 };

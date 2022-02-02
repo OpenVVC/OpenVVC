@@ -598,14 +598,66 @@ rcn_tu_c(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
 }
 
 static void
+rcn_intra_tu(OVCTUDec *const ctudec, uint8_t x0, uint8_t y0,
+             uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t cu_flags)
+{
+    uint8_t mip_flag = cu_flags & flg_mip_flag;
+
+    uint8_t intra_mode = ctudec->intra_mode;
+
+    uint8_t x0_unit = x0 >> LOG2_MIN_CU_S;
+    uint8_t y0_unit = y0 >> LOG2_MIN_CU_S;
+    uint8_t nb_unit_w = (1 << log2_tb_w) >> LOG2_MIN_CU_S;
+    uint8_t nb_unit_h = (1 << log2_tb_h) >> LOG2_MIN_CU_S;
+
+    if (mip_flag){
+        const struct OVRCNCtx *rcn = &ctudec->rcn_ctx;
+        ctudec->rcn_funcs.mip.rcn_intra_mip(rcn, x0, y0, log2_tb_w, log2_tb_h, ctudec->cu_opaque);
+
+    } else {
+        uint8_t isp_flag = !!(cu_flags & flg_isp_flag);
+
+        if (!isp_flag) {
+            uint8_t mrl_flag = !!(cu_flags & flg_mrl_flag);
+            if (!mrl_flag) {
+                ctudec->rcn_funcs.intra_pred(&ctudec->rcn_ctx,
+                                             &ctudec->rcn_ctx.ctu_buff,
+                                             intra_mode, x0, y0,
+                                             log2_tb_w, log2_tb_h);
+            }
+
+            if (mrl_flag){
+                uint8_t mrl_idx = ctudec->cu_opaque;
+                ctudec->rcn_funcs.intra_pred_mrl(ctudec, ctudec->rcn_ctx.ctu_buff.y,
+                                                 RCN_CTB_STRIDE, intra_mode, x0, y0,
+                                                 log2_tb_w, log2_tb_h,
+                                                 mrl_idx);
+            }
+        }
+    }
+
+    fill_bs_map(&ctudec->dbf_info.bs2_map, x0, y0, log2_tb_w, log2_tb_h);
+
+    ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field,
+                                x0_unit, y0_unit,
+                                nb_unit_w, nb_unit_h);
+}
+
+static void
 rcn_res_wrap(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
              uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t cu_flags,
              const struct TUInfo *const tu_info)
 {
     uint8_t cbf_mask = tu_info->cbf_mask;
     if (ctu_dec->transform_unit == &transform_unit_st) {
+        if (cu_flags & 0x2) {
+            rcn_intra_tu(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags);
+        }
         rcn_tu_st(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, cbf_mask, tu_info);
     } else if (ctu_dec->transform_unit == &transform_unit_l) {
+        if (cu_flags & 0x2) {
+            rcn_intra_tu(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags);
+        }
         rcn_tu_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, cbf_mask, tu_info);
     } else if (ctu_dec->transform_unit == &transform_unit_c) {
         rcn_tu_c(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, cbf_mask, tu_info);
