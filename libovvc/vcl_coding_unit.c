@@ -666,8 +666,8 @@ coding_unit(OVCTUDec *const ctu_dec,
                            (x0 ? ctu_dec->drv_ctx.qp_map_y[qp_grp_y0 >> log2_min_cb_s] : ctu_dec->qp_ctx.current_qp) + 1) >> 1;
             ctu_dec->read_qp = 1;
             ctu_dec->qp_ctx.current_qp = pred_qp;
-            derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
         }
+        derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
     } else {
         int8_t qp_y = collocated_qp(&ctu_dec->dbf_info.qp_map_y, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1);
         int base_qp_c = ov_clip(qp_y, 0, 63);
@@ -680,9 +680,6 @@ coding_unit(OVCTUDec *const ctu_dec,
         ctu_dec->dequant_cr_skip.qp   = OVMAX(ctu_dec->dequant_cr.qp, ctu_dec->qp_ctx.min_qp_prime_ts);
         ctu_dec->dequant_jcbcr_skip.qp = OVMAX(ctu_dec->dequant_joint_cb_cr.qp, ctu_dec->qp_ctx.min_qp_prime_ts);
         ctu_dec->read_qp = 0;
-    }
-    if (ctu_dec->coding_unit !=coding_unit_intra_c) {
-            derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
     }
 
     int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
