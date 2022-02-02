@@ -617,6 +617,21 @@ drv_intra_mode_c(VVCCU cu, uint8_t luma_mode)
     return intra_mode;
 }
 
+static int8_t
+collocated_qp(const struct DBFQPMap *qp_map, int x0, int y0,
+              int log2_cb_w, int log2_cb_h)
+{
+    uint8_t x0_u = x0 >> 2;
+    uint8_t y0_u = y0 >> 2;
+    int nb_units_w = (1 << (log2_cb_w - 1)) >> 2;
+    int nb_units_h = (1 << (log2_cb_h - 1)) >> 2;
+
+    x0_u += nb_units_w;
+    y0_u += nb_units_h;
+
+   return qp_map->hor[34 + 2 + x0_u + y0_u * 34];
+}
+
 int
 coding_unit(OVCTUDec *const ctu_dec,
             const OVPartInfo *const part_ctx,
@@ -653,6 +668,18 @@ coding_unit(OVCTUDec *const ctu_dec,
             ctu_dec->qp_ctx.current_qp = pred_qp;
             derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
         }
+    } else {
+        int8_t qp_y = collocated_qp(&ctu_dec->dbf_info.qp_map_y, x0 << 1, y0 << 1, log2_cb_w + 1, log2_cb_h + 1);
+        int base_qp_c = ov_clip(qp_y, 0, 63);
+        int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
+
+        ctu_dec->dequant_cb.qp = ov_clip(ctu_dec->qp_ctx.chroma_qp_map_cb[base_qp_c] + ctu_dec->qp_ctx.dqp_cb + ctu_dec->qp_ctx.cb_offset, -qp_bd_offset, 63) + qp_bd_offset;
+        ctu_dec->dequant_cr.qp = ov_clip(ctu_dec->qp_ctx.chroma_qp_map_cr[base_qp_c] + ctu_dec->qp_ctx.dqp_cr + ctu_dec->qp_ctx.cr_offset, -qp_bd_offset, 63) + qp_bd_offset;
+        ctu_dec->dequant_joint_cb_cr.qp = ov_clip(ctu_dec->qp_ctx.chroma_qp_map_jcbcr[base_qp_c] + ctu_dec->qp_ctx.dqp_jcbcr + ctu_dec->qp_ctx.jcbcr_offset, -qp_bd_offset, 63) + qp_bd_offset;
+        ctu_dec->dequant_cb_skip.qp   = OVMAX(ctu_dec->dequant_cb.qp, ctu_dec->qp_ctx.min_qp_prime_ts);
+        ctu_dec->dequant_cr_skip.qp   = OVMAX(ctu_dec->dequant_cr.qp, ctu_dec->qp_ctx.min_qp_prime_ts);
+        ctu_dec->dequant_jcbcr_skip.qp = OVMAX(ctu_dec->dequant_joint_cb_cr.qp, ctu_dec->qp_ctx.min_qp_prime_ts);
+        ctu_dec->read_qp = 0;
     }
     if (ctu_dec->coding_unit !=coding_unit_intra_c) {
             derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);

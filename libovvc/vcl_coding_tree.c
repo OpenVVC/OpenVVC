@@ -216,6 +216,13 @@ coding_quadtree(OVCTUDec *const ctu_dec,
 {
     uint8_t split_cu_flag = 0;
 
+    if (ctu_dec->coding_unit != coding_unit_intra && ((log2_cb_s > 6) || (log2_cb_s * 2 + 2 * (ctu_dec->coding_unit == coding_unit_intra_c)) >= (2 * part_ctx->log2_ctu_s - (ctu_dec->cu_qp_chroma_offset_subdiv)))) {
+        ctu_dec->qp_ctx.dqp_cb = 0;
+        ctu_dec->qp_ctx.dqp_cr = 0;
+        ctu_dec->qp_ctx.dqp_jcbcr = 0;
+        ctu_dec->read_qp_c = 1;
+    }
+
     int x_cb = x0 >> part_ctx->log2_min_cb_s;
     int y_cb = y0 >> part_ctx->log2_min_cb_s;
 
@@ -820,8 +827,14 @@ multi_type_tree(OVCTUDec *const ctu_dec,
     if (ctu_dec->share == 1 && ctu_dec->active_part_map == &ctu_dec->part_map_c) {
         can_split = 0;
     }
-
     uint8_t allow_tt_v = 0, allow_tt_h = 0, allow_bt_h = 0, allow_bt_v = 0;
+
+    if (ctu_dec->coding_unit != coding_unit_intra && (log2_cb_h > 6 || log2_cb_w > 6 || (log2_cb_h + log2_cb_w + 2 * (ctu_dec->coding_unit == coding_unit_intra_c)) >= (2 * part_ctx->log2_ctu_s - (ctu_dec->cu_qp_chroma_offset_subdiv)))) {
+        ctu_dec->qp_ctx.dqp_cb = 0;
+        ctu_dec->qp_ctx.dqp_cr = 0;
+        ctu_dec->qp_ctx.dqp_jcbcr = 0;
+        ctu_dec->read_qp_c = 1;
+    }
 
     if (can_split) {
         /* Ternary Tree needs both width and height to be less than max_tt_size
