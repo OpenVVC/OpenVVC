@@ -25,7 +25,7 @@ scale_add_residual(const int16_t *src, uint16_t *dst,
         for (j = 0; j < tb_w; ++j){
             value = _src[j];
             sign  = value & (1 << 15);
-            value = (abs(value) * scale + (1 << (11 - 1))) >> 11;
+            value = (ov_bdclip(abs(value)) * scale + (1 << (11 - 1))) >> 11;
             value = (ov_clip(sign ? -value : value ,-(1 << 15),1 << 15));
             _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
@@ -50,7 +50,7 @@ scale_sub_residual(const int16_t *src, uint16_t *dst,
         for (j = 0; j < tb_w; ++j){
             value = -_src[j];
             sign  = value & (1 << 15);
-            value = (abs(value) * scale + (1 << (11 - 1))) >> 11;
+            value = (ov_bdclip(abs(value)) * scale + (1 << (11 - 1))) >> 11;
             value = (ov_clip(sign ? -value : value ,-(1 << 15),1 << 15));
             _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
@@ -75,7 +75,7 @@ scale_add_half_residual(const int16_t *src, uint16_t *dst,
         for (j = 0; j < tb_w; ++j){
             value = _src[j] >> 1;
             sign  = value & (1 << 15);
-            value = (abs(value) * scale + (1 << (11 - 1))) >> 11;
+            value = (ov_bdclip(abs(value)) * scale + (1 << (11 - 1))) >> 11;
             value = (ov_clip(sign ? -value : value ,-(1 << 15),1 << 15));
             _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
