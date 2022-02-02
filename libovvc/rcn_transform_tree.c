@@ -229,10 +229,11 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
     if ((cbf_mask & 0x3) == 0x3) {
         int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
         uint8_t    qp = ctu_dec->dequant_joint_cb_cr.qp - qp_bd_offset;
+
+
         dbf_fill_qp_map(&ctu_dec->dbf_info.qp_map_cb, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1, qp);
         dbf_fill_qp_map(&ctu_dec->dbf_info.qp_map_cr, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1, qp);
     }
-    /* FIXME set jcbcr dbf qp */
 
     /* FIXME better organisation based on cbf_mask */
     if (cbf_mask == 3) {
