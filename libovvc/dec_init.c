@@ -75,7 +75,7 @@ sps_init_partition_constraint_info_inter_chroma(OVPartInfo *const pinfo, const O
 
     pinfo->max_mtt_depth = sps->sps_max_mtt_hierarchy_depth_inter_slice;
 
-    pinfo->log2_max_tb_s = 5 + sps->sps_max_luma_transform_size_64_flag;
+    pinfo->log2_max_tb_s = 5 + sps->sps_max_luma_transform_size_64_flag - 1;
 
     return 0;
 }
@@ -141,7 +141,7 @@ ph_override_partition_constraint_info_inter_chroma(OVPartInfo *const pinfo, cons
 
     pinfo->max_mtt_depth = ph->ph_max_mtt_hierarchy_depth_inter_slice;
 
-    pinfo->log2_max_tb_s = 5 + sps->sps_max_luma_transform_size_64_flag;
+    pinfo->log2_max_tb_s = 5 + sps->sps_max_luma_transform_size_64_flag - 1;
 
     return 0;
 }
@@ -194,7 +194,7 @@ sps_init_partition_constraint_info_chroma(OVPartInfo *const pinfo, const OVSPS *
 
     pinfo->max_mtt_depth = sps->sps_max_mtt_hierarchy_depth_intra_slice_chroma;
 
-    pinfo->log2_max_tb_s = 5 + sps->sps_max_luma_transform_size_64_flag;
+    pinfo->log2_max_tb_s = 5 + sps->sps_max_luma_transform_size_64_flag - 1;
 
     return 0;
 }
