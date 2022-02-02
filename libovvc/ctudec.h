@@ -184,6 +184,12 @@ typedef struct VVCQPCTX
     const int8_t *chroma_qp_map_cb;
     const int8_t *chroma_qp_map_cr;
     const int8_t *chroma_qp_map_jcbcr;
+    int8_t cb_qp_offset_list[16];
+    int8_t cr_qp_offset_list[16];
+    int8_t joint_cbcr_qp_offset_list[16];
+    int8_t dqp_cb;
+    int8_t dqp_cr;
+    int8_t dqp_jcbcr;
 } VVCQPCTX;
 
 struct VVCCU
@@ -630,6 +636,12 @@ struct OVCTUDec
     uint8_t enable_lfnst;
 
     uint8_t delta_qp_enabled;
+    uint8_t cu_qp_delta_subdiv;
+    uint8_t cu_qp_chroma_offset_subdiv;
+    uint8_t chroma_qp_offset_enabled;
+    uint8_t chroma_qp_offset_len;
+    uint8_t read_qp;
+    uint8_t read_qp_c;
 
     uint8_t isp_enabled;
     uint8_t enabled_mip;

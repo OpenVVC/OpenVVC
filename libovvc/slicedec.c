@@ -258,9 +258,15 @@ slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
     int8_t cb_qp_offset = sh->sh_cb_qp_offset + pps->pps_cb_qp_offset;
     int8_t cr_qp_offset = sh->sh_cr_qp_offset + pps->pps_cr_qp_offset;
     int8_t jcbcr_qp_offset = sh->sh_joint_cbcr_qp_offset + pps->pps_joint_cbcr_qp_offset_value;
+    uint8_t cu_qp_delta_subdiv = sh->sh_slice_type == 2 ? ph->ph_cu_qp_delta_subdiv_intra_slice : ph->ph_cu_qp_delta_subdiv_inter_slice;
+    uint8_t cu_qp_chroma_offset_subdiv = sh->sh_slice_type == 2 ? ph->ph_cu_chroma_qp_offset_subdiv_intra_slice : ph->ph_cu_chroma_qp_offset_subdiv_inter_slice;
+    ctudec->chroma_qp_offset_enabled = sh->sh_cu_chroma_qp_offset_enabled_flag;
+    ctudec->chroma_qp_offset_len = pps->pps_chroma_qp_offset_list_len_minus1 + 1;
 
     ctudec->slice_qp = pic_qp + sh->sh_qp_delta;
 
+    ctudec->cu_qp_delta_subdiv = cu_qp_delta_subdiv;
+    ctudec->cu_qp_chroma_offset_subdiv = cu_qp_chroma_offset_subdiv;
     /* FIXME
      * check tables are valid when same qp table for all
      */
@@ -268,11 +274,15 @@ slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
     qp_ctx->chroma_qp_map_cr    = prms->sps_info.qp_tables_c[1].qp;
     qp_ctx->chroma_qp_map_jcbcr = prms->sps_info.qp_tables_c[2].qp;
 
+    memcpy(qp_ctx->cb_qp_offset_list, pps->pps_cb_qp_offset_list, sizeof(int8_t)*16);
+    memcpy(qp_ctx->cr_qp_offset_list, pps->pps_cr_qp_offset_list, sizeof(int8_t)*16);
+    memcpy(qp_ctx->joint_cbcr_qp_offset_list, pps->pps_joint_cbcr_qp_offset_list, sizeof(int8_t)*16);
     qp_ctx->current_qp = slice_qp;
     qp_ctx->cb_offset = cb_qp_offset;
     qp_ctx->cr_offset = cr_qp_offset;
     qp_ctx->jcbcr_offset = jcbcr_qp_offset;
     qp_ctx->qp_bd_offset = qp_bd_offset;
+    qp_ctx->min_qp_prime_ts = 4 + 6 * sps->sps_min_qp_prime_ts;
 
     ctudec->dequant_luma.qp = slice_qp + qp_bd_offset;
     ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[slice_qp + cb_qp_offset] + qp_bd_offset;
