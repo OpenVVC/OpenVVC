@@ -516,6 +516,8 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
 
     }
 
+    fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
+    fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
 }
 
 
