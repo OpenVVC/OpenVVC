@@ -505,6 +505,7 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
         ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x0_unit,
                                     y0_unit, nb_unit_w, nb_unit_h);
 
+        fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0, y0, log2_tb_w, log2_tb_h);
         ctu_dec->rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1,
                                         log2_tb_w - 1, log2_tb_h - 1);
     }
@@ -585,6 +586,7 @@ rcn_tu_c(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
     ctu_dec->rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0, y0, log2_tb_w, log2_tb_h);
 
     fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
+    fill_bs_map(&ctu_dec->dbf_info.bs2_map_c, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
 
     if (jcbcr_flag) {
 
