@@ -1152,11 +1152,6 @@ ovvc_transform_scale_sub_sse_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
    s[2] = _mm_srai_epi16(r[2], 15);
    s[3] = _mm_srai_epi16(r[3], 15);
 
-   s[0] = _mm_xor_si128(s[0], _mm_set1_epi16(-1));
-   s[1] = _mm_xor_si128(s[1], _mm_set1_epi16(-1));
-   s[2] = _mm_xor_si128(s[2], _mm_set1_epi16(-1));
-   s[3] = _mm_xor_si128(s[3], _mm_set1_epi16(-1));
-
    //         value = (abs(value);
    r[0] = _mm_abs_epi16(r[0]);
    r[1] = _mm_abs_epi16(r[1]);
@@ -1201,6 +1196,12 @@ ovvc_transform_scale_sub_sse_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[2] = _mm_packs_epi32(m[4], m[5]);
    r[3] = _mm_packs_epi32(m[6], m[7]);
 
+
+   /* Revert sign_mask */
+   s[0] = _mm_xor_si128(s[0], _mm_set1_epi16(-1));
+   s[1] = _mm_xor_si128(s[1], _mm_set1_epi16(-1));
+   s[2] = _mm_xor_si128(s[2], _mm_set1_epi16(-1));
+   s[3] = _mm_xor_si128(s[3], _mm_set1_epi16(-1));
 
    //         value = (sign ? value : -value);
    r[0] = _mm_xor_si128(r[0], s[0]);
@@ -1258,11 +1259,6 @@ ovvc_transform_scale_sub_sse_16_2_10(uint16_t *dst, ptrdiff_t dst_stride,
    s[2] = _mm_srai_epi16(r[2], 15);
    s[3] = _mm_srai_epi16(r[3], 15);
 
-   s[0] = _mm_xor_si128(s[0], _mm_set1_epi16(-1));
-   s[1] = _mm_xor_si128(s[1], _mm_set1_epi16(-1));
-   s[2] = _mm_xor_si128(s[2], _mm_set1_epi16(-1));
-   s[3] = _mm_xor_si128(s[3], _mm_set1_epi16(-1));
-
    //         value = (abs(value);
    r[0] = _mm_abs_epi16(r[0]);
    r[1] = _mm_abs_epi16(r[1]);
@@ -1307,6 +1303,11 @@ ovvc_transform_scale_sub_sse_16_2_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[2] = _mm_packs_epi32(m[4], m[5]);
    r[3] = _mm_packs_epi32(m[6], m[7]);
 
+   /* Revert sign_mask */
+   s[0] = _mm_xor_si128(s[0], _mm_set1_epi16(-1));
+   s[1] = _mm_xor_si128(s[1], _mm_set1_epi16(-1));
+   s[2] = _mm_xor_si128(s[2], _mm_set1_epi16(-1));
+   s[3] = _mm_xor_si128(s[3], _mm_set1_epi16(-1));
 
    //         value = (sign ? -value : value);
    r[0] = _mm_xor_si128(r[0], s[0]);
@@ -1365,11 +1366,6 @@ ovvc_transform_scale_sub_sse_32_1_10(uint16_t *dst, ptrdiff_t dst_stride,
    s[2] = _mm_srai_epi16(r[2], 15);
    s[3] = _mm_srai_epi16(r[3], 15);
 
-   s[0] = _mm_xor_si128(s[0], _mm_set1_epi16(-1));
-   s[1] = _mm_xor_si128(s[1], _mm_set1_epi16(-1));
-   s[2] = _mm_xor_si128(s[2], _mm_set1_epi16(-1));
-   s[3] = _mm_xor_si128(s[3], _mm_set1_epi16(-1));
-
    //         value = (abs(value);
    r[0] = _mm_abs_epi16(r[0]);
    r[1] = _mm_abs_epi16(r[1]);
@@ -1414,6 +1410,11 @@ ovvc_transform_scale_sub_sse_32_1_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[2] = _mm_packs_epi32(m[4], m[5]);
    r[3] = _mm_packs_epi32(m[6], m[7]);
 
+   /* Revert sign_mask */
+   s[0] = _mm_xor_si128(s[0], _mm_set1_epi16(-1));
+   s[1] = _mm_xor_si128(s[1], _mm_set1_epi16(-1));
+   s[2] = _mm_xor_si128(s[2], _mm_set1_epi16(-1));
+   s[3] = _mm_xor_si128(s[3], _mm_set1_epi16(-1));
 
    //         value = (sign ? -value : value);
    r[0] = _mm_xor_si128(r[0], s[0]);
@@ -1471,11 +1472,6 @@ ovvc_transform_scale_sub_half_sse_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
    s[2] = _mm_srai_epi16(r[2], 15);
    s[3] = _mm_srai_epi16(r[3], 15);
 
-   s[0] = _mm_xor_si128(s[0], _mm_set1_epi16(-1));
-   s[1] = _mm_xor_si128(s[1], _mm_set1_epi16(-1));
-   s[2] = _mm_xor_si128(s[2], _mm_set1_epi16(-1));
-   s[3] = _mm_xor_si128(s[3], _mm_set1_epi16(-1));
-
    //         value = (-value);
    r[0] = _mm_sub_epi16(_mm_setzero_si128(), r[0]);
    r[1] = _mm_sub_epi16(_mm_setzero_si128(), r[1]);
@@ -1530,6 +1526,12 @@ ovvc_transform_scale_sub_half_sse_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[1] = _mm_packs_epi32(m[2], m[3]);
    r[2] = _mm_packs_epi32(m[4], m[5]);
    r[3] = _mm_packs_epi32(m[6], m[7]);
+
+   /* Revert sign_mask */
+   s[0] = _mm_xor_si128(s[0], _mm_set1_epi16(-1));
+   s[1] = _mm_xor_si128(s[1], _mm_set1_epi16(-1));
+   s[2] = _mm_xor_si128(s[2], _mm_set1_epi16(-1));
+   s[3] = _mm_xor_si128(s[3], _mm_set1_epi16(-1));
 
    //         value = (sign ? -value : value);
    r[0] = _mm_xor_si128(r[0], s[0]);
@@ -1587,11 +1589,6 @@ ovvc_transform_scale_sub_half_sse_16_2_10(uint16_t *dst, ptrdiff_t dst_stride,
    s[2] = _mm_srai_epi16(r[2], 15);
    s[3] = _mm_srai_epi16(r[3], 15);
 
-   s[0] = _mm_xor_si128(s[0], _mm_set1_epi16(-1));
-   s[1] = _mm_xor_si128(s[1], _mm_set1_epi16(-1));
-   s[2] = _mm_xor_si128(s[2], _mm_set1_epi16(-1));
-   s[3] = _mm_xor_si128(s[3], _mm_set1_epi16(-1));
-
    //         value = (-value);
    r[0] = _mm_sub_epi16(_mm_setzero_si128(), r[0]);
    r[1] = _mm_sub_epi16(_mm_setzero_si128(), r[1]);
@@ -1640,13 +1637,17 @@ ovvc_transform_scale_sub_half_sse_16_2_10(uint16_t *dst, ptrdiff_t dst_stride,
    m[6] = _mm_srai_epi32(m[6], 11);
    m[7] = _mm_srai_epi32(m[7], 11);
 
-
    //         value = (ov_clip(value , 0,(1 << 16)-1));
    r[0] = _mm_packs_epi32(m[0], m[1]);
    r[1] = _mm_packs_epi32(m[2], m[3]);
    r[2] = _mm_packs_epi32(m[4], m[5]);
    r[3] = _mm_packs_epi32(m[6], m[7]);
 
+   /* Revert sign_mask */
+   s[0] = _mm_xor_si128(s[0], _mm_set1_epi16(-1));
+   s[1] = _mm_xor_si128(s[1], _mm_set1_epi16(-1));
+   s[2] = _mm_xor_si128(s[2], _mm_set1_epi16(-1));
+   s[3] = _mm_xor_si128(s[3], _mm_set1_epi16(-1));
 
    //         value = (sign ? -value : value);
    r[0] = _mm_xor_si128(r[0], s[0]);
@@ -1705,11 +1706,6 @@ ovvc_transform_scale_sub_half_sse_32_1_10(uint16_t *dst, ptrdiff_t dst_stride,
    s[2] = _mm_srai_epi16(r[2], 15);
    s[3] = _mm_srai_epi16(r[3], 15);
 
-   s[0] = _mm_xor_si128(s[0], _mm_set1_epi16(-1));
-   s[1] = _mm_xor_si128(s[1], _mm_set1_epi16(-1));
-   s[2] = _mm_xor_si128(s[2], _mm_set1_epi16(-1));
-   s[3] = _mm_xor_si128(s[3], _mm_set1_epi16(-1));
-
    //         value = (-value);
    r[0] = _mm_sub_epi16(_mm_setzero_si128(), r[0]);
    r[1] = _mm_sub_epi16(_mm_setzero_si128(), r[1]);
@@ -1765,6 +1761,11 @@ ovvc_transform_scale_sub_half_sse_32_1_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[2] = _mm_packs_epi32(m[4], m[5]);
    r[3] = _mm_packs_epi32(m[6], m[7]);
 
+   /* Revert sign_mask */
+   s[0] = _mm_xor_si128(s[0], _mm_set1_epi16(-1));
+   s[1] = _mm_xor_si128(s[1], _mm_set1_epi16(-1));
+   s[2] = _mm_xor_si128(s[2], _mm_set1_epi16(-1));
+   s[3] = _mm_xor_si128(s[3], _mm_set1_epi16(-1));
 
    //         value = (sign ? -value : value);
    r[0] = _mm_xor_si128(r[0], s[0]);
