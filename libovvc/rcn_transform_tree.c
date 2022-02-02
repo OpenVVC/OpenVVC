@@ -262,9 +262,6 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
                     uint8_t intra_mode,
                     const struct ISPTUInfo *const tu_info)
 {
-    #if 0
-    struct OVDrvCtx *const pred_ctx = &ctudec->drv_ctx;
-    #endif
     const struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
     const struct RCNFunctions *const rcn_func = &ctudec->rcn_funcs;
     uint8_t cbf_flags = tu_info->cbf_mask;
@@ -278,6 +275,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
     if (log2_cb_h < 4 && (log2_pb_w <= (4 - log2_cb_h))) {
         log2_pb_w = 4 - log2_cb_h;
     }
+
     nb_pb = (1 << log2_cb_w) >> log2_pb_w;
     pb_w =  1 << log2_pb_w;
     offset_x = 0;
@@ -301,20 +299,14 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
                                log2_cb_w, log2_cb_h, offset_x, 0);
         }
 
-        /* FIXME determine if DBF is applied on ISP subblocks */
-        #if 1
         if (!(offset_x & 0x3) ) {
             dbf_fill_qp_map(&ctudec->dbf_info.qp_map_y, x0, y0,  log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h, ctudec->qp_ctx.current_qp);
             fill_ctb_bound(&ctudec->dbf_info, x0 & ~0x3, y0, log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h);
             fill_bs_map(&ctudec->dbf_info.bs2_map, x0 & ~0x3, y0, log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h);
         }
-        //fill_ctb_bound(&ctudec->dbf_info, x0 & ~0x3, y0, log2_pb_w, log2_cb_h);
-        #endif
 
         if (cbf) {
             int16_t *coeffs_y = ctudec->residual_y + i * (1 << (log2_pb_w + log2_cb_h));
-
-            //fill_bs_map(&ctudec->dbf_info.bs1_map, x0, y0, log2_pb_w, log2_cb_h);
 
             if (log2_pb_w) {
                 DECLARE_ALIGNED(32, int16_t, tmp)[64*64];
@@ -392,19 +384,15 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
 
         uint8_t cbf = (cbf_flags >> (nb_pb - i - 1)) & 0x1;
 
-        /* FIXME determine if DBF is applied on ISP subblocks */
-        #if 1
         if (!(offset_y & 0x3) ) {
             dbf_fill_qp_map(&ctudec->dbf_info.qp_map_y, x0, y0, log2_cb_w, log2_pb_h >=2 ? log2_pb_h : 2, ctudec->qp_ctx.current_qp);
             fill_ctb_bound(&ctudec->dbf_info, x0, y0, log2_cb_w, log2_pb_h >=2 ? log2_pb_h : 2);
             fill_bs_map(&ctudec->dbf_info.bs2_map, x0, y0, log2_cb_w, log2_pb_h >=2 ? log2_pb_h : 2);
         }
-        //fill_ctb_bound(&ctudec->dbf_info, x0, y0, log2_cb_w, log2_pb_h);
-        #endif
 
         ctudec->rcn_funcs.intra_pred_isp(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
-                           RCN_CTB_STRIDE, intra_mode, x0, y0,
-                           log2_cb_w, log2_pb_h, log2_cb_w, log2_cb_h, 0, offset_y);
+                                         RCN_CTB_STRIDE, intra_mode, x0, y0,
+                                         log2_cb_w, log2_pb_h, log2_cb_w, log2_cb_h, 0, offset_y);
         if (cbf) {
             int16_t *coeffs_y = ctudec->residual_y + i * (1 << (log2_cb_w + log2_pb_h));
 
