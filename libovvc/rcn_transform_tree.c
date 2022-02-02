@@ -5,6 +5,7 @@
 #include "ovmem.h"
 #include "ctudec.h"
 #include "dbf_utils.h"
+#include "drv_utils.h"
 #include "drv.h"
 #include "vcl.h"
 #include "rcn_dequant.h"
@@ -12,6 +13,7 @@
 
 #define TR_SHIFT_V (6 + 1)
 #define TR_SHIFT_H ((6 + 15 - 1) - BITDEPTH)
+#define LOG2_MIN_CU_S 2
 
 struct TBInfo {
    uint16_t last_pos;
@@ -485,12 +487,22 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
 
         /* FIXME use transform add optimization */
         rcn_func->ict.add[log2_tb_w](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
-        /* FIXME Avoid reprocessing CCLM from here by recontructing at the end of transform tree */
-        if (ctu_dec->intra_mode_c >= 67 && ctu_dec->intra_mode_c < 70) {
-            ctu_dec->rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1, log2_tb_w - 1, log2_tb_h - 1);
-        }
         fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
         fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
+    }
+
+    /* FIXME Avoid reprocessing CCLM from here by recontructing at the end of transform tree */
+    if (cu_flags & 0x2) {
+        uint8_t x0_unit = (x0) >> LOG2_MIN_CU_S;
+        uint8_t y0_unit = (y0) >> LOG2_MIN_CU_S;
+        uint8_t nb_unit_w = (1 << log2_tb_w) >> LOG2_MIN_CU_S;
+        uint8_t nb_unit_h = (1 << log2_tb_h) >> LOG2_MIN_CU_S;
+
+        ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x0_unit,
+                                    y0_unit, nb_unit_w, nb_unit_h);
+
+        ctu_dec->rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0 >> 1, y0 >> 1,
+                                        log2_tb_w - 1, log2_tb_h - 1);
     }
 
     if (jcbcr_flag) {
@@ -503,17 +515,6 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
 
     }
 
-    int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
-    derive_dequant_ctx(ctu_dec, &ctu_dec->qp_ctx, 0);
-    struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
-    uint8_t qp_l  = ctu_dec->qp_ctx.current_qp;
-    uint8_t qp_jc = ctu_dec->dequant_joint_cb_cr.qp - qp_bd_offset;
-    uint8_t qp_cb = (cbf_mask & 0x3) == 0x3 && jcbcr_flag ? qp_jc : ctu_dec->dequant_cb.qp - qp_bd_offset;
-    uint8_t qp_cr = (cbf_mask & 0x3) == 0x3 && jcbcr_flag ? qp_jc : ctu_dec->dequant_cr.qp - qp_bd_offset;
-
-    dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_tb_w, log2_tb_h, qp_l);
-    dbf_fill_qp_map(&dbf_info->qp_map_cb, x0, y0, log2_tb_w, log2_tb_h, qp_cb);
-    dbf_fill_qp_map(&dbf_info->qp_map_cr, x0, y0, log2_tb_w, log2_tb_h, qp_cr);
 }
 
 
@@ -549,6 +550,9 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
         /* FIXME use transform add optimization */
         rcn_func->ict.add[log2_tb_w](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
     }
+    struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
+    uint8_t qp_l  = ctu_dec->qp_ctx.current_qp;
+    dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_tb_w, log2_tb_h, qp_l);
 }
 
 static void
@@ -559,6 +563,18 @@ rcn_tu_c(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
 {
     uint8_t jcbcr_flag = cbf_mask & 0x8;
     uint8_t cbf_mask_c = cbf_mask & 0x3;
+
+    uint8_t x0_unit = (x0 << 1) >> LOG2_MIN_CU_S;
+    uint8_t y0_unit = (y0 << 1) >> LOG2_MIN_CU_S;
+    uint8_t nb_unit_w = (2 << log2_tb_w) >> LOG2_MIN_CU_S;
+    uint8_t nb_unit_h = (2 << log2_tb_h) >> LOG2_MIN_CU_S;
+
+    ctu_field_set_rect_bitfield(&ctu_dec->rcn_ctx.progress_field_c, x0_unit,
+                                y0_unit, nb_unit_w, nb_unit_h);
+
+    ctu_dec->rcn_funcs.intra_pred_c(&ctu_dec->rcn_ctx, ctu_dec->intra_mode_c, x0, y0, log2_tb_w, log2_tb_h);
+
+    fill_ctb_bound_c(&ctu_dec->dbf_info, x0 << 1, y0 << 1, log2_tb_w + 1, log2_tb_h + 1);
 
     if (jcbcr_flag) {
 
@@ -577,11 +593,11 @@ rcn_res_wrap(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
              const struct TUInfo *const tu_info)
 {
     uint8_t cbf_mask = tu_info->cbf_mask;
-    if (ctu_dec->transform_unit == &transform_unit_st && cbf_mask) {
+    if (ctu_dec->transform_unit == &transform_unit_st) {
         rcn_tu_st(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, cbf_mask, tu_info);
-    } else if (ctu_dec->transform_unit == &transform_unit_l && cbf_mask) {
+    } else if (ctu_dec->transform_unit == &transform_unit_l) {
         rcn_tu_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, cbf_mask, tu_info);
-    } else if (ctu_dec->transform_unit == &transform_unit_c && cbf_mask) {
+    } else if (ctu_dec->transform_unit == &transform_unit_c) {
         rcn_tu_c(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, cbf_mask, tu_info);
     }
 }
