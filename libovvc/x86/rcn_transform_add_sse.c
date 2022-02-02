@@ -12,6 +12,18 @@
 #define CLIP_10 ((1 << 10) - 1)
 #define SIGN_16 (int16_t)(1 << 15)
 
+#define bd_clip_10_4x128_epi16(a,b,c,d)\
+   a = _mm_max_epi16(a, _mm_setzero_si128());\
+   b = _mm_max_epi16(b, _mm_setzero_si128());\
+   c = _mm_max_epi16(c, _mm_setzero_si128());\
+   d = _mm_max_epi16(d, _mm_setzero_si128());\
+\
+   a = _mm_min_epi16(a, _mm_set1_epi16(CLIP_10));\
+   b = _mm_min_epi16(b, _mm_set1_epi16(CLIP_10));\
+   c = _mm_min_epi16(c, _mm_set1_epi16(CLIP_10));\
+   d = _mm_min_epi16(d, _mm_set1_epi16(CLIP_10));
+
+
 static inline void
 ovvc_transform_add_sse_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
                               const int16_t *src, ptrdiff_t src_stride)
@@ -544,6 +556,8 @@ ovvc_transform_scale_add_sse_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[2] = _mm_abs_epi16(r[2]);
    r[3] = _mm_abs_epi16(r[3]);
 
+   bd_clip_10_4x128_epi16(r[0], r[1], r[2], r[3]);
+
    //         value = (value * scale + (1 << (11 - 1)));
    m[0] = _mm_unpacklo_epi16(r[0], b);
    m[1] = _mm_unpackhi_epi16(r[0], b);
@@ -647,6 +661,8 @@ ovvc_transform_scale_add_sse_16_2_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[1] = _mm_abs_epi16(r[1]);
    r[2] = _mm_abs_epi16(r[2]);
    r[3] = _mm_abs_epi16(r[3]);
+
+   bd_clip_10_4x128_epi16(r[0], r[1], r[2], r[3]);
 
    //         value = (value * scale + (1 << (11 - 1)));
    m[0] = _mm_unpacklo_epi16(r[0], b);
@@ -752,6 +768,8 @@ ovvc_transform_scale_add_sse_32_1_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[1] = _mm_abs_epi16(r[1]);
    r[2] = _mm_abs_epi16(r[2]);
    r[3] = _mm_abs_epi16(r[3]);
+
+   bd_clip_10_4x128_epi16(r[0], r[1], r[2], r[3]);
 
    //         value = (value * scale + (1 << (11 - 1)));
    m[0] = _mm_unpacklo_epi16(r[0], b);
@@ -862,6 +880,8 @@ ovvc_transform_scale_add_half_sse_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[2] = _mm_abs_epi16(r[2]);
    r[3] = _mm_abs_epi16(r[3]);
 
+   bd_clip_10_4x128_epi16(r[0], r[1], r[2], r[3]);
+
    //         value = (value * scale + (1 << (11 - 1)));
    m[0] = _mm_unpacklo_epi16(r[0], b);
    m[1] = _mm_unpackhi_epi16(r[0], b);
@@ -970,6 +990,8 @@ ovvc_transform_scale_add_half_sse_16_2_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[1] = _mm_abs_epi16(r[1]);
    r[2] = _mm_abs_epi16(r[2]);
    r[3] = _mm_abs_epi16(r[3]);
+
+   bd_clip_10_4x128_epi16(r[0], r[1], r[2], r[3]);
 
    //         value = (value * scale + (1 << (11 - 1)));
    m[0] = _mm_unpacklo_epi16(r[0], b);
@@ -1081,6 +1103,8 @@ ovvc_transform_scale_add_half_sse_32_1_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[2] = _mm_abs_epi16(r[2]);
    r[3] = _mm_abs_epi16(r[3]);
 
+   bd_clip_10_4x128_epi16(r[0], r[1], r[2], r[3]);
+
    //         value = (value * scale + (1 << (11 - 1)));
    m[0] = _mm_unpacklo_epi16(r[0], b);
    m[1] = _mm_unpackhi_epi16(r[0], b);
@@ -1184,6 +1208,8 @@ ovvc_transform_scale_sub_sse_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[1] = _mm_abs_epi16(r[1]);
    r[2] = _mm_abs_epi16(r[2]);
    r[3] = _mm_abs_epi16(r[3]);
+
+   bd_clip_10_4x128_epi16(r[0], r[1], r[2], r[3]);
 
    //         value = (value * scale + (1 << (11 - 1)));
    m[0] = _mm_unpacklo_epi16(r[0], b);
@@ -1289,6 +1315,8 @@ ovvc_transform_scale_sub_sse_16_2_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[2] = _mm_abs_epi16(r[2]);
    r[3] = _mm_abs_epi16(r[3]);
 
+   bd_clip_10_4x128_epi16(r[0], r[1], r[2], r[3]);
+
    //         value = (value * scale + (1 << (11 - 1)));
    m[0] = _mm_unpacklo_epi16(r[0], b);
    m[1] = _mm_unpackhi_epi16(r[0], b);
@@ -1393,6 +1421,8 @@ ovvc_transform_scale_sub_sse_32_1_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[1] = _mm_abs_epi16(r[1]);
    r[2] = _mm_abs_epi16(r[2]);
    r[3] = _mm_abs_epi16(r[3]);
+
+   bd_clip_10_4x128_epi16(r[0], r[1], r[2], r[3]);
 
    //         value = (value * scale + (1 << (11 - 1)));
    m[0] = _mm_unpacklo_epi16(r[0], b);
@@ -1514,6 +1544,8 @@ ovvc_transform_scale_sub_half_sse_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[2] = _mm_abs_epi16(r[2]);
    r[3] = _mm_abs_epi16(r[3]);
 
+   bd_clip_10_4x128_epi16(r[0], r[1], r[2], r[3]);
+
    //         value = (value * scale + (1 << (11 - 1)));
    m[0] = _mm_unpacklo_epi16(r[0], b);
    m[1] = _mm_unpackhi_epi16(r[0], b);
@@ -1632,6 +1664,8 @@ ovvc_transform_scale_sub_half_sse_16_2_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[1] = _mm_abs_epi16(r[1]);
    r[2] = _mm_abs_epi16(r[2]);
    r[3] = _mm_abs_epi16(r[3]);
+
+   bd_clip_10_4x128_epi16(r[0], r[1], r[2], r[3]);
 
    //         value = (value * scale + (1 << (11 - 1)));
    m[0] = _mm_unpacklo_epi16(r[0], b);
@@ -1753,6 +1787,8 @@ ovvc_transform_scale_sub_half_sse_32_1_10(uint16_t *dst, ptrdiff_t dst_stride,
    r[1] = _mm_abs_epi16(r[1]);
    r[2] = _mm_abs_epi16(r[2]);
    r[3] = _mm_abs_epi16(r[3]);
+
+   bd_clip_10_4x128_epi16(r[0], r[1], r[2], r[3]);
 
    //         value = (value * scale + (1 << (11 - 1)));
    m[0] = _mm_unpacklo_epi16(r[0], b);
