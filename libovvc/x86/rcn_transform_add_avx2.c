@@ -293,11 +293,8 @@ ovvc_transform_sub_half_avx2_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
     r23 = _mm256_blend_epi32(r2, r3, 0xF0);
 
     //         value = (-value);
-    r01 = _mm256_xor_si256(r01, _mm256_set1_epi16((int16_t)0xFFFF));
-    r23 = _mm256_xor_si256(r23, _mm256_set1_epi16((int16_t)0xFFFF));
-
-    r01 = _mm256_add_epi16(r01, _mm256_set1_epi16(1));
-    r23 = _mm256_add_epi16(r23, _mm256_set1_epi16(1));
+    r01 = _mm256_sub_epi16(_mm256_setzero_si256(), r01);
+    r23 = _mm256_sub_epi16(_mm256_setzero_si256(), r23);
 
     //         value = (abs(value);
     r01 = _mm256_srai_epi16(r01, 1);
@@ -330,11 +327,8 @@ ovvc_transform_sub_half_avx2_16_2_10(uint16_t *dst, ptrdiff_t dst_stride,
     r1 = _mm256_loadu_si256((__m256i *)&src[1 * src_stride]);
 
     //         value = (-value);
-    r0 = _mm256_xor_si256(r0, _mm256_set1_epi16((int16_t)0xFFFF));
-    r1 = _mm256_xor_si256(r1, _mm256_set1_epi16((int16_t)0xFFFF));
-
-    r0 = _mm256_add_epi16(r0, _mm256_set1_epi16(1));
-    r1 = _mm256_add_epi16(r1, _mm256_set1_epi16(1));
+    r0 = _mm256_sub_epi16(_mm256_setzero_si256(), r0);
+    r1 = _mm256_sub_epi16(_mm256_setzero_si256(), r1);
 
     //         value = (abs(value);
     r0 = _mm256_srai_epi16(r0, 1);
@@ -365,11 +359,8 @@ ovvc_transform_sub_half_avx2_32_1_10(uint16_t *dst, ptrdiff_t dst_stride,
     r1 = _mm256_loadu_si256((__m256i *)&src[16]);
 
     //         value = (-value);
-    r0 = _mm256_xor_si256(r0, _mm256_set1_epi16((int16_t)0xFFFF));
-    r1 = _mm256_xor_si256(r1, _mm256_set1_epi16((int16_t)0xFFFF));
-
-    r0 = _mm256_add_epi16(r0, _mm256_set1_epi16(1));
-    r1 = _mm256_add_epi16(r1, _mm256_set1_epi16(1));
+    r0 = _mm256_sub_epi16(_mm256_setzero_si256(), r0);
+    r1 = _mm256_sub_epi16(_mm256_setzero_si256(), r1);
 
     //         value = (abs(value);
     r0 = _mm256_srai_epi16(r0, 1);
