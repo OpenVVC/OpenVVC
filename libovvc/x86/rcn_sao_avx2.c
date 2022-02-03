@@ -52,7 +52,7 @@ sao_band_filter_0_10_avx2(OVSample* _dst,
       src0 = _mm256_add_epi16(src0, x0);
       src0 = _mm256_max_epi16(src0, _mm256_setzero_si256());
       src0 = _mm256_min_epi16(src0, _mm256_set1_epi16(0x03FF));
-      _mm256_store_si256((__m256i*)&dst[x], src0);
+      _mm256_storeu_si256((__m256i*)&dst[x], src0);
     }
     for ( ; x < width; x += 8) {
       __m128i src0 = _mm_loadu_si128((__m128i*)&src[x]);
@@ -71,7 +71,7 @@ sao_band_filter_0_10_avx2(OVSample* _dst,
       src0 = _mm_add_epi16(src0, x0);
       src0 = _mm_max_epi16(src0, _mm_setzero_si128());
       src0 = _mm_min_epi16(src0, _mm_set1_epi16(0x03FF));
-      _mm_store_si128((__m128i*)&dst[x], src0);
+      _mm_storeu_si128((__m128i*)&dst[x], src0);
     }
     dst += stride_dst;
     src += stride_src;
