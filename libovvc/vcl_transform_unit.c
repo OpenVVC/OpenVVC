@@ -1420,9 +1420,9 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
             tb_info->sig_sb_map = 2;
             ctu_dec->residual_coding_isp_v(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
         } else {
-            tb_info->last_pos = last_pos;
             tb_info->sig_sb_map = ctu_dec->residual_coding_l(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
         }
+        tb_info->last_pos = last_pos;
     }
 
     if (cbf_mask_c) {
@@ -1573,9 +1573,9 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
                 tb_info->sig_sb_map = 2;
                 ctu_dec->residual_coding_isp_h(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
             } else {
-                tb_info->last_pos = last_pos;
                 tb_info->sig_sb_map = ctu_dec->residual_coding_l(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
             }
+            tb_info->last_pos = last_pos;
         }
         coeffs_y += tb_s;
     }
@@ -1635,9 +1635,9 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
             tb_info->sig_sb_map = 2;
             ctu_dec->residual_coding_isp_h(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
         } else {
-            tb_info->last_pos = last_pos;
             tb_info->sig_sb_map = ctu_dec->residual_coding_l(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
         }
+        tb_info->last_pos = last_pos;
     }
 
     if (cbf_mask_c) {
