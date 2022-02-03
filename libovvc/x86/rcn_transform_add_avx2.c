@@ -10,6 +10,13 @@
 #define CLIP_10 ((1 << 10) - 1)
 #define SIGN_16 (int16_t)(1 << 15)
 
+#define bd_clip_10_2x128_epi16(a,b)\
+   a = _mm256_max_epi16(a, _mm256_setzero_si256());\
+   b = _mm256_max_epi16(b, _mm256_setzero_si256());\
+\
+   a = _mm256_min_epi16(a, _mm256_set1_epi16(CLIP_10));\
+   b = _mm256_min_epi16(b, _mm256_set1_epi16(CLIP_10));\
+
 static inline void
 ovvc_transform_add_avx2_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
                               const int16_t *src, ptrdiff_t src_stride)
@@ -411,6 +418,8 @@ ovvc_transform_scale_add_avx2_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
     r01 = _mm256_abs_epi16(r01);
     r23 = _mm256_abs_epi16(r23);
 
+    bd_clip_10_2x128_epi16(r01, r23);
+
     //         value = (value * scale + (1 << (11 - 1)));
     __m256i m01l = _mm256_unpacklo_epi16(r01, b);
     __m256i m01h = _mm256_unpackhi_epi16(r01, b);
@@ -477,6 +486,8 @@ ovvc_transform_scale_add_avx2_16_2_10(uint16_t *dst, ptrdiff_t dst_stride,
     r0 = _mm256_abs_epi16(r0);
     r1 = _mm256_abs_epi16(r1);
 
+    bd_clip_10_2x128_epi16(r0, r1);
+
     m0 = _mm256_unpacklo_epi16(r0, b);
     m1 = _mm256_unpackhi_epi16(r0, b);
     m2 = _mm256_unpacklo_epi16(r1, b);
@@ -533,6 +544,8 @@ ovvc_transform_scale_add_avx2_32_1_10(uint16_t *dst, ptrdiff_t dst_stride,
 
     r0 = _mm256_abs_epi16(r0);
     r1 = _mm256_abs_epi16(r1);
+
+    bd_clip_10_2x128_epi16(r0, r1);
 
     m0 = _mm256_unpacklo_epi16(r0, b);
     m1 = _mm256_unpackhi_epi16(r0, b);
@@ -606,6 +619,8 @@ ovvc_transform_scale_add_half_avx2_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
    r01 = _mm256_abs_epi16(r01);
    r23 = _mm256_abs_epi16(r23);
 
+   bd_clip_10_2x128_epi16(r01, r23);
+
    //         value = (value * scale + (1 << (11 - 1)));
    __m256i m01l = _mm256_unpacklo_epi16(r01, b);
    __m256i m01h = _mm256_unpackhi_epi16(r01, b);
@@ -675,6 +690,8 @@ ovvc_transform_scale_add_half_avx2_16_2_10(uint16_t *dst, ptrdiff_t dst_stride,
     r0 = _mm256_abs_epi16(r0);
     r1 = _mm256_abs_epi16(r1);
 
+    bd_clip_10_2x128_epi16(r0, r1);
+
     m0 = _mm256_unpacklo_epi16(r0, b);
     m1 = _mm256_unpackhi_epi16(r0, b);
     m2 = _mm256_unpacklo_epi16(r1, b);
@@ -734,6 +751,8 @@ ovvc_transform_scale_add_half_avx2_32_1_10(uint16_t *dst, ptrdiff_t dst_stride,
 
     r0 = _mm256_abs_epi16(r0);
     r1 = _mm256_abs_epi16(r1);
+
+    bd_clip_10_2x128_epi16(r0, r1);
 
     m0 = _mm256_unpacklo_epi16(r0, b);
     m1 = _mm256_unpackhi_epi16(r0, b);
@@ -804,6 +823,8 @@ ovvc_transform_scale_sub_avx2_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
     r01 = _mm256_abs_epi16(r01);
     r23 = _mm256_abs_epi16(r23);
 
+    bd_clip_10_2x128_epi16(r01, r23);
+
     //         value = (value * scale + (1 << (11 - 1)));
     __m256i m01l = _mm256_unpacklo_epi16(r01, b);
     __m256i m01h = _mm256_unpackhi_epi16(r01, b);
@@ -873,6 +894,8 @@ ovvc_transform_scale_sub_avx2_16_2_10(uint16_t *dst, ptrdiff_t dst_stride,
     r0 = _mm256_abs_epi16(r0);
     r1 = _mm256_abs_epi16(r1);
 
+    bd_clip_10_2x128_epi16(r0, r1);
+
     //         value = (value * scale + (1 << (11 - 1)));
     m0 = _mm256_unpacklo_epi16(r0, b);
     m1 = _mm256_unpackhi_epi16(r0, b);
@@ -939,6 +962,8 @@ ovvc_transform_scale_sub_avx2_32_1_10(uint16_t *dst, ptrdiff_t dst_stride,
     //         value = (abs(value);
     r0 = _mm256_abs_epi16(r0);
     r1 = _mm256_abs_epi16(r1);
+
+    bd_clip_10_2x128_epi16(r0, r1);
 
     //         value = (value * scale + (1 << (11 - 1)));
     m0 = _mm256_unpacklo_epi16(r0, b);
@@ -1025,6 +1050,8 @@ ovvc_transform_scale_sub_half_avx2_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
     r01 = _mm256_abs_epi16(r01);
     r23 = _mm256_abs_epi16(r23);
 
+    bd_clip_10_2x128_epi16(r01, r23);
+
     //         value = (value * scale + (1 << (11 - 1)));
     __m256i m01l = _mm256_unpacklo_epi16(r01, b);
     __m256i m01h = _mm256_unpackhi_epi16(r01, b);
@@ -1104,6 +1131,8 @@ ovvc_transform_scale_sub_half_avx2_16_2_10(uint16_t *dst, ptrdiff_t dst_stride,
     r0 = _mm256_abs_epi16(r0);
     r1 = _mm256_abs_epi16(r1);
 
+    bd_clip_10_2x128_epi16(r0, r1);
+
     //         value = (value * scale + (1 << (11 - 1)));
     m0 = _mm256_unpacklo_epi16(r0, b);
     m1 = _mm256_unpackhi_epi16(r0, b);
@@ -1177,6 +1206,8 @@ ovvc_transform_scale_sub_half_avx2_32_1_10(uint16_t *dst, ptrdiff_t dst_stride,
 
     r0 = _mm256_abs_epi16(r0);
     r1 = _mm256_abs_epi16(r1);
+
+    bd_clip_10_2x128_epi16(r0, r1);
 
     //         value = (value * scale + (1 << (11 - 1)));
     m0 = _mm256_unpacklo_epi16(r0, b);
