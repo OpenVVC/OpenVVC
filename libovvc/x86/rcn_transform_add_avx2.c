@@ -14,22 +14,22 @@ static inline void
 ovvc_transform_add_avx2_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
                               const int16_t *src, ptrdiff_t src_stride)
 {
-    __m128i l0, l1, l2, l3, r0, r1, r2, r3;
+    __m256i l0, l1, l2, l3, r0, r1, r2, r3;
     __m256i l01, l23, r01, r23;
 
-    l0 = _mm_loadu_si128((__m128i *)&dst[0 * dst_stride]);
-    l1 = _mm_loadu_si128((__m128i *)&dst[1 * dst_stride]);
-    l2 = _mm_loadu_si128((__m128i *)&dst[2 * dst_stride]);
-    l3 = _mm_loadu_si128((__m128i *)&dst[3 * dst_stride]);
-    r0 = _mm_loadu_si128((__m128i *)&src[0 * src_stride]);
-    r1 = _mm_loadu_si128((__m128i *)&src[1 * src_stride]);
-    r2 = _mm_loadu_si128((__m128i *)&src[2 * src_stride]);
-    r3 = _mm_loadu_si128((__m128i *)&src[3 * src_stride]);
+    l0 = _mm256_loadu_si256((__m256i *)&dst[0 * dst_stride]);
+    l1 = _mm256_loadu_si256((__m256i *)&dst[1 * dst_stride - 8]);
+    l2 = _mm256_loadu_si256((__m256i *)&dst[2 * dst_stride]);
+    l3 = _mm256_loadu_si256((__m256i *)&dst[3 * dst_stride - 8]);
+    r0 = _mm256_loadu_si256((__m256i *)&src[0 * src_stride]);
+    r1 = _mm256_loadu_si256((__m256i *)&src[1 * src_stride - 8]);
+    r2 = _mm256_loadu_si256((__m256i *)&src[2 * src_stride]);
+    r3 = _mm256_loadu_si256((__m256i *)&src[3 * src_stride - 8]);
 
-    l01 = _mm256_inserti128_si256(_mm256_castsi128_si256(l0), l1, 1);
-    l23 = _mm256_inserti128_si256(_mm256_castsi128_si256(l2), l3, 1);
-    r01 = _mm256_inserti128_si256(_mm256_castsi128_si256(r0), r1, 1);
-    r23 = _mm256_inserti128_si256(_mm256_castsi128_si256(r2), r3, 1);
+    l01 = _mm256_blend_epi32(l0, l1, 0xF0);
+    l23 = _mm256_blend_epi32(l2, l3, 0xF0);
+    r01 = _mm256_blend_epi32(r0, r1, 0xF0);
+    r23 = _mm256_blend_epi32(r2, r3, 0xF0);
 
     l01 = _mm256_add_epi16(l01, r01);
     l23 = _mm256_add_epi16(l23, r23);
@@ -98,22 +98,22 @@ static inline void
 ovvc_transform_add_half_avx2_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
                               const int16_t *src, ptrdiff_t src_stride)
 {
-    __m128i l0, l1, l2, l3, r0, r1, r2, r3;
+    __m256i l0, l1, l2, l3, r0, r1, r2, r3;
     __m256i l01, l23, r01, r23;
     
-    l0 = _mm_loadu_si128((__m128i *)&dst[0 * dst_stride]);
-    l1 = _mm_loadu_si128((__m128i *)&dst[1 * dst_stride]);
-    l2 = _mm_loadu_si128((__m128i *)&dst[2 * dst_stride]);
-    l3 = _mm_loadu_si128((__m128i *)&dst[3 * dst_stride]);
-    r0 = _mm_loadu_si128((__m128i *)&src[0 * src_stride]);
-    r1 = _mm_loadu_si128((__m128i *)&src[1 * src_stride]);
-    r2 = _mm_loadu_si128((__m128i *)&src[2 * src_stride]);
-    r3 = _mm_loadu_si128((__m128i *)&src[3 * src_stride]);
+    l0 = _mm256_loadu_si256((__m256i *)&dst[0 * dst_stride]);
+    l1 = _mm256_loadu_si256((__m256i *)&dst[1 * dst_stride - 8]);
+    l2 = _mm256_loadu_si256((__m256i *)&dst[2 * dst_stride]);
+    l3 = _mm256_loadu_si256((__m256i *)&dst[3 * dst_stride - 8]);
+    r0 = _mm256_loadu_si256((__m256i *)&src[0 * src_stride]);
+    r1 = _mm256_loadu_si256((__m256i *)&src[1 * src_stride - 8]);
+    r2 = _mm256_loadu_si256((__m256i *)&src[2 * src_stride]);
+    r3 = _mm256_loadu_si256((__m256i *)&src[3 * src_stride - 8]);
 
-    l01 = _mm256_inserti128_si256(_mm256_castsi128_si256(l0), l1, 1);
-    l23 = _mm256_inserti128_si256(_mm256_castsi128_si256(l2), l3, 1);
-    r01 = _mm256_inserti128_si256(_mm256_castsi128_si256(r0), r1, 1);
-    r23 = _mm256_inserti128_si256(_mm256_castsi128_si256(r2), r3, 1);
+    l01 = _mm256_blend_epi32(l0, l1, 0xF0);
+    l23 = _mm256_blend_epi32(l2, l3, 0xF0);
+    r01 = _mm256_blend_epi32(r0, r1, 0xF0);
+    r23 = _mm256_blend_epi32(r2, r3, 0xF0);
 
     r01 = _mm256_srai_epi16(r01, 1);
     r23 = _mm256_srai_epi16(r23, 1);
@@ -191,22 +191,22 @@ static inline void
 ovvc_transform_sub_avx2_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
                               const int16_t *src, ptrdiff_t src_stride)
 {
-    __m128i l0, l1, l2, l3, r0, r1, r2, r3;
+    __m256i l0, l1, l2, l3, r0, r1, r2, r3;
     __m256i l01, l23, r01, r23;
 
-    l0 = _mm_loadu_si128((__m128i *)&dst[0 * dst_stride]);
-    l1 = _mm_loadu_si128((__m128i *)&dst[1 * dst_stride]);
-    l2 = _mm_loadu_si128((__m128i *)&dst[2 * dst_stride]);
-    l3 = _mm_loadu_si128((__m128i *)&dst[3 * dst_stride]);
-    r0 = _mm_loadu_si128((__m128i *)&src[0 * src_stride]);
-    r1 = _mm_loadu_si128((__m128i *)&src[1 * src_stride]);
-    r2 = _mm_loadu_si128((__m128i *)&src[2 * src_stride]);
-    r3 = _mm_loadu_si128((__m128i *)&src[3 * src_stride]);
+    l0 = _mm256_loadu_si256((__m256i *)&dst[0 * dst_stride]);
+    l1 = _mm256_loadu_si256((__m256i *)&dst[1 * dst_stride - 8]);
+    l2 = _mm256_loadu_si256((__m256i *)&dst[2 * dst_stride]);
+    l3 = _mm256_loadu_si256((__m256i *)&dst[3 * dst_stride - 8]);
+    r0 = _mm256_loadu_si256((__m256i *)&src[0 * src_stride]);
+    r1 = _mm256_loadu_si256((__m256i *)&src[1 * src_stride - 8]);
+    r2 = _mm256_loadu_si256((__m256i *)&src[2 * src_stride]);
+    r3 = _mm256_loadu_si256((__m256i *)&src[3 * src_stride - 8]);
 
-    l01 = _mm256_inserti128_si256(_mm256_castsi128_si256(l0), l1, 1);
-    l23 = _mm256_inserti128_si256(_mm256_castsi128_si256(l2), l3, 1);
-    r01 = _mm256_inserti128_si256(_mm256_castsi128_si256(r0), r1, 1);
-    r23 = _mm256_inserti128_si256(_mm256_castsi128_si256(r2), r3, 1);
+    l01 = _mm256_blend_epi32(l0, l1, 0xF0);
+    l23 = _mm256_blend_epi32(l2, l3, 0xF0);
+    r01 = _mm256_blend_epi32(r0, r1, 0xF0);
+    r23 = _mm256_blend_epi32(r2, r3, 0xF0);
 
     l01 = _mm256_sub_epi16(l01, r01);
     l23 = _mm256_sub_epi16(l23, r23);
@@ -275,22 +275,22 @@ static inline void
 ovvc_transform_sub_half_avx2_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
                               const int16_t *src, ptrdiff_t src_stride)
 {
-    __m128i l0, l1, l2, l3, r0, r1, r2, r3;
+    __m256i l0, l1, l2, l3, r0, r1, r2, r3;
     __m256i l01, l23, r01, r23;
 
-    l0 = _mm_loadu_si128((__m128i *)&dst[0 * dst_stride]);
-    l1 = _mm_loadu_si128((__m128i *)&dst[1 * dst_stride]);
-    l2 = _mm_loadu_si128((__m128i *)&dst[2 * dst_stride]);
-    l3 = _mm_loadu_si128((__m128i *)&dst[3 * dst_stride]);
-    r0 = _mm_loadu_si128((__m128i *)&src[0 * src_stride]);
-    r1 = _mm_loadu_si128((__m128i *)&src[1 * src_stride]);
-    r2 = _mm_loadu_si128((__m128i *)&src[2 * src_stride]);
-    r3 = _mm_loadu_si128((__m128i *)&src[3 * src_stride]);
+    l0 = _mm256_loadu_si256((__m256i *)&dst[0 * dst_stride]);
+    l1 = _mm256_loadu_si256((__m256i *)&dst[1 * dst_stride - 8]);
+    l2 = _mm256_loadu_si256((__m256i *)&dst[2 * dst_stride]);
+    l3 = _mm256_loadu_si256((__m256i *)&dst[3 * dst_stride - 8]);
+    r0 = _mm256_loadu_si256((__m256i *)&src[0 * src_stride]);
+    r1 = _mm256_loadu_si256((__m256i *)&src[1 * src_stride - 8]);
+    r2 = _mm256_loadu_si256((__m256i *)&src[2 * src_stride]);
+    r3 = _mm256_loadu_si256((__m256i *)&src[3 * src_stride - 8]);
 
-    l01 = _mm256_inserti128_si256(_mm256_castsi128_si256(l0), l1, 1);
-    l23 = _mm256_inserti128_si256(_mm256_castsi128_si256(l2), l3, 1);
-    r01 = _mm256_inserti128_si256(_mm256_castsi128_si256(r0), r1, 1);
-    r23 = _mm256_inserti128_si256(_mm256_castsi128_si256(r2), r3, 1);
+    l01 = _mm256_blend_epi32(l0, l1, 0xF0);
+    l23 = _mm256_blend_epi32(l2, l3, 0xF0);
+    r01 = _mm256_blend_epi32(r0, r1, 0xF0);
+    r23 = _mm256_blend_epi32(r2, r3, 0xF0);
 
     //         value = (-value);
     r01 = _mm256_xor_si256(r01, _mm256_set1_epi16((int16_t)0xFFFF));
@@ -395,22 +395,22 @@ ovvc_transform_scale_add_avx2_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
     __m256i a = _mm256_unpackhi_epi16(scale, _mm256_set1_epi16(1));
     __m256i b = _mm256_set1_epi16(1 << (11 - 1));
 
-    __m128i l0, l1, l2, l3, r0, r1, r2, r3;
+    __m256i l0, l1, l2, l3, r0, r1, r2, r3;
     __m256i l01, l23, r01, r23, s01, s23;
 
-    l0 = _mm_loadu_si128((__m128i *)&dst[0 * dst_stride]);
-    l1 = _mm_loadu_si128((__m128i *)&dst[1 * dst_stride]);
-    l2 = _mm_loadu_si128((__m128i *)&dst[2 * dst_stride]);
-    l3 = _mm_loadu_si128((__m128i *)&dst[3 * dst_stride]);
-    r0 = _mm_loadu_si128((__m128i *)&src[0 * src_stride]);
-    r1 = _mm_loadu_si128((__m128i *)&src[1 * src_stride]);
-    r2 = _mm_loadu_si128((__m128i *)&src[2 * src_stride]);
-    r3 = _mm_loadu_si128((__m128i *)&src[3 * src_stride]);
+    l0 = _mm256_loadu_si256((__m256i *)&dst[0 * dst_stride]);
+    l1 = _mm256_loadu_si256((__m256i *)&dst[1 * dst_stride - 8]);
+    l2 = _mm256_loadu_si256((__m256i *)&dst[2 * dst_stride]);
+    l3 = _mm256_loadu_si256((__m256i *)&dst[3 * dst_stride - 8]);
+    r0 = _mm256_loadu_si256((__m256i *)&src[0 * src_stride]);
+    r1 = _mm256_loadu_si256((__m256i *)&src[1 * src_stride - 8]);
+    r2 = _mm256_loadu_si256((__m256i *)&src[2 * src_stride]);
+    r3 = _mm256_loadu_si256((__m256i *)&src[3 * src_stride - 8]);
 
-    l01 = _mm256_inserti128_si256(_mm256_castsi128_si256(l0), l1, 1);
-    l23 = _mm256_inserti128_si256(_mm256_castsi128_si256(l2), l3, 1);
-    r01 = _mm256_inserti128_si256(_mm256_castsi128_si256(r0), r1, 1);
-    r23 = _mm256_inserti128_si256(_mm256_castsi128_si256(r2), r3, 1);
+    l01 = _mm256_blend_epi32(l0, l1, 0xF0);
+    l23 = _mm256_blend_epi32(l2, l3, 0xF0);
+    r01 = _mm256_blend_epi32(r0, r1, 0xF0);
+    r23 = _mm256_blend_epi32(r2, r3, 0xF0);
 
     //         sign  = value & (1 << 15);
     s01 = _mm256_srai_epi16(_mm256_and_si256(r01, _mm256_set1_epi16(SIGN_16)), 15);
@@ -597,22 +597,22 @@ ovvc_transform_scale_add_half_avx2_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
     __m256i a = _mm256_unpackhi_epi16(scale, _mm256_set1_epi16(1));
    __m256i b = _mm256_set1_epi16(1 << (11 - 1));
 
-    __m128i l0, l1, l2, l3, r0, r1, r2, r3;
+    __m256i l0, l1, l2, l3, r0, r1, r2, r3;
     __m256i l01, l23, r01, r23, s01, s23;
 
-    l0 = _mm_loadu_si128((__m128i *)&dst[0 * dst_stride]);
-    l1 = _mm_loadu_si128((__m128i *)&dst[1 * dst_stride]);
-    l2 = _mm_loadu_si128((__m128i *)&dst[2 * dst_stride]);
-    l3 = _mm_loadu_si128((__m128i *)&dst[3 * dst_stride]);
-    r0 = _mm_loadu_si128((__m128i *)&src[0 * src_stride]);
-    r1 = _mm_loadu_si128((__m128i *)&src[1 * src_stride]);
-    r2 = _mm_loadu_si128((__m128i *)&src[2 * src_stride]);
-    r3 = _mm_loadu_si128((__m128i *)&src[3 * src_stride]);
+    l0 = _mm256_loadu_si256((__m256i *)&dst[0 * dst_stride]);
+    l1 = _mm256_loadu_si256((__m256i *)&dst[1 * dst_stride - 8]);
+    l2 = _mm256_loadu_si256((__m256i *)&dst[2 * dst_stride]);
+    l3 = _mm256_loadu_si256((__m256i *)&dst[3 * dst_stride - 8]);
+    r0 = _mm256_loadu_si256((__m256i *)&src[0 * src_stride]);
+    r1 = _mm256_loadu_si256((__m256i *)&src[1 * src_stride - 8]);
+    r2 = _mm256_loadu_si256((__m256i *)&src[2 * src_stride]);
+    r3 = _mm256_loadu_si256((__m256i *)&src[3 * src_stride - 8]);
 
-    l01 = _mm256_inserti128_si256(_mm256_castsi128_si256(l0), l1, 1);
-    l23 = _mm256_inserti128_si256(_mm256_castsi128_si256(l2), l3, 1);
-    r01 = _mm256_inserti128_si256(_mm256_castsi128_si256(r0), r1, 1);
-    r23 = _mm256_inserti128_si256(_mm256_castsi128_si256(r2), r3, 1);
+    l01 = _mm256_blend_epi32(l0, l1, 0xF0);
+    l23 = _mm256_blend_epi32(l2, l3, 0xF0);
+    r01 = _mm256_blend_epi32(r0, r1, 0xF0);
+    r23 = _mm256_blend_epi32(r2, r3, 0xF0);
 
    //         sign  = value & (1 << 15);
    s01 = _mm256_srai_epi16(_mm256_and_si256(r01, _mm256_set1_epi16(SIGN_16)), 15);
@@ -808,22 +808,22 @@ ovvc_transform_scale_sub_avx2_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
     __m256i a = _mm256_unpackhi_epi16(scale, _mm256_set1_epi16(1));
     __m256i b = _mm256_set1_epi16(1 << (11 - 1));
 
-    __m128i l0, l1, l2, l3, r0, r1, r2, r3;
+    __m256i l0, l1, l2, l3, r0, r1, r2, r3;
     __m256i l01, l23, r01, r23, s01, s23;
 
-    l0 = _mm_loadu_si128((__m128i *)&dst[0 * dst_stride]);
-    l1 = _mm_loadu_si128((__m128i *)&dst[1 * dst_stride]);
-    l2 = _mm_loadu_si128((__m128i *)&dst[2 * dst_stride]);
-    l3 = _mm_loadu_si128((__m128i *)&dst[3 * dst_stride]);
-    r0 = _mm_loadu_si128((__m128i *)&src[0 * src_stride]);
-    r1 = _mm_loadu_si128((__m128i *)&src[1 * src_stride]);
-    r2 = _mm_loadu_si128((__m128i *)&src[2 * src_stride]);
-    r3 = _mm_loadu_si128((__m128i *)&src[3 * src_stride]);
+    l0 = _mm256_loadu_si256((__m256i *)&dst[0 * dst_stride]);
+    l1 = _mm256_loadu_si256((__m256i *)&dst[1 * dst_stride - 8]);
+    l2 = _mm256_loadu_si256((__m256i *)&dst[2 * dst_stride]);
+    l3 = _mm256_loadu_si256((__m256i *)&dst[3 * dst_stride - 8]);
+    r0 = _mm256_loadu_si256((__m256i *)&src[0 * src_stride]);
+    r1 = _mm256_loadu_si256((__m256i *)&src[1 * src_stride - 8]);
+    r2 = _mm256_loadu_si256((__m256i *)&src[2 * src_stride]);
+    r3 = _mm256_loadu_si256((__m256i *)&src[3 * src_stride - 8]);
 
-    l01 = _mm256_inserti128_si256(_mm256_castsi128_si256(l0), l1, 1);
-    l23 = _mm256_inserti128_si256(_mm256_castsi128_si256(l2), l3, 1);
-    r01 = _mm256_inserti128_si256(_mm256_castsi128_si256(r0), r1, 1);
-    r23 = _mm256_inserti128_si256(_mm256_castsi128_si256(r2), r3, 1);
+    l01 = _mm256_blend_epi32(l0, l1, 0xF0);
+    l23 = _mm256_blend_epi32(l2, l3, 0xF0);
+    r01 = _mm256_blend_epi32(r0, r1, 0xF0);
+    r23 = _mm256_blend_epi32(r2, r3, 0xF0);
 
     //         sign  = value & (1 << 15);
     s01 = _mm256_srai_epi16(_mm256_and_si256(r01, _mm256_set1_epi16(SIGN_16)), 15);
@@ -1021,22 +1021,23 @@ ovvc_transform_scale_sub_half_avx2_8_4_10(uint16_t *dst, ptrdiff_t dst_stride,
     __m256i a = _mm256_unpackhi_epi16(scale, _mm256_set1_epi16(1));
     __m256i b = _mm256_set1_epi16(1 << (11 - 1));
 
-    __m128i l0, l1, l2, l3, r0, r1, r2, r3;
+    __m256i l0, l1, l2, l3, r0, r1, r2, r3;
     __m256i l01, l23, r01, r23, s01, s23;
 
-    l0 = _mm_loadu_si128((__m128i *)&dst[0 * dst_stride]);
-    l1 = _mm_loadu_si128((__m128i *)&dst[1 * dst_stride]);
-    l2 = _mm_loadu_si128((__m128i *)&dst[2 * dst_stride]);
-    l3 = _mm_loadu_si128((__m128i *)&dst[3 * dst_stride]);
-    r0 = _mm_loadu_si128((__m128i *)&src[0 * src_stride]);
-    r1 = _mm_loadu_si128((__m128i *)&src[1 * src_stride]);
-    r2 = _mm_loadu_si128((__m128i *)&src[2 * src_stride]);
-    r3 = _mm_loadu_si128((__m128i *)&src[3 * src_stride]);
+    l0 = _mm256_loadu_si256((__m256i *)&dst[0 * dst_stride]);
+    l1 = _mm256_loadu_si256((__m256i *)&dst[1 * dst_stride - 8]);
+    l2 = _mm256_loadu_si256((__m256i *)&dst[2 * dst_stride]);
+    l3 = _mm256_loadu_si256((__m256i *)&dst[3 * dst_stride - 8]);
+    r0 = _mm256_loadu_si256((__m256i *)&src[0 * src_stride]);
+    r1 = _mm256_loadu_si256((__m256i *)&src[1 * src_stride - 8]);
+    r2 = _mm256_loadu_si256((__m256i *)&src[2 * src_stride]);
+    r3 = _mm256_loadu_si256((__m256i *)&src[3 * src_stride - 8]);
 
-    l01 = _mm256_inserti128_si256(_mm256_castsi128_si256(l0), l1, 1);
-    l23 = _mm256_inserti128_si256(_mm256_castsi128_si256(l2), l3, 1);
-    r01 = _mm256_inserti128_si256(_mm256_castsi128_si256(r0), r1, 1);
-    r23 = _mm256_inserti128_si256(_mm256_castsi128_si256(r2), r3, 1);
+    l01 = _mm256_blend_epi32(l0, l1, 0xF0);
+    l23 = _mm256_blend_epi32(l2, l3, 0xF0);
+    r01 = _mm256_blend_epi32(r0, r1, 0xF0);
+    r23 = _mm256_blend_epi32(r2, r3, 0xF0);
+
 
     //         sign  = value & (1 << 15);
     s01 = _mm256_srai_epi16(_mm256_and_si256(r01, _mm256_set1_epi16(SIGN_16)), 15);
