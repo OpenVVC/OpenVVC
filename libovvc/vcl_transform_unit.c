@@ -547,7 +547,7 @@ lfnst_check_st(const struct TUInfo *const tu_info, uint8_t log2_tb_w, uint8_t lo
         if (cbf_flag_l) {
             const struct TBInfo *tb_info = &tu_info->tb_info[2];
             uint8_t nb_coeffs = check_lfnst_nb_coeffs(tb_info->last_pos);
-            can_lfnst &= tb_info->sig_sb_map == 0x1;
+            can_lfnst &= tb_info->sig_sb_map <= 0x1;
             can_lfnst &= nb_coeffs <= max_lfnst_pos;
             non_only_dc |= nb_coeffs;
         }
@@ -913,7 +913,7 @@ lfnst_mts(const OVCTUDec *const ctu_dec, uint8_t log2_tb_w, uint8_t log2_tb_h,
         if (!(tu_info->tr_skip_mask & 0x10)) {
             const struct TBInfo *tb_info = &tu_info->tb_info[2];
             /* FIXME use sb_sig_map instead of last pos */
-            if (ctu_dec->enable_lfnst && cu_flags & 0x2 && tb_info->sig_sb_map == 0x1) {
+            if (ctu_dec->enable_lfnst && cu_flags & 0x2 && tb_info->sig_sb_map <= 0x1) {
                 int max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
                 int nb_coeffs = check_lfnst_nb_coeffs(tb_info->last_pos);
                 uint8_t is_mip = !!(cu_flags & flg_mip_flag);
@@ -1463,7 +1463,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
 
     if (ctu_dec->enable_lfnst) {
         int max_lfnst_pos = (log2_cb_h == log2_pb_w) && (log2_pb_w <= 3) ? 7 : 15;
-        uint8_t can_lfnst = (tu_info.tb_info[0].sig_sb_map | tu_info.tb_info[1].sig_sb_map | tu_info.tb_info[2].sig_sb_map | tu_info.tb_info[3].sig_sb_map) == 1;
+        uint8_t can_lfnst = (tu_info.tb_info[0].sig_sb_map | tu_info.tb_info[1].sig_sb_map | tu_info.tb_info[2].sig_sb_map | tu_info.tb_info[3].sig_sb_map) <= 1;
 
         can_lfnst &= check_lfnst_nb_coeffs(tu_info.tb_info[0].last_pos) <= max_lfnst_pos;
         can_lfnst &= check_lfnst_nb_coeffs(tu_info.tb_info[1].last_pos) <= max_lfnst_pos;
@@ -1679,7 +1679,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
     }
 
     if (ctu_dec->enable_lfnst) {
-        uint8_t can_lfnst = (tu_info.tb_info[0].sig_sb_map | tu_info.tb_info[1].sig_sb_map | tu_info.tb_info[2].sig_sb_map | tu_info.tb_info[3].sig_sb_map) == 1;
+        uint8_t can_lfnst = (tu_info.tb_info[0].sig_sb_map | tu_info.tb_info[1].sig_sb_map | tu_info.tb_info[2].sig_sb_map | tu_info.tb_info[3].sig_sb_map) <= 1;
         int max_lfnst_pos = (log2_pb_h == log2_cb_w) && (log2_cb_w <= 3) ? 7 : 15;
 
         can_lfnst &= check_lfnst_nb_coeffs(tu_info.tb_info[0].last_pos) <= max_lfnst_pos;
