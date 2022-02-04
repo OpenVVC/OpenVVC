@@ -248,13 +248,13 @@ struct TRFunctions
 struct DCFunctions
 {
   DCFunc func;
-  DCFunc pdpc;
+  DCFunc pdpc[5][5];
 };
 
 struct PlanarFunctions
 {
   PlanarFunc func;
-  PlanarFunc pdpc[2];
+  PlanarFunc pdpc[5][5];
 };
 
 struct ICTFunctions

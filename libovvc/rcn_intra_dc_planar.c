@@ -206,9 +206,15 @@ void
 BD_DECL(rcn_init_dc_planar_functions)(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->dc.func = &intra_dc;
-    rcn_funcs->dc.pdpc = &intra_dc_pdpc;
+    rcn_funcs->planar.func = &intra_planar;
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        for (uint8_t j = 0; j < 5; j++)
+        {
+            rcn_funcs->dc.pdpc[i][j] = &intra_dc_pdpc;
+            rcn_funcs->planar.pdpc[i][j] = &intra_planar_pdpc;
+        }
+    }
+    
 
-    rcn_funcs->planar.func    = &intra_planar;
-    rcn_funcs->planar.pdpc[0] = &intra_planar_pdpc;
-    rcn_funcs->planar.pdpc[1] = &intra_planar_pdpc;
 }
