@@ -407,6 +407,38 @@ ovcabac_read_ae_smvd_flag(OVCABACCtx *const cabac_ctx)
     return ovcabac_ae_read(cabac_ctx, &cabac_state[SMVD_FLAG_CTX_OFFSET]);
 }
 
+static uint8_t
+ovcabac_read_ae_intra_bdpcm_flag(OVCABACCtx *const cabac_ctx)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[BDPCM_MODE_CTX_OFFSET]);
+}
+
+static uint8_t
+ovcabac_read_ae_intra_bdpcm_dir(OVCABACCtx *const cabac_ctx)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[BDPCM_MODE_CTX_OFFSET + 1]);
+}
+
+static uint8_t
+ovcabac_read_ae_intra_bdpcm_flag_c(OVCABACCtx *const cabac_ctx)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[BDPCM_MODE_CTX_OFFSET + 2]);
+}
+
+static uint8_t
+ovcabac_read_ae_intra_bdpcm_dir_c(OVCABACCtx *const cabac_ctx)
+{
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+
+    return ovcabac_ae_read(cabac_ctx, &cabac_state[BDPCM_MODE_CTX_OFFSET + 3]);
+}
+
 /* mip_abv + mip_lft */
 static uint8_t
 ovcabac_read_ae_intra_mip(OVCABACCtx *const cabac_ctx,
@@ -613,6 +645,9 @@ drv_intra_mode_c(VVCCU cu, uint8_t luma_mode)
     uint8_t cclm_idx = cu.cu_mode_idx_c;
     uint8_t intra_mode = derive_intra_mode_c(cclm_flag, mpm_flag_c, mpm_idx,
                                              luma_mode, cclm_idx);
+    if (cu.cu_flags & flg_intra_bdpcm_chroma_flag) {
+        intra_mode = (cu.cu_flags & flg_intra_bdpcm_chroma_dir) ? 50 : 18;
+    }
 
     return intra_mode;
 }
@@ -888,6 +923,29 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
 
     cu.cu_flags |= flg_pred_mode_flag;
 
+    if (ctu_dec->bdpcm_enabled && log2_cb_w <= ctu_dec->max_log2_transform_skip_size
+                               && log2_cb_h <= ctu_dec->max_log2_transform_skip_size) {
+        uint8_t intra_bdpcm_luma_flag = ovcabac_read_ae_intra_bdpcm_flag(cabac_ctx);
+        if (intra_bdpcm_luma_flag) {
+            struct PartMap *part_map = &ctu_dec->part_map;
+            uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
+            uint8_t x_cb = x0 >> log2_min_cb_s;
+            uint8_t y_cb = y0 >> log2_min_cb_s;
+            uint8_t nb_cb_w = (1 << log2_cb_w) >> log2_min_cb_s;
+            uint8_t nb_cb_h = (1 << log2_cb_h) >> log2_min_cb_s;
+
+            uint8_t intra_bdpcm_luma_dir = ovcabac_read_ae_intra_bdpcm_dir(cabac_ctx);
+
+            memset(&part_map->cu_mode_x[x_cb], OV_INTRA, sizeof(uint8_t) * nb_cb_w);
+            memset(&part_map->cu_mode_y[y_cb], OV_INTRA, sizeof(uint8_t) * nb_cb_h);
+
+            FLG_STORE(intra_bdpcm_luma_flag, cu.cu_flags);
+            FLG_STORE(intra_bdpcm_luma_dir, cu.cu_flags);
+            updt_cu_maps(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, OV_INTRA);
+            goto end;
+        }
+    }
+
     if (ctu_dec->enabled_mip) {
         struct PartMap *part_map = &ctu_dec->part_map;
         uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
@@ -967,6 +1025,7 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
 
         updt_cu_maps(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, OV_INTRA);
     }
+end:
 
     return cu;
 }
@@ -984,6 +1043,26 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
 
     /* Force intra pred mode in case of separate or dual tree */
     cu.cu_flags = 2;
+
+    if (ctu_dec->bdpcm_enabled && log2_cb_w <= ctu_dec->max_log2_transform_skip_size
+                               && log2_cb_h <= ctu_dec->max_log2_transform_skip_size) {
+        uint8_t intra_bdpcm_chroma_flag = ovcabac_read_ae_intra_bdpcm_flag_c(cabac_ctx);
+        if (intra_bdpcm_chroma_flag) {
+            struct PartMap *part_map = &ctu_dec->part_map;
+            uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
+            uint8_t x_cb = x0 >> log2_min_cb_s;
+            uint8_t y_cb = y0 >> log2_min_cb_s;
+            uint8_t nb_cb_w = (1 << log2_cb_w) >> log2_min_cb_s;
+            uint8_t nb_cb_h = (1 << log2_cb_h) >> log2_min_cb_s;
+
+            uint8_t intra_bdpcm_chroma_dir = ovcabac_read_ae_intra_bdpcm_dir_c(cabac_ctx);
+
+            FLG_STORE(intra_bdpcm_chroma_flag, cu.cu_flags);
+            FLG_STORE(intra_bdpcm_chroma_dir, cu.cu_flags);
+
+            goto end;
+        }
+    }
 
     /* FIXME CCLM luma partition constraints */
     if (ctu_dec->lm_chroma_enabled && ((!ctu_dec->tmp_disable_cclm &&
@@ -1008,6 +1087,7 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
         }
     }
 
+end:
     return cu;
 }
 

@@ -25,7 +25,7 @@ struct TreeInfo
                           unsigned int x0, unsigned int y0,
                           unsigned int log2_tb_w,
                           unsigned int log2_tb_h,
-                          uint8_t cbf_ctx, uint8_t cu_flags,
+                          uint8_t cbf_ctx, uint16_t cu_flags,
                           uint8_t tr_depth, struct TUInfo *const tu_info);
     const OVPartInfo *part_ctx;
 };

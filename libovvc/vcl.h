@@ -19,19 +19,19 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
 int transform_unit_st(OVCTUDec *const ctu_dec,
                       unsigned int x0, unsigned int y0,
                       unsigned int log2_tb_w, unsigned int log2_tb_h,
-                      uint8_t rqt_root_cbf, uint8_t cu_flags, uint8_t tr_depth,
+                      uint8_t rqt_root_cbf, uint16_t cu_flags, uint8_t tr_depth,
                       struct TUInfo *const tu_info);
 
 int transform_unit_l(OVCTUDec *const ctu_dec,
                      unsigned int x0, unsigned int y0,
                      unsigned int log2_tb_w, unsigned int log2_tb_h,
-                     uint8_t rqt_root_cbf, uint8_t cu_flags, uint8_t tr_depth,
+                     uint8_t rqt_root_cbf, uint16_t cu_flags, uint8_t tr_depth,
                      struct TUInfo *const tu_info);
 
 int transform_unit_c(OVCTUDec *const ctu_dec,
                      unsigned int x0, unsigned int y0,
                      unsigned int log2_tb_w, unsigned int log2_tb_h,
-                     uint8_t rqt_root_cbf, uint8_t cu_flags, uint8_t tr_depth,
+                     uint8_t rqt_root_cbf, uint16_t cu_flags, uint8_t tr_depth,
                      struct TUInfo *const tu_info);
 
 VVCCU coding_unit_intra_st(OVCTUDec *const ctu_dec,
@@ -123,7 +123,7 @@ int residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
                                     uint8_t log2_tb_w, uint8_t log2_tb_h,
                                     uint16_t last_pos);
 
-int residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst, uint8_t log2_tb_w, uint8_t log2_tb_h);
+int residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t bdpcm);
 
 int coding_unit(OVCTUDec *const ctu_dec,
                 const OVPartInfo *const part_ctx,

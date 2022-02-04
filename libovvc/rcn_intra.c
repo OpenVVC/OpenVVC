@@ -450,7 +450,7 @@ intra_angular_h(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *ref2, 
 static void
 vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ctu_buff,
                uint8_t intra_mode, int x0, int y0,
-               int log2_pb_w, int log2_pb_h)
+               int log2_pb_w, int log2_pb_h, uint16_t cu_flags)
 {
     const struct DCFunctions *dc = &rcn_ctx->ctudec->rcn_funcs.dc;
     const struct PlanarFunctions *planar = &rcn_ctx->ctudec->rcn_funcs.planar;
@@ -475,6 +475,19 @@ vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ct
                                             rcn_ctx->progress_field.hfield[y0 >> 2],
                                             rcn_ctx->progress_field.vfield[x0 >> 2],
                                             x0, y0, log2_pb_w, log2_pb_h, 0);
+
+    if (cu_flags & flg_intra_bdpcm_luma_flag) {
+
+        if (cu_flags & flg_intra_bdpcm_luma_dir) {
+            const struct IntraAngularFunctions *cubic_v = rcn_ctx->ctudec->rcn_funcs.intra_angular_cubic_v;
+            cubic_v->pure(ref1, dst, dst_stride, log2_pb_w, log2_pb_h);
+        } else {
+            const struct IntraAngularFunctions *cubic_h = rcn_ctx->ctudec->rcn_funcs.intra_angular_cubic_h;
+            cubic_h->pure(ref2, dst, dst_stride, log2_pb_w, log2_pb_h);
+        }
+
+        return;
+    }
 
     switch (intra_mode) {
     case OVINTRA_PLANAR:
@@ -968,7 +981,7 @@ vvc_intra_chroma_angular(const struct OVRCNCtx *rcn_ctx, const OVSample *const s
 static void
 vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
                       uint8_t intra_mode, int x0, int y0,
-                      int log2_pb_w, int log2_pb_h)
+                      int log2_pb_w, int log2_pb_h, uint16_t cu_flags)
 {
     const struct RCNFunctions *rcn_func = &rcn_ctx->ctudec->rcn_funcs;
     const struct DCFunctions *dc = &rcn_ctx->ctudec->rcn_funcs.dc;
@@ -993,6 +1006,40 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
 
     uint64_t left_col_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
     uint64_t top_row_map  = rcn_ctx->progress_field_c.hfield[y0 >> 1];
+
+    if (cu_flags & flg_intra_bdpcm_chroma_flag) {
+        if (cu_flags & flg_intra_bdpcm_chroma_dir) {
+            const struct IntraAngularFunctions *cubic_v = rcn_ctx->ctudec->rcn_funcs.intra_angular_cubic_v;
+            ctudec->rcn_funcs.tmp.fill_ref_above_0_chroma(src_cb, dst_stride, ref_above,
+                                                          top_row_map, left_col_map,
+                                                          x0, y0, log2_pb_w, log2_pb_h);
+
+            cubic_v->pure(ref1, dst_cb, dst_stride, log2_pb_w, log2_pb_h);
+
+            ctudec->rcn_funcs.tmp.fill_ref_above_0_chroma(src_cr, dst_stride, ref_above,
+                                                          top_row_map, left_col_map,
+                                                          x0, y0, log2_pb_w, log2_pb_h);
+
+            cubic_v->pure(ref1, dst_cr, dst_stride, log2_pb_w, log2_pb_h);
+        } else  {
+            const struct IntraAngularFunctions *cubic_h = rcn_ctx->ctudec->rcn_funcs.intra_angular_cubic_h;
+
+            ctudec->rcn_funcs.tmp.fill_ref_left_0_chroma(src_cb, dst_stride, ref_left,
+                                                         left_col_map, top_row_map,
+                                                         x0, y0, log2_pb_w, log2_pb_h);
+
+            cubic_h->pure(ref2, dst_cb, dst_stride, log2_pb_w, log2_pb_h);
+
+            ctudec->rcn_funcs.tmp.fill_ref_left_0_chroma(src_cr, dst_stride, ref_left,
+                                                         left_col_map, top_row_map,
+                                                         x0, y0, log2_pb_w, log2_pb_h);
+
+
+            cubic_h->pure(ref2, dst_cr, dst_stride, log2_pb_w, log2_pb_h);
+        }
+
+        return;
+    }
 
     switch (intra_mode) {
     case OVINTRA_PLANAR://PLANAR

@@ -108,6 +108,7 @@ typedef struct TSCoeffCodingCtx{
     uint8_t *sign_map;
     uint16_t *abs_coeffs;
     int16_t nb_remaining_bins;
+    uint8_t is_bdpcm;
 }TSCoeffCodingCtx;
 
 typedef struct VVCResidualStates{
@@ -1416,6 +1417,11 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
             int sign_offset = nb_sig_c_ngh != 2 ? nb_sig_c_ngh + nb_signs_ngh :
                 (nb_signs_ngh == 2 ? 2 : nb_signs_ngh ^ 1);
 
+            if (cctx->is_bdpcm) {
+                nb_sig_c_ngh = 3;
+                sign_offset += 3;
+            }
+
             uint8_t ts_sign_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_RESIDUAL_SIGN_CTX_OFFSET + sign_offset]);
             uint8_t ts_gt1_flag  = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_LRG1_FLAG_CTX_OFFSET + nb_sig_c_ngh]);
             int value = 1;
@@ -1461,6 +1467,11 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
             uint8_t nb_signs_ngh = cctx->sign_map[x + y * VVC_TR_CTX_STRIDE];
             int sign_offset = nb_sig_c_ngh != 2 ? nb_sig_c_ngh + nb_signs_ngh :
                                                  (nb_signs_ngh == 2 ? 2 : nb_signs_ngh ^ 1);
+
+            if (cctx->is_bdpcm) {
+                nb_sig_c_ngh = 3;
+                sign_offset += 3;
+            }
 
             uint8_t ts_sign_flag = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_RESIDUAL_SIGN_CTX_OFFSET + sign_offset]);
             uint8_t ts_gt1_flag  = ovcabac_ae_read(cabac_ctx, &ctx_table[TS_LRG1_FLAG_CTX_OFFSET + nb_sig_c_ngh]);
@@ -1522,6 +1533,7 @@ ovcabac_read_ae_sb_ts_core(OVCABACCtx *const cabac_ctx,
      * when no greater flag is encountered
      */
     /* TS coeff Prediction */
+    if (!cctx->is_bdpcm)
     for (int i = 0; i < nb_sig_c; i++) {
         int idx = sig_c_idx_map[i];
         int x = idx & x_mask;
@@ -3505,9 +3517,10 @@ init_sb_map_ts(uint8_t *nb_sig, uint8_t *sign_map, uint16_t *abs_val, uint8_t lo
     }
 }
 
+
 int
 residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
-                   uint8_t log2_tb_w, uint8_t log2_tb_h)
+                   uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t bdpcm_flag)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     /* FIXME smaller reset tables */
@@ -3526,6 +3539,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
         .nb_sig_ngh = &nb_significant   [0],
         .sign_map   = &sign_map         [0],
         .abs_coeffs = &abs_coeffs  [VVC_TR_CTX_STRIDE + 0],
+        .is_bdpcm = bdpcm_flag
     };
 
     const enum TBSize tb_size = log2_size_2_idx(log2_tb_w, log2_tb_h);
@@ -3551,6 +3565,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
                                                (int16_t*) &max_nb_bins,
                                                scan_ctx);
 
+        if (!cctx.is_bdpcm)
         deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
         store_sb_coeff(_dst, sb_coeffs, log2_tb_w, scan_ctx->log2_sb_w,
@@ -3597,6 +3612,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
                                                        (int16_t*) &max_nb_bins,
                                                        scan_ctx);
 
+                if (!cctx.is_bdpcm)
                 deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
                 store_sb_coeff(_dst, sb_coeffs, log2_tb_w, scan_ctx->log2_sb_w,
@@ -3636,6 +3652,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
                                                   (int16_t*) &max_nb_bins,
                                                   scan_ctx);
 
+            if (!cctx.is_bdpcm)
             deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
             store_sb_coeff(_dst, sb_coeffs, log2_tb_w, scan_ctx->log2_sb_w,

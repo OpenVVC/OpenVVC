@@ -52,6 +52,10 @@ enum VVCCUFlag
      DECL_FLG(mpm_flag,5),
      DECL_FLG(cclm_flag,6),
      DECL_FLG(mpm_flag_c,7),
+     DECL_FLG(intra_bdpcm_luma_flag,8),
+     DECL_FLG(intra_bdpcm_chroma_flag,9),
+     DECL_FLG(intra_bdpcm_luma_dir,10),
+     DECL_FLG(intra_bdpcm_chroma_dir,11),
      DECL_FLG(merge_flag,2),
      DECL_FLG(inter_dir,3),
 };
@@ -222,7 +226,7 @@ struct VVCCU
  *  |
  */
 
-    uint8_t cu_flags;
+    uint16_t cu_flags;
     uint8_t cu_mode_idx;
     uint8_t cu_mode_idx_c;
     uint8_t cu_opaque;
@@ -626,6 +630,7 @@ struct OVCTUDec
      * mts_enabled could be replace by a mts status etc.)
      */
     uint8_t transform_skip_enabled;
+    uint8_t sh_ts_disabled;
     uint8_t max_log2_transform_skip_size;
     uint8_t enable_sdh;
     uint8_t jcbcr_enabled;
@@ -646,6 +651,7 @@ struct OVCTUDec
     uint8_t isp_enabled;
     uint8_t enabled_mip;
     uint8_t enable_mrl;
+    uint8_t bdpcm_enabled;
 
     uint8_t lm_chroma_enabled;
     uint8_t enable_cclm;
@@ -719,10 +725,9 @@ struct OVCTUDec
 
     int (*transform_unit)(struct OVCTUDec *const lc_ctx,
                           unsigned int x0, unsigned int y0,
-                          unsigned int log2_tb_w,
-                          unsigned int log2_tb_h,
-                          uint8_t cbf_ctx, uint8_t cu_flags,
-                          uint8_t tr_depth, struct TUInfo *const tu_info);
+                          unsigned int log2_tb_w, unsigned int log2_tb_h,
+                          uint8_t cbf_ctx, uint16_t cu_flags, uint8_t tr_depth,
+                          struct TUInfo *const tu_info);
 
     int (*prediction_unit)(struct OVCTUDec *const lc_ctx,
                            const OVPartInfo *const part_ctx,
