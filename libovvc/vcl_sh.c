@@ -151,6 +151,9 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
         /*TODO ceil log2_num_tiles_in_pic / num_slices_in_sub_pc*/
         int nb_bits_in_slice_address = 0;
         sh->sh_slice_address = nvcl_read_bits(rdr, nb_bits_in_slice_address);
+        if (sh->sh_slice_address) {
+           return -1;
+        }
     }
 
     /* FIXME to be derived from sps */
@@ -374,6 +377,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
     /*FIXME derive nb entry points */
     int nb_entry_points = (pps->pps_num_tile_columns_minus1 + 1) * (pps->pps_num_tile_rows_minus1 + 1) - 1;
     if (nb_entry_points > 0) {
+        if (nb_entry_points > 16) return -1;
         sh->sh_entry_offset_len_minus1 = nvcl_read_u_expgolomb(rdr);
         for (i = 0; i < nb_entry_points; i++) {
             sh->sh_entry_point_offset_minus1[i] = nvcl_read_bits(rdr, sh->sh_entry_offset_len_minus1 + 1);
