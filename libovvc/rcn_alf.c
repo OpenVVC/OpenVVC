@@ -1342,7 +1342,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                 int yVb = (blk_dst.y + blk_dst.height - 1);// & (ctu_s - 1);
                 yVb = yVb & (ctu_s/chr_scale - 1);
 
-                uint8_t isVB = (yVb < virbnd_pos && (yVb >= virbnd_pos - 2)) || (yVb >= virbnd_pos && (yVb <= virbnd_pos + 1));
+                uint8_t isVB = (yVb < virbnd_pos && (yVb >= virbnd_pos - 2)) || (yVb >= virbnd_pos && (yVb <= virbnd_pos + 1)) || ctu_h != ctu_s || ctu_w != ctu_s;
                 ctudec->rcn_funcs.alf.chroma[isVB](dst_chroma, src_chroma,
                                                            stride_dst, stride_src, blk_dst,
                                                            alf->chroma_coeff_final[alt_num],
@@ -1374,7 +1374,9 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                     // FIXME: CC ALF seems to be applied only on border block
                     int virbnd_pos = ((y_pos_pic + ctu_s > ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA));
 
-                    uint8_t isVB = 1;
+                int yVb = (blk_dst.y + blk_dst.height - 1);// & (ctu_s - 1);
+                yVb = yVb & (ctu_s/chr_scale - 1);
+                uint8_t isVB = (yVb < virbnd_pos && (yVb >= virbnd_pos - 2)) || (yVb >= virbnd_pos && (yVb <= virbnd_pos + 1)) || ctu_h != ctu_s || ctu_w != ctu_s;
 
                     ctudec->rcn_funcs.alf.ccalf[isVB](dst_chroma, src_chroma, stride_dst, stride_src, blk_dst, c_idx, filt_coeff,
                                                               ctu_s, virbnd_pos);

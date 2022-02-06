@@ -42,6 +42,31 @@ struct ISPTUInfo {
    struct TBInfo tb_info[4];
 };
 
+static int
+derive_nb_rows(uint64_t sig_sb_map)
+{
+    uint8_t col = sig_sb_map | 1;
+
+    col |= sig_sb_map >> 8;
+    col |= sig_sb_map >> 16;
+    col |= sig_sb_map >> 24;
+    col |= sig_sb_map >> 32;
+    col |= sig_sb_map >> 40;
+    col |= sig_sb_map >> 48;
+    col |= sig_sb_map >> 56;
+
+    return (32 - ov_clz(col)) << 2;
+}
+
+static int
+derive_nb_cols(uint64_t sig_sb_map)
+{
+    uint8_t num_z = ov_clz64(sig_sb_map | 1);
+    uint8_t z_div8 = (num_z >> 3);
+
+    return (8 - z_div8) << 2;
+}
+
 static void
 rcn_residual(OVCTUDec *const ctudec,
              int16_t *const dst, int16_t *src,
@@ -49,7 +74,7 @@ rcn_residual(OVCTUDec *const ctudec,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
              unsigned int lim_sb_s,
              uint8_t cu_mts_flag, uint8_t cu_mts_idx,
-             uint8_t is_dc, uint8_t lfnst_flag, uint8_t is_mip, uint8_t lfnst_idx)
+             uint8_t is_dc, uint8_t lfnst_flag, uint8_t is_mip, uint8_t lfnst_idx, uint64_t sig_sb_map)
 {
     struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
     fill_bs_map(&ctudec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
@@ -77,6 +102,10 @@ rcn_residual(OVCTUDec *const ctudec,
         if (lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) lim_sb_s = 8;
         int nb_row =  OVMIN(lim_sb_s, 1 << log2_tb_w);
         int nb_col =  OVMIN(lim_sb_s, 1 << log2_tb_h);
+        if (!lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) {
+            nb_col = derive_nb_cols(sig_sb_map);
+            nb_row = derive_nb_rows(sig_sb_map);
+        }
 
         /* FIXME use coefficient zeroing in MTS */
         TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, TR_SHIFT_V);
@@ -89,6 +118,10 @@ rcn_residual(OVCTUDec *const ctudec,
         } else {
             int nb_row = OVMIN(lim_sb_s, 1 << log2_tb_w);
             int nb_col = OVMIN(lim_sb_s, 1 << log2_tb_h);
+            if (!lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) {
+                nb_col = derive_nb_cols(sig_sb_map);
+                nb_row = derive_nb_rows(sig_sb_map);
+            }
 
             TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, TR_SHIFT_V);
             TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, TR_SHIFT_H);
@@ -99,6 +132,10 @@ rcn_residual(OVCTUDec *const ctudec,
         if (lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) lim_sb_s = 8;
         int nb_row =  OVMIN(lim_sb_s, 1 << log2_tb_w);
         int nb_col =  OVMIN(lim_sb_s, 1 << log2_tb_h);
+        if (!lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) {
+            nb_col = derive_nb_cols(sig_sb_map);
+            nb_row = derive_nb_rows(sig_sb_map);
+        }
 
         TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, TR_SHIFT_V);
         TRFunc->func[tr_h_idx][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, TR_SHIFT_H);
@@ -111,7 +148,7 @@ rcn_residual_c(OVCTUDec *const ctudec,
                uint8_t x0, uint8_t y0,
                uint8_t log2_tb_w, uint8_t log2_tb_h,
                uint16_t last_pos,
-               uint8_t lfnst_flag, uint8_t lfnst_idx)
+               uint8_t lfnst_flag, uint8_t lfnst_idx, uint64_t sig_sb_map)
 {
     struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
 
@@ -143,6 +180,13 @@ rcn_residual_c(OVCTUDec *const ctudec,
         if (lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) lim_sb_s = 8;
         int nb_row =  OVMIN(lim_sb_s, 1 << log2_tb_w);
         int nb_col =  OVMIN(lim_sb_s, 1 << log2_tb_h);
+
+        #if 1
+        if (!lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) {
+            nb_col = derive_nb_cols(sig_sb_map);
+            nb_row = derive_nb_rows(sig_sb_map);
+        }
+        #endif
         /*FIXME might be transform SKIP */
 
         TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, TR_SHIFT_V);
@@ -204,7 +248,7 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
             tr_buff = ctu_dec->transform_buff;
             rcn_residual_c(ctu_dec, tr_buff, coeffs_cb,
                            x0, y0, log2_tb_w, log2_tb_h,
-                           tb_info_cb->last_pos, lfnst_flag, tu_info->lfnst_idx);
+                           tb_info_cb->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info_cb->sig_sb_map);
         } else {
             if (cu_flags & flg_intra_bdpcm_chroma_flag) {
                 int qp = ctu_dec->dequant_cb_skip.qp;
@@ -248,7 +292,7 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
             tr_buff = ctu_dec->transform_buff;
             rcn_residual_c(ctu_dec, tr_buff, coeffs_cr,
                            x0, y0, log2_tb_w, log2_tb_h,
-                           tb_info_cr->last_pos, lfnst_flag, tu_info->lfnst_idx);
+                           tb_info_cr->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info_cr->sig_sb_map);
         } else {
             if (cu_flags & flg_intra_bdpcm_chroma_flag) {
                 int qp = ctu_dec->dequant_cr_skip.qp;
@@ -297,7 +341,7 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
         int16_t *const coeffs_jcbcr = ctu_dec->residual_cb + tu_info->pos_offset;
         rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_jcbcr,
                        x0, y0, log2_tb_w, log2_tb_h,
-                       tb_info->last_pos, lfnst_flag, tu_info->lfnst_idx);
+                       tb_info->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info->sig_sb_map);
     } else {
         int16_t *const coeffs_jcbcr = ctu_dec->residual_cb + tu_info->pos_offset;
         if (cu_flags & flg_intra_bdpcm_chroma_flag) {
@@ -430,6 +474,11 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
                 int nb_row = OVMIN(lim_sb_s, 1 << log2_pb_w);
                 int nb_col = OVMIN(lim_sb_s, 1 << log2_cb_h);
 
+                if (!lfnst_flag && log2_pb_w > 1 && log2_cb_h > 1) {
+                    nb_col = derive_nb_cols(tb_info->sig_sb_map);
+                    nb_row = derive_nb_rows(tb_info->sig_sb_map);
+                }
+
                 TRFunc->func[type_v][OVMIN(log2_cb_h,6)](src, tmp, pb_w, nb_row, nb_col, TR_SHIFT_V);
                 TRFunc->func[type_h][OVMIN(log2_pb_w,6)](tmp, dst, cb_h, cb_h, nb_row, TR_SHIFT_H);
             } else {
@@ -528,6 +577,11 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                 int nb_row = OVMIN(lim_sb_s, 1 << log2_cb_w);
                 int nb_col = OVMIN(lim_sb_s, 1 << log2_pb_h);
 
+                if (!lfnst_flag && log2_cb_w > 1 && log2_pb_h > 1) {
+                    nb_col = derive_nb_cols(tb_info->sig_sb_map);
+                    nb_row = derive_nb_rows(tb_info->sig_sb_map);
+                }
+
                 TRFunc->func[type_v][OVMIN(log2_pb_h,6)](src, tmp, cb_w, nb_row, nb_col, TR_SHIFT_V);
                 TRFunc->func[type_h][OVMIN(log2_cb_w,6)](tmp, dst, pb_h, pb_h, nb_row, TR_SHIFT_H);
             } else {
@@ -574,7 +628,7 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
             is_mip |= !is_intra;
             rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
                          lim_sb_s, tu_info->cu_mts_flag, tu_info->cu_mts_idx,
-                         !tb_info->last_pos, tu_info->lfnst_flag, is_mip, tu_info->lfnst_idx);
+                         !tb_info->last_pos, tu_info->lfnst_flag, is_mip, tu_info->lfnst_idx, tb_info->sig_sb_map);
 
         } else {
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
@@ -657,7 +711,7 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
             is_mip |= !is_intra;
             rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
                          lim_sb_s, tu_info->cu_mts_flag, tu_info->cu_mts_idx,
-                         !tb_info->last_pos, tu_info->lfnst_flag, is_mip, tu_info->lfnst_idx);
+                         !tb_info->last_pos, tu_info->lfnst_flag, is_mip, tu_info->lfnst_idx, tb_info->sig_sb_map);
 
         } else {
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;

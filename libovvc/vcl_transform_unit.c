@@ -650,8 +650,8 @@ residual_coding_c(OVCTUDec *const ctu_dec,
     int16_t *const coeffs_cr = ctu_dec->residual_cr + tu_info->pos_offset;
     uint16_t last_pos_cb = (1 << (log2_tb_h + log2_tb_w)) - 1;
     uint16_t last_pos_cr = (1 << (log2_tb_h + log2_tb_w)) - 1;
-    uint32_t sig_sb_map_cb = 0x1;
-    uint32_t sig_sb_map_cr = 0x1;
+    uint64_t sig_sb_map_cb = 0x1;
+    uint64_t sig_sb_map_cr = 0x1;
     uint8_t transform_skip_flag = 0;
     struct TBInfo *const tb_info_cb = &tu_info->tb_info[0];
     struct TBInfo *const tb_info_cr = &tu_info->tb_info[1];
@@ -735,7 +735,7 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
 
     uint16_t last_pos;
     int16_t *const coeffs_jcbcr = ctu_dec->residual_cb + tu_info->pos_offset;
-    uint32_t sig_sb_map = 0x1;
+    uint64_t sig_sb_map = 0x1;
     uint8_t transform_skip_flag = 0;
     struct TBInfo *const tb_info = &tu_info->tb_info[0];
 

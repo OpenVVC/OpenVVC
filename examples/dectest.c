@@ -318,7 +318,9 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
         ret = ovdec_drain_picture(dec, &frame);
 
         if (frame) {
-            write_decoded_frame_to_file(frame, fout);
+            if (fout) {
+                write_decoded_frame_to_file(frame, fout);
+            }
 
             ov_log(NULL, OVLOG_DEBUG, "Drain picture with POC %d.\n", frame->poc);
 

@@ -751,9 +751,9 @@ struct OVCTUDec
                                   uint8_t log2_tb_w, uint8_t log2_tb_h,
                                   uint16_t last_pos);
 
-    int (*residual_coding_c)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
-                             uint8_t log2_tb_w, uint8_t log2_tb_h,
-                             uint16_t last_pos);
+    uint64_t (*residual_coding_c)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
+                                  uint8_t log2_tb_w, uint8_t log2_tb_h,
+                                  uint16_t last_pos);
 
     /* FIXME
      *    -Reduce residual buff to 32x32

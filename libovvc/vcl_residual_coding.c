@@ -4315,7 +4315,7 @@ store_sb_coeff_4x4(int16_t *tb_coeff, const int16_t *sb_coeffs,
     memcpy(dst += dst_stride, sb_coeffs += src_stride, cpy_w);
 }
 
-static int
+static uint64_t
 read_tb_inv_diag_scan(const struct SBReader *const sb_rdr, const struct IQScale *const deq_prms,
                       OVCABACCtx *const cabac_ctx, int16_t *const dst, int log2_tb_w, int log2_tb_h,
                       uint16_t last_pos)
@@ -4414,10 +4414,10 @@ read_tb_inv_diag_scan(const struct SBReader *const sb_rdr, const struct IQScale 
 
         store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_tb_w);
 
-        return 0xFFFF;
+        return sig_sb_map | 0x1;
 }
 
-int
+uint64_t
 residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
                            uint8_t log2_tb_w, uint8_t log2_tb_h,
                            uint16_t last_pos)
@@ -4838,7 +4838,7 @@ decode_dpq_small_w_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     return 0xFFFF;
 }
 
-static int
+static uint64_t
 read_tb_inv_diag_scan_sdh(const struct SBReader *const sb_rdr, const OVCTUDec *const ctudec, const struct IQScale *const deq_prms,
                           OVCABACCtx *const cabac_ctx, int16_t *const dst, int log2_tb_w, int log2_tb_h,
                           uint16_t last_pos)
@@ -4935,10 +4935,10 @@ read_tb_inv_diag_scan_sdh(const struct SBReader *const sb_rdr, const OVCTUDec *c
 
         store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_tb_w);
 
-        return 0xFFFF;
+        return sig_sb_map | 0x1;
 }
 
-int
+uint64_t
 residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
                            uint8_t log2_tb_w, uint8_t log2_tb_h,
                            uint16_t last_pos)

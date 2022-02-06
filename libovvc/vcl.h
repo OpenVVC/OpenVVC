@@ -111,7 +111,7 @@ uint64_t residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
                              uint8_t log2_tb_w, uint8_t log2_tb_h,
                              uint16_t last_pos);
 
-int residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
+uint64_t residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
                                     uint8_t log2_tb_w, uint8_t log2_tb_h,
                                     uint16_t last_pos);
 
@@ -119,7 +119,7 @@ uint64_t residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
                              uint8_t log2_tb_w, uint8_t log2_tb_h,
                              uint16_t last_pos);
 
-int residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
+uint64_t residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
                                     uint8_t log2_tb_w, uint8_t log2_tb_h,
                                     uint16_t last_pos);
 
