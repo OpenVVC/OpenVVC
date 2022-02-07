@@ -14,36 +14,6 @@ typedef int16_t TMatrixCoeff;
 #define SIZEV 32
 #define SIZEH 2
 
-void afficherVecteur4SSE128(__m128i cible)
-{
-    int32_t test[4];
-    _mm_store_si128((__m128i *)test, cible);
-
-//    printf(" ________ ________ ________ ________\n|        |        |        |        |\n");
-    printf("| %06d | %06d | %06d | %06d |\n",  test[0], test[1], test[2], test[3]);
-//    printf("|________|________|________|________|\n");
-}
-
-void afficherVecteur8SSE128(__m128i cible)
-{
-    int16_t test[8];
-    _mm_store_si128((__m128i *)test, cible);
-
-//    printf(" ________ ________ ________ ________ ________ ________ ________ ________\n|        |        |        |        |        |        |        |        |\n");
-    printf("| %06d | %06d | %06d | %06d | %06d | %06d | %06d | %06d |\n", test[0], test[1], test[2], test[3], test[4], test[5], test[6], test[7]);
-//    printf("|________|________|________|________|________|________|________|________|\n");
-}
-
-void afficherTableau2D(int v, int h, TCoeff * m){
-    int i,j;
-    for (i = 0; i < v; ++i) {
-        for (j = 0; j < h; ++j) {
-            printf("%i ",m[i*h+j]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
 static void
 transpose8x8(__m128i *in, __m128i *out){
   __m128i tmp1[8], tmp2[8];
@@ -103,7 +73,6 @@ void inverse_sse2_B4(const TCoeff *src, TCoeff *dst, int src_stride, int shift, 
         _mm_store_si128((__m128i *)&(dst[i*8]), result[i]);	//dst[i*8] car result contient 8 résultat
     }
 }
-
 
 void inverse_sse2_B8(const TCoeff *src, TCoeff *dst, int src_stride, int shift, int line, const TMatrixCoeff* iT){
   __m128i add = _mm_set1_epi32(1 << (shift - 1));
