@@ -2843,6 +2843,9 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     uint8_t lim_log2_w = OVMIN(log2_tb_w - tmp_red_w, 5);
     uint8_t lim_log2_h = OVMIN(log2_tb_h - tmp_red_h, 5);
 
+    uint8_t log2_red_w = OVMIN(log2_tb_w, 5);
+    uint8_t log2_red_h = OVMIN(log2_tb_h, 5);
+
     /*FIXME sort and rewrite scan map */
     const uint8_t *const sb_idx_2_sb_num = ff_vvc_idx_2_num[lim_log2_w  - 2]
                                                             [lim_log2_h - 2];
@@ -2885,7 +2888,7 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
 
-    memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
+    memset(_dst, 0, sizeof(int16_t) * (1 << (log2_red_w + log2_red_h)));
 
     if (!last_pos){
         ovcabac_read_ae_sb_dc_coeff_sdh(cabac_ctx, sb_coeffs);
@@ -2897,7 +2900,7 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         return 0;
     }
 
-    reset_ctx_buffers(&c_coding_ctx, lim_log2_w + tmp_red_w, lim_log2_h + tmp_red_h);
+    reset_ctx_buffers(&c_coding_ctx, log2_red_w, log2_red_h);
 
     last_x =  last_pos       & 0x1F;
     last_y = (last_pos >> 8) & 0x1F;
@@ -2914,9 +2917,9 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
         memcpy(&_dst[0]             , &sb_coeffs[ 0], sizeof(int16_t) * 4);
-        memcpy(&_dst[1 << log2_tb_w], &sb_coeffs[ 4], sizeof(int16_t) * 4);
-        memcpy(&_dst[2 << log2_tb_w], &sb_coeffs[ 8], sizeof(int16_t) * 4);
-        memcpy(&_dst[3 << log2_tb_w], &sb_coeffs[12], sizeof(int16_t) * 4);
+        memcpy(&_dst[1 << log2_red_w], &sb_coeffs[ 4], sizeof(int16_t) * 4);
+        memcpy(&_dst[2 << log2_red_w], &sb_coeffs[ 8], sizeof(int16_t) * 4);
+        memcpy(&_dst[3 << log2_red_w], &sb_coeffs[12], sizeof(int16_t) * 4);
         memcpy(ctu_dec->lfnst_subblock, sb_coeffs, sizeof(int16_t) * 16);
 
         /* Implicit first sub-block */
@@ -2925,7 +2928,7 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     sig_sb_map |= 1llu << (last_sb_x + (last_sb_y << 3));
 
-    sb_pos    = (last_sb_x << 2) + ((last_sb_y << log2_tb_w) << 2);
+    sb_pos    = (last_sb_x << 2) + ((last_sb_y << log2_red_w) << 2);
     sb_offset = (last_sb_x << 2) + (last_sb_y << 2) * VVC_TR_CTX_STRIDE;
 
     d_sb = last_sb_x + last_sb_y;
@@ -2946,9 +2949,9 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
     memcpy(&_dst[sb_pos + (0)]             , &sb_coeffs[ 0], sizeof(int16_t) * 4);
-    memcpy(&_dst[sb_pos + (1 << log2_tb_w)], &sb_coeffs[ 4], sizeof(int16_t) * 4);
-    memcpy(&_dst[sb_pos + (2 << log2_tb_w)], &sb_coeffs[ 8], sizeof(int16_t) * 4);
-    memcpy(&_dst[sb_pos + (3 << log2_tb_w)], &sb_coeffs[12], sizeof(int16_t) * 4);
+    memcpy(&_dst[sb_pos + (1 << log2_red_w)], &sb_coeffs[ 4], sizeof(int16_t) * 4);
+    memcpy(&_dst[sb_pos + (2 << log2_red_w)], &sb_coeffs[ 8], sizeof(int16_t) * 4);
+    memcpy(&_dst[sb_pos + (3 << log2_red_w)], &sb_coeffs[12], sizeof(int16_t) * 4);
 
     nb_sb = sb_idx_2_sb_num[last_sb_x + last_sb_y * ((1 << lim_log2_w) >> 2)];
 
@@ -2964,7 +2967,7 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         if (sig_sb_flg) {
 
-            sb_pos    = (x_sb << 2) + ((y_sb << log2_tb_w) << 2);
+            sb_pos    = (x_sb << 2) + ((y_sb << log2_red_w) << 2);
             sb_offset = (x_sb << 2) + (y_sb << 2) * (VVC_TR_CTX_STRIDE);
 
             sig_sb_map |= 1llu << (x_sb + (y_sb << 3));
@@ -2981,9 +2984,9 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
             deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
             memcpy(&_dst[sb_pos + (0)]             , &sb_coeffs[ 0], sizeof(int16_t) * 4);
-            memcpy(&_dst[sb_pos + (1 << log2_tb_w)], &sb_coeffs[ 4], sizeof(int16_t) * 4);
-            memcpy(&_dst[sb_pos + (2 << log2_tb_w)], &sb_coeffs[ 8], sizeof(int16_t) * 4);
-            memcpy(&_dst[sb_pos + (3 << log2_tb_w)], &sb_coeffs[12], sizeof(int16_t) * 4);
+            memcpy(&_dst[sb_pos + (1 << log2_red_w)], &sb_coeffs[ 4], sizeof(int16_t) * 4);
+            memcpy(&_dst[sb_pos + (2 << log2_red_w)], &sb_coeffs[ 8], sizeof(int16_t) * 4);
+            memcpy(&_dst[sb_pos + (3 << log2_red_w)], &sb_coeffs[12], sizeof(int16_t) * 4);
         }
     }
 
@@ -2997,9 +3000,9 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
     memcpy(&_dst[0]             , &sb_coeffs[ 0], sizeof(int16_t) * 4);
-    memcpy(&_dst[1 << log2_tb_w], &sb_coeffs[ 4], sizeof(int16_t) * 4);
-    memcpy(&_dst[2 << log2_tb_w], &sb_coeffs[ 8], sizeof(int16_t) * 4);
-    memcpy(&_dst[3 << log2_tb_w], &sb_coeffs[12], sizeof(int16_t) * 4);
+    memcpy(&_dst[1 << log2_red_w], &sb_coeffs[ 4], sizeof(int16_t) * 4);
+    memcpy(&_dst[2 << log2_red_w], &sb_coeffs[ 8], sizeof(int16_t) * 4);
+    memcpy(&_dst[3 << log2_red_w], &sb_coeffs[12], sizeof(int16_t) * 4);
 
     /* Implicit last significant */
     return sig_sb_map | 1;
@@ -3678,6 +3681,9 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     uint8_t lim_log2_w = OVMIN(log2_tb_w - tmp_red_w, 5);
     uint8_t lim_log2_h = OVMIN(log2_tb_h - tmp_red_h, 5);
 
+    uint8_t log2_red_w = OVMIN(log2_tb_w, 5);
+    uint8_t log2_red_h = OVMIN(log2_tb_h, 5);
+
     const uint8_t *const sb_idx_2_sb_num = ff_vvc_idx_2_num[lim_log2_w - 2]
                                                            [lim_log2_h - 2];
 
@@ -3718,7 +3724,7 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
 
-    memset(_dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
+    memset(_dst, 0, sizeof(int16_t) * (1 << (log2_red_w + log2_red_h)));
 
     if (!last_pos){
 
@@ -3732,7 +3738,7 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         return 0;
     }
 
-    reset_ctx_buffers(&c_coding_ctx, lim_log2_w + tmp_red_w, lim_log2_h + tmp_red_h);
+    reset_ctx_buffers(&c_coding_ctx, log2_red_w, log2_red_h);
 
     last_x =  last_pos       & 0x1F;
     last_y = (last_pos >> 8) & 0x1F;
@@ -3751,9 +3757,9 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
         memcpy(&_dst[0]             , &sb_coeffs[ 0], sizeof(int16_t) * 4);
-        memcpy(&_dst[1 << log2_tb_w], &sb_coeffs[ 4], sizeof(int16_t) * 4);
-        memcpy(&_dst[2 << log2_tb_w], &sb_coeffs[ 8], sizeof(int16_t) * 4);
-        memcpy(&_dst[3 << log2_tb_w], &sb_coeffs[12], sizeof(int16_t) * 4);
+        memcpy(&_dst[1 << log2_red_w], &sb_coeffs[ 4], sizeof(int16_t) * 4);
+        memcpy(&_dst[2 << log2_red_w], &sb_coeffs[ 8], sizeof(int16_t) * 4);
+        memcpy(&_dst[3 << log2_red_w], &sb_coeffs[12], sizeof(int16_t) * 4);
 
         memcpy(ctu_dec->lfnst_subblock, sb_coeffs, sizeof(int16_t) * 16);
 
@@ -3763,7 +3769,7 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     sig_sb_map |= 1llu << (last_sb_x + (last_sb_y << 3));
 
-    sb_pos    = (last_sb_x << 2) + ((last_sb_y << log2_tb_w) << 2);
+    sb_pos    = (last_sb_x << 2) + ((last_sb_y << log2_red_w) << 2);
     sb_offset = (last_sb_x << 2) + (last_sb_y << 2) * VVC_TR_CTX_STRIDE;
 
     d_sb = last_sb_x + last_sb_y;
@@ -3784,9 +3790,9 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
     memcpy(&_dst[sb_pos + (0)]             , &sb_coeffs[ 0], sizeof(int16_t) * 4);
-    memcpy(&_dst[sb_pos + (1 << log2_tb_w)], &sb_coeffs[ 4], sizeof(int16_t) * 4);
-    memcpy(&_dst[sb_pos + (2 << log2_tb_w)], &sb_coeffs[ 8], sizeof(int16_t) * 4);
-    memcpy(&_dst[sb_pos + (3 << log2_tb_w)], &sb_coeffs[12], sizeof(int16_t) * 4);
+    memcpy(&_dst[sb_pos + (1 << log2_red_w)], &sb_coeffs[ 4], sizeof(int16_t) * 4);
+    memcpy(&_dst[sb_pos + (2 << log2_red_w)], &sb_coeffs[ 8], sizeof(int16_t) * 4);
+    memcpy(&_dst[sb_pos + (3 << log2_red_w)], &sb_coeffs[12], sizeof(int16_t) * 4);
 
     nb_sb = sb_idx_2_sb_num[last_sb_x + last_sb_y * ((1 << lim_log2_w) >> 2)];
 
@@ -3802,7 +3808,7 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         if(sig_sb_flg){
 
-            sb_pos    = (x_sb << 2) + ((y_sb << log2_tb_w) << 2);
+            sb_pos    = (x_sb << 2) + ((y_sb << log2_red_w) << 2);
             sb_offset = (x_sb << 2) + (y_sb << 2) * (VVC_TR_CTX_STRIDE);
 
             sig_sb_map |= 1llu << (x_sb + (y_sb << 3));
@@ -3819,9 +3825,9 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
             deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
             memcpy(&_dst[sb_pos + (0)]             , &sb_coeffs[ 0], sizeof(int16_t) * 4);
-            memcpy(&_dst[sb_pos + (1 << log2_tb_w)], &sb_coeffs[ 4], sizeof(int16_t) * 4);
-            memcpy(&_dst[sb_pos + (2 << log2_tb_w)], &sb_coeffs[ 8], sizeof(int16_t) * 4);
-            memcpy(&_dst[sb_pos + (3 << log2_tb_w)], &sb_coeffs[12], sizeof(int16_t) * 4);
+            memcpy(&_dst[sb_pos + (1 << log2_red_w)], &sb_coeffs[ 4], sizeof(int16_t) * 4);
+            memcpy(&_dst[sb_pos + (2 << log2_red_w)], &sb_coeffs[ 8], sizeof(int16_t) * 4);
+            memcpy(&_dst[sb_pos + (3 << log2_red_w)], &sb_coeffs[12], sizeof(int16_t) * 4);
         }
     }
 
@@ -3835,9 +3841,9 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
     memcpy(&_dst[0]             , &sb_coeffs[ 0], sizeof(int16_t) * 4);
-    memcpy(&_dst[1 << log2_tb_w], &sb_coeffs[ 4], sizeof(int16_t) * 4);
-    memcpy(&_dst[2 << log2_tb_w], &sb_coeffs[ 8], sizeof(int16_t) * 4);
-    memcpy(&_dst[3 << log2_tb_w], &sb_coeffs[12], sizeof(int16_t) * 4);
+    memcpy(&_dst[1 << log2_red_w], &sb_coeffs[ 4], sizeof(int16_t) * 4);
+    memcpy(&_dst[2 << log2_red_w], &sb_coeffs[ 8], sizeof(int16_t) * 4);
+    memcpy(&_dst[3 << log2_red_w], &sb_coeffs[12], sizeof(int16_t) * 4);
 
     /* Implicit last significant */
     return sig_sb_map | 1;

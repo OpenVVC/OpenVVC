@@ -106,9 +106,10 @@ rcn_residual(OVCTUDec *const ctudec,
             nb_col = derive_nb_cols(sig_sb_map);
             nb_row = derive_nb_rows(sig_sb_map);
         }
+        int cb_w = log2_tb_h >= 2 ? OVMIN(32, tb_w) : tb_w;
 
         /* FIXME use coefficient zeroing in MTS */
-        TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, TR_SHIFT_V);
+        TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, cb_w, nb_row, nb_col, TR_SHIFT_V);
         TRFunc->func[tr_h_idx][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, TR_SHIFT_H);
 
     } else if (!cu_mts_flag) {
@@ -122,8 +123,9 @@ rcn_residual(OVCTUDec *const ctudec,
                 nb_col = derive_nb_cols(sig_sb_map);
                 nb_row = derive_nb_rows(sig_sb_map);
             }
+            int cb_w = log2_tb_h >= 2 ? OVMIN(32, tb_w) : tb_w;
 
-            TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, TR_SHIFT_V);
+            TRFunc->func[DCT_II][log2_tb_h](src, tmp, cb_w, nb_row, nb_col, TR_SHIFT_V);
             TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, TR_SHIFT_H);
         }
     } else {
@@ -136,8 +138,9 @@ rcn_residual(OVCTUDec *const ctudec,
             nb_col = derive_nb_cols(sig_sb_map);
             nb_row = derive_nb_rows(sig_sb_map);
         }
+        int cb_w = log2_tb_h >= 2 ? OVMIN(32, tb_w) : tb_w;
 
-        TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, TR_SHIFT_V);
+        TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, cb_w, nb_row, nb_col, TR_SHIFT_V);
         TRFunc->func[tr_h_idx][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, TR_SHIFT_H);
     }
 }
@@ -461,10 +464,11 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
                 if (lfnst_flag) {
                     uint8_t lfnst_idx = tu_info->lfnst_idx;
                     int16_t lfnst_sb[16];
+                    int tmp_shift = pb_w > 1 && cb_h > 4 ? OVMIN(5,log2_pb_w) : log2_pb_w;
                     memcpy(lfnst_sb     , &coeffs_y[0], sizeof(int16_t) * 4);
-                    memcpy(lfnst_sb +  4, &coeffs_y[1 << log2_pb_w], sizeof(int16_t) * 4);
-                    memcpy(lfnst_sb +  8, &coeffs_y[2 << log2_pb_w], sizeof(int16_t) * 4);
-                    memcpy(lfnst_sb + 12, &coeffs_y[3 << log2_pb_w], sizeof(int16_t) * 4);
+                    memcpy(lfnst_sb +  4, &coeffs_y[1 << tmp_shift], sizeof(int16_t) * 4);
+                    memcpy(lfnst_sb +  8, &coeffs_y[2 << tmp_shift], sizeof(int16_t) * 4);
+                    memcpy(lfnst_sb + 12, &coeffs_y[3 << tmp_shift], sizeof(int16_t) * 4);
                     process_lfnst_luma_isp(ctudec, coeffs_y, lfnst_sb, log2_pb_w, log2_cb_h,log2_cb_w, log2_cb_h, x0 -offset_x, y0,
                                        lfnst_idx);
                     /* lfnst forces IDCT II usage */
@@ -479,7 +483,9 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
                     nb_row = derive_nb_rows(tb_info->sig_sb_map);
                 }
 
-                TRFunc->func[type_v][OVMIN(log2_cb_h,6)](src, tmp, pb_w, nb_row, nb_col, TR_SHIFT_V);
+                int tmp_pb_w = pb_w;
+                if (!lfnst_flag && pb_w > 1 && cb_h > 4) tmp_pb_w = OVMIN(32, pb_w);
+                TRFunc->func[type_v][OVMIN(log2_cb_h,6)](src, tmp,  tmp_pb_w, nb_row, nb_col, TR_SHIFT_V);
                 TRFunc->func[type_h][OVMIN(log2_pb_w,6)](tmp, dst, cb_h, cb_h, nb_row, TR_SHIFT_H);
             } else {
                 int cb_h = 1 << log2_cb_h;
@@ -562,10 +568,11 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                     uint8_t lfnst_idx = tu_info->lfnst_idx;
                     /*FIXME avoid distinguishing isp case in lfnst */
                     int16_t lfnst_sb[16];
+                    int tmp_shift = log2_cb_w > 1 && log2_pb_h > 1 ? OVMIN(5,log2_cb_w) : log2_cb_w;
                     memcpy(lfnst_sb     , &coeffs_y[0], sizeof(int16_t) * 4);
-                    memcpy(lfnst_sb +  4, &coeffs_y[1 << log2_cb_w], sizeof(int16_t) * 4);
-                    memcpy(lfnst_sb +  8, &coeffs_y[2 << log2_cb_w], sizeof(int16_t) * 4);
-                    memcpy(lfnst_sb + 12, &coeffs_y[3 << log2_cb_w], sizeof(int16_t) * 4);
+                    memcpy(lfnst_sb +  4, &coeffs_y[1 << tmp_shift], sizeof(int16_t) * 4);
+                    memcpy(lfnst_sb +  8, &coeffs_y[2 << tmp_shift], sizeof(int16_t) * 4);
+                    memcpy(lfnst_sb + 12, &coeffs_y[3 << tmp_shift], sizeof(int16_t) * 4);
                     process_lfnst_luma_isp(ctudec, coeffs_y, lfnst_sb, log2_cb_w, log2_pb_h,log2_cb_w, log2_cb_h, x0, y0-offset_y,
                                        lfnst_idx);
 
@@ -582,6 +589,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                     nb_row = derive_nb_rows(tb_info->sig_sb_map);
                 }
 
+                if (!lfnst_flag && log2_pb_h > 1 && log2_cb_w > 1) cb_w = OVMIN(32, cb_w);
                 TRFunc->func[type_v][OVMIN(log2_pb_h,6)](src, tmp, cb_w, nb_row, nb_col, TR_SHIFT_V);
                 TRFunc->func[type_h][OVMIN(log2_cb_w,6)](tmp, dst, pb_h, pb_h, nb_row, TR_SHIFT_H);
             } else {

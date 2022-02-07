@@ -135,7 +135,7 @@ process_lfnst_luma(OVCTUDec *const ctudec,
     memset(dst, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
 
     const int8_t *lfnst_matrix = lfnst[(log2_tb_w >= 3 && log2_tb_h >= 3)][lfnst_mode][lfnst_idx];
-    (rcnFunc->lfnst.func[need_transpose][(log2_tb_w >= 3 && log2_tb_h >= 3)])(tmp, dst, lfnst_matrix, log2_tb_w, log2_tb_h);
+    (rcnFunc->lfnst.func[need_transpose][(log2_tb_w >= 3 && log2_tb_h >= 3)])(tmp, dst, lfnst_matrix, OVMIN(5,log2_tb_w), log2_tb_h);
 }
 
 void
