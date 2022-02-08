@@ -4106,14 +4106,19 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     if (!last_sb_x) {
         int last_coeff_idx = last_x + (last_y << 3) ;
-        int nb_coeffs = ff_vvc_diag_scan_8x2_num_cg [last_coeff_idx];
-        if (log2_tb_w <= 2) {
+
+        if (log2_tb_w < 3) {
+
             const struct SBReader *const sb_rdr = &chroma_2x2_reader_dqp;
-            if (last_x >= 2) {
+
+            if (last_x > 1) {
 
                 sb_offset = 2;
 
                 position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_offset);
+
+                int nb_coeffs = ff_vvc_diag_scan_8x2_num_cg [last_coeff_idx];
+                /* Hackish way of retrieving nb_coeffs based on 8x2 map instead of 4x2*/
                 nb_coeffs -= 4;
 
                 nb_sig_c = sb_rdr->read_first_sb(cabac_ctx, sb_coeffs, nb_coeffs,
@@ -4133,6 +4138,8 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
                 store_sb_coeff(_dst, sb_coeffs + 4, log2_tb_w, 1, 1);
 
             } else {
+                /* Note 8x2 map and 4x2 map are equivalent  if last_x <= 1 */
+                int nb_coeffs = ff_vvc_diag_scan_8x2_num_cg [last_coeff_idx];
                 nb_sig_c = sb_rdr->read_dc_sb(cabac_ctx, sb_coeffs,
                                               nb_coeffs, &c_coding_ctx, sb_rdr);
 
@@ -4141,6 +4148,7 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
                 store_sb_coeff(_dst, sb_coeffs, log2_tb_w, 1, 1);
             }
         } else {
+            int nb_coeffs = ff_vvc_diag_scan_8x2_num_cg [last_coeff_idx];
             const struct SBReader *const sb_rdr = &chroma_8x2_reader_dqp;
 
             nb_sig_c = sb_rdr->read_dc_sb(cabac_ctx, sb_coeffs, nb_coeffs,
@@ -4248,16 +4256,15 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     if (!last_sb_y) {
         int last_coeff_idx = last_x + (last_y << 1);
-        int nb_coeffs = ff_vvc_diag_scan_2x8_num_cg [last_coeff_idx];
         if (log2_tb_h <= 2) {
             const struct SBReader *const sb_rdr = &chroma_2x2_reader_dqp;
             static const uint8_t tmp_lut[4] = {
                 0, 2, 1, 3
             };
 
-            if (last_y >= 2) {
+            if (last_y > 1) {
 
-                nb_coeffs = tmp_lut[last_coeff_idx - 4];
+                int nb_coeffs = tmp_lut[last_coeff_idx - 4];
 
                 int16_t sb_offset = 2 * VVC_TR_CTX_STRIDE;
 
@@ -4282,7 +4289,7 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
                 store_sb_coeff(_dst, sb_coeffs + 4, log2_tb_w, 1, 1);
 
             } else {
-                nb_coeffs = tmp_lut[last_coeff_idx];
+                int nb_coeffs = tmp_lut[last_coeff_idx];
 
                 nb_sig_c = sb_rdr->read_dc_sb(cabac_ctx, sb_coeffs,
                                               nb_coeffs, &c_coding_ctx, sb_rdr);
@@ -4293,6 +4300,7 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
             }
         } else {
             const struct SBReader *const sb_rdr = &chroma_2x8_reader_dqp;
+            int nb_coeffs = ff_vvc_diag_scan_2x8_num_cg [last_coeff_idx];
             nb_sig_c = sb_rdr->read_dc_sb(cabac_ctx, sb_coeffs, nb_coeffs,
                                           &c_coding_ctx, sb_rdr);
 
@@ -4653,15 +4661,15 @@ decode_dpq_small_h_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
     if (!last_sb_x) {
         int last_coeff_idx = last_x + (last_y << 3) ;
-        int nb_coeffs = ff_vvc_diag_scan_8x2_num_cg [last_coeff_idx];
         if (log2_tb_w <= 2) {
             const struct SBReader *const sb_rdr = &chroma_2x2_reader_sdh;
-            if (last_x >= 2) {
+            if (last_x > 1) {
+                int nb_coeffs = ff_vvc_diag_scan_8x2_num_cg [last_coeff_idx];
+                nb_coeffs -= 4;
 
                 sb_offset = 2;
 
                 position_cc_ctx(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_offset);
-                nb_coeffs -= 4;
 
                 nb_sig_c = sb_rdr->read_first_sb(cabac_ctx, sb_coeffs, nb_coeffs,
                                                   &c_coding_ctx, sb_rdr);
@@ -4680,6 +4688,7 @@ decode_dpq_small_h_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
                 store_sb_coeff(_dst, sb_coeffs + 4, log2_tb_w, 1, 1);
 
             } else {
+                int nb_coeffs = ff_vvc_diag_scan_8x2_num_cg [last_coeff_idx];
                 nb_sig_c = sb_rdr->read_dc_sb(cabac_ctx, sb_coeffs,
                                               nb_coeffs, &c_coding_ctx, sb_rdr);
 
@@ -4688,6 +4697,7 @@ decode_dpq_small_h_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
                 store_sb_coeff(_dst, sb_coeffs, log2_tb_w, 1, 1);
             }
         } else {
+            int nb_coeffs = ff_vvc_diag_scan_8x2_num_cg [last_coeff_idx];
             const struct SBReader *const sb_rdr = &chroma_8x2_reader_sdh;
 
             nb_sig_c = sb_rdr->read_dc_sb(cabac_ctx, sb_coeffs, nb_coeffs,
@@ -4791,13 +4801,13 @@ decode_dpq_small_w_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     if(!last_sb_y){
         int last_coeff_idx = last_x + (last_y << 1);
         int nb_coeffs = ff_vvc_diag_scan_2x8_num_cg [last_coeff_idx];
-        if (log2_tb_h <= 2) {
+        if (log2_tb_h < 3) {
             const struct SBReader *const sb_rdr = &chroma_2x2_reader_sdh;
             static const uint8_t tmp_lut[4] = {
                 0, 2, 1, 3
             };
 
-            if (last_y >= 2) {
+            if (last_y > 1) {
 
                 nb_coeffs = tmp_lut[last_coeff_idx - 4];
 
