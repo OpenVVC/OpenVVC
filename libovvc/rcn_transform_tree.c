@@ -213,7 +213,7 @@ rcn_residual_c(OVCTUDec *const ctudec,
                uint8_t x0, uint8_t y0,
                uint8_t log2_tb_w, uint8_t log2_tb_h,
                uint16_t last_pos,
-               uint8_t lfnst_flag, uint8_t lfnst_idx, uint64_t sig_sb_map)
+               uint8_t lfnst_flag, uint8_t lfnst_idx, uint64_t sig_sb_map, uint8_t qp)
 {
     struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
 
@@ -221,6 +221,47 @@ rcn_residual_c(OVCTUDec *const ctudec,
 
     int tb_w = 1 << log2_tb_w;
     int tb_h = 1 << log2_tb_h;
+
+    if (log2_tb_h > 1 && log2_tb_w > 1) {
+        int nb_cols = derive_nb_cols(sig_sb_map);
+        int nb_rows = derive_nb_rows(sig_sb_map);
+
+        if (ctudec->residual_coding_l == &residual_coding_dpq) {
+            struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+            uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
+            if (!is_neg) {
+                dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
+            } else {
+                dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
+            }
+        } else {
+            struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
+            uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
+            if (!is_neg) {
+                dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
+            } else {
+                dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
+            }
+        }
+    } else {
+        if (ctudec->residual_coding_l == &residual_coding_dpq) {
+            struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+            uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
+            if (!is_neg) {
+                dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, 1 << log2_tb_h, 1 << log2_tb_w);
+            } else {
+                dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, 1 << log2_tb_h, 1 << log2_tb_w);
+            }
+        } else {
+            struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
+            uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
+            if (!is_neg) {
+                dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, 1 << log2_tb_h, 1 << log2_tb_w);
+            } else {
+                dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, 1 << log2_tb_h, 1 << log2_tb_w);
+            }
+        }
+    }
 
 
     if (lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) {
@@ -312,9 +353,10 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
         if (!(tu_info->tr_skip_mask & 0x2)) {
             const struct TBInfo *const tb_info_cb = &tu_info->tb_info[0];
             tr_buff = ctu_dec->transform_buff;
+            uint8_t qp = ctu_dec->dequant_cb.qp;
             rcn_residual_c(ctu_dec, tr_buff, coeffs_cb,
                            x0, y0, log2_tb_w, log2_tb_h,
-                           tb_info_cb->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info_cb->sig_sb_map);
+                           tb_info_cb->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info_cb->sig_sb_map, qp);
         } else {
             if (cu_flags & flg_intra_bdpcm_chroma_flag) {
                 int qp = ctu_dec->dequant_cb_skip.qp;
@@ -356,9 +398,10 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
         if (!(tu_info->tr_skip_mask & 0x1)) {
             const struct TBInfo *const tb_info_cr = &tu_info->tb_info[1];
             tr_buff = ctu_dec->transform_buff;
+            uint8_t qp = ctu_dec->dequant_cr.qp;
             rcn_residual_c(ctu_dec, tr_buff, coeffs_cr,
                            x0, y0, log2_tb_w, log2_tb_h,
-                           tb_info_cr->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info_cr->sig_sb_map);
+                           tb_info_cr->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info_cr->sig_sb_map, qp);
         } else {
             if (cu_flags & flg_intra_bdpcm_chroma_flag) {
                 int qp = ctu_dec->dequant_cr_skip.qp;
@@ -405,9 +448,19 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
     if (!(tu_info->tr_skip_mask & 0x1)) {
         const struct TBInfo *const tb_info = &tu_info->tb_info[0];
         int16_t *const coeffs_jcbcr = ctu_dec->residual_cb + tu_info->pos_offset;
+        uint8_t qp;
+
+        if ((cbf_mask&0x3) == 3) {
+            qp = ctu_dec->dequant_joint_cb_cr.qp;
+        } else if (cbf_mask == 1) {
+            qp = ctu_dec->dequant_cr.qp;
+        } else {
+            qp = ctu_dec->dequant_cb.qp;
+        }
+
         rcn_residual_c(ctu_dec, ctu_dec->transform_buff, coeffs_jcbcr,
                        x0, y0, log2_tb_w, log2_tb_h,
-                       tb_info->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info->sig_sb_map);
+                       tb_info->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info->sig_sb_map, qp);
     } else {
         int16_t *const coeffs_jcbcr = ctu_dec->residual_cb + tu_info->pos_offset;
         if (cu_flags & flg_intra_bdpcm_chroma_flag) {
