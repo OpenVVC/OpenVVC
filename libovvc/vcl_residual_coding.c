@@ -4075,7 +4075,7 @@ static const struct SBReader chroma_2x2_reader_dqp = {
     .cabac_offsets = &chroma_ctx_offsets
 };
 
-static int
+static uint64_t
 decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
                         uint8_t log2_tb_w, uint8_t log2_tb_h,
                         uint16_t last_pos)
@@ -4216,7 +4216,7 @@ decode_dpq_small_h_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
 
 }
 
-static int
+static uint64_t
 decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
                         uint8_t log2_tb_w, uint8_t log2_tb_h,
                         uint16_t last_pos)
@@ -4625,7 +4625,7 @@ static const struct SBReader chroma_2x2_reader_sdh = {
     .cabac_offsets = &chroma_ctx_offsets
 };
 
-static int
+static uint64_t
 decode_dpq_small_h_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
                         uint8_t log2_tb_w, uint8_t log2_tb_h,
                         uint16_t last_pos, struct IQScale deq_prms)
@@ -4762,7 +4762,7 @@ decode_dpq_small_h_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
 }
 
-static int
+static uint64_t
 decode_dpq_small_w_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
                         uint8_t log2_tb_w, uint8_t log2_tb_h,
                         uint16_t last_pos, const struct IQScale const deq_prms)
