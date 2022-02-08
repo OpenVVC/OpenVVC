@@ -135,6 +135,26 @@ rcn_residual(OVCTUDec *const ctudec,
                 dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
             }
         }
+    } else {
+        int qp = ctudec->dequant_luma.qp;
+        if (ctudec->residual_coding_l == &residual_coding_dpq) {
+            struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+            uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
+            if (!is_neg) {
+                dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, 1 << log2_tb_h, 1 << log2_tb_w);
+            } else {
+                dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, 1 << log2_tb_h, 1 << log2_tb_w);
+            }
+        } else {
+            struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
+            uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
+            if (!is_neg) {
+                dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, 1 << log2_tb_h, 1 << log2_tb_w);
+            } else {
+                dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, 1 << log2_tb_h, 1 << log2_tb_w);
+            }
+        }
+
     }
 
 
@@ -598,6 +618,23 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
                             dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_pb_w, nb_cols, nb_rows);
                         }
                     }
+                } else {
+                    int qp = ctudec->dequant_luma.qp;
+                    struct IQScale deq_prms;
+                    if (ctudec->residual_coding_l == &residual_coding_dpq) {
+                        deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_pb_w, log2_cb_h);
+                    } else {
+                        deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_pb_w, log2_cb_h);
+                    }
+                    uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
+                    if (log2_pb_w) {
+                        if (!is_neg) {
+                            dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_pb_w, 1 << log2_cb_h, 1 << log2_pb_w);
+                        } else {
+                            dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_pb_w, 1 << log2_cb_h, 1 << log2_pb_w);
+                        }
+                    } else {
+                    }
                 }
 
                 memset(tmp, 0, sizeof(int16_t) << (log2_pb_w + log2_cb_h));
@@ -632,7 +669,20 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
                 const struct TBInfo *const tb_info = &tu_info->tb_info[i];
                 int cb_h = 1 << log2_cb_h;
                 DECLARE_ALIGNED(32, int16_t, tmp)[64];
+                int qp = ctudec->dequant_luma.qp;
+                struct IQScale deq_prms;
+                if (ctudec->residual_coding_l == &residual_coding_dpq) {
+                    deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_pb_w, log2_cb_h);
+                } else {
+                    deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_pb_w, log2_cb_h);
+                }
+                uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
 
+                if (!is_neg) {
+                    dequant_tb(coeffs_y, deq_prms.scale, deq_prms.shift, log2_pb_w, 1 << log2_cb_h, 1 << log2_pb_w);
+                } else {
+                    dequant_tb_neg(coeffs_y, deq_prms.scale, deq_prms.shift, log2_pb_w, 1 << log2_cb_h, 1 << log2_pb_w);
+                }
                 memset(tmp, 0, sizeof(int16_t) << (log2_pb_w + log2_cb_h));
 
                 TRFunc->func[type_v][OVMIN(log2_cb_h,6)](coeffs_y, tmp, pb_w, pb_w, tb_info->last_pos & 0x1F, TR_SHIFT_H + 1);
@@ -726,6 +776,20 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                             dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_cb_w, nb_cols, nb_rows);
                         }
                     }
+                } else {
+                    int qp = ctudec->dequant_luma.qp;
+                    struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_cb_w, log2_pb_h);
+                    if (ctudec->residual_coding_l == &residual_coding_dpq) {
+                        deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_cb_w, log2_pb_h);
+                    } else {
+                        deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_cb_w, log2_pb_h);
+                    }
+                    uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
+                    if (!is_neg) {
+                        dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_cb_w, 1 << log2_pb_h, 1 << log2_cb_w);
+                    } else {
+                        dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_cb_w, 1 << log2_pb_h, 1 << log2_cb_w);
+                    }
                 }
 
                 memset(tmp, 0, sizeof(int16_t) << (log2_cb_w + log2_pb_h));
@@ -761,6 +825,19 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
             } else {
                 const struct TBInfo *const tb_info = &tu_info->tb_info[i];
                 int cb_w = 1 << log2_cb_w;
+                int qp = ctudec->dequant_luma.qp;
+                struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_cb_w, log2_pb_h);
+                if (ctudec->residual_coding_l == &residual_coding_dpq) {
+                    deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_cb_w, log2_pb_h);
+                } else {
+                    deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_cb_w, log2_pb_h);
+                }
+                uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
+                if (!is_neg) {
+                    dequant_tb(coeffs_y, deq_prms.scale, deq_prms.shift, log2_cb_w, 1 << log2_pb_h, 1 << log2_cb_w);
+                } else {
+                    dequant_tb_neg(coeffs_y, deq_prms.scale, deq_prms.shift, log2_cb_w, 1 << log2_pb_h, 1 << log2_cb_w);
+                }
                 DECLARE_ALIGNED(32, int16_t, tmp)[64];
 
                 memset(tmp, 0, sizeof(int16_t) << (log2_cb_w + log2_pb_h));
