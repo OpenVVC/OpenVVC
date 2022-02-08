@@ -3628,7 +3628,7 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
         store_sb_coeff(_dst, sb_coeffs, log2_tb_w, scan_ctx->log2_sb_w,
                        scan_ctx->log2_sb_h);
 
-        return 0xFFFF;
+        return 0x1;
 
     } else {
         const uint8_t *const scan_sb_x = select_sb_scan_map_x(log2_tb_w, log2_tb_h,
@@ -3715,9 +3715,9 @@ residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
             store_sb_coeff(_dst, sb_coeffs, log2_tb_w, scan_ctx->log2_sb_w,
                            scan_ctx->log2_sb_h);
         }
-    }
 
-    return 0xFFFF;
+        return sig_sb_map;
+    }
 }
 
 uint64_t
