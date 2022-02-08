@@ -33,9 +33,8 @@ derive_dequant_ctx(OVCTUDec *const ctudec, const struct VVCQPCTX *const qp_ctx,
 
     ctudec->qp_ctx.current_qp = base_qp;
 }
-#endif
 
-static void
+void
 dequant_sb_neg(int16_t *const sb_coeffs, int scale, int shift)
 {
     for( int i = 0; i < 16 ; i++ ){
@@ -44,7 +43,7 @@ dequant_sb_neg(int16_t *const sb_coeffs, int scale, int shift)
     }
 }
 
-static void
+void
 dequant_sb(int16_t *const sb_coeffs, int scale, int shift)
 {
     int add = (1 << shift) >> 1;
@@ -54,6 +53,7 @@ dequant_sb(int16_t *const sb_coeffs, int scale, int shift)
     }
 }
 
+#endif
 
 static struct IQScale
 derive_dequant_sdh(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
