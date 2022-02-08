@@ -2500,12 +2500,13 @@ residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         _dst[0] = sb_coeffs[0];
 
-        return 1;
+        return 0;
     }
 
     reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
 
-    if(log2_tb_h){
+    if (log2_tb_h) {
+        uint64_t sig_sb_map;
         last_x =  last_pos       & 0x1F;
         last_y = (last_pos >> 8) & 0x1F;
         last_sb_x = last_x >> 3  ;
@@ -2521,7 +2522,7 @@ residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
             memcpy(&_dst[0             ], &sb_coeffs[0], sizeof(int16_t) * 8);
             memcpy(&_dst[1 << log2_tb_w], &sb_coeffs[8], sizeof(int16_t) * 8);
 
-            return nb_sig_c;
+            return 0x1;
         }
 
         x = last_x - (last_sb_x << 3) ;
@@ -2549,12 +2550,18 @@ residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         memcpy(&_dst[sb_pos + 0               ], &sb_coeffs[0], sizeof(int16_t) * 8);
         memcpy(&_dst[sb_pos + (1 << log2_tb_w)], &sb_coeffs[8], sizeof(int16_t) * 8);
 
+        sig_sb_map = 1llu << last_sb_x;
+
         nb_sb = last_sb_x;
         nb_sb--;
 
-        for(;nb_sb > 0; --nb_sb){
+        for (;nb_sb > 0; --nb_sb) {
+
             sig_sb_flg = ovcabac_read_ae_significant_sb_flag(cabac_ctx, sig_sb_flg);
-            if(sig_sb_flg){
+
+            if (sig_sb_flg) {
+
+                sig_sb_map |= 1 << nb_sb;
 
                 sb_pos    = nb_sb << 3;
                 sb_offset = nb_sb << 3;
@@ -2590,8 +2597,9 @@ residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         memcpy(&_dst[0             ], &sb_coeffs[0],  sizeof(int16_t) * 8);
         memcpy(&_dst[1 << log2_tb_w], &sb_coeffs[8],  sizeof(int16_t) * 8);
 
-        return nb_sig_c;
+        return sig_sb_map | 0x1;
     } else {
+        uint64_t sig_sb_map;
         last_x = last_pos & 0x1F;
 
         last_sb_x = last_x >> 4 ;
@@ -2607,8 +2615,10 @@ residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             memcpy(&_dst[0] , &sb_coeffs[0], sizeof(int16_t) * 16);
 
-            return nb_sig_c;
+            return 0x1;
         }
+
+        sig_sb_map = 1 << last_sb_x;
 
         x = last_x - (last_sb_x << 4);
 
@@ -2689,13 +2699,15 @@ residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
         _dst[0] = sb_coeffs[0];
-        return 1;
+
+        return 0;
     }
 
     if (log2_tb_w) reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
     else reset_ctx_buffers(&c_coding_ctx, log2_tb_h, log2_tb_w);
 
     if (log2_tb_w) {
+        uint64_t sig_sb_map;
         last_x =  last_pos       & 0x1F;
         last_y = (last_pos >> 8) & 0x1F;
         last_sb_y = last_y >> 3;
@@ -2710,13 +2722,14 @@ residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             memcpy(&_dst[0], &sb_coeffs[0],  sizeof(int16_t) * 16);
 
-            return nb_sig_c;
+            return 0x1;
         }
 
         sb_pos    =  last_sb_y << 4;
         sb_offset = (last_sb_y << 3) * VVC_TR_CTX_STRIDE;
 
         nb_sb = last_sb_y;
+        sig_sb_map = 1llu << (last_sb_y << 3);
 
         x = last_x;
         y = last_y - (last_sb_y << 3);
@@ -2741,9 +2754,14 @@ residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         nb_sb--;
 
-        for( ;nb_sb > 0; --nb_sb){
+        for ( ;nb_sb > 0; --nb_sb) {
+
             sig_sb_flg = ovcabac_read_ae_significant_sb_flag(cabac_ctx, sig_sb_flg);
-            if(sig_sb_flg){
+
+            if (sig_sb_flg) {
+
+                sig_sb_map |= 1llu << (nb_sb << 3);
+
                 sb_pos    =  nb_sb << 4;
                 sb_offset = (nb_sb << 3) * VVC_TR_CTX_STRIDE ;
 
@@ -2776,9 +2794,11 @@ residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         memcpy(&_dst[0], &sb_coeffs[0],  sizeof(int16_t) * 16);
 
-        return nb_sig_c;
+        return sig_sb_map | 0x1;
 
     } else {
+        uint64_t sig_sb_map;
+
         last_y    = (last_pos >> 8) & 0x1F;
         last_sb_y = last_y >> 4;
 
@@ -2790,8 +2810,10 @@ residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             memcpy(&_dst[0],  &sb_coeffs[0],  sizeof(int16_t) * 16);
 
-            return nb_sig_c;
+            return 0x1;
         }
+
+        sig_sb_map = 1llu << (last_sb_y << 3);
 
         y = last_y - (last_sb_y << 4);
 
@@ -2820,7 +2842,7 @@ residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         memcpy(&_dst[0], &sb_coeffs[0], sizeof(int16_t) * 16);
 
-        return nb_sig_c;
+        return sig_sb_map | 0x1;
     }
 }
 
@@ -3061,12 +3083,14 @@ residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         _dst[0] = sb_coeffs[0];
 
-        return 1;
+        return 0;
     }
 
     reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
 
-    if(log2_tb_h){
+    if (log2_tb_h) {
+        uint64_t sig_sb_map;
+
         last_x =  last_pos       & 0x1F;
         last_y = (last_pos >> 8) & 0x1F;
         last_sb_x = last_x >> 3  ;
@@ -3083,13 +3107,15 @@ residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
             memcpy(&_dst[0             ], &sb_coeffs[0], sizeof(int16_t) * 8);
             memcpy(&_dst[1 << log2_tb_w], &sb_coeffs[8], sizeof(int16_t) * 8);
 
-            return nb_sig_c;
+            return 0x1;
         }
 
         x = last_x - (last_sb_x << 3) ;
         y = last_y;
 
         start_coeff_idx = ff_vvc_diag_scan_8x2_num_cg [x + y * (1 << 3)];
+
+        sig_sb_map = 1llu << last_sb_x;
 
         sb_pos    = last_sb_x << 3;
         sb_offset = last_sb_x << 3;
@@ -3116,9 +3142,13 @@ residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         nb_sb = last_sb_x;
         nb_sb--;
 
-        for(;nb_sb > 0; --nb_sb){
+        for ( ;nb_sb > 0; --nb_sb) {
+
             sig_sb_flg = ovcabac_read_ae_significant_sb_flag(cabac_ctx, sig_sb_flg);
-            if(sig_sb_flg){
+
+            if (sig_sb_flg) {
+
+                sig_sb_map |= 1llu << nb_sb;
 
                 sb_pos    = nb_sb << 3;
                 sb_offset = nb_sb << 3;
@@ -3155,8 +3185,9 @@ residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         memcpy(&_dst[0             ], &sb_coeffs[0],  sizeof(int16_t) * 8);
         memcpy(&_dst[1 << log2_tb_w], &sb_coeffs[8],  sizeof(int16_t) * 8);
 
-        return nb_sig_c;
+        return sig_sb_map | 0x1;
     } else {
+        uint64_t sig_sb_map;
         last_x = last_pos & 0x1F;
 
         last_sb_x = last_x >> 4 ;
@@ -3172,8 +3203,10 @@ residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             memcpy(&_dst[0] , &sb_coeffs[0], sizeof(int16_t) * 16);
 
-            return nb_sig_c;
+            return 0x1;
         }
+
+        sig_sb_map = 1llu << last_sb_x;
 
         x = last_x - (last_sb_x << 4);
 
@@ -3254,13 +3287,14 @@ residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         deq_prms.dequant_sb(sb_coeffs, deq_prms.scale, deq_prms.shift);
 
         _dst[0] = sb_coeffs[0];
-        return 1;
+        return 0;
     }
 
     if (log2_tb_w) reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
     else reset_ctx_buffers(&c_coding_ctx, log2_tb_h, log2_tb_w);
 
-    if(log2_tb_w){
+    if (log2_tb_w) {
+        uint64_t sig_sb_map;
         last_x =  last_pos       & 0x1F;
         last_y = (last_pos >> 8) & 0x1F;
         last_sb_y = last_y >> 3;
@@ -3275,8 +3309,10 @@ residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             memcpy(&_dst[0], &sb_coeffs[0],  sizeof(int16_t) * 16);
 
-            return nb_sig_c;
+            return 0x1;
         }
+        sig_sb_map = 1llu << (last_sb_y << 3);
+
         sb_pos    =  last_sb_y << 4;
         sb_offset = (last_sb_y << 3) * VVC_TR_CTX_STRIDE;
 
@@ -3308,8 +3344,13 @@ residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         nb_sb--;
 
         for( ;nb_sb > 0; --nb_sb){
+
             sig_sb_flg = ovcabac_read_ae_significant_sb_flag(cabac_ctx, sig_sb_flg);
+
             if(sig_sb_flg){
+
+                sig_sb_map |= 1llu << (nb_sb << 3);
+
                 sb_pos    =  nb_sb << 4;
                 sb_offset = (nb_sb << 3) * VVC_TR_CTX_STRIDE ;
 
@@ -3343,9 +3384,10 @@ residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         memcpy(&_dst[0], &sb_coeffs[0],  sizeof(int16_t) * 16);
 
-        return nb_sig_c;
+        return sig_sb_map | 0x1;
 
     } else {
+        uint64_t sig_sb_map;
         last_y    = (last_pos >> 8) & 0x1F;
         last_sb_y = last_y >> 4;
 
@@ -3357,8 +3399,10 @@ residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             memcpy(&_dst[0],  &sb_coeffs[0],  sizeof(int16_t) * 16);
 
-            return nb_sig_c;
+            return 0x1;
         }
+
+        sig_sb_map = 1llu << (last_sb_y << 3);
 
         y = last_y - (last_sb_y << 4);
 
@@ -3388,7 +3432,7 @@ residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         memcpy(&_dst[0], &sb_coeffs[0], sizeof(int16_t) * 16);
 
-        return nb_sig_c;
+        return sig_sb_map | 0x1;
     }
 }
 
