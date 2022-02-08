@@ -84,7 +84,6 @@ rcn_residual(OVCTUDec *const ctudec,
     int tb_w = 1 << log2_tb_w;
     int tb_h = 1 << log2_tb_h;
 
-    memset(tmp, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
 
     if (lfnst_flag) {
         /* FIXME separate lfnst mode derivation from lfnst reconstruction */
@@ -99,7 +98,6 @@ rcn_residual(OVCTUDec *const ctudec,
         enum DCTType tr_h_idx = log2_tb_w <= 4 ? DST_VII : DCT_II;
         enum DCTType tr_v_idx = log2_tb_h <= 4 ? DST_VII : DCT_II;
 
-        if (lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) lim_sb_s = 8;
         int nb_row =  OVMIN(lim_sb_s, 1 << log2_tb_w);
         int nb_col =  OVMIN(lim_sb_s, 1 << log2_tb_h);
         if (!lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) {
@@ -107,6 +105,8 @@ rcn_residual(OVCTUDec *const ctudec,
             nb_row = derive_nb_rows(sig_sb_map);
         }
         int cb_w = log2_tb_h >= 2 ? OVMIN(32, tb_w) : tb_w;
+
+        memset(&tmp[nb_row << log2_tb_h], 0, sizeof(int16_t) * ((1 << (log2_tb_w + log2_tb_h)) - (nb_row << log2_tb_h)));
 
         /* FIXME use coefficient zeroing in MTS */
         TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, cb_w, nb_row, nb_col, TR_SHIFT_V);
@@ -125,13 +125,14 @@ rcn_residual(OVCTUDec *const ctudec,
             }
             int cb_w = log2_tb_h >= 2 ? OVMIN(32, tb_w) : tb_w;
 
+            memset(&tmp[nb_row << log2_tb_h], 0, sizeof(int16_t) * ((1 << (log2_tb_w + log2_tb_h)) - (nb_row << log2_tb_h)));
+
             TRFunc->func[DCT_II][log2_tb_h](src, tmp, cb_w, nb_row, nb_col, TR_SHIFT_V);
             TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, TR_SHIFT_H);
         }
     } else {
         enum DCTType tr_h_idx = cu_mts_idx  & 1;
         enum DCTType tr_v_idx = cu_mts_idx >> 1;
-        if (lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) lim_sb_s = 8;
         int nb_row =  OVMIN(lim_sb_s, 1 << log2_tb_w);
         int nb_col =  OVMIN(lim_sb_s, 1 << log2_tb_h);
         if (!lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) {
@@ -139,6 +140,8 @@ rcn_residual(OVCTUDec *const ctudec,
             nb_row = derive_nb_rows(sig_sb_map);
         }
         int cb_w = log2_tb_h >= 2 ? OVMIN(32, tb_w) : tb_w;
+        //memset(tmp, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
+        memset(&tmp[nb_row << log2_tb_h], 0, sizeof(int16_t) * ((1 << (log2_tb_w + log2_tb_h)) - (nb_row << log2_tb_h)));
 
         TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, cb_w, nb_row, nb_col, TR_SHIFT_V);
         TRFunc->func[tr_h_idx][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, TR_SHIFT_H);
@@ -160,7 +163,6 @@ rcn_residual_c(OVCTUDec *const ctudec,
     int tb_w = 1 << log2_tb_w;
     int tb_h = 1 << log2_tb_h;
 
-    memset(tmp, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
 
     if (lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) {
         /* FIXME separate lfnst mode derivation from lfnst reconstruction */
@@ -191,6 +193,8 @@ rcn_residual_c(OVCTUDec *const ctudec,
         }
         #endif
         /*FIXME might be transform SKIP */
+
+        memset(&tmp[nb_row << log2_tb_h], 0, sizeof(int16_t) * ((1 << (log2_tb_w + log2_tb_h)) - (nb_row << log2_tb_h)));
 
         TRFunc->func[DCT_II][log2_tb_h](src, tmp, tb_w, nb_row, nb_col, TR_SHIFT_V);
         TRFunc->func[DCT_II][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, TR_SHIFT_H);
@@ -488,12 +492,13 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
                 TRFunc->func[type_v][OVMIN(log2_cb_h,6)](src, tmp,  tmp_pb_w, nb_row, nb_col, TR_SHIFT_V);
                 TRFunc->func[type_h][OVMIN(log2_pb_w,6)](tmp, dst, cb_h, cb_h, nb_row, TR_SHIFT_H);
             } else {
+                const struct TBInfo *const tb_info = &tu_info->tb_info[i];
                 int cb_h = 1 << log2_cb_h;
                 DECLARE_ALIGNED(32, int16_t, tmp)[64];
 
                 memset(tmp, 0, sizeof(int16_t) << (log2_pb_w + log2_cb_h));
 
-                TRFunc->func[type_v][OVMIN(log2_cb_h,6)](coeffs_y, tmp, pb_w, pb_w, cb_h, TR_SHIFT_H + 1);
+                TRFunc->func[type_v][OVMIN(log2_cb_h,6)](coeffs_y, tmp, pb_w, pb_w, tb_info->last_pos & 0x1F, TR_SHIFT_H + 1);
 
                 memcpy(ctudec->transform_buff, tmp, sizeof(uint16_t) * (1 << log2_cb_h));
             }
@@ -593,12 +598,13 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                 TRFunc->func[type_v][OVMIN(log2_pb_h,6)](src, tmp, cb_w, nb_row, nb_col, TR_SHIFT_V);
                 TRFunc->func[type_h][OVMIN(log2_cb_w,6)](tmp, dst, pb_h, pb_h, nb_row, TR_SHIFT_H);
             } else {
+                const struct TBInfo *const tb_info = &tu_info->tb_info[i];
                 int cb_w = 1 << log2_cb_w;
                 DECLARE_ALIGNED(32, int16_t, tmp)[64];
 
                 memset(tmp, 0, sizeof(int16_t) << (log2_cb_w + log2_pb_h));
 
-                TRFunc->func[type_h][OVMIN(log2_cb_w,6)](coeffs_y, tmp, pb_h, pb_h, cb_w, TR_SHIFT_H + 1);
+                TRFunc->func[type_h][OVMIN(log2_cb_w,6)](coeffs_y, tmp, pb_h, pb_h, tb_info->last_pos & 0x1F, TR_SHIFT_H + 1);
 
                 memcpy(ctudec->transform_buff, tmp, sizeof(uint16_t) * (1 << log2_cb_w));
             }
