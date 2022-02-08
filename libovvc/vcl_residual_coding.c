@@ -4339,8 +4339,6 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
-    int qp = ctu_dec->dequant_chroma->qp;
-
     /* FIXME this is a bit wasteful if we only read a few sub blocks */
     memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
 
