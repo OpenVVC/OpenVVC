@@ -831,7 +831,7 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
         } else {
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             if (cu_flags & flg_intra_bdpcm_luma_flag) {
-                int qp = ctu_dec->dequant_skip->qp;
+                int qp = ctu_dec->dequant_luma_skip.qp;
                 const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
                 if (cu_flags & flg_intra_bdpcm_luma_dir){
                     apply_bdpcm_2(ctu_dec->transform_buff, coeffs_y, log2_tb_w, log2_tb_h);
@@ -844,6 +844,13 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
                 }
             } else {
                 memcpy(ctu_dec->transform_buff, coeffs_y, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
+                if (ctu_dec->sh_ts_disabled) {
+                    int qp = ctu_dec->dequant_luma_skip.qp;
+                    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
+                    for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
+                        deq_prms.dequant_sb(&ctu_dec->transform_buff[16*i], deq_prms.scale, deq_prms.shift);
+                    }
+                }
             }
         }
 
@@ -914,7 +921,7 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
         } else {
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             if (cu_flags & flg_intra_bdpcm_luma_flag) {
-                int qp = ctu_dec->dequant_skip->qp;
+                int qp = ctu_dec->dequant_luma_skip.qp;
                 const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
                 if (cu_flags & flg_intra_bdpcm_luma_dir){
                     apply_bdpcm_2(ctu_dec->transform_buff, coeffs_y, log2_tb_w, log2_tb_h);
@@ -927,6 +934,13 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
                 }
             } else {
                 memcpy(ctu_dec->transform_buff, coeffs_y, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
+                if (ctu_dec->sh_ts_disabled) {
+                    int qp = ctu_dec->dequant_luma_skip.qp;
+                    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
+                    for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
+                        deq_prms.dequant_sb(&ctu_dec->transform_buff[16*i], deq_prms.scale, deq_prms.shift);
+                    }
+                }
             }
         }
 
