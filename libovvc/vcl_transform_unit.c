@@ -473,7 +473,7 @@ static uint8_t
 jcbcr_lfnst_check(const struct TUInfo *tu_info, uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
     const struct TBInfo *const tb_info = &tu_info->tb_info[0];
-    if (!tu_info->tr_skip_mask && tb_info->sig_sb_map == 0x1 && log2_tb_h > 1 && log2_tb_w > 1) {
+    if (!tu_info->tr_skip_mask && tb_info->sig_sb_map <= 0x1 && log2_tb_h > 1 && log2_tb_w > 1) {
         int max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
         int nb_coeffs = check_lfnst_nb_coeffs(tb_info->last_pos);
 
@@ -493,7 +493,7 @@ chroma_lfnst_check(const struct TUInfo *tu_info, uint8_t cbf_mask, uint8_t log2_
     const struct TBInfo *const tb_info_cb = &tu_info->tb_info[0];
     const struct TBInfo *const tb_info_cr = &tu_info->tb_info[1];
 
-    if (log2_tb_w > 1 && log2_tb_h > 1 && tb_info_cb->sig_sb_map == 0x1 && tb_info_cr->sig_sb_map == 0x1 && !tu_info->tr_skip_mask) {
+    if (log2_tb_w > 1 && log2_tb_h > 1 && tb_info_cb->sig_sb_map <= 0x1 && tb_info_cr->sig_sb_map <= 0x1 && !tu_info->tr_skip_mask) {
         uint8_t need_cb_chk = cbf_mask & 0x2;
         uint8_t need_cr_chk = cbf_mask & 0x1;
 
@@ -555,14 +555,15 @@ lfnst_check_st(const struct TUInfo *const tu_info, uint8_t log2_tb_w, uint8_t lo
         if (jcbcr_flag && log2_tb_h > 2 && log2_tb_w > 2) {
             const struct TBInfo *const tb_info_cbcr = &tu_info->tb_info[0];
             uint8_t nb_coeffs_cbcr = check_lfnst_nb_coeffs(tb_info_cbcr->last_pos);
-            can_lfnst &= tb_info_cbcr->sig_sb_map == 0x1;
+            can_lfnst &= tb_info_cbcr->sig_sb_map <= 0x1;
             can_lfnst &= nb_coeffs_cbcr <= max_lfnst_pos_c;
             non_only_dc |= nb_coeffs_cbcr;
         } else {
+
             if (cbf_mask_cb && log2_tb_h > 2 && log2_tb_w > 2) {
                 const struct TBInfo *const tb_info_cb = &tu_info->tb_info[0];
                 uint8_t nb_coeffs_cb = check_lfnst_nb_coeffs(tb_info_cb->last_pos);
-                can_lfnst &= tb_info_cb->sig_sb_map == 0x1;
+                can_lfnst &= tb_info_cb->sig_sb_map <= 0x1;
                 can_lfnst &= nb_coeffs_cb <= max_lfnst_pos_c;
                 non_only_dc |= nb_coeffs_cb;
             }
@@ -570,7 +571,7 @@ lfnst_check_st(const struct TUInfo *const tu_info, uint8_t log2_tb_w, uint8_t lo
             if (cbf_mask_cr && log2_tb_h > 2 && log2_tb_w > 2) {
                 const struct TBInfo *const tb_info_cr = &tu_info->tb_info[1];
                 uint8_t nb_coeffs_cr = check_lfnst_nb_coeffs(tb_info_cr->last_pos);
-                can_lfnst &= tb_info_cr->sig_sb_map == 0x1;
+                can_lfnst &= tb_info_cr->sig_sb_map <= 0x1;
                 can_lfnst &= nb_coeffs_cr <= max_lfnst_pos_c;
                 non_only_dc |= nb_coeffs_cr;
             }
@@ -1479,7 +1480,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
                     const struct TBInfo *const tb_info = &tu_info_c.tb_info[0];
                     uint8_t nb_coeffs = check_lfnst_nb_coeffs(tb_info->last_pos);
 
-                    can_lfnst &= tb_info->sig_sb_map == 0x1;
+                    can_lfnst &= tb_info->sig_sb_map <= 0x1;
                     can_lfnst &= nb_coeffs <= max_lfnst_pos_c;
                 } else {
                     uint8_t need_cb_chk = cbf_mask_c & 0x2;
@@ -1489,14 +1490,14 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
                     if (need_cb_chk) {
                         const struct TBInfo *const tb_info_cb = &tu_info_c.tb_info[0];
                         uint8_t nb_coeffs_cb = check_lfnst_nb_coeffs(tb_info_cb->last_pos);
-                        can_lfnst &= tb_info_cb->sig_sb_map == 0x1;
+                        can_lfnst &= tb_info_cb->sig_sb_map <= 0x1;
                         can_lfnst &= nb_coeffs_cb <= max_lfnst_pos_c;
                     }
 
                     if (need_cr_chk) {
                         const struct TBInfo *const tb_info_cr = &tu_info_c.tb_info[1];
                         uint8_t nb_coeffs_cr = check_lfnst_nb_coeffs(tb_info_cr->last_pos);
-                        can_lfnst &= tb_info_cr->sig_sb_map == 0x1;
+                        can_lfnst &= tb_info_cr->sig_sb_map <= 0x1;
                         can_lfnst &= nb_coeffs_cr <= max_lfnst_pos_c;
                     }
                 }
@@ -1695,7 +1696,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
                 if (jcbcr_flag) {
                     const struct TBInfo *const tb_info = &tu_info_c.tb_info[0];
                     uint8_t nb_coeffs = check_lfnst_nb_coeffs(tb_info->last_pos);
-                    can_lfnst &= tb_info->sig_sb_map == 0x1;
+                    can_lfnst &= tb_info->sig_sb_map <= 0x1;
                     can_lfnst &= nb_coeffs <= max_lfnst_pos_c;
                 } else {
                     uint8_t need_cb_chk = cbf_mask_c & 0x2;
@@ -1704,14 +1705,14 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
                     if (need_cb_chk) {
                         const struct TBInfo *const tb_info_cb = &tu_info_c.tb_info[0];
                         uint8_t nb_coeffs_cb = check_lfnst_nb_coeffs(tb_info_cb->last_pos);
-                        can_lfnst &= tb_info_cb->sig_sb_map == 0x1;
+                        can_lfnst &= tb_info_cb->sig_sb_map <= 0x1;
                         can_lfnst &= nb_coeffs_cb <= max_lfnst_pos_c;
                     }
 
                     if (need_cr_chk) {
                         const struct TBInfo *const tb_info_cr = &tu_info_c.tb_info[1];
                         uint8_t nb_coeffs_cr = check_lfnst_nb_coeffs(tb_info_cr->last_pos);
-                        can_lfnst &= tb_info_cr->sig_sb_map == 0x1;
+                        can_lfnst &= tb_info_cr->sig_sb_map <= 0x1;
                         can_lfnst &= nb_coeffs_cr <= max_lfnst_pos_c;
                     }
                 }
