@@ -2474,8 +2474,10 @@ residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     uint8_t sum_abs_level   [VVC_TR_CTX_SIZE];
     uint8_t sum_abs_level2 [VVC_TR_CTX_SIZE];
 
-    uint16_t max_nb_bins = ((1 << (log2_tb_w + log2_tb_h))
-                             * 28) >> 4;
+    uint8_t log2_red_h = OVMIN(log2_tb_h, 5);
+    uint8_t log2_red_w = OVMIN(log2_tb_w, 5);
+
+    uint16_t max_nb_bins = ((1 << (log2_red_w + log2_red_h)) * 28) >> 4;
 
     VVCCoeffCodingCtx c_coding_ctx = {
         .sum_abs_lvl  = &sum_abs_level[VVC_TR_CTX_OFFSET],
@@ -2660,7 +2662,11 @@ residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     uint8_t  nb_significant[VVC_TR_CTX_SIZE];
     uint8_t  sum_abs_level  [VVC_TR_CTX_SIZE];
     uint8_t sum_abs_level2 [VVC_TR_CTX_SIZE];
-    uint16_t max_nb_bins = ((1 << (log2_tb_w + log2_tb_h)) * 28) >> 4;
+
+    uint8_t log2_red_h = OVMIN(log2_tb_h, 5);
+    uint8_t log2_red_w = OVMIN(log2_tb_w, 5);
+
+    uint16_t max_nb_bins = ((1 << (log2_red_w + log2_red_h)) * 28) >> 4;
 
     VVCCoeffCodingCtx c_coding_ctx = {
         .sum_abs_lvl  = &sum_abs_level[VVC_TR_CTX_OFFSET],
@@ -3032,8 +3038,7 @@ residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     uint8_t log2_red_h = OVMIN(log2_tb_h, 5);
     uint8_t log2_red_w = OVMIN(log2_tb_w, 5);
 
-    uint16_t max_nb_bins = ((1 << (log2_red_w + log2_red_h))
-                             * 28) >> 4;
+    uint16_t max_nb_bins = ((1 << (log2_red_w + log2_red_h)) * 28) >> 4;
 
     int qp = ctu_dec->dequant_luma.qp;
 
