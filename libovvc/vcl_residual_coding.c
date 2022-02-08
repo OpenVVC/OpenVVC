@@ -2503,7 +2503,7 @@ residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         return 0;
     }
 
-    reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
+    reset_ctx_buffers(&c_coding_ctx, log2_red_w, log2_red_h);
 
     if (log2_tb_h) {
         uint64_t sig_sb_map;
@@ -2703,8 +2703,8 @@ residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         return 0;
     }
 
-    if (log2_tb_w) reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
-    else reset_ctx_buffers(&c_coding_ctx, log2_tb_h, log2_tb_w);
+    if (log2_tb_w) reset_ctx_buffers(&c_coding_ctx, log2_red_w, log2_red_h);
+    else reset_ctx_buffers(&c_coding_ctx, log2_red_h, log2_tb_w);
 
     if (log2_tb_w) {
         uint64_t sig_sb_map;
@@ -3086,7 +3086,7 @@ residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         return 0;
     }
 
-    reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
+    reset_ctx_buffers(&c_coding_ctx, log2_red_w, log2_red_h);
 
     if (log2_tb_h) {
         uint64_t sig_sb_map;
@@ -3290,15 +3290,16 @@ residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         return 0;
     }
 
-    if (log2_tb_w) reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
-    else reset_ctx_buffers(&c_coding_ctx, log2_tb_h, log2_tb_w);
+    if (log2_tb_w) reset_ctx_buffers(&c_coding_ctx, log2_red_w, log2_red_h);
+    else reset_ctx_buffers(&c_coding_ctx, log2_red_h, log2_red_w);
 
     if (log2_tb_w) {
         uint64_t sig_sb_map;
         last_x =  last_pos       & 0x1F;
         last_y = (last_pos >> 8) & 0x1F;
         last_sb_y = last_y >> 3;
-        if(!last_sb_y){
+
+        if (!last_sb_y) {
             int last_coeff_idx = last_x + (last_y << 1);
             int nb_coeffs = ff_vvc_diag_scan_2x8_num_cg [last_coeff_idx];
             nb_sig_c = ovcabac_read_ae_sb_2x8_dc_dpq(cabac_ctx, sb_coeffs,
