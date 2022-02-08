@@ -674,7 +674,6 @@ residual_coding_c(OVCTUDec *const ctu_dec,
         }
 
         if (!(transform_skip_flag & 0x2) || ctu_dec->sh_ts_disabled) {
-            ctu_dec->dequant_chroma = &ctu_dec->dequant_cb;
 
             last_pos_cb = ovcabac_read_ae_last_sig_pos_c(cabac_ctx, log2_tb_w, log2_tb_h);
 
@@ -703,7 +702,6 @@ residual_coding_c(OVCTUDec *const ctu_dec,
         }
 
         if (!(transform_skip_flag & 0x1) || ctu_dec->sh_ts_disabled) {
-            ctu_dec->dequant_chroma = &ctu_dec->dequant_cr;
 
             last_pos_cr = ovcabac_read_ae_last_sig_pos_c(cabac_ctx, log2_tb_w, log2_tb_h);
 
@@ -748,19 +746,6 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
         tu_info->tr_skip_mask |= transform_skip_flag;
     }
 
-    /* FIXME this is hackish joint cb cr involves a different delta qp from
-       previous ones */
-    if (cbf_mask == 3) {
-        ctu_dec->dequant_chroma = &ctu_dec->dequant_joint_cb_cr;
-        ctu_dec->dequant_skip = &ctu_dec->dequant_jcbcr_skip;
-    } else if (cbf_mask == 1) {
-        ctu_dec->dequant_chroma = &ctu_dec->dequant_cr;
-        ctu_dec->dequant_skip   = &ctu_dec->dequant_cr_skip;
-    } else {
-        ctu_dec->dequant_chroma = &ctu_dec->dequant_cb;
-        ctu_dec->dequant_skip   = &ctu_dec->dequant_cb_skip;
-    }
-
     if (!transform_skip_flag || ctu_dec->sh_ts_disabled) {
         last_pos = ovcabac_read_ae_last_sig_pos_c(cabac_ctx, log2_tb_w, log2_tb_h);
 
@@ -769,6 +754,17 @@ residual_coding_jcbcr(OVCTUDec *const ctu_dec,
         tb_info->last_pos   = last_pos;
     } else {
         uint8_t intra_bdpcm_chroma_flag = !!(cu_flags & flg_intra_bdpcm_chroma_flag);
+
+        /* FIXME this is hackish joint cb cr involves a different delta qp from
+           previous ones */
+        if (cbf_mask == 3) {
+            ctu_dec->dequant_skip = &ctu_dec->dequant_jcbcr_skip;
+        } else if (cbf_mask == 1) {
+            ctu_dec->dequant_skip   = &ctu_dec->dequant_cr_skip;
+        } else {
+            ctu_dec->dequant_skip   = &ctu_dec->dequant_cb_skip;
+        }
+
         residual_coding_ts(ctu_dec, ctu_dec->residual_cb + tu_info->pos_offset, log2_tb_w, log2_tb_h,
                            intra_bdpcm_chroma_flag);
     }
