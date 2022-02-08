@@ -97,6 +97,28 @@ dequant_tb(int16_t *src, int scale, int shift, uint8_t log2_tb_w, uint8_t nb_row
 }
 
 static void
+dequant_4x4_sb(OVCTUDec *const ctudec, int16_t *src, uint64_t sig_sb_map, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp)
+{
+    struct IQScale deq_prms;
+    int nb_cols = derive_nb_cols(sig_sb_map);
+    int nb_rows = derive_nb_rows(sig_sb_map);
+
+    if (ctudec->residual_coding_l == &residual_coding_dpq) {
+        deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+    } else {
+        deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
+    }
+
+    uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
+
+    if (!is_neg) {
+        dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
+    } else {
+        dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
+    }
+}
+
+static void
 rcn_residual(OVCTUDec *const ctudec,
              int16_t *const dst, int16_t *src,
              uint8_t x0, uint8_t y0,
@@ -115,26 +137,7 @@ rcn_residual(OVCTUDec *const ctudec,
 
     if (log2_tb_h > 1 && log2_tb_w > 1) {
         int qp = ctudec->dequant_luma.qp;
-        int nb_cols = derive_nb_cols(sig_sb_map);
-        int nb_rows = derive_nb_rows(sig_sb_map);
-
-        if (ctudec->residual_coding_l == &residual_coding_dpq) {
-            struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
-            uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
-            if (!is_neg) {
-                dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
-            } else {
-                dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
-            }
-        } else {
-            struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
-            uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
-            if (!is_neg) {
-                dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
-            } else {
-                dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
-            }
-        }
+        dequant_4x4_sb(ctudec, src, sig_sb_map, log2_tb_w, log2_tb_h, qp);
     } else {
         int qp = ctudec->dequant_luma.qp;
         if (ctudec->residual_coding_l == &residual_coding_dpq) {
@@ -243,26 +246,7 @@ rcn_residual_c(OVCTUDec *const ctudec,
     int tb_h = 1 << log2_tb_h;
 
     if (log2_tb_h > 1 && log2_tb_w > 1) {
-        int nb_cols = derive_nb_cols(sig_sb_map);
-        int nb_rows = derive_nb_rows(sig_sb_map);
-
-        if (ctudec->residual_coding_l == &residual_coding_dpq) {
-            struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
-            uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
-            if (!is_neg) {
-                dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
-            } else {
-                dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
-            }
-        } else {
-            struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
-            uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
-            if (!is_neg) {
-                dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
-            } else {
-                dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
-            }
-        }
+        dequant_4x4_sb(ctudec, src, sig_sb_map, log2_tb_w, log2_tb_h, qp);
     } else {
         if (ctudec->residual_coding_l == &residual_coding_dpq) {
             struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
@@ -598,26 +582,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
 
                 if (log2_cb_h > 1 && log2_pb_w > 1) {
                     int qp = ctudec->dequant_luma.qp;
-                    int nb_cols = derive_nb_cols(tb_info->sig_sb_map);
-                    int nb_rows = derive_nb_rows(tb_info->sig_sb_map);
-
-                    if (ctudec->residual_coding_l == &residual_coding_dpq) {
-                        struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_pb_w, log2_cb_h);
-                        uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
-                        if (!is_neg) {
-                            dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_pb_w, nb_cols, nb_rows);
-                        } else {
-                            dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_pb_w, nb_cols, nb_rows);
-                        }
-                    } else {
-                        struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_pb_w, log2_cb_h);
-                        uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
-                        if (!is_neg) {
-                            dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_pb_w, nb_cols, nb_rows);
-                        } else {
-                            dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_pb_w, nb_cols, nb_rows);
-                        }
-                    }
+                    dequant_4x4_sb(ctudec, src, tb_info->sig_sb_map, log2_pb_w, log2_cb_h, qp);
                 } else {
                     int qp = ctudec->dequant_luma.qp;
                     struct IQScale deq_prms;
@@ -756,26 +721,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
 
                 if (log2_pb_h > 1 && log2_cb_w > 1) {
                     int qp = ctudec->dequant_luma.qp;
-                    int nb_cols = derive_nb_cols(tb_info->sig_sb_map);
-                    int nb_rows = derive_nb_rows(tb_info->sig_sb_map);
-
-                    if (ctudec->residual_coding_l == &residual_coding_dpq) {
-                        struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_cb_w, log2_pb_h);
-                        uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
-                        if (!is_neg) {
-                            dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_cb_w, nb_cols, nb_rows);
-                        } else {
-                            dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_cb_w, nb_cols, nb_rows);
-                        }
-                    } else {
-                        struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_cb_w, log2_pb_h);
-                        uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
-                        if (!is_neg) {
-                            dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_cb_w, nb_cols, nb_rows);
-                        } else {
-                            dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_cb_w, nb_cols, nb_rows);
-                        }
-                    }
+                    dequant_4x4_sb(ctudec, src, tb_info->sig_sb_map, log2_cb_w, log2_pb_h, qp);
                 } else {
                     int qp = ctudec->dequant_luma.qp;
                     struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_cb_w, log2_pb_h);
