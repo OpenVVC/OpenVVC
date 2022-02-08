@@ -2452,7 +2452,7 @@ reset_ctx_buffers (const VVCCoeffCodingCtx *ctx, int log2_w, int log2_h)
     }
 }
 
-int
+uint64_t
 residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
                           uint8_t log2_tb_w, uint8_t log2_tb_h,
                           uint16_t last_pos)
@@ -2635,11 +2635,11 @@ residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         memcpy(&_dst[0] , &sb_coeffs[0], sizeof(int16_t) * 16);
 
-        return nb_sig_c;
+        return sig_sb_map | 0x1;
     }
 }
 
-int
+uint64_t
 residual_coding_isp_v_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
                           uint8_t log2_tb_w, uint8_t log2_tb_h,
                           uint16_t last_pos)
@@ -3008,7 +3008,7 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     return sig_sb_map | 1;
 }
 
-int
+uint64_t
 residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
                           uint8_t log2_tb_w, uint8_t log2_tb_h,
                           uint16_t last_pos)
@@ -3198,11 +3198,11 @@ residual_coding_isp_h_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         memcpy(&_dst[0] , &sb_coeffs[0], sizeof(int16_t) * 16);
 
-        return nb_sig_c;
+        return sig_sb_map | 0x1;
     }
 }
 
-int
+uint64_t
 residual_coding_isp_v_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
                           uint8_t log2_tb_w, uint8_t log2_tb_h,
                           uint16_t last_pos)
@@ -3523,7 +3523,7 @@ init_sb_map_ts(uint8_t *nb_sig, uint8_t *sign_map, uint16_t *abs_val, uint8_t lo
 }
 
 
-int
+uint64_t
 residual_coding_ts(OVCTUDec *const ctu_dec, int16_t *dst,
                    uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t bdpcm_flag)
 {

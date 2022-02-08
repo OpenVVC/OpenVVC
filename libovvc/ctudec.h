@@ -735,15 +735,15 @@ struct OVCTUDec
                            uint8_t log2_pb_w, uint8_t log2_pb_h,
                            uint8_t skip_flag, uint8_t cu_merge_flag);
 
-    int (*residual_coding_isp_h)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
+    uint64_t (*residual_coding_isp_h)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
                                  uint8_t log2_tb_w, uint8_t log2_tb_h,
                                  uint16_t last_pos);
 
-    int (*residual_coding_isp_v)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
+    uint64_t (*residual_coding_isp_v)(struct OVCTUDec *const lc_ctx, int16_t *const dst,
                                  uint8_t log2_tb_w, uint8_t log2_tb_h,
                                  uint16_t last_pos);
 
-    int (*residual_coding_ts)(struct OVCTUDec *const lc_ctx,
+    uint64_t (*residual_coding_ts)(struct OVCTUDec *const lc_ctx,
                               uint8_t log2_tb_w,
                               uint8_t log2_tb_h);
 
