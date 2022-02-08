@@ -632,7 +632,7 @@ residual_coding_l(OVCTUDec *const ctu_dec,
     } else {
         uint8_t intra_bdpcm_luma_flag = !!(cu_flags & flg_intra_bdpcm_luma_flag);
         ctu_dec->dequant_skip = &ctu_dec->dequant_luma_skip;
-        residual_coding_ts(ctu_dec, ctu_dec->residual_y + tu_info->pos_offset, log2_tb_w, log2_tb_h,
+        residual_coding_ts(ctu_dec, coeffs_y, log2_tb_w, log2_tb_h,
                            intra_bdpcm_luma_flag);
     }
 
