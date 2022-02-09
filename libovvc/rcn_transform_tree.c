@@ -97,6 +97,116 @@ dequant_tb(int16_t *src, int scale, int shift, uint8_t log2_tb_w, uint8_t nb_row
 }
 
 static void
+dequant_tb_neg_4x4(int16_t *dst, const int16_t *src, int scale, int shift,
+                   uint8_t log2_tb_w, uint8_t log2_tb_h, uint64_t sig_sb_map)
+{
+    int nb_rows = derive_nb_cols(sig_sb_map);
+    int nb_cols = derive_nb_rows(sig_sb_map);
+    uint8_t src_stride = 1 << (OVMIN(5, log2_tb_w));
+    uint8_t dst_stride = 1 << (OVMIN(5, log2_tb_w));
+
+    #if 0
+    for (int i = 0; i < nb_rows/4 ; i++) {
+        for (int j = 0; j < nb_cols/4 ; j++) {
+            int16_t *_dst = dst + (j << 2);
+            const int16_t *_src = src + (j << 4);
+            _dst[0] = ov_clip_intp2((int32_t)_src[ 0] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+            _dst[1] = ov_clip_intp2((int32_t)_src[ 1] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+            _dst[2] = ov_clip_intp2((int32_t)_src[ 2] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+            _dst[3] = ov_clip_intp2((int32_t)_src[ 3] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+
+            _dst += dst_stride;
+
+            _dst[0] = ov_clip_intp2((int32_t)_src[ 4] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+            _dst[1] = ov_clip_intp2((int32_t)_src[ 5] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+            _dst[2] = ov_clip_intp2((int32_t)_src[ 6] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+            _dst[3] = ov_clip_intp2((int32_t)_src[ 7] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+
+            _dst += dst_stride;
+
+            _dst[0] = ov_clip_intp2((int32_t)_src[ 8] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+            _dst[1] = ov_clip_intp2((int32_t)_src[ 9] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+            _dst[2] = ov_clip_intp2((int32_t)_src[10] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+            _dst[3] = ov_clip_intp2((int32_t)_src[11] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+
+            _dst += dst_stride;
+
+            _dst[0] = ov_clip_intp2((int32_t)_src[12] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+            _dst[1] = ov_clip_intp2((int32_t)_src[13] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+            _dst[2] = ov_clip_intp2((int32_t)_src[14] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+            _dst[3] = ov_clip_intp2((int32_t)_src[15] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+        }
+        src += src_stride << 2;
+        dst += dst_stride << 2;
+    }
+    #else
+    for (int i = 0; i < nb_rows ; i++) {
+        for (int j = 0; j < nb_cols ; j++) {
+            dst[j    ] = ov_clip_intp2((int32_t)src[j    ] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
+        }
+        src += src_stride;
+        dst += dst_stride;
+    }
+    #endif
+}
+
+static void
+dequant_tb_4x4(int16_t *dst, const int16_t *src, int scale, int shift,
+               uint8_t log2_tb_w, uint8_t log2_tb_h, uint64_t sig_sb_map)
+{
+    int add = (1 << shift) >> 1;
+    int nb_rows = derive_nb_cols(sig_sb_map);
+    int nb_cols = derive_nb_rows(sig_sb_map);
+    uint8_t src_stride = 1 << (OVMIN(5, log2_tb_w));
+    uint8_t dst_stride = 1 << (OVMIN(5, log2_tb_w));
+
+    #if 0
+    for (int i = 0; i < nb_rows/4 ; i++) {
+        for (int j = 0; j < nb_cols/4 ; j++) {
+            int16_t *_dst = dst + (j << 2);
+            const int16_t *_src = src + (j << 4);
+            _dst[0] = ov_clip_intp2((int32_t)(_src[ 0] * scale + add) >> shift, MAX_LOG2_TR_RANGE + 1);
+            _dst[1] = ov_clip_intp2((int32_t)(_src[ 1] * scale + add) >> shift, MAX_LOG2_TR_RANGE + 1);
+            _dst[2] = ov_clip_intp2((int32_t)(_src[ 2] * scale + add) >> shift, MAX_LOG2_TR_RANGE + 1);
+            _dst[3] = ov_clip_intp2((int32_t)(_src[ 3] * scale + add) >> shift, MAX_LOG2_TR_RANGE + 1);
+
+            _dst += dst_stride;
+
+            _dst[0] = ov_clip_intp2((int32_t)(_src[ 4] * scale + add) >> shift, MAX_LOG2_TR_RANGE + 1);
+            _dst[1] = ov_clip_intp2((int32_t)(_src[ 5] * scale + add) >> shift, MAX_LOG2_TR_RANGE + 1);
+            _dst[2] = ov_clip_intp2((int32_t)(_src[ 6] * scale + add) >> shift, MAX_LOG2_TR_RANGE + 1);
+            _dst[3] = ov_clip_intp2((int32_t)(_src[ 7] * scale + add) >> shift, MAX_LOG2_TR_RANGE + 1);
+
+            _dst += dst_stride;
+
+            _dst[0] = ov_clip_intp2((int32_t)(_src[ 8] * scale + add) >> shift, MAX_LOG2_TR_RANGE + 1);
+            _dst[1] = ov_clip_intp2((int32_t)(_src[ 9] * scale + add) >> shift, MAX_LOG2_TR_RANGE + 1);
+            _dst[2] = ov_clip_intp2((int32_t)(_src[10] * scale + add) >> shift, MAX_LOG2_TR_RANGE + 1);
+            _dst[3] = ov_clip_intp2((int32_t)(_src[11] * scale + add) >> shift, MAX_LOG2_TR_RANGE + 1);
+
+            _dst += dst_stride;
+
+            _dst[0] = ov_clip_intp2((int32_t)(_src[12] * scale + add) >> shift, MAX_LOG2_TR_RANGE + 1);
+            _dst[1] = ov_clip_intp2((int32_t)(_src[13] * scale + add) >> shift, MAX_LOG2_TR_RANGE + 1);
+            _dst[2] = ov_clip_intp2((int32_t)(_src[14] * scale + add) >> shift, MAX_LOG2_TR_RANGE + 1);
+            _dst[3] = ov_clip_intp2((int32_t)(_src[15] * scale + add) >> shift, MAX_LOG2_TR_RANGE + 1);
+        }
+        src += src_stride << 2;
+        dst += dst_stride << 2;
+    }
+    #else
+    for (int i = 0; i < nb_rows ; i++) {
+        for (int j = 0; j < nb_cols ; j++) {
+            dst[j] = ov_clip_intp2((int32_t)(src[j] * scale + add) >> shift,
+                                   MAX_LOG2_TR_RANGE + 1);
+        }
+        src += src_stride;
+        dst += dst_stride;
+    }
+    #endif
+}
+
+static void
 dequant_4x4_sb(OVCTUDec *const ctudec, int16_t *src, uint64_t sig_sb_map, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp)
 {
     struct IQScale deq_prms;
@@ -112,9 +222,23 @@ dequant_4x4_sb(OVCTUDec *const ctudec, int16_t *src, uint64_t sig_sb_map, uint8_
     uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
 
     if (!is_neg) {
-        dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
+        DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
+        uint8_t log2_red_w = OVMIN(5, log2_tb_w);
+        uint8_t log2_red_h = OVMIN(5, log2_tb_h);
+
+        /*FIXME avoid copy */
+        memcpy(tmp, src, sizeof(int16_t) << (log2_red_h + log2_red_w));
+
+        dequant_tb_4x4(src, tmp, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
     } else {
-        dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_cols, nb_rows);
+        DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
+        uint8_t log2_red_w = OVMIN(5, log2_tb_w);
+        uint8_t log2_red_h = OVMIN(5, log2_tb_h);
+
+        /*FIXME avoid copy */
+        memcpy(tmp, src, sizeof(int16_t) << (log2_red_h + log2_red_w));
+
+        dequant_tb_neg_4x4(src, tmp,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
     }
 }
 
