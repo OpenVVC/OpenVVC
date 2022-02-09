@@ -674,7 +674,7 @@ dequant_is_neg(const OVCTUDec *const ctudec, uint8_t qp, uint8_t log2_tb_w, uint
 }
 
 static void
-rcn_isp_tu(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t log2_tb_w, uint8_t log2_tb_h, int16_t *coeffs_y, const struct ISPTUInfo *const tu_info, uint8_t log2_cb_w, uint8_t offset_x, uint8_t x0, uint8_t y0, uint8_t type_v, uint8_t type_h, int8_t lfnst_intra_mode)
+rcn_isp_tu(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t log2_tb_w, uint8_t log2_tb_h, int16_t *coeffs_y, const struct ISPTUInfo *const tu_info, uint8_t type_v, uint8_t type_h, int8_t lfnst_intra_mode)
 {
     DECLARE_ALIGNED(32, int16_t, tmp)[32*64];
 
@@ -686,8 +686,8 @@ rcn_isp_tu(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
     int nb_col = derive_nb_cols(tb_info->sig_sb_map);
     int nb_row = derive_nb_rows(tb_info->sig_sb_map);
 
-    int cb_h = 1 << log2_tb_h;
-    int pb_w = 1 << log2_tb_w;
+    int tb_h = 1 << log2_tb_h;
+    int tb_w = 1 << log2_tb_w;
 
     int qp = ctudec->dequant_luma.qp;
 
@@ -704,8 +704,7 @@ rcn_isp_tu(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
         memcpy(lfnst_sb +  8, &coeffs_y[2 << log2_tb_w], sizeof(int16_t) * 4);
         memcpy(lfnst_sb + 12, &coeffs_y[3 << log2_tb_w], sizeof(int16_t) * 4);
 
-        process_lfnst_luma(ctudec, coeffs_y, lfnst_sb,
-                           log2_tb_w, log2_tb_h,
+        process_lfnst_luma(ctudec, coeffs_y, lfnst_sb, log2_tb_w, log2_tb_h,
                            lfnst_idx, lfnst_intra_mode);
 
         nb_row = OVMIN(8, 1 << log2_tb_w);
@@ -715,8 +714,8 @@ rcn_isp_tu(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
         type_v = type_h = DCT_II;
     }
 
-    TRFunc->func[type_v][OVMIN(log2_tb_h, 6)](src, tmp, pb_w, nb_row, nb_col, TR_SHIFT_V);
-    TRFunc->func[type_h][OVMIN(log2_tb_w, 6)](tmp, dst, cb_h, cb_h, nb_row, TR_SHIFT_H);
+    TRFunc->func[type_v][OVMIN(log2_tb_h, 6)](src, tmp, tb_w, nb_row, nb_col, TR_SHIFT_V);
+    TRFunc->func[type_h][OVMIN(log2_tb_w, 6)](tmp, dst, tb_h, tb_h, nb_row, TR_SHIFT_H);
 }
 
 static void
@@ -799,7 +798,8 @@ rcn_tu_isp_v(OVCTUDec *const ctudec,
         if (log2_tb_w == 1) {
             rcn_2xX_tb(ctudec, tb_info, log2_cb_h, coeffs_y, type_v, type_h);
         } else {
-            rcn_isp_tu(ctudec, tb_info, log2_tb_w, log2_tb_h, coeffs_y, tu_info, log2_cb_w, offset, x0, y0, type_v, type_h, lfnst_intra_mode);
+            rcn_isp_tu(ctudec, tb_info, log2_tb_w, log2_tb_h, coeffs_y, tu_info,
+                       type_v, type_h, lfnst_intra_mode);
         }
 
     } else {
