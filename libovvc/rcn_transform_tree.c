@@ -293,8 +293,7 @@ rcn_residual(OVCTUDec *const ctudec,
         memcpy(lfnst_sb +  8, &src[2 << tmp_shift], sizeof(int16_t) * 4);
         memcpy(lfnst_sb + 12, &src[3 << tmp_shift], sizeof(int16_t) * 4);
         /* FIXME separate lfnst mode derivation from lfnst reconstruction */
-        process_lfnst_luma(ctudec, src, lfnst_sb, log2_tb_w, log2_tb_h, x0, y0,
-                           lfnst_idx);
+        process_lfnst_luma(ctudec, src, lfnst_sb, log2_tb_w, log2_tb_h, lfnst_idx);
         lim_sb_s = 8;
         is_dc = 0;
     }
@@ -699,8 +698,8 @@ rcn_isp_tu(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
         memcpy(lfnst_sb +  8, &coeffs_y[2 << log2_tb_w], sizeof(int16_t) * 4);
         memcpy(lfnst_sb + 12, &coeffs_y[3 << log2_tb_w], sizeof(int16_t) * 4);
 
-        process_lfnst_luma_isp(ctudec, coeffs_y, lfnst_sb, log2_tb_w, log2_tb_h, log2_cb_w, log2_tb_h, x0 -offset_x, y0,
-                               lfnst_idx);
+        process_lfnst_luma_isp(ctudec, coeffs_y, lfnst_sb, log2_tb_w, log2_tb_h,
+                               log2_cb_w, log2_tb_h, lfnst_idx);
 
         nb_row = OVMIN(8, 1 << log2_tb_w);
         nb_col = OVMIN(8, 1 << log2_tb_h);
@@ -940,13 +939,18 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                     uint8_t lfnst_idx = tu_info->lfnst_idx;
                     /*FIXME avoid distinguishing isp case in lfnst */
                     int16_t lfnst_sb[16];
+
                     int tmp_shift = log2_cb_w > 1 && log2_pb_h > 1 ? OVMIN(5,log2_cb_w) : log2_cb_w;
+
                     memcpy(lfnst_sb     , &coeffs_y[0], sizeof(int16_t) * 4);
                     memcpy(lfnst_sb +  4, &coeffs_y[1 << tmp_shift], sizeof(int16_t) * 4);
                     memcpy(lfnst_sb +  8, &coeffs_y[2 << tmp_shift], sizeof(int16_t) * 4);
                     memcpy(lfnst_sb + 12, &coeffs_y[3 << tmp_shift], sizeof(int16_t) * 4);
-                    process_lfnst_luma_isp(ctudec, coeffs_y, lfnst_sb, log2_cb_w, log2_pb_h,log2_cb_w, log2_cb_h, x0, y0-offset_y,
-                                       lfnst_idx);
+
+                    process_lfnst_luma_isp(ctudec, coeffs_y, lfnst_sb,
+                                           log2_cb_w, log2_pb_h,
+                                           log2_cb_w, log2_cb_h,
+                                           lfnst_idx);
 
                     lim_sb_s = 8;
                     /* lfnst forces IDCT II usage */

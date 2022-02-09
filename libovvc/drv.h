@@ -150,13 +150,13 @@ void process_lfnst(OVCTUDec *const ctudec,
 void process_lfnst_luma(OVCTUDec *const ctudec,
                    int16_t *dst, const int16_t *src,
                    int log2_tb_w, int log2_tb_h,
-                   int x0, int y0, uint8_t lfnst_idx);
+                   uint8_t lfnst_idx);
 
 void process_lfnst_luma_isp(OVCTUDec *const ctudec,
                             int16_t *dst, const int16_t *src,
                             int log2_tb_w, int log2_tb_h,
                             int log2_cb_w, int log2_cb_h,
-                            int x0, int y0, uint8_t lfnst_idx);
+                            uint8_t lfnst_idx);
 
 void tmvp_inter_synchronization(const OVPicture *ref_pic, int ctb_x, int ctb_y, int log2_ctu_s);
 

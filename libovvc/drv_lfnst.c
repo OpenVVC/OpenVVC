@@ -28,16 +28,9 @@ derive_wide_angular_mode2(int8_t log2_pb_w, int8_t log2_pb_h, int pred_mode)
 
 /* FIXME move pare to mode derviation */
 static int8_t
-derive_lfnst_mode_l(OVCTUDec *const ctudec,
-                   int log2_tb_w, int log2_tb_h,
-                   int x0, int y0)
+derive_lfnst_mode_l(OVCTUDec *const ctudec, int log2_tb_w, int log2_tb_h,
+                    int8_t intra_mode)
 {
-    const OVPartInfo *const part_ctx = ctudec->part_ctx;
-    int log2_min_cb_s = part_ctx->log2_min_cb_s;
-    int x_pu = x0 >> log2_min_cb_s;
-    int y_pu = y0 >> log2_min_cb_s;
-    int8_t intra_mode = ctudec->drv_ctx.intra_info.luma_modes[x_pu + (y_pu << 5)];
-
     if (intra_mode > OVINTRA_DC) {
         intra_mode = derive_wide_angular_mode2(log2_tb_w, log2_tb_h, intra_mode);
     }
@@ -114,11 +107,11 @@ void
 process_lfnst_luma(OVCTUDec *const ctudec,
                    int16_t *dst, const int16_t *src,
                    int log2_tb_w, int log2_tb_h,
-                   int x0, int y0, uint8_t lfnst_idx)
+                   uint8_t lfnst_idx)
 {
     struct RCNFunctions *const rcnFunc = &ctudec->rcn_funcs;
 
-    int8_t intra_mode = derive_lfnst_mode_l(ctudec, log2_tb_w, log2_tb_h, x0, y0);
+    int8_t intra_mode = derive_lfnst_mode_l(ctudec, log2_tb_w, log2_tb_h, ctudec->intra_mode);
 
     uint8_t need_transpose = (intra_mode < 67  && intra_mode > OVINTRA_DIA) || intra_mode >= 67 + 14;
 
@@ -140,14 +133,14 @@ process_lfnst_luma(OVCTUDec *const ctudec,
 
 void
 process_lfnst_luma_isp(OVCTUDec *const ctudec,
-                   int16_t *dst, const int16_t *src,
-                   int log2_tb_w, int log2_tb_h,
-                   int log2_cb_w, int log2_cb_h,
-                   int x0, int y0, uint8_t lfnst_idx)
+                       int16_t *dst, const int16_t *src,
+                       int log2_tb_w, int log2_tb_h,
+                       int log2_cb_w, int log2_cb_h,
+                       uint8_t lfnst_idx)
 {
     struct RCNFunctions *const rcnFunc = &ctudec->rcn_funcs;
 
-    int8_t intra_mode = derive_lfnst_mode_l(ctudec, log2_cb_w, log2_cb_h, x0, y0);
+    int8_t intra_mode = derive_lfnst_mode_l(ctudec, log2_cb_w, log2_cb_h, ctudec->intra_mode);
 
     uint8_t need_transpose = (intra_mode < 67  && intra_mode > OVINTRA_DIA) || intra_mode >= 67 + 14;
 
