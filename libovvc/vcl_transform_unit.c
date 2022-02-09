@@ -1369,8 +1369,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
             tb_info->last_pos = last_pos;
 
             if (log2_pb_w < 2) {
-                tb_info->sig_sb_map = 2;
-                ctu_dec->residual_coding_isp_v(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
+                tb_info->sig_sb_map = ctu_dec->residual_coding_isp_v(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
             }else {
                 tb_info->sig_sb_map = ctu_dec->residual_coding_l(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
             }
@@ -1432,8 +1431,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
         int16_t *coeffs_y = ctu_dec->residual_y + i * (1 << (log2_pb_w + log2_cb_h));
 
         if (log2_pb_w <= 1) {
-            tb_info->sig_sb_map = 2;
-            ctu_dec->residual_coding_isp_v(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
+            tb_info->sig_sb_map = ctu_dec->residual_coding_isp_v(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
         } else {
             tb_info->sig_sb_map = ctu_dec->residual_coding_l(ctu_dec, coeffs_y, log2_pb_w, log2_cb_h, last_pos);
         }
@@ -1458,7 +1456,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
         cbf_mask_c |= jcbcr_flag;
     }
 
-    if (ctu_dec->enable_lfnst) {
+    if (ctu_dec->enable_lfnst && log2_pb_w > 1) {
         int max_lfnst_pos = (log2_cb_h == log2_pb_w) && (log2_pb_w <= 3) ? 7 : 15;
         uint8_t can_lfnst = (tu_info.tb_info[0].sig_sb_map | tu_info.tb_info[1].sig_sb_map | tu_info.tb_info[2].sig_sb_map | tu_info.tb_info[3].sig_sb_map) <= 1;
 
@@ -1585,8 +1583,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
             uint16_t last_pos = ovcabac_read_ae_last_sig_pos(cabac_ctx, log2_cb_w, log2_pb_h);
 
             if (log2_pb_h <= 1) {
-                tb_info->sig_sb_map = 2;
-                ctu_dec->residual_coding_isp_h(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
+                tb_info->sig_sb_map = ctu_dec->residual_coding_isp_h(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
             } else {
                 tb_info->sig_sb_map = ctu_dec->residual_coding_l(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
             }
@@ -1648,8 +1645,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
         uint16_t last_pos = ovcabac_read_ae_last_sig_pos(cabac_ctx, log2_cb_w, log2_pb_h);
 
         if (log2_pb_h <= 1) {
-            tb_info->sig_sb_map = 2;
-            ctu_dec->residual_coding_isp_h(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
+            tb_info->sig_sb_map = ctu_dec->residual_coding_isp_h(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
         } else {
             tb_info->sig_sb_map = ctu_dec->residual_coding_l(ctu_dec, coeffs_y, log2_cb_w, log2_pb_h, last_pos);
         }
@@ -1675,7 +1671,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
 
     }
 
-    if (ctu_dec->enable_lfnst) {
+    if (ctu_dec->enable_lfnst && log2_pb_h > 1) {
         uint8_t can_lfnst = (tu_info.tb_info[0].sig_sb_map | tu_info.tb_info[1].sig_sb_map | tu_info.tb_info[2].sig_sb_map | tu_info.tb_info[3].sig_sb_map) <= 1;
         int max_lfnst_pos = (log2_pb_h == log2_cb_w) && (log2_cb_w <= 3) ? 7 : 15;
 
