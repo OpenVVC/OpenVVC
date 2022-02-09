@@ -41,6 +41,20 @@ derive_lfnst_mode_l(OVCTUDec *const ctudec, int log2_tb_w, int log2_tb_h,
     return intra_mode;
 }
 
+int8_t
+drv_lfnst_mode_l(uint8_t log2_tb_w, uint8_t log2_tb_h,
+                 int8_t intra_mode)
+{
+    if (intra_mode > OVINTRA_DC) {
+        intra_mode = derive_wide_angular_mode2(log2_tb_w, log2_tb_h, intra_mode);
+    }
+
+    intra_mode = intra_mode < 0 ? intra_mode + 14 + 67: intra_mode >= 67
+        ? intra_mode + 14 : intra_mode;
+
+    return intra_mode;
+}
+
 static int8_t
 derive_lfnst_mode_c(OVCTUDec *const ctudec,
                    int log2_tb_w, int log2_tb_h,
@@ -106,45 +120,15 @@ process_lfnst(OVCTUDec *const ctudec,
 void
 process_lfnst_luma(OVCTUDec *const ctudec,
                    int16_t *dst, const int16_t *src,
-                   int log2_tb_w, int log2_tb_h,
-                   uint8_t lfnst_idx)
+                   uint8_t log2_tb_w, uint8_t log2_tb_h,
+                   uint8_t lfnst_idx, int8_t lfnst_intra_mode)
 {
     struct RCNFunctions *const rcnFunc = &ctudec->rcn_funcs;
 
-    int8_t intra_mode = derive_lfnst_mode_l(ctudec, log2_tb_w, log2_tb_h, ctudec->intra_mode);
+    uint8_t need_transpose = (lfnst_intra_mode < 67  && lfnst_intra_mode > OVINTRA_DIA) ||
+                              lfnst_intra_mode >= 67 + 14;
 
-    uint8_t need_transpose = (intra_mode < 67  && intra_mode > OVINTRA_DIA) || intra_mode >= 67 + 14;
-
-    int lfnst_mode = lfnst_mode_map[intra_mode];
-    uint64_t scan_map = 0xfbe7ad369c258140;
-    int16_t tmp[16];
-
-    for (int i = 0; i < 16; ++i) {
-        tmp[i] = src[scan_map & 0xF];
-        scan_map >>= 4;
-    }
-
-    /* FIXME reduce memset since limited transform */
-    memset(dst, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
-
-    const int8_t *lfnst_matrix = lfnst[(log2_tb_w >= 3 && log2_tb_h >= 3)][lfnst_mode][lfnst_idx];
-    (rcnFunc->lfnst.func[need_transpose][(log2_tb_w >= 3 && log2_tb_h >= 3)])(tmp, dst, lfnst_matrix, OVMIN(5,log2_tb_w), log2_tb_h);
-}
-
-void
-process_lfnst_luma_isp(OVCTUDec *const ctudec,
-                       int16_t *dst, const int16_t *src,
-                       int log2_tb_w, int log2_tb_h,
-                       int log2_cb_w, int log2_cb_h,
-                       uint8_t lfnst_idx)
-{
-    struct RCNFunctions *const rcnFunc = &ctudec->rcn_funcs;
-
-    int8_t intra_mode = derive_lfnst_mode_l(ctudec, log2_cb_w, log2_cb_h, ctudec->intra_mode);
-
-    uint8_t need_transpose = (intra_mode < 67  && intra_mode > OVINTRA_DIA) || intra_mode >= 67 + 14;
-
-    int lfnst_mode = lfnst_mode_map[intra_mode];
+    int lfnst_mode = lfnst_mode_map[lfnst_intra_mode];
     uint64_t scan_map = 0xfbe7ad369c258140;
     int16_t tmp[16];
 
