@@ -17,9 +17,6 @@
 #include "rcn_dequant.h"
 #include "vcl.h"
 
-#define IQUANT_SHIFT 6
-#define MAX_LOG2_TR_RANGE 15
-
 #define VVC_TR_CTX_STRIDE (32+2)
 #define VVC_TR_CTX_OFFSET ((VVC_TR_CTX_STRIDE)*2+2)
 #define VVC_TR_CTX_SIZE   (VVC_TR_CTX_STRIDE*VVC_TR_CTX_STRIDE)
