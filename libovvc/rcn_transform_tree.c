@@ -784,7 +784,7 @@ rcn_tu_isp_v(OVCTUDec *const ctudec,
              unsigned int x0, unsigned int y0,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
              uint8_t lfnst_intra_mode,
-             const struct ISPTUInfo *const tu_info, uint8_t i, uint8_t lfnst_flag,
+             const struct ISPTUInfo *const tu_info, uint8_t i,
              uint8_t type_v, uint8_t type_h, uint8_t offset)
 {
     const struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
@@ -864,7 +864,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
 
         if (cbf) {
             rcn_tu_isp_v(ctudec, x0, y0, log2_pb_w, log2_cb_h,
-                         lfnst_intra_mode, tu_info, i, lfnst_flag,
+                         lfnst_intra_mode, tu_info, i,
                          type_v, type_h, offset_x);
         }
         x0 += pb_w;
