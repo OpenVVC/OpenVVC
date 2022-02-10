@@ -783,20 +783,20 @@ static void
 rcn_tu_isp_v(OVCTUDec *const ctudec,
              unsigned int x0, unsigned int y0,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
-             unsigned int log2_cb_w, unsigned int log2_cb_h,
              uint8_t lfnst_intra_mode,
              const struct ISPTUInfo *const tu_info, uint8_t i, uint8_t lfnst_flag,
              uint8_t type_v, uint8_t type_h, uint8_t offset)
 {
     const struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
     const struct RCNFunctions *const rcn_func = &ctudec->rcn_funcs;
-    int16_t *coeffs_y = ctudec->residual_y + i * (1 << (log2_tb_w + log2_cb_h));
     const struct TBInfo *const tb_info = &tu_info->tb_info[i];
+
+    int16_t *coeffs_y = ctudec->residual_y + (i << (log2_tb_w + log2_tb_h));
 
     if (log2_tb_w) {
 
         if (log2_tb_w == 1) {
-            rcn_2xX_tb(ctudec, tb_info, log2_cb_h, coeffs_y, type_v, type_h);
+            rcn_2xX_tb(ctudec, tb_info, log2_tb_h, coeffs_y, type_v, type_h);
         } else {
             rcn_isp_tu(ctudec, tb_info, log2_tb_w, log2_tb_h, coeffs_y, tu_info,
                        type_v, type_h, lfnst_intra_mode);
@@ -809,7 +809,7 @@ rcn_tu_isp_v(OVCTUDec *const ctudec,
     OVSample *dst  = &ctudec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
     int16_t *src  = ctudec->transform_buff;
 
-    rcn_func->ict.add[log2_tb_w](src, dst, log2_tb_w, log2_cb_h, 0);
+    rcn_func->ict.add[log2_tb_w](src, dst, log2_tb_w, log2_tb_h, 0);
 }
 
 static void
@@ -864,7 +864,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
 
         if (cbf) {
             rcn_tu_isp_v(ctudec, x0, y0, log2_pb_w, log2_cb_h,
-                         log2_cb_w, log2_cb_h, lfnst_intra_mode, tu_info, i, lfnst_flag,
+                         lfnst_intra_mode, tu_info, i, lfnst_flag,
                          type_v, type_h, offset_x);
         }
         x0 += pb_w;
