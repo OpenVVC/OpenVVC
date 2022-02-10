@@ -285,25 +285,6 @@ rcn_residual(OVCTUDec *const ctudec,
     }
 
 
-    if (lfnst_flag) {
-        int16_t lfnst_sb[16];
-        int tmp_shift = log2_tb_w > 1 && log2_tb_h > 1 ? OVMIN(5,log2_tb_w) : log2_tb_w;
-        int8_t intra_mode = is_mip ? OVINTRA_PLANAR : ctudec->intra_mode;
-
-        int8_t lfnst_intra_mode = drv_lfnst_mode_l(log2_tb_w, log2_tb_h, intra_mode);
-
-        memcpy(lfnst_sb     , &src[0], sizeof(int16_t) * 4);
-        memcpy(lfnst_sb +  4, &src[1 << tmp_shift], sizeof(int16_t) * 4);
-        memcpy(lfnst_sb +  8, &src[2 << tmp_shift], sizeof(int16_t) * 4);
-        memcpy(lfnst_sb + 12, &src[3 << tmp_shift], sizeof(int16_t) * 4);
-
-        process_lfnst_luma(ctudec, src, lfnst_sb, OVMIN(5, log2_tb_w), log2_tb_h,
-                           lfnst_idx, lfnst_intra_mode);
-
-        lim_sb_s = 8;
-        is_dc = 0;
-    }
-
     if (!is_mip && !cu_mts_flag && ctudec->mts_implicit && (log2_tb_w <= 4 || log2_tb_h <= 4) && !lfnst_flag) {
         /*FIXME condition on size in the if could be removed ?*/
         enum DCTType tr_h_idx = log2_tb_w <= 4 ? DST_VII : DCT_II;
@@ -324,6 +305,25 @@ rcn_residual(OVCTUDec *const ctudec,
         TRFunc->func[tr_h_idx][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, TR_SHIFT_H);
 
     } else if (!cu_mts_flag) {
+
+        if (lfnst_flag) {
+            int16_t lfnst_sb[16];
+            int tmp_shift = log2_tb_w > 1 && log2_tb_h > 1 ? OVMIN(5,log2_tb_w) : log2_tb_w;
+            int8_t intra_mode = is_mip ? OVINTRA_PLANAR : ctudec->intra_mode;
+
+            int8_t lfnst_intra_mode = drv_lfnst_mode_l(log2_tb_w, log2_tb_h, intra_mode);
+
+            memcpy(lfnst_sb     , &src[0], sizeof(int16_t) * 4);
+            memcpy(lfnst_sb +  4, &src[1 << tmp_shift], sizeof(int16_t) * 4);
+            memcpy(lfnst_sb +  8, &src[2 << tmp_shift], sizeof(int16_t) * 4);
+            memcpy(lfnst_sb + 12, &src[3 << tmp_shift], sizeof(int16_t) * 4);
+
+            process_lfnst_luma(ctudec, src, lfnst_sb, OVMIN(5, log2_tb_w), log2_tb_h,
+                               lfnst_idx, lfnst_intra_mode);
+
+            lim_sb_s = 8;
+            is_dc = 0;
+        }
 
         if (is_dc) {
             TRFunc->dc(dst, log2_tb_w, log2_tb_h, src[0]);
