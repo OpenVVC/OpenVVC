@@ -853,13 +853,16 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
          */
          /*FIXME separate small cases */
         if (!(offset_x & 0x3)) {
-            ctudec->rcn_funcs.intra_pred_isp(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
-                               RCN_CTB_STRIDE, intra_mode, x0, y0,
-                               log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h,
-                               log2_cb_w, log2_cb_h, offset_x, 0);
 
-            fill_ctb_bound(&ctudec->dbf_info, x0 & ~0x3, y0, log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h);
-            fill_bs_map(&ctudec->dbf_info.bs2_map, x0 & ~0x3, y0, log2_pb_w >= 2 ? log2_pb_w : 2, log2_cb_h);
+            uint8_t log2_pred_w = log2_pb_w < 2 ? 2 : log2_pb_w;
+
+            ctudec->rcn_funcs.intra_pred_isp(ctudec, &ctudec->rcn_ctx.ctu_buff.y[0],
+                                             RCN_CTB_STRIDE, intra_mode, x0, y0,
+                                             log2_pred_w, log2_cb_h,
+                                             log2_cb_w, log2_cb_h, offset_x, 0);
+
+            fill_ctb_bound(&ctudec->dbf_info,      x0, y0, log2_pred_w, log2_cb_h);
+            fill_bs_map(&ctudec->dbf_info.bs2_map, x0, y0, log2_pred_w, log2_cb_h);
         }
 
         if (cbf) {
