@@ -807,7 +807,7 @@ rcn_tu_isp_v(OVCTUDec *const ctudec,
     }
 
     OVSample *dst  = &ctudec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
-    int16_t *src  = ctudec->transform_buff;
+    const int16_t *src  = ctudec->transform_buff;
 
     rcn_func->ict.add[log2_tb_w](src, dst, log2_tb_w, log2_tb_h, 0);
 }
