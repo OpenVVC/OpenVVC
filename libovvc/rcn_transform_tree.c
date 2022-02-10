@@ -698,11 +698,12 @@ rcn_isp_tu(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
     if (tu_info->lfnst_flag) {
         uint8_t lfnst_idx = tu_info->lfnst_idx;
         int16_t lfnst_sb[16];
+        uint8_t log2_stride = OVMIN(5, log2_tb_w);
 
-        memcpy(lfnst_sb     , &coeffs_y[0             ], sizeof(int16_t) * 4);
-        memcpy(lfnst_sb +  4, &coeffs_y[1 << log2_tb_w], sizeof(int16_t) * 4);
-        memcpy(lfnst_sb +  8, &coeffs_y[2 << log2_tb_w], sizeof(int16_t) * 4);
-        memcpy(lfnst_sb + 12, &coeffs_y[3 << log2_tb_w], sizeof(int16_t) * 4);
+        memcpy(lfnst_sb     , &coeffs_y[0               ], sizeof(int16_t) * 4);
+        memcpy(lfnst_sb +  4, &coeffs_y[1 << log2_stride], sizeof(int16_t) * 4);
+        memcpy(lfnst_sb +  8, &coeffs_y[2 << log2_stride], sizeof(int16_t) * 4);
+        memcpy(lfnst_sb + 12, &coeffs_y[3 << log2_stride], sizeof(int16_t) * 4);
 
         process_lfnst_luma(ctudec, coeffs_y, lfnst_sb, log2_tb_w, log2_tb_h,
                            lfnst_idx, lfnst_intra_mode);
@@ -714,6 +715,7 @@ rcn_isp_tu(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
         type_v = type_h = DCT_II;
     }
 
+    if (!tu_info->lfnst_flag) tb_w = OVMIN(32, tb_w);
     TRFunc->func[type_v][OVMIN(log2_tb_h, 6)](src, tmp, tb_w, nb_row, nb_col, TR_SHIFT_V);
     TRFunc->func[type_h][OVMIN(log2_tb_w, 6)](tmp, dst, tb_h, tb_h, nb_row, TR_SHIFT_H);
 }
@@ -811,6 +813,100 @@ rcn_tu_isp_v(OVCTUDec *const ctudec,
 
     rcn_func->ict.add[log2_tb_w](src, dst, log2_tb_w, log2_tb_h, 0);
 }
+
+static void
+rcn_Xx2_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t log2_tb_w,
+           int16_t *coeffs_y, uint8_t type_v, uint8_t type_h)
+{
+    const struct TRFunctions *const TRFunc = &ctudec->rcn_funcs.tr;
+
+    DECLARE_ALIGNED(32, int16_t, tmp)[2*64];
+
+    int16_t *src = coeffs_y;
+    int16_t *dst = ctudec->transform_buff;
+
+    int nb_col = (derive_nb_cols(tb_info->sig_sb_map) >> 2) << 1;
+    int nb_row = (derive_nb_rows(tb_info->sig_sb_map) >> 2) << 3;
+
+    const uint8_t log2_tb_h = 1;
+
+    int tb_h = 1 << log2_tb_h;
+    int tb_w = 1 << log2_tb_w;
+
+    int qp = ctudec->dequant_luma.qp;
+
+    uint8_t is_neg = dequant_is_neg(ctudec, qp, log2_tb_w, log2_tb_h);
+    if (!is_neg) {
+        struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
+        dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
+    } else {
+        struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
+        dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
+    }
+
+    memset(tmp, 0, sizeof(int16_t) << (1 + log2_tb_w));
+
+    TRFunc->func[type_v][OVMIN(log2_tb_h,6)](src, tmp, tb_w, nb_row, nb_col, TR_SHIFT_V);
+    TRFunc->func[type_h][OVMIN(log2_tb_w,6)](tmp, dst, tb_h, tb_h, nb_row, TR_SHIFT_H);
+}
+
+static void
+rcn_Xx1_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t log2_tb_w, int16_t *coeffs_y, uint8_t type_h)
+{
+    const struct TRFunctions *const TRFunc = &ctudec->rcn_funcs.tr;
+    const uint8_t log2_tb_h = 0;
+
+    int tb_h = 1 << log2_tb_h;
+    int tb_w = 1 << log2_tb_w;
+
+    int qp = ctudec->dequant_luma.qp;
+
+    uint8_t is_neg = dequant_is_neg(ctudec, qp, log2_tb_w, log2_tb_h);
+    if (!is_neg) {
+        struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
+        dequant_tb(coeffs_y, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
+    } else {
+        struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
+        dequant_tb_neg(coeffs_y, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
+    }
+
+    TRFunc->func[type_h][OVMIN(log2_tb_w,6)](coeffs_y, ctudec->transform_buff, tb_h, tb_h, tb_info->last_pos & 0x1F, TR_SHIFT_H + 1);
+
+}
+
+static void
+rcn_tu_isp_h(OVCTUDec *const ctudec,
+             unsigned int x0, unsigned int y0,
+             unsigned int log2_tb_w, unsigned int log2_tb_h,
+             uint8_t lfnst_intra_mode,
+             const struct ISPTUInfo *const tu_info, uint8_t i,
+             uint8_t type_v, uint8_t type_h, uint8_t offset)
+{
+    const struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
+    const struct RCNFunctions *const rcn_func = &ctudec->rcn_funcs;
+    const struct TBInfo *const tb_info = &tu_info->tb_info[i];
+
+    int16_t *coeffs_y = ctudec->residual_y + (i << (log2_tb_w + log2_tb_h));
+
+    if (log2_tb_h) {
+
+        if (log2_tb_h == 1) {
+            rcn_Xx2_tb(ctudec, tb_info, log2_tb_w, coeffs_y, type_v, type_h);
+        } else {
+            rcn_isp_tu(ctudec, tb_info, log2_tb_w, log2_tb_h, coeffs_y, tu_info,
+                       type_v, type_h, lfnst_intra_mode);
+        }
+
+    } else {
+        rcn_Xx1_tb(ctudec, tb_info, log2_tb_w, coeffs_y, type_h);
+    }
+
+    OVSample *dst  = &ctudec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
+    const int16_t *src  = ctudec->transform_buff;
+
+    rcn_func->ict.add[log2_tb_w](src, dst, log2_tb_w, log2_tb_h, 0);
+}
+
 
 static void
 recon_isp_subtree_v(OVCTUDec *const ctudec,
@@ -921,100 +1017,9 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                                          RCN_CTB_STRIDE, intra_mode, x0, y0,
                                          log2_cb_w, log2_pb_h, log2_cb_w, log2_cb_h, 0, offset_y);
         if (cbf) {
-            int16_t *coeffs_y = ctudec->residual_y + i * (1 << (log2_cb_w + log2_pb_h));
-
-            fill_bs_map(&ctudec->dbf_info.bs1_map, x0, y0, log2_cb_w, log2_pb_h);
-
-            if (log2_pb_h) {
-                const struct TBInfo *const tb_info = &tu_info->tb_info[i];
-                DECLARE_ALIGNED(32, int16_t, tmp)[64*64];
-                int16_t *src = coeffs_y;
-                int16_t *dst = ctudec->transform_buff;
-                int cb_w = 1 << log2_cb_w;
-                int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;
-
-                if (log2_pb_h > 1 && log2_cb_w > 1) {
-                    int qp = ctudec->dequant_luma.qp;
-                    dequant_4x4_sb(ctudec, src, tb_info->sig_sb_map, log2_cb_w, log2_pb_h, qp);
-                } else {
-                    int qp = ctudec->dequant_luma.qp;
-                    struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_cb_w, log2_pb_h);
-                    if (ctudec->residual_coding_l == &residual_coding_dpq) {
-                        deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_cb_w, log2_pb_h);
-                    } else {
-                        deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_cb_w, log2_pb_h);
-                    }
-                    uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
-                    if (!is_neg) {
-                        dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_cb_w, 1 << log2_pb_h, 1 << log2_cb_w);
-                    } else {
-                        dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_cb_w, 1 << log2_pb_h, 1 << log2_cb_w);
-                    }
-                }
-
-                memset(tmp, 0, sizeof(int16_t) << (log2_cb_w + log2_pb_h));
-
-                if (lfnst_flag) {
-                    uint8_t lfnst_idx = tu_info->lfnst_idx;
-                    /*FIXME avoid distinguishing isp case in lfnst */
-                    int16_t lfnst_sb[16];
-
-                    int tmp_shift = log2_cb_w > 1 && log2_pb_h > 1 ? OVMIN(5,log2_cb_w) : log2_cb_w;
-
-                    memcpy(lfnst_sb     , &coeffs_y[0], sizeof(int16_t) * 4);
-                    memcpy(lfnst_sb +  4, &coeffs_y[1 << tmp_shift], sizeof(int16_t) * 4);
-                    memcpy(lfnst_sb +  8, &coeffs_y[2 << tmp_shift], sizeof(int16_t) * 4);
-                    memcpy(lfnst_sb + 12, &coeffs_y[3 << tmp_shift], sizeof(int16_t) * 4);
-
-                    process_lfnst_luma(ctudec, coeffs_y, lfnst_sb,
-                                       log2_cb_w, log2_pb_h,
-                                       lfnst_idx, lfnst_intra_mode);
-
-                    lim_sb_s = 8;
-                    /* lfnst forces IDCT II usage */
-                    type_v = type_h = DCT_II;
-                }
-
-                int nb_row = OVMIN(lim_sb_s, 1 << log2_cb_w);
-                int nb_col = OVMIN(lim_sb_s, 1 << log2_pb_h);
-
-                if (!lfnst_flag && log2_cb_w > 1 && log2_pb_h > 1) {
-                    nb_col = derive_nb_cols(tb_info->sig_sb_map);
-                    nb_row = derive_nb_rows(tb_info->sig_sb_map);
-                }
-
-                if (!lfnst_flag && log2_pb_h > 1 && log2_cb_w > 1) cb_w = OVMIN(32, cb_w);
-                TRFunc->func[type_v][OVMIN(log2_pb_h,6)](src, tmp, cb_w, nb_row, nb_col, TR_SHIFT_V);
-                TRFunc->func[type_h][OVMIN(log2_cb_w,6)](tmp, dst, pb_h, pb_h, nb_row, TR_SHIFT_H);
-            } else {
-                const struct TBInfo *const tb_info = &tu_info->tb_info[i];
-                int cb_w = 1 << log2_cb_w;
-                int qp = ctudec->dequant_luma.qp;
-                struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_cb_w, log2_pb_h);
-                if (ctudec->residual_coding_l == &residual_coding_dpq) {
-                    deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_cb_w, log2_pb_h);
-                } else {
-                    deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_cb_w, log2_pb_h);
-                }
-                uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
-                if (!is_neg) {
-                    dequant_tb(coeffs_y, deq_prms.scale, deq_prms.shift, log2_cb_w, 1 << log2_pb_h, 1 << log2_cb_w);
-                } else {
-                    dequant_tb_neg(coeffs_y, deq_prms.scale, deq_prms.shift, log2_cb_w, 1 << log2_pb_h, 1 << log2_cb_w);
-                }
-                DECLARE_ALIGNED(32, int16_t, tmp)[64];
-
-                memset(tmp, 0, sizeof(int16_t) << (log2_cb_w + log2_pb_h));
-
-                TRFunc->func[type_h][OVMIN(log2_cb_w,6)](coeffs_y, tmp, pb_h, pb_h, tb_info->last_pos & 0x1F, TR_SHIFT_H + 1);
-
-                memcpy(ctudec->transform_buff, tmp, sizeof(uint16_t) * (1 << log2_cb_w));
-            }
-
-            OVSample *dst  = &ctudec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
-            int16_t *src  = ctudec->transform_buff;
-
-            rcn_func->ict.add[log2_cb_w](src, dst, log2_cb_w, log2_pb_h, 0);
+            rcn_tu_isp_h(ctudec, x0, y0, log2_cb_w, log2_pb_h,
+                         lfnst_intra_mode, tu_info, i,
+                         type_v, type_h, offset_y);
         }
         y0 += pb_h;
         offset_y += pb_h;
