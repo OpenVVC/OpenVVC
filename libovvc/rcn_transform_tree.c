@@ -755,7 +755,7 @@ rcn_2xX_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
 }
 
 static void
-rcn_1xX_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t log2_tb_h, int16_t *coeffs_y, uint8_t type_v, uint8_t type_h)
+rcn_1xX_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t log2_tb_h, int16_t *coeffs_y, uint8_t type_v)
 {
     const struct TRFunctions *const TRFunc = &ctudec->rcn_funcs.tr;
     const uint8_t log2_tb_w = 0;
@@ -803,7 +803,7 @@ rcn_tu_isp_v(OVCTUDec *const ctudec,
         }
 
     } else {
-        rcn_1xX_tb(ctudec, tb_info, log2_cb_h, coeffs_y, type_v, type_h);
+        rcn_1xX_tb(ctudec, tb_info, log2_tb_h, coeffs_y, type_v);
     }
 
     OVSample *dst  = &ctudec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
