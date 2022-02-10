@@ -351,7 +351,7 @@ rcn_residual(OVCTUDec *const ctudec,
             nb_row = derive_nb_rows(sig_sb_map);
         }
         int cb_w = log2_tb_h >= 2 ? OVMIN(32, tb_w) : tb_w;
-        //memset(tmp, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
+
         memset(&tmp[nb_row << log2_tb_h], 0, sizeof(int16_t) * ((1 << (log2_tb_w + log2_tb_h)) - (nb_row << log2_tb_h)));
 
         TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, cb_w, nb_row, nb_col, TR_SHIFT_V);
@@ -849,9 +849,8 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
 
         /* On vertical ISP the intra prediction can only be performed with a min width of 4
            thus requiring to perform prediction on 2 PBs for size 2xX and all PBs in the
-           case of 1xX. Even when transforms are smaller
-         */
-         /*FIXME separate small cases */
+           case of 1xX. Even when transforms are smaller */
+
         if (!(offset_x & 0x3)) {
 
             uint8_t log2_pred_w = log2_pb_w < 2 ? 2 : log2_pb_w;
@@ -870,7 +869,8 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
                          lfnst_intra_mode, tu_info, i,
                          type_v, type_h, offset_x);
         }
-        x0 += pb_w;
+
+        x0       += pb_w;
         offset_x += pb_w;
     }
 }
