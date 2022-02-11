@@ -637,6 +637,58 @@ apply_bdpcm_2(int16_t *dst, const int16_t *src, uint8_t log2_tb_w, uint8_t log2_
     }
 }
 
+static void
+rcn_bdpcm_tb_l(OVCTUDec *const ctu_dec, int16_t *dst, int16_t *src, const struct TBInfo *tb_info,
+               uint8_t log2_tb_w, uint8_t log2_tb_h, uint16_t cu_flags, uint8_t qp)
+{
+    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
+
+    if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
+        DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
+
+        memcpy(tmp, src, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+        memset(src, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+
+        reorder_tb_4x4(src, tmp, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
+    }
+
+    if (cu_flags & flg_intra_bdpcm_luma_dir){
+        apply_bdpcm_2(dst, src, log2_tb_w, log2_tb_h);
+    } else {
+        apply_bdpcm_1(dst, src, log2_tb_w, log2_tb_h);
+    }
+
+    for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
+        deq_prms.dequant_sb(&dst[16*i], deq_prms.scale, deq_prms.shift);
+    }
+}
+
+static void
+rcn_bdpcm_tb(OVCTUDec *const ctu_dec, int16_t *dst, int16_t *src, const struct TBInfo *tb_info,
+             uint8_t log2_tb_w, uint8_t log2_tb_h, uint16_t cu_flags, uint8_t qp)
+{
+    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
+
+    if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
+        DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
+
+        memcpy(tmp, src, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+        memset(src, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+
+        reorder_tb_4x4(src, tmp, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
+    }
+
+    if (cu_flags & flg_intra_bdpcm_chroma_dir){
+        apply_bdpcm_2(dst, src, log2_tb_w, log2_tb_h);
+    } else {
+        apply_bdpcm_1(dst, src, log2_tb_w, log2_tb_h);
+    }
+
+    for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
+        deq_prms.dequant_sb(&dst[16*i], deq_prms.scale, deq_prms.shift);
+    }
+}
+
 
 static void
 rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
@@ -662,27 +714,12 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
             const struct TBInfo *const tb_info = &tu_info->tb_info[0];
             int qp = ctu_dec->dequant_cb_skip.qp;
             if (cu_flags & flg_intra_bdpcm_chroma_flag) {
-                const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
+
+                rcn_bdpcm_tb(ctu_dec, ctu_dec->transform_buff, coeffs_cb, tb_info,
+                             log2_tb_w, log2_tb_h, cu_flags, qp);
+
                 tr_buff = ctu_dec->transform_buff;
 
-                if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
-                    DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
-
-                    memcpy(tmp, coeffs_cb, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
-                    memset(coeffs_cb, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
-
-                    reorder_tb_4x4(coeffs_cb, tmp,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
-                }
-
-                if (cu_flags & flg_intra_bdpcm_chroma_dir){
-                    apply_bdpcm_2(tr_buff, coeffs_cb, log2_tb_w, log2_tb_h);
-                } else {
-                    apply_bdpcm_1(tr_buff, coeffs_cb, log2_tb_w, log2_tb_h);
-                }
-
-                for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
-                    deq_prms.dequant_sb(&ctu_dec->transform_buff[16*i], deq_prms.scale, deq_prms.shift);
-                }
             } else {
                 if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
                     dequant_4x4_ts(ctu_dec, coeffs_cb, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
@@ -719,28 +756,11 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
             const struct TBInfo *const tb_info = &tu_info->tb_info[1];
             int qp = ctu_dec->dequant_cr_skip.qp;
             if (cu_flags & flg_intra_bdpcm_chroma_flag) {
-                const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
+
+                rcn_bdpcm_tb(ctu_dec, ctu_dec->transform_buff, coeffs_cr, tb_info,
+                             log2_tb_w, log2_tb_h, cu_flags, qp);
+
                 tr_buff = ctu_dec->transform_buff;
-
-                if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
-                    DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
-
-                    memcpy(tmp, coeffs_cr, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
-                    memset(coeffs_cr, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
-
-                    reorder_tb_4x4(coeffs_cr, tmp,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
-                }
-
-                if (cu_flags & flg_intra_bdpcm_chroma_dir){
-                    apply_bdpcm_2(tr_buff, coeffs_cr, log2_tb_w, log2_tb_h);
-                } else {
-                    apply_bdpcm_1(tr_buff, coeffs_cr, log2_tb_w, log2_tb_h);
-                }
-
-                //if (!ctu_dec->sh_ts_disabled)
-                for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
-                    deq_prms.dequant_sb(&ctu_dec->transform_buff[16*i], deq_prms.scale, deq_prms.shift);
-                }
 
             } else {
                 if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
@@ -792,28 +812,10 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
         int qp = (cbf_mask == 3) ? ctu_dec->dequant_jcbcr_skip.qp : (cbf_mask == 2) ? ctu_dec->dequant_cb_skip.qp : ctu_dec->dequant_cb_skip.qp;
         const struct TBInfo *const tb_info = &tu_info->tb_info[0];
         if (cu_flags & flg_intra_bdpcm_chroma_flag) {
-            const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
 
-            int16_t *tr_buff = ctu_dec->transform_buff;
+            rcn_bdpcm_tb(ctu_dec, ctu_dec->transform_buff, coeffs_jcbcr, tb_info,
+                         log2_tb_w, log2_tb_h, cu_flags, qp);
 
-            if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
-                DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
-
-                memcpy(tmp, coeffs_jcbcr, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
-                memset(coeffs_jcbcr, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
-
-                reorder_tb_4x4(coeffs_jcbcr, tmp,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
-            }
-
-            if (cu_flags & flg_intra_bdpcm_chroma_dir){
-                apply_bdpcm_2(tr_buff, coeffs_jcbcr, log2_tb_w, log2_tb_h);
-            } else {
-                apply_bdpcm_1(tr_buff, coeffs_jcbcr, log2_tb_w, log2_tb_h);
-            }
-                //if (!ctu_dec->sh_ts_disabled)
-            for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
-                deq_prms.dequant_sb(&ctu_dec->transform_buff[16*i], deq_prms.scale, deq_prms.shift);
-            }
         } else {
             memcpy(ctu_dec->transform_buff, coeffs_jcbcr, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
             if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
@@ -1238,25 +1240,8 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             if (cu_flags & flg_intra_bdpcm_luma_flag) {
                 int qp = ctu_dec->dequant_luma_skip.qp;
-                const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
-                if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
-                    DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
-
-                    memcpy(tmp, coeffs_y, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
-                    memset(coeffs_y, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
-
-                    reorder_tb_4x4(coeffs_y, tmp,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
-                }
-
-                if (cu_flags & flg_intra_bdpcm_luma_dir){
-                    apply_bdpcm_2(ctu_dec->transform_buff, coeffs_y, log2_tb_w, log2_tb_h);
-                } else {
-                    apply_bdpcm_1(ctu_dec->transform_buff, coeffs_y, log2_tb_w, log2_tb_h);
-                }
-                //if (!ctu_dec->sh_ts_disabled)
-                for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
-                    deq_prms.dequant_sb(&ctu_dec->transform_buff[16*i], deq_prms.scale, deq_prms.shift);
-                }
+                rcn_bdpcm_tb_l(ctu_dec, ctu_dec->transform_buff, coeffs_y, tb_info,
+                               log2_tb_w, log2_tb_h, cu_flags, qp);
             } else {
                 memcpy(ctu_dec->transform_buff, coeffs_y, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
                 if (ctu_dec->sh_ts_disabled) {
@@ -1341,25 +1326,10 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             if (cu_flags & flg_intra_bdpcm_luma_flag) {
                 int qp = ctu_dec->dequant_luma_skip.qp;
-                const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
-                if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
-                    DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
 
-                    memcpy(tmp, coeffs_y, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
-                    memset(coeffs_y, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+                rcn_bdpcm_tb_l(ctu_dec, ctu_dec->transform_buff, coeffs_y, tb_info,
+                               log2_tb_w, log2_tb_h, cu_flags, qp);
 
-                    reorder_tb_4x4(coeffs_y, tmp,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
-                }
-
-                if (cu_flags & flg_intra_bdpcm_luma_dir){
-                    apply_bdpcm_2(ctu_dec->transform_buff, coeffs_y, log2_tb_w, log2_tb_h);
-                } else {
-                    apply_bdpcm_1(ctu_dec->transform_buff, coeffs_y, log2_tb_w, log2_tb_h);
-                }
-                //if (!ctu_dec->sh_ts_disabled)
-                for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
-                    deq_prms.dequant_sb(&ctu_dec->transform_buff[16*i], deq_prms.scale, deq_prms.shift);
-                }
             } else {
                 memcpy(ctu_dec->transform_buff, coeffs_y, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
                 if (ctu_dec->sh_ts_disabled) {
