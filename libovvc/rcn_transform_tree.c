@@ -69,30 +69,32 @@ derive_nb_cols(uint64_t sig_sb_map)
 
 #define MAX_LOG2_TR_RANGE 15
 static void
-dequant_tb_neg(int16_t *src, int scale, int shift, uint8_t log2_tb_w, uint8_t nb_rows, uint8_t nb_cols)
+dequant_tb_neg(int16_t *dst, const int16_t *src, int scale, int shift, uint8_t log2_tb_w, uint8_t nb_rows, uint8_t nb_cols)
 {
     uint8_t stride = 1 << (OVMIN(5, log2_tb_w));
 
     for (int i = 0; i < nb_rows ; i++) {
         for (int j = 0; j < nb_cols ; j++) {
-            src[j] = ov_clip_intp2((int32_t)src[j] * (scale << shift),
-                                         MAX_LOG2_TR_RANGE + 1);
+            dst[j] = ov_clip_intp2((int32_t)src[j] * (scale << shift),
+                                   MAX_LOG2_TR_RANGE + 1);
         }
         src += stride;
+        dst += stride;
     }
 }
 
 static void
-dequant_tb(int16_t *src, int scale, int shift, uint8_t log2_tb_w, uint8_t nb_rows, uint8_t nb_cols)
+dequant_tb(int16_t *dst, const int16_t *src, int scale, int shift, uint8_t log2_tb_w, uint8_t nb_rows, uint8_t nb_cols)
 {
     int add = (1 << shift) >> 1;
     uint8_t stride = 1 << (OVMIN(5, log2_tb_w));
     for (int i = 0; i < nb_rows ; i++) {
         for (int j = 0; j < nb_cols ; j++) {
-            src[j] = ov_clip_intp2((int32_t)(src[j] * scale + add) >> shift,
+            dst[j] = ov_clip_intp2((int32_t)(src[j] * scale + add) >> shift,
                                    MAX_LOG2_TR_RANGE + 1);
         }
         src += stride;
+        dst += stride;
     }
 }
 
@@ -515,6 +517,27 @@ dequant_is_neg(const OVCTUDec *const ctudec, uint8_t qp, uint8_t log2_tb_w, uint
 }
 
 static void
+dequant_non_4x4_sb(const OVCTUDec *const ctudec, int16_t *dst, int16_t *src, uint64_t sig_sb_map,
+                   uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp)
+{
+    /* Note in case of small blocks TBs are supposed to be small so processing the
+     * whole block should not be an issue regarding performance
+     */
+    uint8_t tb_w = 1 << log2_tb_w;
+    uint8_t tb_h = 1 << log2_tb_h;
+
+    uint8_t is_neg = dequant_is_neg(ctudec, qp, log2_tb_w, log2_tb_h);
+
+    if (!is_neg) {
+        struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
+        dequant_tb(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
+    } else {
+        struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
+        dequant_tb_neg(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
+    }
+}
+
+static void
 rcn_residual_c(OVCTUDec *const ctudec,
                int16_t *const dst, int16_t *src,
                uint8_t x0, uint8_t y0,
@@ -545,14 +568,7 @@ rcn_residual_c(OVCTUDec *const ctudec,
         int nb_col = (derive_nb_cols(sig_sb_map) >> 2) << log2_sb_h;
         int nb_row = (derive_nb_rows(sig_sb_map) >> 2) << log2_sb_w;
 
-        uint8_t is_neg = dequant_is_neg(ctudec, qp, log2_tb_w, log2_tb_h);
-        if (!is_neg) {
-            struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
-            dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
-        } else {
-            struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
-            dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
-        }
+        dequant_non_4x4_sb(ctudec, src, src, sig_sb_map, log2_tb_w, log2_tb_h, qp);
     }
 
     if (!last_pos && !lfnst_flag) {
@@ -904,14 +920,7 @@ rcn_2xX_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
 
     int qp = ctudec->dequant_luma.qp;
 
-    uint8_t is_neg = dequant_is_neg(ctudec, qp, log2_tb_w, log2_tb_h);
-    if (!is_neg) {
-        struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
-        dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
-    } else {
-        struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
-        dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
-    }
+    dequant_non_4x4_sb(ctudec, src, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
 
     memset(tmp, 0, sizeof(int16_t) << (1 + log2_tb_h));
 
@@ -920,7 +929,7 @@ rcn_2xX_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
 }
 
 static void
-rcn_1xX_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t log2_tb_h, int16_t *coeffs_y, uint8_t type_v)
+rcn_1xX_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t log2_tb_h, int16_t *src, uint8_t type_v)
 {
     const struct TRFunctions *const TRFunc = &ctudec->rcn_funcs.tr;
     const uint8_t log2_tb_w = 0;
@@ -930,16 +939,9 @@ rcn_1xX_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
 
     int qp = ctudec->dequant_luma.qp;
 
-    uint8_t is_neg = dequant_is_neg(ctudec, qp, log2_tb_w, log2_tb_h);
-    if (!is_neg) {
-        struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
-        dequant_tb(coeffs_y, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
-    } else {
-        struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
-        dequant_tb_neg(coeffs_y, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
-    }
+    dequant_non_4x4_sb(ctudec, src, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
 
-    TRFunc->func[type_v][OVMIN(log2_tb_h,6)](coeffs_y, ctudec->transform_buff, tb_w, tb_w, tb_info->last_pos & 0x1F, TR_SHIFT_H + 1);
+    TRFunc->func[type_v][OVMIN(log2_tb_h,6)](src, ctudec->transform_buff, tb_w, tb_w, tb_info->last_pos & 0x1F, TR_SHIFT_H + 1);
 
 }
 
@@ -998,14 +1000,7 @@ rcn_Xx2_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
 
     int qp = ctudec->dequant_luma.qp;
 
-    uint8_t is_neg = dequant_is_neg(ctudec, qp, log2_tb_w, log2_tb_h);
-    if (!is_neg) {
-        struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
-        dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
-    } else {
-        struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
-        dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
-    }
+    dequant_non_4x4_sb(ctudec, src, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
 
     memset(tmp, 0, sizeof(int16_t) << (1 + log2_tb_w));
 
@@ -1014,7 +1009,7 @@ rcn_Xx2_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
 }
 
 static void
-rcn_Xx1_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t log2_tb_w, int16_t *coeffs_y, uint8_t type_h)
+rcn_Xx1_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t log2_tb_w, int16_t *src, uint8_t type_h)
 {
     const struct TRFunctions *const TRFunc = &ctudec->rcn_funcs.tr;
     const uint8_t log2_tb_h = 0;
@@ -1024,16 +1019,9 @@ rcn_Xx1_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
 
     int qp = ctudec->dequant_luma.qp;
 
-    uint8_t is_neg = dequant_is_neg(ctudec, qp, log2_tb_w, log2_tb_h);
-    if (!is_neg) {
-        struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
-        dequant_tb(coeffs_y, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
-    } else {
-        struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
-        dequant_tb_neg(coeffs_y, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
-    }
+    dequant_non_4x4_sb(ctudec, src, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
 
-    TRFunc->func[type_h][OVMIN(log2_tb_w,6)](coeffs_y, ctudec->transform_buff, tb_h, tb_h, tb_info->last_pos & 0x1F, TR_SHIFT_H + 1);
+    TRFunc->func[type_h][OVMIN(log2_tb_w,6)](src, ctudec->transform_buff, tb_h, tb_h, tb_info->last_pos & 0x1F, TR_SHIFT_H + 1);
 
 }
 
