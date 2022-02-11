@@ -638,57 +638,32 @@ apply_bdpcm_2(int16_t *dst, const int16_t *src, uint8_t log2_tb_w, uint8_t log2_
 }
 
 static void
-rcn_bdpcm_tb_l(OVCTUDec *const ctu_dec, int16_t *dst, int16_t *src, const struct TBInfo *tb_info,
-               uint8_t log2_tb_w, uint8_t log2_tb_h, uint16_t cu_flags, uint8_t qp)
-{
-    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
-
-    if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
-        DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
-
-        memcpy(tmp, src, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
-        memset(src, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
-
-        reorder_tb_4x4(src, tmp, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
-    }
-
-    if (cu_flags & flg_intra_bdpcm_luma_dir){
-        apply_bdpcm_2(dst, src, log2_tb_w, log2_tb_h);
-    } else {
-        apply_bdpcm_1(dst, src, log2_tb_w, log2_tb_h);
-    }
-
-    for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
-        deq_prms.dequant_sb(&dst[16*i], deq_prms.scale, deq_prms.shift);
-    }
-}
-
-static void
 rcn_bdpcm_tb(OVCTUDec *const ctu_dec, int16_t *dst, int16_t *src, const struct TBInfo *tb_info,
-             uint8_t log2_tb_w, uint8_t log2_tb_h, uint16_t cu_flags, uint8_t qp)
+             uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t bdpcm_dir, uint8_t qp)
 {
+    DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
     const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
+    int16_t *bdpcm_src = src;
 
     if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
-        DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
 
-        memcpy(tmp, src, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
-        memset(src, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+        //memcpy(tmp, src, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+        memset(tmp, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
 
-        reorder_tb_4x4(src, tmp, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
+        reorder_tb_4x4(tmp, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
+        bdpcm_src = tmp;
     }
 
-    if (cu_flags & flg_intra_bdpcm_chroma_dir){
-        apply_bdpcm_2(dst, src, log2_tb_w, log2_tb_h);
+    if (bdpcm_dir) {
+        apply_bdpcm_2(dst, bdpcm_src, log2_tb_w, log2_tb_h);
     } else {
-        apply_bdpcm_1(dst, src, log2_tb_w, log2_tb_h);
+        apply_bdpcm_1(dst, bdpcm_src, log2_tb_w, log2_tb_h);
     }
 
     for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
         deq_prms.dequant_sb(&dst[16*i], deq_prms.scale, deq_prms.shift);
     }
 }
-
 
 static void
 rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
@@ -715,8 +690,10 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
             int qp = ctu_dec->dequant_cb_skip.qp;
             if (cu_flags & flg_intra_bdpcm_chroma_flag) {
 
+                uint8_t bdpcm_dir = !!(cu_flags & flg_intra_bdpcm_chroma_dir);
+
                 rcn_bdpcm_tb(ctu_dec, ctu_dec->transform_buff, coeffs_cb, tb_info,
-                             log2_tb_w, log2_tb_h, cu_flags, qp);
+                             log2_tb_w, log2_tb_h, bdpcm_dir, qp);
 
                 tr_buff = ctu_dec->transform_buff;
 
@@ -757,8 +734,10 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
             int qp = ctu_dec->dequant_cr_skip.qp;
             if (cu_flags & flg_intra_bdpcm_chroma_flag) {
 
+                uint8_t bdpcm_dir = !!(cu_flags & flg_intra_bdpcm_chroma_dir);
+
                 rcn_bdpcm_tb(ctu_dec, ctu_dec->transform_buff, coeffs_cr, tb_info,
-                             log2_tb_w, log2_tb_h, cu_flags, qp);
+                             log2_tb_w, log2_tb_h, bdpcm_dir, qp);
 
                 tr_buff = ctu_dec->transform_buff;
 
@@ -813,8 +792,10 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
         const struct TBInfo *const tb_info = &tu_info->tb_info[0];
         if (cu_flags & flg_intra_bdpcm_chroma_flag) {
 
+            uint8_t bdpcm_dir = !!(cu_flags & flg_intra_bdpcm_chroma_dir);
+
             rcn_bdpcm_tb(ctu_dec, ctu_dec->transform_buff, coeffs_jcbcr, tb_info,
-                         log2_tb_w, log2_tb_h, cu_flags, qp);
+                         log2_tb_w, log2_tb_h, bdpcm_dir, qp);
 
         } else {
             memcpy(ctu_dec->transform_buff, coeffs_jcbcr, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
@@ -1240,8 +1221,10 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             if (cu_flags & flg_intra_bdpcm_luma_flag) {
                 int qp = ctu_dec->dequant_luma_skip.qp;
-                rcn_bdpcm_tb_l(ctu_dec, ctu_dec->transform_buff, coeffs_y, tb_info,
-                               log2_tb_w, log2_tb_h, cu_flags, qp);
+                uint8_t bdpcm_dir = !!(cu_flags & flg_intra_bdpcm_luma_dir);
+
+                rcn_bdpcm_tb(ctu_dec, ctu_dec->transform_buff, coeffs_y, tb_info,
+                             log2_tb_w, log2_tb_h, bdpcm_dir, qp);
             } else {
                 memcpy(ctu_dec->transform_buff, coeffs_y, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
                 if (ctu_dec->sh_ts_disabled) {
@@ -1326,9 +1309,10 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             if (cu_flags & flg_intra_bdpcm_luma_flag) {
                 int qp = ctu_dec->dequant_luma_skip.qp;
+                uint8_t bdpcm_dir = !!(cu_flags & flg_intra_bdpcm_luma_dir);
 
-                rcn_bdpcm_tb_l(ctu_dec, ctu_dec->transform_buff, coeffs_y, tb_info,
-                               log2_tb_w, log2_tb_h, cu_flags, qp);
+                rcn_bdpcm_tb(ctu_dec, ctu_dec->transform_buff, coeffs_y, tb_info,
+                             log2_tb_w, log2_tb_h, bdpcm_dir, qp);
 
             } else {
                 memcpy(ctu_dec->transform_buff, coeffs_y, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
