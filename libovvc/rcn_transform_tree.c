@@ -333,7 +333,7 @@ dequant_tb_4x4(int16_t *dst, const int16_t *src, int scale, int shift,
 }
 
 static void
-dequant_4x4_ts(OVCTUDec *const ctudec, int16_t *src, uint64_t sig_sb_map, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp)
+dequant_4x4_ts(OVCTUDec *const ctudec, int16_t *dst, const int16_t *src, uint64_t sig_sb_map, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp)
 {
     struct IQScale deq_prms;
     int nb_cols = 1 << log2_tb_w; //derive_nb_cols(sig_sb_map);
@@ -344,25 +344,21 @@ dequant_4x4_ts(OVCTUDec *const ctudec, int16_t *src, uint64_t sig_sb_map, uint8_
     uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
 
     if (!is_neg) {
-        DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
         uint8_t log2_red_w = OVMIN(5, log2_tb_w);
         uint8_t log2_red_h = OVMIN(5, log2_tb_h);
 
-        /*FIXME avoid copy */
-        memcpy(tmp, src, sizeof(int16_t) << (log2_red_h + log2_red_w));
-        memset(src, 0, sizeof(int16_t) << (log2_red_h + log2_red_w));
+        /* FIXME avoid resetting buffers */
+        memset(dst, 0, sizeof(int16_t) << (log2_red_h + log2_red_w));
 
-        dequant_tb_4x4(src, tmp, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
+        dequant_tb_4x4(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
     } else {
-        DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
         uint8_t log2_red_w = OVMIN(5, log2_tb_w);
         uint8_t log2_red_h = OVMIN(5, log2_tb_h);
 
-        /*FIXME avoid copy */
-        memcpy(tmp, src, sizeof(int16_t) << (log2_red_h + log2_red_w));
-        memset(src, 0, sizeof(int16_t) << (log2_red_h + log2_red_w));
+        /* FIXME avoid resetting buffers */
+        memset(dst, 0, sizeof(int16_t) << (log2_red_h + log2_red_w));
 
-        dequant_tb_neg_4x4(src, tmp,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
+        dequant_tb_neg_4x4(dst, src,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
     }
 }
 
@@ -647,7 +643,6 @@ rcn_bdpcm_tb(OVCTUDec *const ctu_dec, int16_t *dst, int16_t *src, const struct T
 
     if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
 
-        //memcpy(tmp, src, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
         memset(tmp, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
 
         reorder_tb_4x4(tmp, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
@@ -677,16 +672,18 @@ rcn_transform_skip_tb_c(OVCTUDec *const ctu_dec, int16_t *dst, int16_t *src,
                      bdpcm_dir, qp);
 
     } else {
-        memcpy(dst, src, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
         if (ctu_dec->sh_ts_disabled) {
             if (log2_tb_w > 1 && log2_tb_h > 1) {
-                dequant_4x4_ts(ctu_dec, dst, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
+                dequant_4x4_ts(ctu_dec, dst, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
             } else {
+                memcpy(dst, src, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
                 const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
                 for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
                     deq_prms.dequant_sb(&dst[16*i], deq_prms.scale, deq_prms.shift);
                 }
             }
+        } else {
+            memcpy(dst, src, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
         }
     }
 }
@@ -1205,16 +1202,10 @@ rcn_transform_skip_tb_l(OVCTUDec *const ctu_dec, int16_t *dst, int16_t *src,
                      bdpcm_dir, qp);
 
     } else {
-        memcpy(dst, src, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
         if (ctu_dec->sh_ts_disabled) {
-            if (log2_tb_w > 1 && log2_tb_h > 1) {
-                dequant_4x4_ts(ctu_dec, dst, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
-            } else {
-                const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
-                for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
-                    deq_prms.dequant_sb(&dst[16*i], deq_prms.scale, deq_prms.shift);
-                }
-            }
+            dequant_4x4_ts(ctu_dec, dst, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
+        } else {
+            memcpy(dst, src, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
         }
     }
 }
