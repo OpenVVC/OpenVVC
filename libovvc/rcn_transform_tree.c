@@ -268,28 +268,31 @@ rcn_residual(OVCTUDec *const ctudec,
         enum DCTType tr_h_idx = log2_tb_w <= 4 ? DST_VII : DCT_II;
         enum DCTType tr_v_idx = log2_tb_h <= 4 ? DST_VII : DCT_II;
 
-        int nb_row =  OVMIN(lim_sb_s, 1 << log2_tb_w);
-        int nb_col =  OVMIN(lim_sb_s, 1 << log2_tb_h);
-        if (!lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) {
-            nb_col = derive_nb_cols(sig_sb_map);
-            nb_row = derive_nb_rows(sig_sb_map);
-        }
-        int cb_w = log2_tb_h >= 2 ? OVMIN(32, tb_w) : tb_w;
+        int nb_col = derive_nb_cols(sig_sb_map);
+        int nb_row = derive_nb_rows(sig_sb_map);
 
-        memset(&tmp[nb_row << log2_tb_h], 0, sizeof(int16_t) * ((1 << (log2_tb_w + log2_tb_h)) - (nb_row << log2_tb_h)));
+        int cb_w = OVMIN(32, tb_w);
 
         /* FIXME use coefficient zeroing in MTS */
+        memset(&tmp[nb_row << log2_tb_h], 0, sizeof(int16_t) * ((1 << (log2_tb_w + log2_tb_h)) - (nb_row << log2_tb_h)));
+
         TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, cb_w, nb_row, nb_col, TR_SHIFT_V);
         TRFunc->func[tr_h_idx][log2_tb_w](tmp, dst, tb_h, tb_h, nb_row, TR_SHIFT_H);
 
     } else if (!cu_mts_flag) {
 
+        int nb_row = derive_nb_rows(sig_sb_map);
+        int nb_col = derive_nb_cols(sig_sb_map);
+
         if (lfnst_flag) {
             int16_t lfnst_sb[16];
-            int tmp_shift = log2_tb_w > 1 && log2_tb_h > 1 ? OVMIN(5,log2_tb_w) : log2_tb_w;
+
+            int tmp_shift = OVMIN(5,log2_tb_w);
+
             int8_t intra_mode = is_mip ? OVINTRA_PLANAR : ctudec->intra_mode;
 
             int8_t lfnst_intra_mode = drv_lfnst_mode_l(log2_tb_w, log2_tb_h, intra_mode);
+            uint8_t is_8x8 = log2_tb_w >= 3 && log2_tb_h >= 3;
 
             memcpy(lfnst_sb     , &src[0], sizeof(int16_t) * 4);
             memcpy(lfnst_sb +  4, &src[1 << tmp_shift], sizeof(int16_t) * 4);
@@ -299,21 +302,18 @@ rcn_residual(OVCTUDec *const ctudec,
             process_lfnst_luma(ctudec, src, lfnst_sb, OVMIN(5, log2_tb_w), log2_tb_h,
                                lfnst_idx, lfnst_intra_mode);
 
-            lim_sb_s = 8;
+            nb_row = 4 << is_8x8;
+            nb_col = 4 << is_8x8;
+
             is_dc = 0;
         }
 
         if (is_dc) {
             TRFunc->dc(dst, log2_tb_w, log2_tb_h, src[0]);
         } else {
-            int nb_row = OVMIN(lim_sb_s, 1 << log2_tb_w);
-            int nb_col = OVMIN(lim_sb_s, 1 << log2_tb_h);
-            if (!lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) {
-                nb_col = derive_nb_cols(sig_sb_map);
-                nb_row = derive_nb_rows(sig_sb_map);
-            }
-            int cb_w = log2_tb_h >= 2 ? OVMIN(32, tb_w) : tb_w;
+            int cb_w = OVMIN(32, tb_w);
 
+            /* FIXME use coefficient zeroing in MTS */
             memset(&tmp[nb_row << log2_tb_h], 0, sizeof(int16_t) * ((1 << (log2_tb_w + log2_tb_h)) - (nb_row << log2_tb_h)));
 
             TRFunc->func[DCT_II][log2_tb_h](src, tmp, cb_w, nb_row, nb_col, TR_SHIFT_V);
@@ -322,14 +322,13 @@ rcn_residual(OVCTUDec *const ctudec,
     } else {
         enum DCTType tr_h_idx = cu_mts_idx  & 1;
         enum DCTType tr_v_idx = cu_mts_idx >> 1;
-        int nb_row =  OVMIN(lim_sb_s, 1 << log2_tb_w);
-        int nb_col =  OVMIN(lim_sb_s, 1 << log2_tb_h);
-        if (!lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) {
-            nb_col = derive_nb_cols(sig_sb_map);
-            nb_row = derive_nb_rows(sig_sb_map);
-        }
-        int cb_w = log2_tb_h >= 2 ? OVMIN(32, tb_w) : tb_w;
 
+        int nb_row = derive_nb_rows(sig_sb_map);
+        int nb_col = derive_nb_cols(sig_sb_map);
+
+        int cb_w = OVMIN(32, tb_w);
+
+        /* FIXME use coefficient zeroing in MTS */
         memset(&tmp[nb_row << log2_tb_h], 0, sizeof(int16_t) * ((1 << (log2_tb_w + log2_tb_h)) - (nb_row << log2_tb_h)));
 
         TRFunc->func[tr_v_idx][log2_tb_h](src, tmp, cb_w, nb_row, nb_col, TR_SHIFT_V);
