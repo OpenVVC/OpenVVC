@@ -4520,7 +4520,7 @@ decode_dpq_small_h_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
                 store_sb_coeff(_dst, sb_coeffs + 4, log2_tb_w, 1, 1);
 
-                return 0x0101;
+                return 0x3;
 
             } else {
                 int nb_coeffs = ff_vvc_diag_scan_8x2_num_cg [last_coeff_idx];
@@ -4670,7 +4670,7 @@ decode_dpq_small_w_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
                 store_sb_coeff(_dst, sb_coeffs, log2_tb_w, 1, 2);
 
-                return 0x01;
+                return 0x1;
             }
         } else {
             const struct SBReader *const sb_rdr = &chroma_2x8_reader_sdh;
@@ -4678,7 +4678,7 @@ decode_dpq_small_w_tu_c_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
                                           &c_coding_ctx, sb_rdr);
 
             memcpy(&_dst[0], &sb_coeffs[0],  sizeof(int16_t) * 16);
-            return 0x01;
+            return 0x1;
         }
     }
 
