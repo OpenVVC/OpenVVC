@@ -335,6 +335,29 @@ rcn_residual(OVCTUDec *const ctudec,
     }
 }
 
+/*TODO at decode init */
+static inline struct IQScale
+derive_dequant(const OVCTUDec *const ctudec, uint8_t qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
+{
+    if (ctudec->residual_coding_l == &residual_coding_dpq) {
+        return ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+    } else {
+        return ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
+    }
+}
+
+static inline uint8_t
+dequant_is_neg(const OVCTUDec *const ctudec, uint8_t qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
+{
+    struct IQScale deq_prms;
+    if (ctudec->residual_coding_l == &residual_coding_dpq) {
+        deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
+    } else {
+        deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
+    }
+    return (deq_prms.dequant_sb == &dequant_sb_neg);
+}
+
 static void
 rcn_residual_c(OVCTUDec *const ctudec,
                int16_t *const dst, int16_t *src,
@@ -353,36 +376,36 @@ rcn_residual_c(OVCTUDec *const ctudec,
     if (log2_tb_h > 1 && log2_tb_w > 1) {
         dequant_4x4_sb(ctudec, src, sig_sb_map, log2_tb_w, log2_tb_h, qp);
     } else {
-        if (ctudec->residual_coding_l == &residual_coding_dpq) {
-            struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
-            uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
-            if (!is_neg) {
-                dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, 1 << log2_tb_h, 1 << log2_tb_w);
-            } else {
-                dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, 1 << log2_tb_h, 1 << log2_tb_w);
-            }
-        } else {
-            struct IQScale deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
-            uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
-            if (!is_neg) {
-                dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, 1 << log2_tb_h, 1 << log2_tb_w);
-            } else {
-                dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, 1 << log2_tb_h, 1 << log2_tb_w);
-            }
+        int log2_sb_w = 2;
+        int log2_sb_h = 2;
+
+        if (log2_tb_w < 2 || log2_tb_h < 2) {
+            log2_sb_w = 1;
+            log2_sb_h = 1;
+            if (log2_tb_h > 2) log2_sb_h = 3;
+            if (log2_tb_w > 2) log2_sb_w = 3;
         }
-    }
 
+        int nb_col = (derive_nb_cols(sig_sb_map) >> 2) << log2_sb_h;
+        int nb_row = (derive_nb_rows(sig_sb_map) >> 2) << log2_sb_w;
 
-    if (lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) {
-        /* FIXME separate lfnst mode derivation from lfnst reconstruction */
-        int16_t lfnst_sb[16];
-        memcpy(lfnst_sb     , &src[0], sizeof(int16_t) * 4);
-        memcpy(lfnst_sb +  4, &src[1 << log2_tb_w], sizeof(int16_t) * 4);
-        memcpy(lfnst_sb +  8, &src[2 << log2_tb_w], sizeof(int16_t) * 4);
-        memcpy(lfnst_sb + 12, &src[3 << log2_tb_w], sizeof(int16_t) * 4);
-
-        process_lfnst(ctudec, src, lfnst_sb, log2_tb_w, log2_tb_h,
-                      x0, y0, lfnst_idx);
+        uint8_t is_neg = dequant_is_neg(ctudec, qp, log2_tb_w, log2_tb_h);
+        if (!is_neg) {
+            struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
+            dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
+        } else {
+            struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
+            dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
+        }
+        #if 0
+        if (!is_neg) {
+            struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
+            dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_row, nb_col);
+        } else {
+            struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
+            dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_row, nb_col);
+        }
+        #endif
     }
 
     if (!last_pos && !lfnst_flag) {
@@ -390,18 +413,36 @@ rcn_residual_c(OVCTUDec *const ctudec,
         TRFunc->dc(dst, log2_tb_w, log2_tb_h, src[0]);
 
     } else {
-        int lim_sb_s = ((((last_pos >> 8)) >> 2) + (((last_pos & 0xFF))>> 2) + 1) << 2;
-        if (lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) lim_sb_s = 8;
-        int nb_row =  OVMIN(lim_sb_s, 1 << log2_tb_w);
-        int nb_col =  OVMIN(lim_sb_s, 1 << log2_tb_h);
+        int log2_sb_w = 2;
+        int log2_sb_h = 2;
 
-        #if 1
-        if (!lfnst_flag && log2_tb_w > 1 && log2_tb_h > 1) {
-            nb_col = derive_nb_cols(sig_sb_map);
-            nb_row = derive_nb_rows(sig_sb_map);
+        if (log2_tb_w < 2 || log2_tb_h < 2) {
+            log2_sb_w = 1;
+            log2_sb_h = 1;
+            if (log2_tb_h > 2) log2_sb_h = 3;
+            if (log2_tb_w > 2) log2_sb_w = 3;
         }
-        #endif
-        /*FIXME might be transform SKIP */
+
+        int nb_col = (derive_nb_cols(sig_sb_map) >> 2) << log2_sb_h;
+        int nb_row = (derive_nb_rows(sig_sb_map) >> 2) << log2_sb_w;
+
+        if (lfnst_flag) {
+            /* FIXME separate lfnst mode derivation from lfnst reconstruction */
+            int16_t lfnst_sb[16];
+            uint8_t is_8x8 = log2_tb_w >= 3 && log2_tb_h >= 3;
+
+            memcpy(lfnst_sb     , &src[0], sizeof(int16_t) * 4);
+            memcpy(lfnst_sb +  4, &src[1 << log2_tb_w], sizeof(int16_t) * 4);
+            memcpy(lfnst_sb +  8, &src[2 << log2_tb_w], sizeof(int16_t) * 4);
+            memcpy(lfnst_sb + 12, &src[3 << log2_tb_w], sizeof(int16_t) * 4);
+
+            process_lfnst(ctudec, src, lfnst_sb, log2_tb_w, log2_tb_h,
+                          x0, y0, lfnst_idx);
+
+
+            nb_row = 4 << is_8x8;
+            nb_col = 4 << is_8x8;
+        }
 
         memset(&tmp[nb_row << log2_tb_h], 0, sizeof(int16_t) * ((1 << (log2_tb_w + log2_tb_h)) - (nb_row << log2_tb_h)));
 
@@ -624,29 +665,6 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
         rcn_func->ict.ict[log2_tb_w][2](ctu_dec->transform_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
     }
 
-}
-
-/*TODO at decode init */
-static inline struct IQScale
-derive_dequant(const OVCTUDec *const ctudec, uint8_t qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
-{
-    if (ctudec->residual_coding_l == &residual_coding_dpq) {
-        return ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
-    } else {
-        return ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
-    }
-}
-
-static inline uint8_t
-dequant_is_neg(const OVCTUDec *const ctudec, uint8_t qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
-{
-    struct IQScale deq_prms;
-    if (ctudec->residual_coding_l == &residual_coding_dpq) {
-        deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
-    } else {
-        deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
-    }
-    return (deq_prms.dequant_sb == &dequant_sb_neg);
 }
 
 static void
