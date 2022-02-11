@@ -97,6 +97,87 @@ dequant_tb(int16_t *src, int scale, int shift, uint8_t log2_tb_w, uint8_t nb_row
 }
 
 static void
+reorder_tb_4x4(int16_t *dst, const int16_t *src, int scale, int shift,
+               uint8_t log2_tb_w, uint8_t log2_tb_h, uint64_t sig_sb_map)
+{
+    int nb_rows = 1 << log2_tb_h; //derive_nb_cols(sig_sb_map);
+    int nb_cols = 1 << log2_tb_w; //derive_nb_rows(sig_sb_map);
+    uint8_t src_stride = 1 << (OVMIN(5, log2_tb_w));
+    uint8_t dst_stride = 1 << (OVMIN(5, log2_tb_w));
+
+    /* Force sig_sb_map to one in case of DC coefficient */
+    //sig_sb_map |= !sig_sb_map;
+
+    for (int i = 0; i < nb_rows/4 ; i++) {
+        uint8_t sig_sb_row = sig_sb_map >> (i << 3);
+        for (int j = 0; j < nb_cols/4 ; j++) {
+            int16_t *_dst = dst + (j << 2);
+            const int16_t *_src = src + (j << 4);
+            #if 0
+            //if (sig_sb_row & 0x1) {
+            #endif
+                _dst[0] = _src[ 0];
+                _dst[1] = _src[ 1];
+                _dst[2] = _src[ 2];
+                _dst[3] = _src[ 3];
+
+                _dst += dst_stride;
+
+                _dst[0] = _src[ 4];
+                _dst[1] = _src[ 5];
+                _dst[2] = _src[ 6];
+                _dst[3] = _src[ 7];
+
+                _dst += dst_stride;
+
+                _dst[0] = _src[ 8];
+                _dst[1] = _src[ 9];
+                _dst[2] = _src[10];
+                _dst[3] = _src[11];
+
+                _dst += dst_stride;
+
+                _dst[0] = _src[12];
+                _dst[1] = _src[13];
+                _dst[2] = _src[14];
+                _dst[3] = _src[15];
+            #if 0
+            //} else {
+                _dst[0] = 0;
+                _dst[1] = 0;
+                _dst[2] = 0;
+                _dst[3] = 0;
+
+                _dst += dst_stride;
+
+                _dst[0] = 0;
+                _dst[1] = 0;
+                _dst[2] = 0;
+                _dst[3] = 0;
+
+                _dst += dst_stride;
+
+                _dst[0] = 0;
+                _dst[1] = 0;
+                _dst[2] = 0;
+                _dst[3] = 0;
+
+                _dst += dst_stride;
+
+                _dst[0] = 0;
+                _dst[1] = 0;
+                _dst[2] = 0;
+                _dst[3] = 0;
+            //}
+            sig_sb_row >>= 1;
+            #endif
+        }
+        src += src_stride << 2;
+        dst += dst_stride << 2;
+    }
+}
+
+static void
 dequant_tb_neg_4x4(int16_t *dst, const int16_t *src, int scale, int shift,
                    uint8_t log2_tb_w, uint8_t log2_tb_h, uint64_t sig_sb_map)
 {
@@ -249,6 +330,39 @@ dequant_tb_4x4(int16_t *dst, const int16_t *src, int scale, int shift,
         src += src_stride << 2;
         dst += dst_stride << 2;
     }
+}
+
+static void
+dequant_4x4_ts(OVCTUDec *const ctudec, int16_t *src, uint64_t sig_sb_map, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp)
+{
+    struct IQScale deq_prms;
+    int nb_cols = 1 << log2_tb_w; //derive_nb_cols(sig_sb_map);
+    int nb_rows = 1 << log2_tb_h; //derive_nb_rows(sig_sb_map);
+
+    deq_prms = ctudec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
+
+    uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
+
+    if (!is_neg) {
+        DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
+        uint8_t log2_red_w = OVMIN(5, log2_tb_w);
+        uint8_t log2_red_h = OVMIN(5, log2_tb_h);
+
+        /*FIXME avoid copy */
+        memcpy(tmp, src, sizeof(int16_t) << (log2_red_h + log2_red_w));
+        memset(src, 0, sizeof(int16_t) << (log2_red_h + log2_red_w));
+
+        dequant_tb_4x4(src, tmp, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
+    } else {
+        DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
+        uint8_t log2_red_w = OVMIN(5, log2_tb_w);
+        uint8_t log2_red_h = OVMIN(5, log2_tb_h);
+
+        /*FIXME avoid copy */
+        memcpy(tmp, src, sizeof(int16_t) << (log2_red_h + log2_red_w));
+        memset(src, 0, sizeof(int16_t) << (log2_red_h + log2_red_w));
+
+        dequant_tb_neg_4x4(src, tmp,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
     }
 }
 
@@ -545,10 +659,20 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
                            x0, y0, log2_tb_w, log2_tb_h,
                            tb_info_cb->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info_cb->sig_sb_map, qp);
         } else {
+            const struct TBInfo *const tb_info = &tu_info->tb_info[0];
+            int qp = ctu_dec->dequant_cb_skip.qp;
             if (cu_flags & flg_intra_bdpcm_chroma_flag) {
-                int qp = ctu_dec->dequant_cb_skip.qp;
                 const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
                 tr_buff = ctu_dec->transform_buff;
+
+                if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
+                    DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
+
+                    memcpy(tmp, coeffs_cb, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+                    memset(coeffs_cb, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+
+                    reorder_tb_4x4(coeffs_cb, tmp,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
+                }
 
                 if (cu_flags & flg_intra_bdpcm_chroma_dir){
                     apply_bdpcm_2(tr_buff, coeffs_cb, log2_tb_w, log2_tb_h);
@@ -560,6 +684,9 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
                     deq_prms.dequant_sb(&ctu_dec->transform_buff[16*i], deq_prms.scale, deq_prms.shift);
                 }
             } else {
+                if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
+                    dequant_4x4_ts(ctu_dec, coeffs_cb, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
+                }
                 tr_buff = coeffs_cb;
             }
         }
@@ -589,10 +716,20 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
                            x0, y0, log2_tb_w, log2_tb_h,
                            tb_info_cr->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info_cr->sig_sb_map, qp);
         } else {
+            const struct TBInfo *const tb_info = &tu_info->tb_info[1];
+            int qp = ctu_dec->dequant_cr_skip.qp;
             if (cu_flags & flg_intra_bdpcm_chroma_flag) {
-                int qp = ctu_dec->dequant_cr_skip.qp;
                 const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
                 tr_buff = ctu_dec->transform_buff;
+
+                if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
+                    DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
+
+                    memcpy(tmp, coeffs_cr, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+                    memset(coeffs_cr, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+
+                    reorder_tb_4x4(coeffs_cr, tmp,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
+                }
 
                 if (cu_flags & flg_intra_bdpcm_chroma_dir){
                     apply_bdpcm_2(tr_buff, coeffs_cr, log2_tb_w, log2_tb_h);
@@ -606,6 +743,9 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
                 }
 
             } else {
+                if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
+                    dequant_4x4_ts(ctu_dec, coeffs_cr, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
+                }
                 tr_buff = coeffs_cr;
             }
         }
@@ -649,11 +789,21 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
                        tb_info->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info->sig_sb_map, qp);
     } else {
         int16_t *const coeffs_jcbcr = ctu_dec->residual_cb + tu_info->pos_offset;
+        int qp = (cbf_mask == 3) ? ctu_dec->dequant_jcbcr_skip.qp : (cbf_mask == 2) ? ctu_dec->dequant_cb_skip.qp : ctu_dec->dequant_cb_skip.qp;
+        const struct TBInfo *const tb_info = &tu_info->tb_info[0];
         if (cu_flags & flg_intra_bdpcm_chroma_flag) {
-            int qp = (cbf_mask == 3) ? ctu_dec->dequant_jcbcr_skip.qp : (cbf_mask == 2) ? ctu_dec->dequant_cb_skip.qp : ctu_dec->dequant_cb_skip.qp;
             const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
 
             int16_t *tr_buff = ctu_dec->transform_buff;
+
+            if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
+                DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
+
+                memcpy(tmp, coeffs_jcbcr, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+                memset(coeffs_jcbcr, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+
+                reorder_tb_4x4(coeffs_jcbcr, tmp,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
+            }
 
             if (cu_flags & flg_intra_bdpcm_chroma_dir){
                 apply_bdpcm_2(tr_buff, coeffs_jcbcr, log2_tb_w, log2_tb_h);
@@ -666,6 +816,9 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
             }
         } else {
             memcpy(ctu_dec->transform_buff, coeffs_jcbcr, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
+            if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
+                dequant_4x4_ts(ctu_dec, ctu_dec->transform_buff, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
+            }
         }
     }
 
@@ -1086,6 +1239,15 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
             if (cu_flags & flg_intra_bdpcm_luma_flag) {
                 int qp = ctu_dec->dequant_luma_skip.qp;
                 const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
+                if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
+                    DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
+
+                    memcpy(tmp, coeffs_y, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+                    memset(coeffs_y, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+
+                    reorder_tb_4x4(coeffs_y, tmp,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
+                }
+
                 if (cu_flags & flg_intra_bdpcm_luma_dir){
                     apply_bdpcm_2(ctu_dec->transform_buff, coeffs_y, log2_tb_w, log2_tb_h);
                 } else {
@@ -1099,9 +1261,13 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
                 memcpy(ctu_dec->transform_buff, coeffs_y, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
                 if (ctu_dec->sh_ts_disabled) {
                     int qp = ctu_dec->dequant_luma_skip.qp;
-                    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
-                    for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
-                        deq_prms.dequant_sb(&ctu_dec->transform_buff[16*i], deq_prms.scale, deq_prms.shift);
+                    if (log2_tb_w > 1 && log2_tb_h > 1) {
+                        dequant_4x4_ts(ctu_dec, ctu_dec->transform_buff, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
+                    } else {
+                        const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
+                        for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
+                            deq_prms.dequant_sb(&ctu_dec->transform_buff[16*i], deq_prms.scale, deq_prms.shift);
+                        }
                     }
                 }
             }
@@ -1176,6 +1342,15 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
             if (cu_flags & flg_intra_bdpcm_luma_flag) {
                 int qp = ctu_dec->dequant_luma_skip.qp;
                 const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
+                if (ctu_dec->sh_ts_disabled && log2_tb_w > 1 && log2_tb_h > 1) {
+                    DECLARE_ALIGNED(32, int16_t, tmp)[32*32];
+
+                    memcpy(tmp, coeffs_y, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+                    memset(coeffs_y, 0, sizeof(int16_t) << (log2_tb_h + log2_tb_w));
+
+                    reorder_tb_4x4(coeffs_y, tmp,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_info->sig_sb_map);
+                }
+
                 if (cu_flags & flg_intra_bdpcm_luma_dir){
                     apply_bdpcm_2(ctu_dec->transform_buff, coeffs_y, log2_tb_w, log2_tb_h);
                 } else {
@@ -1189,9 +1364,13 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
                 memcpy(ctu_dec->transform_buff, coeffs_y, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
                 if (ctu_dec->sh_ts_disabled) {
                     int qp = ctu_dec->dequant_luma_skip.qp;
-                    const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
-                    for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
-                        deq_prms.dequant_sb(&ctu_dec->transform_buff[16*i], deq_prms.scale, deq_prms.shift);
+                    if (log2_tb_w > 1 && log2_tb_h > 1) {
+                        dequant_4x4_ts(ctu_dec, ctu_dec->transform_buff, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
+                    } else {
+                        const struct IQScale deq_prms = ctu_dec->rcn_funcs.tmp.derive_dequant_ts(qp, log2_tb_w, log2_tb_h);
+                        for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
+                            deq_prms.dequant_sb(&ctu_dec->transform_buff[16*i], deq_prms.scale, deq_prms.shift);
+                        }
                     }
                 }
             }
