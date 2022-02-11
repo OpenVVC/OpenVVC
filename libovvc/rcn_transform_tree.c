@@ -105,7 +105,6 @@ dequant_tb_neg_4x4(int16_t *dst, const int16_t *src, int scale, int shift,
     uint8_t src_stride = 1 << (OVMIN(5, log2_tb_w));
     uint8_t dst_stride = 1 << (OVMIN(5, log2_tb_w));
 
-    #if 1
     /* Force sig_sb_map to one in case of DC coefficient */
     sig_sb_map |= !sig_sb_map;
 
@@ -172,15 +171,6 @@ dequant_tb_neg_4x4(int16_t *dst, const int16_t *src, int scale, int shift,
         src += src_stride << 2;
         dst += dst_stride << 2;
     }
-    #else
-    for (int i = 0; i < nb_rows ; i++) {
-        for (int j = 0; j < nb_cols ; j++) {
-            dst[j    ] = ov_clip_intp2((int32_t)src[j    ] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-        }
-        src += src_stride;
-        dst += dst_stride;
-    }
-    #endif
 }
 
 static void
@@ -193,7 +183,6 @@ dequant_tb_4x4(int16_t *dst, const int16_t *src, int scale, int shift,
     uint8_t src_stride = 1 << (OVMIN(5, log2_tb_w));
     uint8_t dst_stride = 1 << (OVMIN(5, log2_tb_w));
 
-    #if 1
     /* Force sig_sb_map to one in case of DC coefficient */
     sig_sb_map |= !sig_sb_map;
 
@@ -260,16 +249,7 @@ dequant_tb_4x4(int16_t *dst, const int16_t *src, int scale, int shift,
         src += src_stride << 2;
         dst += dst_stride << 2;
     }
-    #else
-    for (int i = 0; i < nb_rows ; i++) {
-        for (int j = 0; j < nb_cols ; j++) {
-            dst[j] = ov_clip_intp2((int32_t)(src[j] * scale + add) >> shift,
-                                   MAX_LOG2_TR_RANGE + 1);
-        }
-        src += src_stride;
-        dst += dst_stride;
     }
-    #endif
 }
 
 static void
@@ -463,15 +443,6 @@ rcn_residual_c(OVCTUDec *const ctudec,
             struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
             dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
         }
-        #if 0
-        if (!is_neg) {
-            struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
-            dequant_tb(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_row, nb_col);
-        } else {
-            struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
-            dequant_tb_neg(src, deq_prms.scale, deq_prms.shift, log2_tb_w, nb_row, nb_col);
-        }
-        #endif
     }
 
     if (!last_pos && !lfnst_flag) {
@@ -585,7 +556,6 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
                     apply_bdpcm_1(tr_buff, coeffs_cb, log2_tb_w, log2_tb_h);
                 }
 
-                //if (!ctu_dec->sh_ts_disabled)
                 for (int i = 0; i < ((1 << (log2_tb_w + log2_tb_h)) >> 4); i++) {
                     deq_prms.dequant_sb(&ctu_dec->transform_buff[16*i], deq_prms.scale, deq_prms.shift);
                 }
