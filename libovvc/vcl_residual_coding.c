@@ -2822,7 +2822,7 @@ store_sb_coeff_4x4(int16_t *tb_coeff, const int16_t *sb_coeffs,
 {
     const uint8_t log2_sb_w = 2;
     const uint8_t log2_sb_h = 2;
-    #if 1
+    #if 0
     int16_t sb_pos = (sb_x << log2_sb_w) + (sb_y << (log2_sb_h + log2_tb_w));
     #else
     int16_t sb_pos = (sb_x + (sb_y << (log2_tb_w - 2))) << 4;
@@ -2832,7 +2832,7 @@ store_sb_coeff_4x4(int16_t *tb_coeff, const int16_t *sb_coeffs,
     int16_t src_stride = 1 << log2_sb_w;
     int16_t *dst = tb_coeff + sb_pos;
 
-    #if 1
+    #if 0
     memcpy(dst              , sb_coeffs              , cpy_w);
     memcpy(dst += dst_stride, sb_coeffs += src_stride, cpy_w);
     memcpy(dst += dst_stride, sb_coeffs += src_stride, cpy_w);
