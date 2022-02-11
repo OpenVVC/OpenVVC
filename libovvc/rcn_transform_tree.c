@@ -247,7 +247,6 @@ rcn_residual(OVCTUDec *const ctudec,
              int16_t *const dst, int16_t *src,
              uint8_t x0, uint8_t y0,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
-             unsigned int lim_sb_s,
              uint8_t cu_mts_flag, uint8_t cu_mts_idx,
              uint8_t is_dc, uint8_t lfnst_flag, uint8_t is_mip, uint8_t lfnst_idx, uint64_t sig_sb_map)
 {
@@ -1025,7 +1024,7 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
             uint8_t is_intra = !!(cu_flags & 0x2);
             is_mip |= !is_intra;
             rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
-                         lim_sb_s, tu_info->cu_mts_flag, tu_info->cu_mts_idx,
+                         tu_info->cu_mts_flag, tu_info->cu_mts_idx,
                          !tb_info->last_pos, tu_info->lfnst_flag, is_mip, tu_info->lfnst_idx, tb_info->sig_sb_map);
 
         } else {
@@ -1115,7 +1114,7 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
             uint8_t is_intra = !!(cu_flags & 0x2);
             is_mip |= !is_intra;
             rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
-                         lim_sb_s, tu_info->cu_mts_flag, tu_info->cu_mts_idx,
+                         tu_info->cu_mts_flag, tu_info->cu_mts_idx,
                          !tb_info->last_pos, tu_info->lfnst_flag, is_mip, tu_info->lfnst_idx, tb_info->sig_sb_map);
 
         } else {
