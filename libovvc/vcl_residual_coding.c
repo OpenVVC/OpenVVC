@@ -4211,7 +4211,7 @@ decode_dpq_small_w_tu_c(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         if(sig_sb_flg){
 
-            sig_sb_map = 1llu << (nb_sb << 8);
+            sig_sb_map |= 1llu << (nb_sb << 3);
 
             sb_pos    = (nb_sb << 4);
             sb_offset = (nb_sb << 3) * VVC_TR_CTX_STRIDE;
