@@ -480,12 +480,21 @@ compute_lfnst_4x4_sse(const int16_t* const src, int16_t* const dst,
                   const int8_t* const lfnst_matrix, int log2_tb_w,
                   int log2_tb_h)
 {
+    uint64_t scan_map = 0xfbe7ad369c258140;
+
+    int16_t tmp[16];
+
+    for (int i = 0; i < 16; ++i) {
+        tmp[i] = src[scan_map & 0xF];
+        scan_map >>= 4;
+    }
+
   __m128i r[2];
   if (!(log2_tb_w == log2_tb_h)) {
-    lfnst_4x4_16(src, r, lfnst_matrix);
+    lfnst_4x4_16(tmp, r, lfnst_matrix);
   }
   else {
-    lfnst_4x4_8(src, r, lfnst_matrix);
+    lfnst_4x4_8(tmp, r, lfnst_matrix);
   }
   _mm_storel_epi64((__m128i*) &dst[0], r[0]);
   _mm_storel_epi64((__m128i*) &dst[1<<log2_tb_w], _mm_bsrli_si128(r[0], 8));
@@ -500,9 +509,19 @@ compute_lfnst_8x8(const int16_t* const src, int16_t* const dst,
 {
   __m128i r[6];
 
-  lfnst_8x8_16(src, &r[0], &lfnst_matrix[0]);
-  lfnst_8x8_16(src, &r[2], &lfnst_matrix[16]);
-  lfnst_8x8_16(src, &r[4], &lfnst_matrix[32]);
+  uint64_t scan_map = 0xfbe7ad369c258140;
+
+  int16_t tmp[16];
+
+  for (int i = 0; i < 16; ++i) {
+      tmp[i] = src[scan_map & 0xF];
+      scan_map >>= 4;
+  }
+
+
+  lfnst_8x8_16(tmp, &r[0], &lfnst_matrix[0]);
+  lfnst_8x8_16(tmp, &r[2], &lfnst_matrix[16]);
+  lfnst_8x8_16(tmp, &r[4], &lfnst_matrix[32]);
 
   _mm_storeu_si128((__m128i *) &dst[0], r[0]);
   _mm_storeu_si128((__m128i *) &dst[(1 << log2_tb_w)], r[1]);
@@ -520,13 +539,22 @@ compute_lfnst_4x4_tr(const int16_t* const src, int16_t* const dst,
                      const int8_t* const lfnst_matrix, int log2_tb_w,
                      int log2_tb_h)
 {
+        uint64_t scan_map = 0xfbe7ad369c258140;
+
+        int16_t tmp[16];
+
+        for (int i = 0; i < 16; ++i) {
+            tmp[i] = src[scan_map & 0xF];
+            scan_map >>= 4;
+        }
+
         __m128i r[2];
         __m128i t[2];
         if (!(log2_tb_w == log2_tb_h)) {
-          lfnst_4x4_16(src, r, lfnst_matrix);
+          lfnst_4x4_16(tmp, r, lfnst_matrix);
         }
         else {
-          lfnst_4x4_8(src, r, lfnst_matrix);
+          lfnst_4x4_8(tmp, r, lfnst_matrix);
         }
 
         t[0] = _mm_unpacklo_epi16(r[0], r[1]);
@@ -553,9 +581,18 @@ compute_lfnst_8x8_tr(const int16_t* const src, int16_t* const dst,
 {
         __m128i r[6], t[4];
 
-        lfnst_8x8_16(src, &r[0], &lfnst_matrix[0]);
-        lfnst_8x8_16(src, &r[2], &lfnst_matrix[16]);
-        lfnst_8x8_16(src, &r[4], &lfnst_matrix[32]);
+        uint64_t scan_map = 0xfbe7ad369c258140;
+
+        int16_t tmp[16];
+
+        for (int i = 0; i < 16; ++i) {
+            tmp[i] = src[scan_map & 0xF];
+            scan_map >>= 4;
+        }
+
+        lfnst_8x8_16(tmp, &r[0], &lfnst_matrix[0]);
+        lfnst_8x8_16(tmp, &r[2], &lfnst_matrix[16]);
+        lfnst_8x8_16(tmp, &r[4], &lfnst_matrix[32]);
 
         t[0] = _mm_unpacklo_epi16(r[0], r[1]);
         t[1] = _mm_unpackhi_epi16(r[0], r[1]);

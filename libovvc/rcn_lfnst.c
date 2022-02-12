@@ -10,13 +10,22 @@ compute_lfnst_4x4(const int16_t* const src, int16_t* const dst,
                   int log2_tb_h)
 {
     int i, j;
+    uint64_t scan_map = 0xfbe7ad369c258140;
+
+    int16_t tmp[16];
+
+    for (int i = 0; i < 16; ++i) {
+        tmp[i] = src[scan_map & 0xF];
+        scan_map >>= 4;
+    }
+
     uint8_t is_4x4 = (log2_tb_w == log2_tb_h);
     uint8_t log2_tr_s = 3 + !is_4x4;
 
     for (i = 0; i < 16; ++i) {
         int sum = 0;
         for (j = 0; j < 1 << log2_tr_s; ++j) {
-            sum += src[j] * lfnst_matrix[i + j * 16];
+            sum += tmp[j] * lfnst_matrix[i + j * 16];
         }
         dst[(i & 3) + ((i >> 2) << log2_tb_w)] =
             ov_clip((sum + 64) >> 7, -(1 << 15), (1 << 15));
@@ -29,10 +38,19 @@ compute_lfnst_8x8(const int16_t* const src, int16_t* const dst,
                   int log2_tb_h)
 {
     int i, j;
+    uint64_t scan_map = 0xfbe7ad369c258140;
+
+    int16_t tmp[16];
+
+    for (int i = 0; i < 16; ++i) {
+        tmp[i] = src[scan_map & 0xF];
+        scan_map >>= 4;
+    }
+
     for (i = 0; i < 32; ++i) {
         int sum = 0;
         for (j = 0; j < 16; ++j) {
-            sum += src[j] * lfnst_matrix[i + j * 48];
+            sum += tmp[j] * lfnst_matrix[i + j * 48];
         }
         dst[(i & 7) + ((i >> 3) << log2_tb_w)] =
             ov_clip((sum + 64) >> 7, -(1 << 15), (1 << 15));
@@ -41,7 +59,7 @@ compute_lfnst_8x8(const int16_t* const src, int16_t* const dst,
     for (; i < 48; ++i) {
         int sum = 0;
         for (j = 0; j < 16; ++j) {
-            sum += src[j] * lfnst_matrix[i + j * 48];
+            sum += tmp[j] * lfnst_matrix[i + j * 48];
         }
         dst[(i & 3) + ((4 + ((i - 32) >> 2)) << log2_tb_w)] =
             ov_clip((sum + 64) >> 7, -(1 << 15), (1 << 15));
@@ -57,10 +75,20 @@ compute_lfnst_4x4_tr(const int16_t* const src, int16_t* const dst,
     uint8_t is_4x4 = (log2_tb_w == log2_tb_h);
     uint8_t log2_tr_s = 3 + !is_4x4;
 
+    uint64_t scan_map = 0xfbe7ad369c258140;
+
+    int16_t tmp[16];
+
+    for (int i = 0; i < 16; ++i) {
+        tmp[i] = src[scan_map & 0xF];
+        scan_map >>= 4;
+    }
+
+
     for (i = 0; i < 16; ++i) {
         int sum = 0;
         for (j = 0; j < 1 << log2_tr_s; ++j) {
-            sum += src[j] * lfnst_matrix[i + j * 16];
+            sum += tmp[j] * lfnst_matrix[i + j * 16];
         }
         dst[((i & 3) << log2_tb_w) + (i >> 2)] =
             ov_clip((sum + 64) >> 7, -(1 << 15), (1 << 15));
@@ -73,10 +101,19 @@ compute_lfnst_8x8_tr(const int16_t* const src, int16_t* const dst,
                      int log2_tb_h)
 {
     int i, j;
+    uint64_t scan_map = 0xfbe7ad369c258140;
+
+    int16_t tmp[16];
+
+    for (int i = 0; i < 16; ++i) {
+        tmp[i] = src[scan_map & 0xF];
+        scan_map >>= 4;
+    }
+
     for (i = 0; i < 32; ++i) {
         int sum = 0;
         for (j = 0; j < 16; ++j) {
-            sum += src[j] * lfnst_matrix[i + j * 48];
+            sum += tmp[j] * lfnst_matrix[i + j * 48];
         }
         dst[((i & 7) << log2_tb_w) + (i >> 3)] =
             ov_clip((sum + 64) >> 7, -(1 << 15), (1 << 15));
@@ -84,7 +121,7 @@ compute_lfnst_8x8_tr(const int16_t* const src, int16_t* const dst,
     for (; i < 48; ++i) {
         int sum = 0;
         for (j = 0; j < 16; ++j) {
-            sum += src[j] * lfnst_matrix[i + j * 48];
+            sum += tmp[j] * lfnst_matrix[i + j * 48];
         }
         dst[((i & 3) << log2_tb_w) + (4 + ((i - 32) >> 2))] =
             ov_clip((sum + 64) >> 7, -(1 << 15), (1 << 15));
