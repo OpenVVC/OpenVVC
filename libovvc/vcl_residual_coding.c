@@ -2449,6 +2449,54 @@ reset_ctx_buffers (const VVCCoeffCodingCtx *ctx, int log2_w, int log2_h)
     }
 }
 
+static void
+reset_ctx_buffers2(const VVCCoeffCodingCtx *ctx, int log2_w, int log2_h, int last_x, int last_y)
+{
+    uint8_t *nb_sig   = ctx->sum_sig_nbs;
+    uint8_t *sum_abs1 = ctx->sum_abs_lvl;
+    uint8_t *sum_abs2 = ctx->sum_abs_lvl2;
+    int w = 1 << log2_w;
+    int h = 1 << log2_h;
+
+    int needed = ((last_x + 4) >> 2) + ((last_y + 4) >> 2) << 2;
+
+    w = OVMIN(needed, w);
+    h = OVMIN(needed, h);
+
+    for (int i = 0; i < h/4; ++i){
+        memset(nb_sig, 0, sizeof(*nb_sig) * w);
+        memset(sum_abs1, 0, sizeof(*sum_abs1) * w);
+        memset(sum_abs2, 0, sizeof(*sum_abs2) * w);
+        nb_sig   += VVC_TR_CTX_STRIDE;
+        sum_abs1 += VVC_TR_CTX_STRIDE;
+        sum_abs2 += VVC_TR_CTX_STRIDE;
+
+        memset(nb_sig, 0, sizeof(*nb_sig) * w);
+        memset(sum_abs1, 0, sizeof(*sum_abs1) * w);
+        memset(sum_abs2, 0, sizeof(*sum_abs2) * w);
+        nb_sig   += VVC_TR_CTX_STRIDE;
+        sum_abs1 += VVC_TR_CTX_STRIDE;
+        sum_abs2 += VVC_TR_CTX_STRIDE;
+
+        memset(nb_sig, 0, sizeof(*nb_sig) * w);
+        memset(sum_abs1, 0, sizeof(*sum_abs1) * w);
+        memset(sum_abs2, 0, sizeof(*sum_abs2) * w);
+        nb_sig   += VVC_TR_CTX_STRIDE;
+        sum_abs1 += VVC_TR_CTX_STRIDE;
+        sum_abs2 += VVC_TR_CTX_STRIDE;
+
+        memset(nb_sig, 0, sizeof(*nb_sig) * w);
+        memset(sum_abs1, 0, sizeof(*sum_abs1) * w);
+        memset(sum_abs2, 0, sizeof(*sum_abs2) * w);
+        nb_sig   += VVC_TR_CTX_STRIDE;
+        sum_abs1 += VVC_TR_CTX_STRIDE;
+        sum_abs2 += VVC_TR_CTX_STRIDE;
+        needed -= 4;
+        w = OVMIN(needed, w);
+        //w -= 4;
+    }
+}
+
 uint64_t
 residual_coding_isp_h_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
                           uint8_t log2_tb_w, uint8_t log2_tb_h,
@@ -2904,14 +2952,14 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
         return 0;
     }
 
-    reset_ctx_buffers(&c_coding_ctx, log2_red_w, log2_red_h);
-
     last_x =  last_pos       & 0x1F;
     last_y = (last_pos >> 8) & 0x1F;
     last_sb_x = last_x >> 2;
     last_sb_y = last_y >> 2;
 
-    if (!last_sb_x && !last_sb_y){
+    reset_ctx_buffers2(&c_coding_ctx, log2_red_w, log2_red_h, last_x, last_y);
+
+    if (!last_sb_x && !last_sb_y) {
         int last_coeff_idx = last_x + (last_y << 2);
         int nb_coeffs = ff_vvc_diag_scan_4x4_num_cg [last_coeff_idx];
 
@@ -3696,13 +3744,13 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
         return 0;
     }
 
-    reset_ctx_buffers(&c_coding_ctx, log2_red_w, log2_red_h);
-
     last_x =  last_pos       & 0x1F;
     last_y = (last_pos >> 8) & 0x1F;
 
     last_sb_x = last_x >> 2;
     last_sb_y = last_y >> 2;
+
+    reset_ctx_buffers2(&c_coding_ctx, log2_red_w, log2_red_h, last_x, last_y);
 
     if (!last_sb_x && !last_sb_y){
         int last_coeff_idx = last_x + (last_y << 2);
@@ -4258,9 +4306,8 @@ read_tb_inv_diag_scan(const struct SBReader *const sb_rdr,
          */
         c_coding_ctx.enable_sdh = 0;
 
-        reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
-
-        if(!sb_x && !sb_y){
+        if (!sb_x && !sb_y) {
+            reset_ctx_buffers(&c_coding_ctx, 2, 2);
 
             sb_rdr->read_dc_sb(cabac_ctx, sb_coeffs, nb_c_first_sb,
                                &c_coding_ctx, sb_rdr);
@@ -4281,6 +4328,8 @@ read_tb_inv_diag_scan(const struct SBReader *const sb_rdr,
         uint64_t sig_sb_map = 1llu << (sb_x + (sb_y << 3));
 
         int nb_sig_c;
+
+        reset_ctx_buffers2(&c_coding_ctx, log2_tb_w, log2_tb_h, last_x, last_y);
 
         update_cctx_pos_4x4(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_x, sb_y);
 
@@ -4784,9 +4833,8 @@ read_tb_inv_diag_scan_sdh(const struct SBReader *const sb_rdr, const OVCTUDec *c
 
         c_coding_ctx.enable_sdh = ctudec->enable_sdh;
 
-        reset_ctx_buffers(&c_coding_ctx, log2_tb_w, log2_tb_h);
-
-        if(!sb_x && !sb_y){
+        if (!sb_x && !sb_y) {
+            reset_ctx_buffers(&c_coding_ctx, 2, 2);
 
             sb_rdr->read_dc_sb(cabac_ctx, sb_coeffs, nb_c_first_sb,
                                &c_coding_ctx, sb_rdr);
@@ -4807,6 +4855,8 @@ read_tb_inv_diag_scan_sdh(const struct SBReader *const sb_rdr, const OVCTUDec *c
         uint64_t sig_sb_map = 1llu << (sb_x + (sb_y << 3));
 
         int nb_sig_c;
+
+        reset_ctx_buffers2(&c_coding_ctx, log2_tb_w, log2_tb_h, last_x, last_y);
 
         update_cctx_pos_4x4(&c_coding_ctx, buff, VVC_TR_CTX_SIZE, sb_x, sb_y);
 
