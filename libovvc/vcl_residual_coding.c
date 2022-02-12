@@ -2896,12 +2896,10 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     uint64_t sig_sb_map = 0;
     int sb_pos;
 
-    memset(_dst, 0, sizeof(int16_t) * (1 << (log2_red_w + log2_red_h)));
-
     if (!last_pos){
         ovcabac_read_ae_sb_dc_coeff_sdh(cabac_ctx, sb_coeffs);
 
-        _dst[0] = sb_coeffs[0];
+        store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_red_w);
 
         return 0;
     }
@@ -3690,14 +3688,11 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
     uint64_t sig_sb_map = 0;
     int sb_pos;
 
-    memset(_dst, 0, sizeof(int16_t) * (1 << (log2_red_w + log2_red_h)));
-
     if (!last_pos){
 
         ovcabac_read_ae_sb_dc_coeff_dpq(cabac_ctx, sb_coeffs);
 
-        _dst[0] = sb_coeffs[0];
-
+        store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_red_w);
         return 0;
     }
 
@@ -4334,25 +4329,53 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
-    /* FIXME this is a bit wasteful if we only read a few sub blocks */
-    memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
-
-    if (!last_pos){
-        int16_t sb_coeffs[16] = {0};
-
-        ovcabac_read_ae_sb_dc_coeff_c_dpq(cabac_ctx, sb_coeffs);
-
-        dst[0] = sb_coeffs [0];
-
-        return 0x1;
-    }
 
     if (log2_tb_w > 1 && log2_tb_h > 1) {
+
         const struct SBReader *const sb_rdr = &chroma_4x4_reader_dqp;
+
+        if (!last_pos){
+            int16_t sb_coeffs[16] = {0};
+
+            ovcabac_read_ae_sb_dc_coeff_c_dpq(cabac_ctx, sb_coeffs);
+
+            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_tb_w);
+
+            return 0x1;
+        }
+
         return read_tb_inv_diag_scan(sb_rdr, cabac_ctx, dst, log2_tb_w, log2_tb_h, last_pos);
+
     } else if (log2_tb_h == 1) {
+
+        memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
+
+        if (!last_pos){
+            int16_t sb_coeffs[16] = {0};
+
+            ovcabac_read_ae_sb_dc_coeff_c_dpq(cabac_ctx, sb_coeffs);
+
+            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_tb_w);
+
+            return 0x1;
+        }
+
         return decode_dpq_small_h_tu_c(ctu_dec, dst, log2_tb_w, log2_tb_h, last_pos);
+
     } else if (log2_tb_w == 1) {
+
+        memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
+
+        if (!last_pos){
+            int16_t sb_coeffs[16] = {0};
+
+            ovcabac_read_ae_sb_dc_coeff_c_dpq(cabac_ctx, sb_coeffs);
+
+            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_tb_w);
+
+            return 0x1;
+        }
+
         return decode_dpq_small_w_tu_c(ctu_dec, dst, log2_tb_w, log2_tb_h, last_pos);
     }
     return 0;
@@ -4832,25 +4855,51 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
-    /* FIXME this is a bit wasteful if we only read a few sub blocks */
-    memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
-
-    if (!last_pos){
-        int16_t sb_coeffs[16] = {0};
-
-        ovcabac_read_ae_sb_dc_coeff_c_sdh(cabac_ctx, sb_coeffs);
-
-        dst[0] = sb_coeffs [0];
-
-        return 0x1;
-    }
-
     if (log2_tb_w > 1 && log2_tb_h > 1) {
+
         const struct SBReader *const sb_rdr = &chroma_4x4_reader_sdh;
+
+        if (!last_pos) {
+            int16_t sb_coeffs[16] = {0};
+
+            ovcabac_read_ae_sb_dc_coeff_c_sdh(cabac_ctx, sb_coeffs);
+
+            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_tb_w);
+
+            return 0x1;
+        }
+
         return read_tb_inv_diag_scan_sdh(sb_rdr, ctu_dec, cabac_ctx, dst, log2_tb_w, log2_tb_h, last_pos);
     } else if (log2_tb_h == 1) {
+
+        memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
+
+        if (!last_pos) {
+            int16_t sb_coeffs[16] = {0};
+
+            ovcabac_read_ae_sb_dc_coeff_c_sdh(cabac_ctx, sb_coeffs);
+
+            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_tb_w);
+
+            return 0x1;
+        }
+
         return decode_dpq_small_h_tu_c_sdh(ctu_dec, dst, log2_tb_w, log2_tb_h, last_pos);
+
     } else if (log2_tb_w == 1) {
+
+        memset(dst, 0, sizeof(int16_t) * (1 << (log2_tb_w + log2_tb_h)));
+
+        if (!last_pos) {
+            int16_t sb_coeffs[16] = {0};
+
+            ovcabac_read_ae_sb_dc_coeff_c_sdh(cabac_ctx, sb_coeffs);
+
+            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_tb_w);
+
+            return 0x1;
+        }
+
         return decode_dpq_small_w_tu_c_sdh(ctu_dec, dst, log2_tb_w, log2_tb_h, last_pos);
     }
     return 0;
