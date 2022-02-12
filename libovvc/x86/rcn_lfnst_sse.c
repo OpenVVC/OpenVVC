@@ -440,6 +440,7 @@ compute_lfnst_4x4_sse(const int16_t* const src, int16_t* const dst,
     uint64_t scan_map = 0xfbe7ad369c258140;
 
     int16_t tmp[16];
+    const __m128i z = _mm_setzero_si128();
 
     for (int i = 0; i < 16; ++i) {
         tmp[i] = src[scan_map & 0xF];
@@ -454,10 +455,10 @@ compute_lfnst_4x4_sse(const int16_t* const src, int16_t* const dst,
         lfnst_4x4_8(tmp, r, lfnst_matrix);
     }
 
-    _mm_storel_epi64((__m128i*) &dst[0], r[0]);
-    _mm_storel_epi64((__m128i*) &dst[1<<log2_tb_w], _mm_bsrli_si128(r[0], 8));
-    _mm_storel_epi64((__m128i*) &dst[2<<log2_tb_w], r[1]);
-    _mm_storel_epi64((__m128i*) &dst[3<<log2_tb_w], _mm_bsrli_si128(r[1], 8));
+    _mm_storeu_si128((__m128i*) &dst[0 << log2_tb_w], _mm_unpacklo_epi64(r[0], z));
+    _mm_storeu_si128((__m128i*) &dst[1 << log2_tb_w], _mm_bsrli_si128(r[0], 8));
+    _mm_storeu_si128((__m128i*) &dst[2 << log2_tb_w], _mm_unpacklo_epi64(r[1], z));
+    _mm_storeu_si128((__m128i*) &dst[3 << log2_tb_w], _mm_bsrli_si128(r[1], 8));
 }
 
 static void
@@ -466,6 +467,7 @@ compute_lfnst_8x8(const int16_t* const src, int16_t* const dst,
                   int log2_tb_h)
 {
     __m128i r[6];
+    const __m128i z = _mm_setzero_si128();
 
     uint64_t scan_map = 0xfbe7ad369c258140;
 
@@ -481,15 +483,15 @@ compute_lfnst_8x8(const int16_t* const src, int16_t* const dst,
     lfnst_8x8_16(tmp, &r[2], &lfnst_matrix[16]);
     lfnst_8x8_16(tmp, &r[4], &lfnst_matrix[32]);
 
-    _mm_storeu_si128((__m128i *) &dst[0], r[0]);
-    _mm_storeu_si128((__m128i *) &dst[(1 << log2_tb_w)], r[1]);
-    _mm_storeu_si128((__m128i *) &dst[(2 << log2_tb_w)], r[2]);
-    _mm_storeu_si128((__m128i *) &dst[(3 << log2_tb_w)], r[3]);
+    _mm_store_si128((__m128i *) &dst[0], r[0]);
+    _mm_store_si128((__m128i *) &dst[(1 << log2_tb_w)], r[1]);
+    _mm_store_si128((__m128i *) &dst[(2 << log2_tb_w)], r[2]);
+    _mm_store_si128((__m128i *) &dst[(3 << log2_tb_w)], r[3]);
 
-    _mm_storel_epi64((__m128i*) &dst[4<<log2_tb_w], r[4]);
-    _mm_storel_epi64((__m128i*) &dst[5<<log2_tb_w], _mm_bsrli_si128(r[4], 8));
-    _mm_storel_epi64((__m128i*) &dst[6<<log2_tb_w], r[5]);
-    _mm_storel_epi64((__m128i*) &dst[7<<log2_tb_w], _mm_bsrli_si128(r[5], 8));
+    _mm_store_si128((__m128i*) &dst[4 << log2_tb_w], _mm_unpacklo_epi64(r[4], z));
+    _mm_store_si128((__m128i*) &dst[5 << log2_tb_w], _mm_bsrli_si128(r[4], 8));
+    _mm_store_si128((__m128i*) &dst[6 << log2_tb_w], _mm_unpacklo_epi64(r[5], z));
+    _mm_store_si128((__m128i*) &dst[7 << log2_tb_w], _mm_bsrli_si128(r[5], 8));
 }
 
 static void
@@ -498,6 +500,7 @@ compute_lfnst_4x4_tr(const int16_t* const src, int16_t* const dst,
                      int log2_tb_h)
 {
     uint64_t scan_map = 0xfbe7ad369c258140;
+    const __m128i z = _mm_setzero_si128();
 
     int16_t tmp[16];
 
@@ -525,10 +528,10 @@ compute_lfnst_4x4_tr(const int16_t* const src, int16_t* const dst,
     r[1] = _mm_shufflelo_epi16(r[1], 0xD8);
     r[1] = _mm_shufflehi_epi16(r[1], 0xD8);
 
-    _mm_storel_epi64((__m128i*) &dst[0], r[0]);
-    _mm_storel_epi64((__m128i*) &dst[1<<log2_tb_w], _mm_bsrli_si128(r[0], 8));
-    _mm_storel_epi64((__m128i*) &dst[2<<log2_tb_w], r[1]);
-    _mm_storel_epi64((__m128i*) &dst[3<<log2_tb_w], _mm_bsrli_si128(r[1], 8));
+    _mm_storeu_si128((__m128i*) &dst[0 << log2_tb_w], _mm_unpacklo_epi64(r[0], z));
+    _mm_storeu_si128((__m128i*) &dst[1 << log2_tb_w], _mm_bsrli_si128(r[0], 8));
+    _mm_storeu_si128((__m128i*) &dst[2 << log2_tb_w], _mm_unpacklo_epi64(r[1], z));
+    _mm_storeu_si128((__m128i*) &dst[3 << log2_tb_w], _mm_bsrli_si128(r[1], 8));
 }
 
 static void
@@ -537,6 +540,7 @@ compute_lfnst_8x8_tr(const int16_t* const src, int16_t* const dst,
                      int log2_tb_h)
 {
     __m128i r[6], t[4];
+    const __m128i z = _mm_setzero_si128();
 
     uint64_t scan_map = 0xfbe7ad369c258140;
 
@@ -572,20 +576,15 @@ compute_lfnst_8x8_tr(const int16_t* const src, int16_t* const dst,
     r[5] = _mm_shufflelo_epi16(r[5], 0xD8);
     r[5] = _mm_shufflehi_epi16(r[5], 0xD8);
 
-    _mm_storel_epi64((__m128i*) &dst[(0<<log2_tb_w)], r[0]);
-    _mm_storel_epi64((__m128i*) &dst[(1<<log2_tb_w)], _mm_bsrli_si128(r[0], 8));
-    _mm_storel_epi64((__m128i*) &dst[(2<<log2_tb_w)], r[1]);
-    _mm_storel_epi64((__m128i*) &dst[(3<<log2_tb_w)], _mm_bsrli_si128(r[1], 8));
+    _mm_store_si128((__m128i*) &dst[(0 << log2_tb_w)], _mm_unpacklo_epi64(r[0], r[4]));
+    _mm_store_si128((__m128i*) &dst[(1 << log2_tb_w)], _mm_unpackhi_epi64(r[0], r[4]));
+    _mm_store_si128((__m128i*) &dst[(2 << log2_tb_w)], _mm_unpacklo_epi64(r[1], r[5]));
+    _mm_store_si128((__m128i*) &dst[(3 << log2_tb_w)], _mm_unpackhi_epi64(r[1], r[5]));
 
-    _mm_storel_epi64((__m128i*) &dst[(4<<log2_tb_w)], r[2]);
-    _mm_storel_epi64((__m128i*) &dst[(5<<log2_tb_w)], _mm_bsrli_si128(r[2], 8));
-    _mm_storel_epi64((__m128i*) &dst[(6<<log2_tb_w)], r[3]);
-    _mm_storel_epi64((__m128i*) &dst[(7<<log2_tb_w)], _mm_bsrli_si128(r[3], 8));
-
-    _mm_storel_epi64((__m128i*) &dst[(0<<log2_tb_w) + 4], r[4]);
-    _mm_storel_epi64((__m128i*) &dst[(1<<log2_tb_w) + 4], _mm_bsrli_si128(r[4], 8));
-    _mm_storel_epi64((__m128i*) &dst[(2<<log2_tb_w) + 4], r[5]);
-    _mm_storel_epi64((__m128i*) &dst[(3<<log2_tb_w) + 4], _mm_bsrli_si128(r[5], 8));
+    _mm_store_si128((__m128i*) &dst[4 << log2_tb_w], _mm_unpacklo_epi64(r[2], z));
+    _mm_store_si128((__m128i*) &dst[5 << log2_tb_w], _mm_bsrli_si128(r[2], 8));
+    _mm_store_si128((__m128i*) &dst[6 << log2_tb_w], _mm_unpacklo_epi64(r[3], z));
+    _mm_store_si128((__m128i*) &dst[7 << log2_tb_w], _mm_bsrli_si128(r[3], 8));
 }
 
 void
