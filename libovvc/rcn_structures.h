@@ -409,6 +409,12 @@ struct TMPBDCompat
 
     struct IQScale (*derive_dequant_ts)(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h);
 
+    void (*dequant_tb_4x4)(int16_t *dst, const int16_t *src, int scale, int shift,
+                           uint8_t log2_tb_w, uint8_t log2_tb_h, uint64_t sig_sb_map);
+
+    void (*dequant_tb_4x4_neg)(int16_t *dst, const int16_t *src, int scale, int shift,
+                               uint8_t log2_tb_w, uint8_t log2_tb_h, uint64_t sig_sb_map);
+
     void (*rcn_transform_tree)(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
                                uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t log2_max_tb_s,
                                uint8_t tr_depth, uint16_t cu_flags, const struct TUInfo *const tu_info);

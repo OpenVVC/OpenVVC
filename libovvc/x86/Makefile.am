@@ -18,7 +18,8 @@ libx86optim_la_SOURCES +=	rcn_transform_sse.c         \
 							rcn_sao_sse.c               \
 							rcn_dmvr_sse.c              \
 							rcn_prof_bdof_sse.c         \
-							rcn_df_sse.c
+							rcn_df_sse.c                \
+							rcn_dequant_sse.c
 
 noinst_HEADERS += rcn_sse.h
 endif

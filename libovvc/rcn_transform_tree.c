@@ -175,6 +175,7 @@ reorder_tb_4x4(int16_t *dst, const int16_t *src, int scale, int shift,
     }
 }
 
+#if 0
 static void
 dequant_tb_neg_4x4(int16_t *dst, const int16_t *src, int scale, int shift,
                    uint8_t log2_tb_w, uint8_t log2_tb_h, uint64_t sig_sb_map)
@@ -329,6 +330,7 @@ dequant_tb_4x4(int16_t *dst, const int16_t *src, int scale, int shift,
         dst += dst_stride << 2;
     }
 }
+#endif
 
 static void
 dequant_4x4_ts(OVCTUDec *const ctudec, int16_t *dst, const int16_t *src, uint64_t sig_sb_map, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp)
@@ -345,12 +347,12 @@ dequant_4x4_ts(OVCTUDec *const ctudec, int16_t *dst, const int16_t *src, uint64_
         uint8_t log2_red_w = OVMIN(5, log2_tb_w);
         uint8_t log2_red_h = OVMIN(5, log2_tb_h);
 
-        dequant_tb_4x4(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
+        ctudec->rcn_funcs.tmp.dequant_tb_4x4(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
     } else {
         uint8_t log2_red_w = OVMIN(5, log2_tb_w);
         uint8_t log2_red_h = OVMIN(5, log2_tb_h);
 
-        dequant_tb_neg_4x4(dst, src,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
+        ctudec->rcn_funcs.tmp.dequant_tb_4x4_neg(dst, src,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
     }
 }
 
@@ -370,9 +372,9 @@ dequant_4x4_sb(OVCTUDec *const ctudec, int16_t *dst, const int16_t *src, uint64_
     uint8_t is_neg = deq_prms.dequant_sb == &dequant_sb_neg;
 
     if (!is_neg) {
-        dequant_tb_4x4(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
+        ctudec->rcn_funcs.tmp.dequant_tb_4x4(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
     } else {
-        dequant_tb_neg_4x4(dst, src,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
+        ctudec->rcn_funcs.tmp.dequant_tb_4x4_neg(dst, src,  deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
     }
 }
 
