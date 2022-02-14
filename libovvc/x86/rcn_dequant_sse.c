@@ -6,14 +6,25 @@
 #include "rcn_structures.h"
 
 #define MAX_LOG2_TR_RANGE 15
+static int
+derive_nb_cols(uint64_t sig_sb_map)
+{
+    uint8_t num_z = ov_clz64(sig_sb_map | 1);
+    uint8_t z_div8 = (num_z >> 3);
+
+    return (8 - z_div8) << 2;
+}
+
 static void
 dequant_tb_4x4_neg(int16_t *dst, const int16_t *src, int scale, int shift,
                    uint8_t log2_tb_w, uint8_t log2_tb_h, uint64_t sig_sb_map)
 {
-    int nb_rows = 1 << OVMIN(5, log2_tb_h);//derive_nb_cols(sig_sb_map);
+    int nb_rows = derive_nb_cols(sig_sb_map);
     int nb_cols = 1 << OVMIN(5, log2_tb_w);//derive_nb_rows(sig_sb_map);
     uint8_t src_stride = 1 << (OVMIN(5, log2_tb_w));
     uint8_t dst_stride = 1 << (OVMIN(5, log2_tb_w));
+
+    int padd_size = (1 << OVMIN(5, log2_tb_h)) - nb_rows;
 
     __m128i add   = _mm_set1_epi16((1 << shift) >> 1);
     __m128i scale_v = _mm_unpacklo_epi16(_mm_set1_epi16(scale), _mm_setzero_si128());
@@ -184,16 +195,19 @@ dequant_tb_4x4_neg(int16_t *dst, const int16_t *src, int scale, int shift,
             dst += dst_stride << 2;
         }
     }
+    memset(dst, 0, sizeof(*dst) * src_stride * padd_size);
 }
 
 static void
 dequant_tb_4x4(int16_t *dst, const int16_t *src, int scale, int shift,
                uint8_t log2_tb_w, uint8_t log2_tb_h, uint64_t sig_sb_map)
 {
-    int nb_rows = 1 << OVMIN(5, log2_tb_h);//derive_nb_cols(sig_sb_map);
+    int nb_rows = derive_nb_cols(sig_sb_map);
     int nb_cols = 1 << OVMIN(5, log2_tb_w);//derive_nb_rows(sig_sb_map);
     uint8_t src_stride = 1 << (OVMIN(5, log2_tb_w));
     uint8_t dst_stride = 1 << (OVMIN(5, log2_tb_w));
+
+    int padd_size = (1 << OVMIN(5, log2_tb_h)) - nb_rows;
 
     /* Force sig_sb_map to one in case of DC coefficient */
     sig_sb_map |= !sig_sb_map;
@@ -364,6 +378,8 @@ dequant_tb_4x4(int16_t *dst, const int16_t *src, int scale, int shift,
             dst += dst_stride << 2;
         }
     }
+
+    memset(dst, 0, sizeof(*dst) * src_stride * padd_size);
 }
 
 void
