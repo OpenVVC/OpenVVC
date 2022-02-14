@@ -13,9 +13,11 @@
 #define SB_H 4
 #define SB_W 4
 #define PROF_SMP_SHIFT (14 - BITDEPTH)
+#define PROF_PREC_RND (1 << (14 - 1))
 
 #define BDOF_SHIFT   (14 + 1 - BITDEPTH)
 #define BDOF_OFFSET  ((1 << (BDOF_SHIFT - 1)))
+#define BDOF_WGT_LIMIT ((1 << 4) - 1)
 
 
 static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
@@ -516,6 +518,216 @@ tmp_prof_mrg_w_sse(OVSample* _dst, ptrdiff_t _dststride,
 }
 
 static void
+derive_bdof_weights(const int16_t* ref0, const int16_t* ref1,
+                    const int16_t* grad_x0, const int16_t* grad_x1,
+                    const int16_t* grad_y0, const int16_t* grad_y1,
+                    const int src0_stride, const int src1_stride,
+                    const int grad_stride,
+                    int *weight_x, int *weight_y)
+{
+    int wgt_x = 0;
+    int wgt_y = 0;
+    int16_t var[8];
+
+    int i, j;
+    __m128i rnd = _mm_set1_epi16(PROF_PREC_RND);
+
+    __m128i z = _mm_setzero_si128();
+    __m128i accu_sgn_y_avg_x = z;
+    __m128i accu_abs_x = z;
+    __m128i accu_abs_y = z;
+    __m128i accu_delta_x = z;
+    __m128i accu_delta_y = z;
+
+    for (i = 0; i < SB_H + 2; i++) {
+        //for (j = 0; j < SB_W + 2; j++) {
+            __m128i g_x0 = _mm_loadu_si128((__m128i *)grad_x0);
+            __m128i g_x1 = _mm_loadu_si128((__m128i *)grad_x1);
+            __m128i g_y0 = _mm_loadu_si128((__m128i *)grad_y0);
+            __m128i g_y1 = _mm_loadu_si128((__m128i *)grad_y1);
+
+            __m128i r0 = _mm_loadu_si128((__m128i *)ref0);
+            __m128i r1 = _mm_loadu_si128((__m128i *)ref1);
+
+            __m128i avg_g_x = _mm_add_epi16(g_x0, g_x1);
+            __m128i avg_g_y = _mm_add_epi16(g_y0, g_y1);
+
+            avg_g_x = _mm_srai_epi16(avg_g_x, 1);
+            avg_g_y = _mm_srai_epi16(avg_g_y, 1);
+
+            accu_abs_x = _mm_add_epi16(accu_abs_x, _mm_abs_epi16(avg_g_x));
+            accu_abs_y = _mm_add_epi16(accu_abs_y, _mm_abs_epi16(avg_g_y));
+
+            r0 = _mm_sub_epi16(r0, rnd);
+            r1 = _mm_sub_epi16(r1, rnd);
+
+            r0 = _mm_srai_epi16(r0, 4);
+            r1 = _mm_srai_epi16(r1, 4);
+
+            __m128i delta_ref = _mm_sub_epi16(r1, r0);
+
+            /*sum_avg_x_y_signs += (avg_grad_y < 0 ? -avg_grad_x : (avg_grad_y == 0 ? 0 : avg_grad_x));*/
+            __m128i sign_msk_y = _mm_cmplt_epi16(avg_g_y, z);
+            __m128i z_msk_y    = _mm_cmpeq_epi16(avg_g_y, z);
+            __m128i s_delta =_mm_xor_si128(delta_ref, sign_msk_y);
+
+            s_delta = _mm_sub_epi16(s_delta, sign_msk_y);
+            s_delta = _mm_andnot_si128(z_msk_y, s_delta);
+
+            accu_delta_y = _mm_add_epi16(accu_delta_y, s_delta);
+
+            __m128i sign_y_avg_x = _mm_xor_si128(avg_g_x, sign_msk_y);
+
+            sign_y_avg_x = _mm_sub_epi16(sign_y_avg_x, sign_msk_y);
+            sign_y_avg_x = _mm_andnot_si128(z_msk_y, sign_y_avg_x);
+
+            accu_sgn_y_avg_x = _mm_add_epi16(accu_sgn_y_avg_x, sign_y_avg_x);
+
+            __m128i sign_msk_x = _mm_cmplt_epi16(avg_g_x, z);
+            __m128i z_msk_x    = _mm_cmpeq_epi16(avg_g_x, z);
+
+            s_delta =_mm_xor_si128(delta_ref, sign_msk_x);
+            s_delta = _mm_sub_epi16(s_delta, sign_msk_x);
+            s_delta = _mm_andnot_si128(z_msk_x, s_delta);
+
+            accu_delta_x = _mm_add_epi16(accu_delta_x, s_delta);
+
+        //}
+
+        ref1 += src1_stride;
+        ref0 += src0_stride;
+
+        grad_x0 += grad_stride;
+        grad_x1 += grad_stride;
+
+        grad_y0 += grad_stride;
+        grad_y1 += grad_stride;
+    }
+
+    __m128i msk = _mm_set1_epi16(-1);
+
+    msk = _mm_bsrli_si128(msk, 4);
+
+
+    accu_abs_x = _mm_and_si128(accu_abs_x, msk);
+    accu_abs_y = _mm_and_si128(accu_abs_y, msk);
+    accu_delta_x = _mm_and_si128(accu_delta_x, msk);
+    accu_delta_y = _mm_and_si128(accu_delta_y, msk);
+    accu_sgn_y_avg_x = _mm_and_si128(accu_sgn_y_avg_x, msk);
+
+    __m128i sum_xy    = _mm_hadd_epi16(accu_abs_x, accu_abs_y);
+    __m128i sum_delta = _mm_hadd_epi16(accu_delta_x, accu_delta_y);
+    __m128i sum_sign  = _mm_hadd_epi16(accu_sgn_y_avg_x, z);
+
+    sum_xy = _mm_hadd_epi16(sum_xy, sum_delta);
+    sum_sign = _mm_hadd_epi16(sum_sign, z);
+    sum_xy = _mm_hadd_epi16(sum_xy, sum_sign);
+
+    _mm_storeu_si128((__m128i*)&var[0], sum_xy);
+
+    int16_t sum_abs_x = var[0];
+    int16_t sum_abs_y = var[1];
+    int16_t sum_delta_x = var[2];
+    int16_t sum_delta_y = var[3];
+    int16_t sum_avg_x_y_signs = var[4];
+
+    if (sum_abs_x) {
+        int log2_renorm_x = floor_log2(sum_abs_x);
+
+        wgt_x = (sum_delta_x << 2) >> log2_renorm_x;
+        wgt_x = ov_clip(wgt_x, -BDOF_WGT_LIMIT, BDOF_WGT_LIMIT);
+        *weight_x = wgt_x;
+    }
+
+    if (sum_abs_y) {
+        int log2_renorm_y = floor_log2(sum_abs_y);
+        int x_offset = 0;
+
+        if (wgt_x) {
+            /* FIXME understand this part */
+            int high = sum_avg_x_y_signs >> 12;
+            int low  = sum_avg_x_y_signs & ((1 << 12) - 1);
+            x_offset = (((wgt_x * high) << 12) + (wgt_x * low)) >> 1;
+        }
+
+        wgt_y = ((sum_delta_y << 2) - x_offset) >> log2_renorm_y;
+        wgt_y = ov_clip(wgt_y, -BDOF_WGT_LIMIT, BDOF_WGT_LIMIT);
+        *weight_y = wgt_y;
+    }
+}
+
+static void
+rcn_bdof(struct BDOFFunctions *const bdof, OVSample *dst, int dst_stride,
+         const int16_t *ref_bdof0, const int16_t *ref_bdof1, int ref_stride,
+         const int16_t *grad_x0, const int16_t *grad_y0,
+         const int16_t *grad_x1, const int16_t *grad_y1,
+         int grad_stride, uint8_t pb_w, uint8_t pb_h)
+{
+    int nb_sb_w = (pb_w >> 2);
+    int nb_sb_h = (pb_h >> 2);
+
+    const int16_t *grad_x0_ln = grad_x0;
+    const int16_t *grad_y0_ln = grad_y0;
+    const int16_t *grad_x1_ln = grad_x1;
+    const int16_t *grad_y1_ln = grad_y1;
+
+    const int16_t *ref0_ln = ref_bdof0 - 128 - 1;
+    const int16_t *ref1_ln = ref_bdof1 - 128 - 1;
+    OVSample *dst_ln = dst;
+
+    int i, j;
+
+    for (i = 0; i < nb_sb_h; i++) {
+        const int16_t *ref0_tmp = ref0_ln;
+        const int16_t *ref1_tmp = ref1_ln;
+
+        grad_x0 = grad_x0_ln;
+        grad_y0 = grad_y0_ln;
+        grad_x1 = grad_x1_ln;
+        grad_y1 = grad_y1_ln;
+
+        dst = dst_ln;
+
+        for (j = 0; j < nb_sb_w; j++) {
+            int wgt_x = 0;
+            int wgt_y = 0;
+
+            derive_bdof_weights(ref0_tmp, ref1_tmp,
+                                grad_x0, grad_x1, grad_y0, grad_y1,
+                                ref_stride, ref_stride,
+                                grad_stride,
+                                &wgt_x, &wgt_y);
+
+            bdof->subblock(ref0_tmp + ref_stride + 1, ref_stride,
+                           ref1_tmp + ref_stride + 1, ref_stride,
+                           dst, dst_stride,
+                           grad_x0 + grad_stride + 1, grad_x1 + grad_stride + 1,
+                           grad_y0 + grad_stride + 1, grad_y1 + grad_stride + 1,
+                           grad_stride,
+                           wgt_x, wgt_y);
+
+            grad_x0 += 1 << 2;
+            grad_x1 += 1 << 2;
+            grad_y0 += 1 << 2;
+            grad_y1 += 1 << 2;
+            ref0_tmp += 1 << 2;
+            ref1_tmp += 1 << 2;
+            dst    += 1 << 2;
+        }
+
+        grad_x0_ln += grad_stride << 2;
+        grad_y0_ln += grad_stride << 2;
+        grad_x1_ln += grad_stride << 2;
+        grad_y1_ln += grad_stride << 2;
+
+        ref0_ln += ref_stride << 2;
+        ref1_ln += ref_stride << 2;
+
+        dst_ln += dst_stride << 2;
+    }
+}
+
+static void
 rcn_apply_bdof_subblock_sse(const int16_t* src0, int src0_stride,
                         const int16_t* src1, int src1_stride,
                         OVSample *dst, int dst_stride,
@@ -654,4 +866,5 @@ rcn_init_bdof_functions_sse(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->bdof.grad = &compute_prof_grad_sse;
     rcn_funcs->bdof.subblock = &rcn_apply_bdof_subblock_sse;
+    rcn_funcs->bdof.rcn_bdof = &rcn_bdof;
 }
