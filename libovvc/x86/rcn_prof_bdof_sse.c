@@ -570,7 +570,6 @@ derive_bdof_weights(const int16_t* ref0, const int16_t* ref1,
         int x_offset = 0;
 
         if (wgt_x) {
-            /* FIXME understand this part */
             int high = sum_avg_x_y_signs >> 12;
             int low  = sum_avg_x_y_signs & ((1 << 12) - 1);
             x_offset = (((wgt_x * high) << 12) + (wgt_x * low)) >> 1;
