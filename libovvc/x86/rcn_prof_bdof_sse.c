@@ -62,11 +62,6 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
         sv3 = _mm_packs_epi32(sv3, _mm_setzero_si128());
         sv4 = _mm_packs_epi32(sv4, _mm_setzero_si128());
 
-        srcV1 = _mm_cvtepi16_epi32(srcV1);
-        srcV2 = _mm_cvtepi16_epi32(srcV2);
-        srcV3 = _mm_cvtepi16_epi32(srcV3);
-        srcV4 = _mm_cvtepi16_epi32(srcV4);
-
         // int32_t add = dmv_scale_h[idx] * grad_x[x] + dmv_scale_v[idx] * grad_y[x];
         x1 = _mm_unpacklo_epi16(x1, y1);
         x2 = _mm_unpacklo_epi16(x2, y2);
@@ -84,17 +79,16 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
         x4 = _mm_madd_epi16(x4, sh4);
 
         // add = ov_clip(add, -PROF_DELTA_LIMIT, PROF_DELTA_LIMIT - 1);
-        __m128i min_val = _mm_set1_epi32(-PROF_DELTA_LIMIT);
-        __m128i max_val = _mm_set1_epi32(PROF_DELTA_LIMIT - 1);
-        x1 = _mm_max_epi32(x1, min_val);
-        x2 = _mm_max_epi32(x2, min_val);
-        x3 = _mm_max_epi32(x3, min_val);
-        x4 = _mm_max_epi32(x4, min_val);
+        __m128i min_val = _mm_set1_epi16(-PROF_DELTA_LIMIT);
+        __m128i max_val = _mm_set1_epi16(PROF_DELTA_LIMIT - 1);
+        x1 = _mm_packs_epi32(x1, x2);
+        x3 = _mm_packs_epi32(x3, x4);
 
-        x1 = _mm_min_epi32(x1, max_val);
-        x2 = _mm_min_epi32(x2, max_val);
-        x3 = _mm_min_epi32(x3, max_val);
-        x4 = _mm_min_epi32(x4, max_val);
+        x1 = _mm_max_epi16(x1, min_val);
+        x3 = _mm_max_epi16(x3, min_val);
+
+        x1 = _mm_min_epi16(x1, max_val);
+        x3 = _mm_min_epi16(x3, max_val);
 
         // val = (int16_t)src[x] -(1 << 13);
         // val += add;
@@ -103,24 +97,29 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
         // val = (val + 8200 /*+ PROF_SMP_OFFSET*/) >> PROF_SMP_SHIFT;
         // dst[x] = ov_clip(val, 0, 1023);
 
-        __m128i offset = _mm_set1_epi32((1 << (13 - BITDEPTH)));
-        srcV1 = _mm_add_epi32(srcV1, offset);
-        srcV2 = _mm_add_epi32(srcV2, offset);
-        srcV3 = _mm_add_epi32(srcV3, offset);
-        srcV4 = _mm_add_epi32(srcV4, offset);
+        __m128i offset = _mm_set1_epi16((1 << (13 - BITDEPTH)));
 
-        x1 = _mm_add_epi32(srcV1, x1);
-        x2 = _mm_add_epi32(srcV2, x2);
-        x3 = _mm_add_epi32(srcV3, x3);
-        x4 = _mm_add_epi32(srcV4, x4);
+        //srcV1 = _mm_cvtepi16_epi32(srcV1);
+        //srcV2 = _mm_cvtepi16_epi32(srcV2);
+        //srcV3 = _mm_cvtepi16_epi32(srcV3);
+        //srcV4 = _mm_cvtepi16_epi32(srcV4);
+        srcV1 = _mm_unpacklo_epi64(srcV1, srcV2);
+        srcV3 = _mm_unpacklo_epi64(srcV3, srcV4);
 
-        x1 = _mm_srai_epi32(x1, PROF_SMP_SHIFT);
-        x2 = _mm_srai_epi32(x2, PROF_SMP_SHIFT);
-        x3 = _mm_srai_epi32(x3, PROF_SMP_SHIFT);
-        x4 = _mm_srai_epi32(x4, PROF_SMP_SHIFT);
+        #if 0
+        srcV1 = _mm_add_epi16(srcV1, offset);
+        srcV2 = _mm_add_epi16(srcV2, offset);
+        srcV3 = _mm_add_epi16(srcV3, offset);
+        srcV4 = _mm_add_epi16(srcV4, offset);
+        #endif
+        srcV1 = _mm_add_epi16(srcV1, offset);
+        srcV3 = _mm_add_epi16(srcV3, offset);
 
-        x1 = _mm_packs_epi32(x1, x2);
-        x3 = _mm_packs_epi32(x3, x4);
+        x1 = _mm_add_epi16(srcV1, x1);
+        x3 = _mm_add_epi16(srcV3, x3);
+
+        x1 = _mm_srai_epi16(x1, PROF_SMP_SHIFT);
+        x3 = _mm_srai_epi16(x3, PROF_SMP_SHIFT);
 
         x1 = _mm_max_epi16(x1, _mm_setzero_si128());
         x3 = _mm_max_epi16(x3, _mm_setzero_si128());
