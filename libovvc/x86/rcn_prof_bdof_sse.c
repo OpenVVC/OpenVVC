@@ -540,59 +540,56 @@ derive_bdof_weights(const int16_t* ref0, const int16_t* ref1,
     __m128i accu_delta_y = z;
 
     for (i = 0; i < SB_H + 2; i++) {
-        //for (j = 0; j < SB_W + 2; j++) {
-            __m128i g_x0 = _mm_loadu_si128((__m128i *)grad_x0);
-            __m128i g_x1 = _mm_loadu_si128((__m128i *)grad_x1);
-            __m128i g_y0 = _mm_loadu_si128((__m128i *)grad_y0);
-            __m128i g_y1 = _mm_loadu_si128((__m128i *)grad_y1);
+        __m128i g_x0 = _mm_loadu_si128((__m128i *)grad_x0);
+        __m128i g_x1 = _mm_loadu_si128((__m128i *)grad_x1);
+        __m128i g_y0 = _mm_loadu_si128((__m128i *)grad_y0);
+        __m128i g_y1 = _mm_loadu_si128((__m128i *)grad_y1);
 
-            __m128i r0 = _mm_loadu_si128((__m128i *)ref0);
-            __m128i r1 = _mm_loadu_si128((__m128i *)ref1);
+        __m128i r0 = _mm_loadu_si128((__m128i *)ref0);
+        __m128i r1 = _mm_loadu_si128((__m128i *)ref1);
 
-            __m128i avg_g_x = _mm_add_epi16(g_x0, g_x1);
-            __m128i avg_g_y = _mm_add_epi16(g_y0, g_y1);
+        __m128i avg_g_x = _mm_add_epi16(g_x0, g_x1);
+        __m128i avg_g_y = _mm_add_epi16(g_y0, g_y1);
 
-            avg_g_x = _mm_srai_epi16(avg_g_x, 1);
-            avg_g_y = _mm_srai_epi16(avg_g_y, 1);
+        avg_g_x = _mm_srai_epi16(avg_g_x, 1);
+        avg_g_y = _mm_srai_epi16(avg_g_y, 1);
 
-            accu_abs_x = _mm_add_epi16(accu_abs_x, _mm_abs_epi16(avg_g_x));
-            accu_abs_y = _mm_add_epi16(accu_abs_y, _mm_abs_epi16(avg_g_y));
+        accu_abs_x = _mm_add_epi16(accu_abs_x, _mm_abs_epi16(avg_g_x));
+        accu_abs_y = _mm_add_epi16(accu_abs_y, _mm_abs_epi16(avg_g_y));
 
-            r0 = _mm_sub_epi16(r0, rnd);
-            r1 = _mm_sub_epi16(r1, rnd);
+        r0 = _mm_sub_epi16(r0, rnd);
+        r1 = _mm_sub_epi16(r1, rnd);
 
-            r0 = _mm_srai_epi16(r0, 4);
-            r1 = _mm_srai_epi16(r1, 4);
+        r0 = _mm_srai_epi16(r0, 4);
+        r1 = _mm_srai_epi16(r1, 4);
 
-            __m128i delta_ref = _mm_sub_epi16(r1, r0);
+        __m128i delta_ref = _mm_sub_epi16(r1, r0);
 
-            /*sum_avg_x_y_signs += (avg_grad_y < 0 ? -avg_grad_x : (avg_grad_y == 0 ? 0 : avg_grad_x));*/
-            __m128i sign_msk_y = _mm_cmplt_epi16(avg_g_y, z);
-            __m128i z_msk_y    = _mm_cmpeq_epi16(avg_g_y, z);
-            __m128i s_delta =_mm_xor_si128(delta_ref, sign_msk_y);
+        __m128i sign_msk_y = _mm_cmplt_epi16(avg_g_y, z);
+        __m128i z_msk_y    = _mm_cmpeq_epi16(avg_g_y, z);
+        __m128i s_delta =_mm_xor_si128(delta_ref, sign_msk_y);
 
-            s_delta = _mm_sub_epi16(s_delta, sign_msk_y);
-            s_delta = _mm_andnot_si128(z_msk_y, s_delta);
+        s_delta = _mm_sub_epi16(s_delta, sign_msk_y);
+        s_delta = _mm_andnot_si128(z_msk_y, s_delta);
 
-            accu_delta_y = _mm_add_epi16(accu_delta_y, s_delta);
+        accu_delta_y = _mm_add_epi16(accu_delta_y, s_delta);
 
-            __m128i sign_y_avg_x = _mm_xor_si128(avg_g_x, sign_msk_y);
+        __m128i sign_y_avg_x = _mm_xor_si128(avg_g_x, sign_msk_y); 
 
-            sign_y_avg_x = _mm_sub_epi16(sign_y_avg_x, sign_msk_y);
-            sign_y_avg_x = _mm_andnot_si128(z_msk_y, sign_y_avg_x);
+        sign_y_avg_x = _mm_sub_epi16(sign_y_avg_x, sign_msk_y);
+        sign_y_avg_x = _mm_andnot_si128(z_msk_y, sign_y_avg_x);
 
-            accu_sgn_y_avg_x = _mm_add_epi16(accu_sgn_y_avg_x, sign_y_avg_x);
+        accu_sgn_y_avg_x = _mm_add_epi16(accu_sgn_y_avg_x, sign_y_avg_x);
 
-            __m128i sign_msk_x = _mm_cmplt_epi16(avg_g_x, z);
-            __m128i z_msk_x    = _mm_cmpeq_epi16(avg_g_x, z);
+        __m128i sign_msk_x = _mm_cmplt_epi16(avg_g_x, z);
+        __m128i z_msk_x    = _mm_cmpeq_epi16(avg_g_x, z);
 
-            s_delta =_mm_xor_si128(delta_ref, sign_msk_x);
-            s_delta = _mm_sub_epi16(s_delta, sign_msk_x);
-            s_delta = _mm_andnot_si128(z_msk_x, s_delta);
+        s_delta =_mm_xor_si128(delta_ref, sign_msk_x);
+        s_delta = _mm_sub_epi16(s_delta, sign_msk_x);
+        s_delta = _mm_andnot_si128(z_msk_x, s_delta);
 
-            accu_delta_x = _mm_add_epi16(accu_delta_x, s_delta);
+        accu_delta_x = _mm_add_epi16(accu_delta_x, s_delta);
 
-        //}
 
         ref1 += src1_stride;
         ref0 += src0_stride;
