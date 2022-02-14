@@ -535,20 +535,19 @@ derive_bdof_weights(const int16_t* ref0, const int16_t* ref1,
 
     msk = _mm_bsrli_si128(msk, 4);
 
-
-    accu_abs_x = _mm_and_si128(accu_abs_x, msk);
-    accu_abs_y = _mm_and_si128(accu_abs_y, msk);
-    accu_delta_x = _mm_and_si128(accu_delta_x, msk);
-    accu_delta_y = _mm_and_si128(accu_delta_y, msk);
+    accu_abs_x       = _mm_and_si128(accu_abs_x, msk);
+    accu_abs_y       = _mm_and_si128(accu_abs_y, msk);
+    accu_delta_x     = _mm_and_si128(accu_delta_x, msk);
+    accu_delta_y     = _mm_and_si128(accu_delta_y, msk);
     accu_sgn_y_avg_x = _mm_and_si128(accu_sgn_y_avg_x, msk);
 
     __m128i sum_xy    = _mm_hadd_epi16(accu_abs_x, accu_abs_y);
     __m128i sum_delta = _mm_hadd_epi16(accu_delta_x, accu_delta_y);
     __m128i sum_sign  = _mm_hadd_epi16(accu_sgn_y_avg_x, z);
 
-    sum_xy = _mm_hadd_epi16(sum_xy, sum_delta);
+    sum_xy   = _mm_hadd_epi16(sum_xy, sum_delta);
     sum_sign = _mm_hadd_epi16(sum_sign, z);
-    sum_xy = _mm_hadd_epi16(sum_xy, sum_sign);
+    sum_xy   = _mm_hadd_epi16(sum_xy, sum_sign);
 
     _mm_storeu_si128((__m128i*)&var[0], sum_xy);
 
