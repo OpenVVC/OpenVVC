@@ -22,7 +22,7 @@
 
 static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
          const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
-         const int32_t* dmv_scale_h, const int32_t* dmv_scale_v,
+         const int16_t* dmv_scale_h, const int16_t* dmv_scale_v,
          uint8_t bidir)
 {
     //FIXME: Convert dmv_scale to int16_t to avoid _mm_packs_epi32
@@ -52,6 +52,7 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
         __m128i srcV3 = _mm_loadl_epi64((__m128i *)&src[2*src_stride]);
         __m128i srcV4 = _mm_loadl_epi64((__m128i *)&src[3*src_stride]);
 
+        #if 0
         sh1 = _mm_packs_epi32(sh1, _mm_setzero_si128());
         sh2 = _mm_packs_epi32(sh2, _mm_setzero_si128());
         sh3 = _mm_packs_epi32(sh3, _mm_setzero_si128());
@@ -61,6 +62,7 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
         sv2 = _mm_packs_epi32(sv2, _mm_setzero_si128());
         sv3 = _mm_packs_epi32(sv3, _mm_setzero_si128());
         sv4 = _mm_packs_epi32(sv4, _mm_setzero_si128());
+        #endif
 
         // int32_t add = dmv_scale_h[idx] * grad_x[x] + dmv_scale_v[idx] * grad_y[x];
         x1 = _mm_unpacklo_epi16(x1, y1);
@@ -160,6 +162,7 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
       __m128i srcV3 = _mm_loadl_epi64((__m128i *)&src[2*src_stride]);
       __m128i srcV4 = _mm_loadl_epi64((__m128i *)&src[3*src_stride]);
 
+      #if 0
       sh1 = _mm_packs_epi32(sh1, _mm_setzero_si128());
       sh2 = _mm_packs_epi32(sh2, _mm_setzero_si128());
       sh3 = _mm_packs_epi32(sh3, _mm_setzero_si128());
@@ -169,6 +172,7 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
       sv2 = _mm_packs_epi32(sv2, _mm_setzero_si128());
       sv3 = _mm_packs_epi32(sv3, _mm_setzero_si128());
       sv4 = _mm_packs_epi32(sv4, _mm_setzero_si128());
+      #endif
 
       srcV1 = _mm_unpacklo_epi16(srcV1, _mm_setzero_si128());
       srcV2 = _mm_unpacklo_epi16(srcV2, _mm_setzero_si128());

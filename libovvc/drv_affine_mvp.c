@@ -3898,21 +3898,23 @@ round_prof_dmv_scale(struct OVDMV dmv)
 
 static void
 compute_prof_dmv_scale(struct AffineDeltaMV delta_mv,
-                       int32_t dmv_scale_h[16], int32_t dmv_scale_v[16])
+                       int16_t dmv_scale_h[16], int16_t dmv_scale_v[16])
 {
     int x, y, i;
     OVMV quad_dmv_h;
     OVMV quad_dmv_v;
-    int32_t *dmv_scale_h_p = dmv_scale_h;
-    int32_t *dmv_scale_v_p = dmv_scale_v;
+    int32_t dmv_scale_h_tab[16];
+    int32_t dmv_scale_v_tab[16];
+    int32_t *dmv_scale_h_p = &dmv_scale_h_tab[0];
+    int32_t *dmv_scale_v_p = &dmv_scale_v_tab[0];
 
     quad_dmv_h.x = (uint32_t)delta_mv.h.x << 2;
     quad_dmv_h.y = (uint32_t)delta_mv.h.y << 2;
     quad_dmv_v.x = (uint32_t)delta_mv.v.x << 2;
     quad_dmv_v.y = (uint32_t)delta_mv.v.y << 2;
 
-    dmv_scale_h_p[0] = ((uint32_t)(delta_mv.h.x + delta_mv.v.x) << 1) - ((uint32_t)(quad_dmv_h.x + quad_dmv_v.x) << 1);
-    dmv_scale_v_p[0] = ((uint32_t)(delta_mv.h.y + delta_mv.v.y) << 1) - ((uint32_t)(quad_dmv_h.y + quad_dmv_v.y) << 1);
+    dmv_scale_h_tab[0] = ((uint32_t)(delta_mv.h.x + delta_mv.v.x) << 1) - ((uint32_t)(quad_dmv_h.x + quad_dmv_v.x) << 1);
+    dmv_scale_v_tab[0] = ((uint32_t)(delta_mv.h.y + delta_mv.v.y) << 1) - ((uint32_t)(quad_dmv_h.y + quad_dmv_v.y) << 1);
 
     for (x = 1; x < SB_W; x++) {
         dmv_scale_h_p[x] = dmv_scale_h_p[x - 1] + quad_dmv_h.x;
@@ -3934,8 +3936,8 @@ compute_prof_dmv_scale(struct AffineDeltaMV delta_mv,
     for (i = 0; i < SB_W * SB_H; i++) {
 
         struct OVDMV dmv = {
-            .x = dmv_scale_h[i],
-            .y = dmv_scale_v[i]
+            .x = dmv_scale_h_tab[i],
+            .y = dmv_scale_v_tab[i]
         };
 
         dmv = round_prof_dmv_scale(dmv);
@@ -3988,10 +3990,10 @@ rcn_affine_mcp_b_l(OVCTUDec *const ctudec,
 }
 
 struct PROFInfo {
-    int32_t dmv_scale_h_0[16];
-    int32_t dmv_scale_v_0[16];
-    int32_t dmv_scale_h_1[16];
-    int32_t dmv_scale_v_1[16];
+    int16_t dmv_scale_h_0[16];
+    int16_t dmv_scale_v_0[16];
+    int16_t dmv_scale_h_1[16];
+    int16_t dmv_scale_v_1[16];
 };
 
 static void

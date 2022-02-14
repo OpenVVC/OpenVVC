@@ -193,7 +193,7 @@ extend_prof_buff(const OVSample *const src, int16_t *dst_prof, int16_t ref_strid
 static void
 rcn_prof(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
          const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
-         const int32_t* dmv_scale_h, const int32_t* dmv_scale_v,
+         const int16_t* dmv_scale_h, const int16_t* dmv_scale_v,
          uint8_t bidir)
 {
     int idx = 0;

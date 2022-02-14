@@ -1103,10 +1103,10 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
 struct PROFInfo
 {
-    int32_t dmv_scale_h_0[16];
-    int32_t dmv_scale_v_0[16];
-    int32_t dmv_scale_h_1[16];
-    int32_t dmv_scale_v_1[16];
+    int16_t dmv_scale_h_0[16];
+    int16_t dmv_scale_v_0[16];
+    int16_t dmv_scale_h_1[16];
+    int16_t dmv_scale_v_1[16];
 };
 
 static void
@@ -1608,7 +1608,7 @@ static void
 rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
                int log2_pu_w, int log2_pu_h,
                OVMV mv, uint8_t type, uint8_t ref_idx,
-               const int32_t *dmv_scale_h, const int32_t *dmv_scale_v)
+               const int16_t *dmv_scale_h, const int16_t *dmv_scale_v)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -1694,7 +1694,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
     prof->grad(tmp_prof, PROF_BUFF_STRIDE, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
 
     prof->rcn(dst.y, dst.stride, (uint16_t *)tmp_prof + PROF_BUFF_STRIDE + 1, PROF_BUFF_STRIDE, tmp_grad_x, tmp_grad_y,
-             4, dmv_scale_h, dmv_scale_v, bidir);
+              4, dmv_scale_h, dmv_scale_v, bidir);
 
     ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, RCN_CTB_STRIDE, ctudec->lmcs_info.luts,
                                             pu_w, pu_h);
@@ -1705,7 +1705,7 @@ static void
 rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int x0, int y0,
                int log2_pu_w, int log2_pu_h,
                OVMV mv, uint8_t type, uint8_t ref_idx,
-               const int32_t *dmv_scale_h, const int32_t *dmv_scale_v)
+               const int16_t *dmv_scale_h, const int16_t *dmv_scale_v)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;

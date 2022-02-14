@@ -190,7 +190,7 @@ typedef void (*PROFGradFunction)(const int16_t* src, int src_stride, int sb_w, i
 
 typedef void (*PROFFunction)(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
                              const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
-                             const int32_t* dmv_scale_h, const int32_t* dmv_scale_v, uint8_t bidir);
+                             const int16_t* dmv_scale_h, const int16_t* dmv_scale_v, uint8_t bidir);
 
 typedef void (*BDOFSBFunction)(const int16_t* src0, int src0_stride,
                                const int16_t* src1, int src1_stride,
