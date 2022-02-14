@@ -729,41 +729,41 @@ rcn_bdof(struct BDOFFunctions *const bdof, OVSample *dst, int dst_stride,
 
 static void
 rcn_apply_bdof_subblock_sse(const int16_t* src0, int src0_stride,
-                        const int16_t* src1, int src1_stride,
-                        OVSample *dst, int dst_stride,
-                        const int16_t *gradX0, const int16_t *gradX1,
-                        const int16_t *gradY0, const int16_t *gradY1, int grad_stride,
-                        int wgt_x, int wgt_y)
+                            const int16_t* src1, int src1_stride,
+                            OVSample *dst, int dst_stride,
+                            const int16_t *gradX0, const int16_t *gradX1,
+                            const int16_t *gradY0, const int16_t *gradY1, int grad_stride,
+                            int wgt_x, int wgt_y)
 {
-    __m128i x01 = _mm_loadl_epi64((__m128i *)&gradX0[0*grad_stride]);
-    __m128i x02 = _mm_loadl_epi64((__m128i *)&gradX0[1*grad_stride]);
-    __m128i x03 = _mm_loadl_epi64((__m128i *)&gradX0[2*grad_stride]);
-    __m128i x04 = _mm_loadl_epi64((__m128i *)&gradX0[3*grad_stride]);
+    __m128i x01 = _mm_loadu_si128((__m128i *)&gradX0[0*grad_stride]);
+    __m128i x02 = _mm_loadu_si128((__m128i *)&gradX0[1*grad_stride]);
+    __m128i x03 = _mm_loadu_si128((__m128i *)&gradX0[2*grad_stride]);
+    __m128i x04 = _mm_loadu_si128((__m128i *)&gradX0[3*grad_stride]);
 
-    __m128i x11 = _mm_loadl_epi64((__m128i *)&gradX1[0*grad_stride]);
-    __m128i x12 = _mm_loadl_epi64((__m128i *)&gradX1[1*grad_stride]);
-    __m128i x13 = _mm_loadl_epi64((__m128i *)&gradX1[2*grad_stride]);
-    __m128i x14 = _mm_loadl_epi64((__m128i *)&gradX1[3*grad_stride]);
+    __m128i x11 = _mm_loadu_si128((__m128i *)&gradX1[0*grad_stride]);
+    __m128i x12 = _mm_loadu_si128((__m128i *)&gradX1[1*grad_stride]);
+    __m128i x13 = _mm_loadu_si128((__m128i *)&gradX1[2*grad_stride]);
+    __m128i x14 = _mm_loadu_si128((__m128i *)&gradX1[3*grad_stride]);
 
-    __m128i y01 = _mm_loadl_epi64((__m128i *)&gradY0[0*grad_stride]);
-    __m128i y02 = _mm_loadl_epi64((__m128i *)&gradY0[1*grad_stride]);
-    __m128i y03 = _mm_loadl_epi64((__m128i *)&gradY0[2*grad_stride]);
-    __m128i y04 = _mm_loadl_epi64((__m128i *)&gradY0[3*grad_stride]);
+    __m128i y01 = _mm_loadu_si128((__m128i *)&gradY0[0*grad_stride]);
+    __m128i y02 = _mm_loadu_si128((__m128i *)&gradY0[1*grad_stride]);
+    __m128i y03 = _mm_loadu_si128((__m128i *)&gradY0[2*grad_stride]);
+    __m128i y04 = _mm_loadu_si128((__m128i *)&gradY0[3*grad_stride]);
 
-    __m128i y11 = _mm_loadl_epi64((__m128i *)&gradY1[0*grad_stride]);
-    __m128i y12 = _mm_loadl_epi64((__m128i *)&gradY1[1*grad_stride]);
-    __m128i y13 = _mm_loadl_epi64((__m128i *)&gradY1[2*grad_stride]);
-    __m128i y14 = _mm_loadl_epi64((__m128i *)&gradY1[3*grad_stride]);
+    __m128i y11 = _mm_loadu_si128((__m128i *)&gradY1[0*grad_stride]);
+    __m128i y12 = _mm_loadu_si128((__m128i *)&gradY1[1*grad_stride]);
+    __m128i y13 = _mm_loadu_si128((__m128i *)&gradY1[2*grad_stride]);
+    __m128i y14 = _mm_loadu_si128((__m128i *)&gradY1[3*grad_stride]);
 
-    __m128i src01 = _mm_loadl_epi64((__m128i *)&src0[0*src0_stride]);
-    __m128i src02 = _mm_loadl_epi64((__m128i *)&src0[1*src0_stride]);
-    __m128i src03 = _mm_loadl_epi64((__m128i *)&src0[2*src0_stride]);
-    __m128i src04 = _mm_loadl_epi64((__m128i *)&src0[3*src0_stride]);
+    __m128i src01 = _mm_loadu_si128((__m128i *)&src0[0*src0_stride]);
+    __m128i src02 = _mm_loadu_si128((__m128i *)&src0[1*src0_stride]);
+    __m128i src03 = _mm_loadu_si128((__m128i *)&src0[2*src0_stride]);
+    __m128i src04 = _mm_loadu_si128((__m128i *)&src0[3*src0_stride]);
 
-    __m128i src11 = _mm_loadl_epi64((__m128i *)&src1[0*src1_stride]);
-    __m128i src12 = _mm_loadl_epi64((__m128i *)&src1[1*src1_stride]);
-    __m128i src13 = _mm_loadl_epi64((__m128i *)&src1[2*src1_stride]);
-    __m128i src14 = _mm_loadl_epi64((__m128i *)&src1[3*src1_stride]);
+    __m128i src11 = _mm_loadu_si128((__m128i *)&src1[0*src1_stride]);
+    __m128i src12 = _mm_loadu_si128((__m128i *)&src1[1*src1_stride]);
+    __m128i src13 = _mm_loadu_si128((__m128i *)&src1[2*src1_stride]);
+    __m128i src14 = _mm_loadu_si128((__m128i *)&src1[3*src1_stride]);
 
     __m128i wx = _mm_set1_epi16(wgt_x);
     __m128i wy = _mm_set1_epi16(wgt_y);
@@ -821,35 +821,19 @@ rcn_apply_bdof_subblock_sse(const int16_t* src0, int src0_stride,
       x03 = _mm_srai_epi32(x03, BDOF_SHIFT);
       x04 = _mm_srai_epi32(x04, BDOF_SHIFT);
 
-      x01 = _mm_shufflelo_epi16(x01, 0x88);
-      x02 = _mm_shufflelo_epi16(x02, 0x88);
-      x03 = _mm_shufflelo_epi16(x03, 0x88);
-      x04 = _mm_shufflelo_epi16(x04, 0x88);
-
-      x01 = _mm_shufflehi_epi16(x01, 0x88);
-      x02 = _mm_shufflehi_epi16(x02, 0x88);
-      x03 = _mm_shufflehi_epi16(x03, 0x88);
-      x04 = _mm_shufflehi_epi16(x04, 0x88);
-
-      x01 = _mm_shuffle_epi32(x01, 0x88);
-      x02 = _mm_shuffle_epi32(x02, 0x88);
-      x03 = _mm_shuffle_epi32(x03, 0x88);
-      x04 = _mm_shuffle_epi32(x04, 0x88);
+      x01 = _mm_packs_epi32(x01, x02);
+      x03 = _mm_packs_epi32(x03, x04);
 
       x01 = _mm_max_epi16(x01, _mm_setzero_si128());
-      x02 = _mm_max_epi16(x02, _mm_setzero_si128());
       x03 = _mm_max_epi16(x03, _mm_setzero_si128());
-      x04 = _mm_max_epi16(x04, _mm_setzero_si128());
 
       x01 = _mm_min_epi16(x01, _mm_set1_epi16(1023));
-      x02 = _mm_min_epi16(x02, _mm_set1_epi16(1023));
       x03 = _mm_min_epi16(x03, _mm_set1_epi16(1023));
-      x04 = _mm_min_epi16(x04, _mm_set1_epi16(1023));
 
       _mm_storel_epi64((__m128i *)&dst[0*dst_stride], x01);
-      _mm_storel_epi64((__m128i *)&dst[1*dst_stride], x02);
+      _mm_storel_epi64((__m128i *)&dst[1*dst_stride], _mm_bsrli_si128(x01, 8));
       _mm_storel_epi64((__m128i *)&dst[2*dst_stride], x03);
-      _mm_storel_epi64((__m128i *)&dst[3*dst_stride], x04);
+      _mm_storel_epi64((__m128i *)&dst[3*dst_stride], _mm_bsrli_si128(x03, 8));
 }
 
 void
