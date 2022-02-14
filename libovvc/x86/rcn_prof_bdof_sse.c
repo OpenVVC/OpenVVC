@@ -52,18 +52,6 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
         __m128i srcV3 = _mm_loadl_epi64((__m128i *)&src[2*src_stride]);
         __m128i srcV4 = _mm_loadl_epi64((__m128i *)&src[3*src_stride]);
 
-        #if 0
-        sh1 = _mm_packs_epi32(sh1, _mm_setzero_si128());
-        sh2 = _mm_packs_epi32(sh2, _mm_setzero_si128());
-        sh3 = _mm_packs_epi32(sh3, _mm_setzero_si128());
-        sh4 = _mm_packs_epi32(sh4, _mm_setzero_si128());
-
-        sv1 = _mm_packs_epi32(sv1, _mm_setzero_si128());
-        sv2 = _mm_packs_epi32(sv2, _mm_setzero_si128());
-        sv3 = _mm_packs_epi32(sv3, _mm_setzero_si128());
-        sv4 = _mm_packs_epi32(sv4, _mm_setzero_si128());
-        #endif
-
         // int32_t add = dmv_scale_h[idx] * grad_x[x] + dmv_scale_v[idx] * grad_y[x];
         x1 = _mm_unpacklo_epi16(x1, y1);
         x2 = _mm_unpacklo_epi16(x2, y2);
@@ -101,19 +89,9 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
 
         __m128i offset = _mm_set1_epi16((1 << (13 - BITDEPTH)));
 
-        //srcV1 = _mm_cvtepi16_epi32(srcV1);
-        //srcV2 = _mm_cvtepi16_epi32(srcV2);
-        //srcV3 = _mm_cvtepi16_epi32(srcV3);
-        //srcV4 = _mm_cvtepi16_epi32(srcV4);
         srcV1 = _mm_unpacklo_epi64(srcV1, srcV2);
         srcV3 = _mm_unpacklo_epi64(srcV3, srcV4);
 
-        #if 0
-        srcV1 = _mm_add_epi16(srcV1, offset);
-        srcV2 = _mm_add_epi16(srcV2, offset);
-        srcV3 = _mm_add_epi16(srcV3, offset);
-        srcV4 = _mm_add_epi16(srcV4, offset);
-        #endif
         srcV1 = _mm_add_epi16(srcV1, offset);
         srcV3 = _mm_add_epi16(srcV3, offset);
 
@@ -161,18 +139,6 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
       __m128i srcV2 = _mm_loadl_epi64((__m128i *)&src[1*src_stride]);
       __m128i srcV3 = _mm_loadl_epi64((__m128i *)&src[2*src_stride]);
       __m128i srcV4 = _mm_loadl_epi64((__m128i *)&src[3*src_stride]);
-
-      #if 0
-      sh1 = _mm_packs_epi32(sh1, _mm_setzero_si128());
-      sh2 = _mm_packs_epi32(sh2, _mm_setzero_si128());
-      sh3 = _mm_packs_epi32(sh3, _mm_setzero_si128());
-      sh4 = _mm_packs_epi32(sh4, _mm_setzero_si128());
-
-      sv1 = _mm_packs_epi32(sv1, _mm_setzero_si128());
-      sv2 = _mm_packs_epi32(sv2, _mm_setzero_si128());
-      sv3 = _mm_packs_epi32(sv3, _mm_setzero_si128());
-      sv4 = _mm_packs_epi32(sv4, _mm_setzero_si128());
-      #endif
 
       // int32_t add = dmv_scale_h[idx] * grad_x[x] + dmv_scale_v[idx] * grad_y[x];
       x1 = _mm_unpacklo_epi16(x1, y1);
