@@ -134,8 +134,8 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
         _mm_storel_epi64((__m128i *)&dst[2*dst_stride], x3);
         _mm_storel_epi64((__m128i *)&dst[3*dst_stride], _mm_bsrli_si128(x3, 8));
     } else {
-      __m128i min_val = _mm_set1_epi32(-PROF_DELTA_LIMIT);
-      __m128i max_val = _mm_set1_epi32(PROF_DELTA_LIMIT - 1);
+      __m128i min_val = _mm_set1_epi16(-PROF_DELTA_LIMIT);
+      __m128i max_val = _mm_set1_epi16(PROF_DELTA_LIMIT - 1);
 
       __m128i sh1 = _mm_loadu_si128((__m128i *)&dmv_scale_h[0]);
       __m128i sh2 = _mm_loadu_si128((__m128i *)&dmv_scale_h[4]);
@@ -174,11 +174,6 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
       sv4 = _mm_packs_epi32(sv4, _mm_setzero_si128());
       #endif
 
-      srcV1 = _mm_unpacklo_epi16(srcV1, _mm_setzero_si128());
-      srcV2 = _mm_unpacklo_epi16(srcV2, _mm_setzero_si128());
-      srcV3 = _mm_unpacklo_epi16(srcV3, _mm_setzero_si128());
-      srcV4 = _mm_unpacklo_epi16(srcV4, _mm_setzero_si128());
-
       // int32_t add = dmv_scale_h[idx] * grad_x[x] + dmv_scale_v[idx] * grad_y[x];
       x1 = _mm_unpacklo_epi16(x1, y1);
       x2 = _mm_unpacklo_epi16(x2, y2);
@@ -196,42 +191,25 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
       x4 = _mm_madd_epi16(x4, sh4);
 
       // add = ov_clip(add, -PROF_DELTA_LIMIT, PROF_DELTA_LIMIT - 1);
-      x1 = _mm_max_epi32(x1, min_val);
-      x2 = _mm_max_epi32(x2, min_val);
-      x3 = _mm_max_epi32(x3, min_val);
-      x4 = _mm_max_epi32(x4, min_val);
+      x1 = _mm_packs_epi32(x1, x2);
+      x3 = _mm_packs_epi32(x3, x4);
 
-      x1 = _mm_min_epi32(x1, max_val);
-      x2 = _mm_min_epi32(x2, max_val);
-      x3 = _mm_min_epi32(x3, max_val);
-      x4 = _mm_min_epi32(x4, max_val);
+      x1 = _mm_max_epi16(x1, min_val);
+      x3 = _mm_max_epi16(x3, min_val);
 
-      // dst[x] = src[x] + add;
-      x1 = _mm_add_epi32(srcV1, x1);
-      x2 = _mm_add_epi32(srcV2, x2);
-      x3 = _mm_add_epi32(srcV3, x3);
-      x4 = _mm_add_epi32(srcV4, x4);
+      x1 = _mm_min_epi16(x1, max_val);
+      x3 = _mm_min_epi16(x3, max_val);
 
-      //pack without saturation
-      x1 = _mm_shufflelo_epi16(x1, 0x88);
-      x2 = _mm_shufflelo_epi16(x2, 0x88);
-      x3 = _mm_shufflelo_epi16(x3, 0x88);
-      x4 = _mm_shufflelo_epi16(x4, 0x88);
+      srcV1 = _mm_unpacklo_epi64(srcV1, srcV2);
+      srcV3 = _mm_unpacklo_epi64(srcV3, srcV4);
 
-      x1 = _mm_shufflehi_epi16(x1, 0x88);
-      x2 = _mm_shufflehi_epi16(x2, 0x88);
-      x3 = _mm_shufflehi_epi16(x3, 0x88);
-      x4 = _mm_shufflehi_epi16(x4, 0x88);
-
-      x1 = _mm_shuffle_epi32(x1, 0x88);
-      x2 = _mm_shuffle_epi32(x2, 0x88);
-      x3 = _mm_shuffle_epi32(x3, 0x88);
-      x4 = _mm_shuffle_epi32(x4, 0x88);
+      x1 = _mm_add_epi16(srcV1, x1);
+      x3 = _mm_add_epi16(srcV3, x3);
 
       _mm_storel_epi64((__m128i *)&dst[0*dst_stride], x1);
-      _mm_storel_epi64((__m128i *)&dst[1*dst_stride], x2);
+      _mm_storel_epi64((__m128i *)&dst[1*dst_stride], _mm_bsrli_si128(x1, 8));
       _mm_storel_epi64((__m128i *)&dst[2*dst_stride], x3);
-      _mm_storel_epi64((__m128i *)&dst[3*dst_stride], x4);
+      _mm_storel_epi64((__m128i *)&dst[3*dst_stride], _mm_bsrli_si128(x3, 8));
     }
 }
 
