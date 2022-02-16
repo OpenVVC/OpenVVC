@@ -1391,6 +1391,52 @@ oh_hevc_put_hevc_uni_epel_hv16_10_avx2(uint16_t* _dst,
   }
 }
 
+#if 1
+DECLARE_ALIGNED(16, static const int32_t, ov_mcp_filters_l[16][4]) = {
+#if 0
+  { { 0, 0, 0, 0, 0, 0, 0, 0},
+  {0, 64, 0, 64, 0, 64, 0, 64},
+  {0,   0, 0,   0, 0,   0, 0,   0},
+  {0,  0 , 0,  0 , 0,  0 , 0,  0 }},
+  { {  0, 1}, { -3, 63}, {  4,  -2}, { 1,  0} },
+  { { -1, 2}, { -5, 62}, {  8,  -3}, { 1,  0} },
+  { { -1, 3}, { -8, 60}, { 13,  -4}, { 1,  0} },
+  { { -1, 4}, {-10, 58}, { 17,  -5}, { 1,  0} },
+  { { -1, 4}, {-11, 52}, { 26,  -8}, { 3, -1} },
+  { { -1, 3}, { -9, 47}, { 31, -10}, { 4, -1} },
+  { { -1, 4}, {-11, 45}, { 34, -10}, { 4, -1} },
+  { { -1, 4}, {-11, 40}, { 40, -11}, { 4, -1} },
+  { { -1, 4}, {-10, 34}, { 45, -11}, { 4, -1} },
+  { { -1, 4}, {-10, 31}, { 47,  -9}, { 3, -1} },
+  { { -1, 3}, { -8, 26}, { 52, -11}, { 4, -1} },
+  { {  0, 1}, { -5, 17}, { 58, -10}, { 4, -1} },
+  { {  0, 1}, { -4, 13}, { 60,  -8}, { 3, -1} },
+  { {  0, 1}, { -3,  8}, { 62,  -5}, { 2, -1} },
+  { {  0, 1}, { -2,  4}, { 63,  -3}, { 1,  0} },
+
+    //Hpel for amvr
+    { { 0, 3}, { 9, 20}, { 20, 9}, { 3, 0} }
+};
+#endif
+{0x00010000, 0x003ffffd, 0xfffe0004, 0x00000001},
+{0x0002ffff, 0x003efffb, 0xfffd0008, 0x00000001},
+{0x0003ffff, 0x003cfff8, 0xfffc000d, 0x00000001},
+{0x0004ffff, 0x003afff6, 0xfffb0011, 0x00000001},
+{0x0004ffff, 0x0034fff5, 0xfff8001a, 0xffff0003},
+{0x0003ffff, 0x002ffff7, 0xfff6001f, 0xffff0004},
+{0x0004ffff, 0x002dfff5, 0xfff60022, 0xffff0004},
+{0x0004ffff, 0x0028fff5, 0xfff50028, 0xffff0004},
+{0x0004ffff, 0x0022fff6, 0xfff5002d, 0xffff0004},
+{0x0004ffff, 0x001ffff6, 0xfff7002f, 0xffff0003},
+{0x0003ffff, 0x001afff8, 0xfff50034, 0xffff0004},
+{0x00010000, 0x0011fffb, 0xfff6003a, 0xffff0004},
+{0x00010000, 0x000dfffc, 0xfff8003c, 0xffff0003},
+{0x00010000, 0x0008fffd, 0xfffb003e, 0xffff0002},
+{0x00010000, 0x0004fffe, 0xfffd003f, 0x00000001},
+{0x00030000, 0x00140009, 0x00090014, 0x00000003}
+};
+#endif
+
 static void
 oh_hevc_put_hevc_bi0_qpel_h16_10_avx2(int16_t* dst,
                                     const uint16_t* _src,
@@ -1405,10 +1451,18 @@ oh_hevc_put_hevc_bi0_qpel_h16_10_avx2(int16_t* dst,
   __m256i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
+  #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][1]);
   c3 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][2]);
   c4 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][3]);
+  #else
+  c1 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][0]);
+  c2 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][1]);
+  c3 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][2]);
+  c4 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][3]);
+
+  #endif
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       x1 = _mm256_loadu_si256((__m256i*)&src[x - 3 * 1]);
@@ -1470,10 +1524,18 @@ oh_hevc_put_hevc_bi1_qpel_h16_10_avx2(uint16_t* _dst,
   const __m256i offset = _mm256_set1_epi16(1 << 10);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
+  #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][1]);
   c3 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][2]);
   c4 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][3]);
+  #else
+  c1 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][0]);
+  c2 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][1]);
+  c3 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][2]);
+  c4 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][3]);
+
+  #endif
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       __m256i r5;
@@ -1541,10 +1603,18 @@ oh_hevc_put_hevc_uni_qpel_h16_10_avx2(uint16_t* _dst,
   const __m256i offset = _mm256_set1_epi16(1 << (10 + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
+  #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][1]);
   c3 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][2]);
   c4 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][3]);
+  #else
+  c1 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][0]);
+  c2 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][1]);
+  c3 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][2]);
+  c4 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][3]);
+
+  #endif
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       x1 = _mm256_loadu_si256((__m256i*)&src[x - 3 * 1]);
@@ -1603,10 +1673,18 @@ oh_hevc_put_hevc_bi0_qpel_v16_10_avx2(int16_t* dst,
   __m256i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
+  #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][1]);
   c3 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][2]);
   c4 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][3]);
+  #else
+  c1 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][0]);
+  c2 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][1]);
+  c3 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][2]);
+  c4 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][3]);
+
+  #endif
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       x1 = _mm256_loadu_si256((__m256i*)&src[x - 3 * srcstride]);
@@ -1671,10 +1749,18 @@ oh_hevc_put_hevc_bi1_qpel_v16_10_avx2(uint16_t* _dst,
   const __m256i offset = _mm256_set1_epi16(1 << 10);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
+  #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][1]);
   c3 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][2]);
   c4 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][3]);
+  #else
+  c1 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][0]);
+  c2 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][1]);
+  c3 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][2]);
+  c4 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][3]);
+
+  #endif
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       __m256i r5;
@@ -1745,10 +1831,18 @@ oh_hevc_put_hevc_uni_qpel_v16_10_avx2(uint16_t* _dst,
   const __m256i offset = _mm256_set1_epi16(1 << (10 + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
+  #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][1]);
   c3 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][2]);
   c4 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][3]);
+  #else
+  c1 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][0]);
+  c2 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][1]);
+  c3 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][2]);
+  c4 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][3]);
+
+  #endif
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       x1 = _mm256_loadu_si256((__m256i*)&src[x - 3 * srcstride]);
@@ -1811,10 +1905,17 @@ oh_hevc_put_hevc_bi0_qpel_v16_14_avx2(int16_t* dst,
   __m256i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
+  #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][1]);
   c3 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][2]);
   c4 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][3]);
+  #else
+  c1 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][0]);
+  c2 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][1]);
+  c3 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][2]);
+  c4 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][3]);
+  #endif
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       x1 = _mm256_loadu_si256((__m256i*)&src[x - 3 * srcstride]);
@@ -1879,10 +1980,17 @@ oh_hevc_put_hevc_bi1_qpel_v16_14_10_avx2(uint16_t* _dst,
   const __m256i offset = _mm256_set1_epi16(1 << 10);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
+  #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][1]);
   c3 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][2]);
   c4 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][3]);
+  #else
+  c1 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][0]);
+  c2 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][1]);
+  c3 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][2]);
+  c4 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][3]);
+  #endif
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       __m256i r5;
@@ -1953,10 +2061,17 @@ oh_hevc_put_hevc_uni_qpel_v16_14_10_avx2(uint16_t* _dst,
   const __m256i offset = _mm256_set1_epi16(1 << (10 + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
+  #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][1]);
   c3 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][2]);
   c4 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][3]);
+  #else
+  c1 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][0]);
+  c2 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][1]);
+  c3 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][2]);
+  c4 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][3]);
+  #endif
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       x1 = _mm256_loadu_si256((__m256i*)&src[x - 3 * srcstride]);
@@ -2648,10 +2763,17 @@ put_vvc_qpel_h16_10_avx2(int16_t* dst,
   __m256i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
+  #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][1]);
   c3 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][2]);
   c4 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][3]);
+  #else
+  c1 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][0]);
+  c2 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][1]);
+  c3 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][2]);
+  c4 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][3]);
+  #endif
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       x1 = _mm256_loadu_si256((__m256i*)&src[x - 3 * 1]);
@@ -2723,10 +2845,17 @@ put_vvc_bi_w_qpel_v16_14_10_avx2(uint8_t* _dst,
   const __m256i offset = _mm256_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
+  #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][1]);
   c3 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][2]);
   c4 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][3]);
+  #else
+  c1 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][0]);
+  c2 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][1]);
+  c3 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][2]);
+  c4 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][3]);
+  #endif
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       __m256i r5;
@@ -2817,10 +2946,17 @@ put_vvc_uni_w_qpel_v16_14_10_avx2(uint8_t* _dst,
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
+  #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][1]);
   c3 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][2]);
   c4 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][3]);
+  #else
+  c1 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][0]);
+  c2 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][1]);
+  c3 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][2]);
+  c4 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][3]);
+  #endif
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       x1 = _mm256_loadu_si256((__m256i*)&src[x - 3 * srcstride]);
@@ -3590,10 +3726,17 @@ put_vvc_uni_w_qpel_h16_10_avx2(uint8_t* _dst,
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
+  #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][1]);
   c3 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][2]);
   c4 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][3]);
+  #else
+  c1 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][0]);
+  c2 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][1]);
+  c3 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][2]);
+  c4 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][3]);
+  #endif
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       x1 = _mm256_loadu_si256((__m256i*)&src[x - 3 * 1]);
@@ -3678,10 +3821,17 @@ put_vvc_bi_w_qpel_h16_10_avx2(uint8_t* _dst,
   const __m256i offset = _mm256_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
+  #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][1]);
   c3 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][2]);
   c4 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][3]);
+  #else
+  c1 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][0]);
+  c2 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][1]);
+  c3 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][2]);
+  c4 = _mm256_set1_epi32(ov_mcp_filters_l[mx - 1][3]);
+  #endif
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       __m256i r5;
@@ -3768,10 +3918,17 @@ put_vvc_uni_w_qpel_v16_10_avx2(uint8_t* _dst,
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
+  #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][1]);
   c3 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][2]);
   c4 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][3]);
+  #else
+  c1 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][0]);
+  c2 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][1]);
+  c3 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][2]);
+  c4 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][3]);
+  #endif
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       x1 = _mm256_loadu_si256((__m256i*)&src[x - 3 * srcstride]);
@@ -3857,10 +4014,17 @@ put_vvc_bi_w_qpel_v16_10_avx2(uint8_t* _dst,
   const __m256i offset = _mm256_set1_epi32(1 << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
+  #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][1]);
   c3 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][2]);
   c4 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][3]);
+  #else
+  c1 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][0]);
+  c2 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][1]);
+  c3 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][2]);
+  c4 = _mm256_set1_epi32(ov_mcp_filters_l[my - 1][3]);
+  #endif
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       __m256i r5;
