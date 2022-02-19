@@ -48,6 +48,7 @@ ovlog_set_callback(void (*log_function)(void* ctx, int log_level, const char* lo
 void
 ov_log(void* ctx, int log_level, const char* log_content, ...)
 {
+    if (log_level <= ov_log_level) {
         va_list args;
 
         va_start(args, log_content);
@@ -55,5 +56,6 @@ ov_log(void* ctx, int log_level, const char* log_content, ...)
         ov_log_callback(ctx, log_level, log_content, args);
 
         va_end(args);
+    }
 }
 
