@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "ovlog.h"
 
-OVLogLevel ov_log_level = OVLOG_INFO;
+static OVLogLevel ov_log_level = OVLOG_INFO;
 
 static const char* vvctype = "VVCDec";
 
