@@ -343,24 +343,34 @@ write_decoded_frame_to_file(OVFrame *const frame, FILE *out_file)
     struct Window output_window = frame->output_window;
     int bd_shift = (frame->frame_info.chroma_format == OV_YUV_420_P8) ? 0: 1;
 
-    for (component = 0; component < 3; component++) {
-        uint16_t add_w = (output_window.offset_lft + output_window.offset_rgt);
-        uint16_t add_h = (output_window.offset_abv + output_window.offset_blw);
-        add_w = component ? add_w : add_w << 1; 
-        add_h = component ? add_h : add_h << 1;
-        uint16_t win_left  =  component ? output_window.offset_lft : output_window.offset_lft << 1;
-        uint16_t win_top   =  component ? output_window.offset_abv : output_window.offset_abv << 1;
-        int frame_h = (frame->height >> (!!component)) - add_h;
-        int frame_w = (frame->width  >> (!!component)) - add_w;
+    uint16_t add_w = (output_window.offset_lft + output_window.offset_rgt);
+    uint16_t add_h = (output_window.offset_abv + output_window.offset_blw);
 
-        int offset_h = win_top * frame->linesize[component] ;
-        int offset   = offset_h + (win_left << bd_shift) ;
-        const uint8_t *data = (uint8_t*)frame->data[component] + offset;
+    if (add_w || add_h) {
+        for (component = 0; component < 3; component++) {
+            uint16_t comp_w = component ? add_w : add_w << 1;
+            uint16_t comp_h = component ? add_h : add_h << 1;
+            uint16_t win_left  =  component ? output_window.offset_lft : output_window.offset_lft << 1;
+            uint16_t win_top   =  component ? output_window.offset_abv : output_window.offset_abv << 1;
+            int frame_h = (frame->height >> (!!component)) - comp_h;
+            int frame_w = (frame->width  >> (!!component)) - comp_w;
 
-        for (int j = 0; j < frame_h; j++) {
-            ret += fwrite(data, frame_w << bd_shift, sizeof(uint8_t), out_file);
-            data += frame->linesize[component];
+            int offset_h = win_top * frame->linesize[component] ;
+            int offset   = offset_h + (win_left << bd_shift) ;
+            const uint8_t *data = (uint8_t*)frame->data[component] + offset;
+
+            for (int j = 0; j < frame_h; j++) {
+                ret += fwrite(data, frame_w << bd_shift, sizeof(uint8_t), out_file);
+                data += frame->linesize[component];
+            }
         }
+    } else {
+        const uint8_t *data = (uint8_t*)frame->data[0];
+        const uint8_t *data_cb = (uint8_t*)frame->data[1];
+        const uint8_t *data_cr = (uint8_t*)frame->data[2];
+        ret += fwrite(data, frame->size[0], sizeof(uint8_t), out_file);
+        ret += fwrite(data_cb, frame->size[1], sizeof(uint8_t), out_file);
+        ret += fwrite(data_cr, frame->size[2], sizeof(uint8_t), out_file);
     }
 
     return ret;
