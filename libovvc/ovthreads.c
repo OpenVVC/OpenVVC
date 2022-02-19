@@ -70,7 +70,7 @@ entry_thread_main_function(void *opaque)
 
         struct EntryJob *entry_job = entry_thread_select_job(entry_th);
 
-        if (entry_job){
+        if (entry_job) {
             slicedec_update_entry_decoder(entry_job->slice_sync->owner, entry_th->ctudec);
             pthread_mutex_lock(&entry_th->entry_mtx);
             entry_th->state = ACTIVE;
@@ -83,8 +83,7 @@ entry_thread_main_function(void *opaque)
             if (is_last) {
                 slicedec_finish_decoding(entry_job->slice_sync->owner);
             }
-        }
-        else{
+        } else {
             pthread_mutex_lock(&main_thread->entry_threads_mtx);
             pthread_mutex_lock(&entry_th->entry_mtx);
             entry_th->state = IDLE;
