@@ -102,6 +102,8 @@ typedef struct OVNALUnit
    * a reference to this OVNALUnit anymore.
    */
   void (*release)(struct OVNALUnit **nalu_p);
+
+  void *release_opaque;
 } OVNALUnit;
 
 /* Picture Unit */
