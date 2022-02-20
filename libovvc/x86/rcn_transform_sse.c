@@ -1326,6 +1326,186 @@ vvc_inverse_dct_ii_4_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
     }
 }
 
+
+static void
+idct_ii_8_8lines(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
+                 int line_brk, int shift)
+{
+    __m128i add = _mm_set1_epi32(1 << (shift - 1));
+    __m128i x[8], d[24], r[16];
+
+    x[0] = _mm_load_si128((__m128i*)(src + 0 * src_stride));
+    x[1] = _mm_load_si128((__m128i*)(src + 2 * src_stride));
+    x[2] = _mm_load_si128((__m128i*)(src + 4 * src_stride));
+    x[3] = _mm_load_si128((__m128i*)(src + 6 * src_stride));
+    x[4] = _mm_load_si128((__m128i*)(src + 1 * src_stride));
+    x[5] = _mm_load_si128((__m128i*)(src + 3 * src_stride));
+    x[6] = _mm_load_si128((__m128i*)(src + 5 * src_stride));
+    x[7] = _mm_load_si128((__m128i*)(src + 7 * src_stride));
+
+    d[0] = _mm_set1_epi16(DCT_II_8[0]);
+    d[1] = _mm_set1_epi16(DCT_II_8[1]);
+    d[2] = _mm_set1_epi16(DCT_II_8[16]);
+    d[3] = _mm_set1_epi16(DCT_II_8[17]);
+    d[4] = _mm_set1_epi16(DCT_II_8[32]);
+    d[5] = _mm_set1_epi16(DCT_II_8[33]);
+    d[6] = _mm_set1_epi16(DCT_II_8[48]);
+    d[7] = _mm_set1_epi16(DCT_II_8[49]);
+
+    for(int k=0; k<4; k++){
+        d[8+4*k+0] = _mm_set1_epi16(DCT_II_8[8+k]);
+        d[8+4*k+1] = _mm_set1_epi16(DCT_II_8[24+k]);
+        d[8+4*k+2] = _mm_set1_epi16(DCT_II_8[40+k]);
+        d[8+4*k+3] = _mm_set1_epi16(DCT_II_8[56+k]);
+    }
+
+    dct2_8x8(x,d,r);
+
+    for(int i=0; i<8; i++){
+        __m128i o;
+
+        r[i+0] = _mm_add_epi32(r[i+0], add);
+        r[i+8] = _mm_add_epi32(r[i+8], add);
+
+        r[i+0] = _mm_srai_epi32(r[i+0], shift);
+        r[i+8] = _mm_srai_epi32(r[i+8], shift);
+
+        o = _mm_packs_epi32(r[i+0], r[i+8]);
+
+        _mm_store_si128((__m128i *) (dst+i*8), o);
+    }
+}
+
+static void
+idct_ii_8_4lines(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
+                 int line_brk, int shift)
+{
+    __m128i x[10], d[8], r[8];
+
+    x[0] = _mm_unpacklo_epi64(_mm_loadl_epi64((__m128i*)(src + 0 * src_stride)),
+                              _mm_loadl_epi64((__m128i*)(src + 2 * src_stride)));
+    x[1] = _mm_unpacklo_epi64(_mm_loadl_epi64((__m128i*)(src + 4 * src_stride)),
+                              _mm_loadl_epi64((__m128i*)(src + 6 * src_stride)));
+
+    x[2] = _mm_unpacklo_epi64(_mm_set1_epi16(src[1 * src_stride + 0]),
+                              _mm_set1_epi16(src[1 * src_stride + 1]));
+    x[3] = _mm_unpacklo_epi64(_mm_set1_epi16(src[3 * src_stride + 0]),
+                              _mm_set1_epi16(src[3 * src_stride + 1]));
+    x[4] = _mm_unpacklo_epi64(_mm_set1_epi16(src[5 * src_stride + 0]),
+                              _mm_set1_epi16(src[5 * src_stride + 1]));
+    x[5] = _mm_unpacklo_epi64(_mm_set1_epi16(src[7 * src_stride + 0]),
+                              _mm_set1_epi16(src[7 * src_stride + 1]));
+
+    x[6] = _mm_unpacklo_epi64(_mm_set1_epi16(src[1 * src_stride + 2]),
+                              _mm_set1_epi16(src[1 * src_stride + 3]));
+    x[7] = _mm_unpacklo_epi64(_mm_set1_epi16(src[3 * src_stride + 2]),
+                              _mm_set1_epi16(src[3 * src_stride + 3]));
+    x[8] = _mm_unpacklo_epi64(_mm_set1_epi16(src[5 * src_stride + 2]),
+                              _mm_set1_epi16(src[5 * src_stride + 3]));
+    x[9] = _mm_unpacklo_epi64(_mm_set1_epi16(src[7 * src_stride + 2]),
+                              _mm_set1_epi16(src[7 * src_stride + 3]));
+
+    static const int16_t DCT_II_8_4_sse[8 * 8] = {
+        64,  64,  64,  64,  83,  36,  83,  36,
+        64, -64,  64, -64,  36, -83,  36, -83,
+        64,  64,  64,  64,  36,  83,  36,  83,
+        -64, 64, -64,  64, -83,  36, -83,  36,
+        89,  75,  18,  50,  89,  75,  18,  50,
+        75, -18, -50, -89,  75, -18, -50, -89,
+        50, -89,  75,  18,  50, -89,  75,  18,
+        18, -50, -89,  75,  18, -50, -89,  75
+    };
+
+    d[0] = _mm_load_si128((__m128i*)(DCT_II_8_4_sse + 0));
+    d[1] = _mm_load_si128((__m128i*)(DCT_II_8_4_sse + 8));
+    d[2] = _mm_load_si128((__m128i*)(DCT_II_8_4_sse + 16));
+    d[3] = _mm_load_si128((__m128i*)(DCT_II_8_4_sse + 24));
+    d[4] = _mm_load_si128((__m128i*)(DCT_II_8_4_sse + 32));
+    d[5] = _mm_load_si128((__m128i*)(DCT_II_8_4_sse + 40));
+    d[6] = _mm_load_si128((__m128i*)(DCT_II_8_4_sse + 48));
+    d[7] = _mm_load_si128((__m128i*)(DCT_II_8_4_sse + 56));
+
+    dct2_8x4(x, d, r);
+
+    __m128i add = _mm_set1_epi32(1 << (shift - 1));
+    for (int i=0; i<8; i+=2){
+        __m128i o;
+
+        r[i+0] = _mm_add_epi32(r[i+0], add);
+        r[i+1] = _mm_add_epi32(r[i+1], add);
+
+        r[i+0] = _mm_srai_epi32(r[i+0], shift);
+        r[i+1] = _mm_srai_epi32(r[i+1], shift);
+
+        o = _mm_packs_epi32(r[i+0], r[i+1]);
+
+        _mm_store_si128((__m128i *) (dst+i/2*8), o);
+    }
+}
+
+static void
+idct_ii_8_2lines(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
+                 int line_brk, int shift)
+{
+    __m128i x[6];
+    __m128i d[6];
+    __m128i r[4];
+
+    x[0] = _mm_unpacklo_epi32(_mm_loadl_epi64((__m128i*)(src + 0 * src_stride)),
+                              _mm_loadl_epi64((__m128i*)(src + 2 * src_stride)));
+
+    x[0] = _mm_unpacklo_epi16(x[0],x[0]);
+
+    x[1] = _mm_unpacklo_epi32(_mm_loadl_epi64((__m128i*)(src + 4 * src_stride)),
+                              _mm_loadl_epi64((__m128i*)(src + 6 * src_stride)));
+
+    x[1] = _mm_unpacklo_epi16(x[1],x[1]);
+
+    x[2] = _mm_unpacklo_epi64(_mm_set1_epi16(src[1 * src_stride    ]),
+                              _mm_set1_epi16(src[1 * src_stride + 1]));
+    x[3] = _mm_unpacklo_epi64(_mm_set1_epi16(src[3 * src_stride    ]),
+                              _mm_set1_epi16(src[3 * src_stride + 1]));
+    x[4] = _mm_unpacklo_epi64(_mm_set1_epi16(src[5 * src_stride    ]),
+                              _mm_set1_epi16(src[5 * src_stride + 1]));
+    x[5] = _mm_unpacklo_epi64(_mm_set1_epi16(src[7 * src_stride    ]),
+                              _mm_set1_epi16(src[7 * src_stride + 1]));
+
+    static const int16_t DCT_II_8_2_sse[8 * 6] = {
+        64,  64,  64,  64,  83,  36,  83,  36,
+        64, -64,  64, -64,  36, -83,  36, -83,
+        89,  75,  18,  50,  89,  75,  18,  50,
+        75, -18, -50, -89,  75, -18, -50, -89,
+        50, -89,  75,  18,  50, -89,  75,  18,
+        18, -50, -89,  75,  18, -50, -89,  75
+    };
+
+    d[0] = _mm_load_si128((__m128i*)(DCT_II_8_2_sse +  0));
+    d[1] = _mm_load_si128((__m128i*)(DCT_II_8_2_sse +  8));
+    d[2] = _mm_load_si128((__m128i*)(DCT_II_8_2_sse + 16));
+    d[3] = _mm_load_si128((__m128i*)(DCT_II_8_2_sse + 24));
+    d[4] = _mm_load_si128((__m128i*)(DCT_II_8_2_sse + 32));
+    d[5] = _mm_load_si128((__m128i*)(DCT_II_8_2_sse + 40));
+
+    dct2_8x2(x, d, r);
+
+    __m128i add = _mm_set1_epi32(1 << (shift - 1));
+    r[0] = _mm_add_epi32(r[0], add);
+    r[1] = _mm_add_epi32(r[1], add);
+    r[2] = _mm_add_epi32(r[2], add);
+    r[3] = _mm_add_epi32(r[3], add);
+
+    r[0] = _mm_srai_epi32(r[0], shift);
+    r[1] = _mm_srai_epi32(r[1], shift);
+    r[2] = _mm_srai_epi32(r[2], shift);
+    r[3] = _mm_srai_epi32(r[3], shift);
+
+    __m128i o0 = _mm_packs_epi32(r[0], r[1]);
+    __m128i o1 = _mm_packs_epi32(r[2], r[3]);
+
+    _mm_store_si128((__m128i *) (dst+0), o0);
+    _mm_store_si128((__m128i *) (dst+8), o1);
+}
+
 void
 vvc_inverse_dct_ii_8_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                          int num_lines, int line_brk, int shift)
@@ -1333,203 +1513,17 @@ vvc_inverse_dct_ii_8_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
     __m128i add = _mm_set1_epi32(1 << (shift - 1));
 
     for (int j = 0; j < num_lines / 8; j++) {
-        __m128i x[8], d[24], r[16];
-
-        x[0] = _mm_load_si128((__m128i*)(src + 0 * src_stride));
-        x[1] = _mm_load_si128((__m128i*)(src + 2 * src_stride));
-        x[2] = _mm_load_si128((__m128i*)(src + 4 * src_stride));
-        x[3] = _mm_load_si128((__m128i*)(src + 6 * src_stride));
-        x[4] = _mm_load_si128((__m128i*)(src + 1 * src_stride));
-        x[5] = _mm_load_si128((__m128i*)(src + 3 * src_stride));
-        x[6] = _mm_load_si128((__m128i*)(src + 5 * src_stride));
-        x[7] = _mm_load_si128((__m128i*)(src + 7 * src_stride));
-
-        d[0] = _mm_set1_epi16(DCT_II_8[0]);
-        d[1] = _mm_set1_epi16(DCT_II_8[1]);
-        d[2] = _mm_set1_epi16(DCT_II_8[16]);
-        d[3] = _mm_set1_epi16(DCT_II_8[17]);
-        d[4] = _mm_set1_epi16(DCT_II_8[32]);
-        d[5] = _mm_set1_epi16(DCT_II_8[33]);
-        d[6] = _mm_set1_epi16(DCT_II_8[48]);
-        d[7] = _mm_set1_epi16(DCT_II_8[49]);
-
-        for(int k=0; k<4; k++){
-            d[8+4*k+0] = _mm_set1_epi16(DCT_II_8[8+k]);
-            d[8+4*k+1] = _mm_set1_epi16(DCT_II_8[24+k]);
-            d[8+4*k+2] = _mm_set1_epi16(DCT_II_8[40+k]);
-            d[8+4*k+3] = _mm_set1_epi16(DCT_II_8[56+k]);
-        }
-
-        dct2_8x8(x,d,r);
-
-        for(int i=0; i<8; i++){
-            __m128i o;
-
-            r[i+0] = _mm_add_epi32(r[i+0], add);
-            r[i+8] = _mm_add_epi32(r[i+8], add);
-
-            r[i+0] = _mm_srai_epi32(r[i+0], shift);
-            r[i+8] = _mm_srai_epi32(r[i+8], shift);
-
-            o = _mm_packs_epi32(r[i+0], r[i+8]);
-
-            _mm_store_si128((__m128i *) (dst+i*8), o);
-        }
+        idct_ii_8_8lines(src, dst, src_stride, line_brk, shift);
         src += 8;
         dst += 64;
     }
 
     if (num_lines & 0x4){
-        __m128i x[10], d[8], r[8];
-
-        x[0] = _mm_unpacklo_epi64(
-                _mm_loadl_epi64((__m128i*)(src + 0 * src_stride)),
-                _mm_loadl_epi64((__m128i*)(src + 2 * src_stride))
-                );
-        x[1] = _mm_unpacklo_epi64(
-                _mm_loadl_epi64((__m128i*)(src + 4 * src_stride)),
-                _mm_loadl_epi64((__m128i*)(src + 6 * src_stride))
-                );
-
-        x[2] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[1 * src_stride + 0]),
-                _mm_set1_epi16(src[1 * src_stride + 1])
-                );
-        x[3] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[3 * src_stride + 0]),
-                _mm_set1_epi16(src[3 * src_stride + 1])
-                );
-        x[4] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[5 * src_stride + 0]),
-                _mm_set1_epi16(src[5 * src_stride + 1])
-                );
-        x[5] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[7 * src_stride + 0]),
-                _mm_set1_epi16(src[7 * src_stride + 1])
-                );
-
-        x[6] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[1 * src_stride + 2]),
-                _mm_set1_epi16(src[1 * src_stride + 3])
-                );
-        x[7] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[3 * src_stride + 2]),
-                _mm_set1_epi16(src[3 * src_stride + 3])
-                );
-        x[8] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[5 * src_stride + 2]),
-                _mm_set1_epi16(src[5 * src_stride + 3])
-                );
-        x[9] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[7 * src_stride + 2]),
-                _mm_set1_epi16(src[7 * src_stride + 3])
-                );
-
-        static const int16_t DCT_II_8_4_sse[8 * 8] = {
-            64,  64,  64,  64,  83,  36,  83,  36,
-            64, -64,  64, -64,  36, -83,  36, -83,
-            64,  64,  64,  64,  36,  83,  36,  83,
-            -64, 64, -64,  64, -83,  36, -83,  36,
-            89,  75,  18,  50,  89,  75,  18,  50,
-            75, -18, -50, -89,  75, -18, -50, -89,
-            50, -89,  75,  18,  50, -89,  75,  18,
-            18, -50, -89,  75,  18, -50, -89,  75
-        };
-
-        d[0] = _mm_load_si128((__m128i*)(DCT_II_8_4_sse + 0));
-        d[1] = _mm_load_si128((__m128i*)(DCT_II_8_4_sse + 8));
-        d[2] = _mm_load_si128((__m128i*)(DCT_II_8_4_sse + 16));
-        d[3] = _mm_load_si128((__m128i*)(DCT_II_8_4_sse + 24));
-        d[4] = _mm_load_si128((__m128i*)(DCT_II_8_4_sse + 32));
-        d[5] = _mm_load_si128((__m128i*)(DCT_II_8_4_sse + 40));
-        d[6] = _mm_load_si128((__m128i*)(DCT_II_8_4_sse + 48));
-        d[7] = _mm_load_si128((__m128i*)(DCT_II_8_4_sse + 56));
-
-        dct2_8x4(x, d, r);
-
-        __m128i add = _mm_set1_epi32(1 << (shift - 1));
-        for (int i=0; i<8; i+=2){
-            __m128i o;
-
-            r[i+0] = _mm_add_epi32(r[i+0], add);
-            r[i+1] = _mm_add_epi32(r[i+1], add);
-
-            r[i+0] = _mm_srai_epi32(r[i+0], shift);
-            r[i+1] = _mm_srai_epi32(r[i+1], shift);
-
-            o = _mm_packs_epi32(r[i+0], r[i+1]);
-
-            _mm_store_si128((__m128i *) (dst+i/2*8), o);
-        }
+        idct_ii_8_4lines(src, dst, src_stride, line_brk, shift);
     }
 
     if (num_lines & 0x2){
-        __m128i x[6];
-        __m128i d[6];
-        __m128i r[4];
-
-        x[0] = _mm_unpacklo_epi32(
-                _mm_loadl_epi64((__m128i*)(src + 0 * src_stride)),
-                _mm_loadl_epi64((__m128i*)(src + 2 * src_stride))
-                );
-        x[0] = _mm_unpacklo_epi16(x[0],x[0]);
-        x[1] = _mm_unpacklo_epi32(
-                _mm_loadl_epi64((__m128i*)(src + 4 * src_stride)),
-                _mm_loadl_epi64((__m128i*)(src + 6 * src_stride))
-                );
-        x[1] = _mm_unpacklo_epi16(x[1],x[1]);
-
-        x[2] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[1 * src_stride    ]),
-                _mm_set1_epi16(src[1 * src_stride + 1])
-                );
-        x[3] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[3 * src_stride    ]),
-                _mm_set1_epi16(src[3 * src_stride + 1])
-                );
-        x[4] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[5 * src_stride    ]),
-                _mm_set1_epi16(src[5 * src_stride + 1])
-                );
-        x[5] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[7 * src_stride    ]),
-                _mm_set1_epi16(src[7 * src_stride + 1])
-                );
-
-        static const int16_t DCT_II_8_2_sse[8 * 6] = {
-            64,  64,  64,  64,  83,  36,  83,  36,
-            64, -64,  64, -64,  36, -83,  36, -83,
-            89,  75,  18,  50,  89,  75,  18,  50,
-            75, -18, -50, -89,  75, -18, -50, -89,
-            50, -89,  75,  18,  50, -89,  75,  18,
-            18, -50, -89,  75,  18, -50, -89,  75
-        };
-
-        d[0] = _mm_load_si128((__m128i*)(DCT_II_8_2_sse +  0));
-        d[1] = _mm_load_si128((__m128i*)(DCT_II_8_2_sse +  8));
-        d[2] = _mm_load_si128((__m128i*)(DCT_II_8_2_sse + 16));
-        d[3] = _mm_load_si128((__m128i*)(DCT_II_8_2_sse + 24));
-        d[4] = _mm_load_si128((__m128i*)(DCT_II_8_2_sse + 32));
-        d[5] = _mm_load_si128((__m128i*)(DCT_II_8_2_sse + 40));
-
-        dct2_8x2(x, d, r);
-
-        __m128i add = _mm_set1_epi32(1 << (shift - 1));
-        r[0] = _mm_add_epi32(r[0], add);
-        r[1] = _mm_add_epi32(r[1], add);
-        r[2] = _mm_add_epi32(r[2], add);
-        r[3] = _mm_add_epi32(r[3], add);
-
-        r[0] = _mm_srai_epi32(r[0], shift);
-        r[1] = _mm_srai_epi32(r[1], shift);
-        r[2] = _mm_srai_epi32(r[2], shift);
-        r[3] = _mm_srai_epi32(r[3], shift);
-
-        __m128i o0 = _mm_packs_epi32(r[0], r[1]);
-        __m128i o1 = _mm_packs_epi32(r[2], r[3]);
-
-        _mm_store_si128((__m128i *) (dst+0), o0);
-        _mm_store_si128((__m128i *) (dst+8), o1);
+        idct_ii_8_2lines(src, dst, src_stride, line_brk, shift);
     }
 
     if (num_lines & 0x1){
