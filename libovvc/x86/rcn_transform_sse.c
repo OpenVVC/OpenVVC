@@ -1509,257 +1509,267 @@ vvc_inverse_dct_ii_8_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
     }
 }
 
-void
-vvc_inverse_dct_ii_16_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                          int num_lines, int line_brk, int shift)
+static void
+idct_ii_16_8lines(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
+                  int line_brk, int shift)
 {
     __m128i add = _mm_set1_epi32(1 << (shift - 1));
+    __m128i x[72], d[32], r[32];
 
-    for (int j = 0; j < num_lines / 8; j++) {
-        __m128i x[72], d[32], r[32];
+    x[0] = _mm_load_si128((__m128i*)(src +  0 * src_stride));
+    x[1] = _mm_load_si128((__m128i*)(src +  4 * src_stride));
+    x[2] = _mm_load_si128((__m128i*)(src +  8 * src_stride));
+    x[3] = _mm_load_si128((__m128i*)(src + 12 * src_stride));
 
-        x[0] = _mm_load_si128((__m128i*)(src +  0 * src_stride));
-        x[1] = _mm_load_si128((__m128i*)(src +  4 * src_stride));
-        x[2] = _mm_load_si128((__m128i*)(src +  8 * src_stride));
-        x[3] = _mm_load_si128((__m128i*)(src + 12 * src_stride));
-        x[4] = _mm_load_si128((__m128i*)(src +  2 * src_stride));
-        x[5] = _mm_load_si128((__m128i*)(src +  6 * src_stride));
-        x[6] = _mm_load_si128((__m128i*)(src + 10 * src_stride));
-        x[7] = _mm_load_si128((__m128i*)(src + 14 * src_stride));
+    x[4] = _mm_load_si128((__m128i*)(src +  2 * src_stride));
+    x[5] = _mm_load_si128((__m128i*)(src +  6 * src_stride));
+    x[6] = _mm_load_si128((__m128i*)(src + 10 * src_stride));
+    x[7] = _mm_load_si128((__m128i*)(src + 14 * src_stride));
 
-        for (int k=0; k<8; k++){
-            for (int l=0; l<8; l++)
-                x[8+8*k+l] = _mm_set1_epi16(src[(2*l+1) * src_stride + k]);
+    for (int k = 0; k < 8; k++){
+        x[8 + 8 * k + 0] = _mm_set1_epi16(src[(2 * 0 + 1) * src_stride + k]);
+        x[8 + 8 * k + 1] = _mm_set1_epi16(src[(2 * 1 + 1) * src_stride + k]);
+        x[8 + 8 * k + 2] = _mm_set1_epi16(src[(2 * 2 + 1) * src_stride + k]);
+        x[8 + 8 * k + 3] = _mm_set1_epi16(src[(2 * 3 + 1) * src_stride + k]);
+        x[8 + 8 * k + 4] = _mm_set1_epi16(src[(2 * 4 + 1) * src_stride + k]);
+        x[8 + 8 * k + 5] = _mm_set1_epi16(src[(2 * 5 + 1) * src_stride + k]);
+        x[8 + 8 * k + 6] = _mm_set1_epi16(src[(2 * 6 + 1) * src_stride + k]);
+        x[8 + 8 * k + 7] = _mm_set1_epi16(src[(2 * 7 + 1) * src_stride + k]);
+    }
+
+    d[0] = _mm_set1_epi16(DCT_II_16[  0]);
+    d[1] = _mm_set1_epi16(DCT_II_16[  1]);
+    d[2] = _mm_set1_epi16(DCT_II_16[ 64]);
+    d[3] = _mm_set1_epi16(DCT_II_16[ 65]);
+    d[4] = _mm_set1_epi16(DCT_II_16[128]);
+    d[5] = _mm_set1_epi16(DCT_II_16[129]);
+    d[6] = _mm_set1_epi16(DCT_II_16[192]);
+    d[7] = _mm_set1_epi16(DCT_II_16[193]);
+
+    for (int k = 0; k < 4; k++) {
+        d[8 + 4 * k + 0] = _mm_set1_epi16(DCT_II_16[ 32 + k]);
+        d[8 + 4 * k + 1] = _mm_set1_epi16(DCT_II_16[ 96 + k]);
+        d[8 + 4 * k + 2] = _mm_set1_epi16(DCT_II_16[160 + k]);
+        d[8 + 4 * k + 3] = _mm_set1_epi16(DCT_II_16[224 + k]);
+    }
+
+    static const int16_t DCT_II_16_8_sse[8 * 8] = {
+        90,  87,  80,  70,  57,  43,  25,   9,
+        87,  57,   9, -43, -80, -90, -70, -25,
+        80,   9, -70, -87, -25,  57,  90,  43,
+        70, -43, -87,   9,  90,  25, -80, -57,
+        57, -80, -25,  90,  -9, -87,  43,  70,
+        43, -90,  57,  25, -87,  70,   9, -80,
+        25, -70,  90, -80,  43,   9, -57,  87,
+        9,  -25,  43, -57,  70, -80,  87, -90
+    };
+
+    d[24 + 0] = _mm_load_si128((__m128i*)(DCT_II_16_8_sse + 8 * 0));
+    d[24 + 1] = _mm_load_si128((__m128i*)(DCT_II_16_8_sse + 8 * 1));
+    d[24 + 2] = _mm_load_si128((__m128i*)(DCT_II_16_8_sse + 8 * 2));
+    d[24 + 3] = _mm_load_si128((__m128i*)(DCT_II_16_8_sse + 8 * 3));
+    d[24 + 4] = _mm_load_si128((__m128i*)(DCT_II_16_8_sse + 8 * 4));
+    d[24 + 5] = _mm_load_si128((__m128i*)(DCT_II_16_8_sse + 8 * 5));
+    d[24 + 6] = _mm_load_si128((__m128i*)(DCT_II_16_8_sse + 8 * 6));
+    d[24 + 7] = _mm_load_si128((__m128i*)(DCT_II_16_8_sse + 8 * 7));
+
+    dct2_16x8(x, d, r);
+
+    for (int i = 0; i < 32; i += 2) {
+        __m128i o;
+
+        r[i + 0] = _mm_add_epi32(r[i + 0], add);
+        r[i + 1] = _mm_add_epi32(r[i + 1], add);
+
+        r[i + 0] = _mm_srai_epi32(r[i + 0], shift);
+        r[i + 1] = _mm_srai_epi32(r[i + 1], shift);
+
+        o = _mm_packs_epi32(r[i + 0], r[i + 1]);
+
+        _mm_store_si128((__m128i *) (dst + i * 8/2), o);
+    }
+
+}
+
+
+static void
+idct_ii_16_4lines(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
+                  int line_brk, int shift)
+{
+    __m128i x[42], d[16], r[16];
+    __m128i add = _mm_set1_epi32(1 << (shift - 1));
+
+    x[0] = _mm_unpacklo_epi64(_mm_loadl_epi64((__m128i*)(src +  0 * src_stride)),
+                              _mm_loadl_epi64((__m128i*)(src +  4 * src_stride)));
+    x[1] = _mm_unpacklo_epi64(_mm_loadl_epi64((__m128i*)(src +  8 * src_stride)),
+                              _mm_loadl_epi64((__m128i*)(src + 12 * src_stride)));
+
+    x[2] = _mm_unpacklo_epi64(_mm_set1_epi16(src[ 2 * src_stride + 0]),
+                              _mm_set1_epi16(src[ 2 * src_stride + 1]));
+    x[3] = _mm_unpacklo_epi64(_mm_set1_epi16(src[ 6 * src_stride + 0]),
+                              _mm_set1_epi16(src[ 6 * src_stride + 1]));
+    x[4] = _mm_unpacklo_epi64(_mm_set1_epi16(src[10 * src_stride + 0]),
+                              _mm_set1_epi16(src[10 * src_stride + 1]));
+    x[5] = _mm_unpacklo_epi64(_mm_set1_epi16(src[14 * src_stride + 0]),
+                              _mm_set1_epi16(src[14 * src_stride + 1]));
+
+    x[6] = _mm_unpacklo_epi64(_mm_set1_epi16(src[ 2 * src_stride + 2]),
+                              _mm_set1_epi16(src[ 2 * src_stride + 3]));
+    x[7] = _mm_unpacklo_epi64(_mm_set1_epi16(src[ 6 * src_stride + 2]),
+                              _mm_set1_epi16(src[ 6 * src_stride + 3]));
+    x[8] = _mm_unpacklo_epi64(_mm_set1_epi16(src[10 * src_stride + 2]),
+                              _mm_set1_epi16(src[10 * src_stride + 3]));
+    x[9] = _mm_unpacklo_epi64(_mm_set1_epi16(src[14 * src_stride + 2]),
+                              _mm_set1_epi16(src[14 * src_stride + 3]));
+
+    for (int k=0; k<4; k++) {
+        for (int l=0; l<8; l++) {
+            x[10+8*k+l] = _mm_set1_epi16(src[(2*l+1) * src_stride + k]);
         }
+    }
 
-        d[0] = _mm_set1_epi16(DCT_II_16[  0]);
-        d[1] = _mm_set1_epi16(DCT_II_16[  1]);
-        d[2] = _mm_set1_epi16(DCT_II_16[ 64]);
-        d[3] = _mm_set1_epi16(DCT_II_16[ 65]);
-        d[4] = _mm_set1_epi16(DCT_II_16[128]);
-        d[5] = _mm_set1_epi16(DCT_II_16[129]);
-        d[6] = _mm_set1_epi16(DCT_II_16[192]);
-        d[7] = _mm_set1_epi16(DCT_II_16[193]);
+    static const int16_t DCT_II_16_4_sse[8 * 16] = {
+        64, 64, 64, 64, 83, 36, 83, 36,
+        64, -64, 64, -64, 36, -83, 36, -83,
+        64, 64, 64, 64, 36, 83, 36, 83,
+        -64, 64, -64, 64, -83, 36, -83, 36,
+        89, 75, 18, 50, 89, 75, 18, 50,
+        75, -18, -50, -89, 75, -18, -50, -89,
+        50, -89, 75, 18, 50, -89, 75, 18,
+        18, -50, -89, 75, 18, -50, -89, 75,
+        90,  87,  80,  70,  57,  43,  25,   9,
+        87,  57,   9, -43, -80, -90, -70, -25,
+        80,   9, -70, -87, -25,  57,  90,  43,
+        70, -43, -87,   9,  90,  25, -80, -57,
+        57, -80, -25,  90,  -9, -87,  43,  70,
+        43, -90,  57,  25, -87,  70,   9, -80,
+        25, -70,  90, -80,  43,   9, -57,  87,
+        9, -25,  43, -57,  70, -80,  87, -90
+    };
 
-        for (int k = 0; k < 4; k++) {
-            d[8 + 4 * k + 0] = _mm_set1_epi16(DCT_II_16[ 32 + k]);
-            d[8 + 4 * k + 1] = _mm_set1_epi16(DCT_II_16[ 96 + k]);
-            d[8 + 4 * k + 2] = _mm_set1_epi16(DCT_II_16[160 + k]);
-            d[8 + 4 * k + 3] = _mm_set1_epi16(DCT_II_16[224 + k]);
-        }
+    for (int k = 0; k < 16; k++) {
+        d[k] = _mm_load_si128((__m128i*)(DCT_II_16_4_sse + 8 * k));
+    }
 
-        static const int16_t DCT_II_16_8_sse[8 * 8] = {
-            90,  87,  80,  70,  57,  43,  25,   9,
-            87,  57,   9, -43, -80, -90, -70, -25,
-            80,   9, -70, -87, -25,  57,  90,  43,
-            70, -43, -87,   9,  90,  25, -80, -57,
-            57, -80, -25,  90,  -9, -87,  43,  70,
-            43, -90,  57,  25, -87,  70,   9, -80,
-            25, -70,  90, -80,  43,   9, -57,  87,
-            9, -25,  43, -57,  70, -80,  87, -90
-        };
+    dct2_16x4(x, d, r);
 
-        for (int k=0; k<8; k++) {
-            d[24+k] = _mm_load_si128((__m128i*)(DCT_II_16_8_sse + 8*k));
-        }
+    for (int i = 0; i < 16; i += 2) {
+        __m128i o;
 
-        dct2_16x8(x, d, r);
+        r[i + 0] = _mm_add_epi32(r[i + 0], add);
+        r[i + 1] = _mm_add_epi32(r[i + 1], add);
 
-        for (int i = 0; i < 32; i+=2) {
-            __m128i o;
+        r[i + 0] = _mm_srai_epi32(r[i + 0], shift);
+        r[i + 1] = _mm_srai_epi32(r[i + 1], shift);
 
-            r[i + 0] = _mm_add_epi32(r[i + 0], add);
-            r[i + 1] = _mm_add_epi32(r[i + 1], add);
+        o = _mm_packs_epi32(r[i + 0], r[i + 1]);
 
-            r[i + 0] = _mm_srai_epi32(r[i + 0], shift);
-            r[i + 1] = _mm_srai_epi32(r[i + 1], shift);
+        _mm_store_si128((__m128i *) (dst + i / 2 * 8), o);
+    }
+}
 
-            o = _mm_packs_epi32(r[i + 0], r[i + 1]);
+static void
+idct_ii_16_2lines(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
+                  int line_brk, int shift)
+{
+    __m128i x[24], d[14], r[8];
+    __m128i add = _mm_set1_epi32(1 << (shift - 1));
 
-            _mm_store_si128((__m128i *) (dst + i * 8/2), o);
-        }
-        src += 8;
+    x[0] = _mm_unpacklo_epi32(_mm_loadl_epi64((__m128i*)(src +  0 * src_stride)),
+                              _mm_loadl_epi64((__m128i*)(src +  4 * src_stride)));
+
+    x[0] = _mm_unpacklo_epi16(x[0], x[0]);
+
+    x[1] = _mm_unpacklo_epi32(_mm_loadl_epi64((__m128i*)(src +  8 * src_stride)),
+                              _mm_loadl_epi64((__m128i*)(src + 12 * src_stride)));
+
+    x[1] = _mm_unpacklo_epi16(x[1], x[1]);
+
+    x[2] = _mm_unpacklo_epi64(_mm_set1_epi16(src[ 2 * src_stride]),
+                              _mm_set1_epi16(src[ 2 * src_stride + 1]));
+    x[3] = _mm_unpacklo_epi64(_mm_set1_epi16(src[ 6 * src_stride]),
+                              _mm_set1_epi16(src[ 6 * src_stride + 1]));
+    x[4] = _mm_unpacklo_epi64(_mm_set1_epi16(src[10 * src_stride]),
+                              _mm_set1_epi16(src[10 * src_stride + 1]));
+    x[5] = _mm_unpacklo_epi64(_mm_set1_epi16(src[14 * src_stride]),
+                              _mm_set1_epi16(src[14 * src_stride + 1]));
+
+    for (int k=0; k<2; k++){
+        x[6 + 8 * k + 0] = _mm_set1_epi16(src[ 1 * src_stride + k]);
+        x[6 + 8 * k + 1] = _mm_set1_epi16(src[ 3 * src_stride + k]);
+        x[6 + 8 * k + 2] = _mm_set1_epi16(src[ 5 * src_stride + k]);
+        x[6 + 8 * k + 3] = _mm_set1_epi16(src[ 7 * src_stride + k]);
+        x[6 + 8 * k + 4] = _mm_set1_epi16(src[ 9 * src_stride + k]);
+        x[6 + 8 * k + 5] = _mm_set1_epi16(src[11 * src_stride + k]);
+        x[6 + 8 * k + 6] = _mm_set1_epi16(src[13 * src_stride + k]);
+        x[6 + 8 * k + 7] = _mm_set1_epi16(src[15 * src_stride + k]);
+    }
+
+    static const int16_t DCT_II_16_2_sse[8 * 14] = {
+        64,  64,  64,  64,  83,  36,  83,  36,
+        64, -64,  64, -64,  36, -83,  36, -83,
+        89,  75,  18,  50,  89,  75,  18,  50,
+        75, -18, -50, -89,  75, -18, -50, -89,
+        50, -89,  75,  18,  50, -89,  75,  18,
+        18, -50, -89,  75,  18, -50, -89,  75,
+        90,  87,  80,  70,  57,  43,  25,   9,
+        87,  57,   9, -43, -80, -90, -70, -25,
+        80,   9, -70, -87, -25,  57,  90,  43,
+        70, -43, -87,   9,  90,  25, -80, -57,
+        57, -80, -25,  90,  -9, -87,  43,  70,
+        43, -90,  57,  25, -87,  70,   9, -80,
+        25, -70,  90, -80,  43,   9, -57,  87,
+        9, -25,  43, -57,  70, -80,  87, -90
+    };
+
+    for (int k=0; k<14; k++) {
+        d[k] = _mm_load_si128((__m128i*)(DCT_II_16_2_sse + 8 * k));
+    }
+
+    dct2_16x2(x, d, r);
+
+    for (int i = 0; i < 8; i += 2) {
+        __m128i o;
+
+        r[i + 0] =  _mm_add_epi32(r[i + 0], add);
+        r[i + 1] =  _mm_add_epi32(r[i + 1], add);
+
+        r[i + 0] = _mm_srai_epi32(r[i + 0], shift);
+        r[i + 1] = _mm_srai_epi32(r[i + 1], shift);
+
+        o = _mm_packs_epi32(r[i + 0], r[i + 1]);
+
+        _mm_store_si128((__m128i *) (dst + i / 2 * 8), o);
+    }
+}
+
+void
+vvc_inverse_dct_ii_16_sse(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
+                          int nb_lines, int line_brk, int shift)
+{
+
+    for (int j = 0; j < nb_lines / 8; j++) {
+        idct_ii_16_8lines(src, dst, src_stride, line_brk, shift);
+        src +=   8;
         dst += 128;
     }
 
-    if (!(num_lines & 0x7)) return;
+    if (!(nb_lines & 0x7)) return;
 
-    if (num_lines & 0x4){
-        __m128i x[42], d[16], r[16];
-
-        x[0] = _mm_unpacklo_epi64(
-                _mm_loadl_epi64((__m128i*)(src + 0 * src_stride)),
-                _mm_loadl_epi64((__m128i*)(src + 4 * src_stride))
-                );
-        x[1] = _mm_unpacklo_epi64(
-                _mm_loadl_epi64((__m128i*)(src +  8 * src_stride)),
-                _mm_loadl_epi64((__m128i*)(src + 12 * src_stride))
-                );
-
-        x[2] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[2 * src_stride + 0]),
-                _mm_set1_epi16(src[2 * src_stride + 1])
-                );
-        x[3] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[6 * src_stride + 0]),
-                _mm_set1_epi16(src[6 * src_stride + 1])
-                );
-        x[4] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[10 * src_stride + 0]),
-                _mm_set1_epi16(src[10 * src_stride + 1])
-                );
-        x[5] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[14 * src_stride + 0]),
-                _mm_set1_epi16(src[14 * src_stride + 1])
-                );
-
-        x[6] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[2 * src_stride + 2]),
-                _mm_set1_epi16(src[2 * src_stride + 3])
-                );
-        x[7] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[6 * src_stride + 2]),
-                _mm_set1_epi16(src[6 * src_stride + 3])
-                );
-        x[8] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[10 * src_stride + 2]),
-                _mm_set1_epi16(src[10 * src_stride + 3])
-                );
-        x[9] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[14 * src_stride + 2]),
-                _mm_set1_epi16(src[14 * src_stride + 3])
-                );
-
-        for (int k=0; k<4; k++){
-            for (int l=0; l<8; l++)
-                x[10+8*k+l] = _mm_set1_epi16(src[(2*l+1) * src_stride + k]);
-        }
-
-        static const int16_t DCT_II_16_4_sse[8 * 16] = {
-            64, 64, 64, 64, 83, 36, 83, 36,
-            64, -64, 64, -64, 36, -83, 36, -83,
-            64, 64, 64, 64, 36, 83, 36, 83,
-            -64, 64, -64, 64, -83, 36, -83, 36,
-            89, 75, 18, 50, 89, 75, 18, 50,
-            75, -18, -50, -89, 75, -18, -50, -89,
-            50, -89, 75, 18, 50, -89, 75, 18,
-            18, -50, -89, 75, 18, -50, -89, 75,
-            90,  87,  80,  70,  57,  43,  25,   9,
-            87,  57,   9, -43, -80, -90, -70, -25,
-            80,   9, -70, -87, -25,  57,  90,  43,
-            70, -43, -87,   9,  90,  25, -80, -57,
-            57, -80, -25,  90,  -9, -87,  43,  70,
-            43, -90,  57,  25, -87,  70,   9, -80,
-            25, -70,  90, -80,  43,   9, -57,  87,
-            9, -25,  43, -57,  70, -80,  87, -90
-        };
-
-        for (int k=0; k<16; k++) {
-            d[k] = _mm_load_si128((__m128i*)(DCT_II_16_4_sse + 8*k));
-        }
-
-        dct2_16x4(x, d, r);
-
-        __m128i add = _mm_set1_epi32(1 << (shift - 1));
-        for (int i = 0; i < 16; i += 2) {
-            __m128i o;
-
-            r[i + 0] = _mm_add_epi32(r[i + 0], add);
-            r[i + 1] = _mm_add_epi32(r[i + 1], add);
-
-            r[i + 0] = _mm_srai_epi32(r[i + 0], shift);
-            r[i + 1] = _mm_srai_epi32(r[i + 1], shift);
-
-            o = _mm_packs_epi32(r[i + 0], r[i + 1]);
-
-            _mm_store_si128((__m128i *) (dst + i / 2 * 8), o);
-        }
+    if (nb_lines & 0x4) {
+        idct_ii_16_4lines(src, dst, src_stride, line_brk, shift);
+        //src +=  4;
+        //dst += 64;
     }
 
-    if (num_lines & 0x2){
-        __m128i x[24], d[14], r[8];
-
-        x[0] = _mm_unpacklo_epi32(
-                _mm_loadl_epi64((__m128i*)(src + 0 * src_stride)),
-                _mm_loadl_epi64((__m128i*)(src + 4 * src_stride))
-                );
-        x[0] = _mm_unpacklo_epi16(x[0], x[0]);
-        x[1] = _mm_unpacklo_epi32(
-                _mm_loadl_epi64((__m128i*)(src + 8 * src_stride)),
-                _mm_loadl_epi64((__m128i*)(src + 12 * src_stride))
-                );
-        x[1] = _mm_unpacklo_epi16(x[1], x[1]);
-
-        x[2] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[2 * src_stride]),
-                _mm_set1_epi16(src[2 * src_stride + 1])
-                );
-        x[3] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[6 * src_stride]),
-                _mm_set1_epi16(src[6 * src_stride + 1])
-                );
-        x[4] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[10 * src_stride]),
-                _mm_set1_epi16(src[10 * src_stride + 1])
-                );
-        x[5] = _mm_unpacklo_epi64(
-                _mm_set1_epi16(src[14 * src_stride]),
-                _mm_set1_epi16(src[14 * src_stride + 1])
-                );
-
-        for (int k=0; k<2; k++){
-            x[6+8*k+0] = _mm_set1_epi16(src[ 1 * src_stride + k]);
-            x[6+8*k+1] = _mm_set1_epi16(src[ 3 * src_stride + k]);
-            x[6+8*k+2] = _mm_set1_epi16(src[ 5 * src_stride + k]);
-            x[6+8*k+3] = _mm_set1_epi16(src[ 7 * src_stride + k]);
-            x[6+8*k+4] = _mm_set1_epi16(src[ 9 * src_stride + k]);
-            x[6+8*k+5] = _mm_set1_epi16(src[11 * src_stride + k]);
-            x[6+8*k+6] = _mm_set1_epi16(src[13 * src_stride + k]);
-            x[6+8*k+7] = _mm_set1_epi16(src[15 * src_stride + k]);
-        }
-
-        static const int16_t DCT_II_16_2_sse[8 * 14] = {
-            64,  64,  64,  64,  83,  36,  83,  36,
-            64, -64,  64, -64,  36, -83,  36, -83,
-            89,  75,  18,  50,  89,  75,  18,  50,
-            75, -18, -50, -89,  75, -18, -50, -89,
-            50, -89,  75,  18,  50, -89,  75,  18,
-            18, -50, -89,  75,  18, -50, -89,  75,
-            90,  87,  80,  70,  57,  43,  25,   9,
-            87,  57,   9, -43, -80, -90, -70, -25,
-            80,   9, -70, -87, -25,  57,  90,  43,
-            70, -43, -87,   9,  90,  25, -80, -57,
-            57, -80, -25,  90,  -9, -87,  43,  70,
-            43, -90,  57,  25, -87,  70,   9, -80,
-            25, -70,  90, -80,  43,   9, -57,  87,
-            9, -25,  43, -57,  70, -80,  87, -90
-        };
-
-        for (int k=0; k<14; k++) {
-            d[k] = _mm_load_si128((__m128i*)(DCT_II_16_2_sse + 8*k));
-        }
-
-        dct2_16x2(x, d, r);
-
-        __m128i add = _mm_set1_epi32(1 << (shift - 1));
-
-        for (int i = 0; i < 8; i += 2) {
-            __m128i o;
-
-            r[i + 0] =  _mm_add_epi32(r[i + 0], add);
-            r[i + 1] =  _mm_add_epi32(r[i + 1], add);
-
-            r[i + 0] = _mm_srai_epi32(r[i + 0], shift);
-            r[i + 1] = _mm_srai_epi32(r[i + 1], shift);
-
-            o = _mm_packs_epi32(r[i + 0], r[i + 1]);
-
-            _mm_store_si128((__m128i *) (dst + i / 2 * 8), o);
-        }
+    if (nb_lines & 0x2) {
+        idct_ii_16_2lines(src, dst, src_stride, line_brk, shift);
+        //src +=  2;
+        //dst += 32;
     }
 
-    if (num_lines & 0x1){
-        vvc_inverse_dct_ii_16(src, dst, src_stride, num_lines & 0x1, line_brk, shift);
+    if (nb_lines & 0x1) {
+        vvc_inverse_dct_ii_16(src, dst, src_stride, nb_lines & 0x1, line_brk, shift);
     }
 }
 
