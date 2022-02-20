@@ -40,10 +40,8 @@
 #include "ctudec.h"
 #include "rcn_structures.h"
 #include "rcn.h"
-#include "rcn_mc.h"
 #include "drv.h"
 #include "drv_utils.h"
-#include "rcn_prof_bdof.h"
 
 #define MAX_PB_SIZE 128
 
@@ -56,6 +54,7 @@
 #define QPEL_EXTRA_AFTER  4
 #define QPEL_EXTRA REF_PADDING_L + QPEL_EXTRA_AFTER
 
+#define PROF_BUFF_STRIDE 128
 #define PROF_BUFF_PADD_H 1
 #define PROF_BUFF_PADD_W 1
 #define SB_H 4

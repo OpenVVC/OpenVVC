@@ -33,7 +33,6 @@
 
 #include <stdlib.h>
 
-#include "rcn_prof_bdof.h"
 #include "rcn_structures.h"
 #include "ovutils.h"
 
@@ -41,6 +40,7 @@
 
 #define MAX_PB_SIZE 128
 
+#define PROF_BUFF_STRIDE 128
 #define PROF_SMP_SHIFT (14 - BITDEPTH)
 #define PROF_PREC_RND (1 << (14 - 1))
 #define PROF_DELTA_LIMIT (1 << 13)
@@ -50,6 +50,7 @@
 #define BDOF_OFFSET  ((1 << (BDOF_SHIFT - 1)))
 
 #define GRAD_SHIFT 6
+
 
 
 #define SB_H 4

@@ -39,7 +39,6 @@
 #include "data_rcn_angular.h"
 #include "ctudec.h"
 #include "rcn_structures.h"
-#include "rcn_mc.h"
 #include "rcn.h"
 #include "rcn_lmcs.h"
 #include "ovmem.h"

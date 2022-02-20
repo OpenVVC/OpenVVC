@@ -45,9 +45,7 @@
 #include "rcn.h"
 #include "ovdpb.h"
 #include "drv_lines.h"
-#include "rcn_mc.h"
 #include "ovthreads.h"
-#include "rcn_sao.h"
 #include "rcn_lmcs.h"
 #include "rcn_dequant.h"
 

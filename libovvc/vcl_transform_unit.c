@@ -42,7 +42,6 @@
 #include "dbf_utils.h"
 #include "drv_utils.h"
 #include "drv.h"
-#include "rcn_transform_tree.h"
 
 #define LOG2_MIN_CU_S 2
 struct TBInfo {

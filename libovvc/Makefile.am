@@ -147,13 +147,9 @@ noinst_HEADERS = 	bitdepth.h            \
 									rcn.h                 \
 									rcn_intra_angular.h   \
 									rcn_lmcs.h            \
-									rcn_mc.h              \
-									rcn_prof_bdof.h       \
-									rcn_sao.h             \
 									rcn_structures.h      \
 									rcn_transform.h       \
 									rcn_transform_scale.h \
-									rcn_transform_tree.h  \
 									slicedec.h            \
 									vcl_cabac.h           \
 									vcl.h

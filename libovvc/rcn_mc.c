@@ -37,7 +37,6 @@
 
 #include "ovutils.h"
 
-#include "rcn_mc.h"
 #include "rcn_structures.h"
 
 #include "bitdepth.h"
