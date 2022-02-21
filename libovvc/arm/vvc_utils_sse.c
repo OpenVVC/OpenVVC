@@ -57,36 +57,6 @@ typedef int16_t TMatrixCoeff;
 #define SIZEV 32
 #define SIZEH 2
 
-void afficherVecteur4SSE128(__m128i cible)
-{
-    int32_t test[4];
-    _mm_store_si128((__m128i *)test, cible);
-
-//    printf(" ________ ________ ________ ________\n|        |        |        |        |\n");
-    printf("| %06d | %06d | %06d | %06d |\n",  test[0], test[1], test[2], test[3]);
-//    printf("|________|________|________|________|\n");
-}
-
-void afficherVecteur8SSE128(__m128i cible)
-{
-    int16_t test[8];
-    _mm_store_si128((__m128i *)test, cible);
-
-//    printf(" ________ ________ ________ ________ ________ ________ ________ ________\n|        |        |        |        |        |        |        |        |\n");
-    printf("| %06d | %06d | %06d | %06d | %06d | %06d | %06d | %06d |\n", test[0], test[1], test[2], test[3], test[4], test[5], test[6], test[7]);
-//    printf("|________|________|________|________|________|________|________|________|\n");
-}
-
-void afficherTableau2D(int v, int h, TCoeff * m){
-    int i,j;
-    for (i = 0; i < v; ++i) {
-        for (j = 0; j < h; ++j) {
-            printf("%i ",m[i*h+j]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
 static void
 transpose8x8(__m128i *in, __m128i *out){
   __m128i tmp1[8], tmp2[8];
@@ -121,7 +91,7 @@ transpose8x8(__m128i *in, __m128i *out){
 void inverse_sse2_B4(const TCoeff *src, TCoeff *dst, int src_stride, int shift, int line, const TMatrixCoeff* iT){
     __m128i x1, x2; //Contient le vecteur à transformer
     __m128i d, d2, d3, d4;	//Contient coefficient DCT ou DST
-    __m128i result[line]; //Variables pour calculs (result[] il faudrait mettre line ou la taille max 32)
+    __m128i result[64];
     __m128i add = _mm_set1_epi32(1 << (shift - 1));
 
     int nbstore = line/2;
@@ -146,7 +116,6 @@ void inverse_sse2_B4(const TCoeff *src, TCoeff *dst, int src_stride, int shift, 
         _mm_store_si128((__m128i *)&(dst[i*8]), result[i]);	//dst[i*8] car result contient 8 résultat
     }
 }
-
 
 void inverse_sse2_B8(const TCoeff *src, TCoeff *dst, int src_stride, int shift, int line, const TMatrixCoeff* iT){
   __m128i add = _mm_set1_epi32(1 << (shift - 1));
@@ -450,8 +419,10 @@ void inverse_sse2_B16(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
     if (!(line&0x7)) {
       return ;
     }
+
     line = line&0x7;
-    __m128i vhi[8], vlo[8], vh[16], vl[16], result[line][4];
+
+    __m128i vhi[8], vlo[8], vh[16], vl[16], result[7][4];
 
     for(int l = 0; l < 2; ++l){
         for(int i = 0; i < line; ++i){
@@ -528,6 +499,7 @@ void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
       x[14]=_mm_load_si128((__m128i*)(_src +  14 * src_stride));
       x[15]=_mm_load_si128((__m128i*)(_src +  15 * src_stride));
       x[16]=_mm_load_si128((__m128i*)(_src +  16 * src_stride));
+      #if 0
       x[17]=_mm_load_si128((__m128i*)(_src +  17 * src_stride));
       x[18]=_mm_load_si128((__m128i*)(_src +  18 * src_stride));
       x[19]=_mm_load_si128((__m128i*)(_src +  19 * src_stride));
@@ -543,6 +515,46 @@ void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
       x[29]=_mm_load_si128((__m128i*)(_src +  29 * src_stride));
       x[30]=_mm_load_si128((__m128i*)(_src +  30 * src_stride));
       x[31]=_mm_load_si128((__m128i*)(_src +  31 * src_stride));
+      #endif
+
+      m[0 ] = _mm_unpacklo_epi16(x[0 ],  x[1 ]);
+      m[1 ] = _mm_unpacklo_epi16(x[2 ],  x[3 ]);
+      m[2 ] = _mm_unpacklo_epi16(x[4 ],  x[5 ]);
+      m[3 ] = _mm_unpacklo_epi16(x[6 ],  x[7 ]);
+      m[4 ] = _mm_unpacklo_epi16(x[8 ],  x[9 ]);
+      m[5 ] = _mm_unpacklo_epi16(x[10],  x[11]);
+      m[6 ] = _mm_unpacklo_epi16(x[12],  x[13]);
+      m[7 ] = _mm_unpacklo_epi16(x[14],  x[15]);
+      #if 0
+      m[8 ] = _mm_unpacklo_epi16(x[16],  x[17]);
+      m[9 ] = _mm_unpacklo_epi16(x[18],  x[19]);
+      m[10] = _mm_unpacklo_epi16(x[20],  x[21]);
+      m[11] = _mm_unpacklo_epi16(x[22],  x[23]);
+      m[12] = _mm_unpacklo_epi16(x[24],  x[25]);
+      m[13] = _mm_unpacklo_epi16(x[26],  x[27]);
+      m[14] = _mm_unpacklo_epi16(x[28],  x[29]);
+      m[15] = _mm_unpacklo_epi16(x[30],  x[31]);
+      #endif
+
+      m[16] = _mm_unpackhi_epi16(x[0 ],  x[1 ]);
+      m[17] = _mm_unpackhi_epi16(x[2 ],  x[3 ]);
+      m[18] = _mm_unpackhi_epi16(x[4 ],  x[5 ]);
+      m[19] = _mm_unpackhi_epi16(x[6 ],  x[7 ]);
+      m[20] = _mm_unpackhi_epi16(x[8 ],  x[9 ]);
+      m[21] = _mm_unpackhi_epi16(x[10],  x[11]);
+      m[22] = _mm_unpackhi_epi16(x[12],  x[13]);
+      m[23] = _mm_unpackhi_epi16(x[14],  x[15]);
+      #if 0
+      m[24] = _mm_unpackhi_epi16(x[16],  x[17]);
+      m[25] = _mm_unpackhi_epi16(x[18],  x[19]);
+      m[26] = _mm_unpackhi_epi16(x[20],  x[21]);
+      m[27] = _mm_unpackhi_epi16(x[22],  x[23]);
+      m[28] = _mm_unpackhi_epi16(x[24],  x[25]);
+      m[29] = _mm_unpackhi_epi16(x[26],  x[27]);
+      m[30] = _mm_unpackhi_epi16(x[28],  x[29]);
+      m[31] = _mm_unpackhi_epi16(x[30],  x[31]);
+      #endif
+
       for (k = 0; k < 32; k++) {
         d[0 ] = _mm_set1_epi16(iT[k + 0  * 32]);
         d[1 ] = _mm_set1_epi16(iT[k + 1  * 32]);
@@ -560,6 +572,7 @@ void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
         d[13] = _mm_set1_epi16(iT[k + 13 * 32]);
         d[14] = _mm_set1_epi16(iT[k + 14 * 32]);
         d[15] = _mm_set1_epi16(iT[k + 15 * 32]);
+        #if 0
         d[16] = _mm_set1_epi16(iT[k + 16 * 32]);
         d[17] = _mm_set1_epi16(iT[k + 17 * 32]);
         d[18] = _mm_set1_epi16(iT[k + 18 * 32]);
@@ -576,41 +589,8 @@ void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
         d[29] = _mm_set1_epi16(iT[k + 29 * 32]);
         d[30] = _mm_set1_epi16(iT[k + 30 * 32]);
         d[31] = _mm_set1_epi16(iT[k + 31 * 32]);
+        #endif
 
-
-        m[0 ] = _mm_unpacklo_epi16(x[0 ],  x[1 ]);
-        m[1 ] = _mm_unpacklo_epi16(x[2 ],  x[3 ]);
-        m[2 ] = _mm_unpacklo_epi16(x[4 ],  x[5 ]);
-        m[3 ] = _mm_unpacklo_epi16(x[6 ],  x[7 ]);
-        m[4 ] = _mm_unpacklo_epi16(x[8 ],  x[9 ]);
-        m[5 ] = _mm_unpacklo_epi16(x[10],  x[11]);
-        m[6 ] = _mm_unpacklo_epi16(x[12],  x[13]);
-        m[7 ] = _mm_unpacklo_epi16(x[14],  x[15]);
-        m[8 ] = _mm_unpacklo_epi16(x[16],  x[17]);
-        m[9 ] = _mm_unpacklo_epi16(x[18],  x[19]);
-        m[10] = _mm_unpacklo_epi16(x[20],  x[21]);
-        m[11] = _mm_unpacklo_epi16(x[22],  x[23]);
-        m[12] = _mm_unpacklo_epi16(x[24],  x[25]);
-        m[13] = _mm_unpacklo_epi16(x[26],  x[27]);
-        m[14] = _mm_unpacklo_epi16(x[28],  x[29]);
-        m[15] = _mm_unpacklo_epi16(x[30],  x[31]);
-
-        m[16] = _mm_unpackhi_epi16(x[0 ],  x[1 ]);
-        m[17] = _mm_unpackhi_epi16(x[2 ],  x[3 ]);
-        m[18] = _mm_unpackhi_epi16(x[4 ],  x[5 ]);
-        m[19] = _mm_unpackhi_epi16(x[6 ],  x[7 ]);
-        m[20] = _mm_unpackhi_epi16(x[8 ],  x[9 ]);
-        m[21] = _mm_unpackhi_epi16(x[10],  x[11]);
-        m[22] = _mm_unpackhi_epi16(x[12],  x[13]);
-        m[23] = _mm_unpackhi_epi16(x[14],  x[15]);
-        m[24] = _mm_unpackhi_epi16(x[16],  x[17]);
-        m[25] = _mm_unpackhi_epi16(x[18],  x[19]);
-        m[26] = _mm_unpackhi_epi16(x[20],  x[21]);
-        m[27] = _mm_unpackhi_epi16(x[22],  x[23]);
-        m[28] = _mm_unpackhi_epi16(x[24],  x[25]);
-        m[29] = _mm_unpackhi_epi16(x[26],  x[27]);
-        m[30] = _mm_unpackhi_epi16(x[28],  x[29]);
-        m[31] = _mm_unpackhi_epi16(x[30],  x[31]);
 
         di[0 ] = _mm_unpacklo_epi16(d[0 ],  d[1 ]);
         di[1 ] = _mm_unpacklo_epi16(d[2 ],  d[3 ]);
@@ -620,6 +600,7 @@ void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
         di[5 ] = _mm_unpacklo_epi16(d[10],  d[11]);
         di[6 ] = _mm_unpacklo_epi16(d[12],  d[13]);
         di[7 ] = _mm_unpacklo_epi16(d[14],  d[15]);
+        #if 0
         di[8 ] = _mm_unpacklo_epi16(d[16],  d[17]);
         di[9 ] = _mm_unpacklo_epi16(d[18],  d[19]);
         di[10] = _mm_unpacklo_epi16(d[20],  d[21]);
@@ -628,6 +609,7 @@ void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
         di[13] = _mm_unpacklo_epi16(d[26],  d[27]);
         di[14] = _mm_unpacklo_epi16(d[28],  d[29]);
         di[15] = _mm_unpacklo_epi16(d[30],  d[31]);
+        #endif
 
         a[0 ] = _mm_madd_epi16(m[0 ], di[0 ]);
         a[1 ] = _mm_madd_epi16(m[1 ], di[1 ]);
@@ -637,6 +619,7 @@ void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
         a[5 ] = _mm_madd_epi16(m[5 ], di[5 ]);
         a[6 ] = _mm_madd_epi16(m[6 ], di[6 ]);
         a[7 ] = _mm_madd_epi16(m[7 ], di[7 ]);
+        #if 0
         a[8 ] = _mm_madd_epi16(m[8 ], di[8 ]);
         a[9 ] = _mm_madd_epi16(m[9 ], di[9 ]);
         a[10] = _mm_madd_epi16(m[10], di[10]);
@@ -645,6 +628,7 @@ void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
         a[13] = _mm_madd_epi16(m[13], di[13]);
         a[14] = _mm_madd_epi16(m[14], di[14]);
         a[15] = _mm_madd_epi16(m[15], di[15]);
+        #endif
 
         a[16] = _mm_madd_epi16(m[16], di[0 ]);
         a[17] = _mm_madd_epi16(m[17], di[1 ]);
@@ -654,6 +638,7 @@ void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
         a[21] = _mm_madd_epi16(m[21], di[5 ]);
         a[22] = _mm_madd_epi16(m[22], di[6 ]);
         a[23] = _mm_madd_epi16(m[23], di[7 ]);
+        #if 0
         a[24] = _mm_madd_epi16(m[24], di[8 ]);
         a[25] = _mm_madd_epi16(m[25], di[9 ]);
         a[26] = _mm_madd_epi16(m[26], di[10]);
@@ -662,35 +647,45 @@ void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
         a[29] = _mm_madd_epi16(m[29], di[13]);
         a[30] = _mm_madd_epi16(m[30], di[14]);
         a[31] = _mm_madd_epi16(m[31], di[15]);
+        #endif
 
         b[0 ] = _mm_add_epi32(a[0 ], a[1 ]);
         b[1 ] = _mm_add_epi32(a[2 ], a[3 ]);
         b[2 ] = _mm_add_epi32(a[4 ], a[5 ]);
         b[3 ] = _mm_add_epi32(a[6 ], a[7 ]);
+        #if 0
         b[4 ] = _mm_add_epi32(a[8 ], a[9 ]);
         b[5 ] = _mm_add_epi32(a[10], a[11]);
         b[6 ] = _mm_add_epi32(a[12], a[13]);
         b[7 ] = _mm_add_epi32(a[14], a[15]);
+        #endif
 
         b[8 ] = _mm_add_epi32(a[16], a[17]);
         b[9 ] = _mm_add_epi32(a[18], a[19]);
         b[10] = _mm_add_epi32(a[20], a[21]);
         b[11] = _mm_add_epi32(a[22], a[23]);
+        #if 0
         b[12] = _mm_add_epi32(a[24], a[25]);
         b[13] = _mm_add_epi32(a[26], a[27]);
         b[14] = _mm_add_epi32(a[28], a[29]);
         b[15] = _mm_add_epi32(a[30], a[31]);
+        #endif
 
         c[0 ] = _mm_add_epi32(b[0 ], b[1 ]);
         c[1 ] = _mm_add_epi32(b[2 ], b[3 ]);
+        #if 0
         c[2 ] = _mm_add_epi32(b[4 ], b[5 ]);
         c[3 ] = _mm_add_epi32(b[6 ], b[7 ]);
+        #endif
 
         c[4 ] = _mm_add_epi32(b[8 ], b[9 ]);
         c[5 ] = _mm_add_epi32(b[10], b[11]);
+        #if 0
         c[6 ] = _mm_add_epi32(b[12], b[13]);
         c[7 ] = _mm_add_epi32(b[14], b[15]);
+        #endif
 
+        #if 0
         d[0 ] = _mm_add_epi32(c[0 ], c[1 ]);
         d[1 ] = _mm_add_epi32(c[2 ], c[3 ]);
         d[2 ] = _mm_add_epi32(c[4 ], c[5 ]);
@@ -698,6 +693,11 @@ void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
 
         r[0] = _mm_add_epi32(d[0], d[1]);
         r[1] = _mm_add_epi32(d[2], d[3]);
+
+        #else
+        r[0] = _mm_add_epi32(c[0 ], c[1 ]);
+        r[1] = _mm_add_epi32(c[4 ], c[5 ]);
+        #endif
 
         r[0] = _mm_add_epi32(r[0], add);
         r[1] = _mm_add_epi32(r[1], add);
@@ -755,8 +755,10 @@ void inverse_sse2_B32(const TCoeff *src, TCoeff *dst, int src_stride, int shift,
     if (!(line&0x7)) {
       return ;
     }
+
     line = line&0x7;
-    __m128i vhi[8], vlo[8], vh[32], vl[32], result[line][8];
+
+    __m128i vhi[8], vlo[8], vh[32], vl[32], result[7][8];
 
     for(int l = 0; l < 4; ++l){
         for(int i = 0; i < line; ++i){

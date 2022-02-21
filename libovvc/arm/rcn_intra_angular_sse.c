@@ -119,26 +119,6 @@
                                                                    \
         _mm_storel_epi64((__m128i *)&(_dst[0]), ref01L);
 
-
-static void afficherVecteur4SSE128(__m128i cible)
-{
-    int32_t test[4];
-    _mm_store_si128((__m128i *)test, cible);
-
-//    printf(" ________ ________ ________ ________\n|        |        |        |        |\n");
-    printf("| %06d | %06d | %06d | %06d |\n",  test[0], test[1], test[2], test[3]);
-//    printf("|________|________|________|________|\n");
-}
-
-static void afficherVecteur8SSE128(__m128i cible)
-{
-    int16_t test[8];
-    _mm_store_si128((__m128i *)test, cible);
-
-//    printf(" ________ ________ ________ ________ ________ ________ ________ ________\n|        |        |        |        |        |        |        |        |\n");
-    printf("| %06d | %06d | %06d | %06d | %06d | %06d | %06d | %06d |\n", test[0], test[1], test[2], test[3], test[4], test[5], test[6], test[7]);
-//    printf("|________|________|________|________|________|________|________|________|\n");
-}
 static const int8_t chroma_filter[4 * 32] =
 {
      0, 64,  0,  0,

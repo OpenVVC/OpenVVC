@@ -44,84 +44,84 @@
 #include "simde/x86/avx2.h"
 #include "simde/x86/avx512.h"
 
+
 #include <stdint.h>
 #include "rcn_alf.h"
 #include "rcn_structures.h"
 
-#define process2coeffs5x5(i, ptr0, ptr1, ptr2, ptr3) { \
+#define process2coeffs5x5SSE(i, ptr0, ptr1, ptr2, ptr3) { \
                     const __m128i val00 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) (ptr0)), cur);\
                     const __m128i val10 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) (ptr2)), cur);\
                     const __m128i val01 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) (ptr1)), cur);\
                     const __m128i val11 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) (ptr3)), cur);\
-\
+                    \
                     __m128i val01A = _mm_unpacklo_epi16(val00, val10);\
                     __m128i val01B = _mm_unpackhi_epi16(val00, val10);\
                     __m128i val01C = _mm_unpacklo_epi16(val01, val11);\
                     __m128i val01D = _mm_unpackhi_epi16(val01, val11);\
-\
+                    \
                     __m128i limit01A = params[1][i];\
-\
+                    \
                     val01A = _mm_min_epi16(val01A, limit01A);\
                     val01B = _mm_min_epi16(val01B, limit01A);\
                     val01C = _mm_min_epi16(val01C, limit01A);\
                     val01D = _mm_min_epi16(val01D, limit01A);\
-\
+                    \
                     limit01A = _mm_sub_epi16(_mm_setzero_si128(), limit01A);\
-\
+                    \
                     val01A = _mm_max_epi16(val01A, limit01A);\
                     val01B = _mm_max_epi16(val01B, limit01A);\
                     val01C = _mm_max_epi16(val01C, limit01A);\
                     val01D = _mm_max_epi16(val01D, limit01A);\
-\
+                    \
                     val01A = _mm_add_epi16(val01A, val01C);\
                     val01B = _mm_add_epi16(val01B, val01D);\
-\
+                    \
                     __m128i coeff01A = params[0][i];\
-\
+                    \
                     accumA = _mm_add_epi32(accumA, _mm_madd_epi16(val01A, coeff01A));\
                     accumB = _mm_add_epi32(accumB, _mm_madd_epi16(val01B, coeff01A));\
                 };\
 
-#define process2coeffs7x7(i, ptr0, ptr1, ptr2, ptr3) { \
+#define process2coeffs7x7SSE(i, ptr0, ptr1, ptr2, ptr3) { \
         const __m128i val00 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) (ptr0)), cur); \
         const __m128i val10 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) (ptr2)), cur); \
         const __m128i val01 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) (ptr1)), cur); \
         const __m128i val11 = _mm_sub_epi16(_mm_loadu_si128((const __m128i *) (ptr3)), cur); \
-         \
+        \
         __m128i val01A = _mm_unpacklo_epi16(val00, val10); \
         __m128i val01B = _mm_unpackhi_epi16(val00, val10); \
         __m128i val01C = _mm_unpacklo_epi16(val01, val11); \
         __m128i val01D = _mm_unpackhi_epi16(val01, val11); \
-         \
+        \
         __m128i limit01A = params[0][1][i]; \
         __m128i limit01B = params[1][1][i]; \
-         \
+        \
         val01A = _mm_min_epi16(val01A, limit01A); \
         val01B = _mm_min_epi16(val01B, limit01B); \
         val01C = _mm_min_epi16(val01C, limit01A); \
         val01D = _mm_min_epi16(val01D, limit01B); \
-         \
+        \
         limit01A = _mm_sub_epi16(_mm_setzero_si128(), limit01A); \
         limit01B = _mm_sub_epi16(_mm_setzero_si128(), limit01B); \
-         \
+        \
         val01A = _mm_max_epi16(val01A, limit01A); \
         val01B = _mm_max_epi16(val01B, limit01B); \
         val01C = _mm_max_epi16(val01C, limit01A); \
         val01D = _mm_max_epi16(val01D, limit01B); \
-         \
+        \
         val01A = _mm_add_epi16(val01A, val01C); \
         val01B = _mm_add_epi16(val01B, val01D); \
-         \
+        \
         const __m128i coeff01A = params[0][0][i]; \
         const __m128i coeff01B = params[1][0][i]; \
-         \
+        \
         accumA = _mm_add_epi32(accumA, _mm_madd_epi16(val01A, coeff01A)); \
         accumB = _mm_add_epi32(accumB, _mm_madd_epi16(val01B, coeff01B)); \
 }; \
 
-
 static void
-simdFilter5x5Blk(OVSample *const dst, const OVSample *const src,
+simdFilter5x5Blk_sse(OVSample *const dst, const OVSample *const src,
                  const int dstStride, const int srcStride,
                  Area blk_dst,
                  const int16_t *const filter_set, const int16_t *const clip_set,
@@ -171,9 +171,9 @@ simdFilter5x5Blk(OVSample *const dst, const OVSample *const src,
                 accumA = mmOffset;
                 accumB = mmOffset;
 
-                process2coeffs5x5(0, pImg3 + 0, pImg4 + 0, pImg1 + 1, pImg2 - 1);
-                process2coeffs5x5(1, pImg1 + 0, pImg2 + 0, pImg1 - 1, pImg2 + 1);
-                process2coeffs5x5(2, pImg0 + 2, pImg0 - 2, pImg0 + 1, pImg0 - 1);
+                process2coeffs5x5SSE(0, pImg3 + 0, pImg4 + 0, pImg1 + 1, pImg2 - 1);
+                process2coeffs5x5SSE(1, pImg1 + 0, pImg2 + 0, pImg1 - 1, pImg2 + 1);
+                process2coeffs5x5SSE(2, pImg0 + 2, pImg0 - 2, pImg0 + 1, pImg0 - 1);
 
                 accumA = _mm_srai_epi32(accumA, SHIFT);
                 accumB = _mm_srai_epi32(accumB, SHIFT);
@@ -192,7 +192,7 @@ simdFilter5x5Blk(OVSample *const dst, const OVSample *const src,
 }
 
 static void
-simdFilter5x5BlkVB(OVSample *const dst, const OVSample *const src,
+simdFilter5x5BlkVB_sse(OVSample *const dst, const OVSample *const src,
                  const int dstStride, const int srcStride,
                  Area blk_dst,
                  const int16_t *const filter_set, const int16_t *const clip_set,
@@ -270,9 +270,9 @@ simdFilter5x5BlkVB(OVSample *const dst, const OVSample *const src,
                     accumB = mmOffsetborder;
                 }
 
-                process2coeffs5x5(0, pImg3 + 0, pImg4 + 0, pImg1 + 1, pImg2 - 1);
-                process2coeffs5x5(1, pImg1 + 0, pImg2 + 0, pImg1 - 1, pImg2 + 1);
-                process2coeffs5x5(2, pImg0 + 2, pImg0 - 2, pImg0 + 1, pImg0 - 1);
+                process2coeffs5x5SSE(0, pImg3 + 0, pImg4 + 0, pImg1 + 1, pImg2 - 1);
+                process2coeffs5x5SSE(1, pImg1 + 0, pImg2 + 0, pImg1 - 1, pImg2 + 1);
+                process2coeffs5x5SSE(2, pImg0 + 2, pImg0 - 2, pImg0 + 1, pImg0 - 1);
 
                 if (!(isNearVBabove || isNearVBbelow)) {
                     accumA = _mm_srai_epi32(accumA, SHIFT);
@@ -301,7 +301,7 @@ simdFilter5x5BlkVB(OVSample *const dst, const OVSample *const src,
 }
 
 static void
-simdFilter7x7Blk(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample *const dst, OVSample *const src, const int dstStride, const int srcStride,
+simdFilter7x7Blk_sse(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample *const dst, OVSample *const src, const int dstStride, const int srcStride,
                          Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                          const int ctu_height, int virbnd_pos)
 {
@@ -371,12 +371,12 @@ simdFilter7x7Blk(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample 
                 __m128i accumA = mmOffset;
                 __m128i accumB = mmOffset;
 
-                process2coeffs7x7(0, pImg5 + 0, pImg6 + 0, pImg3 + 1, pImg4 - 1);
-                process2coeffs7x7(1, pImg3 + 0, pImg4 + 0, pImg3 - 1, pImg4 + 1);
-                process2coeffs7x7(2, pImg1 + 2, pImg2 - 2, pImg1 + 1, pImg2 - 1);
-                process2coeffs7x7(3, pImg1 + 0, pImg2 + 0, pImg1 - 1, pImg2 + 1);
-                process2coeffs7x7(4, pImg1 - 2, pImg2 + 2, pImg0 + 3, pImg0 - 3);
-                process2coeffs7x7(5, pImg0 + 2, pImg0 - 2, pImg0 + 1, pImg0 - 1);
+                process2coeffs7x7SSE(0, pImg5 + 0, pImg6 + 0, pImg3 + 1, pImg4 - 1);
+                process2coeffs7x7SSE(1, pImg3 + 0, pImg4 + 0, pImg3 - 1, pImg4 + 1);
+                process2coeffs7x7SSE(2, pImg1 + 2, pImg2 - 2, pImg1 + 1, pImg2 - 1);
+                process2coeffs7x7SSE(3, pImg1 + 0, pImg2 + 0, pImg1 - 1, pImg2 + 1);
+                process2coeffs7x7SSE(4, pImg1 - 2, pImg2 + 2, pImg0 + 3, pImg0 - 3);
+                process2coeffs7x7SSE(5, pImg0 + 2, pImg0 - 2, pImg0 + 1, pImg0 - 1);
 
                 accumA = _mm_srai_epi32(accumA, SHIFT);
                 accumB = _mm_srai_epi32(accumB, SHIFT);
@@ -395,7 +395,7 @@ simdFilter7x7Blk(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample 
 }
 
 static void
-simdFilter7x7BlkVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample *const dst, OVSample *const src, const int dstStride, const int srcStride,
+simdFilter7x7BlkVB_sse(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample *const dst, OVSample *const src, const int dstStride, const int srcStride,
                          Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                          const int ctu_height, int virbnd_pos)
 {
@@ -503,12 +503,12 @@ simdFilter7x7BlkVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSampl
                     accumB = mmOffsetborder;
                 }
 
-                process2coeffs7x7(0, pImg5 + 0, pImg6 + 0, pImg3 + 1, pImg4 - 1);
-                process2coeffs7x7(1, pImg3 + 0, pImg4 + 0, pImg3 - 1, pImg4 + 1);
-                process2coeffs7x7(2, pImg1 + 2, pImg2 - 2, pImg1 + 1, pImg2 - 1);
-                process2coeffs7x7(3, pImg1 + 0, pImg2 + 0, pImg1 - 1, pImg2 + 1);
-                process2coeffs7x7(4, pImg1 - 2, pImg2 + 2, pImg0 + 3, pImg0 - 3);
-                process2coeffs7x7(5, pImg0 + 2, pImg0 - 2, pImg0 + 1, pImg0 - 1);
+                process2coeffs7x7SSE(0, pImg5 + 0, pImg6 + 0, pImg3 + 1, pImg4 - 1);
+                process2coeffs7x7SSE(1, pImg3 + 0, pImg4 + 0, pImg3 - 1, pImg4 + 1);
+                process2coeffs7x7SSE(2, pImg1 + 2, pImg2 - 2, pImg1 + 1, pImg2 - 1);
+                process2coeffs7x7SSE(3, pImg1 + 0, pImg2 + 0, pImg1 - 1, pImg2 + 1);
+                process2coeffs7x7SSE(4, pImg1 - 2, pImg2 + 2, pImg0 + 3, pImg0 - 3);
+                process2coeffs7x7SSE(5, pImg0 + 2, pImg0 - 2, pImg0 + 1, pImg0 - 1);
 
                 if (!(isNearVBabove || isNearVBbelow))
                 {
@@ -535,7 +535,7 @@ simdFilter7x7BlkVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSampl
     }
 }
 
-#define selectEvenValues(dest, src0, src1) {\
+#define selectEvenValuesSSE(dest, src0, src1) {\
   __m128i a0 = _mm_shufflelo_epi16(src0, 0xD8);\
   __m128i a1 = _mm_shufflelo_epi16(src1, 0xD8);\
   a0 = _mm_shufflehi_epi16(a0, 0xD8);\
@@ -545,7 +545,7 @@ simdFilter7x7BlkVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSampl
   dest = _mm_unpacklo_epi32(b0, b1);\
 }
 
-#define selectOddValues(dest, src0, src1) {\
+#define selectOddValuesSSE(dest, src0, src1) {\
   __m128i a0 = _mm_shufflelo_epi16(src0, 0xD8);\
   __m128i a1 = _mm_shufflelo_epi16(src1, 0xD8);\
   a0 = _mm_shufflehi_epi16(a0, 0xD8);\
@@ -558,7 +558,7 @@ simdFilter7x7BlkVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSampl
   dest = _mm_unpackhi_epi32(b0, b1);\
 }
 
-#define selectEvenOddValues(even, odd, src0, src1) {\
+#define selectEvenOddValuesSSE(even, odd, src0, src1) {\
   __m128i a0 = _mm_shufflelo_epi16(src0, 0xD8);\
   __m128i a1 = _mm_shufflelo_epi16(src1, 0xD8);\
   a0 = _mm_shufflehi_epi16(a0, 0xD8);\
@@ -569,9 +569,9 @@ simdFilter7x7BlkVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSampl
   odd = _mm_unpackhi_epi32(b0, b1);\
 }
 
-void cc_alf_filterBlkVB_sse(OVSample * chroma_dst, OVSample * luma_src, const int chr_stride, const int luma_stride,
+static void cc_alf_filterBlkVB_sse(OVSample * chroma_dst, OVSample * luma_src, const int chr_stride, const int luma_stride,
                             const Area blk_dst, const uint8_t c_id, const int16_t *filt_coeff,
-                            const int vbCTUHeight, int vbPos)
+                            const int ctu_s, int virbnd_pos)
 {
   const size_t STEP_X = 8;
   const size_t STEP_Y = 4;
@@ -612,14 +612,14 @@ void cc_alf_filterBlkVB_sse(OVSample * chroma_dst, OVSample * luma_src, const in
         col <<= scaleX;
         const int16_t *srcCross = luma_src + col + row * luma_stride;
 
-        int pos = ((blk_dst.y + i + ii) << scaleY) & (vbCTUHeight - 1);
-        if (!(scaleY == 0 && (pos == vbPos || pos == vbPos + 1)))
+        int pos = ((blk_dst.y + i + ii) << scaleY) & (ctu_s - 1);
+        if (!(scaleY == 0 && (pos == virbnd_pos || pos == virbnd_pos + 1)))
         {
-          if (pos == (vbPos - 2) || pos == (vbPos + 1))
+          if (pos == (virbnd_pos - 2) || pos == (virbnd_pos + 1))
           {
             offset3 = offset1;
           }
-          else if (pos == (vbPos - 1) || pos == vbPos)
+          else if (pos == (virbnd_pos - 1) || pos == virbnd_pos)
           {
             offset1 = 0;
             offset2 = 0;
@@ -638,10 +638,10 @@ void cc_alf_filterBlkVB_sse(OVSample * chroma_dst, OVSample * luma_src, const in
           __m128i x30 = _mm_loadu_si128((const __m128i *) (srcCross + offset3));
           __m128i x31 = _mm_loadu_si128((const __m128i *) (srcCross + offset3 + 8));
 
-          selectEvenValues(val0, x00, x01);
-          selectEvenOddValues(curr, val2, x10, x11);
-          selectEvenOddValues(val4, val5, x20, x21);
-          selectEvenValues(val6, x30, x31);
+          selectEvenValuesSSE(val0, x00, x01);
+          selectEvenOddValuesSSE(curr, val2, x10, x11);
+          selectEvenOddValuesSSE(val4, val5, x20, x21);
+          selectEvenValuesSSE(val6, x30, x31);
 
           val1 = _mm_setr_epi16(srcCross[-1], 0, 0, 0, 0, 0, 0, 0);
           val3 = _mm_setr_epi16(srcCross[offset1 -1], 0, 0, 0, 0, 0, 0, 0);
@@ -710,7 +710,7 @@ void cc_alf_filterBlkVB_sse(OVSample * chroma_dst, OVSample * luma_src, const in
   }
 }
 
-static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr,
+static void simdDeriveClassificationBlk_sse(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr,
                                         OVSample *const src, const int stride, const Area blk,
                                         const int shift, const int ctu_s, int virbnd_pos)
 {
@@ -773,7 +773,6 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
             const __m128i all = _mm_hadd_epi16(hv, di);
 
             const __m128i t = _mm_blend_epi16(all, prev, 0xaa);
-
             _mm_storeu_si128((__m128i *) &colSums[i >> 1][j], _mm_hadd_epi16(t, all));
 
             prev = all;
@@ -894,7 +893,6 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
                                                                             0, 4, 8, 12));
         }
 
-
         __m128i c1, c2, t1, t2;
 
         c1 = _mm_unpacklo_epi16(class_idx[0], class_idx[1]);
@@ -904,7 +902,6 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
         t1 = _mm_unpacklo_epi16(transpose_idx[0], transpose_idx[1]);
         t2 = _mm_unpacklo_epi16(transpose_idx[2], transpose_idx[3]);
         t1 = _mm_unpacklo_epi32(t1, t2);
-
 
         _mm_storel_epi64((__m128i *) (class_idx_arr +  sb_y      * CLASSIFICATION_BLK_SIZE + sb_x), c1);
         _mm_storel_epi64((__m128i *) (class_idx_arr + (sb_y + 1) * CLASSIFICATION_BLK_SIZE + sb_x), _mm_bsrli_si128(c1, 8));
@@ -916,11 +913,11 @@ static void simdDeriveClassificationBlk(uint8_t * class_idx_arr, uint8_t * trans
 }
 
 void rcn_init_alf_functions_sse(struct RCNFunctions *rcn_func){
-  rcn_func->alf.classif=&simdDeriveClassificationBlk;
-  rcn_func->alf.luma[0]=&simdFilter7x7Blk;
-  rcn_func->alf.luma[1]=&simdFilter7x7BlkVB;
-  rcn_func->alf.chroma[0]=&simdFilter5x5Blk;
-  rcn_func->alf.chroma[1]=&simdFilter5x5BlkVB;
-  rcn_func->alf.ccalf[0]=&cc_alf_filterBlkVB_sse;
-  rcn_func->alf.ccalf[1]=&cc_alf_filterBlkVB_sse;
+    rcn_func->alf.classif=&simdDeriveClassificationBlk_sse;
+    rcn_func->alf.luma[0]=&simdFilter7x7Blk_sse;
+    rcn_func->alf.luma[1]=&simdFilter7x7BlkVB_sse;
+    rcn_func->alf.chroma[0]=&simdFilter5x5Blk_sse;
+    rcn_func->alf.chroma[1]=&simdFilter5x5BlkVB_sse;
+    rcn_func->alf.ccalf[0]=&cc_alf_filterBlkVB_sse;
+    rcn_func->alf.ccalf[1]=&cc_alf_filterBlkVB_sse;
 }

@@ -20,7 +20,8 @@ libarmoptim_la_SOURCES +=	rcn_transform_sse.c         \
 							rcn_intra_angular_sse.c     \
 							rcn_df_sse.c                
 if !HAVE_EXCLUDE_CLANG
-libarmoptim_la_SOURCES +=	rcn_intra_dc_planar_sse.c
+libarmoptim_la_SOURCES +=	rcn_intra_dc_planar_sse.c   \
+							rcn_dequant_sse.c
 endif
 endif
 

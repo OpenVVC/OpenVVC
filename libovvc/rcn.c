@@ -255,6 +255,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
         #if ARM_SIMDE
           #ifndef EXCLUDE_FOR_CLANG
             rcn_init_dc_planar_functions_sse(rcn_func);
+            rcn_init_dequant_sse(rcn_func);
           #endif
           rcn_init_mc_functions_sse(rcn_func);
           rcn_init_tr_functions_sse(rcn_func);
@@ -269,10 +270,11 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
           rcn_init_ciip_functions_sse(rcn_func);
           rcn_init_df_functions_sse(rcn_func);
           rcn_init_intra_angular_functions_10_sse(rcn_func);
+
           if (lm_chroma_enabled) {
-              if (!sps_chroma_vertical_collocated_flag ) {
-                  rcn_init_cclm_functions_sse(rcn_func);
-              }
+            if (!sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {
+              rcn_init_cclm_functions_sse(rcn_func);
+            }
           }
           #endif
         // to enable Assembly optimisation
