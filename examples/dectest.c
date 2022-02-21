@@ -346,7 +346,7 @@ write_decoded_frame_to_file(OVFrame *const frame, FILE *out_file)
     uint16_t add_w = (output_window.offset_lft + output_window.offset_rgt);
     uint16_t add_h = (output_window.offset_abv + output_window.offset_blw);
 
-    if (add_w || add_h) {
+    if (add_w || add_h || frame->width < (frame->linesize[0] >> bd_shift)) {
         for (component = 0; component < 3; component++) {
             uint16_t comp_w = component ? add_w : add_w << 1;
             uint16_t comp_h = component ? add_h : add_h << 1;
