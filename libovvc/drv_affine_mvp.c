@@ -3549,14 +3549,8 @@ static inline uint8_t
 check_dbf_mv(const OVMV mv0)
 {
     /* FIXME check if need of crossed with vertical delta */
-    #if 0
-    OVMV mv = {.x= mv0.x*SB_SIZE, .y= mv0.y*SB_SIZE};
-    mv = round_affine_mv2(mv);
-    //mv = clip_mv(mv);
-    #else
     OVMV mv = {.x= mv0.x, .y= mv0.y};
     mv = round_dmv(mv);
-    #endif
     uint8_t int_diff  = OVABS(mv.x) >= LF_MV_THRESHOLD;
             int_diff |= OVABS(mv.y) >= LF_MV_THRESHOLD;
     return int_diff;
@@ -3566,21 +3560,10 @@ static inline uint8_t
 check_dbf_mv_b(const OVMV mv_0, const OVMV mv_1)
 {
     /* FIXME check if need of crossed with vertical delta */
-    #if 0
-    OVMV mv0 = {.x= mv_0.x*SB_SIZE + 31, .y= mv_0.y*SB_SIZE + 31};
-    OVMV mv1 = {.x= mv_1.x*SB_SIZE + 31, .y= mv_1.y*SB_SIZE + 31};
-
-    mv0 = round_affine_mv2(mv0);
-    mv1 = round_affine_mv2(mv1);
-
-    //mv0 = clip_mv(mv0);
-    //mv1 = clip_mv(mv1);
-    #else
     OVMV mv0 = {.x= mv_0.x, .y= mv_0.y};
     OVMV mv1 = {.x= mv_1.x, .y= mv_1.y};
     mv0 = round_dmv(mv0);
     mv1 = round_dmv(mv1);
-    #endif
 
     uint8_t int_diff  = OVABS(mv0.x) >= LF_MV_THRESHOLD;
             int_diff |= OVABS(mv0.y) >= LF_MV_THRESHOLD;
@@ -3608,11 +3591,6 @@ dbf_update_internal_p(const struct InterDRVCtx *inter_ctx,
     if (mv_broad) {
         int i;
         for (i = 2; i < nb_unit_w; i += 2) {
-#if 0
-            if (check_dbf_mv(dmv0.h)) {
-                dbf_info->bs1_map.ver[x0_u + i] |= mask_ver;
-            }
-#else
             if (mv_broad) {
                 const OVMV *mv = &mv_ctx->mvs[35 + i + x0_u + y0_u * 34];
                 int j;
@@ -3624,15 +3602,9 @@ dbf_update_internal_p(const struct InterDRVCtx *inter_ctx,
                 }
                 dbf_info->bs1_map.ver[x0_u + i] |= tmp_msk;
             }
-#endif
         }
 
         for (i = 2; i < nb_unit_h; i += 2) {
-#if 0
-            if (check_dbf_mv(dmv0.v)) {
-                dbf_info->bs1_map.hor[y0_u + i] |= mask_hor;
-            }
-#else
             const OVMV *mv = &mv_ctx->mvs[35 + x0_u + (y0_u + i) * 34];
             int j;
             uint64_t tmp_msk = 0;
@@ -3642,7 +3614,6 @@ dbf_update_internal_p(const struct InterDRVCtx *inter_ctx,
                 mv++;
             }
             dbf_info->bs1_map.hor[y0_u + i] |= tmp_msk;
-#endif
         }
     }
 }
@@ -3678,46 +3649,22 @@ dbf_update_internal_b(const struct InterDRVCtx *inter_ctx,
 {
 
     if (mv_broad) {
-        #if 0
-        uint64_t mask_ver = (uint64_t)((uint64_t)1 << nb_unit_h) - 1;
-        uint64_t mask_hor = (uint64_t)((uint64_t)1 << nb_unit_w) - 1;
-        mask_ver <<= y0_u;
-        mask_hor <<= (2 + x0_u);
-        #endif
         int i;
         for (i = 2; i < nb_unit_w; i += 2) {
-#if 0
-            if (check_dbf_mv_b(dmv0.h, dmv1.h)) {
-                dbf_info->bs1_map.ver[x0_u + i] |= mask_ver;
-            }
-#else
             const OVMV *mv0 = &mv_ctx0->mvs[35 + i + x0_u + y0_u * 34];
             const OVMV *mv1 = &mv_ctx1->mvs[35 + i + x0_u + y0_u * 34];
             int j;
             uint64_t tmp_msk = 0;
             for (j = 0; j < nb_unit_h; j++) {
-#if 0
-                uint64_t val  = mv_threshold_check(*mv0, mv0[-1]);
-                val |= mv_threshold_check(*mv1, mv1[-1]);
-                uint64_t val2  = mv_threshold_check(*mv0, mv1[-1]);
-                val2 |= mv_threshold_check(*mv1, mv0[-1]);
-#else
                 uint64_t val =  check_dbf_enabled(inter_ctx, *mv0, *mv1, mv0[-1], mv1[-1]);
-#endif
                 tmp_msk |= val << (j + y0_u);
                 mv0 += 34;
                 mv1 += 34;
             }
             dbf_info->bs1_map.ver[x0_u + i] |= tmp_msk;
-#endif
         }
 
         for (i = 2; i < nb_unit_h; i += 2) {
-#if 0
-            if (check_dbf_mv_b(dmv0.v, dmv1.v)) {
-                dbf_info->bs1_map.hor[y0_u + i] |= mask_hor;
-            }
-#else
             const OVMV *mv0 = &mv_ctx0->mvs[35 + x0_u + (y0_u + i) * 34];
             const OVMV *mv1 = &mv_ctx1->mvs[35 + x0_u + (y0_u + i) * 34];
             int j;
@@ -3729,7 +3676,6 @@ dbf_update_internal_b(const struct InterDRVCtx *inter_ctx,
                 mv1++;
             }
             dbf_info->bs1_map.hor[y0_u + i] |= tmp_msk;
-#endif
         }
     }
 }
