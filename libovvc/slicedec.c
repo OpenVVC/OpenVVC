@@ -1228,15 +1228,35 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
 
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 1;
     for (int i = 0; i < ctudec->drv_ctx.inter_ctx.nb_active_ref0; ++i) {
+        uint8_t opp_ref_idx0 = 0xFF;
+
         if(ctudec->drv_ctx.inter_ctx.rpl0[i]->poc > sldec->pic->poc) {
             ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 0;
         }
+
+        for (int j = 0; j < ctudec->drv_ctx.inter_ctx.nb_active_ref1; j ++) {
+            if (ctudec->drv_ctx.inter_ctx.rpl0[i] == ctudec->drv_ctx.inter_ctx.rpl1[j]) {
+                opp_ref_idx0 = j;
+                break;
+            }
+        }
+        ctudec->drv_ctx.inter_ctx.rpl0_opp[i] = opp_ref_idx0;
     }
 
     for (int i = 0; i < ctudec->drv_ctx.inter_ctx.nb_active_ref1; ++i) {
+        uint8_t opp_ref_idx1 = 0xFF;
+
         if(ctudec->drv_ctx.inter_ctx.rpl1[i]->poc > sldec->pic->poc) {
             ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 0;
         }
+
+        for (int j = 0; j < ctudec->drv_ctx.inter_ctx.nb_active_ref0; j ++) {
+            if (ctudec->drv_ctx.inter_ctx.rpl1[i] == ctudec->drv_ctx.inter_ctx.rpl0[j]) {
+                opp_ref_idx1 = j;
+                break;
+            }
+        }
+        ctudec->drv_ctx.inter_ctx.rpl1_opp[i] = opp_ref_idx1;
     }
 
     /* FIXME Bidir only */

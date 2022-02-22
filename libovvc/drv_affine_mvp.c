@@ -4177,13 +4177,8 @@ drv_affine_mvp_p(struct InterDRVCtx *const inter_ctx,
     uint8_t nb_pb_w = (1 << log2_cu_w) >> 2;
     uint8_t nb_pb_h = (1 << log2_cu_h) >> 2;
 
-    uint8_t opp_ref_idx0 = 0xFF;
+    uint8_t opp_ref_idx0 = inter_ctx->rpl0_opp[ref_idx0];
     uint8_t prof_dir = inter_ctx->prof_enabled ? 0x3 : 0;
-
-    for (int i = 0; i < inter_ctx->nb_active_ref1; i ++) {
-         if (inter_ctx->rpl0[ref_idx0] == inter_ctx->rpl1[i])
-             opp_ref_idx0 = i;
-    }
 
     /* FIXME can we combine mvp derivation for bi pred */
     if (inter_dir & 0x1) {
@@ -4305,21 +4300,9 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
     uint8_t nb_pb_w = (1 << log2_cu_w) >> 2;
     uint8_t nb_pb_h = (1 << log2_cu_h) >> 2;
 
-    uint8_t opp_ref_idx0 = 0xFF;
-    uint8_t opp_ref_idx1 = 0xFF;
+    uint8_t opp_ref_idx0 = inter_ctx->rpl0_opp[ref_idx0];
+    uint8_t opp_ref_idx1 = inter_ctx->rpl1_opp[ref_idx1];
     uint8_t prof_dir = inter_ctx->prof_enabled ? 0x3 : 0;
-
-    for (int i = 0; i < inter_ctx->nb_active_ref1; i ++) {
-         if (inter_ctx->rpl0[ref_idx0] == inter_ctx->rpl1[i])
-             opp_ref_idx0 = i;
-    }
-
-    if (ref_idx1 != 0xFF) {
-        for (int i = 0; i < inter_ctx->nb_active_ref0; i ++) {
-            if (inter_ctx->rpl1[ref_idx1] == inter_ctx->rpl0[i])
-                opp_ref_idx1 = i;
-        }
-    }
 
     /* FIXME can we combine mvp derivation for bi pred */
     if (inter_dir & 0x1) {

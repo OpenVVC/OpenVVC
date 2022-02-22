@@ -2130,23 +2130,9 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
     uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
     uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
 
-    uint8_t opp_ref_idx0 = 0xFF;
-    uint8_t opp_ref_idx1 = 0xFF;
-
-    for (int i = 0; i < inter_ctx->nb_active_ref1; i ++) {
-         if (inter_ctx->rpl0[ref_idx0] == inter_ctx->rpl1[i])
-             opp_ref_idx0 = i;
-    }
-
-    if (ref_idx1 != 0xFF) {
-        for (int i = 0; i < inter_ctx->nb_active_ref0; i ++) {
-            if (inter_ctx->rpl1[ref_idx1] == inter_ctx->rpl0[i])
-                opp_ref_idx1 = i;
-        }
-    }
-
     /* FIXME can we combine mvp derivation for bi pred */
     if (inter_dir & 0x1) {
+        uint8_t opp_ref_idx0 = inter_ctx->rpl0_opp[ref_idx0];
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
 
@@ -2165,6 +2151,8 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
     }
 
     if (inter_dir & 0x2) {
+        uint8_t opp_ref_idx1 = inter_ctx->rpl1_opp[ref_idx1];
+
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
 
@@ -2297,22 +2285,11 @@ drv_mvp_mvd(struct InterDRVCtx *const inter_ctx,
     uint8_t y0_unit = y0 >> LOG2_MIN_CU_S;
     uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
     uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
-    uint8_t opp_ref_idx0 = 0xFF;
-    uint8_t opp_ref_idx1 = 0xFF;
-
-    for (int i = 0; i < inter_ctx->nb_active_ref1; i ++) {
-         if (inter_ctx->rpl0[ref_idx0] == inter_ctx->rpl1[i])
-             opp_ref_idx0 = i;
-    }
-
-    for (int i = 0; i < inter_ctx->nb_active_ref0; i ++) {
-         if (inter_ctx->rpl1[ref_idx1] == inter_ctx->rpl0[i])
-             opp_ref_idx1 = i;
-    }
-
+    uint8_t opp_ref_idx0 = inter_ctx->rpl0_opp[ref_idx0];
+    uint8_t opp_ref_idx1 = inter_ctx->rpl1_opp[ref_idx1];
 
     const struct OVMVCtx *const mv_ctx_opp = &inter_ctx->mv_ctx0 == mv_ctx ? &inter_ctx->mv_ctx1 :
-        &inter_ctx->mv_ctx0;
+                                                                             &inter_ctx->mv_ctx0;
 
     uint8_t ref_idx = &inter_ctx->mv_ctx0 == mv_ctx  ? ref_idx0 : ref_idx1;
     uint8_t ref_idx_opp = &inter_ctx->mv_ctx0 == mv_ctx  ? opp_ref_idx0 : opp_ref_idx1;

@@ -341,6 +341,9 @@ struct InterDRVCtx
     uint16_t scale_fact_rpl0[16][2];
     uint16_t scale_fact_rpl1[16][2];
 
+    uint8_t rpl0_opp[16];
+    uint8_t rpl1_opp[16];
+
     uint8_t nb_active_ref0;
     uint8_t nb_active_ref1;
 
