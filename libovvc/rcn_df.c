@@ -937,6 +937,7 @@ filter_veritcal_edge_c(const struct DBFInfo *const dbf_info, OVSample *src, ptrd
         OVSample *src1 = src + stride;
 
         const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, qp, 1 + is_bs2);
+        if (dbf_params.tc == 0 || dbf_params.beta == 0) return;
         uint8_t is_strong = 0;
 
         if (is_large) {
@@ -1118,6 +1119,7 @@ filter_horizontal_edge_c(const struct DBFInfo *const dbf_info, OVSample *src, pt
         OVSample *src1 = src + 1;
 
         const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, qp, 1 + is_bs2);
+        if (dbf_params.tc == 0 || dbf_params.beta == 0) return;
         uint8_t is_strong = 0;
 
         if (is_large) {
@@ -1284,6 +1286,8 @@ filter_veritcal_edge(const struct DFFunctions *df, const struct DBFInfo *const d
     /*FIXME subblock handling */
 
     const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, qp, bs);
+    if (dbf_params.tc == 0 || dbf_params.beta == 0) return;
+
     OVSample* src0 = src;
     OVSample* src3 = src + stride * 3;
 
@@ -1487,6 +1491,7 @@ filter_horizontal_edge(const struct DFFunctions *df, const struct DBFInfo *const
     /*FIXME subblock handling */
 
     const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, qp, bs);
+    if (dbf_params.tc == 0 || dbf_params.beta == 0) return;
 
     OVSample *src0 = (OVSample *)src;
     OVSample *src3 = (OVSample *)src + 3;
