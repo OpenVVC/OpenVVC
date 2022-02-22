@@ -19,9 +19,9 @@ jobs:
         run: ./configure
       - name: Compilation
         run: make
-      - name: Test All Intra
-        run: ./CI/checkMD5.sh ./CI/test_bitstreams/all_intra ./examples/dectest http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/all_intra/
-      - name: Test Low Delay
-        run: ./CI/checkMD5.sh ./CI/test_bitstreams/low_delay ./examples/dectest http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/low_delay/
-      - name: Test Random Access
-        run: ./CI/checkMD5.sh ./CI/test_bitstreams/random_access ./examples/dectest http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/random_access/
+      - name: Download Streams
+        run: ./CI/dlvideobin https://nasext-vaader.insa-rennes.fr/ietr-vaader/OVVC/conf_stream/ ./CI/test_bitstreams/conf_stream/ --no_md5
+      - name: Set Env Variables 
+        run: export OVDEC=$(pwd)/examples/dectest
+      - name: Non regression testing
+        run: - ./CI/ovnreg ./CI/conf.vmd5 --no_cleanup --keep_fail

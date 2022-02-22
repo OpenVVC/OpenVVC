@@ -21,7 +21,7 @@ build_linux_gcc:
       - examples/.libs/dectest
       - examples/dectest
 
-AllIntra_CTC_gcc:
+passing_conf_gcc:
   stage: test
   tags:
     - x86
@@ -31,9 +31,17 @@ AllIntra_CTC_gcc:
   before_script:
     - apt update && apt install -y curl
   script:
-    - ./CI/checkMD5.sh ./CI/test_bitstreams/all_intra ./examples/dectest http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/all_intra/
+    - export OVDEC=$(pwd)/examples/dectest
+    - export OVSTREAM=/test_bitstreams
+    - ./CI/dlvideobin https://nasext-vaader.insa-rennes.fr/ietr-vaader/OVVC/conf_stream/ ${OVSTREAM}/conf_stream/ --no_md5
+    - ./CI/ovnreg ./CI/conf.vmd5
+  artifacts:
+    when: on_failure
+    paths:
+      - .ovnreg_*
 
-LowDelay_CTC_gcc:
+failing_conf_gcc:
+  allow_failure: true
   stage: test
   tags:
     - x86
@@ -43,16 +51,63 @@ LowDelay_CTC_gcc:
   before_script:
     - apt update && apt install -y curl
   script:
-    - ./CI/checkMD5.sh ./CI/test_bitstreams/low_delay ./examples/dectest http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/low_delay/
+    - export OVDEC=$(pwd)/examples/dectest
+    - export OVSTREAM=/test_bitstreams
+    - grep "^[#;]" CI/conf.vmd5 | sed 's/# //g' > CI/fail.vmd5
+    - ./CI/dlvideobin https://nasext-vaader.insa-rennes.fr/ietr-vaader/OVVC/conf_stream/ ${OVSTREAM}/conf_stream/ --no_md5
+    - ./CI/ovnreg ./CI/fail.vmd5 --no_cleanup --keep_fail
+  artifacts:
+    when: on_failure
+    paths:
+      - .ovnreg_*
 
-RandomAccess_CTC_gcc:
+# MAC OS builds
+build_macos_gcc:
+  stage: build
+  tags:
+    - MACOS
+  script:
+    - gcc --version
+    - autoreconf -if
+    - ./configure
+    - make
+# Files to keep after compilation
+  artifacts:
+    paths:
+      - libovvc/.libs/libovvc*.dylib
+      - examples/.libs/dectest
+      - examples/dectest
+
+passing_conf_macos_gcc:
   stage: test
   tags:
-    - x86
-  image: ubuntu
+    - MACOS
   dependencies:
-    - build_linux_gcc
-  before_script:
-    - apt update && apt install -y curl
+    - build_macos_gcc
   script:
-    - ./CI/checkMD5.sh ./CI/test_bitstreams/random_access ./examples/dectest http://openvvc.insa-rennes.fr/bitstreams/JVET_CTC/random_access/
+    - export OVDEC=$(pwd)/examples/dectest
+    - export OVSTREAM=/Users/gugautie/test_bitstreams
+    - ./CI/dlvideobin https://nasext-vaader.insa-rennes.fr/ietr-vaader/OVVC/conf_stream/ ${OVSTREAM}/conf_stream/ --no_md5
+    - ./CI/ovnreg ./CI/conf.vmd5
+  artifacts:
+    when: on_failure
+    paths:
+      - .ovnreg_*
+
+failing_conf_macos_gcc:
+  allow_failure: true
+  stage: test
+  tags:
+    - MACOS
+  dependencies:
+    - build_macos_gcc
+  script:
+    - export OVDEC=$(pwd)/examples/dectest
+    - export OVSTREAM=/Users/gugautie/test_bitstreams
+    - grep "^[#;]" CI/conf.vmd5 | sed 's/# //g' > CI/fail.vmd5
+    - ./CI/dlvideobin https://nasext-vaader.insa-rennes.fr/ietr-vaader/OVVC/conf_stream/ ${OVSTREAM}/conf_stream/ --no_md5
+    - ./CI/ovnreg ./CI/fail.vmd5 --no_cleanup --keep_fail
+  artifacts:
+    when: on_failure
+    paths:
+      - .ovnreg_*

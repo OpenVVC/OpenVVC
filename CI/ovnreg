@@ -1,0 +1,238 @@
+#!/bin/bash
+
+case $(uname -s) in
+      Darwin|darwin|macos|macOS)
+        MD5SUM="md5 -r"
+    ;;
+      *)
+        MD5SUM="md5sum"
+    ;;
+esac
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+
+# Default values
+ext_list="266
+          bin
+          h266
+          vvc"
+
+filter_extension(){
+  var=$1
+  shift
+  for ext in $*; do
+    eval "var2=$(echo \$${var})"
+    tmp=$(echo ${var2} | sed -e "s/\(.*\)\(\.${ext}\$\)/\1/g")
+    eval "${var}=${tmp}"
+  done
+  unset tmp
+  unset var
+}
+
+append(){
+    var=${1}
+    shift
+    eval "${var}=\"\$${var} ${*}\""
+}
+
+decode(){
+  dec_arg="-i ${1} -o ${2} -t 2 -e 2"
+  { $($DECODER ${dec_arg} 2> ${3} 1>&2); } 2> /dev/null
+  return $?
+}
+
+on_decoding_error() {
+    retval=$?
+    increment nb_error
+    case $retval in
+      "139")
+        er='SEGF'
+        ;;
+      "134")
+        er='STACK'
+        ;;
+      *)
+        er='OTHER'
+        ;;
+    esac
+
+    log_status "$er" $RED 1>&2
+    append segf_list ${vvc_vid}
+    cat $tmplog
+  [ -z $keep_segf ] && rm ${tmpyuv}
+}
+
+on_decoding_end(){
+	[ $keep_log ] || rm $tmplog
+	return 0
+}
+
+increment(){
+    eval "${1}=$((${1} + 1))"
+}
+
+short_name(){
+    printf "%.$2s" "$1"
+}
+
+vmd5(){
+    decode ${vvc_vid} ${tmpyuv} ${tmplog} || { on_decoding_error ; return 1; }
+    md5=$($MD5SUM ${tmpyuv} | cut -f 1 -d ' ')
+    on_decoding_end
+    return 0
+}
+
+log_status(){
+  status=$1
+  color=$2
+  [ -z $no_progress ] && printf "\r%-70.70s ${color}%+10s${NC}\n" "${name}" "${status}"
+}
+
+on_success() {
+	append pass_list ${vvc_vid}
+  log_status 'PASS' $GREEN 1>&2
+	[ -z $keep_pass ] && rm ${tmpyuv}
+}
+
+on_md5_mismatch() {
+	increment nb_error
+  log_status 'FAIL' $RED 1>&2
+	append fail_list ${vvc_vid}
+	[ -z $keep_fail ] && rm ${tmpyuv}
+}
+
+gen_file(){
+  lfile="$1"
+  shift
+  for v ; do
+    printf "$v\n" >> ${lfile}
+  done
+}
+
+die() {
+   printf "${RED}%s${NC}\n" "$*"
+   exit 1
+}
+
+
+print_usage(){
+cat <<EOF
+NAME
+  ovnreg - test md5sum
+
+SYNOPSYS
+  ovnreg [options] <VMD5_FILE> [options]
+
+	   For each DIR passed as argument genlist will look for VVC files based
+		 on file extension. For each file matching extension it will look for
+		 a macthing .md5 file based on its basename, read its content and,
+		 sanitize the md5sum read and print its value to stdout.
+		 If no .md5 file exists it will report an error to stderr.
+
+     vvc_extension = "${ext_list}"
+
+OPTIONS
+     --no_progress   Do not report progress
+     --no_cleanup    keep all files
+     --keep_segf     keep decoder output on segfault
+     --keep_pass     keep decoder output on success
+     --keep_fail     keep decoder output on md5 mismatch
+
+ENVIRONMENT
+     OVDEC "${OVDEC}" Decoder to be tested.
+     OVSTREAM "${OVSTREAM}" Root folder of tested bitstream.
+
+EXAMPLE
+  OVDEC=./detest ovnreg samples.vmd5
+
+EOF
+}
+
+no_progress=''
+no_cleanup=''
+keep_segf=''
+keep_pass=''
+keep_fail=''
+
+for opt; do
+  case "$opt" in
+	  --help)
+		  print_usage
+			exit 0
+		;;
+	  --*)
+		  optname=${opt#--}
+		  eval "$optname='yes'"
+		;;
+	  *)
+	    vmd5_file="$opt"
+		;;
+	esac
+done
+
+DECODER=${OVDEC:? $(die "No decoder to test. Set OVDEC before retrying.")}
+
+tmpdir=$(mktemp -d -t ovnreg_XXXX)
+tmp_fail=$(mktemp -p . -t .ovnreg_failXXX 2> /dev/null || mktemp -t .ovnreg_failXXX)
+tmp_pass=$(mktemp -p . -t .ovnreg_passXXX 2> /dev/null || mktemp -t .ovnreg_passXXX)
+tmp_segf=$(mktemp -p . -t .ovnreg_segfXXX 2> /dev/null || mktemp -t .ovnreg_segfXXX)
+
+exclude_pattern="^[^#;]"
+vmd5_file=$(grep "$exclude_pattern" "$vmd5_file" | sed 's/# //g')
+nb_files=$(wc -l <<< "$vmd5_file")
+file_id=0
+
+log_cleanup() {
+	rm $tmp_fail;
+	rm $tmp_pass;
+	rm $tmp_segf;
+	rm -r $tmpdir;
+}
+
+on_interrupt() {
+	printf "\r"
+	[ $no_cleanup ] || log_cleanup ;
+	exit 0;
+}
+
+trap on_interrupt INT
+
+main_loop() {
+  while read var ; do
+
+    increment file_id
+
+    ref_md5=$(echo $var | cut -f 1 -d ' ');
+    vvc_vid="${OVSTREAM}"/$(echo $var | cut -f 2 -d ' ');
+
+    name=$(basename ${vvc_vid});
+
+    filter_extension name ${ext_list}
+
+    tmpyuv="${tmpdir}/${name}.yuv";
+    tmplog="${tmpdir}/${name}.log";
+
+    [ -z $no_progress ] && printf "\r%-63.62s %s" "Processing $(short_name "$name" 30)..." "$file_id of $nb_files" 1>&2
+
+    vmd5 || continue
+    
+    [ $ref_md5 = $md5 ] || { on_md5_mismatch ; continue ; }
+
+    on_success
+
+    done
+}
+
+main_loop <<< "$vmd5_file"
+
+gen_file ${tmp_fail} ${fail_list}
+gen_file ${tmp_pass} ${pass_list}
+gen_file ${tmp_segf} ${segf_list}
+
+[ -z $no_cleanup ] && rm -r $tmpdir
+
+exit $nb_error

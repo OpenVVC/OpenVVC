@@ -27,6 +27,7 @@ configure
 *.annote
 *.m4
 libtool
+.ovnreg_*
 
 # Build folder
 build/*

@@ -1,0 +1,65 @@
+#!/bin/sh
+
+print_usage(){
+    cat <<EOF
+USAGE ./dlvideobin <url> <bitstreams folder> [options]
+OPTIONS
+     --no_md5   Do not download matching md5 file 
+EOF
+    exit 0
+}
+
+die(){
+    echo -e "$RED${*}$NC"
+    exit 1
+}
+
+if [ $# -lt 2 ];  then
+    print_usage
+    die "Illegal number of parameters"
+fi
+
+no_md5=''
+
+for opt; do
+  case "$opt" in
+	  --help)
+		  print_usage
+			exit 0
+		;;
+	  --*)
+		  optname=${opt#--}
+		  eval "$optname='yes'"
+		;;
+	  *)
+		;;
+	esac
+done
+
+
+URL=$1
+STREAM=$2
+
+mkdir -p $STREAM
+
+if [ $# -ge 2 ];  then
+  STREAMLIST=$(curl --silent $URL | grep -o -E '(([[:alnum:]]+_)+[[:alnum:]]+.266")' | sed 's/\"/\ /g')
+fi
+
+for file in $STREAMLIST
+do
+  if [ ! -f "$STREAM/$file" ]; then
+    echo Downloading $file ...
+    curl --silent $URL/$file --output $STREAM/$file
+  fi
+done
+
+if [ -z $no_md5 ]; then
+  for file in $STREAMLIST
+    do
+      if [ ! -f "$STREAM/${file%.266}.md5" ]; then
+        echo Downloading ${file%.266}.md5 ...
+        curl --silent $URL/${file%.266}.md5 --output $STREAM/${file%.266}.md5
+      fi
+  done
+fi
