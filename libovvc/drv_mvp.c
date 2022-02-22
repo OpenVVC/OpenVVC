@@ -1292,12 +1292,12 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
         }
 
         if (nb_cand == merge_idx){
-            avg_mv.mv0.bcw_idx_plus1 = 0;
-            avg_mv.mv1.bcw_idx_plus1 = 0;
             uint8_t prec_amvr0 = cand[0].inter_dir & 0x1 ? cand[0].mv0.prec_amvr : cand[0].mv1.prec_amvr;
             uint8_t prec_amvr1 = cand[1].inter_dir & 0x1 ? cand[1].mv0.prec_amvr : cand[1].mv1.prec_amvr;
             avg_mv.mv0.prec_amvr = (prec_amvr0 == prec_amvr1) ? prec_amvr0 : 0 ;
             avg_mv.mv1.prec_amvr = avg_mv.mv0.prec_amvr ;
+            avg_mv.mv0.bcw_idx_plus1 = 0;
+            avg_mv.mv1.bcw_idx_plus1 = 0;
             return avg_mv;
         }
 
@@ -2152,11 +2152,13 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
 
         mvd0 = drv_change_precision_mv(mvd0, prec_amvr, MV_PRECISION_INTERNAL);
 
-        mv0.bcw_idx_plus1 = bcw_idx + 1;
-        mv0.prec_amvr = prec_amvr;
         mv0.x += mvd0.x;
         mv0.y += mvd0.y;
+
         mv0.ref_idx = ref_idx0;
+
+        mv0.bcw_idx_plus1 = bcw_idx + 1;
+        mv0.prec_amvr     = prec_amvr;
     }
 
     if (inter_dir & 0x2) {
@@ -2173,11 +2175,13 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
 
         mvd1 = drv_change_precision_mv(mvd1, prec_amvr, MV_PRECISION_INTERNAL);
 
-        mv1.bcw_idx_plus1 = bcw_idx + 1;
-        mv1.prec_amvr = prec_amvr;
         mv1.x += mvd1.x;
         mv1.y += mvd1.y;
+
         mv1.ref_idx = ref_idx1;
+
+        mv1.bcw_idx_plus1 = bcw_idx + 1;
+        mv1.prec_amvr = prec_amvr;
     }
 
     mv_info.inter_dir = inter_dir;
