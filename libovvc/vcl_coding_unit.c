@@ -858,24 +858,20 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
     uint8_t log2_min_cb_s = part_ctx->log2_min_cb_s;
     uint8_t y_cb = y0 >> log2_min_cb_s;
     uint8_t x_cb = x0 >> log2_min_cb_s;
-    #if 0
-    VVCCTUPredContext *const pred_ctx = &ctu_dec->pred_ctx;
-    #endif
     /*TODO fill */
     uint8_t cu_type_abv = ctu_dec->part_map.cu_mode_x[x_cb];
     uint8_t cu_type_lft = ctu_dec->part_map.cu_mode_y[y_cb];
-    uint8_t cu_skip_flag;
     uint8_t cu_type = OV_INTER;
     VVCCU cu = {0};
 
-    cu_skip_flag = ovcabac_read_ae_cu_skip_flag(cabac_ctx, cu_type_abv,
+    uint8_t cu_skip_flag = ovcabac_read_ae_cu_skip_flag(cabac_ctx, cu_type_abv,
                                                 cu_type_lft);
 
     if (cu_skip_flag) {
         /* FIXME cu_skip_flag activation force merge_flag so we only need to read
            merge_idx */
         uint8_t merge_flag = 1;
-        cu_type = ctu_dec->prediction_unit(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, cu_skip_flag, merge_flag);
+        cu_type = ctu_dec->prediction_unit(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, cu_skip_flag, 1);
 
         if (cu_type == OV_AFFINE) {
             cu_type = OV_INTER_SKIP_AFFINE;
@@ -907,7 +903,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
 
         } else {
             uint8_t merge_flag = ovcabac_read_ae_cu_merge_flag(cabac_ctx);
-            cu_type = ctu_dec->prediction_unit(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, cu_skip_flag, merge_flag);
+            cu_type = ctu_dec->prediction_unit(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, 0, merge_flag);
 
             FLG_STORE(merge_flag, cu.cu_flags);
             ctu_dec->intra_mode_c = 0;
