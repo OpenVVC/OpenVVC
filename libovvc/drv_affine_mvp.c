@@ -691,8 +691,8 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
             mv = tmvp_rescale(mv, scale);
 
             mv.ref_idx = ref_idx;
-            mv.bcw_idx_plus1 = 0;
-            mv.prec_amvr = 0;
+            //mv.bcw_idx_plus1 = 0;
+            //mv.prec_amvr = 0;
 
             dst[1] = mv;
         } else if (cand_c0 && cand_c01) {
@@ -718,8 +718,8 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
             scale = derive_tmvp_scale(dist_ref_opp, dist_col);
 
             mv = tmvp_rescale(mv, scale);
-            mv.bcw_idx_plus1 = 0;
-            mv.prec_amvr = 0;
+            //mv.bcw_idx_plus1 = 0;
+            //mv.prec_amvr = 0;
 
             mv.ref_idx = ref_idx;
 
@@ -748,8 +748,8 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
             mv = tmvp_rescale(mv, scale);
 
             mv.ref_idx = ref_idx;
-            mv.bcw_idx_plus1 = 0;
-            mv.prec_amvr = 0;
+            //mv.bcw_idx_plus1 = 0;
+            //mv.prec_amvr = 0;
 
             dst[1] = mv;
 
@@ -778,8 +778,8 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
             mv = tmvp_rescale(mv, scale);
 
             mv.ref_idx = ref_idx;
-            mv.bcw_idx_plus1 = 0;
-            mv.prec_amvr = 0;
+            //mv.bcw_idx_plus1 = 0;
+            //mv.prec_amvr = 0;
 
             dst[1] = mv;
         }
@@ -3693,46 +3693,6 @@ update_mv_ctx_b2(struct InterDRVCtx *const inter_ctx,
     dbf_fill_aff_map(&dbf_info->affine_map, pb_x, pb_y, nb_pb_w, nb_pb_h);
     dbf_mv_check_sbtmvp(inter_ctx, dbf_info, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
-    #if 0
-    if (inter_dir == 0x3) {
-        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        const struct AffineDeltaMV dmv_0 = {0}; 
-        const struct AffineDeltaMV dmv_1 = {0}; 
-
-        const uint8_t mv_broad_0 = 0;
-        const uint8_t mv_broad_1 = 0;
-
-
-
-        return ((!mv_broad_0) | (!mv_broad_1 << 1));
-    } else if (inter_dir & 0x2) {
-        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-
-        const struct AffineDeltaMV dmv_1 = {0}; 
-
-        const uint8_t mv_broad_1 = 0;
-
-        dbf_mv_check_p(inter_ctx, dbf_info, mv_ctx1, mv_ctx0, pb_x, pb_y, nb_pb_w, nb_pb_h);
-
-        dbf_update_internal_p(inter_ctx, dbf_info, dmv_1, pb_x, pb_y, nb_pb_w, nb_pb_h, !mv_broad_1, mv_ctx1, inter_ctx->dist_ref_1);
-
-        return (!mv_broad_1 << 1);
-    } else if (inter_dir & 0x1) {
-        struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
-        struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
-        const struct AffineDeltaMV dmv_0 = {0}; 
-
-        const uint8_t mv_broad_0 = 0;
-
-        dbf_mv_check_p(inter_ctx, dbf_info, mv_ctx0, mv_ctx1, pb_x, pb_y, nb_pb_w, nb_pb_h);
-
-        dbf_update_internal_p(inter_ctx, dbf_info, dmv_0, pb_x, pb_y, nb_pb_w, nb_pb_h, !mv_broad_0, mv_ctx0, inter_ctx->dist_ref_0);
-
-        return (!mv_broad_0);
-    }
-    #endif
     return 0;
 }
 
