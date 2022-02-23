@@ -802,7 +802,7 @@ filter_luma_weak(OVSample* src, const int stride, const int tc, const int th_cut
 
 
 static inline uint8_t
-use_strong_filter_c2(OVSample* src, const int stride, const int beta, const int tc, uint8_t is_ctb_b)
+use_strong_filter_c2(const OVSample* src, const int stride, const int beta, const int tc, uint8_t is_ctb_b)
 {
     const int16_t m0 = src[(-stride * 4) >> is_ctb_b];
     #if 0
@@ -821,7 +821,7 @@ use_strong_filter_c2(OVSample* src, const int stride, const int beta, const int 
 }
 
 static inline uint8_t
-use_strong_filter_c(OVSample* src, const int stride, const int beta, const int tc)
+use_strong_filter_c(const OVSample* src, const int stride, const int beta, const int tc)
 {
     const int16_t m0 = src[-stride * 4];
     const int16_t m3 = src[-stride    ];
