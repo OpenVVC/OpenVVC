@@ -1350,23 +1350,23 @@ fill_tmvp_map(struct OVMV *const tmvp_mv, OVMV mv,
 {
     /* Align MVs on 8x8 grid */
     int i, j;
-
-    int x0 = pb_x << LOG2_MIN_CU_S;
-    int y0 = pb_y << LOG2_MIN_CU_S;
-    int pb_w = nb_pb_w << LOG2_MIN_CU_S;
-    int pb_h = nb_pb_h << LOG2_MIN_CU_S;
-
     OVMV *dst_mv = tmvp_mv;
+    uint8_t skip_first_x = pb_x & 0x1;
+    uint8_t skip_first_y = pb_y & 0x1;
+
+    OVMV *mv_line = &dst_mv[((pb_x + skip_first_x) >> 1) + ((pb_y + skip_first_y) >> 1) * 16];
 
     /* FIXME check if necessary reset */
     mv.bcw_idx_plus1 = 0;
     mv.prec_amvr = 0;
 
-    for (j = 0; j < pb_h; j += 4) {
-        for (i = 0; i < pb_w; i += 4) {
-            if (!((x0 + i) & 0x7) && !((y0 + j) & 0x7))
-                dst_mv[((x0 + i) >> 3) + ((y0 + j) >> 3) * 16] = mv;
+    for (j = 0; j < (nb_pb_h + !skip_first_y >> 1); ++j) {
+        OVMV *dst = mv_line;
+        for (i = 0; i < (nb_pb_w + !skip_first_x >> 1); ++i) {
+            *dst = mv;
+            ++dst;
         }
+        mv_line += 16;
     }
 }
 
