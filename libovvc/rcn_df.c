@@ -1851,20 +1851,10 @@ vvc_dbf_ctu_hor(const struct DFFunctions * df, OVSample *src, int stride, const 
 }
 
 static void
-filter_horizontal_edge(const struct DFFunctions *df, const struct DBFInfo *const dbf_info, OVSample *src, ptrdiff_t stride,
-                       uint8_t qp, uint64_t bs2_map, uint64_t large_p_map,
-                       uint64_t large_q_map, uint64_t small_map,
-                       uint64_t affine_p, uint64_t affine_q, uint64_t aff_edg_1)
+filter_horizontal_edge(const struct DFFunctions *df, const struct DBFParams *const dbf_params,
+                       OVSample *src, ptrdiff_t stride,
+                       uint8_t max_l_p, uint8_t max_l_q)
 {
-    int max_l_p = small_map & 0x1 ? 1 : (large_p_map & 0x1) ? 7 : 3;
-    int max_l_q = small_map & 0x1 ? 1 : (large_q_map & 0x1) ? 7 : 3;
-    uint8_t bs = 1 + (bs2_map & 0x1);
-
-    /*FIXME subblock handling */
-
-    const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, qp, bs);
-    if (dbf_params.tc == 0 || dbf_params.beta == 0) return;
-
     OVSample *src0 = (OVSample *)src;
     OVSample *src3 = (OVSample *)src + 3;
 
@@ -1874,23 +1864,6 @@ filter_horizontal_edge(const struct DFFunctions *df, const struct DBFInfo *const
     const int dq3 = compute_dq(src3, stride);
 
     uint8_t use_strong_large = 0;
-
-    uint8_t is_aff_p = affine_p & 0x1;
-    uint8_t is_aff_q = affine_q & 0x1;
-
-    if (is_aff_p) {
-        max_l_p = OVMIN(5, max_l_p);
-    }
-
-    if (is_aff_q) {
-        max_l_q = OVMIN(5, max_l_q);
-    }
-
-    if (aff_edg_1 & 0x1) {
-        max_l_p = OVMIN(2, max_l_p);
-        max_l_q = OVMIN(2, max_l_q);
-        max_l_p = max_l_q = OVMIN(max_l_p, max_l_q);
-    }
 
     if (max_l_p > 3 || max_l_q > 3) {
         int dp0L = dp0;
@@ -1912,11 +1885,11 @@ filter_horizontal_edge(const struct DFFunctions *df, const struct DBFInfo *const
         int d3L = dp3L + dq3L;
 
         int dL = d0L + d3L;
-        use_strong_large = (dL < dbf_params.beta) &&
-            ((d0L << 1) < (dbf_params.beta >> 4)) &&
-            ((d3L << 1) < (dbf_params.beta >> 4)) &&
-            use_strong_filter_l0(src0, stride, dbf_params.beta, dbf_params.tc, max_l_p, max_l_q) &&
-            use_strong_filter_l0(src3, stride, dbf_params.beta, dbf_params.tc, max_l_p, max_l_q);
+        use_strong_large = (dL < dbf_params->beta) &&
+            ((d0L << 1) < (dbf_params->beta >> 4)) &&
+            ((d3L << 1) < (dbf_params->beta >> 4)) &&
+            use_strong_filter_l0(src0, stride, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q) &&
+            use_strong_filter_l0(src3, stride, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q);
     }
 
     if (use_strong_large) {
@@ -1924,35 +1897,35 @@ filter_horizontal_edge(const struct DFFunctions *df, const struct DBFInfo *const
             max_l_q = max_l_q > 3 ? max_l_q : 3;
             const int filter_idx = derive_filter_idx(max_l_p, max_l_q);
             OVSample *_src = src0;
-            df->filter_v[filter_idx](_src, stride, dbf_params.tc);
+            df->filter_v[filter_idx](_src, stride, dbf_params->tc);
     } else {
         const int d0 = dp0 + dq0;
         const int d3 = dp3 + dq3;
         const int d  = d0 + d3;
 
-        if (d < dbf_params.beta) {
+        if (d < dbf_params->beta) {
             uint8_t sw = (max_l_p >= 3 && max_l_q >= 3);
 
-            sw = sw && ((d0 << 1) < (dbf_params.beta >> 2))
-                && ((d3 << 1) < (dbf_params.beta >> 2))
-                && use_strong_filter_l1(src0, stride, dbf_params.beta, dbf_params.tc)
-                && use_strong_filter_l1(src3, stride, dbf_params.beta, dbf_params.tc);
+            sw = sw && ((d0 << 1) < (dbf_params->beta >> 2))
+                && ((d3 << 1) < (dbf_params->beta >> 2))
+                && use_strong_filter_l1(src0, stride, dbf_params->beta, dbf_params->tc)
+                && use_strong_filter_l1(src3, stride, dbf_params->beta, dbf_params->tc);
 
             if (sw){
                 for (int i = 0; i < 4; i++) {
                     OVSample *_src = src0 + i;
-                    filter_luma_strong_small(_src, stride, dbf_params.tc);
+                    filter_luma_strong_small(_src, stride, dbf_params->tc);
                 }
             } else {
                 const int dp = dp0 + dp3;
                 const int dq = dq0 + dq3;
-                const int side_thd = (dbf_params.beta + (dbf_params.beta >> 1)) >> 3;
-                const int th_cut  = dbf_params.tc * 10;
+                const int side_thd = (dbf_params->beta + (dbf_params->beta >> 1)) >> 3;
+                const int th_cut  = dbf_params->tc * 10;
                 uint8_t extend_p = (dp < side_thd) && (max_l_p > 1 && max_l_q > 1);
                 uint8_t extend_q = (dq < side_thd) && (max_l_p > 1 && max_l_q > 1);
                 for (int i = 0; i < 4; i++) {
                     OVSample *_src = src0 + i;
-                    filter_luma_weak(_src, stride, dbf_params.tc, th_cut, extend_p, extend_q);
+                    filter_luma_weak(_src, stride, dbf_params->tc, th_cut, extend_p, extend_q);
                 }
             }
         }
@@ -1968,7 +1941,7 @@ vvc_dbf_ctu_ver(const struct DFFunctions *df, OVSample *src, int stride, const s
     int i;
 
     const uint64_t *edg_map = &dbf_info->ctb_bound_hor[8];
-    const uint64_t *aff_edg_map = &dbf_info->aff_edg_hor[8];
+    const uint64_t *sb_edg_map = &dbf_info->aff_edg_hor[8];
     uint8_t skip_first = !ctu_abv;
 
     /* Filtering vertical edges on the whole would overlap with next CTU first
@@ -1983,7 +1956,7 @@ vvc_dbf_ctu_ver(const struct DFFunctions *df, OVSample *src, int stride, const s
     for (i = skip_first; i < nb_unit_h; ++i) {
         OVSample *src_tmp = src;
 
-        uint64_t edg_msk = edg_map[i] | aff_edg_map[i];
+        uint64_t edg_msk = edg_map[i] | sb_edg_map[i];
         uint64_t bs2_map = dbf_info->bs2_map.hor[i];
         uint64_t bs1_map = dbf_info->bs1_map.hor[i];
 
@@ -1991,54 +1964,51 @@ vvc_dbf_ctu_ver(const struct DFFunctions *df, OVSample *src, int stride, const s
         edg_msk &= bs2_map | bs1_map;
 
         if (edg_msk) {
-            uint64_t large_p_map = derive_size_3_map(&edg_map[i - 7]);
-            uint64_t large_q_map = derive_size_3_map(&edg_map[i + 1]);
-            uint64_t small_map = edg_map[i - 1] | edg_map[i + 1] | aff_edg_map[i + 1] | aff_edg_map[i - 1];
-            uint64_t aff_edg_1 = aff_edg_map[i] & (edg_map[i - 2] | edg_map[i + 2] | edg_map[i - 1] | edg_map[i + 1]) & ~edg_map[i];
-
+            uint64_t pos_msk = 1;
+            uint8_t once = 1;
+            struct EdgeCtx edg_ctx;
             const uint8_t *qp_row = &dbf_info->qp_map_y.hor[34 * i];
-            uint64_t affine_p = dbf_info->affine_map.hor[i];
-            uint64_t affine_q = dbf_info->affine_map.hor[i + 1];
-
-            large_p_map  &= ~(aff_edg_map[i] & (~edg_map[i]));
-            large_q_map  &= ~(aff_edg_map[i] & (~edg_map[i]));
 
             do {
+                uint8_t qp, bs;
                 uint8_t nb_skipped_blk = ov_ctz64(edg_msk);
-                uint8_t qp;
 
                 /* Skip non filtered edges */
-                large_p_map >>= nb_skipped_blk;
-                large_q_map >>= nb_skipped_blk;
-                affine_p >>= nb_skipped_blk;
-                affine_q >>= nb_skipped_blk;
-                aff_edg_1 >>= nb_skipped_blk;
-                small_map   >>= nb_skipped_blk;
-                bs2_map     >>= nb_skipped_blk;
+                pos_msk <<= nb_skipped_blk;
+
                 qp_row       += nb_skipped_blk;
                 src_tmp      += nb_skipped_blk * blk_stride;
 
+                bs = 1 + !!(bs2_map & pos_msk);
+
                 qp = (qp_row[0] + qp_row[34] + 1) >> 1;
 
-                filter_horizontal_edge(df, dbf_info, src_tmp, stride, qp, bs2_map,
-                                       large_p_map, large_q_map, small_map,
-                                       affine_p, affine_q, aff_edg_1);
+                const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, qp, bs);
+                if (dbf_params.tc || dbf_params.beta) {
+                    const uint64_t affine_p = dbf_info->affine_map.hor[i    ];
+                    const uint64_t affine_q = dbf_info->affine_map.hor[i + 1];
+
+                    if (once) {
+                        set_edge_context(&edg_ctx, edg_map, sb_edg_map, i);
+                        once = 0;
+                    }
+
+                    struct DBFLength max_lgth_info = derive_filter_length(&edg_ctx, affine_p, affine_q,
+                                                                          pos_msk);
+
+                    filter_horizontal_edge(df, &dbf_params, src_tmp, stride,
+                                           max_lgth_info.lgth_p, max_lgth_info.lgth_q);
+
+                }
 
                 edg_msk  >>= nb_skipped_blk + 1;
-                bs2_map   >>= 1;
-
-                small_map   >>= 1;
-                large_p_map >>= 1;
-                large_q_map >>= 1;
-                affine_p >>= 1;
-                affine_q >>= 1;
-                aff_edg_1 >>= 1;
+                pos_msk <<= 1;
 
                 src_tmp += blk_stride;
                 qp_row++;
+
             } while (edg_msk);
         }
-
         src += stride << 2;
     }
 }
