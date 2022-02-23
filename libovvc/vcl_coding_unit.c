@@ -726,7 +726,12 @@ coding_unit(OVCTUDec *const ctu_dec,
 
         uint8_t qp_grp_msk = (1 << (part_ctx->log2_ctu_s + 1 - cu_qp_delta_subdiv))  - 1;
         uint8_t qp_grp_start = !((x0 & qp_grp_msk) | (y0 & qp_grp_msk));
+        uint8_t x0_u = x0 >> 2;
+        uint8_t y0_u = y0 >> 2;
+        uint8_t nb_unit_w = (1 << log2_cb_w) >> 2;
+        uint8_t nb_unit_h = (1 << log2_cb_h) >> 2;
 
+        dbf_fill_cu_edge(&ctu_dec->dbf_info.cu_edge, x0_u, y0_u, nb_unit_w, nb_unit_h);
         if (qp_grp_start) {
             uint8_t qp_grp_x0 = x0 & (~qp_grp_msk);
             uint8_t qp_grp_y0 = y0 & (~qp_grp_msk);

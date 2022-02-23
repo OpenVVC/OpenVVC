@@ -529,6 +529,7 @@ dbf_load_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l
 {
     int nb_pb_s = (1 << log2_ctu_s) >> 2;
     uint64_t ctb_lft_msk = (uint64_t)-(!!ctb_x);
+    memset(&dbf_info->cu_edge, 0, sizeof(dbf_info->cu_edge));
 
     if (ctb_x) {
         /* copy previous 8 vertical edges used for filter length derivation */
@@ -671,6 +672,7 @@ dbf_load_info(struct DBFInfo *const dbf_info,
     dbf_load_edge_map(dbf_info, dbf_lines, log2_ctu_s, ctb_x);
     dbf_load_bs_map(dbf_info, dbf_lines, log2_ctu_s, ctb_x);
     dbf_load_qp_map(dbf_info, dbf_lines, log2_ctu_s, ctb_x);
+    memset(&dbf_info->cu_edge, 0, sizeof(dbf_info->cu_edge));
 }
 
 void

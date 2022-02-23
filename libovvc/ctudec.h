@@ -116,6 +116,12 @@ struct DBFMap
     uint64_t hor[33]; /* Row map of horizontal edges */
 };
 
+struct EdgeMap
+{
+    uint64_t ver[33];
+    uint64_t hor[33];
+};
+
 struct DBFQPMap
 {
     uint8_t hor[34*33];
@@ -129,6 +135,9 @@ struct DBFInfo
     uint64_t ctb_bound_hor[16 + 33]; /* Row map of horizontal edges */
     uint64_t ctb_bound_ver_c[16 + 33]; /* Column map of vertical edges */
     uint64_t ctb_bound_hor_c[16 + 33]; /* Row map of horizontal edges */
+    struct EdgeMap cu_edge;
+    struct EdgeMap tu_edge;
+    struct EdgeMap sb_edge;
 
     /* FIXME reduce since internal */
     uint64_t aff_edg_ver[16 + 33]; /* Column map of affine internal vertical edges */

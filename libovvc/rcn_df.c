@@ -1389,6 +1389,361 @@ filter_veritcal_edge(const struct DFFunctions *df, const struct DBFInfo *const d
     }
 }
 
+#define LF_MV_THRESHOLD 8
+static inline uint8_t
+mv_threshold_check(OVMV a, OVMV b)
+{
+    uint32_t abs_delta_x = OVABS(a.x - b.x);
+    uint32_t abs_delta_y = OVABS(a.y - b.y);
+
+    uint8_t chk = (abs_delta_x >= LF_MV_THRESHOLD) || (abs_delta_y >= LF_MV_THRESHOLD);
+
+    return chk;
+}
+
+#define PB_POS_IN_BUF(x,y) (35 + (x) + ((y) * 34))
+
+static uint64_t
+check_dbf_enabled_p(const int16_t *dist_ref_p, const int16_t *dist_ref_q, OVMV mv_p0, OVMV mv_q0)
+{
+    int16_t ref0_p = dist_ref_p[mv_p0.ref_idx];
+
+    int16_t ref0_q = dist_ref_q[mv_q0.ref_idx];
+    uint8_t bs = 1;
+
+    if (ref0_p == ref0_q) {
+        bs  = mv_threshold_check(mv_q0, mv_p0);
+    }
+
+    return (uint64_t)bs;
+}
+
+static uint64_t
+check_dbf_enabled(const struct InterDRVCtx *const inter_ctx,
+                  OVMV mv_p0, OVMV mv_p1, OVMV mv_q0, OVMV mv_q1)
+{
+    const int16_t *dist_0 = inter_ctx->dist_ref_0;
+    const int16_t *dist_1 = inter_ctx->dist_ref_1;
+
+    int16_t ref0_p = dist_0[mv_p0.ref_idx];
+    int16_t ref1_p = dist_1[mv_p1.ref_idx];
+
+    int16_t ref0_q = dist_0[mv_q0.ref_idx];
+    int16_t ref1_q = dist_1[mv_q1.ref_idx];
+
+    uint8_t paired_ref_pq  = (ref0_p == ref0_q) && (ref1_p == ref1_q);
+    uint8_t swapped_ref_pq = (ref0_p == ref1_q) && (ref1_p == ref0_q);
+
+    /* FIXME ref check can be done on q */
+    uint8_t coupled_l0_l1 = ref0_p == ref1_p; // Same L0 & L1
+    uint8_t bs = 1;
+
+    /* No need to check for both paired and swapped since coupled L0 L1 implies
+     * paired_ref_pq == swapped_ref_pq
+     */
+    if ((coupled_l0_l1) && (paired_ref_pq)) {
+        bs  = mv_threshold_check(mv_q0, mv_p0) || mv_threshold_check(mv_q1, mv_p1);
+        bs &= mv_threshold_check(mv_q1, mv_p0) || mv_threshold_check(mv_q0, mv_p1);
+    } else if (paired_ref_pq){
+        bs  = mv_threshold_check(mv_q0, mv_p0);
+        bs |= mv_threshold_check(mv_q1, mv_p1);
+    } else if (swapped_ref_pq) {
+        bs  = mv_threshold_check(mv_q1, mv_p0);
+        bs |= mv_threshold_check(mv_q0, mv_p1);
+    }
+
+    return (uint64_t)bs;
+}
+
+static uint64_t
+dbf_mv_set_hedges(const struct InterDRVCtx *const inter_ctx,
+                  int x0_unit, int y0_unit,
+                  int nb_unit_w, int nb_unit_h, uint64_t msk)
+{
+    const struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+    const struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+    uint64_t unit_msk_h = (uint64_t)((uint64_t)1 << nb_unit_w) - 1llu;
+
+    uint64_t abv0_p_msk = (mv_ctx0->map.hfield[y0_unit] >> (x0_unit + 1)) & unit_msk_h;
+    uint64_t abv1_p_msk = (mv_ctx1->map.hfield[y0_unit] >> (x0_unit + 1)) & unit_msk_h;
+
+    uint64_t abv0_q_msk = (mv_ctx0->map.hfield[y0_unit + 1] >> (x0_unit + 1)) & unit_msk_h;
+    uint64_t abv1_q_msk = (mv_ctx1->map.hfield[y0_unit + 1] >> (x0_unit + 1)) & unit_msk_h;
+
+    uint64_t bs1_map_h = ((~msk) >> x0_unit + 2) & unit_msk_h;
+    //uint64_t bs1_map_h = (dbf_info->bs1_map.hor[y0_unit] >> (x0_unit + 2)) & unit_msk_h;
+
+    uint64_t mv_q_b  = (abv0_q_msk &  abv1_q_msk);
+    uint64_t mv_q_p0 = (abv0_q_msk & ~abv1_q_msk);
+    uint64_t mv_q_p1 = (abv1_q_msk & ~abv0_q_msk);
+
+    uint64_t mv_p_b  = (abv0_p_msk &  abv1_p_msk);
+    uint64_t mv_p_p0 = (abv0_p_msk & ~abv1_p_msk);
+    uint64_t mv_p_p1 = (abv1_p_msk & ~abv0_p_msk);
+
+    uint64_t chk_b  = mv_q_b & mv_p_b;
+
+    uint64_t chk_p0 = mv_q_p0 & (mv_p_p0 | mv_p_p1);
+    uint64_t chk_p1 = mv_q_p1 & (mv_p_p0 | mv_p_p1);
+
+    const int16_t *dist_ref0 = inter_ctx->dist_ref_0;
+    const int16_t *dist_ref1 = inter_ctx->dist_ref_1;
+
+    chk_b  &= (~bs1_map_h) & unit_msk_h;
+    chk_p0 &= (~bs1_map_h) & unit_msk_h;
+    chk_p1 &= (~bs1_map_h) & unit_msk_h;
+
+    uint64_t dst_map_h = (~(chk_p0 | chk_p1 | chk_b)) & unit_msk_h;
+
+    if (chk_b) {
+        const OVMV *mv0_p = &mv_ctx0->mvs[PB_POS_IN_BUF(x0_unit, y0_unit - 1)];
+        const OVMV *mv1_p = &mv_ctx1->mvs[PB_POS_IN_BUF(x0_unit, y0_unit - 1)];
+        const OVMV *mv0_q = &mv_ctx0->mvs[PB_POS_IN_BUF(x0_unit, y0_unit)];
+        const OVMV *mv1_q = &mv_ctx1->mvs[PB_POS_IN_BUF(x0_unit, y0_unit)];
+
+        uint8_t pos_shift = 0;
+        do {
+            uint8_t nb_skipped_blk = ov_ctz64(chk_b);
+            mv0_p += nb_skipped_blk;
+            mv1_p += nb_skipped_blk;
+            mv0_q += nb_skipped_blk;
+            mv1_q += nb_skipped_blk;
+            pos_shift += nb_skipped_blk;
+
+            uint64_t abv_th = check_dbf_enabled(inter_ctx, *mv0_p, *mv1_p, *mv0_q, *mv1_q);
+
+            dst_map_h |= abv_th << pos_shift;
+
+            mv0_p++;
+            mv1_p++;
+            mv0_q++;
+            mv1_q++;
+            pos_shift++;
+
+            chk_b >>= nb_skipped_blk + 1;
+
+        } while (chk_b);
+    }
+
+    if (chk_p0 | chk_p1) {
+        const OVMV *mv0_p = &mv_ctx0->mvs[PB_POS_IN_BUF(x0_unit, y0_unit - 1)];
+        const OVMV *mv1_p = &mv_ctx1->mvs[PB_POS_IN_BUF(x0_unit, y0_unit - 1)];
+        const OVMV *mv0_q = &mv_ctx0->mvs[PB_POS_IN_BUF(x0_unit, y0_unit)];
+        const OVMV *mv1_q = &mv_ctx1->mvs[PB_POS_IN_BUF(x0_unit, y0_unit)];
+
+        uint8_t pos_shift = 0;
+        do {
+            uint8_t nb_skipped_blk = ov_ctz64(chk_p0 | chk_p1);
+            mv0_p += nb_skipped_blk;
+            mv1_p += nb_skipped_blk;
+            mv0_q += nb_skipped_blk;
+            mv1_q += nb_skipped_blk;
+
+            chk_p0 >>= nb_skipped_blk;
+            chk_p1 >>= nb_skipped_blk;
+            mv_p_p0 >>= nb_skipped_blk;
+
+            pos_shift += nb_skipped_blk;
+            uint8_t is_l0_p = mv_p_p0 & 0x1;
+            uint8_t is_l0_q =  chk_p0 & 0x1;
+            const int16_t *dist_p = is_l0_p ? dist_ref0 : dist_ref1;
+            const int16_t *dist_q = is_l0_q ? dist_ref0 : dist_ref1;
+            OVMV mv_p = is_l0_p ? *mv0_p : *mv1_p;
+            OVMV mv_q = is_l0_q ? *mv0_q : *mv1_q;
+
+            uint64_t abv_th = check_dbf_enabled_p(dist_p, dist_q, mv_p, mv_q);
+
+            dst_map_h |= abv_th << pos_shift;
+
+            mv0_p++;
+            mv1_p++;
+            mv0_q++;
+            mv1_q++;
+            pos_shift++;
+
+            chk_p0 >>= 1;
+            chk_p1 >>= 1;
+            mv_p_p0 >>= 1;
+
+        } while (chk_p0 | chk_p1);
+    }
+
+    return (dst_map_h << (x0_unit + 2) & msk);
+}
+
+static uint64_t
+dbf_mv_set_vedges(const struct InterDRVCtx *const inter_ctx,
+                  int x0_unit, int y0_unit,
+                  int nb_unit_w, int nb_unit_h, uint64_t msk)
+{
+    const struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
+    const struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
+
+    uint64_t unit_msk_v = (uint64_t)((uint64_t)1 << nb_unit_h) - 1llu;
+
+    uint64_t lft0_p_msk = (mv_ctx0->map.vfield[x0_unit] >> (y0_unit + 1)) & unit_msk_v;
+    uint64_t lft1_p_msk = (mv_ctx1->map.vfield[x0_unit] >> (y0_unit + 1)) & unit_msk_v;
+
+    uint64_t lft0_q_msk = (mv_ctx0->map.vfield[x0_unit + 1] >> (y0_unit + 1)) & unit_msk_v;
+    uint64_t lft1_q_msk = (mv_ctx1->map.vfield[x0_unit + 1] >> (y0_unit + 1)) & unit_msk_v;
+
+    uint64_t bs1_map_v = ((~msk) >> y0_unit )& unit_msk_v;
+
+    uint64_t mv_q_b  = (lft0_q_msk &  lft1_q_msk);
+    uint64_t mv_q_p0 = (lft0_q_msk & ~lft1_q_msk);
+    uint64_t mv_q_p1 = (lft1_q_msk & ~lft0_q_msk);
+
+    uint64_t mv_p_b  = (lft0_p_msk &  lft1_p_msk);
+    uint64_t mv_p_p0 = (lft0_p_msk & ~lft1_p_msk);
+    uint64_t mv_p_p1 = (lft1_p_msk & ~lft0_p_msk);
+
+    uint64_t chk_b  = mv_q_b & mv_p_b;
+
+    uint64_t chk_p0 = mv_q_p0 & (mv_p_p0 | mv_p_p1);
+    uint64_t chk_p1 = mv_q_p1 & (mv_p_p0 | mv_p_p1);
+
+    const int16_t *dist_ref0 = inter_ctx->dist_ref_0;
+    const int16_t *dist_ref1 = inter_ctx->dist_ref_1;
+
+    chk_b  &= (~bs1_map_v) & unit_msk_v;
+
+    chk_p0 &= (~bs1_map_v) & unit_msk_v;
+    chk_p1 &= (~bs1_map_v) & unit_msk_v;
+
+    uint64_t dst_map_v = (~(chk_p0 | chk_p1 | chk_b)) & unit_msk_v;
+
+    if (chk_b) {
+        const OVMV *mv0_p = &mv_ctx0->mvs[PB_POS_IN_BUF(x0_unit - 1, y0_unit)];
+        const OVMV *mv1_p = &mv_ctx1->mvs[PB_POS_IN_BUF(x0_unit - 1, y0_unit)];
+        const OVMV *mv0_q = &mv_ctx0->mvs[PB_POS_IN_BUF(x0_unit, y0_unit)];
+        const OVMV *mv1_q = &mv_ctx1->mvs[PB_POS_IN_BUF(x0_unit, y0_unit)];
+
+        uint8_t pos_shift = 0;
+        do {
+            uint8_t nb_skipped_blk = ov_ctz64(chk_b);
+            mv0_p += 34 * nb_skipped_blk;
+            mv1_p += 34 * nb_skipped_blk;
+            mv0_q += 34 * nb_skipped_blk;
+            mv1_q += 34 * nb_skipped_blk;
+            pos_shift += nb_skipped_blk;
+
+            uint64_t lft_th = check_dbf_enabled(inter_ctx, *mv0_p, *mv1_p, *mv0_q, *mv1_q);
+
+            dst_map_v |= lft_th << pos_shift;
+
+            mv0_p += 34;
+            mv1_p += 34;
+            mv0_q += 34;
+            mv1_q += 34;
+            pos_shift++;
+
+            chk_b >>= nb_skipped_blk + 1;
+
+        } while (chk_b);
+    }
+
+    if (chk_p0 | chk_p1) {
+        const OVMV *mv0_p = &mv_ctx0->mvs[PB_POS_IN_BUF(x0_unit - 1, y0_unit)];
+        const OVMV *mv1_p = &mv_ctx1->mvs[PB_POS_IN_BUF(x0_unit - 1, y0_unit)];
+        const OVMV *mv0_q = &mv_ctx0->mvs[PB_POS_IN_BUF(x0_unit, y0_unit)];
+        const OVMV *mv1_q = &mv_ctx1->mvs[PB_POS_IN_BUF(x0_unit, y0_unit)];
+
+        uint8_t pos_shift = 0;
+        do {
+            uint8_t nb_skipped_blk = ov_ctz64(chk_p0 | chk_p1);
+            mv0_p += 34 * nb_skipped_blk;
+            mv1_p += 34 * nb_skipped_blk;
+            mv0_q += 34 * nb_skipped_blk;
+            mv1_q += 34 * nb_skipped_blk;
+
+            chk_p0 >>= nb_skipped_blk;
+            chk_p1 >>= nb_skipped_blk;
+            mv_p_p0 >>= nb_skipped_blk;
+
+            pos_shift += nb_skipped_blk;
+            uint8_t is_l0_p = mv_p_p0 & 0x1;
+            uint8_t is_l0_q =  chk_p0 & 0x1;
+            const int16_t *dist_p = is_l0_p ? dist_ref0 : dist_ref1;
+            const int16_t *dist_q = is_l0_q ? dist_ref0 : dist_ref1;
+            OVMV mv_p = is_l0_p ? *mv0_p : *mv1_p;
+            OVMV mv_q = is_l0_q ? *mv0_q : *mv1_q;
+
+            uint64_t lft_th = check_dbf_enabled_p(dist_p, dist_q, mv_p, mv_q);
+
+            dst_map_v |= lft_th << pos_shift;
+
+            mv0_p += 34;
+            mv1_p += 34;
+            mv0_q += 34;
+            mv1_q += 34;
+            pos_shift++;
+
+            chk_p0 >>= 1;
+            chk_p1 >>= 1;
+            mv_p_p0 >>= 1;
+
+        } while (chk_p0 | chk_p1);
+    }
+
+    return (dst_map_v << y0_unit) & msk;
+}
+
+static void
+dbf_ctu_preproc_h(const struct InterDRVCtx *const inter_ctx, struct DBFInfo *const dbf_info,
+                  uint8_t nb_unit_h, uint8_t nb_unit_w)
+{
+    int i;
+    const uint64_t *cu_edg_map = &dbf_info->cu_edge.hor[0];
+    const uint64_t *sb_edg_map = &dbf_info->aff_edg_hor[8];
+
+    for (i = 0; i < nb_unit_h; ++i) {
+        uint64_t edg_msk = cu_edg_map[i] | sb_edg_map[i];
+        uint64_t bs_map  = dbf_info->bs2_map.hor[i];
+                 bs_map |= dbf_info->bs1_map.hor[i];
+                 bs_map &= edg_msk;
+        if (edg_msk ^ bs_map) {
+            /* If some edges are not set yet check for MV condition */
+            uint64_t no_filter = edg_msk ^ bs_map;
+
+            if (no_filter) {
+                uint64_t tmp = bs_map;
+                tmp = dbf_mv_set_hedges(inter_ctx, 0, i, nb_unit_w, nb_unit_h, no_filter);
+                dbf_info->bs1_map.hor[i] |= tmp;
+            }
+        }
+    }
+}
+
+static void
+dbf_ctu_preproc_v(const struct InterDRVCtx *const inter_ctx, struct DBFInfo *const dbf_info,
+                  uint8_t nb_unit_h, uint8_t nb_unit_w)
+{
+    const uint64_t vedge_mask = ((uint64_t)1 << nb_unit_h) - 1;
+
+    const uint64_t *cu_edg_map = &dbf_info->cu_edge.ver[0];
+    const uint64_t *sb_edg_map = &dbf_info->aff_edg_ver[8];
+
+    int i;
+
+    for (i = 0; i < nb_unit_w; ++i) {
+        uint64_t edg_msk = cu_edg_map[i] | sb_edg_map[i];
+        uint64_t bs_map  = dbf_info->bs2_map.ver[i];
+                 bs_map |= dbf_info->bs1_map.ver[i];
+                 bs_map &= edg_msk;
+        if (edg_msk ^ bs_map) {
+            /* If some edges are not set yet check for MV condition */
+            uint64_t no_filter = edg_msk ^ bs_map;
+
+            if (no_filter) {
+                uint64_t tmp = bs_map;
+                tmp = dbf_mv_set_vedges(inter_ctx, i, 0, nb_unit_w, nb_unit_h, no_filter);
+                dbf_info->bs1_map.ver[i] |= tmp;
+            }
+        }
+    }
+}
+
 static void
 vvc_dbf_ctu_hor(const struct DFFunctions * df, OVSample *src, int stride, const struct DBFInfo *const dbf_info,
                 uint8_t nb_unit_h, int is_last_h, uint8_t nb_unit_w, uint8_t ctu_lft)
@@ -1410,6 +1765,7 @@ vvc_dbf_ctu_hor(const struct DFFunctions * df, OVSample *src, int stride, const 
         uint64_t edg_msk = edg_map[i] | aff_edg_map[i];
         uint64_t bs1_map  = dbf_info->bs1_map.ver[i];
         uint64_t bs2_map  = dbf_info->bs2_map.ver[i];
+        uint64_t no_filter = vedge_mask ^ (bs1_map | bs2_map);
 
         edg_msk &= vedge_mask;
         edg_msk &= bs2_map | bs1_map;
@@ -1672,6 +2028,9 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInfo *const d
     uint8_t ctu_lft = rcn_ctx->ctudec->ctu_ngh_flags & CTU_LFT_FLG;
     uint8_t ctu_abv = rcn_ctx->ctudec->ctu_ngh_flags & CTU_UP_FLG;
 
+    dbf_ctu_preproc_v(&rcn_ctx->ctudec->drv_ctx.inter_ctx, dbf_info, nb_unit, nb_unit);
+    dbf_ctu_preproc_h(&rcn_ctx->ctudec->drv_ctx.inter_ctx, dbf_info, nb_unit, nb_unit);
+
     if (!dbf_info->disable_h)
     vvc_dbf_ctu_hor(df, fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_y, nb_unit, ctu_lft);
     if (!dbf_info->disable_v)
@@ -1699,6 +2058,9 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInf
     /* FIXME give as argument */
     uint8_t ctu_lft = rcn_ctx->ctudec->ctu_ngh_flags & CTU_LFT_FLG;
     uint8_t ctu_abv = rcn_ctx->ctudec->ctu_ngh_flags & CTU_UP_FLG;
+
+    dbf_ctu_preproc_v(&rcn_ctx->ctudec->drv_ctx.inter_ctx, dbf_info, nb_unit_h, nb_unit_w);
+    dbf_ctu_preproc_h(&rcn_ctx->ctudec->drv_ctx.inter_ctx, dbf_info, nb_unit_h, nb_unit_w);
 
     if (!dbf_info->disable_h)
     vvc_dbf_ctu_hor(df, fbuff->y, fbuff->stride, dbf_info, nb_unit_h, !!last_y, nb_unit_w, ctu_lft);

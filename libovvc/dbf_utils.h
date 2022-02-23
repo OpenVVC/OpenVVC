@@ -57,6 +57,22 @@ dbf_fill_qp_map(struct DBFQPMap *qp_map, int x0, int y0,
 }
 
 static inline void
+dbf_fill_cu_edge(struct EdgeMap *edg_map, int x0_u, int y0_u,
+                 int nb_unit_w, int nb_unit_h)
+{
+    uint64_t mask_ver = (uint64_t)((uint64_t)1 << nb_unit_h) - 1;
+    uint64_t mask_hor = (uint64_t)((uint64_t)1 << nb_unit_w) - 1;
+
+    mask_ver <<= y0_u;
+    mask_hor <<= x0_u + 2;
+
+    edg_map->ver[x0_u] |= mask_ver;
+    edg_map->hor[y0_u] |= mask_hor;
+    edg_map->ver[x0_u + nb_unit_w] |= mask_ver;
+    edg_map->hor[y0_u + nb_unit_h] |= mask_hor;
+}
+
+static inline void
 dbf_fill_aff_map(struct DBFMap *aff_map, int x0_u, int y0_u,
                 int nb_unit_w, int nb_unit_h)
 {
