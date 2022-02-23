@@ -1326,13 +1326,21 @@ fill_mvp_map(struct OVMVCtx *const mv_ctx, OVMV mv,
              int pb_x, int pb_y, int nb_pb_w, int nb_pb_h)
 {
     int i, j;
+    OVMV *const mv_start = &mv_ctx->mvs[PB_POS_IN_BUF(pb_x + 0, pb_y + 0)];
+    OVMV *mv_l = mv_start;
 
     ctu_field_set_rect_bitfield(&mv_ctx->map, pb_x, pb_y, nb_pb_w, nb_pb_h);
 
     for (j = 0; j < nb_pb_h; ++j) {
-        for (i = 0; i < nb_pb_w; ++i) {
-            memcpy(&mv_ctx->mvs[PB_POS_IN_BUF(pb_x + i, pb_y + j)], &mv, sizeof(OVMV));
-        }
+        mv_l[0          ] = mv;
+        mv_l[nb_pb_w - 1] = mv;
+        mv_l += 34;
+    }
+    mv_l = mv_start + 34 * (nb_pb_h - 1);
+
+    for (i = 0; i < nb_pb_w; ++i) {
+        mv_start[i] = mv;
+        mv_l[i]     = mv;
     }
 }
 
