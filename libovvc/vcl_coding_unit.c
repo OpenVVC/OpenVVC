@@ -1623,14 +1623,12 @@ drv_rcn_wrap_mvp_p(OVCTUDec *const ctu_dec,
     } else {
         const struct MVPDataP *const mvp_data = &mvp_info.data.mvd_info;
 
-        inter_ctx->prec_amvr = mvp_info.prec_amvr;
-
         if (inter_dir & 0x1) {
             uint8_t mvp_idx0 = mvp_data->mvp_idx;
             ref_idx0 = mvp_data->ref_idx;
             mv_info = drv_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
                                 mvp_data->mvd, mvp_data->mvd,
-                                inter_ctx->prec_amvr,
+                                mvp_info.prec_amvr,
                                 mvp_idx0, -1,
                                 BCW_DEFAULT,
                                 0x1, ref_idx0, -1,
@@ -1643,7 +1641,7 @@ drv_rcn_wrap_mvp_p(OVCTUDec *const ctu_dec,
             ref_idx1 = mvp_data->ref_idx;
             mv_info = drv_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
                                 mvp_data->mvd, mvp_data->mvd,
-                                inter_ctx->prec_amvr,
+                                mvp_info.prec_amvr,
                                 -1, mvp_idx1,
                                 BCW_DEFAULT,
                                 0x2, -1, ref_idx1,
