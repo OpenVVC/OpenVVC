@@ -1269,18 +1269,11 @@ vvc_dbf_chroma_ver(OVSample *src_cb, OVSample *src_cr, int stride,
 }
 
 static void
-filter_veritcal_edge(const struct DFFunctions *df, const struct DBFInfo *const dbf_info, OVSample *src, ptrdiff_t stride,
-                     uint8_t qp, uint64_t bs2_map, uint64_t large_p_map,
-                     uint64_t large_q_map, uint64_t small_map,
-                     uint64_t affine_p, uint64_t affine_q, uint64_t aff_edg_1)
+filter_vertical_edge(const struct DFFunctions *df, const struct DBFParams *const dbf_params, OVSample *src, ptrdiff_t stride,
+                     uint8_t qp, uint8_t bs, uint8_t max_l_p, uint8_t max_l_q)
 {
-    int max_l_p = small_map & 0x1 ? 1 : (large_p_map & 0x1) ? 7 : 3;
-    int max_l_q = small_map & 0x1 ? 1 : (large_q_map & 0x1) ? 7 : 3;
 
-    uint8_t bs = 1 + (bs2_map & 0x1);
-
-    const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, qp, bs);
-    if (dbf_params.tc == 0 || dbf_params.beta == 0) return;
+    if (dbf_params->tc == 0 || dbf_params->beta == 0) return;
 
     OVSample* src0 = src;
     OVSample* src3 = src + stride * 3;
@@ -1291,22 +1284,6 @@ filter_veritcal_edge(const struct DFFunctions *df, const struct DBFInfo *const d
     const int dq3 = compute_dq(src3, 1);
 
     uint8_t use_strong_large = 0;
-
-    uint8_t is_aff_p = affine_p & 0x1;
-    uint8_t is_aff_q = affine_q & 0x1;
-
-    if (aff_edg_1 & 0x1) {
-        max_l_p = OVMIN(2, max_l_p);
-        max_l_q = OVMIN(2, max_l_q);
-        max_l_p = max_l_q = OVMIN(max_l_p, max_l_q);
-    }
-
-    if (is_aff_p) {
-        max_l_p = OVMIN(5, max_l_p);
-    }
-    if (is_aff_q) {
-        max_l_q = OVMIN(5, max_l_q);
-    }
 
     if (max_l_p > 3 || max_l_q > 3) {
         int dp0L = dp0;
@@ -1333,18 +1310,18 @@ filter_veritcal_edge(const struct DFFunctions *df, const struct DBFInfo *const d
 
         int dL = d0L + d3L;
 
-        use_strong_large = (dL < dbf_params.beta) &&
-            ((d0L << 1) < (dbf_params.beta >> 4)) &&
-            ((d3L << 1) < (dbf_params.beta >> 4)) &&
-            use_strong_filter_l0(src0, 1, dbf_params.beta, dbf_params.tc, max_l_p, max_l_q) &&
-            use_strong_filter_l0(src3, 1, dbf_params.beta, dbf_params.tc, max_l_p, max_l_q);
+        use_strong_large = (dL < dbf_params->beta) &&
+            ((d0L << 1) < (dbf_params->beta >> 4)) &&
+            ((d3L << 1) < (dbf_params->beta >> 4)) &&
+            use_strong_filter_l0(src0, 1, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q) &&
+            use_strong_filter_l0(src3, 1, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q);
         if (use_strong_large) {
             OVSample *_src = src0;
             /* FIXME should already be 3 or higher since we would be small otherwise */
             max_l_p = max_l_p > 3 ? max_l_p : 3;
             max_l_q = max_l_q > 3 ? max_l_q : 3;
             const int filter_idx = derive_filter_idx(max_l_p, max_l_q);
-            df->filter_h[filter_idx](_src, stride, dbf_params.tc);
+            df->filter_h[filter_idx](_src, stride, dbf_params->tc);
         }
     }
 
@@ -1353,33 +1330,30 @@ filter_veritcal_edge(const struct DFFunctions *df, const struct DBFInfo *const d
         const int d3 = dp3 + dq3;
         const int d  = d0  + d3;
 
-        if (d < dbf_params.beta) {
-            //uint8_t is_not_small = !(small_map & 0x1);
+        if (d < dbf_params->beta) {
             uint8_t sw = (max_l_p >= 3 && max_l_q >= 3);//is_not_small;
 
-            sw = sw && ((d0 << 1) < (dbf_params.beta >> 2))
-                && ((d3 << 1) < (dbf_params.beta >> 2))
-                && use_strong_filter_l1(src0, 1, dbf_params.beta, dbf_params.tc)
-                && use_strong_filter_l1(src3, 1, dbf_params.beta, dbf_params.tc);
+            sw = sw && ((d0 << 1) < (dbf_params->beta >> 2))
+                && ((d3 << 1) < (dbf_params->beta >> 2))
+                && use_strong_filter_l1(src0, 1, dbf_params->beta, dbf_params->tc)
+                && use_strong_filter_l1(src3, 1, dbf_params->beta, dbf_params->tc);
 
             if (sw){
                 OVSample *_src = src0;
                 for (int i = 0; i < 4; i++) {
-                    filter_luma_strong_small(_src, 1, dbf_params.tc);
+                    filter_luma_strong_small(_src, 1, dbf_params->tc);
                     _src += stride;
                 }
             } else {
                 const int dp = dp0 + dp3;
                 const int dq = dq0 + dq3;
-                const int side_thd = (dbf_params.beta + (dbf_params.beta >> 1)) >> 3;
-                const int th_cut  = dbf_params.tc * 10;
-                //uint8_t extend_p = is_not_small && (dp < side_thd);
-                //uint8_t extend_q = is_not_small && (dq < side_thd);
+                const int side_thd = (dbf_params->beta + (dbf_params->beta >> 1)) >> 3;
+                const int th_cut  = dbf_params->tc * 10;
                 uint8_t extend_p = (dp < side_thd) && (max_l_p > 1 && max_l_q > 1);
                 uint8_t extend_q = (dq < side_thd) && (max_l_p > 1 && max_l_q > 1);
                 OVSample *_src = src0;
                 for (int i = 0; i < 4; i++) {
-                    filter_luma_weak(_src, 1, dbf_params.tc, th_cut, extend_p, extend_q);
+                    filter_luma_weak(_src, 1, dbf_params->tc, th_cut, extend_p, extend_q);
                     _src += stride;
                 }
             }
@@ -1470,7 +1444,6 @@ dbf_mv_set_hedges(const struct InterDRVCtx *const inter_ctx,
     uint64_t abv1_q_msk = (mv_ctx1->map.hfield[y0_unit + 1] >> (x0_unit + 1)) & unit_msk_h;
 
     uint64_t bs1_map_h = ((~msk) >> x0_unit + 2) & unit_msk_h;
-    //uint64_t bs1_map_h = (dbf_info->bs1_map.hor[y0_unit] >> (x0_unit + 2)) & unit_msk_h;
 
     uint64_t mv_q_b  = (abv0_q_msk &  abv1_q_msk);
     uint64_t mv_q_p0 = (abv0_q_msk & ~abv1_q_msk);
@@ -1742,6 +1715,43 @@ dbf_ctu_preproc_v(const struct InterDRVCtx *const inter_ctx, struct DBFInfo *con
     }
 }
 
+struct DBFLength
+{
+    uint8_t lgth_p;
+    uint8_t lgth_q;
+};
+
+static struct DBFLength
+derive_filter_length(uint64_t small_map, uint64_t large_p_map, uint64_t large_q_map,
+                     uint64_t affine_p, uint64_t affine_q, uint64_t aff_edg_1)
+{
+    int max_l_p = small_map & 0x1 ? 1 : (large_p_map & 0x1) ? 7 : 3;
+    int max_l_q = small_map & 0x1 ? 1 : (large_q_map & 0x1) ? 7 : 3;
+
+    struct DBFLength lgth_info;
+
+    uint8_t is_aff_p = affine_p & 0x1;
+    uint8_t is_aff_q = affine_q & 0x1;
+
+    if (aff_edg_1 & 0x1) {
+        max_l_p = OVMIN(2, max_l_p);
+        max_l_q = OVMIN(2, max_l_q);
+        max_l_p = max_l_q = OVMIN(max_l_p, max_l_q);
+    }
+
+    if (is_aff_p) {
+        max_l_p = OVMIN(5, max_l_p);
+    }
+    if (is_aff_q) {
+        max_l_q = OVMIN(5, max_l_q);
+    }
+
+    lgth_info.lgth_p = max_l_p;
+    lgth_info.lgth_q = max_l_q;
+
+    return lgth_info;
+}
+
 static void
 vvc_dbf_ctu_hor(const struct DFFunctions * df, OVSample *src, int stride, const struct DBFInfo *const dbf_info,
                 uint8_t nb_unit_h, int is_last_h, uint8_t nb_unit_w, uint8_t ctu_lft)
@@ -1798,10 +1808,15 @@ vvc_dbf_ctu_hor(const struct DFFunctions * df, OVSample *src, int stride, const 
                 qp_col       += nb_skipped_blk * 34;
                 src_tmp      += nb_skipped_blk * blk_stride;
 
+                uint8_t bs = 1 + (bs2_map & 0x1);
+
                 qp = (qp_col[-1] + qp_col[0] + 1) >> 1;
 
-                filter_veritcal_edge(df, dbf_info, src_tmp, stride, qp, bs2_map, large_p_map,
-                                     large_q_map, small_map, affine_p, affine_q, aff_edg_1);
+                const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, qp, bs);
+                struct DBFLength max_lgth_info = derive_filter_length(small_map, large_p_map, large_q_map,
+                                                                      affine_p, affine_q, aff_edg_1);
+
+                filter_vertical_edge(df, &dbf_params, src_tmp, stride, qp, bs, max_lgth_info.lgth_p, max_lgth_info.lgth_q);
 
                 edg_msk  >>= nb_skipped_blk + 1;
                 bs2_map   >>= 1;
