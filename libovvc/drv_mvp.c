@@ -1348,12 +1348,12 @@ static void
 fill_tmvp_map(struct OVMV *const tmvp_mv, OVMV mv,
               int pb_x, int pb_y, int nb_pb_w, int nb_pb_h)
 {
-    /* Align MVs on 8x8 grid */
     int i, j;
     OVMV *dst_mv = tmvp_mv;
     uint8_t skip_first_x = pb_x & 0x1;
     uint8_t skip_first_y = pb_y & 0x1;
 
+    /* Align MVs on 8x8 grid */
     OVMV *mv_line = &dst_mv[((pb_x + skip_first_x) >> 1) + ((pb_y + skip_first_y) >> 1) * 16];
 
     /* FIXME check if necessary reset */
