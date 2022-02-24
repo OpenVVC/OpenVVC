@@ -1861,8 +1861,7 @@ set_edge_context(struct EdgeCtx *edg_ctx, const uint64_t *edg_map, const uint64_
     edg_ctx->large_q_map = derive_size_3_map(&edg_map[i + 1]);
 
     edg_ctx->small_map = edg_map[i - 1] | edg_map[i + 1] | sb_edg_map[i - 1] | sb_edg_map[i + 1];
-    edg_ctx->aff_edg_1 = sb_edg_map[i] & (edg_map[i - 2] | edg_map[i + 2] |
-                                          edg_map[i - 1] | edg_map[i + 1])
+    edg_ctx->aff_edg_1 = sb_edg_map[i] & (edg_map[i - 2] | edg_map[i + 2])
                                        & ~edg_map[i];
 
     edg_ctx->large_p_map  &= ~(sb_edg_map[i] & (~edg_map[i]));
