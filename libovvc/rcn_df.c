@@ -833,8 +833,9 @@ filter_luma_strong_small_h(OVSample* src, const int stride, const int tc)
 }
 
 static inline void
-filter_luma_weak_h(OVSample* src, const int stride, const int tc, const int th_cut, const uint8_t extend_p, const uint8_t extend_q)
+filter_luma_weak_h(OVSample* src, const int stride, const int tc, const uint8_t extend_p, const uint8_t extend_q)
 {
+    const int th_cut = tc * 10;
     for (int i = 0; i < 4; i++) {
         const int16_t m1  = src[-3];
         const int16_t m2  = src[-2];
@@ -868,8 +869,9 @@ filter_luma_weak_h(OVSample* src, const int stride, const int tc, const int th_c
 }
 
 static inline void
-filter_luma_weak_v(OVSample* src, const int stride, const int tc, const int th_cut, const uint8_t extend_p, const uint8_t extend_q)
+filter_luma_weak_v(OVSample* src, const int stride, const int tc, const uint8_t extend_p, const uint8_t extend_q)
 {
+    const int th_cut = tc * 10;
     for (int i = 0; i < 4; i++) {
         const int16_t m1  = src[-stride * 3];
         const int16_t m2  = src[-stride * 2];
@@ -1446,10 +1448,9 @@ filter_vertical_edge(const struct DFFunctions *df, const struct DBFParams *const
                 const int dp = dp0 + dp3;
                 const int dq = dq0 + dq3;
                 const int side_thd = (dbf_params->beta + (dbf_params->beta >> 1)) >> 3;
-                const int th_cut  = dbf_params->tc * 10;
                 uint8_t extend_p = (dp < side_thd) && (max_l_p > 1 && max_l_q > 1);
                 uint8_t extend_q = (dq < side_thd) && (max_l_p > 1 && max_l_q > 1);
-                filter_luma_weak_h(src0, stride, dbf_params->tc, th_cut, extend_p, extend_q);
+                filter_luma_weak_h(src0, stride, dbf_params->tc, extend_p, extend_q);
             }
         }
     }
@@ -2011,10 +2012,9 @@ filter_horizontal_edge(const struct DFFunctions *df, const struct DBFParams *con
                 const int dp = dp0 + dp3;
                 const int dq = dq0 + dq3;
                 const int side_thd = (dbf_params->beta + (dbf_params->beta >> 1)) >> 3;
-                const int th_cut  = dbf_params->tc * 10;
                 uint8_t extend_p = (dp < side_thd) && (max_l_p > 1 && max_l_q > 1);
                 uint8_t extend_q = (dq < side_thd) && (max_l_p > 1 && max_l_q > 1);
-                filter_luma_weak_v(src0, stride, dbf_params->tc, th_cut, extend_p, extend_q);
+                filter_luma_weak_v(src0, stride, dbf_params->tc, extend_p, extend_q);
             }
         }
     }
