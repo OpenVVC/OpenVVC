@@ -1419,17 +1419,12 @@ filter_vertical_edge(const struct DFFunctions *df, const struct DBFParams *const
             ((d3L << 1) < (dbf_params->beta >> 4)) &&
             use_strong_filter_l0(src0, 1, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q) &&
             use_strong_filter_l0(src3, 1, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q);
-        if (use_strong_large) {
-            OVSample *_src = src0;
-            /* FIXME should already be 3 or higher since we would be small otherwise */
-            max_l_p = max_l_p > 3 ? max_l_p : 3;
-            max_l_q = max_l_q > 3 ? max_l_q : 3;
-            const int filter_idx = derive_filter_idx(max_l_p, max_l_q);
-            df->filter_h[filter_idx](_src, stride, dbf_params->tc);
-        }
     }
 
-    if (!use_strong_large) {
+    if (use_strong_large) {
+        const int filter_idx = derive_filter_idx(max_l_p, max_l_q);
+        df->filter_h[filter_idx](src0, stride, dbf_params->tc);
+    } else {
         const int d0 = dp0 + dq0;
         const int d3 = dp3 + dq3;
         const int d  = d0  + d3;
@@ -1988,11 +1983,8 @@ filter_horizontal_edge(const struct DFFunctions *df, const struct DBFParams *con
     }
 
     if (use_strong_large) {
-            max_l_p = max_l_p > 3 ? max_l_p : 3;
-            max_l_q = max_l_q > 3 ? max_l_q : 3;
-            const int filter_idx = derive_filter_idx(max_l_p, max_l_q);
-            OVSample *_src = src0;
-            df->filter_v[filter_idx](_src, stride, dbf_params->tc);
+        const int filter_idx = derive_filter_idx(max_l_p, max_l_q);
+        df->filter_v[filter_idx](src0, stride, dbf_params->tc);
     } else {
         const int d0 = dp0 + dq0;
         const int d3 = dp3 + dq3;
