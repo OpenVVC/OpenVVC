@@ -88,8 +88,8 @@ use_strong_filter_l0(const OVSample* src, const int stride, const int beta, cons
         sp3 += abs(mP5 - mP6 - mP7 + mP8);
         sp3 += abs(m0 - mP8) + 1;
         sp3 >>= 1;
-    } else if (max_l_p > 3) {
-        /*FIXME max_l_p == 5 ?*/
+    } else if (max_l_p == 5) {
+        /* max_l_p == 5 */
         const int16_t mP6 = src[-stride * 6];
         sp3 += abs(m0 - mP6) + 1;
         sp3 >>= 1;
@@ -103,7 +103,7 @@ use_strong_filter_l0(const OVSample* src, const int stride, const int beta, cons
         sq3 += abs(m8 - m9 - m10 + m11);
         sq3 += abs(m11 - m7) + 1;
         sq3 >>= 1;
-    } else if (max_l_q > 3) {
+    } else if (max_l_q == 5) {
         const int16_t m9  = src[stride * 5];
         sq3 += abs(m9 - m7) + 1;
         sq3 >>= 1;
