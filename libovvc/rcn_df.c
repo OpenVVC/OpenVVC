@@ -2072,7 +2072,7 @@ vvc_dbf_ctu_ver(const struct DFFunctions *df, OVSample *src, int stride, const s
                     const uint64_t affine_q = dbf_info->affine_map.hor[i + 1];
 
                     if (once) {
-                        edg_ctx.large_p_map = i < 4 ? 0 : derive_size_3_map(&edg_map[i - 7]);
+                        edg_ctx.large_p_map = i < 7 ? 0 : derive_size_3_map(&edg_map[i - 7]);
                         set_edge_context(&edg_ctx, edg_map, sb_edg_map, i);
                         once = 0;
                     }
