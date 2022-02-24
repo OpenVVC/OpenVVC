@@ -838,6 +838,8 @@ static inline void
 filter_luma_weak_h(OVSample* src, const int stride, const int tc, const uint8_t extend_p, const uint8_t extend_q)
 {
     const int th_cut = tc * 10;
+    const int tc2_p = -extend_p & (tc >> 1);
+    const int tc2_q = -extend_q & (tc >> 1);
     for (int i = 0; i < 4; i++) {
         const int16_t m1  = src[-3];
         const int16_t m2  = src[-2];
@@ -851,20 +853,12 @@ filter_luma_weak_h(OVSample* src, const int stride, const int tc, const uint8_t 
 
         if (abs(delta) < th_cut) {
             delta = ov_clip(delta, -tc, tc);
+            const int delta1 = ov_clip(((((m1 + m3 + 1) >> 1) - m2 + delta) >> 1), -tc2_p, tc2_p);
+            const int delta2 = ov_clip(((((m6 + m4 + 1) >> 1) - m5 - delta) >> 1), -tc2_q, tc2_q);
+            src[- 2] = ov_bdclip(m2 + delta1);
             src[-1] = ov_bdclip(m3 + delta);
             src[0]  = ov_bdclip(m4 - delta);
-
-            if (extend_p) {
-                const int tc2 = tc >> 1;
-                const int delta1 = ov_clip(((((m1 + m3 + 1) >> 1) - m2 + delta) >> 1), -tc2, tc2);
-                src[- 2] = ov_bdclip(m2 + delta1);
-            }
-
-            if (extend_q) {
-                const int tc2 = tc >> 1;
-                const int delta2 = ov_clip(((((m6 + m4 + 1) >> 1) - m5 - delta) >> 1), -tc2, tc2);
-                src[1] = ov_bdclip(m5 + delta2);
-            }
+            src[1] = ov_bdclip(m5 + delta2);
         }
         src += stride;
     }
@@ -874,6 +868,8 @@ static inline void
 filter_luma_weak_v(OVSample* src, const int stride, const int tc, const uint8_t extend_p, const uint8_t extend_q)
 {
     const int th_cut = tc * 10;
+    const int tc2_p = -extend_p & (tc >> 1);
+    const int tc2_q = -extend_q & (tc >> 1);
     for (int i = 0; i < 4; i++) {
         const int16_t m1  = src[-stride * 3];
         const int16_t m2  = src[-stride * 2];
@@ -887,22 +883,14 @@ filter_luma_weak_v(OVSample* src, const int stride, const int tc, const uint8_t 
 
         if (abs(delta) < th_cut) {
             delta = ov_clip(delta, -tc, tc);
-            src[-stride] = ov_bdclip(m3 + delta);
-            src[0]       = ov_bdclip(m4 - delta);
-
-            if (extend_p) {
-                const int tc2 = tc >> 1;
-                const int delta1 = ov_clip(((((m1 + m3 + 1) >> 1) - m2 + delta) >> 1), -tc2, tc2);
-                src[-stride * 2] = ov_bdclip(m2 + delta1);
-            }
-
-            if (extend_q) {
-                const int tc2 = tc >> 1;
-                const int delta2 = ov_clip(((((m6 + m4 + 1) >> 1) - m5 - delta) >> 1), -tc2, tc2);
-                src[stride] = ov_bdclip(m5 + delta2);
-            }
+            const int delta1 = ov_clip(((((m1 + m3 + 1) >> 1) - m2 + delta) >> 1), -tc2_p, tc2_p);
+            const int delta2 = ov_clip(((((m6 + m4 + 1) >> 1) - m5 - delta) >> 1), -tc2_q, tc2_q);
+            src[stride * -2] = ov_bdclip(m2 + delta1);
+            src[stride * -1] = ov_bdclip(m3 + delta);
+            src[stride * 0]  = ov_bdclip(m4 - delta);
+            src[stride * 1]  = ov_bdclip(m5 + delta2);
         }
-        src += 1;
+        ++src;
     }
 }
 
