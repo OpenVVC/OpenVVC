@@ -439,70 +439,70 @@ filter_h_5_3(OVSample *src, const int stride, const int tc)
 static void
 filter_h_3_5(OVSample *src, const int stride, const int tc)
 {
-    //static const int db_c[3] = { 11, 32, 53};
-    //static const int8_t tc3[3] = { 2, 4, 6 };
-    //static const int db_c7[5] = { 58, 45, 32, 19, 6};
-    //static const int8_t tc7[7] = { 6, 5, 4, 3, 2, 1, 1};
-    const int8_t db_c[8] = { 11, 32, 53, 58, 45, 32, 19, 6};
-    const int8_t tc_c[8] = {  2,  4,  6,  6,  5,  4,  3, 2};
+    static const int8_t db_c[8] = { 11, 32, 53, 58, 45, 32, 19, 6};
+    static const int8_t tc_c[8] = {  2,  4,  6,  6,  5,  4,  3, 2};
+
+    int16_t ref_val[8];
+    int16_t tc_val[8];
+    int16_t db_val[8];
+
+    tc_val[0] = (tc * tc_c[0]) >> 1;
+    tc_val[1] = (tc * tc_c[1]) >> 1;
+    tc_val[2] = (tc * tc_c[2]) >> 1;
+    tc_val[3] = (tc * tc_c[3]) >> 1;
+    tc_val[4] = (tc * tc_c[4]) >> 1;
+    tc_val[5] = (tc * tc_c[5]) >> 1;
+    tc_val[6] = (tc * tc_c[6]) >> 1;
+    tc_val[7] = (tc * tc_c[7]) >> 1;
+
+    src -= 3;
 
     for (int i = 0; i < 4; i++) {
-        OVSample* srcP = src - 1;
-        OVSample* srcQ = src;
+        int ref_p = (src[0] + src[-1] + 1) >> 1;
+        int ref_q = (src[7] + src[ 8] + 1) >> 1;
 
-
-        int ref_p = (srcP[-2] + srcP[-3] + 1) >> 1;
-        int ref_q = (srcQ[ 4] + srcQ[ 5] + 1) >> 1;
-
-        int db_ref = (srcP[0] + srcP[-1] + srcP[-2] + srcP[-3]
-                    + srcQ[0] + srcQ[ 1] + srcQ[ 2] + srcQ[ 3] + 4) >> 3;
+        int db_ref = (src[2] + src[1] + src[0] + src[-1]
+                    + src[3] + src[4] + src[5] + src[ 6] + 4) >> 3;
 
         int16_t clp_min[8];
         int16_t clp_max[8];
 
-#if 0
-        for (int pos = 0; pos < 3; pos++) {
-            int cvalue = (tc * tc3[pos]) >> 1;
-            int32_t val = srcP[-1 * pos];
-            srcP[-1 * pos] = ov_clip(((refMiddle * dbCoeffs3[pos] + refP * (64 - dbCoeffs3[pos]) + 32) >> 6),val - cvalue, val + cvalue);
-        }
-#endif
-        clp_min[0] = (int)src[-3] - ((tc * tc_c[0]) >> 1);
-        clp_max[0] = (int)src[-3] + ((tc * tc_c[0]) >> 1);
+        clp_min[0] = (int)src[0] - tc_val[0];
+        clp_min[1] = (int)src[1] - tc_val[1];
+        clp_min[2] = (int)src[2] - tc_val[2];
+        clp_min[3] = (int)src[3] - tc_val[3];
+        clp_min[4] = (int)src[4] - tc_val[4];
+        clp_min[5] = (int)src[5] - tc_val[5];
+        clp_min[6] = (int)src[6] - tc_val[6];
+        clp_min[7] = (int)src[7] - tc_val[7];
 
-        clp_min[1] = (int)src[-2] - ((tc * tc_c[1]) >> 1);
-        clp_max[1] = (int)src[-2] + ((tc * tc_c[1]) >> 1);
+        clp_max[0] = (int)src[0] + tc_val[0];
+        clp_max[1] = (int)src[1] + tc_val[1];
+        clp_max[2] = (int)src[2] + tc_val[2];
+        clp_max[3] = (int)src[3] + tc_val[3];
+        clp_max[4] = (int)src[4] + tc_val[4];
+        clp_max[5] = (int)src[5] + tc_val[5];
+        clp_max[6] = (int)src[6] + tc_val[6];
+        clp_max[7] = (int)src[7] + tc_val[7];
 
-        clp_min[2] = (int)src[-1] - ((tc * tc_c[2]) >> 1);
-        clp_max[2] = (int)src[-1] + ((tc * tc_c[2]) >> 1);
+        db_val[0] = (db_ref * db_c[0] + ref_p * (64 - db_c[0]) + 32) >> 6;
+        db_val[1] = (db_ref * db_c[1] + ref_p * (64 - db_c[1]) + 32) >> 6;
+        db_val[2] = (db_ref * db_c[2] + ref_p * (64 - db_c[2]) + 32) >> 6;
+        db_val[3] = (db_ref * db_c[3] + ref_q * (64 - db_c[3]) + 32) >> 6;
+        db_val[4] = (db_ref * db_c[4] + ref_q * (64 - db_c[4]) + 32) >> 6;
+        db_val[5] = (db_ref * db_c[5] + ref_q * (64 - db_c[5]) + 32) >> 6;
+        db_val[6] = (db_ref * db_c[6] + ref_q * (64 - db_c[6]) + 32) >> 6;
+        db_val[7] = (db_ref * db_c[7] + ref_q * (64 - db_c[7]) + 32) >> 6;
 
-        clp_min[3] = (int)src[0] - ((tc * tc_c[3]) >> 1);
-        clp_max[3] = (int)src[0] + ((tc * tc_c[3]) >> 1);
-        clp_min[4] = (int)src[1] - ((tc * tc_c[4]) >> 1);
-        clp_max[4] = (int)src[1] + ((tc * tc_c[4]) >> 1);
-        clp_min[5] = (int)src[2] - ((tc * tc_c[5]) >> 1);
-        clp_max[5] = (int)src[2] + ((tc * tc_c[5]) >> 1);
-        clp_min[6] = (int)src[3] - ((tc * tc_c[6]) >> 1);
-        clp_max[6] = (int)src[3] + ((tc * tc_c[6]) >> 1);
-        clp_min[7] = (int)src[4] - ((tc * tc_c[7]) >> 1);
-        clp_max[7] = (int)src[4] + ((tc * tc_c[7]) >> 1);
+        src[0] = ov_clip(db_val[0], clp_min[0], clp_max[0]);
+        src[1] = ov_clip(db_val[1], clp_min[1], clp_max[1]);
+        src[2] = ov_clip(db_val[2], clp_min[2], clp_max[2]);
+        src[3] = ov_clip(db_val[3], clp_min[3], clp_max[3]);
+        src[4] = ov_clip(db_val[4], clp_min[4], clp_max[4]);
+        src[5] = ov_clip(db_val[5], clp_min[5], clp_max[5]);
+        src[6] = ov_clip(db_val[6], clp_min[6], clp_max[6]);
+        src[7] = ov_clip(db_val[7], clp_min[7], clp_max[7]);
 
-        src[-3] = ov_clip(((db_ref * db_c[0] + ref_p * (64 - db_c[0]) + 32) >> 6), clp_min[0], clp_max[0]);
-        src[-2] = ov_clip(((db_ref * db_c[1] + ref_p * (64 - db_c[1]) + 32) >> 6), clp_min[1], clp_max[1]);
-        src[-1] = ov_clip(((db_ref * db_c[2] + ref_p * (64 - db_c[2]) + 32) >> 6), clp_min[2], clp_max[2]);
-
-        src[ 0] = ov_clip(((db_ref * db_c[3] + ref_q * (64 - db_c[3]) + 32) >> 6), clp_min[3], clp_max[3]);
-        src[ 1] = ov_clip(((db_ref * db_c[4] + ref_q * (64 - db_c[4]) + 32) >> 6), clp_min[4], clp_max[4]);
-        src[ 2] = ov_clip(((db_ref * db_c[5] + ref_q * (64 - db_c[5]) + 32) >> 6), clp_min[5], clp_max[5]);
-        src[ 3] = ov_clip(((db_ref * db_c[6] + ref_q * (64 - db_c[6]) + 32) >> 6), clp_min[6], clp_max[6]);
-        src[ 4] = ov_clip(((db_ref * db_c[7] + ref_q * (64 - db_c[7]) + 32) >> 6), clp_min[7], clp_max[7]);
-#if 0
-        for (int pos = 0; pos < 5; pos++) {
-            int cvalue = (tc * tc7[pos]) >> 1;
-            int32_t val = srcQ[ 1 * pos];
-            srcQ[ 1 * pos] = ov_clip(((refMiddle * dbCoeffs5[pos] + ref_q * (64 - dbCoeffs5[pos]) + 32) >> 6),val - cvalue, val + cvalue);
-        }
-#endif
         src += stride;
     }
 }
