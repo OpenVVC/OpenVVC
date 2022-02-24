@@ -2061,8 +2061,10 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInfo *const d
     uint8_t ctu_lft = rcn_ctx->ctudec->ctu_ngh_flags & CTU_LFT_FLG;
     uint8_t ctu_abv = rcn_ctx->ctudec->ctu_ngh_flags & CTU_UP_FLG;
 
-    dbf_ctu_preproc_v(&rcn_ctx->ctudec->drv_ctx.inter_ctx, dbf_info, nb_unit, nb_unit);
-    dbf_ctu_preproc_h(&rcn_ctx->ctudec->drv_ctx.inter_ctx, dbf_info, nb_unit, nb_unit);
+    if (rcn_ctx->ctudec->tmp_slice_type !=2){
+        dbf_ctu_preproc_v(&rcn_ctx->ctudec->drv_ctx.inter_ctx, dbf_info, nb_unit, nb_unit);
+        dbf_ctu_preproc_h(&rcn_ctx->ctudec->drv_ctx.inter_ctx, dbf_info, nb_unit, nb_unit);
+    }
 
     if (!dbf_info->disable_h)
     vvc_dbf_ctu_hor(df, fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_y, nb_unit, ctu_lft);
@@ -2092,8 +2094,10 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInf
     uint8_t ctu_lft = rcn_ctx->ctudec->ctu_ngh_flags & CTU_LFT_FLG;
     uint8_t ctu_abv = rcn_ctx->ctudec->ctu_ngh_flags & CTU_UP_FLG;
 
-    dbf_ctu_preproc_v(&rcn_ctx->ctudec->drv_ctx.inter_ctx, dbf_info, nb_unit_h, nb_unit_w);
-    dbf_ctu_preproc_h(&rcn_ctx->ctudec->drv_ctx.inter_ctx, dbf_info, nb_unit_h, nb_unit_w);
+    if (rcn_ctx->ctudec->tmp_slice_type !=2){
+        dbf_ctu_preproc_v(&rcn_ctx->ctudec->drv_ctx.inter_ctx, dbf_info, nb_unit_h, nb_unit_w);
+        dbf_ctu_preproc_h(&rcn_ctx->ctudec->drv_ctx.inter_ctx, dbf_info, nb_unit_h, nb_unit_w);
+    }
 
     if (!dbf_info->disable_h)
     vvc_dbf_ctu_hor(df, fbuff->y, fbuff->stride, dbf_info, nb_unit_h, !!last_y, nb_unit_w, ctu_lft);

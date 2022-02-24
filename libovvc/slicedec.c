@@ -1430,6 +1430,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     //In loop filter information for CTU reconstruction
     ctudec_init_in_loop_filters(ctudec, prms);
+    ctudec->tmp_slice_type = sh->sh_slice_type;
 
     return 0;
 }

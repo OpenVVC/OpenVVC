@@ -845,6 +845,7 @@ struct OVCTUDec
     uint8_t cu_opaque;
     uint8_t tmp_ciip;
     uint8_t tmp_red;
+    uint8_t tmp_slice_type;
 };
 
 void ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic);
