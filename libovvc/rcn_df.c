@@ -442,9 +442,7 @@ filter_h_3_5(OVSample *src, const int stride, const int tc)
     static const int8_t db_c[8] = { 11, 32, 53, 58, 45, 32, 19, 6};
     static const int8_t tc_c[8] = {  2,  4,  6,  6,  5,  4,  3, 2};
 
-    int16_t ref_val[8];
     int16_t tc_val[8];
-    int16_t db_val[8];
 
     tc_val[0] = (tc * tc_c[0]) >> 1;
     tc_val[1] = (tc * tc_c[1]) >> 1;
@@ -466,6 +464,7 @@ filter_h_3_5(OVSample *src, const int stride, const int tc)
 
         int16_t clp_min[8];
         int16_t clp_max[8];
+        int16_t db_val[8];
 
         clp_min[0] = (int)src[0] - tc_val[0];
         clp_min[1] = (int)src[1] - tc_val[1];
@@ -1885,7 +1884,6 @@ vvc_dbf_ctu_hor(const struct DFFunctions * df, OVSample *src, int stride, const 
         uint64_t edg_msk = edg_map[i] | sb_edg_map[i];
         uint64_t bs1_map  = dbf_info->bs1_map.ver[i];
         uint64_t bs2_map  = dbf_info->bs2_map.ver[i];
-        uint64_t no_filter = vedge_mask ^ (bs1_map | bs2_map);
 
         edg_msk &= vedge_mask;
         edg_msk &= bs2_map | bs1_map;
