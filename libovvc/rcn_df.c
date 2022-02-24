@@ -68,7 +68,6 @@ static const uint8_t beta_lut[MAX_QP + 1] =
     74, 76, 78, 80, 82, 84, 86, 88
 };
 
-
 static inline uint8_t
 use_strong_filter_l0(const OVSample* src, const int stride, const int beta, const int tc, int max_l_p, int max_l_q)
 {
@@ -147,6 +146,7 @@ compute_dq(OVSample* src, const int stride)
 {
     return abs((int32_t)src[0] - 2 * (int32_t)src[stride] + (int32_t)src[stride * 2]);
 }
+
 struct DBFParams{
     int beta;
     int tc;
