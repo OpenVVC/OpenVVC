@@ -1821,26 +1821,32 @@ struct DBFLength
 static struct DBFLength
 derive_filter_length(const struct EdgeCtx *edg_ctx, uint64_t affine_p, uint64_t affine_q, uint64_t pos_msk)
 {
-    int max_l_p = edg_ctx->small_map & pos_msk ? 1 : (edg_ctx->large_p_map & pos_msk) ? 7 : 3;
-    int max_l_q = edg_ctx->small_map & pos_msk ? 1 : (edg_ctx->large_q_map & pos_msk) ? 7 : 3;
-
     struct DBFLength lgth_info;
+    uint8_t max_l_p, max_l_q;
 
-    uint8_t is_aff_p = !!(affine_p & pos_msk);
-    uint8_t is_aff_q = !!(affine_q & pos_msk);
+    if (edg_ctx->small_map & pos_msk) {
+        max_l_p = 1;
+        max_l_q = 1;
+    } else if (edg_ctx->aff_edg_1 & pos_msk) {
+        max_l_p = 2;
+        max_l_q = 2;
+    } else {
+        max_l_p = 3;
+        max_l_q = 3;
 
-    if (edg_ctx->aff_edg_1 & pos_msk) {
-        max_l_p = OVMIN(2, max_l_p);
-        max_l_q = OVMIN(2, max_l_q);
-        max_l_p = max_l_q = OVMIN(max_l_p, max_l_q);
-    }
+        if (edg_ctx->large_p_map & pos_msk) {
+            max_l_p = 7;
+            if (affine_p & pos_msk) {
+                max_l_p = 5;
+            }
+        }
 
-    if (is_aff_p) {
-        max_l_p = OVMIN(5, max_l_p);
-    }
-
-    if (is_aff_q) {
-        max_l_q = OVMIN(5, max_l_q);
+        if (edg_ctx->large_q_map & pos_msk) {
+            max_l_q = 7;
+            if (affine_q & pos_msk) {
+                max_l_q = 5;
+            }
+        }
     }
 
     lgth_info.lgth_p = max_l_p;
