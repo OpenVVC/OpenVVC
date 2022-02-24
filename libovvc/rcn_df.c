@@ -194,11 +194,11 @@ derive_size_3_map(const uint64_t *edge_map)
     return ~is_large_map;
 }
 
-static inline int
+static inline uint8_t
 derive_filter_idx(int filter_l_p, int filter_l_q)
 {
-    int p_idx = (filter_l_p >> 1) - 1;
-    int q_idx = (filter_l_q >> 1) - 1;
+    uint8_t p_idx = (filter_l_p >> 1) - 1;
+    uint8_t q_idx = (filter_l_q >> 1) - 1;
     return (((p_idx & 0x3) << 2) | (q_idx & 0x3));
 }
 
