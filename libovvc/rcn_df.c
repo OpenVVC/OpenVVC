@@ -786,6 +786,7 @@ filter_v_3_5(OVSample *src, const int stride, const int tc)
 static inline void
 filter_luma_strong_small_v(OVSample* src, const int stride, const int tc)
 {
+    int16_t tc_c[6] = { 1 * tc, 2 * tc, 3 * tc , 3 * tc, 2 * tc, 1 * tc};
 
     for (int i = 0; i < 4; i++) {
         const int16_t m0  = src[-stride * 4];
@@ -797,12 +798,12 @@ filter_luma_strong_small_v(OVSample* src, const int stride, const int tc)
         const int16_t m6  = src[ stride * 2];
         const int16_t m7  = src[ stride * 3];
 
-        src[-stride * 3] = ov_clip(((2 * m0 + 3 * m1 + m2 + m3 + m4 + 4) >> 3),     m1 - 1 * tc, m1 + 1 * tc);
-        src[-stride * 2] = ov_clip(((m1 + m2 + m3 + m4 + 2) >> 2),                  m2 - 2 * tc, m2 + 2 * tc);
-        src[-stride]     = ov_clip(((m1 + 2 * m2 + 2 * m3 + 2 * m4 + m5 + 4) >> 3), m3 - 3 * tc, m3 + 3 * tc);
-        src[0]           = ov_clip(((m2 + 2 * m3 + 2 * m4 + 2 * m5 + m6 + 4) >> 3), m4 - 3 * tc, m4 + 3 * tc);
-        src[stride]      = ov_clip(((m3 + m4 + m5 + m6 + 2) >> 2),                  m5 - 2 * tc, m5 + 2 * tc);
-        src[stride * 2]  = ov_clip(((m3 + m4 + m5 + 3 * m6 + 2 * m7 + 4) >> 3),     m6 - 1 * tc, m6 + 1 * tc);
+        src[-stride * 3] = ov_clip(((2 * m0 + 3 * m1 + m2 + m3 + m4 + 4) >> 3),     m1 - tc_c[0], m1 + tc_c[0]);
+        src[-stride * 2] = ov_clip(((m1 + m2 + m3 + m4 + 2) >> 2),                  m2 - tc_c[1], m2 + tc_c[1]);
+        src[-stride]     = ov_clip(((m1 + 2 * m2 + 2 * m3 + 2 * m4 + m5 + 4) >> 3), m3 - tc_c[2], m3 + tc_c[2]);
+        src[0]           = ov_clip(((m2 + 2 * m3 + 2 * m4 + 2 * m5 + m6 + 4) >> 3), m4 - tc_c[3], m4 + tc_c[3]);
+        src[stride]      = ov_clip(((m3 + m4 + m5 + m6 + 2) >> 2),                  m5 - tc_c[4], m5 + tc_c[4]);
+        src[stride * 2]  = ov_clip(((m3 + m4 + m5 + 3 * m6 + 2 * m7 + 4) >> 3),     m6 - tc_c[5], m6 + tc_c[5]);
         src++;
     }
 }
@@ -810,6 +811,8 @@ filter_luma_strong_small_v(OVSample* src, const int stride, const int tc)
 static inline void
 filter_luma_strong_small_h(OVSample* src, const int stride, const int tc)
 {
+
+    int16_t tc_c[6] = { 1 * tc, 2 * tc, 3 * tc , 3 * tc, 2 * tc, 1 * tc};
 
     for (int i = 0; i < 4; i++) {
         const int16_t m0  = src[-4];
@@ -821,12 +824,12 @@ filter_luma_strong_small_h(OVSample* src, const int stride, const int tc)
         const int16_t m6  = src[ 2];
         const int16_t m7  = src[ 3];
 
-        src[-3] = ov_clip(((2 * m0 + 3 * m1 + m2 + m3 + m4 + 4) >> 3),     m1 - 1 * tc, m1 + 1 * tc);
-        src[-2] = ov_clip(((m1 + m2 + m3 + m4 + 2) >> 2),                  m2 - 2 * tc, m2 + 2 * tc);
-        src[-1] = ov_clip(((m1 + 2 * m2 + 2 * m3 + 2 * m4 + m5 + 4) >> 3), m3 - 3 * tc, m3 + 3 * tc);
-        src[0]  = ov_clip(((m2 + 2 * m3 + 2 * m4 + 2 * m5 + m6 + 4) >> 3), m4 - 3 * tc, m4 + 3 * tc);
-        src[1]  = ov_clip(((m3 + m4 + m5 + m6 + 2) >> 2),                  m5 - 2 * tc, m5 + 2 * tc);
-        src[2]  = ov_clip(((m3 + m4 + m5 + 3 * m6 + 2 * m7 + 4) >> 3),     m6 - 1 * tc, m6 + 1 * tc);
+        src[-3] = ov_clip(((2 * m0 + 3 * m1 + m2 + m3 + m4 + 4) >> 3),     m1 - tc_c[0], m1 + tc_c[0]);
+        src[-2] = ov_clip(((m1 + m2 + m3 + m4 + 2) >> 2),                  m2 - tc_c[1], m2 + tc_c[1]);
+        src[-1] = ov_clip(((m1 + 2 * m2 + 2 * m3 + 2 * m4 + m5 + 4) >> 3), m3 - tc_c[2], m3 + tc_c[2]);
+        src[0]  = ov_clip(((m2 + 2 * m3 + 2 * m4 + 2 * m5 + m6 + 4) >> 3), m4 - tc_c[3], m4 + tc_c[3]);
+        src[1]  = ov_clip(((m3 + m4 + m5 + m6 + 2) >> 2),                  m5 - tc_c[4], m5 + tc_c[4]);
+        src[2]  = ov_clip(((m3 + m4 + m5 + 3 * m6 + 2 * m7 + 4) >> 3),     m6 - tc_c[5], m6 + tc_c[5]);
         src += stride;
     }
 }
