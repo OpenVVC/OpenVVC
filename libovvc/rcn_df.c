@@ -1405,8 +1405,8 @@ filter_vertical_edge(const struct DFFunctions *df, const struct DBFParams *const
         int dL = d0L + d3L;
 
         use_strong_large = (dL < dbf_params->beta) &&
-            ((d0L << 1) < (dbf_params->beta >> 4)) &&
-            ((d3L << 1) < (dbf_params->beta >> 4)) &&
+            (d0L < (dbf_params->beta + 0x10 >> 5)) &&
+            (d3L < (dbf_params->beta + 0x10 >> 5)) &&
             use_strong_filter_l0(src0, 1, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q) &&
             use_strong_filter_l0(src3, 1, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q);
     }
@@ -1422,8 +1422,8 @@ filter_vertical_edge(const struct DFFunctions *df, const struct DBFParams *const
         if (d < dbf_params->beta) {
             uint8_t sw = (max_l_p >= 3 && max_l_q >= 3);//is_not_small;
 
-            sw = sw && ((d0 << 1) < (dbf_params->beta >> 2))
-                    && ((d3 << 1) < (dbf_params->beta >> 2))
+            sw = sw && (d0 < (dbf_params->beta + 0x4 >> 3))
+                    && (d3 < (dbf_params->beta + 0x4 >> 3))
                     && use_strong_filter_l1(src0, 1, dbf_params->beta, dbf_params->tc)
                     && use_strong_filter_l1(src3, 1, dbf_params->beta, dbf_params->tc);
 
@@ -1970,8 +1970,8 @@ filter_horizontal_edge(const struct DFFunctions *df, const struct DBFParams *con
 
         int dL = d0L + d3L;
         use_strong_large = (dL < dbf_params->beta) &&
-            ((d0L << 1) < (dbf_params->beta >> 4)) &&
-            ((d3L << 1) < (dbf_params->beta >> 4)) &&
+            (d0L < (dbf_params->beta + 0x10 >> 5)) &&
+            (d3L < (dbf_params->beta + 0x10 >> 5)) &&
             use_strong_filter_l0(src0, stride, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q) &&
             use_strong_filter_l0(src3, stride, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q);
     }
@@ -1987,10 +1987,10 @@ filter_horizontal_edge(const struct DFFunctions *df, const struct DBFParams *con
         if (d < dbf_params->beta) {
             uint8_t sw = (max_l_p >= 3 && max_l_q >= 3);
 
-            sw = sw && ((d0 << 1) < (dbf_params->beta >> 2))
-                && ((d3 << 1) < (dbf_params->beta >> 2))
-                && use_strong_filter_l1(src0, stride, dbf_params->beta, dbf_params->tc)
-                && use_strong_filter_l1(src3, stride, dbf_params->beta, dbf_params->tc);
+            sw = sw && (d0 < (dbf_params->beta + 0x4 >> 3))
+                    && (d3 < (dbf_params->beta + 0x4 >> 3))
+                    && use_strong_filter_l1(src0, stride, dbf_params->beta, dbf_params->tc)
+                    && use_strong_filter_l1(src3, stride, dbf_params->beta, dbf_params->tc);
 
             if (sw){
                 filter_luma_strong_small_v(src0, stride, dbf_params->tc);
