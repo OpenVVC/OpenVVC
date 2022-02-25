@@ -1427,8 +1427,8 @@ filter_vertical_edge(const struct DFFunctions *df, const struct DBFParams *const
                 const int dp = dp0 + dp3;
                 const int dq = dq0 + dq3;
                 const int side_thd = (dbf_params->beta + (dbf_params->beta >> 1)) >> 3;
-                uint8_t extend_p = (dp < side_thd) && (max_l_p > 1 && max_l_q > 1);
-                uint8_t extend_q = (dq < side_thd) && (max_l_p > 1 && max_l_q > 1);
+                uint8_t extend_p = dp < side_thd && max_l_p > 1;
+                uint8_t extend_q = dq < side_thd && max_l_p > 1;
                 filter_luma_weak_h(src0, stride, dbf_params->tc, extend_p, extend_q);
             }
         }
