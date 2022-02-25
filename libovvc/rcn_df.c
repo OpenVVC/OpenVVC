@@ -1023,46 +1023,46 @@ filter_veritcal_edge_c(const struct DBFInfo *const dbf_info, OVSample *src, ptrd
     /* Note there is no need to check anything here since condition
      * is already checked in edge_map
      */
-        OVSample *src0 = src;
-        OVSample *src1 = src + stride;
+    OVSample *src0 = src;
+    OVSample *src1 = src + stride;
 
-        const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, qp, 1 + is_bs2);
-        if (dbf_params.tc == 0 || dbf_params.beta == 0) return;
-        uint8_t is_strong = 0;
+    const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, qp, 1 + is_bs2);
+    if (dbf_params.tc == 0 || dbf_params.beta == 0) return;
+    uint8_t is_strong = 0;
 
-        if (is_large) {
-            const int dp0 = compute_dp(src0, 1);
-            const int dq0 = compute_dq(src0, 1);
-            const int dp3 = compute_dp(src1, 1);
-            const int dq3 = compute_dq(src1, 1);
+    if (is_large) {
+        const int dp0 = compute_dp(src0, 1);
+        const int dq0 = compute_dq(src0, 1);
+        const int dp3 = compute_dp(src1, 1);
+        const int dq3 = compute_dq(src1, 1);
 
-            const int d0 = dp0 + dq0;
-            const int d3 = dp3 + dq3;
+        const int d0 = dp0 + dq0;
+        const int d3 = dp3 + dq3;
 
-            const int d = d0 + d3;
+        const int d = d0 + d3;
 
-            is_strong = (d < dbf_params.beta) &&
-                        (2 * d0 < (dbf_params.beta >> 2)) &&
-                        (2 * d3 < (dbf_params.beta >> 2)) &&
-                        use_strong_filter_c(src0, 1, dbf_params.beta, dbf_params.tc) &&
-                        use_strong_filter_c(src1, 1, dbf_params.beta, dbf_params.tc);
+        is_strong = (d < dbf_params.beta) &&
+            (2 * d0 < (dbf_params.beta >> 2)) &&
+            (2 * d3 < (dbf_params.beta >> 2)) &&
+            use_strong_filter_c(src0, 1, dbf_params.beta, dbf_params.tc) &&
+            use_strong_filter_c(src1, 1, dbf_params.beta, dbf_params.tc);
 
-            if (is_strong) {
-                int j;
-                for (j = 0; j < 2; ++j) {
-                    filter_chroma_strong(src, 1, dbf_params.tc);
-                    src += stride;
-                }
-            }
-        }
-
-        if (!is_strong) {
+        if (is_strong) {
             int j;
             for (j = 0; j < 2; ++j) {
-                filter_chroma_weak(src, 1, dbf_params.tc);
+                filter_chroma_strong(src, 1, dbf_params.tc);
                 src += stride;
             }
         }
+    }
+
+    if (!is_strong) {
+        int j;
+        for (j = 0; j < 2; ++j) {
+            filter_chroma_weak(src, 1, dbf_params.tc);
+            src += stride;
+        }
+    }
 }
 
 /* Filter vertical edges */
@@ -1202,46 +1202,46 @@ filter_horizontal_edge_c(const struct DBFInfo *const dbf_info, OVSample *src, pt
     /* Note there is no need to check anything here since condition
      * is already checked in edge_map
      */
-        OVSample *src0 = src;
-        OVSample *src1 = src + 1;
+    OVSample *src0 = src;
+    OVSample *src1 = src + 1;
 
-        const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, qp, 1 + is_bs2);
-        if (dbf_params.tc == 0 || dbf_params.beta == 0) return;
-        uint8_t is_strong = 0;
+    const struct DBFParams dbf_params = compute_dbf_limits(dbf_info, qp, 1 + is_bs2);
+    if (dbf_params.tc == 0 || dbf_params.beta == 0) return;
+    uint8_t is_strong = 0;
 
-        if (is_large) {
-            const int dp0 = compute_dp_c(src0, stride, is_ctb_b);
-            const int dq0 = compute_dq(src0, stride);
-            const int dp3 = compute_dp_c(src1, stride, is_ctb_b);
-            const int dq3 = compute_dq(src1, stride);
+    if (is_large) {
+        const int dp0 = compute_dp_c(src0, stride, is_ctb_b);
+        const int dq0 = compute_dq(src0, stride);
+        const int dp3 = compute_dp_c(src1, stride, is_ctb_b);
+        const int dq3 = compute_dq(src1, stride);
 
-            const int d0 = dp0 + dq0;
-            const int d3 = dp3 + dq3;
+        const int d0 = dp0 + dq0;
+        const int d3 = dp3 + dq3;
 
-            const int d = d0 + d3;
+        const int d = d0 + d3;
 
-            is_strong = (d < dbf_params.beta) &&
-                        (2 * d0 < (dbf_params.beta >> 2)) &&
-                        (2 * d3 < (dbf_params.beta >> 2)) &&
-                        use_strong_filter_c2(src0, stride, dbf_params.beta, dbf_params.tc, is_ctb_b) &&
-                        use_strong_filter_c2(src1, stride, dbf_params.beta, dbf_params.tc, is_ctb_b);
+        is_strong = (d < dbf_params.beta) &&
+            (2 * d0 < (dbf_params.beta >> 2)) &&
+            (2 * d3 < (dbf_params.beta >> 2)) &&
+            use_strong_filter_c2(src0, stride, dbf_params.beta, dbf_params.tc, is_ctb_b) &&
+            use_strong_filter_c2(src1, stride, dbf_params.beta, dbf_params.tc, is_ctb_b);
 
-            if (is_strong) {
-                int j;
-                for (j = 0; j < 2; ++j) {
-                    filter_chroma_strong_c(src, stride, dbf_params.tc, is_ctb_b);
-                    src++;
-                }
-            }
-        }
-
-        if (!is_strong) {
+        if (is_strong) {
             int j;
             for (j = 0; j < 2; ++j) {
-                filter_chroma_weak(src, stride, dbf_params.tc);
+                filter_chroma_strong_c(src, stride, dbf_params.tc, is_ctb_b);
                 src++;
             }
         }
+    }
+
+    if (!is_strong) {
+        int j;
+        for (j = 0; j < 2; ++j) {
+            filter_chroma_weak(src, stride, dbf_params.tc);
+            src++;
+        }
+    }
 }
 
 static void
