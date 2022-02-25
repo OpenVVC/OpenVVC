@@ -1020,11 +1020,9 @@ filter_veritcal_edge_c(const struct DBFInfo *const dbf_info, OVSample *src, ptrd
     const uint8_t is_large = large_map_q & 0x1;
     const uint8_t is_bs2   = bs2_map     & 0x1;
 
-    /* Note there should not be any need to check anything here since condition
+    /* Note there is no need to check anything here since condition
      * is already checked in edge_map
-     * FIXME check on inter when bs1 is enabled
      */
-    if (is_large || is_bs2) {
         OVSample *src0 = src;
         OVSample *src1 = src + stride;
 
@@ -1065,7 +1063,6 @@ filter_veritcal_edge_c(const struct DBFInfo *const dbf_info, OVSample *src, ptrd
                 src += stride;
             }
         }
-    }
 }
 
 /* Filter vertical edges */
@@ -1202,11 +1199,9 @@ filter_horizontal_edge_c(const struct DBFInfo *const dbf_info, OVSample *src, pt
     const uint8_t is_large = large_map_q & 0x1;
     const uint8_t is_bs2   = bs2_map     & 0x1;
 
-    /* Note there should not be any need to check anything here since condition
+    /* Note there is no need to check anything here since condition
      * is already checked in edge_map
-     * FIXME check on inter when bs1 is enabled
      */
-    if (is_large || is_bs2) {
         OVSample *src0 = src;
         OVSample *src1 = src + 1;
 
@@ -1247,7 +1242,6 @@ filter_horizontal_edge_c(const struct DBFInfo *const dbf_info, OVSample *src, pt
                 src++;
             }
         }
-    }
 }
 
 static void
