@@ -861,10 +861,10 @@ filter_luma_weak_h(OVSample* src, const int stride, const int tc, const uint8_t 
             delta = ov_clip(delta, -tc, tc);
             const int delta1 = ov_clip(((((p2 + p0 + 1) >> 1) - p1 + delta) >> 1), -tc2_p, tc2_p);
             const int delta2 = ov_clip(((((q2 + q0 + 1) >> 1) - q1 - delta) >> 1), -tc2_q, tc2_q);
-            src[- 2] = ov_bdclip(p1 + delta1);
+            src[-2] = ov_bdclip(p1 + delta1);
             src[-1] = ov_bdclip(p0 + delta);
             src[0]  = ov_bdclip(q0 - delta);
-            src[1] = ov_bdclip(q1 + delta2);
+            src[1]  = ov_bdclip(q1 + delta2);
         }
         src += stride;
     }
@@ -905,9 +905,6 @@ static inline uint8_t
 use_strong_filter_c2(const OVSample* src, const int stride, const int beta, const int tc, uint8_t is_ctb_b)
 {
     const int16_t p3 = src[(-stride * 4) >> is_ctb_b];
-    #if 0
-    const int16_t p1 = src[-stride * 2];
-    #endif
     const int16_t p0 = src[-stride    ];
     const int16_t q0 = src[ 0         ];
     const int16_t q3 = src[ stride * 3];
