@@ -138,13 +138,19 @@ compute_dp_c(OVSample* src, const int stride , const uint8_t is_ctb_b)
 static inline uint16_t
 compute_dp(OVSample* src, const int stride)
 {
-    return abs((int32_t)src[-stride * 3] - 2 * (int32_t)src[-stride * 2] + (int32_t)src[-stride]);
+    const int16_t p2 = src[-stride * 3];
+    const int16_t p1 = src[-stride * 2];
+    const int16_t p0 = src[-stride    ];
+    return abs(p2 - 2 * p1 + p0);
 }
 
 static inline uint16_t
 compute_dq(OVSample* src, const int stride)
 {
-    return abs((int32_t)src[0] - 2 * (int32_t)src[stride] + (int32_t)src[stride * 2]);
+    const int16_t q0 = src[0         ];
+    const int16_t q1 = src[stride * 1];
+    const int16_t q2 = src[stride * 2];
+    return abs(q0 - 2 * q1 + q2);
 }
 
 struct DBFParams{
