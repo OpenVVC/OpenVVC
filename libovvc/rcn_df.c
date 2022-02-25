@@ -1420,7 +1420,7 @@ filter_vertical_edge(const struct DFFunctions *df, const struct DBFParams *const
         const int d  = d0  + d3;
 
         if (d < dbf_params->beta) {
-            uint8_t sw = (max_l_p >= 3 && max_l_q >= 3);//is_not_small;
+            uint8_t sw = max_l_p > 2;
 
             sw = sw && (d0 < (dbf_params->beta + 0x4 >> 3))
                     && (d3 < (dbf_params->beta + 0x4 >> 3))
@@ -1985,7 +1985,7 @@ filter_horizontal_edge(const struct DFFunctions *df, const struct DBFParams *con
         const int d  = d0 + d3;
 
         if (d < dbf_params->beta) {
-            uint8_t sw = (max_l_p >= 3 && max_l_q >= 3);
+            uint8_t sw = max_l_p > 2;
 
             sw = sw && (d0 < (dbf_params->beta + 0x4 >> 3))
                     && (d3 < (dbf_params->beta + 0x4 >> 3))
@@ -1998,8 +1998,8 @@ filter_horizontal_edge(const struct DFFunctions *df, const struct DBFParams *con
                 const int dp = dp0 + dp3;
                 const int dq = dq0 + dq3;
                 const int side_thd = (dbf_params->beta + (dbf_params->beta >> 1)) >> 3;
-                uint8_t extend_p = (dp < side_thd) && (max_l_p > 1 && max_l_q > 1);
-                uint8_t extend_q = (dq < side_thd) && (max_l_p > 1 && max_l_q > 1);
+                uint8_t extend_p = dp < side_thd && max_l_p > 1;
+                uint8_t extend_q = dq < side_thd && max_l_p > 1;
                 filter_luma_weak_v(src0, stride, dbf_params->tc, extend_p, extend_q);
             }
         }
