@@ -931,7 +931,7 @@ use_strong_filter_c(const OVSample* src, const int stride, const int beta, const
 }
 
 static inline void
-filter_chroma_strong(OVSample* src, const int stride, const int tc/*, const uint8_t is_ctb_b*/)
+filter_chroma_strong(OVSample* src, const int stride, const int tc)
 {
     const int16_t m0 = src[-stride * 4];
     const int16_t m1 = src[-stride * 3];
