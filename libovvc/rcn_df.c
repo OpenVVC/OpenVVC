@@ -226,16 +226,16 @@ filter_h_7_7(OVSample *src, const int stride, const int tc)
     clp[5] = (tc * tc7_q[5]) >> 1;
     clp[6] = (tc * tc7_q[6]) >> 1;
 
-  for (int i = 0; i < 4; i++) {
-    OVSample* srcP = src - 1;
-    OVSample* srcQ = src;
+    for (int i = 0; i < 4; i++) {
+        OVSample* srcP = src - 1;
+        OVSample* srcQ = src;
 
-    int ref_p = (srcP[-6 * 1] + srcP[-7 * 1] + 1) >> 1;
-    int ref_q = (srcQ[ 6 * 1] + srcQ[ 7 * 1] + 1) >> 1;
+        int ref_p = (srcP[-6 * 1] + srcP[-7 * 1] + 1) >> 1;
+        int ref_q = (srcQ[ 6 * 1] + srcQ[ 7 * 1] + 1) >> 1;
 
-    int db_ref = (2 * (srcP[0] + srcQ[0])
-                    + srcP[-1] + srcP[-2 * 1] + srcP[-3 * 1] + srcP[-4 * 1] + srcP[-5 * 1] + srcP[-6 * 1]
-                    + srcQ[ 1] + srcQ[ 2 * 1] + srcQ[ 3 * 1] + srcQ[ 4 * 1] + srcQ[ 5 * 1] + srcQ[ 6 * 1] + 8) >> 4;
+        int db_ref = (2 * (srcP[0] + srcQ[0])
+                      + srcP[-1] + srcP[-2 * 1] + srcP[-3 * 1] + srcP[-4 * 1] + srcP[-5 * 1] + srcP[-6 * 1]
+                      + srcQ[ 1] + srcQ[ 2 * 1] + srcQ[ 3 * 1] + srcQ[ 4 * 1] + srcQ[ 5 * 1] + srcQ[ 6 * 1] + 8) >> 4;
 
         srcP[-0] = ov_clip(((db_ref * db7_q[0] + ref_p * (64 - db7_q[0]) + 32) >> 6), srcP[-0] - clp[0], srcP[-0] + clp[0]);
         srcP[-1] = ov_clip(((db_ref * db7_q[1] + ref_p * (64 - db7_q[1]) + 32) >> 6), srcP[-1] - clp[1], srcP[-1] + clp[1]);
@@ -252,8 +252,8 @@ filter_h_7_7(OVSample *src, const int stride, const int tc)
         srcQ[4] = ov_clip(((db_ref * db7_q[4] + ref_q * (64 - db7_q[4]) + 32) >> 6), srcQ[4] - clp[4], srcQ[4] + clp[4]);
         srcQ[5] = ov_clip(((db_ref * db7_q[5] + ref_q * (64 - db7_q[5]) + 32) >> 6), srcQ[5] - clp[5], srcQ[5] + clp[5]);
         srcQ[6] = ov_clip(((db_ref * db7_q[6] + ref_q * (64 - db7_q[6]) + 32) >> 6), srcQ[6] - clp[6], srcQ[6] + clp[6]);
-    src += stride;
-  }
+        src += stride;
+    }
 }
 
 static void
