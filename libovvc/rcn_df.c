@@ -213,8 +213,8 @@ filter_h_7_7(OVSample *src, const int stride, const int tc)
 {
     static const int8_t db7_q[7] = { 59, 50, 41, 32, 23, 14, 5 };
     static const int8_t db7_p[7] = { 5, 14, 23, 32, 41, 50, 59 };
-    static const int8_t tc7_q[7] = { 6, 5, 4, 3, 2, 1, 1};
-    static const int8_t tc7_p[7] = { 1, 1, 2, 3, 4, 5, 6};
+    static const int8_t tc7_q[7] = { 6, 5, 4, 3, 2, 1, 1 };
+    static const int8_t tc7_p[7] = { 1, 1, 2, 3, 4, 5, 6 };
 
     int16_t clp_q[7];
     int16_t clp_p[7];
@@ -238,6 +238,7 @@ filter_h_7_7(OVSample *src, const int stride, const int tc)
     for (int i = 0; i < 4; i++) {
         OVSample* srcP = src - 1;
         OVSample* srcQ = src;
+        OVSample* _src = src - 7;
 
         int ref_p = (srcP[-6 * 1] + srcP[-7 * 1] + 1) >> 1;
         int ref_q = (srcQ[ 6 * 1] + srcQ[ 7 * 1] + 1) >> 1;
@@ -246,21 +247,21 @@ filter_h_7_7(OVSample *src, const int stride, const int tc)
                       + srcP[-1] + srcP[-2 * 1] + srcP[-3 * 1] + srcP[-4 * 1] + srcP[-5 * 1] + srcP[-6 * 1]
                       + srcQ[ 1] + srcQ[ 2 * 1] + srcQ[ 3 * 1] + srcQ[ 4 * 1] + srcQ[ 5 * 1] + srcQ[ 6 * 1] + 8) >> 4;
 
-        srcP[-6] = ov_clip(((db_ref * db7_p[0] + ref_p * (64 - db7_p[0]) + 32) >> 6), srcP[-6] - clp_p[0], srcP[-6] + clp_p[0]);
-        srcP[-5] = ov_clip(((db_ref * db7_p[1] + ref_p * (64 - db7_p[1]) + 32) >> 6), srcP[-5] - clp_p[1], srcP[-5] + clp_p[1]);
-        srcP[-4] = ov_clip(((db_ref * db7_p[2] + ref_p * (64 - db7_p[2]) + 32) >> 6), srcP[-4] - clp_p[2], srcP[-4] + clp_p[2]);
-        srcP[-3] = ov_clip(((db_ref * db7_p[3] + ref_p * (64 - db7_p[3]) + 32) >> 6), srcP[-3] - clp_p[3], srcP[-3] + clp_p[3]);
-        srcP[-2] = ov_clip(((db_ref * db7_p[4] + ref_p * (64 - db7_p[4]) + 32) >> 6), srcP[-2] - clp_p[4], srcP[-2] + clp_p[4]);
-        srcP[-1] = ov_clip(((db_ref * db7_p[5] + ref_p * (64 - db7_p[5]) + 32) >> 6), srcP[-1] - clp_p[5], srcP[-1] + clp_p[5]);
-        srcP[-0] = ov_clip(((db_ref * db7_p[6] + ref_p * (64 - db7_p[6]) + 32) >> 6), srcP[-0] - clp_p[6], srcP[-0] + clp_p[6]);
+        _src[0] = ov_clip(((db_ref * db7_p[0] + ref_p * (64 - db7_p[0]) + 32) >> 6), _src[0] - clp_p[0], _src[0] + clp_p[0]);
+        _src[1] = ov_clip(((db_ref * db7_p[1] + ref_p * (64 - db7_p[1]) + 32) >> 6), _src[1] - clp_p[1], _src[1] + clp_p[1]);
+        _src[2] = ov_clip(((db_ref * db7_p[2] + ref_p * (64 - db7_p[2]) + 32) >> 6), _src[2] - clp_p[2], _src[2] + clp_p[2]);
+        _src[3] = ov_clip(((db_ref * db7_p[3] + ref_p * (64 - db7_p[3]) + 32) >> 6), _src[3] - clp_p[3], _src[3] + clp_p[3]);
+        _src[4] = ov_clip(((db_ref * db7_p[4] + ref_p * (64 - db7_p[4]) + 32) >> 6), _src[4] - clp_p[4], _src[4] + clp_p[4]);
+        _src[5] = ov_clip(((db_ref * db7_p[5] + ref_p * (64 - db7_p[5]) + 32) >> 6), _src[5] - clp_p[5], _src[5] + clp_p[5]);
+        _src[6] = ov_clip(((db_ref * db7_p[6] + ref_p * (64 - db7_p[6]) + 32) >> 6), _src[6] - clp_p[6], _src[6] + clp_p[6]);
 
-        srcQ[0] = ov_clip(((db_ref * db7_q[0] + ref_q * (64 - db7_q[0]) + 32) >> 6), srcQ[0] - clp_q[0], srcQ[0] + clp_q[0]);
-        srcQ[1] = ov_clip(((db_ref * db7_q[1] + ref_q * (64 - db7_q[1]) + 32) >> 6), srcQ[1] - clp_q[1], srcQ[1] + clp_q[1]);
-        srcQ[2] = ov_clip(((db_ref * db7_q[2] + ref_q * (64 - db7_q[2]) + 32) >> 6), srcQ[2] - clp_q[2], srcQ[2] + clp_q[2]);
-        srcQ[3] = ov_clip(((db_ref * db7_q[3] + ref_q * (64 - db7_q[3]) + 32) >> 6), srcQ[3] - clp_q[3], srcQ[3] + clp_q[3]);
-        srcQ[4] = ov_clip(((db_ref * db7_q[4] + ref_q * (64 - db7_q[4]) + 32) >> 6), srcQ[4] - clp_q[4], srcQ[4] + clp_q[4]);
-        srcQ[5] = ov_clip(((db_ref * db7_q[5] + ref_q * (64 - db7_q[5]) + 32) >> 6), srcQ[5] - clp_q[5], srcQ[5] + clp_q[5]);
-        srcQ[6] = ov_clip(((db_ref * db7_q[6] + ref_q * (64 - db7_q[6]) + 32) >> 6), srcQ[6] - clp_q[6], srcQ[6] + clp_q[6]);
+        src[0] = ov_clip(((db_ref * db7_q[0] + ref_q * (64 - db7_q[0]) + 32) >> 6), src[0] - clp_q[0], src[0] + clp_q[0]);
+        src[1] = ov_clip(((db_ref * db7_q[1] + ref_q * (64 - db7_q[1]) + 32) >> 6), src[1] - clp_q[1], src[1] + clp_q[1]);
+        src[2] = ov_clip(((db_ref * db7_q[2] + ref_q * (64 - db7_q[2]) + 32) >> 6), src[2] - clp_q[2], src[2] + clp_q[2]);
+        src[3] = ov_clip(((db_ref * db7_q[3] + ref_q * (64 - db7_q[3]) + 32) >> 6), src[3] - clp_q[3], src[3] + clp_q[3]);
+        src[4] = ov_clip(((db_ref * db7_q[4] + ref_q * (64 - db7_q[4]) + 32) >> 6), src[4] - clp_q[4], src[4] + clp_q[4]);
+        src[5] = ov_clip(((db_ref * db7_q[5] + ref_q * (64 - db7_q[5]) + 32) >> 6), src[5] - clp_q[5], src[5] + clp_q[5]);
+        src[6] = ov_clip(((db_ref * db7_q[6] + ref_q * (64 - db7_q[6]) + 32) >> 6), src[6] - clp_q[6], src[6] + clp_q[6]);
         src += stride;
     }
 }
