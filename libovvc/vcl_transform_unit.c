@@ -440,7 +440,7 @@ decode_cbf_st(OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, u
     #endif
 
     /* FIXME intra if inter we only check for cbf_mask == 3*/
-    if (ctu_dec->jcbcr_enabled && (((cu_flags & 0x2) && cbf_mask) || cbf_mask == 3)) {
+    if (ctu_dec->jcbcr_enabled && (!(cu_flags & flg_ibc_flag) && ((cu_flags & 0x2) && cbf_mask) || cbf_mask == 3)) {
         uint8_t joint_cb_cr = ovcabac_read_ae_joint_cb_cr_flag(cabac_ctx, (cbf_mask & 0x3) - 1);
         cbf_mask |= joint_cb_cr << 3;
     }
@@ -570,7 +570,7 @@ lfnst_check_st(const struct TUInfo *const tu_info, uint8_t log2_tb_w, uint8_t lo
     uint8_t is_mip = !!(cu_flags & flg_mip_flag);
     uint8_t mip_lfnst = !is_mip || (log2_tb_h >= 4 && log2_tb_w >= 4);
 
-    uint8_t can_lfnst = mip_lfnst;
+    uint8_t can_lfnst = mip_lfnst && !(cu_flags & flg_ibc_flag);
 
     can_lfnst &= !(tu_info->tr_skip_mask);
 
@@ -852,7 +852,7 @@ transform_unit_l(struct OVCTUDec *const ctu_dec,
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t intra_bdpcm_luma_flag = !!(cu_flags & flg_intra_bdpcm_luma_flag);
-    uint8_t cbf_mask = ovcabac_read_ae_tu_cbf_luma(cabac_ctx, intra_bdpcm_luma_flag);
+    uint8_t cbf_mask = rqt_root_cbf || ovcabac_read_ae_tu_cbf_luma(cabac_ctx, intra_bdpcm_luma_flag);
 
     if (cbf_mask) {
         if (ctu_dec->delta_qp_enabled && cbf_mask && ctu_dec->read_qp) {
@@ -906,7 +906,7 @@ lfnst_mts(const OVCTUDec *const ctu_dec, uint8_t log2_tb_w, uint8_t log2_tb_h,
                 uint8_t allow_mip_lfnst = !is_mip || (log2_tb_h >= 4 && log2_tb_w >= 4);
 
         if (!(tu_info->tr_skip_mask))
-        if ((cu_flags & 0x2) && allow_mip_lfnst && ctu_dec->enable_lfnst && cu_flags & 0x2) {
+        if ((cu_flags & 0x2) && allow_mip_lfnst && ctu_dec->enable_lfnst && cu_flags & 0x2 && !(cu_flags & flg_ibc_flag)) {
             uint8_t can_lfnst = lfnst_check_st(tu_info, log2_tb_w, log2_tb_h,
                                                cbf_mask, cu_flags);
 
@@ -942,7 +942,7 @@ lfnst_mts(const OVCTUDec *const ctu_dec, uint8_t log2_tb_w, uint8_t log2_tb_h,
         if (!(tu_info->tr_skip_mask & 0x10)) {
             const struct TBInfo *tb_info = &tu_info->tb_info[2];
             /* FIXME use sb_sig_map instead of last pos */
-            if (ctu_dec->enable_lfnst && cu_flags & 0x2 && tb_info->sig_sb_map <= 0x1) {
+            if (ctu_dec->enable_lfnst && cu_flags & 0x2 && tb_info->sig_sb_map <= 0x1&& !(cu_flags & flg_ibc_flag)) {
                 int max_lfnst_pos = (log2_tb_h == log2_tb_w) && (log2_tb_w <= 3) ? 7 : 15;
                 int nb_coeffs = check_lfnst_nb_coeffs(tb_info->last_pos);
                 uint8_t is_mip = !!(cu_flags & flg_mip_flag);
@@ -1823,7 +1823,7 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
                     VVCCU cu)
 {
     uint8_t split_tu = ((log2_cb_w > part_ctx->log2_max_tb_s) | (log2_cb_h > part_ctx->log2_max_tb_s));
-    if (cu.cu_flags & flg_pred_mode_flag) {
+    if (cu.cu_flags & flg_pred_mode_flag && !(cu.cu_flags & flg_ibc_flag)) {
         /* INTRA */
         if (!(cu.cu_flags & flg_isp_flag)) {
             /*FIXME check if part_ctx mandatory for transform_tree */
@@ -1897,8 +1897,8 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
 
         if (rqt_root_cbf) {
             uint8_t sbt_flag = 0;
-            if (!split_tu) {
-                if (ctu_dec->sbt_enabled && !ctu_dec->tmp_ciip) {
+            if (!split_tu && !(cu.cu_flags & flg_ibc_flag)) {
+                if (ctu_dec->sbt_enabled && !ctu_dec->tmp_ciip && !(cu.cu_flags & flg_ibc_flag)) {
                     uint8_t sbt_mask = sbt_allowed(log2_cb_w, log2_cb_h);
                     if (sbt_mask) {
                         sbt_flag = ovcabac_read_ae_sbt_flag(cabac_ctx, log2_cb_w, log2_cb_h);

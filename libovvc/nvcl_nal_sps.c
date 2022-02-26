@@ -93,10 +93,12 @@ validate_sps(OVNVCLReader *rdr, const union HLSData *const data)
         return OVVC_EINDATA;
     }
 
+    #if 0
     if (sps->sps_ibc_enabled_flag) {
         ov_log(NULL, OVLOG_ERROR, "Unsupported IBC\n");
         return OVVC_EINDATA;
     }
+    #endif
 
     return 1;
 }

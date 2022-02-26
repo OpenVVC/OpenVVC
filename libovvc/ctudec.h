@@ -89,6 +89,7 @@ enum VVCCUFlag
      DECL_FLG(intra_bdpcm_chroma_flag,9),
      DECL_FLG(intra_bdpcm_luma_dir,10),
      DECL_FLG(intra_bdpcm_chroma_dir,11),
+     DECL_FLG(ibc_flag,12),
      DECL_FLG(merge_flag,2),
      DECL_FLG(inter_dir,3),
 };
@@ -708,6 +709,8 @@ struct OVCTUDec
     uint8_t affine_nb_merge_cand;
 
     uint8_t bdof_enabled;
+    uint8_t ibc_enabled;
+    uint8_t nb_ibc_cand_min1;
     uint8_t dmvr_enabled;
 
     uint8_t dbf_disable;

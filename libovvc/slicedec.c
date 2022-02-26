@@ -1366,6 +1366,8 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->sbt_enabled      = sps->sps_sbt_enabled_flag;
     ctudec->affine_enabled   = sps->sps_affine_enabled_flag;
     ctudec->drv_ctx.inter_ctx.sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
+    ctudec->ibc_enabled = sps->sps_ibc_enabled_flag;
+    ctudec->nb_ibc_cand_min1 = 6 - sps->sps_six_minus_max_num_ibc_merge_cand;
 
     if (ctudec->affine_enabled || sps->sps_sbtmvp_enabled_flag) {
         init_affine_status(ctudec, sps, ph);
