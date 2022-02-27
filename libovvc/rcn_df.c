@@ -1912,7 +1912,7 @@ derive_filter_length(const struct EdgeCtx *edg_ctx, uint64_t affine_p, uint64_t 
 static void
 set_edge_context(struct EdgeCtx *edg_ctx, const uint64_t *edg_map, const uint64_t *sb_edg_map, uint8_t i)
 {
-    edg_ctx->large_q_map = derive_size_3_map(&edg_map[i + 1]);
+    edg_ctx->large_q_map = i % 4 ? 0 : derive_size_3_map(&edg_map[i + 1]);
 
     edg_ctx->small_map = edg_map[i - 1] | edg_map[i + 1] | sb_edg_map[i - 1] | sb_edg_map[i + 1];
     edg_ctx->aff_edg_1 = sb_edg_map[i] & (edg_map[i - 2] | edg_map[i + 2])
@@ -1973,7 +1973,7 @@ vvc_dbf_ctu_hor(const struct DFFunctions * df, OVSample *src, int stride, const 
                     const uint64_t affine_q = dbf_info->affine_map.ver[i + 1];
 
                     if (once) {
-                        edg_ctx.large_p_map = derive_size_3_map(&edg_map[i - 7]);
+                        edg_ctx.large_p_map = i % 4 ? 0 : derive_size_3_map(&edg_map[i - 7]);
                         set_edge_context(&edg_ctx, edg_map, sb_edg_map, i);
                         once = 0;
                     }
@@ -2126,7 +2126,7 @@ vvc_dbf_ctu_ver(const struct DFFunctions *df, OVSample *src, int stride, const s
                     const uint64_t affine_q = dbf_info->affine_map.hor[i + 1];
 
                     if (once) {
-                        edg_ctx.large_p_map = i < 7 ? 0 : derive_size_3_map(&edg_map[i - 7]);
+                        edg_ctx.large_p_map = i % 4 || i < 7 ? 0 : derive_size_3_map(&edg_map[i - 7]);
                         set_edge_context(&edg_ctx, edg_map, sb_edg_map, i);
                         once = 0;
                     }
