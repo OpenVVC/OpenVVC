@@ -189,6 +189,492 @@ filter_h_7_7(OVSample *src, const int stride, const int tc)
 }
 
 static void
+filter_h_5_7(OVSample *src, const int stride, const int tc)
+{
+    static const int16_t db5_p[8] = { 0, 0, 0, 6, 19, 32, 45, 58 };
+    static const int16_t tc5_p[8] = { 0, 0, 0, 2, 3, 4, 5, 6 };
+    static const int16_t db7_q[8] = { 59, 50, 41, 32, 23, 14, 5, 0 };
+    static const int16_t tc7_q[8] = { 6, 5, 4, 3, 2, 1, 1, 0 };
+
+    __m128i tmp = _mm_set1_epi16(tc);
+    __m128i clp_p = _mm_loadu_si128((__m128i *)tc5_p);
+    clp_p = _mm_mullo_epi16(clp_p, tmp);
+    clp_p = _mm_srli_epi16(clp_p, 1);
+
+    __m128i clp_q = _mm_loadu_si128((__m128i *)tc7_q);
+    clp_q = _mm_mullo_epi16(clp_q, tmp);
+    clp_q = _mm_srli_epi16(clp_q, 1);
+
+    __m128i db7p = _mm_loadu_si128((__m128i *)db5_p);
+    __m128i db7q = _mm_loadu_si128((__m128i *)db7_q);
+
+
+    int16_t ref_p[4];
+    int16_t ref_q[4];
+    int16_t db_ref[4];
+
+    OVSample* _src = src;
+    for (int i = 0; i < 4; ++i) {
+        OVSample* srcP = _src - 1;
+        OVSample* srcQ = _src;
+        ref_p[i] = (srcP[-4 * 1] + srcP[-5 * 1] + 1) >> 1;
+        ref_q[i] = (srcQ[ 6 * 1] + srcQ[ 7 * 1] + 1) >> 1;
+
+        db_ref[i] = (2 * (srcP[0] + srcP[-1] + srcQ[0] + srcQ[ 1])
+                         + srcP[-2 * 1] + srcP[-3 * 1] + srcP[-4 * 1] + srcP[-5 * 1]
+                         + srcQ[ 2 * 1] + srcQ[ 3 * 1] + srcQ[ 4 * 1] + srcQ[ 5 * 1] + 8) >> 4;
+        _src += stride;
+    }
+    __m128i add_32 = _mm_set1_epi16(32);
+
+    for (int i = 0; i < 4; i++) {
+        OVSample* _src = src - 8;
+        __m128i p = _mm_load_si128((__m128i *) _src);
+        __m128i q = _mm_load_si128((__m128i *)  src);
+        __m128i clp_min_p = _mm_sub_epi16(p, clp_p);
+        __m128i clp_max_p = _mm_add_epi16(p, clp_p);
+        __m128i clp_min_q = _mm_sub_epi16(q, clp_q);
+        __m128i clp_max_q = _mm_add_epi16(q, clp_q);
+        __m128i dref = _mm_set1_epi16(db_ref[i]);
+        __m128i rf_p = _mm_set1_epi16(ref_p[i]);
+        __m128i rf_q = _mm_set1_epi16(ref_q[i]);
+
+        __m128i dref_p = _mm_mullo_epi16(dref, db7p);
+        __m128i dref_q = _mm_mullo_epi16(dref, db7q);
+        __m128i x1 = _mm_mullo_epi16(rf_p, db7p);
+        __m128i x2 = _mm_mullo_epi16(rf_q, db7q);
+
+        __m128i x0 = _mm_subs_epu16(_mm_slli_epi16(rf_p, 6), x1);
+        __m128i x3 = _mm_subs_epu16(_mm_slli_epi16(rf_q, 6), x2);
+
+        x0 = _mm_adds_epu16(x0, dref_p);
+        x0 = _mm_adds_epu16(x0, add_32);
+        x3 = _mm_adds_epu16(x3, dref_q);
+        x3 = _mm_adds_epu16(x3, add_32);
+
+        x3 = _mm_srli_epi16(x3, 6);
+        x0 = _mm_srli_epi16(x0, 6);
+
+        x0 = _mm_max_epi16(x0, clp_min_p);
+        x3 = _mm_max_epi16(x3, clp_min_q);
+        x0 = _mm_min_epi16(x0, clp_max_p);
+        x3 = _mm_min_epi16(x3, clp_max_q);
+
+        _mm_store_si128((__m128i *) _src, x0);
+        _mm_store_si128((__m128i *) src, x3);
+
+        src += stride;
+    }
+}
+
+static void
+filter_h_7_5(OVSample *src, const int stride, const int tc)
+{
+
+    static const int16_t db7_p[8] = { 0, 5, 14, 23, 32, 41, 50, 59 };
+    static const int16_t tc7_p[8] = { 0, 1, 1, 2, 3, 4, 5, 6 };
+    static const int16_t db5_q[8] = { 58, 45, 32, 19, 6 , 0, 0, 0 };
+    static const int16_t tc5_q[8] = { 6, 5, 4, 3, 2 , 0, 0, 0 };
+
+    __m128i tmp = _mm_set1_epi16(tc);
+    __m128i clp_p = _mm_loadu_si128((__m128i *)tc7_p);
+    clp_p = _mm_mullo_epi16(clp_p, tmp);
+    clp_p = _mm_srli_epi16(clp_p, 1);
+
+    __m128i clp_q = _mm_loadu_si128((__m128i *)tc5_q);
+    clp_q = _mm_mullo_epi16(clp_q, tmp);
+    clp_q = _mm_srli_epi16(clp_q, 1);
+
+    __m128i db7p = _mm_loadu_si128((__m128i *)db7_p);
+    __m128i db7q = _mm_loadu_si128((__m128i *)db5_q);
+
+
+    int16_t ref_p[4];
+    int16_t ref_q[4];
+    int16_t db_ref[4];
+
+    OVSample* _src = src;
+    for (int i = 0; i < 4; ++i) {
+        OVSample* srcP = _src - 1;
+        OVSample* srcQ = _src;
+        ref_p[i] = (srcP[-6 * 1] + srcP[-7 * 1] + 1) >> 1;
+        ref_q[i] = (srcQ[ 4 * 1] + srcQ[ 5 * 1] + 1) >> 1;
+
+        db_ref[i] = (2 * (srcP[0] + srcP[-1] + srcQ[0] + srcQ[ 1])
+                + srcP[-2 * 1] + srcP[-3 * 1] + srcP[-4 * 1] + srcP[-5 * 1]
+                + srcQ[ 2 * 1] + srcQ[ 3 * 1] + srcQ[ 4 * 1] + srcQ[ 5 * 1] + 8) >> 4;
+        _src += stride;
+    }
+    __m128i add_32 = _mm_set1_epi16(32);
+
+    for (int i = 0; i < 4; i++) {
+        OVSample* _src = src - 8;
+        __m128i p = _mm_load_si128((__m128i *) _src);
+        __m128i q = _mm_load_si128((__m128i *)  src);
+        __m128i clp_min_p = _mm_sub_epi16(p, clp_p);
+        __m128i clp_max_p = _mm_add_epi16(p, clp_p);
+        __m128i clp_min_q = _mm_sub_epi16(q, clp_q);
+        __m128i clp_max_q = _mm_add_epi16(q, clp_q);
+        __m128i dref = _mm_set1_epi16(db_ref[i]);
+        __m128i rf_p = _mm_set1_epi16(ref_p[i]);
+        __m128i rf_q = _mm_set1_epi16(ref_q[i]);
+
+        __m128i dref_p = _mm_mullo_epi16(dref, db7p);
+        __m128i dref_q = _mm_mullo_epi16(dref, db7q);
+        __m128i x1 = _mm_mullo_epi16(rf_p, db7p);
+        __m128i x2 = _mm_mullo_epi16(rf_q, db7q);
+
+        __m128i x0 = _mm_subs_epu16(_mm_slli_epi16(rf_p, 6), x1);
+        __m128i x3 = _mm_subs_epu16(_mm_slli_epi16(rf_q, 6), x2);
+
+        x0 = _mm_adds_epu16(x0, dref_p);
+        x0 = _mm_adds_epu16(x0, add_32);
+        x3 = _mm_adds_epu16(x3, dref_q);
+        x3 = _mm_adds_epu16(x3, add_32);
+
+        x3 = _mm_srli_epi16(x3, 6);
+        x0 = _mm_srli_epi16(x0, 6);
+
+        x0 = _mm_max_epi16(x0, clp_min_p);
+        x3 = _mm_max_epi16(x3, clp_min_q);
+        x0 = _mm_min_epi16(x0, clp_max_p);
+        x3 = _mm_min_epi16(x3, clp_max_q);
+
+        _mm_store_si128((__m128i *) _src, x0);
+        _mm_store_si128((__m128i *) src, x3);
+
+        src += stride;
+    }
+}
+
+static void
+filter_h_3_5(OVSample *src, const int stride, const int tc)
+{
+
+    static const int16_t db3_p[8] = { 0, 0, 0, 0, 0, 11, 32, 53 };
+    static const int16_t tc3_p[8] = { 0, 0, 0, 0, 0, 2, 4, 6 };
+    static const int16_t db5_q[8] = { 58, 45, 32, 19, 6 , 0, 0, 0 };
+    static const int16_t tc5_q[8] = { 6, 5, 4, 3, 2 , 0, 0, 0 };
+
+    __m128i tmp = _mm_set1_epi16(tc);
+    __m128i clp_p = _mm_loadu_si128((__m128i *)tc3_p);
+    clp_p = _mm_mullo_epi16(clp_p, tmp);
+    clp_p = _mm_srli_epi16(clp_p, 1);
+
+    __m128i clp_q = _mm_loadu_si128((__m128i *)tc5_q);
+    clp_q = _mm_mullo_epi16(clp_q, tmp);
+    clp_q = _mm_srli_epi16(clp_q, 1);
+
+    __m128i db7p = _mm_loadu_si128((__m128i *)db3_p);
+    __m128i db7q = _mm_loadu_si128((__m128i *)db5_q);
+
+
+    int16_t ref_p[4];
+    int16_t ref_q[4];
+    int16_t db_ref[4];
+
+    OVSample* _src = src;
+    for (int i = 0; i < 4; ++i) {
+        OVSample* srcP = _src - 1;
+        OVSample* srcQ = _src;
+        ref_p[i] = (srcP[-2 * 1] + srcP[-3 * 1] + 1) >> 1;
+        ref_q[i] = (srcQ[ 4 * 1] + srcQ[ 5 * 1] + 1) >> 1;
+
+        db_ref[i] = (srcP[0] + srcP[-1] + srcP[-2] + srcP[-3]
+                    + srcQ[0] + srcQ[1] + srcQ[2] + srcQ[3] + 4) >> 3;
+
+
+        _src += stride;
+    }
+    __m128i add_32 = _mm_set1_epi16(32);
+
+    for (int i = 0; i < 4; i++) {
+        OVSample* _src = src - 8;
+        __m128i p = _mm_load_si128((__m128i *) _src);
+        __m128i q = _mm_load_si128((__m128i *)  src);
+        __m128i clp_min_p = _mm_sub_epi16(p, clp_p);
+        __m128i clp_max_p = _mm_add_epi16(p, clp_p);
+        __m128i clp_min_q = _mm_sub_epi16(q, clp_q);
+        __m128i clp_max_q = _mm_add_epi16(q, clp_q);
+        __m128i dref = _mm_set1_epi16(db_ref[i]);
+        __m128i rf_p = _mm_set1_epi16(ref_p[i]);
+        __m128i rf_q = _mm_set1_epi16(ref_q[i]);
+
+        __m128i dref_p = _mm_mullo_epi16(dref, db7p);
+        __m128i dref_q = _mm_mullo_epi16(dref, db7q);
+        __m128i x1 = _mm_mullo_epi16(rf_p, db7p);
+        __m128i x2 = _mm_mullo_epi16(rf_q, db7q);
+
+        __m128i x0 = _mm_subs_epu16(_mm_slli_epi16(rf_p, 6), x1);
+        __m128i x3 = _mm_subs_epu16(_mm_slli_epi16(rf_q, 6), x2);
+
+        x0 = _mm_adds_epu16(x0, dref_p);
+        x0 = _mm_adds_epu16(x0, add_32);
+        x3 = _mm_adds_epu16(x3, dref_q);
+        x3 = _mm_adds_epu16(x3, add_32);
+
+        x3 = _mm_srli_epi16(x3, 6);
+        x0 = _mm_srli_epi16(x0, 6);
+
+        x0 = _mm_max_epi16(x0, clp_min_p);
+        x3 = _mm_max_epi16(x3, clp_min_q);
+        x0 = _mm_min_epi16(x0, clp_max_p);
+        x3 = _mm_min_epi16(x3, clp_max_q);
+
+        _mm_store_si128((__m128i *) _src, x0);
+        _mm_store_si128((__m128i *) src, x3);
+
+        src += stride;
+    }
+}
+
+static void
+filter_h_5_5(OVSample *src, const int stride, const int tc)
+{
+
+    static const int16_t db5_p[8] = { 0, 0, 0, 6, 19, 32, 45, 58 };
+    static const int16_t tc5_p[8] = { 0, 0, 0, 2, 3, 4, 5, 6 };
+    static const int16_t db5_q[8] = { 58, 45, 32, 19, 6 , 0, 0, 0 };
+    static const int16_t tc5_q[8] = { 6, 5, 4, 3, 2 , 0, 0, 0 };
+
+    __m128i tmp = _mm_set1_epi16(tc);
+    __m128i clp_p = _mm_loadu_si128((__m128i *)tc5_p);
+    clp_p = _mm_mullo_epi16(clp_p, tmp);
+    clp_p = _mm_srli_epi16(clp_p, 1);
+
+    __m128i clp_q = _mm_loadu_si128((__m128i *)tc5_q);
+    clp_q = _mm_mullo_epi16(clp_q, tmp);
+    clp_q = _mm_srli_epi16(clp_q, 1);
+
+    __m128i db7p = _mm_loadu_si128((__m128i *)db5_p);
+    __m128i db7q = _mm_loadu_si128((__m128i *)db5_q);
+
+
+    int16_t ref_p[4];
+    int16_t ref_q[4];
+    int16_t db_ref[4];
+
+    OVSample* _src = src;
+    for (int i = 0; i < 4; ++i) {
+        OVSample* srcP = _src - 1;
+        OVSample* srcQ = _src;
+        ref_p[i] = (srcP[-4 * 1] + srcP[-5 * 1] + 1) >> 1;
+        ref_q[i] = (srcQ[ 4 * 1] + srcQ[ 5 * 1] + 1) >> 1;
+
+        db_ref[i] = (2 * (srcP[0] + srcP[-1] + srcP[-2 * 1]
+                        + srcQ[0] + srcQ[ 1] + srcQ[ 2 * 1])
+                     + srcP[-3 * 1] + srcP[-4 * 1]
+                     + srcQ[ 3 * 1] + srcQ[ 4 * 1] + 8) >> 4;
+
+        _src += stride;
+    }
+    __m128i add_32 = _mm_set1_epi16(32);
+
+    for (int i = 0; i < 4; i++) {
+        OVSample* _src = src - 8;
+        __m128i p = _mm_load_si128((__m128i *) _src);
+        __m128i q = _mm_load_si128((__m128i *)  src);
+        __m128i clp_min_p = _mm_sub_epi16(p, clp_p);
+        __m128i clp_max_p = _mm_add_epi16(p, clp_p);
+        __m128i clp_min_q = _mm_sub_epi16(q, clp_q);
+        __m128i clp_max_q = _mm_add_epi16(q, clp_q);
+        __m128i dref = _mm_set1_epi16(db_ref[i]);
+        __m128i rf_p = _mm_set1_epi16(ref_p[i]);
+        __m128i rf_q = _mm_set1_epi16(ref_q[i]);
+
+        __m128i dref_p = _mm_mullo_epi16(dref, db7p);
+        __m128i dref_q = _mm_mullo_epi16(dref, db7q);
+        __m128i x1 = _mm_mullo_epi16(rf_p, db7p);
+        __m128i x2 = _mm_mullo_epi16(rf_q, db7q);
+
+        __m128i x0 = _mm_subs_epu16(_mm_slli_epi16(rf_p, 6), x1);
+        __m128i x3 = _mm_subs_epu16(_mm_slli_epi16(rf_q, 6), x2);
+
+        x0 = _mm_adds_epu16(x0, dref_p);
+        x0 = _mm_adds_epu16(x0, add_32);
+        x3 = _mm_adds_epu16(x3, dref_q);
+        x3 = _mm_adds_epu16(x3, add_32);
+
+        x3 = _mm_srli_epi16(x3, 6);
+        x0 = _mm_srli_epi16(x0, 6);
+
+        x0 = _mm_max_epi16(x0, clp_min_p);
+        x3 = _mm_max_epi16(x3, clp_min_q);
+        x0 = _mm_min_epi16(x0, clp_max_p);
+        x3 = _mm_min_epi16(x3, clp_max_q);
+
+        _mm_store_si128((__m128i *) _src, x0);
+        _mm_store_si128((__m128i *) src, x3);
+
+        src += stride;
+    }
+}
+
+static void
+filter_h_7_3(OVSample *src, const int stride, const int tc)
+{
+
+    static const int16_t db7_p[8] = { 0, 5, 14, 23, 32, 41, 50, 59 };
+    static const int16_t tc7_p[8] = { 0, 1, 1, 2, 3, 4, 5, 6 };
+    static const int16_t db3_q[8] = { 53, 32, 11, 0, 0, 0, 0, 0 };
+    static const int16_t tc3_q[8] = { 6, 4, 2, 0, 0, 0, 0, 0 };
+
+    __m128i tmp = _mm_set1_epi16(tc);
+    __m128i clp_p = _mm_loadu_si128((__m128i *)tc7_p);
+    clp_p = _mm_mullo_epi16(clp_p, tmp);
+    clp_p = _mm_srli_epi16(clp_p, 1);
+
+    __m128i clp_q = _mm_loadu_si128((__m128i *)tc3_q);
+    clp_q = _mm_mullo_epi16(clp_q, tmp);
+    clp_q = _mm_srli_epi16(clp_q, 1);
+
+    __m128i db7p = _mm_loadu_si128((__m128i *)db7_p);
+    __m128i db7q = _mm_loadu_si128((__m128i *)db3_q);
+
+
+    int16_t ref_p[4];
+    int16_t ref_q[4];
+    int16_t db_ref[4];
+
+    OVSample* _src = src;
+    for (int i = 0; i < 4; ++i) {
+        OVSample* srcP = _src - 1;
+        OVSample* srcQ = _src;
+        ref_p[i] = (srcP[-6 * 1] + srcP[-7 * 1] + 1) >> 1;
+        ref_q[i] = (srcQ[ 2 * 1] + srcQ[ 3 * 1] + 1) >> 1;
+
+        db_ref[i] = (2 * (srcP[0] + srcQ[0])
+            + srcP[     -1] + srcP[-2 * 1] + srcP[-3 * 1] + srcP[-4 * 1] + srcP[-5 * 1] + srcP[-6 * 1]
+            + srcQ[      0] + srcQ[     1] + srcQ[     1] + srcQ[2 *  1] + srcQ[ 2 * 1] + srcQ[     1] + 8) >> 4;
+
+        _src += stride;
+    }
+
+    __m128i add_32 = _mm_set1_epi16(32);
+
+    for (int i = 0; i < 4; i++) {
+        OVSample* _src = src - 8;
+        __m128i p = _mm_load_si128((__m128i *) _src);
+        __m128i q = _mm_load_si128((__m128i *)  src);
+        __m128i clp_min_p = _mm_sub_epi16(p, clp_p);
+        __m128i clp_max_p = _mm_add_epi16(p, clp_p);
+        __m128i clp_min_q = _mm_sub_epi16(q, clp_q);
+        __m128i clp_max_q = _mm_add_epi16(q, clp_q);
+        __m128i dref = _mm_set1_epi16(db_ref[i]);
+        __m128i rf_p = _mm_set1_epi16(ref_p[i]);
+        __m128i rf_q = _mm_set1_epi16(ref_q[i]);
+
+        __m128i dref_p = _mm_mullo_epi16(dref, db7p);
+        __m128i dref_q = _mm_mullo_epi16(dref, db7q);
+        __m128i x1 = _mm_mullo_epi16(rf_p, db7p);
+        __m128i x2 = _mm_mullo_epi16(rf_q, db7q);
+
+        __m128i x0 = _mm_subs_epu16(_mm_slli_epi16(rf_p, 6), x1);
+        __m128i x3 = _mm_subs_epu16(_mm_slli_epi16(rf_q, 6), x2);
+
+        x0 = _mm_adds_epu16(x0, dref_p);
+        x0 = _mm_adds_epu16(x0, add_32);
+        x3 = _mm_adds_epu16(x3, dref_q);
+        x3 = _mm_adds_epu16(x3, add_32);
+
+        x3 = _mm_srli_epi16(x3, 6);
+        x0 = _mm_srli_epi16(x0, 6);
+
+        x0 = _mm_max_epi16(x0, clp_min_p);
+        x3 = _mm_max_epi16(x3, clp_min_q);
+        x0 = _mm_min_epi16(x0, clp_max_p);
+        x3 = _mm_min_epi16(x3, clp_max_q);
+
+        _mm_store_si128((__m128i *) _src, x0);
+        _mm_store_si128((__m128i *) src, x3);
+
+        src += stride;
+    }
+}
+
+static void
+filter_h_3_7(OVSample *src, const int stride, const int tc)
+{
+
+    static const int16_t db3_p[8] = { 0, 0, 0, 0, 0, 11, 32, 53 };
+    static const int16_t tc3_p[8] = { 0, 0, 0, 0, 0, 2, 4, 6 };
+    static const int16_t db7_q[8] = { 59, 50, 41, 32, 23, 14, 5, 0 };
+    static const int16_t tc7_q[8] = { 6, 5, 4, 3, 2, 1, 1, 0 };
+
+    __m128i tmp = _mm_set1_epi16(tc);
+    __m128i clp_p = _mm_loadu_si128((__m128i *)tc3_p);
+    clp_p = _mm_mullo_epi16(clp_p, tmp);
+    clp_p = _mm_srli_epi16(clp_p, 1);
+
+    __m128i clp_q = _mm_loadu_si128((__m128i *)tc7_q);
+    clp_q = _mm_mullo_epi16(clp_q, tmp);
+    clp_q = _mm_srli_epi16(clp_q, 1);
+
+    __m128i db7p = _mm_loadu_si128((__m128i *)db3_p);
+    __m128i db7q = _mm_loadu_si128((__m128i *)db7_q);
+
+
+    int16_t ref_p[4];
+    int16_t ref_q[4];
+    int16_t db_ref[4];
+
+    OVSample* _src = src;
+    for (int i = 0; i < 4; ++i) {
+        OVSample* srcP = _src - 1;
+        OVSample* srcQ = _src;
+        ref_p[i] = (srcP[-2 * 1] + srcP[-3 * 1] + 1) >> 1;
+        ref_q[i] = (srcQ[ 6 * 1] + srcQ[ 7 * 1] + 1) >> 1;
+
+        db_ref[i] = (2 * (srcQ[0] + srcP[0])
+            + srcP[      0] + srcP[    -1] + srcP[    -1] + srcP[-2 * 1] + srcP[-2 * 1] + srcP[    -1]
+            + srcQ[      1] + srcQ[2 *  1] + srcQ[3 *  1] + srcQ[4 *  1] + srcQ[5 *  1] + srcQ[6 *  1] + 8) >> 4;
+
+        _src += stride;
+    }
+
+    __m128i add_32 = _mm_set1_epi16(32);
+
+    for (int i = 0; i < 4; i++) {
+        OVSample* _src = src - 8;
+        __m128i p = _mm_load_si128((__m128i *) _src);
+        __m128i q = _mm_load_si128((__m128i *)  src);
+        __m128i clp_min_p = _mm_sub_epi16(p, clp_p);
+        __m128i clp_max_p = _mm_add_epi16(p, clp_p);
+        __m128i clp_min_q = _mm_sub_epi16(q, clp_q);
+        __m128i clp_max_q = _mm_add_epi16(q, clp_q);
+        __m128i dref = _mm_set1_epi16(db_ref[i]);
+        __m128i rf_p = _mm_set1_epi16(ref_p[i]);
+        __m128i rf_q = _mm_set1_epi16(ref_q[i]);
+
+        __m128i dref_p = _mm_mullo_epi16(dref, db7p);
+        __m128i dref_q = _mm_mullo_epi16(dref, db7q);
+        __m128i x1 = _mm_mullo_epi16(rf_p, db7p);
+        __m128i x2 = _mm_mullo_epi16(rf_q, db7q);
+
+        __m128i x0 = _mm_subs_epu16(_mm_slli_epi16(rf_p, 6), x1);
+        __m128i x3 = _mm_subs_epu16(_mm_slli_epi16(rf_q, 6), x2);
+
+        x0 = _mm_adds_epu16(x0, dref_p);
+        x0 = _mm_adds_epu16(x0, add_32);
+        x3 = _mm_adds_epu16(x3, dref_q);
+        x3 = _mm_adds_epu16(x3, add_32);
+
+        x3 = _mm_srli_epi16(x3, 6);
+        x0 = _mm_srli_epi16(x0, 6);
+
+        x0 = _mm_max_epi16(x0, clp_min_p);
+        x3 = _mm_max_epi16(x3, clp_min_q);
+        x0 = _mm_min_epi16(x0, clp_max_p);
+        x3 = _mm_min_epi16(x3, clp_max_q);
+
+        _mm_store_si128((__m128i *) _src, x0);
+        _mm_store_si128((__m128i *) src, x3);
+
+        src += stride;
+    }
+}
+
+static void
 filter_v_7_7(OVSample *src, const int stride, const int tc)
 {
     static const int dbCoeffs7[7] = { 59, 50, 41, 32, 23, 14, 5 };
@@ -896,6 +1382,84 @@ filter_v_5_3(OVSample *src, const int stride, const int tc)
 }
 
 static void
+filter_h_5_3(OVSample *src, const int stride, const int tc)
+{
+    static const int16_t db5_p[8] = { 0, 0, 0, 6, 19, 32, 45, 58 };
+    static const int16_t tc5_p[8] = { 0, 0, 0, 2, 3, 4, 5, 6 };
+    static const int16_t db3_q[8] = { 53, 32, 11, 0, 0, 0, 0, 0 };
+    static const int16_t tc3_q[8] = { 6, 4, 2, 0, 0, 0, 0, 0 };
+
+    __m128i tmp = _mm_set1_epi16(tc);
+    __m128i clp_p = _mm_loadu_si128((__m128i *)tc5_p);
+    clp_p = _mm_mullo_epi16(clp_p, tmp);
+    clp_p = _mm_srli_epi16(clp_p, 1);
+
+    __m128i clp_q = _mm_loadu_si128((__m128i *)tc3_q);
+    clp_q = _mm_mullo_epi16(clp_q, tmp);
+    clp_q = _mm_srli_epi16(clp_q, 1);
+
+    __m128i db7p = _mm_loadu_si128((__m128i *)db5_p);
+    __m128i db7q = _mm_loadu_si128((__m128i *)db3_q);
+
+
+    int16_t ref_p[4];
+    int16_t ref_q[4];
+    int16_t db_ref[4];
+
+    OVSample* _src = src;
+    for (int i = 0; i < 4; ++i) {
+        OVSample* srcP = _src - 1;
+        OVSample* srcQ = _src;
+        ref_p[i] = (srcP[-4 * 1] + srcP[-5 * 1] + 1) >> 1;
+        ref_q[i] = (srcQ[ 2 * 1] + srcQ[ 3 * 1] + 1) >> 1;
+
+        db_ref[i] = (srcP[0] + srcP[-1] + srcP[-2 * 1] + srcP[-3 * 1]
+                   + srcQ[0] + srcQ[ 1] + srcQ[ 2 * 1] + srcQ[ 3 * 1] + 4) >> 3;
+
+        _src += stride;
+    }
+    __m128i add_32 = _mm_set1_epi16(32);
+
+    for (int i = 0; i < 4; i++) {
+        OVSample* _src = src - 8;
+        __m128i p = _mm_load_si128((__m128i *) _src);
+        __m128i q = _mm_load_si128((__m128i *)  src);
+        __m128i clp_min_p = _mm_sub_epi16(p, clp_p);
+        __m128i clp_max_p = _mm_add_epi16(p, clp_p);
+        __m128i clp_min_q = _mm_sub_epi16(q, clp_q);
+        __m128i clp_max_q = _mm_add_epi16(q, clp_q);
+        __m128i dref = _mm_set1_epi16(db_ref[i]);
+        __m128i rf_p = _mm_set1_epi16(ref_p[i]);
+        __m128i rf_q = _mm_set1_epi16(ref_q[i]);
+
+        __m128i dref_p = _mm_mullo_epi16(dref, db7p);
+        __m128i dref_q = _mm_mullo_epi16(dref, db7q);
+        __m128i x1 = _mm_mullo_epi16(rf_p, db7p);
+        __m128i x2 = _mm_mullo_epi16(rf_q, db7q);
+
+        __m128i x0 = _mm_subs_epu16(_mm_slli_epi16(rf_p, 6), x1);
+        __m128i x3 = _mm_subs_epu16(_mm_slli_epi16(rf_q, 6), x2);
+
+        x0 = _mm_adds_epu16(x0, dref_p);
+        x0 = _mm_adds_epu16(x0, add_32);
+        x3 = _mm_adds_epu16(x3, dref_q);
+        x3 = _mm_adds_epu16(x3, add_32);
+
+        x3 = _mm_srli_epi16(x3, 6);
+        x0 = _mm_srli_epi16(x0, 6);
+
+        x0 = _mm_max_epi16(x0, clp_min_p);
+        x3 = _mm_max_epi16(x3, clp_min_q);
+        x0 = _mm_min_epi16(x0, clp_max_p);
+        x3 = _mm_min_epi16(x3, clp_max_q);
+
+        _mm_store_si128((__m128i *) _src, x0);
+        _mm_store_si128((__m128i *) src, x3);
+
+        src += stride;
+    }
+}
+static void
 filter_v_3_5(OVSample *src, const int stride, const int tc)
 {
   static const int dbCoeffs3[3] = { 53, 32, 11 };
@@ -1000,6 +1564,14 @@ rcn_init_df_functions_sse(struct RCNFunctions *const rcn_funcs)
   rcn_funcs->df.filter_v[10]= &filter_v_7_7;
 
   rcn_funcs->df.filter_h[0] = &filter_luma_strong_small_h;
+  rcn_funcs->df.filter_h[1] = &filter_h_3_5;
+  rcn_funcs->df.filter_h[2] = &filter_h_3_7;
 
+  rcn_funcs->df.filter_h[4] = &filter_h_5_3;
+  rcn_funcs->df.filter_h[5] = &filter_h_5_5;
+  rcn_funcs->df.filter_h[6] = &filter_h_5_7;
+
+  rcn_funcs->df.filter_h[8] = &filter_h_7_3;
+  rcn_funcs->df.filter_h[9] = &filter_h_7_5;
   rcn_funcs->df.filter_h[10]= &filter_h_7_7;
 }
