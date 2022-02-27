@@ -984,66 +984,97 @@ use_strong_filter_c(const OVSample* src, const int stride, const int beta, const
     return ((d_strong < (beta >> 3)) && (abs(p0 - q0) < ((tc * 5 + 1) >> 1)));
 }
 
-static inline void
-filter_chroma_strong(OVSample* src, const int stride, const int tc)
+static void
+filter_chroma_strong_c_v(OVSample* src, const int stride, const int tc, uint8_t is_ctb_b)
 {
-    const int16_t p3 = src[-stride * 4];
-    const int16_t p2 = src[-stride * 3];
-    const int16_t p1 = src[-stride * 2];
-    const int16_t p0 = src[-stride    ];
-    const int16_t q0 = src[0          ];
-    const int16_t q1 = src[ stride    ];
-    const int16_t q2 = src[ stride * 2];
-    const int16_t q3 = src[ stride * 3];
+    int j;
+    for (j = 0; j < 2; ++j) {
+        const int16_t p3 = src[-stride * 4];
+        const int16_t p2 = src[-stride * 3];
+        const int16_t p1 = src[-stride * 2];
+        const int16_t p0 = src[-stride    ];
+        const int16_t q0 = src[0          ];
+        const int16_t q1 = src[ stride    ];
+        const int16_t q2 = src[ stride * 2];
+        const int16_t q3 = src[ stride * 3];
 
-    src[-stride * 3] = ov_clip(((3 * p3 + 2 * p2 + p1 + p0 + q0 + 4) >> 3),p2 - tc, p2 + tc);      // p)2
-    src[-stride * 2] = ov_clip(((2 * p3 + p2 + 2 * p1 + p0 + q0 + q1 + 4) >> 3),p1 - tc, p1 + tc); // p)1
-    src[-stride * 1] = ov_clip(((p3 + p2 + p1 + 2 * p0 + q0 + q1 + q2 + 4) >> 3),p0 - tc, p0 + tc); // p)0
-    src[ 0         ] = ov_clip(((p2 + p1 + p0 + 2 * q0 + q1 + q2 + q3 + 4) >> 3),q0 - tc, q0 + tc); // q)0
-    src[ stride * 1] = ov_clip(((p1 + p0 + q0 + 2 * q1 + q2 + 2 * q3 + 4) >> 3),q1 - tc, q1 + tc);  // q)1
-    src[ stride * 2] = ov_clip(((p0 + q0 + q1 + 2 * q2 + 3 * q3 + 4) >> 3),q2 - tc, q2 + tc);       // q)2
-}
-
-static inline void
-filter_chroma_strong_c(OVSample* src, const int stride, const int tc, uint8_t is_ctb_b)
-{
-    const int16_t p3 = src[-stride * 4];
-    const int16_t p2 = src[-stride * 3];
-    const int16_t p1 = src[-stride * 2];
-    const int16_t p0 = src[-stride    ];
-    const int16_t q0 = src[0          ];
-    const int16_t q1 = src[ stride    ];
-    const int16_t q2 = src[ stride * 2];
-    const int16_t q3 = src[ stride * 3];
-
-    if (is_ctb_b) {
-        src[-stride * 1] = ov_clip(((3 * p1 + 2 * p0 + q0 + q1 + q2 + 4) >> 3),p0 - tc, p0 + tc); // p)0
-        src[0          ] = ov_clip(((2 * p1 + p0 + 2 * q0 + q1 + q2 + q3 + 4) >> 3),q0 - tc, q0 + tc); // q)0
-        src[ stride * 1] = ov_clip(((p1 + p0 + q0 + 2 * q1 + q2 + 2 * q3 + 4) >> 3),q1 - tc, q1 + tc); // q)1
-        src[ stride * 2] = ov_clip(((p0 + q0 + q1 + 2 * q2 + 3 * q3 + 4) >> 3),q2 - tc, q2 + tc);      // q)2
-    } else {
-        src[-stride * 3] = ov_clip(((3 * p3 + 2 * p2 + p1 + p0 + q0 + 4) >> 3),p2 - tc, p2 + tc);      // p)2
-        src[-stride * 2] = ov_clip(((2 * p3 + p2 + 2 * p1 + p0 + q0 + q1 + 4) >> 3),p1 - tc, p1 + tc); // p)1
-        src[-stride * 1] = ov_clip(((p3 + p2 + p1 + 2 * p0 + q0 + q1 + q2 + 4) >> 3),p0 - tc, p0 + tc); // p)0
-        src[ 0         ] = ov_clip(((p2 + p1 + p0 + 2 * q0 + q1 + q2 + q3 + 4) >> 3),q0 - tc, q0 + tc); // q)0
-        src[ stride * 1] = ov_clip(((p1 + p0 + q0 + 2 * q1 + q2 + 2 * q3 + 4) >> 3),q1 - tc, q1 + tc);  // q)1
-        src[ stride * 2] = ov_clip(((p0 + q0 + q1 + 2 * q2 + 3 * q3 + 4) >> 3),q2 - tc, q2 + tc);       // q)2
+        if (is_ctb_b) {
+            src[-stride * 1] = ov_clip(((3 * p1 + 2 * p0 + q0 + q1 + q2 + 4) >> 3),p0 - tc, p0 + tc); // p)0
+            src[0          ] = ov_clip(((2 * p1 + p0 + 2 * q0 + q1 + q2 + q3 + 4) >> 3),q0 - tc, q0 + tc); // q)0
+            src[ stride * 1] = ov_clip(((p1 + p0 + q0 + 2 * q1 + q2 + 2 * q3 + 4) >> 3),q1 - tc, q1 + tc); // q)1
+            src[ stride * 2] = ov_clip(((p0 + q0 + q1 + 2 * q2 + 3 * q3 + 4) >> 3),q2 - tc, q2 + tc);      // q)2
+        } else {
+            src[-stride * 3] = ov_clip(((3 * p3 + 2 * p2 + p1 + p0 + q0 + 4) >> 3),p2 - tc, p2 + tc);      // p)2
+            src[-stride * 2] = ov_clip(((2 * p3 + p2 + 2 * p1 + p0 + q0 + q1 + 4) >> 3),p1 - tc, p1 + tc); // p)1
+            src[-stride * 1] = ov_clip(((p3 + p2 + p1 + 2 * p0 + q0 + q1 + q2 + 4) >> 3),p0 - tc, p0 + tc); // p)0
+            src[ 0         ] = ov_clip(((p2 + p1 + p0 + 2 * q0 + q1 + q2 + q3 + 4) >> 3),q0 - tc, q0 + tc); // q)0
+            src[ stride * 1] = ov_clip(((p1 + p0 + q0 + 2 * q1 + q2 + 2 * q3 + 4) >> 3),q1 - tc, q1 + tc);  // q)1
+            src[ stride * 2] = ov_clip(((p0 + q0 + q1 + 2 * q2 + 3 * q3 + 4) >> 3),q2 - tc, q2 + tc);       // q)2
+        }
+        src++;
     }
 }
 
-static inline void
-filter_chroma_weak(OVSample* src, const int stride, const int tc)
+static void
+filter_chroma_strong_c_h(OVSample* src, const int stride, const int tc)
+{
+    int j;
+    for (j = 0; j < 2; ++j) {
+        const int16_t p3 = src[-1 * 4];
+        const int16_t p2 = src[-1 * 3];
+        const int16_t p1 = src[-1 * 2];
+        const int16_t p0 = src[-1    ];
+        const int16_t q0 = src[0          ];
+        const int16_t q1 = src[ 1    ];
+        const int16_t q2 = src[ 1 * 2];
+        const int16_t q3 = src[ 1 * 3];
+
+        src[-1 * 3] = ov_clip(((3 * p3 + 2 * p2 + p1 + p0 + q0 + 4) >> 3),p2 - tc, p2 + tc);      // p)2
+        src[-1 * 2] = ov_clip(((2 * p3 + p2 + 2 * p1 + p0 + q0 + q1 + 4) >> 3),p1 - tc, p1 + tc); // p)1
+        src[-1 * 1] = ov_clip(((p3 + p2 + p1 + 2 * p0 + q0 + q1 + q2 + 4) >> 3),p0 - tc, p0 + tc); // p)0
+        src[ 0    ] = ov_clip(((p2 + p1 + p0 + 2 * q0 + q1 + q2 + q3 + 4) >> 3),q0 - tc, q0 + tc); // q)0
+        src[ 1 * 1] = ov_clip(((p1 + p0 + q0 + 2 * q1 + q2 + 2 * q3 + 4) >> 3),q1 - tc, q1 + tc);  // q)1
+        src[ 1 * 2] = ov_clip(((p0 + q0 + q1 + 2 * q2 + 3 * q3 + 4) >> 3),q2 - tc, q2 + tc);       // q)2
+        src += stride;
+    }
+}
+
+static void
+filter_chroma_weak_h(OVSample* src, const int stride, const int tc)
 {
     int delta;
+    int j;
 
-    const int16_t p1 = src[-stride * 2];
-    const int16_t p0 = src[-stride    ];
-    const int16_t q0 = src[0          ];
-    const int16_t q1 = src[ stride    ];
+    for (j = 0; j < 2; ++j) {
+        const int16_t p1 = src[-1 * 2];
+        const int16_t p0 = src[-1    ];
+        const int16_t q0 = src[0          ];
+        const int16_t q1 = src[ 1    ];
 
-    delta = ov_clip((((q0 << 2) - (p0 << 2) + p1 - q1 + 4) >> 3), -tc, tc);
-    src[-stride] = ov_bdclip(p0 + delta);
-    src[0]       = ov_bdclip(q0 - delta);
+        delta = ov_clip((((q0 << 2) - (p0 << 2) + p1 - q1 + 4) >> 3), -tc, tc);
+        src[-1] = ov_bdclip(p0 + delta);
+        src[0]       = ov_bdclip(q0 - delta);
+        src += stride;
+    }
+}
+
+static void
+filter_chroma_weak_v(OVSample* src, const int stride, const int tc)
+{
+    int delta;
+    int j;
+
+    for (j = 0; j < 2; ++j) {
+        const int16_t p1 = src[-stride * 2];
+        const int16_t p0 = src[-stride    ];
+        const int16_t q0 = src[0          ];
+        const int16_t q1 = src[ stride    ];
+
+        delta = ov_clip((((q0 << 2) - (p0 << 2) + p1 - q1 + 4) >> 3), -tc, tc);
+        src[-stride] = ov_bdclip(p0 + delta);
+        src[0]       = ov_bdclip(q0 - delta);
+        src++;
+    }
 }
 
 /* Check if filter is 3 or 1 sample large based on other left edges */
@@ -1102,20 +1133,12 @@ filter_veritcal_edge_c(const struct DBFInfo *const dbf_info, OVSample *src, ptrd
             use_strong_filter_c(src1, 1, dbf_params.beta, dbf_params.tc);
 
         if (is_strong) {
-            int j;
-            for (j = 0; j < 2; ++j) {
-                filter_chroma_strong(src, 1, dbf_params.tc);
-                src += stride;
-            }
+            filter_chroma_strong_c_h(src, stride, dbf_params.tc);
         }
     }
 
     if (!is_strong) {
-        int j;
-        for (j = 0; j < 2; ++j) {
-            filter_chroma_weak(src, 1, dbf_params.tc);
-            src += stride;
-        }
+        filter_chroma_weak_h(src, stride, dbf_params.tc);
     }
 }
 
@@ -1281,20 +1304,12 @@ filter_horizontal_edge_c(const struct DBFInfo *const dbf_info, OVSample *src, pt
             use_strong_filter_c2(src1, stride, dbf_params.beta, dbf_params.tc, is_ctb_b);
 
         if (is_strong) {
-            int j;
-            for (j = 0; j < 2; ++j) {
-                filter_chroma_strong_c(src, stride, dbf_params.tc, is_ctb_b);
-                src++;
-            }
+            filter_chroma_strong_c_v(src, stride, dbf_params.tc, is_ctb_b);
         }
     }
 
     if (!is_strong) {
-        int j;
-        for (j = 0; j < 2; ++j) {
-            filter_chroma_weak(src, stride, dbf_params.tc);
-            src++;
-        }
+        filter_chroma_weak_v(src, stride, dbf_params.tc);
     }
 }
 
