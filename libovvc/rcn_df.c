@@ -840,7 +840,7 @@ filter_v_3_5(OVSample *src, const int stride, const int tc)
   }
 }
 
-static inline void
+static void
 filter_luma_strong_small_v(OVSample* src, const int stride, const int tc)
 {
     int16_t tc_c[6] = { 1 * tc, 2 * tc, 3 * tc , 3 * tc, 2 * tc, 1 * tc};
@@ -865,7 +865,7 @@ filter_luma_strong_small_v(OVSample* src, const int stride, const int tc)
     }
 }
 
-static inline void
+static void
 filter_luma_strong_small_h(OVSample* src, const int stride, const int tc)
 {
 
@@ -891,7 +891,7 @@ filter_luma_strong_small_h(OVSample* src, const int stride, const int tc)
     }
 }
 
-static inline void
+static void
 filter_luma_weak_h(OVSample* src, const int stride, const int tc, const uint8_t extend_p, const uint8_t extend_q)
 {
     const int th_cut = tc * 10;
@@ -921,7 +921,7 @@ filter_luma_weak_h(OVSample* src, const int stride, const int tc, const uint8_t 
     }
 }
 
-static inline void
+static void
 filter_luma_weak_v(OVSample* src, const int stride, const int tc, const uint8_t extend_p, const uint8_t extend_q)
 {
     const int th_cut = tc * 10;
