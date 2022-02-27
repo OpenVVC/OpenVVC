@@ -130,13 +130,13 @@ use_strong_filter_l1(const OVSample* src, const int stride, const int beta, cons
 
 /* FIXME Macros ? */
 static inline uint16_t
-compute_dp_c(OVSample* src, const int stride , const uint8_t is_ctb_b)
+compute_dp_c(const OVSample* src, const int stride , const uint8_t is_ctb_b)
 {
     return abs((int32_t)src[-stride * (3 - is_ctb_b)] - 2 * (int32_t)src[-stride * 2] + (int32_t)src[-stride]);
 }
 
 static inline uint16_t
-compute_dp(OVSample* src, const int stride)
+compute_dp(const OVSample* src, const int stride)
 {
     const int16_t p2 = src[-stride * 3];
     const int16_t p1 = src[-stride * 2];
@@ -145,7 +145,7 @@ compute_dp(OVSample* src, const int stride)
 }
 
 static inline uint16_t
-compute_dq(OVSample* src, const int stride)
+compute_dq(const OVSample* src, const int stride)
 {
     const int16_t q0 = src[0         ];
     const int16_t q1 = src[stride * 1];
