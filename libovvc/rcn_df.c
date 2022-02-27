@@ -132,7 +132,7 @@ use_strong_filter_l1(const OVSample* src, const int stride, const int beta, cons
 static inline uint16_t
 compute_dp_c(const OVSample* src, const int stride , const uint8_t is_ctb_b)
 {
-    return abs((int32_t)src[-stride * (3 - is_ctb_b)] - 2 * (int32_t)src[-stride * 2] + (int32_t)src[-stride]);
+    return abs((int16_t)src[-stride * (3 - is_ctb_b)] - 2 * (int16_t)src[-stride * 2] + (int16_t)src[-stride]);
 }
 
 static inline uint16_t
