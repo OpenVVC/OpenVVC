@@ -1491,7 +1491,7 @@ filter_vertical_edge(const struct DFFunctions *df, const struct DBFParams *const
                     && use_strong_filter_l1(src3, 1, dbf_params->beta, dbf_params->tc);
 
             if (sw){
-                filter_luma_strong_small_h(src0, stride, dbf_params->tc);
+                df->filter_h[0](src0, stride, dbf_params->tc);
             } else {
                 const int dp = dp0 + dp3;
                 const int dq = dq0 + dq3;
@@ -2056,7 +2056,7 @@ filter_horizontal_edge(const struct DFFunctions *df, const struct DBFParams *con
                     && use_strong_filter_l1(src3, stride, dbf_params->beta, dbf_params->tc);
 
             if (sw){
-                filter_luma_strong_small_v(src0, stride, dbf_params->tc);
+                df->filter_v[0](src0, stride, dbf_params->tc);
             } else {
                 const int dp = dp0 + dp3;
                 const int dq = dq0 + dq3;
@@ -2218,7 +2218,7 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInf
 void
 BD_DECL(rcn_init_df_functions)(struct RCNFunctions *const rcn_funcs)
 {
-  rcn_funcs->df.filter_h[0] = NULL;
+  rcn_funcs->df.filter_h[0] = &filter_luma_strong_small_h;
   rcn_funcs->df.filter_h[1] = &filter_h_3_5;
   rcn_funcs->df.filter_h[2] = &filter_h_3_7;
   rcn_funcs->df.filter_h[3] = NULL;
@@ -2230,7 +2230,7 @@ BD_DECL(rcn_init_df_functions)(struct RCNFunctions *const rcn_funcs)
   rcn_funcs->df.filter_h[9] = &filter_h_7_5;
   rcn_funcs->df.filter_h[10]= &filter_h_7_7;
 
-  rcn_funcs->df.filter_v[0] = NULL;
+  rcn_funcs->df.filter_v[0] = &filter_luma_strong_small_v;
   rcn_funcs->df.filter_v[1] = &filter_v_3_5;
   rcn_funcs->df.filter_v[2] = &filter_v_3_7;
   rcn_funcs->df.filter_v[3] = NULL;

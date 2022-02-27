@@ -919,14 +919,11 @@ filter_v_3_5(OVSample *src, const int stride, const int tc)
 void
 rcn_init_df_functions_sse(struct RCNFunctions *const rcn_funcs)
 {
-  rcn_funcs->df.filter_v[0] = NULL;
   rcn_funcs->df.filter_v[1] = &filter_v_3_5;
   rcn_funcs->df.filter_v[2] = &filter_v_3_7;
-  rcn_funcs->df.filter_v[3] = NULL;
   rcn_funcs->df.filter_v[4] = &filter_v_5_3;
   rcn_funcs->df.filter_v[5] = &filter_v_5_5;
   rcn_funcs->df.filter_v[6] = &filter_v_5_7;
-  rcn_funcs->df.filter_v[7] = NULL;
   rcn_funcs->df.filter_v[8] = &filter_v_7_3;
   rcn_funcs->df.filter_v[9] = &filter_v_7_5;
   rcn_funcs->df.filter_v[10]= &filter_v_7_7;
