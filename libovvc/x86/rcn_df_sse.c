@@ -39,6 +39,77 @@
 #include "rcn_structures.h"
 
 static void
+filter_luma_strong_small_h(OVSample* src, const int stride, const int tc)
+{
+    static const int16_t tc_c[8] = { 0, 1, 2 ,3, 3, 2, 1, 0 };
+    static const int16_t msk[8*8] = {
+        0, 2, 0, 0, 0, 0, 0, 0,
+        0, 3, 2, 1, 0, 0, 0, 0,
+        0, 1, 2, 2, 1, 0, 0, 0,
+        0, 1, 2, 2, 2, 2, 1, 0,
+        0, 1, 2, 2, 2, 2, 1, 0,
+        0, 0, 0, 1, 2, 2, 1, 0,
+        0, 0, 0, 0, 1, 2, 3, 0,
+        0, 0, 0, 0, 0, 0, 2, 0
+    };
+
+    const __m128i msk0  = _mm_loadu_si128((__m128i *)msk + 0);
+    const __m128i msk1  = _mm_loadu_si128((__m128i *)msk + 1);
+    const __m128i msk2  = _mm_loadu_si128((__m128i *)msk + 2);
+    const __m128i msk3  = _mm_loadu_si128((__m128i *)msk + 3);
+    const __m128i msk4  = _mm_loadu_si128((__m128i *)msk + 4);
+    const __m128i msk5  = _mm_loadu_si128((__m128i *)msk + 5);
+    const __m128i msk6  = _mm_loadu_si128((__m128i *)msk + 6);
+    const __m128i msk7  = _mm_loadu_si128((__m128i *)msk + 7);
+
+    const __m128i clp_val = _mm_mullo_epi16(_mm_set1_epi16(tc), _mm_loadu_si128((__m128i *)tc_c));
+    const __m128i add_4   = _mm_set1_epi16(4);
+
+    for (int i = 0; i < 4; i++) {
+        __m128i dval;
+        __m128i line = _mm_loadu_si128((__m128i *) &src[-4]);
+        __m128i clp_min = _mm_sub_epi16(line, clp_val);
+        __m128i clp_max = _mm_add_epi16(line, clp_val);
+
+        __m128i p3  = _mm_set1_epi16(src[-4]);
+        __m128i p2  = _mm_set1_epi16(src[-3]);
+        __m128i p1  = _mm_set1_epi16(src[-2]);
+        __m128i p0  = _mm_set1_epi16(src[-1]);
+        __m128i q0  = _mm_set1_epi16(src[ 0]);
+        __m128i q1  = _mm_set1_epi16(src[ 1]);
+        __m128i q2  = _mm_set1_epi16(src[ 2]);
+        __m128i q3  = _mm_set1_epi16(src[ 3]);
+
+        p3  = _mm_mullo_epi16(p3, msk0);
+        p2  = _mm_mullo_epi16(p2, msk1);
+        p1  = _mm_mullo_epi16(p1, msk2);
+        p0  = _mm_mullo_epi16(p0, msk3);
+        q0  = _mm_mullo_epi16(q0, msk4);
+        q1  = _mm_mullo_epi16(q1, msk5);
+        q2  = _mm_mullo_epi16(q2, msk6);
+        q3  = _mm_mullo_epi16(q3, msk7);
+
+        dval = _mm_add_epi16(p2, p3);
+        dval = _mm_add_epi16(dval, p1);
+        dval = _mm_add_epi16(dval, p0);
+        dval = _mm_add_epi16(dval, q0);
+        dval = _mm_add_epi16(dval, q1);
+        dval = _mm_add_epi16(dval, q2);
+        dval = _mm_add_epi16(dval, q3);
+
+        dval = _mm_add_epi16(dval, add_4);
+
+        dval = _mm_srli_epi16(dval, 3);
+
+        dval = _mm_max_epi16(dval, clp_min);
+        dval = _mm_min_epi16(dval, clp_max);
+
+        _mm_storeu_si128((__m128i *) &src[-4], dval);
+        src += stride;
+    }
+}
+
+static void
 filter_h_7_7(OVSample *src, const int stride, const int tc)
 {
     static const int16_t db7_p[8] = { 0, 5, 14, 23, 32, 41, 50, 59 };
@@ -927,5 +998,8 @@ rcn_init_df_functions_sse(struct RCNFunctions *const rcn_funcs)
   rcn_funcs->df.filter_v[8] = &filter_v_7_3;
   rcn_funcs->df.filter_v[9] = &filter_v_7_5;
   rcn_funcs->df.filter_v[10]= &filter_v_7_7;
+
+  rcn_funcs->df.filter_h[0] = &filter_luma_strong_small_h;
+
   rcn_funcs->df.filter_h[10]= &filter_h_7_7;
 }
