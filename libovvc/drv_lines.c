@@ -541,12 +541,9 @@ dbf_load_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l
 
     for (int i = 0; i < nb_pb_s + 1; ++i) {
         dbf_info->ctb_bound_hor[i + 8] = ctb_lft_msk & (dbf_info->ctb_bound_hor[i + 8] >> (nb_pb_s)) & 0x3;
-        dbf_info->aff_edg_hor[i + 8] = ctb_lft_msk & (dbf_info->aff_edg_hor[i + 8] >> (nb_pb_s)) & 0x3;
+        dbf_info->aff_edg_hor[i + 8]   = ctb_lft_msk & (dbf_info->aff_edg_hor[i + 8] >> (nb_pb_s)) & 0x3;
         dbf_info->ctb_bound_ver[i + 8] = 0;
-        dbf_info->aff_edg_ver[i + 8] = 0;
-    }
-
-    for (int i = 0; i < nb_pb_s + 1; ++i) {
+        dbf_info->aff_edg_ver[i + 8]   = 0;
         dbf_info->ctb_bound_hor_c[i + 8] = ctb_lft_msk & (dbf_info->ctb_bound_hor_c[i + 8] >> (nb_pb_s)) & 0x3;
         dbf_info->ctb_bound_ver_c[i + 8] = 0;
     }
