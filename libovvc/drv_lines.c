@@ -602,11 +602,9 @@ dbf_load_bs_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
     /* Reset inner part of vertical maps */
     memset(bs2_map->ver + 1, 0, sizeof(*bs2_map->ver) * nb_pb_s);
     memset(bs2_map_c->ver + 1, 0, sizeof(*bs2_map_c->ver) * nb_pb_s);
-
     memset(bs1_map->ver + 1, 0, sizeof(*bs1_map->ver) * nb_pb_s);
     memset(bs1_map_cb->ver + 1, 0, sizeof(*bs1_map_cb->ver) * nb_pb_s);
     memset(bs1_map_cr->ver + 1, 0, sizeof(*bs1_map_cr->ver) * nb_pb_s);
-
     memset(affine_map->ver + 1, 0, sizeof(*affine_map->ver) * nb_pb_s);
 
     /* Reset inner part */
@@ -667,7 +665,6 @@ dbf_load_info(struct DBFInfo *const dbf_info,
     dbf_load_edge_map(dbf_info, dbf_lines, log2_ctu_s, ctb_x);
     dbf_load_bs_map(dbf_info, dbf_lines, log2_ctu_s, ctb_x);
     dbf_load_qp_map(dbf_info, dbf_lines, log2_ctu_s, ctb_x);
-    memset(&dbf_info->cu_edge, 0, sizeof(dbf_info->cu_edge));
 }
 
 void
