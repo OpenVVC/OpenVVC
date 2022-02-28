@@ -535,7 +535,7 @@ dbf_load_edge_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l
         uint64_t *ctb_bnd_c = dbf_info->ctb_bound_ver_c;
         uint64_t *ctb_aff = dbf_info->aff_edg_ver;
         memcpy(ctb_bnd, &ctb_bnd[nb_pb_s], 8 * sizeof(uint64_t));
-        memcpy(ctb_aff, &ctb_aff[nb_pb_s], 8 * sizeof(uint64_t));
+        memcpy(ctb_aff   + 8 - 3, &ctb_aff[nb_pb_s   + 8 - 3], 3 * sizeof(uint64_t));
         memcpy(ctb_bnd_c + 8 - 3, &ctb_bnd_c[nb_pb_s + 8 - 3], 3 * sizeof(uint64_t));
     }
 
