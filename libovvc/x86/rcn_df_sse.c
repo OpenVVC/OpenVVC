@@ -39,6 +39,37 @@
 #include "rcn_structures.h"
 
 static void
+filter_luma_weak_h(OVSample* src, const int stride, const int tc, const uint8_t extend_p, const uint8_t extend_q)
+{
+    const int th_cut = tc * 10;
+    const int tc2_p = -extend_p & (tc >> 1);
+    const int tc2_q = -extend_q & (tc >> 1);
+
+    for (int i = 0; i < 4; i++) {
+        const int16_t p2  = src[-3];
+        const int16_t p1  = src[-2];
+        const int16_t p0  = src[-1];
+        const int16_t q0  = src[0];
+        const int16_t q1  = src[1];
+        const int16_t q2  = src[2];
+
+        /* Weak filter */
+        int delta = (((q0 - p0) << 3) + (q0 - p0) - (((q1 - p1) << 1) + (q1 - p1)) + 8) >> 4;
+
+        if (abs(delta) < th_cut) {
+            delta = ov_clip(delta, -tc, tc);
+            const int delta1 = ov_clip(((((p2 + p0 + 1) >> 1) - p1 + delta) >> 1), -tc2_p, tc2_p);
+            const int delta2 = ov_clip(((((q2 + q0 + 1) >> 1) - q1 - delta) >> 1), -tc2_q, tc2_q);
+            src[-2] = ov_bdclip(p1 + delta1);
+            src[-1] = ov_bdclip(p0 + delta);
+            src[0]  = ov_bdclip(q0 - delta);
+            src[1]  = ov_bdclip(q1 + delta2);
+        }
+        src += stride;
+    }
+}
+
+static void
 filter_luma_strong_small_h(OVSample* src, const int stride, const int tc)
 {
     static const int16_t tc_c[8] = { 0, 1, 2 ,3, 3, 2, 1, 0 };
@@ -671,6 +702,37 @@ filter_h_3_7(OVSample *src, const int stride, const int tc)
         _mm_store_si128((__m128i *) src, x3);
 
         src += stride;
+    }
+}
+
+static void
+filter_luma_weak_v(OVSample* src, const int stride, const int tc, const uint8_t extend_p, const uint8_t extend_q)
+{
+    const int th_cut = tc * 10;
+    const int tc2_p = -extend_p & (tc >> 1);
+    const int tc2_q = -extend_q & (tc >> 1);
+
+    for (int i = 0; i < 4; i++) {
+        const int16_t p2  = src[-3*stride];
+        const int16_t p1  = src[-2*stride];
+        const int16_t p0  = src[-1*stride];
+        const int16_t q0  = src[0*stride];
+        const int16_t q1  = src[1*stride];
+        const int16_t q2  = src[2*stride];
+
+        /* Weak filter */
+        int delta = (9 * (q0 - p0) - 3 * (q1 - p1) + 8) >> 4;
+
+        if (abs(delta) < th_cut) {
+            delta = ov_clip(delta, -tc, tc);
+            const int delta1 = ov_clip(((((p2 + p0 + 1) >> 1) - p1 + delta) >> 1), -tc2_p, tc2_p);
+            const int delta2 = ov_clip(((((q2 + q0 + 1) >> 1) - q1 - delta) >> 1), -tc2_q, tc2_q);
+            src[-2*stride] = ov_bdclip(p1 + delta1);
+            src[-1*stride] = ov_bdclip(p0 + delta);
+            src[0*stride]  = ov_bdclip(q0 - delta);
+            src[1*stride]  = ov_bdclip(q1 + delta2);
+        }
+        ++src;
     }
 }
 
@@ -1459,6 +1521,32 @@ filter_h_5_3(OVSample *src, const int stride, const int tc)
         src += stride;
     }
 }
+
+static void
+filter_luma_strong_small_v(OVSample* src, const int stride, const int tc)
+{
+    int16_t tc_c[6] = { 1 * tc, 2 * tc, 3 * tc , 3 * tc, 2 * tc, 1 * tc};
+
+    for (int i = 0; i < 4; i++) {
+        const int16_t p3  = src[-stride * 4];
+        const int16_t p2  = src[-stride * 3];
+        const int16_t p1  = src[-stride * 2];
+        const int16_t p0  = src[-stride    ];
+        const int16_t q0  = src[ 0         ];
+        const int16_t q1  = src[ stride    ];
+        const int16_t q2  = src[ stride * 2];
+        const int16_t q3  = src[ stride * 3];
+
+        src[-stride * 3] = ov_clip((((p2 + p2) + (p3 + p3) + (p2 + p1) + (p0 + q0) + 4) >> 3), p2 - tc_c[0], p2 + tc_c[0]);
+        src[-stride * 2] = ov_clip((((p1 + p2) + (p2 + p1) + (p0 + p0) + (q0 + q0) + 4) >> 3), p1 - tc_c[1], p1 + tc_c[1]);
+        src[-stride]     = ov_clip((((p0 + p1) + (p2 + p1) + (p0 + q0) + (q0 + q1) + 4) >> 3), p0 - tc_c[2], p0 + tc_c[2]);
+        src[0]           = ov_clip((((q0 + q1) + (p1 + p0) + (p0 + q0) + (q1 + q2) + 4) >> 3), q0 - tc_c[3], q0 + tc_c[3]);
+        src[stride]      = ov_clip((((q1 + q2) + (p0 + q0) + (p0 + q0) + (q1 + q2) + 4) >> 3), q1 - tc_c[4], q1 + tc_c[4]);
+        src[stride * 2]  = ov_clip((((q2 + q2) + (p0 + q0) + (q1 + q2) + (q3 + q3) + 4) >> 3), q2 - tc_c[5], q2 + tc_c[5]);
+        src++;
+    }
+}
+
 static void
 filter_v_3_5(OVSample *src, const int stride, const int tc)
 {
@@ -1552,6 +1640,49 @@ filter_v_3_5(OVSample *src, const int stride, const int tc)
 }
 
 static void
+filter_chroma_strong_c_v(OVSample* src, const int stride, const int tc, uint8_t is_ctb_b)
+{
+    int j;
+    if (is_ctb_b) {
+        for (j = 0; j < 2; ++j) {
+            const int16_t p3 = src[-stride * 4];
+            const int16_t p2 = src[-stride * 3];
+            const int16_t p1 = src[-stride * 2];
+            const int16_t p0 = src[-stride    ];
+            const int16_t q0 = src[0          ];
+            const int16_t q1 = src[ stride    ];
+            const int16_t q2 = src[ stride * 2];
+            const int16_t q3 = src[ stride * 3];
+
+            src[-1 * stride] = ov_clip((((p0 + p1) + (p1 + p1) + (p0 + q0) + (q1 + q2) + 4) >> 3), p0 - tc, p0 + tc);
+            src[ 0 * stride] = ov_clip((((q0 + q3) + (p1 + p1) + (p0 + q0) + (q1 + q2) + 4) >> 3), q0 - tc, q0 + tc);
+            src[ 1 * stride] = ov_clip((((q1 + p1) + (p0 + q0) + (q1 + q2) + (q3 + q3) + 4) >> 3), q1 - tc, q1 + tc);
+            src[ 2 * stride] = ov_clip((((q2 + q3) + (p0 + q0) + (q1 + q2) + (q3 + q3) + 4) >> 3), q2 - tc, q2 + tc);
+            src++;
+        }
+    } else {
+        for (j = 0; j < 2; ++j) {
+            const int16_t p3 = src[-stride * 4];
+            const int16_t p2 = src[-stride * 3];
+            const int16_t p1 = src[-stride * 2];
+            const int16_t p0 = src[-stride    ];
+            const int16_t q0 = src[0          ];
+            const int16_t q1 = src[ stride    ];
+            const int16_t q2 = src[ stride * 2];
+            const int16_t q3 = src[ stride * 3];
+
+            src[-3 * stride] = ov_clip((((p2 + p3) + (p3 + p3) + (p2 + p1) + (p0 + q0) + 4) >> 3), p2 - tc, p2 + tc);
+            src[-2 * stride] = ov_clip((((p1 + q1) + (p3 + p3) + (p2 + p1) + (p0 + q0) + 4) >> 3), p1 - tc, p1 + tc);
+            src[-1 * stride] = ov_clip((((p0 + p3) + (p2 + p1) + (p0 + q0) + (q1 + q2) + 4) >> 3), p0 - tc, p0 + tc);
+            src[ 0 * stride] = ov_clip((((q0 + q3) + (p2 + p1) + (p0 + q0) + (q1 + q2) + 4) >> 3), q0 - tc, q0 + tc);
+            src[ 1 * stride] = ov_clip((((q1 + p1) + (p0 + q0) + (q1 + q2) + (q3 + q3) + 4) >> 3), q1 - tc, q1 + tc);
+            src[ 2 * stride] = ov_clip((((q2 + q3) + (p0 + q0) + (q1 + q2) + (q3 + q3) + 4) >> 3), q2 - tc, q2 + tc);
+            src++;
+        }
+    }
+}
+
+static void
 filter_chroma_strong_c_h(OVSample* src, const int stride, const int tc)
 {
 
@@ -1615,9 +1746,48 @@ filter_chroma_strong_c_h(OVSample* src, const int stride, const int tc)
     _mm_storeu_si128((__m128i *) &src[-4 + stride], x1);
 }
 
+static void
+filter_chroma_weak_h(OVSample* src, const int stride, const int tc)
+{
+    int delta;
+    int j;
+
+    for (j = 0; j < 2; ++j) {
+        const int16_t p1 = src[-2];
+        const int16_t p0 = src[-1];
+        const int16_t q0 = src[ 0];
+        const int16_t q1 = src[ 1];
+
+        delta = ov_clip((((q0 << 2) - (p0 << 2) + p1 - q1 + 4) >> 3), -tc, tc);
+        src[-1] = ov_bdclip(p0 + delta);
+        src[0]       = ov_bdclip(q0 - delta);
+        src += stride;
+    }
+}
+
+static void
+filter_chroma_weak_v(OVSample* src, const int stride, const int tc)
+{
+    int delta;
+    int j;
+
+    for (j = 0; j < 2; ++j) {
+        const int16_t p1 = src[-stride * 2];
+        const int16_t p0 = src[-stride    ];
+        const int16_t q0 = src[0          ];
+        const int16_t q1 = src[ stride    ];
+
+        delta = ov_clip((((q0 << 2) - (p0 << 2) + p1 - q1 + 4) >> 3), -tc, tc);
+        src[-stride] = ov_bdclip(p0 + delta);
+        src[0]       = ov_bdclip(q0 - delta);
+        src++;
+    }
+}
+
 void
 rcn_init_df_functions_sse(struct RCNFunctions *const rcn_funcs)
 {
+  rcn_funcs->df.filter_v[0] = &filter_luma_strong_small_v;
   rcn_funcs->df.filter_v[1] = &filter_v_3_5;
   rcn_funcs->df.filter_v[2] = &filter_v_3_7;
   rcn_funcs->df.filter_v[4] = &filter_v_5_3;
@@ -1638,5 +1808,10 @@ rcn_init_df_functions_sse(struct RCNFunctions *const rcn_funcs)
   rcn_funcs->df.filter_h[8] = &filter_h_7_3;
   rcn_funcs->df.filter_h[9] = &filter_h_7_5;
   rcn_funcs->df.filter_h[10]= &filter_h_7_7;
+  rcn_funcs->df.filter_weak_h = filter_luma_weak_h;
+  rcn_funcs->df.filter_weak_v = filter_luma_weak_v;
+  rcn_funcs->df.filter_weak_h_c = filter_chroma_weak_h;
+  rcn_funcs->df.filter_weak_v_c = filter_chroma_weak_v;
   rcn_funcs->df.filter_strong_h_c = filter_chroma_strong_c_h;
+  rcn_funcs->df.filter_strong_v_c = filter_chroma_strong_c_v;
 }
