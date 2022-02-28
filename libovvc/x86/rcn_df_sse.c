@@ -1551,6 +1551,70 @@ filter_v_3_5(OVSample *src, const int stride, const int tc)
  }
 }
 
+static void
+filter_chroma_strong_c_h(OVSample* src, const int stride, const int tc)
+{
+
+    const __m128i add_4 = _mm_set1_epi16(4);
+    const __m128i tc_c = _mm_set1_epi16(tc);
+
+    __m128i line0 = _mm_loadu_si128((__m128i*)(src - 4 +      0));
+    __m128i line1 = _mm_loadu_si128((__m128i*)(src - 4 + stride));
+
+    __m128i p0 = _mm_bslli_si128(line0, 6);
+    __m128i q0 = _mm_bsrli_si128(line0, 6);
+    __m128i p1 = _mm_bslli_si128(line1, 6);
+    __m128i q1 = _mm_bsrli_si128(line1, 6);
+
+    p0 = _mm_shufflelo_epi16(p0, 0xFF);
+    q0 = _mm_shufflehi_epi16(q0, 0x00);
+    p1 = _mm_shufflelo_epi16(p1, 0xFF);
+    q1 = _mm_shufflehi_epi16(q1, 0x00);
+
+    __m128i y0 = _mm_blend_epi16(p0, q0, 0x55);
+    __m128i y1 = _mm_blend_epi16(p1, q1, 0x55);
+
+    q0 = _mm_bsrli_si128(q0, 4);
+    q1 = _mm_bsrli_si128(q1, 4);
+
+    __m128i h0 = _mm_hadd_epi16(p0, q0);
+    __m128i h1 = _mm_hadd_epi16(p1, q1);
+
+    __m128i v0 = _mm_add_epi16(h0, _mm_bsrli_si128(h0, 2));
+    __m128i v1 = _mm_add_epi16(h1, _mm_bsrli_si128(h1, 2));
+
+    __m128i w0 = _mm_add_epi16(v0, _mm_bsrli_si128(h0, 4));
+    __m128i w1 = _mm_add_epi16(v1, _mm_bsrli_si128(h1, 4));
+
+    __m128i x0 = _mm_bsrli_si128(_mm_unpacklo_epi16(w0, w0), 2);
+    __m128i x1 = _mm_bsrli_si128(_mm_unpacklo_epi16(w1, w1), 2);
+
+    y0 = _mm_add_epi16(line0, y0);
+    y1 = _mm_add_epi16(line1, y1);
+    x0 = _mm_add_epi16(x0, y0);
+    x1 = _mm_add_epi16(x1, y1);
+    x0 = _mm_add_epi16(x0, add_4);
+    x1 = _mm_add_epi16(x1, add_4);
+    x0 = _mm_srli_epi16(x0, 3);
+    x1 = _mm_srli_epi16(x1, 3);
+
+    __m128i clp_min0 = _mm_subs_epu16(line0, tc_c);
+    __m128i clp_max0 = _mm_adds_epu16(line0, tc_c);
+    __m128i clp_min1 = _mm_subs_epu16(line1, tc_c);
+    __m128i clp_max1 = _mm_adds_epu16(line1, tc_c);
+
+    x0 = _mm_max_epi16(x0, clp_min0);
+    x0 = _mm_min_epi16(x0, clp_max0);
+    x1 = _mm_max_epi16(x1, clp_min1);
+    x1 = _mm_min_epi16(x1, clp_max1);
+
+    x0 = _mm_blend_epi16(x0, line0, 0x81);
+    x1 = _mm_blend_epi16(x1, line1, 0x81);
+
+    _mm_storeu_si128((__m128i *) &src[-4 +      0], x0);
+    _mm_storeu_si128((__m128i *) &src[-4 + stride], x1);
+}
+
 void
 rcn_init_df_functions_sse(struct RCNFunctions *const rcn_funcs)
 {
@@ -1574,4 +1638,5 @@ rcn_init_df_functions_sse(struct RCNFunctions *const rcn_funcs)
   rcn_funcs->df.filter_h[8] = &filter_h_7_3;
   rcn_funcs->df.filter_h[9] = &filter_h_7_5;
   rcn_funcs->df.filter_h[10]= &filter_h_7_7;
+  rcn_funcs->df.filter_strong_h_c = filter_chroma_strong_c_h;
 }
