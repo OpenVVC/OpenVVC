@@ -43,6 +43,12 @@
 
 #include "bitdepth.h"
 
+static inline uint16_t ov_abs(uint16_t x)
+{
+     uint16_t msk = -((int16_t)x < 0);
+     return (x + msk) ^ msk;
+}
+
 static const uint16_t tc_lut[MAX_QP + 1 + DEFAULT_INTRA_TC_OFFSET] =
 {
       0,   0,
@@ -76,8 +82,8 @@ use_strong_filter_l0(const OVSample* src, const int stride, const int beta, cons
     const int16_t q0 = src[ 0         ];
     const int16_t q3 = src[ stride * 3];
 
-    int sp3 = abs(p3 - p0);
-    int sq3 = abs(q3 - q0);
+    int sp3 = ov_abs(p3 - p0);
+    int sq3 = ov_abs(q3 - q0);
 
     /*FIXME we could use branchless to derive eiher mxmy coordinate */
     if (max_l_p == 7) {
@@ -85,13 +91,13 @@ use_strong_filter_l0(const OVSample* src, const int stride, const int beta, cons
         const int16_t p6 = src[-stride * 7];
         const int16_t p5 = src[-stride * 6];
         const int16_t p4 = src[-stride * 5];
-        sp3 += abs(p4 - p5 - p6 + p7);
-        sp3 += abs(p3 - p7) + 1;
+        sp3 += ov_abs((p4 - p5) - p6 + p7);
+        sp3 += ov_abs(p3 - p7) + 1;
         sp3 >>= 1;
     } else if (max_l_p == 5) {
         /* max_l_p == 5 */
         const int16_t p5 = src[-stride * 6];
-        sp3 += abs(p3 - p5) + 1;
+        sp3 += ov_abs(p3 - p5) + 1;
         sp3 >>= 1;
     }
 
@@ -100,16 +106,16 @@ use_strong_filter_l0(const OVSample* src, const int stride, const int beta, cons
         const int16_t q5  = src[stride * 5];
         const int16_t q6 = src[stride * 6];
         const int16_t q7 = src[stride * 7];
-        sq3 += abs(q4 - q5 - q6 + q7);
-        sq3 += abs(q7 - q3) + 1;
+        sq3 += ov_abs((q4 - q5) - q6 + q7);
+        sq3 += ov_abs(q7 - q3) + 1;
         sq3 >>= 1;
     } else if (max_l_q == 5) {
         const int16_t q5  = src[stride * 5];
-        sq3 += abs(q5 - q3) + 1;
+        sq3 += ov_abs(q5 - q3) + 1;
         sq3 >>= 1;
     }
 
-    return ((sp3 + sq3) < (beta * 3 >> 5)) && (abs(p0 - q0) < ((tc * 5 + 1) >> 1));
+    return ((sp3 + sq3) < (beta * 3 >> 5)) && (ov_abs(p0 - q0) < ((tc * 5 + 1) >> 1));
 }
 
 static inline uint8_t
@@ -120,19 +126,19 @@ use_strong_filter_l1(const OVSample* src, const int stride, const int beta, cons
     const int16_t q0 = src[ 0         ];
     const int16_t q3 = src[ stride * 3];
 
-    int sp3 = abs(p3 - p0);
-    int sq3 = abs(q3 - q0);
+    int sp3 = ov_abs(p3 - p0);
+    int sq3 = ov_abs(q3 - q0);
 
     const int d_strong = sp3 + sq3;
 
-    return ((d_strong < (beta >> 3)) && (abs(p0 - q0) < ((tc * 5 + 1) >> 1)));
+    return ((d_strong < (beta >> 3)) && (ov_abs(p0 - q0) < ((tc * 5 + 1) >> 1)));
 }
 
 /* FIXME Macros ? */
 static inline uint16_t
 compute_dp_c(const OVSample* src, const int stride , const uint8_t is_ctb_b)
 {
-    return abs((int16_t)src[-stride * (3 - is_ctb_b)] - 2 * (int16_t)src[-stride * 2] + (int16_t)src[-stride]);
+    return ov_abs((int16_t)src[-stride * (3 - is_ctb_b)] - 2 * (int16_t)src[-stride * 2] + (int16_t)src[-stride]);
 }
 
 static inline uint16_t
@@ -141,7 +147,7 @@ compute_dp(const OVSample* src, const int stride)
     const int16_t p2 = src[-stride * 3];
     const int16_t p1 = src[-stride * 2];
     const int16_t p0 = src[-stride    ];
-    return abs(p2 - 2 * p1 + p0);
+    return ov_abs((p2 - p1) + (p0 -p1));
 }
 
 static inline uint16_t
@@ -150,7 +156,7 @@ compute_dq(const OVSample* src, const int stride)
     const int16_t q0 = src[0         ];
     const int16_t q1 = src[stride * 1];
     const int16_t q2 = src[stride * 2];
-    return abs(q0 - 2 * q1 + q2);
+    return ov_abs((q0 - q1) + (q2 - q1));
 }
 
 struct DBFParams{
@@ -908,7 +914,7 @@ filter_luma_weak_h(OVSample* src, const int stride, const int tc, const uint8_t 
         /* Weak filter */
         int delta = (9 * (q0 - p0) - 3 * (q1 - p1) + 8) >> 4;
 
-        if (abs(delta) < th_cut) {
+        if (ov_abs(delta) < th_cut) {
             delta = ov_clip(delta, -tc, tc);
             const int delta1 = ov_clip(((((p2 + p0 + 1) >> 1) - p1 + delta) >> 1), -tc2_p, tc2_p);
             const int delta2 = ov_clip(((((q2 + q0 + 1) >> 1) - q1 - delta) >> 1), -tc2_q, tc2_q);
@@ -938,7 +944,7 @@ filter_luma_weak_v(OVSample* src, const int stride, const int tc, const uint8_t 
         /* Weak filter */
         int delta = (9 * (q0 - p0) - 3 * (q1 - p1) + 8) >> 4;
 
-        if (abs(delta) < th_cut) {
+        if (ov_abs(delta) < th_cut) {
             delta = ov_clip(delta, -tc, tc);
             const int delta1 = ov_clip(((((p2 + p0 + 1) >> 1) - p1 + delta) >> 1), -tc2_p, tc2_p);
             const int delta2 = ov_clip(((((q2 + q0 + 1) >> 1) - q1 - delta) >> 1), -tc2_q, tc2_q);
@@ -960,12 +966,12 @@ use_strong_filter_c2(const OVSample* src, const int stride, const int beta, cons
     const int16_t q0 = src[ 0         ];
     const int16_t q3 = src[ stride * 3];
 
-    int sp3 = abs(p3 - p0);
-    int sq3 = abs(q3 - q0);
+    int sp3 = ov_abs(p3 - p0);
+    int sq3 = ov_abs(q3 - q0);
 
     const int d_strong = sp3 + sq3;
 
-    return ((d_strong < (beta >> 3)) && (abs(p0 - q0) < ((tc * 5 + 1) >> 1)));
+    return ((d_strong < (beta >> 3)) && (ov_abs(p0 - q0) < ((tc * 5 + 1) >> 1)));
 }
 
 static inline uint8_t
@@ -976,12 +982,12 @@ use_strong_filter_c(const OVSample* src, const int stride, const int beta, const
     const int16_t q0 = src[ 0         ];
     const int16_t q3 = src[ stride * 3];
 
-    int sp3 = abs(p3 - p0);
-    int sq3 = abs(q3 - q0);
+    int sp3 = ov_abs(p3 - p0);
+    int sq3 = ov_abs(q3 - q0);
 
     const int d_strong = sp3 + sq3;
 
-    return ((d_strong < (beta >> 3)) && (abs(p0 - q0) < ((tc * 5 + 1) >> 1)));
+    return ((d_strong < (beta >> 3)) && (ov_abs(p0 - q0) < ((tc * 5 + 1) >> 1)));
 }
 
 static void
