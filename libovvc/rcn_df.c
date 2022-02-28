@@ -1445,6 +1445,10 @@ filter_vertical_edge(const struct DFFunctions *df, const struct DBFParams *const
     const int dp3 = compute_dp(src3, 1);
     const int dq3 = compute_dq(src3, 1);
 
+    const int d0 = dp0 + dq0;
+    const int d3 = dp3 + dq3;
+    const int d  = d0  + d3;
+    if (d < dbf_params->beta) {
     uint8_t use_strong_large = 0;
 
     if (max_l_p > 3 || max_l_q > 3) {
@@ -1483,11 +1487,7 @@ filter_vertical_edge(const struct DFFunctions *df, const struct DBFParams *const
         const int filter_idx = derive_filter_idx(max_l_p, max_l_q);
         df->filter_h[filter_idx](src0, stride, dbf_params->tc);
     } else {
-        const int d0 = dp0 + dq0;
-        const int d3 = dp3 + dq3;
-        const int d  = d0  + d3;
 
-        if (d < dbf_params->beta) {
             uint8_t sw = max_l_p > 2;
 
             sw = sw && (d0 < (dbf_params->beta + 0x4 >> 3))
@@ -2015,6 +2015,10 @@ filter_horizontal_edge(const struct DFFunctions *df, const struct DBFParams *con
     const int dp3 = compute_dp(src3, stride);
     const int dq3 = compute_dq(src3, stride);
 
+    const int d0 = dp0 + dq0;
+    const int d3 = dp3 + dq3;
+    const int d  = d0 + d3;
+    if (d < dbf_params->beta) {
     uint8_t use_strong_large = 0;
 
     if (max_l_p > 3 || max_l_q > 3) {
@@ -2048,11 +2052,7 @@ filter_horizontal_edge(const struct DFFunctions *df, const struct DBFParams *con
         const int filter_idx = derive_filter_idx(max_l_p, max_l_q);
         df->filter_v[filter_idx](src0, stride, dbf_params->tc);
     } else {
-        const int d0 = dp0 + dq0;
-        const int d3 = dp3 + dq3;
-        const int d  = d0 + d3;
 
-        if (d < dbf_params->beta) {
             uint8_t sw = max_l_p > 2;
 
             sw = sw && (d0 < (dbf_params->beta + 0x4 >> 3))
