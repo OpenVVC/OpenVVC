@@ -492,21 +492,19 @@ dbf_load_qp_map(struct DBFInfo *const dbf_info, const struct DBFLines *const l,
     int i;
 
     /* Note no need to process last horizontal top right since it is not processed */
+    int pos = 0;
+    int pos_last = pos + nb_units_ctb;
     for (i = 0; i < nb_units_ctb + 1; ++i) {
-        dbf_info->qp_map_y.hor [i * 34] = dbf_info->qp_map_y.hor [i * 34 + nb_units_ctb];
-        dbf_info->qp_map_cb.hor[i * 34] = dbf_info->qp_map_cb.hor[i * 34 + nb_units_ctb];
-        dbf_info->qp_map_cr.hor[i * 34] = dbf_info->qp_map_cr.hor[i * 34 + nb_units_ctb];
-
-        dbf_info->qp_map_y.hor [1 + i * 34] = dbf_info->qp_map_y.hor [i * 34 + nb_units_ctb + 1];
-        dbf_info->qp_map_cb.hor[1 + i * 34] = dbf_info->qp_map_cb.hor[i * 34 + nb_units_ctb + 1];
-        dbf_info->qp_map_cr.hor[1 + i * 34] = dbf_info->qp_map_cr.hor[i * 34 + nb_units_ctb + 1];
+        memcpy(&dbf_info->qp_map_y.hor [pos], &dbf_info->qp_map_y.hor [pos_last], sizeof(int8_t) * 2);
+        memcpy(&dbf_info->qp_map_cb.hor[pos], &dbf_info->qp_map_cb.hor[pos_last], sizeof(int8_t) * 2);
+        memcpy(&dbf_info->qp_map_cr.hor[pos], &dbf_info->qp_map_cr.hor[pos_last], sizeof(int8_t) * 2);
+        pos += 34;
+        pos_last += 34;
     }
 
-    for (i = 0; i < nb_units_ctb; ++i) {
-        dbf_info->qp_map_y.hor [2 + i] = l->qp_x_map   [(ctb_x << 5) + i];
-        dbf_info->qp_map_cb.hor[2 + i] = l->qp_x_map_cb[(ctb_x << 5) + i];
-        dbf_info->qp_map_cr.hor[2 + i] = l->qp_x_map_cr[(ctb_x << 5) + i];
-    }
+    memcpy(&dbf_info->qp_map_y.hor [2], &l->qp_x_map[(ctb_x << 5)], sizeof(uint8_t) * nb_units_ctb);
+    memcpy(&dbf_info->qp_map_cb.hor[2], &l->qp_x_map_cb[(ctb_x << 5)], sizeof(uint8_t) * nb_units_ctb);
+    memcpy(&dbf_info->qp_map_cr.hor[2], &l->qp_x_map_cr[(ctb_x << 5)], sizeof(uint8_t) * nb_units_ctb);
 }
 
 static void
