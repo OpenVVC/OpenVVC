@@ -166,17 +166,19 @@ filter_h_7_7(OVSample *src, const int stride, const int tc)
     int16_t db_ref[4];
 
     OVSample* _src = src;
+
     for (int i = 0; i < 4; ++i) {
         OVSample* srcP = _src - 1;
         OVSample* srcQ = _src;
-        ref_p[i] = (srcP[-6 * 1] + srcP[-7 * 1] + 1) >> 1;
-        ref_q[i] = (srcQ[ 6 * 1] + srcQ[ 7 * 1] + 1) >> 1;
+        ref_p[i] = (srcP[-6] + srcP[-7] + 1) >> 1;
+        ref_q[i] = (srcQ[ 6] + srcQ[ 7] + 1) >> 1;
 
         db_ref[i] = (2 * (srcP[0] + srcQ[0])
-                     + srcP[-1] + srcP[-2 * 1] + srcP[-3 * 1] + srcP[-4 * 1] + srcP[-5 * 1] + srcP[-6 * 1]
-                     + srcQ[ 1] + srcQ[ 2 * 1] + srcQ[ 3 * 1] + srcQ[ 4 * 1] + srcQ[ 5 * 1] + srcQ[ 6 * 1] + 8) >> 4;
+                     + srcP[-1] + srcP[-2] + srcP[-3] + srcP[-4] + srcP[-5] + srcP[-6]
+                     + srcQ[ 1] + srcQ[ 2] + srcQ[ 3] + srcQ[ 4] + srcQ[ 5] + srcQ[ 6] + 8) >> 4;
         _src += stride;
     }
+
     __m128i add_32 = _mm_set1_epi16(32);
 
     for (int i = 0; i < 4; i++) {
@@ -406,13 +408,12 @@ filter_h_3_5(OVSample *src, const int stride, const int tc)
 
     OVSample* _src = src;
     for (int i = 0; i < 4; ++i) {
-        OVSample* srcP = _src - 1;
         OVSample* srcQ = _src;
-        ref_p[i] = (srcP[-2 * 1] + srcP[-3 * 1] + 1) >> 1;
-        ref_q[i] = (srcQ[ 4 * 1] + srcQ[ 5 * 1] + 1) >> 1;
+        ref_p[i] = (_src[-4] + _src[-3] + 1) >> 1;
+        ref_q[i] = (_src[ 4] + _src[ 5] + 1) >> 1;
 
-        db_ref[i] = (srcP[0] + srcP[-1] + srcP[-2] + srcP[-3]
-                    + srcQ[0] + srcQ[1] + srcQ[2] + srcQ[3] + 4) >> 3;
+        db_ref[i] = (  _src[-4] + _src[-3] + _src[-2] + _src[-1]
+                     + _src[ 0] + _src[ 1] + _src[ 2] + _src[ 3] + 4) >> 3;
 
 
         _src += stride;
