@@ -1448,52 +1448,52 @@ filter_vertical_edge(const struct DFFunctions *df, const struct DBFParams *const
     const int d0 = dp0 + dq0;
     const int d3 = dp3 + dq3;
     const int d  = d0  + d3;
+
     if (d < dbf_params->beta) {
-    uint8_t use_strong_large = 0;
+        uint8_t use_strong_large = 0;
 
-    if (max_l_p > 3 || max_l_q > 3) {
-        int dp0L = dp0;
-        int dq0L = dq0;
-        int dp3L = dp3;
-        int dq3L = dq3;
+        if (max_l_p > 3 || max_l_q > 3) {
+            int dp0L = dp0;
+            int dq0L = dq0;
+            int dp3L = dp3;
+            int dq3L = dq3;
 
-        if (max_l_p > 3) {
-            dp0L += compute_dp(src0 - 3, 1) + 1;
-            dp3L += compute_dp(src3 - 3, 1) + 1;
-            dp0L >>= 1;
-            dp3L >>= 1;
+            if (max_l_p > 3) {
+                dp0L += compute_dp(src0 - 3, 1) + 1;
+                dp3L += compute_dp(src3 - 3, 1) + 1;
+                dp0L >>= 1;
+                dp3L >>= 1;
+            }
+
+            if (max_l_q > 3) {
+                dq0L += compute_dq(src0 + 3, 1) + 1;
+                dq3L += compute_dq(src3 + 3, 1) + 1;
+                dq0L >>= 1;
+                dq3L >>= 1;
+            }
+
+            int d0L = dp0L + dq0L;
+            int d3L = dp3L + dq3L;
+
+            int dL = d0L + d3L;
+
+            use_strong_large = (dL < dbf_params->beta) &&
+                (d0L < (dbf_params->beta + 0x10 >> 5)) &&
+                (d3L < (dbf_params->beta + 0x10 >> 5)) &&
+                use_strong_filter_l0(src0, 1, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q) &&
+                use_strong_filter_l0(src3, 1, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q);
         }
 
-        if (max_l_q > 3) {
-            dq0L += compute_dq(src0 + 3, 1) + 1;
-            dq3L += compute_dq(src3 + 3, 1) + 1;
-            dq0L >>= 1;
-            dq3L >>= 1;
-        }
-
-        int d0L = dp0L + dq0L;
-        int d3L = dp3L + dq3L;
-
-        int dL = d0L + d3L;
-
-        use_strong_large = (dL < dbf_params->beta) &&
-            (d0L < (dbf_params->beta + 0x10 >> 5)) &&
-            (d3L < (dbf_params->beta + 0x10 >> 5)) &&
-            use_strong_filter_l0(src0, 1, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q) &&
-            use_strong_filter_l0(src3, 1, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q);
-    }
-
-    if (use_strong_large) {
-        const int filter_idx = derive_filter_idx(max_l_p, max_l_q);
-        df->filter_h[filter_idx](src0, stride, dbf_params->tc);
-    } else {
-
+        if (use_strong_large) {
+            const int filter_idx = derive_filter_idx(max_l_p, max_l_q);
+            df->filter_h[filter_idx](src0, stride, dbf_params->tc);
+        } else {
             uint8_t sw = max_l_p > 2;
 
             sw = sw && (d0 < (dbf_params->beta + 0x4 >> 3))
-                    && (d3 < (dbf_params->beta + 0x4 >> 3))
-                    && use_strong_filter_l1(src0, 1, dbf_params->beta, dbf_params->tc)
-                    && use_strong_filter_l1(src3, 1, dbf_params->beta, dbf_params->tc);
+                && (d3 < (dbf_params->beta + 0x4 >> 3))
+                && use_strong_filter_l1(src0, 1, dbf_params->beta, dbf_params->tc)
+                && use_strong_filter_l1(src3, 1, dbf_params->beta, dbf_params->tc);
 
             if (sw){
                 df->filter_h[0](src0, stride, dbf_params->tc);
@@ -2018,47 +2018,47 @@ filter_horizontal_edge(const struct DFFunctions *df, const struct DBFParams *con
     const int d0 = dp0 + dq0;
     const int d3 = dp3 + dq3;
     const int d  = d0 + d3;
+
     if (d < dbf_params->beta) {
-    uint8_t use_strong_large = 0;
+        uint8_t use_strong_large = 0;
 
-    if (max_l_p > 3 || max_l_q > 3) {
-        int dp0L = dp0;
-        int dq0L = dq0;
-        int dp3L = dp3;
-        int dq3L = dq3;
+        if (max_l_p > 3 || max_l_q > 3) {
+            int dp0L = dp0;
+            int dq0L = dq0;
+            int dp3L = dp3;
+            int dq3L = dq3;
 
-        if (max_l_p > 3) {
-            dp0L = (dp0L + compute_dp(src0 - 3 * stride, stride) + 1) >> 1;
-            dp3L = (dp3L + compute_dp(src3 - 3 * stride, stride) + 1) >> 1;
+            if (max_l_p > 3) {
+                dp0L = (dp0L + compute_dp(src0 - 3 * stride, stride) + 1) >> 1;
+                dp3L = (dp3L + compute_dp(src3 - 3 * stride, stride) + 1) >> 1;
+            }
+
+            if (max_l_q > 3) {
+                dq0L = (dq0L + compute_dq(src0 + 3 * stride, stride) + 1) >> 1;
+                dq3L = (dq3L + compute_dq(src3 + 3 * stride, stride) + 1) >> 1;
+            }
+
+            int d0L = dp0L + dq0L;
+            int d3L = dp3L + dq3L;
+
+            int dL = d0L + d3L;
+            use_strong_large = (dL < dbf_params->beta) &&
+                (d0L < (dbf_params->beta + 0x10 >> 5)) &&
+                (d3L < (dbf_params->beta + 0x10 >> 5)) &&
+                use_strong_filter_l0(src0, stride, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q) &&
+                use_strong_filter_l0(src3, stride, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q);
         }
 
-        if (max_l_q > 3) {
-            dq0L = (dq0L + compute_dq(src0 + 3 * stride, stride) + 1) >> 1;
-            dq3L = (dq3L + compute_dq(src3 + 3 * stride, stride) + 1) >> 1;
-        }
-
-        int d0L = dp0L + dq0L;
-        int d3L = dp3L + dq3L;
-
-        int dL = d0L + d3L;
-        use_strong_large = (dL < dbf_params->beta) &&
-            (d0L < (dbf_params->beta + 0x10 >> 5)) &&
-            (d3L < (dbf_params->beta + 0x10 >> 5)) &&
-            use_strong_filter_l0(src0, stride, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q) &&
-            use_strong_filter_l0(src3, stride, dbf_params->beta, dbf_params->tc, max_l_p, max_l_q);
-    }
-
-    if (use_strong_large) {
-        const int filter_idx = derive_filter_idx(max_l_p, max_l_q);
-        df->filter_v[filter_idx](src0, stride, dbf_params->tc);
-    } else {
-
+        if (use_strong_large) {
+            const int filter_idx = derive_filter_idx(max_l_p, max_l_q);
+            df->filter_v[filter_idx](src0, stride, dbf_params->tc);
+        } else {
             uint8_t sw = max_l_p > 2;
 
             sw = sw && (d0 < (dbf_params->beta + 0x4 >> 3))
-                    && (d3 < (dbf_params->beta + 0x4 >> 3))
-                    && use_strong_filter_l1(src0, stride, dbf_params->beta, dbf_params->tc)
-                    && use_strong_filter_l1(src3, stride, dbf_params->beta, dbf_params->tc);
+                && (d3 < (dbf_params->beta + 0x4 >> 3))
+                && use_strong_filter_l1(src0, stride, dbf_params->beta, dbf_params->tc)
+                && use_strong_filter_l1(src3, stride, dbf_params->beta, dbf_params->tc);
 
             if (sw){
                 df->filter_v[0](src0, stride, dbf_params->tc);
