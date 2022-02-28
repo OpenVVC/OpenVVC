@@ -1105,7 +1105,7 @@ derive_large_map_from_ngh(const uint64_t *src_map)
 }
 
 static void
-filter_veritcal_edge_c(const struct DBFInfo *const dbf_info, OVSample *src, ptrdiff_t stride,
+filter_veritcal_edge_c(const struct DFFunctions *df, const struct DBFInfo *const dbf_info, OVSample *src, ptrdiff_t stride,
                        uint8_t qp, uint64_t bs2_map, uint64_t large_map_q)
 {
     const uint8_t is_large = large_map_q & 0x1;
@@ -1138,19 +1138,18 @@ filter_veritcal_edge_c(const struct DBFInfo *const dbf_info, OVSample *src, ptrd
             use_strong_filter_c(src0, 1, dbf_params.beta, dbf_params.tc) &&
             use_strong_filter_c(src1, 1, dbf_params.beta, dbf_params.tc);
 
-        if (is_strong) {
-            filter_chroma_strong_c_h(src, stride, dbf_params.tc);
-        }
     }
 
-    if (!is_strong) {
-        filter_chroma_weak_h(src, stride, dbf_params.tc);
+    if (is_strong) {
+        df->filter_strong_h_c(src, stride, dbf_params.tc);
+    } else {
+        df->filter_weak_h_c(src, stride, dbf_params.tc);
     }
 }
 
 /* Filter vertical edges */
 static void
-vvc_dbf_chroma_hor(OVSample *src_cb, OVSample *src_cr, int stride,
+vvc_dbf_chroma_hor(const struct DFFunctions *df, OVSample *src_cb, OVSample *src_cr, int stride,
                    const struct DBFInfo *const dbf_info,
                    uint8_t nb_unit_h, int is_last_h, uint8_t nb_unit_w,
                    uint8_t ctu_lft)
@@ -1216,7 +1215,7 @@ vvc_dbf_chroma_hor(OVSample *src_cb, OVSample *src_cr, int stride,
 
                 qp = (qp_col[-1] + qp_col[0] + 1) >> 1;
 
-                filter_veritcal_edge_c(dbf_info, src, stride, qp, bs2_map, large_map_q);
+                filter_veritcal_edge_c(df, dbf_info, src, stride, qp, bs2_map, large_map_q);
 
                 edge_map    >>= nb_skipped_blk + 1;
                 large_map_q >>= 1;
@@ -1261,7 +1260,7 @@ vvc_dbf_chroma_hor(OVSample *src_cb, OVSample *src_cr, int stride,
 
                 qp = (qp_col[-1] + qp_col[0] + 1) >> 1;
 
-                filter_veritcal_edge_c(dbf_info, src, stride, qp, bs2_map, large_map_q);
+                filter_veritcal_edge_c(df, dbf_info, src, stride, qp, bs2_map, large_map_q);
 
                 edge_map    >>= nb_skipped_blk + 1;
                 large_map_q >>= 1;
@@ -1276,7 +1275,7 @@ vvc_dbf_chroma_hor(OVSample *src_cb, OVSample *src_cr, int stride,
 }
 
 static void
-filter_horizontal_edge_c(const struct DBFInfo *const dbf_info, OVSample *src, ptrdiff_t stride,
+filter_horizontal_edge_c(const struct DFFunctions *df, const struct DBFInfo *const dbf_info, OVSample *src, ptrdiff_t stride,
                          uint8_t qp, uint64_t bs2_map, uint64_t large_map_q, uint8_t is_ctb_b)
 {
     const uint8_t is_large = large_map_q & 0x1;
@@ -1310,17 +1309,17 @@ filter_horizontal_edge_c(const struct DBFInfo *const dbf_info, OVSample *src, pt
             use_strong_filter_c2(src1, stride, dbf_params.beta, dbf_params.tc, is_ctb_b);
 
         if (is_strong) {
-            filter_chroma_strong_c_v(src, stride, dbf_params.tc, is_ctb_b);
+            df->filter_strong_v_c(src, stride, dbf_params.tc, is_ctb_b);
         }
     }
 
     if (!is_strong) {
-        filter_chroma_weak_v(src, stride, dbf_params.tc);
+        df->filter_weak_v_c(src, stride, dbf_params.tc);
     }
 }
 
 static void
-vvc_dbf_chroma_ver(OVSample *src_cb, OVSample *src_cr, int stride,
+vvc_dbf_chroma_ver(const struct DFFunctions *df, OVSample *src_cb, OVSample *src_cr, int stride,
                    const struct DBFInfo *const dbf_info,
                    uint8_t nb_unit_w, int is_last_w, uint8_t nb_unit_h, uint8_t is_last_h,
                    uint8_t ctu_abv)
@@ -1371,7 +1370,7 @@ vvc_dbf_chroma_ver(OVSample *src_cb, OVSample *src_cr, int stride,
 
                 qp = (qp_row[0] + qp_row[34] + 1) >> 1;
 
-                filter_horizontal_edge_c(dbf_info, src, stride, qp, bs2_map,
+                filter_horizontal_edge_c(df, dbf_info, src, stride, qp, bs2_map,
                                          large_map_q, is_ctb_b);
 
                 edge_map    >>= nb_skipped_blk + 1;
@@ -1416,7 +1415,7 @@ vvc_dbf_chroma_ver(OVSample *src_cb, OVSample *src_cr, int stride,
 
                 qp = (qp_row[0] + qp_row[34] + 1) >> 1;
 
-                filter_horizontal_edge_c(dbf_info, src, stride, qp, bs2_map,
+                filter_horizontal_edge_c(df, dbf_info, src, stride, qp, bs2_map,
                                          large_map_q, is_ctb_b);
 
                 edge_map    >>= nb_skipped_blk + 1;
@@ -2179,11 +2178,11 @@ rcn_dbf_ctu(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInfo *const d
     vvc_dbf_ctu_ver(df, fbuff->y, fbuff->stride, dbf_info, nb_unit, !!last_x, nb_unit, ctu_abv);
 
     if (!dbf_info->disable_h)
-    vvc_dbf_chroma_hor(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
+    vvc_dbf_chroma_hor(df, fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
                        nb_unit, !!last_y, nb_unit, ctu_lft);
 
     if (!dbf_info->disable_v)
-    vvc_dbf_chroma_ver(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
+    vvc_dbf_chroma_ver(df, fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
                        nb_unit, !!last_x, nb_unit, !!last_y, ctu_abv);
 
 }
@@ -2212,11 +2211,11 @@ rcn_dbf_truncated_ctu(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInf
     vvc_dbf_ctu_ver(df, fbuff->y, fbuff->stride, dbf_info, nb_unit_w, !!last_x, nb_unit_h, ctu_abv);
 
     if (!dbf_info->disable_h)
-    vvc_dbf_chroma_hor(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
+    vvc_dbf_chroma_hor(df, fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
                        nb_unit_h, !!last_y, nb_unit_w, ctu_lft);
 
     if (!dbf_info->disable_v)
-    vvc_dbf_chroma_ver(fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
+    vvc_dbf_chroma_ver(df, fbuff->cb, fbuff->cr, fbuff->stride_c, dbf_info,
                        nb_unit_w, !!last_x, nb_unit_h, !!last_y, ctu_abv);
 
 }
@@ -2247,6 +2246,10 @@ BD_DECL(rcn_init_df_functions)(struct RCNFunctions *const rcn_funcs)
   rcn_funcs->df.filter_v[8] = &filter_v_7_3;
   rcn_funcs->df.filter_v[9] = &filter_v_7_5;
   rcn_funcs->df.filter_v[10]= &filter_v_7_7;
+  rcn_funcs->df.filter_weak_h_c = filter_chroma_weak_h;
+  rcn_funcs->df.filter_weak_v_c = filter_chroma_weak_v;
+  rcn_funcs->df.filter_strong_h_c = filter_chroma_strong_c_h;
+  rcn_funcs->df.filter_strong_v_c = filter_chroma_strong_c_v;
 
   rcn_funcs->df.rcn_dbf_ctu = &rcn_dbf_ctu;
   rcn_funcs->df.rcn_dbf_truncated_ctu = &rcn_dbf_truncated_ctu;
