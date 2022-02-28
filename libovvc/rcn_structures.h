@@ -391,6 +391,8 @@ struct DBFInfo;
 struct DFFunctions{
     DFFilterFunction filter_h[11];
     DFFilterFunction filter_v[11];
+    void (*filter_weak_h)(OVSample* src, const int stride, const int tc, const uint8_t extend_p, const uint8_t extend_q);
+    void (*filter_weak_v)(OVSample* src, const int stride, const int tc, const uint8_t extend_p, const uint8_t extend_q);
     void (*filter_weak_h_c)(OVSample* src, const int stride, const int tc);
     void (*filter_weak_v_c)(OVSample* src, const int stride, const int tc);
     void (*filter_strong_h_c)(OVSample* src, const int stride, const int tc);

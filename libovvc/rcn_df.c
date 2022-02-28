@@ -1503,7 +1503,7 @@ filter_vertical_edge(const struct DFFunctions *df, const struct DBFParams *const
                 const int side_thd = (dbf_params->beta + (dbf_params->beta >> 1)) >> 3;
                 uint8_t extend_p = dp < side_thd && max_l_p > 1;
                 uint8_t extend_q = dq < side_thd && max_l_p > 1;
-                filter_luma_weak_h(src0, stride, dbf_params->tc, extend_p, extend_q);
+                df->filter_weak_h(src0, stride, dbf_params->tc, extend_p, extend_q);
             }
         }
     }
@@ -2068,7 +2068,7 @@ filter_horizontal_edge(const struct DFFunctions *df, const struct DBFParams *con
                 const int side_thd = (dbf_params->beta + (dbf_params->beta >> 1)) >> 3;
                 uint8_t extend_p = dp < side_thd && max_l_p > 1;
                 uint8_t extend_q = dq < side_thd && max_l_p > 1;
-                filter_luma_weak_v(src0, stride, dbf_params->tc, extend_p, extend_q);
+                df->filter_weak_v(src0, stride, dbf_params->tc, extend_p, extend_q);
             }
         }
     }
@@ -2246,6 +2246,8 @@ BD_DECL(rcn_init_df_functions)(struct RCNFunctions *const rcn_funcs)
   rcn_funcs->df.filter_v[8] = &filter_v_7_3;
   rcn_funcs->df.filter_v[9] = &filter_v_7_5;
   rcn_funcs->df.filter_v[10]= &filter_v_7_7;
+  rcn_funcs->df.filter_weak_h = filter_luma_weak_h;
+  rcn_funcs->df.filter_weak_v = filter_luma_weak_v;
   rcn_funcs->df.filter_weak_h_c = filter_chroma_weak_h;
   rcn_funcs->df.filter_weak_v_c = filter_chroma_weak_v;
   rcn_funcs->df.filter_strong_h_c = filter_chroma_strong_c_h;
