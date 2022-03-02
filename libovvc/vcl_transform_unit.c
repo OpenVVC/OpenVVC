@@ -394,7 +394,7 @@ ovcabac_read_ae_sbt_pos_flag(OVCABACCtx *const cabac_ctx)
 
 
 static uint8_t
-decode_cbf_st(OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, uint16_t cu_flags)
+decode_cbf_st(OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, CUFlags cu_flags)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t intra_bdpcm_chroma_flag = !!(cu_flags & flg_intra_bdpcm_chroma_flag);
@@ -449,7 +449,7 @@ decode_cbf_st(OVCTUDec *const ctu_dec, uint8_t rqt_root_cbf, uint8_t tr_depth, u
 }
 
 static uint8_t
-decode_cbf_c(OVCTUDec *const ctu_dec, uint16_t cu_flags)
+decode_cbf_c(OVCTUDec *const ctu_dec, CUFlags cu_flags)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t intra_bdpcm_chroma_flag = !!(cu_flags & flg_intra_bdpcm_chroma_flag);
@@ -555,7 +555,7 @@ chroma_lfnst_check(const struct TUInfo *tu_info, uint8_t cbf_mask, uint8_t log2_
 
 static uint8_t
 lfnst_check_st(const struct TUInfo *const tu_info, uint8_t log2_tb_w, uint8_t log2_tb_h,
-               uint8_t cbf_mask, uint16_t cu_flags)
+               uint8_t cbf_mask, CUFlags cu_flags)
 {
     uint8_t cbf_flag_l  = cbf_mask & 0x10;
     uint8_t jcbcr_flag  = cbf_mask & 0x8;
@@ -620,7 +620,7 @@ static int
 residual_coding_l(OVCTUDec *const ctu_dec,
                   unsigned int x0, unsigned int y0,
                   unsigned int log2_tb_w, unsigned int log2_tb_h,
-                  uint16_t cu_flags, struct TUInfo *const tu_info)
+                  CUFlags cu_flags, struct TUInfo *const tu_info)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     uint8_t tr_skip_flag = 0;
@@ -676,7 +676,7 @@ static int
 residual_coding_c(OVCTUDec *const ctu_dec,
                   unsigned int x0, unsigned int y0,
                   unsigned int log2_tb_w, unsigned int log2_tb_h,
-                  uint8_t cbf_mask, uint16_t cu_flags, struct TUInfo *tu_info)
+                  uint8_t cbf_mask, CUFlags cu_flags, struct TUInfo *tu_info)
 {
 
     int16_t *const coeffs_cb = ctu_dec->residual_cb + tu_info->pos_offset;
@@ -760,7 +760,7 @@ static int
 residual_coding_jcbcr(OVCTUDec *const ctu_dec,
                       unsigned int x0, unsigned int y0,
                       unsigned int log2_tb_w, unsigned int log2_tb_h,
-                      uint8_t cbf_mask, uint16_t cu_flags, struct TUInfo *tu_info)
+                      uint8_t cbf_mask, CUFlags cu_flags, struct TUInfo *tu_info)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
 
@@ -810,7 +810,7 @@ int
 transform_unit_st(OVCTUDec *const ctu_dec,
                   unsigned int x0, unsigned int y0,
                   unsigned int log2_tb_w, unsigned int log2_tb_h,
-                  uint8_t rqt_root_cbf, uint16_t cu_flags, uint8_t tr_depth,
+                  uint8_t rqt_root_cbf, CUFlags cu_flags, uint8_t tr_depth,
                   struct TUInfo *const tu_info)
 {
     uint8_t cbf_mask = decode_cbf_st(ctu_dec, rqt_root_cbf, tr_depth, cu_flags);
@@ -847,7 +847,7 @@ int
 transform_unit_l(struct OVCTUDec *const ctu_dec,
                  unsigned int x0, unsigned int y0,
                  unsigned int log2_tb_w, unsigned int log2_tb_h,
-                 uint8_t rqt_root_cbf, uint16_t cu_flags, uint8_t tr_depth,
+                 uint8_t rqt_root_cbf, CUFlags cu_flags, uint8_t tr_depth,
                  struct TUInfo *const tu_info)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -872,7 +872,7 @@ int
 transform_unit_c(OVCTUDec *const ctu_dec,
                  unsigned int x0, unsigned int y0,
                  unsigned int log2_tb_w, unsigned int log2_tb_h,
-                 uint8_t rqt_root_cbf, uint16_t cu_flags, uint8_t tr_depth,
+                 uint8_t rqt_root_cbf, CUFlags cu_flags, uint8_t tr_depth,
                  struct TUInfo *const tu_info)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -898,7 +898,7 @@ transform_unit_c(OVCTUDec *const ctu_dec,
 
 static void
 lfnst_mts(const OVCTUDec *const ctu_dec, uint8_t log2_tb_w, uint8_t log2_tb_h,
-          uint16_t cu_flags, struct TUInfo *const tu_info)
+          CUFlags cu_flags, struct TUInfo *const tu_info)
 {
     uint8_t cbf_mask = tu_info->cbf_mask;
     if (ctu_dec->transform_unit == &transform_unit_st && cbf_mask) {
@@ -1001,7 +1001,7 @@ transform_tree(OVCTUDec *const ctu_dec,
                unsigned int x0, unsigned int y0,
                unsigned int log2_tb_w, unsigned int log2_tb_h,
                unsigned int log2_max_tb_s, uint8_t rqt_root_cbf,
-               uint16_t cu_flags, uint8_t tr_depth, struct TUInfo *tu_info)
+               CUFlags cu_flags, uint8_t tr_depth, struct TUInfo *tu_info)
 {
     uint8_t split_v = log2_tb_w > log2_max_tb_s;
     uint8_t split_h = log2_tb_h > log2_max_tb_s;
@@ -1088,7 +1088,7 @@ static int
 sbt_half_ver(OVCTUDec *const ctu_dec,
              unsigned int x0, unsigned int y0,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
-             uint8_t sbt_pos, uint16_t cu_flags, struct TUInfo *tu_info)
+             uint8_t sbt_pos, CUFlags cu_flags, struct TUInfo *tu_info)
 {
     fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
     fill_ctb_bound_c(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
@@ -1139,7 +1139,7 @@ static int
 sbt_half_hor(OVCTUDec *const ctu_dec,
              unsigned int x0, unsigned int y0,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
-             uint8_t sbt_pos, uint16_t cu_flags, struct TUInfo *tu_info)
+             uint8_t sbt_pos, CUFlags cu_flags, struct TUInfo *tu_info)
 {
     int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
     fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
@@ -1193,7 +1193,7 @@ static int
 sbt_quad_ver(OVCTUDec *const ctu_dec,
              unsigned int x0, unsigned int y0,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
-             uint8_t sbt_pos, uint16_t cu_flags, struct TUInfo *tu_info)
+             uint8_t sbt_pos, CUFlags cu_flags, struct TUInfo *tu_info)
 {
     int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
     fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
@@ -1249,7 +1249,7 @@ static int
 sbt_quad_hor(OVCTUDec *const ctu_dec,
              unsigned int x0, unsigned int y0,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
-             uint8_t sbt_pos, uint16_t cu_flags, struct TUInfo *tu_info)
+             uint8_t sbt_pos, CUFlags cu_flags, struct TUInfo *tu_info)
 {
     int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
     fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
@@ -1307,7 +1307,7 @@ sbt_tree(OVCTUDec *const ctu_dec,
          unsigned int x0, unsigned int y0,
          unsigned int log2_tb_w, unsigned int log2_tb_h,
          uint8_t sbt_mode,
-         uint8_t sbt_pos, uint16_t cu_flags, struct TUInfo *tu_info)
+         uint8_t sbt_pos, CUFlags cu_flags, struct TUInfo *tu_info)
 {
     /* FIXME remove this if zeroing is done by transform */
     switch (sbt_mode) {

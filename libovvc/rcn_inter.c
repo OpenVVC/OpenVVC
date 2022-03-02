@@ -93,14 +93,6 @@ struct OVDMV {
     int32_t y;
 };
 
-enum CUMode {
-    OV_NA = 0xFF,
-    OV_INTER = 1,
-    OV_INTRA = 2,
-    OV_INTER_SKIP = 3,
-    OV_MIP = 4,
-};
-
 static OVMV
 clip_mv(int pos_x, int pos_y, int pic_w, int pic_h, int pb_w, int pb_h, OVMV mv)
 {

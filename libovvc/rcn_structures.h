@@ -37,6 +37,7 @@
 #include <stdint.h>
 
 #include "rcn_intra_angular.h"
+#include "cu_utils.h"
 #include "bitdepth.h"
 
 struct ALFClassifier;
@@ -456,18 +457,18 @@ struct TMPBDCompat
 
     void (*rcn_transform_tree)(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
                                uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t log2_max_tb_s,
-                               uint8_t tr_depth, uint16_t cu_flags, const struct TUInfo *const tu_info);
+                               uint8_t tr_depth, CUFlags cu_flags, const struct TUInfo *const tu_info);
 
 
     void (*rcn_tu_c)(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
                      uint8_t log2_tb_w, uint8_t log2_tb_h,
-                     uint16_t cu_flags, uint8_t cbf_mask,
+                     CUFlags cu_flags, uint8_t cbf_mask,
                      const struct TUInfo *const tu_info);
 
     void (*rcn_tu_st)(OVCTUDec *const ctu_dec,
                       uint8_t x0, uint8_t y0,
                       uint8_t log2_tb_w, uint8_t log2_tb_h,
-                      uint16_t cu_flags, uint8_t cbf_mask,
+                      CUFlags cu_flags, uint8_t cbf_mask,
                       const struct TUInfo *const tu_info);
 
     void (*recon_isp_subtree_h)(OVCTUDec *const ctudec,
@@ -563,11 +564,11 @@ struct RCNFunctions
     void (*intra_pred)(const struct OVRCNCtx *const rcn_ctx,
                        const struct OVBuffInfo* ctu_buff,
                        uint8_t intra_mode, int x0, int y0,
-                       int log2_pb_w, int log2_pb_h, uint16_t cu_flags);
+                       int log2_pb_w, int log2_pb_h, CUFlags cu_flags);
 
     void (*intra_pred_c)(const struct OVRCNCtx *const rcn_ctx,
                          uint8_t intra_mode, int x0, int y0,
-                         int log2_pb_w, int log2_pb_h, uint16_t cu_flags);
+                         int log2_pb_w, int log2_pb_h, CUFlags cu_flags);
 
     void (*intra_pred_isp)(const OVCTUDec *const ctudec,
                            OVSample *const src,

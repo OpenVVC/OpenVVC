@@ -48,18 +48,6 @@
 #define LOG2_MIN_CU_S 2
 /*FIXME find a more global location for these defintions */
 
-enum CUMode {
-    OV_NA = 0xFF,
-    OV_INTER = 1,
-    OV_INTRA = 2,
-    OV_INTER_SKIP = 3,
-    OV_MIP = 4,
-    OV_AFFINE = 5,
-    OV_INTER_SKIP_AFFINE = 6,
-    OV_IBC = 7,
-    OV_IBC_SKIP = 8,
-};
-
 #define BCW_NUM                 5 ///< the number of weight options
 #define BCW_DEFAULT             ((uint8_t)(BCW_NUM >> 1)) ///< Default weighting index representing for w=0.5
 #define BCW_SIZE_CONSTRAINT     256 ///< disabling Bcw if cu size is smaller than 256

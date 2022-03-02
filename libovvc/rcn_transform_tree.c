@@ -690,7 +690,7 @@ rcn_bdpcm_tb(OVCTUDec *const ctu_dec, int16_t *dst, int16_t *src, const struct T
 static void
 rcn_transform_skip_tb_c(OVCTUDec *const ctu_dec, int16_t *dst, int16_t *src,
                         const struct TBInfo *const tb_info,
-                        uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp, uint16_t cu_flags)
+                        uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp, CUFlags cu_flags)
 {
     if (cu_flags & flg_intra_bdpcm_chroma_flag) {
         uint8_t bdpcm_dir = !!(cu_flags & flg_intra_bdpcm_chroma_dir);
@@ -719,7 +719,7 @@ rcn_transform_skip_tb_c(OVCTUDec *const ctu_dec, int16_t *dst, int16_t *src,
 static void
 rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
           uint8_t x0, uint8_t y0,
-          uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t cbf_mask, uint8_t lfnst_flag, uint16_t cu_flags)
+          uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t cbf_mask, uint8_t lfnst_flag, CUFlags cu_flags)
 {
     const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_funcs;
 
@@ -793,7 +793,7 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
 static void
 rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
           uint8_t x0, uint8_t y0, uint8_t log2_tb_w, uint8_t log2_tb_h,
-          uint8_t cbf_mask, uint8_t lfnst_flag, uint16_t cu_flags)
+          uint8_t cbf_mask, uint8_t lfnst_flag, CUFlags cu_flags)
 {
     const struct RCNFunctions *const rcn_func = &ctu_dec->rcn_funcs;
     OVSample *const dst_cb = &ctu_dec->rcn_ctx.ctu_buff.cb[x0 + (y0 * RCN_CTB_STRIDE)];
@@ -1200,7 +1200,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
 static void
 rcn_transform_skip_tb_l(OVCTUDec *const ctu_dec, int16_t *dst, int16_t *src,
                         const struct TBInfo *const tb_info,
-                        uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp, uint16_t cu_flags)
+                        uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp, CUFlags cu_flags)
 {
     if (cu_flags & flg_intra_bdpcm_luma_flag) {
         uint8_t bdpcm_dir = !!(cu_flags & flg_intra_bdpcm_luma_dir);
@@ -1221,7 +1221,7 @@ static void
 rcn_tu_st(OVCTUDec *const ctu_dec,
           uint8_t x0, uint8_t y0,
           uint8_t log2_tb_w, uint8_t log2_tb_h,
-          uint16_t cu_flags, uint8_t cbf_mask,
+          CUFlags cu_flags, uint8_t cbf_mask,
           const struct TUInfo *const tu_info)
 {
     uint8_t cbf_flag_l = cbf_mask & 0x10;
@@ -1297,7 +1297,7 @@ static void
 rcn_tu_l(OVCTUDec *const ctu_dec,
          uint8_t x0, uint8_t y0,
          uint8_t log2_tb_w, uint8_t log2_tb_h,
-         uint16_t cu_flags, uint8_t cbf_mask,
+         CUFlags cu_flags, uint8_t cbf_mask,
          const struct TUInfo *const tu_info)
 {
     const struct TBInfo *const tb_info = &tu_info->tb_info[2];
@@ -1337,7 +1337,7 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
 static void
 rcn_tu_c(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
          uint8_t log2_tb_w, uint8_t log2_tb_h,
-         uint16_t cu_flags, uint8_t cbf_mask,
+         CUFlags cu_flags, uint8_t cbf_mask,
          const struct TUInfo *const tu_info)
 {
     uint8_t jcbcr_flag = cbf_mask & 0x8;
@@ -1371,7 +1371,7 @@ rcn_tu_c(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
 
 static void
 rcn_intra_tu(OVCTUDec *const ctudec, uint8_t x0, uint8_t y0,
-             uint8_t log2_tb_w, uint8_t log2_tb_h, uint16_t cu_flags)
+             uint8_t log2_tb_w, uint8_t log2_tb_h, CUFlags cu_flags)
 {
     uint8_t mip_flag = cu_flags & flg_mip_flag;
 
@@ -1419,7 +1419,7 @@ rcn_intra_tu(OVCTUDec *const ctudec, uint8_t x0, uint8_t y0,
 
 static void
 rcn_res_wrap(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
-             uint8_t log2_tb_w, uint8_t log2_tb_h, uint16_t cu_flags,
+             uint8_t log2_tb_w, uint8_t log2_tb_h, CUFlags cu_flags,
              const struct TUInfo *const tu_info)
 {
     uint8_t cbf_mask = tu_info->cbf_mask;
@@ -1441,7 +1441,7 @@ rcn_res_wrap(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
 static void
 rcn_transform_tree(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
                    uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t log2_max_tb_s,
-                   uint8_t tr_depth, uint16_t cu_flags, const struct TUInfo *const tu_info)
+                   uint8_t tr_depth, CUFlags cu_flags, const struct TUInfo *const tu_info)
 {
     uint8_t split_v = log2_tb_w > log2_max_tb_s;
     uint8_t split_h = log2_tb_h > log2_max_tb_s;

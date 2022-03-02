@@ -483,7 +483,7 @@ intra_angular_h(const struct OVRCNCtx *rcn_ctx, OVSample *ref1, OVSample *ref2, 
 static void
 vvc_intra_pred(const struct OVRCNCtx *const rcn_ctx, const struct OVBuffInfo* ctu_buff,
                uint8_t intra_mode, int x0, int y0,
-               int log2_pb_w, int log2_pb_h, uint16_t cu_flags)
+               int log2_pb_w, int log2_pb_h, CUFlags cu_flags)
 {
     const struct DCFunctions *dc = &rcn_ctx->ctudec->rcn_funcs.dc;
     const struct PlanarFunctions *planar = &rcn_ctx->ctudec->rcn_funcs.planar;
@@ -1014,7 +1014,7 @@ vvc_intra_chroma_angular(const struct OVRCNCtx *rcn_ctx, const OVSample *const s
 static void
 vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
                       uint8_t intra_mode, int x0, int y0,
-                      int log2_pb_w, int log2_pb_h, uint16_t cu_flags)
+                      int log2_pb_w, int log2_pb_h, CUFlags cu_flags)
 {
     const struct RCNFunctions *rcn_func = &rcn_ctx->ctudec->rcn_funcs;
     const struct DCFunctions *dc = &rcn_ctx->ctudec->rcn_funcs.dc;

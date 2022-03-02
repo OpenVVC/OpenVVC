@@ -285,7 +285,7 @@ derive_intra_mode_c(uint8_t cclm_flag, uint8_t mpm_flag, uint8_t mpm_idx,
 
 static uint8_t
 derive_intra_angular_mode(struct IntraDRVInfo *i_info,
-                          uint16_t cu_flags, uint8_t cu_mode_info,
+                          CUFlags cu_flags, uint8_t cu_mode_info,
                           int x_pu, int y_pu, int nb_pb_w, int nb_pb_h)
 {
     uint8_t mpm_flag = cu_flags & flg_mpm_flag;

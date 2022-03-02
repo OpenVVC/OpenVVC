@@ -44,6 +44,8 @@
 #include "rcn_alf.h"
 #include "rcn_lmcs.h"
 #include "dec_structures.h"
+#include "cu_utils.h"
+
 
     /* FIXME COMPAT old
      * Old structures to be removed
@@ -52,12 +54,6 @@
      * and are still used by the decoder however they will be removed
      * in the future
      */
-
-#define FLG_STORE(name, dst) \
-   dst |= -(!!name) & flg_##name;
-
-#define DECL_FLG(name, pos)\
-    flg_##name = (1llu << (pos))
 
 enum CTUNGHFlags
 {
@@ -74,25 +70,6 @@ typedef struct OVBuffInfo{
     int32_t stride;
     int32_t stride_c;
 } OVBuffInfo;
-
-enum VVCCUFlag
-{
-     DECL_FLG(cu_skip_flag,0),
-     DECL_FLG(pred_mode_flag,1),
-     DECL_FLG(mip_flag,2),
-     DECL_FLG(isp_flag,3),
-     DECL_FLG(mrl_flag,4),
-     DECL_FLG(mpm_flag,5),
-     DECL_FLG(cclm_flag,6),
-     DECL_FLG(mpm_flag_c,7),
-     DECL_FLG(intra_bdpcm_luma_flag,8),
-     DECL_FLG(intra_bdpcm_chroma_flag,9),
-     DECL_FLG(intra_bdpcm_luma_dir,10),
-     DECL_FLG(intra_bdpcm_chroma_dir,11),
-     DECL_FLG(ibc_flag,12),
-     DECL_FLG(merge_flag,2),
-     DECL_FLG(inter_dir,3),
-};
 
 struct TUInfo;
 
@@ -269,7 +246,7 @@ struct VVCCU
  *  |
  */
 
-    uint16_t cu_flags;
+    CUFlags cu_flags;
     uint8_t cu_mode_idx;
     uint8_t cu_mode_idx_c;
     uint8_t cu_opaque;
@@ -774,7 +751,7 @@ struct OVCTUDec
     int (*transform_unit)(struct OVCTUDec *const lc_ctx,
                           unsigned int x0, unsigned int y0,
                           unsigned int log2_tb_w, unsigned int log2_tb_h,
-                          uint8_t cbf_ctx, uint16_t cu_flags, uint8_t tr_depth,
+                          uint8_t cbf_ctx, CUFlags cu_flags, uint8_t tr_depth,
                           struct TUInfo *const tu_info);
 
     int (*prediction_unit)(struct OVCTUDec *const lc_ctx,

@@ -38,14 +38,7 @@
 #include "dec_structures.h"
 #include "ctudec.h"
 #include "rcn_lmcs.h"
-
-enum CUMode {
-    OV_NA = 0xFF,
-    OV_INTER = 1,
-    OV_INTRA = 2,
-    OV_INTER_SKIP = 3,
-    OV_MIP = 4,
-};
+#include "cu_utils.h"
 
 struct TreeInfo
 {
@@ -58,7 +51,7 @@ struct TreeInfo
                           unsigned int x0, unsigned int y0,
                           unsigned int log2_tb_w,
                           unsigned int log2_tb_h,
-                          uint8_t cbf_ctx, uint16_t cu_flags,
+                          uint8_t cbf_ctx, CUFlags cu_flags,
                           uint8_t tr_depth, struct TUInfo *const tu_info);
     const OVPartInfo *part_ctx;
 };

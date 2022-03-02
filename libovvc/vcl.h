@@ -36,6 +36,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "cu_utils.h"
 #include "dec_structures.h"
 #include "ovdefs.h"
 #include "vcl_cabac.h"
@@ -52,19 +53,19 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
 int transform_unit_st(OVCTUDec *const ctu_dec,
                       unsigned int x0, unsigned int y0,
                       unsigned int log2_tb_w, unsigned int log2_tb_h,
-                      uint8_t rqt_root_cbf, uint16_t cu_flags, uint8_t tr_depth,
+                      uint8_t rqt_root_cbf, CUFlags cu_flags, uint8_t tr_depth,
                       struct TUInfo *const tu_info);
 
 int transform_unit_l(OVCTUDec *const ctu_dec,
                      unsigned int x0, unsigned int y0,
                      unsigned int log2_tb_w, unsigned int log2_tb_h,
-                     uint8_t rqt_root_cbf, uint16_t cu_flags, uint8_t tr_depth,
+                     uint8_t rqt_root_cbf, CUFlags cu_flags, uint8_t tr_depth,
                      struct TUInfo *const tu_info);
 
 int transform_unit_c(OVCTUDec *const ctu_dec,
                      unsigned int x0, unsigned int y0,
                      unsigned int log2_tb_w, unsigned int log2_tb_h,
-                     uint8_t rqt_root_cbf, uint16_t cu_flags, uint8_t tr_depth,
+                     uint8_t rqt_root_cbf, CUFlags cu_flags, uint8_t tr_depth,
                      struct TUInfo *const tu_info);
 
 VVCCU coding_unit_intra_st(OVCTUDec *const ctu_dec,
