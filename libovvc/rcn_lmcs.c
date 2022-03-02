@@ -277,7 +277,7 @@ rcn_lmcs_reshape_luma_blk_lut(OVSample *dst, ptrdiff_t stride_dst, const OVSampl
 {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++){
-            dst[x] = lmcs_lut_luma[dst[x]];
+            dst[x] = lmcs_lut_luma[dst[x] & (1 << BITDEPTH) - 1];
         }
         dst += stride_dst;
     }
