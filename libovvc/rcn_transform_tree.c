@@ -1237,7 +1237,7 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
             int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             uint8_t is_mip = !!(cu_flags & flg_mip_flag);
-            uint8_t is_intra = !!(cu_flags & 0x2);
+            uint8_t is_intra = !!(cu_flags & flg_pred_mode_flag);
             is_mip |= !is_intra;
             rcn_residual(ctu_dec, tr_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
                          tu_info->cu_mts_flag, tu_info->cu_mts_idx,
@@ -1254,14 +1254,14 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
         rcn_func->ict.add[log2_tb_w](tr_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
             fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
         if (!(cu_flags & flg_intra_bdpcm_luma_flag)) {
-            if (cu_flags & 0x2) {
+            if (cu_flags & flg_pred_mode_flag) {
                 fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_tb_w, log2_tb_h);
             }
         }
     }
 
     /* FIXME Avoid reprocessing CCLM from here by recontructing at the end of transform tree */
-    if (cu_flags & 0x2) {
+    if (cu_flags & flg_pred_mode_flag) {
         uint8_t x0_unit = (x0) >> LOG2_MIN_CU_S;
         uint8_t y0_unit = (y0) >> LOG2_MIN_CU_S;
         uint8_t nb_unit_w = (1 << log2_tb_w) >> LOG2_MIN_CU_S;
@@ -1308,7 +1308,7 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
             int lim_sb_s = ((((tb_info->last_pos >> 8)) >> 2) + (((tb_info->last_pos & 0xFF))>> 2) + 1) << 2;
             int16_t *const coeffs_y = ctu_dec->residual_y + tu_info->pos_offset;
             uint8_t is_mip = !!(cu_flags & flg_mip_flag);
-            uint8_t is_intra = !!(cu_flags & 0x2);
+            uint8_t is_intra = !!(cu_flags & flg_pred_mode_flag);
             is_mip |= !is_intra;
             rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
                          tu_info->cu_mts_flag, tu_info->cu_mts_idx,
@@ -1322,7 +1322,7 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
         }
 
         if (!(cu_flags & flg_intra_bdpcm_luma_flag)) {
-            if (cu_flags & 0x2) {
+            if (cu_flags & flg_pred_mode_flag) {
                 fill_bs_map(&ctu_dec->dbf_info.bs2_map, x0, y0, log2_tb_w, log2_tb_h);
             }
         }
@@ -1424,12 +1424,12 @@ rcn_res_wrap(OVCTUDec *const ctu_dec, uint8_t x0, uint8_t y0,
 {
     uint8_t cbf_mask = tu_info->cbf_mask;
     if (ctu_dec->transform_unit == &transform_unit_st) {
-        if (cu_flags & 0x2) {
+        if (cu_flags & flg_pred_mode_flag) {
             rcn_intra_tu(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags);
         }
         rcn_tu_st(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, cbf_mask, tu_info);
     } else if (ctu_dec->transform_unit == &transform_unit_l) {
-        if (cu_flags & 0x2) {
+        if (cu_flags & flg_pred_mode_flag) {
             rcn_intra_tu(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags);
         }
         rcn_tu_l(ctu_dec, x0, y0, log2_tb_w, log2_tb_h, cu_flags, cbf_mask, tu_info);

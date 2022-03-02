@@ -774,7 +774,7 @@ coding_unit(OVCTUDec *const ctu_dec,
      * transform trees
      */
 
-    if (cu.cu_flags & 0x2 && !(cu.cu_flags & flg_ibc_flag)) {
+    if ((cu.cu_flags & flg_pred_mode_flag) && !(cu.cu_flags & flg_ibc_flag)) {
         if (ctu_dec->coding_unit == &coding_unit_intra_st || ctu_dec->coding_unit == &coding_unit_inter_st) {
             uint8_t luma_mode;
             luma_mode = drv_intra_cu(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, cu);
@@ -1300,7 +1300,7 @@ coding_unit_intra_c(OVCTUDec *const ctu_dec,
     uint8_t cclm_flag = 0;
 
     /* Force intra pred mode in case of separate or dual tree */
-    cu.cu_flags = 2;
+    cu.cu_flags |= flg_pred_mode_flag;
 
     if (ctu_dec->bdpcm_enabled && log2_cb_w <= ctu_dec->max_log2_transform_skip_size
                                && log2_cb_h <= ctu_dec->max_log2_transform_skip_size) {
