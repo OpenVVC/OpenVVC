@@ -127,7 +127,7 @@ rcn_intra_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log
     OVSample *dst_cb =  rcn_ctx->ctu_buff.cb - RCN_CTB_STRIDE;
     OVSample *dst_cr =  rcn_ctx->ctu_buff.cr - RCN_CTB_STRIDE;
 
-    memcpy(dst_y,  src_y , sizeof(OVSample) * OVMIN(((1 << log2_ctb_s) + (1 << log2_ctb_s)), RCN_CTB_STRIDE - 16));
+    memcpy(dst_y,  src_y , sizeof(OVSample) * ((1 << log2_ctb_s) + (1 << (log2_ctb_s - (log2_ctb_s == 7)))));
     memcpy(dst_cb, src_cb, sizeof(OVSample) * ((1 << (log2_ctb_s - 1)) + (1 << (log2_ctb_s - 1))));
     memcpy(dst_cr, src_cr, sizeof(OVSample) * ((1 << (log2_ctb_s - 1)) + (1 << (log2_ctb_s - 1))));
 }
