@@ -847,6 +847,12 @@ struct MVPDataP
     uint8_t mvp_idx;
 };
 
+struct IBCMVPData
+{
+    IBCMV mvd;
+    uint8_t mvp_idx;
+};
+
 static inline uint8_t
 check_nz_mvd_p(const OVMV *const mvd)
 {
@@ -857,12 +863,21 @@ check_nz_mvd_p(const OVMV *const mvd)
     return (uint8_t)!!mvd_not_zero;
 }
 
-static struct MVPDataP
+static inline uint8_t
+check_ibc_nz_mvd(const IBCMV *const mvd)
+{
+    int32_t mvd_not_zero = 0;
+
+    mvd_not_zero |= (mvd->x | mvd->y);
+
+    return (uint8_t)!!mvd_not_zero;
+}
+
+static struct IBCMVPData
 inter_mvp_data_ibc(OVCTUDec *const ctu_dec, uint8_t nb_ibc_cand_min1)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    struct MVPDataP mvp_data;
-    uint8_t ref_idx = 0;
+    struct IBCMVPData mvp_data;
     OVMV mvd;
     uint8_t mvp_idx = 0;
 
@@ -872,9 +887,9 @@ inter_mvp_data_ibc(OVCTUDec *const ctu_dec, uint8_t nb_ibc_cand_min1)
         mvp_idx = ovcabac_read_ae_mvp_flag(cabac_ctx);
     }
 
-    mvp_data.ref_idx   = ref_idx;
-    mvp_data.mvd       = mvd;
-    mvp_data.mvp_idx   = mvp_idx;
+    mvp_data.mvd.x   = mvd.x;
+    mvp_data.mvd.y   = mvd.y;
+    mvp_data.mvp_idx = mvp_idx;
 
     return mvp_data;
 }
@@ -1007,20 +1022,26 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
 
                 uint8_t ibc_flag = ovcabac_read_ae_cu_ibc_flag(cabac_ctx, ibc_abv, ibc_lft);
                 if (ibc_flag) {
+                    IBCMV mv;
                     uint8_t nb_ibc_cand_min1 = ctu_dec->nb_ibc_cand_min1 - 1;
                     uint8_t merge_flag = ovcabac_read_ae_cu_merge_flag(cabac_ctx);
                     if (merge_flag) {
                         uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, nb_ibc_cand_min1 + 1);
                         FLG_STORE(merge_flag, cu.cu_flags);
+                        mv = drv_ibc_merge_mv(&ctu_dec->drv_ctx.ibc_ctx, x0, y0, log2_cu_w, log2_cu_h, merge_idx, nb_ibc_cand_min1 + 1);
                     } else {
                         const struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
-                        struct MVPDataP mvp_data = inter_mvp_data_ibc(ctu_dec, nb_ibc_cand_min1);
+                        struct IBCMVPData mvp_data = inter_mvp_data_ibc(ctu_dec, nb_ibc_cand_min1);
+                        uint8_t prec_amvr = 0;
+
                         if (inter_ctx->amvr_flag) {
-                            uint8_t nz_mvd = check_nz_mvd_p(&mvp_data.mvd);
+                            uint8_t nz_mvd = check_ibc_nz_mvd(&mvp_data.mvd);
                             if (nz_mvd) {
-                                uint8_t prec_amvr = ovcabac_read_ae_ibc_amvr_precision(cabac_ctx);
+                                prec_amvr = ovcabac_read_ae_ibc_amvr_precision(cabac_ctx);
                             }
                         }
+                        mv = drv_ibc_mvp(&ctu_dec->drv_ctx.ibc_ctx, x0, y0, log2_cu_w, log2_cu_h, mvp_data.mvd, mvp_data.mvp_idx, prec_amvr);
+
                     }
 
                     FLG_STORE(ibc_flag, cu.cu_flags);
@@ -1063,18 +1084,22 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
                 if (ibc_flag) {
                     uint8_t nb_ibc_cand_min1 = ctu_dec->nb_ibc_cand_min1 - 1;
                     uint8_t merge_flag = ovcabac_read_ae_cu_merge_flag(cabac_ctx);
+                    IBCMV mv;
                     if (merge_flag) {
                         uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, nb_ibc_cand_min1 + 1);
                         FLG_STORE(merge_flag, cu.cu_flags);
+                        mv = drv_ibc_merge_mv(&ctu_dec->drv_ctx.ibc_ctx, x0, y0, log2_cu_w, log2_cu_h, merge_idx, nb_ibc_cand_min1 + 1);
                     } else {
                         const struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
-                        struct MVPDataP mvp_data = inter_mvp_data_ibc(ctu_dec, nb_ibc_cand_min1);
+                        struct IBCMVPData mvp_data = inter_mvp_data_ibc(ctu_dec, nb_ibc_cand_min1);
+                        uint8_t prec_amvr = 0;
                         if (inter_ctx->amvr_flag) {
-                            uint8_t nz_mvd = check_nz_mvd_p(&mvp_data.mvd);
+                            uint8_t nz_mvd = check_ibc_nz_mvd(&mvp_data.mvd);
                             if (nz_mvd) {
-                                uint8_t prec_amvr = ovcabac_read_ae_ibc_amvr_precision(cabac_ctx);
+                                prec_amvr = ovcabac_read_ae_ibc_amvr_precision(cabac_ctx);
                             }
                         }
+                        mv = drv_ibc_mvp(&ctu_dec->drv_ctx.ibc_ctx, x0, y0, log2_cu_w, log2_cu_h, mvp_data.mvd, mvp_data.mvp_idx, prec_amvr);
                     }
                     if (!cu_skip_flag) {
                         updt_cu_maps(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, OV_IBC);
@@ -1155,18 +1180,22 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
         if (ibc_flag) {
             uint8_t nb_ibc_cand_min1 = ctu_dec->nb_ibc_cand_min1 - 1;
             uint8_t merge_flag = cu_skip_flag || ovcabac_read_ae_cu_merge_flag(cabac_ctx);
+            IBCMV mv;
             if (merge_flag) {
                 uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, nb_ibc_cand_min1 + 1);
                 FLG_STORE(merge_flag, cu.cu_flags);
+                mv = drv_ibc_merge_mv(&ctu_dec->drv_ctx.ibc_ctx, x0, y0, log2_cb_w, log2_cb_h, merge_idx, nb_ibc_cand_min1 + 1);
             } else {
                 const struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
-                struct MVPDataP mvp_data = inter_mvp_data_ibc(ctu_dec, nb_ibc_cand_min1);
+                struct IBCMVPData mvp_data = inter_mvp_data_ibc(ctu_dec, nb_ibc_cand_min1);
+                uint8_t prec_amvr = 0;
                 if (inter_ctx->amvr_flag) {
-                    uint8_t nz_mvd = check_nz_mvd_p(&mvp_data.mvd);
+                    uint8_t nz_mvd = check_ibc_nz_mvd(&mvp_data.mvd);
                     if (nz_mvd) {
-                        uint8_t prec_amvr = ovcabac_read_ae_ibc_amvr_precision(cabac_ctx);
+                        prec_amvr = ovcabac_read_ae_ibc_amvr_precision(cabac_ctx);
                     }
                 }
+                mv = drv_ibc_mvp(&ctu_dec->drv_ctx.ibc_ctx, x0, y0, log2_cb_w, log2_cb_h, mvp_data.mvd, mvp_data.mvp_idx, prec_amvr);
             }
             if (!cu_skip_flag) {
                 updt_cu_maps(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, OV_IBC);

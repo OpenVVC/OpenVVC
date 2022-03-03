@@ -87,6 +87,7 @@ libovvc_la_SOURCES = 	ctudec.c                     \
 						drv_lfnst.c                  \
 						drv_intra.c                  \
 						drv_mvp.c                    \
+						drv_ibc.c                    \
 						rcn.c                        \
 						rcn_lfnst.c                  \
 						rcn_gpm.c                    \

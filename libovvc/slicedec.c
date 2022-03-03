@@ -858,6 +858,9 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
         if (slice_type != SLICE_I) {
             store_inter_maps(drv_lines, ctudec, ctb_x, 0);
         }
+        if (ctudec->ibc_enabled) {
+            store_ibc_maps(drv_lines, ctudec, ctb_x, 0);
+        }
 
         if (!ctudec->dbf_disable) {
             const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
@@ -914,6 +917,10 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     /* FIXME if inter only */
     if (slice_type != SLICE_I) {
         store_inter_maps(drv_lines, ctudec, ctb_x, 1);
+    }
+
+    if (ctudec->ibc_enabled) {
+        store_ibc_maps(drv_lines, ctudec, ctb_x, 1);
     }
     
     //Apply in-loop filters on the available pixels of CTU line
@@ -996,6 +1003,10 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
             store_inter_maps(drv_lines, ctudec, ctb_x, 0);
         }
 
+        if (ctudec->ibc_enabled) {
+            store_ibc_maps(drv_lines, ctudec, ctb_x, 0);
+        }
+
         ctudec->rcn_funcs.rcn_update_ctu_border(rcn_ctx, log2_ctb_s);
 
         if (!ctudec->dbf_disable) {
@@ -1022,6 +1033,10 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
 
     if (slice_type != SLICE_I) {
         store_inter_maps(drv_lines, ctudec, ctb_x, 1);
+    }
+
+    if (ctudec->ibc_enabled) {
+        store_ibc_maps(drv_lines, ctudec, ctb_x, 1);
     }
 
     int ctb_y = ctudec->ctb_y - einfo->ctb_y;

@@ -147,6 +147,10 @@ struct DRVLines
         uint64_t *large_map_c;
     } dbf_lines;
 
+    struct IBCLines {
+        IBCMV *mv;
+        uint32_t *map;
+    }ibc_lines;
     /*FIXME used */
     void *inter_data;
 };

@@ -190,4 +190,13 @@ void process_lfnst_luma(OVCTUDec *const ctudec,
 
 void tmvp_inter_synchronization(const OVPicture *ref_pic, int ctb_x, int ctb_y, int log2_ctu_s);
 
+IBCMV drv_ibc_merge_mv(struct IBCMVCtx *const ibc_ctx,
+                       uint8_t x0, uint8_t y0,
+                       uint8_t log2_cb_w, uint8_t log2_cb_h,
+                       uint8_t merge_idx, uint8_t max_nb_merge_cand);
+
+IBCMV drv_ibc_mvp(struct IBCMVCtx *const ibc_ctx,
+                  uint8_t x0, uint8_t y0,
+                  uint8_t log2_cb_w, uint8_t log2_cb_h,
+                  IBCMV mvd, uint8_t mvp_idx, uint8_t prec_amvr);
 #endif

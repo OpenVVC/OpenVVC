@@ -174,6 +174,100 @@ fill_inter_map(OVCTUDec *const ctudec, uint64_t above_map, uint64_t tr_map)
 #endif
 
 static void
+free_ibc_drv_lines(struct DRVLines *const drv_lns)
+{
+    struct IBCLines *const lns = &drv_lns->ibc_lines;
+
+    if (lns->mv) {
+        ov_freep(&lns->mv);
+    }
+
+    if (lns->map) {
+        ov_freep(&lns->map);
+    }
+}
+
+static int
+init_ibc_drv_lines(struct DRVLines *const drv_lns, int nb_pb_ctb,
+                     int nb_ctb_pic_w)
+{
+    struct IBCLines *const lns = &drv_lns->ibc_lines;
+
+    lns->mv  = ov_mallocz(sizeof(*lns->mv) * nb_pb_ctb * (nb_ctb_pic_w + 2));
+    lns->map = ov_mallocz(sizeof(*lns->map) * (nb_ctb_pic_w + 2));
+
+    if (!lns->mv || !lns->map) {
+        free_ibc_drv_lines(drv_lns);
+        return OVVC_ENOMEM;
+    }
+
+    return 0;
+}
+
+static void
+offset_ibc_drv_lines(struct DRVLines *const drv_lns, int ctb_offset)
+{
+    struct IBCLines *const lns = &drv_lns->ibc_lines;
+
+    lns->mv += ctb_offset;
+    lns->map += ctb_offset;
+}
+
+#define LOG2_UNIT_S 2
+void
+store_ibc_maps(const struct DRVLines *const l,
+               OVCTUDec *const ctudec,
+               unsigned int ctb_x, uint8_t is_last)
+{
+    /*FIXME we do not need above left */
+    struct IBCMVCtx *const ibc_ctx = &ctudec->drv_ctx.ibc_ctx;
+    const struct IBCLines  *const lns = &l->ibc_lines;
+
+    uint64_t *const rows_map = ibc_ctx->ctu_map.hfield;
+    uint64_t *const cols_map = ibc_ctx->ctu_map.vfield;
+
+    uint8_t log2_ctu_s = ctudec->part_ctx->log2_ctu_s;
+    uint8_t nb_units_ctb =  (1 << (log2_ctu_s & 7)) >> LOG2_UNIT_S;
+    int i;
+
+    /* Load next CTU above context from line buffer */
+    uint64_t above_map = lns->map[ctb_x + 1];
+
+    above_map |= (uint64_t)lns->map [ctb_x + 2] << nb_units_ctb;
+
+    if (is_last) {
+       above_map = 0;
+    }
+
+    /* Store last row into buffer line */
+    lns->map[ctb_x]   = (uint32_t)(rows_map[nb_units_ctb] >> 1);
+
+    for (i = 0; i < nb_units_ctb + 1; i++) {
+        rows_map[i] >>= nb_units_ctb;
+    }
+
+    rows_map[0] |= above_map << 1;
+
+    uint64_t lst_col = cols_map[nb_units_ctb];
+
+    /* Fill cols from above */
+    uint64_t tmp_abv = above_map;
+
+    cols_map[0] = lst_col;
+
+    for (i = 1; i < nb_units_ctb + 1; i++) {
+        tmp_abv >>= 1;
+        cols_map[i] = tmp_abv & 0x1;
+    }
+
+    /* Save inner last row to line buffer */
+    memcpy(&lns->mv[ctb_x * nb_units_ctb], &ibc_ctx->abv_row[0], sizeof(IBCMV) * nb_units_ctb);
+
+    /* Load inner first row from line buffer */
+    memcpy(&ibc_ctx->abv_row[0], &lns->mv[(ctb_x + 1) * nb_units_ctb], sizeof(IBCMV) * (nb_units_ctb));
+}
+
+static void
 tmvp_store_mv(OVCTUDec *ctudec)
 {
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -263,7 +357,6 @@ rotate_affine_cp(struct AffineInfo *const aff_info, struct AffineInfo *const lns
 /* Copy last Motion Vector from CTU to corresponding line in 
  * DRVLine
  */
-#define LOG2_UNIT_S 2
 void
 store_inter_maps(const struct DRVLines *const l,
                  OVCTUDec *const ctudec,
@@ -714,6 +807,8 @@ init_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
      /* FIXME return */
      ret = init_dbf_lines(&lns->dbf_lines, nb_ctb_pic_w, 32 * nb_pb_pic_w2);
 
+     ret = init_ibc_drv_lines(lns, nb_pb_ctb2, 32*nb_ctb_pic_w);
+
      lns->intra_luma_x  = ov_mallocz(sizeof(*lns->intra_luma_x) * nb_pb_pic_w);
 
      if (!lns->intra_luma_x || ret < 0) {
@@ -732,6 +827,14 @@ reset_inter_lines(const struct InterLines *const inter_lns, uint16_t nb_ctu_w,
     memset(inter_lns->dir0,   0, sizeof(*inter_lns->dir0)   * nb_rst_units);
     memset(inter_lns->dir1,   0, sizeof(*inter_lns->dir1)   * nb_rst_units);
     memset(inter_lns->affine, 0, sizeof(*inter_lns->affine) * nb_rst_units);
+}
+
+static void
+reset_ibc_lines(const struct IBCLines *const ibc_lns, uint16_t nb_ctu_w,
+                  uint8_t log2_ctb_s)
+{
+    uint16_t nb_rst_units = (nb_ctu_w << log2_ctb_s) >> LOG2_UNIT_S;
+    memset(ibc_lns->map,   0, sizeof(*ibc_lns->map) * nb_rst_units);
 }
 
 void
@@ -760,6 +863,9 @@ reset_drv_lines(OVSliceDec *sldec, const OVPS *const prms)
     uint16_t nb_pb_pic_w2 = (nb_ctb_pic_w << log2_ctb_s) >> LOG2_MIN_CU_S;
 
     reset_inter_lines(&lns->inter_lines, nb_ctb_pic_w, log2_ctb_s);
+
+    reset_ibc_lines(&lns->ibc_lines, nb_ctb_pic_w, log2_ctb_s);
+
     /* PLANAR  = 0 value is used if absent so we use it as reset value
     */
     memset(lns->intra_luma_x,     0,  sizeof(*lns->intra_luma_x) * nb_pb_pic_w);
@@ -924,6 +1030,8 @@ offset_drv_lines(struct DRVLines *const lns, uint8_t tile_x, uint8_t tile_y,
 
      offset_inter_drv_lines(lns, (ctb_offset << log2_ctb_s) >> LOG2_UNIT_S, log2_ctb_s, LOG2_UNIT_S);
 
+     offset_ibc_drv_lines(lns, (ctb_offset << log2_ctb_s) >> LOG2_UNIT_S);
+
      //ctb_offset -= tile_x;
      //ctb_offset -= tile_y * nb_tile_cols;
      /* FIXME return */
@@ -937,6 +1045,7 @@ drv_lines_uninit(OVSliceDec *sldec)
 
      ov_freep(&lns->intra_luma_x);
      free_inter_drv_lines(lns);
+     free_ibc_drv_lines(lns);
      free_dbf_lines(&lns->dbf_lines);
 }
 

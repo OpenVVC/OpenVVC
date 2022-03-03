@@ -55,6 +55,25 @@
      * in the future
      */
 
+/*FIXME IBCMV storage size could be reduced based on max permitted IBC motion
+        according to IBC max buffer size but also based on the fact
+        that IBC only use integer MVs
+*/
+typedef struct IBCMV
+{
+   int32_t x;
+   int32_t y;
+} IBCMV;
+
+struct IBCMVCtx
+{
+    struct CTUBitField ctu_map;
+    IBCMV lft_col[32];
+    IBCMV abv_row[32];
+    IBCMV hmvp_lut[5];
+    uint8_t nb_hmvp_cand;
+};
+
 enum CTUNGHFlags
 {
      CTU_UP_FLG    = 1 << 0,
@@ -561,6 +580,7 @@ struct OVCTUDec
         struct InterDRVCtx  inter_ctx;
         int8_t qp_map_x[32];
         int8_t qp_map_y[32];
+        struct IBCMVCtx ibc_ctx;
     } drv_ctx;
 
     /* Reconstruction context */
