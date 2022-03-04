@@ -1010,10 +1010,9 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
                 struct IntraDRVInfo *const i_info   = &ctu_dec->drv_ctx.intra_info;
                 uint8_t nb_ibc_cand_min1 = ctu_dec->nb_ibc_cand_min1 - 1;
                 uint8_t merge_flag = 1;
-                if (merge_flag) {
-                    uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, nb_ibc_cand_min1 + 1);
-                    FLG_STORE(merge_flag, cu.cu_flags);
-                }
+                IBCMV mv;
+                uint8_t merge_idx = ovcabac_read_ae_mvp_merge_idx(cabac_ctx, nb_ibc_cand_min1 + 1);
+                FLG_STORE(merge_flag, cu.cu_flags);
 
                 FLG_STORE(ibc_flag, cu.cu_flags);
 
