@@ -987,6 +987,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
                 } else {
                     updt_cu_maps(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, OV_IBC_SKIP);
                 }
+                mv = drv_ibc_merge_mv(&ctu_dec->drv_ctx.ibc_ctx, x0, y0, log2_cu_w, log2_cu_h, merge_idx, nb_ibc_cand_min1 + 1);
 
                 return cu;
             }
