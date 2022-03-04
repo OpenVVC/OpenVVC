@@ -137,42 +137,42 @@ void rcn_init_dequant_8(struct RCNFunctions *rcn_funcs);
 
 
 void
-vvc_add_residual(const int16_t *src, uint16_t *dst,
+vvc_add_residual(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                  int log2_tb_w, int log2_tb_h,
                  int scale);
 
 void
-vvc_sub_residual(const int16_t *src, uint16_t *dst,
+vvc_sub_residual(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                 int log2_tb_w, int log2_tb_h,
                 int scale);
 
 void
-vvc_add_half_residual(const int16_t *src, uint16_t *dst,
+vvc_add_half_residual(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale);
 
 void
-vvc_sub_half_residual(const int16_t *src, uint16_t *dst,
+vvc_sub_half_residual(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale);
 
 void
-vvc_scale_add_residual(const int16_t *src, uint16_t *dst,
+vvc_scale_add_residual(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                      int log2_tb_w, int log2_tb_h,
                      int scale);
 
 void
-vvc_scale_sub_residual(const int16_t *src, uint16_t *dst,
+vvc_scale_sub_residual(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                      int log2_tb_w, int log2_tb_h,
                      int scale);
 
 void
-vvc_scale_add_half_residual(const int16_t *src, uint16_t *dst,
+vvc_scale_add_half_residual(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                           int log2_tb_w, int log2_tb_h,
                           int scale);
 
 void
-vvc_scale_sub_half_residual(const int16_t *src, uint16_t *dst,
+vvc_scale_sub_half_residual(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                            int log2_tb_w, int log2_tb_h,
                            int scale);
 

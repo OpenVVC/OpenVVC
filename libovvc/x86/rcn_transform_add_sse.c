@@ -1850,7 +1850,7 @@ vvc_add_residual_8_4_10_sse(const int16_t *const src, uint16_t *const dst, int16
             _src += tb_w << 2;
         }
     } else {
-        vvc_add_residual(src, dst, log2_tb_w, log2_tb_h, 0);
+        vvc_add_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
     }
 }
 
@@ -1871,7 +1871,7 @@ vvc_add_residual_16_2_10_sse(const int16_t *const src, uint16_t *const dst, int1
           _src += tb_w << 1;
       }
     } else {
-        vvc_add_residual(src, dst, log2_tb_w, log2_tb_h, 0);
+        vvc_add_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
     }
 }
 
@@ -1928,7 +1928,7 @@ vvc_add_half_residual_8_4_10_sse(const int16_t *const src, uint16_t *const dst, 
             _src += tb_w << 2;
         }
     } else {
-        vvc_add_half_residual(src, dst, log2_tb_w, log2_tb_h, 0);
+        vvc_add_half_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
     }
 }
 
@@ -1949,7 +1949,7 @@ vvc_add_half_residual_16_2_10_sse(const int16_t *const src, uint16_t *const dst,
           _src += tb_w << 1;
       }
     } else {
-        vvc_add_half_residual(src, dst, log2_tb_w, log2_tb_h, 0);
+        vvc_add_half_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
     }
 }
 
@@ -1987,7 +1987,7 @@ vvc_sub_residual_8_4_10_sse(const int16_t *const src, uint16_t *const dst, int16
             _src += tb_w << 2;
         }
     } else {
-        vvc_sub_residual(src, dst, log2_tb_w, log2_tb_h, 0);
+        vvc_sub_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
     }
 }
 
@@ -2008,7 +2008,7 @@ vvc_sub_residual_16_2_10_sse(const int16_t *const src, uint16_t *const dst, int1
           _src += tb_w << 1;
       }
     } else {
-        vvc_sub_residual(src, dst, log2_tb_w, log2_tb_h, 0);
+        vvc_sub_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
     }
 }
 
@@ -2046,7 +2046,7 @@ vvc_sub_half_residual_8_4_10_sse(const int16_t *const src, uint16_t *const dst, 
             _src += tb_w << 2;
         }
     } else {
-        vvc_sub_half_residual(src, dst, log2_tb_w, log2_tb_h, 0);
+        vvc_sub_half_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
     }
 }
 
@@ -2067,7 +2067,7 @@ vvc_sub_half_residual_16_2_10_sse(const int16_t *const src, uint16_t *const dst,
           _src += tb_w << 1;
       }
     } else {
-        vvc_sub_half_residual(src, dst, log2_tb_w, log2_tb_h, 0);
+        vvc_sub_half_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
     }
 }
 
@@ -2108,7 +2108,7 @@ vvc_scale_add_residual_8_4_10_sse(const int16_t *src, uint16_t *dst, int16_t dst
         _src += tb_w << 2;
     }
   } else {
-      vvc_scale_add_residual(src, dst, log2_tb_w, log2_tb_h, scale);
+      vvc_scale_add_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, scale);
   }
 }
 
@@ -2131,7 +2131,7 @@ vvc_scale_add_residual_16_2_10_sse(const int16_t *src, uint16_t *dst, int16_t ds
         _src += tb_w << 1;
     }
   } else {
-      vvc_scale_add_residual(src, dst, log2_tb_w, log2_tb_h, scale);
+      vvc_scale_add_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, scale);
   }
 }
 
@@ -2173,7 +2173,7 @@ vvc_scale_add_half_residual_8_4_10_sse(const int16_t *src, uint16_t *dst, int16_
         _src += tb_w << 2;
     }
   } else {
-      vvc_scale_add_half_residual(src, dst, log2_tb_w, log2_tb_h, scale);
+      vvc_scale_add_half_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, scale);
   }
 }
 
@@ -2196,7 +2196,7 @@ vvc_scale_add_half_residual_16_2_10_sse(const int16_t *src, uint16_t *dst, int16
         _src += tb_w << 1;
     }
   } else {
-      vvc_scale_add_half_residual(src, dst, log2_tb_w, log2_tb_h, scale);
+      vvc_scale_add_half_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, scale);
   }
 }
 
@@ -2238,7 +2238,7 @@ vvc_scale_sub_residual_8_4_10_sse(const int16_t *src, uint16_t *dst, int16_t dst
         _src += tb_w << 2;
     }
   } else {
-      vvc_scale_sub_residual(src, dst, log2_tb_w, log2_tb_h, scale);
+      vvc_scale_sub_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, scale);
   }
 }
 
@@ -2261,7 +2261,7 @@ vvc_scale_sub_residual_16_2_10_sse(const int16_t *src, uint16_t *dst, int16_t ds
         _src += tb_w << 1;
     }
   } else {
-      vvc_scale_sub_residual(src, dst, log2_tb_w, log2_tb_h, scale);
+      vvc_scale_sub_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, scale);
   }
 }
 
@@ -2303,7 +2303,7 @@ vvc_scale_sub_half_residual_8_4_10_sse(const int16_t *src, uint16_t *dst, int16_
         _src += tb_w << 2;
     }
   } else {
-      vvc_scale_sub_half_residual(src, dst, log2_tb_w, log2_tb_h, scale);
+      vvc_scale_sub_half_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, scale);
   }
 }
 
@@ -2326,7 +2326,7 @@ vvc_scale_sub_half_residual_16_2_10_sse(const int16_t *src, uint16_t *dst, int16
         _src += tb_w << 1;
     }
   } else {
-      vvc_scale_sub_half_residual(src, dst, log2_tb_w, log2_tb_h, scale);
+      vvc_scale_sub_half_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, scale);
   }
 }
 
