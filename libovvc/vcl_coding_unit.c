@@ -1070,7 +1070,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
                     } else {
                         const struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
                         struct IBCMVPData mvp_data = inter_mvp_data_ibc(ctu_dec, nb_ibc_cand_min1);
-                        uint8_t prec_amvr = 0;
+                        uint8_t prec_amvr = MV_PRECISION_INT;
 
                         if (inter_ctx->amvr_flag) {
                             uint8_t nz_mvd = check_ibc_nz_mvd(&mvp_data.mvd);
@@ -1133,7 +1133,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
                     } else {
                         const struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
                         struct IBCMVPData mvp_data = inter_mvp_data_ibc(ctu_dec, nb_ibc_cand_min1);
-                        uint8_t prec_amvr = 0;
+                        uint8_t prec_amvr = MV_PRECISION_INT;
                         if (inter_ctx->amvr_flag) {
                             uint8_t nz_mvd = check_ibc_nz_mvd(&mvp_data.mvd);
                             if (nz_mvd) {
@@ -1232,7 +1232,7 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
             } else {
                 const struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
                 struct IBCMVPData mvp_data = inter_mvp_data_ibc(ctu_dec, nb_ibc_cand_min1);
-                uint8_t prec_amvr = 0;
+                uint8_t prec_amvr = MV_PRECISION_INT;
                 if (inter_ctx->amvr_flag) {
                     uint8_t nz_mvd = check_ibc_nz_mvd(&mvp_data.mvd);
                     if (nz_mvd) {
