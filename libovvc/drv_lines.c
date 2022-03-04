@@ -943,6 +943,47 @@ load_first_ctu_inter(const struct DRVLines *const l,
     inter_ctx->hmvp_lut.nb_mv = 0;
 }
 
+static void
+load_first_ctu_ibc(const struct DRVLines *const l,
+                   OVCTUDec *const ctudec,
+                   unsigned int ctb_x)
+{
+    uint8_t nb_unit_ctb =  (1 << ((ctudec->part_ctx->log2_ctu_s) & 7)) >> LOG2_UNIT_S;
+    struct IBCMVCtx *const ibc_ctx = &ctudec->drv_ctx.ibc_ctx;
+    const struct IBCLines *const lns = &l->ibc_lines;
+
+    uint64_t above_map0 = lns->map[0];
+
+    above_map0 |= (uint64_t)lns->map[1] << nb_unit_ctb;
+
+    int i;
+
+    uint64_t *const rows_map0 = ibc_ctx->ctu_map.hfield;
+
+    rows_map0[0] = above_map0 << 1;
+
+    for (i = 1; i < nb_unit_ctb + 1; i++) {
+        rows_map0[i] = 0;
+    }
+
+    uint64_t *const cols_map0 = ibc_ctx->ctu_map.vfield;
+
+    /* Reset first col */
+    cols_map0[0] = 0;
+
+    /* Init columns first field from above map */
+    uint64_t tmp_abv0 = above_map0;
+    for (i = 1; i < nb_unit_ctb + 1; i++) {
+        cols_map0[i] = tmp_abv0 & 0x1;
+        tmp_abv0 >>= 1;
+    }
+
+    /* Copy upper MVs from line buffer */
+    memcpy(&ibc_ctx->abv_row[0], &lns->mv[0], sizeof(IBCMV) * (nb_unit_ctb));
+
+    /* Reset HMVP Look Up table */
+    ctudec->drv_ctx.ibc_ctx.nb_hmvp_cand= 0;
+}
 
 void
 drv_line_next_line(OVCTUDec *const ctudec, const struct DRVLines *const lns)
@@ -970,6 +1011,9 @@ drv_line_next_line(OVCTUDec *const ctudec, const struct DRVLines *const lns)
     intra_info->luma_mode_x = lns->intra_luma_x;
 
     load_first_ctu_inter(lns, ctudec, 0);
+
+    if (ctudec->ibc_enabled)
+        load_first_ctu_ibc(lns, ctudec, 0);
 
     memset(intra_info->luma_mode_y, 0, sizeof(*intra_info->luma_mode_y) * nb_pb_ctb_w);
     memset(drv_ctx->qp_map_x, qp_val, sizeof(*drv_ctx->qp_map_x) * nb_pb_ctb_w);

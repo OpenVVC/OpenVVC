@@ -120,11 +120,11 @@ ibc_update_hmvp_lut(struct IBCMVCtx *const ibc_ctx, const IBCMV mv)
 }
 
 static IBCMV
-ibc_hmvp_mvp_cand(const struct IBCMVCtx *const ibc_ctx)
+ibc_hmvp_mvp_cand(const struct IBCMVCtx *const ibc_ctx, int8_t mvp_idx, int8_t nb_cand)
 {
     IBCMV cand = { 0 };
-    int nb_lut_cand = ibc_ctx->nb_hmvp_cand;
-    if (nb_lut_cand) {
+    int nb_lut_cand = (int8_t)ibc_ctx->nb_hmvp_cand - (mvp_idx - nb_cand);
+    if (nb_lut_cand > 0) {
         cand = ibc_ctx->hmvp_lut[nb_lut_cand - 1];
     }
     return cand;
@@ -145,15 +145,13 @@ ibc_derive_hmvp_merge_cand(const struct IBCMVCtx *const ibc_ctx,
     int8_t target_idx = merge_idx - nb_cand;
     if (target_idx < nb_lut_cand) {
         IBCMV first_cand = ibc_ctx->hmvp_lut[ibc_ctx->nb_hmvp_cand - 1];
-        uint8_t already_cand = 0;
-        if (status_msk & A1_MSK) already_cand |= ibc_mi_cmp(&a1_b1[0], &first_cand);
-        if (status_msk & B1_MSK) already_cand |= ibc_mi_cmp(&a1_b1[1], &first_cand);
-        if (already_cand) {
-             /* skip first_cand */
-             nb_lut_cand--;
-        }
-
         int8_t lut_idx = nb_lut_cand - target_idx - 1;
+        uint8_t already_cand = 0;
+        already_cand |= (status_msk & A1_MSK) && ibc_mi_cmp(&a1_b1[0], &first_cand);
+        already_cand |= (status_msk & B1_MSK) && ibc_mi_cmp(&a1_b1[1], &first_cand);
+
+        /* skip first_cand if equal to previous candidate */
+        lut_idx -= already_cand;
 
         if (lut_idx >= 0) {
             cand = ibc_ctx->hmvp_lut[lut_idx];
@@ -172,6 +170,7 @@ ibc_derive_mvp_mv(struct IBCMVCtx *const ibc_ctx,
     uint64_t abv_row = ibc_ctx->ctu_map.hfield[y0_unit];
 
     IBCMV cand = {0};
+    uint8_t nb_cand = 0;
 
     /* If small do not check for A1 and B1 candidates and look directly into
        HMVP LUT */
@@ -180,23 +179,36 @@ ibc_derive_mvp_mv(struct IBCMVCtx *const ibc_ctx,
     uint8_t cand_a1 = !!(lft_col & POS_MASK(y0_unit, nb_unit_h - 1));
     uint8_t cand_b1 = !!(abv_row & POS_MASK(x0_unit, nb_unit_w - 1));
 
-    if (cand_a1) {
+    if (cand_a1 & !mvp_idx) {
         int cand_pos = y0_unit + nb_unit_h - 1;
         cand = ibc_ctx->lft_col[cand_pos];
         goto found;
-    }
-
-    if (cand_b1) {
+    } else if (cand_b1 & !mvp_idx) {
         int cand_pos = x0_unit + nb_unit_w - 1;
         cand = ibc_ctx->abv_row[cand_pos];
         goto found;
+    } else if (cand_a1 & cand_b1) {
+        int a1_pos = y0_unit + nb_unit_h - 1;
+        int b1_pos = x0_unit + nb_unit_w - 1;
+        IBCMV a1_cand = ibc_ctx->lft_col[a1_pos];
+        IBCMV b1_cand = ibc_ctx->abv_row[b1_pos];
+
+        if (!ibc_mi_cmp(&a1_cand, &b1_cand)) {
+            cand = b1_cand;
+            goto found;
+        }
+
+        nb_cand = 1;
+
+    } else {
+        nb_cand = cand_a1 | cand_b1;
     }
 
 hmvp:
-    cand = ibc_hmvp_mvp_cand(ibc_ctx);
+    cand = ibc_hmvp_mvp_cand(ibc_ctx, mvp_idx, nb_cand);
 
 found:
-    cand = drv_round_to_precision_mv(cand, MV_PRECISION_INTERNAL, prec_amvr);
+    //cand = drv_round_to_precision_mv(cand, MV_PRECISION_INTERNAL, prec_amvr);
     return cand;
 }
 
@@ -213,10 +225,13 @@ ibc_derive_merge_mv(const struct IBCMVCtx *const ibc_ctx,
 
     int nb_cand = 0;
 
+    uint8_t cand_a1 = 0;
+    uint8_t cand_b1 = 0;
+
     if ((nb_unit_h | nb_unit_w) == 1) goto hmvp;
 
-    uint8_t cand_a1 = !!(lft_col & POS_MASK(y0_unit, nb_unit_h - 1));
-    uint8_t cand_b1 = !!(abv_row & POS_MASK(x0_unit, nb_unit_w - 1));
+    cand_a1 = !!(lft_col & POS_MASK(y0_unit, nb_unit_h - 1));
+    cand_b1 = !!(abv_row & POS_MASK(x0_unit, nb_unit_w - 1));
 
     if (cand_a1) {
         int cand_pos = y0_unit + nb_unit_h - 1;
@@ -241,7 +256,7 @@ ibc_derive_merge_mv(const struct IBCMVCtx *const ibc_ctx,
 
 hmvp:
     /* FIXME check if check on max_nb_merge_cand_min1 required */
-    if (nb_cand != max_nb_merge_cand - 1) {
+    if (nb_cand != max_nb_merge_cand) {
         uint8_t status_msk = cand_a1 | (cand_b1 << 1);
         /* FIXME small */
         cand = ibc_derive_hmvp_merge_cand(ibc_ctx, amvp_cand, status_msk, nb_cand, merge_idx);
@@ -281,7 +296,9 @@ ibc_update_mv_ctx(struct IBCMVCtx *const ibc_ctx,
 {
     ibc_fill_mvp_map(ibc_ctx, mv, x0_unit, y0_unit, nb_unit_w, nb_unit_h);
 
-    ibc_update_hmvp_lut(ibc_ctx, mv);
+    if ((nb_unit_w | nb_unit_h) > 1) {
+        ibc_update_hmvp_lut(ibc_ctx, mv);
+    }
 }
 
 IBCMV
@@ -312,15 +329,21 @@ drv_ibc_mvp(struct IBCMVCtx *const ibc_ctx,
             uint8_t log2_cb_w, uint8_t log2_cb_h,
             IBCMV mvd, uint8_t mvp_idx, uint8_t prec_amvr)
 {
-    IBCMV mv;
-
     uint8_t x0_unit = x0 >> LOG2_MIN_CU_S;
     uint8_t y0_unit = y0 >> LOG2_MIN_CU_S;
     uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
     uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
 
-    mv = ibc_derive_mvp_mv(ibc_ctx, x0_unit, y0_unit,
-                           nb_unit_w, nb_unit_h, mvp_idx, prec_amvr);
+#if 0
+    IBCMV mv0 = ibc_derive_mvp_mv(ibc_ctx, x0_unit, y0_unit,
+                                 nb_unit_w, nb_unit_h, mvp_idx, prec_amvr);
+#else
+    IBCMV mv = ibc_derive_merge_mv(ibc_ctx, x0_unit, y0_unit,
+                                   nb_unit_w, nb_unit_h, mvp_idx,
+                                   6);
+#endif
+
+    mv = drv_round_to_precision_mv(mv, MV_PRECISION_INTERNAL, prec_amvr);
 
     mvd = drv_change_precision_mv(mvd, prec_amvr, MV_PRECISION_INTERNAL);
 
