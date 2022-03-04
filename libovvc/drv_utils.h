@@ -105,68 +105,6 @@ enum MvPrecision
   MV_PRECISION_INTERNAL = MV_PRECISION_SIXTEENTH,
 };
 
-#if 0
-static void
-init_ctu_bitfield(struct OVRCNCtx *const rcn_ctx,
-                         const struct LineMaps *const l,
-                         unsigned int ctb_x)
-{
-
-    uint8_t nb_pb =  (1 << ((rcn_ctx->part_ctx->log2_ctu_s) & 7)) >> 2;
-    struct CTUBitField *const map_l = &rcn_ctx->progress_map;
-    struct CTUBitField *const map_c = &rcn_ctx->progress_map_c;
-    uint8_t ctb_ngh_flags = rcn_ctx->ctu_neighbour_flags;
-
-    /* Reset CTUBorders */
-    map_l->hfield[0] = 0;
-    map_c->hfield[0] = 0;
-
-    map_l->vfield[0] = 0;
-    map_c->vfield[0] = 0;
-
-    if (ctb_ngh_flags & VVC_CTU_LEFT_FLAG) {
-        /* Copy last col into next CTU border */
-        int i;
-        map_l->vfield[0] = map_l->vfield[nb_ctb_pb];
-        map_c->vfield[0] = map_c->vfield[nb_ctb_pb];
-        for (i = 1; i < nb_ctb_pb + 1; i++) {
-            map_l->hfield[i] = (uint64_t)!!(map_l->vfield[nb_ctb_pb] & (1llu << i));
-            map_c->hfield[i] = (uint64_t)!!(map_c->vfield[nb_ctb_pb] & (1llu << i));
-        }
-    } else {
-        for (i = 1; i < nb_ctb_pb + 1; i++) {
-            map_l->hfield[i]= 0;
-            map_c->hfield[i]= 0;
-        }
-    }
-
-    if (ctb_ngh_flags & VVC_CTU_UP_FLAG) {
-        int i;
-        map_l->hfield[0] = ((uint64_t)l->progress_map_l[ctb_x]) << 1;
-        map_c->hfield[0] = ((uint64_t)l->progress_map_c[ctb_x]) << 1;
-
-        if (ctb_ngh_flags & VVC_CTU_UPRIGHT_FLAG) {
-            map_l->hfield[0] |= ((uint64_t)l->progress_map_l[ctb_x + 1]) << (nb_ctb_pb + 1);
-            map_c->hfield[0] |= ((uint64_t)l->progress_map_c[ctb_x + 1]) << (nb_ctb_pb + 1);
-        }
-
-        if (ctb_ngh_flags & VVC_CTU_UPLEFT_FLAG) {
-            map_l->hfield[0] |= (uint64_t)(map_l->vfield[0] & 0x1);
-            map_c->hfield[0] |= (uint64_t)(map_l->vfield[0] & 0x1);
-        }
-        for (i = 1; i < nb_ctb_pb + 1; i++) {
-            uint64_t available = !!(l->progress_map_l[ctb_x] & (1 << (i - 1)));
-            map_l->vfield[i]= available;
-            map_c->vfield[i]= available;
-        }
-    } else {
-        for (int i = 1; i < nb_ctb_pb + 1; i++) {
-            map_l->vfield[i]= 0;
-            map_c->vfield[i]= 0;
-        }
-    }
-}
-#else
 
 /* FIXME think to reset this in case of ctu size changes? */
 static inline void
@@ -307,7 +245,5 @@ init_ctu_bitfield_border(struct OVRCNCtx *const rcn_ctx,
     map_l->hfield[0] |= ((~tr_mask) << (nb_ctb_pb + 1)) & (-(int64_t)tr);
     map_c->hfield[0] |= ((~tr_mask) << (nb_ctb_pb + 1)) & (-(int64_t)tr);
 }
-
-#endif
 
 #endif
