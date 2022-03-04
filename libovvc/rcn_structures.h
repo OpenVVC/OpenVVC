@@ -154,7 +154,7 @@ typedef void (*MDLMFunc)(const OVSample* const src_luma, OVSample* const dst_cb,
                          int log2_pb_w, int log2_pb_h, int x0, int y0,
                          uint8_t left_available, uint8_t up_available, LMsubsampleFunc const compute_subsample);
 
-typedef void (*ResidualAddScaleFunc)(const int16_t *src, OVSample *dst,
+typedef void (*ResidualAddScaleFunc)(const int16_t *src, OVSample *dst, int16_t dst_stride,
                                      int log2_tb_w, int log2_tb_h,
                                      int scale);
 

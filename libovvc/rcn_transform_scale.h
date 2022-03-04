@@ -38,35 +38,35 @@
 
 struct ResidualScaleFunctions
 {
-    void (*scale_add_residual)(const int16_t *src, uint16_t *dst,
+    void (*scale_add_residual)(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                                int log2_tb_w, int log2_tb_h,
                                int scale);
 
-    void (*scale_sub_residual)(const int16_t *src, uint16_t *dst,
+    void (*scale_sub_residual)(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                                int log2_tb_w, int log2_tb_h,
                                int scale);
 
-    void (*scale_add_half_residual)(const int16_t *src, uint16_t *dst,
+    void (*scale_add_half_residual)(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                                     int log2_tb_w, int log2_tb_h,
                                     int scale);
 
-    void (*scale_sub_half_residual)(const int16_t *src, uint16_t *dst,
+    void (*scale_sub_half_residual)(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                                     int log2_tb_w, int log2_tb_h,
                                     int scale);
 
-    void (*add_residual)(const int16_t *src, uint16_t *dst,
+    void (*add_residual)(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                          int log2_tb_w, int log2_tb_h,
                          int scale);
 
-    void (*sub_residual)(const int16_t *src, uint16_t *dst,
+    void (*sub_residual)(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                          int log2_tb_w, int log2_tb_h,
                          int scale);
 
-    void (*add_half_residual)(const int16_t *src, uint16_t *dst,
+    void (*add_half_residual)(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                               int log2_tb_w, int log2_tb_h,
                               int scale);
 
-    void (*sub_half_residual)(const int16_t *src, uint16_t *dst,
+    void (*sub_half_residual)(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                               int log2_tb_w, int log2_tb_h,
                               int scale);
 };

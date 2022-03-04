@@ -746,9 +746,9 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
         }
 
         if (log2_tb_w + log2_tb_h > 2) {
-            rcn_func->ict.ict[log2_tb_w][0](tr_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+            rcn_func->ict.ict[log2_tb_w][0](tr_buff, dst_cb, RCN_CTB_STRIDE, log2_tb_w, log2_tb_h, scale);
         } else {
-            rcn_func->ict.add[log2_tb_w](tr_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+            rcn_func->ict.add[log2_tb_w](tr_buff, dst_cb, RCN_CTB_STRIDE, log2_tb_w, log2_tb_h, scale);
         }
 
         if (!(cu_flags & flg_intra_bdpcm_chroma_flag)) {
@@ -778,9 +778,9 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
         }
 
         if (log2_tb_w + log2_tb_h > 2) {
-            rcn_func->ict.ict[log2_tb_w][0](tr_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+            rcn_func->ict.ict[log2_tb_w][0](tr_buff, dst_cr, RCN_CTB_STRIDE, log2_tb_w, log2_tb_h, scale);
         } else {
-            rcn_func->ict.add[log2_tb_w](tr_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+            rcn_func->ict.add[log2_tb_w](tr_buff, dst_cr, RCN_CTB_STRIDE, log2_tb_w, log2_tb_h, scale);
         }
 
         if (!(cu_flags & flg_intra_bdpcm_chroma_flag)) {
@@ -847,18 +847,18 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
     if (cbf_mask == 3) {
         int16_t scale  =  ctu_dec->lmcs_info.scale_c_flag ? ctu_dec->lmcs_info.lmcs_chroma_scale : 1<< 11;
         if (log2_tb_w + log2_tb_h == 2) scale = 1<<11;
-        rcn_func->ict.ict[log2_tb_w][0](tr_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
-        rcn_func->ict.ict[log2_tb_w][1](tr_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+        rcn_func->ict.ict[log2_tb_w][0](tr_buff, dst_cb, RCN_CTB_STRIDE, log2_tb_w, log2_tb_h, scale);
+        rcn_func->ict.ict[log2_tb_w][1](tr_buff, dst_cr, RCN_CTB_STRIDE, log2_tb_w, log2_tb_h, scale);
     } else if (cbf_mask == 2) {
         int16_t scale  =  ctu_dec->lmcs_info.scale_c_flag ? ctu_dec->lmcs_info.lmcs_chroma_scale : 1<< 11;
         if (log2_tb_w + log2_tb_h == 2) scale = 1<<11;
-        rcn_func->ict.ict[log2_tb_w][0](tr_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
-        rcn_func->ict.ict[log2_tb_w][2](tr_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
+        rcn_func->ict.ict[log2_tb_w][0](tr_buff, dst_cb, RCN_CTB_STRIDE, log2_tb_w, log2_tb_h, scale);
+        rcn_func->ict.ict[log2_tb_w][2](tr_buff, dst_cr, RCN_CTB_STRIDE, log2_tb_w, log2_tb_h, scale);
     } else {
         int16_t scale  =  ctu_dec->lmcs_info.scale_c_flag ? ctu_dec->lmcs_info.lmcs_chroma_scale : 1<< 11;
         if (log2_tb_w + log2_tb_h == 2) scale = 1<<11;
-        rcn_func->ict.ict[log2_tb_w][0](tr_buff, dst_cr, log2_tb_w, log2_tb_h, scale);
-        rcn_func->ict.ict[log2_tb_w][2](tr_buff, dst_cb, log2_tb_w, log2_tb_h, scale);
+        rcn_func->ict.ict[log2_tb_w][0](tr_buff, dst_cr, RCN_CTB_STRIDE, log2_tb_w, log2_tb_h, scale);
+        rcn_func->ict.ict[log2_tb_w][2](tr_buff, dst_cb, RCN_CTB_STRIDE, log2_tb_w, log2_tb_h, scale);
     }
 
 }
@@ -992,7 +992,7 @@ rcn_tu_isp_v(OVCTUDec *const ctudec,
     OVSample *dst  = &ctudec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
     const int16_t *src  = ctudec->transform_buff;
 
-    rcn_func->ict.add[log2_tb_w](src, dst, log2_tb_w, log2_tb_h, 0);
+    rcn_func->ict.add[log2_tb_w](src, dst, RCN_CTB_STRIDE, log2_tb_w, log2_tb_h, 0);
 }
 
 static void
@@ -1075,7 +1075,7 @@ rcn_tu_isp_h(OVCTUDec *const ctudec,
     OVSample *dst  = &ctudec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE];
     const int16_t *src  = ctudec->transform_buff;
 
-    rcn_func->ict.add[log2_tb_w](src, dst, log2_tb_w, log2_tb_h, 0);
+    rcn_func->ict.add[log2_tb_w](src, dst, RCN_CTB_STRIDE, log2_tb_w, log2_tb_h, 0);
 }
 
 
@@ -1251,7 +1251,7 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
         }
 
         /* FIXME use transform add optimization */
-        rcn_func->ict.add[log2_tb_w](tr_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
+        rcn_func->ict.add[log2_tb_w](tr_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], RCN_CTB_STRIDE, log2_tb_w, log2_tb_h, 0);
             fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
         if (!(cu_flags & flg_intra_bdpcm_luma_flag)) {
             if (cu_flags & flg_pred_mode_flag) {
@@ -1329,7 +1329,7 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
             fill_bs_map(&ctu_dec->dbf_info.bs1_map, x0, y0, log2_tb_w, log2_tb_h);
 
         /* FIXME use transform add optimization */
-        rcn_func->ict.add[log2_tb_w](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], log2_tb_w, log2_tb_h, 0);
+        rcn_func->ict.add[log2_tb_w](ctu_dec->transform_buff, &ctu_dec->rcn_ctx.ctu_buff.y[x0 + y0 * RCN_CTB_STRIDE], RCN_CTB_STRIDE, log2_tb_w, log2_tb_h, 0);
     }
     fill_ctb_bound(&ctu_dec->dbf_info, x0, y0, log2_tb_w, log2_tb_h);
 }

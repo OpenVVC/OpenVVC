@@ -513,7 +513,6 @@ struct TrCoeffData
 };
 
 struct CTURCNData
-    
 {
     DECLARE_ALIGNED(32, uint16_t, y_buff)[RCN_CTB_SIZE];
     DECLARE_ALIGNED(32, uint16_t, cb_buff)[RCN_CTB_SIZE];

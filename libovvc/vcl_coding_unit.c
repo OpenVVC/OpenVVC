@@ -283,8 +283,8 @@ ovcabac_read_ae_bcw_idx(OVCABACCtx *const cabac_ctx, uint8_t is_ldc){
 static uint8_t
 ovcabac_read_ae_ibc_amvr_precision(OVCABACCtx *const cabac_ctx)
 {
-    static const uint8_t amvr_precision[4] = {
-        MV_PRECISION_QUARTER, MV_PRECISION_INT, MV_PRECISION_4PEL, MV_PRECISION_HALF
+    static const uint8_t amvr_precision[3] = {
+        MV_PRECISION_INT, MV_PRECISION_INT, MV_PRECISION_4PEL,
     };
 
     uint64_t *const cabac_state = cabac_ctx->ctx_table;

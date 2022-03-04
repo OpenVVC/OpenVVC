@@ -43,7 +43,7 @@
 #include "bitdepth.h"
 
 static void
-scale_add_residual(const int16_t *src, OVSample *dst,
+scale_add_residual(const int16_t *src, OVSample *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale)
 {
@@ -62,13 +62,13 @@ scale_add_residual(const int16_t *src, OVSample *dst,
             value = (ov_clip(sign ? -value : value ,-(1 << 15),1 << 15));
             _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
-        _dst += RCN_CTB_STRIDE;
+        _dst += dst_stride;
         _src += tb_w;
     }
 }
 
 static void
-scale_sub_residual(const int16_t *src, OVSample *dst,
+scale_sub_residual(const int16_t *src, OVSample *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale)
 {
@@ -87,13 +87,13 @@ scale_sub_residual(const int16_t *src, OVSample *dst,
             value = (ov_clip(sign ? -value : value ,-(1 << 15),1 << 15));
             _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
-        _dst += RCN_CTB_STRIDE;
+        _dst += dst_stride;
         _src += tb_w;
     }
 }
 
 static void
-scale_add_half_residual(const int16_t *src, OVSample *dst,
+scale_add_half_residual(const int16_t *src, OVSample *dst, int16_t dst_stride,
                            int log2_tb_w, int log2_tb_h,
                            int scale)
 {
@@ -112,13 +112,13 @@ scale_add_half_residual(const int16_t *src, OVSample *dst,
             value = (ov_clip(sign ? -value : value ,-(1 << 15),1 << 15));
             _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
-        _dst += RCN_CTB_STRIDE;
+        _dst += dst_stride;
         _src += tb_w;
     }
 }
 
 static void
-scale_sub_half_residual(const int16_t *src, OVSample *dst,
+scale_sub_half_residual(const int16_t *src, OVSample *dst, int16_t dst_stride,
                            int log2_tb_w, int log2_tb_h,
                            int scale)
 {
@@ -137,13 +137,13 @@ scale_sub_half_residual(const int16_t *src, OVSample *dst,
             value = (ov_clip(sign ? -value : value ,-(1 << 15),1 << 15));
             _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
-        _dst += RCN_CTB_STRIDE;
+        _dst += dst_stride;
         _src += tb_w;
     }
 }
 
 static void
-add_residual(const int16_t *src, OVSample *dst,
+add_residual(const int16_t *src, OVSample *dst, int16_t dst_stride,
                  int log2_tb_w, int log2_tb_h,
                  int scale)
 {
@@ -158,13 +158,13 @@ add_residual(const int16_t *src, OVSample *dst,
             value   = _src[j];
             _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
-        _dst += RCN_CTB_STRIDE;
+        _dst += dst_stride;
         _src += tb_w;
     }
 }
 
 static void
-sub_residual(const int16_t *src, OVSample *dst,
+sub_residual(const int16_t *src, OVSample *dst, int16_t dst_stride,
                  int log2_tb_w, int log2_tb_h,
                  int scale)
 {
@@ -179,13 +179,13 @@ sub_residual(const int16_t *src, OVSample *dst,
             value   = -_src[j];
             _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
-        _dst += RCN_CTB_STRIDE;
+        _dst += dst_stride;
         _src += tb_w;
     }
 }
 
 static void
-add_half_residual(const int16_t *src, OVSample *dst,
+add_half_residual(const int16_t *src, OVSample *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale)
 {
@@ -200,13 +200,13 @@ add_half_residual(const int16_t *src, OVSample *dst,
             value   = _src[j] >> 1;
             _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
-        _dst += RCN_CTB_STRIDE;
+        _dst += dst_stride;
         _src += tb_w;
     }
 }
 
 static void
-sub_half_residual(const int16_t *src, OVSample *dst,
+sub_half_residual(const int16_t *src, OVSample *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale)
 {
@@ -221,7 +221,7 @@ sub_half_residual(const int16_t *src, OVSample *dst,
             value   = (-_src[j]) >> 1;
             _dst[j] = ov_bdclip((int32_t)_dst[j] + value);
         }
-        _dst += RCN_CTB_STRIDE;
+        _dst += dst_stride;
         _src += tb_w;
     }
 }
