@@ -53,8 +53,8 @@ rcn_update_ctu_border(struct OVRCNCtx *rcn_ctx, uint8_t log2_ctb_s)
      finfo->cr += ctu_s >> 1;
      /* Note we also copy border of above line for top left sample
       */
-     src -= binfo->stride_c;
-     dst -= binfo->stride_c;
+     src -= binfo->stride;
+     dst -= binfo->stride;
 
      /* Copy 4 left samples because of MRL */
      for (i = 0; i < ctu_s + 1; ++i) {
@@ -120,7 +120,7 @@ static void
 rcn_intra_line_to_ctu(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log2_ctb_s)
 {
     const struct OVBuffInfo *const il = &rcn_ctx->intra_line_buff;
-          struct OVBuffInfo *ctu_buff = &rcn_ctx->ctu_buff;
+    const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
     const OVSample *src_y  = il->y  + x_l;
     const OVSample *src_cb = il->cb + (x_l>>1);
     const OVSample *src_cr = il->cr + (x_l>>1);
@@ -138,7 +138,7 @@ static void
 rcn_ctu_to_intra_line(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log2_ctu_s)
 {
     const struct OVBuffInfo *intra_line_binfo = &rcn_ctx->intra_line_buff;
-          struct OVBuffInfo *ctu_buff = &rcn_ctx->ctu_buff;
+    const struct OVBuffInfo *ctu_buff = &rcn_ctx->ctu_buff;
 
     int max_cu_width_l = 1 << log2_ctu_s;
     int max_cu_width_c = 1 << (log2_ctu_s - 1);
@@ -554,8 +554,8 @@ rcn_attach_ctu_buff(struct OVRCNCtx *const rcn_ctx)
      ctu_binfo->cb = (OVSample *)rcn_data->cb_buff + RCN_CTB_PADDING;
      ctu_binfo->cr = (OVSample *)rcn_data->cr_buff + RCN_CTB_PADDING;
 
-     ctu_binfo->stride   = RCN_CTB_STRIDE;
-     ctu_binfo->stride_c = RCN_CTB_STRIDE;
+     ctu_binfo->stride   = RCN_CTB_STRIDE + 2;
+     ctu_binfo->stride_c = RCN_CTB_STRIDE + 1;
 }
 
 static void

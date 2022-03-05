@@ -724,7 +724,8 @@ coding_unit(OVCTUDec *const ctu_dec,
 
     uint8_t compute_chr_scale = ((!(x0 & 0x3F) && !(y0 & 0x3F)) && ctu_dec->lmcs_info.lmcs_enabled_flag) ;
     if (compute_chr_scale){
-        ctu_dec->rcn_funcs.rcn_lmcs_compute_chroma_scale(&ctu_dec->lmcs_info, &ctu_dec->rcn_ctx.progress_field,
+        int16_t src_stride = ctu_dec->rcn_ctx.ctu_buff.stride;
+        ctu_dec->rcn_funcs.rcn_lmcs_compute_chroma_scale(&ctu_dec->lmcs_info, src_stride, &ctu_dec->rcn_ctx.progress_field,
                                       ctu_dec->rcn_ctx.ctu_buff.y, x0, y0);
     }
 

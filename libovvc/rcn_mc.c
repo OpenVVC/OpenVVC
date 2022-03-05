@@ -1610,7 +1610,7 @@ put_weighted_qpel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
 
 static void
 put_weighted_ciip_pixels(OVSample* dst, int dststride,
-                      const OVSample* src_intra, const OVSample* src_inter, int srcstride,
+                      const OVSample* src_intra, const OVSample* src_inter, int intra_stride, int inter_stride,
                       int width, int height, int wt)
 {
     int x, y;
@@ -1620,8 +1620,8 @@ put_weighted_ciip_pixels(OVSample* dst, int dststride,
         for (x = 0; x < width; ++x) {
             dst[x] = ov_bdclip(((src_intra[x] * wt + src_inter[x] * (4 - wt)) + offset) >> shift);
         }
-        src_intra += srcstride;
-        src_inter += srcstride;
+        src_intra += intra_stride;
+        src_inter += inter_stride;
         dst += dststride;
     }
 }

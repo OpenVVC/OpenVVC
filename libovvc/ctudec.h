@@ -458,7 +458,6 @@ struct InterDRVCtx
     struct AffineDRVInfo affine_ctx;
 };
 
-
 /* Structure reserved for Intra Modes dervivation
  */
 struct IntraDRVInfo
@@ -514,9 +513,9 @@ struct TrCoeffData
 
 struct CTURCNData
 {
-    DECLARE_ALIGNED(32, uint16_t, y_buff)[RCN_CTB_SIZE];
-    DECLARE_ALIGNED(32, uint16_t, cb_buff)[RCN_CTB_SIZE];
-    DECLARE_ALIGNED(32, uint16_t, cr_buff)[RCN_CTB_SIZE];
+    DECLARE_ALIGNED(32, uint16_t, y_buff)[RCN_CTB_SIZE + 256];
+    DECLARE_ALIGNED(32, uint16_t, cb_buff)[RCN_CTB_SIZE + 256];
+    DECLARE_ALIGNED(32, uint16_t, cr_buff)[RCN_CTB_SIZE + 256];
 
     DECLARE_ALIGNED(32, uint16_t, tmp_bi_mrg0)[RCN_CTB_SIZE];
     DECLARE_ALIGNED(32, uint16_t, tmp_bi_mrg1)[RCN_CTB_SIZE];

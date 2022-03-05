@@ -938,7 +938,7 @@ vvc_intra_chroma_angular(const struct OVRCNCtx *rcn_ctx, const OVSample *const s
     int pred_mode = derive_wide_angular_mode(log2_pb_w, log2_pb_h,
                                              intra_mode);
 
-    int dst_stride = RCN_CTB_STRIDE;
+    int dst_stride = rcn_ctx->ctu_buff.stride_c;
     OVSample *ref1 = ref_above + (1 << log2_pb_h);
     OVSample *ref2 = ref_left + (1 << log2_pb_w);
     int is_vertical = pred_mode >= OVINTRA_DIA ? 1 : 0;
@@ -1023,8 +1023,8 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
 
     const struct OVBuffInfo *ctu_buff = &rcn_ctx->ctu_buff;
 
-    OVSample *const dst_cb = &ctu_buff->cb[(x0) + (y0 * RCN_CTB_STRIDE)];
-    OVSample *const dst_cr = &ctu_buff->cr[(x0) + (y0 * RCN_CTB_STRIDE)];
+    OVSample *const dst_cb = &ctu_buff->cb[(x0) + (y0 * ctu_buff->stride_c)];
+    OVSample *const dst_cr = &ctu_buff->cr[(x0) + (y0 * ctu_buff->stride_c)];
 
     const OVSample *const src_cb = &rcn_ctx->ctu_buff.cb[0];
     const OVSample *const src_cr = &rcn_ctx->ctu_buff.cr[0];
@@ -1150,13 +1150,13 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
     }
     case OVINTRA_LM_CHROMA:
     {
-        const OVSample  *const src_luma = &rcn_ctx->ctu_buff.y[(x0<<1)+((y0<<1)*RCN_CTB_STRIDE)];
+        const OVSample  *const src_luma = &ctu_buff->y[(x0<<1)+((y0<<1)*ctu_buff->stride)];
         /* FIXME to be replaced by progress fields */
         uint8_t neighbour = rcn_ctx->ctudec->ctu_ngh_flags;
         uint8_t got_left_ctu = neighbour & CTU_LFT_FLG;
         uint8_t got_top_ctu  = neighbour & CTU_UP_FLG;
 
-        rcn_func->cclm.cclm(src_luma, dst_cb, dst_cr, log2_pb_w, log2_pb_h,
+        rcn_func->cclm.cclm(src_luma, dst_cb, dst_cr, ctu_buff->stride, ctu_buff->stride_c, log2_pb_w, log2_pb_h,
                             y0, got_top_ctu || y0, got_left_ctu || x0, rcn_func->cclm.compute_subsample);
         break;
     }
@@ -1165,9 +1165,9 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
         uint8_t neighbour = rcn_ctx->ctudec->ctu_ngh_flags;
         uint8_t got_left_ctu = neighbour & CTU_LFT_FLG;
         uint8_t got_top_ctu  = neighbour & CTU_UP_FLG;
-        const OVSample  *const src_luma = &rcn_ctx->ctu_buff.y[(x0<<1)+((y0<<1)*RCN_CTB_STRIDE)];
+        const OVSample  *const src_luma = &ctu_buff->y[(x0<<1)+((y0<<1)*ctu_buff->stride)];
 
-        rcn_func->cclm.mdlm_left(src_luma, dst_cb, dst_cr,
+        rcn_func->cclm.mdlm_left(src_luma, dst_cb, dst_cr, ctu_buff->stride, ctu_buff->stride_c,
                                  left_col_map, log2_pb_w, log2_pb_h,
                                  x0, y0, x0 || got_left_ctu, y0 || got_top_ctu, rcn_func->cclm.compute_subsample);
         break;
@@ -1177,9 +1177,9 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
         uint8_t neighbour = rcn_ctx->ctudec->ctu_ngh_flags;
         uint8_t got_left_ctu = neighbour & CTU_LFT_FLG;
         uint8_t got_top_ctu  = neighbour & CTU_UP_FLG;
-        const OVSample  *const src_luma = &rcn_ctx->ctu_buff.y[(x0<<1)+((y0<<1)*RCN_CTB_STRIDE)];
+        const OVSample  *const src_luma = &ctu_buff->y[(x0<<1)+((y0<<1)*ctu_buff->stride)];
 
-        rcn_func->cclm.mdlm_top(src_luma, dst_cb, dst_cr,
+        rcn_func->cclm.mdlm_top(src_luma, dst_cb, dst_cr, ctu_buff->stride, ctu_buff->stride_c,
                                 top_row_map, log2_pb_w, log2_pb_h,
                                 x0, y0, x0 || got_left_ctu, y0 || got_top_ctu, rcn_func->cclm.compute_subsample);
         break;

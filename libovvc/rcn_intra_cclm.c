@@ -490,10 +490,10 @@ vvc_intra_cclm2(const OVSample *lm_src, OVSample *dst_cb, OVSample *dst_cr,
 
 static void
 vvc_intra_cclm(const OVSample *const src_luma, OVSample *const dst_cb,
-               OVSample *const dst_cr, int log2_pb_w, int log2_pb_h,
+               OVSample *const dst_cr, int16_t stride_l, int16_t stride_c, int log2_pb_w, int log2_pb_h,
                int y0, int up_available, int left_available, LMsubsampleFunc const compute_subsample)
 {
-    vvc_intra_cclm2(src_luma, dst_cb, dst_cr, RCN_CTB_STRIDE, RCN_CTB_STRIDE,
+    vvc_intra_cclm2(src_luma, dst_cb, dst_cr, stride_l, stride_c,
                log2_pb_w, log2_pb_h, left_available, up_available, y0, compute_subsample);
 }
 
@@ -569,10 +569,10 @@ vvc_intra_cclm2_collocated(const OVSample *lm_src, OVSample *dst_cb, OVSample *d
 
 static void
 vvc_intra_cclm_cl(const OVSample *const src_luma, OVSample *const dst_cb,
-                  OVSample *const dst_cr, int log2_pb_w, int log2_pb_h,
+                  OVSample *const dst_cr, int16_t stride_l, int16_t stride_c, int log2_pb_w, int log2_pb_h,
                   int y0, int up_available, int left_available, LMsubsampleFunc const compute_subsample)
 {
-    vvc_intra_cclm2_collocated(src_luma, dst_cb, dst_cr, RCN_CTB_STRIDE, RCN_CTB_STRIDE,
+    vvc_intra_cclm2_collocated(src_luma, dst_cb, dst_cr, stride_l, stride_c,
                log2_pb_w, log2_pb_h, left_available, up_available, y0);
 }
 
@@ -637,12 +637,12 @@ vvc_intra_mdlm_t2(const OVSample *lm_src, OVSample *dst_cb, OVSample *dst_cr,
 
 static void
 vvc_intra_mdlm_top(const OVSample *const src_luma,
-                   OVSample *const dst_cb, OVSample *const dst_cr,
+                   OVSample *const dst_cb, OVSample *const dst_cr, int16_t stride_l, int16_t stride_c,
                    uint64_t intra_map_rows, int log2_pb_w,
                    int log2_pb_h, int x0, int y0,
                    uint8_t left_available , uint8_t up_available, LMsubsampleFunc const compute_subsample)
 {
-    vvc_intra_mdlm_t2(src_luma, dst_cb, dst_cr, RCN_CTB_STRIDE, RCN_CTB_STRIDE,
+    vvc_intra_mdlm_t2(src_luma, dst_cb, dst_cr, stride_l, stride_c,
                       log2_pb_w, log2_pb_h, left_available, up_available,
                       y0, x0, intra_map_rows, compute_subsample);
 }
@@ -707,12 +707,12 @@ vvc_intra_mdlm_t2_collocated(const OVSample *lm_src, OVSample *dst_cb, OVSample 
 
 static void
 vvc_intra_mdlm_top_cl(const OVSample *const src_luma,
-                      OVSample *const dst_cb, OVSample *const dst_cr,
+                      OVSample *const dst_cb, OVSample *const dst_cr, int16_t stride_l, int16_t stride_c,
                       uint64_t intra_map_rows, int log2_pb_w,
                       int log2_pb_h, int x0, int y0,
                       uint8_t left_available , uint8_t up_available, LMsubsampleFunc const compute_subsample)
 {
-    vvc_intra_mdlm_t2_collocated(src_luma, dst_cb, dst_cr, RCN_CTB_STRIDE, RCN_CTB_STRIDE,
+    vvc_intra_mdlm_t2_collocated(src_luma, dst_cb, dst_cr, stride_l, stride_c,
                       log2_pb_w, log2_pb_h, left_available, up_available,
                       y0, x0, intra_map_rows);
 }
@@ -769,12 +769,12 @@ vvc_intra_mdlm_l2(const OVSample *lm_src, OVSample *dst_cb, OVSample *dst_cr,
 
 static void
 vvc_intra_mdlm_left(const OVSample *const src_luma,
-                    OVSample *const dst_cb, OVSample *const dst_cr,
+                    OVSample *const dst_cb, OVSample *const dst_cr, int16_t stride_l, int16_t stride_c,
                     uint64_t intra_map_cols, int log2_pb_w,
                     int log2_pb_h, int x0, int y0,
                     uint8_t left_available, uint8_t up_available, LMsubsampleFunc const compute_subsample)
 {
-    vvc_intra_mdlm_l2(src_luma, dst_cb, dst_cr, RCN_CTB_STRIDE, RCN_CTB_STRIDE,
+    vvc_intra_mdlm_l2(src_luma, dst_cb, dst_cr, stride_l, stride_c,
                       log2_pb_w, log2_pb_h, left_available, up_available,
                       y0, x0, intra_map_cols, compute_subsample);
 }
@@ -832,12 +832,12 @@ vvc_intra_mdlm_l2_collocated(const OVSample *lm_src, OVSample *dst_cb, OVSample 
 
 static void
 vvc_intra_mdlm_left_cl(const OVSample *const src_luma,
-                       OVSample *const dst_cb, OVSample *const dst_cr,
+                       OVSample *const dst_cb, OVSample *const dst_cr, int16_t stride_l, int16_t stride_c,
                        uint64_t intra_map_cols, int log2_pb_w,
                        int log2_pb_h, int x0, int y0,
                        uint8_t left_available, uint8_t up_available, LMsubsampleFunc const compute_subsample)
 {
-    vvc_intra_mdlm_l2_collocated(src_luma, dst_cb, dst_cr, RCN_CTB_STRIDE, RCN_CTB_STRIDE,
+    vvc_intra_mdlm_l2_collocated(src_luma, dst_cb, dst_cr, stride_l, stride_c,
                       log2_pb_w, log2_pb_h, left_available, up_available,
                       y0, x0, intra_map_cols);
 }

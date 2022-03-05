@@ -8636,7 +8636,7 @@ put_vvc_qpel_bilinear_hv_sse(uint16_t* _dst, ptrdiff_t _dststride, const uint16_
 
 static void
 put_weighted_ciip_pixels_sse(uint16_t* dst, int dststride,
-                      const uint16_t* src_intra, const uint16_t* src_inter, int srcstride,
+                      const uint16_t* src_intra, const uint16_t* src_inter, int stride_intra, int stride_inter,
                       int width, int height, int wt)
 {
   int x, y;
@@ -8673,8 +8673,8 @@ put_weighted_ciip_pixels_sse(uint16_t* dst, int dststride,
 
       _mm_storeu_si128((__m128i*)&dst[x], x1);
       }
-      src_intra += srcstride;
-      src_inter += srcstride;
+      src_intra += stride_intra;
+      src_inter += stride_inter;
       dst += dststride;
   }
 }

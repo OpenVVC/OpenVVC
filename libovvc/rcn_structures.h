@@ -146,11 +146,11 @@ typedef void (*LMsubsampleFunc)(const OVSample *lm_src, OVSample *dst_cb, OVSamp
                                 int pb_w, int pb_h, uint8_t lft_avail);
 
 typedef void (*CCLMFunc)( const OVSample* const src_luma, OVSample* const dst_cb,
-                          OVSample* const dst_cr, int log2_pb_w, int log2_pb_h, int y0,
+                          OVSample* const dst_cr, int16_t stride_l, int16_t stride_c, int log2_pb_w, int log2_pb_h, int y0,
                           int up_available, int left_available, LMsubsampleFunc const compute_subsample);
 
 typedef void (*MDLMFunc)(const OVSample* const src_luma, OVSample* const dst_cb,
-                         OVSample* const dst_cr, uint64_t intra_map_rows,
+                         OVSample* const dst_cr, int16_t stride_l, int16_t stride_c, uint64_t intra_map_rows,
                          int log2_pb_w, int log2_pb_h, int x0, int y0,
                          uint8_t left_available, uint8_t up_available, LMsubsampleFunc const compute_subsample);
 
@@ -234,7 +234,7 @@ typedef void (*BDOFSBFunction)(const int16_t* src0, int src0_stride,
                                int wgt_x, int wgt_y);
 
 typedef void (*CIIPWeightedFuntion)(OVSample* dst, int dststride, const OVSample* src_intra,
-                                    const OVSample* src_inter, int srcstride, int width, int height, int wt);
+                                    const OVSample* src_inter, int intra_stride, int srcstride, int width, int height, int wt);
 
 typedef void (*DFFilterFunction)(OVSample *src, const int stride, const int tc);
 
@@ -527,7 +527,7 @@ struct RCNFunctions
     LMCSReshapeFunc lmcs_reshape_forward;
     LMCSReshapeFunc lmcs_reshape_backward;
 
-    void (*rcn_lmcs_compute_chroma_scale)(struct LMCSInfo *const lmcs_info,
+    void (*rcn_lmcs_compute_chroma_scale)(struct LMCSInfo *const lmcs_info, int16_t src_stride,
                                           const struct CTUBitField *const progress_field,
                                           const OVSample *ctu_data_y, uint8_t x0, uint8_t y0);
 

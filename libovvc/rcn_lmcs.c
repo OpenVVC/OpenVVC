@@ -203,9 +203,9 @@ lmcs_convert_data_to_info(struct LMCSParams *const dst, const struct OVLMCSData 
 }
 
 static uint32_t
-lmcs_compute_luma_average(const OVSample *src, uint32_t abv_mask, uint32_t lft_mask)
+lmcs_compute_luma_average(const OVSample *src, int16_t src_stride, uint32_t abv_mask, uint32_t lft_mask)
 {
-    const OVSample *_src = src - RCN_CTB_STRIDE;
+    const OVSample *_src = src - src_stride;
 
     uint32_t luma_sum1 = 0;
     uint32_t luma_sum2 = 0;
@@ -241,16 +241,16 @@ lmcs_compute_luma_average(const OVSample *src, uint32_t abv_mask, uint32_t lft_m
     uint8_t nb_units_lft = 0;
     while (lft_mask) {
         luma_sum1 += _src[0];
-        luma_sum2 += _src[RCN_CTB_STRIDE];
-        luma_sum3 += _src[RCN_CTB_STRIDE << 1];
-        luma_sum4 += _src[RCN_CTB_STRIDE * 3];
-        _src += RCN_CTB_STRIDE << 2;
+        luma_sum2 += _src[src_stride];
+        luma_sum3 += _src[src_stride << 1];
+        luma_sum4 += _src[src_stride * 3];
+        _src += src_stride << 2;
         ++nb_units_lft;
         lft_mask >>= 1;
     }
 
     if (nb_units_lft) {
-        uint32_t pad_val = _src[-RCN_CTB_STRIDE] * (16 - nb_units_lft);
+        uint32_t pad_val = _src[-src_stride] * (16 - nb_units_lft);
         luma_sum1 += pad_val;
         luma_sum2 += pad_val;
         luma_sum3 += pad_val;
@@ -318,7 +318,7 @@ rcn_lmcs_no_reshape(OVSample *dst, ptrdiff_t stride_dst,
 }
 
 static void
-rcn_lmcs_compute_chroma_scale(struct LMCSInfo *const lmcs_info,
+rcn_lmcs_compute_chroma_scale(struct LMCSInfo *const lmcs_info, int16_t src_stride,
                               const struct CTUBitField *const progress_field,
                               const OVSample *ctu_data_y, uint8_t x0, uint8_t y0)
 {
@@ -330,9 +330,9 @@ rcn_lmcs_compute_chroma_scale(struct LMCSInfo *const lmcs_info,
     uint32_t abv_mask = (abv_map >> (x0_unit + 1)) & needed_mask;
     uint32_t lft_mask = (lft_map >> (y0_unit + 1)) & needed_mask;
 
-    const OVSample *src = &ctu_data_y[x0 + y0 * RCN_CTB_STRIDE];
+    const OVSample *src = &ctu_data_y[x0 + y0 * src_stride];
 
-    uint32_t luma_avg = lmcs_compute_luma_average(src, abv_mask, lft_mask);
+    uint32_t luma_avg = lmcs_compute_luma_average(src, src_stride, abv_mask, lft_mask);
 
     int idx = get_bwd_idx(lmcs_info->luts->wnd_bnd, luma_avg, lmcs_info->min_idx, lmcs_info->max_idx);
 
