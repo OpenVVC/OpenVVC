@@ -73,11 +73,13 @@ fill_ref_left_0(const OVSample* const src, int src_stride,
                 uint64_t intra_map_rows, int8_t x0, int8_t y0, int log2_pb_w,
                 int log2_pb_h, int offset_y)
 {
-    const OVSample* src_col = &src[(x0 - 1) + (y0 - 1) * src_stride];
+    const OVSample* src_col = &src[(x0 - 1)];
     uint64_t  avl_map_l =     available_units_map(intra_map_cols, y0, log2_pb_h);
     uint64_t navl_map_l = non_available_units_map(intra_map_cols, y0, log2_pb_h);
     const int ref_length_l = (1 << (log2_pb_h + 1)) + 1;
     int nb_pb_ref_l = ((1 << (log2_pb_h + 1)) >> 2) + 1;
+
+    src_col += (y0 - 1) * src_stride;
 
     if (!navl_map_l) {
         int i;
@@ -148,13 +150,15 @@ fill_ref_left_0_chroma(const OVSample* const src, int src_stride,
                        uint64_t intra_map_rows, int8_t x0, int8_t y0,
                        int log2_pb_w, int log2_pb_h)
 {
-    const OVSample* src_col = &src[(x0 - 1) + (y0 - 1) * src_stride];
+    const OVSample* src_col = &src[(x0 - 1)];
     int y_pb = y0 >> 1;
     int nb_pb_ref_l = ((1 << (log2_pb_h + 1)) >> 1) + 1;
 
     uint64_t ref_map_l = (1llu << (nb_pb_ref_l + 1)) - 1;
     uint64_t avl_map_l = (intra_map_cols >> y_pb) & ref_map_l;
     uint64_t navl_map_l = avl_map_l ^ ref_map_l;
+
+    src_col += (y0 - 1) * src_stride;
 
     if (!navl_map_l) {
         const int ref_length_l = (1 << (log2_pb_h + 1)) + 1;
@@ -226,8 +230,7 @@ fill_ref_left_0_mref(const OVSample* const src, int src_stride,
                      uint64_t intra_map_rows, int mref_idx, int8_t x0,
                      int8_t y0, int log2_pb_w, int log2_pb_h)
 {
-    const OVSample* src_col =
-        &src[(x0 - (mref_idx + 1)) + (y0 - (mref_idx + 1)) * src_stride];
+    const OVSample* src_col = &src[(x0 - (mref_idx + 1))];
     int y_pb = y0 >> 2;
     int nb_pb_ref_l = ((1 << (log2_pb_h + 1)) >> 2) + 1;
     int hw_ratio =
@@ -236,6 +239,8 @@ fill_ref_left_0_mref(const OVSample* const src, int src_stride,
     uint64_t ref_map_l = (1llu << (nb_pb_ref_l + 1)) - 1;
     uint64_t avl_map_l = (intra_map_cols >> y_pb) & ref_map_l;
     uint64_t navl_map_l = avl_map_l ^ ref_map_l;
+
+    src_col += (y0 - (1 + mref_idx)) * src_stride;
 
     if (!navl_map_l) {
         const int ref_length_l =
@@ -318,11 +323,13 @@ fill_ref_above_0(const OVSample* const src, int src_stride,
                  uint64_t intra_map_cols, int8_t x0, int8_t y0, int log2_pb_w,
                  int log2_pb_h, int offset_x)
 {
-    const OVSample *src_line = &src[(x0 - 1) + (y0 - 1) * src_stride];
+    const OVSample *src_line = &src[(y0 - 1) * src_stride];
 
     uint64_t  avl_map_a =     available_units_map(intra_map_rows, x0, log2_pb_w);
     uint64_t navl_map_a = non_available_units_map(intra_map_rows, x0, log2_pb_w);
     const int ref_length_a = (1 << (log2_pb_w + 1)) + 1;
+
+    src_line += (x0 - 1);
 
     if (!navl_map_a) {
         int i;
@@ -396,7 +403,9 @@ fill_ref_above_0_chroma(const OVSample* const src, int src_stride,
     uint64_t avl_map_a = (intra_map_rows >> x_pb) & ref_map_a;
     uint64_t navl_map_a = avl_map_a ^ ref_map_a;
 
-    const OVSample* src_line = &src[(x0 - 1) + (y0 - 1) * src_stride];
+    const OVSample* src_line = &src[(y0 - 1) * src_stride];
+
+    src_line += (x0 - 1);
 
     if (!navl_map_a) {
         const int ref_length_a = (1 << (log2_pb_w + 1)) + 1;
@@ -490,8 +499,9 @@ fill_ref_above_0_mref(const OVSample* const src, int src_stride,
     uint64_t avl_map_a = (intra_map_rows >> x_pb) & ref_map_a;
     uint64_t navl_map_a = avl_map_a ^ ref_map_a;
 
-    const OVSample* src_line =
-        &src[(x0 - (1 + mref_idx)) + (y0 - (1 + mref_idx)) * src_stride];
+    const OVSample* src_line = &src[(y0 - (1 + mref_idx)) * src_stride];
+
+    src_line += (x0 - (1 + mref_idx));
 
     if (!navl_map_a) {
         const int ref_length_a =
@@ -564,7 +574,9 @@ fill_ref_above_0_mref(const OVSample* const src, int src_stride,
                 (intra_map_cols >> y_pb) & needed_mask_l;
 
             int i;
-            const OVSample* src_line = &src[(x0 - 1) + y0 * src_stride];
+            const OVSample* src_line = &src[y0 * src_stride];
+
+            src_line += (x0 - 1);
 
             padding_value = AVG_VAL;
 
