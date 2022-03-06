@@ -73,7 +73,7 @@ fill_ref_left_0(const OVSample* const src, int src_stride,
                 uint64_t intra_map_rows, int8_t x0, int8_t y0, int log2_pb_w,
                 int log2_pb_h, int offset_y)
 {
-    const OVSample* _src = &src[(x0 - 1) + (y0 - 1) * src_stride];
+    const OVSample* src_col = &src[(x0 - 1) + (y0 - 1) * src_stride];
     uint64_t  avl_map_l =     available_units_map(intra_map_cols, y0, log2_pb_h);
     uint64_t navl_map_l = non_available_units_map(intra_map_cols, y0, log2_pb_h);
     const int ref_length_l = (1 << (log2_pb_h + 1)) + 1;
@@ -82,8 +82,8 @@ fill_ref_left_0(const OVSample* const src, int src_stride,
     if (!navl_map_l) {
         int i;
         for (i = 0; i < ref_length_l; ++i) {
-            ref_left[i] = *_src;
-            _src += src_stride;
+            ref_left[i] = *src_col;
+            src_col += src_stride;
         }
 
     } else if (avl_map_l) {
@@ -93,20 +93,20 @@ fill_ref_left_0(const OVSample* const src, int src_stride,
         int i;
 
         if (avl_map_l & 0x1) {
-            *_dst = *(_src + src_stride * offset_y);
+            *_dst = *(src_col + src_stride * offset_y);
         } else {
-            *_dst = _src[src_stride];
+            *_dst = src_col[src_stride];
         }
 
-        _src += src_stride;
+        src_col += src_stride;
         ++_dst;
 
         for (i = 1; i < nb_pb_avl; ++i) {
-            _dst[0] = _src[0 * src_stride];
-            _dst[1] = _src[1 * src_stride];
-            _dst[2] = _src[2 * src_stride];
-            _dst[3] = _src[3 * src_stride];
-            _src += 4 * src_stride;
+            _dst[0] = src_col[0 * src_stride];
+            _dst[1] = src_col[1 * src_stride];
+            _dst[2] = src_col[2 * src_stride];
+            _dst[3] = src_col[3 * src_stride];
+            src_col += 4 * src_stride;
             _dst += 4;
         }
 
@@ -128,7 +128,7 @@ fill_ref_left_0(const OVSample* const src, int src_stride,
         int i;
 
         if (avl_map_a) {
-            padding_val = _src[1 + src_stride * offset_y];
+            padding_val = src_col[1 + src_stride * offset_y];
         }
 
         for (i = 0; i < ref_length_l; ++i) {
@@ -148,7 +148,7 @@ fill_ref_left_0_chroma(const OVSample* const src, int src_stride,
                        uint64_t intra_map_rows, int8_t x0, int8_t y0,
                        int log2_pb_w, int log2_pb_h)
 {
-    const OVSample* _src = &src[(x0 - 1) + (y0 - 1) * src_stride];
+    const OVSample* src_col = &src[(x0 - 1) + (y0 - 1) * src_stride];
     int y_pb = y0 >> 1;
     int nb_pb_ref_l = ((1 << (log2_pb_h + 1)) >> 1) + 1;
 
@@ -160,8 +160,8 @@ fill_ref_left_0_chroma(const OVSample* const src, int src_stride,
         const int ref_length_l = (1 << (log2_pb_h + 1)) + 1;
         int i;
         for (i = 0; i < ref_length_l; ++i) {
-            ref_left[i] = *_src;
-            _src += src_stride;
+            ref_left[i] = *src_col;
+            src_col += src_stride;
         }
     } else if (avl_map_l) {
         int nb_pb_avl = 64 - __builtin_clzll(avl_map_l);
@@ -170,19 +170,19 @@ fill_ref_left_0_chroma(const OVSample* const src, int src_stride,
         int i;
 
         if (avl_map_l & 0x1) {
-            *_dst = *_src;
+            *_dst = *src_col;
         } else {
-            *_dst = _src[src_stride];
+            *_dst = src_col[src_stride];
         }
 
-        _src += src_stride;
+        src_col += src_stride;
         ++_dst;
 
         for (i = 1; i < nb_pb_avl; ++i) {
-            _dst[0] = _src[0 * src_stride];
-            _dst[1] = _src[1 * src_stride];
-            padding_val = _src[1 * src_stride];
-            _src += 2 * src_stride;
+            _dst[0] = src_col[0 * src_stride];
+            _dst[1] = src_col[1 * src_stride];
+            padding_val = src_col[1 * src_stride];
+            src_col += 2 * src_stride;
             _dst += 2;
         }
 
@@ -205,7 +205,7 @@ fill_ref_left_0_chroma(const OVSample* const src, int src_stride,
         int i;
 
         if (avl_map_a) {
-            padding_val = _src[1];
+            padding_val = src_col[1];
         }
 
         for (i = 0; i < ref_length_l; ++i) {
@@ -226,7 +226,7 @@ fill_ref_left_0_mref(const OVSample* const src, int src_stride,
                      uint64_t intra_map_rows, int mref_idx, int8_t x0,
                      int8_t y0, int log2_pb_w, int log2_pb_h)
 {
-    const OVSample* _src =
+    const OVSample* src_col =
         &src[(x0 - (mref_idx + 1)) + (y0 - (mref_idx + 1)) * src_stride];
     int y_pb = y0 >> 2;
     int nb_pb_ref_l = ((1 << (log2_pb_h + 1)) >> 2) + 1;
@@ -242,8 +242,8 @@ fill_ref_left_0_mref(const OVSample* const src, int src_stride,
             (1 << (log2_pb_h + 1)) + 1 + (mref_idx + 1);
         int i;
         for (i = 0; i < ref_length_l; ++i) {
-            ref_left[i] = *_src;
-            _src += src_stride;
+            ref_left[i] = *src_col;
+            src_col += src_stride;
         }
     } else if (avl_map_l) {
         int nb_pb_avl = 64 - __builtin_clzll(avl_map_l);
@@ -253,25 +253,25 @@ fill_ref_left_0_mref(const OVSample* const src, int src_stride,
 
         if (avl_map_l & 0x1) {
             for (i = 0; i < mref_idx + 1; ++i) {
-                *_dst = *(_src);
+                *_dst = *(src_col);
                 _dst++;
-                _src += src_stride;
+                src_col += src_stride;
             }
         } else {
-            _src += src_stride;
+            src_col += src_stride;
             for (i = 0; i < mref_idx + 1; ++i) {
-                *_dst = *_src;
+                *_dst = *src_col;
                 _dst++;
             }
         }
 
         for (i = 1; i < nb_pb_avl; ++i) {
-            _dst[0] = _src[0 * src_stride];
-            _dst[1] = _src[1 * src_stride];
-            _dst[2] = _src[2 * src_stride];
-            _dst[3] = _src[3 * src_stride];
-            padding_val = _src[3 * src_stride];
-            _src += 4 * src_stride;
+            _dst[0] = src_col[0 * src_stride];
+            _dst[1] = src_col[1 * src_stride];
+            _dst[2] = src_col[2 * src_stride];
+            _dst[3] = src_col[3 * src_stride];
+            padding_val = src_col[3 * src_stride];
+            src_col += 4 * src_stride;
             _dst += 4;
         }
 
@@ -297,7 +297,7 @@ fill_ref_left_0_mref(const OVSample* const src, int src_stride,
         int i;
 
         if (avl_map_a) {
-            padding_val = _src[1 + mref_idx];
+            padding_val = src_col[1 + mref_idx];
         }
 
         for (i = 0; i < ref_length_l; ++i) {
@@ -318,7 +318,7 @@ fill_ref_above_0(const OVSample* const src, int src_stride,
                  uint64_t intra_map_cols, int8_t x0, int8_t y0, int log2_pb_w,
                  int log2_pb_h, int offset_x)
 {
-    const OVSample *_src = &src[(x0 - 1) + (y0 - 1) * src_stride];
+    const OVSample *src_line = &src[(x0 - 1) + (y0 - 1) * src_stride];
 
     uint64_t  avl_map_a =     available_units_map(intra_map_rows, x0, log2_pb_w);
     uint64_t navl_map_a = non_available_units_map(intra_map_rows, x0, log2_pb_w);
@@ -327,8 +327,8 @@ fill_ref_above_0(const OVSample* const src, int src_stride,
     if (!navl_map_a) {
         int i;
         for (i = 0; i < ref_length_a; ++i) {
-            ref_above[i] = *_src;
-            ++_src;
+            ref_above[i] = *src_line;
+            ++src_line;
         }
     } else {
         OVSample padding_value = AVG_VAL;
@@ -337,13 +337,13 @@ fill_ref_above_0(const OVSample* const src, int src_stride,
             OVSample *_dst = ref_above + 1;
             int nb_pb_avl = 64 - __builtin_clzll(avl_map_a);
 
-            memcpy(_dst, _src + 1, (nb_pb_avl - 1) * (sizeof(*_dst) << LOG2_UNIT_S));
+            memcpy(_dst, src_line + 1, (nb_pb_avl - 1) * (sizeof(*_dst) << LOG2_UNIT_S));
             _dst += (nb_pb_avl - 1) << LOG2_UNIT_S;
 
             if (avl_map_a & 0x1) {
-                ref_above[0] = *(_src + offset_x);
+                ref_above[0] = *(src_line + offset_x);
             } else {
-                ref_above[0] = _src[1];
+                ref_above[0] = src_line[1];
             }
 
             padding_value = _dst[-1];
@@ -367,8 +367,8 @@ fill_ref_above_0(const OVSample* const src, int src_stride,
             padding_value = AVG_VAL;
 
             if (avl_map_l) {
-                _src += offset_x + src_stride;
-                padding_value = *_src;
+                src_line += offset_x + src_stride;
+                padding_value = *src_line;
             }
 
             for (i = 0; i < ref_length_a; ++i) {
@@ -396,14 +396,14 @@ fill_ref_above_0_chroma(const OVSample* const src, int src_stride,
     uint64_t avl_map_a = (intra_map_rows >> x_pb) & ref_map_a;
     uint64_t navl_map_a = avl_map_a ^ ref_map_a;
 
-    const OVSample* _src = &src[(x0 - 1) + (y0 - 1) * src_stride];
+    const OVSample* src_line = &src[(x0 - 1) + (y0 - 1) * src_stride];
 
     if (!navl_map_a) {
         const int ref_length_a = (1 << (log2_pb_w + 1)) + 1;
         int i;
         for (i = 0; i < ref_length_a; ++i) {
-            ref_above[i] = *_src;
-            ++_src;
+            ref_above[i] = *src_line;
+            ++src_line;
         }
     } else {
         OVSample padding_value = AVG_VAL;
@@ -416,26 +416,26 @@ fill_ref_above_0_chroma(const OVSample* const src, int src_stride,
             OVSample* _dst = ref_above;
 
             if (avl_map_a & 0x1) {
-                *_dst = _src[0];
+                *_dst = src_line[0];
             } else {
-                *_dst = _src[1];
+                *_dst = src_line[1];
             }
 
             ++_dst;
-            ++_src;
+            ++src_line;
             avl_map_a >>= 1;
             navl_map_a >>= 1;
 
             while (avl_map_a) {
-                _dst[0] = _src[0];
-                _dst[1] = _src[1];
+                _dst[0] = src_line[0];
+                _dst[1] = src_line[1];
                 avl_map_a >>= 1;
                 navl_map_a >>= 1;
-               _src += 2;
+               src_line += 2;
                 _dst += 2;
             }
 
-            padding_value = _src[-1];
+            padding_value = src_line[-1];
 
             while (navl_map_a) {
                 _dst[0] = padding_value;
@@ -460,7 +460,7 @@ fill_ref_above_0_chroma(const OVSample* const src, int src_stride,
             padding_value = AVG_VAL;
 
             if (usable_mask_l) {
-                padding_value = _src[src_stride];
+                padding_value = src_line[src_stride];
             }
 
             for (i = 0; i < ref_length_a; ++i) {
@@ -490,7 +490,7 @@ fill_ref_above_0_mref(const OVSample* const src, int src_stride,
     uint64_t avl_map_a = (intra_map_rows >> x_pb) & ref_map_a;
     uint64_t navl_map_a = avl_map_a ^ ref_map_a;
 
-    const OVSample* _src =
+    const OVSample* src_line =
         &src[(x0 - (1 + mref_idx)) + (y0 - (1 + mref_idx)) * src_stride];
 
     if (!navl_map_a) {
@@ -498,8 +498,8 @@ fill_ref_above_0_mref(const OVSample* const src, int src_stride,
             (1 << (log2_pb_w + 1)) + 1 + (mref_idx + 1);
         int i;
         for (i = 0; i < ref_length_a; ++i) {
-            ref_above[i] = *_src;
-            ++_src;
+            ref_above[i] = *src_line;
+            ++src_line;
         }
     } else {
         OVSample padding_value = AVG_VAL;
@@ -514,14 +514,14 @@ fill_ref_above_0_mref(const OVSample* const src, int src_stride,
 
             if (avl_map_a & 0x1) {
                 for (i = 0; i < mref_idx + 1; ++i) {
-                    *_dst = *(_src);
-                    ++_src;
+                    *_dst = *(src_line);
+                    ++src_line;
                     ++_dst;
                 }
             } else {
-                _src += (mref_idx + 1);
+                src_line += (mref_idx + 1);
                 for (i = 0; i < mref_idx + 1; ++i) {
-                    *_dst = *(_src);
+                    *_dst = *(src_line);
                     ++_dst;
                 }
             }
@@ -530,17 +530,17 @@ fill_ref_above_0_mref(const OVSample* const src, int src_stride,
             navl_map_a >>= 1;
 
             while (avl_map_a) {
-                _dst[0] = _src[0];
-                _dst[1] = _src[1];
-                _dst[2] = _src[2];
-                _dst[3] = _src[3];
+                _dst[0] = src_line[0];
+                _dst[1] = src_line[1];
+                _dst[2] = src_line[2];
+                _dst[3] = src_line[3];
                 avl_map_a >>= 1;
                 navl_map_a >>= 1;
-                _src += 4;
+                src_line += 4;
                 _dst += 4;
             }
 
-            padding_value = _src[-1];
+            padding_value = src_line[-1];
 
             while (navl_map_a) {
                 _dst[0] = padding_value;
@@ -564,12 +564,12 @@ fill_ref_above_0_mref(const OVSample* const src, int src_stride,
                 (intra_map_cols >> y_pb) & needed_mask_l;
 
             int i;
-            const OVSample* _src = &src[(x0 - 1) + y0 * src_stride];
+            const OVSample* src_line = &src[(x0 - 1) + y0 * src_stride];
 
             padding_value = AVG_VAL;
 
             if (usable_mask_l) {
-                padding_value = *_src;
+                padding_value = *src_line;
             }
 
             for (i = 0; i < ref_length_a; ++i) {
