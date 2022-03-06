@@ -233,8 +233,7 @@ fill_ref_left_0_mref(const OVSample* const src, int src_stride,
     const OVSample* src_col = &src[(x0 - (mref_idx + 1))];
     int y_pb = y0 >> 2;
     int nb_pb_ref_l = ((1 << (log2_pb_h + 1)) >> 2) + 1;
-    int hw_ratio =
-        OVMAX(1, (1 << log2_pb_h) >> log2_pb_w); // Note this is only
+    int hw_ratio = OVMAX(1, (1 << log2_pb_h) >> log2_pb_w);
 
     uint64_t ref_map_l = (1llu << (nb_pb_ref_l + 1)) - 1;
     uint64_t avl_map_l = (intra_map_cols >> y_pb) & ref_map_l;
@@ -504,8 +503,7 @@ fill_ref_above_0_mref(const OVSample* const src, int src_stride,
     src_line += (x0 - (1 + mref_idx));
 
     if (!navl_map_a) {
-        const int ref_length_a =
-            (1 << (log2_pb_w + 1)) + 1 + (mref_idx + 1);
+        const int ref_length_a = (1 << (log2_pb_w + 1)) + 1 + (mref_idx + 1);
         int i;
         for (i = 0; i < ref_length_a; ++i) {
             ref_above[i] = *src_line;
@@ -515,10 +513,6 @@ fill_ref_above_0_mref(const OVSample* const src, int src_stride,
         OVSample padding_value = AVG_VAL;
         if (avl_map_a) {
 
-            // FIXME: int nb_pb_usable = 64 -
-            // __builtin_clzll(avl_map_a);
-            // FIXME: int nb_pb_missing = nb_pb_ref_a -
-            // nb_pb_usable;
             OVSample* _dst = ref_above;
             int i;
 
@@ -568,10 +562,8 @@ fill_ref_above_0_mref(const OVSample* const src, int src_stride,
             // FIXME: +(mref_idx + 1);
             int nb_pb_ref_l = ((1 << (log2_pb_h + 1)) >> 2) + 1;
 
-            uint64_t needed_mask_l =
-                (1llu << (nb_pb_ref_l + 1)) - 1;
-            uint64_t usable_mask_l =
-                (intra_map_cols >> y_pb) & needed_mask_l;
+            uint64_t needed_mask_l = (1llu << (nb_pb_ref_l + 1)) - 1;
+            uint64_t usable_mask_l = (intra_map_cols >> y_pb) & needed_mask_l;
 
             int i;
             const OVSample* src_line = &src[y0 * src_stride];
