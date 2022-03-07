@@ -418,9 +418,9 @@ compute_lm_subsample(const OVSample *src_y, OVSample *dst_cb, OVSample *dst_cr,
 }
 
 static void
-vvc_intra_cclm(const OVSample *const src_y, OVSample *const dst_cb,
-               OVSample *const dst_cr, int16_t stride_l, int16_t stride_c, int log2_pb_w, int log2_pb_h,
-               int y0, int abv_avail, int lft_avail, LMsubsampleFunc const compute_subsample)
+intra_cclm(const OVSample *const src_y, OVSample *const dst_cb,
+           OVSample *const dst_cr, int16_t stride_l, int16_t stride_c, int log2_pb_w, int log2_pb_h,
+           int y0, int abv_avail, int lft_avail, LMsubsampleFunc const compute_subsample)
 {
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
@@ -487,9 +487,9 @@ vvc_intra_cclm(const OVSample *const src_y, OVSample *const dst_cb,
 }
 
 static void
-vvc_intra_cclm_cl(const OVSample *const src_y, OVSample *const dst_cb,
-                  OVSample *const dst_cr, int16_t stride_l, int16_t stride_c, int log2_pb_w, int log2_pb_h,
-                  int y0, int abv_avail, int lft_avail, LMsubsampleFunc const compute_subsample)
+intra_cclm_cl(const OVSample *const src_y, OVSample *const dst_cb,
+              OVSample *const dst_cr, int16_t stride_l, int16_t stride_c, int log2_pb_w, int log2_pb_h,
+              int y0, int abv_avail, int lft_avail, LMsubsampleFunc const compute_subsample)
 {
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
@@ -556,11 +556,11 @@ vvc_intra_cclm_cl(const OVSample *const src_y, OVSample *const dst_cb,
 }
 
 static void
-vvc_intra_mdlm_top(const OVSample *const src_y,
-                   OVSample *const dst_cb, OVSample *const dst_cr, int16_t stride_l, int16_t stride_c,
-                   uint64_t abv_map, int log2_pb_w,
-                   int log2_pb_h, int x0, int y0,
-                   uint8_t lft_avail , uint8_t abv_avail, LMsubsampleFunc const compute_subsample)
+intra_mdlm_top(const OVSample *const src_y,
+               OVSample *const dst_cb, OVSample *const dst_cr, int16_t stride_l, int16_t stride_c,
+               uint64_t abv_map, int log2_pb_w,
+               int log2_pb_h, int x0, int y0,
+               uint8_t lft_avail , uint8_t abv_avail, LMsubsampleFunc const compute_subsample)
 {
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
@@ -615,11 +615,11 @@ vvc_intra_mdlm_top(const OVSample *const src_y,
 }
 
 static void
-vvc_intra_mdlm_top_cl(const OVSample *const src_y,
-                      OVSample *const dst_cb, OVSample *const dst_cr, int16_t stride_l, int16_t stride_c,
-                      uint64_t abv_map, int log2_pb_w,
-                      int log2_pb_h, int x0, int y0,
-                      uint8_t lft_avail , uint8_t abv_avail, LMsubsampleFunc const compute_subsample)
+intra_mdlm_top_cl(const OVSample *const src_y,
+                  OVSample *const dst_cb, OVSample *const dst_cr, int16_t stride_l, int16_t stride_c,
+                  uint64_t abv_map, int log2_pb_w,
+                  int log2_pb_h, int x0, int y0,
+                  uint8_t lft_avail , uint8_t abv_avail, LMsubsampleFunc const compute_subsample)
 {
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
@@ -674,11 +674,11 @@ vvc_intra_mdlm_top_cl(const OVSample *const src_y,
 }
 
 static void
-vvc_intra_mdlm_left(const OVSample *const src_y,
-                    OVSample *const dst_cb, OVSample *const dst_cr, int16_t stride_l, int16_t stride_c,
-                    uint64_t lft_map, int log2_pb_w,
-                    int log2_pb_h, int x0, int y0,
-                    uint8_t lft_avail, uint8_t abv_avail, LMsubsampleFunc const compute_subsample)
+intra_mdlm_left(const OVSample *const src_y,
+                OVSample *const dst_cb, OVSample *const dst_cr, int16_t stride_l, int16_t stride_c,
+                uint64_t lft_map, int log2_pb_w,
+                int log2_pb_h, int x0, int y0,
+                uint8_t lft_avail, uint8_t abv_avail, LMsubsampleFunc const compute_subsample)
 {
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
@@ -725,13 +725,13 @@ vvc_intra_mdlm_left(const OVSample *const src_y,
 }
 
 static void
-vvc_intra_mdlm_left_cl(const OVSample *const src_y,
-                       OVSample *const dst_cb, OVSample *const dst_cr,
-                       int16_t stride_l, int16_t stride_c,
-                       uint64_t lft_map, int log2_pb_w,
-                       int log2_pb_h, int x0, int y0,
-                       uint8_t lft_avail, uint8_t abv_avail,
-                       LMsubsampleFunc const compute_subsample)
+intra_mdlm_left_cl(const OVSample *const src_y,
+                   OVSample *const dst_cb, OVSample *const dst_cr,
+                   int16_t stride_l, int16_t stride_c,
+                   uint64_t lft_map, int log2_pb_w,
+                   int log2_pb_h, int x0, int y0,
+                   uint8_t lft_avail, uint8_t abv_avail,
+                   LMsubsampleFunc const compute_subsample)
 {
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
@@ -781,9 +781,9 @@ void
 BD_DECL(rcn_init_cclm_functions_collocated)(struct RCNFunctions *rcn_func)
 {
    struct CCLMFunctions *const cclm = &rcn_func->cclm; 
-   cclm->cclm = &vvc_intra_cclm_cl;
-   cclm->mdlm_left = &vvc_intra_mdlm_left_cl;
-   cclm->mdlm_top  = &vvc_intra_mdlm_top_cl;
+   cclm->cclm      = &intra_cclm_cl;
+   cclm->mdlm_left = &intra_mdlm_left_cl;
+   cclm->mdlm_top  = &intra_mdlm_top_cl;
 }
 
 /* FIXME check vertical / horizontal */
@@ -791,9 +791,9 @@ void
 BD_DECL(rcn_init_cclm_functions)(struct RCNFunctions *rcn_func)
 {
    struct CCLMFunctions *const cclm = &rcn_func->cclm; 
-   cclm->cclm              = &vvc_intra_cclm;
-   cclm->mdlm_left         = &vvc_intra_mdlm_left;
-   cclm->mdlm_top          = &vvc_intra_mdlm_top;
+   cclm->cclm              = &intra_cclm;
+   cclm->mdlm_left         = &intra_mdlm_left;
+   cclm->mdlm_top          = &intra_mdlm_top;
    cclm->compute_subsample = &compute_lm_subsample;
 }
 
