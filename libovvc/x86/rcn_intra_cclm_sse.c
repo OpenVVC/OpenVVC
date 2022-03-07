@@ -346,9 +346,9 @@ compute_lm_subsample_4_lft_avail_sse(const uint16_t *lm_src, uint16_t *dst_cb, u
 
 static void
 compute_lm_subsample_8_lft_avail_sse(const uint16_t *lm_src, uint16_t *dst_cb, uint16_t *dst_cr,
-                    ptrdiff_t lm_src_stride, ptrdiff_t dst_stride_c,
-                    const struct CCLMParams *const lm_params,
-                    int pb_w, int pb_h)
+                                     ptrdiff_t lm_src_stride, ptrdiff_t dst_stride_c,
+                                     const struct CCLMParams *const lm_params,
+                                     int pb_w, int pb_h)
 {
     int i, j;
     ptrdiff_t lm_src_stride2 = lm_src_stride << 1;
