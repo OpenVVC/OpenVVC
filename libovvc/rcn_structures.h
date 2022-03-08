@@ -146,18 +146,19 @@ typedef void (*MCRPRWeighted)(OVSample* _dst, ptrdiff_t _dststride,
                       intptr_t mx, intptr_t my, int width);
 
 typedef void (*LMsubsampleFunc)(const OVSample *lm_src, OVSample *dst_cb, OVSample *dst_cr,
-                                ptrdiff_t lm_src_stride, ptrdiff_t dst_stride_c,
+                                ptrdiff_t stride_l, ptrdiff_t stride_c,
                                 const struct CCLMParams *const lm_params,
                                 int pb_w, int pb_h, uint8_t lft_avail);
 
-typedef void (*CCLMFunc)( const OVSample* const src_luma, OVSample* const dst_cb,
-                          OVSample* const dst_cr, int16_t stride_l, int16_t stride_c, int log2_pb_w, int log2_pb_h, int y0,
-                          int up_available, int left_available, LMsubsampleFunc const compute_subsample);
+struct OVRCNCtx;
 
-typedef void (*MDLMFunc)(const OVSample* const src_luma, OVSample* const dst_cb,
-                         OVSample* const dst_cr, int16_t stride_l, int16_t stride_c, uint64_t intra_map_rows,
+typedef void (*CCLMFunc)(const struct OVRCNCtx *const rcn_ctx,
                          int log2_pb_w, int log2_pb_h, int x0, int y0,
-                         uint8_t left_available, uint8_t up_available, LMsubsampleFunc const compute_subsample);
+                         int up_available, int left_available);
+
+typedef void (*MDLMFunc)(const struct OVRCNCtx *const rcn_ctx, uint64_t intra_map_rows,
+                         int log2_pb_w, int log2_pb_h, int x0, int y0,
+                         uint8_t left_available, uint8_t up_available);
 
 typedef void (*ResidualAddScaleFunc)(const int16_t *src, OVSample *dst, int16_t dst_stride,
                                      int log2_tb_w, int log2_tb_h,

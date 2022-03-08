@@ -1156,8 +1156,8 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
         uint8_t got_left_ctu = neighbour & CTU_LFT_FLG;
         uint8_t got_top_ctu  = neighbour & CTU_UP_FLG;
 
-        rcn_func->cclm.cclm(src_luma, dst_cb, dst_cr, ctu_buff->stride, ctu_buff->stride_c, log2_pb_w, log2_pb_h,
-                            y0, got_top_ctu || y0, got_left_ctu || x0, rcn_func->cclm.compute_subsample);
+        rcn_func->cclm.cclm(rcn_ctx, log2_pb_w, log2_pb_h, x0, y0,
+                            got_top_ctu || y0, got_left_ctu || x0);
         break;
     }
     case OVINTRA_MDLM_LEFT:
@@ -1165,11 +1165,10 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
         uint8_t neighbour = rcn_ctx->ctudec->ctu_ngh_flags;
         uint8_t got_left_ctu = neighbour & CTU_LFT_FLG;
         uint8_t got_top_ctu  = neighbour & CTU_UP_FLG;
-        const OVSample  *const src_luma = &ctu_buff->y[(x0<<1)+((y0<<1)*ctu_buff->stride)];
 
-        rcn_func->cclm.mdlm_left(src_luma, dst_cb, dst_cr, ctu_buff->stride, ctu_buff->stride_c,
+        rcn_func->cclm.mdlm_left(rcn_ctx,
                                  left_col_map, log2_pb_w, log2_pb_h,
-                                 x0, y0, x0 || got_left_ctu, y0 || got_top_ctu, rcn_func->cclm.compute_subsample);
+                                 x0, y0, x0 || got_left_ctu, y0 || got_top_ctu);
         break;
     }
     case OVINTRA_MDLM_TOP:
@@ -1177,11 +1176,10 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
         uint8_t neighbour = rcn_ctx->ctudec->ctu_ngh_flags;
         uint8_t got_left_ctu = neighbour & CTU_LFT_FLG;
         uint8_t got_top_ctu  = neighbour & CTU_UP_FLG;
-        const OVSample  *const src_luma = &ctu_buff->y[(x0<<1)+((y0<<1)*ctu_buff->stride)];
 
-        rcn_func->cclm.mdlm_top(src_luma, dst_cb, dst_cr, ctu_buff->stride, ctu_buff->stride_c,
+        rcn_func->cclm.mdlm_top(rcn_ctx,
                                 top_row_map, log2_pb_w, log2_pb_h,
-                                x0, y0, x0 || got_left_ctu, y0 || got_top_ctu, rcn_func->cclm.compute_subsample);
+                                x0, y0, x0 || got_left_ctu, y0 || got_top_ctu);
         break;
     }
     default://angular
