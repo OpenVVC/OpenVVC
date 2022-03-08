@@ -116,17 +116,17 @@ derive_cclm_params(const struct AVGMinMax *const avgs)
 }
 
 static inline struct AVGMinMax
-sort_average_lm_ref_samples(const OVSample *const lm_smp, const OVSample *const smp_cb,
+sort_average_lm_ref_samples(const OVSample *const smp_y, const OVSample *const smp_cb,
                             const OVSample *const smp_cr, int nb_samples)
 {
     struct AVGMinMax avg_min_max;
 
     if (nb_samples == 2) {
-        int min_idx = lm_smp[0] >= lm_smp[1];
+        int min_idx = smp_y[0] >= smp_y[1];
         int max_idx = !min_idx;
 
-        avg_min_max.min_l = lm_smp[min_idx];
-        avg_min_max.max_l = lm_smp[max_idx];
+        avg_min_max.min_l = smp_y[min_idx];
+        avg_min_max.max_l = smp_y[max_idx];
 
         avg_min_max.min_cb = smp_cb[min_idx];
         avg_min_max.max_cb = smp_cb[max_idx];
@@ -142,14 +142,14 @@ sort_average_lm_ref_samples(const OVSample *const lm_smp, const OVSample *const 
         int8_t *min_idx = &idx[0];
         int8_t *max_idx = &idx[2];
 
-        if (lm_smp[0] > lm_smp[2]) SWAP(int8_t, min_idx[0], min_idx[1]);
-        if (lm_smp[1] > lm_smp[3]) SWAP(int8_t, max_idx[0], max_idx[1]);
+        if (smp_y[0] > smp_y[2]) SWAP(int8_t, min_idx[0], min_idx[1]);
+        if (smp_y[1] > smp_y[3]) SWAP(int8_t, max_idx[0], max_idx[1]);
 
-        if (lm_smp[min_idx[0]] > lm_smp[max_idx[1]]) SWAP(int8_t*, min_idx, max_idx);
-        if (lm_smp[min_idx[1]] > lm_smp[max_idx[0]]) SWAP(int8_t, min_idx[1], max_idx[0]);
+        if (smp_y[min_idx[0]] > smp_y[max_idx[1]]) SWAP(int8_t*, min_idx, max_idx);
+        if (smp_y[min_idx[1]] > smp_y[max_idx[0]]) SWAP(int8_t, min_idx[1], max_idx[0]);
 
-        avg_min_max.min_l = (lm_smp[min_idx[0]] + lm_smp[min_idx[1]] + 1) >> 1;
-        avg_min_max.max_l = (lm_smp[max_idx[0]] + lm_smp[max_idx[1]] + 1) >> 1;
+        avg_min_max.min_l = (smp_y[min_idx[0]] + smp_y[min_idx[1]] + 1) >> 1;
+        avg_min_max.max_l = (smp_y[max_idx[0]] + smp_y[max_idx[1]] + 1) >> 1;
 
         avg_min_max.min_cb = (smp_cb[min_idx[0]] + smp_cb[min_idx[1]] + 1) >> 1;
         avg_min_max.max_cb = (smp_cb[max_idx[0]] + smp_cb[max_idx[1]] + 1) >> 1;
@@ -163,29 +163,28 @@ sort_average_lm_ref_samples(const OVSample *const lm_smp, const OVSample *const 
 
 static void
 sub_sample_lm_ref_abv0(const OVSample *src_y, const OVSample *src_cb, const OVSample *src_cr,
-                       OVSample *const lm_dst, OVSample *dst_cb, OVSample *dst_cr,
-                       ptrdiff_t stride_l, ptrdiff_t src_c_stride,
+                       OVSample *const smp_y, OVSample *smp_cb, OVSample *smp_cr,
+                       ptrdiff_t stride_l, ptrdiff_t stride_c,
                        int abv_step, int nb_sample_abv, uint8_t lft_avail)
 {
     int start_pos = abv_step >> 1;
     const OVSample *_src = src_y - stride_l + (start_pos << 1);
-    const OVSample *_src_cb = src_cb - src_c_stride + start_pos;
-    const OVSample *_src_cr = src_cr - src_c_stride + start_pos;
+    const OVSample *_src_cb = src_cb - stride_c + start_pos;
+    const OVSample *_src_cr = src_cr - stride_c + start_pos;
     int i;
 
     int abv_step_l = abv_step << 1;
     uint8_t pad_left = start_pos == 0 && !lft_avail;
 
     for (i = 0; i < nb_sample_abv; i++) {
-
         int s = 2;
         s += _src[0              ] * 2;
         s += _src[0 - (!pad_left)];
         s += _src[0 + 1          ];
 
-        lm_dst[i] = s >> 2;
-        dst_cb[i] = _src_cb[0];
-        dst_cr[i] = _src_cr[0];
+        smp_y[i] = s >> 2;
+        smp_cb[i] = _src_cb[0];
+        smp_cr[i] = _src_cr[0];
 
         _src += abv_step_l;
         _src_cb += abv_step;
@@ -196,17 +195,17 @@ sub_sample_lm_ref_abv0(const OVSample *src_y, const OVSample *src_cb, const OVSa
 
 static void
 sub_sample_lm_ref_lft_cl(const OVSample *src_y, const OVSample *src_cb, const OVSample *src_cr,
-                         OVSample *const lm_dst, OVSample *dst_cb, OVSample *dst_cr,
-                         ptrdiff_t stride_l, ptrdiff_t src_c_stride,
+                         OVSample *const smp_y, OVSample *smp_cb, OVSample *smp_cr,
+                         ptrdiff_t stride_l, ptrdiff_t stride_c,
                          int lft_step, int nb_sample_lft, int abv_avail)
 {
     int start_pos = lft_step >> 1;
     int lm_src_stride2 = stride_l << 1;
     int stride_sl = lm_src_stride2 * lft_step;
-    int stride_c = src_c_stride * lft_step;
+    int stride_sc = stride_c * lft_step;
     const OVSample *_src    = src_y - 2 + start_pos * lm_src_stride2;
-    const OVSample *_src_cb = src_cb - 1 + start_pos * src_c_stride;
-    const OVSample *_src_cr = src_cr - 1 + start_pos * src_c_stride;
+    const OVSample *_src_cb = src_cb - 1 + start_pos * stride_c;
+    const OVSample *_src_cr = src_cr - 1 + start_pos * stride_c;
     int i;
 
     uint8_t padd_abv = start_pos == 0 && !abv_avail;
@@ -219,28 +218,28 @@ sub_sample_lm_ref_lft_cl(const OVSample *src_y, const OVSample *src_cb, const OV
         s += _src[1];
         s += _src[stride_l];
 
-        lm_dst[i] = s >> 3;
+        smp_y[i] = s >> 3;
 
-        dst_cb[i] = _src_cb[0];
-        dst_cr[i] = _src_cr[0];
+        smp_cb[i] = _src_cb[0];
+        smp_cr[i] = _src_cr[0];
         padd_abv = 0;
 
         _src    += stride_sl;
-        _src_cb += stride_c;
-        _src_cr += stride_c;
+        _src_cb += stride_sc;
+        _src_cr += stride_sc;
     }
 }
 
 static void
 sub_sample_lm_ref_abv_cl(const OVSample *src_y, const OVSample *src_cb, const OVSample *src_cr,
-                         OVSample *const lm_dst, OVSample *dst_cb, OVSample *dst_cr,
-                         ptrdiff_t stride_l, ptrdiff_t src_c_stride,
+                         OVSample *const smp_y, OVSample *smp_cb, OVSample *smp_cr,
+                         ptrdiff_t stride_l, ptrdiff_t stride_c,
                          int abv_step, int nb_sample_abv, uint8_t lft_avail)
 {
     int start_pos = abv_step >> 1;
     const OVSample *_src = src_y - (stride_l << 1) + (start_pos << 1);
-    const OVSample *_src_cb = src_cb - src_c_stride + start_pos;
-    const OVSample *_src_cr = src_cr - src_c_stride + start_pos;
+    const OVSample *_src_cb = src_cb - stride_c + start_pos;
+    const OVSample *_src_cr = src_cr - stride_c + start_pos;
     int i;
 
     int abv_step_l = abv_step << 1;
@@ -256,9 +255,9 @@ sub_sample_lm_ref_abv_cl(const OVSample *src_y, const OVSample *src_cb, const OV
         s += _src[0 + 1];
         s += _src[0 + stride_l];
 
-        lm_dst[i] = s >> 3;
-        dst_cb[i] = _src_cb[0];
-        dst_cr[i] = _src_cr[0];
+        smp_y[i] = s >> 3;
+        smp_cb[i] = _src_cb[0];
+        smp_cr[i] = _src_cr[0];
 
         pad_left = 0;
 
@@ -321,7 +320,7 @@ intra_cclm_cl(const OVSample *const src_y, OVSample *const dst_cb,
 
     if (abv_avail || lft_avail){
         struct AVGMinMax avg_min_max;
-        OVSample lm_smp[4];
+        OVSample smp_y[4];
         OVSample smp_cb[4];
         OVSample smp_cr[4];
         uint8_t log2_nb_smp_abv = !!abv_avail + !lft_avail;
@@ -341,11 +340,11 @@ intra_cclm_cl(const OVSample *const src_y, OVSample *const dst_cb,
 
             /*FIXME avoid checking for first_line */
             if (ctu_first_line) {
-                sub_sample_lm_ref_abv0(src_y, dst_cb, dst_cr, lm_smp, smp_cb, smp_cr,
+                sub_sample_lm_ref_abv0(src_y, dst_cb, dst_cr, smp_y, smp_cb, smp_cr,
                                        stride_l, stride_c,
                                        abv_step, nb_sample_abv, lft_avail);
             } else {
-                sub_sample_lm_ref_abv_cl(src_y, dst_cb, dst_cr, lm_smp, smp_cb, smp_cr,
+                sub_sample_lm_ref_abv_cl(src_y, dst_cb, dst_cr, smp_y, smp_cb, smp_cr,
                                          stride_l, stride_c,
                                          abv_step, nb_sample_abv, lft_avail);
             }
@@ -358,7 +357,7 @@ intra_cclm_cl(const OVSample *const src_y, OVSample *const dst_cb,
                We are forced to reduce nb_smp in this particular case */
             nb_sample_lft = OVMIN(pb_h, nb_sample_lft);
 
-            sub_sample_lm_ref_lft_cl(src_y, dst_cb, dst_cr, &lm_smp[nb_sample_abv],
+            sub_sample_lm_ref_lft_cl(src_y, dst_cb, dst_cr, &smp_y[nb_sample_abv],
                                      &smp_cb[nb_sample_abv], &smp_cr[nb_sample_abv],
                                      stride_l, stride_c,
                                      lft_step, nb_sample_lft, abv_avail);
@@ -366,7 +365,7 @@ intra_cclm_cl(const OVSample *const src_y, OVSample *const dst_cb,
 
         nb_sample = nb_sample_lft + nb_sample_abv;
 
-        avg_min_max = sort_average_lm_ref_samples(lm_smp, smp_cb, smp_cr, nb_sample);
+        avg_min_max = sort_average_lm_ref_samples(smp_y, smp_cb, smp_cr, nb_sample);
 
         lm_params = derive_cclm_params(&avg_min_max);
     }
@@ -392,7 +391,7 @@ intra_mdlm_abv_cl(const OVSample *const src_y,
 
     if (abv_avail) {
         struct AVGMinMax avg_min_max;
-        OVSample lm_smp[4];
+        OVSample smp_y[4];
         OVSample smp_cb[4];
         OVSample smp_cr[4];
 
@@ -416,16 +415,16 @@ intra_mdlm_abv_cl(const OVSample *const src_y,
 
         /*FIXME avoid checking for first_line */
         if (ctu_first_line) {
-            sub_sample_lm_ref_abv0(src_y, dst_cb, dst_cr, lm_smp, smp_cb, smp_cr,
+            sub_sample_lm_ref_abv0(src_y, dst_cb, dst_cr, smp_y, smp_cb, smp_cr,
                                    stride_l, stride_c,
                                    abv_step, nb_sample_abv, lft_avail);
         } else {
-            sub_sample_lm_ref_abv_cl(src_y, dst_cb, dst_cr, lm_smp, smp_cb, smp_cr,
+            sub_sample_lm_ref_abv_cl(src_y, dst_cb, dst_cr, smp_y, smp_cb, smp_cr,
                                      stride_l, stride_c,
                                      abv_step, nb_sample_abv, lft_avail);
         }
 
-        avg_min_max = sort_average_lm_ref_samples(lm_smp, smp_cb, smp_cr, nb_sample_abv);
+        avg_min_max = sort_average_lm_ref_samples(smp_y, smp_cb, smp_cr, nb_sample_abv);
 
         lm_params = derive_cclm_params(&avg_min_max);
     }
@@ -489,17 +488,17 @@ intra_mdlm_lft_cl(const OVSample *const src_y,
 
 static void
 sub_sample_lm_ref_lft(const OVSample *src_y, const OVSample *src_cb, const OVSample *src_cr,
-                      OVSample *const lm_dst, OVSample *dst_cb, OVSample *dst_cr,
-                      ptrdiff_t stride_l, ptrdiff_t src_c_stride,
+                      OVSample *const smp_y, OVSample *smp_cb, OVSample *smp_cr,
+                      ptrdiff_t stride_l, ptrdiff_t stride_c,
                       int lft_step, int nb_sample_lft)
 {
     int start_pos = lft_step >> 1;
     int lm_src_stride2 = stride_l << 1;
     int stride_sl = lm_src_stride2 * lft_step;
-    int stride_c = src_c_stride * lft_step;
+    int stride_sc = stride_c * lft_step;
     const OVSample *_src    = src_y - 2 + start_pos * lm_src_stride2;
-    const OVSample *_src_cb = src_cb - 1 + start_pos * src_c_stride;
-    const OVSample *_src_cr = src_cr - 1 + start_pos * src_c_stride;
+    const OVSample *_src_cb = src_cb - 1 + start_pos * stride_c;
+    const OVSample *_src_cr = src_cr - 1 + start_pos * stride_c;
     int i;
 
     for (i = 0; i < nb_sample_lft; i++) {
@@ -511,28 +510,28 @@ sub_sample_lm_ref_lft(const OVSample *src_y, const OVSample *src_cb, const OVSam
         s += _src[stride_l + 1];
         s += _src[stride_l - 1];
 
-        lm_dst[i] = s >> 3;
+        smp_y[i] = s >> 3;
 
-        dst_cb[i] = _src_cb[0];
-        dst_cr[i] = _src_cr[0];
+        smp_cb[i] = _src_cb[0];
+        smp_cr[i] = _src_cr[0];
 
         _src    += stride_sl;
-        _src_cb += stride_c;
-        _src_cr += stride_c;
+        _src_cb += stride_sc;
+        _src_cr += stride_sc;
     }
 }
 
 static void
 sub_sample_lm_ref_abv(const OVSample *src_y, const OVSample *src_cb, const OVSample *src_cr,
-                      OVSample *const lm_dst, OVSample *dst_cb, OVSample *dst_cr,
-                      ptrdiff_t stride_l, ptrdiff_t src_c_stride,
+                      OVSample *const smp_y, OVSample *smp_cb, OVSample *smp_cr,
+                      ptrdiff_t stride_l, ptrdiff_t stride_c,
                       int abv_step, int nb_sample_abv, uint8_t lft_avail)
 {
 
     int start_pos = abv_step >> 1;
     const OVSample *_src    = src_y - (stride_l << 1) + (start_pos << 1);
-    const OVSample *_src_cb = src_cb - src_c_stride + start_pos;
-    const OVSample *_src_cr = src_cr - src_c_stride + start_pos;
+    const OVSample *_src_cb = src_cb - stride_c + start_pos;
+    const OVSample *_src_cr = src_cr - stride_c + start_pos;
     int i;
 
     int abv_step_l = abv_step << 1;
@@ -548,9 +547,9 @@ sub_sample_lm_ref_abv(const OVSample *src_y, const OVSample *src_cb, const OVSam
         s += _src[0 + 1 + stride_l];
         s += _src[0 + stride_l - (!pad_left)];
 
-        lm_dst[i] = s >> 3;
-        dst_cb[i] = _src_cb[0];
-        dst_cr[i] = _src_cr[0];
+        smp_y[i] = s >> 3;
+        smp_cb[i] = _src_cb[0];
+        smp_cr[i] = _src_cr[0];
 
         pad_left = 0;
 
@@ -611,9 +610,9 @@ intra_cclm(const OVSample *const src_y, OVSample *const dst_cb,
     int pb_w = 1 << log2_pb_w;
     int pb_h = 1 << log2_pb_h;
 
-    if (abv_avail || lft_avail){
+    if (abv_avail || lft_avail) {
         struct AVGMinMax avg_min_max;
-        OVSample lm_smp[4];
+        OVSample smp_y[4];
         OVSample smp_cb[4];
         OVSample smp_cr[4];
         uint8_t log2_nb_smp_abv = !!abv_avail + !lft_avail;
@@ -633,11 +632,11 @@ intra_cclm(const OVSample *const src_y, OVSample *const dst_cb,
 
             /*FIXME avoid checking for first_line */
             if (ctu_first_line) {
-                sub_sample_lm_ref_abv0(src_y, dst_cb, dst_cr, lm_smp, smp_cb, smp_cr,
+                sub_sample_lm_ref_abv0(src_y, dst_cb, dst_cr, smp_y, smp_cb, smp_cr,
                                        stride_l, stride_c,
                                        abv_step, nb_sample_abv, lft_avail);
             } else {
-                sub_sample_lm_ref_abv(src_y, dst_cb, dst_cr, lm_smp, smp_cb, smp_cr,
+                sub_sample_lm_ref_abv(src_y, dst_cb, dst_cr, smp_y, smp_cb, smp_cr,
                                       stride_l, stride_c,
                                       abv_step, nb_sample_abv, lft_avail);
             }
@@ -650,7 +649,7 @@ intra_cclm(const OVSample *const src_y, OVSample *const dst_cb,
                We are forced to reduce nb_smp in this particular case */
             nb_sample_lft = OVMIN(pb_h, nb_sample_lft);
 
-            sub_sample_lm_ref_lft(src_y, dst_cb, dst_cr, &lm_smp[nb_sample_abv],
+            sub_sample_lm_ref_lft(src_y, dst_cb, dst_cr, &smp_y[nb_sample_abv],
                                   &smp_cb[nb_sample_abv], &smp_cr[nb_sample_abv],
                                   stride_l, stride_c,
                                   lft_step, nb_sample_lft);
@@ -658,7 +657,7 @@ intra_cclm(const OVSample *const src_y, OVSample *const dst_cb,
 
         nb_sample = nb_sample_lft + nb_sample_abv;
 
-        avg_min_max = sort_average_lm_ref_samples(lm_smp, smp_cb, smp_cr, nb_sample);
+        avg_min_max = sort_average_lm_ref_samples(smp_y, smp_cb, smp_cr, nb_sample);
 
         lm_params = derive_cclm_params(&avg_min_max);
     }
@@ -684,7 +683,7 @@ intra_mdlm_abv(const OVSample *const src_y,
 
     if (abv_avail) {
         struct AVGMinMax avg_min_max;
-        OVSample lm_smp[4];
+        OVSample smp_y[4];
         OVSample smp_cb[4];
         OVSample smp_cr[4];
 
@@ -708,16 +707,16 @@ intra_mdlm_abv(const OVSample *const src_y,
 
         /*FIXME avoid checking for first_line */
         if (ctu_first_line) {
-            sub_sample_lm_ref_abv0(src_y, dst_cb, dst_cr, lm_smp, smp_cb, smp_cr,
+            sub_sample_lm_ref_abv0(src_y, dst_cb, dst_cr, smp_y, smp_cb, smp_cr,
                                    stride_l, stride_c,
                                    abv_step, nb_sample_abv, lft_avail);
         } else {
-            sub_sample_lm_ref_abv(src_y, dst_cb, dst_cr, lm_smp, smp_cb, smp_cr,
+            sub_sample_lm_ref_abv(src_y, dst_cb, dst_cr, smp_y, smp_cb, smp_cr,
                                   stride_l, stride_c,
                                   abv_step, nb_sample_abv, lft_avail);
         }
 
-        avg_min_max = sort_average_lm_ref_samples(lm_smp, smp_cb, smp_cr, nb_sample_abv);
+        avg_min_max = sort_average_lm_ref_samples(smp_y, smp_cb, smp_cr, nb_sample_abv);
 
         lm_params = derive_cclm_params(&avg_min_max);
     }
@@ -743,7 +742,7 @@ intra_mdlm_lft(const OVSample *const src_y,
 
     if (lft_avail) {
         struct AVGMinMax avg_min_max;
-        OVSample lm_smp[4];
+        OVSample smp_y[4];
         OVSample smp_cb[4];
         OVSample smp_cr[4];
 
@@ -764,11 +763,11 @@ intra_mdlm_lft(const OVSample *const src_y,
         /* in case of lft only ref_length might be 2 while nb_sample_lft is 4
            We are forced to reduce nb_smp in this particular case*/
 
-        sub_sample_lm_ref_lft(src_y, dst_cb, dst_cr, lm_smp, smp_cb, smp_cr,
+        sub_sample_lm_ref_lft(src_y, dst_cb, dst_cr, smp_y, smp_cb, smp_cr,
                               stride_l, stride_c,
                               lft_step, nb_sample_lft);
 
-        avg_min_max = sort_average_lm_ref_samples(lm_smp, smp_cb, smp_cr, nb_sample_lft);
+        avg_min_max = sort_average_lm_ref_samples(smp_y, smp_cb, smp_cr, nb_sample_lft);
 
         lm_params = derive_cclm_params(&avg_min_max);
     }
