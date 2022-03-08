@@ -153,10 +153,12 @@ typedef void (*LMsubsampleFunc)(const OVSample *lm_src, OVSample *dst_cb, OVSamp
 struct OVRCNCtx;
 
 typedef void (*CCLMFunc)(const struct OVRCNCtx *const rcn_ctx,
-                         int log2_pb_w, int log2_pb_h, int x0, int y0);
+                         uint8_t log2_pb_w, uint8_t log2_pb_h,
+                         uint8_t x0, uint8_t y0);
 
 typedef void (*MDLMFunc)(const struct OVRCNCtx *const rcn_ctx,
-                         int log2_pb_w, int log2_pb_h, int x0, int y0);
+                         uint8_t log2_pb_w, uint8_t log2_pb_h,
+                         uint8_t x0, uint8_t y0);
 
 typedef void (*ResidualAddScaleFunc)(const int16_t *src, OVSample *dst, int16_t dst_stride,
                                      int log2_tb_w, int log2_tb_h,

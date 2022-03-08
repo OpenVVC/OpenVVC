@@ -324,7 +324,8 @@ compute_lm_subsample_cl(const OVSample *src_y, OVSample *dst_cb, OVSample *dst_c
 
 static void
 intra_cclm_cl(const struct OVRCNCtx *const rcn_ctx,
-              int log2_pb_w, int log2_pb_h, int x0, int y0)
+              uint8_t log2_pb_w, uint8_t log2_pb_h,
+              uint8_t x0, uint8_t y0)
 {
     const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
     int16_t stride_l = ctu_buff->stride;
@@ -408,7 +409,8 @@ intra_cclm_cl(const struct OVRCNCtx *const rcn_ctx,
 
 static void
 intra_mdlm_abv_cl(const struct OVRCNCtx *const rcn_ctx,
-                  int log2_pb_w, int log2_pb_h, int x0, int y0)
+                  uint8_t log2_pb_w, uint8_t log2_pb_h,
+                  uint8_t x0, uint8_t y0)
 {
     const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
     int16_t stride_l = ctu_buff->stride;
@@ -480,7 +482,8 @@ intra_mdlm_abv_cl(const struct OVRCNCtx *const rcn_ctx,
 
 static void
 intra_mdlm_lft_cl(const struct OVRCNCtx *const rcn_ctx,
-                  int log2_pb_w, int log2_pb_h, int x0, int y0)
+                  uint8_t log2_pb_w, uint8_t log2_pb_h,
+                  uint8_t x0, uint8_t y0)
 {
     const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
     int16_t stride_l = ctu_buff->stride;
@@ -655,7 +658,8 @@ compute_lm_subsample(const OVSample *src_y, OVSample *dst_cb, OVSample *dst_cr,
 
 static void
 intra_cclm(const struct OVRCNCtx *const rcn_ctx,
-           int log2_pb_w, int log2_pb_h, int x0, int y0)
+           uint8_t log2_pb_w, uint8_t log2_pb_h,
+           uint8_t x0, uint8_t y0)
 {
     const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
     int16_t stride_l = ctu_buff->stride;
@@ -740,7 +744,8 @@ intra_cclm(const struct OVRCNCtx *const rcn_ctx,
 
 static void
 intra_mdlm_abv(const struct OVRCNCtx *const rcn_ctx,
-               int log2_pb_w, int log2_pb_h, int x0, int y0)
+               uint8_t log2_pb_w, uint8_t log2_pb_h,
+               uint8_t x0, uint8_t y0)
 {
     const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
     int16_t stride_l = ctu_buff->stride;
@@ -812,7 +817,8 @@ intra_mdlm_abv(const struct OVRCNCtx *const rcn_ctx,
 
 static void
 intra_mdlm_lft(const struct OVRCNCtx *const rcn_ctx,
-               int log2_pb_w, int log2_pb_h, int x0, int y0)
+               uint8_t log2_pb_w, uint8_t log2_pb_h,
+               uint8_t x0, uint8_t y0)
 {
     const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
     int16_t stride_l = ctu_buff->stride;
