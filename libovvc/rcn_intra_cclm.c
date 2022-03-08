@@ -317,7 +317,9 @@ intra_cclm_cl(const struct OVRCNCtx *const rcn_ctx,
     const OVSample  *const src_y = &ctu_buff->y[(x0 << 1) + ((y0 << 1) * stride_l)];
     OVSample *const dst_cb = &ctu_buff->cb[x0 + y0 * stride_c];
     OVSample *const dst_cr = &ctu_buff->cr[x0 + y0 * stride_c];
-    const LMsubsampleFunc const compute_subsample = rcn_ctx->ctudec->rcn_funcs.cclm.compute_subsample;
+
+    uint64_t lft_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
+    uint64_t abv_map = rcn_ctx->progress_field_c.hfield[y0 >> 1];
 
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
@@ -385,8 +387,7 @@ intra_cclm_cl(const struct OVRCNCtx *const rcn_ctx,
 
 static void
 intra_mdlm_abv_cl(const struct OVRCNCtx *const rcn_ctx,
-                  uint64_t abv_map, int log2_pb_w,
-                  int log2_pb_h, int x0, int y0,
+                  int log2_pb_w, int log2_pb_h, int x0, int y0,
                   uint8_t lft_avail , uint8_t abv_avail)
 {
     const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
@@ -396,6 +397,9 @@ intra_mdlm_abv_cl(const struct OVRCNCtx *const rcn_ctx,
     const OVSample  *const src_y = &ctu_buff->y[(x0 << 1) + ((y0 << 1) * stride_l)];
     OVSample *const dst_cb = &ctu_buff->cb[x0 + y0 * stride_c];
     OVSample *const dst_cr = &ctu_buff->cr[x0 + y0 * stride_c];
+
+    uint64_t lft_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
+    uint64_t abv_map = rcn_ctx->progress_field_c.hfield[y0 >> 1];
 
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
@@ -451,8 +455,7 @@ intra_mdlm_abv_cl(const struct OVRCNCtx *const rcn_ctx,
 
 static void
 intra_mdlm_lft_cl(const struct OVRCNCtx *const rcn_ctx,
-                  uint64_t lft_map, int log2_pb_w, int log2_pb_h,
-                  int x0, int y0,
+                  int log2_pb_w, int log2_pb_h, int x0, int y0,
                   uint8_t lft_avail, uint8_t abv_avail)
 {
     const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
@@ -462,6 +465,10 @@ intra_mdlm_lft_cl(const struct OVRCNCtx *const rcn_ctx,
     const OVSample  *const src_y = &ctu_buff->y[(x0 << 1) + ((y0 << 1) * stride_l)];
     OVSample *const dst_cb = &ctu_buff->cb[x0 + y0 * stride_c];
     OVSample *const dst_cr = &ctu_buff->cr[x0 + y0 * stride_c];
+
+    uint64_t lft_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
+    uint64_t abv_map = rcn_ctx->progress_field_c.hfield[y0 >> 1];
+
 
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
@@ -632,6 +639,9 @@ intra_cclm(const struct OVRCNCtx *const rcn_ctx,
     OVSample *const dst_cr = &ctu_buff->cr[x0 + y0 * stride_c];
     const LMsubsampleFunc const compute_subsample = rcn_ctx->ctudec->rcn_funcs.cclm.compute_subsample;
 
+    uint64_t lft_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
+    uint64_t abv_map = rcn_ctx->progress_field_c.hfield[y0 >> 1];
+
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
         .cr = {.a = 0, .b = AVG_VAL, .shift = 0}
@@ -698,7 +708,7 @@ intra_cclm(const struct OVRCNCtx *const rcn_ctx,
 
 static void
 intra_mdlm_abv(const struct OVRCNCtx *const rcn_ctx,
-               uint64_t abv_map, int log2_pb_w, int log2_pb_h, int x0, int y0,
+               int log2_pb_w, int log2_pb_h, int x0, int y0,
                uint8_t lft_avail , uint8_t abv_avail)
 {
     const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
@@ -709,6 +719,9 @@ intra_mdlm_abv(const struct OVRCNCtx *const rcn_ctx,
     OVSample *const dst_cb = &ctu_buff->cb[x0 + y0 * stride_c];
     OVSample *const dst_cr = &ctu_buff->cr[x0 + y0 * stride_c];
     const LMsubsampleFunc const compute_subsample = rcn_ctx->ctudec->rcn_funcs.cclm.compute_subsample;
+
+    uint64_t lft_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
+    uint64_t abv_map = rcn_ctx->progress_field_c.hfield[y0 >> 1];
 
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
@@ -764,7 +777,7 @@ intra_mdlm_abv(const struct OVRCNCtx *const rcn_ctx,
 
 static void
 intra_mdlm_lft(const struct OVRCNCtx *const rcn_ctx,
-               uint64_t lft_map, int log2_pb_w, int log2_pb_h, int x0, int y0,
+               int log2_pb_w, int log2_pb_h, int x0, int y0,
                uint8_t lft_avail, uint8_t abv_avail)
 {
     const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
@@ -775,6 +788,9 @@ intra_mdlm_lft(const struct OVRCNCtx *const rcn_ctx,
     OVSample *const dst_cb = &ctu_buff->cb[x0 + y0 * stride_c];
     OVSample *const dst_cr = &ctu_buff->cr[x0 + y0 * stride_c];
     const LMsubsampleFunc const compute_subsample = rcn_ctx->ctudec->rcn_funcs.cclm.compute_subsample;
+
+    uint64_t lft_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
+    uint64_t abv_map = rcn_ctx->progress_field_c.hfield[y0 >> 1];
 
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
@@ -833,7 +849,7 @@ BD_DECL(rcn_init_cclm_functions_collocated)(struct RCNFunctions *rcn_func)
 void
 BD_DECL(rcn_init_cclm_functions)(struct RCNFunctions *rcn_func)
 {
-   struct CCLMFunctions *const cclm = &rcn_func->cclm; 
+   struct CCLMFunctions *const cclm = &rcn_func->cclm;
    cclm->cclm              = &intra_cclm;
    cclm->mdlm_left         = &intra_mdlm_lft;
    cclm->mdlm_top          = &intra_mdlm_abv;

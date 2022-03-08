@@ -156,7 +156,7 @@ typedef void (*CCLMFunc)(const struct OVRCNCtx *const rcn_ctx,
                          int log2_pb_w, int log2_pb_h, int x0, int y0,
                          int up_available, int left_available);
 
-typedef void (*MDLMFunc)(const struct OVRCNCtx *const rcn_ctx, uint64_t intra_map_rows,
+typedef void (*MDLMFunc)(const struct OVRCNCtx *const rcn_ctx,
                          int log2_pb_w, int log2_pb_h, int x0, int y0,
                          uint8_t left_available, uint8_t up_available);
 
