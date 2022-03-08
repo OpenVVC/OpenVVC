@@ -50,6 +50,23 @@ struct AVGMinMax{
     uint16_t max_cr;
 };
 
+#define LFT_AVAIL 0x2
+#define ABV_AVAIL 0x1
+
+static inline uint8_t
+derive_availibilty_status(uint64_t abv_map, uint64_t lft_map, uint8_t x0, uint8_t y0, uint8_t log2_cb_w, uint8_t log2_cb_h)
+{
+    uint8_t x0_unit = x0 >> 1;
+    uint8_t y0_unit = y0 >> 1;
+    uint64_t msk_w = (1llu << ((1 << log2_cb_w) >> 1)) - 1;
+    uint64_t msk_h = (1llu << ((1 << log2_cb_h) >> 1)) - 1;
+    uint64_t lft_msk = lft_map >> (y0_unit + 1);
+    uint64_t abv_msk = abv_map >> (x0_unit + 1);
+    uint8_t abv_avail = !!(abv_msk & msk_w);
+    uint8_t lft_avail = !!(lft_msk & msk_h);
+    return (lft_avail << 1) | abv_avail;
+}
+
 static inline struct LMParams
 compute_lm_params(int16_t avg_min_l, int16_t avg_min_c, int16_t avg_max_c, int16_t v, int8_t log2_rng_l)
 {
@@ -307,8 +324,7 @@ compute_lm_subsample_cl(const OVSample *src_y, OVSample *dst_cb, OVSample *dst_c
 
 static void
 intra_cclm_cl(const struct OVRCNCtx *const rcn_ctx,
-              int log2_pb_w, int log2_pb_h, int x0, int y0,
-              int abv_avail, int lft_avail)
+              int log2_pb_w, int log2_pb_h, int x0, int y0)
 {
     const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
     int16_t stride_l = ctu_buff->stride;
@@ -320,6 +336,11 @@ intra_cclm_cl(const struct OVRCNCtx *const rcn_ctx,
 
     uint64_t lft_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
     uint64_t abv_map = rcn_ctx->progress_field_c.hfield[y0 >> 1];
+
+    uint8_t status = derive_availibilty_status(abv_map, lft_map, x0, y0, log2_pb_w, log2_pb_h);
+
+    uint8_t abv_avail = !!(status & ABV_AVAIL);
+    uint8_t lft_avail = !!(status & LFT_AVAIL);
 
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
@@ -387,8 +408,7 @@ intra_cclm_cl(const struct OVRCNCtx *const rcn_ctx,
 
 static void
 intra_mdlm_abv_cl(const struct OVRCNCtx *const rcn_ctx,
-                  int log2_pb_w, int log2_pb_h, int x0, int y0,
-                  uint8_t lft_avail , uint8_t abv_avail)
+                  int log2_pb_w, int log2_pb_h, int x0, int y0)
 {
     const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
     int16_t stride_l = ctu_buff->stride;
@@ -400,6 +420,11 @@ intra_mdlm_abv_cl(const struct OVRCNCtx *const rcn_ctx,
 
     uint64_t lft_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
     uint64_t abv_map = rcn_ctx->progress_field_c.hfield[y0 >> 1];
+
+    uint8_t status = derive_availibilty_status(abv_map, lft_map, x0, y0, log2_pb_w, log2_pb_h);
+
+    uint8_t abv_avail = !!(status & ABV_AVAIL);
+    uint8_t lft_avail = !!(status & LFT_AVAIL);
 
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
@@ -455,8 +480,7 @@ intra_mdlm_abv_cl(const struct OVRCNCtx *const rcn_ctx,
 
 static void
 intra_mdlm_lft_cl(const struct OVRCNCtx *const rcn_ctx,
-                  int log2_pb_w, int log2_pb_h, int x0, int y0,
-                  uint8_t lft_avail, uint8_t abv_avail)
+                  int log2_pb_w, int log2_pb_h, int x0, int y0)
 {
     const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
     int16_t stride_l = ctu_buff->stride;
@@ -469,6 +493,10 @@ intra_mdlm_lft_cl(const struct OVRCNCtx *const rcn_ctx,
     uint64_t lft_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
     uint64_t abv_map = rcn_ctx->progress_field_c.hfield[y0 >> 1];
 
+    uint8_t status = derive_availibilty_status(abv_map, lft_map, x0, y0, log2_pb_w, log2_pb_h);
+
+    uint8_t abv_avail = status & ABV_AVAIL;
+    uint8_t lft_avail = status & LFT_AVAIL;
 
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
@@ -568,12 +596,12 @@ sub_sample_lm_ref_abv(const OVSample *src_y, const OVSample *src_cb, const OVSam
 
     for (i = 0; i < nb_sample_abv; i++) {
         int s = 4;
+        s += _src[0 - (!pad_left)];
         s += _src[0] * 2;
         s += _src[0 + 1];
-        s += _src[0 - (!pad_left)];
+        s += _src[0 + stride_l - (!pad_left)];
         s += _src[0 + stride_l] * 2;
         s += _src[0 + 1 + stride_l];
-        s += _src[0 + stride_l - (!pad_left)];
 
         smp_y[i] = s >> 3;
         smp_cb[i] = _src_cb[0];
@@ -627,8 +655,7 @@ compute_lm_subsample(const OVSample *src_y, OVSample *dst_cb, OVSample *dst_cr,
 
 static void
 intra_cclm(const struct OVRCNCtx *const rcn_ctx,
-           int log2_pb_w, int log2_pb_h, int x0, int y0,
-           int abv_avail, int lft_avail)
+           int log2_pb_w, int log2_pb_h, int x0, int y0)
 {
     const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
     int16_t stride_l = ctu_buff->stride;
@@ -641,6 +668,11 @@ intra_cclm(const struct OVRCNCtx *const rcn_ctx,
 
     uint64_t lft_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
     uint64_t abv_map = rcn_ctx->progress_field_c.hfield[y0 >> 1];
+
+    uint8_t status = derive_availibilty_status(abv_map, lft_map, x0, y0, log2_pb_w, log2_pb_h);
+
+    uint8_t abv_avail = !!(status & ABV_AVAIL);
+    uint8_t lft_avail = !!(status & LFT_AVAIL);
 
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
@@ -708,8 +740,7 @@ intra_cclm(const struct OVRCNCtx *const rcn_ctx,
 
 static void
 intra_mdlm_abv(const struct OVRCNCtx *const rcn_ctx,
-               int log2_pb_w, int log2_pb_h, int x0, int y0,
-               uint8_t lft_avail , uint8_t abv_avail)
+               int log2_pb_w, int log2_pb_h, int x0, int y0)
 {
     const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
     int16_t stride_l = ctu_buff->stride;
@@ -722,6 +753,10 @@ intra_mdlm_abv(const struct OVRCNCtx *const rcn_ctx,
 
     uint64_t lft_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
     uint64_t abv_map = rcn_ctx->progress_field_c.hfield[y0 >> 1];
+    uint8_t status = derive_availibilty_status(abv_map, lft_map, x0, y0, log2_pb_w, log2_pb_h);
+
+    uint8_t abv_avail = !!(status & ABV_AVAIL);
+    uint8_t lft_avail = !!(status & LFT_AVAIL);
 
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},
@@ -777,8 +812,7 @@ intra_mdlm_abv(const struct OVRCNCtx *const rcn_ctx,
 
 static void
 intra_mdlm_lft(const struct OVRCNCtx *const rcn_ctx,
-               int log2_pb_w, int log2_pb_h, int x0, int y0,
-               uint8_t lft_avail, uint8_t abv_avail)
+               int log2_pb_w, int log2_pb_h, int x0, int y0)
 {
     const struct OVBuffInfo *const ctu_buff = &rcn_ctx->ctu_buff;
     int16_t stride_l = ctu_buff->stride;
@@ -791,6 +825,11 @@ intra_mdlm_lft(const struct OVRCNCtx *const rcn_ctx,
 
     uint64_t lft_map = rcn_ctx->progress_field_c.vfield[x0 >> 1];
     uint64_t abv_map = rcn_ctx->progress_field_c.hfield[y0 >> 1];
+
+    uint8_t status = derive_availibilty_status(abv_map, lft_map, x0, y0, log2_pb_w, log2_pb_h);
+
+    uint8_t abv_avail = !!(status & ABV_AVAIL);
+    uint8_t lft_avail = !!(status & LFT_AVAIL);
 
     struct CCLMParams lm_params = {
         .cb = {.a = 0, .b = AVG_VAL, .shift = 0},

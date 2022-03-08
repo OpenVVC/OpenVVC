@@ -1150,34 +1150,17 @@ vvc_intra_pred_chroma(const struct OVRCNCtx *const rcn_ctx,
     }
     case OVINTRA_LM_CHROMA:
     {
-        const OVSample  *const src_luma = &ctu_buff->y[(x0<<1)+((y0<<1)*ctu_buff->stride)];
-        /* FIXME to be replaced by progress fields */
-        uint8_t neighbour = rcn_ctx->ctudec->ctu_ngh_flags;
-        uint8_t got_left_ctu = neighbour & CTU_LFT_FLG;
-        uint8_t got_top_ctu  = neighbour & CTU_UP_FLG;
-
-        rcn_func->cclm.cclm(rcn_ctx, log2_pb_w, log2_pb_h, x0, y0,
-                            got_top_ctu || y0, got_left_ctu || x0);
+        rcn_func->cclm.cclm(rcn_ctx, log2_pb_w, log2_pb_h, x0, y0);
         break;
     }
     case OVINTRA_MDLM_LEFT:
     {
-        uint8_t neighbour = rcn_ctx->ctudec->ctu_ngh_flags;
-        uint8_t got_left_ctu = neighbour & CTU_LFT_FLG;
-        uint8_t got_top_ctu  = neighbour & CTU_UP_FLG;
-
-        rcn_func->cclm.mdlm_left(rcn_ctx, log2_pb_w, log2_pb_h, x0, y0,
-                                 x0 || got_left_ctu, y0 || got_top_ctu);
+        rcn_func->cclm.mdlm_left(rcn_ctx, log2_pb_w, log2_pb_h, x0, y0);
         break;
     }
     case OVINTRA_MDLM_TOP:
     {
-        uint8_t neighbour = rcn_ctx->ctudec->ctu_ngh_flags;
-        uint8_t got_left_ctu = neighbour & CTU_LFT_FLG;
-        uint8_t got_top_ctu  = neighbour & CTU_UP_FLG;
-
-        rcn_func->cclm.mdlm_top(rcn_ctx, log2_pb_w, log2_pb_h, x0, y0,
-                                x0 || got_left_ctu, y0 || got_top_ctu);
+        rcn_func->cclm.mdlm_top(rcn_ctx, log2_pb_w, log2_pb_h, x0, y0);
         break;
     }
     default://angular
