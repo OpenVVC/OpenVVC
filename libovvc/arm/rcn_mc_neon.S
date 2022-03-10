@@ -514,15 +514,15 @@ function put_vvc_uni_qpel_v_10_16_neon_8lines, export=1
       sub    x2, x2, x3
       sub    x2, x2, x13
       mov    x9, x2  //save x2[-3*_srcstride]
-      mov    x8, x0  //save x0[0]
       mov    x14, x4  //save height
       DUP    V29.4S, w11 //offset vector
       DUP    V30.8H, wzr //min val vector
       DUP    V31.8H, w10 //max val vector
+      mov    x10, x0  //save x0[0]
       LD1    {V0.8B}, [x5]
       SADDW   V0.8H, V30.8H, V0.8B
       uni_qpel_v_filter_8lines x0, x2
-      add x0, x8, #16
+      add x0, x10, #16
       add x2, x9, #16
       mov    x4, x14
       uni_qpel_v_filter_8lines x0, x2
@@ -539,15 +539,15 @@ function put_vvc_uni_qpel_v_10_16_neon_4lines, export=1
       sub    x2, x2, x3
       sub    x2, x2, x13
       mov    x9, x2  //save x2[-3*_srcstride]
-      mov    x8, x0  //save x0[0]
       mov    x14, x4  //save height
       DUP    V29.4S, w11 //offset vector
       DUP    V30.8H, wzr //min val vector
       DUP    V31.8H, w10 //max val vector
+      mov    x10, x0  //save x0[0]
       LD1    {V0.8B}, [x5]
       SADDW   V0.8H, V30.8H, V0.8B
       uni_qpel_v_filter_4lines x0, x2
-      add x0, x8, #16
+      add x0, x10, #16
       add x2, x9, #16
       mov    x4, x14
       uni_qpel_v_filter_4lines x0, x2
@@ -564,23 +564,23 @@ function put_vvc_uni_qpel_v_10_32_neon_8lines, export=1
       sub    x2, x2, x3
       sub    x2, x2, x13
       mov    x9, x2  //save x2[-3*_srcstride]
-      mov    x8, x0  //save x0[0]
       mov    x14, x4  //save height
       DUP    V29.4S, w11 //offset vector
       DUP    V30.8H, wzr //min val vector
       DUP    V31.8H, w10 //max val vector
+      mov    x10, x0  //save x0[0]
       LD1    {V0.8B}, [x5]
       SADDW   V0.8H, V30.8H, V0.8B
       uni_qpel_v_filter_8lines x0, x2
-      add x0, x8, #16
+      add x0, x10, #16
       add x2, x9, #16
       mov    x4, x14
       uni_qpel_v_filter_8lines x0, x2
-      add x0, x8, #32
+      add x0, x10, #32
       add x2, x9, #32
       mov    x4, x14
       uni_qpel_v_filter_8lines x0, x2
-      add x0, x8, #48
+      add x0, x10, #48
       add x2, x9, #48
       mov    x4, x14
       uni_qpel_v_filter_8lines x0, x2
@@ -597,23 +597,23 @@ function put_vvc_uni_qpel_v_10_32_neon_4lines, export=1
       sub    x2, x2, x3
       sub    x2, x2, x13
       mov    x9, x2  //save x2[-3*_srcstride]
-      mov    x8, x0  //save x0[0]
       mov    x14, x4  //save height
       DUP    V29.4S, w11 //offset vector
       DUP    V30.8H, wzr //min val vector
       DUP    V31.8H, w10 //max val vector
+      mov    x10, x0  //save x0[0]
       LD1    {V0.8B}, [x5]
       SADDW   V0.8H, V30.8H, V0.8B
       uni_qpel_v_filter_4lines x0, x2
-      add x0, x8, #16
+      add x0, x10, #16
       add x2, x9, #16
       mov    x4, x14
       uni_qpel_v_filter_4lines x0, x2
-      add x0, x8, #32
+      add x0, x10, #32
       add x2, x9, #32
       mov    x4, x14
       uni_qpel_v_filter_4lines x0, x2
-      add x0, x8, #48
+      add x0, x10, #48
       add x2, x9, #48
       mov    x4, x14
       uni_qpel_v_filter_4lines x0, x2
@@ -741,17 +741,17 @@ function put_vvc_uni_qpel_hv_10_16_neon_8lines, export=1
       lsl    x15, x14, #1 //2*_srcstride
       sub    x2, x2, x14
       sub    x2, x2, x15//start hv src[]
-      mov    x16, x4//save height
-      mov    x17, x2//save start src
-      mov    x15, x0//save start dst
       LD1    {V0.8B}, [x5]
       LD1    {V1.8B}, [x6]
+      mov    x6, x4//save height
+      mov    x7, x2//save start src
+      mov    x15, x0//save start dst
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
       uni_qpel_hv_filter_8lines x0, x2, V0, V1, x13, x12
       add x0, x15, #16
-      add x2, x17, #16
-      mov x4, x16
+      add x2, x7, #16
+      mov x4, x6
       uni_qpel_hv_filter_8lines x0, x2, V0, V1, x13, x12
       ret lr
 endfunc
@@ -771,17 +771,17 @@ function put_vvc_uni_qpel_hv_10_16_neon_4lines, export=1
       lsl    x15, x14, #1 //2*_srcstride
       sub    x2, x2, x14
       sub    x2, x2, x15//start hv src[]
-      mov    x16, x4//save height
-      mov    x17, x2//save start src
       mov    x15, x0//save start dst
       LD1    {V0.8B}, [x5]
       LD1    {V1.8B}, [x6]
+      mov    x6, x4//save height
+      mov    x7, x2//save start src
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
       uni_qpel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       add x0, x15, #16
-      add x2, x17, #16
-      mov x4, x16
+      add x2, x7, #16
+      mov x4, x6
       uni_qpel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       ret lr
 endfunc
@@ -801,25 +801,25 @@ function put_vvc_uni_qpel_hv_10_32_neon_8lines, export=1
       lsl    x15, x14, #1 //2*_srcstride
       sub    x2, x2, x14
       sub    x2, x2, x15//start hv src[]
-      mov    x16, x4//save height
-      mov    x17, x2//save start src
-      mov    x15, x0//save start dst
       LD1    {V0.8B}, [x5]
       LD1    {V1.8B}, [x6]
+      mov    x15, x0//save start dst
+      mov    x6, x4//save height
+      mov    x7, x2//save start src
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
       uni_qpel_hv_filter_8lines x0, x2, V0, V1, x13, x12
       add x0, x15, #16
-      add x2, x17, #16
-      mov x4, x16
+      add x2, x7, #16
+      mov x4, x6
       uni_qpel_hv_filter_8lines x0, x2, V0, V1, x13, x12
       add x0, x15, #32
-      add x2, x17, #32
-      mov x4, x16
+      add x2, x7, #32
+      mov x4, x6
       uni_qpel_hv_filter_8lines x0, x2, V0, V1, x13, x12
       add x0, x15, #48
-      add x2, x17, #48
-      mov x4, x16
+      add x2, x7, #48
+      mov x4, x6
       uni_qpel_hv_filter_8lines x0, x2, V0, V1, x13, x12
       ret lr
 endfunc
@@ -839,25 +839,25 @@ function put_vvc_uni_qpel_hv_10_32_neon_4lines, export=1
       lsl    x15, x14, #1 //2*_srcstride
       sub    x2, x2, x14
       sub    x2, x2, x15//start hv src[]
-      mov    x16, x4//save height
-      mov    x17, x2//save start src
-      mov    x15, x0//save start dst
       LD1    {V0.8B}, [x5]
       LD1    {V1.8B}, [x6]
+      mov    x6, x4//save height
+      mov    x7, x2//save start src
+      mov    x15, x0//save start dst
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
       uni_qpel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       add x0, x15, #16
-      add x2, x17, #16
-      mov x4, x16
+      add x2, x7, #16
+      mov x4, x6
       uni_qpel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       add x0, x15, #32
-      add x2, x17, #32
-      mov x4, x16
+      add x2, x7, #32
+      mov x4, x6
       uni_qpel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       add x0, x15, #48
-      add x2, x17, #48
-      mov x4, x16
+      add x2, x7, #48
+      mov x4, x6
       uni_qpel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       ret lr
 endfunc
@@ -1023,14 +1023,14 @@ function put_vvc_bi0_qpel_v_10_16_neon_8lines, export=1
       sub    x1, x1, x2
       sub    x1, x1, x12
       mov    x9, x1  //save x1[-3*_srcstride]
-      mov    x8, x0  //save x0[0]
       mov    x14, x3  //save height
       DUP    V30.8H, wzr //min val vector
       DUP    V31.8H, w10 //max val vector
       LD1    {V0.8B}, [x4]
+      mov    x10, x0  //save x0[0]
       SADDW   V0.8H, V30.8H, V0.8B
       bi0_qpel_v_filter_8lines x0, x1
-      add x0, x8, #16
+      add x0, x10, #16
       add x1, x9, #16
       mov x3, x14
       bi0_qpel_v_filter_8lines x0, x1
@@ -1045,14 +1045,14 @@ function put_vvc_bi0_qpel_v_10_16_neon_4lines, export=1
       sub    x1, x1, x2
       sub    x1, x1, x12
       mov    x9, x1  //save x1[-3*_srcstride]
-      mov    x8, x0  //save x0[0]
       mov    x14, x3  //save height
       DUP    V30.8H, wzr //min val vector
       DUP    V31.8H, w10 //max val vector
       LD1    {V0.8B}, [x4]
+      mov    x10, x0  //save x0[0]
       SADDW   V0.8H, V30.8H, V0.8B
       bi0_qpel_v_filter_4lines x0, x1
-      add x0, x8, #16
+      add x0, x10, #16
       add x1, x9, #16
       mov x3, x14
       bi0_qpel_v_filter_4lines x0, x1
@@ -1067,22 +1067,22 @@ function put_vvc_bi0_qpel_v_10_32_neon_8lines, export=1
       sub    x1, x1, x2
       sub    x1, x1, x12
       mov    x9, x1  //save x1[-3*_srcstride]
-      mov    x8, x0  //save x0[0]
       mov    x14, x3  //save height
       DUP    V30.8H, wzr //min val vector
       DUP    V31.8H, w10 //max val vector
       LD1    {V0.8B}, [x4]
+      mov    x10, x0  //save x0[0]
       SADDW   V0.8H, V30.8H, V0.8B
       bi0_qpel_v_filter_8lines x0, x1
-      add x0, x8, #16
+      add x0, x10, #16
       add x1, x9, #16
       mov x3, x14
       bi0_qpel_v_filter_8lines x0, x1
-      add x0, x8, #32
+      add x0, x10, #32
       add x1, x9, #32
       mov x3, x14
       bi0_qpel_v_filter_8lines x0, x1
-      add x0, x8, #48
+      add x0, x10, #48
       add x1, x9, #48
       mov x3, x14
       bi0_qpel_v_filter_8lines x0, x1
@@ -1097,22 +1097,22 @@ function put_vvc_bi0_qpel_v_10_32_neon_4lines, export=1
       sub    x1, x1, x2
       sub    x1, x1, x12
       mov    x9, x1  //save x1[-3*_srcstride]
-      mov    x8, x0  //save x0[0]
       mov    x14, x3  //save height
       DUP    V30.8H, wzr //min val vector
       DUP    V31.8H, w10 //max val vector
       LD1    {V0.8B}, [x4]
+      mov    x10, x0  //save x0[0]
       SADDW   V0.8H, V30.8H, V0.8B
       bi0_qpel_v_filter_4lines x0, x1
-      add x0, x8, #16
+      add x0, x10, #16
       add x1, x9, #16
       mov x3, x14
       bi0_qpel_v_filter_4lines x0, x1
-      add x0, x8, #32
+      add x0, x10, #32
       add x1, x9, #32
       mov x3, x14
       bi0_qpel_v_filter_4lines x0, x1
-      add x0, x8, #48
+      add x0, x10, #48
       add x1, x9, #48
       mov x3, x14
       bi0_qpel_v_filter_4lines x0, x1
@@ -1237,17 +1237,17 @@ function put_vvc_bi0_qpel_hv_10_16_neon_8lines, export=1
       lsl    x15, x14, #1 //2*_srcstride
       sub    x1, x1, x14
       sub    x1, x1, x15//start hv src[]
-      mov    x16, x3//save height
-      mov    x17, x1//save start src
-      mov    x15, x0//save start dst
       LD1    {V0.8B}, [x4]
       LD1    {V1.8B}, [x5]
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
+      mov    x6, x3//save height
+      mov    x7, x1//save start src
+      mov    x15, x0//save start dst
       bi0_qpel_hv_filter_8lines x0, x1, V0, V1, x13, x12
       add x0, x15, #16
-      add x1, x17, #16
-      mov x3, x16
+      add x1, x7, #16
+      mov x3, x6
       bi0_qpel_hv_filter_8lines x0, x1, V0, V1, x13, x12
       ret lr
 endfunc
@@ -1266,8 +1266,8 @@ function put_vvc_bi0_qpel_hv_10_16_neon_4lines, export=1
       lsl    x15, x14, #1 //2*_srcstride
       sub    x1, x1, x14
       sub    x1, x1, x15//start hv src[]
-      mov    x16, x3//save height
-      mov    x17, x1//save start src
+      mov    x6, x3//save height
+      mov    x7, x1//save start src
       mov    x15, x0//save start dst
       LD1    {V0.8B}, [x4]
       LD1    {V1.8B}, [x5]
@@ -1275,8 +1275,8 @@ function put_vvc_bi0_qpel_hv_10_16_neon_4lines, export=1
       SADDW   V1.8H, V30.8H, V1.8B
       bi0_qpel_hv_filter_4lines x0, x1, V0, V1, x13, x12
       add x0, x15, #16
-      add x1, x17, #16
-      mov x3, x16
+      add x1, x7, #16
+      mov x3, x6
       bi0_qpel_hv_filter_4lines x0, x1, V0, V1, x13, x12
       ret lr
 endfunc
@@ -1295,8 +1295,8 @@ function put_vvc_bi0_qpel_hv_10_32_neon_8lines, export=1
       lsl    x15, x14, #1 //2*_srcstride
       sub    x1, x1, x14
       sub    x1, x1, x15//start hv src[]
-      mov    x16, x3//save height
-      mov    x17, x1//save start src
+      mov    x6, x3//save height
+      mov    x7, x1//save start src
       mov    x15, x0//save start dst
       LD1    {V0.8B}, [x4]
       LD1    {V1.8B}, [x5]
@@ -1304,16 +1304,16 @@ function put_vvc_bi0_qpel_hv_10_32_neon_8lines, export=1
       SADDW   V1.8H, V30.8H, V1.8B
       bi0_qpel_hv_filter_8lines x0, x1, V0, V1, x13, x12
       add x0, x15, #16
-      add x1, x17, #16
-      mov x3, x16
+      add x1, x7, #16
+      mov x3, x6
       bi0_qpel_hv_filter_8lines x0, x1, V0, V1, x13, x12
       add x0, x15, #32
-      add x1, x17, #32
-      mov x3, x16
+      add x1, x7, #32
+      mov x3, x6
       bi0_qpel_hv_filter_8lines x0, x1, V0, V1, x13, x12
       add x0, x15, #48
-      add x1, x17, #48
-      mov x3, x16
+      add x1, x7, #48
+      mov x3, x6
       bi0_qpel_hv_filter_8lines x0, x1, V0, V1, x13, x12
       ret lr
 endfunc
@@ -1332,8 +1332,8 @@ function put_vvc_bi0_qpel_hv_10_32_neon_4lines, export=1
       lsl    x15, x14, #1 //2*_srcstride
       sub    x1, x1, x14
       sub    x1, x1, x15//start hv src[]
-      mov    x16, x3//save height
-      mov    x17, x1//save start src
+      mov    x6, x3//save height
+      mov    x7, x1//save start src
       mov    x15, x0//save start dst
       LD1    {V0.8B}, [x4]
       LD1    {V1.8B}, [x5]
@@ -1341,16 +1341,16 @@ function put_vvc_bi0_qpel_hv_10_32_neon_4lines, export=1
       SADDW   V1.8H, V30.8H, V1.8B
       bi0_qpel_hv_filter_4lines x0, x1, V0, V1, x13, x12
       add x0, x15, #16
-      add x1, x17, #16
-      mov x3, x16
+      add x1, x7, #16
+      mov x3, x6
       bi0_qpel_hv_filter_4lines x0, x1, V0, V1, x13, x12
       add x0, x15, #32
-      add x1, x17, #32
-      mov x3, x16
+      add x1, x7, #32
+      mov x3, x6
       bi0_qpel_hv_filter_4lines x0, x1, V0, V1, x13, x12
       add x0, x15, #48
-      add x1, x17, #48
-      mov x3, x16
+      add x1, x7, #48
+      mov x3, x6
       bi0_qpel_hv_filter_4lines x0, x1, V0, V1, x13, x12
       ret lr
 endfunc
@@ -1817,19 +1817,19 @@ function put_vvc_bi1_qpel_hv_10_16_neon_8lines, export=1
       lsl    x15, x14, #1 //2*_srcstride
       sub    x2, x2, x14
       sub    x2, x2, x15//start hv src[]
-      mov    x16, x5//save height
-      mov    x17, x2//save start src
-      mov    x15, x0//save start dst
-      mov    x14, x4//save start dst
       LD1    {V0.8B}, [x6]
       LD1    {V1.8B}, [x7]
+      mov    x6, x5//save height
+      mov    x7, x2//save start src
+      mov    x15, x0//save start dst
+      mov    x14, x4//save start dst
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
       bi1_qpel_hv_filter_8lines x0, x2, V0, V1, x13, x12
       add x0, x15, #16
-      add x2, x17, #16
+      add x2, x7, #16
       add x4, x14, #16
-      mov x5, x16
+      mov x5, x6
       bi1_qpel_hv_filter_8lines x0, x2, V0, V1, x13, x12
       ret lr
 endfunc
@@ -1850,19 +1850,19 @@ function put_vvc_bi1_qpel_hv_10_16_neon_4lines, export=1
       lsl    x15, x14, #1 //2*_srcstride
       sub    x2, x2, x14
       sub    x2, x2, x15//start hv src[]
-      mov    x16, x5//save height
-      mov    x17, x2//save start src
-      mov    x15, x0//save start dst
-      mov    x14, x4//save start dst
       LD1    {V0.8B}, [x6]
       LD1    {V1.8B}, [x7]
+      mov    x6, x5//save height
+      mov    x7, x2//save start src
+      mov    x15, x0//save start dst
+      mov    x14, x4//save start dst
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
       bi1_qpel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       add x0, x15, #16
-      add x2, x17, #16
+      add x2, x7, #16
       add x4, x14, #16
-      mov x5, x16
+      mov x5, x6
       bi1_qpel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       ret lr
 endfunc
@@ -1883,29 +1883,29 @@ function put_vvc_bi1_qpel_hv_10_32_neon_8lines, export=1
       lsl    x15, x14, #1 //2*_srcstride
       sub    x2, x2, x14
       sub    x2, x2, x15//start hv src[]
-      mov    x16, x5//save height
-      mov    x17, x2//save start src
-      mov    x15, x0//save start dst
-      mov    x14, x4//save start dst
       LD1    {V0.8B}, [x6]
       LD1    {V1.8B}, [x7]
+      mov    x6, x5//save height
+      mov    x7, x2//save start src
+      mov    x15, x0//save start dst
+      mov    x14, x4//save start dst
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
       bi1_qpel_hv_filter_8lines x0, x2, V0, V1, x13, x12
       add x0, x15, #16
-      add x2, x17, #16
+      add x2, x7, #16
       add x4, x14, #16
-      mov x5, x16
+      mov x5, x6
       bi1_qpel_hv_filter_8lines x0, x2, V0, V1, x13, x12
       add x0, x15, #32
-      add x2, x17, #32
+      add x2, x7, #32
       add x4, x14, #32
-      mov x5, x16
+      mov x5, x6
       bi1_qpel_hv_filter_8lines x0, x2, V0, V1, x13, x12
       add x0, x15, #48
-      add x2, x17, #48
+      add x2, x7, #48
       add x4, x14, #48
-      mov x5, x16
+      mov x5, x6
       bi1_qpel_hv_filter_8lines x0, x2, V0, V1, x13, x12
       ret lr
 endfunc
@@ -1926,29 +1926,29 @@ function put_vvc_bi1_qpel_hv_10_32_neon_4lines, export=1
       lsl    x15, x14, #1 //2*_srcstride
       sub    x2, x2, x14
       sub    x2, x2, x15//start hv src[]
-      mov    x16, x5//save height
-      mov    x17, x2//save start src
-      mov    x15, x0//save start dst
-      mov    x14, x4//save start dst
       LD1    {V0.8B}, [x6]
       LD1    {V1.8B}, [x7]
+      mov    x6, x5//save height
+      mov    x7, x2//save start src
+      mov    x15, x0//save start dst
+      mov    x14, x4//save start dst
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
       bi1_qpel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       add x0, x15, #16
-      add x2, x17, #16
+      add x2, x7, #16
       add x4, x14, #16
-      mov x5, x16
+      mov x5, x6
       bi1_qpel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       add x0, x15, #32
-      add x2, x17, #32
+      add x2, x7, #32
       add x4, x14, #32
-      mov x5, x16
+      mov x5, x6
       bi1_qpel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       add x0, x15, #48
-      add x2, x17, #48
+      add x2, x7, #48
       add x4, x14, #48
-      mov x5, x16
+      mov x5, x6
       bi1_qpel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       ret lr
 endfunc
@@ -2166,15 +2166,15 @@ function put_vvc_uni_epel_v_10_16_neon_4lines, export=1
       lsl    x3, x3, #1 //_srcstride
       sub    x2, x2, x3
       mov    x9, x2  //save x2[-_srcstride]
-      mov    x8, x0  //save x0[0]
       mov    x14, x4  //save height
       DUP    V29.4S, w11 //offset vector
       DUP    V30.8H, wzr //min val vector
       DUP    V31.8H, w10 //max val vector
+      mov    x10, x0  //save x0[0]
       LD1    {V0.8B}, [x5]
       SADDW   V0.8H, V30.8H, V0.8B
       uni_epel_v_filter_4lines x0, x2
-      add x0, x8, #16
+      add x0, x10, #16
       add x2, x9, #16
       mov x4, x14
       uni_epel_v_filter_4lines x0, x2
@@ -2189,15 +2189,15 @@ function put_vvc_uni_epel_v_10_16_neon_2lines, export=1
       lsl    x3, x3, #1 //_srcstride
       sub    x2, x2, x3
       mov    x9, x2  //save x2[-_srcstride]
-      mov    x8, x0  //save x0[0]
       mov    x14, x4  //save height
       DUP    V29.4S, w11 //offset vector
       DUP    V30.8H, wzr //min val vector
       DUP    V31.8H, w10 //max val vector
+      mov    x10, x0  //save x0[0]
       LD1    {V0.8B}, [x5]
       SADDW   V0.8H, V30.8H, V0.8B
       uni_epel_v_filter_2lines x0, x2
-      add x0, x8, #16
+      add x0, x10, #16
       add x2, x9, #16
       mov x4, x14
       uni_epel_v_filter_2lines x0, x2
@@ -2212,23 +2212,23 @@ function put_vvc_uni_epel_v_10_32_neon_4lines, export=1
       lsl    x3, x3, #1 //_srcstride
       sub    x2, x2, x3
       mov    x9, x2  //save x2[-_srcstride]
-      mov    x8, x0  //save x0[0]
       mov    x14, x4  //save height
       DUP    V29.4S, w11 //offset vector
       DUP    V30.8H, wzr //min val vector
       DUP    V31.8H, w10 //max val vector
+      mov    x10, x0  //save x0[0]
       LD1    {V0.8B}, [x5]
       SADDW   V0.8H, V30.8H, V0.8B
       uni_epel_v_filter_4lines x0, x2
-      add x0, x8, #16
+      add x0, x10, #16
       add x2, x9, #16
       mov x4, x14
       uni_epel_v_filter_4lines x0, x2
-      add x0, x8, #32
+      add x0, x10, #32
       add x2, x9, #32
       mov x4, x14
       uni_epel_v_filter_4lines x0, x2
-      add x0, x8, #48
+      add x0, x10, #48
       add x2, x9, #48
       mov x4, x14
       uni_epel_v_filter_4lines x0, x2
@@ -2243,23 +2243,23 @@ function put_vvc_uni_epel_v_10_32_neon_2lines, export=1
       lsl    x3, x3, #1 //_srcstride
       sub    x2, x2, x3
       mov    x9, x2  //save x2[-_srcstride]
-      mov    x8, x0  //save x0[0]
       mov    x14, x4  //save height
       DUP    V29.4S, w11 //offset vector
       DUP    V30.8H, wzr //min val vector
       DUP    V31.8H, w10 //max val vector
+      mov    x10, x0  //save x0[0]
       LD1    {V0.8B}, [x5]
       SADDW   V0.8H, V30.8H, V0.8B
       uni_epel_v_filter_2lines x0, x2
-      add x0, x8, #16
+      add x0, x10, #16
       add x2, x9, #16
       mov x4, x14
       uni_epel_v_filter_2lines x0, x2
-      add x0, x8, #32
+      add x0, x10, #32
       add x2, x9, #32
       mov x4, x14
       uni_epel_v_filter_2lines x0, x2
-      add x0, x8, #48
+      add x0, x10, #48
       add x2, x9, #48
       mov x4, x14
       uni_epel_v_filter_2lines x0, x2
@@ -2355,17 +2355,17 @@ function put_vvc_uni_epel_hv_10_16_neon_4lines, export=1
       lsl    x1, x1, #1 //_dststride
       lsl    x14, x3, #1 //_srcstride
       sub    x2, x2, x14//start hv src[]
-      mov    x16, x4//save height
-      mov    x17, x2//save start src
-      mov    x15, x0//save start dst
       LD1    {V0.8B}, [x5]
       LD1    {V1.8B}, [x6]
+      mov    x6, x4//save height
+      mov    x7, x2//save start src
+      mov    x15, x0//save start dst
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
       uni_epel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       add x0, x15, #16
-      add x2, x17, #16
-      mov x4, x16
+      add x2, x7, #16
+      mov x4, x6
       uni_epel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       ret lr
 endfunc
@@ -2383,17 +2383,17 @@ function put_vvc_uni_epel_hv_10_16_neon_2lines, export=1
       lsl    x1, x1, #1 //_dststride
       lsl    x14, x3, #1 //_srcstride
       sub    x2, x2, x14//start hv src[]
-      mov    x16, x4//save height
-      mov    x17, x2//save start src
-      mov    x15, x0//save start dst
       LD1    {V0.8B}, [x5]
       LD1    {V1.8B}, [x6]
+      mov    x6, x4//save height
+      mov    x7, x2//save start src
+      mov    x15, x0//save start dst
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
       uni_epel_hv_filter_2lines x0, x2, V0, V1, x13, x12
       add x0, x15, #16
-      add x2, x17, #16
-      mov x4, x16
+      add x2, x7, #16
+      mov x4, x6
       uni_epel_hv_filter_2lines x0, x2, V0, V1, x13, x12
       ret lr
 endfunc
@@ -2411,25 +2411,25 @@ function put_vvc_uni_epel_hv_10_32_neon_4lines, export=1
       lsl    x1, x1, #1 //_dststride
       lsl    x14, x3, #1 //_srcstride
       sub    x2, x2, x14//start hv src[]
-      mov    x16, x4//save height
-      mov    x17, x2//save start src
-      mov    x15, x0//save start dst
       LD1    {V0.8B}, [x5]
       LD1    {V1.8B}, [x6]
+      mov    x6, x4//save height
+      mov    x7, x2//save start src
+      mov    x15, x0//save start dst
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
       uni_epel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       add x0, x15, #16
-      add x2, x17, #16
-      mov x4, x16
+      add x2, x7, #16
+      mov x4, x6
       uni_epel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       add x0, x15, #32
-      add x2, x17, #32
-      mov x4, x16
+      add x2, x7, #32
+      mov x4, x6
       uni_epel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       add x0, x15, #48
-      add x2, x17, #48
-      mov x4, x16
+      add x2, x7, #48
+      mov x4, x6
       uni_epel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       ret lr
 endfunc
@@ -2447,25 +2447,25 @@ function put_vvc_uni_epel_hv_10_32_neon_2lines, export=1
       lsl    x1, x1, #1 //_dststride
       lsl    x14, x3, #1 //_srcstride
       sub    x2, x2, x14//start hv src[]
-      mov    x16, x4//save height
-      mov    x17, x2//save start src
-      mov    x15, x0//save start dst
       LD1    {V0.8B}, [x5]
       LD1    {V1.8B}, [x6]
+      mov    x6, x4//save height
+      mov    x7, x2//save start src
+      mov    x15, x0//save start dst
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
       uni_epel_hv_filter_2lines x0, x2, V0, V1, x13, x12
       add x0, x15, #16
-      add x2, x17, #16
-      mov x4, x16
+      add x2, x7, #16
+      mov x4, x6
       uni_epel_hv_filter_2lines x0, x2, V0, V1, x13, x12
       add x0, x15, #32
-      add x2, x17, #32
-      mov x4, x16
+      add x2, x7, #32
+      mov x4, x6
       uni_epel_hv_filter_2lines x0, x2, V0, V1, x13, x12
       add x0, x15, #48
-      add x2, x17, #48
-      mov x4, x16
+      add x2, x7, #48
+      mov x4, x6
       uni_epel_hv_filter_2lines x0, x2, V0, V1, x13, x12
       ret lr
 endfunc
@@ -2603,14 +2603,14 @@ function put_vvc_bi0_epel_v_10_16_neon_4lines, export=1
       lsl    x2, x2, #1 //_srcstride
       sub    x1, x1, x2
       mov    x9, x1  //save x1[-3*_srcstride]
-      mov    x8, x0  //save x0[0]
       mov    x14, x3  //save height
       DUP    V30.8H, wzr //min val vector
       DUP    V31.8H, w10 //max val vector
       LD1    {V0.8B}, [x4]
+      mov    x10, x0  //save x0[0]
       SADDW   V0.8H, V30.8H, V0.8B
       bi0_epel_v_filter_4lines x0, x1
-      add x0, x8, #16
+      add x0, x10, #16
       add x1, x9, #16
       mov x3, x14
       bi0_epel_v_filter_4lines x0, x1
@@ -2623,14 +2623,14 @@ function put_vvc_bi0_epel_v_10_16_neon_2lines, export=1
       lsl    x2, x2, #1 //_srcstride
       sub    x1, x1, x2
       mov    x9, x1  //save x1[-3*_srcstride]
-      mov    x8, x0  //save x0[0]
       mov    x14, x3  //save height
       DUP    V30.8H, wzr //min val vector
       DUP    V31.8H, w10 //max val vector
       LD1    {V0.8B}, [x4]
+      mov    x10, x0  //save x0[0]
       SADDW   V0.8H, V30.8H, V0.8B
       bi0_epel_v_filter_2lines x0, x1
-      add x0, x8, #16
+      add x0, x10, #16
       add x1, x9, #16
       mov x3, x14
       bi0_epel_v_filter_2lines x0, x1
@@ -2643,22 +2643,22 @@ function put_vvc_bi0_epel_v_10_32_neon_4lines, export=1
       lsl    x2, x2, #1 //_srcstride
       sub    x1, x1, x2
       mov    x9, x1  //save x1[-3*_srcstride]
-      mov    x8, x0  //save x0[0]
       mov    x14, x3  //save height
       DUP    V30.8H, wzr //min val vector
       DUP    V31.8H, w10 //max val vector
       LD1    {V0.8B}, [x4]
+      mov    x10, x0  //save x0[0]
       SADDW   V0.8H, V30.8H, V0.8B
       bi0_epel_v_filter_4lines x0, x1
-      add x0, x8, #16
+      add x0, x10, #16
       add x1, x9, #16
       mov x3, x14
       bi0_epel_v_filter_4lines x0, x1
-      add x0, x8, #32
+      add x0, x10, #32
       add x1, x9, #32
       mov x3, x14
       bi0_epel_v_filter_4lines x0, x1
-      add x0, x8, #48
+      add x0, x10, #48
       add x1, x9, #48
       mov x3, x14
       bi0_epel_v_filter_4lines x0, x1
@@ -2671,22 +2671,22 @@ function put_vvc_bi0_epel_v_10_32_neon_2lines, export=1
       lsl    x2, x2, #1 //_srcstride
       sub    x1, x1, x2
       mov    x9, x1  //save x1[-3*_srcstride]
-      mov    x8, x0  //save x0[0]
       mov    x14, x3  //save height
       DUP    V30.8H, wzr //min val vector
       DUP    V31.8H, w10 //max val vector
       LD1    {V0.8B}, [x4]
+      mov    x10, x0  //save x0[0]
       SADDW   V0.8H, V30.8H, V0.8B
       bi0_epel_v_filter_2lines x0, x1
-      add x0, x8, #16
+      add x0, x10, #16
       add x1, x9, #16
       mov x3, x14
       bi0_epel_v_filter_2lines x0, x1
-      add x0, x8, #32
+      add x0, x10, #32
       add x1, x9, #32
       mov x3, x14
       bi0_epel_v_filter_2lines x0, x1
-      add x0, x8, #48
+      add x0, x10, #48
       add x1, x9, #48
       mov x3, x14
       bi0_epel_v_filter_2lines x0, x1
@@ -2779,8 +2779,8 @@ function put_vvc_bi0_epel_hv_10_16_neon_4lines, export=1
       lsl    x13, x13, #1 // last jump h
       lsl    x14, x2, #1 //_srcstride
       sub    x1, x1, x14
-      mov    x16, x3//save height
-      mov    x17, x1//save start src
+      mov    x6, x3//save height
+      mov    x7, x1//save start src
       mov    x15, x0//save start dst
       LD1    {V0.8B}, [x4]
       LD1    {V1.8B}, [x5]
@@ -2788,8 +2788,8 @@ function put_vvc_bi0_epel_hv_10_16_neon_4lines, export=1
       SADDW   V1.8H, V30.8H, V1.8B
       bi0_epel_hv_filter_4lines x0, x1, V0, V1, x13, x12
       add x0, x15, #16
-      add x1, x17, #16
-      mov x3, x16
+      add x1, x7, #16
+      mov x3, x6
       bi0_epel_hv_filter_4lines x0, x1, V0, V1, x13, x12
       ret lr
 endfunc
@@ -2806,8 +2806,8 @@ function put_vvc_bi0_epel_hv_10_16_neon_2lines, export=1
       lsl    x13, x13, #1 // last jump h
       lsl    x14, x2, #1 //_srcstride
       sub    x1, x1, x14
-      mov    x16, x3//save height
-      mov    x17, x1//save start src
+      mov    x6, x3//save height
+      mov    x7, x1//save start src
       mov    x15, x0//save start dst
       LD1    {V0.8B}, [x4]
       LD1    {V1.8B}, [x5]
@@ -2815,8 +2815,8 @@ function put_vvc_bi0_epel_hv_10_16_neon_2lines, export=1
       SADDW   V1.8H, V30.8H, V1.8B
       bi0_epel_hv_filter_2lines x0, x1, V0, V1, x13, x12
       add x0, x15, #16
-      add x1, x17, #16
-      mov x3, x16
+      add x1, x7, #16
+      mov x3, x6
       bi0_epel_hv_filter_2lines x0, x1, V0, V1, x13, x12
       ret lr
 endfunc
@@ -2833,8 +2833,8 @@ function put_vvc_bi0_epel_hv_10_32_neon_4lines, export=1
       lsl    x13, x13, #1 // last jump h
       lsl    x14, x2, #1 //_srcstride
       sub    x1, x1, x14
-      mov    x16, x3//save height
-      mov    x17, x1//save start src
+      mov    x6, x3//save height
+      mov    x7, x1//save start src
       mov    x15, x0//save start dst
       LD1    {V0.8B}, [x4]
       LD1    {V1.8B}, [x5]
@@ -2842,16 +2842,16 @@ function put_vvc_bi0_epel_hv_10_32_neon_4lines, export=1
       SADDW   V1.8H, V30.8H, V1.8B
       bi0_epel_hv_filter_4lines x0, x1, V0, V1, x13, x12
       add x0, x15, #16
-      add x1, x17, #16
-      mov x3, x16
+      add x1, x7, #16
+      mov x3, x6
       bi0_epel_hv_filter_4lines x0, x1, V0, V1, x13, x12
       add x0, x15, #32
-      add x1, x17, #32
-      mov x3, x16
+      add x1, x7, #32
+      mov x3, x6
       bi0_epel_hv_filter_4lines x0, x1, V0, V1, x13, x12
       add x0, x15, #48
-      add x1, x17, #48
-      mov x3, x16
+      add x1, x7, #48
+      mov x3, x6
       bi0_epel_hv_filter_4lines x0, x1, V0, V1, x13, x12
       ret lr
 endfunc
@@ -2868,8 +2868,8 @@ function put_vvc_bi0_epel_hv_10_32_neon_2lines, export=1
       lsl    x13, x13, #1 // last jump h
       lsl    x14, x2, #1 //_srcstride
       sub    x1, x1, x14
-      mov    x16, x3//save height
-      mov    x17, x1//save start src
+      mov    x6, x3//save height
+      mov    x7, x1//save start src
       mov    x15, x0//save start dst
       LD1    {V0.8B}, [x4]
       LD1    {V1.8B}, [x5]
@@ -2877,16 +2877,16 @@ function put_vvc_bi0_epel_hv_10_32_neon_2lines, export=1
       SADDW   V1.8H, V30.8H, V1.8B
       bi0_epel_hv_filter_2lines x0, x1, V0, V1, x13, x12
       add x0, x15, #16
-      add x1, x17, #16
-      mov x3, x16
+      add x1, x7, #16
+      mov x3, x6
       bi0_epel_hv_filter_2lines x0, x1, V0, V1, x13, x12
       add x0, x15, #32
-      add x1, x17, #32
-      mov x3, x16
+      add x1, x7, #32
+      mov x3, x6
       bi0_epel_hv_filter_2lines x0, x1, V0, V1, x13, x12
       add x0, x15, #48
-      add x1, x17, #48
-      mov x3, x16
+      add x1, x7, #48
+      mov x3, x6
       bi0_epel_hv_filter_2lines x0, x1, V0, V1, x13, x12
       ret lr
 endfunc
@@ -3269,19 +3269,19 @@ function put_vvc_bi1_epel_hv_10_16_neon_4lines, export=1
       lsl    x1, x1, #1 //_dststride
       lsl    x14, x3, #1 //_srcstride
       sub    x2, x2, x14//start hv src[]
-      mov    x16, x5//save height
-      mov    x17, x2//save start src
-      mov    x15, x0//save start dst
-      mov    x14, x4//save start dst
       LD1    {V0.8B}, [x6]
       LD1    {V1.8B}, [x7]
+      mov    x6, x5//save height
+      mov    x7, x2//save start src
+      mov    x15, x0//save start dst
+      mov    x14, x4//save start dst
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
       bi1_epel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       add x0, x15, #16
-      add x2, x17, #16
+      add x2, x7, #16
       add x4, x14, #16
-      mov x5, x16
+      mov x5, x6
       bi1_epel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       ret lr
 endfunc
@@ -3300,19 +3300,19 @@ function put_vvc_bi1_epel_hv_10_16_neon_2lines, export=1
       lsl    x1, x1, #1 //_dststride
       lsl    x14, x3, #1 //_srcstride
       sub    x2, x2, x14//start hv src[]
-      mov    x16, x5//save height
-      mov    x17, x2//save start src
-      mov    x15, x0//save start dst
-      mov    x14, x4//save start dst
       LD1    {V0.8B}, [x6]
       LD1    {V1.8B}, [x7]
+      mov    x6, x5//save height
+      mov    x7, x2//save start src
+      mov    x15, x0//save start dst
+      mov    x14, x4//save start dst
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
       bi1_epel_hv_filter_2lines x0, x2, V0, V1, x13, x12
       add x0, x15, #16
-      add x2, x17, #16
+      add x2, x7, #16
       add x4, x14, #16
-      mov x5, x16
+      mov x5, x6
       bi1_epel_hv_filter_2lines x0, x2, V0, V1, x13, x12
       ret lr
 endfunc
@@ -3331,29 +3331,29 @@ function put_vvc_bi1_epel_hv_10_32_neon_4lines, export=1
       lsl    x1, x1, #1 //_dststride
       lsl    x14, x3, #1 //_srcstride
       sub    x2, x2, x14//start hv src[]
-      mov    x16, x5//save height
-      mov    x17, x2//save start src
-      mov    x15, x0//save start dst
-      mov    x14, x4//save start dst
       LD1    {V0.8B}, [x6]
       LD1    {V1.8B}, [x7]
+      mov    x6, x5//save height
+      mov    x7, x2//save start src
+      mov    x15, x0//save start dst
+      mov    x14, x4//save start dst
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
       bi1_epel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       add x0, x15, #16
-      add x2, x17, #16
+      add x2, x7, #16
       add x4, x14, #16
-      mov x5, x16
+      mov x5, x6
       bi1_epel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       add x0, x15, #32
-      add x2, x17, #32
+      add x2, x7, #32
       add x4, x14, #32
-      mov x5, x16
+      mov x5, x6
       bi1_epel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       add x0, x15, #48
-      add x2, x17, #48
+      add x2, x7, #48
       add x4, x14, #48
-      mov x5, x16
+      mov x5, x6
       bi1_epel_hv_filter_4lines x0, x2, V0, V1, x13, x12
       ret lr
 endfunc
@@ -3372,29 +3372,29 @@ function put_vvc_bi1_epel_hv_10_32_neon_2lines, export=1
       lsl    x1, x1, #1 //_dststride
       lsl    x14, x3, #1 //_srcstride
       sub    x2, x2, x14//start hv src[]
-      mov    x16, x5//save height
-      mov    x17, x2//save start src
-      mov    x15, x0//save start dst
-      mov    x14, x4//save start dst
       LD1    {V0.8B}, [x6]
       LD1    {V1.8B}, [x7]
+      mov    x6, x5//save height
+      mov    x7, x2//save start src
+      mov    x15, x0//save start dst
+      mov    x14, x4//save start dst
       SADDW   V0.8H, V30.8H, V0.8B
       SADDW   V1.8H, V30.8H, V1.8B
       bi1_epel_hv_filter_2lines x0, x2, V0, V1, x13, x12
       add x0, x15, #16
-      add x2, x17, #16
+      add x2, x7, #16
       add x4, x14, #16
-      mov x5, x16
+      mov x5, x6
       bi1_epel_hv_filter_2lines x0, x2, V0, V1, x13, x12
       add x0, x15, #32
-      add x2, x17, #32
+      add x2, x7, #32
       add x4, x14, #32
-      mov x5, x16
+      mov x5, x6
       bi1_epel_hv_filter_2lines x0, x2, V0, V1, x13, x12
       add x0, x15, #48
-      add x2, x17, #48
+      add x2, x7, #48
       add x4, x14, #48
-      mov x5, x16
+      mov x5, x6
       bi1_epel_hv_filter_2lines x0, x2, V0, V1, x13, x12
       ret lr
 endfunc
