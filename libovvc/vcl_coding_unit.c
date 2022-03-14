@@ -760,7 +760,6 @@ coding_unit(OVCTUDec *const ctu_dec,
         ctu_dec->dequant_cb_skip.qp   = OVMAX(ctu_dec->dequant_cb.qp, ctu_dec->qp_ctx.min_qp_prime_ts);
         ctu_dec->dequant_cr_skip.qp   = OVMAX(ctu_dec->dequant_cr.qp, ctu_dec->qp_ctx.min_qp_prime_ts);
         ctu_dec->dequant_jcbcr_skip.qp = OVMAX(ctu_dec->dequant_joint_cb_cr.qp, ctu_dec->qp_ctx.min_qp_prime_ts);
-        ctu_dec->read_qp = 0;
     }
 
     int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
