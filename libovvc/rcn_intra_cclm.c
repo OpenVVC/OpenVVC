@@ -195,8 +195,8 @@ sub_sample_lm_ref_abv0(const OVSample *src_y, const OVSample *src_cb, const OVSa
 
     for (i = 0; i < nb_sample_abv; i++) {
         int s = 2;
-        s += _src[0              ] * 2;
         s += _src[0 - (!pad_left)];
+        s += _src[0              ] * 2;
         s += _src[0 + 1          ];
 
         smp_y[i] = s >> 2;
@@ -267,8 +267,8 @@ sub_sample_lm_ref_abv_cl(const OVSample *src_y, const OVSample *src_cb, const OV
         int s = 4;
 
         s += _src[0 - stride_l];
-        s += _src[0] * 4;
         s += _src[0 - (!pad_left)];
+        s += _src[0] * 4;
         s += _src[0 + 1];
         s += _src[0 + stride_l];
 
