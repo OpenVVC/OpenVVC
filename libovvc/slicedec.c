@@ -832,6 +832,7 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctu_w = 1 << log2_ctb_s;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctu_h = 1 << log2_ctb_s;
 
+    ctudec->rcn_funcs.rcn_attach_ctu_buff(rcn_ctx, log2_ctb_s, 0);
     /* Do not copy on first line */
     if (ctb_addr_rs >= nb_ctu_w) {
         ctudec->rcn_funcs.rcn_intra_line_to_ctu(rcn_ctx, 0, log2_ctb_s);
@@ -853,7 +854,13 @@ decode_ctu_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
             backup_qp = ctudec->drv_ctx.qp_map_x[0];
         }
 
-        ctudec->rcn_funcs.rcn_update_ctu_border(rcn_ctx, log2_ctb_s);
+        ctudec->rcn_funcs.rcn_attach_ctu_buff(rcn_ctx, log2_ctb_s, ctb_x + 1);
+
+        uint8_t ctb_addr_msk = (256 * 128 >> (2 * log2_ctb_s)) - 1;
+        if (!((ctb_x + 1) & ctb_addr_msk)) {
+            ctudec->rcn_funcs.rcn_update_ctu_border(rcn_ctx, log2_ctb_s);
+        }
+        ctudec->rcn_funcs.rcn_update_frame_buff(rcn_ctx, log2_ctb_s);
 
         if (slice_type != SLICE_I) {
             store_inter_maps(drv_lines, ctudec, ctb_x, 0);
@@ -984,6 +991,8 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     uint8_t slice_type = sldec->slice_type;
     int ctb_x = 0;
 
+    ctudec->rcn_funcs.rcn_attach_ctu_buff(rcn_ctx, log2_ctb_s, 0);
+
     ctudec->rcn_funcs.rcn_intra_line_to_ctu(rcn_ctx, 0, log2_ctb_s);
 
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.ctu_w = 1 << log2_ctb_s;
@@ -1007,7 +1016,14 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
             store_ibc_maps(drv_lines, ctudec, ctb_x, 0);
         }
 
-        ctudec->rcn_funcs.rcn_update_ctu_border(rcn_ctx, log2_ctb_s);
+        ctudec->rcn_funcs.rcn_attach_ctu_buff(rcn_ctx, log2_ctb_s, ctb_x + 1);
+
+        uint8_t ctb_addr_msk = (256 * 128 >> (2 * log2_ctb_s)) - 1;
+        if (!((ctb_x + 1) & ctb_addr_msk)) {
+            ctudec->rcn_funcs.rcn_update_ctu_border(rcn_ctx, log2_ctb_s);
+        }
+
+        ctudec->rcn_funcs.rcn_update_frame_buff(rcn_ctx, log2_ctb_s);
 
         if (!ctudec->dbf_disable) {
             const struct DBFLines *const dbf_lns = &drv_lines->dbf_lines;
@@ -1295,7 +1311,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     init_lines(ctudec, sldec, &einfo, prms, ctudec->part_ctx,
                &drv_lines, cc_lines);
 
-    ctudec->rcn_funcs.rcn_attach_ctu_buff(rcn_ctx);
+    ctudec->rcn_funcs.rcn_attach_ctu_buff(rcn_ctx, log2_ctb_s, 0);
 
     ctudec->rcn_funcs.rcn_attach_frame_buff(rcn_ctx, sldec->pic->frame, &einfo, log2_ctb_s);
 

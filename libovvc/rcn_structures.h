@@ -590,6 +590,8 @@ struct RCNFunctions
 
     void (*rcn_write_ctu_to_frame)(const struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s);
 
+    void (*rcn_update_frame_buff)(struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctu_s);
+
     void (*rcn_intra_line_to_ctu)(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log2_ctb_s);
 
     void (*rcn_ctu_to_intra_line)(const struct OVRCNCtx *const rcn_ctx, int x_l, uint8_t log2_ctu_s);
@@ -610,7 +612,7 @@ struct RCNFunctions
 
     void (*rcn_alloc_filter_buffers)(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int margin, uint8_t log2_ctb_s);
 
-    void (*rcn_attach_ctu_buff)(struct OVRCNCtx *const rcn_ctx);
+    void (*rcn_attach_ctu_buff)(struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s, uint8_t ctb_x);
 
     void (*rcn_attach_frame_buff)(struct OVRCNCtx *const rcn_ctx, const OVFrame *const f,
                                   const struct RectEntryInfo *const einfo, uint8_t log2_ctb_s);

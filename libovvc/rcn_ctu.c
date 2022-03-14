@@ -41,16 +41,13 @@
 static void
 rcn_update_ctu_border(struct OVRCNCtx *rcn_ctx, uint8_t log2_ctb_s)
 {
+    uint8_t ctb_addr = (256 * 128 >> (2 * log2_ctb_s));
      uint8_t ctu_s = 1 << log2_ctb_s;
      struct OVBuffInfo *binfo = &rcn_ctx->ctu_buff;
-     const OVSample *src = binfo->y + ctu_s - 4;
+     const OVSample *src = binfo->y + ctu_s*ctb_addr - 4;
      OVSample *dst = binfo->y - 4;
      int i;
 
-     struct OVBuffInfo *finfo = &rcn_ctx->frame_buff;
-     finfo->y += ctu_s;
-     finfo->cb += ctu_s >> 1;
-     finfo->cr += ctu_s >> 1;
      /* Note we also copy border of above line for top left sample
       */
      src -= binfo->stride;
@@ -63,7 +60,7 @@ rcn_update_ctu_border(struct OVRCNCtx *rcn_ctx, uint8_t log2_ctb_s)
          src += binfo->stride;
      }
 
-     src = binfo->cb + (ctu_s >> 1) - 1;
+     src = binfo->cb + (ctu_s  * ctb_addr >> 1) - 1;
      dst = binfo->cb - 1;
      src -= binfo->stride_c;
      dst -= binfo->stride_c;
@@ -74,7 +71,7 @@ rcn_update_ctu_border(struct OVRCNCtx *rcn_ctx, uint8_t log2_ctb_s)
          src += binfo->stride_c;
      }
 
-     src = binfo->cr + (ctu_s >> 1) - 1;
+     src = binfo->cr + (ctu_s * ctb_addr >> 1) - 1;
      dst = binfo->cr - 1;
      src -= binfo->stride_c;
      dst -= binfo->stride_c;
@@ -183,6 +180,15 @@ rcn_write_ctu_to_frame_border(const struct OVRCNCtx *const rcn_ctx,
         src_cb += ctu_buff->stride_c;
         src_cr += ctu_buff->stride_c;
     }
+}
+
+static void
+rcn_update_frame_buff(struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s)
+{
+     struct OVBuffInfo *finfo = &rcn_ctx->frame_buff;
+     finfo->y += 1 << log2_ctb_s;
+     finfo->cb += 1 << log2_ctb_s >> 1;
+     finfo->cr += 1 << log2_ctb_s >> 1;
 }
 
 static void
@@ -543,19 +549,22 @@ rcn_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int margi
     }
 
 }
-
+#define PADD 256 + 128 + 4
 static void
-rcn_attach_ctu_buff(struct OVRCNCtx *const rcn_ctx)
+rcn_attach_ctu_buff(struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s, uint8_t ctb_x)
 {
      struct CTURCNData *rcn_data = &rcn_ctx->data;
      struct OVBuffInfo *ctu_binfo = &rcn_ctx->ctu_buff;
+     uint16_t stride = (256 * 128 >> log2_ctb_s) + 4 + 64;
+     uint16_t stride_c = stride >> 1;
+     uint8_t ctb_addr_msk = (256 * 128 >> (2 * log2_ctb_s)) - 1;
 
-     ctu_binfo->y  = (OVSample *)rcn_data->y_buff  + RCN_CTB_PADDING;
-     ctu_binfo->cb = (OVSample *)rcn_data->cb_buff + RCN_CTB_PADDING;
-     ctu_binfo->cr = (OVSample *)rcn_data->cr_buff + RCN_CTB_PADDING;
+     ctu_binfo->y  = (OVSample *)rcn_data->y_buff  + stride + ((ctb_x&ctb_addr_msk) << log2_ctb_s);
+     ctu_binfo->cb = (OVSample *)rcn_data->cb_buff + stride_c + ((ctb_x&ctb_addr_msk) << (log2_ctb_s - 1));
+     ctu_binfo->cr = (OVSample *)rcn_data->cr_buff + stride_c + ((ctb_x&ctb_addr_msk) << (log2_ctb_s - 1));
 
-     ctu_binfo->stride   = RCN_CTB_STRIDE + 2;
-     ctu_binfo->stride_c = RCN_CTB_STRIDE + 1;
+     ctu_binfo->stride   = stride;
+     ctu_binfo->stride_c = stride_c;//RCN_CTB_STRIDE;
 }
 
 static void
@@ -613,4 +622,5 @@ BD_DECL(rcn_init_ctu_buffs)(struct RCNFunctions *const rcn_funcs)
     rcn_funcs->rcn_attach_ctu_buff           = &rcn_attach_ctu_buff;
     rcn_funcs->rcn_attach_frame_buff         = &rcn_attach_frame_buff;
     rcn_funcs->rcn_next_buff_line            = &rcn_next_buff_line;
+    rcn_funcs->rcn_update_frame_buff         = &rcn_update_frame_buff;
 }
