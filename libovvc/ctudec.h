@@ -450,6 +450,11 @@ struct InterDRVCtx
         /* MV plane storage for collocated reference picture */
         const struct MVPlane *col_plane0;
         const struct MVPlane *col_plane1;
+        uint16_t pln0_stride;
+        uint16_t pln1_stride;
+        const OVMV *ctb_mv0;
+        const OVMV *ctb_mv1;
+
         uint8_t col_ref_l0;
         uint8_t ldc;
 

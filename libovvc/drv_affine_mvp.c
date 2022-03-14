@@ -63,6 +63,7 @@
 #define PB_POS_IN_BUF(x,y) (35 + (x) + ((y) * 34))
 #define TMVP_BUFF_STRIDE 17
 #define TMVP_POS_IN_BUF(x,y) ((x >> 1) + (((y) >> 1) * TMVP_BUFF_STRIDE))
+#define TMVP_POS_IN_BUF2(x,y) ((x >> 1) + (((y >> 1)) * tmvp->pln0_stride))
 
 #define MAX_NB_AMVP_CAND 2
 
@@ -384,12 +385,20 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
     const struct MVPlane *plane0 = tmvp_ctx->col_plane0;
     const struct MVPlane *plane1 = tmvp_ctx->col_plane1;
 
+    #if 0
+    if (is_border_pic) {
+        memset(&tmvp_ctx->dir_map_v0[nb_pb_ctb_w], 0, sizeof(uint64_t));
+        memset(&tmvp_ctx->dir_map_v1[nb_pb_ctb_w], 0, sizeof(uint64_t));
+    }
+    #endif
     if (is_border_pic) {
         memset(tmvp_ctx->dir_map_v0, 0, sizeof(uint64_t) * 34);
         memset(tmvp_ctx->dir_map_v1, 0, sizeof(uint64_t) * 34);
     }
+    #if 0
     memset(tmvp_ctx->mvs0, 0, sizeof(tmvp_ctx->mvs0));
     memset(tmvp_ctx->mvs1, 0, sizeof(tmvp_ctx->mvs1));
+    #endif
 
     const OVPicture* ref_pic = tmvp_ctx->col_ref;
     tmvp_inter_synchronization(ref_pic, ctb_x, ctb_y, log2_ctb_s);
@@ -403,13 +412,17 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
         OVMV *src_mv = plane0->mvs + ctb_offset;
         OVMV *mvs = tmvp_ctx->mvs0;
         int i;
+            tmvp_ctx->ctb_mv0 = src_mv;
+            tmvp_ctx->pln0_stride = pln_stride;
 
         memcpy(&tmvp_ctx->dir_map_v0[1], src_dirs, sizeof(uint64_t) * (nb_pb_ctb_w + !is_border_pic));
+        #if 0
         for (i = 0; i < nb_pb_ctb_w; i += 2) {
             memcpy(mvs, src_mv, sizeof(*mvs) * (nb_tmvp_unit + !is_border_pic));
             mvs += TMVP_BUFF_STRIDE;
             src_mv += pln_stride;
         }
+        #endif
     }
 
     if (plane1 && plane1->dirs) {
@@ -422,13 +435,18 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
         int32_t ctb_offset = ctb_x * nb_tmvp_unit + (ctb_y * nb_tmvp_unit * pln_stride);
         OVMV *src_mv = plane1->mvs + ctb_offset;
 
+            tmvp_ctx->ctb_mv1 = src_mv;
+            tmvp_ctx->pln1_stride = pln_stride;
+            tmvp_ctx->pln0_stride = pln_stride;
         /*FIXME memory could be spared with smaller map size when possible */
         memcpy(&tmvp_ctx->dir_map_v1[1], src_dirs, sizeof(uint64_t) * (nb_pb_ctb_w + !is_border_pic));
+        #if 0
         for (i = 0; i < nb_pb_ctb_w; i += 2) {
             memcpy(mvs, src_mv, sizeof(*mvs) * (nb_tmvp_unit + !is_border_pic));
             mvs += TMVP_BUFF_STRIDE;
             src_mv += pln_stride;
         }
+        #endif
     }
 
     inter_ctx->tmvp_avail |= 1;
@@ -536,10 +554,10 @@ tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *co
     int16_t scale;
 
     if (cand_c0 | cand_c01) {
-        int16_t c0_pos = TMVP_POS_IN_BUF(pos.c0_x, pos.c0_y);
+        int16_t c0_pos = TMVP_POS_IN_BUF2(pos.c0_x, pos.c0_y);
 
-        const OVMV *mvs    = cand_c0 ? tmvp->mvs0
-                                     : tmvp->mvs1;
+        const OVMV *mvs    = cand_c0 ? tmvp->ctb_mv0
+                                     : tmvp->ctb_mv1;
 
         const int16_t *dist_cols = cand_c0 ? tmvp->dist_col_0
                                            : tmvp->dist_col_1;
@@ -550,10 +568,10 @@ tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *co
         goto found;
 
     } else if (cand_c1 | cand_c11) {
-        int16_t c1_pos = TMVP_POS_IN_BUF(pos.c1_x, pos.c1_y);
+        int16_t c1_pos = TMVP_POS_IN_BUF2(pos.c1_x, pos.c1_y);
 
-        const OVMV *mvs    = cand_c1 ? tmvp->mvs0
-                                     : tmvp->mvs1;
+        const OVMV *mvs    = cand_c1 ? tmvp->ctb_mv0
+                                     : tmvp->ctb_mv1;
 
         const int16_t *dist_cols = cand_c1 ? tmvp->dist_col_0
                                            : tmvp->dist_col_1;
@@ -600,10 +618,10 @@ tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *co
     int16_t scale;
 
     if (cand_c0 | cand_c01) {
-        int16_t c0_pos = TMVP_POS_IN_BUF(pos.c0_x, pos.c0_y);
+        int16_t c0_pos = TMVP_POS_IN_BUF2(pos.c0_x, pos.c0_y);
 
-        const OVMV *mvs    = cand_c01 ? tmvp->mvs1
-                                      : tmvp->mvs0;
+        const OVMV *mvs    = cand_c01 ? tmvp->ctb_mv1
+                                      : tmvp->ctb_mv0;
 
         const int16_t *dist_cols = cand_c01 ? tmvp->dist_col_1
                                             : tmvp->dist_col_0;
@@ -614,10 +632,10 @@ tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *co
         goto found;
 
     } else if (cand_c1 | cand_c11) {
-        int16_t c1_pos = TMVP_POS_IN_BUF(pos.c1_x, pos.c1_y);
+        int16_t c1_pos = TMVP_POS_IN_BUF2(pos.c1_x, pos.c1_y);
 
-        const OVMV *mvs    = cand_c11 ? tmvp->mvs1
-                                      : tmvp->mvs0;
+        const OVMV *mvs    = cand_c11 ? tmvp->ctb_mv1
+                                      : tmvp->ctb_mv0;
 
         const int16_t *dist_cols = cand_c11 ? tmvp->dist_col_1
                                             : tmvp->dist_col_0;
@@ -663,11 +681,11 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
     int16_t scale;
 
     if (cand_c0 | cand_c01) {
-        int16_t c0_pos = TMVP_POS_IN_BUF(pos.c0_x, pos.c0_y);
+        int16_t c0_pos = TMVP_POS_IN_BUF2(pos.c0_x, pos.c0_y);
         uint8_t dir = 0;
 
         if (cand_c0 && cand_c01 && !tmvp->col_ref_l0) {
-            const OVMV *mvs    = tmvp->mvs0;
+            const OVMV *mvs    = tmvp->ctb_mv0;
             const int16_t *dist_cols = tmvp->dist_col_0;
             mv       = mvs[c0_pos];
             dist_col = dist_cols[mv.ref_idx];
@@ -681,7 +699,7 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
             dst[0] = mv;
 
-            mv       = tmvp->mvs1[c0_pos];
+            mv       = tmvp->ctb_mv1[c0_pos];
             dist_col = tmvp->dist_col_1[mv.ref_idx];
 
             dir |= 0x2;
@@ -696,7 +714,7 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
             dst[1] = mv;
         } else if (cand_c0 && cand_c01) {
-            const OVMV *mvs    = tmvp->mvs1;
+            const OVMV *mvs    = tmvp->ctb_mv1;
             const int16_t *dist_cols = tmvp->dist_col_1;
             mv       = mvs[c0_pos];
             dist_col = dist_cols[mv.ref_idx];
@@ -710,7 +728,7 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
             dst[0] = mv;
 
-            mv       = tmvp->mvs0[c0_pos];
+            mv       = tmvp->ctb_mv0[c0_pos];
             dist_col = tmvp->dist_col_0[mv.ref_idx];
 
             dir |= 0x2;
@@ -725,7 +743,7 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
             dst[1] = mv;
         } else if (cand_c0) {
-            const OVMV *mvs    = tmvp->mvs0;
+            const OVMV *mvs    = tmvp->ctb_mv0;
             const int16_t *dist_cols = tmvp->dist_col_0;
             mv       = mvs[c0_pos];
             dist_col = dist_cols[mv.ref_idx];
@@ -754,7 +772,7 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
             dst[1] = mv;
 
         } else if (cand_c01) {
-            const OVMV *mvs    = tmvp->mvs1;
+            const OVMV *mvs    = tmvp->ctb_mv1;
             const int16_t *dist_cols = tmvp->dist_col_1;
             mv       = mvs[c0_pos];
             dist_col = dist_cols[mv.ref_idx];
@@ -809,11 +827,11 @@ merge_tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
     int16_t scale;
 
     if (cand_c0 | cand_c01) {
-        int16_t c0_pos = TMVP_POS_IN_BUF(pos.c0_x, pos.c0_y);
+        int16_t c0_pos = TMVP_POS_IN_BUF2(pos.c0_x, pos.c0_y);
         uint8_t dir = 0;
 
         if (cand_c0) {
-            const OVMV *mvs    = tmvp->mvs0;
+            const OVMV *mvs    = tmvp->ctb_mv0;
             const int16_t *dist_cols = tmvp->dist_col_0;
             mv       = mvs[c0_pos];
             dist_col = dist_cols[mv.ref_idx];
@@ -840,7 +858,7 @@ merge_tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
             dst[1] = mv;
 
         } else if (cand_c01) {
-            const OVMV *mvs    = tmvp->mvs1;
+            const OVMV *mvs    = tmvp->ctb_mv1;
             const int16_t *dist_cols = tmvp->dist_col_1;
             mv       = mvs[c0_pos];
             dist_col = dist_cols[mv.ref_idx];
@@ -894,11 +912,11 @@ merge_tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
     int16_t scale;
 
     if (cand_c0 | cand_c01) {
-        int16_t c0_pos = TMVP_POS_IN_BUF(pos.c0_x, pos.c0_y);
+        int16_t c0_pos = TMVP_POS_IN_BUF2(pos.c0_x, pos.c0_y);
         uint8_t dir = 0;
 
         if (cand_c01) {
-            const OVMV *mvs    = tmvp->mvs1;
+            const OVMV *mvs    = tmvp->ctb_mv1;
             const int16_t *dist_cols = tmvp->dist_col_1;
             mv       = mvs[c0_pos];
             dist_col = dist_cols[mv.ref_idx];
@@ -924,7 +942,7 @@ merge_tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
 
             dst[1] = mv;
         } else if (cand_c0) {
-            const OVMV *mvs    = tmvp->mvs0;
+            const OVMV *mvs    = tmvp->ctb_mv0;
             const int16_t *dist_cols = tmvp->dist_col_0;
             mv       = mvs[c0_pos];
             dist_col = dist_cols[mv.ref_idx];
@@ -1561,11 +1579,11 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
     int16_t scale;
 
     if (cand_c0 | cand_c01) {
-        int16_t c0_pos = TMVP_POS_IN_BUF((pos.x >> 2), (pos.y >> 2));
+        int16_t c0_pos = TMVP_POS_IN_BUF2((pos.x >> 2), (pos.y >> 2));
         uint8_t dir = 0;
 
         if (cand_c0 && cand_c01 && !tmvp->col_ref_l0) {
-            const OVMV *mvs    = tmvp->mvs0;
+            const OVMV *mvs    = tmvp->ctb_mv0;
             const int16_t *dist_cols = tmvp->dist_col_0;
             mv       = mvs[c0_pos];
             dist_col = dist_cols[mv.ref_idx];
@@ -1581,7 +1599,7 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
             dst[0] = mv;
 
-            mv       = tmvp->mvs1[c0_pos];
+            mv       = tmvp->ctb_mv1[c0_pos];
             dist_col = tmvp->dist_col_1[mv.ref_idx];
 
             dir |= 0x2;
@@ -1596,7 +1614,7 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
             dst[1] = mv;
         } else if (cand_c0 && cand_c01) {
-            const OVMV *mvs    = tmvp->mvs1;
+            const OVMV *mvs    = tmvp->ctb_mv1;
             const int16_t *dist_cols = tmvp->dist_col_1;
             mv       = mvs[c0_pos];
             dist_col = dist_cols[mv.ref_idx];
@@ -1612,7 +1630,7 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
             dst[0] = mv;
 
-            mv       = tmvp->mvs0[c0_pos];
+            mv       = tmvp->ctb_mv0[c0_pos];
             dist_col = tmvp->dist_col_0[mv.ref_idx];
 
             dir |= 0x2;
@@ -1627,7 +1645,7 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
             dst[1] = mv;
         } else if (cand_c0) {
-            const OVMV *mvs    = tmvp->mvs0;
+            const OVMV *mvs    = tmvp->ctb_mv0;
             const int16_t *dist_cols = tmvp->dist_col_0;
             mv       = mvs[c0_pos];
             dist_col = dist_cols[mv.ref_idx];
@@ -1658,7 +1676,7 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
             dst[1] = mv;
 
         } else if (cand_c01) {
-            const OVMV *mvs    = tmvp->mvs1;
+            const OVMV *mvs    = tmvp->ctb_mv1;
             const int16_t *dist_cols = tmvp->dist_col_1;
             mv       = mvs[c0_pos];
             dist_col = dist_cols[mv.ref_idx];
@@ -1715,19 +1733,19 @@ sbtmvp_from_same_rpl(const struct InterDRVCtx *const inter_ctx, const struct VVC
     if (rpl_idx == RPL_0) {
         dist_ref  = inter_ctx->dist_ref_0[ref_idx];
         dist_cols = tmvp->dist_col_0;
-        mvs       = tmvp->mvs0;
+        mvs       = tmvp->ctb_mv0;
 
         avail  = cand_msk & 0x1;
     } else {
         dist_ref  = inter_ctx->dist_ref_1[ref_idx];
         dist_cols = tmvp->dist_col_1;
-        mvs       = tmvp->mvs1;
+        mvs       = tmvp->ctb_mv1;
 
         avail = cand_msk & 0x2;
     }
 
     if (avail) {
-        int16_t c0_pos = TMVP_POS_IN_BUF((pos.x >> 2), (pos.y >> 2));
+        int16_t c0_pos = TMVP_POS_IN_BUF2((pos.x >> 2), (pos.y >> 2));
 
         mv       = mvs[c0_pos];
         dist_col = dist_cols[mv.ref_idx];
