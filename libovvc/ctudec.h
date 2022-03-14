@@ -55,6 +55,12 @@
      * in the future
      */
 
+struct DBFMap
+{
+    uint64_t ver[33]; /* Column map of vertical edges */
+    uint64_t hor[33]; /* Row map of horizontal edges */
+};
+
 /*FIXME IBCMV storage size could be reduced based on max permitted IBC motion
         according to IBC max buffer size but also based on the fact
         that IBC only use integer MVs
@@ -68,6 +74,7 @@ typedef struct IBCMV
 struct IBCMVCtx
 {
     struct CTUBitField ctu_map;
+    struct DBFMap *bs1_map;
     IBCMV lft_col[32];
     IBCMV abv_row[32];
     IBCMV hmvp_lut[5];
@@ -105,12 +112,6 @@ struct CCLMParams
 {
    struct LMParams cb;
    struct LMParams cr;
-};
-
-struct DBFMap
-{
-    uint64_t ver[33]; /* Column map of vertical edges */
-    uint64_t hor[33]; /* Row map of horizontal edges */
 };
 
 struct EdgeMap
@@ -163,6 +164,7 @@ struct DBFInfo
     struct DBFQPMap qp_map_cr;
     uint8_t disable_v;
     uint8_t disable_h;
+    const struct IBCMVCtx *ibc_ctx;
 };
 
 struct SAOInfo

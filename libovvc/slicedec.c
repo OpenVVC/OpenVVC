@@ -1399,6 +1399,8 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->drv_ctx.inter_ctx.sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
     ctudec->ibc_enabled = sps->sps_ibc_enabled_flag;
     ctudec->nb_ibc_cand_min1 = 6 - sps->sps_six_minus_max_num_ibc_merge_cand;
+    ctudec->drv_ctx.ibc_ctx.bs1_map = &ctudec->dbf_info.bs1_map;
+    ctudec->dbf_info.ibc_ctx = &ctudec->drv_ctx.ibc_ctx;
 
     if (ctudec->affine_enabled || sps->sps_sbtmvp_enabled_flag) {
         init_affine_status(ctudec, sps, ph);

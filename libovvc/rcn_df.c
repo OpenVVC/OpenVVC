@@ -1577,6 +1577,7 @@ check_dbf_enabled(const struct InterDRVCtx *const inter_ctx,
 
 static uint64_t
 dbf_mv_set_hedges(const struct InterDRVCtx *const inter_ctx,
+                  const struct IBCMVCtx *const ibc_ctx,
                   int x0_unit, int y0_unit,
                   int nb_unit_w, int nb_unit_h, uint64_t msk)
 {
@@ -1587,11 +1588,15 @@ dbf_mv_set_hedges(const struct InterDRVCtx *const inter_ctx,
 
     uint64_t abv0_p_msk = (mv_ctx0->map.hfield[y0_unit] >> (x0_unit + 1)) & unit_msk_h;
     uint64_t abv1_p_msk = (mv_ctx1->map.hfield[y0_unit] >> (x0_unit + 1)) & unit_msk_h;
+    uint64_t ibc_p_msk = (ibc_ctx->ctu_map.hfield[y0_unit] >> (x0_unit + 1)) & unit_msk_h;
 
     uint64_t abv0_q_msk = (mv_ctx0->map.hfield[y0_unit + 1] >> (x0_unit + 1)) & unit_msk_h;
     uint64_t abv1_q_msk = (mv_ctx1->map.hfield[y0_unit + 1] >> (x0_unit + 1)) & unit_msk_h;
+    uint64_t ibc_q_msk = (ibc_ctx->ctu_map.hfield[y0_unit + 1] >> (x0_unit + 1)) & unit_msk_h;
 
     uint64_t bs1_map_h = ((~msk) >> x0_unit + 2) & unit_msk_h;
+    bs1_map_h |= ibc_p_msk & (abv1_q_msk | abv0_q_msk);
+    bs1_map_h |= ibc_q_msk & (abv1_p_msk | abv0_p_msk);
 
     uint64_t mv_q_b  = (abv0_q_msk &  abv1_q_msk);
     uint64_t mv_q_p0 = (abv0_q_msk & ~abv1_q_msk);
@@ -1609,11 +1614,11 @@ dbf_mv_set_hedges(const struct InterDRVCtx *const inter_ctx,
     const int16_t *dist_ref0 = inter_ctx->dist_ref_0;
     const int16_t *dist_ref1 = inter_ctx->dist_ref_1;
 
-    chk_b  &= (~bs1_map_h) & unit_msk_h;
-    chk_p0 &= (~bs1_map_h) & unit_msk_h;
-    chk_p1 &= (~bs1_map_h) & unit_msk_h;
+    chk_b  &= (~(bs1_map_h | (ibc_p_msk & ibc_q_msk))) & unit_msk_h;
+    chk_p0 &= (~(bs1_map_h | (ibc_p_msk & ibc_q_msk))) & unit_msk_h;
+    chk_p1 &= (~(bs1_map_h | (ibc_p_msk & ibc_q_msk))) & unit_msk_h;
 
-    uint64_t dst_map_h = (~(chk_p0 | chk_p1 | chk_b)) & unit_msk_h;
+    uint64_t dst_map_h = (ibc_p_msk & ibc_q_msk) ^ (~(chk_p0 | chk_p1 | chk_b)) & unit_msk_h;
 
     if (chk_b) {
         const OVMV *mv0_p = &mv_ctx0->mvs[PB_POS_IN_BUF(x0_unit, y0_unit - 1)];
@@ -1688,11 +1693,12 @@ dbf_mv_set_hedges(const struct InterDRVCtx *const inter_ctx,
         } while (chk_p0 | chk_p1);
     }
 
-    return (dst_map_h << (x0_unit + 2) & msk);
+    return ((dst_map_h | bs1_map_h) << (x0_unit + 2) & msk);
 }
 
 static uint64_t
 dbf_mv_set_vedges(const struct InterDRVCtx *const inter_ctx,
+                  const struct IBCMVCtx *const ibc_ctx,
                   int x0_unit, int y0_unit,
                   int nb_unit_w, int nb_unit_h, uint64_t msk)
 {
@@ -1703,11 +1709,15 @@ dbf_mv_set_vedges(const struct InterDRVCtx *const inter_ctx,
 
     uint64_t lft0_p_msk = (mv_ctx0->map.vfield[x0_unit] >> (y0_unit + 1)) & unit_msk_v;
     uint64_t lft1_p_msk = (mv_ctx1->map.vfield[x0_unit] >> (y0_unit + 1)) & unit_msk_v;
+    uint64_t ibc_p_msk = (ibc_ctx->ctu_map.vfield[x0_unit] >> (y0_unit + 1)) & unit_msk_v;
 
     uint64_t lft0_q_msk = (mv_ctx0->map.vfield[x0_unit + 1] >> (y0_unit + 1)) & unit_msk_v;
     uint64_t lft1_q_msk = (mv_ctx1->map.vfield[x0_unit + 1] >> (y0_unit + 1)) & unit_msk_v;
+    uint64_t ibc_q_msk = (ibc_ctx->ctu_map.vfield[x0_unit + 1] >> (y0_unit + 1)) & unit_msk_v;
 
     uint64_t bs1_map_v = ((~msk) >> y0_unit )& unit_msk_v;
+    bs1_map_v |= ibc_p_msk & (lft1_q_msk | lft0_q_msk);
+    bs1_map_v |= ibc_q_msk & (lft1_p_msk | lft0_p_msk);
 
     uint64_t mv_q_b  = (lft0_q_msk &  lft1_q_msk);
     uint64_t mv_q_p0 = (lft0_q_msk & ~lft1_q_msk);
@@ -1725,12 +1735,12 @@ dbf_mv_set_vedges(const struct InterDRVCtx *const inter_ctx,
     const int16_t *dist_ref0 = inter_ctx->dist_ref_0;
     const int16_t *dist_ref1 = inter_ctx->dist_ref_1;
 
-    chk_b  &= (~bs1_map_v) & unit_msk_v;
+    chk_b  &= (~(bs1_map_v | (ibc_p_msk & ibc_q_msk))) & unit_msk_v;
 
-    chk_p0 &= (~bs1_map_v) & unit_msk_v;
-    chk_p1 &= (~bs1_map_v) & unit_msk_v;
+    chk_p0 &= (~(bs1_map_v | (ibc_p_msk & ibc_q_msk))) & unit_msk_v;
+    chk_p1 &= (~(bs1_map_v | (ibc_p_msk & ibc_q_msk))) & unit_msk_v;
 
-    uint64_t dst_map_v = (~(chk_p0 | chk_p1 | chk_b)) & unit_msk_v;
+    uint64_t dst_map_v = (ibc_p_msk & ibc_q_msk) ^ (~(chk_p0 | chk_p1 | chk_b)) & unit_msk_v;
 
     if (chk_b) {
         const OVMV *mv0_p = &mv_ctx0->mvs[PB_POS_IN_BUF(x0_unit - 1, y0_unit)];
@@ -1805,7 +1815,7 @@ dbf_mv_set_vedges(const struct InterDRVCtx *const inter_ctx,
         } while (chk_p0 | chk_p1);
     }
 
-    return (dst_map_v << y0_unit) & msk;
+    return ((dst_map_v  | bs1_map_v) << y0_unit) & msk;
 }
 
 static void
@@ -1827,7 +1837,7 @@ dbf_ctu_preproc_h(const struct InterDRVCtx *const inter_ctx, struct DBFInfo *con
 
             if (no_filter) {
                 uint64_t tmp = bs_map;
-                tmp = dbf_mv_set_hedges(inter_ctx, 0, i, nb_unit_w, nb_unit_h, no_filter);
+                tmp = dbf_mv_set_hedges(inter_ctx, dbf_info->ibc_ctx, 0, i, nb_unit_w, nb_unit_h, no_filter);
                 dbf_info->bs1_map.hor[i] |= tmp;
             }
         }
@@ -1856,7 +1866,7 @@ dbf_ctu_preproc_v(const struct InterDRVCtx *const inter_ctx, struct DBFInfo *con
 
             if (no_filter) {
                 uint64_t tmp = bs_map;
-                tmp = dbf_mv_set_vedges(inter_ctx, i, 0, nb_unit_w, nb_unit_h, no_filter);
+                tmp = dbf_mv_set_vedges(inter_ctx, dbf_info->ibc_ctx, i, 0, nb_unit_w, nb_unit_h, no_filter);
                 dbf_info->bs1_map.ver[i] |= tmp;
             }
         }

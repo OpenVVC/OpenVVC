@@ -268,6 +268,47 @@ found:
 }
 
 static void
+set_ibc_df_map(struct DBFMap *bs1_map,
+               struct IBCMVCtx *const ibc_ctx,
+               IBCMV mv,
+               int x0_unit, int y0_unit,
+               int nb_unit_w, int nb_unit_h)
+{
+    uint64_t lft_msk = ((uint64_t)1 << nb_unit_h) - 1;
+    uint64_t abv_msk = ((uint64_t)1 << nb_unit_w) - 1;
+
+    uint64_t lft_map = (ibc_ctx->ctu_map.vfield[x0_unit] >> (y0_unit + 1)) & lft_msk;
+    uint64_t abv_map = (ibc_ctx->ctu_map.hfield[y0_unit] >> (x0_unit + 1)) & abv_msk;
+
+    if (abv_map) {
+        IBCMV *abv_row = &ibc_ctx->abv_row[x0_unit + 0];
+        uint64_t dst_msk = 0;
+        int i;
+        for (i = 0; i < nb_unit_w; ++i) {
+            uint8_t filter = OVABS(abv_row[i].x - mv.x) >= 8 || OVABS(abv_row[i].y - mv.y) >= 8;
+            dst_msk |= (uint64_t)filter << i;
+        }
+        dst_msk &= abv_map;
+        dst_msk <<= x0_unit + 2;
+        bs1_map->hor[y0_unit] |= dst_msk;
+    }
+
+    if (lft_map) {
+        IBCMV *lft_col = &ibc_ctx->lft_col[y0_unit + 0];
+        uint64_t dst_msk = 0;
+        int i;
+        for (i = 0; i < nb_unit_h; ++i) {
+            uint8_t filter = OVABS(lft_col[i].x - mv.x) >= 8 || OVABS(lft_col[i].y - mv.y) >= 8;
+            dst_msk |= (uint64_t)filter << i;
+        }
+        dst_msk &= lft_map;
+        dst_msk <<= y0_unit;
+        bs1_map->ver[x0_unit] |= dst_msk;
+    }
+
+}
+
+static void
 ibc_fill_mvp_map(struct IBCMVCtx *const ibc_ctx,
                  IBCMV mv,
                  int x0_unit, int y0_unit,
@@ -276,6 +317,8 @@ ibc_fill_mvp_map(struct IBCMVCtx *const ibc_ctx,
     int i;
     IBCMV *abv_row = &ibc_ctx->abv_row[x0_unit + 0];
     IBCMV *lft_col = &ibc_ctx->lft_col[y0_unit + 0];
+
+    set_ibc_df_map(ibc_ctx->bs1_map, ibc_ctx, mv, x0_unit, y0_unit, nb_unit_w, nb_unit_h);
 
     ctu_field_set_rect_bitfield(&ibc_ctx->ctu_map, x0_unit, y0_unit, nb_unit_w, nb_unit_h);
 
