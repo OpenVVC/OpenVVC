@@ -405,10 +405,10 @@ struct DFFunctions{
     void (*filter_strong_h_c)(OVSample* src, const int stride, const int tc);
     void (*filter_strong_v_c)(OVSample* src, const int stride, const int tc, uint8_t is_cbt_b);
 
-    void (*rcn_dbf_ctu)(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInfo *const dbf_info,
+    void (*rcn_dbf_ctu)(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
                         uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y);
 
-    void (*rcn_dbf_truncated_ctu)(const struct OVRCNCtx  *const rcn_ctx, const struct DBFInfo *const dbf_info,
+    void (*rcn_dbf_truncated_ctu)(const struct OVRCNCtx  *const rcn_ctx, struct DBFInfo *const dbf_info,
                                   uint8_t log2_ctu_s, uint8_t last_x, uint8_t last_y,
                                   uint8_t ctu_w, uint8_t ctu_h);
 };
