@@ -18,6 +18,7 @@ A detailed list of supported tools is available on our [website](https://openvvc
   - [Minimal Compilation Steps](#minimal-compilation-steps)
   - [For Windows](#for-windows)
   - [Configure Parameters](#configure-parameters)
+- [Embedding OpenVVC into FFmpeg](#embedding-openvvc-into-ffmpeg)
 
 ## Changelog
 ### v1.0.0
@@ -196,3 +197,44 @@ it to find libraries and programs with nonstandard names/locations.
 Report bugs to the package provider.
 
 ```
+
+## Embedding OpenVVC into FFmpeg
+
+We maintain a fork of FFmpeg with patches for VVC decoding support included on top of current master.
+
+#### Compile and install OpenVVC
+1. Follow instructions on OpenVVC build and installation according to your platform requirements.
+
+2. Install the decoder library
+```
+sudo make install
+```
+
+#### Compile FFmpeg
+
+1. Install some dependencies
+```
+sudo apt install sdl2 pkg-config nasm
+```
+
+2. Clone the FFmpeg repository
+```
+git clone https://github.com/OpenVVC/FFmpeg.git
+git checkout master
+```
+
+3. Enable VVC support in FFmpeg configuration
+```
+cd FFmpeg
+./configure --enable-libopenvvc
+```
+
+3. Compile FFmpeg
+```
+make
+```
+#### Play VVC files with FFmpeg player
+```
+./ffplay <FILE.vvc>
+```
+
