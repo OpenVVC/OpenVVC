@@ -40,6 +40,11 @@
 #include "cu_utils.h"
 #include "bitdepth.h"
 
+typedef struct IBCMV {
+    int32_t x;
+    int32_t y;
+} IBCMV;
+
 struct ALFClassifier;
 struct Area;
 struct CCLMParams;
@@ -673,7 +678,18 @@ struct RCNFunctions
 
     void (*rcn_gpm_b)(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
                       int x0, int y0, int log2_pb_w, int log2_pb_h);
-};
 
+    void (*rcn_ibc_l)(OVCTUDec *const ctu_dec,
+                      int16_t x0, int16_t y0,
+                      uint8_t log2_cu_w, uint8_t log2_cu_h,
+                      uint8_t log2_ctu_s,
+                      IBCMV mv);
+
+    void (*rcn_ibc_c)(OVCTUDec *const ctu_dec,
+                      int16_t x0, int16_t y0,
+                      uint8_t log2_cu_w, uint8_t log2_cu_h,
+                      uint8_t log2_ctu_s,
+                      IBCMV mv);
+};
 
 #endif

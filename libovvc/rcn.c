@@ -169,6 +169,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
   rcn_init_transform_trees_10(rcn_func);
   rcn_init_intra_functions_10(rcn_func);
   rcn_init_inter_functions_10(rcn_func);
+  rcn_init_ibc_10(rcn_func);
   if (lm_chroma_enabled) {
       /* FIXME add support vertical */
       if (sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {
@@ -199,6 +200,7 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
       rcn_init_transform_trees_8(rcn_func);
       rcn_init_intra_functions_8(rcn_func);
       rcn_init_inter_functions_8(rcn_func);
+      rcn_init_ibc_8(rcn_func);
       if (lm_chroma_enabled) {
           /* FIXME add support vertical */
           if (sps_chroma_vertical_collocated_flag /*sps->sps_chroma_horizontal_collocated_flag*/) {

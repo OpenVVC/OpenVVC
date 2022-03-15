@@ -61,6 +61,7 @@ struct DBFMap
     uint64_t hor[33]; /* Row map of horizontal edges */
 };
 
+#if 0
 /*FIXME IBCMV storage size could be reduced based on max permitted IBC motion
         according to IBC max buffer size but also based on the fact
         that IBC only use integer MVs
@@ -70,6 +71,7 @@ typedef struct IBCMV
    int32_t x;
    int32_t y;
 } IBCMV;
+#endif
 
 struct IBCMVCtx
 {

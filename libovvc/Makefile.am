@@ -29,6 +29,7 @@ dsp_template_SOURCES = \
 							rcn_fill_ref.c           \
 							rcn_intra_angular.c      \
 							rcn_intra_dc_planar.c    \
+							rcn_ibc.c                \
 							rcn_lmcs.c               \
 							rcn_residuals.c          \
 							rcn_dequant.c            \

@@ -84,6 +84,8 @@ void rcn_init_tr_functions_10(struct RCNFunctions *const rcn_funcs);
 void rcn_init_ict_functions_10(struct RCNFunctions *const rcn_funcs, uint8_t ict_type,
                                uint8_t bitdepth);
                                
+void rcn_init_ibc_10(struct RCNFunctions *rcn_funcs);
+
 void rcn_init_fill_ref_10(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_dequant_10(struct RCNFunctions *rcn_funcs);
@@ -135,6 +137,7 @@ void rcn_init_transform_trees_8(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_dequant_8(struct RCNFunctions *rcn_funcs);
 
+void rcn_init_ibc_8(struct RCNFunctions *rcn_funcs);
 
 void
 vvc_add_residual(const int16_t *src, uint16_t *dst, int16_t dst_stride,

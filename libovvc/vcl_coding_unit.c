@@ -1058,6 +1058,10 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
                     updt_cu_maps(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, OV_IBC_SKIP);
                 }
                 mv = drv_ibc_merge_mv(&ctu_dec->drv_ctx.ibc_ctx, x0, y0, log2_cu_w, log2_cu_h, merge_idx, nb_ibc_cand_min1 + 1);
+                ctu_dec->rcn_funcs.rcn_ibc_l(ctu_dec, x0, y0, log2_cu_w, log2_cu_h, part_ctx->log2_ctu_s, mv);
+                if (ctu_dec->coding_unit != &coding_unit_intra && !ctu_dec->share) {
+                    ctu_dec->rcn_funcs.rcn_ibc_c(ctu_dec, x0, y0, log2_cu_w, log2_cu_h, part_ctx->log2_ctu_s, mv);
+                }
 
                 reset_intra_map_ibc(ctu_dec, i_info, x0, y0, log2_cu_w, log2_cu_h, log2_min_cb_s);
 
@@ -1116,6 +1120,11 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
                         }
                         mv = drv_ibc_mvp(&ctu_dec->drv_ctx.ibc_ctx, x0, y0, log2_cu_w, log2_cu_h, mvp_data.mvd, mvp_data.mvp_idx, prec_amvr);
 
+                    }
+
+                    ctu_dec->rcn_funcs.rcn_ibc_l(ctu_dec, x0, y0, log2_cu_w, log2_cu_h, part_ctx->log2_ctu_s, mv);
+                    if (ctu_dec->coding_unit != &coding_unit_intra && !ctu_dec->share) {
+                        ctu_dec->rcn_funcs.rcn_ibc_c(ctu_dec, x0, y0, log2_cu_w, log2_cu_h, part_ctx->log2_ctu_s, mv);
                     }
 
                     reset_intra_map_ibc(ctu_dec, i_info, x0, y0, log2_cu_w, log2_cu_h, log2_min_cb_s);
@@ -1178,6 +1187,12 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
                         }
                         mv = drv_ibc_mvp(&ctu_dec->drv_ctx.ibc_ctx, x0, y0, log2_cu_w, log2_cu_h, mvp_data.mvd, mvp_data.mvp_idx, prec_amvr);
                     }
+
+                    ctu_dec->rcn_funcs.rcn_ibc_l(ctu_dec, x0, y0, log2_cu_w, log2_cu_h, part_ctx->log2_ctu_s, mv);
+                    if (ctu_dec->coding_unit != &coding_unit_intra && !ctu_dec->share) {
+                        ctu_dec->rcn_funcs.rcn_ibc_c(ctu_dec, x0, y0, log2_cu_w, log2_cu_h, part_ctx->log2_ctu_s, mv);
+                    }
+
                     reset_intra_map_ibc(ctu_dec, i_info, x0, y0, log2_cu_w, log2_cu_h, log2_min_cb_s);
 
                     if (!cu_skip_flag) {
@@ -1277,6 +1292,12 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
                 }
                 mv = drv_ibc_mvp(&ctu_dec->drv_ctx.ibc_ctx, x0, y0, log2_cb_w, log2_cb_h, mvp_data.mvd, mvp_data.mvp_idx, prec_amvr);
             }
+
+            ctu_dec->rcn_funcs.rcn_ibc_l(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, part_ctx->log2_ctu_s, mv);
+            if (ctu_dec->coding_unit != &coding_unit_intra && !ctu_dec->share) {
+                ctu_dec->rcn_funcs.rcn_ibc_c(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, part_ctx->log2_ctu_s, mv);
+            }
+
             reset_intra_map_ibc(ctu_dec, i_info, x0, y0, log2_cb_w, log2_cb_h, log2_min_cb_s);
 
             if (!cu_skip_flag) {
