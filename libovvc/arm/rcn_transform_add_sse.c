@@ -1843,7 +1843,7 @@ ovvc_transform_scale_sub_half_sse_32_1_10(uint16_t *dst, ptrdiff_t dst_stride,
 }
 
 static void
-vvc_add_residual_8_4_10_sse(const int16_t *const src, uint16_t *const dst,
+vvc_add_residual_8_4_10_sse(const int16_t *const src, uint16_t *const dst, int16_t dst_stride,
                             int log2_tb_w, int log2_tb_h, int scale)
 {
     int i;
@@ -1853,18 +1853,18 @@ vvc_add_residual_8_4_10_sse(const int16_t *const src, uint16_t *const dst,
     uint16_t *_dst = dst;
     if (log2_tb_h > 1) {
         for (i = 0; i < tb_h >> 2; ++i){
-            ovvc_transform_add_sse_8_4_10(_dst, RCN_CTB_STRIDE,
+            ovvc_transform_add_sse_8_4_10(_dst, dst_stride,
                                           _src, tb_w);
-            _dst += RCN_CTB_STRIDE << 2;
+            _dst += dst_stride << 2;
             _src += tb_w << 2;
         }
     } else {
-        vvc_add_residual(src, dst, log2_tb_w, log2_tb_h, 0);
+        vvc_add_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
     }
 }
 
 static void
-vvc_add_residual_16_2_10_sse(const int16_t *const src, uint16_t *const dst,
+vvc_add_residual_16_2_10_sse(const int16_t *const src, uint16_t *const dst, int16_t dst_stride,
                             int log2_tb_w, int log2_tb_h, int scale)
 {
     int i;
@@ -1874,18 +1874,18 @@ vvc_add_residual_16_2_10_sse(const int16_t *const src, uint16_t *const dst,
     uint16_t *_dst = dst;
     if (log2_tb_h > 1) {
       for (i = 0; i < tb_h >> 1; ++i){
-          ovvc_transform_add_sse_16_2_10(_dst, RCN_CTB_STRIDE,
+          ovvc_transform_add_sse_16_2_10(_dst, dst_stride,
                                          _src, tb_w);
-          _dst += RCN_CTB_STRIDE << 1;
+          _dst += dst_stride << 1;
           _src += tb_w << 1;
       }
     } else {
-        vvc_add_residual(src, dst, log2_tb_w, log2_tb_h, 0);
+        vvc_add_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
     }
 }
 
 static void
-vvc_add_residual_32_1_10_sse(const int16_t *const src, uint16_t *const dst,
+vvc_add_residual_32_1_10_sse(const int16_t *const src, uint16_t *const dst, int16_t dst_stride,
                      int log2_tb_w, int log2_tb_h, int scale)
 {
     int i;
@@ -1894,15 +1894,15 @@ vvc_add_residual_32_1_10_sse(const int16_t *const src, uint16_t *const dst,
     const int16_t *_src = (const int16_t *)src;
     uint16_t *_dst = dst;
     for (i = 0; i < tb_h; ++i){
-        ovvc_transform_add_sse_32_1_10(_dst, RCN_CTB_STRIDE,
+        ovvc_transform_add_sse_32_1_10(_dst, dst_stride,
                                        _src, tb_w);
-        _dst += RCN_CTB_STRIDE;
+        _dst += dst_stride;
         _src += tb_w;
     }
 }
 
 static void
-vvc_add_residual_64_1_10_sse(const int16_t *const src, uint16_t *const dst,
+vvc_add_residual_64_1_10_sse(const int16_t *const src, uint16_t *const dst, int16_t dst_stride,
                      int log2_tb_w, int log2_tb_h, int scale)
 {
     int i;
@@ -1911,17 +1911,17 @@ vvc_add_residual_64_1_10_sse(const int16_t *const src, uint16_t *const dst,
     const int16_t *_src = (const int16_t *)src;
     uint16_t *_dst = dst;
     for (i = 0; i < tb_h; ++i){
-        ovvc_transform_add_sse_32_1_10(_dst, RCN_CTB_STRIDE,
+        ovvc_transform_add_sse_32_1_10(_dst, dst_stride,
                                        _src, tb_w);
-        ovvc_transform_add_sse_32_1_10(_dst+32, RCN_CTB_STRIDE,
+        ovvc_transform_add_sse_32_1_10(_dst+32, dst_stride,
                                        _src+32, tb_w);
-        _dst += RCN_CTB_STRIDE;
+        _dst += dst_stride;
         _src += tb_w;
     }
 }
 
 static void
-vvc_add_half_residual_8_4_10_sse(const int16_t *const src, uint16_t *const dst,
+vvc_add_half_residual_8_4_10_sse(const int16_t *const src, uint16_t *const dst, int16_t dst_stride,
                             int log2_tb_w, int log2_tb_h, int scale)
 {
     int i;
@@ -1931,18 +1931,18 @@ vvc_add_half_residual_8_4_10_sse(const int16_t *const src, uint16_t *const dst,
     uint16_t *_dst = dst;
     if (log2_tb_h > 1) {
         for (i = 0; i < tb_h >> 2; ++i){
-            ovvc_transform_add_half_sse_8_4_10(_dst, RCN_CTB_STRIDE,
+            ovvc_transform_add_half_sse_8_4_10(_dst, dst_stride,
                                           _src, tb_w);
-            _dst += RCN_CTB_STRIDE << 2;
+            _dst += dst_stride << 2;
             _src += tb_w << 2;
         }
     } else {
-        vvc_add_half_residual(src, dst, log2_tb_w, log2_tb_h, 0);
+        vvc_add_half_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
     }
 }
 
 static void
-vvc_add_half_residual_16_2_10_sse(const int16_t *const src, uint16_t *const dst,
+vvc_add_half_residual_16_2_10_sse(const int16_t *const src, uint16_t *const dst, int16_t dst_stride,
                             int log2_tb_w, int log2_tb_h, int scale)
 {
     int i;
@@ -1952,18 +1952,18 @@ vvc_add_half_residual_16_2_10_sse(const int16_t *const src, uint16_t *const dst,
     uint16_t *_dst = dst;
     if (log2_tb_h > 1) {
       for (i = 0; i < tb_h >> 1; ++i){
-          ovvc_transform_add_half_sse_16_2_10(_dst, RCN_CTB_STRIDE,
+          ovvc_transform_add_half_sse_16_2_10(_dst, dst_stride,
                                          _src, tb_w);
-          _dst += RCN_CTB_STRIDE << 1;
+          _dst += dst_stride << 1;
           _src += tb_w << 1;
       }
     } else {
-        vvc_add_half_residual(src, dst, log2_tb_w, log2_tb_h, 0);
+        vvc_add_half_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
     }
 }
 
 static void
-vvc_add_half_residual_32_1_10_sse(const int16_t *const src, uint16_t *const dst,
+vvc_add_half_residual_32_1_10_sse(const int16_t *const src, uint16_t *const dst, int16_t dst_stride,
                      int log2_tb_w, int log2_tb_h, int scale)
 {
     int i;
@@ -1972,15 +1972,15 @@ vvc_add_half_residual_32_1_10_sse(const int16_t *const src, uint16_t *const dst,
     const int16_t *_src = (const int16_t *)src;
     uint16_t *_dst = dst;
     for (i = 0; i < tb_h; ++i){
-        ovvc_transform_add_half_sse_32_1_10(_dst, RCN_CTB_STRIDE,
+        ovvc_transform_add_half_sse_32_1_10(_dst, dst_stride,
                                        _src, tb_w);
-        _dst += RCN_CTB_STRIDE;
+        _dst += dst_stride;
         _src += tb_w;
     }
 }
 
 static void
-vvc_sub_residual_8_4_10_sse(const int16_t *const src, uint16_t *const dst,
+vvc_sub_residual_8_4_10_sse(const int16_t *const src, uint16_t *const dst, int16_t dst_stride,
                             int log2_tb_w, int log2_tb_h, int scale)
 {
     int i;
@@ -1990,18 +1990,18 @@ vvc_sub_residual_8_4_10_sse(const int16_t *const src, uint16_t *const dst,
     uint16_t *_dst = dst;
     if (log2_tb_h > 1) {
         for (i = 0; i < tb_h >> 2; ++i){
-            ovvc_transform_sub_sse_8_4_10(_dst, RCN_CTB_STRIDE,
+            ovvc_transform_sub_sse_8_4_10(_dst, dst_stride,
                                           _src, tb_w);
-            _dst += RCN_CTB_STRIDE << 2;
+            _dst += dst_stride << 2;
             _src += tb_w << 2;
         }
     } else {
-        vvc_sub_residual(src, dst, log2_tb_w, log2_tb_h, 0);
+        vvc_sub_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
     }
 }
 
 static void
-vvc_sub_residual_16_2_10_sse(const int16_t *const src, uint16_t *const dst,
+vvc_sub_residual_16_2_10_sse(const int16_t *const src, uint16_t *const dst, int16_t dst_stride,
                             int log2_tb_w, int log2_tb_h, int scale)
 {
     int i;
@@ -2011,18 +2011,18 @@ vvc_sub_residual_16_2_10_sse(const int16_t *const src, uint16_t *const dst,
     uint16_t *_dst = dst;
     if (log2_tb_h > 1) {
       for (i = 0; i < tb_h >> 1; ++i){
-          ovvc_transform_sub_sse_16_2_10(_dst, RCN_CTB_STRIDE,
+          ovvc_transform_sub_sse_16_2_10(_dst, dst_stride,
                                          _src, tb_w);
-          _dst += RCN_CTB_STRIDE << 1;
+          _dst += dst_stride << 1;
           _src += tb_w << 1;
       }
     } else {
-        vvc_sub_residual(src, dst, log2_tb_w, log2_tb_h, 0);
+        vvc_sub_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
     }
 }
 
 static void
-vvc_sub_residual_32_1_10_sse(const int16_t *const src, uint16_t *const dst,
+vvc_sub_residual_32_1_10_sse(const int16_t *const src, uint16_t *const dst, int16_t dst_stride,
                      int log2_tb_w, int log2_tb_h, int scale)
 {
     int i;
@@ -2031,15 +2031,15 @@ vvc_sub_residual_32_1_10_sse(const int16_t *const src, uint16_t *const dst,
     const int16_t *_src = (const int16_t *)src;
     uint16_t *_dst = dst;
     for (i = 0; i < tb_h; ++i){
-        ovvc_transform_sub_sse_32_1_10(_dst, RCN_CTB_STRIDE,
+        ovvc_transform_sub_sse_32_1_10(_dst, dst_stride,
                                        _src, tb_w);
-        _dst += RCN_CTB_STRIDE;
+        _dst += dst_stride;
         _src += tb_w;
     }
 }
 
 static void
-vvc_sub_half_residual_8_4_10_sse(const int16_t *const src, uint16_t *const dst,
+vvc_sub_half_residual_8_4_10_sse(const int16_t *const src, uint16_t *const dst, int16_t dst_stride,
                             int log2_tb_w, int log2_tb_h, int scale)
 {
     int i;
@@ -2049,18 +2049,18 @@ vvc_sub_half_residual_8_4_10_sse(const int16_t *const src, uint16_t *const dst,
     uint16_t *_dst = dst;
     if (log2_tb_h > 1) {
         for (i = 0; i < tb_h >> 2; ++i){
-            ovvc_transform_sub_half_sse_8_4_10(_dst, RCN_CTB_STRIDE,
+            ovvc_transform_sub_half_sse_8_4_10(_dst, dst_stride,
                                           _src, tb_w);
-            _dst += RCN_CTB_STRIDE << 2;
+            _dst += dst_stride << 2;
             _src += tb_w << 2;
         }
     } else {
-        vvc_sub_half_residual(src, dst, log2_tb_w, log2_tb_h, 0);
+        vvc_sub_half_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
     }
 }
 
 static void
-vvc_sub_half_residual_16_2_10_sse(const int16_t *const src, uint16_t *const dst,
+vvc_sub_half_residual_16_2_10_sse(const int16_t *const src, uint16_t *const dst, int16_t dst_stride,
                             int log2_tb_w, int log2_tb_h, int scale)
 {
     int i;
@@ -2070,18 +2070,18 @@ vvc_sub_half_residual_16_2_10_sse(const int16_t *const src, uint16_t *const dst,
     uint16_t *_dst = dst;
     if (log2_tb_h > 1) {
       for (i = 0; i < tb_h >> 1; ++i){
-          ovvc_transform_sub_half_sse_16_2_10(_dst, RCN_CTB_STRIDE,
+          ovvc_transform_sub_half_sse_16_2_10(_dst, dst_stride,
                                          _src, tb_w);
-          _dst += RCN_CTB_STRIDE << 1;
+          _dst += dst_stride << 1;
           _src += tb_w << 1;
       }
     } else {
-        vvc_sub_half_residual(src, dst, log2_tb_w, log2_tb_h, 0);
+        vvc_sub_half_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
     }
 }
 
 static void
-vvc_sub_half_residual_32_1_10_sse(const int16_t *const src, uint16_t *const dst,
+vvc_sub_half_residual_32_1_10_sse(const int16_t *const src, uint16_t *const dst, int16_t dst_stride,
                      int log2_tb_w, int log2_tb_h, int scale)
 {
     int i;
@@ -2090,15 +2090,15 @@ vvc_sub_half_residual_32_1_10_sse(const int16_t *const src, uint16_t *const dst,
     const int16_t *_src = (const int16_t *)src;
     uint16_t *_dst = dst;
     for (i = 0; i < tb_h; ++i){
-        ovvc_transform_sub_half_sse_32_1_10(_dst, RCN_CTB_STRIDE,
+        ovvc_transform_sub_half_sse_32_1_10(_dst, dst_stride,
                                        _src, tb_w);
-        _dst += RCN_CTB_STRIDE;
+        _dst += dst_stride;
         _src += tb_w;
     }
 }
 
 static void
-vvc_scale_add_residual_8_4_10_sse(const int16_t *src, uint16_t *dst,
+vvc_scale_add_residual_8_4_10_sse(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale)
 {
@@ -2111,18 +2111,18 @@ vvc_scale_add_residual_8_4_10_sse(const int16_t *src, uint16_t *dst,
   if (log2_tb_h > 1) {
     __m128i scale_vector = _mm_set1_epi16(scale);
     for (i = 0; i < tb_h >> 2; ++i){
-        ovvc_transform_scale_add_sse_8_4_10(_dst, RCN_CTB_STRIDE,
+        ovvc_transform_scale_add_sse_8_4_10(_dst, dst_stride,
                                        _src, tb_w, scale_vector);
-        _dst += RCN_CTB_STRIDE << 2;
+        _dst += dst_stride << 2;
         _src += tb_w << 2;
     }
   } else {
-      vvc_scale_add_residual(src, dst, log2_tb_w, log2_tb_h, scale);
+      vvc_scale_add_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, scale);
   }
 }
 
 static void
-vvc_scale_add_residual_16_2_10_sse(const int16_t *src, uint16_t *dst,
+vvc_scale_add_residual_16_2_10_sse(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale)
 {
@@ -2134,18 +2134,18 @@ vvc_scale_add_residual_16_2_10_sse(const int16_t *src, uint16_t *dst,
   if (log2_tb_h > 1) {
     __m128i scale_vector = _mm_set1_epi16(scale);
     for (i = 0; i < tb_h >> 1; ++i){
-        ovvc_transform_scale_add_sse_16_2_10(_dst, RCN_CTB_STRIDE,
+        ovvc_transform_scale_add_sse_16_2_10(_dst, dst_stride,
                                        _src, tb_w, scale_vector);
-        _dst += RCN_CTB_STRIDE << 1;
+        _dst += dst_stride << 1;
         _src += tb_w << 1;
     }
   } else {
-      vvc_scale_add_residual(src, dst, log2_tb_w, log2_tb_h, scale);
+      vvc_scale_add_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, scale);
   }
 }
 
 static void
-vvc_scale_add_residual_32_1_10_sse(const int16_t *src, uint16_t *dst,
+vvc_scale_add_residual_32_1_10_sse(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale)
 {
@@ -2156,15 +2156,15 @@ vvc_scale_add_residual_32_1_10_sse(const int16_t *src, uint16_t *dst,
   uint16_t *_dst = dst;
   __m128i scale_vector = _mm_set1_epi16(scale);
   for (i = 0; i < tb_h; ++i){
-      ovvc_transform_scale_add_sse_32_1_10(_dst, RCN_CTB_STRIDE,
+      ovvc_transform_scale_add_sse_32_1_10(_dst, dst_stride,
                                      _src, tb_w, scale_vector);
-      _dst += RCN_CTB_STRIDE;
+      _dst += dst_stride;
       _src += tb_w;
   }
 }
 
 static void
-vvc_scale_add_half_residual_8_4_10_sse(const int16_t *src, uint16_t *dst,
+vvc_scale_add_half_residual_8_4_10_sse(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale)
 {
@@ -2176,18 +2176,18 @@ vvc_scale_add_half_residual_8_4_10_sse(const int16_t *src, uint16_t *dst,
   if (log2_tb_h > 1) {
     __m128i scale_vector = _mm_set1_epi16(scale);
     for (i = 0; i < tb_h >> 2; ++i){
-        ovvc_transform_scale_add_half_sse_8_4_10(_dst, RCN_CTB_STRIDE,
+        ovvc_transform_scale_add_half_sse_8_4_10(_dst, dst_stride,
                                        _src, tb_w, scale_vector);
-        _dst += RCN_CTB_STRIDE << 2;
+        _dst += dst_stride << 2;
         _src += tb_w << 2;
     }
   } else {
-      vvc_scale_add_half_residual(src, dst, log2_tb_w, log2_tb_h, scale);
+      vvc_scale_add_half_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, scale);
   }
 }
 
 static void
-vvc_scale_add_half_residual_16_2_10_sse(const int16_t *src, uint16_t *dst,
+vvc_scale_add_half_residual_16_2_10_sse(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale)
 {
@@ -2199,18 +2199,18 @@ vvc_scale_add_half_residual_16_2_10_sse(const int16_t *src, uint16_t *dst,
   if (log2_tb_h > 1) {
     __m128i scale_vector = _mm_set1_epi16(scale);
     for (i = 0; i < tb_h >> 1; ++i){
-        ovvc_transform_scale_add_half_sse_16_2_10(_dst, RCN_CTB_STRIDE,
+        ovvc_transform_scale_add_half_sse_16_2_10(_dst, dst_stride,
                                        _src, tb_w, scale_vector);
-        _dst += RCN_CTB_STRIDE << 1;
+        _dst += dst_stride << 1;
         _src += tb_w << 1;
     }
   } else {
-      vvc_scale_add_half_residual(src, dst, log2_tb_w, log2_tb_h, scale);
+      vvc_scale_add_half_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, scale);
   }
 }
 
 static void
-vvc_scale_add_half_residual_32_1_10_sse(const int16_t *src, uint16_t *dst,
+vvc_scale_add_half_residual_32_1_10_sse(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale)
 {
@@ -2221,15 +2221,15 @@ vvc_scale_add_half_residual_32_1_10_sse(const int16_t *src, uint16_t *dst,
   uint16_t *_dst = dst;
   __m128i scale_vector = _mm_set1_epi16(scale);
   for (i = 0; i < tb_h; ++i){
-      ovvc_transform_scale_add_half_sse_32_1_10(_dst, RCN_CTB_STRIDE,
+      ovvc_transform_scale_add_half_sse_32_1_10(_dst, dst_stride,
                                      _src, tb_w, scale_vector);
-      _dst += RCN_CTB_STRIDE;
+      _dst += dst_stride;
       _src += tb_w;
   }
 }
 
 static void
-vvc_scale_sub_residual_8_4_10_sse(const int16_t *src, uint16_t *dst,
+vvc_scale_sub_residual_8_4_10_sse(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale)
 {
@@ -2241,18 +2241,18 @@ vvc_scale_sub_residual_8_4_10_sse(const int16_t *src, uint16_t *dst,
   if (log2_tb_h > 1) {
     __m128i scale_vector = _mm_set1_epi16(scale);
     for (i = 0; i < tb_h >> 2; ++i){
-        ovvc_transform_scale_sub_sse_8_4_10(_dst, RCN_CTB_STRIDE,
+        ovvc_transform_scale_sub_sse_8_4_10(_dst, dst_stride,
                                        _src, tb_w, scale_vector);
-        _dst += RCN_CTB_STRIDE << 2;
+        _dst += dst_stride << 2;
         _src += tb_w << 2;
     }
   } else {
-      vvc_scale_sub_residual(src, dst, log2_tb_w, log2_tb_h, scale);
+      vvc_scale_sub_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, scale);
   }
 }
 
 static void
-vvc_scale_sub_residual_16_2_10_sse(const int16_t *src, uint16_t *dst,
+vvc_scale_sub_residual_16_2_10_sse(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale)
 {
@@ -2264,18 +2264,18 @@ vvc_scale_sub_residual_16_2_10_sse(const int16_t *src, uint16_t *dst,
   if (log2_tb_h > 1) {
     __m128i scale_vector = _mm_set1_epi16(scale);
     for (i = 0; i < tb_h >> 1; ++i){
-        ovvc_transform_scale_sub_sse_16_2_10(_dst, RCN_CTB_STRIDE,
+        ovvc_transform_scale_sub_sse_16_2_10(_dst, dst_stride,
                                        _src, tb_w, scale_vector);
-        _dst += RCN_CTB_STRIDE << 1;
+        _dst += dst_stride << 1;
         _src += tb_w << 1;
     }
   } else {
-      vvc_scale_sub_residual(src, dst, log2_tb_w, log2_tb_h, scale);
+      vvc_scale_sub_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, scale);
   }
 }
 
 static void
-vvc_scale_sub_residual_32_1_10_sse(const int16_t *src, uint16_t *dst,
+vvc_scale_sub_residual_32_1_10_sse(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale)
 {
@@ -2286,15 +2286,15 @@ vvc_scale_sub_residual_32_1_10_sse(const int16_t *src, uint16_t *dst,
   uint16_t *_dst = dst;
   __m128i scale_vector = _mm_set1_epi16(scale);
   for (i = 0; i < tb_h; ++i){
-      ovvc_transform_scale_sub_sse_32_1_10(_dst, RCN_CTB_STRIDE,
+      ovvc_transform_scale_sub_sse_32_1_10(_dst, dst_stride,
                                      _src, tb_w, scale_vector);
-      _dst += RCN_CTB_STRIDE;
+      _dst += dst_stride;
       _src += tb_w;
   }
 }
 
 static void
-vvc_scale_sub_half_residual_8_4_10_sse(const int16_t *src, uint16_t *dst,
+vvc_scale_sub_half_residual_8_4_10_sse(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale)
 {
@@ -2306,18 +2306,18 @@ vvc_scale_sub_half_residual_8_4_10_sse(const int16_t *src, uint16_t *dst,
   if (log2_tb_h > 1) {
     __m128i scale_vector = _mm_set1_epi16(scale);
     for (i = 0; i < tb_h >> 2; ++i){
-        ovvc_transform_scale_sub_half_sse_8_4_10(_dst, RCN_CTB_STRIDE,
+        ovvc_transform_scale_sub_half_sse_8_4_10(_dst, dst_stride,
                                        _src, tb_w, scale_vector);
-        _dst += RCN_CTB_STRIDE << 2;
+        _dst += dst_stride << 2;
         _src += tb_w << 2;
     }
   } else {
-      vvc_scale_sub_half_residual(src, dst, log2_tb_w, log2_tb_h, scale);
+      vvc_scale_sub_half_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, scale);
   }
 }
 
 static void
-vvc_scale_sub_half_residual_16_2_10_sse(const int16_t *src, uint16_t *dst,
+vvc_scale_sub_half_residual_16_2_10_sse(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale)
 {
@@ -2329,18 +2329,18 @@ vvc_scale_sub_half_residual_16_2_10_sse(const int16_t *src, uint16_t *dst,
   if (log2_tb_h > 1) {
     __m128i scale_vector = _mm_set1_epi16(scale);
     for (i = 0; i < tb_h >> 1; ++i){
-        ovvc_transform_scale_sub_half_sse_16_2_10(_dst, RCN_CTB_STRIDE,
+        ovvc_transform_scale_sub_half_sse_16_2_10(_dst, dst_stride,
                                        _src, tb_w, scale_vector);
-        _dst += RCN_CTB_STRIDE << 1;
+        _dst += dst_stride << 1;
         _src += tb_w << 1;
     }
   } else {
-      vvc_scale_sub_half_residual(src, dst, log2_tb_w, log2_tb_h, scale);
+      vvc_scale_sub_half_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, scale);
   }
 }
 
 static void
-vvc_scale_sub_half_residual_32_1_10_sse(const int16_t *src, uint16_t *dst,
+vvc_scale_sub_half_residual_32_1_10_sse(const int16_t *src, uint16_t *dst, int16_t dst_stride,
                       int log2_tb_w, int log2_tb_h,
                       int scale)
 {
@@ -2351,9 +2351,9 @@ vvc_scale_sub_half_residual_32_1_10_sse(const int16_t *src, uint16_t *dst,
   uint16_t *_dst = dst;
   __m128i scale_vector = _mm_set1_epi16(scale);
   for (i = 0; i < tb_h; ++i){
-      ovvc_transform_scale_sub_half_sse_32_1_10(_dst, RCN_CTB_STRIDE,
+      ovvc_transform_scale_sub_half_sse_32_1_10(_dst, dst_stride,
                                      _src, tb_w, scale_vector);
-      _dst += RCN_CTB_STRIDE;
+      _dst += dst_stride;
       _src += tb_w;
   }
 }
