@@ -941,6 +941,40 @@ updt_cu_maps(OVCTUDec *const ctudec,
 }
 
 static void
+reset_intra_map_ibc(OVCTUDec *const ctudec, struct IntraDRVInfo *const intra_ctx,
+                    uint8_t x0, uint8_t y0,
+                    uint8_t log2_cb_w, uint8_t log2_cb_h,
+                    uint8_t log2_min_cb_s)
+{
+    uint8_t x0_unit = x0 >> LOG2_MIN_CU_S;
+    uint8_t y0_unit = y0 >> LOG2_MIN_CU_S;
+    uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
+    uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
+
+    ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field,
+                                x0_unit, y0_unit, nb_unit_w, nb_unit_h);
+
+    if (ctudec->coding_unit != coding_unit_intra) {
+        ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field_c,
+                                    x0_unit, y0_unit, nb_unit_w, nb_unit_h);
+    }
+
+    uint8_t y_cb = y0 >> log2_min_cb_s;
+    uint8_t x_cb = x0 >> log2_min_cb_s;
+    uint8_t nb_cb_w = (1 << log2_cb_w) >> log2_min_cb_s;
+    uint8_t nb_cb_h = (1 << log2_cb_h) >> log2_min_cb_s;
+
+    /* We need to reset Intra mode maps to PLANAR for correct MPM derivation */
+    memset(&intra_ctx->luma_mode_x[x_cb], OVINTRA_PLANAR, sizeof(uint8_t) * nb_cb_w);
+    memset(&intra_ctx->luma_mode_y[y_cb], OVINTRA_PLANAR, sizeof(uint8_t) * nb_cb_h);
+
+    for (int i = 0; i < nb_cb_h; i++) {
+        memset(&intra_ctx->luma_modes[x_cb + (i << 5) + (y_cb << 5)], OVINTRA_DC,
+               sizeof(uint8_t) * nb_cb_w);
+    }
+}
+
+static void
 reset_intra_map(OVCTUDec *const ctudec, struct IntraDRVInfo *const intra_ctx,
                 uint8_t x0, uint8_t y0,
                 uint8_t log2_cb_w, uint8_t log2_cb_h,
@@ -954,8 +988,10 @@ reset_intra_map(OVCTUDec *const ctudec, struct IntraDRVInfo *const intra_ctx,
     ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field,
                                 x0_unit, y0_unit, nb_unit_w, nb_unit_h);
 
-    ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field_c,
-                                x0_unit, y0_unit, nb_unit_w, nb_unit_h);
+    if (ctudec->coding_unit != coding_unit_intra) {
+        ctu_field_set_rect_bitfield(&ctudec->rcn_ctx.progress_field_c,
+                                    x0_unit, y0_unit, nb_unit_w, nb_unit_h);
+    }
 
     uint8_t y_cb = y0 >> log2_min_cb_s;
     uint8_t x_cb = x0 >> log2_min_cb_s;
@@ -1023,7 +1059,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
                 }
                 mv = drv_ibc_merge_mv(&ctu_dec->drv_ctx.ibc_ctx, x0, y0, log2_cu_w, log2_cu_h, merge_idx, nb_ibc_cand_min1 + 1);
 
-                reset_intra_map(ctu_dec, i_info, x0, y0, log2_cu_w, log2_cu_h, log2_min_cb_s);
+                reset_intra_map_ibc(ctu_dec, i_info, x0, y0, log2_cu_w, log2_cu_h, log2_min_cb_s);
 
                 return cu;
             }
@@ -1082,7 +1118,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
 
                     }
 
-                    reset_intra_map(ctu_dec, i_info, x0, y0, log2_cu_w, log2_cu_h, log2_min_cb_s);
+                    reset_intra_map_ibc(ctu_dec, i_info, x0, y0, log2_cu_w, log2_cu_h, log2_min_cb_s);
 
                     FLG_STORE(ibc_flag, cu.cu_flags);
 
@@ -1142,7 +1178,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
                         }
                         mv = drv_ibc_mvp(&ctu_dec->drv_ctx.ibc_ctx, x0, y0, log2_cu_w, log2_cu_h, mvp_data.mvd, mvp_data.mvp_idx, prec_amvr);
                     }
-                    reset_intra_map(ctu_dec, i_info, x0, y0, log2_cu_w, log2_cu_h, log2_min_cb_s);
+                    reset_intra_map_ibc(ctu_dec, i_info, x0, y0, log2_cu_w, log2_cu_h, log2_min_cb_s);
 
                     if (!cu_skip_flag) {
                         updt_cu_maps(ctu_dec, part_ctx, x0, y0, log2_cu_w, log2_cu_h, OV_IBC);
@@ -1241,7 +1277,7 @@ coding_unit_intra(OVCTUDec *const ctu_dec,
                 }
                 mv = drv_ibc_mvp(&ctu_dec->drv_ctx.ibc_ctx, x0, y0, log2_cb_w, log2_cb_h, mvp_data.mvd, mvp_data.mvp_idx, prec_amvr);
             }
-            reset_intra_map(ctu_dec, i_info, x0, y0, log2_cb_w, log2_cb_h, log2_min_cb_s);
+            reset_intra_map_ibc(ctu_dec, i_info, x0, y0, log2_cb_w, log2_cb_h, log2_min_cb_s);
 
             if (!cu_skip_flag) {
                 updt_cu_maps(ctu_dec, part_ctx, x0, y0, log2_cb_w, log2_cb_h, OV_IBC);
