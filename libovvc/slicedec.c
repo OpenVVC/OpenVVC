@@ -519,14 +519,15 @@ slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
 {   
     struct OVPS* slice_params = &sldec->active_params;
 
-    if(!slice_params->sps){
+    if (!slice_params->sps) {
         slice_params->sps = ov_mallocz(sizeof(struct OVSPS));
         slice_params->pps = ov_mallocz(sizeof(struct OVPPS));
         slice_params->sh = ov_mallocz(sizeof(struct OVSH));
         slice_params->ph = ov_mallocz(sizeof(struct OVPH));
 
-        for (int i=0; i<8; i++)
+        for (int i = 0; i < 8; i++) {
             slice_params->aps_alf[i] = ov_mallocz(sizeof(struct OVAPS));
+        }
 
         slice_params->aps_alf_c = ov_mallocz(sizeof(struct OVAPS));
         slice_params->aps_cc_alf_cb = ov_mallocz(sizeof(struct OVAPS));
@@ -539,24 +540,25 @@ slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
     *(slice_params->sh) = *(dec_params->sh);
     *(slice_params->ph) = *(dec_params->ph);
 
-    for (int i=0; i<8; i++){
-        if(dec_params->aps_alf[i])
+    for (int i = 0; i < 8; i++) {
+        if (dec_params->aps_alf[i]) {
             *(slice_params->aps_alf[i]) = *(dec_params->aps_alf[i]);
+        }
     }
 
-    if(dec_params->aps_alf_c){
+    if (dec_params->aps_alf_c) {
         *(slice_params->aps_alf_c) = *(dec_params->aps_alf_c);
     }
 
-    if(dec_params->aps_cc_alf_cb){
+    if (dec_params->aps_cc_alf_cb) {
         *(slice_params->aps_cc_alf_cb) = *(dec_params->aps_cc_alf_cb);
     }
 
-    if(dec_params->aps_cc_alf_cr){
+    if (dec_params->aps_cc_alf_cr) {
         *(slice_params->aps_cc_alf_cr) = *(dec_params->aps_cc_alf_cr);
     }
 
-    if(dec_params->aps_lmcs){
+    if (dec_params->aps_lmcs) {
         *(slice_params->aps_lmcs) = *(dec_params->aps_lmcs);
     }
 
@@ -578,20 +580,23 @@ slicedec_free_params(OVSliceDec *sldec)
         ov_freep(&slice_params->pps);
         ov_freep(&slice_params->sh);
         ov_freep(&slice_params->ph);
-
     }
-    if(slice_params->aps_alf_c){
-        for (int i=0; i<8; i++)
-            ov_freep(&(slice_params->aps_alf[i]));
 
+    if (slice_params->aps_alf_c) {
+        for (int i = 0; i < 8; i++) {
+            ov_freep(&(slice_params->aps_alf[i]));
+        }
         ov_freep(&slice_params->aps_alf_c);
     }
-    if(slice_params->aps_cc_alf_cb){
+
+    if (slice_params->aps_cc_alf_cb) {
         ov_freep(&slice_params->aps_cc_alf_cb);
         ov_freep(&slice_params->aps_cc_alf_cr);
     }
-    if(slice_params->aps_lmcs)
+
+    if (slice_params->aps_lmcs) {
         ov_freep(&slice_params->aps_lmcs);
+    }
 
 }
 
@@ -619,7 +624,7 @@ slicedec_finish_decoding(OVSliceDec *sldec)
 
     //Signal main thread that a slice thread is available
     struct MainThread* t_main = slice_sync->main_thread;
-    if(t_main){
+    if (t_main) {
         pthread_mutex_lock(&t_main->main_mtx);
         // ov_log(NULL, OVLOG_DEBUG,"Slice sign main\n");
         pthread_cond_signal(&t_main->main_cnd);

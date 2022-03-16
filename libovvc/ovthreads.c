@@ -42,7 +42,6 @@
 #include "ovthreads.h"
 #include "ovdpb.h"
 
-
 static int
 ovthread_decode_entry(struct EntryJob *entry_job, struct EntryThread *entry_th)
 {   
@@ -87,7 +86,6 @@ entry_thread_select_job(struct EntryThread *entry_th)
     return entry_job;
 }
 
-
 static void *
 entry_thread_main_function(void *opaque)
 {
@@ -110,8 +108,7 @@ entry_thread_main_function(void *opaque)
 
             uint8_t is_last = ovthread_decode_entry(entry_job, entry_th);
 
-            /* Check if the entry was the last of the slice
-             */
+            /* Check if the entry was the last of the slice */
             if (is_last) {
                 slicedec_finish_decoding(entry_job->slice_sync->owner);
             }
@@ -132,7 +129,6 @@ entry_thread_main_function(void *opaque)
     }
     return NULL;
 }
-
 
 int
 ovthread_init_entry_thread(struct EntryThread *entry_th)
@@ -162,16 +158,14 @@ ovthread_init_entry_thread(struct EntryThread *entry_th)
     return 1;
 }
 
-
 void
 ovthread_uninit_entry_thread(struct EntryThread *entry_th)
 {       
-        pthread_mutex_destroy(&entry_th->entry_mtx);
-        pthread_cond_destroy(&entry_th->entry_cnd);
+    pthread_mutex_destroy(&entry_th->entry_mtx);
+    pthread_cond_destroy(&entry_th->entry_cnd);
 
-        ctudec_uninit(entry_th->ctudec);
+    ctudec_uninit(entry_th->ctudec);
 }
-
 
 /*
 Functions needed for the synchro of threads decoding the slice
@@ -213,7 +207,6 @@ ovthread_slice_add_entry_jobs(struct SliceSynchro *slice_sync, DecodeFunc decode
     return 0;
 }
 
-
 int
 ovthread_slice_sync_init(struct SliceSynchro *slice_sync)
 {   
@@ -224,7 +217,6 @@ ovthread_slice_sync_init(struct SliceSynchro *slice_sync)
 
     return 0;
 }
-
 
 void
 ovthread_slice_sync_uninit(struct SliceSynchro *slice_sync)

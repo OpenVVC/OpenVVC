@@ -43,9 +43,7 @@
 struct SliceSynchro;
 struct OVVCDec;
 struct OVFrame;
-/*
-Functions for the threads decoding rectangular entries
-*/
+
 struct EntryThread
 {
     struct MainThread *main_thread;
@@ -62,11 +60,15 @@ struct EntryThread
     uint8_t kill;
 };
 
-struct EntryJob{
+struct EntryJob
+{
     struct SliceSynchro *slice_sync;
     uint8_t entry_idx;
 };
 
+/*
+ *  Functions for the threads decoding rectangular entries
+ */
 int ovthread_init_entry_thread(struct EntryThread *entry_th);
 
 void ovthread_uninit_entry_thread(struct EntryThread *entry_th);
