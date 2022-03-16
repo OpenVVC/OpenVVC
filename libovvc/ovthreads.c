@@ -64,14 +64,12 @@ ovthread_decode_entry(struct EntryJob *entry_job, struct EntryThread *entry_th)
     return nb_entries_decoded == nb_entries - 1 ;
 }
 
-
 struct EntryJob *
 entry_thread_select_job(struct EntryThread *entry_th)
 {
     /* Get the first available job in the job fifo. 
      */
     struct MainThread* main_thread = entry_th->main_thread;
-    uint16_t size_fifo = main_thread->size_fifo; 
     struct EntryJob *entry_jobs_fifo = main_thread->entry_jobs_fifo;
     struct EntryJob *entry_job = NULL;
 
@@ -79,6 +77,7 @@ entry_thread_select_job(struct EntryThread *entry_th)
     int64_t first_idx = main_thread->first_idx_fifo;
     int64_t last_idx  = main_thread->last_idx_fifo;
     if (first_idx <= last_idx) {
+        uint16_t size_fifo = main_thread->size_fifo;
         int idx = first_idx % size_fifo;
         entry_job = &entry_jobs_fifo[idx];
         main_thread->first_idx_fifo ++;
@@ -185,19 +184,18 @@ ovthread_slice_add_entry_jobs(struct SliceSynchro *slice_sync, DecodeFunc decode
     atomic_store_explicit(&slice_sync->nb_entries_decoded, 0, memory_order_relaxed);
 
     struct MainThread* main_thread = slice_sync->main_thread;
-    int size_fifo = main_thread->size_fifo; 
     struct EntryJob *entry_jobs_fifo = main_thread->entry_jobs_fifo;
 
     /* Add entry jobs to the job FIFO of the main thread. 
      */
     pthread_mutex_lock(&main_thread->main_mtx);
-    for (int i = 1; i <= nb_entries; ++i) {
-        main_thread->last_idx_fifo++;
-        int idx = main_thread->last_idx_fifo % size_fifo;
+    for (int i = 0; i < nb_entries; ++i) {
+        int size_fifo = main_thread->size_fifo;
+        int idx = (++main_thread->last_idx_fifo) % size_fifo;
         struct EntryJob *entry_job = &entry_jobs_fifo[idx];
-        entry_job->entry_idx = i-1;
+        entry_job->entry_idx = i;
         entry_job->slice_sync = slice_sync;
-        ov_log(NULL, OVLOG_DEBUG, "Main adds POC %d entry %d\n", slice_sync->owner->pic->poc, i-1);
+        ov_log(NULL, OVLOG_DEBUG, "Main adds POC %d entry %d\n", slice_sync->owner->pic->poc, i);
     }
     pthread_mutex_unlock(&main_thread->main_mtx);
 
