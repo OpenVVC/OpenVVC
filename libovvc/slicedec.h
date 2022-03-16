@@ -160,7 +160,8 @@ typedef struct OVSliceDec
 {
    uint8_t slice_type;
 
-   OVPS *active_params;
+   OVPS active_params;
+
    /* Lins for CABAC context derivation luma and chroma */
    struct CCLines cabac_lines[2];
 

@@ -54,7 +54,7 @@ ovthread_decode_entry(struct EntryJob *entry_job, struct EntryThread *entry_th)
     
     OVCTUDec *const ctudec  = entry_th->ctudec;
     OVSliceDec *const sldec = slice_sync->owner;
-    const OVPS *const prms  = sldec->active_params;
+    const OVPS *const prms  = &sldec->active_params;
 
     slice_sync->decode_entry(sldec, ctudec, prms, entry_idx);
 

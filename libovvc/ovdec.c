@@ -121,7 +121,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
     slicedec_copy_params(sldec, &dec->active_params);
 
     if (!dec->active_params.sh->sh_slice_address) {
-        ret = ovdpb_init_picture(dec->dpb, &sldec->pic, sldec->active_params, nalu->type, sldec, dec);
+        ret = ovdpb_init_picture(dec->dpb, &sldec->pic, &sldec->active_params, nalu->type, sldec, dec);
         if (ret < 0) {
             return ret;
         }
@@ -136,12 +136,12 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
     ov_nalu_new_ref(&sldec->slice_sync.slice_nalu, nalu);
 
     /*FIXME return checks */
-    ret = slicedec_init_lines(sldec, sldec->active_params);
+    ret = slicedec_init_lines(sldec, &sldec->active_params);
     if (ret < 0) {
         return ret;
     }
 
-    ret = decinit_set_entry_points(sldec->active_params, nalu, nb_sh_bytes);
+    ret = decinit_set_entry_points(&sldec->active_params, nalu, nb_sh_bytes);
     if (ret < 0) {
         return ret;
     }
@@ -400,7 +400,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
             }
 
             /* FIXME handle non rect entries later */
-            ret = slicedec_decode_rect_entries(sldec, sldec->active_params, vvcdec->main_thread.entry_threads_list);
+            ret = slicedec_decode_rect_entries(sldec, &sldec->active_params, vvcdec->main_thread.entry_threads_list);
         }
 
         break;

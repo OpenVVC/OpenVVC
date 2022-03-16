@@ -517,10 +517,7 @@ slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, in
 void
 slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
 {   
-    //structures not allocated yet
-    if(!sldec->active_params)
-        sldec->active_params = ov_mallocz(sizeof(struct OVPS));
-    struct OVPS* slice_params = sldec->active_params;
+    struct OVPS* slice_params = &sldec->active_params;
 
     if(!slice_params->sps){
         slice_params->sps = ov_mallocz(sizeof(struct OVSPS));
@@ -574,10 +571,8 @@ slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
 void
 slicedec_free_params(OVSliceDec *sldec)
 {   
-    if(!sldec->active_params)
-        return;
+    struct OVPS* slice_params = &sldec->active_params;
 
-    struct OVPS* slice_params = sldec->active_params;
     if(slice_params->sps){
         ov_freep(&slice_params->sps);
         ov_freep(&slice_params->pps);
@@ -598,7 +593,6 @@ slicedec_free_params(OVSliceDec *sldec)
     if(slice_params->aps_lmcs)
         ov_freep(&slice_params->aps_lmcs);
 
-    ov_freep(&sldec->active_params);
 }
 
 void
@@ -1473,7 +1467,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 int
 slicedec_update_entry_decoder(OVSliceDec *sldec, OVCTUDec *ctudec)
 {
-    const OVPS *const prms = sldec->active_params;
+    const OVPS *const prms = &sldec->active_params;
     ctudec->pic_w = prms->pps->pps_pic_width_in_luma_samples;
     ctudec->pic_h = prms->pps->pps_pic_height_in_luma_samples;
     slicedec_init_slice_tools(ctudec, prms);
