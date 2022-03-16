@@ -149,7 +149,7 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
     return 0;
 }
 
-void
+static void
 ovdec_wait_available_entry_thread(OVVCDec *const dec)
 {
     #if USE_THREADS
