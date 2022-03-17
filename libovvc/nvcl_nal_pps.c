@@ -49,12 +49,12 @@ probe_pps_id(OVNVCLReader *const rdr)
     return pps_id;
 }
 
-static const union HLSData **
+static struct HLSDataRef **
 storage_in_nvcl_ctx(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
 {
     uint8_t id = probe_pps_id(rdr);
-    OVPPS **list = nvcl_ctx->pps_list;
-    const union HLSData **storage = (const union HLSData**)&list[id];
+
+    struct HLSDataRef **storage = &nvcl_ctx->pps_list[id];
 
     return storage;
 }
@@ -75,10 +75,10 @@ free_pps(const union HLSData *pps)
 
 static int
 replace_pps(const struct HLSReader *const manager,
-            const union HLSData **storage,
+            struct HLSDataRef **storage,
             const OVHLSData *const hls_data)
 {
-    const union HLSData *to_free = *storage;
+    const union HLSData *to_free = (*storage)->data;
     union HLSData *new = ov_malloc(manager->data_size);
 
     if (!new) {
@@ -87,7 +87,7 @@ replace_pps(const struct HLSReader *const manager,
 
     memcpy(new, hls_data, manager->data_size);
 
-    *storage = new;
+    (*storage)->data = new;
 
     if (to_free) {
         free_pps(to_free);

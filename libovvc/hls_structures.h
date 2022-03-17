@@ -38,12 +38,20 @@
 
 union HLSData
 {
-     OVSH  sh;
-     OVPH  ph;
-     OVSPS sps;
-     OVPPS pps;
-     OVAPS aps;
-     OVSEI sei;
+    OVSH  sh;
+    OVPH  ph;
+    OVSPS sps;
+    OVPPS pps;
+    OVAPS aps;
+    OVSEI sei;
+};
+
+struct HLSDataRef {
+    struct HLSDataRef *data_ref;
+    const union HLSData *data;
+    void (*free)(struct HLSDataRef **ref, void *opaque);
+    void *opaque;
+    atomic_uint ref_count;
 };
 
 struct HLSReader
@@ -53,8 +61,8 @@ struct HLSReader
 
     uint8_t (*probe_id)(OVNVCLReader *const rdr);
 
-    const union HLSData **(*find_storage)(OVNVCLReader *const rdr,
-                                          OVNVCLCtx *const nvcl_ctx);
+    struct HLSDataRef **(*find_storage)(OVNVCLReader *const rdr,
+                                             OVNVCLCtx *const nvcl_ctx);
 
     int (*read)(OVNVCLReader *const rdr, OVHLSData *const hls_data,
                 const OVNVCLCtx *const nvcl_ctx);
@@ -62,10 +70,18 @@ struct HLSReader
     int (*validate)(OVNVCLReader *rdr, const union HLSData *const hls_data);
 
     int (*replace)(const struct HLSReader *const manager,
-                   const union HLSData **storage,
+                   struct HLSDataRef **storage,
                    const OVHLSData *const hls_data);
 
     void (*free)(const union HLSData *const hls_data);
 };
 
+void hlsdata_unref(struct HLSDataRef **dataref_p);
+
+void hlsdata_ref_default_free(struct HLSDataRef **ref_p, void *opaque);
+
+struct HLSDataRef * hlsdataref_create(union HLSData *data, void (*free)(struct HLSDataRef **ref, void *opaque), void *opaque);
+
+int
+hlsdata_newref(struct HLSDataRef **dst_p, struct HLSDataRef *src);
 #endif

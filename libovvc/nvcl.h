@@ -48,11 +48,11 @@ struct OVNVCLCtx
     /* TODO use an other typedef to store more info in
      * lists
      */
-    OVSPS *sps_list[OV_MAX_NUM_SPS];
-    OVPPS *pps_list[OV_MAX_NUM_PPS];
+    struct HLSDataRef *sps_list[OV_MAX_NUM_SPS];
+    struct HLSDataRef *pps_list[OV_MAX_NUM_PPS];
     OVAPS *lmcs_aps_list[OV_MAX_NUM_APS];
     OVAPS *alf_aps_list[OV_MAX_NUM_APS];
-    OVPH *ph;
+    struct HLSDataRef *ph;
     OVSH *sh;
     OVSEI *sei;
 };

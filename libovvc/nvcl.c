@@ -32,6 +32,8 @@
  **/
 
 #include <string.h>
+
+#include "overror.h"
 #include "ovmem.h"
 #include "ovutils.h"
 
@@ -44,7 +46,6 @@
 
 typedef int (*NALUnitAction)(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr,
                              uint8_t nalu_type);
-
 
 static const char *nalu_name[32] =
 {
@@ -123,6 +124,59 @@ static const struct HLSReader *nalu_reader[32] =
     &todo                  /* UNSPEC */
 };
 
+void
+hlsdata_unref(struct HLSDataRef **dataref_p)
+{
+    struct HLSDataRef *dataref = *dataref_p;
+    if (dataref) {
+        unsigned ref_count = atomic_fetch_add_explicit(&dataref->ref_count, -1, memory_order_acq_rel);
+        if (!ref_count) {
+            dataref->free(dataref_p, dataref->opaque);
+        }
+    }
+
+    *dataref_p = NULL;
+}
+
+void
+hlsdata_ref_default_free(struct HLSDataRef **ref_p, void *opaque)
+{
+    if (ref_p) {
+        struct HLSDataRef *to_free = *ref_p;
+        if (to_free->data) {
+            ov_freep(&to_free->data);
+        }
+        ov_freep(ref_p);
+    }
+}
+
+struct HLSDataRef *
+hlsdataref_create(union HLSData *data, void (*free)(struct HLSDataRef **ref, void *opaque), void *opaque)
+{
+   struct HLSDataRef *new = ov_mallocz(sizeof(struct HLSDataRef));
+
+   if (new) {
+       atomic_init(&new->ref_count, 0);
+       new->free = free ? free : &hlsdata_ref_default_free;
+       new->opaque = opaque;
+       new->data = data;
+       new->data_ref = new;
+   }
+
+   return new;
+}
+
+int
+hlsdata_newref(struct HLSDataRef **dst_p, struct HLSDataRef *src)
+{
+    struct HLSDataRef *dst;
+
+    atomic_fetch_add_explicit(&src->ref_count, 1, memory_order_acq_rel);
+
+    *dst_p = src;
+
+    return 0;
+}
 
 void
 nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
@@ -130,16 +184,12 @@ nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
     int i;
     int nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->sps_list);
     for (i = 0; i < nb_elems; ++i) {
-        if (nvcl_ctx->sps_list[i]) {
-            ov_freep(&nvcl_ctx->sps_list[i]);
-        }
+        hlsdata_unref(&nvcl_ctx->sps_list[i]);
     }
 
     nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->pps_list);
     for (i = 0; i < nb_elems; ++i) {
-        if (nvcl_ctx->pps_list[i]) {
-            ov_freep(&nvcl_ctx->pps_list[i]);
-        }
+        hlsdata_unref(&nvcl_ctx->pps_list[i]);
     }
 
     nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->alf_aps_list);
@@ -157,7 +207,7 @@ nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
     }
 
     if (nvcl_ctx->ph) {
-        ov_freep(&nvcl_ctx->ph);
+        hlsdata_unref(&nvcl_ctx->ph);
     }
 
     if (nvcl_ctx->sh) {
@@ -170,11 +220,28 @@ nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
 
 }
 
+static void
+hls_replace_ref(const struct HLSReader *const hls_hdl, struct HLSDataRef **storage, const union HLSData *const data)
+{
+    const union HLSData *tmp = ov_malloc(hls_hdl->data_size);
+    if (!tmp) {
+        return;
+    }
+    memcpy(tmp, data, hls_hdl->data_size);
+
+    hlsdata_unref(storage);
+    *storage = hlsdataref_create(tmp, NULL, NULL);
+
+    if (!*storage) {
+        return;
+    }
+}
+
 static int
 decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr,
                      const struct HLSReader *const hls_hdl)
 {
-    const union HLSData **storage = hls_hdl->find_storage(rdr, nvcl_ctx);
+    struct HLSDataRef **storage = hls_hdl->find_storage(rdr, nvcl_ctx);
     union HLSData data;
     int ret;
 
@@ -195,7 +262,11 @@ decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr,
     if (ret < 0)  goto invalid;
 
     ov_log(NULL, OVLOG_TRACE, "Replacing new %s\n", hls_hdl->name);
+    #if 0
     ret = hls_hdl->replace(hls_hdl, storage, &data);
+    #else
+    hls_replace_ref(hls_hdl, storage, &data);
+    #endif
 
     return ret;
 

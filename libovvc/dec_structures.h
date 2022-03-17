@@ -312,6 +312,9 @@ struct OVVCDec
 
     struct OVPS{
         /* Pointers to active parameter sets */
+        struct HLSDataRef *sps_ref;
+        struct HLSDataRef *pps_ref;
+        struct HLSDataRef *ph_ref;
         OVSPS *sps;
         OVPPS *pps;
         OVAPS *aps_alf[8];

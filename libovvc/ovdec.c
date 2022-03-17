@@ -683,6 +683,7 @@ ovdec_close(OVVCDec *vvcdec)
         if (not_dec) goto fail;
 
         nvcl_free_ctx(&vvcdec->nvcl_ctx);
+        decinit_unref_params(&vvcdec->active_params);
 
         ovdec_uninit_subdec_list(vvcdec);
 

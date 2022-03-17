@@ -94,14 +94,32 @@ cleanup:
 #include "hls_structures.h"
 extern const struct HLSReader ph_manager;
 
+static void
+hls_replace_ref(const struct HLSReader *const hls_hdl, struct HLSDataRef **storage, const union HLSData *const data)
+{
+    const union HLSData *tmp = ov_malloc(hls_hdl->data_size);
+    if (!tmp) {
+        return;
+    }
+    memcpy(tmp, data, hls_hdl->data_size);
+
+    hlsdata_unref(storage);
+    *storage = hlsdataref_create(tmp, NULL, NULL);
+
+    if (!*storage) {
+        return;
+    }
+}
+
 static int
 nvcl_decode_ph(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx,
                const struct HLSReader *const hls_hdl)
 {
-    const union HLSData **storage = hls_hdl->find_storage(rdr, nvcl_ctx);
+    struct HLSDataRef **storage = hls_hdl->find_storage(rdr, nvcl_ctx);
     union HLSData data;
     int ret;
 
+    /* FIXME PH cannot be identical since it cntains POC info */
     if (*storage) {
         /* TODO compare RBSP data to avoid new read */
         uint8_t identical_rbsp = 0;
@@ -118,7 +136,11 @@ nvcl_decode_ph(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx,
     ret = hls_hdl->validate(rdr, &data);
     if (ret < 0)  goto invalid;
 
+    #if 0
     ret = hls_hdl->replace(hls_hdl, storage, &data);
+    #else
+    hls_replace_ref(hls_hdl, storage, &data);
+    #endif
 
     return ret;
 
@@ -155,9 +177,9 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
     }
 
     /* TODO create proper structure to hold activated parameters sets */
-    ph = nvcl_ctx->ph;
-    pps = nvcl_ctx->pps_list[ph->ph_pic_parameter_set_id];
-    sps = nvcl_ctx->sps_list[pps->pps_seq_parameter_set_id];
+    ph = (OVPH *)nvcl_ctx->ph->data;
+    pps = (OVPPS *)nvcl_ctx->pps_list[ph->ph_pic_parameter_set_id]->data;
+    sps = (OVSPS *)nvcl_ctx->sps_list[pps->pps_seq_parameter_set_id]->data;
 
     if (!ph || !pps || !sps) {
         ov_log(NULL, 3, "Missing parameter sets while reading SH\n");

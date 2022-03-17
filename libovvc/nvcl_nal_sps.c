@@ -52,12 +52,11 @@ probe_sps_id(OVNVCLReader *const rdr)
     return sps_id;
 }
 
-static const union HLSData **
+static struct HLSDataRef **
 storage_in_nvcl_ctx(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
 {
     uint8_t id = probe_sps_id(rdr);
-    OVSPS **list = nvcl_ctx->sps_list;
-    const union HLSData **storage = (const union HLSData**)&list[id];
+    struct HLSDataRef **storage = &nvcl_ctx->sps_list[id];
 
     return storage;
 }
@@ -113,7 +112,7 @@ free_sps(const union HLSData *const data)
 
 static int
 replace_sps(const struct HLSReader *const manager,
-            const union HLSData **storage,
+            struct HLSDataRef **storage,
             const OVHLSData *const hls_data)
 {
     /* TODO unref and/or free dynamic structure */

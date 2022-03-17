@@ -59,10 +59,10 @@ probe_ph_id(OVNVCLReader *const rdr)
     return 0;
 }
 
-static const union HLSData **
+static struct HLSDataRef **
 storage_in_nvcl_ctx(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
 {
-    return (const union HLSData **)&nvcl_ctx->ph;
+    return &nvcl_ctx->ph;
 }
 
 static int
@@ -81,7 +81,7 @@ free_ph(const union HLSData *ph)
 
 static int
 replace_ph(const struct HLSReader *const manager,
-           const union HLSData **storage,
+           struct HLSDataRef **storage,
            const OVHLSData *const hls_data)
 {
     /* TODO unref and/or free dynamic structure */
@@ -130,11 +130,11 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
     if (ph->ph_pic_parameter_set_id < OV_MAX_NUM_PPS) {
         uint8_t pps_id = ph->ph_pic_parameter_set_id & 0xF;
-        pps = nvcl_ctx->pps_list[pps_id];
+        pps = (OVPPS *)nvcl_ctx->pps_list[pps_id]->data;
         if (pps) {
             /* We suppose sps_id already checked by sps reader */
             uint8_t sps_id = pps->pps_seq_parameter_set_id & 0xF;
-            sps = nvcl_ctx->sps_list[sps_id];
+            sps = (OVSPS *)nvcl_ctx->sps_list[sps_id]->data;
         }
         if (!pps || !sps) {
             ov_log(NULL, 3, "SPS or PPS missing when trying to decode PH\n");

@@ -45,6 +45,7 @@
 #include "nvcl_structures.h"
 #include "dec_structures.h"
 #include "rcn_lmcs.h"
+#include "hls_structures.h"
 
 
 static int
@@ -497,7 +498,7 @@ retrieve_sps(const OVNVCLCtx *const nvcl_ctx, const OVPPS *const pps)
     uint8_t sps_id = pps->pps_seq_parameter_set_id;
     OVSPS *sps = NULL;
     if (sps_id < 16) {
-        sps = nvcl_ctx->sps_list[sps_id];
+        sps = (OVSPS *)nvcl_ctx->sps_list[sps_id]->data;
     } else {
         ov_log(NULL, 3, "Invalid SPS ID  %d\n", sps_id);
     }
@@ -511,7 +512,7 @@ retrieve_pps(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
     uint8_t pps_id = ph->ph_pic_parameter_set_id;
     OVPPS *pps = NULL;
     if (pps_id < 16) {
-        pps = nvcl_ctx->pps_list[pps_id];
+        pps = (OVPPS *)nvcl_ctx->pps_list[pps_id]->data;
     } else {
         ov_log(NULL, 3, "Invalid PPS ID  %d\n", pps_id);
     }
@@ -580,13 +581,24 @@ set_max_pic_part_info(struct PicPartInfo *pic_info, const OVSPS *const sps, cons
 
 }
 
+void
+decinit_unref_params(struct OVPS *const ps)
+{
+    hlsdata_unref(&ps->sps_ref);
+    hlsdata_unref(&ps->pps_ref);
+    hlsdata_unref(&ps->ph_ref);
+    ps->sps = NULL;
+    ps->pps = NULL;
+    ps->ph = NULL;
+}
+
 int
 decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
 {
     /* FIXME assert nvcl_ctx params sets are not NULL*/
     int ret;
     OVSH * sh = nvcl_ctx->sh;
-    OVPH * ph = nvcl_ctx->ph;
+    OVPH * ph = (OVPH *)nvcl_ctx->ph->data;
     OVPPS * pps = retrieve_pps(nvcl_ctx, ph);
     OVSPS * sps = retrieve_sps(nvcl_ctx, pps);
 
@@ -597,12 +609,16 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
         return OVVC_EINDATA;
     }
 
+    uint8_t pps_id = ph->ph_pic_parameter_set_id;
+    uint8_t sps_id = pps->pps_seq_parameter_set_id;
+
     if (ps->sps != sps) {
         ret = update_sps_info(&ps->sps_info, sps);
         if (ret < 0) {
             goto failsps;
         }
-
+        hlsdata_unref(&ps->sps_ref);
+        hlsdata_newref(&ps->sps_ref, nvcl_ctx->sps_list[sps_id]);
         ps->sps = sps;
     }
 
@@ -612,6 +628,8 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
         if (ret < 0) {
             goto failpps;
         }
+        hlsdata_unref(&ps->pps_ref);
+        hlsdata_newref(&ps->pps_ref, nvcl_ctx->pps_list[pps_id]);
         ps->pps = pps;
     }
 
@@ -621,6 +639,8 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
         if (ret < 0) {
             goto failph;
         }
+        hlsdata_unref(&ps->ph_ref);
+        hlsdata_newref(&ps->ph_ref,  nvcl_ctx->ph);
         ps->ph = ph;
     }
 
