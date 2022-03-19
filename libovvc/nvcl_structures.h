@@ -186,6 +186,49 @@ struct OVVUI
 
 };
 
+struct OVVPS
+{
+    uint8_t vps_video_parameter_set_id;
+    uint8_t vps_max_layers_minus1;
+    uint8_t vps_max_sublayers_minus1;
+    uint8_t vps_default_ptl_dpb_hrd_max_tid_flag;
+    uint8_t vps_all_independent_layers_flag;
+    uint8_t vps_layer_id[64];
+    uint8_t vps_independent_layer_flag[64];
+    uint8_t vps_max_tid_ref_present_flag[64];
+    uint8_t vps_direct_ref_layer_flag[256][64];
+    uint8_t vps_max_tid_il_ref_pics_plus1[64][64];
+    uint8_t vps_each_layer_is_an_ols_flag;
+    uint8_t vps_ols_mode_idc;
+    uint8_t vps_num_output_layer_sets_minus2;
+    uint8_t vps_ols_output_layer_flag[256][64];
+    uint8_t vps_num_ptls_minus1;
+    uint8_t vps_pt_present_flag[256];
+    uint8_t vps_ptl_max_tid[256];
+    uint8_t vps_ptl_alignment_zero_bit;
+    OVPTL * profile_tier_level;
+    uint8_t vps_ols_ptl_idx[256];
+    uint8_t vps_num_dpb_params_minus1;
+    uint8_t vps_sublayer_dpb_params_present_flag;
+    uint8_t vps_dpb_max_tid[64];
+    struct OVDPBParams dpb_parameters[64];
+    uint8_t vps_ols_dpb_pic_width[64];
+    uint8_t vps_ols_dpb_pic_height[64];
+    uint8_t vps_ols_dpb_chroma_format[64];
+    uint8_t vps_ols_dpb_bitdepth_minus8[64];
+    uint8_t vps_ols_dpb_params_idx[64];
+    uint8_t vps_timing_hrd_params_present_flag;
+    OVGHRDTiming * ghrd;
+    uint8_t vps_sublayer_cpb_params_present_flag;
+    uint8_t vps_num_ols_timing_hrd_params_minus1;
+    uint8_t vps_hrd_max_tid[64];
+    OVOLSHRDTiming *ols_hrd;
+    uint8_t vps_ols_timing_hrd_idx[64];
+    /* unused */
+    uint8_t vps_extension_flag;
+    uint8_t vps_extension_data_flag;
+};
+
 struct OVSPS
 {
     uint8_t sps_seq_parameter_set_id;

@@ -48,6 +48,7 @@ struct OVNVCLCtx
     /* TODO use an other typedef to store more info in
      * lists
      */
+    struct HLSDataRef *vps_list[OV_MAX_NUM_VPS];
     struct HLSDataRef *sps_list[OV_MAX_NUM_SPS];
     struct HLSDataRef *pps_list[OV_MAX_NUM_PPS];
     OVAPS *lmcs_aps_list[OV_MAX_NUM_APS];
@@ -69,8 +70,8 @@ int nvcl_opi_read(OVNVCLReader *const rdr, OVOPI *const opi,
 int nvcl_dci_read(OVNVCLReader *const rdr, OVDCI *const dci,
                   OVNVCLCtx *const nvcl_ctx);
 
-int nvcl_vps_read(OVNVCLReader *const rdr, OVVPS *const vps,
-                  OVNVCLCtx *const nvcl_ctx);
+int nvcl_vps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
+                  const OVNVCLCtx *const nvcl_ctx);
 
 int nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const sps,
                   const OVNVCLCtx *const nvcl_ctx);

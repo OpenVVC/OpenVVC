@@ -65,6 +65,7 @@ libovvc_la_SOURCES = 	ctudec.c                     \
 						nvcl_nal_aps.c               \
 						nvcl_nal_pps.c               \
 						nvcl_nal_sps.c               \
+						nvcl_nal_vps.c               \
 						nvcl_nal_sei.c               \
 						nvcl_ptl.c                   \
 						nvcl_rpl.c                   \

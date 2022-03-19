@@ -179,7 +179,7 @@ profile_tier_level_vps(OVNVCLReader *const rdr, uint8_t vps_pt_present_flag, uin
     struct OVPTL *ptl;
     struct OVPTL ptl_stck;
     ptl = &ptl_stck;
-    if(vps_pt_present_flag) {
+    if (vps_pt_present_flag) {
         ptl->general_profile_idc = nvcl_read_bits(rdr, 7);
         ptl->general_tier_flag = nvcl_read_flag(rdr);
     }
@@ -210,7 +210,7 @@ profile_tier_level_vps(OVNVCLReader *const rdr, uint8_t vps_pt_present_flag, uin
         }
     }
 
-    if(vps_pt_present_flag) {
+    if (vps_pt_present_flag) {
         ptl->ptl_num_sub_profiles = nvcl_read_bits(rdr, 8);
         for (i = 0; i < ptl->ptl_num_sub_profiles; i++) {
             ptl->general_sub_profile_idc[i] = nvcl_read_bits(rdr, 32);

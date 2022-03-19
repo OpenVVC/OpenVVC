@@ -40,6 +40,7 @@ union HLSData
 {
     OVSH  sh;
     OVPH  ph;
+    OVVPS vps;
     OVSPS sps;
     OVPPS pps;
     OVAPS aps;

@@ -84,6 +84,7 @@ static const char *nalu_name[32] =
 };
 
 static const struct HLSReader todo;
+extern const struct HLSReader vps_manager;
 extern const struct HLSReader sps_manager;
 extern const struct HLSReader pps_manager;
 extern const struct HLSReader ph_manager;
@@ -104,7 +105,7 @@ static const struct HLSReader *nalu_reader[32] =
     &todo                , /* RSVD_IRAP_VCL */
     &todo                , /* OPI */
     &todo                , /* DCI */
-    &todo                , /* VPS */
+    &vps_manager         , /* VPS */
     &sps_manager         , /* SPS */
     &pps_manager         , /* PPS */
     &todo                , /* PREFIX_APS */
@@ -182,7 +183,12 @@ void
 nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
 {
     int i;
-    int nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->sps_list);
+    int nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->vps_list);
+    for (i = 0; i < nb_elems; ++i) {
+        hlsdata_unref(&nvcl_ctx->vps_list[i]);
+    }
+
+    nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->sps_list);
     for (i = 0; i < nb_elems; ++i) {
         hlsdata_unref(&nvcl_ctx->sps_list[i]);
     }
@@ -330,7 +336,7 @@ static const NALUnitAction nalu_action[32] =
     &warn_unspec                , /* RSVD_IRAP_VCL */
     &warn_unsupported           , /* OPI */
     &warn_unsupported           , /* DCI */
-    &warn_unsupported           , /* VPS */
+    &decode_nvcl_hls            , /* VPS */
     &decode_nvcl_hls            , /* SPS */
     &decode_nvcl_hls            , /* PPS */
     &nvcl_decode_nalu_aps       , /* PREFIX_APS */
