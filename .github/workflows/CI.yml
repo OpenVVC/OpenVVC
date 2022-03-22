@@ -21,7 +21,8 @@ jobs:
         run: make
       - name: Download Streams
         run: ./CI/dlvideobin https://nasext-vaader.insa-rennes.fr/ietr-vaader/OVVC/conf_stream/ ./CI/test_bitstreams/conf_stream/ --no_md5
-      - name: Set Env Variables 
-        run: export OVDEC=$(pwd)/examples/dectest
       - name: Non regression testing
-        run: - ./CI/ovnreg ./CI/conf.vmd5 --no_cleanup --keep_fail
+        run:
+          export OVDEC=$(pwd)/examples/dectest;
+          export OVSTREAM=$(pwd)/CI/test_bitstreams/;
+          ./CI/ovnreg ./CI/conf.vmd5 --no_cleanup --keep_fail;
