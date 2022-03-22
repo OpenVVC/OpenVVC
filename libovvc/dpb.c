@@ -882,6 +882,8 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
         if (ret < 0) {
             goto fail;
         }
+    } else {
+        current_pic->rpl_info1.nb_active_refs = 0;
     }
 
 
@@ -1062,6 +1064,67 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
     return 0;
 }
 
+static int
+update_rpl(const OVPPS *const pps,
+           const OVSH  *const sh,
+           const OVPH  *const ph,
+           OVRPL *const rpl0,
+           OVRPL *const rpl1,
+           uint8_t slice_type)
+{
+    const OVHRPL *const hrpl = !pps->pps_rpl_info_in_ph_flag ? &sh->hrpl: &ph->hrpl;
+
+    if (slice_type != 2) {
+        /* copy rpl content */
+        *rpl0 = hrpl->rpl_h0.rpl_data;
+        *rpl1 = hrpl->rpl_h1.rpl_data;
+        if (sh->sh_num_ref_idx_active_override_flag) {
+            uint8_t nb_rpl_ref0 = hrpl->rpl_h0.rpl_data.num_ref_entries;
+
+            if (nb_rpl_ref0 > 1) {
+                uint8_t nb_active_ref0 = sh->sh_num_ref_idx_active_l0_minus1 + 1;
+                rpl0->num_ref_active_entries = nb_active_ref0;
+            } else {
+                rpl0->num_ref_active_entries = nb_rpl_ref0;
+            }
+
+            if (slice_type == 0) {
+                uint8_t nb_rpl_ref1 = hrpl->rpl_h1.rpl_data.num_ref_entries;
+
+                if (nb_rpl_ref1 > 1) {
+                    uint8_t nb_active_ref1 = sh->sh_num_ref_idx_active_l1_minus1 + 1;
+                    rpl1->num_ref_active_entries = nb_active_ref1;
+                } else {
+                    rpl1->num_ref_active_entries = nb_rpl_ref1;
+                }
+            } else
+                rpl1->num_ref_active_entries = 0;
+        } else {
+            uint8_t nb_active_ref0 = pps->pps_num_ref_idx_default_active_minus1[0] + 1;
+            uint8_t nb_rpl_ref0    = hrpl->rpl_h0.rpl_data.num_ref_entries;
+
+            rpl0->num_ref_active_entries = nb_active_ref0 < nb_rpl_ref0 ? nb_active_ref0 : nb_rpl_ref0;
+
+            if (slice_type == 0) {
+                uint8_t nb_active_ref1 = pps->pps_num_ref_idx_default_active_minus1[1] + 1;
+                uint8_t nb_rpl_ref1    = hrpl->rpl_h1.rpl_data.num_ref_entries;
+
+                rpl1->num_ref_active_entries = nb_active_ref1 < nb_rpl_ref1 ? nb_active_ref1 : nb_rpl_ref1;
+            } else
+                rpl1->num_ref_active_entries = 0;
+        }
+    } else {
+        /* I slice might contain RPL info for non active refs
+         * in this case all refs are non active so we still
+         * copy rpl info.
+         */
+        *rpl0 = hrpl->rpl_h0.rpl_data;
+        *rpl1 = hrpl->rpl_h1.rpl_data;
+        rpl0->num_ref_active_entries = 0;
+        rpl1->num_ref_active_entries = 0;
+    }
+}
+
 /* TODO rename to ovdpb_init_pic();*/
 int
 ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t nalu_type,
@@ -1181,10 +1244,10 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
      */
     if (!idr_flag) {
         const OVPPS *const pps = ps->pps;
-        const OVRPL *rpl0 = !pps->pps_rpl_info_in_ph_flag ? sh->hrpl.rpl0 : ph->hrpl.rpl0;
-        const OVRPL *rpl1 = !pps->pps_rpl_info_in_ph_flag ? sh->hrpl.rpl1 : ph->hrpl.rpl1;
         uint8_t slice_type = sh->sh_slice_type;
-        mark_ref_pic_lists(dpb, slice_type, rpl0, rpl1, sldec);
+        OVRPL rpl0, rpl1;
+        update_rpl(pps, sh, ph, &rpl0, &rpl1, slice_type);
+        mark_ref_pic_lists(dpb, slice_type, &rpl0, &rpl1, sldec);
     }
 
     ovdpb_clear_refs(dpb);

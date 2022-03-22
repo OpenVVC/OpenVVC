@@ -370,8 +370,8 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     /* FIXME check if default to zero or needs check in SPS in case of IDR
      * and sps_idr_rpl_present is OFF
      */
-    int nb_ref_entries0 = hrpl->rpl0 ? hrpl->rpl0->num_ref_entries : 0;
-    int nb_ref_entries1 = hrpl->rpl1 ? hrpl->rpl1->num_ref_entries : 0;
+    int nb_ref_entries0 = hrpl->rpl0 ? hrpl->rpl_h0.rpl_data.num_ref_entries : 0;
+    int nb_ref_entries1 = hrpl->rpl1 ? hrpl->rpl_h1.rpl_data.num_ref_entries : 0;
 
     if ((sh->sh_slice_type != I && nb_ref_entries0 > 1) ||
         (sh->sh_slice_type == B && nb_ref_entries1 > 1)) {
@@ -399,22 +399,6 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
             }
 
         }
-    }
-    /* FIXME do this in Info structures ?*/
-    if (sh->sh_slice_type != I) {
-        ph->hrpl.rpl0 = &ph->hrpl.rpl_h0.rpl_data;
-        ph->hrpl.rpl1 = &ph->hrpl.rpl_h1.rpl_data;
-        sh->hrpl.rpl_h0.rpl_data.num_ref_active_entries = nb_ref_entries0;
-        ph->hrpl.rpl_h0.rpl_data.num_ref_active_entries = nb_ref_entries0;
-        if (sh->sh_slice_type == B) {
-            sh->hrpl.rpl_h1.rpl_data.num_ref_active_entries = nb_ref_entries1;
-            ph->hrpl.rpl_h1.rpl_data.num_ref_active_entries = nb_ref_entries1;
-        }
-    } else {
-        sh->hrpl.rpl_h0.rpl_data.num_ref_active_entries = 0;
-        sh->hrpl.rpl_h1.rpl_data.num_ref_active_entries = 0;
-        ph->hrpl.rpl_h0.rpl_data.num_ref_active_entries = 0;
-        ph->hrpl.rpl_h1.rpl_data.num_ref_active_entries = 0;
     }
 
     if (sh->sh_slice_type != I) {
