@@ -293,7 +293,8 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
             ph->ph_temporal_mvp_enabled_flag = nvcl_read_flag(rdr);
             if (ph->ph_temporal_mvp_enabled_flag && pps->pps_rpl_info_in_ph_flag) {
                 /* FIXME compute num_ref_entries */
-                if (num_ref_entries0 > 0) {
+                ph->ph_collocated_from_l0_flag = 1;
+                if (num_ref_entries1 > 0) {
                     ph->ph_collocated_from_l0_flag = nvcl_read_flag(rdr);
                     if ((ph->ph_collocated_from_l0_flag && num_ref_entries0 > 1) || (!ph->ph_collocated_from_l0_flag && num_ref_entries1 > 1)) {
                         ph->ph_collocated_ref_idx = nvcl_read_u_expgolomb(rdr);
@@ -306,35 +307,27 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
             ph->ph_mmvd_fullpel_only_flag = nvcl_read_flag(rdr);
         }
 
-        /* FIXME Num ref entries can be undefined if rpl info are in PH */
         if (!pps->pps_rpl_info_in_ph_flag) {
 
             ph->ph_mvd_l1_zero_flag = nvcl_read_flag(rdr);
-            if (sps->sps_bdof_control_present_in_ph_flag || num_ref_entries1 > 0) {
+            if (sps->sps_bdof_control_present_in_ph_flag) {
                 ph->ph_bdof_disabled_flag = nvcl_read_flag(rdr);
             }
 
-            if (sps->sps_dmvr_control_present_in_ph_flag || num_ref_entries1 > 0) {
+            if (sps->sps_dmvr_control_present_in_ph_flag) {
                 ph->ph_dmvr_disabled_flag = nvcl_read_flag(rdr);
             }
 
-        } else /*if (num_ref_entries1 > 0)*/{
+        } else if (num_ref_entries1 > 0) {
 
-            /* FIXME compute num_ref_entries */
-            #if 0
-            if (num_ref_entries1 > 0) {
-            #endif
-                ph->ph_mvd_l1_zero_flag = nvcl_read_flag(rdr);
-                if (sps->sps_bdof_control_present_in_ph_flag || num_ref_entries1 > 0) {
-                    ph->ph_bdof_disabled_flag = nvcl_read_flag(rdr);
-                }
-
-                if (sps->sps_dmvr_control_present_in_ph_flag) {
-                    ph->ph_dmvr_disabled_flag = nvcl_read_flag(rdr);
-                }
-            #if 0
+            ph->ph_mvd_l1_zero_flag = nvcl_read_flag(rdr);
+            if (sps->sps_bdof_control_present_in_ph_flag) {
+                ph->ph_bdof_disabled_flag = nvcl_read_flag(rdr);
             }
-            #endif
+
+            if (sps->sps_dmvr_control_present_in_ph_flag) {
+                ph->ph_dmvr_disabled_flag = nvcl_read_flag(rdr);
+            }
         }
 
         if (sps->sps_prof_control_present_in_ph_flag) {
