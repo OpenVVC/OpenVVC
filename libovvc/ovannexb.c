@@ -72,6 +72,7 @@ ovannexb_check_stc_or_epb(const uint8_t *byte)
         }
     } else if (byte1 == 0 && byte2 == 0) {
        /*FIXME check if this should be used as RBSP end detection*/
+       return 3;
     }
 
     return 0;

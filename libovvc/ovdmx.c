@@ -446,7 +446,7 @@ ovdmx_init_pu_from_list(OVPictureUnit **ovpu_p, struct NALUListStatus *const sta
 
 
     for (int i = 0; i < status->nb_nalus; i++) {
-        ov_log(NULL, OVLOG_ERROR, "/t %s\n", nalu_name[lelem->nalu->type]);
+        //ov_log(NULL, OVLOG_ERROR, "/t %s\n", nalu_name[lelem->nalu->type]);
 
         ov_nalu_new_ref(&ovpu->nalus[i], lelem->nalu);
 

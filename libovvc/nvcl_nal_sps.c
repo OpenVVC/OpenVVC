@@ -66,6 +66,14 @@ validate_sps(OVNVCLReader *rdr, const union HLSData *const data)
 {
     /* TODO various check on limitation and max sizes */
     const OVSPS *const sps =  (const OVSPS *)data;
+    uint32_t nb_bits_read = nvcl_nb_bits_read(rdr) + 1;
+    uint32_t stop_bit_pos = nvcl_find_rbsp_stop_bit(rdr);
+    if (stop_bit_pos != nb_bits_read) {
+
+        ov_log(NULL, OVLOG_ERROR, "rbsp_stop_bit mismatch: cursor at %d,  expected %d\n", nb_bits_read, stop_bit_pos);
+        return OVVC_EINDATA;
+    }
+
 
     if (sps->sps_weighted_pred_flag || sps->sps_weighted_bipred_flag) {
         ov_log(NULL, OVLOG_WARNING, "Unsupported weighted pred\n");
@@ -628,7 +636,6 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
     sps->sps_ibc_enabled_flag = nvcl_read_flag(rdr);
     if (sps->sps_ibc_enabled_flag) {
-        /* FIXME check code type */
         sps->sps_six_minus_max_num_ibc_merge_cand = nvcl_read_u_expgolomb(rdr);
     }
 

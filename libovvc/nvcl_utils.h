@@ -113,6 +113,16 @@ nvcl_nb_bits_read(const OVNVCLReader *const rdr)
 }
 
 static inline uint32_t
+nvcl_find_rbsp_stop_bit(const OVNVCLReader *const rdr)
+{
+    ptrdiff_t nb_bytes_in_rbsp = rdr->str_end - rdr->str_start;
+    uint8_t byte = rdr->str_start[nb_bytes_in_rbsp - 1];
+    uint8_t nb_bits_in_rbsp = 8 - ov_ctz(byte);
+
+    return ((nb_bytes_in_rbsp - 1) << 3) + (nb_bits_in_rbsp);
+}
+
+static inline uint32_t
 nvcl_nb_bytes(const OVNVCLReader *const rdr)
 {
     ptrdiff_t nb_bytes = rdr->str_end - rdr->str_start;
