@@ -2,10 +2,10 @@ OpenVVC
 =======
 An open-source VVC decoder library licensed under LGPLv2.1. OpenVVC is still under development.
 
-|     | Windows   | Linux     | MacOS     | Android     |
-|-----|-----------|-----------|-----------|-------------|
-| x86 | Supported | Supported | Supported |  -          |
-| ARM | -         | Supported | Supported |  Supported  |
+|     | Windows   | Linux     | MacOS     | Android     | iOS         |
+|-----|-----------|-----------|-----------|-------------|-------------|
+| x86 | Supported | Supported | Supported |  -          |  -          |
+| ARM | -         | Supported | Supported |  Supported  |  Supported  |
 
 A detailed list of supported tools is available on our [website](https://openvvc.github.io/#supported-tools).
 
@@ -69,6 +69,27 @@ To test the library, you can perform:
 
 ### For Windows
 Build on windows was tested using Cygwin and MSYS2. After installing the dependencies, the compilation steps are identical to previous [section](#minimal-compilation-steps).
+
+### For Android
+For cross compiling the library for Android, first download the SDK on this [page](https://developer.android.com/studio).
+Then execute the following commands:
+```
+autoreconf -if
+CC=<PATH_TO_SDK>/android-ndk-r23/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang ./configure --with-sysroot=<PATH_TO_SDK>/android-ndk-r23/toolchains/llvm/prebuilt/linux-x86_64/sysroot/ -host=aarch64-linux-android21 --target=aarch64-none-linux-android21
+make
+```
+
+### For iOS
+The only difference with the [Minimal Compilation Steps](#minimal-compilation-steps) is the use of the iconfigure wrapper. The steps are the following:
+```
+autoreconf -if
+./iconfigure arm64
+make
+```
+Make sure to select the right toolchain using the following command:
+```
+sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+```
 
 ### Configure Parameters:
 ```
