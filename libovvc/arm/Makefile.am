@@ -20,8 +20,7 @@ libarmoptim_la_SOURCES +=	rcn_transform_sse.c                   \
 							rcn_intra_angular_sse.c               \
 							rcn_df_sse.c                
 if !HAVE_EXCLUDE_CLANG
-libarmoptim_la_SOURCES +=	rcn_intra_dc_planar_sse.c             \
-							rcn_dequant_sse.c
+libarmoptim_la_SOURCES +=	rcn_dequant_sse.c
 endif
 endif
 
@@ -29,7 +28,9 @@ if HAVE_NEON_ASM
 libarmoptim_la_SOURCES +=	rcn_mc_neon.S                         \
 							rcn_mc_neon_wrapper.c                 \
 							rcn_intra_dc_planar_neon.S            \
-							rcn_intra_dc_planar_neon_wrapper.c							
+							rcn_intra_dc_planar_neon_wrapper.c    \
+							rcn_dequant_neon.S                    \
+							rcn_dequant_neon_wrapper.c						
 endif
 endif
 
