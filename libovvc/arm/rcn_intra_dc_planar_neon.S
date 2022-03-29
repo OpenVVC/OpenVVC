@@ -239,7 +239,7 @@
         .if \w > 8
             ADD_REF_\w V12, V2
         .else
-            MOV V12\s1, V20\s1
+            MOV V12.16B, V20.16B
         .endif
     .endif
     .if \w <= \h
