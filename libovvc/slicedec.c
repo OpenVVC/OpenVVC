@@ -382,6 +382,9 @@ init_cabac_lines(OVSliceDec *sldec, const OVPS *const prms)
      lns_c->log2_cu_w_map_x = ov_mallocz(sizeof(*lns_c->log2_cu_w_map_x) * nb_pb_pic_w * tinfo->nb_tile_rows);
      lns_c->cu_mode_x       = ov_mallocz(sizeof(*lns_c->cu_mode_x)       * nb_pb_pic_w * tinfo->nb_tile_rows);
 
+     lns->nb_pb_w   = nb_pb_pic_w;
+     lns_c->nb_pb_w = nb_pb_pic_w;
+
      if (!lns->qt_depth_map_x || !lns->log2_cu_w_map_x || !lns->cu_mode_x ||
          !lns_c->qt_depth_map_x || !lns_c->log2_cu_w_map_x || !lns_c->cu_mode_x) {
          cabac_lines_uninit(sldec);
@@ -406,7 +409,7 @@ clear_cabac_lines(const OVSliceDec *sldec, const OVPS *const prms)
      const struct CCLines *const lns   = &sldec->cabac_lines[0];
      const struct CCLines *const lns_c = &sldec->cabac_lines[1];
 
-     uint8_t log2_ctb_s = pinfo->log2_ctu_s;
+     uint8_t log2_ctb_s    = pinfo->log2_ctu_s;
      uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
 
      /* TODO use active parameters such as generic pic info
@@ -1502,6 +1505,26 @@ slicedec_init_lines(OVSliceDec *const sldec, const OVPS *const prms)
         if (ret < 0) {
             ov_log(NULL, 3, "FAILED init cabac lines\n");
             return ret;
+        }
+    } else {
+        uint8_t slice_type = sldec->slice_type;
+        const OVPartInfo *const pinfo = slice_type == SLICE_I ? &prms->sps_info.part_info[0]
+            : &prms->sps_info.part_info[1];
+        const struct TileInfo *const tinfo = &prms->pps_info.tile_info;
+
+        uint8_t log2_ctb_s = pinfo->log2_ctu_s;
+        uint8_t log2_min_cb_s = pinfo->log2_min_cb_s;
+        uint16_t pic_w = prms->sps->sps_pic_width_max_in_luma_samples;
+        uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
+        uint16_t nb_pb_pic_w = nb_ctb_pic_w << (log2_ctb_s - log2_min_cb_s);
+
+        if (nb_pb_pic_w != sldec->cabac_lines[0].nb_pb_w) {
+            cabac_lines_uninit(sldec);
+            int ret = init_cabac_lines(sldec, prms);
+            if (ret < 0) {
+                ov_log(NULL, 3, "FAILED init cabac lines\n");
+                return ret;
+            }
         }
     }
     clear_cabac_lines(sldec, prms);

@@ -594,6 +594,17 @@ decinit_unref_params(struct OVPS *const ps)
     ps->sh = NULL;
 }
 
+uint8_t
+sps_check_dimension_change(const OVSPS *const old, const OVSPS *const new)
+{
+    if (old) {
+        uint8_t diff_w = old->sps_pic_width_max_in_luma_samples != new->sps_pic_width_max_in_luma_samples;
+        uint8_t diff_h = old->sps_pic_height_max_in_luma_samples != new->sps_pic_height_max_in_luma_samples;
+        return diff_w | diff_h;
+    }
+    return 1;
+}
+
 int
 decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
 {
@@ -618,6 +629,10 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
         ret = update_sps_info(&ps->sps_info, sps);
         if (ret < 0) {
             goto failsps;
+        }
+        if (ps->sps) {
+            uint8_t req_dpb_realloc = sps_check_dimension_change(ps->sps, sps);
+            ps->sps_info.req_dpb_realloc = req_dpb_realloc;
         }
         hlsdata_unref(&ps->sps_ref);
         hlsdata_newref(&ps->sps_ref, nvcl_ctx->sps_list[sps_id]);

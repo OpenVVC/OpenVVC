@@ -83,6 +83,7 @@ struct CCLines
     uint8_t *qt_depth_map_x;
     uint8_t *log2_cu_w_map_x;
     uint8_t *cu_mode_x;
+    uint16_t nb_pb_w;
     /* TODO we could do the same for rows and allocate a
      * complete row instead of reset columns y buffers 
      * at each new line

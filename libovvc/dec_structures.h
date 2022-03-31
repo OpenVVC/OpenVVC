@@ -147,6 +147,8 @@ struct SPSInfo
         uint8_t matrix_coeffs;
         uint8_t full_range;
     } color_desc;
+
+    uint8_t req_dpb_realloc;
 };
 
 struct PPSInfo

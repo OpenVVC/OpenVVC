@@ -1125,7 +1125,6 @@ update_rpl(const OVPPS *const pps,
     }
 }
 
-/* TODO rename to ovdpb_init_pic();*/
 int
 ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t nalu_type,
                    OVSliceDec *const sldec, const OVVCDec *ovdec)
@@ -1141,10 +1140,6 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     idr_flag |= nalu_type == OVNALU_IDR_W_RADL;
     idr_flag |= nalu_type == OVNALU_IDR_N_LP;
 
-    /*FIXME Clarify how GDR NALO are supposed to be handled
-     * At the current time we consider it to have the same
-     * effect as a CRA
-     */
     cra_flag |= nalu_type == OVNALU_CRA;
     cra_flag |= nalu_type == OVNALU_GDR;
 
@@ -1180,10 +1175,10 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         }
         poc += ps->ph->ph_pic_order_cnt_lsb;
     } else {
-        /* FIXME arg should be last_poc */
+        uint32_t last_poc = dpb->poc;
         poc = derive_poc(ps->ph->ph_pic_order_cnt_lsb,
                          ps->sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4,
-                         poc);
+                         last_poc);
     }
 
     dpb->poc = poc;
@@ -1242,7 +1237,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
      * Slices it is not clear whether we should still mark them
      * or not
      */
-    if (!idr_flag) {
+    if (!idr_flag || ovdec->active_params.sps->sps_idr_rpl_present_flag) {
         const OVPPS *const pps = ps->pps;
         uint8_t slice_type = sh->sh_slice_type;
         OVRPL rpl0, rpl1;
@@ -1335,7 +1330,7 @@ void
 ovdpb_init_decoded_ctus(OVPicture *const pic, const OVPS *const ps)
 {   
     int pic_w = ps->sps->sps_pic_width_max_in_luma_samples;
-    int pic_h = ps->sps->sps_pic_width_max_in_luma_samples;
+    int pic_h = ps->sps->sps_pic_height_max_in_luma_samples;
     uint8_t log2_ctb_s    = (ps->sps->sps_log2_ctu_size_minus5 + 5) & 0x7;
     uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
     uint16_t nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;

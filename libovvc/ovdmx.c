@@ -668,7 +668,7 @@ append_rbsp_segment_to_cache(struct ReaderCache *const cache_ctx,
 {
     ptrdiff_t sgmt_size = sgmt_ctx->end_p - sgmt_ctx->start_p;
     /* FIXME use an assert instead this is not supposed to happen */
-    if (sgmt_size <= 0) {
+    if (sgmt_size < 0) {
         ov_log(NULL, OVLOG_ERROR, "Invalid segment\n");
         return -1;
     }
