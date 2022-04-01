@@ -401,6 +401,7 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
     #endif
 
     const OVPicture* ref_pic = tmvp_ctx->col_ref;
+    if (ref_pic)
     tmvp_inter_synchronization(ref_pic, ctb_x, ctb_y, log2_ctb_s);
 
     if (plane0 && plane0->dirs) {

@@ -534,6 +534,7 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
+    if (!ref0 || !ref1) return;
     
     OVSample *edge_buff0 = (OVSample *)rcn_ctx->data.edge_buff0;
     OVSample *edge_buff1 = (OVSample *)rcn_ctx->data.edge_buff1;
@@ -884,6 +885,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
+    if (!ref0 | !ref1) return 0;
 
     OVSample edge_buff0[RCN_CTB_SIZE];
     OVSample edge_buff1[RCN_CTB_SIZE];
@@ -1154,6 +1156,7 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
+    if (!ref0 | !ref1) return;
 
     /* TMP buffers for edge emulation
      * FIXME use tmp buffers in local contexts
@@ -1273,6 +1276,7 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
+    if (!ref0 || !ref1) return;
 
         
     OVSample *edge_buff0 = (OVSample *)rcn_ctx->data.edge_buff0;
@@ -1411,6 +1415,7 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
+    if (!ref0 || !ref1) return;
 
     OVSample *edge_buff0 = (OVSample *)rcn_ctx->data.edge_buff0;
     OVSample *edge_buff1 = (OVSample *)rcn_ctx->data.edge_buff1;
@@ -1498,6 +1503,7 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
     OVSample *tmp_buff = (OVSample *)rcn_ctx->data.tmp_buff;
     OVPicture *ref_pic =  type ? ref1 : ref0;
+    if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
 
     const OVSample *const ref0_y  = (OVSample *) frame0->data[0];
@@ -1571,12 +1577,14 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, 
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
+    if (!ref0 | !ref1) return;
 
     dst  += x0 + y0 * dst_stride;
 
     OVSample* tmp_buff = (OVSample*)rcn_ctx->data.tmp_buff;
 
     OVPicture *ref_pic =  type ? ref1 : ref0;
+    if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
 
     const OVSample *const ref0_y  = (OVSample *) frame0->data[0];
@@ -1655,6 +1663,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
     OVSample *tmp_buff = (OVSample *)rcn_ctx->data.tmp_buff;
 
     OVPicture *ref_pic =  type ? ref1 : ref0;
+    if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
 
     const OVSample *const ref0_y  = (OVSample *) frame0->data[0];
@@ -1752,6 +1761,7 @@ rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, in
     OVSample *tmp_buff = (OVSample *)rcn_ctx->data.tmp_buff;
 
     OVPicture *ref_pic =  type ? ref1 : ref0;
+    if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
 
     const OVSample *const ref0_y  = (OVSample *) frame0->data[0];
@@ -1843,6 +1853,7 @@ rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
     OVSample *tmp_buff = (OVSample *)rcn_ctx->data.tmp_buff;
     
     OVPicture *ref_pic =  type ? ref1 : ref0;
+    if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
 
     const OVSample *const ref0_cb = (OVSample *) frame0->data[1];
@@ -1920,6 +1931,7 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
+    if (!ref0 | !ref1) return;
 
     dst_cb += (x0 >> 1) + (y0 >> 1) * dst_stride;
     dst_cr += (x0 >> 1) + (y0 >> 1) * dst_stride;
@@ -1927,6 +1939,7 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int
     OVSample *tmp_buff = (OVSample *)rcn_ctx->data.tmp_buff;
     
     OVPicture *ref_pic =  type ? ref1 : ref0;
+    if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
 
     const OVSample *const ref0_cb = (OVSample *) frame0->data[1];
@@ -2052,6 +2065,7 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
     OVPicture *ref_pic =  type ? ref1 : ref0;
+    if (!ref_pic) return;
 
     const OVFrame *const frame0 = ref_pic->frame;
     const OVSample *const ref0_y  = (OVSample *)frame0->data[0];
@@ -2169,6 +2183,7 @@ rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
     OVPicture *ref_pic =  type ? ref1 : ref0;
+    if (!ref_pic) return;
 
     const OVFrame *const frame0 = ref_pic->frame;
     const OVSample *const ref0_y  = (OVSample *) frame0->data[0];
@@ -2283,6 +2298,7 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
 
+    if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
     const OVSample *const ref0_cb = (OVSample *) frame0->data[1];
     const OVSample *const ref0_cr = (OVSample *) frame0->data[2];
@@ -2408,6 +2424,7 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
     OVPicture *ref_pic =  type ? ref1 : ref0;
+    if (!ref_pic) return;
 
     dst_cb += (x0 >> 1) + (y0 >> 1) * dst_stride;
     dst_cr += (x0 >> 1) + (y0 >> 1) * dst_stride;
