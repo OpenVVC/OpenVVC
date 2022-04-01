@@ -487,7 +487,7 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t 
 
 
 static int
-vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, OVPicture **dst_rpl_na)
+vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl)
 {
     int i, j;
     uint8_t found, flag;
@@ -558,7 +558,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, OV
                     ov_log(NULL, OVLOG_TRACE, "Mark non active reference %d for picture %d\n", ref_poc, dpb->poc);
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
                     ovdpb_new_ref_pic(ref_pic, flag);
-                    dst_rpl_na[i-rpl->num_ref_active_entries] = ref_pic; 
+                    dst_rpl[i] = ref_pic;
                     break;
                 }
             }
@@ -573,7 +573,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, OV
 }
 
 static int
-vvc_unmark_refs(OVPicture **dst_rpl, OVPicture **dst_rpl_na, uint8_t nb_active_refs, uint8_t nb_refs)
+vvc_unmark_refs(OVPicture **dst_rpl, uint8_t nb_active_refs, uint8_t nb_refs)
 {
     int i;
     for (i = 0;  i < nb_active_refs; ++i) {
@@ -588,14 +588,14 @@ vvc_unmark_refs(OVPicture **dst_rpl, OVPicture **dst_rpl_na, uint8_t nb_active_r
     }
 
     for (;  i < nb_refs; ++i) {
-        OVPicture *ref_pic = dst_rpl_na[i - nb_active_refs];
+        OVPicture *ref_pic = dst_rpl[i];
         if(ref_pic){
             int16_t ref_poc  = ref_pic->poc;
             int16_t ref_type = ST_REF;
             uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
             ov_log(NULL, OVLOG_TRACE, "Unmark non active reference %d\n", ref_poc);
             ovdpb_unref_pic(ref_pic, flag);
-            dst_rpl_na[i - nb_active_refs] = NULL;
+            dst_rpl[i] = NULL;
         }
      }
     return 0;
@@ -732,13 +732,13 @@ ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVPicture * current_pic)
 {
     int ret;
 
-    ret = vvc_unmark_refs(current_pic->rpl0, current_pic->rpl0_non_active, current_pic->nb_active_refs0, current_pic->nb_refs0);
+    ret = vvc_unmark_refs(current_pic->rpl0, current_pic->nb_active_refs0, current_pic->nb_refs0);
     if (ret < 0) {
         goto fail;
     }
 
     if (slice_type == SLICE_B){
-        ret = vvc_unmark_refs(current_pic->rpl1, current_pic->rpl1_non_active, current_pic->nb_active_refs1, current_pic->nb_refs1);
+        ret = vvc_unmark_refs(current_pic->rpl1, current_pic->nb_active_refs1, current_pic->nb_refs1);
         if (ret < 0) {
             goto fail;
         }
@@ -775,7 +775,7 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
         pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
     }
 
-    ret = vvc_mark_refs(dpb, rpl0, poc, current_pic->rpl0, current_pic->rpl0_non_active);
+    ret = vvc_mark_refs(dpb, rpl0, poc, current_pic->rpl0);
     current_pic->nb_refs0 = rpl0->num_ref_entries;
     current_pic->nb_active_refs0 = rpl0->num_ref_active_entries;
     if (ret < 0) {
@@ -783,7 +783,7 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
     }
 
     if (slice_type == SLICE_B){
-        ret = vvc_mark_refs(dpb, rpl1, poc, current_pic->rpl1, current_pic->rpl1_non_active);
+        ret = vvc_mark_refs(dpb, rpl1, poc, current_pic->rpl1);
         current_pic->nb_refs1 = rpl1->num_ref_entries;
         current_pic->nb_active_refs1 = rpl1->num_ref_active_entries;
         if (ret < 0) {
