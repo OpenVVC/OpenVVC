@@ -512,6 +512,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, OV
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
                     ovdpb_new_ref_pic(ref_pic, flag);
                     dst_rpl[i] = ref_pic; 
+                    break;
                 }
             }
         }
@@ -558,6 +559,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, OV
                     ref_pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
                     ovdpb_new_ref_pic(ref_pic, flag);
                     dst_rpl_na[i-rpl->num_ref_active_entries] = ref_pic; 
+                    break;
                 }
             }
         }
@@ -1010,6 +1012,7 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
             for (int i = 0; i < 16; ++i){
                 if (pic->rpl1[i] == col_pic){
                     tmvp_ctx->col_info.ref_idx_rpl1 = i;
+                    break;
                 }
             }
             tmvp_ctx->collocated_ref = col_pic;
@@ -1026,6 +1029,7 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
             for (int i = 0; i < 16; ++i){
                 if (pic->rpl0[i] == col_pic){
                     tmvp_ctx->col_info.ref_idx_rpl0 = i;
+                    break;
                 }
             }
             tmvp_ctx->collocated_ref = col_pic;
