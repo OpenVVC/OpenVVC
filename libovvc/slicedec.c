@@ -1169,7 +1169,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
         // search nearest forward POC in List 0
         for (ref = 0; ref < nb_active_ref0; ref++) {
             int ref_poc = inter_ctx->rpl0[ref]->poc;
-            int ref_type = inter_ctx->rpl_info0->ref_info[ref].type;
+            int ref_type = ST_REF;
             uint8_t is_lterm = (ref_type == LT_REF);
             if(ref_poc < cur_poc && (ref_poc > forw_poc || ref_idx0 == -1)  && !is_lterm) {
                 forw_poc = ref_poc;
@@ -1180,7 +1180,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
         // search nearest backward POC in List 1
         for (ref = 0; ref < nb_active_ref1; ref++) {
             int ref_poc = inter_ctx->rpl1[ref]->poc;
-            int ref_type = inter_ctx->rpl_info1->ref_info[ref].type;
+            int ref_type = ST_REF;
             uint8_t is_lterm = (ref_type == LT_REF);
             if(ref_poc > cur_poc && (ref_poc < back_poc || ref_idx1 == -1)  && !is_lterm) {
                 back_poc = ref_poc;
@@ -1197,7 +1197,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
             // search nearest backward POC in List 0
             for (ref = 0; ref < nb_active_ref0; ref++) {
                 int ref_poc = inter_ctx->rpl0[ref]->poc;
-                int ref_type = inter_ctx->rpl_info0->ref_info[ref].type;
+                int ref_type = ST_REF;
                 uint8_t is_lterm = (ref_type == LT_REF);
                 if(ref_poc > cur_poc && (ref_poc < back_poc || ref_idx0 == -1)  && !is_lterm) {
                     back_poc = ref_poc;
@@ -1208,7 +1208,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
             // search nearest forward POC in List 1
             for (ref = 0; ref < nb_active_ref1; ref++) {
                 int ref_poc = inter_ctx->rpl1[ref]->poc;
-                int ref_type = inter_ctx->rpl_info1->ref_info[ref].type;
+                int ref_type = ST_REF;
                 uint8_t is_lterm = (ref_type == LT_REF);
                 if(ref_poc < cur_poc && (ref_poc > forw_poc || ref_idx1 == -1)  && !is_lterm) {
                     forw_poc = ref_poc;
@@ -1262,10 +1262,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     memcpy(ctudec->drv_ctx.inter_ctx.rpl0, sldec->pic->rpl0, sizeof(sldec->pic->rpl0));
     memcpy(ctudec->drv_ctx.inter_ctx.rpl1, sldec->pic->rpl1, sizeof(sldec->pic->rpl1));
 
-    ctudec->drv_ctx.inter_ctx.rpl_info0 = &sldec->pic->rpl_info0;
-    ctudec->drv_ctx.inter_ctx.rpl_info1 = &sldec->pic->rpl_info1;
-    ctudec->drv_ctx.inter_ctx.nb_active_ref0 = sldec->pic->rpl_info0.nb_active_refs;
-    ctudec->drv_ctx.inter_ctx.nb_active_ref1 = sldec->pic->rpl_info1.nb_active_refs;
+    ctudec->drv_ctx.inter_ctx.nb_active_ref0 = sldec->pic->nb_active_refs0;
+    ctudec->drv_ctx.inter_ctx.nb_active_ref1 = sldec->pic->nb_active_refs1;
 
     ctudec_compute_refs_scaling(ctudec, sldec->pic);
 
@@ -1273,7 +1271,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     for (int i = 0; i < ctudec->drv_ctx.inter_ctx.nb_active_ref0; ++i) {
         uint8_t opp_ref_idx0 = 0xFF;
 
-        if(ctudec->drv_ctx.inter_ctx.rpl0[i]->poc > sldec->pic->poc) {
+        if (sldec->pic->tmvp.dist_ref_0[i] < 0) {
             ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 0;
         }
 
@@ -1289,7 +1287,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     for (int i = 0; i < ctudec->drv_ctx.inter_ctx.nb_active_ref1; ++i) {
         uint8_t opp_ref_idx1 = 0xFF;
 
-        if(ctudec->drv_ctx.inter_ctx.rpl1[i]->poc > sldec->pic->poc) {
+        if (sldec->pic->tmvp.dist_ref_1[i] < 0) {
             ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 0;
         }
 
