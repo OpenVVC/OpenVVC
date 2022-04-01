@@ -631,25 +631,6 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVSEI **sei_p)
         int min_idx   = INT_MAX;
         int i;
 
-        #if 0
-        if (dpb->sh.no_output_of_prior_pics_flag == 1 && dpb->no_rasl_output_flag == 1) {
-        #else
-        if (0) {
-        #endif
-            /* Do not output previously decoded picture which are not already bumped
-             * Note that they can still be used by current pic
-             */
-            for (i = 0; i < nb_dpb_pic; i++) {
-                OVPicture *pic = &dpb->pictures[i];
-                uint8_t not_bumped = !(pic->flags & OV_BUMPED_PIC_FLAG);
-                uint8_t not_current = pic->poc != dpb->poc;
-                uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
-                if (not_bumped && not_current && is_output_cvs) {
-                    ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG);
-                }
-            }
-        }
-
         /* Count pic marked for output in output cvs and find the min poc_id */
         for (i = 0; i < nb_dpb_pic; i++) {
             OVPicture *pic = &dpb->pictures[i];
@@ -702,24 +683,6 @@ ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVSEI **sei_p)
         int min_idx   = nb_dpb_pic;
         uint8_t in_decoding;
 
-        #if 0
-        if (dpb->sh.no_output_of_prior_pics_flag == 1 && dpb->no_rasl_output_flag == 1) {
-        #else
-        if (0) {
-        #endif
-            /* Do not output previously decoded picture which are not already bumped
-             * Note that they can still be used by current pic
-             */
-            for (i = 0; i < nb_dpb_pic; i++) {
-                OVPicture *pic = &dpb->pictures[i];
-                uint8_t not_bumped = !(pic->flags & OV_BUMPED_PIC_FLAG);
-                uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
-                if (not_bumped && is_output_cvs) {
-                    ovdpb_unref_pic(pic, OV_OUTPUT_PIC_FLAG);
-                }
-            }
-        }
-
         /* Count pic marked for output in output cvs and find the min poc_id */
         for (i = 0; i < nb_dpb_pic; i++) {
             OVPicture *pic = &dpb->pictures[i];
@@ -755,11 +718,6 @@ ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVSEI **sei_p)
             pic->frame->pts = dpb->pts;
             dpb_pic_to_frame_ref(pic, out, sei_p);
             return nb_output;
-        }
-
-        /* If no output pic found increase cvs_id and retry */
-        if (output_cvs_id != dpb->cvs_id) {
-        } else {
         }
 
         *out = NULL;
