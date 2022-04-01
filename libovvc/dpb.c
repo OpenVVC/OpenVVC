@@ -222,7 +222,7 @@ ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
      * returned to the DPB;
      */
     pthread_mutex_lock(&pic->pic_mtx);
-    if (! pic->flags && !ref_count) {
+    if (!pic->flags && !ref_count) {
         /* Release TMVP  MV maps */
         dpbpriv_release_pic(pic);
     }
