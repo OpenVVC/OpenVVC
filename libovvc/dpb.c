@@ -769,64 +769,6 @@ ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVSEI **sei_p)
     return 0;
 }
 
-/*FIXME
- *   There might be better ways instead of always looping over
- *   the whole DPB and check for POC and CVS.
- */
-void
-ovdpb_bump_frame(OVDPB *dpb, uint32_t poc, uint16_t output_cvs_id)
-{
-    int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
-    int min_poc = INT_MAX;
-    int nb_output_pic = 0;
-    int i;
-
-    /* Count pictures in current output target Coded Video Sequence
-     * which does not correspond to current picture
-     */
-    for (i = 0; i < nb_dpb_pic; i++) {
-        OVPicture *pic = &dpb->pictures[i];
-        uint8_t flags = (pic->flags);
-        uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
-        uint8_t not_current = pic->poc != poc;
-        if (flags && is_output_cvs && not_current) {
-            nb_output_pic++;
-        }
-    }
-
-    if (nb_output_pic >= dpb->max_nb_dpb_pic) {
-        /* Determine the min POC among those pic
-         */
-        for (i = 0; i < nb_dpb_pic; i++) {
-            OVPicture *pic = &dpb->pictures[i];
-            uint8_t flags = (pic->flags);
-            uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
-            uint8_t output_flag = (pic->flags & OV_OUTPUT_PIC_FLAG);
-            uint8_t not_current = pic->poc != poc;
-            if (flags && output_flag && is_output_cvs && not_current) {
-                if (pic->poc < min_poc) {
-                    min_poc = pic->poc;
-                }
-            }
-        }
-
-        /* Mark with bumping Flag picture with POC <= to min_poc
-         */
-        for (i = 0; i < nb_dpb_pic; i++) {
-            OVPicture *pic = &dpb->pictures[i];
-            uint8_t output_flag = (pic->flags & OV_OUTPUT_PIC_FLAG);
-            uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
-            /* Note if the current pic can be also bumped */
-            if (output_flag && is_output_cvs && pic->poc <= min_poc) {
-                pic->flags |= OV_BUMPED_PIC_FLAG;
-                // ovdpb_new_ref_pic(pic, OV_BUMPED_PIC_FLAG);
-            }
-        }
-        nb_output_pic--;
-    }
-}
-
-
 int
 ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVPicture * current_pic)
 {
@@ -1166,14 +1108,6 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     /* If the NALU is an Refresh Picture all previous pictures in DPB
      * can be unreferenced
      */
-
-    /* FIXME test bumping here */
-    /* Mark previous pic for output */
-    if (idr_flag | cra_flag) {
-        /* FIXME */
-        uint16_t out_cvs_id = (dpb->cvs_id - idr_flag) & 0xFF;
-        ovdpb_bump_frame(dpb, poc, out_cvs_id);
-    }
 
     /* Find an available place in DPB and allocate/retrieve available memory
      * for the current picture data from the Frame Pool
