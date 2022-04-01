@@ -678,49 +678,49 @@ ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVSEI **sei_p)
     int i;
     int output_cvs_id = find_min_cvs_id(dpb);
 
-        int nb_output = 0;
-        int min_poc   = INT_MAX;
-        int min_idx   = nb_dpb_pic;
-        uint8_t in_decoding;
+    int nb_output = 0;
+    int min_poc   = INT_MAX;
+    int min_idx   = nb_dpb_pic;
+    uint8_t in_decoding;
 
-        /* Count pic marked for output in output cvs and find the min poc_id */
-        for (i = 0; i < nb_dpb_pic; i++) {
-            OVPicture *pic = &dpb->pictures[i];
-            uint8_t output_flag = (pic->flags & OV_OUTPUT_PIC_FLAG);
-            uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
-            if (output_flag && is_output_cvs) {
-                in_decoding = (pic->flags & OV_IN_DECODING_PIC_FLAG);
+    /* Count pic marked for output in output cvs and find the min poc_id */
+    for (i = 0; i < nb_dpb_pic; i++) {
+        OVPicture *pic = &dpb->pictures[i];
+        uint8_t output_flag = (pic->flags & OV_OUTPUT_PIC_FLAG);
+        uint8_t is_output_cvs = pic->cvs_id == output_cvs_id;
+        if (output_flag && is_output_cvs) {
+            in_decoding = (pic->flags & OV_IN_DECODING_PIC_FLAG);
+            if(!in_decoding){
+                nb_output ++;
+            }
+            if (pic->poc < min_poc ){
+                min_poc = pic->poc;
                 if(!in_decoding){
-                    nb_output ++;
+                    min_idx = i;
                 }
-                if (pic->poc < min_poc ){
-                    min_poc = pic->poc;
-                    if(!in_decoding){
-                        min_idx = i;
-                    }
-                    else{
-                        min_idx = nb_dpb_pic;
-                    }
+                else{
+                    min_idx = nb_dpb_pic;
                 }
             }
         }
+    }
 
-        /* If the number of pic to output is less than max_num_reorder_pics
-         * in current cvs we wait for more pic before outputting any
-         */
-        if (output_cvs_id == dpb->cvs_id && nb_output <= dpb->max_nb_reorder_pic) {
-            return 0;
-        }
+    /* If the number of pic to output is less than max_num_reorder_pics
+     * in current cvs we wait for more pic before outputting any
+     */
+    if (output_cvs_id == dpb->cvs_id && nb_output <= dpb->max_nb_reorder_pic) {
+        return 0;
+    }
 
-        if (min_idx < nb_dpb_pic) {
-            OVPicture *pic = &dpb->pictures[min_idx];
-            dpb->pts += dpb->nb_units_in_ticks;
-            pic->frame->pts = dpb->pts;
-            dpb_pic_to_frame_ref(pic, out, sei_p);
-            return nb_output;
-        }
+    if (min_idx < nb_dpb_pic) {
+        OVPicture *pic = &dpb->pictures[min_idx];
+        dpb->pts += dpb->nb_units_in_ticks;
+        pic->frame->pts = dpb->pts;
+        dpb_pic_to_frame_ref(pic, out, sei_p);
+        return nb_output;
+    }
 
-        *out = NULL;
+    *out = NULL;
 
     ov_log(NULL, OVLOG_TRACE, "No picture to output\n");
 
