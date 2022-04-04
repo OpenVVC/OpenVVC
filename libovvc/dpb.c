@@ -417,10 +417,6 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc, uint8_t ph_pic_ou
 
     ovdpb_reset_decoded_ctus(pic);
 
-    #if 0
-    dpb->active_pic = pic;
-    #endif
-
     if (ph_pic_output_flag) {
         ovdpb_new_ref_pic(pic, OV_OUTPUT_PIC_FLAG);
         ovdpb_new_ref_pic(pic, OV_IN_DECODING_PIC_FLAG);
@@ -1003,24 +999,6 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
 
     cra_flag |= nalu_type == OVNALU_CRA;
     cra_flag |= nalu_type == OVNALU_GDR;
-
-    #if 0
-    /* This means decoder was flushed or previous thread received EOS/EOB
-     * thus sequence changed in previous thread thus we wait for a refresh
-     * picture
-     * FIXME we need to handle this from DPB state
-     */
-    if (dpb->max_ra == INT_MAX) {
-        if (idr_cra_flag & (VVC_CRA_NAL_FLAG)) {
-            dpb->max_ra = dpb->poc;
-        } else if (idr_cra_flag & VVC_IDR_NAL_FLAG){
-            dpb->max_ra = INT_MIN;
-        }
-    }
-
-    dpb->no_rasl_output_flag = dpb->last_eos && (idr_cra_flag &
-                              (VVC_IDR_NAL_FLAG | VVC_CRA_NAL_FLAG));
-    #endif
 
     /* TODO move to dec init */
     if (idr_flag){
