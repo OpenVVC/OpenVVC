@@ -661,8 +661,9 @@ ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVSEI **sei_p)
 
     } while (1);
 
-    *out = NULL;
     ov_log(NULL, OVLOG_TRACE, "No picture to output\n");
+
+    *out = NULL;
 
     return 0;
 }
@@ -898,18 +899,19 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
 
 
         } else if (sh->sh_slice_type != SLICE_I) {
-            /* FIXME idx can be ph */
             int ref_idx = pps->pps_rpl_info_in_ph_flag ? ph->ph_collocated_ref_idx : sh->sh_collocated_ref_idx;
             const OVPicture *col_pic = pic->rpl1[ref_idx];
+
+            tmvp_ctx->collocated_ref = col_pic;
             tmvp_ctx->col_info.ref_idx_rpl1 = ref_idx;
             tmvp_ctx->col_info.ref_idx_rpl0 = -1;
+
             for (int i = 0; i < 16; ++i){
                 if (pic->rpl0[i] == col_pic){
                     tmvp_ctx->col_info.ref_idx_rpl0 = i;
                     break;
                 }
             }
-            tmvp_ctx->collocated_ref = col_pic;
 
             tmvp_set_mv_scales(tmvp_ctx, pic, col_pic);
 
