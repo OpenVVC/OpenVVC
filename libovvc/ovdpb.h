@@ -121,13 +121,11 @@ struct OVPicture
     /* FIXME use frame directly ? */
     /* FIXME should be const */
     struct OVPicture *rpl0[16];
-    struct OVPicture *rpl0_non_active[16];
     struct OVPicture *rpl1[16];
-    struct OVPicture *rpl1_non_active[16];
 
     uint8_t nb_refs0;
-    uint8_t nb_active_refs0;
     uint8_t nb_refs1;
+    uint8_t nb_active_refs0;
     uint8_t nb_active_refs1;
 
     struct MVPlane mv_plane0;
