@@ -1155,8 +1155,9 @@ ovdpb_synchro_ref_decoded_ctus(const OVPicture *const ref_pic, int tl_ctu_x, int
 
         all_ctus_available = 1;
         for (int ctu_y = tl_ctu_y; ctu_y <= br_ctu_y; ctu_y++ ) {
+            const uint64_t *ctu_col = decoded_ctus->mask[ctu_y];
             for (int i = 0; i < mask_w; i++)
-                all_ctus_available = all_ctus_available && ((decoded_ctus->mask[ctu_y][i] & wanted_mask[i]) == wanted_mask[i]);
+                all_ctus_available = all_ctus_available && ((ctu_col[i] & wanted_mask[i]) == wanted_mask[i]);
         }
         if (!all_ctus_available) {
             // ov_log(NULL, OVLOG_DEBUG, "Wait ref POC %d lines %d,%d \n", ref_pic->poc, tl_ctu_x, tl_ctu_y);
