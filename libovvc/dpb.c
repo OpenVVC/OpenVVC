@@ -1278,23 +1278,13 @@ ovdpb_reset_decoded_ctus(OVPicture *const pic)
 {
     struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
     pthread_mutex_lock(decoded_ctus->ref_mtx);
-    for(int i = 0; i < decoded_ctus->mask_h; i++){
-        if (decoded_ctus->mask)
-        memset(decoded_ctus->mask[i], 0, decoded_ctus->mask_w * sizeof(int64_t));
+    if (decoded_ctus->mask) {
+        for(int i = 0; i < decoded_ctus->mask_h; i++){
+            memset(decoded_ctus->mask[i], 0, decoded_ctus->mask_w * sizeof(int64_t));
+        }
     }
     pthread_mutex_unlock(decoded_ctus->ref_mtx);
 
     atomic_store(&pic->idx_function, 1);
-}
-
-void
-ovdpb_get_lines_decoded_ctus(OVPicture *const pic, uint64_t* decoded, int y_start, int y_end )
-{
-    // ov_log(NULL, OVLOG_DEBUG, "Get decoded_ctus ref POC %d lines %d,%d \n", pic->poc, y_start, y_end);
-    struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
-    int mask_w = decoded_ctus->mask_w;
-    // for(int i = y_start; i <= y_end; i++)
-    //     memcpy(decoded[i], decoded_ctus->mask[i], decoded_ctus->mask_w * sizeof(int64_t)) ;
-    memcpy(&decoded[y_start*mask_w], decoded_ctus->mask[y_start], (y_end-y_start) * mask_w * sizeof(int64_t)) ;
 }
 

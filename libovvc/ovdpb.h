@@ -224,6 +224,4 @@ void ovdpb_report_decoded_ctu_line(OVPicture *const pic, int y_ctu, int xmin_ctu
 
 void ovdpb_report_decoded_frame(OVPicture *const pic);
 
-void ovdpb_get_lines_decoded_ctus(OVPicture *const pic, uint64_t* decoded, int y_start, int y_end );
-
 #endif
