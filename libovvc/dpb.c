@@ -804,25 +804,6 @@ fail:
 }
 
 
-int16_t
-tmvp_compute_scale(int32_t dist_current, int32_t dist_colocated)
-{
-    int scale;
-    if (dist_current == dist_colocated || !dist_colocated)
-        return 256;
-
-    /*FIXME POW2 clip */
-    dist_current   = ov_clip(dist_current, -128, 127);
-    dist_colocated = ov_clip(dist_colocated, -128, 127);
-
-    scale = dist_current * ((0x4000 + OVABS(dist_colocated >> 1)) / dist_colocated);
-    scale += 32;
-    scale >>= 6;
-    /* FIXME pow2_clip */
-    scale = ov_clip(scale, -4096, 4095);
-    return (int16_t)scale;
-}
-
 static void
 tmvp_release_mv_planes(OVPicture *const pic)
 {
