@@ -54,13 +54,16 @@ enum SliceType {
 static int
 validate_sh(OVNVCLReader *rdr, const union HLSData *const data)
 {
+    const OVSH *const sh = (const OVSH *)&data->sh;
+    if (sh->sh_slice_type > 3) return OVVC_EINDATA;
+
     return 0;
 }
 
 static void
 free_sh(const union HLSData *const data)
 {
-    const OVSH *const sh = (const OVSH *)sh;
+    const OVSH *const sh = (const OVSH *)&data->sh;
     ov_free((void *)sh);
 }
 
