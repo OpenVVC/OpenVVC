@@ -150,7 +150,7 @@ ovframepool_init(struct FramePool **fpool_p, uint8_t fmt, uint8_t bitdepth_min8,
         uint8_t comp_shift = fmt_info->shift_h[i] + fmt_info->shift_v[i];
         size_t elem_size = pic_size >> comp_shift;
 
-        fpool->plane_pool[i] = ovmempool_init(elem_size);
+        fpool->plane_pool[i] = ovmempool_init(elem_size + 32);
 
         if (!fpool->plane_pool[i]) {
             goto fail_poolinit;
@@ -216,7 +216,7 @@ ovframepool_request_planes(OVFrame *const frame, struct FramePool *const fpool)
 
         frame->linesize[i] = prop->stride;
 
-        frame->size[i]     = pool->elem_size;
+        frame->size[i]     = pool->elem_size - 32;
 
         frame->frame_info.chroma_format = fpool->fmt_c;
     }
