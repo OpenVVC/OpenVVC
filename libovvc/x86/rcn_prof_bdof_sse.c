@@ -61,14 +61,14 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
     //FIXME: Convert dmv_scale to int16_t to avoid _mm_packs_epi32
     if (!bidir) {
         __m128i sh1 = _mm_loadu_si128((__m128i *)&dmv_scale_h[0]);
-        __m128i sh2 = _mm_loadu_si128((__m128i *)&dmv_scale_h[4]);
         __m128i sh3 = _mm_loadu_si128((__m128i *)&dmv_scale_h[8]);
-        __m128i sh4 = _mm_loadu_si128((__m128i *)&dmv_scale_h[12]);
-
         __m128i sv1 = _mm_loadu_si128((__m128i *)&dmv_scale_v[0]);
-        __m128i sv2 = _mm_loadu_si128((__m128i *)&dmv_scale_v[4]);
         __m128i sv3 = _mm_loadu_si128((__m128i *)&dmv_scale_v[8]);
-        __m128i sv4 = _mm_loadu_si128((__m128i *)&dmv_scale_v[12]);
+
+        __m128i sh2 = _mm_bsrli_si128(sh1, 8);
+        __m128i sh4 = _mm_bsrli_si128(sh3, 8);
+        __m128i sv2 = _mm_bsrli_si128(sv1, 8);
+        __m128i sv4 = _mm_bsrli_si128(sv3, 8);
 
         __m128i x1 = _mm_loadl_epi64((__m128i *)&grad_x[0*grad_stride]);
         __m128i x2 = _mm_loadl_epi64((__m128i *)&grad_x[1*grad_stride]);
@@ -149,14 +149,15 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
       __m128i max_val = _mm_set1_epi16(PROF_DELTA_LIMIT - 1);
 
       __m128i sh1 = _mm_loadu_si128((__m128i *)&dmv_scale_h[0]);
-      __m128i sh2 = _mm_loadu_si128((__m128i *)&dmv_scale_h[4]);
       __m128i sh3 = _mm_loadu_si128((__m128i *)&dmv_scale_h[8]);
-      __m128i sh4 = _mm_loadu_si128((__m128i *)&dmv_scale_h[12]);
 
       __m128i sv1 = _mm_loadu_si128((__m128i *)&dmv_scale_v[0]);
-      __m128i sv2 = _mm_loadu_si128((__m128i *)&dmv_scale_v[4]);
       __m128i sv3 = _mm_loadu_si128((__m128i *)&dmv_scale_v[8]);
-      __m128i sv4 = _mm_loadu_si128((__m128i *)&dmv_scale_v[12]);
+
+      __m128i sh2 = _mm_bsrli_si128(sh1, 8);
+      __m128i sh4 = _mm_bsrli_si128(sh3, 8);
+      __m128i sv2 = _mm_bsrli_si128(sv1, 8);
+      __m128i sv4 = _mm_bsrli_si128(sv3, 8);
 
       __m128i x1 = _mm_loadl_epi64((__m128i *)&grad_x[0*grad_stride]);
       __m128i x2 = _mm_loadl_epi64((__m128i *)&grad_x[1*grad_stride]);
