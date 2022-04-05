@@ -1019,10 +1019,10 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         mc_l->bidir1[prec_1_mc_type][log2_pu_w - 1](dst.y, dst.stride, ref1_b.y, ref1_b.stride,
                                                     tmp_buff, pu_h, prec_x1, prec_y1, pu_w);
     } else {
-        int16_t grad_x0[(16 + 2) * (16 + 2)];
-        int16_t grad_y0[(16 + 2) * (16 + 2)];
-        int16_t grad_x1[(16 + 2) * (16 + 2)];
-        int16_t grad_y1[(16 + 2) * (16 + 2)];
+        int16_t grad_x0[(16 + 2) * (16 + 3)];
+        int16_t grad_y0[(16 + 2) * (16 + 3)];
+        int16_t grad_x1[(16 + 2) * (16 + 3)];
+        int16_t grad_y1[(16 + 2) * (16 + 3)];
         
         int16_t *tmp_buff1 = (int16_t*) rcn_ctx->data.tmp_buff1;
         
@@ -1198,10 +1198,10 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     int16_t ref_bdof1[(16 + 2 * PROF_BUFF_PADD_H) * (128 + 2 * PROF_BUFF_PADD_W)] = {0};
 
     /* FIXME tab dim */
-    int16_t grad_x0[(16 + 2) * (16 + 2)];
-    int16_t grad_y0[(16 + 2) * (16 + 2)];
-    int16_t grad_x1[(16 + 2) * (16 + 2)];
-    int16_t grad_y1[(16 + 2) * (16 + 2)];
+    int16_t grad_x0[(16 + 2) * (16 + 3)];
+    int16_t grad_y0[(16 + 2) * (16 + 3)];
+    int16_t grad_x1[(16 + 2) * (16 + 3)];
+    int16_t grad_y1[(16 + 2) * (16 + 3)];
 
     int16_t ref_stride = 128;
     int16_t grad_stride = pu_w + 2;
