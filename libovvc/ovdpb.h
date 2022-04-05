@@ -107,9 +107,9 @@ struct OVPicture
 
     //Map of decoded CTUs
     struct PicDecodedCtusInfo {
-        uint64_t** mask;
-        int mask_h;
-        int mask_w;
+        uint64_t mask[256][5];
+        uint16_t mask_h;
+        uint16_t mask_w;
         pthread_mutex_t *ref_mtx;
         pthread_cond_t  *ref_cnd;
     } decoded_ctus;

@@ -345,7 +345,6 @@ ovdpb_flush_dpb(OVDPB *dpb)
         dpb->pictures[i].flags = 0; 
         atomic_init( &dpb->pictures[i].ref_count, 0);
         ovdpb_release_pic(dpb, &dpb->pictures[i]);
-        ovdpb_uninit_decoded_ctus(&dpb->pictures[i]);
     }
 }
 
@@ -1181,28 +1180,11 @@ ovdpb_init_decoded_ctus(OVPicture *const pic, const OVPS *const ps)
     decoded_ctus->mask_h = nb_ctb_pic_h;
     decoded_ctus->mask_w = (nb_ctb_pic_w >> SIZE_INT64) + 1;
 
-    if(!decoded_ctus->mask){
-        decoded_ctus->mask = ov_mallocz(decoded_ctus->mask_h * sizeof(uint64_t*));
-        for(int i = 0; i < decoded_ctus->mask_h; i++)
-            decoded_ctus->mask[i] = ov_mallocz(decoded_ctus->mask_w * sizeof(uint64_t));
-    }
-
     atomic_init(&pic->idx_function, 1);
     pic->ovdpb_frame_synchro[0] = ovdpb_no_synchro;
     pic->ovdpb_frame_synchro[1] = ovdpb_synchro_ref_decoded_ctus;
     decoded_ctus->ref_mtx = &pic->internal.ref_mtx;
     decoded_ctus->ref_cnd = &pic->internal.ref_cnd;
-}
-
-void
-ovdpb_uninit_decoded_ctus(OVPicture *const pic)
-{   
-    struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
-    if(decoded_ctus->mask){
-        for(int i = 0; i < decoded_ctus->mask_h; i++)
-            ov_freep(&decoded_ctus->mask[i]);
-        ov_freep(&decoded_ctus->mask);
-    }
 }
 
 void
