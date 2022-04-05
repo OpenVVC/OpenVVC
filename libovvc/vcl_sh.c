@@ -306,6 +306,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     sh->sh_slice_type = I;
     if (ph->ph_inter_slice_allowed_flag) {
         sh->sh_slice_type = nvcl_read_u_expgolomb(rdr);
+        if (sh->sh_slice_type > 3) return OVVC_EINDATA;
     }
 
     /* FIXME nal_unit_type is mandatory argument */
