@@ -43,12 +43,6 @@
 
 struct EntryThread;
 
-enum StateSynchro {
-    IDLE = 0,
-    ACTIVE,
-    DECODING_FINISHED
-};
-
 typedef int (*DecodeFunc)(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms, uint16_t entry_idx);
 
 struct SliceSynchro
@@ -60,20 +54,15 @@ struct SliceSynchro
     
     OVNALUnit* slice_nalu;
 
-    int nb_threads;
+    //int nb_threads;
     uint8_t active_state;
 
     /* Information on current task */
-    // int nb_entry_th;
     int nb_entries;
     atomic_uint nb_entries_decoded;
 
     DecodeFunc decode_entry;
 
-    /* Slice decoder thread to be used later if
-     * multiple slices
-     */
-    pthread_t thread;
     pthread_mutex_t gnrl_mtx;
     pthread_cond_t gnrl_cnd;
 };

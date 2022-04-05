@@ -44,6 +44,12 @@ struct SliceSynchro;
 struct OVVCDec;
 struct OVFrame;
 
+enum StateSynchro {
+    IDLE = 0,
+    ACTIVE,
+    DECODING_FINISHED
+};
+
 struct EntryThread
 {
     struct MainThread *main_thread;
