@@ -653,7 +653,6 @@ slicedec_decode_rect_entries(OVSliceDec *sldec, const OVPS *const prms, struct E
 
     int ret = 0;
     #if USE_THREADS
-    // ovthread_decode_entries(&sldec->slice_sync, slicedec_decode_rect_entry, nb_entries);
     ovthread_slice_add_entry_jobs(&sldec->slice_sync, slicedec_decode_rect_entry, nb_entries);
     #else
     int i;
