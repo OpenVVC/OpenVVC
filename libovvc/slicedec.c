@@ -487,7 +487,6 @@ init_pic_border_info(struct RectEntryInfo *einfo, const OVPS *const prms, int en
 void
 slicedec_init_rect_entry(struct RectEntryInfo *einfo, const OVPS *const prms, int entry_idx)
 {
-
     /* FIXME retrieve values from parameter sets */
     const struct SHInfo *const sh_info     = &prms->sh_info;
     const struct PPSInfo *const pps_info   = &prms->pps_info;

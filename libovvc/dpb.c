@@ -1181,8 +1181,10 @@ ovdpb_init_decoded_ctus(OVPicture *const pic, const OVPS *const ps)
     decoded_ctus->mask_w = (nb_ctb_pic_w >> SIZE_INT64) + 1;
 
     atomic_init(&pic->idx_function, 1);
+
     pic->ovdpb_frame_synchro[0] = ovdpb_no_synchro;
     pic->ovdpb_frame_synchro[1] = ovdpb_synchro_ref_decoded_ctus;
+
     decoded_ctus->ref_mtx = &pic->internal.ref_mtx;
     decoded_ctus->ref_cnd = &pic->internal.ref_cnd;
 }
@@ -1197,9 +1199,13 @@ ovdpb_report_decoded_ctu_line(OVPicture *const pic, int y_ctu, int xmin_ctu, int
     xctu_to_mask(mask, mask_w, xmin_ctu, xmax_ctu);
 
     pthread_mutex_lock(decoded_ctus->ref_mtx);
-    for(int i = 0; i < mask_w; i++)
+
+    for (int i = 0; i < mask_w; i++) {
         decoded_ctus->mask[y_ctu][i] |= mask[i];
+    }
+
     pthread_cond_broadcast(decoded_ctus->ref_cnd);
+
     pthread_mutex_unlock(decoded_ctus->ref_mtx);
     // ov_log(NULL, OVLOG_TRACE, "update_decoded_ctus POC %d line %d\n", pic->poc, y_ctu);
 }

@@ -46,7 +46,7 @@ static int
 ovthread_decode_entry(struct EntryJob *entry_job, struct EntryThread *entry_th)
 {   
     struct SliceSynchro* slice_sync = entry_job->slice_sync;
-    uint8_t entry_idx              = entry_job->entry_idx;
+    uint8_t entry_idx               = entry_job->entry_idx;
 
     uint16_t nb_entries  = slice_sync->nb_entries;
     ov_log(NULL, OVLOG_DEBUG, "Decoder with POC %d, start entry %d\n", slice_sync->owner->pic->poc, entry_idx);
