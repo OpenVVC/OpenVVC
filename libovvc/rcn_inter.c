@@ -2085,7 +2085,7 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     rcn_inter_synchronization(ref_pic, ref_x, ref_y, ref_pu_w, ref_pu_h, log2_ctb_s);
 
     uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, ref_pic_w, ref_pic_h,
-                                                   ref_pu_w, ref_pu_h);;
+                                                   ref_pu_w + 1, ref_pu_h + 1);;
 
     const OVSample *src  = &ref0_y [ ref_x + ref_y * src_stride];
     int buff_off = REF_PADDING_L * (tmp_emul_str) + (REF_PADDING_L);
@@ -2204,7 +2204,7 @@ rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int
     rcn_inter_synchronization(ref_pic, ref_x, ref_y, ref_pu_w, ref_pu_h, log2_ctb_s);
 
     uint8_t emulate_edge = test_for_edge_emulation(ref_x, ref_y, ref_pic_w, ref_pic_h,
-                                                   ref_pu_w, ref_pu_h);;
+                                                   ref_pu_w + 1, ref_pu_h + 1);;
 
     const OVSample *src  = &ref0_y [ ref_x + ref_y * src_stride];
     int buff_off = REF_PADDING_L * (tmp_emul_str) + (REF_PADDING_L);
@@ -2338,7 +2338,7 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         }    
 
         uint8_t emulate_edge = test_for_edge_emulation_c(ref_x, ref_y, ref_pic_w, ref_pic_h,
-                                                 ref_pu_w, ref_pu_h);;
+                                                 ref_pu_w + 2, ref_pu_h + 2);;
 
         int buff_off = REF_PADDING_C * (tmp_emul_str) + (REF_PADDING_C);
         int src_off  = REF_PADDING_C * (src_stride_c) + (REF_PADDING_C);
@@ -2467,7 +2467,7 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
         }    
 
         uint8_t emulate_edge = test_for_edge_emulation_c(ref_x, ref_y, ref_pic_w, ref_pic_h,
-                                                 ref_pu_w, ref_pu_h);;
+                                                 ref_pu_w + 2, ref_pu_h + 2);;
 
         int buff_off = REF_PADDING_C * (tmp_emul_str) + (REF_PADDING_C);
         int src_off  = REF_PADDING_C * (src_stride_c) + (REF_PADDING_C);
