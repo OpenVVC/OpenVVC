@@ -1990,8 +1990,8 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int
 static uint8_t
 compute_rpr_filter_idx(int scale_factor, int flag_4x4)
 {
-    const int rpr_thres_1 = ( 1 << RPR_SCALE_BITS ) * 5 / 4;
-    const int rpr_thres_2 = ( 1 << RPR_SCALE_BITS ) * 7 / 4;
+    const int rpr_thres_1 = (5 << RPR_SCALE_BITS) >> 2;
+    const int rpr_thres_2 = (7 << RPR_SCALE_BITS) >> 2;
 
     //TODOrpr: use MC filtre 4x4 for affine (and use RPR affine filters)
     int filter_idx = flag_4x4 ? 3 : 0 ;
