@@ -2104,8 +2104,6 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         src = src - src_off + REF_PADDING_L;
     }
 
-    // printf("\n %i, %i, %i, %i", pos_x, pos_y, ref_x, ref_y);
-  
     int32_t   pos_mv_x, pos_mv_y;
     const OVSample* p_src = src ;
     uint16_t* p_tmp_rpr = tmp_rpr + REF_PADDING_L;
@@ -2115,7 +2113,6 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         pos_mv_x  = (ref_pos_x + ((col * stepX) << shift_mv) + offset) >>  RPR_SCALE_BITS ;
         prec_x    = pos_mv_x & 0xF;
         prec_y    = 0;
-           // printf("\nHor %i %i", col, prec_x);        
         prec_type = filter_idx_h || prec_x;
         p_src     = src + (pos_mv_x >> shift_mv) - ref_x;
 
@@ -2129,7 +2126,6 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         pos_mv_y  = ( ref_pos_y + ((row * stepY) << shift_mv) + offset ) >> RPR_SCALE_BITS;
         prec_x    = 0;
         prec_y    = pos_mv_y & 0xF;
-           // printf("\nVer %i %i",row, prec_y);  
         prec_type = filter_idx_v || prec_y ;
         p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * tmp_rpr_str;
 
@@ -2223,8 +2219,6 @@ rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int
         src = src - src_off + REF_PADDING_L ;
     }
 
-    // printf("\n %i, %i, %i, %i", pos_x, pos_y, ref_x, ref_y);
-  
     int32_t   pos_mv_x, pos_mv_y;
     const OVSample* p_src = src ;
     uint16_t* p_tmp_rpr = tmp_rpr + REF_PADDING_L;
@@ -2234,7 +2228,6 @@ rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int
         pos_mv_x  = (ref_pos_x + ((col * stepX) << shift_mv) + offset) >>  RPR_SCALE_BITS ;
         prec_x    = pos_mv_x & 0xF;
         prec_y    = 0;
-           // printf("\nHor %i %i", col, prec_x);        
         prec_type = filter_idx_h || prec_x;
         p_src     = src + (pos_mv_x >> shift_mv) - ref_x;
 
@@ -2248,7 +2241,6 @@ rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int
         pos_mv_y  = ( ref_pos_y + ((row * stepY) << shift_mv) + offset ) >> RPR_SCALE_BITS;
         prec_x    = 0;
         prec_y    = pos_mv_y & 0xF;
-           // printf("\nVer %i %i",row, prec_y);  
         prec_type = filter_idx_v || prec_y;
         p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * tmp_rpr_str;
         mc_l->rpr_v_bi[prec_type][log2_pu_w-1](p_dst, dst_stride, p_tmp_rpr, tmp_rpr_str, 1,
