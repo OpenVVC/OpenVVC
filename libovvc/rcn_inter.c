@@ -1996,12 +1996,12 @@ compute_rpr_filter_idx(int scale_factor, int flag_4x4)
     //TODOrpr: use MC filtre 4x4 for affine (and use RPR affine filters)
     int filter_idx = flag_4x4 ? 3 : 0 ;
 
-    if( scale_factor > rpr_thres_2 ){
+    if (scale_factor > rpr_thres_2) {
         filter_idx += 2;
-    }
-    else if( scale_factor > rpr_thres_1 ){
+    } else if (scale_factor > rpr_thres_1) {
         filter_idx += 1;
     }
+
     return filter_idx;
 }
 
@@ -2009,13 +2009,13 @@ compute_rpr_filter_idx(int scale_factor, int flag_4x4)
 static void
 clip_rpr_position(int* pos_x, int* pos_y, int pic_w, int pic_h, int pb_w, int pb_h, int shift_pos)
 {
-    int prec_x = *pos_x & ((1<<shift_pos)-1);
-    int prec_y = *pos_y & ((1<<shift_pos)-1);
+    int prec_x = *pos_x & ((1 << shift_pos) - 1);
+    int prec_y = *pos_y & ((1 << shift_pos) - 1);
 
-    int x_max  = (pic_w + 3 ) << shift_pos;
-    int y_max  = (pic_h + 3 ) << shift_pos;
-    int x_min  = -((pb_w + 4 ) << shift_pos);
-    int y_min  = -((pb_h + 4 ) << shift_pos);
+    int x_max  = (pic_w + 3) << shift_pos;
+    int y_max  = (pic_h + 3) << shift_pos;
+    int x_min  = -((pb_w + 4) << shift_pos);
+    int y_min  = -((pb_h + 4) << shift_pos);
 
     *pos_x = ov_clip(*pos_x, x_min + prec_x, x_max + prec_x);
     *pos_y = ov_clip(*pos_y, y_min + prec_y, y_max + prec_y);
@@ -2026,28 +2026,30 @@ static void
 rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
         OVMV mv, uint8_t type, uint8_t ref_idx, int scaling_hor, int scaling_ver)
 {
+    struct OVRCNCtx *const rcn_ctx   = &ctudec->rcn_ctx;
+    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
+
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
     const int pu_w = 1 << log2_pu_w;
     const int pu_h = 1 << log2_pu_h;
 
-    struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     OVSample* tmp_emul = (OVSample *) rcn_ctx->data.tmp_buff;
     uint16_t* tmp_rpr  = (uint16_t *) rcn_ctx->data.tmp_rpr;
-    uint16_t tmp_emul_str = 2*RCN_CTB_STRIDE;
-    uint16_t tmp_rpr_str  = 2*RCN_CTB_STRIDE;
+
+    uint16_t tmp_emul_str = 2 * RCN_CTB_STRIDE;
+    uint16_t tmp_rpr_str  = 2 * RCN_CTB_STRIDE;
  
-    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-    struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
     OVPicture *ref_pic =  type ? ref1 : ref0;
 
     const OVFrame *const frame0 = ref_pic->frame;
-    const OVSample *const ref0_y  = (OVSample *) frame0->data[0];
+    const OVSample *const ref0_y  = (OVSample *)frame0->data[0];
     dst.y  += x0 + y0 * dst.stride;
-    int src_stride   = frame0->linesize[0] /sizeof(OVSample);
+    int src_stride   = frame0->linesize[0] / sizeof(OVSample);
 
     const int ref_pic_w = frame0->width;
     const int ref_pic_h = frame0->height;
@@ -2059,20 +2061,22 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     uint8_t flag_4x4     = (log2_pu_w == 2 && log2_pu_h == 2);
     uint8_t filter_idx_h = compute_rpr_filter_idx(scaling_hor, flag_4x4);
     uint8_t filter_idx_v = compute_rpr_filter_idx(scaling_ver, flag_4x4);
-    int stepX = (( scaling_hor + 8 ) >> 4) << 4;
-    int stepY = (( scaling_ver + 8 ) >> 4) << 4;
+    int stepX = ((scaling_hor + 8) >> 4) << 4;
+    int stepY = ((scaling_ver + 8) >> 4) << 4;
 
-    int32_t ref_pos_x = ((( pos_x << shift_mv)  + mv.x ) * (int32_t)scaling_hor) + (1<<7);
-    int32_t ref_pos_y = ((( pos_y << shift_mv ) + mv.y ) * (int32_t)scaling_ver) + (1<<7);
-    int     ref_x     = (ref_pos_x + offset)  >> shift_pos;
+    int32_t ref_pos_x = (((pos_x << shift_mv) + mv.x) * (int32_t)scaling_hor) + (1 << 7);
+    int32_t ref_pos_y = (((pos_y << shift_mv) + mv.y) * (int32_t)scaling_ver) + (1 << 7);
+
+    int     ref_x     = (ref_pos_x + offset) >> shift_pos;
     int     ref_y     = (ref_pos_y + offset) >> shift_pos;
-    int ref_pu_w = ((ref_pos_x + (((pu_w-1) * stepX) << shift_mv) + offset) >> shift_pos) - ref_x + 1 ;
-    int ref_pu_h = ((ref_pos_y + (((pu_h-1) * stepY) << shift_mv) + offset) >> shift_pos) - ref_y + 1;
+
+    int ref_pu_w = ((ref_pos_x + (((pu_w - 1) * stepX) << shift_mv) + offset) >> shift_pos) - ref_x + 1;
+    int ref_pu_h = ((ref_pos_y + (((pu_h - 1) * stepY) << shift_mv) + offset) >> shift_pos) - ref_y + 1;
     ref_pu_h = OVMAX(1, ref_pu_h);
     
     //Clip ref position now that ref_pu_w and ref_pu_h are computed
     clip_rpr_position(&ref_pos_x, &ref_pos_y, ref_pic_w, ref_pic_h, ref_pu_w, ref_pu_h, shift_pos);
-    ref_x = (ref_pos_x + offset)  >> shift_pos;
+    ref_x = (ref_pos_x + offset) >> shift_pos;
     ref_y = (ref_pos_y + offset) >> shift_pos;
 
     /*
@@ -2097,7 +2101,7 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         src_stride = tmp_emul_str;
     }
     else{
-        src = src - src_off + REF_PADDING_L ;
+        src = src - src_off + REF_PADDING_L;
     }
 
     // printf("\n %i, %i, %i, %i", pos_x, pos_y, ref_x, ref_y);
