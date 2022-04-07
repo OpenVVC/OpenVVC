@@ -68,8 +68,7 @@ validate_sps(OVNVCLReader *rdr, const union HLSData *const data)
     const OVSPS *const sps =  (const OVSPS *)data;
 
     if (sps->sps_weighted_pred_flag || sps->sps_weighted_bipred_flag) {
-        ov_log(NULL, OVLOG_ERROR, "Unsupported weighted pred\n");
-        return OVVC_EINDATA;
+        ov_log(NULL, OVLOG_WARNING, "Unsupported weighted pred\n");
     }
 
     if (sps->sps_subpic_info_present_flag) {
@@ -83,8 +82,7 @@ validate_sps(OVNVCLReader *rdr, const union HLSData *const data)
     }
 
     if (sps->sps_explicit_scaling_list_enabled_flag) {
-        ov_log(NULL, OVLOG_ERROR, "Unsupported scaling lists\n");
-        return OVVC_EINDATA;
+        ov_log(NULL, OVLOG_WARNING, "Unsupported scaling lists\n");
     }
 
     if (sps->sps_long_term_ref_pics_flag) {
