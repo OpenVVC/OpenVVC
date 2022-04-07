@@ -599,7 +599,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
     if (sps->sps_chroma_format_idc == 1) {
         sps->sps_chroma_horizontal_collocated_flag = nvcl_read_flag(rdr);
-        sps->sps_chroma_vertical_collocated_flag = nvcl_read_flag(rdr);
+        sps->sps_chroma_vertical_collocated_flag   = nvcl_read_flag(rdr);
     }
 
     sps->sps_palette_enabled_flag = nvcl_read_flag(rdr);
