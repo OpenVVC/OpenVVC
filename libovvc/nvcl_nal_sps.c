@@ -579,7 +579,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     if (sps->sps_six_minus_max_num_merge_cand <= 4) {
         sps->sps_gpm_enabled_flag = nvcl_read_flag(rdr);
         if (sps->sps_gpm_enabled_flag){
-            //TODOgpm: do not init here
+            /* FIXME remove dirty static initialization of GPM LUTs */
             rcn_init_gpm_params();
             if (sps->sps_six_minus_max_num_merge_cand <= 3) {
                 sps->sps_max_num_merge_cand_minus_max_num_gpm_cand = nvcl_read_u_expgolomb(rdr);
