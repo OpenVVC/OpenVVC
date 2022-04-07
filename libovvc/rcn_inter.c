@@ -900,6 +900,13 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
+
+    mv0->x = ov_clip(mv0->x, MV_MIN, MV_MAX);
+    mv0->y = ov_clip(mv0->y, MV_MIN, MV_MAX);
+
+    mv1->x = ov_clip(mv1->x, MV_MIN, MV_MAX);
+    mv1->y = ov_clip(mv1->y, MV_MIN, MV_MAX);
+
     OVMV tmp0 = *mv0;
     OVMV tmp1 = *mv1;
 
