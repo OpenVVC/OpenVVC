@@ -417,7 +417,7 @@ nvcl_pps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         pps->pps_cu_chroma_qp_offset_list_enabled_flag = nvcl_read_flag(rdr);
         if (pps->pps_cu_chroma_qp_offset_list_enabled_flag) {
             pps->pps_chroma_qp_offset_list_len_minus1 = nvcl_read_u_expgolomb(rdr);
-            for (i = 0; i <= pps->pps_chroma_qp_offset_list_len_minus1; i++) {
+            for (i = 0; i <= (pps->pps_chroma_qp_offset_list_len_minus1 & 0x3F); i++) {
                 pps->pps_cb_qp_offset_list[i] = nvcl_read_s_expgolomb(rdr);
                 pps->pps_cr_qp_offset_list[i] = nvcl_read_s_expgolomb(rdr);
                 if (pps->pps_joint_cbcr_qp_offset_present_flag) {
