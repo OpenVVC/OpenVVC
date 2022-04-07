@@ -423,7 +423,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         sps->sps_log2_diff_max_tt_min_qt_intra_slice_luma = nvcl_read_u_expgolomb(rdr);
     }
 
-    if (sps->sps_chroma_format_idc != 0) {
+    if (sps->sps_chroma_format_idc) {
         sps->sps_qtbtt_dual_tree_intra_flag = nvcl_read_flag(rdr);
     }
 
@@ -431,7 +431,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         sps->sps_log2_diff_min_qt_min_cb_intra_slice_chroma = nvcl_read_u_expgolomb(rdr);
 
         sps->sps_max_mtt_hierarchy_depth_intra_slice_chroma = nvcl_read_u_expgolomb(rdr);
-        if (sps->sps_max_mtt_hierarchy_depth_intra_slice_chroma != 0) {
+        if (sps->sps_max_mtt_hierarchy_depth_intra_slice_chroma) {
             sps->sps_log2_diff_max_bt_min_qt_intra_slice_chroma = nvcl_read_u_expgolomb(rdr);
             sps->sps_log2_diff_max_tt_min_qt_intra_slice_chroma = nvcl_read_u_expgolomb(rdr);
         }
@@ -440,12 +440,12 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     sps->sps_log2_diff_min_qt_min_cb_inter_slice = nvcl_read_u_expgolomb(rdr);
 
     sps->sps_max_mtt_hierarchy_depth_inter_slice = nvcl_read_u_expgolomb(rdr);
-    if (sps->sps_max_mtt_hierarchy_depth_inter_slice != 0) {
+    if (sps->sps_max_mtt_hierarchy_depth_inter_slice) {
         sps->sps_log2_diff_max_bt_min_qt_inter_slice = nvcl_read_u_expgolomb(rdr);
         sps->sps_log2_diff_max_tt_min_qt_inter_slice = nvcl_read_u_expgolomb(rdr);
     }
 
-    if (sps->sps_log2_ctu_size_minus5 > 0) {
+    if (sps->sps_log2_ctu_size_minus5) {
         sps->sps_max_luma_transform_size_64_flag = nvcl_read_flag(rdr);
     }
 
@@ -463,7 +463,8 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
     sps->sps_lfnst_enabled_flag = nvcl_read_flag(rdr);
 
-    if (sps->sps_chroma_format_idc != 0) {
+    if (sps->sps_chroma_format_idc) {
+
         sps->sps_joint_cbcr_enabled_flag = nvcl_read_flag(rdr);
         sps->sps_same_qp_table_for_chroma_flag = nvcl_read_flag(rdr);
 
@@ -489,7 +490,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     sps->sps_sao_enabled_flag = nvcl_read_flag(rdr);
 
     sps->sps_alf_enabled_flag = nvcl_read_flag(rdr);
-    if (sps->sps_alf_enabled_flag && sps->sps_chroma_format_idc != 0) {
+    if (sps->sps_alf_enabled_flag && sps->sps_chroma_format_idc) {
         sps->sps_ccalf_enabled_flag = nvcl_read_flag(rdr);
     }
 
@@ -498,7 +499,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     sps->sps_weighted_bipred_flag = nvcl_read_flag(rdr);
     sps->sps_long_term_ref_pics_flag = nvcl_read_flag(rdr);
 
-    if (sps->sps_video_parameter_set_id > 0) {
+    if (sps->sps_video_parameter_set_id) {
         sps->sps_inter_layer_prediction_enabled_flag = nvcl_read_flag(rdr);
     }
 
@@ -593,7 +594,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     sps->sps_mrl_enabled_flag = nvcl_read_flag(rdr);
     sps->sps_mip_enabled_flag = nvcl_read_flag(rdr);
 
-    if (sps->sps_chroma_format_idc != 0) {
+    if (sps->sps_chroma_format_idc) {
         sps->sps_cclm_enabled_flag = nvcl_read_flag(rdr);
     }
 
@@ -671,7 +672,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         if (sps->sps_timing_hrd_params_present_flag) {
             struct HRDTiming hrd_timing = {0};
             general_timing_hrd_parameters(rdr, &hrd_timing);
-            if (sps->sps_max_sublayers_minus1 > 0) {
+            if (sps->sps_max_sublayers_minus1) {
                 sps->sps_sublayer_cpb_params_present_flag = nvcl_read_flag(rdr);
             }
 
