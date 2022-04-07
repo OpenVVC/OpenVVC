@@ -651,12 +651,12 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         sps->sps_virtual_boundaries_present_flag = nvcl_read_flag(rdr);
         if (sps->sps_virtual_boundaries_present_flag) {
             sps->sps_num_ver_virtual_boundaries = nvcl_read_u_expgolomb(rdr);
-            for (i = 0; i < sps->sps_num_ver_virtual_boundaries; i++) {
+            for (i = 0; i < ((sps->sps_num_ver_virtual_boundaries - !!sps->sps_num_ver_virtual_boundaries) & 0x3FF); i++) {
                 sps->sps_virtual_boundary_pos_x_minus1[i] = nvcl_read_u_expgolomb(rdr);
             }
 
             sps->sps_num_hor_virtual_boundaries = nvcl_read_u_expgolomb(rdr);
-            for (i = 0; i < sps->sps_num_hor_virtual_boundaries; i++) {
+            for (i = 0; i < ((sps->sps_num_hor_virtual_boundaries - !!sps->sps_num_hor_virtual_boundaries) & 0x3FF); i++) {
                 sps->sps_virtual_boundary_pos_y_minus1[i] = nvcl_read_u_expgolomb(rdr);
             }
         }
