@@ -465,10 +465,10 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
     if (sps->sps_chroma_format_idc) {
 
-        sps->sps_joint_cbcr_enabled_flag = nvcl_read_flag(rdr);
+        sps->sps_joint_cbcr_enabled_flag       = nvcl_read_flag(rdr);
         sps->sps_same_qp_table_for_chroma_flag = nvcl_read_flag(rdr);
 
-        sps->sps_qp_table_start_minus26[0] = nvcl_read_s_expgolomb(rdr);
+        sps->sps_qp_table_start_minus26[0]        = nvcl_read_s_expgolomb(rdr);
         sps->sps_num_points_in_qp_table_minus1[0] = nvcl_read_u_expgolomb(rdr);
         for (j = 0; j <= (sps->sps_num_points_in_qp_table_minus1[0] & 0x3F); j++) {
             sps->sps_delta_qp_in_val_minus1[0][j] = nvcl_read_u_expgolomb(rdr);
