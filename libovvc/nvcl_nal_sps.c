@@ -622,7 +622,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     if (sps->sps_ladf_enabled_flag) {
         sps->sps_num_ladf_intervals_minus2 = nvcl_read_bits(rdr, 2);
         sps->sps_ladf_lowest_interval_qp_offset = nvcl_read_s_expgolomb(rdr);
-        for (i = 0; i < sps->sps_num_ladf_intervals_minus2 + 1; i++) {
+        for (i = 0; i <= ((sps->sps_num_ladf_intervals_minus2 + 2) & 0x3F); i++) {
             sps->sps_ladf_qp_offset[i] = nvcl_read_s_expgolomb(rdr);
             sps->sps_ladf_delta_threshold_minus1[i] = nvcl_read_u_expgolomb(rdr);
         }
