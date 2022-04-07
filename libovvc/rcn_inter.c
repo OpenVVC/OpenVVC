@@ -260,8 +260,8 @@ check_identical_motion(struct InterDRVCtx *const inter_ctx, int inter_dir, const
     if(inter_dir != 3)
         return 0;
 
-    uint16_t poc0 = inter_ctx->rpl0[ref_idx0]->poc;
-    uint16_t poc1 = inter_ctx->rpl1[ref_idx1]->poc;
+    uint16_t poc0 = inter_ctx->rpl0[ref_idx0] ? inter_ctx->rpl0[ref_idx0]->poc : -1;
+    uint16_t poc1 = inter_ctx->rpl1[ref_idx1] ? inter_ctx->rpl1[ref_idx1]->poc : -1;
 
     return (poc0 == poc1 && mv0.x == mv1.x && mv0.y == mv1.y);
 }
