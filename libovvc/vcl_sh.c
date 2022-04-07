@@ -302,14 +302,12 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         sh->sh_num_tiles_in_slice_minus1 = nvcl_read_u_expgolomb(rdr);
     }
 
-    /* Default value */
     sh->sh_slice_type = I;
     if (ph->ph_inter_slice_allowed_flag) {
         sh->sh_slice_type = nvcl_read_u_expgolomb(rdr);
         if (sh->sh_slice_type > 3) return OVVC_EINDATA;
     }
 
-    /* FIXME nal_unit_type is mandatory argument */
     if (nalu_type == OVNALU_IDR_W_RADL ||
         nalu_type == OVNALU_IDR_N_LP   ||
         nalu_type == OVNALU_CRA        ||
