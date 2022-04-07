@@ -648,10 +648,6 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
     sps->sps_virtual_boundaries_enabled_flag = nvcl_read_flag(rdr);
     if (sps->sps_virtual_boundaries_enabled_flag) {
-        if (sps->sps_explicit_scaling_list_enabled_flag) {
-            ov_log(NULL, OVLOG_ERROR, "Unsupported virtual boundaries\n");
-            return OVVC_EINDATA;
-        }
         sps->sps_virtual_boundaries_present_flag = nvcl_read_flag(rdr);
         if (sps->sps_virtual_boundaries_present_flag) {
             sps->sps_num_ver_virtual_boundaries = nvcl_read_u_expgolomb(rdr);
