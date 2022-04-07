@@ -443,32 +443,31 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
     if (sps->sps_sao_enabled_flag && !pps->pps_sao_info_in_ph_flag) {
         sh->sh_sao_luma_used_flag = nvcl_read_flag(rdr);
-        if (sps->sps_chroma_format_idc != 0) {
+        if (sps->sps_chroma_format_idc) {
             sh->sh_sao_chroma_used_flag = nvcl_read_flag(rdr);
         }
     }
 
     if (pps->pps_deblocking_filter_override_enabled_flag && !pps->pps_dbf_info_in_ph_flag) {
         sh->sh_deblocking_params_present_flag = nvcl_read_flag(rdr);
-    }
 
-    if (sh->sh_deblocking_params_present_flag) {
-        if (!pps->pps_deblocking_filter_disabled_flag) {
-            sh->sh_deblocking_filter_disabled_flag = nvcl_read_flag(rdr);
-        }
+        if (sh->sh_deblocking_params_present_flag) {
+            if (!pps->pps_deblocking_filter_disabled_flag) {
+                sh->sh_deblocking_filter_disabled_flag = nvcl_read_flag(rdr);
+            }
 
-        if (!sh->sh_deblocking_filter_disabled_flag) {
-            sh->sh_luma_beta_offset_div2 = nvcl_read_s_expgolomb(rdr);
-            sh->sh_luma_tc_offset_div2   = nvcl_read_s_expgolomb(rdr);
-            if (pps->pps_chroma_tool_offsets_present_flag) {
-                sh->sh_cb_beta_offset_div2 = nvcl_read_s_expgolomb(rdr);
-                sh->sh_cb_tc_offset_div2   = nvcl_read_s_expgolomb(rdr);
-                sh->sh_cr_beta_offset_div2 = nvcl_read_s_expgolomb(rdr);
-                sh->sh_cr_tc_offset_div2   = nvcl_read_s_expgolomb(rdr);
+            if (!sh->sh_deblocking_filter_disabled_flag) {
+                sh->sh_luma_beta_offset_div2 = nvcl_read_s_expgolomb(rdr);
+                sh->sh_luma_tc_offset_div2   = nvcl_read_s_expgolomb(rdr);
+                if (pps->pps_chroma_tool_offsets_present_flag) {
+                    sh->sh_cb_beta_offset_div2 = nvcl_read_s_expgolomb(rdr);
+                    sh->sh_cb_tc_offset_div2   = nvcl_read_s_expgolomb(rdr);
+                    sh->sh_cr_beta_offset_div2 = nvcl_read_s_expgolomb(rdr);
+                    sh->sh_cr_tc_offset_div2   = nvcl_read_s_expgolomb(rdr);
+                }
             }
         }
     }
-
 
     if (sps->sps_dep_quant_enabled_flag) {
         sh->sh_dep_quant_used_flag = nvcl_read_flag(rdr);
