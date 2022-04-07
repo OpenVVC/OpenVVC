@@ -367,44 +367,39 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
          nvcl_read_header_ref_pic_lists(rdr, hrpl, sps, pps);
     }
 
-    /* FIXME check this + clean up*/
-    OVHRPL *const hrpl = pps->pps_rpl_info_in_ph_flag ? &ph->hrpl : &sh->hrpl;
-
-    /* FIXME check if default to zero or needs check in SPS in case of IDR
-     * and sps_idr_rpl_present is OFF
-     */
-    int nb_ref_entries0 = hrpl->rpl0 ? hrpl->rpl_h0.rpl_data.num_ref_entries : 0;
-    int nb_ref_entries1 = hrpl->rpl1 ? hrpl->rpl_h1.rpl_data.num_ref_entries : 0;
-
-    if ((sh->sh_slice_type != I && nb_ref_entries0 > 1) ||
-        (sh->sh_slice_type == B && nb_ref_entries1 > 1)) {
-        sh->sh_num_ref_idx_active_override_flag = nvcl_read_flag(rdr);
-        if (sh->sh_num_ref_idx_active_override_flag) {
-            if (nb_ref_entries0 > 1) {
-                sh->sh_num_ref_idx_active_l0_minus1 = nvcl_read_u_expgolomb(rdr);
-                nb_ref_entries0 = sh->sh_num_ref_idx_active_l0_minus1 + 1;
-            }
-
-            if (sh->sh_slice_type == B && nb_ref_entries1 > 1) {
-                sh->sh_num_ref_idx_active_l1_minus1 = nvcl_read_u_expgolomb(rdr);
-                nb_ref_entries1 = sh->sh_num_ref_idx_active_l1_minus1 + 1;
-            }
-        } else if (nb_ref_entries0 > pps->pps_num_ref_idx_default_active_minus1[0] ||
-                    nb_ref_entries1 > pps->pps_num_ref_idx_default_active_minus1[1]) {
-
-            if (nb_ref_entries0 > pps->pps_num_ref_idx_default_active_minus1[0]) {
-                nb_ref_entries0 = pps->pps_num_ref_idx_default_active_minus1[0] + 1;
-            }
-
-            if (sh->sh_slice_type == B &&
-                nb_ref_entries1 > pps->pps_num_ref_idx_default_active_minus1[1]) {
-                nb_ref_entries1 = pps->pps_num_ref_idx_default_active_minus1[1] + 1;
-            }
-
-        }
-    }
-
     if (sh->sh_slice_type != I) {
+        const OVHRPL *const hrpl = pps->pps_rpl_info_in_ph_flag ? &ph->hrpl : &sh->hrpl;
+
+        int nb_ref_entries0 = hrpl->rpl0 ? hrpl->rpl_h0.rpl_data.num_ref_entries : 0;
+        int nb_ref_entries1 = hrpl->rpl1 ? hrpl->rpl_h1.rpl_data.num_ref_entries : 0;
+
+        if ((nb_ref_entries0 > 1) ||
+            (sh->sh_slice_type == B && nb_ref_entries1 > 1)) {
+            sh->sh_num_ref_idx_active_override_flag = nvcl_read_flag(rdr);
+            if (sh->sh_num_ref_idx_active_override_flag) {
+                if (nb_ref_entries0 > 1) {
+                    sh->sh_num_ref_idx_active_l0_minus1 = nvcl_read_u_expgolomb(rdr);
+                    nb_ref_entries0 = sh->sh_num_ref_idx_active_l0_minus1 + 1;
+                }
+
+                if (sh->sh_slice_type == B && nb_ref_entries1 > 1) {
+                    sh->sh_num_ref_idx_active_l1_minus1 = nvcl_read_u_expgolomb(rdr);
+                    nb_ref_entries1 = sh->sh_num_ref_idx_active_l1_minus1 + 1;
+                }
+            } else if (nb_ref_entries0 > pps->pps_num_ref_idx_default_active_minus1[0] ||
+                       nb_ref_entries1 > pps->pps_num_ref_idx_default_active_minus1[1]) {
+
+                if (nb_ref_entries0 > pps->pps_num_ref_idx_default_active_minus1[0]) {
+                    nb_ref_entries0 = pps->pps_num_ref_idx_default_active_minus1[0] + 1;
+                }
+
+                if (sh->sh_slice_type == B &&
+                    nb_ref_entries1 > pps->pps_num_ref_idx_default_active_minus1[1]) {
+                    nb_ref_entries1 = pps->pps_num_ref_idx_default_active_minus1[1] + 1;
+                }
+            }
+        }
+
         if (pps->pps_cabac_init_present_flag) {
             sh->sh_cabac_init_flag = nvcl_read_flag(rdr);
         }
