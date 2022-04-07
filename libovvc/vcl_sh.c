@@ -327,26 +327,25 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
                 sh->sh_alf_aps_id_luma[i] = nvcl_read_bits(rdr, 3);
             }
 
-            //VVC_CHROMA_400 
-            if (sps->sps_chroma_format_idc != 0) {
+            if (sps->sps_chroma_format_idc) {
                 sh->sh_alf_cb_enabled_flag = nvcl_read_flag(rdr);
                 sh->sh_alf_cr_enabled_flag = nvcl_read_flag(rdr);
-            }
 
-            if (sh->sh_alf_cb_enabled_flag || sh->sh_alf_cr_enabled_flag) {
-                sh->sh_alf_aps_id_chroma = nvcl_read_bits(rdr, 3);
-            }
-
-            if (sps->sps_ccalf_enabled_flag) {
-
-                sh->sh_alf_cc_cb_enabled_flag = nvcl_read_flag(rdr);
-                if (sh->sh_alf_cc_cb_enabled_flag) {
-                    sh->sh_alf_cc_cb_aps_id = nvcl_read_bits(rdr, 3);
+                if (sh->sh_alf_cb_enabled_flag || sh->sh_alf_cr_enabled_flag) {
+                    sh->sh_alf_aps_id_chroma = nvcl_read_bits(rdr, 3);
                 }
 
-                sh->sh_alf_cc_cr_enabled_flag = nvcl_read_flag(rdr);
-                if (sh->sh_alf_cc_cr_enabled_flag) {
-                    sh->sh_alf_cc_cr_aps_id = nvcl_read_bits(rdr, 3);
+                if (sps->sps_ccalf_enabled_flag) {
+
+                    sh->sh_alf_cc_cb_enabled_flag = nvcl_read_flag(rdr);
+                    if (sh->sh_alf_cc_cb_enabled_flag) {
+                        sh->sh_alf_cc_cb_aps_id = nvcl_read_bits(rdr, 3);
+                    }
+
+                    sh->sh_alf_cc_cr_enabled_flag = nvcl_read_flag(rdr);
+                    if (sh->sh_alf_cc_cr_enabled_flag) {
+                        sh->sh_alf_cc_cr_aps_id = nvcl_read_bits(rdr, 3);
+                    }
                 }
             }
         }
