@@ -40,8 +40,8 @@
 
 #define OV_MAX_NUM_VPS 16
 #define OV_MAX_NUM_SPS 16
-#define OV_MAX_NUM_PPS 16
-#define OV_MAX_NUM_APS 16
+#define OV_MAX_NUM_PPS 64
+#define OV_MAX_NUM_APS 32
 
 struct OVNVCLCtx
 {
