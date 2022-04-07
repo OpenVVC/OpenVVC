@@ -433,7 +433,7 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc, uint8_t ph_pic_ou
 }
 
 static int
-compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t poc)
+compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t poc, uint8_t weighted_pred)
 {
     const int nb_refs = rpl->num_ref_entries;
     int i;
@@ -451,8 +451,8 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t 
 
         switch (ref_type) {
         case ST_REF:
-           ref_poc = !rp->strp_entry_sign_flag ? poc +  rp->abs_delta_poc_st + 1
-                                               : poc - (rp->abs_delta_poc_st + 1);
+           ref_poc = !rp->strp_entry_sign_flag ? poc +  rp->abs_delta_poc_st + (!weighted_pred | !i)
+                                               : poc - (rp->abs_delta_poc_st + (!weighted_pred | !i));
            rinfo->poc = ref_poc;
 
         break;
@@ -482,7 +482,7 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t 
 
 
 static int
-vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl)
+vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, uint8_t weighted_pred)
 {
     int i, j;
     uint8_t found, flag;
@@ -490,7 +490,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl)
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
 
     struct RPLInfo rpl_info;
-    compute_ref_poc(rpl, &rpl_info, poc);
+    compute_ref_poc(rpl, &rpl_info, poc, weighted_pred);
 
     for (i = 0;  i < rpl->num_ref_active_entries; ++i){
         ref_poc  = rpl_info.ref_info[i].poc;
@@ -770,8 +770,9 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
 
         pic->flags &= ~(OV_LT_REF_PIC_FLAG | OV_ST_REF_PIC_FLAG);
     }
+    uint8_t weighted_pred = sldec->active_params.sps->sps_weighted_pred_flag || sldec->active_params.sps->sps_weighted_bipred_flag;
 
-    ret = vvc_mark_refs(dpb, rpl0, poc, current_pic->rpl0);
+    ret = vvc_mark_refs(dpb, rpl0, poc, current_pic->rpl0, weighted_pred);
     current_pic->nb_refs0 = rpl0->num_ref_entries;
     current_pic->nb_active_refs0 = rpl0->num_ref_active_entries;
     if (ret < 0) {
@@ -779,7 +780,7 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
     }
 
     if (slice_type == SLICE_B){
-        ret = vvc_mark_refs(dpb, rpl1, poc, current_pic->rpl1);
+        ret = vvc_mark_refs(dpb, rpl1, poc, current_pic->rpl1, weighted_pred);
         current_pic->nb_refs1 = rpl1->num_ref_entries;
         current_pic->nb_active_refs1 = rpl1->num_ref_active_entries;
         if (ret < 0) {
@@ -1072,6 +1073,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     if (!idr_flag || ovdec->active_params.sps->sps_idr_rpl_present_flag) {
         const OVPPS *const pps = ps->pps;
         uint8_t slice_type = sh->sh_slice_type;
+        uint8_t weighted_pred = ovdec->active_params.sps->sps_weighted_pred_flag || ovdec->active_params.sps->sps_weighted_bipred_flag;
         OVRPL rpl0, rpl1;
         update_rpl(pps, sh, ph, &rpl0, &rpl1, slice_type);
         mark_ref_pic_lists(dpb, slice_type, &rpl0, &rpl1, sldec);
@@ -1079,16 +1081,16 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         if (!idr_flag) {
             for (int i = 0; i < rpl0.num_ref_entries; ++i) {
                 const struct RefPic *const rp = &rpl0.rp_list[i];
-                (*pic_p)->tmvp.dist_ref_0[i] = rp->strp_entry_sign_flag ?  (rp->abs_delta_poc_st + 1)
-                                                                        : -(rp->abs_delta_poc_st + 1);
+                (*pic_p)->tmvp.dist_ref_0[i] = rp->strp_entry_sign_flag ?  (rp->abs_delta_poc_st + (!weighted_pred | !i))
+                                                                        : -(rp->abs_delta_poc_st + (!weighted_pred | !i));
                 if (i)
                     (*pic_p)->tmvp.dist_ref_0[i] += (*pic_p)->tmvp.dist_ref_0[i - 1];
             }
 
             for (int i = 0; i < rpl1.num_ref_entries; ++i) {
                 const struct RefPic *const rp = &rpl1.rp_list[i];
-                (*pic_p)->tmvp.dist_ref_1[i] = rp->strp_entry_sign_flag ?  (rp->abs_delta_poc_st + 1)
-                                                                        : -(rp->abs_delta_poc_st + 1);
+                (*pic_p)->tmvp.dist_ref_1[i] = rp->strp_entry_sign_flag ?  (rp->abs_delta_poc_st + (!weighted_pred | !i))
+                                                                        : -(rp->abs_delta_poc_st + (!weighted_pred | !i));
                 if (i)
                     (*pic_p)->tmvp.dist_ref_1[i] += (*pic_p)->tmvp.dist_ref_1[i - 1];
             }
