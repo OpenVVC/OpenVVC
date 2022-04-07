@@ -508,22 +508,28 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     sps->sps_rpl1_same_as_rpl0_flag = nvcl_read_flag(rdr);
 
     sps->sps_num_ref_pic_lists0 = nvcl_read_u_expgolomb(rdr);
-    for (j = 0; j < sps->sps_num_ref_pic_lists0; j++) {
+    if (sps->sps_num_ref_pic_lists0) {
+        uint8_t nb_rpl_min1 = (sps->sps_num_ref_pic_lists0 - 1) & 0x3F;
+        for (j = 0; j <= nb_rpl_min1; j++) {
         #if 0
         ref_pic_list_struct(O, j);
         #endif
-        OVRPL *rpl = &sps->rpl_s0[j];
-        nvcl_read_sps_ref_pic_list(rdr, sps, rpl);
+            OVRPL *rpl = &sps->rpl_s0[j];
+            nvcl_read_sps_ref_pic_list(rdr, sps, rpl);
+        }
     }
 
     if (!sps->sps_rpl1_same_as_rpl0_flag) {
         sps->sps_num_ref_pic_lists1 = nvcl_read_u_expgolomb(rdr);
-        for (j = 0; j < sps->sps_num_ref_pic_lists1; j++) {
+        if (sps->sps_num_ref_pic_lists1) {
+            uint8_t nb_rpl_min1 = (sps->sps_num_ref_pic_lists1 - 1) & 0x3F;
+            for (j = 0; j <= nb_rpl_min1; j++) {
             #if 0
             ref_pic_list_struct(1, j);
             #endif
-            OVRPL *rpl = &sps->rpl_s1[j];
-            nvcl_read_sps_ref_pic_list(rdr, sps, rpl);
+                OVRPL *rpl = &sps->rpl_s1[j];
+                nvcl_read_sps_ref_pic_list(rdr, sps, rpl);
+            }
         }
     } else {
        /* TODO copy or ref to rpl0 ?*/
