@@ -130,7 +130,7 @@ typedef struct OVPTL
     uint8_t ptl_reserved_zero_bit;
     uint8_t sublayer_level_idc[64];
     uint8_t ptl_num_sub_profiles;
-    uint8_t general_sub_profile_idc[64];
+    uint8_t general_sub_profile_idc[256];
 } OVPTL;
 
 #if 0
