@@ -470,7 +470,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
         sps->sps_qp_table_start_minus26[0] = nvcl_read_s_expgolomb(rdr);
         sps->sps_num_points_in_qp_table_minus1[0] = nvcl_read_u_expgolomb(rdr);
-        for (j = 0; j <= sps->sps_num_points_in_qp_table_minus1[0]; j++) {
+        for (j = 0; j <= (sps->sps_num_points_in_qp_table_minus1[0] & 0x3F); j++) {
             sps->sps_delta_qp_in_val_minus1[0][j] = nvcl_read_u_expgolomb(rdr);
             sps->sps_delta_qp_diff_val[0][j] = nvcl_read_u_expgolomb(rdr);
         }
@@ -479,7 +479,7 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
             for (i = 1; i < 2 + sps->sps_joint_cbcr_enabled_flag; i++) {
                 sps->sps_qp_table_start_minus26[i] = nvcl_read_s_expgolomb(rdr);
                 sps->sps_num_points_in_qp_table_minus1[i] = nvcl_read_u_expgolomb(rdr);
-                for (j = 0; j <= sps->sps_num_points_in_qp_table_minus1[i]; j++) {
+                for (j = 0; j <= (sps->sps_num_points_in_qp_table_minus1[i] & 0x3F); j++) {
                     sps->sps_delta_qp_in_val_minus1[i][j] = nvcl_read_u_expgolomb(rdr);
                     sps->sps_delta_qp_diff_val[i][j] = nvcl_read_u_expgolomb(rdr);
                 }
