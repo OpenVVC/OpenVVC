@@ -632,7 +632,7 @@ struct OVSH
     uint16_t sh_subpic_id;
     uint16_t sh_slice_address;
     /* Could be reduced unused */
-    uint8_t sh_extra_bit[64];
+    uint8_t sh_extra_bit[24];
     uint16_t sh_num_tiles_in_slice_minus1;
     uint8_t sh_slice_type;
     uint8_t sh_no_output_of_prior_pics_flag;
