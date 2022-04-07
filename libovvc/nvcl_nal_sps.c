@@ -511,9 +511,6 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     if (sps->sps_num_ref_pic_lists0) {
         uint8_t nb_rpl_min1 = (sps->sps_num_ref_pic_lists0 - 1) & 0x3F;
         for (j = 0; j <= nb_rpl_min1; j++) {
-        #if 0
-        ref_pic_list_struct(O, j);
-        #endif
             OVRPL *rpl = &sps->rpl_s0[j];
             nvcl_read_sps_ref_pic_list(rdr, sps, rpl);
         }
@@ -524,9 +521,6 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         if (sps->sps_num_ref_pic_lists1) {
             uint8_t nb_rpl_min1 = (sps->sps_num_ref_pic_lists1 - 1) & 0x3F;
             for (j = 0; j <= nb_rpl_min1; j++) {
-            #if 0
-            ref_pic_list_struct(1, j);
-            #endif
                 OVRPL *rpl = &sps->rpl_s1[j];
                 nvcl_read_sps_ref_pic_list(rdr, sps, rpl);
             }
