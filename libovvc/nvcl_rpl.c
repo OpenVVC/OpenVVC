@@ -62,7 +62,7 @@ ref_pic_list_ilrp_ltrp(OVNVCLReader *const rdr, struct OVRPL *const rpl,
 {
     if (!rpl->ltrp_in_header_flag) {
         int i;
-        for (i = 0; i < rpl->num_ref_entries; i++) {
+        for (i = 0; i <= ((rpl->num_ref_entries - 1) & 0xF); i++) {
             struct RefPic *rp = &rpl->rp_list[i];
             rp->inter_layer_ref_pic_flag = nvcl_read_flag(rdr);
             if (rp->inter_layer_ref_pic_flag) {
@@ -82,7 +82,7 @@ ref_pic_list_ilrp_ltrp(OVNVCLReader *const rdr, struct OVRPL *const rpl,
         }
     } else {
         int i;
-        for (i = 0; i < rpl->num_ref_entries; i++) {
+        for (i = 0; i <= ((rpl->num_ref_entries - 1) & 0xF); i++) {
             struct RefPic *rp = &rpl->rp_list[i];
             rp->inter_layer_ref_pic_flag = nvcl_read_flag(rdr);
             if (rp->inter_layer_ref_pic_flag) {
@@ -105,7 +105,7 @@ static int
 ref_pic_list_ilrp(OVNVCLReader *const rdr, struct OVRPL *const rpl)
 {
     int i;
-    for (i = 0; i < rpl->num_ref_entries; i++) {
+    for (i = 0; i <= ((rpl->num_ref_entries - 1) & 0xF); i++) {
         struct RefPic *rp = &rpl->rp_list[i];
         rp->inter_layer_ref_pic_flag = nvcl_read_flag(rdr);
         if (rp->inter_layer_ref_pic_flag) {
@@ -130,7 +130,7 @@ ref_pic_list_ltrp(OVNVCLReader *const rdr, struct OVRPL *const rpl,
          * the ref pic list
          */
          int i;
-        for (i = 0; i < rpl->num_ref_entries; i++) {
+        for (i = 0; i <= ((rpl->num_ref_entries - 1) & 0xF); i++) {
             struct RefPic *rp = &rpl->rp_list[i];
             rp->st_ref_pic_flag = nvcl_read_flag(rdr);
             if (rp->st_ref_pic_flag) {
@@ -147,7 +147,7 @@ ref_pic_list_ltrp(OVNVCLReader *const rdr, struct OVRPL *const rpl,
          * read from sps
          */
          int i;
-        for (i = 0; i < rpl->num_ref_entries; i++) {
+        for (i = 0; i <= ((rpl->num_ref_entries - 1) & 0xF); i++) {
             struct RefPic *rp = &rpl->rp_list[i];
             rp->st_ref_pic_flag = nvcl_read_flag(rdr);
             if (rp->st_ref_pic_flag) {
@@ -168,7 +168,7 @@ static int
 ref_pic_list_strp(OVNVCLReader *const rdr, struct OVRPL *const rpl, uint8_t use_weighted_pred)
 {
     int i;
-    for (i = 0; i < rpl->num_ref_entries; i++) {
+    for (i = 0; i <= ((rpl->num_ref_entries - 1) & 0xF); i++) {
         struct RefPic *rp = &rpl->rp_list[i];
         /* Default value to 1 to avoid confusion between
          * short and long reference pictures when reading
@@ -268,7 +268,7 @@ header_read_long_term_info(OVNVCLReader *const rdr, const struct OVRPL *const rp
     if (rpl->ltrp_in_header_flag) {
         int j;
         const uint8_t nb_bits = sps->sps_log2_max_pic_order_cnt_lsb_minus4 + 4;
-        for (j = 0; j < rpl->num_ref_entries; j++) {
+        for (j = 0; j <= ((rpl->num_ref_entries - 1) & 0xF); j++) {
             const struct RefPic *rp = &rpl->rp_list[j];
             if (!rp->st_ref_pic_flag && !rp->inter_layer_ref_pic_flag) {
                 struct LTInfo *lti = &rpl_h->lt_info[j];
@@ -285,7 +285,7 @@ header_read_long_term_info(OVNVCLReader *const rdr, const struct OVRPL *const rp
     } else {
         /* This can only be called when rpl comes from sps */
         int j;
-        for (j = 0; j < rpl->num_ref_entries; j++) {
+        for (j = 0; j <= ((rpl->num_ref_entries - 1) & 0xF); j++) {
             const struct RefPic *rp = &rpl->rp_list[j];
             /* FIXME avoid recount of lt_ref */
             if (!rp->st_ref_pic_flag && !rp->inter_layer_ref_pic_flag) {
