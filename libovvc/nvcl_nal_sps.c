@@ -173,7 +173,7 @@ subpic_info(OVNVCLReader *const rdr, OVSPS *const sps)
         if (!sps->sps_subpic_same_size_flag) {
             /*TODO check ctb_w and ctb_h conditions once outside of loop*/
             /*FIXME ensure sps_subpic_ctu_top_left_*[0] are init at 0*/
-            for (i = 1; i <= sps->sps_num_subpics_minus1; i++) {
+            for (i = 1; i <= (sps->sps_num_subpics_minus1 & 0xF); i++) {
 
                 if (sps->sps_pic_width_max_in_luma_samples > ctb_s) {
                     int v = ov_ceil_log2(nb_ctu_w);
@@ -204,14 +204,13 @@ subpic_info(OVNVCLReader *const rdr, OVSPS *const sps)
     }
 
     sps->sps_subpic_id_len_minus1 = nvcl_read_u_expgolomb(rdr);
-
     sps->sps_subpic_id_mapping_explicitly_signalled_flag = nvcl_read_flag(rdr);
-    if (sps->sps_subpic_id_mapping_explicitly_signalled_flag) {
 
+    if (sps->sps_subpic_id_mapping_explicitly_signalled_flag) {
         sps->sps_subpic_id_mapping_present_flag = nvcl_read_flag(rdr);
         if (sps->sps_subpic_id_mapping_present_flag) {
             int i;
-            for (i = 0; i <= sps->sps_num_subpics_minus1; i++) {
+            for (i = 0; i <= (sps->sps_num_subpics_minus1 & 0xF); i++) {
                 sps->sps_subpic_id[i] = nvcl_read_bits(rdr, sps->sps_subpic_id_len_minus1 + 1);
             }
         }
