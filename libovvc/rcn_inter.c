@@ -958,8 +958,8 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                                                      ref_dmvr1 + 2 + 2 * dmvr_stride,
                                                      sad, pu_w, pu_h);
 
-        int32_t delta_h = dmvr_mv_x[dmvr_idx] << 4;
-        int32_t delta_v = dmvr_mv_y[dmvr_idx] << 4;
+        int32_t delta_h = dmvr_mv_x[dmvr_idx] * 16;
+        int32_t delta_v = dmvr_mv_y[dmvr_idx] * 16;
 
         min_cost = sad[dmvr_idx];
 
