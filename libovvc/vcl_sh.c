@@ -287,7 +287,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     if ((pps->pps_rect_slice_flag && nb_slices_subpic > 1) ||
         (!pps->pps_rect_slice_flag && nb_tiles_pic > 1)) {
         /*TODO ceil log2_num_tiles_in_pic / num_slices_in_sub_pc*/
-        int nb_bits_in_slice_address = 0;
+        int nb_bits_in_slice_address = ov_ceil_log2(nb_tiles_pic);
         sh->sh_slice_address = nvcl_read_bits(rdr, nb_bits_in_slice_address);
         if (sh->sh_slice_address) {
            ov_log(NULL, OVLOG_ERROR, "Invalid slice address\n");
