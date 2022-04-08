@@ -92,6 +92,13 @@ validate_sps(OVNVCLReader *rdr, const union HLSData *const data)
         return OVVC_EINDATA;
     }
 
+    if (sps->sps_pic_width_max_in_luma_samples & 0xE003 || sps->sps_pic_height_max_in_luma_samples & 0xE003) {
+        ov_log(NULL, OVLOG_ERROR, "Invalid maximum picture dimension %dx%d in SPS.\n",
+               sps->sps_pic_width_max_in_luma_samples,
+               sps->sps_pic_height_max_in_luma_samples);
+        return OVVC_EINDATA;
+    }
+
     return 1;
 }
 
