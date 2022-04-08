@@ -99,6 +99,17 @@ validate_sps(OVNVCLReader *rdr, const union HLSData *const data)
         return OVVC_EINDATA;
     }
 
+    if ((sps->sps_num_points_in_qp_table_minus1[0] |
+         sps->sps_num_points_in_qp_table_minus1[1] |
+         sps->sps_num_points_in_qp_table_minus1[2]) & ~0x3F) {
+
+        ov_log(NULL, OVLOG_ERROR, "Invalid sps_num_points_in_qp_table_minus1 %d %d %d in SPS.\n",
+               sps->sps_num_points_in_qp_table_minus1[0],
+               sps->sps_num_points_in_qp_table_minus1[1],
+               sps->sps_num_points_in_qp_table_minus1[2]);
+        return OVVC_EINDATA;
+    }
+
     return 1;
 }
 
