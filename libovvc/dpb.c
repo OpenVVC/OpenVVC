@@ -1113,12 +1113,6 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
     return ret;
 
 fail:
-    #if 0
-    if (dpb->active_pic){
-        ovdpb_unref_pic(dpb, dpb->active_pic, ~0);
-        dpb->active_pic = NULL;
-    }
-    #endif
     ovdpb_clear_refs(dpb);
 
 failnoclear:
