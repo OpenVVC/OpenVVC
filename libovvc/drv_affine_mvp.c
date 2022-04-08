@@ -1002,7 +1002,7 @@ derive_affine_delta_mvs(const struct AffineControlInfo *const cinfo,
         delta_mv_v.y = (uint32_t)(cinfo->lb.y - cinfo->lt.y) << scale_v;
 
     } else {
-        delta_mv_v.x = -delta_mv_h.y;
+        delta_mv_v.x = -(uint32_t)delta_mv_h.y;
         delta_mv_v.y =  delta_mv_h.x;
     }
 
