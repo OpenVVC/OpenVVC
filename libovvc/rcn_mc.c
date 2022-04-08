@@ -1492,7 +1492,7 @@ put_weighted_pel_bi_pixels(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, p
     int offset = (1 << (shift - 1)) ;
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
-            dst[x] = ov_bdclip(((src2[x] * wx0 + ((src[x] * wx1) << (14 - BITDEPTH))
+            dst[x] = ov_bdclip(((src2[x] * wx0 + (int32_t)((uint32_t)(src[x] * wx1) << (14 - BITDEPTH))
                                  + offset)  >> shift));
         }
         src2 += MAX_PB_SIZE;
