@@ -405,6 +405,15 @@ init_tile_ctx(struct TileInfo *const tinfo, const OVPPS *const pps)
 }
 
 static int
+check_pps_dimension(const OVPPS *const pps, const OVSPS *const sps)
+{
+     uint8_t pps_w = pps->pps_pic_width_in_luma_samples > sps->sps_pic_width_max_in_luma_samples;
+     uint8_t pps_h = pps->pps_pic_height_in_luma_samples > sps->sps_pic_height_max_in_luma_samples;
+
+     return -(pps_w | pps_h);
+}
+
+static int
 update_pps_info(struct PPSInfo *const pps_info, const OVPPS *const pps,
                 const OVSPS *const sps)
 {
@@ -435,6 +444,15 @@ update_pps_info(struct PPSInfo *const pps_info, const OVPPS *const pps,
 
         tinfo->nb_tile_cols = 1;
         tinfo->nb_tile_rows = 1;
+    }
+
+    if (check_pps_dimension(pps, sps)) {
+        ov_log(NULL, OVLOG_ERROR,
+               "PPS picture dimension %dx%d bigger than max picture dimension in SPS %dx%d.\n",
+               pps->pps_pic_width_in_luma_samples, pps->pps_pic_height_in_luma_samples,
+               sps->sps_pic_width_max_in_luma_samples, sps->sps_pic_height_max_in_luma_samples);
+
+        return OVVC_EINDATA;
     }
 
     return 0;
