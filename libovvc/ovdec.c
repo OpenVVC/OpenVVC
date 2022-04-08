@@ -406,6 +406,7 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
             ret = init_vcl_decoder(vvcdec, sldec, nvcl_ctx, nalu, nb_sh_bytes);
 
             if (ret < 0) {
+                ov_log(NULL, OVLOG_ERROR, "Error in slice init.\n");
                 slicedec_finish_decoding(sldec);
                 goto failvcl;
             }

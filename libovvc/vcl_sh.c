@@ -288,6 +288,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         int nb_bits_in_slice_address = 0;
         sh->sh_slice_address = nvcl_read_bits(rdr, nb_bits_in_slice_address);
         if (sh->sh_slice_address) {
+           ov_log(NULL, OVLOG_ERROR, "Invalid slice address\n");
            return -1;
         }
     }
