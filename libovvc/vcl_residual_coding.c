@@ -2898,7 +2898,7 @@ has_sig_sb_neighbour(uint64_t sig_sb_map, uint16_t sb_x, uint16_t sb_y)
 
 static inline void
 store_sb_coeff_4x4(int16_t *tb_coeff, const int16_t *sb_coeffs,
-                   int16_t sb_x, int16_t sb_y,
+                   uint16_t sb_x, uint16_t sb_y,
                    uint8_t log2_tb_w)
 {
     const uint8_t log2_sb_w = 2;
@@ -2906,7 +2906,7 @@ store_sb_coeff_4x4(int16_t *tb_coeff, const int16_t *sb_coeffs,
     #if 0
     int16_t sb_pos = (sb_x << log2_sb_w) + (sb_y << (log2_sb_h + log2_tb_w));
     #else
-    int16_t sb_pos = (sb_x + (sb_y << (log2_tb_w - 2))) << 4;
+    uint16_t sb_pos = (sb_x + (sb_y << (log2_tb_w - 2))) << 4;
     #endif
     int16_t cpy_w = sizeof(*sb_coeffs) << log2_sb_w;
     int16_t dst_stride = 1 << log2_tb_w;
@@ -2980,7 +2980,7 @@ residual_coding_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
     if (!last_pos){
         ovcabac_read_ae_sb_dc_coeff_sdh(cabac_ctx, sb_coeffs);
 
-        store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_red_w);
+        store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, 2);
 
         return 0;
     }
@@ -3773,7 +3773,7 @@ residual_coding_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
         ovcabac_read_ae_sb_dc_coeff_dpq(cabac_ctx, sb_coeffs);
 
-        store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_red_w);
+        store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, 2);
         return 0;
     }
 
@@ -4421,7 +4421,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             ovcabac_read_ae_sb_dc_coeff_c_dpq(cabac_ctx, sb_coeffs);
 
-            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_tb_w);
+            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, 2);
 
             return 0x1;
         }
@@ -4437,7 +4437,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             ovcabac_read_ae_sb_dc_coeff_c_dpq(cabac_ctx, sb_coeffs);
 
-            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_tb_w);
+            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, 2);
 
             return 0x1;
         }
@@ -4453,7 +4453,7 @@ residual_coding_chroma_dpq(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             ovcabac_read_ae_sb_dc_coeff_c_dpq(cabac_ctx, sb_coeffs);
 
-            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_tb_w);
+            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, 2);
 
             return 0x1;
         }
@@ -4947,7 +4947,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             ovcabac_read_ae_sb_dc_coeff_c_sdh(cabac_ctx, sb_coeffs);
 
-            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_tb_w);
+            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, 2);
 
             return 0x1;
         }
@@ -4962,7 +4962,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             ovcabac_read_ae_sb_dc_coeff_c_sdh(cabac_ctx, sb_coeffs);
 
-            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_tb_w);
+            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, 2);
 
             return 0x1;
         }
@@ -4978,7 +4978,7 @@ residual_coding_chroma_sdh(OVCTUDec *const ctu_dec, int16_t *const dst,
 
             ovcabac_read_ae_sb_dc_coeff_c_sdh(cabac_ctx, sb_coeffs);
 
-            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, log2_tb_w);
+            store_sb_coeff_4x4(dst, sb_coeffs, 0, 0, 2);
 
             return 0x1;
         }
