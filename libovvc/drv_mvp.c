@@ -145,8 +145,8 @@ tmvp_round_mv(int32_t val)
       int round = (1 << scale) >> 1;
       int n     = (val + round) >> scale;
       int exponent  = scale + ((n ^ sign) >> (MV_MANTISSA_BITCOUNT - 1));
-      int mantissa  = (n & MV_MANTISSA_UPPER_LIMIT) | (sign << (MV_MANTISSA_BITCOUNT - 1));
-      return (mantissa ^ MV_MANTISSA_LIMIT) << (exponent - !!exponent);
+      int mantissa  = (n & MV_MANTISSA_UPPER_LIMIT) | ((uint32_t)sign << (MV_MANTISSA_BITCOUNT - 1));
+      return (uint32_t)(mantissa ^ MV_MANTISSA_LIMIT) << (exponent - !!exponent);
   } else {
       return val;
   }
