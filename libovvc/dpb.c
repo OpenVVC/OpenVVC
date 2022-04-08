@@ -578,7 +578,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
     return 0;
 }
 
-static int
+static void
 vvc_unmark_refs(OVPicture **dst_rpl, uint8_t nb_active_refs, uint8_t nb_refs)
 {
     int i;
@@ -604,7 +604,6 @@ vvc_unmark_refs(OVPicture **dst_rpl, uint8_t nb_active_refs, uint8_t nb_refs)
             dst_rpl[i] = NULL;
         }
      }
-    return 0;
 }
 
 static void
@@ -734,29 +733,14 @@ ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVSEI **sei_p)
     return 0;
 }
 
-int
-ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVPicture * current_pic)
+void
+ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVPicture *current_pic)
 {
-    int ret;
-
-    ret = vvc_unmark_refs(current_pic->rpl0, current_pic->nb_active_refs0, current_pic->nb_refs0);
-    if (ret < 0) {
-        goto fail;
-    }
+    vvc_unmark_refs(current_pic->rpl0, current_pic->nb_active_refs0, current_pic->nb_refs0);
 
     if (slice_type == SLICE_B){
-        ret = vvc_unmark_refs(current_pic->rpl1, current_pic->nb_active_refs1, current_pic->nb_refs1);
-        if (ret < 0) {
-            goto fail;
-        }
+        vvc_unmark_refs(current_pic->rpl1, current_pic->nb_active_refs1, current_pic->nb_refs1);
     }
-    return 0;
-
-fail:
-    /* FIXME ref_marking failed but we allocated a new ref
-     * to replace the missing one
-     */
-    return 1;
 }
 
 static int

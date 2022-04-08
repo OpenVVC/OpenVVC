@@ -214,7 +214,7 @@ int ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVSEI **sei_p);
 
 int ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVSEI **sei_p);
 
-int ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVPicture * current_pic);
+void ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVPicture * current_pic);
 
 void ovdpb_report_decoded_ctu_line(OVPicture *const pic, int y_ctu, int xmin_ctu, int xmax_ctu);
 
