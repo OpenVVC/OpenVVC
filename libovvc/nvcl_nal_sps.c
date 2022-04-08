@@ -110,6 +110,7 @@ free_sps(const union HLSData *const data)
     ov_free((void *)sps);
 }
 
+#if 0
 static int
 replace_sps(const struct HLSReader *const manager,
             struct HLSDataRef **storage,
@@ -133,6 +134,7 @@ replace_sps(const struct HLSReader *const manager,
 
     return 0;
 }
+#endif
 
 static void
 subpic_info(OVNVCLReader *const rdr, OVSPS *const sps)
@@ -342,7 +344,7 @@ ols_timing_hrd_parameters(OVNVCLReader *const rdr, const struct HRDTiming *const
 
 int
 nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
-              const OVNVCLCtx *const nvcl_ctx)
+              const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type)
 {
     int i, j;
     OVSPS *const sps = &hls_data->sps;
@@ -721,6 +723,6 @@ const struct HLSReader sps_manager =
     .find_storage = &storage_in_nvcl_ctx,
     .read         = &nvcl_sps_read,
     .validate     = &validate_sps,
-    .replace      = &replace_sps,
+    //.replace      = &replace_sps,
     .free         = &free_sps
 };

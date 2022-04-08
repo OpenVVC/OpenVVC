@@ -587,9 +587,11 @@ decinit_unref_params(struct OVPS *const ps)
     hlsdata_unref(&ps->sps_ref);
     hlsdata_unref(&ps->pps_ref);
     hlsdata_unref(&ps->ph_ref);
+    hlsdata_unref(&ps->sh_ref);
     ps->sps = NULL;
     ps->pps = NULL;
     ps->ph = NULL;
+    ps->sh = NULL;
 }
 
 int
@@ -597,7 +599,7 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
 {
     /* FIXME assert nvcl_ctx params sets are not NULL*/
     int ret;
-    OVSH * sh = nvcl_ctx->sh;
+    OVSH * sh = (OVSH *)nvcl_ctx->sh->data;
     OVPH * ph = (OVPH *)nvcl_ctx->ph->data;
     OVPPS * pps = retrieve_pps(nvcl_ctx, ph);
     OVSPS * sps = retrieve_sps(nvcl_ctx, pps);
@@ -648,12 +650,14 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
      * directely after the Slice Header is read so we are
      * reading a new slice
      */
-    if (nvcl_ctx->sh) {
-        ret = update_sh_info(&ps->sh_info, nvcl_ctx->sh);
+    if (ps->sh != sh) {
+        ret = update_sh_info(&ps->sh_info, (OVSH *)nvcl_ctx->sh->data);
         if (ret < 0) {
             goto failsh;
         }
-        ps->sh = nvcl_ctx->sh;
+        hlsdata_unref(&ps->sh_ref);
+        hlsdata_newref(&ps->sh_ref,  nvcl_ctx->sh);
+        ps->sh = (OVSH *)nvcl_ctx->sh->data;
     }
 
     for(int i = 0; i < sh->sh_num_alf_aps_ids_luma; i++){

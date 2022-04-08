@@ -73,6 +73,7 @@ free_pps(const union HLSData *pps)
     ov_free((void *)pps);
 }
 
+#if 0
 static int
 replace_pps(const struct HLSReader *const manager,
             struct HLSDataRef **storage,
@@ -95,6 +96,7 @@ replace_pps(const struct HLSReader *const manager,
 
     return 0;
 }
+#endif
 
 static void
 pps_read_slices_in_subpic(OVNVCLReader *const rdr, OVPPS *const pps)
@@ -265,7 +267,7 @@ pps_read_pic_partition(OVNVCLReader *const rdr, OVPPS *const pps)
 
 int
 nvcl_pps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
-              const OVNVCLCtx *const nvcl_ctx)
+              const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type)
 {
     int i;
     OVPPS *const pps = &hls_data->pps;
@@ -482,6 +484,6 @@ const struct HLSReader pps_manager =
     .find_storage = &storage_in_nvcl_ctx,
     .read         = &nvcl_pps_read,
     .validate     = &validate_pps,
-    .replace      = &replace_pps,
+//    .replace      = &replace_pps,
     .free         = &free_pps
 };

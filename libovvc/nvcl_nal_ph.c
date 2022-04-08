@@ -79,6 +79,7 @@ free_ph(const union HLSData *ph)
     ov_free((void *)ph);
 }
 
+#if 0
 static int
 replace_ph(const struct HLSReader *const manager,
            struct HLSDataRef **storage,
@@ -102,10 +103,11 @@ replace_ph(const struct HLSReader *const manager,
 
     return 0;
 }
+#endif
 
 int
 nvcl_ph_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
-             const OVNVCLCtx *const nvcl_ctx)
+             const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type)
 {
     const OVPPS *pps = NULL;
     const OVSPS *sps = NULL;
@@ -398,6 +400,6 @@ const struct HLSReader ph_manager =
     .find_storage = &storage_in_nvcl_ctx,
     .read         = &nvcl_ph_read,
     .validate     = &validate_ph,
-    .replace      = &replace_ph,
+//    .replace      = &replace_ph,
     .free         = &free_ph
 };

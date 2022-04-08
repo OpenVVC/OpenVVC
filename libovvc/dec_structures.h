@@ -315,6 +315,7 @@ struct OVVCDec
         struct HLSDataRef *sps_ref;
         struct HLSDataRef *pps_ref;
         struct HLSDataRef *ph_ref;
+        struct HLSDataRef *sh_ref;
         OVSPS *sps;
         OVPPS *pps;
         OVAPS *aps_alf[8];

@@ -521,7 +521,6 @@ slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
     struct OVPS* slice_params = &sldec->active_params;
 
     if (!slice_params->sps) {
-        slice_params->sh = ov_mallocz(sizeof(struct OVSH));
 
         for (int i = 0; i < 8; i++) {
             slice_params->aps_alf[i] = ov_mallocz(sizeof(struct OVAPS));
@@ -533,21 +532,23 @@ slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
         slice_params->aps_lmcs = ov_mallocz(sizeof(struct OVAPS));
     }
 
-    #if 0
+    #if 1
     hlsdata_unref(&slice_params->sps_ref);
     hlsdata_unref(&slice_params->pps_ref);
     hlsdata_unref(&slice_params->ph_ref);
+    hlsdata_unref(&slice_params->sh_ref);
     #endif
 
     hlsdata_newref(&slice_params->sps_ref, dec_params->sps_ref);
     hlsdata_newref(&slice_params->pps_ref, dec_params->pps_ref);
     hlsdata_newref(&slice_params->ph_ref, dec_params->ph_ref);
+    hlsdata_newref(&slice_params->sh_ref, dec_params->sh_ref);
 
-    slice_params->sps = slice_params->sps_ref->data;
-    slice_params->pps = slice_params->pps_ref->data;
-    slice_params->ph = slice_params->ph_ref->data;
+    slice_params->sps = (OVSPS *)slice_params->sps_ref->data;
+    slice_params->pps = (OVPPS *)slice_params->pps_ref->data;
+    slice_params->ph = (OVPH *)slice_params->ph_ref->data;
+    slice_params->sh = (OVSH *)slice_params->sh_ref->data;
 
-    *(slice_params->sh) = *(dec_params->sh);
 
     for (int i = 0; i < 8; i++) {
         if (dec_params->aps_alf[i]) {
@@ -585,7 +586,6 @@ slicedec_free_params(OVSliceDec *sldec)
     struct OVPS* slice_params = &sldec->active_params;
 
     if(slice_params->sps){
-        ov_freep(&slice_params->sh);
     }
 
     if (slice_params->aps_alf_c) {
@@ -619,6 +619,7 @@ slicedec_finish_decoding(OVSliceDec *sldec)
         hlsdata_unref(&sldec->active_params.sps_ref);
         hlsdata_unref(&sldec->active_params.pps_ref);
         hlsdata_unref(&sldec->active_params.ph_ref);
+        hlsdata_unref(&sldec->active_params.sh_ref);
     }
 
     if (sldec->pic) {

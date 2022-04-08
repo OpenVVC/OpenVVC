@@ -54,7 +54,7 @@ struct OVNVCLCtx
     OVAPS *lmcs_aps_list[OV_MAX_NUM_APS];
     OVAPS *alf_aps_list[OV_MAX_NUM_APS];
     struct HLSDataRef *ph;
-    OVSH *sh;
+    struct HLSDataRef *sh;
     OVSEI *sei;
 };
 
@@ -71,25 +71,25 @@ int nvcl_dci_read(OVNVCLReader *const rdr, OVDCI *const dci,
                   OVNVCLCtx *const nvcl_ctx);
 
 int nvcl_vps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
-                  const OVNVCLCtx *const nvcl_ctx);
+                  const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
 
 int nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const sps,
-                  const OVNVCLCtx *const nvcl_ctx);
+                  const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
 
 int nvcl_pps_read(OVNVCLReader *const rdr, OVHLSData *const pps,
-                  const OVNVCLCtx *const nvcl_ctx);
+                  const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
 
 int nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
                   OVNVCLCtx *const nvcl_ctx);
 
 int nvcl_ph_read(OVNVCLReader *const rdr, OVHLSData *const ph,
-                 const OVNVCLCtx *const nvcl_ctx);
+                 const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
 
 int nvcl_sei_read(OVNVCLReader *const rdr, OVSH *const sh,
                   OVNVCLCtx *const nvcl_ctx);
 
-int nvcl_sh_read(OVNVCLReader *const rdr, OVSH *const sh,
-                 OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
+int nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const ph,
+                 const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
 
 /* Decoding functions */
 int nvcl_decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, OVNALUnit *nal_unit);

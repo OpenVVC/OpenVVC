@@ -88,20 +88,21 @@ extern const struct HLSReader vps_manager;
 extern const struct HLSReader sps_manager;
 extern const struct HLSReader pps_manager;
 extern const struct HLSReader ph_manager;
+extern const struct HLSReader sh_manager;
 
 static const struct HLSReader *nalu_reader[32] =
 {
-    &todo                , /* TRAIL */
-    &todo                , /* STSA */
-    &todo                , /* RADL */
-    &todo                , /* RASL */
+    &sh_manager          , /* TRAIL */
+    &sh_manager          , /* STSA */
+    &sh_manager          , /* RADL */
+    &sh_manager          , /* RASL */
     &todo                , /* RSVD_VCL */
     &todo                , /* RSVD_VCL */
     &todo                , /* RSVD_VCL */
-    &todo                , /* IDR_W_RADL */
-    &todo                , /* IDR_N_LP */
-    &todo                , /* CRA */
-    &todo                , /* GDR */
+    &sh_manager          , /* IDR_W_RADL */
+    &sh_manager          , /* IDR_N_LP */
+    &sh_manager          , /* CRA */
+    &sh_manager          , /* GDR */
     &todo                , /* RSVD_IRAP_VCL */
     &todo                , /* OPI */
     &todo                , /* DCI */
@@ -217,7 +218,7 @@ nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
     }
 
     if (nvcl_ctx->sh) {
-        ov_freep(&nvcl_ctx->sh);
+        hlsdata_unref(&nvcl_ctx->sh);
     }
 
     if (nvcl_ctx->sei) {
@@ -229,7 +230,7 @@ nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
 static void
 hls_replace_ref(const struct HLSReader *const hls_hdl, struct HLSDataRef **storage, const union HLSData *const data)
 {
-    const union HLSData *tmp = ov_malloc(hls_hdl->data_size);
+    union HLSData *tmp = ov_malloc(hls_hdl->data_size);
     if (!tmp) {
         return;
     }
@@ -245,7 +246,7 @@ hls_replace_ref(const struct HLSReader *const hls_hdl, struct HLSDataRef **stora
 
 static int
 decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr,
-                     const struct HLSReader *const hls_hdl)
+                     const struct HLSReader *const hls_hdl, uint8_t nalu_type)
 {
     struct HLSDataRef **storage = hls_hdl->find_storage(rdr, nvcl_ctx);
     union HLSData data;
@@ -260,7 +261,7 @@ decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr,
     memset(&data, 0, hls_hdl->data_size);
     ov_log(NULL, OVLOG_TRACE, "Reading new %s\n", hls_hdl->name);
 
-    ret = hls_hdl->read(rdr, &data, nvcl_ctx);
+    ret = hls_hdl->read(rdr, &data, nvcl_ctx, nalu_type);
     if (ret < 0)  goto failread;
 
     ov_log(NULL, OVLOG_TRACE, "Checking %s\n", hls_hdl->name);
@@ -316,7 +317,7 @@ static int decode_nvcl_hls(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr,
 {
     const struct HLSReader *const hls_reader = nalu_reader[nalu_type];
     if (hls_reader != &todo)
-        return decode_nalu_hls_data(nvcl_ctx, rdr, hls_reader);
+        return decode_nalu_hls_data(nvcl_ctx, rdr, hls_reader, nalu_type);
     return 0;
 }
 

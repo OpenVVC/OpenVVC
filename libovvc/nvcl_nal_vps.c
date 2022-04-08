@@ -318,7 +318,7 @@ ols_timing_hrd_parameters(OVNVCLReader *const rdr, const struct HRDTiming *const
 
 int
 nvcl_vps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
-              const OVNVCLCtx *const nvcl_ctx)
+              const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type)
 {
 
     OVVPS *const vps = &hls_data->vps;

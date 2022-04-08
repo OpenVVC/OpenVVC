@@ -66,7 +66,7 @@ struct HLSReader
                                              OVNVCLCtx *const nvcl_ctx);
 
     int (*read)(OVNVCLReader *const rdr, OVHLSData *const hls_data,
-                const OVNVCLCtx *const nvcl_ctx);
+                const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type);
 
     int (*validate)(OVNVCLReader *rdr, const union HLSData *const hls_data);
 
