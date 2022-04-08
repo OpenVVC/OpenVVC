@@ -322,7 +322,7 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
             rpl_h0->rpl_idx = nvcl_read_bits(rdr, nb_bits);
         }
 
-        rpl0 = &sps->rpl_s0[rpl_h0->rpl_idx];
+        rpl0 = &sps->rpl_s0[rpl_h0->rpl_idx & 0x3F];
 
         if (sps->sps_long_term_ref_pics_flag) {
             /* Call long term post function */
@@ -355,7 +355,7 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
             rpl_h1->rpl_idx = nvcl_read_bits(rdr, v);
         }
 
-        rpl1 = &sps->rpl_s1[rpl_h1->rpl_idx];
+        rpl1 = &sps->rpl_s1[rpl_h1->rpl_idx & 0x3F];
 
         if (sps->sps_long_term_ref_pics_flag) {
             /* Call long term post function */
@@ -366,7 +366,7 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
 
     } else if (rpl_h0->rpl_sps_flag && sps->sps_num_ref_pic_lists1 > 0) {
         /*FIXME check nb_rpl1  + long term poc complement */
-        const struct OVRPL *rpl1 = &sps->rpl_s1[rpl_h0->rpl_idx];
+        const struct OVRPL *rpl1 = &sps->rpl_s1[rpl_h0->rpl_idx & 0x3F];
 
         memcpy(&rpl_h1->rpl_data, rpl1, sizeof(*rpl1));
     } else if (rpl_h0->rpl_sps_flag && sps->sps_rpl1_same_as_rpl0_flag) {
