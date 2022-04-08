@@ -1904,11 +1904,15 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
 
     }
 
-    mv_info.mv0.x += mvd0.x;
-    mv_info.mv0.y += mvd0.y;
+    if (mv_info.inter_dir & 0x1) {
+        mv_info.mv0.x += mvd0.x;
+        mv_info.mv0.y += mvd0.y;
+    }
 
-    mv_info.mv1.x += mvd1.x;
-    mv_info.mv1.y += mvd1.y;
+    if (mv_info.inter_dir & 0x2) {
+        mv_info.mv1.x += mvd1.x;
+        mv_info.mv1.y += mvd1.y;
+    }
 
     /* FIXME check before ? */
     if (is_small && mv_info.inter_dir == 0x3) {
