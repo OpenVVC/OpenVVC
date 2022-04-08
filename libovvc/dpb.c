@@ -1217,14 +1217,15 @@ void
 ovdpb_report_decoded_frame(OVPicture *const pic)
 {
     struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
+
+    atomic_store(&pic->idx_function, 0);
+
     pthread_mutex_lock(decoded_ctus->ref_mtx);
     for(int i = 0; i < decoded_ctus->mask_h; i++){
         memset(decoded_ctus->mask[i], 0xFF, decoded_ctus->mask_w * sizeof(int64_t));
     }
     pthread_cond_broadcast(decoded_ctus->ref_cnd);
     pthread_mutex_unlock(decoded_ctus->ref_mtx);
-
-    atomic_store(&pic->idx_function, 0);
 }
 
 static void
