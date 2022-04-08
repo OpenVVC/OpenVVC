@@ -618,11 +618,12 @@ slicedec_finish_decoding(OVSliceDec *sldec)
      */
     if (slice_sync->slice_nalu) {
         ov_nalu_unref(&slice_sync->slice_nalu);
-        hlsdata_unref(&sldec->active_params.sps_ref);
-        hlsdata_unref(&sldec->active_params.pps_ref);
-        hlsdata_unref(&sldec->active_params.ph_ref);
-        hlsdata_unref(&sldec->active_params.sh_ref);
     }
+
+    hlsdata_unref(&sldec->active_params.sps_ref);
+    hlsdata_unref(&sldec->active_params.pps_ref);
+    hlsdata_unref(&sldec->active_params.ph_ref);
+    hlsdata_unref(&sldec->active_params.sh_ref);
 
     if (sldec->pic) {
         ov_log(NULL, OVLOG_DEBUG, "Decoder with POC %d, finished frame \n", sldec->pic->poc);
