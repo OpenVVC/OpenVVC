@@ -1018,10 +1018,6 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
 
     dpb->poc = poc;
 
-    /* If the NALU is an Refresh Picture all previous pictures in DPB
-     * can be unreferenced
-     */
-
     /* Find an available place in DPB and allocate/retrieve available memory
      * for the current picture data from the Frame Pool
      */
