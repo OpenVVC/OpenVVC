@@ -1066,7 +1066,10 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         uint8_t weighted_pred = ovdec->active_params.sps->sps_weighted_pred_flag || ovdec->active_params.sps->sps_weighted_bipred_flag;
         OVRPL rpl0, rpl1;
         update_rpl(pps, sh, ph, &rpl0, &rpl1, slice_type);
-        mark_ref_pic_lists(dpb, slice_type, &rpl0, &rpl1, sldec);
+        ret = mark_ref_pic_lists(dpb, slice_type, &rpl0, &rpl1, sldec);
+        if (ret < 0) {
+            goto fail;
+        }
 
         if (!idr_flag) {
             for (int i = 0; i < rpl0.num_ref_entries; ++i) {
