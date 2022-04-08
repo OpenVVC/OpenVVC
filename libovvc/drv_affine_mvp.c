@@ -3459,13 +3459,13 @@ drv_affine_mvp_p(struct InterDRVCtx *const inter_ctx,
     uint8_t nb_pb_w = (1 << log2_cu_w) >> 2;
     uint8_t nb_pb_h = (1 << log2_cu_h) >> 2;
 
-    uint8_t opp_ref_idx0 = inter_ctx->rpl0_opp[ref_idx0];
     uint8_t prof_dir = inter_ctx->prof_enabled ? 0x3 : 0;
 
     /* FIXME can we combine mvp derivation for bi pred */
     if (inter_dir & 0x1) {
         struct AffineControlInfo *const cp_info = &mv_info.cinfo[0];
 
+        uint8_t opp_ref_idx0 = inter_ctx->rpl0_opp[ref_idx0];
         *cp_info = drv_affine_mvp(inter_ctx, affine_ctx, x_pb, y_pb,
                                   nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
                                   ref_idx0, opp_ref_idx0, mvp_idx0,
@@ -3579,14 +3579,13 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
     uint8_t nb_pb_w = (1 << log2_cu_w) >> 2;
     uint8_t nb_pb_h = (1 << log2_cu_h) >> 2;
 
-    uint8_t opp_ref_idx0 = inter_ctx->rpl0_opp[ref_idx0];
-    uint8_t opp_ref_idx1 = inter_ctx->rpl1_opp[ref_idx1];
     uint8_t prof_dir = inter_ctx->prof_enabled ? 0x3 : 0;
 
     /* FIXME can we combine mvp derivation for bi pred */
     if (inter_dir & 0x1) {
         struct AffineControlInfo *const cp_info = &mv_info.cinfo[0];
 
+        uint8_t opp_ref_idx0 = inter_ctx->rpl0_opp[ref_idx0];
         *cp_info = drv_affine_mvp(inter_ctx, affine_ctx, x_pb, y_pb,
                                   nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
                                   ref_idx0, opp_ref_idx0, mvp_idx0,
@@ -3629,6 +3628,7 @@ drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
 
     if (inter_dir & 0x2) {
         struct AffineControlInfo *const cp_info = &mv_info.cinfo[1];
+        uint8_t opp_ref_idx1 = inter_ctx->rpl1_opp[ref_idx1];
 
         *cp_info = drv_affine_mvp(inter_ctx, affine_ctx, x_pb, y_pb,
                                   nb_pb_w, nb_pb_h, log2_cu_w, log2_cu_h,
