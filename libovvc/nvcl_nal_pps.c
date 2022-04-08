@@ -60,9 +60,18 @@ storage_in_nvcl_ctx(OVNVCLReader *const rdr, OVNVCLCtx *const nvcl_ctx)
 }
 
 static int
-validate_pps(OVNVCLReader *rdr, const union HLSData *const pps)
+validate_pps(OVNVCLReader *rdr, const union HLSData *const data)
 {
-    /* TODO various check on limitation and max sizes */
+    const OVPPS *const pps = &data->pps;
+
+    if ((pps->pps_pic_width_in_luma_samples | pps->pps_pic_height_in_luma_samples) & 0xE003) {
+        ov_log(NULL, OVLOG_ERROR, "Invalid picture dimension %dx%d. \n",
+               pps->pps_pic_width_in_luma_samples,
+               pps->pps_pic_height_in_luma_samples);
+
+        return OVVC_EINDATA;
+    }
+
     return 1;
 }
 
