@@ -350,7 +350,7 @@ ovdpb_flush_dpb(OVDPB *dpb)
 
 /*FIXME rename to request new picture */
 static OVPicture *
-alloc_frame(OVDPB *dpb)
+alloc_frame(OVDPB *dpb, int poc)
 {
     int i, ret;
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
@@ -374,7 +374,7 @@ alloc_frame(OVDPB *dpb)
         pic->flags = 0;
         atomic_init(&pic->ref_count, 0);
 
-        ov_log(NULL, OVLOG_DEBUG, "Attached frame %p to Picture with POC %d\n", pic->frame, pic->poc);
+        ov_log(NULL, OVLOG_DEBUG, "Attached frame %p to Picture with POC %d\n", pic->frame, poc);
 
         return pic;
     }
@@ -402,11 +402,14 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc, uint8_t ph_pic_ou
             pic->poc == poc) {
             ov_log(NULL, OVLOG_ERROR, "Duplicate POC in a sequence: %d for cvs_id: %d.\n",
                    poc, pic->cvs_id);
+            //*pic_p = pic;
+            *pic_p == NULL;
+            //ovdpb_report_decoded_frame(ref_pic);
             return OVVC_EINDATA;
         }
     }
 
-    pic = alloc_frame(dpb);
+    pic = alloc_frame(dpb, poc);
 
     if (!pic) {
         return OVVC_ENOMEM;
@@ -528,7 +531,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
              * Picture with requested POC ID in the DPB
              */
             ov_log(NULL, OVLOG_ERROR, "Generating missing reference %d for picture %d\n", ref_poc, dpb->poc);
-            ref_pic = alloc_frame(dpb);
+            ref_pic = alloc_frame(dpb, ref_poc);
 
             if (ref_pic == NULL){
                 return OVVC_ENOMEM;
@@ -579,7 +582,7 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
 }
 
 static void
-vvc_unmark_refs(OVPicture **dst_rpl, uint8_t nb_active_refs, uint8_t nb_refs)
+vvc_unmark_refs(OVPicture * current_pic, OVPicture **dst_rpl, uint8_t nb_active_refs, uint8_t nb_refs)
 {
     int i;
     for (i = 0;  i < nb_active_refs; ++i) {
@@ -588,7 +591,7 @@ vvc_unmark_refs(OVPicture **dst_rpl, uint8_t nb_active_refs, uint8_t nb_refs)
             int16_t ref_poc  = ref_pic->poc;
             int16_t ref_type = ST_REF;
             uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
-            ov_log(NULL, OVLOG_TRACE, "Unmark active reference %d\n", ref_poc);
+            ov_log(NULL, OVLOG_TRACE, "Unmark active reference %d from picture %d RPL\n", ref_poc, current_pic->poc);
             ovdpb_unref_pic(ref_pic, flag);
         }
     }
@@ -599,7 +602,7 @@ vvc_unmark_refs(OVPicture **dst_rpl, uint8_t nb_active_refs, uint8_t nb_refs)
             int16_t ref_poc  = ref_pic->poc;
             int16_t ref_type = ST_REF;
             uint8_t flag = ref_type == ST_REF ? OV_ST_REF_PIC_FLAG : OV_LT_REF_PIC_FLAG;
-            ov_log(NULL, OVLOG_TRACE, "Unmark non active reference %d\n", ref_poc);
+            ov_log(NULL, OVLOG_TRACE, "Unmark non active reference %d from picture %d RPL\n", ref_poc, current_pic->poc);
             ovdpb_unref_pic(ref_pic, flag);
             dst_rpl[i] = NULL;
         }
@@ -736,10 +739,10 @@ ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVSEI **sei_p)
 void
 ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVPicture *current_pic)
 {
-    vvc_unmark_refs(current_pic->rpl0, current_pic->nb_active_refs0, current_pic->nb_refs0);
+    vvc_unmark_refs(current_pic, current_pic->rpl0, current_pic->nb_active_refs0, current_pic->nb_refs0);
 
     if (slice_type == SLICE_B){
-        vvc_unmark_refs(current_pic->rpl1, current_pic->nb_active_refs1, current_pic->nb_refs1);
+        vvc_unmark_refs(current_pic, current_pic->rpl1, current_pic->nb_active_refs1, current_pic->nb_refs1);
     }
 }
 
