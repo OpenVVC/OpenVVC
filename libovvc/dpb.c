@@ -439,6 +439,7 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t 
     int i;
     rpl_info->nb_refs = nb_refs;
     rpl_info->nb_active_refs = rpl->num_ref_active_entries;
+    int last_poc = poc;
 
     for (i = 0; i < nb_refs; ++i) {
         const struct RefPic *const rp = &rpl->rp_list[i];
@@ -451,8 +452,8 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t 
 
         switch (ref_type) {
         case ST_REF:
-           ref_poc = !rp->strp_entry_sign_flag ? poc +  rp->abs_delta_poc_st + (!weighted_pred | !i)
-                                               : poc - (rp->abs_delta_poc_st + (!weighted_pred | !i));
+           ref_poc = !rp->strp_entry_sign_flag ? last_poc +  rp->abs_delta_poc_st + (!weighted_pred | !i)
+                                               : last_poc - (rp->abs_delta_poc_st + (!weighted_pred | !i));
            rinfo->poc = ref_poc;
 
         break;
@@ -473,11 +474,18 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t 
         break;
         }
 
-        poc = ref_poc;
+        last_poc = ref_poc;
 
+        if (poc == ref_poc) {
+            goto self_ref;
+        }
     }
 
     return 0;
+
+self_ref:
+    ov_log(NULL, OVLOG_ERROR, "Invalid self reference for picture with POC %d.\n", poc);
+    return OVVC_EINDATA;
 }
 
 
@@ -490,7 +498,10 @@ vvc_mark_refs(OVDPB *dpb, const OVRPL *rpl, int32_t poc, OVPicture **dst_rpl, ui
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
 
     struct RPLInfo rpl_info;
-    compute_ref_poc(rpl, &rpl_info, poc, weighted_pred);
+    int ret = compute_ref_poc(rpl, &rpl_info, poc, weighted_pred);
+    if (ret < 0) {
+        return ret;
+    }
 
     for (i = 0;  i < rpl->num_ref_active_entries; ++i){
         ref_poc  = rpl_info.ref_info[i].poc;
