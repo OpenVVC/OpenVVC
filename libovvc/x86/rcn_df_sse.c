@@ -54,7 +54,7 @@ filter_luma_weak_h(OVSample* src, const int stride, const int tc, const uint8_t 
         const int16_t q2  = src[2];
 
         /* Weak filter */
-        int delta = (((q0 - p0) << 3) + (q0 - p0) - (((q1 - p1) << 1) + (q1 - p1)) + 8) >> 4;
+        int delta = ((int16_t)((uint16_t)(q0 - p0) << 3) + (q0 - p0) - ((int16_t)((uint16_t)(q1 - p1) << 1) + (q1 - p1)) + 8) >> 4;
 
         if (abs(delta) < th_cut) {
             delta = ov_clip(delta, -tc, tc);
