@@ -316,7 +316,8 @@ read_write_stream(OVVCHdl *const hdl, FILE *fout)
 
         if (pu) {
             int nb_pic2;
-            ret = ovdec_submit_picture_unit(dec, pu);
+            int dec_ret;
+            dec_ret = ovdec_submit_picture_unit(dec, pu);
 
             ovpu_unref(&pu);
 
