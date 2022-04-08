@@ -332,6 +332,7 @@ decinit_set_entry_points(OVPS *const prms, const OVNALUnit *nal, uint32_t nb_sh_
     uint32_t rbsp_offset[256];
     const int nb_rbsp_epb = nal->nb_epb;
     const uint32_t *rbsp_epb_pos = nal->epb_pos;
+    const uint8_t *const rbsp_end = nal->rbsp_data + nal->rbsp_size;
     int nb_sh_epb = 0;
 
     rbsp_offset[0] = 0;
@@ -356,11 +357,11 @@ decinit_set_entry_points(OVPS *const prms, const OVNALUnit *nal, uint32_t nb_sh_
     /* FIXME avoid using an offset tab and compute directly on entries */
     sh_info->rbsp_entry[0] = nal->rbsp_data + nb_sh_bytes;
     for (i = 1; i < nb_entries; ++i) {
-        sh_info->rbsp_entry[i] = nal->rbsp_data + rbsp_offset[i] + nb_sh_bytes;
+        sh_info->rbsp_entry[i] = OVMIN(nal->rbsp_data + rbsp_offset[i] + nb_sh_bytes, rbsp_end);
     }
 
     /* Note this is so we can retrieve entry end by using rbsp_entry [i + 1] */
-    sh_info->rbsp_entry[i] = nal->rbsp_data + nal->rbsp_size;
+    sh_info->rbsp_entry[i] = rbsp_end;
 
     /*FIXME check entries do not exceed rpbs size */
     return 0;
