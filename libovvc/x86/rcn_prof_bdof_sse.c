@@ -428,7 +428,7 @@ tmp_prof_mrg_w_sse(OVSample* _dst, ptrdiff_t _dststride,
     int shift = 14 - BITDEPTH + log_weights;
 
     __m128i offset = _mm_set1_epi32(2*((1 << (13 - BITDEPTH))) << (log_weights - 1));
-    __m128i wt = _mm_set1_epi32(wt0&0xFFFF | (wt1<<16));
+    __m128i wt = _mm_set1_epi32(wt0&0xFFFF | ((uint32_t)wt1<<16));
 
     __m128i src00 = _mm_loadl_epi64((__m128i *)&src0[0*srcstride]);
     __m128i src01 = _mm_loadl_epi64((__m128i *)&src0[1*srcstride]);

@@ -40,20 +40,20 @@
 #include "data_rcn_angular.h"
 
 #define LOAD_GAUSS_FILTER_SSE() \
-        __m128i filter01 = _mm_set1_epi32((16 - (delta_frac >> 1))&0xFFFF | ((int32_t)(32 - (delta_frac >> 1))<<16)); \
-        __m128i filter23 = _mm_set1_epi32((16 + (delta_frac >> 1))&0xFFFF | ((int32_t)(delta_frac >> 1)<<16));
+        __m128i filter01 = _mm_set1_epi32((16 - (delta_frac >> 1))&0xFFFF | ((uint32_t)(32 - (delta_frac >> 1))<<16)); \
+        __m128i filter23 = _mm_set1_epi32((16 + (delta_frac >> 1))&0xFFFF | ((uint32_t)(delta_frac >> 1)<<16));
 
 #define LOAD_CUBIC_FILTER_SSE() \
-        __m128i filter01 = _mm_set1_epi32(filter[0]&0xFFFF | ((int32_t)filter[1]<<16)); \
-        __m128i filter23 = _mm_set1_epi32(filter[2]&0xFFFF | ((int32_t)filter[3]<<16));
+        __m128i filter01 = _mm_set1_epi32(filter[0]&0xFFFF | ((uint32_t)filter[1]<<16)); \
+        __m128i filter23 = _mm_set1_epi32(filter[2]&0xFFFF | ((uint32_t)filter[3]<<16));
 
 #define LOAD_GAUSS_FILTER_AVX2() \
-        __m256i filter01 = _mm256_set1_epi32((16 - (delta_frac >> 1))&0xFFFF | ((int32_t)(32 - (delta_frac >> 1))<<16)); \
-        __m256i filter23 = _mm256_set1_epi32((16 + (delta_frac >> 1))&0xFFFF | ((int32_t)(delta_frac >> 1)<<16));
+        __m256i filter01 = _mm256_set1_epi32((16 - (delta_frac >> 1))&0xFFFF | ((uint32_t)(32 - (delta_frac >> 1))<<16)); \
+        __m256i filter23 = _mm256_set1_epi32((16 + (delta_frac >> 1))&0xFFFF | ((uint32_t)(delta_frac >> 1)<<16));
 
 #define LOAD_CUBIC_FILTER_AVX2() \
-        __m256i filter01 = _mm256_set1_epi32(filter[0]&0xFFFF | ((int32_t)filter[1]<<16)); \
-        __m256i filter23 = _mm256_set1_epi32(filter[2]&0xFFFF | ((int32_t)filter[3]<<16));
+        __m256i filter01 = _mm256_set1_epi32(filter[0]&0xFFFF | ((uint32_t)filter[1]<<16)); \
+        __m256i filter23 = _mm256_set1_epi32(filter[2]&0xFFFF | ((uint32_t)filter[3]<<16));
 
 #define FILTER_16_SAMPLES() \
         __m256i ref0 = _mm256_loadu_si256((__m256i *)&ref[0]);          \
