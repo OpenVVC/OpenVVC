@@ -606,7 +606,7 @@ derive_bdof_weights(const int16_t* ref0, const int16_t* ref1,
         if (wgt_x) {
             int high = sum_avg_x_y_signs >> 12;
             int low  = sum_avg_x_y_signs & ((1 << 12) - 1);
-            x_offset = (((wgt_x * high) << 12) + (wgt_x * low)) >> 1;
+            x_offset = ((int32_t)((uint32_t)(wgt_x * high) << 12) + (wgt_x * low)) >> 1;
         }
 
         wgt_y = ((sum_delta_y * 4) - x_offset) >> log2_renorm_y;
