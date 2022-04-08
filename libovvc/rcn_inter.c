@@ -3123,7 +3123,7 @@ rcn_gpm_weights_and_steps(int split_dir, int log2_pb_w_l, int log2_pb_h_l, int* 
       *weight = &g_globalGeoWeights[g_angle2mask[angle]][weight_offset];
   } else if (g_angle2mirror[angle] == 1) {
       int weight_offset = g_weightOffset[split_dir][hIdx][wIdx][1] * GEO_WEIGHT_MASK_SIZE + (GEO_WEIGHT_MASK_SIZE - 1 - g_weightOffset[split_dir][hIdx][wIdx][0]);
-      *step_x = -1 << cr_scale;
+      *step_x = -1u << cr_scale;
       *step_y = (GEO_WEIGHT_MASK_SIZE << cr_scale) + (1 << log2_pb_w_l);
       *weight = &g_globalGeoWeights[g_angle2mask[angle]][weight_offset];
   } else {
