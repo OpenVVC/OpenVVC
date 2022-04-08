@@ -771,31 +771,27 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
     uint8_t weighted_pred = sldec->active_params.sps->sps_weighted_pred_flag || sldec->active_params.sps->sps_weighted_bipred_flag;
 
     ret = vvc_mark_refs(dpb, rpl0, poc, current_pic->rpl0, weighted_pred);
+
     current_pic->nb_refs0 = rpl0->num_ref_entries;
     current_pic->nb_active_refs0 = rpl0->num_ref_active_entries;
-    if (ret < 0) {
-        goto fail;
-    }
 
     if (slice_type == SLICE_B){
-        ret = vvc_mark_refs(dpb, rpl1, poc, current_pic->rpl1, weighted_pred);
+        ret |= vvc_mark_refs(dpb, rpl1, poc, current_pic->rpl1, weighted_pred);
         current_pic->nb_refs1 = rpl1->num_ref_entries;
         current_pic->nb_active_refs1 = rpl1->num_ref_active_entries;
-        if (ret < 0) {
-            goto fail;
-        }
     } else {
         current_pic->nb_active_refs1 = 0;
     }
 
+    if (ret < 0) {
+        goto fail;
+    }
 
     return 0;
 
 fail:
-    /* FIXME ref_marking failed but we allocated a new ref
-     * to replace the missing one
-     */
-    return 1;
+    ovdpb_unmark_ref_pic_lists(slice_type, current_pic);
+    return ret;
 }
 
 
