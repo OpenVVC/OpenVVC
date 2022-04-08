@@ -114,7 +114,7 @@ struct OVPicture
         pthread_cond_t  *ref_cnd;
     } decoded_ctus;
 
-    atomic_uint idx_function;
+    atomic_uint *idx_function;
     FrameSynchroFunction ovdpb_frame_synchro[2];
 
     /* Pointers to ref_pic_list */
@@ -152,6 +152,7 @@ struct OVPicture
     struct ScalingInfo scale_info;
     struct PictureInternal
     {
+        atomic_uint idx_function;
         pthread_mutex_t ref_mtx;
         pthread_cond_t  ref_cnd;
     } internal;
