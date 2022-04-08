@@ -110,6 +110,12 @@ validate_sps(OVNVCLReader *rdr, const union HLSData *const data)
         return OVVC_EINDATA;
     }
 
+    if (sps->sps_six_minus_max_num_merge_cand > 6) {
+        ov_log(NULL, OVLOG_ERROR, "Invalid sps_six_minus_max_num_merge_cand %d in SPS.\n",
+               sps->sps_six_minus_max_num_merge_cand);
+        return OVVC_EINDATA;
+    }
+
     return 1;
 }
 
