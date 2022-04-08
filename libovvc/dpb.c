@@ -1066,6 +1066,19 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         uint8_t weighted_pred = ovdec->active_params.sps->sps_weighted_pred_flag || ovdec->active_params.sps->sps_weighted_bipred_flag;
         OVRPL rpl0, rpl1;
         update_rpl(pps, sh, ph, &rpl0, &rpl1, slice_type);
+        if ((rpl0.num_ref_entries | rpl1.num_ref_entries) & ~0xF) {
+            ov_log(NULL, OVLOG_ERROR, "Too many pictures in RPL for picture POC: %d\n", (*pic_p)->poc);
+            ret = OVVC_EINDATA;
+            goto failnoclear;
+        }
+
+        if ((rpl0.num_ref_active_entries > rpl0.num_ref_entries) ||
+            (rpl1.num_ref_active_entries > rpl1.num_ref_entries)) {
+            ret = OVVC_EINDATA;
+            ov_log(NULL, OVLOG_ERROR, "Too many active pictures in RPL for picture POC: %d\n", (*pic_p)->poc);
+            goto failnoclear;
+        }
+
         ret = mark_ref_pic_lists(dpb, slice_type, &rpl0, &rpl1, sldec);
         if (ret < 0) {
             goto fail;
@@ -1108,6 +1121,7 @@ fail:
     #endif
     ovdpb_clear_refs(dpb);
 
+failnoclear:
     return ret;
 }
 
