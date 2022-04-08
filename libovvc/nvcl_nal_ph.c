@@ -132,10 +132,12 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
     if (ph->ph_pic_parameter_set_id < OV_MAX_NUM_PPS) {
         uint8_t pps_id = ph->ph_pic_parameter_set_id & 0xF;
+        if (nvcl_ctx->pps_list[pps_id])
         pps = (OVPPS *)nvcl_ctx->pps_list[pps_id]->data;
         if (pps) {
             /* We suppose sps_id already checked by sps reader */
             uint8_t sps_id = pps->pps_seq_parameter_set_id & 0xF;
+            if (nvcl_ctx->sps_list[sps_id])
             sps = (OVSPS *)nvcl_ctx->sps_list[sps_id]->data;
         }
         if (!pps || !sps) {

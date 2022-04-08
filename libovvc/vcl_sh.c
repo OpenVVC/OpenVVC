@@ -258,9 +258,11 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     }
 
     /* TODO create proper structure to hold activated parameters sets */
-    ph = (OVPH *)nvcl_ctx->ph->data;
-    pps = (OVPPS *)nvcl_ctx->pps_list[ph->ph_pic_parameter_set_id]->data;
-    sps = (OVSPS *)nvcl_ctx->sps_list[pps->pps_seq_parameter_set_id]->data;
+    if (nvcl_ctx->ph) {
+        ph = (OVPH *)nvcl_ctx->ph->data;
+        pps = (OVPPS *)nvcl_ctx->pps_list[ph->ph_pic_parameter_set_id]->data;
+        sps = (OVSPS *)nvcl_ctx->sps_list[pps->pps_seq_parameter_set_id]->data;
+    }
 
     if (!ph || !pps || !sps) {
         ov_log(NULL, 3, "Missing parameter sets while reading SH\n");
