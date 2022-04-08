@@ -783,6 +783,10 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
         current_pic->nb_active_refs1 = 0;
     }
 
+    if ((slice_type != SLICE_I && !current_pic->nb_active_refs0) || (!current_pic->nb_active_refs1 && slice_type == SLICE_B)) {
+         ret = OVVC_EINDATA;
+    }
+
     if (ret < 0) {
         goto fail;
     }
