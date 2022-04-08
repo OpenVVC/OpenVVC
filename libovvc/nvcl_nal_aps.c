@@ -66,8 +66,9 @@ void
 nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data,
                    uint8_t aps_chroma_present_flag)
 {
-    alf_data->alf_luma_filter_signal_flag = nvcl_read_flag(rdr);
     uint8_t sign = 0;
+
+    alf_data->alf_luma_filter_signal_flag = nvcl_read_flag(rdr);
 
     if (aps_chroma_present_flag) {
         alf_data->alf_chroma_filter_signal_flag = nvcl_read_flag(rdr);
@@ -242,6 +243,8 @@ nvcl_decode_nalu_aps(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr, uint8_t
     } else if (aps->aps_params_type == 1) {
         ov_free(nvcl_ctx->lmcs_aps_list[aps_id]);
         nvcl_ctx->lmcs_aps_list[aps_id] = aps;
+    } else {
+        ov_free(aps);
     }
     return aps_id;
 
