@@ -237,6 +237,94 @@ duplicated:
     return 0;
 }
 
+static int
+pred_weight_table_monochrome_sh(OVNVCLReader *const rdr, struct RPLWeightInfo *const wgt_info, uint8_t nb_active_refs0, uint8_t nb_active_refs1)
+{
+    int i;
+    wgt_info->num_l0_weights = nb_active_refs0;
+    wgt_info->num_l1_weights = nb_active_refs1;
+
+    wgt_info->luma_log2_weight_denom = nvcl_read_u_expgolomb(rdr);
+
+    for (i = 0; i < nb_active_refs0; i++) {
+        wgt_info->luma_weight_l0_flag[i] = nvcl_read_flag(rdr);;
+    }
+
+    for (i = 0; i < nb_active_refs0; i++) {
+        if (wgt_info->luma_weight_l0_flag[i]) {
+            wgt_info->delta_luma_weight_l0[i] = nvcl_read_s_expgolomb(rdr);
+            wgt_info->luma_offset_l0[i]       = nvcl_read_s_expgolomb(rdr);
+        }
+    }
+
+    for (i = 0; i < nb_active_refs1; i++) {
+        wgt_info->luma_weight_l1_flag[i] = nvcl_read_flag(rdr);
+    }
+
+    for (i = 0; i < nb_active_refs1; i++) {
+        if (wgt_info->luma_weight_l1_flag[i]) {
+            wgt_info->delta_luma_weight_l1[i] = nvcl_read_s_expgolomb(rdr);
+            wgt_info->luma_offset_l1[i]       = nvcl_read_s_expgolomb(rdr);
+        }
+    }
+}
+
+static int
+pred_weight_table_sh(OVNVCLReader *const rdr, struct RPLWeightInfo *const wgt_info, uint8_t nb_active_refs0, uint8_t nb_active_refs1)
+{
+    int i;
+    wgt_info->num_l0_weights = nb_active_refs0;
+    wgt_info->num_l1_weights = nb_active_refs1;
+
+    wgt_info->luma_log2_weight_denom         = nvcl_read_u_expgolomb(rdr);
+    wgt_info->delta_chroma_log2_weight_denom = nvcl_read_s_expgolomb(rdr);
+
+    /* FIXME better flags storage */
+    for (i = 0; i < nb_active_refs0; i++) {
+        wgt_info->luma_weight_l0_flag[i] = nvcl_read_flag(rdr);;
+    }
+
+    for (i = 0; i < nb_active_refs0; i++) {
+        wgt_info->chroma_weight_l0_flag[i] = nvcl_read_flag(rdr);
+    }
+
+    for (i = 0; i < nb_active_refs0; i++) {
+        if (wgt_info->luma_weight_l0_flag[i]) {
+            wgt_info->delta_luma_weight_l0[i] = nvcl_read_s_expgolomb(rdr);
+            wgt_info->luma_offset_l0[i]       = nvcl_read_s_expgolomb(rdr);
+        }
+        if (wgt_info->chroma_weight_l0_flag[i]) {
+            wgt_info->delta_chroma_weight_l0[0][i] = nvcl_read_s_expgolomb(rdr);
+            wgt_info->delta_chroma_offset_l0[0][i] = nvcl_read_s_expgolomb(rdr);
+            wgt_info->delta_chroma_weight_l0[1][i] = nvcl_read_s_expgolomb(rdr);
+            wgt_info->delta_chroma_offset_l0[1][i] = nvcl_read_s_expgolomb(rdr);
+        }
+    }
+
+    for (i = 0; i < nb_active_refs1; i++) {
+        wgt_info->luma_weight_l1_flag[i] = nvcl_read_flag(rdr);
+    }
+
+    for (i = 0; i < nb_active_refs1; i++) {
+        wgt_info->chroma_weight_l1_flag[i] = nvcl_read_flag(rdr);
+    }
+
+    for (i = 0; i < nb_active_refs1; i++) {
+
+        if (wgt_info->luma_weight_l1_flag[i]) {
+            wgt_info->delta_luma_weight_l1[i] = nvcl_read_s_expgolomb(rdr);
+            wgt_info->luma_offset_l1[i]       = nvcl_read_s_expgolomb(rdr);
+        }
+
+        if (wgt_info->chroma_weight_l1_flag[i]) {
+            wgt_info->delta_chroma_weight_l1[0][i] = nvcl_read_s_expgolomb(rdr);
+            wgt_info->delta_chroma_offset_l1[0][i] = nvcl_read_s_expgolomb(rdr);
+            wgt_info->delta_chroma_weight_l1[1][i] = nvcl_read_s_expgolomb(rdr);
+            wgt_info->delta_chroma_offset_l1[1][i] = nvcl_read_s_expgolomb(rdr);
+        }
+    }
+}
+
 int
 nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
              const OVNVCLCtx *const nvcl_ctx, uint8_t nalu_type)
@@ -420,9 +508,14 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         if (!pps->pps_wp_info_in_ph_flag &&
             ((pps->pps_weighted_pred_flag && sh->sh_slice_type == P) ||
              (pps->pps_weighted_bipred_flag && sh->sh_slice_type == B))) {
-            #if 0
-            pred_weight_table();
-            #endif
+
+            struct RPLWeightInfo wgt_info = {0};
+            if (sps->sps_chroma_format_idc) {
+                pred_weight_table_sh(rdr, &wgt_info, nb_ref_entries0, (nb_ref_entries1 & -pps->pps_weighted_bipred_flag));
+            } else {
+                pred_weight_table_monochrome_sh(rdr, &wgt_info, nb_ref_entries0, (nb_ref_entries1 & -pps->pps_weighted_bipred_flag));
+            }
+
         }
     }
 

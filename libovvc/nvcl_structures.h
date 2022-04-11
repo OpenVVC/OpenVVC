@@ -40,6 +40,28 @@
 #define OV_MAX_NB_RP 16
 #define PIC_CODE_CW_BINS 16
 
+struct RPLWeightInfo
+{
+    uint8_t luma_log2_weight_denom;
+    int8_t delta_chroma_log2_weight_denom;
+    uint8_t luma_weight_l0_flag[16];
+    uint8_t chroma_weight_l0_flag[16];
+    int8_t delta_luma_weight_l0[16];
+    int8_t luma_offset_l0[16];
+    int8_t delta_chroma_weight_l0[2][16];
+    int8_t delta_chroma_offset_l0[2][16];
+    uint8_t luma_weight_l1_flag[16];
+    uint8_t chroma_weight_l1_flag[16];
+    int8_t delta_luma_weight_l1[16];
+    int8_t luma_offset_l1[16];
+    int8_t delta_chroma_weight_l1[2][16];
+    int8_t delta_chroma_offset_l1[2][16];
+
+    /* Non present in slice header */
+    uint8_t num_l0_weights;
+    uint8_t num_l1_weights;
+};
+
 /* FIXME :
  *     -use union to shorten size and better reflect
  *    how Ref Picture are read ?
