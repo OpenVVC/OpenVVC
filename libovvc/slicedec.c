@@ -1156,7 +1156,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
     ctudec->drv_ctx.inter_ctx.bi_dir_pred_flag = 0;
 
     if (prms->sps->sps_smvd_enabled_flag && !inter_ctx->tmvp_ctx.ldc
-        && !inter_ctx->mvd1_zero_flag) {
+        && !ctudec->mvd1_zero_enabled) {
         const int nb_active_ref0 = inter_ctx->nb_active_ref0;
         const int nb_active_ref1 = inter_ctx->nb_active_ref1;
         int ref = 0;
@@ -1406,6 +1406,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->sbt_enabled      = sps->sps_sbt_enabled_flag;
     ctudec->affine_enabled   = sps->sps_affine_enabled_flag;
     ctudec->drv_ctx.inter_ctx.sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
+    ctudec->sbtmvp_enabled = sps->sps_sbtmvp_enabled_flag  && ph->ph_temporal_mvp_enabled_flag;
     ctudec->ibc_enabled = sps->sps_ibc_enabled_flag;
     ctudec->nb_ibc_cand_min1 = 6 - sps->sps_six_minus_max_num_ibc_merge_cand;
     ctudec->drv_ctx.ibc_ctx.bs1_map = &ctudec->dbf_info.bs1_map;
@@ -1446,27 +1447,29 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     ctudec->drv_ctx.inter_ctx.mmvd_shift = ph->ph_mmvd_fullpel_only_flag << 1;
     ctudec->drv_ctx.inter_ctx.tmvp_enabled = ph->ph_temporal_mvp_enabled_flag;
-    ctudec->drv_ctx.inter_ctx.mvd1_zero_flag = ph->ph_mvd_l1_zero_flag;
+    ctudec->mvd1_zero_enabled = ph->ph_mvd_l1_zero_flag;
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.col_ref_l0 = ph->ph_collocated_from_l0_flag ||
                                                     sh->sh_collocated_from_l0_flag ||
                                                     sh->sh_slice_type == SLICE_P;
 
-    ctudec->drv_ctx.inter_ctx.ciip_flag = sps->sps_ciip_enabled_flag;
-    ctudec->drv_ctx.inter_ctx.mmvd_flag = sps->sps_mmvd_enabled_flag;
-    ctudec->drv_ctx.inter_ctx.gpm_flag  = sps->sps_gpm_enabled_flag;
+    ctudec->ciip_enabled = sps->sps_ciip_enabled_flag;
+    ctudec->mmvd_enabled = sps->sps_mmvd_enabled_flag;
+    ctudec->gpm_enabled  = sps->sps_gpm_enabled_flag;
+
     if (sps->sps_gpm_enabled_flag) {
         if (ctudec->max_num_merge_candidates >= 3) {
-            ctudec->drv_ctx.inter_ctx.max_gpm_cand = ctudec->max_num_merge_candidates
+            ctudec->max_gpm_cand = ctudec->max_num_merge_candidates
                 - sps->sps_max_num_merge_cand_minus_max_num_gpm_cand;
         } else if (ctudec->max_num_merge_candidates == 2) {
-            ctudec->drv_ctx.inter_ctx.max_gpm_cand = 2;
+            ctudec->max_gpm_cand = 2;
         } else {
-            ctudec->drv_ctx.inter_ctx.max_gpm_cand = 0;
+            ctudec->max_gpm_cand = 0;
         }
     }
-    ctudec->drv_ctx.inter_ctx.bcw_flag = sps->sps_bcw_enabled_flag;
-    ctudec->drv_ctx.inter_ctx.amvr_flag = sps->sps_amvr_enabled_flag;
-    ctudec->drv_ctx.inter_ctx.affine_amvr_flag = sps->sps_affine_amvr_enabled_flag;
+
+    ctudec->bcw_enabled = !sps->sps_weighted_pred_flag && sps->sps_bcw_enabled_flag;
+    ctudec->amvr_enabled = sps->sps_amvr_enabled_flag;
+    ctudec->affine_amvr_enabled = sps->sps_affine_amvr_enabled_flag;
 
     rcn_init_functions(&ctudec->rcn_funcs, ict_type(ph), ctudec->lm_chroma_enabled,
                         sps->sps_chroma_vertical_collocated_flag, ph->ph_lmcs_enabled_flag,

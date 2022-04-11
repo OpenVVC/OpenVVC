@@ -379,33 +379,8 @@ struct InterDRVCtx
     int ref_smvd_idx0;
     int ref_smvd_idx1;
 
-    /* Combined Inter Intra Pred(CIIP) Related
-     * information
-     */
-    uint8_t ciip_flag;
-
-    /* Merge mode with MVD(MMVD) Related
-     * information
-     */
-    uint8_t mmvd_flag;
     uint8_t mmvd_shift;
 
-    /* Bi-prediction CU-level Weight (BCW) Related
-     * information
-     */
-    uint8_t bcw_flag;
-
-    /* Geometric Partition Mode(GPM) Related
-     * information
-     */
-    uint8_t gpm_flag;
-    int max_gpm_cand;
-
-    /* Adaptive MV Refinement(AMVR) Related
-     * information
-     */
-    uint8_t amvr_flag;
-    uint8_t affine_amvr_flag;
     uint8_t affine_6params_enabled;
     uint8_t prec_amvr;
 
@@ -420,8 +395,6 @@ struct InterDRVCtx
         OVMV mv0;
         OVMV mv1;
     } gpm_ctx;
-
-    uint8_t mvd1_zero_flag;
 
     uint8_t tmvp_enabled;
     uint8_t sbtmvp_enabled;
@@ -706,11 +679,22 @@ struct OVCTUDec
     uint8_t lm_chroma_enabled;
     uint8_t enable_cclm;
     uint8_t max_num_merge_candidates;
+    uint8_t max_gpm_cand;
+
     uint8_t sbt_enabled;
 
+    uint8_t sbtmvp_enabled;
     uint8_t affine_enabled;
     uint8_t affine_status;
     uint8_t affine_nb_merge_cand;
+
+    uint8_t ciip_enabled;
+    uint8_t mmvd_enabled;
+    uint8_t bcw_enabled;
+    uint8_t gpm_enabled;
+    uint8_t amvr_enabled;
+    uint8_t affine_amvr_enabled;
+    uint8_t mvd1_zero_enabled;
 
     uint8_t ibc_enabled;
     uint8_t nb_ibc_cand_min1;
