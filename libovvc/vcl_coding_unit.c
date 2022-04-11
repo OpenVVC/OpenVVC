@@ -2440,7 +2440,7 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
                             0x3, ref_idx0, ref_idx1, log2_cb_w + log2_cb_h <= 5);
 
         uint8_t bdof_enable = 0;
-        if (ctu_dec->bdof_enabled) {
+        if (inter_ctx->bdof_enabled) {
             /* Note ciip_flag is zero in this function */
             uint8_t ciip_flag = 0;
             uint8_t bcw_flag = (mv_info.mv0.bcw_idx_plus1 != 0 && mv_info.mv0.bcw_idx_plus1 != 3);
@@ -2582,7 +2582,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
         {
             uint8_t bdof_enable = 0;
             uint8_t dmvr_enable = 0;
-            if (ctu_dec->bdof_enabled && mv_info.inter_dir == 0x3) {
+            if (inter_ctx->bdof_enabled && mv_info.inter_dir == 0x3) {
                 /* Note ciip_flag is zero in this function */
                 uint8_t ciip_flag = 0;
                 uint8_t bcw_flag = (mv_info.mv0.bcw_idx_plus1 != 0 && mv_info.mv0.bcw_idx_plus1 != 3);
@@ -2591,7 +2591,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 bdof_enable = bdof_enable && check_bdof_ref(inter_ctx, ref_idx0, ref_idx1);
             }
 
-            if (ctu_dec->dmvr_enabled && mv_info.inter_dir == 0x3) {
+            if (inter_ctx->dmvr_enabled && mv_info.inter_dir == 0x3) {
                 /*FIXME check both mv in bir dir ?*/
                 uint8_t bcw_flag = (mv_info.mv0.bcw_idx_plus1 != 0 && mv_info.mv0.bcw_idx_plus1 != 3);
                 dmvr_enable = check_bdof(log2_cb_w, log2_cb_h, 0, mmvd_flag, bcw_flag);

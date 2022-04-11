@@ -427,6 +427,8 @@ struct InterDRVCtx
     uint8_t sbtmvp_enabled;
 
     uint8_t prof_enabled;
+    uint8_t bdof_enabled;
+    uint8_t dmvr_enabled;
 
     uint8_t tmvp_avail;
     struct VVCTMVP
@@ -710,10 +712,8 @@ struct OVCTUDec
     uint8_t affine_status;
     uint8_t affine_nb_merge_cand;
 
-    uint8_t bdof_enabled;
     uint8_t ibc_enabled;
     uint8_t nb_ibc_cand_min1;
-    uint8_t dmvr_enabled;
 
     uint8_t dbf_disable;
 

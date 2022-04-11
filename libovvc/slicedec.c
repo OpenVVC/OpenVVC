@@ -1428,10 +1428,10 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->lm_chroma_enabled = sps->sps_cclm_enabled_flag;
 
     ctudec->drv_ctx.inter_ctx.prof_enabled = sps->sps_affine_prof_enabled_flag  && !ph->ph_prof_disabled_flag;
-    ctudec->bdof_enabled = sps->sps_bdof_enabled_flag && (!ph->ph_bdof_disabled_flag);
-    ctudec->bdof_enabled &= sh->sh_slice_type == SLICE_B;
-    ctudec->dmvr_enabled = sps->sps_dmvr_enabled_flag && (!ph->ph_dmvr_disabled_flag);
-    ctudec->dmvr_enabled &= sh->sh_slice_type == SLICE_B;
+    ctudec->drv_ctx.inter_ctx.bdof_enabled = sps->sps_bdof_enabled_flag && (!ph->ph_bdof_disabled_flag);
+    ctudec->drv_ctx.inter_ctx.bdof_enabled &= sh->sh_slice_type == SLICE_B;
+    ctudec->drv_ctx.inter_ctx.dmvr_enabled = sps->sps_dmvr_enabled_flag && (!ph->ph_dmvr_disabled_flag);
+    ctudec->drv_ctx.inter_ctx.dmvr_enabled &= sh->sh_slice_type == SLICE_B;
     ctudec->drv_ctx.inter_ctx.prec_amvr = 0;
 
     slice_init_qp_ctx(ctudec, prms);
