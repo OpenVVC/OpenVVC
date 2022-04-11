@@ -646,6 +646,7 @@ struct OVPH
     uint8_t ph_extension_data_byte[8];
     /* Ref Pic List Info */
     struct OVHRPL hrpl;
+    struct RPLWeightInfo wgt_info;
 };
 
 struct OVSH
@@ -702,6 +703,7 @@ struct OVSH
     uint32_t sh_entry_point_offset_minus1[64];
     /* Ref pic list info */
     struct OVHRPL hrpl;
+    struct RPLWeightInfo wgt_info;
 };
 
 #define MAX_NUM_ALF_CLASSES                            25

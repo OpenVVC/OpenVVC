@@ -431,11 +431,10 @@ nvcl_ph_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
         }
 
         if ((pps->pps_weighted_pred_flag || pps->pps_weighted_bipred_flag) && pps->pps_wp_info_in_ph_flag) {
-            struct RPLWeightInfo wgt_info = {0};
             if (sps->sps_chroma_format_idc) {
-                pred_weight_table_ph(rdr, &wgt_info, num_ref_entries1, pps->pps_weighted_bipred_flag);
+                pred_weight_table_ph(rdr, &ph->wgt_info, num_ref_entries1, pps->pps_weighted_bipred_flag);
             } else {
-                pred_weight_table_monochrome_ph(rdr, &wgt_info, num_ref_entries1, pps->pps_weighted_bipred_flag);
+                pred_weight_table_monochrome_ph(rdr, &ph->wgt_info, num_ref_entries1, pps->pps_weighted_bipred_flag);
             }
         }
     }
