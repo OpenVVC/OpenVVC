@@ -529,16 +529,13 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
-    /* FIXME derive ref_idx */
-    uint8_t ref_idx_0 = ref_idx0;
-    uint8_t ref_idx_1 = ref_idx1;
     uint8_t prec_amvr = mv0.prec_amvr;
     uint8_t use_bcw = mv0.bcw_idx_plus1 != 0 && mv0.bcw_idx_plus1 != 3;
 
     int16_t wt0, wt1;
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
+    OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
+    OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
     if (!ref0 || !ref1) return;
     
     OVSample *edge_buff0 = (OVSample *)rcn_ctx->data.edge_buff0;
@@ -1156,12 +1153,10 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     struct BDOFFunctions *bdof = &ctudec->rcn_funcs.bdof;
     /* FIXME derive ref_idx */
-    uint8_t ref_idx_0 = ref_idx0;
-    uint8_t ref_idx_1 = ref_idx1;
     uint8_t prec_amvr = mv0.prec_amvr;
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
+    OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
+    OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
     if (!ref0 | !ref1) return;
 
     /* TMP buffers for edge emulation
@@ -1279,12 +1274,8 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint8_t prec_amvr = mv0.prec_amvr;
     uint8_t use_bcw = mv0.bcw_idx_plus1 != 0 && mv0.bcw_idx_plus1 != 3;
 
-    /* FIXME derive ref_idx */
-    uint8_t ref_idx_0 = ref_idx0;
-    uint8_t ref_idx_1 = ref_idx1;
-
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
+    OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
+    OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
     if (!ref0 || !ref1) return;
 
         
@@ -1417,13 +1408,10 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_c = &ctudec->rcn_funcs.mc_c;
     uint8_t use_bcw = mv0.bcw_idx_plus1 != 0 && mv0.bcw_idx_plus1 != 3;
-    /* FIXME derive ref_idx */
-    uint8_t ref_idx_0 = ref_idx0;
-    uint8_t ref_idx_1 = ref_idx1;
     int16_t wt0, wt1;
 
-    OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
-    OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
+    OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
+    OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
     if (!ref0 || !ref1) return;
 
     OVSample *edge_buff0 = (OVSample *)rcn_ctx->data.edge_buff0;
