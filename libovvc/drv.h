@@ -58,6 +58,7 @@ enum OVIntraMode
 struct OVRCNCtx;
 struct OVMVCtx;
 struct InterDRVCtx;
+struct MVPInfoB;
 
 uint8_t derive_intra_mode_c(uint8_t cclm_flag, uint8_t mpm_flag,
                             uint8_t mpm_idx, uint8_t luma_mode,

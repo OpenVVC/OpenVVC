@@ -44,6 +44,7 @@
 #include "rcn_lmcs.h"
 #include "dbf_utils.h"
 #include "rcn_dequant.h"
+#include "ovmv_structures.h"
 
 #define LOG2_MIN_CU_S 2
 /*FIXME find a more global location for these defintions */
@@ -839,19 +840,6 @@ coding_unit(OVCTUDec *const ctu_dec,
     return 0;
 }
 
-struct MVPDataP
-{
-    OVMV mvd;
-    uint8_t ref_idx;
-    uint8_t mvp_idx;
-};
-
-struct IBCMVPData
-{
-    IBCMV mvd;
-    uint8_t mvp_idx;
-};
-
 static inline uint8_t
 check_nz_mvd_p(const OVMV *const mvd)
 {
@@ -1478,21 +1466,6 @@ end:
     return cu;
 }
 
-enum MergeTypeP
-{
-    SB_MERGE,
-    CIIP_MERGE,
-    GPM_MERGE,
-    MMVD_MERGE,
-    DEFAULT_MERGE
-};
-
-struct MergeData
-{
-    enum MergeTypeP merge_type;
-    uint8_t merge_idx;
-};
-
 static OVMV
 drv_merge_motion_info_p(const struct MergeData *const mrg_data,
                         struct InterDRVCtx *const inter_ctx,
@@ -1645,25 +1618,6 @@ inter_merge_data_p(OVCTUDec *const ctu_dec,
     return mrg_data;
 }
 
-struct MVPDataB
-{
-    struct MVPDataP mvd0;
-    struct MVPDataP mvd1;
-};
-
-struct AffineMVPDataP
-{
-    struct AffineControlInfo mvd;
-    uint8_t ref_idx;
-    uint8_t mvp_idx;
-};
-
-struct AffineMVPDataB
-{
-    struct AffineMVPDataP mvp0;
-    struct AffineMVPDataP mvp1;
-};
-
 static inline uint8_t
 check_nz_affine_mvd_p(const struct AffineControlInfo *const cp_mvd, uint8_t affine_type)
 {
@@ -1713,28 +1667,38 @@ static struct AffineMVPDataB
 inter_affine_mvp_data_b(OVCTUDec *const ctu_dec, uint8_t nb_active_ref0_min1,
                         uint8_t nb_active_ref1_min1, uint8_t affine_type)
 {
-    struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     struct AffineMVPDataB mvp_data;
 
-    mvp_data.mvp0 = inter_affine_mvp_data_p(ctu_dec, nb_active_ref0_min1, affine_type);
+    mvp_data.ref_idx0 = nb_active_ref0_min1;
+    if (nb_active_ref0_min1) {
+        mvp_data.ref_idx0 = ovcabac_read_ae_ref_idx(cabac_ctx, nb_active_ref0_min1 + 1);
+    }
 
-    mvp_data.mvp1.ref_idx = nb_active_ref1_min1;
+    mvp_data.mvd0.lt = ovcabac_read_ae_mvd(cabac_ctx);
+    mvp_data.mvd0.rt = ovcabac_read_ae_mvd(cabac_ctx);
+    if (affine_type) {
+        mvp_data.mvd0.lb = ovcabac_read_ae_mvd(cabac_ctx);
+    }
+
+    mvp_data.mvp_idx0 = ovcabac_read_ae_mvp_flag(cabac_ctx);
+
+    mvp_data.ref_idx1 = nb_active_ref1_min1;
     if (nb_active_ref1_min1) {
-        mvp_data.mvp1.ref_idx = ovcabac_read_ae_ref_idx(cabac_ctx, nb_active_ref1_min1 + 1);
+        mvp_data.ref_idx1 = ovcabac_read_ae_ref_idx(cabac_ctx, nb_active_ref1_min1 + 1);
     }
 
     if (!ctu_dec->mvd1_zero_enabled) {
-        mvp_data.mvp1.mvd.lt = ovcabac_read_ae_mvd(cabac_ctx);
-        mvp_data.mvp1.mvd.rt = ovcabac_read_ae_mvd(cabac_ctx);
+        mvp_data.mvd1.lt = ovcabac_read_ae_mvd(cabac_ctx);
+        mvp_data.mvd1.rt = ovcabac_read_ae_mvd(cabac_ctx);
         if (affine_type) {
-            mvp_data.mvp1.mvd.lb = ovcabac_read_ae_mvd(cabac_ctx);
+            mvp_data.mvd1.lb = ovcabac_read_ae_mvd(cabac_ctx);
         }
     } else {
-        memset(&mvp_data.mvp1.mvd, 0, sizeof(mvp_data.mvp1.mvd));
+        memset(&mvp_data.mvd1, 0, sizeof(mvp_data.mvd1));
     }
 
-    mvp_data.mvp1.mvp_idx = ovcabac_read_ae_mvp_flag(cabac_ctx);
+    mvp_data.mvp_idx1 = ovcabac_read_ae_mvp_flag(cabac_ctx);
 
     return mvp_data;
 }
@@ -1744,13 +1708,21 @@ inter_mvp_data_b(OVCTUDec *const ctu_dec, uint8_t nb_active_ref0_min1,
                  uint8_t nb_active_ref1_min1)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
-    const struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
     struct MVPDataB mvp_data;
+    OVMV mvd0;
     OVMV mvd1 = {0};
+    uint8_t ref_idx0 = 0;
+    uint8_t mvp_idx0 = 0;
     uint8_t ref_idx1 = 0;
     uint8_t mvp_idx1 = 0;
 
-    struct MVPDataP mvd_data0 = inter_mvp_data_p(ctu_dec, nb_active_ref0_min1);
+    if (nb_active_ref0_min1) {
+        ref_idx0 = ovcabac_read_ae_ref_idx(cabac_ctx, nb_active_ref0_min1 + 1);
+    }
+
+    mvd0 = ovcabac_read_ae_mvd(cabac_ctx);
+
+    mvp_idx0 = ovcabac_read_ae_mvp_flag(cabac_ctx);
 
     if (nb_active_ref1_min1) {
         ref_idx1 = ovcabac_read_ae_ref_idx(cabac_ctx, nb_active_ref1_min1 + 1);
@@ -1762,25 +1734,16 @@ inter_mvp_data_b(OVCTUDec *const ctu_dec, uint8_t nb_active_ref0_min1,
 
     mvp_idx1 = ovcabac_read_ae_mvp_flag(cabac_ctx);
 
+    mvp_data.mvd0 = mvd0;
+    mvp_data.mvd1 = mvd1;
 
-    mvp_data.mvd0         = mvd_data0;
-    mvp_data.mvd1.mvd     = mvd1;
-    mvp_data.mvd1.ref_idx = ref_idx1;
-    mvp_data.mvd1.mvp_idx = mvp_idx1;
+    mvp_data.ref_idx0 = ref_idx0;
+    mvp_data.mvp_idx0 = mvp_idx0;
+    mvp_data.ref_idx1 = ref_idx1;
+    mvp_data.mvp_idx1 = mvp_idx1;
 
     return mvp_data;
 }
-
-struct MVPInfoP
-{
-     uint8_t cu_type;
-     union {
-         struct AffineMVPDataP cp_mvd_info;
-         struct MVPDataP mvd_info;
-     } data;
-     uint8_t prec_amvr;
-     uint8_t affine_type;
-};
 
 static struct MVPInfoP
 inter_mvp_read_p(OVCTUDec *const ctu_dec,
@@ -2261,27 +2224,6 @@ idx:
     return mrg_data;
 }
 
-struct SMVDData
-{
-    struct OVMV mvd;
-    uint8_t mvp_idx0;
-    uint8_t mvp_idx1;
-};
-
-struct MVPInfoB
-{
-    uint8_t type;
-    union
-    {
-        struct AffineMVPDataB aff_mvp;
-        struct MVPDataB mvp;
-        struct SMVDData smvd;
-    } data;
-    uint8_t prec_amvr;
-    uint8_t bcw_idx;
-    uint8_t affine_type;
-};
-
 uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
                        uint8_t x0, uint8_t y0,
                        uint8_t log2_cb_w, uint8_t log2_cb_h,
@@ -2316,7 +2258,7 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
 
             /* Note affine is always be 1 here  skip_flag always 0 */
             if (ctu_dec->affine_amvr_enabled) {
-                int32_t nz_mvd = check_nz_affine_b(&mvp_data.mvp0.mvd, &mvp_data.mvp1.mvd,
+                int32_t nz_mvd = check_nz_affine_b(&mvp_data.mvd0, &mvp_data.mvd1,
                                                    affine_type);
 
                 if (nz_mvd) {
@@ -2359,7 +2301,7 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
             struct MVPDataB mvp_b = inter_mvp_data_b(ctu_dec, nb_active_ref0_min1,
                                                      nb_active_ref1_min1);
             if (ctu_dec->amvr_enabled) {
-                uint8_t nz_mvd = check_nz_mvd_b(&mvp_b.mvd0.mvd, &mvp_b.mvd1.mvd, ctu_dec->mvd1_zero_enabled);
+                uint8_t nz_mvd = check_nz_mvd_b(&mvp_b.mvd0, &mvp_b.mvd1, ctu_dec->mvd1_zero_enabled);
                 if (nz_mvd) {
                     inter_ctx->prec_amvr = ovcabac_read_ae_amvr_precision(cabac_ctx);
                 }
@@ -2382,13 +2324,13 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
     mvp_info.bcw_idx = bcw_idx;
 
     if (affine_flag) {
-        struct AffineMVPDataB *const mvp_data = &mvp_info.data.aff_mvp;
+        const struct AffineMVPDataB *const mvp_data = &mvp_info.data.aff_mvp;
 
         drv_affine_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                         &mvp_data->mvp0.mvd, &mvp_data->mvp1.mvd,
-                         mvp_data->mvp0.mvp_idx, mvp_data->mvp1.mvp_idx,
+                         &mvp_data->mvd0, &mvp_data->mvd1,
+                         mvp_data->mvp_idx0, mvp_data->mvp_idx1,
                          mvp_info.bcw_idx,
-                         0x3, mvp_data->mvp0.ref_idx, mvp_data->mvp1.ref_idx,
+                         0x3, mvp_data->ref_idx0, mvp_data->ref_idx1,
                          mvp_info.affine_type);
 
         cu_type = OV_AFFINE;
@@ -2421,13 +2363,13 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
         } else {
             const struct MVPDataB *const mvp_b = &mvp_info.data.mvp;
 
-            mvd0 = mvp_b->mvd0.mvd;
-            ref_idx0 = mvp_b->mvd0.ref_idx;
-            mvp_idx0 = mvp_b->mvd0.mvp_idx;
+            mvd0 = mvp_b->mvd0;
+            ref_idx0 = mvp_b->ref_idx0;
+            mvp_idx0 = mvp_b->mvp_idx0;
 
-            mvd1 = mvp_b->mvd1.mvd;
-            ref_idx1 = mvp_b->mvd1.ref_idx;
-            mvp_idx1 = mvp_b->mvd1.mvp_idx;
+            mvd1 = mvp_b->mvd1;
+            ref_idx1 = mvp_b->ref_idx1;
+            mvp_idx1 = mvp_b->mvp_idx1;
         }
 
         mv_info = drv_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
