@@ -60,6 +60,8 @@
 #define SB_H 4
 #define SB_W 4
 
+#define BCW_DENOM 3
+
 static const int8_t dmvr_mv_x[25 + 25] = {
     -2, -1, 0, 1, 2,
     -2, -1, 0, 1, 2,
@@ -593,9 +595,8 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     } else {
         wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
         wt0 = 8 - wt1;
-        int denom = floor_log2(wt0 + wt1);
         mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.y, dst.stride << 1, (uint8_t*)ref1_b.y, ref1_b.stride << 1,
-                                                        tmp_buff,  MAX_PB_SIZE, pu_h, denom, wt0, wt1,
+                                                        tmp_buff,  MAX_PB_SIZE, pu_h, BCW_DENOM, wt0, wt1,
                                                         prec_x1, prec_y1, pu_w);
     }
 
@@ -1394,9 +1395,8 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         } else {
             int16_t wt1 = bcw_weights[mv0.bcw_idx_plus1 - 1];
             int16_t wt0 = 8 - wt1;
-            int denom = floor_log2(wt0 + wt1);
             mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.y, dst.stride << 1, (uint8_t*)ref1_b.y, ref1_b.stride << 1,
-                                                        tmp_buff,  MAX_PB_SIZE, pu_h, denom, wt0, wt1,
+                                                        tmp_buff,  MAX_PB_SIZE, pu_h, BCW_DENOM, wt0, wt1,
                                                         prec_x1, prec_y1, pu_w);
         }
     }
@@ -1484,12 +1484,11 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     } else {
         wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
         wt0 = 8 - wt1;
-        int denom = floor_log2(wt0 + wt1);
         mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cb, dst.stride_c<<1, (uint8_t*)ref1_c.cb, ref1_c.stride_c<<1,
-                                                    ref_data0,  MAX_PB_SIZE, pu_h >> 1, denom, wt0, wt1,
+                                                    ref_data0,  MAX_PB_SIZE, pu_h >> 1, BCW_DENOM, wt0, wt1,
                                                     prec_x1, prec_y1, pu_w >> 1);
         mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cr, dst.stride_c << 1, (uint8_t*)ref1_c.cr, ref1_c.stride_c<<1,
-                                                        ref_data1,  MAX_PB_SIZE, pu_h >> 1, denom, wt0, wt1,
+                                                        ref_data1,  MAX_PB_SIZE, pu_h >> 1, BCW_DENOM, wt0, wt1,
                                                         prec_x1, prec_y1, pu_w >> 1);
     }
 }
@@ -2616,9 +2615,8 @@ rcn_mc_rpr_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     } else {
         int wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
         int wt0 = 8 - wt1;
-        int denom = floor_log2(wt0 + wt1);
         mc_l->rpr_w[log2_pb_w-1](dst.y, dst.stride, tmp_rpl0, tmp_rpl0_stride,
-                                    tmp_rpl1, tmp_rpl1_stride, pu_h, denom, wt0, wt1, 0, 0, pu_w);
+                                    tmp_rpl1, tmp_rpl1_stride, pu_h, BCW_DENOM, wt0, wt1, 0, 0, pu_w);
     }
 
     ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, dst.stride, ctudec->lmcs_info.luts, pu_w, pu_h);
@@ -2674,9 +2672,8 @@ rcn_mc_rpr_prof_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     } else {
         int wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
         int wt0 = 8 - wt1;
-        int denom = floor_log2(wt0 + wt1);
         mc_l->rpr_w[log2_pb_w-1](dst.y, dst.stride, tmp_rpl0, tmp_rpl0_stride,
-                                    tmp_rpl1, tmp_rpl1_stride, pu_h, denom, wt0, wt1, 0, 0, pu_w);
+                                    tmp_rpl1, tmp_rpl1_stride, pu_h, BCW_DENOM, wt0, wt1, 0, 0, pu_w);
     }
 
     ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, dst.stride, ctudec->lmcs_info.luts, pu_w, pu_h);
@@ -2757,11 +2754,10 @@ rcn_mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     } else {
         int wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
         int wt0 = 8 - wt1;
-        int denom = floor_log2(wt0 + wt1);
         mc_c->rpr_w[log2_pb_w-2](dst.cb, dst.stride_c, tmp_rpl0_cb, tmp_rpl0_stride, tmp_rpl1_cb, tmp_rpl1_stride,
-                            pu_h, denom, wt0, wt1, 0, 0, pu_w);
+                            pu_h, BCW_DENOM, wt0, wt1, 0, 0, pu_w);
         mc_c->rpr_w[log2_pb_w-2](dst.cr, dst.stride_c, tmp_rpl0_cr, tmp_rpl0_stride, tmp_rpl1_cr, tmp_rpl1_stride,
-                            pu_h, denom, wt0, wt1, 0, 0, pu_w);
+                            pu_h, BCW_DENOM, wt0, wt1, 0, 0, pu_w);
     }
 
 }
