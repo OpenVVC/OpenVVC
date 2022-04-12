@@ -127,8 +127,8 @@ clip_mv_rpr(int pos_x, int pos_y, int pic_w, int pic_h, int pb_w, int pb_h, OVMV
 }
 
 static void
-rcn_gpm_weights_and_steps(int split_dir, int log2_pb_w_l, int log2_pb_h_l, int* step_x, int* step_y,
-                          int16_t** weight, int cr_scale);
+gpm_weights_and_steps(int split_dir, int log2_pb_w_l, int log2_pb_h_l, int* step_x, int* step_y,
+                      int16_t** weight, int cr_scale);
 
 static void
 rcn_inter_synchronization(const OVPicture *ref_pic, int ref_pos_x, int ref_pos_y, int pu_w, int pu_h, int log2_ctu_s)
@@ -258,7 +258,7 @@ test_for_edge_emulation(int pb_x, int pb_y, int pic_w, int pic_h,
 
 static uint8_t
 check_identical_motion(struct InterDRVCtx *const inter_ctx, int inter_dir, const OVMV mv0, const OVMV mv1,
-                        uint8_t ref_idx0, uint8_t ref_idx1)
+                       uint8_t ref_idx0, uint8_t ref_idx1)
 {
     if (inter_dir != 3)
         return 0;
@@ -382,7 +382,7 @@ padd_dmvr(OVSample *const _ref, int16_t stride, uint8_t pu_w, uint8_t pu_h)
 
 static struct OVBuffInfo
 derive_ref_buf_y(OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
-                OVSample *edge_buff, int log2_pu_w, int log2_pu_h, int log2_ctu_s)
+                 OVSample *edge_buff, int log2_pu_w, int log2_pu_h, int log2_ctu_s)
 {
     struct OVBuffInfo ref_buff;
     OVSample *const ref_y  = (OVSample *) ref_pic->frame->data[0];
@@ -402,7 +402,7 @@ derive_ref_buf_y(OVPicture *const ref_pic, OVMV mv, int pos_x, int pos_y,
                                                    pu_w, pu_h);;
 
     /*Frame thread synchronization to ensure data is available
-     */
+    */
     rcn_inter_synchronization(ref_pic, ref_pos_x, ref_pos_y, pu_w, pu_h, log2_ctu_s);
 
     if (emulate_edge) {
@@ -521,10 +521,10 @@ derive_dmvr_ref_buf_c(const OVPicture *const ref_pic, OVMV mv, int pos_x, int po
 }
 
 static void
-rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
-                            uint8_t x0, uint8_t y0,
-                            uint8_t log2_pu_w, uint8_t log2_pu_h,
-                            OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1)
+motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
+                        uint8_t x0, uint8_t y0,
+                        uint8_t log2_pu_w, uint8_t log2_pu_h,
+                        OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -537,7 +537,7 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
     if (!ref0 || !ref1) return;
-    
+
     OVSample *edge_buff0 = (OVSample *)rcn_ctx->data.edge_buff0;
     OVSample *edge_buff1 = (OVSample *)rcn_ctx->data.edge_buff1;
     int16_t *tmp_buff = (int16_t *) rcn_ctx->data.tmp_buff;
@@ -594,12 +594,12 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
         wt0 = 8 - wt1;
         mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.y, dst.stride << 1, (uint8_t*)ref1_b.y, ref1_b.stride << 1,
-                                                        tmp_buff,  MAX_PB_SIZE, pu_h, BCW_DENOM, wt0, wt1,
-                                                        prec_x1, prec_y1, pu_w);
+                                                     tmp_buff,  MAX_PB_SIZE, pu_h, BCW_DENOM, wt0, wt1,
+                                                     prec_x1, prec_y1, pu_w);
     }
 
     ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, dst.stride, ctudec->lmcs_info.luts,
-                                            pu_w, pu_h);
+                                           pu_w, pu_h);
 
 }
 
@@ -891,7 +891,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     OVSample edge_buff0[RCN_CTB_SIZE];
     OVSample edge_buff1[RCN_CTB_SIZE];
-    
+
     /*FIXME permit smaller stride to reduce tables */
     uint16_t ref_dmvr0[(16 + 2 * DMVR_REF_PADD) * (128 + 2 * DMVR_REF_PADD)] = {0};
     uint16_t ref_dmvr1[(16 + 2 * DMVR_REF_PADD) * (128 + 2 * DMVR_REF_PADD)] = {0};
@@ -1034,9 +1034,9 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         int16_t grad_y0[(16 + 2) * (16 + 3)];
         int16_t grad_x1[(16 + 2) * (16 + 3)];
         int16_t grad_y1[(16 + 2) * (16 + 3)];
-        
+
         int16_t *tmp_buff1 = (int16_t*) rcn_ctx->data.tmp_buff1;
-        
+
         int16_t ref_stride = 128;
         int16_t grad_stride = pu_w + 2;
 
@@ -1076,8 +1076,8 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     }
 
     ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, dst.stride,
-                                                ctudec->lmcs_info.luts,
-                                                pu_w, pu_h);
+                                           ctudec->lmcs_info.luts,
+                                           pu_w, pu_h);
 
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
@@ -1086,7 +1086,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     OVSample *edge_buff0_1 = (OVSample *)rcn_ctx->data.edge_buff0;
     OVSample *edge_buff1_1 = (OVSample *)rcn_ctx->data.edge_buff1;
-    
+
     struct OVBuffInfo ref0_c = derive_dmvr_ref_buf_c(ref0, tmp0,
                                                      pos_x >> 1, pos_y >> 1,
                                                      edge_buff0, edge_buff0_1,
@@ -1256,16 +1256,16 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                    grad_stride, pb_w, pb_h);
 
     ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, dst.stride,
-                                            ctudec->lmcs_info.luts,
-                                            pu_w, pu_h);
+                                           ctudec->lmcs_info.luts,
+                                           pu_w, pu_h);
 }
 
 static void
-rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
-                                 uint8_t x0, uint8_t y0,
-                                 uint8_t log2_pu_w, uint8_t log2_pu_h,
-                                 OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1,
-                                 uint8_t prof_dir, const struct PROFInfo *const prof_info)
+prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
+                             uint8_t x0, uint8_t y0,
+                             uint8_t log2_pu_w, uint8_t log2_pu_h,
+                             OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1,
+                             uint8_t prof_dir, const struct PROFInfo *const prof_info)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -1278,12 +1278,12 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
     if (!ref0 || !ref1) return;
 
-        
+
     OVSample *edge_buff0 = (OVSample *)rcn_ctx->data.edge_buff0;
     OVSample *edge_buff1 = (OVSample *)rcn_ctx->data.edge_buff1;
 
     int16_t *tmp_buff1 = (int16_t*) rcn_ctx->data.tmp_buff1;
-    
+
     int16_t *tmp_buff = (int16_t *) rcn_ctx->data.tmp_buff;
 
 
@@ -1388,14 +1388,14 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
             int16_t wt1 = bcw_weights[mv0.bcw_idx_plus1 - 1];
             int16_t wt0 = 8 - wt1;
             mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.y, dst.stride << 1, (uint8_t*)ref1_b.y, ref1_b.stride << 1,
-                                                        tmp_buff,  MAX_PB_SIZE, pu_h, BCW_DENOM, wt0, wt1,
-                                                        prec_x1, prec_y1, pu_w);
+                                                         tmp_buff,  MAX_PB_SIZE, pu_h, BCW_DENOM, wt0, wt1,
+                                                         prec_x1, prec_y1, pu_w);
         }
     }
 
     ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, dst.stride,
-                                            ctudec->lmcs_info.luts,
-                                            pu_w, pu_h);
+                                           ctudec->lmcs_info.luts,
+                                           pu_w, pu_h);
 }
 
 static void
@@ -1474,17 +1474,17 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
         wt0 = 8 - wt1;
         mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cb, dst.stride_c<<1, (uint8_t*)ref1_c.cb, ref1_c.stride_c<<1,
-                                                    ref_data0,  MAX_PB_SIZE, pu_h >> 1, BCW_DENOM, wt0, wt1,
-                                                    prec_x1, prec_y1, pu_w >> 1);
+                                                     ref_data0,  MAX_PB_SIZE, pu_h >> 1, BCW_DENOM, wt0, wt1,
+                                                     prec_x1, prec_y1, pu_w >> 1);
         mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cr, dst.stride_c << 1, (uint8_t*)ref1_c.cr, ref1_c.stride_c<<1,
-                                                        ref_data1,  MAX_PB_SIZE, pu_h >> 1, BCW_DENOM, wt0, wt1,
-                                                        prec_x1, prec_y1, pu_w >> 1);
+                                                     ref_data1,  MAX_PB_SIZE, pu_h >> 1, BCW_DENOM, wt0, wt1,
+                                                     prec_x1, prec_y1, pu_w >> 1);
     }
 }
 
 static void
-rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-          OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
+mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
+      OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -1555,16 +1555,16 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
     }
 
     mc_l->unidir[prec_mc_type][log2_pu_w - 1](dst.y, dst.stride,
-                                          src_y, src_stride, pu_h,
-                                          prec_x, prec_y, pu_w);
+                                              src_y, src_stride, pu_h,
+                                              prec_x, prec_y, pu_w);
 
     ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, dst.stride, ctudec->lmcs_info.luts,
-                                            pu_w, pu_h);
+                                           pu_w, pu_h);
 }
 
 static void
-rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, int y0, 
-                int log2_pu_w, int log2_pu_h, OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
+rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, int y0,
+                 int log2_pu_w, int log2_pu_h, OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -1635,7 +1635,7 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, 
         src_y = tmp_buff + buff_off;
         src_stride = RCN_CTB_STRIDE;
     }
-    mc_l->bidir0[prec_mc_type][log2_pu_w - 1]((int16_t*)dst, 
+    mc_l->bidir0[prec_mc_type][log2_pu_w - 1]((int16_t*)dst,
                                           src_y, src_stride, pu_h,
                                           prec_x, prec_y, pu_w);
 }
@@ -1735,15 +1735,15 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
               4, dmv_scale_h, dmv_scale_v, bidir);
 
     ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, dst.stride, ctudec->lmcs_info.luts,
-                                            pu_w, pu_h);
+                                           pu_w, pu_h);
 
 }
 
 static void
 rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int x0, int y0,
-               int log2_pu_w, int log2_pu_h,
-               OVMV mv, uint8_t rpl_idx, uint8_t ref_idx,
-               const int16_t *dmv_scale_h, const int16_t *dmv_scale_v)
+                  int log2_pu_w, int log2_pu_h,
+                  OVMV mv, uint8_t rpl_idx, uint8_t ref_idx,
+                  const int16_t *dmv_scale_h, const int16_t *dmv_scale_v)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -1831,12 +1831,12 @@ rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, in
     prof->grad(tmp_prof, PROF_BUFF_STRIDE, SB_W, SB_H, 4, tmp_grad_x, tmp_grad_y);
 
     prof->rcn((OVSample*) dst, dst_stride, (uint16_t *)tmp_prof + PROF_BUFF_STRIDE + 1, PROF_BUFF_STRIDE, tmp_grad_x, tmp_grad_y,
-             4, dmv_scale_h, dmv_scale_v, bidir);
+              4, dmv_scale_h, dmv_scale_v, bidir);
 }
 
 static void
-rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-          OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
+mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
+      OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -1850,7 +1850,7 @@ rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
 
     OVSample *tmp_buff = (OVSample *)rcn_ctx->data.tmp_buff;
-    
+
     OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
@@ -1920,8 +1920,8 @@ rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 }
 
 static void
-rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int dst_stride, int x0, int y0, 
-                int log2_pu_w, int log2_pu_h, OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
+rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int dst_stride, int x0, int y0,
+                 int log2_pu_w, int log2_pu_h, OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -1936,7 +1936,7 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int
     dst_cr += (x0 >> 1) + (y0 >> 1) * dst_stride;
 
     OVSample *tmp_buff = (OVSample *)rcn_ctx->data.tmp_buff;
-    
+
     OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
@@ -2042,8 +2042,8 @@ clip_rpr_position(int* pos_x, int* pos_y, int pic_w, int pic_h, int pb_w, int pb
 
 
 static void
-rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-        OVMV mv, uint8_t rpl_idx, uint8_t ref_idx, int scaling_hor, int scaling_ver)
+mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
+          OVMV mv, uint8_t rpl_idx, uint8_t ref_idx, int scaling_hor, int scaling_ver)
 {
     struct OVRCNCtx *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -2060,7 +2060,7 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
 
     uint16_t tmp_emul_str = 2 * RCN_CTB_STRIDE;
     uint16_t tmp_rpr_str  = 2 * RCN_CTB_STRIDE;
- 
+
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
     OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
@@ -2074,7 +2074,7 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     const int ref_pic_w = frame0->width;
     const int ref_pic_h = frame0->height;
 
-     //MV precision is 4 bits for luma
+    //MV precision is 4 bits for luma
     int shift_mv  = 4;
     int shift_pos = RPR_SCALE_BITS + shift_mv;
     int offset    = 1 << (RPR_SCALE_BITS - 1);
@@ -2093,7 +2093,7 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     int ref_pu_w = ((ref_pos_x + (((pu_w - 1) * stepX) << shift_mv) + offset) >> shift_pos) - ref_x + 1;
     int ref_pu_h = ((ref_pos_y + (((pu_h - 1) * stepY) << shift_mv) + offset) >> shift_pos) - ref_y + 1;
     ref_pu_h = OVMAX(1, ref_pu_h);
-    
+
     //Clip ref position now that ref_pu_w and ref_pu_h are computed
     clip_rpr_position(&ref_pos_x, &ref_pos_y, ref_pic_w, ref_pic_h, ref_pu_w, ref_pu_h, shift_pos);
     ref_x = (ref_pos_x + offset) >> shift_pos;
@@ -2136,7 +2136,7 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         p_src     = src + (pos_mv_x >> shift_mv) - ref_x;
 
         mc_l->rpr_h[prec_type][1](p_tmp_rpr, tmp_rpr_str, p_src, src_stride, ref_pu_h + QPEL_EXTRA + 1,
-                                                        prec_x, prec_y, 1, filter_idx_h);
+                                  prec_x, prec_y, 1, filter_idx_h);
         p_tmp_rpr   +=  1;
     }
 
@@ -2149,20 +2149,20 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
         p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * tmp_rpr_str;
 
         mc_l->rpr_v_uni[prec_type][log2_pu_w-1](p_dst, dst.stride, p_tmp_rpr, tmp_rpr_str, 1,
-                                            prec_x, prec_y, pu_w, filter_idx_v);
+                                                prec_x, prec_y, pu_w, filter_idx_v);
         p_dst    +=  dst.stride;
     }
 
     ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, dst.stride,
-                                        ctudec->lmcs_info.luts,
-                                        pu_w, pu_h);    
+                                           ctudec->lmcs_info.luts,
+                                           pu_w, pu_h);
 }
 
 
 static void
-rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int x0, int y0, 
-            int log2_pu_w, int log2_pu_h, OVMV mv, uint8_t rpl_idx, uint8_t ref_idx,
-            int scaling_hor, int scaling_ver)
+rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int x0, int y0,
+                 int log2_pu_w, int log2_pu_h, OVMV mv, uint8_t rpl_idx, uint8_t ref_idx,
+                 int scaling_hor, int scaling_ver)
 {
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
@@ -2175,7 +2175,7 @@ rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int
     uint16_t* tmp_rpr  = (uint16_t *) rcn_ctx->data.tmp_rpr;
     uint16_t tmp_emul_str = 2*RCN_CTB_STRIDE;
     uint16_t tmp_rpr_str  = 2*RCN_CTB_STRIDE;
- 
+
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
@@ -2251,7 +2251,7 @@ rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int
         p_src     = src + (pos_mv_x >> shift_mv) - ref_x;
 
         mc_l->rpr_h[prec_type][1](p_tmp_rpr, tmp_rpr_str, p_src, src_stride, ref_pu_h + QPEL_EXTRA + 1,
-                                                        prec_x, prec_y, 1, filter_idx_h);
+                                  prec_x, prec_y, 1, filter_idx_h);
         p_tmp_rpr   +=  1;
     }
 
@@ -2263,15 +2263,15 @@ rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int
         prec_type = filter_idx_v || prec_y;
         p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * tmp_rpr_str;
         mc_l->rpr_v_bi[prec_type][log2_pu_w-1](p_dst, dst_stride, p_tmp_rpr, tmp_rpr_str, 1,
-                                            prec_x, prec_y, pu_w, filter_idx_v);
+                                               prec_x, prec_y, pu_w, filter_idx_v);
         p_dst    +=  dst_stride;
     }
 
 }
 
 static void
-rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-        OVMV mv, uint8_t rpl_idx, uint8_t ref_idx, int scaling_hor, int scaling_ver)
+mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
+          OVMV mv, uint8_t rpl_idx, uint8_t ref_idx, int scaling_hor, int scaling_ver)
 {
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
@@ -2340,17 +2340,17 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
     const OVSample* p_src;
     OVSample* p_dst;
     for(int comp_c = 0;  comp_c < 2; comp_c ++)
-    {   
+    {
         src_stride_c = frame0->linesize[1] /sizeof(OVSample);
         const OVSample * src_c = src_cb;
         OVSample* dst_c = dst.cb;
         if (comp_c == 1) {
             src_c = src_cr;
             dst_c = dst.cr;
-        }    
+        }
 
         uint8_t emulate_edge = test_for_edge_emulation_c(ref_x, ref_y, ref_pic_w, ref_pic_h,
-                                                 ref_pu_w + 2, ref_pu_h + 2);;
+                                                         ref_pu_w + 2, ref_pu_h + 2);;
 
         int buff_off = REF_PADDING_C * (tmp_emul_str) + (REF_PADDING_C);
         int src_off  = REF_PADDING_C * (src_stride_c) + (REF_PADDING_C);
@@ -2377,7 +2377,7 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
             p_src     = src_c + (pos_mv_x >> shift_mv) - ref_x;
 
             mc_c->rpr_h[prec_type][1](p_tmp_rpr, tmp_rpr_str, p_src, src_stride_c,
-                                        ref_pu_h + EPEL_EXTRA + 2, prec_x, prec_y, 1, filter_idx_h);
+                                      ref_pu_h + EPEL_EXTRA + 2, prec_x, prec_y, 1, filter_idx_h);
             p_tmp_rpr   +=  1;
         }
 
@@ -2391,16 +2391,16 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
             p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * tmp_rpr_str;
 
             mc_c->rpr_v_uni[prec_type][log2_pu_w-2](p_dst, dst.stride_c, p_tmp_rpr, tmp_rpr_str,
-                                                1, prec_x, prec_y, pu_w, filter_idx_v); 
+                                                    1, prec_x, prec_y, pu_w, filter_idx_v);
             p_dst    +=  dst.stride_c;
         }
     }
 }
 
 static void
-rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uint16_t dst_stride, int x0, int y0, 
-                int log2_pu_w, int log2_pu_h, OVMV mv, uint8_t rpl_idx, uint8_t ref_idx,
-                int scaling_hor, int scaling_ver)
+rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uint16_t dst_stride, int x0, int y0,
+                 int log2_pu_w, int log2_pu_h, OVMV mv, uint8_t rpl_idx, uint8_t ref_idx,
+                 int scaling_hor, int scaling_ver)
 {
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
@@ -2469,17 +2469,17 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
     const OVSample* p_src;
     uint16_t* p_dst;
     for(int comp_c = 0;  comp_c < 2; comp_c ++)
-    {   
+    {
         src_stride_c = frame0->linesize[1]/sizeof(OVSample);
         const OVSample * src_c = src_cb;
         uint16_t * dst_c = dst_cb;
         if (comp_c == 1) {
             src_c = src_cr;
             dst_c = dst_cr;
-        }    
+        }
 
         uint8_t emulate_edge = test_for_edge_emulation_c(ref_x, ref_y, ref_pic_w, ref_pic_h,
-                                                 ref_pu_w + 2, ref_pu_h + 2);;
+                                                         ref_pu_w + 2, ref_pu_h + 2);;
 
         int buff_off = REF_PADDING_C * (tmp_emul_str) + (REF_PADDING_C);
         int src_off  = REF_PADDING_C * (src_stride_c) + (REF_PADDING_C);
@@ -2506,7 +2506,7 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
             p_src     = src_c + (pos_mv_x >> shift_mv) - ref_x;
 
             mc_c->rpr_h[prec_type][1](p_tmp_rpr, tmp_rpr_str, p_src, src_stride_c,
-                                        ref_pu_h + EPEL_EXTRA + 2, prec_x, prec_y, 1, filter_idx_h);
+                                      ref_pu_h + EPEL_EXTRA + 2, prec_x, prec_y, 1, filter_idx_h);
             p_tmp_rpr   +=  1;
         }
 
@@ -2520,7 +2520,7 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
             p_tmp_rpr = tmp_rpr + buff_off + ((pos_mv_y >> shift_mv) - ref_y) * tmp_rpr_str;
 
             mc_c->rpr_v_bi[prec_type][log2_pu_w-2](p_dst, dst_stride, p_tmp_rpr, tmp_rpr_str,
-                                                1, prec_x, prec_y, pu_w, filter_idx_v); 
+                                                   1, prec_x, prec_y, pu_w, filter_idx_v);
             p_dst    +=  dst_stride;
         }
     }
@@ -2528,20 +2528,20 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
 
 
 static void
-rcn_mcp_rpr(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
+mcp_rpr(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
         OVMV mv, uint8_t rpl_idx, uint8_t ref_idx, int scaling_hor, int scaling_ver)
 {
-    rcn_mcp_rpr_l(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx, scaling_hor, scaling_ver);
-    rcn_mcp_rpr_c(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx, scaling_hor, scaling_ver);
+    mcp_rpr_l(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx, scaling_hor, scaling_ver);
+    mcp_rpr_c(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx, scaling_hor, scaling_ver);
 }
 
 
 static void
-rcn_mc_rpr_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
-                        uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,
-                        OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1,
-                        int rpr_scale_h0, int rpr_scale_v0,
-                        int rpr_scale_h1, int rpr_scale_v1, struct VVCGPM* gpm_ctx )
+mc_rpr_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
+           uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,
+           OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1,
+           int rpr_scale_h0, int rpr_scale_v0,
+           int rpr_scale_h1, int rpr_scale_v1, struct VVCGPM* gpm_ctx )
 {
     uint8_t no_rpr_l0 = rpr_scale_h0 == RPR_NO_SCALE && rpr_scale_v0 == RPR_NO_SCALE;
     uint8_t no_rpr_l1 = rpr_scale_h1 == RPR_NO_SCALE && rpr_scale_v1 == RPR_NO_SCALE;
@@ -2561,8 +2561,8 @@ rcn_mc_rpr_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         tmp_rpl0_stride = MAX_PB_SIZE;
         rcn_mcp_bidir0_l(ctudec, tmp_rpl0, tmp_rpl0_stride, x0, y0, log2_pb_w, log2_pb_h, mv0, type0, ref_idx0);
     } else {
-        rcn_mcp_rpr_bi_l(ctudec, tmp_rpl0, tmp_rpl0_stride, x0, y0, log2_pb_w, log2_pb_h, mv0, type0, ref_idx0, 
-                        rpr_scale_h0, rpr_scale_v0);
+        rcn_mcp_rpr_bi_l(ctudec, tmp_rpl0, tmp_rpl0_stride, x0, y0, log2_pb_w, log2_pb_h, mv0, type0, ref_idx0,
+                         rpr_scale_h0, rpr_scale_v0);
     }
 
     uint16_t* tmp_rpl1 = rcn_ctx->data.tmp_bi_mrg1;
@@ -2571,8 +2571,8 @@ rcn_mc_rpr_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         tmp_rpl1_stride = MAX_PB_SIZE;
         rcn_mcp_bidir0_l(ctudec, tmp_rpl1, tmp_rpl1_stride, x0, y0, log2_pb_w, log2_pb_h, mv1, type1, ref_idx1);
     } else {
-        rcn_mcp_rpr_bi_l(ctudec, tmp_rpl1, tmp_rpl1_stride, x0, y0, log2_pb_w, log2_pb_h, mv1, type1, ref_idx1, 
-                        rpr_scale_h1, rpr_scale_v1);
+        rcn_mcp_rpr_bi_l(ctudec, tmp_rpl1, tmp_rpl1_stride, x0, y0, log2_pb_w, log2_pb_h, mv1, type1, ref_idx1,
+                         rpr_scale_h1, rpr_scale_v1);
     }
 
     dst.y       += x0 + y0 * dst.stride;
@@ -2586,31 +2586,31 @@ rcn_mc_rpr_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         if (gpm_ctx) {
             int16_t* weight;
             int step_x, step_y;
-            uint8_t chroma_flag = 0; 
-            rcn_gpm_weights_and_steps(gpm_ctx->split_dir, log2_pb_w, log2_pb_h, &step_x, &step_y, &weight, chroma_flag);
+            uint8_t chroma_flag = 0;
+            gpm_weights_and_steps(gpm_ctx->split_dir, log2_pb_w, log2_pb_h, &step_x, &step_y, &weight, chroma_flag);
             mc_l->gpm_weighted(dst.y, dst.stride, (int16_t*) tmp_rpl0, tmp_rpl0_stride,
-                                    (int16_t*) tmp_rpl1, tmp_rpl1_stride, pu_h, pu_w, step_x, step_y, weight);
+                               (int16_t*) tmp_rpl1, tmp_rpl1_stride, pu_h, pu_w, step_x, step_y, weight);
         } else {
             mc_l->rpr_sum(dst.y, dst.stride, tmp_rpl0, tmp_rpl0_stride,
-                                    tmp_rpl1, tmp_rpl1_stride, pu_h, 0, 0, pu_w);
+                          tmp_rpl1, tmp_rpl1_stride, pu_h, 0, 0, pu_w);
         }
     } else {
         int wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
         int wt0 = 8 - wt1;
         mc_l->rpr_w[log2_pb_w-1](dst.y, dst.stride, tmp_rpl0, tmp_rpl0_stride,
-                                    tmp_rpl1, tmp_rpl1_stride, pu_h, BCW_DENOM, wt0, wt1, 0, 0, pu_w);
+                                 tmp_rpl1, tmp_rpl1_stride, pu_h, BCW_DENOM, wt0, wt1, 0, 0, pu_w);
     }
 
     ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, dst.stride, ctudec->lmcs_info.luts, pu_w, pu_h);
 }
 
 static void
-rcn_mc_rpr_prof_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
-                        uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,
-                        OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1,
-                        int rpr_scale_h0, int rpr_scale_v0,
-                        int rpr_scale_h1, int rpr_scale_v1,
-                        uint8_t prof_dir, const struct PROFInfo *const prof_info )
+mc_rpr_prof_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
+                uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,
+                OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1,
+                int rpr_scale_h0, int rpr_scale_v0,
+                int rpr_scale_h1, int rpr_scale_v1,
+                uint8_t prof_dir, const struct PROFInfo *const prof_info )
 {
     uint8_t no_rpr_l0 = rpr_scale_h0 == RPR_NO_SCALE && rpr_scale_v0 == RPR_NO_SCALE;
     uint8_t no_rpr_l1 = rpr_scale_h1 == RPR_NO_SCALE && rpr_scale_v1 == RPR_NO_SCALE;
@@ -2621,20 +2621,20 @@ rcn_mc_rpr_prof_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint16_t tmp_rpl0_stride = RCN_CTB_STRIDE;
     if (no_rpr_l0) {
         rcn_prof_mcp_bi_l(ctudec, tmp_rpl0, tmp_rpl0_stride, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0,
-                       prof_info->dmv_scale_h_0, prof_info->dmv_scale_v_0);
+                          prof_info->dmv_scale_h_0, prof_info->dmv_scale_v_0);
     } else {
         rcn_mcp_rpr_bi_l(ctudec, tmp_rpl0, tmp_rpl0_stride, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0,
-                        rpr_scale_h0, rpr_scale_v0);
+                         rpr_scale_h0, rpr_scale_v0);
     }
 
     uint16_t *tmp_rpl1 = &rcn_ctx->data.tmp_bi_mrg1[0];
     uint16_t tmp_rpl1_stride = RCN_CTB_STRIDE;
     if (no_rpr_l1) {
         rcn_prof_mcp_bi_l(ctudec, tmp_rpl1, tmp_rpl1_stride, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1,
-                       prof_info->dmv_scale_h_1, prof_info->dmv_scale_v_1);    
+                          prof_info->dmv_scale_h_1, prof_info->dmv_scale_v_1);
     } else {
         rcn_mcp_rpr_bi_l(ctudec, tmp_rpl1, tmp_rpl1_stride, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1,
-                        rpr_scale_h1, rpr_scale_v1);
+                         rpr_scale_h1, rpr_scale_v1);
     }
 
     dst.y     += x0 + y0 * dst.stride;
@@ -2646,12 +2646,12 @@ rcn_mc_rpr_prof_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     if (!use_bcw) {
         mc_l->rpr_sum(dst.y, dst.stride, tmp_rpl0, tmp_rpl0_stride,
-                                tmp_rpl1, tmp_rpl1_stride, pu_h, 0, 0, pu_w);
+                      tmp_rpl1, tmp_rpl1_stride, pu_h, 0, 0, pu_w);
     } else {
         int wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
         int wt0 = 8 - wt1;
         mc_l->rpr_w[log2_pb_w-1](dst.y, dst.stride, tmp_rpl0, tmp_rpl0_stride,
-                                    tmp_rpl1, tmp_rpl1_stride, pu_h, BCW_DENOM, wt0, wt1, 0, 0, pu_w);
+                                 tmp_rpl1, tmp_rpl1_stride, pu_h, BCW_DENOM, wt0, wt1, 0, 0, pu_w);
     }
 
     ctudec->rcn_funcs.lmcs_reshape_forward(dst.y, dst.stride, ctudec->lmcs_info.luts, pu_w, pu_h);
@@ -2659,11 +2659,11 @@ rcn_mc_rpr_prof_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
 
 static void
-rcn_mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
-                        uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,
-                        OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1,
-                        int rpr_scale_h0, int rpr_scale_v0,
-                        int rpr_scale_h1, int rpr_scale_v1, struct VVCGPM* gpm_ctx )
+mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
+           uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,
+           OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1,
+           int rpr_scale_h0, int rpr_scale_v0,
+           int rpr_scale_h1, int rpr_scale_v1, struct VVCGPM* gpm_ctx )
 {
     uint8_t no_rpr_l0 = rpr_scale_h0 == RPR_NO_SCALE && rpr_scale_v0 == RPR_NO_SCALE;
     uint8_t no_rpr_l1 = rpr_scale_h1 == RPR_NO_SCALE && rpr_scale_v1 == RPR_NO_SCALE;
@@ -2681,11 +2681,11 @@ rcn_mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint16_t tmp_rpl0_stride = dst.stride_c;
     if (no_rpr_l0) {
         tmp_rpl0_stride = MAX_PB_SIZE;
-        rcn_mcp_bidir0_c(ctudec, tmp_rpl0_cb, tmp_rpl0_cr, tmp_rpl0_stride, x0, y0, 
-                        log2_pb_w, log2_pb_h, mv0, type0, ref_idx0);
+        rcn_mcp_bidir0_c(ctudec, tmp_rpl0_cb, tmp_rpl0_cr, tmp_rpl0_stride, x0, y0,
+                         log2_pb_w, log2_pb_h, mv0, type0, ref_idx0);
     } else {
-        rcn_mcp_rpr_bi_c(ctudec, tmp_rpl0_cb, tmp_rpl0_cr, tmp_rpl0_stride, x0, y0, 
-                        log2_pb_w, log2_pb_h, mv0, type0, ref_idx0, rpr_scale_h0, rpr_scale_v0);
+        rcn_mcp_rpr_bi_c(ctudec, tmp_rpl0_cb, tmp_rpl0_cr, tmp_rpl0_stride, x0, y0,
+                         log2_pb_w, log2_pb_h, mv0, type0, ref_idx0, rpr_scale_h0, rpr_scale_v0);
     }
 
     uint16_t* tmp_rpl1_cb = rcn_ctx->data.tmp_bi_mrg2;
@@ -2693,8 +2693,8 @@ rcn_mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint16_t tmp_rpl1_stride = dst.stride_c;
     if (no_rpr_l1) {
         tmp_rpl1_stride = MAX_PB_SIZE;
-        rcn_mcp_bidir0_c(ctudec, tmp_rpl1_cb, tmp_rpl1_cr, tmp_rpl1_stride, x0, y0, 
-                        log2_pb_w, log2_pb_h, mv1, type1, ref_idx1);
+        rcn_mcp_bidir0_c(ctudec, tmp_rpl1_cb, tmp_rpl1_cr, tmp_rpl1_stride, x0, y0,
+                         log2_pb_w, log2_pb_h, mv1, type1, ref_idx1);
     } else {
         rcn_mcp_rpr_bi_c(ctudec, tmp_rpl1_cb, tmp_rpl1_cr, tmp_rpl1_stride, x0, y0,
                          log2_pb_w, log2_pb_h, mv1, type1, ref_idx1, rpr_scale_h1, rpr_scale_v1);
@@ -2707,48 +2707,51 @@ rcn_mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     tmp_rpl1_cb += (x0 >> 1) + (y0 >> 1) * tmp_rpl1_stride;
     tmp_rpl0_cr += (x0 >> 1) + (y0 >> 1) * tmp_rpl0_stride;
     tmp_rpl1_cr += (x0 >> 1) + (y0 >> 1) * tmp_rpl1_stride;
+
     int pu_w = 1 << (log2_pb_w-1);
     int pu_h = 1 << (log2_pb_h-1);
+
     struct MCFunctions *mc_c = &ctudec->rcn_funcs.mc_c;
+
     if (!use_bcw) {
         if (gpm_ctx) {
             int16_t* weight;
             int step_x, step_y;
-            uint8_t chroma_flag = 1; 
-            rcn_gpm_weights_and_steps(gpm_ctx->split_dir, log2_pb_w, log2_pb_h, &step_x, &step_y, &weight, chroma_flag);
+            uint8_t chroma_flag = 1;
+            gpm_weights_and_steps(gpm_ctx->split_dir, log2_pb_w, log2_pb_h, &step_x, &step_y, &weight, chroma_flag);
             mc_c->gpm_weighted(dst.cb, dst.stride_c, (int16_t*) tmp_rpl0_cb, tmp_rpl0_stride,
-                                    (int16_t*) tmp_rpl1_cb, tmp_rpl1_stride, pu_h, pu_w, step_x, step_y, weight);
+                               (int16_t*) tmp_rpl1_cb, tmp_rpl1_stride, pu_h, pu_w, step_x, step_y, weight);
             mc_c->gpm_weighted(dst.cr, dst.stride_c, (int16_t*) tmp_rpl0_cr, tmp_rpl0_stride,
-                                    (int16_t*) tmp_rpl1_cr, tmp_rpl1_stride, pu_h, pu_w, step_x, step_y, weight);
+                               (int16_t*) tmp_rpl1_cr, tmp_rpl1_stride, pu_h, pu_w, step_x, step_y, weight);
         } else {
             mc_c->rpr_sum(dst.cb, dst.stride_c, tmp_rpl0_cb, tmp_rpl0_stride, tmp_rpl1_cb, tmp_rpl1_stride,
-                                pu_h, 0, 0, pu_w);
+                          pu_h, 0, 0, pu_w);
             mc_c->rpr_sum(dst.cr, dst.stride_c, tmp_rpl0_cr, tmp_rpl0_stride, tmp_rpl1_cr, tmp_rpl1_stride,
-                                pu_h, 0, 0, pu_w);
+                          pu_h, 0, 0, pu_w);
         }
     } else {
         int wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
         int wt0 = 8 - wt1;
         mc_c->rpr_w[log2_pb_w-2](dst.cb, dst.stride_c, tmp_rpl0_cb, tmp_rpl0_stride, tmp_rpl1_cb, tmp_rpl1_stride,
-                            pu_h, BCW_DENOM, wt0, wt1, 0, 0, pu_w);
+                                 pu_h, BCW_DENOM, wt0, wt1, 0, 0, pu_w);
         mc_c->rpr_w[log2_pb_w-2](dst.cr, dst.stride_c, tmp_rpl0_cr, tmp_rpl0_stride, tmp_rpl1_cr, tmp_rpl1_stride,
-                            pu_h, BCW_DENOM, wt0, wt1, 0, 0, pu_w);
+                                 pu_h, BCW_DENOM, wt0, wt1, 0, 0, pu_w);
     }
 
 }
 
 
 static void
-rcn_mc_rpr_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
-                        uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,
-                        OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1,
-                        int rpr_scale_h0, int rpr_scale_v0, 
-                        int rpr_scale_h1, int rpr_scale_v1)
+mc_rpr_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
+             uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,
+             OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1,
+             int rpr_scale_h0, int rpr_scale_v0,
+             int rpr_scale_h1, int rpr_scale_v1)
 {
-    rcn_mc_rpr_b_l(ctudec, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, 
-                            rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
-    rcn_mc_rpr_b_c(ctudec, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, 
-                            rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
+    mc_rpr_b_l(ctudec, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
+               rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
+    mc_rpr_b_c(ctudec, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
+               rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
 }
 
 static void
@@ -2759,12 +2762,12 @@ rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_
     uint8_t no_rpr_l0 = !(inter_ctx->rpr_scale_msk0 & (1 << ref_idx));
 
     if (no_rpr_l0) {
-        rcn_mcp_l(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx);
-        rcn_mcp_c(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx);
+        mcp_l(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx);
+        mcp_c(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx);
     } else {
         int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx][0];
         int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx][1];
-        rcn_mcp_rpr(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx, rpr_scale_h0, rpr_scale_v0);
+        mcp_rpr(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx, rpr_scale_h0, rpr_scale_v0);
     }
 
 }
@@ -2783,37 +2786,37 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *cons
         uint8_t no_rpr_l1 = !(inter_ctx->rpr_scale_msk1 & (1 << ref_idx1));
         uint8_t no_rpr_l0 = !(inter_ctx->rpr_scale_msk0 & (1 << ref_idx0));
         if (no_rpr_l0 && no_rpr_l1) {
-            rcn_motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
+            motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
             rcn_motion_compensation_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
         } else {
             int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
             int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
             int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
             int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
-            rcn_mc_rpr_b(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, 
+            mc_rpr_b(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
                             rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1);
         }
 
     } else if (inter_dir & 0x2 || identical_motion) {
         uint8_t no_rpr_l1 = !(inter_ctx->rpr_scale_msk1 & (1 << ref_idx1));
         if (no_rpr_l1) {
-            rcn_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
-            rcn_mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
+            mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
+            mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
         } else {
             int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
             int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
-            rcn_mcp_rpr(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1, rpr_scale_h1, rpr_scale_v1);
+            mcp_rpr(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1, rpr_scale_h1, rpr_scale_v1);
         }
 
     } else if (inter_dir & 0x1) {
         uint8_t no_rpr_l0 = !(inter_ctx->rpr_scale_msk0 & (1 << ref_idx0));
         if (no_rpr_l0) {
-            rcn_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
-            rcn_mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
+            mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
+            mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
         } else {
             int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
             int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
-            rcn_mcp_rpr(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0, rpr_scale_h0, rpr_scale_v0);
+            mcp_rpr(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0, rpr_scale_h0, rpr_scale_v0);
         }
     }
 }
@@ -2825,7 +2828,7 @@ rcn_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
             unsigned int x0, unsigned int y0,
             unsigned int log2_pb_w, unsigned int log2_pb_h,
             uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1)
-{   
+{
 
     uint8_t identical_motion = check_identical_motion(inter_ctx, inter_dir, mv0, mv1, ref_idx0, ref_idx1);
 
@@ -2833,34 +2836,34 @@ rcn_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
         uint8_t no_rpr_l1 = !(inter_ctx->rpr_scale_msk1 & (1 << ref_idx1));
         uint8_t no_rpr_l0 = !(inter_ctx->rpr_scale_msk0 & (1 << ref_idx0));
         if (no_rpr_l0 && no_rpr_l1) {
-            rcn_motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
+            motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
         } else {
             int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
             int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
             int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
             int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
-            rcn_mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, 
+            mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
                             rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
         }
 
     } else if (inter_dir & 0x2 || identical_motion) {
         uint8_t no_rpr_l1 = !(inter_ctx->rpr_scale_msk1 & (1 << ref_idx1));
         if (no_rpr_l1) {
-            rcn_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
+            mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
         } else {
             int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
             int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
-            rcn_mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1, rpr_scale_h1, rpr_scale_v1);
+            mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1, rpr_scale_h1, rpr_scale_v1);
         }
 
     } else if (inter_dir & 0x1) {
         uint8_t no_rpr_l0 = !(inter_ctx->rpr_scale_msk0 & (1 << ref_idx0));
         if (no_rpr_l0) {
-            rcn_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
+            mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
         } else {
             int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
             int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
-            rcn_mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0, rpr_scale_h0, rpr_scale_v0);
+            mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0, rpr_scale_h0, rpr_scale_v0);
         }
     }
 }
@@ -2880,24 +2883,24 @@ rcn_prof_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCt
         uint8_t no_rpr_l0 = !(inter_ctx->rpr_scale_msk0 & (1 << ref_idx0));
         uint8_t apply_prof = (no_rpr_l0 && (prof_dir & 0x1)) || (no_rpr_l1 && (prof_dir & 0x2));
         if (no_rpr_l0 && no_rpr_l1) {
-            rcn_prof_motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, 
-                                             ref_idx0, ref_idx1, prof_dir, prof_info);
+            prof_motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1,
+                                         ref_idx0, ref_idx1, prof_dir, prof_info);
         } else if (apply_prof) {
             int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
             int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
             int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
             int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
 
-            rcn_mc_rpr_prof_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, 
-                                rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, prof_dir, prof_info);
+            mc_rpr_prof_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
+                            rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, prof_dir, prof_info);
         } else {
             int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
             int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
             int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
             int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
 
-            rcn_mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, 
-                           rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
+            mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
+                       rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
         }
 
     } else if (inter_dir & 0x2 ) {
@@ -2910,8 +2913,8 @@ rcn_prof_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCt
             int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
             int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
 
-            rcn_mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1, 
-                          rpr_scale_h1, rpr_scale_v1);
+            mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1,
+                      rpr_scale_h1, rpr_scale_v1);
         }
 
     } else if (inter_dir & 0x1) {
@@ -2924,8 +2927,8 @@ rcn_prof_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCt
             int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
             int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
 
-            rcn_mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0, 
-                          rpr_scale_h0, rpr_scale_v0);
+            mcp_rpr_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0,
+                      rpr_scale_h0, rpr_scale_v0);
         }
     }
 }
@@ -2951,38 +2954,38 @@ rcn_mcp_b_c(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
             int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
             int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
 
-            rcn_mc_rpr_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, 
-                            rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
+            mc_rpr_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
+                       rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
         }
 
     } else if (inter_dir & 0x2 || identical_motion) {
         uint8_t no_rpr_l1 = !(inter_ctx->rpr_scale_msk1 & (1 << ref_idx1));
         if (no_rpr_l1) {
-            rcn_mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
+            mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1);
         } else {
             int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
             int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
-            rcn_mcp_rpr_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1, 
-                        rpr_scale_h1, rpr_scale_v1);
+            mcp_rpr_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1,
+                      rpr_scale_h1, rpr_scale_v1);
         }
 
     } else if (inter_dir & 0x1) {
         uint8_t no_rpr_l0 = !(inter_ctx->rpr_scale_msk0 & (1 << ref_idx0));
         if (no_rpr_l0) {
-            rcn_mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
+            mcp_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0);
         } else {
             int rpr_scale_h0 = inter_ctx->scale_fact_rpl0[ref_idx0][0];
             int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
-            rcn_mcp_rpr_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0, 
-                          rpr_scale_h0, rpr_scale_v0);
+            mcp_rpr_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0,
+                      rpr_scale_h0, rpr_scale_v0);
         }
     }
 }
 
 static void
-rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, struct OVBuffInfo* tmp_inter,
-                      unsigned int x0, unsigned int y0,
-                      unsigned int log2_pb_w, unsigned int log2_pb_h)
+ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, struct OVBuffInfo* tmp_inter,
+                  unsigned int x0, unsigned int y0,
+                  unsigned int log2_pb_w, unsigned int log2_pb_h)
 {
     struct CIIPFunctions *ciip = &ctudec->rcn_funcs.ciip;
     //Compute weight in function of neighboring coding modes
@@ -3016,9 +3019,9 @@ rcn_ciip_weighted_sum(OVCTUDec*const ctudec, struct OVBuffInfo* tmp_intra, struc
         mc_c->unidir[0][0](dst.cr, dst.stride_c, tmp_inter->cr, tmp_inter->stride_c, 1 << (log2_pb_h - 1), 0, 0, 1 << (log2_pb_w - 1));
     } else {
         ciip->weighted(dst.cb, dst.stride_c, tmp_intra->cb, tmp_inter->cb, tmp_intra->stride_c, tmp_inter->stride_c,
-                           1 << (log2_pb_w - 1), 1 << (log2_pb_h - 1), wt);
+                       1 << (log2_pb_w - 1), 1 << (log2_pb_h - 1), wt);
         ciip->weighted(dst.cr, dst.stride_c, tmp_intra->cr, tmp_inter->cr, tmp_intra->stride_c, tmp_inter->stride_c,
-                           1 << (log2_pb_w - 1), 1 << (log2_pb_h - 1), wt);
+                       1 << (log2_pb_w - 1), 1 << (log2_pb_h - 1), wt);
     }
 }
 
@@ -3034,12 +3037,13 @@ rcn_ciip_b(OVCTUDec*const ctudec,
     const OVPartInfo *const part_ctx = ctudec->part_ctx;
     struct OVBuffInfo tmp_inter;
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
-       
+
     tmp_inter.y  = (OVSample *)&rcn_ctx->data.tmp_inter_l[RCN_CTB_PADDING];
     tmp_inter.cb = (OVSample *)&rcn_ctx->data.tmp_inter_cb[RCN_CTB_PADDING];
     tmp_inter.cr = (OVSample *)&rcn_ctx->data.tmp_inter_cr[RCN_CTB_PADDING];
     tmp_inter.stride   = RCN_CTB_STRIDE;
     tmp_inter.stride_c = RCN_CTB_STRIDE;
+
     rcn_mcp_b(ctudec, tmp_inter, inter_ctx, part_ctx, mv0, mv1, x0, y0, log2_pb_w, log2_pb_h,
               inter_dir, ref_idx0, ref_idx1);
 
@@ -3048,7 +3052,7 @@ rcn_ciip_b(OVCTUDec*const ctudec,
     ctudec->rcn_funcs.intra_pred(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0, y0, log2_pb_w, log2_pb_h, 0);
     ctudec->rcn_funcs.intra_pred_c(&ctudec->rcn_ctx, OVINTRA_PLANAR, x0 >> 1, y0 >> 1, log2_pb_w - 1, log2_pb_h - 1, 0);
 
-    rcn_ciip_weighted_sum(ctudec, &tmp_intra, &tmp_inter, x0, y0, log2_pb_w, log2_pb_h);
+    ciip_weighted_sum(ctudec, &tmp_intra, &tmp_inter, x0, y0, log2_pb_w, log2_pb_h);
 }
 
 static void
@@ -3062,7 +3066,7 @@ rcn_ciip(OVCTUDec *const ctudec,
     OVSample * tmp_inter_l = (OVSample *)rcn_ctx->data.tmp_inter_l;
     OVSample *tmp_inter_cb = (OVSample *)rcn_ctx->data.tmp_inter_cb;
     OVSample *tmp_inter_cr = (OVSample *)rcn_ctx->data.tmp_inter_cr;
-    
+
     tmp_inter.y  = &tmp_inter_l [RCN_CTB_PADDING];
     tmp_inter.cb = &tmp_inter_cb[RCN_CTB_PADDING];
     tmp_inter.cr = &tmp_inter_cr[RCN_CTB_PADDING];
@@ -3076,7 +3080,7 @@ rcn_ciip(OVCTUDec *const ctudec,
     ctudec->rcn_funcs.intra_pred(&ctudec->rcn_ctx, &tmp_intra, OVINTRA_PLANAR, x0, y0, log2_pb_w, log2_pb_h, 0);
     ctudec->rcn_funcs.intra_pred_c(&ctudec->rcn_ctx, OVINTRA_PLANAR, x0 >> 1, y0 >> 1, log2_pb_w - 1, log2_pb_h - 1, 0);
 
-    rcn_ciip_weighted_sum(ctudec, &tmp_intra, &tmp_inter, x0, y0, log2_pb_w, log2_pb_h);
+    ciip_weighted_sum(ctudec, &tmp_intra, &tmp_inter, x0, y0, log2_pb_w, log2_pb_h);
 
 }
 
@@ -3091,10 +3095,10 @@ static const int8_t g_angle2mask[GEO_NUM_ANGLES] =
 
 
 static void
-rcn_gpm_weights_and_steps(int split_dir, int log2_pb_w_l, int log2_pb_h_l, int* step_x, int* step_y,
-                          int16_t** weight, int cr_scale)
+gpm_weights_and_steps(int split_dir, int log2_pb_w_l, int log2_pb_h_l, int* step_x, int* step_y,
+                      int16_t** weight, int cr_scale)
 {
-    static const int8_t g_angle2mirror[GEO_NUM_ANGLES] =
+static const int8_t g_angle2mirror[GEO_NUM_ANGLES] =
     {
         0, 0, 0, 0, 0, 0, 0, 0,
         0, 1, 1, 1, 1, 2, 2, 2,
@@ -3149,10 +3153,10 @@ rcn_gpm_b(OVCTUDec *const ctudec, struct VVCGPM* gpm_ctx,
     int rpr_scale_v1 = scale_fact_rpl[1];
 
     /*The RPR functions apply the same bidir0 filters than non-RPR, therefore use only RPR function*/
-    rcn_mc_rpr_b_l(ctudec, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, mv0.ref_idx, mv1.ref_idx, 
-                   rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, gpm_ctx);
-    rcn_mc_rpr_b_c(ctudec, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, mv0.ref_idx, mv1.ref_idx, 
-                   rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, gpm_ctx);
+    mc_rpr_b_l(ctudec, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, mv0.ref_idx, mv1.ref_idx,
+               rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, gpm_ctx);
+    mc_rpr_b_c(ctudec, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, mv0.ref_idx, mv1.ref_idx,
+               rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, gpm_ctx);
 
 }
 
