@@ -1433,7 +1433,6 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->drv_ctx.inter_ctx.bdof_enabled &= sh->sh_slice_type == SLICE_B;
     ctudec->drv_ctx.inter_ctx.dmvr_enabled = sps->sps_dmvr_enabled_flag && (!ph->ph_dmvr_disabled_flag);
     ctudec->drv_ctx.inter_ctx.dmvr_enabled &= sh->sh_slice_type == SLICE_B;
-    ctudec->drv_ctx.inter_ctx.prec_amvr = 0;
 
     slice_init_qp_ctx(ctudec, prms);
 

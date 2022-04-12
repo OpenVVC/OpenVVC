@@ -381,7 +381,6 @@ struct InterDRVCtx
     uint8_t mmvd_shift;
 
     uint8_t affine_6params_enabled;
-    uint8_t prec_amvr;
 
     struct VVCGPM
     {
