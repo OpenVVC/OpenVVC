@@ -529,6 +529,7 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     /* FIXME derive ref_idx */
     uint8_t ref_idx_0 = ref_idx0;
     uint8_t ref_idx_1 = ref_idx1;
+    uint8_t prec_amvr = mv0.prec_amvr;
 
     int16_t wt0, wt1;
 
@@ -570,7 +571,7 @@ rcn_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint8_t prec_y0 = (mv0.y) & 0xF;
     uint8_t prec_x1 = (mv1.x) & 0xF;
     uint8_t prec_y1 = (mv1.y) & 0xF;
-    if(inter_ctx->prec_amvr == MV_PRECISION_HALF){
+    if(prec_amvr == MV_PRECISION_HALF){
         prec_x0 += (prec_x0 == 8) ? 8 : 0;
         prec_y0 += (prec_y0 == 8) ? 8 : 0;
         prec_x1 += (prec_x1 == 8) ? 8 : 0;
@@ -882,6 +883,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     struct DMVRFunctions *dmvr = &ctudec->rcn_funcs.dmvr;
     struct BDOFFunctions *bdof = &ctudec->rcn_funcs.bdof;
+    uint8_t prec_amvr = mv0->prec_amvr;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
@@ -999,7 +1001,7 @@ rcn_dmvr_mv_refine(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     prec_x1 = (mv1->x) & 0xF;
     prec_y1 = (mv1->y) & 0xF;
 
-    if(inter_ctx->prec_amvr == MV_PRECISION_HALF){
+    if(prec_amvr == MV_PRECISION_HALF){
         prec_x0 += (prec_x0 == 8) ? 8 : 0;
         prec_y0 += (prec_y0 == 8) ? 8 : 0;
         prec_x1 += (prec_x1 == 8) ? 8 : 0;
@@ -1153,6 +1155,7 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     /* FIXME derive ref_idx */
     uint8_t ref_idx_0 = ref_idx0;
     uint8_t ref_idx_1 = ref_idx1;
+    uint8_t prec_amvr = mv0.prec_amvr;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx_0];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx_1];
@@ -1193,7 +1196,7 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint8_t prec_x1 = (mv1.x) & 0xF;
     uint8_t prec_y1 = (mv1.y) & 0xF;
 
-    if (inter_ctx->prec_amvr == MV_PRECISION_HALF) {
+    if (prec_amvr == MV_PRECISION_HALF) {
         prec_x0 += (prec_x0 == 8) ? 8 : 0;
         prec_y0 += (prec_y0 == 8) ? 8 : 0;
         prec_x1 += (prec_x1 == 8) ? 8 : 0;
@@ -1270,6 +1273,7 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     struct PROFFunctions *prof = &ctudec->rcn_funcs.prof;
+    uint8_t prec_amvr = mv0.prec_amvr;
     /* FIXME derive ref_idx */
     uint8_t ref_idx_0 = ref_idx0;
     uint8_t ref_idx_1 = ref_idx1;
@@ -1318,7 +1322,7 @@ rcn_prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint8_t prec_x1 = (mv1.x) & 0xF;
     uint8_t prec_y1 = (mv1.y) & 0xF;
 
-    if(inter_ctx->prec_amvr == MV_PRECISION_HALF){
+    if(prec_amvr == MV_PRECISION_HALF){
         prec_x0 += (prec_x0 == 8) ? 8 : 0;
         prec_y0 += (prec_y0 == 8) ? 8 : 0;
         prec_x1 += (prec_x1 == 8) ? 8 : 0;
@@ -1495,6 +1499,7 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
+    uint8_t prec_amvr = mv.prec_amvr;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
@@ -1527,7 +1532,7 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
     uint8_t prec_x   = (mv.x) & 0xF;
     uint8_t prec_y   = (mv.y) & 0xF;
-    if(inter_ctx->prec_amvr == MV_PRECISION_HALF){
+    if(prec_amvr == MV_PRECISION_HALF){
         prec_x += (prec_x == 8) ? 8 : 0;
         prec_y += (prec_y == 8) ? 8 : 0;
     }
@@ -1574,6 +1579,7 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, 
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
+    uint8_t prec_amvr = mv.prec_amvr;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
@@ -1608,7 +1614,7 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, 
 
     uint8_t prec_x   = (mv.x) & 0xF;
     uint8_t prec_y   = (mv.y) & 0xF;
-    if(inter_ctx->prec_amvr == MV_PRECISION_HALF){
+    if(prec_amvr == MV_PRECISION_HALF){
         prec_x += (prec_x == 8) ? 8 : 0;
         prec_y += (prec_y == 8) ? 8 : 0;
     }
@@ -1654,6 +1660,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
 
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     struct PROFFunctions *prof = &ctudec->rcn_funcs.prof;
+    uint8_t prec_amvr = mv.prec_amvr;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
@@ -1687,7 +1694,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
 
     uint8_t prec_x   = (mv.x) & 0xF;
     uint8_t prec_y   = (mv.y) & 0xF;
-    if(inter_ctx->prec_amvr == MV_PRECISION_HALF){
+    if(prec_amvr == MV_PRECISION_HALF){
         prec_x += (prec_x == 8) ? 8 : 0;
         prec_y += (prec_y == 8) ? 8 : 0;
     }
@@ -1752,6 +1759,7 @@ rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, in
 
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     struct PROFFunctions *prof = &ctudec->rcn_funcs.prof;
+    uint8_t prec_amvr = mv.prec_amvr;
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
@@ -1785,7 +1793,7 @@ rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, in
 
     uint8_t prec_x   = (mv.x) & 0xF;
     uint8_t prec_y   = (mv.y) & 0xF;
-    if(inter_ctx->prec_amvr == MV_PRECISION_HALF){
+    if(prec_amvr == MV_PRECISION_HALF){
         prec_x += (prec_x == 8) ? 8 : 0;
         prec_y += (prec_y == 8) ? 8 : 0;
     }
