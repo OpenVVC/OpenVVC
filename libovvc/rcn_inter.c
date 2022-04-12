@@ -618,52 +618,52 @@ static uint64_t
 rcn_dmvr_sad_16(const uint16_t *ref0, const uint16_t *ref1,
                 int16_t dmvr_stride, int16_t pb_w, int16_t pb_h)
 {
-  uint64_t sum = 0;
-  int i;
-  for (i = 0; i < (pb_h >> 1); ++i) {
-      sum += abs((int16_t)ref0[0]  - (int16_t)ref1[0]);
-      sum += abs((int16_t)ref0[1]  - (int16_t)ref1[1]);
-      sum += abs((int16_t)ref0[2]  - (int16_t)ref1[2]);
-      sum += abs((int16_t)ref0[3]  - (int16_t)ref1[3]);
-      sum += abs((int16_t)ref0[4]  - (int16_t)ref1[4]);
-      sum += abs((int16_t)ref0[5]  - (int16_t)ref1[5]);
-      sum += abs((int16_t)ref0[6]  - (int16_t)ref1[6]);
-      sum += abs((int16_t)ref0[7]  - (int16_t)ref1[7]);
-      sum += abs((int16_t)ref0[8]  - (int16_t)ref1[8]);
-      sum += abs((int16_t)ref0[9]  - (int16_t)ref1[9]);
-      sum += abs((int16_t)ref0[10] - (int16_t)ref1[10]);
-      sum += abs((int16_t)ref0[11] - (int16_t)ref1[11]);
-      sum += abs((int16_t)ref0[12] - (int16_t)ref1[12]);
-      sum += abs((int16_t)ref0[13] - (int16_t)ref1[13]);
-      sum += abs((int16_t)ref0[14] - (int16_t)ref1[14]);
-      sum += abs((int16_t)ref0[15] - (int16_t)ref1[15]);
+    uint64_t sum = 0;
+    int i;
+    for (i = 0; i < (pb_h >> 1); ++i) {
+        sum += abs((int16_t)ref0[0]  - (int16_t)ref1[0]);
+        sum += abs((int16_t)ref0[1]  - (int16_t)ref1[1]);
+        sum += abs((int16_t)ref0[2]  - (int16_t)ref1[2]);
+        sum += abs((int16_t)ref0[3]  - (int16_t)ref1[3]);
+        sum += abs((int16_t)ref0[4]  - (int16_t)ref1[4]);
+        sum += abs((int16_t)ref0[5]  - (int16_t)ref1[5]);
+        sum += abs((int16_t)ref0[6]  - (int16_t)ref1[6]);
+        sum += abs((int16_t)ref0[7]  - (int16_t)ref1[7]);
+        sum += abs((int16_t)ref0[8]  - (int16_t)ref1[8]);
+        sum += abs((int16_t)ref0[9]  - (int16_t)ref1[9]);
+        sum += abs((int16_t)ref0[10] - (int16_t)ref1[10]);
+        sum += abs((int16_t)ref0[11] - (int16_t)ref1[11]);
+        sum += abs((int16_t)ref0[12] - (int16_t)ref1[12]);
+        sum += abs((int16_t)ref0[13] - (int16_t)ref1[13]);
+        sum += abs((int16_t)ref0[14] - (int16_t)ref1[14]);
+        sum += abs((int16_t)ref0[15] - (int16_t)ref1[15]);
 
-      ref0 += dmvr_stride << 1;
-      ref1 += dmvr_stride << 1;
-  }
-  return sum;
+        ref0 += dmvr_stride << 1;
+        ref1 += dmvr_stride << 1;
+    }
+    return sum;
 }
 
 static uint64_t
 rcn_dmvr_sad_8(const uint16_t *ref0, const uint16_t *ref1,
                int16_t dmvr_stride, int16_t pb_w, int16_t pb_h)
 {
-  uint64_t sum = 0;
-  int i;
-  for (i = 0; i < (pb_h >> 1); ++i) {
-      sum += abs((int16_t)ref0[0] - (int16_t)ref1[0]);
-      sum += abs((int16_t)ref0[1] - (int16_t)ref1[1]);
-      sum += abs((int16_t)ref0[2] - (int16_t)ref1[2]);
-      sum += abs((int16_t)ref0[3] - (int16_t)ref1[3]);
-      sum += abs((int16_t)ref0[4] - (int16_t)ref1[4]);
-      sum += abs((int16_t)ref0[5] - (int16_t)ref1[5]);
-      sum += abs((int16_t)ref0[6] - (int16_t)ref1[6]);
-      sum += abs((int16_t)ref0[7] - (int16_t)ref1[7]);
+    uint64_t sum = 0;
+    int i;
+    for (i = 0; i < (pb_h >> 1); ++i) {
+        sum += abs((int16_t)ref0[0] - (int16_t)ref1[0]);
+        sum += abs((int16_t)ref0[1] - (int16_t)ref1[1]);
+        sum += abs((int16_t)ref0[2] - (int16_t)ref1[2]);
+        sum += abs((int16_t)ref0[3] - (int16_t)ref1[3]);
+        sum += abs((int16_t)ref0[4] - (int16_t)ref1[4]);
+        sum += abs((int16_t)ref0[5] - (int16_t)ref1[5]);
+        sum += abs((int16_t)ref0[6] - (int16_t)ref1[6]);
+        sum += abs((int16_t)ref0[7] - (int16_t)ref1[7]);
 
-      ref0 += dmvr_stride << 1;
-      ref1 += dmvr_stride << 1;
-  }
-  return sum;
+        ref0 += dmvr_stride << 1;
+        ref1 += dmvr_stride << 1;
+    }
+    return sum;
 }
 
 static uint8_t
@@ -760,42 +760,42 @@ dmvr_compute_sads_8(const uint16_t *ref0, const uint16_t *ref1,
 static inline int32_t
 div_for_maxq7(int64_t num, int64_t den)
 {
-  int32_t sign, q;
-  sign = 0;
+    int32_t sign, q;
+    sign = 0;
 
-  if (num < 0) {
-    sign = 1;
-    num = -num;
-  }
+    if (num < 0) {
+        sign = 1;
+        num = -num;
+    }
 
-  q = 0;
-  den = (den << 3);
+    q = 0;
+    den = (den << 3);
 
-  if (num >= den) {
-    num -= den;
-    q++;
-  }
+    if (num >= den) {
+        num -= den;
+        q++;
+    }
 
-  q = (q << 1);
+    q = (q << 1);
 
-  den = (den >> 1);
+    den = (den >> 1);
 
-  if (num >= den) {
-    num -= den;
-    q++;
-  }
+    if (num >= den) {
+        num -= den;
+        q++;
+    }
 
-  q = (q << 1);
+    q = (q << 1);
 
-  if (num >= (den >> 1)) {
-    q++;
-  }
+    if (num >= (den >> 1)) {
+        q++;
+    }
 
-  if (sign) {
-    return -q;
-  }
+    if (sign) {
+        return -q;
+    }
 
-  return q;
+    return q;
 }
 
 static struct DMVRDelta
