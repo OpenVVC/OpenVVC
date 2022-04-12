@@ -350,6 +350,8 @@ struct InterDRVCtx
     OVPicture *rpl1[16];
     uint16_t scale_fact_rpl0[16][2];
     uint16_t scale_fact_rpl1[16][2];
+    uint16_t rpr_scale_msk0;
+    uint16_t rpr_scale_msk1;
 
     uint8_t rpl0_opp[16];
     uint8_t rpl1_opp[16];
@@ -836,7 +838,6 @@ struct OVCTUDec
     uint8_t tmp_slice_type;
 };
 
-void ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic);
 int ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms);
 
 int ctudec_init(OVCTUDec **ctudec_p);

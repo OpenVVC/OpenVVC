@@ -1224,6 +1224,61 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
     }
 }
 
+#define RPR_NO_SCALE (1 << RPR_SCALE_BITS)
+static void
+ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
+{
+    struct Frame *frame = pic->frame;
+    /*FIXME only 420*/
+    uint16_t add_w = (pic->scale_info.scaling_win_left + pic->scale_info.scaling_win_right) << 1;
+    uint16_t add_h = (pic->scale_info.scaling_win_top + pic->scale_info.scaling_win_bottom) << 1;
+    uint16_t pic_w = frame->width  - add_w;
+    uint16_t pic_h = frame->height - add_h;
+
+    int scale_h, scale_v;
+    int ref_pic_w, ref_pic_h;
+    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    inter_ctx->rpr_scale_msk0 = 0;
+    inter_ctx->rpr_scale_msk1 = 0;
+    for (int i = 0;  i < inter_ctx->nb_active_ref0; ++i){
+        OVPicture *ref_pic  = inter_ctx->rpl0[i];
+        frame = ref_pic->frame;
+        if (!frame)
+            continue;
+        /*FIXME only 420*/
+        add_w = (ref_pic->scale_info.scaling_win_left + ref_pic->scale_info.scaling_win_right) << 1;
+        add_h = (ref_pic->scale_info.scaling_win_top + ref_pic->scale_info.scaling_win_bottom) << 1;
+        ref_pic_w = frame->width  - add_w;
+        ref_pic_h = frame->height - add_h;
+
+        scale_h = ((ref_pic_w << RPR_SCALE_BITS) + (pic_w >> 1)) / pic_w;
+        scale_v = ((ref_pic_h << RPR_SCALE_BITS) + (pic_h >> 1)) / pic_h;
+
+        inter_ctx->scale_fact_rpl0[i][0] = scale_h;
+        inter_ctx->scale_fact_rpl0[i][1] = scale_v;
+
+        inter_ctx->rpr_scale_msk0 |= (scale_h != RPR_NO_SCALE || scale_v != RPR_NO_SCALE) << i;
+    }
+    for (int i = 0;  i < inter_ctx->nb_active_ref1; ++i){
+        OVPicture *ref_pic = inter_ctx->rpl1[i];
+        frame = ref_pic->frame;
+        if (!frame)
+            continue;
+        /*FIXME only 420*/
+        add_w = (ref_pic->scale_info.scaling_win_left + ref_pic->scale_info.scaling_win_right) << 1;
+        add_h = (ref_pic->scale_info.scaling_win_top  + ref_pic->scale_info.scaling_win_bottom) << 1;
+        ref_pic_w = frame->width  - add_w;
+        ref_pic_h = frame->height - add_h;
+
+        scale_h = ((ref_pic_w << RPR_SCALE_BITS) + (pic_w >> 1)) / pic_w;
+        scale_v = ((ref_pic_h << RPR_SCALE_BITS) + (pic_h >> 1)) / pic_h;
+        inter_ctx->scale_fact_rpl1[i][0] = scale_h;
+        inter_ctx->scale_fact_rpl1[i][1] = scale_v;
+
+        inter_ctx->rpr_scale_msk1 |= (scale_h != RPR_NO_SCALE || scale_v != RPR_NO_SCALE) << i;
+    }
+}
+
 static int
 slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS *const prms,
                            uint16_t entry_idx)
