@@ -1827,32 +1827,8 @@ drv_rcn_wrap_mvp_p(OVCTUDec *const ctu_dec,
     if (mvp_info.cu_type == OV_AFFINE) {
         struct AffineMVPDataP *const mvp_data = &mvp_info.data.cp_mvd_info;
 
-        inter_ctx->prec_amvr = mvp_info.prec_amvr;
-
-        if (inter_dir & 0x1) {
-
-            ref_idx0 = mvp_data->ref_idx;
-
-            /*FIXME can NULL for mvd ?*/
-            drv_affine_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                             &mvp_data->mvd, NULL,
-                             mvp_data->mvp_idx, -1,
-                             BCW_DEFAULT,
-                             0x1, ref_idx0, -1,
-                             mvp_info.affine_type);
-
-        } else {
-
-            ref_idx1 = mvp_data->ref_idx;
-
-            drv_affine_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                             NULL, &mvp_data->mvd,
-                             -1, mvp_data->mvp_idx,
-                             BCW_DEFAULT,
-                             0x2, -1, ref_idx1,
-                             mvp_info.affine_type);
-
-        }
+        drv_affine_mvp_p(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
+                         &mvp_info, inter_dir);
 
         cu_type = OV_AFFINE;
 
@@ -2327,11 +2303,7 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
         const struct AffineMVPDataB *const mvp_data = &mvp_info.data.aff_mvp;
 
         drv_affine_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                         &mvp_data->mvd0, &mvp_data->mvd1,
-                         mvp_data->mvp_idx0, mvp_data->mvp_idx1,
-                         mvp_info.bcw_idx,
-                         0x3, mvp_data->ref_idx0, mvp_data->ref_idx1,
-                         mvp_info.affine_type);
+                         &mvp_info, 0x3);
 
         cu_type = OV_AFFINE;
 
@@ -2618,6 +2590,7 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
             goto end;
 
         } else {
+            struct MVPInfoP mvp_info;
             if (ctu_dec->affine_enabled && log2_cb_w > 3 && log2_cb_h > 3) {
                 uint8_t y_cb = y0 >> log2_min_cb_s;
                 uint8_t x_cb = x0 >> log2_min_cb_s;
@@ -2648,11 +2621,12 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                     inter_ctx->prec_amvr = prec_amvr;
 
                     cu_type = OV_AFFINE;
+                    mvp_info.data.cp_mvd_info = aff_mvp_data;
+                    mvp_info.prec_amvr   = prec_amvr;
+                    mvp_info.affine_type = affine_type;
 
-                    drv_affine_mvp_b(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
-                                     &aff_mvp_data.mvd, &aff_mvp_data.mvd, aff_mvp_data.mvp_idx, aff_mvp_data.mvp_idx, BCW_DEFAULT,
-                                     inter_dir, aff_mvp_data.ref_idx, aff_mvp_data.ref_idx,
-                                     affine_type);
+                    drv_affine_mvp_p(inter_ctx, x0, y0, log2_cb_w, log2_cb_h,
+                                     &mvp_info, inter_dir);
 
                     goto end;
                 }

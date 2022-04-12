@@ -59,6 +59,7 @@ struct OVRCNCtx;
 struct OVMVCtx;
 struct InterDRVCtx;
 struct MVPInfoB;
+struct MVPInfoP;
 
 uint8_t derive_intra_mode_c(uint8_t cclm_flag, uint8_t mpm_flag,
                             uint8_t mpm_idx, uint8_t luma_mode,
@@ -142,11 +143,8 @@ VVCMergeInfo drv_mvp_b(struct InterDRVCtx *const inter_ctx,
 void drv_affine_mvp_b(struct InterDRVCtx *const inter_ctx,
                       uint8_t x0, uint8_t y0,
                       uint8_t log2_cu_w, uint8_t log2_cu_h,
-                      struct AffineControlInfo * cp_mvd0,
-                      struct AffineControlInfo * cp_mvd1,
-                      uint8_t mvp_idx0, uint8_t mvp_idx1, uint8_t bcw_idx,
-                      uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
-                      uint8_t affine_type);
+                      const struct MVPInfoB *const aff_mvp_data,
+                      uint8_t inter_dir);
 
 void drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                             uint8_t x0, uint8_t y0,
@@ -156,11 +154,8 @@ void drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
 void drv_affine_mvp_p(struct InterDRVCtx *const inter_ctx,
                       uint8_t x0, uint8_t y0,
                       uint8_t log2_cu_w, uint8_t log2_cu_h,
-                      struct AffineControlInfo * cp_mvd0,
-                      struct AffineControlInfo * cp_mvd1,
-                      uint8_t mvp_idx0, uint8_t mvp_idx1, uint8_t bcw_idx,
-                      uint8_t inter_dir, uint8_t ref_idx0, uint8_t ref_idx1,
-                      uint8_t affine_type);
+                      const struct MVPInfoP *mvp_info,
+                      uint8_t inter_dir);
 
 void drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
                             uint8_t x0, uint8_t y0,
