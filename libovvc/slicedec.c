@@ -1153,7 +1153,7 @@ static void
 slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc)
 {
     const struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
-    ctudec->drv_ctx.inter_ctx.bi_dir_pred_flag = 0;
+    ctudec->smvd_enabled = 0;
 
     if (prms->sps->sps_smvd_enabled_flag && !inter_ctx->tmvp_ctx.ldc
         && !ctudec->mvd1_zero_enabled) {
@@ -1217,7 +1217,7 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
         }
 
         if (forw_poc < cur_poc && back_poc > cur_poc){
-            ctudec->drv_ctx.inter_ctx.bi_dir_pred_flag = 1;
+            ctudec->smvd_enabled = 1;
             ctudec->drv_ctx.inter_ctx.ref_smvd_idx0 = ref_idx0;
             ctudec->drv_ctx.inter_ctx.ref_smvd_idx1 = ref_idx1;
         }

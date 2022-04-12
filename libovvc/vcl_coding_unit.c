@@ -2333,7 +2333,7 @@ uint8_t read_bidir_mvp(OVCTUDec *const ctu_dec,
 
     if (!affine_flag) {
 
-        if (inter_ctx->bi_dir_pred_flag) {
+        if (ctu_dec->smvd_enabled) {
             smvd_flag = ovcabac_read_ae_smvd_flag(cabac_ctx);
         }
 

@@ -375,7 +375,6 @@ struct InterDRVCtx
     /* Symmetric MVD (SMVD) Related
      * information
      */
-    uint8_t bi_dir_pred_flag;
     int ref_smvd_idx0;
     int ref_smvd_idx1;
 
@@ -690,6 +689,7 @@ struct OVCTUDec
 
     uint8_t ciip_enabled;
     uint8_t mmvd_enabled;
+    uint8_t smvd_enabled;
     uint8_t bcw_enabled;
     uint8_t gpm_enabled;
     uint8_t amvr_enabled;
