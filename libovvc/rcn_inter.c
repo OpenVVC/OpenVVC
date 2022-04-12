@@ -2626,27 +2626,25 @@ rcn_mc_rpr_prof_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     uint8_t no_scale_rpl0 = scale_rpl0_hor == (1<<RPR_SCALE_BITS) && scale_rpl0_ver == (1<<RPR_SCALE_BITS);
     uint8_t no_scale_rpl1 = scale_rpl1_hor == (1<<RPR_SCALE_BITS) && scale_rpl1_ver == (1<<RPR_SCALE_BITS);
     uint8_t use_bcw = mv0.bcw_idx_plus1 != 0 && mv0.bcw_idx_plus1 != 3;
-    int type0 = 0;
-    int type1 = 1;
 
     struct OVRCNCtx *const rcn_ctx = &ctudec->rcn_ctx;
     uint16_t *tmp_rpl0 = &rcn_ctx->data.tmp_bi_mrg0[0];
     uint16_t tmp_rpl0_stride = RCN_CTB_STRIDE;
     if (no_scale_rpl0) {
-        rcn_prof_mcp_bi_l(ctudec, tmp_rpl0, tmp_rpl0_stride, x0, y0, log2_pb_w, log2_pb_h, mv0, type0, ref_idx0,
+        rcn_prof_mcp_bi_l(ctudec, tmp_rpl0, tmp_rpl0_stride, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0,
                        prof_info->dmv_scale_h_0, prof_info->dmv_scale_v_0);
     } else {
-        rcn_mcp_rpr_bi_l(ctudec, tmp_rpl0, tmp_rpl0_stride, x0, y0, log2_pb_w, log2_pb_h, mv0, type0, ref_idx0, 
+        rcn_mcp_rpr_bi_l(ctudec, tmp_rpl0, tmp_rpl0_stride, x0, y0, log2_pb_w, log2_pb_h, mv0, 0, ref_idx0,
                         scale_rpl0_hor, scale_rpl0_ver);
     }
 
     uint16_t *tmp_rpl1 = &rcn_ctx->data.tmp_bi_mrg1[0];
     uint16_t tmp_rpl1_stride = RCN_CTB_STRIDE;
     if (no_scale_rpl1) {
-        rcn_prof_mcp_bi_l(ctudec, tmp_rpl1, tmp_rpl1_stride, x0, y0, log2_pb_w, log2_pb_h, mv1, type1, ref_idx1,
+        rcn_prof_mcp_bi_l(ctudec, tmp_rpl1, tmp_rpl1_stride, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1,
                        prof_info->dmv_scale_h_1, prof_info->dmv_scale_v_1);    
     } else {
-        rcn_mcp_rpr_bi_l(ctudec, tmp_rpl1, tmp_rpl1_stride, x0, y0, log2_pb_w, log2_pb_h, mv1, type1, ref_idx1, 
+        rcn_mcp_rpr_bi_l(ctudec, tmp_rpl1, tmp_rpl1_stride, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1,
                         scale_rpl1_hor, scale_rpl1_ver);
     }
 
@@ -2758,11 +2756,10 @@ rcn_mc_rpr_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
                         int scale_rpl0_hor, int scale_rpl0_ver, 
                         int scale_rpl1_hor, int scale_rpl1_ver)
 {
-    struct VVCGPM* gpm_ctx = 0;
     rcn_mc_rpr_b_l(ctudec, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, 
-                            scale_rpl0_hor, scale_rpl0_ver, scale_rpl1_hor, scale_rpl1_ver, gpm_ctx);
+                            scale_rpl0_hor, scale_rpl0_ver, scale_rpl1_hor, scale_rpl1_ver, NULL);
     rcn_mc_rpr_b_c(ctudec, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, 
-                            scale_rpl0_hor, scale_rpl0_ver, scale_rpl1_hor, scale_rpl1_ver, gpm_ctx);
+                            scale_rpl0_hor, scale_rpl0_ver, scale_rpl1_hor, scale_rpl1_ver, NULL);
 }
 
 static void
@@ -2846,9 +2843,8 @@ rcn_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
         if (no_scale_rpl0 && no_scale_rpl1) {
             rcn_motion_compensation_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
         } else {
-            struct VVCGPM* gpm_ctx = 0;
             rcn_mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, 
-                            scale_rpl0_hor, scale_rpl0_ver, scale_rpl1_hor, scale_rpl1_ver, gpm_ctx);
+                            scale_rpl0_hor, scale_rpl0_ver, scale_rpl1_hor, scale_rpl1_ver, NULL);
         }
 
     } else if (inter_dir & 0x2 || identical_motion) {
@@ -2895,9 +2891,8 @@ rcn_prof_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCt
             rcn_mc_rpr_prof_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, 
                             scale_rpl0_hor, scale_rpl0_ver, scale_rpl1_hor, scale_rpl1_ver, prof_dir, prof_info);
         } else {
-            struct VVCGPM* gpm_ctx = 0;
             rcn_mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, 
-                            scale_rpl0_hor, scale_rpl0_ver, scale_rpl1_hor, scale_rpl1_ver, gpm_ctx);
+                            scale_rpl0_hor, scale_rpl0_ver, scale_rpl1_hor, scale_rpl1_ver, NULL);
         }
 
     } else if (inter_dir & 0x2 ) {
@@ -2942,9 +2937,8 @@ rcn_mcp_b_c(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *co
         if (no_scale_rpl0 && no_scale_rpl1) {
             rcn_motion_compensation_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1);
         } else {
-            struct VVCGPM* gpm_ctx = 0;
             rcn_mc_rpr_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1, 
-                            scale_rpl0_hor, scale_rpl0_ver, scale_rpl1_hor, scale_rpl1_ver, gpm_ctx);
+                            scale_rpl0_hor, scale_rpl0_ver, scale_rpl1_hor, scale_rpl1_ver, NULL);
         }
 
     } else if (inter_dir & 0x2 || identical_motion) {
