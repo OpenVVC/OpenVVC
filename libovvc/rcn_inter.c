@@ -1495,7 +1495,7 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
 static void
 rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-          OVMV mv, uint8_t type, uint8_t ref_idx)
+          OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -1509,7 +1509,7 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
     dst.y  += x0 + y0 * dst.stride;
 
     OVSample *tmp_buff = (OVSample *)rcn_ctx->data.tmp_buff;
-    OVPicture *ref_pic =  type ? ref1 : ref0;
+    OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
 
@@ -1575,7 +1575,7 @@ rcn_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
 static void
 rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, int y0, 
-                int log2_pu_w, int log2_pu_h, OVMV mv, uint8_t type, uint8_t ref_idx)
+                int log2_pu_w, int log2_pu_h, OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -1591,7 +1591,7 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, 
 
     OVSample* tmp_buff = (OVSample*)rcn_ctx->data.tmp_buff;
 
-    OVPicture *ref_pic =  type ? ref1 : ref0;
+    OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
 
@@ -1654,7 +1654,7 @@ rcn_mcp_bidir0_l(OVCTUDec *const ctudec, uint16_t* dst, int dst_stride, int x0, 
 static void
 rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
                int log2_pu_w, int log2_pu_h,
-               OVMV mv, uint8_t type, uint8_t ref_idx,
+               OVMV mv, uint8_t rpl_idx, uint8_t ref_idx,
                const int16_t *dmv_scale_h, const int16_t *dmv_scale_v)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
@@ -1671,7 +1671,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
 
     OVSample *tmp_buff = (OVSample *)rcn_ctx->data.tmp_buff;
 
-    OVPicture *ref_pic =  type ? ref1 : ref0;
+    OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
 
@@ -1753,7 +1753,7 @@ rcn_prof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0,
 static void
 rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int x0, int y0,
                int log2_pu_w, int log2_pu_h,
-               OVMV mv, uint8_t type, uint8_t ref_idx,
+               OVMV mv, uint8_t rpl_idx, uint8_t ref_idx,
                const int16_t *dmv_scale_h, const int16_t *dmv_scale_v)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
@@ -1770,7 +1770,7 @@ rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, in
 
     OVSample *tmp_buff = (OVSample *)rcn_ctx->data.tmp_buff;
 
-    OVPicture *ref_pic =  type ? ref1 : ref0;
+    OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
 
@@ -1847,7 +1847,7 @@ rcn_prof_mcp_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, in
 
 static void
 rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-          OVMV mv, uint8_t type, uint8_t ref_idx)
+          OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -1862,7 +1862,7 @@ rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
     OVSample *tmp_buff = (OVSample *)rcn_ctx->data.tmp_buff;
     
-    OVPicture *ref_pic =  type ? ref1 : ref0;
+    OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
 
@@ -1932,7 +1932,7 @@ rcn_mcp_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log
 
 static void
 rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int dst_stride, int x0, int y0, 
-                int log2_pu_w, int log2_pu_h, OVMV mv, uint8_t type, uint8_t ref_idx)
+                int log2_pu_w, int log2_pu_h, OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
 {
     struct OVRCNCtx    *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -1948,7 +1948,7 @@ rcn_mcp_bidir0_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, int
 
     OVSample *tmp_buff = (OVSample *)rcn_ctx->data.tmp_buff;
     
-    OVPicture *ref_pic =  type ? ref1 : ref0;
+    OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
     const OVFrame *const frame0 = ref_pic->frame;
 
@@ -2054,7 +2054,7 @@ clip_rpr_position(int* pos_x, int* pos_y, int pic_w, int pic_h, int pb_w, int pb
 
 static void
 rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-        OVMV mv, uint8_t type, uint8_t ref_idx, int scaling_hor, int scaling_ver)
+        OVMV mv, uint8_t rpl_idx, uint8_t ref_idx, int scaling_hor, int scaling_ver)
 {
     struct OVRCNCtx *const rcn_ctx   = &ctudec->rcn_ctx;
     struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
@@ -2074,7 +2074,7 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
  
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
-    OVPicture *ref_pic =  type ? ref1 : ref0;
+    OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
 
     const OVFrame *const frame0 = ref_pic->frame;
@@ -2172,7 +2172,7 @@ rcn_mcp_rpr_l(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
 
 static void
 rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int x0, int y0, 
-            int log2_pu_w, int log2_pu_h, OVMV mv, uint8_t type, uint8_t ref_idx,
+            int log2_pu_w, int log2_pu_h, OVMV mv, uint8_t rpl_idx, uint8_t ref_idx,
             int scaling_hor, int scaling_ver)
 {
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
@@ -2191,7 +2191,7 @@ rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int
     struct MCFunctions *mc_l = &ctudec->rcn_funcs.mc_l;
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
-    OVPicture *ref_pic =  type ? ref1 : ref0;
+    OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
 
     const OVFrame *const frame0 = ref_pic->frame;
@@ -2282,7 +2282,7 @@ rcn_mcp_rpr_bi_l(OVCTUDec *const ctudec, uint16_t* dst, uint16_t dst_stride, int
 
 static void
 rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-        OVMV mv, uint8_t type, uint8_t ref_idx, int scaling_hor, int scaling_ver)
+        OVMV mv, uint8_t rpl_idx, uint8_t ref_idx, int scaling_hor, int scaling_ver)
 {
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
@@ -2301,7 +2301,7 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
-    OVPicture *ref_pic =  type ? ref1 : ref0;
+    OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
 
     dst.cb += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
     dst.cr += (x0 >> 1) + (y0 >> 1) * dst.stride_c;
@@ -2410,7 +2410,7 @@ rcn_mcp_rpr_c(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int
 
 static void
 rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uint16_t dst_stride, int x0, int y0, 
-                int log2_pu_w, int log2_pu_h, OVMV mv, uint8_t type, uint8_t ref_idx,
+                int log2_pu_w, int log2_pu_h, OVMV mv, uint8_t rpl_idx, uint8_t ref_idx,
                 int scaling_hor, int scaling_ver)
 {
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
@@ -2430,7 +2430,7 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
 
     OVPicture *ref0 = inter_ctx->rpl0[ref_idx];
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx];
-    OVPicture *ref_pic =  type ? ref1 : ref0;
+    OVPicture *ref_pic =  rpl_idx ? ref1 : ref0;
     if (!ref_pic) return;
 
     dst_cb += (x0 >> 1) + (y0 >> 1) * dst_stride;
@@ -2540,10 +2540,10 @@ rcn_mcp_rpr_bi_c(OVCTUDec *const ctudec, uint16_t* dst_cb, uint16_t* dst_cr, uin
 
 static void
 rcn_mcp_rpr(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
-        OVMV mv, uint8_t type, uint8_t ref_idx, int scaling_hor, int scaling_ver)
+        OVMV mv, uint8_t rpl_idx, uint8_t ref_idx, int scaling_hor, int scaling_ver)
 {
-    rcn_mcp_rpr_l(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, type, ref_idx, scaling_hor, scaling_ver);
-    rcn_mcp_rpr_c(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, type, ref_idx, scaling_hor, scaling_ver);
+    rcn_mcp_rpr_l(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx, scaling_hor, scaling_ver);
+    rcn_mcp_rpr_c(ctudec, dst, x0, y0, log2_pu_w, log2_pu_h, mv, rpl_idx, ref_idx, scaling_hor, scaling_ver);
 }
 
 
