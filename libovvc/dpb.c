@@ -403,7 +403,7 @@ ovdpb_init_current_pic(OVDPB *dpb, OVPicture **pic_p, int poc, uint8_t ph_pic_ou
             ov_log(NULL, OVLOG_ERROR, "Duplicate POC in a sequence: %d for cvs_id: %d.\n",
                    poc, pic->cvs_id);
             //*pic_p = pic;
-            *pic_p == NULL;
+            *pic_p = NULL;
             //ovdpb_report_decoded_frame(ref_pic);
             return OVVC_EINDATA;
         }
