@@ -24,4 +24,4 @@ jobs:
       - name: Set Env Variables 
         run: export OVDEC=$(pwd)/examples/dectest
       - name: Non regression testing
-        run: ./CI/ovnreg ./CI/conf.vmd5 --no_cleanup --keep_fail
+        run: OVDEC=./examples/dectest OVSTREAM=. ./CI/ovnreg ./CI/conf.vmd5 --no_cleanup --keep_fail
