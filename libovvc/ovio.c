@@ -89,9 +89,18 @@ OVFileIO*
 ovio_new_fileio(const char* path, const char* mode)
 {
   OVFileIO* io = ov_malloc(sizeof(OVFileIO));
+  if (!io) return NULL;
   memcpy(io, &defaultFileIO, sizeof(OVFileIO));
+
   io->file = fopen(path, mode);
+  if (!io->file) goto erropen;
+
   return io;
+
+erropen:
+  ov_free(io);
+  return NULL;
+
 }
 
 

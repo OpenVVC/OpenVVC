@@ -284,7 +284,9 @@ ovdmx_close(OVVCDmx *vvcdmx)
 
         free_nalu_list(&vvcdmx->nalu_list);
 
-        free_nalu_elem(vvcdmx->nalu_pending);
+        if (vvcdmx->nalu_pending) {
+            free_nalu_elem(vvcdmx->nalu_pending);
+        }
 
         ov_free(vvcdmx);
 
