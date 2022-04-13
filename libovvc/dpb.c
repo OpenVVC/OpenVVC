@@ -980,6 +980,7 @@ update_rpl(const OVPPS *const pps,
         rpl0->num_ref_active_entries = 0;
         rpl1->num_ref_active_entries = 0;
     }
+    return 0;
 }
 
 int
