@@ -2708,8 +2708,8 @@ mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     tmp_rpl0_cr += (x0 >> 1) + (y0 >> 1) * tmp_rpl0_stride;
     tmp_rpl1_cr += (x0 >> 1) + (y0 >> 1) * tmp_rpl1_stride;
 
-    int pu_w = 1 << (log2_pb_w-1);
-    int pu_h = 1 << (log2_pb_h-1);
+    int pu_w = 1 << (log2_pb_w - 1);
+    int pu_h = 1 << (log2_pb_h - 1);
 
     struct MCFunctions *mc_c = &ctudec->rcn_funcs.mc_c;
 
@@ -2903,7 +2903,7 @@ rcn_prof_mcp_b_l(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCt
                        rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
         }
 
-    } else if (inter_dir & 0x2 ) {
+    } else if (inter_dir & 0x2) {
         uint8_t no_rpr_l1 = !(inter_ctx->rpr_scale_msk1 & (1 << ref_idx1));
         if (no_rpr_l1) {
             rcn_prof_mcp_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv1, 1, ref_idx1,
