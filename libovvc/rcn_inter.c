@@ -2740,20 +2740,6 @@ mc_rpr_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
 }
 
-
-static void
-mc_rpr_b(OVCTUDec *const ctudec, struct OVBuffInfo dst,
-             uint8_t x0, uint8_t y0, uint8_t log2_pb_w, uint8_t log2_pb_h,
-             OVMV mv0, OVMV mv1, uint8_t ref_idx0, uint8_t ref_idx1,
-             int rpr_scale_h0, int rpr_scale_v0,
-             int rpr_scale_h1, int rpr_scale_v1)
-{
-    mc_rpr_b_l(ctudec, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
-               rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
-    mc_rpr_b_c(ctudec, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
-               rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
-}
-
 static void
 rcn_mcp(OVCTUDec *const ctudec, struct OVBuffInfo dst, int x0, int y0, int log2_pu_w, int log2_pu_h,
         OVMV mv, uint8_t rpl_idx, uint8_t ref_idx)
@@ -2793,8 +2779,10 @@ rcn_mcp_b(OVCTUDec*const lc_ctx, struct OVBuffInfo dst, struct InterDRVCtx *cons
             int rpr_scale_v0 = inter_ctx->scale_fact_rpl0[ref_idx0][1];
             int rpr_scale_h1 = inter_ctx->scale_fact_rpl1[ref_idx1][0];
             int rpr_scale_v1 = inter_ctx->scale_fact_rpl1[ref_idx1][1];
-            mc_rpr_b(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
-                            rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1);
+            mc_rpr_b_l(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
+                       rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
+            mc_rpr_b_c(lc_ctx, dst, x0, y0, log2_pb_w, log2_pb_h, mv0, mv1, ref_idx0, ref_idx1,
+                       rpr_scale_h0, rpr_scale_v0, rpr_scale_h1, rpr_scale_v1, NULL);
         }
 
     } else if (inter_dir & 0x2 || identical_motion) {
