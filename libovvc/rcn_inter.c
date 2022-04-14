@@ -540,15 +540,11 @@ motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     OVSample *edge_buff0 = (OVSample *)rcn_ctx->data.edge_buff0;
     OVSample *edge_buff1 = (OVSample *)rcn_ctx->data.edge_buff1;
-    int16_t *tmp_buff = (int16_t *) rcn_ctx->data.tmp_buff;
 
-    /*FIXME we suppose here both refs possess the same size*/
+    int16_t *tmp_buff = (int16_t *) rcn_ctx->data.tmp_buff;
 
     const int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
 
-    /* FIXME we should not need ctb_x/y
-     * it could be retrieved from position in frame buff
-     */
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
@@ -1162,17 +1158,11 @@ rcn_bdof_mcp_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     OVPicture *ref1 = inter_ctx->rpl1[ref_idx1];
     if (!ref0 | !ref1) return;
 
-    /* TMP buffers for edge emulation
-     * FIXME use tmp buffers in local contexts
-     */
     OVSample edge_buff0[RCN_CTB_SIZE];
     OVSample edge_buff1[RCN_CTB_SIZE];
 
     const int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
 
-    /* FIXME we should not need ctb_x/y
-     * it could be retrieved from position in frame buff
-     */
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
@@ -1294,9 +1284,6 @@ prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     const int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
 
-    /* FIXME we should not need ctb_x/y
-     * it could be retrieved from position in frame buff
-     */
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
@@ -1419,17 +1406,16 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
 
     OVSample *edge_buff0 = (OVSample *)rcn_ctx->data.edge_buff0;
     OVSample *edge_buff1 = (OVSample *)rcn_ctx->data.edge_buff1;
+
     OVSample *edge_buff0_1 = (OVSample *)rcn_ctx->data.edge_buff0_1;
     OVSample *edge_buff1_1 = (OVSample *)rcn_ctx->data.edge_buff1_1;
+
     int16_t *tmp_buff = (int16_t *) rcn_ctx->data.tmp_buff;
 
     /*FIXME we suppose here both refs possess the same size*/
 
     const int log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
 
-    /* FIXME we should not need ctb_x/y
-     * it could be retrieved from position in frame buff
-     */
     int pos_x = (ctudec->ctb_x << log2_ctb_s) + x0;
     int pos_y = (ctudec->ctb_y << log2_ctb_s) + y0;
 
