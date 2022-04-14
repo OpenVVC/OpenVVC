@@ -757,42 +757,31 @@ dmvr_compute_sads_8(const uint16_t *ref0, const uint16_t *ref1,
 static inline int32_t
 div_for_maxq7(int64_t num, int64_t den)
 {
-    int32_t sign, q;
-    sign = 0;
+    uint64_t sign = -(num < 0);
+    int32_t q = 0;
+    uint64_t msk;
 
-    if (num < 0) {
-        sign = 1;
-        num = -num;
-    }
+    num = (num ^ sign) - sign;
+    den <<= 3;
 
-    q = 0;
-    den = (den << 3);
+    msk = -(num >= den);
+    num -= msk & den;
+    q |= msk & 0x1;
 
-    if (num >= den) {
-        num -= den;
-        q++;
-    }
+    q   <<= 1;
+    den >>= 1;
 
-    q = (q << 1);
+    msk = -(num >= den);
+    num -= msk & den;
+    q |= msk & 0x1;
 
-    den = (den >> 1);
+    q   <<= 1;
+    den >>= 1;
 
-    if (num >= den) {
-        num -= den;
-        q++;
-    }
+    msk = -(num >= den);
+    q |= msk & 0x1;
 
-    q = (q << 1);
-
-    if (num >= (den >> 1)) {
-        q++;
-    }
-
-    if (sign) {
-        return -q;
-    }
-
-    return q;
+    return (q ^ sign) - sign;
 }
 
 static struct DMVRDelta
