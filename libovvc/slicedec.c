@@ -1224,6 +1224,74 @@ slicedec_smvd_params(OVCTUDec *const ctudec, const OVPS *const prms, int cur_poc
     }
 }
 
+static void
+set_ref_weights_l0(struct WPInfo *wp_info,
+                   const struct RPLWeightInfo *const wgt_info)
+{
+    int i;
+    int16_t denom_l = 1 << wgt_info->luma_log2_weight_denom;
+    int16_t denom_c = 1 << (wgt_info->luma_log2_weight_denom + wgt_info->delta_chroma_log2_weight_denom);
+
+    for (i = 0; i < wgt_info->num_l0_weights; i++) {
+
+        wp_info[i].flag = wgt_info->luma_weight_l0_flag[i];
+        wp_info[i].weight_y = denom_l + wgt_info->delta_luma_weight_l0[i];
+        wp_info[i].offset_y = wgt_info->luma_offset_l0[i] * (1 << 2);
+
+        wp_info[i].flag_c = wgt_info->chroma_weight_l0_flag[i];
+        wp_info[i].weight_cb = denom_c + wgt_info->delta_chroma_weight_l0[0][i];
+        wp_info[i].weight_cr = denom_c + wgt_info->delta_chroma_weight_l0[1][i];
+
+        int range = 128;
+        int pred_cb  = (range - ((range * wp_info[i].weight_cb) >> (wgt_info->luma_log2_weight_denom + wgt_info->delta_chroma_log2_weight_denom)));
+        int pred_cr  = (range - ((range * wp_info[i].weight_cr) >> (wgt_info->luma_log2_weight_denom + wgt_info->delta_chroma_log2_weight_denom)));
+        wp_info[i].offset_cb = (pred_cb + wgt_info->delta_chroma_offset_l0[0][i]) * (1 << 2);
+        wp_info[i].offset_cr = (pred_cr + wgt_info->delta_chroma_offset_l0[1][i]) * (1 << 2);
+    }
+}
+
+static void
+set_ref_weights_l1(struct WPInfo *wp_info,
+                   const struct RPLWeightInfo *const wgt_info)
+{
+    int i;
+    int16_t denom_l = 1 << wgt_info->luma_log2_weight_denom;
+    int16_t denom_c = 1 << (wgt_info->luma_log2_weight_denom + wgt_info->delta_chroma_log2_weight_denom);
+
+    for (i = 0; i < wgt_info->num_l1_weights; i++) {
+
+        wp_info[i].flag = wgt_info->luma_weight_l1_flag[i];
+        wp_info[i].weight_y = denom_l + wgt_info->delta_luma_weight_l1[i];
+        wp_info[i].offset_y = wgt_info->luma_offset_l1[i] * (1 << 2);
+
+        wp_info[i].flag_c = wgt_info->chroma_weight_l1_flag[i];
+        wp_info[i].weight_cb = denom_c + wgt_info->delta_chroma_weight_l1[0][i];
+        wp_info[i].weight_cr = denom_c + wgt_info->delta_chroma_weight_l1[1][i];
+
+        int range = 128;
+        int pred_cb  = (range - ((range * wp_info[i].weight_cb) >> (wgt_info->luma_log2_weight_denom + wgt_info->delta_chroma_log2_weight_denom)));
+        int pred_cr  = (range - ((range * wp_info[i].weight_cr) >> (wgt_info->luma_log2_weight_denom + wgt_info->delta_chroma_log2_weight_denom)));
+        wp_info[i].offset_cb = (pred_cb + wgt_info->delta_chroma_offset_l1[0][i]) * (1 << 2);
+        wp_info[i].offset_cr = (pred_cr + wgt_info->delta_chroma_offset_l1[1][i]) * (1 << 2);
+    }
+}
+
+static void
+derive_ref_weights(OVCTUDec *const ctudec, const OVPS *const prms)
+{
+    struct InterDRVCtx *const inter_ctx = &ctudec->drv_ctx.inter_ctx;
+    inter_ctx->weighted_pred_status = (prms->pps->pps_weighted_bipred_flag << 1) | prms->pps->pps_weighted_pred_flag;
+    if (inter_ctx->weighted_pred_status) {
+        const struct RPLWeightInfo *const wgh_info = prms->pps->pps_wp_info_in_ph_flag ? &prms->ph->wgt_info
+                                                                                       : &prms->sh->wgt_info;
+
+        set_ref_weights_l0(inter_ctx->wp_info0, wgh_info);
+        set_ref_weights_l1(inter_ctx->wp_info1, wgh_info);
+        inter_ctx->weighted_denom = wgh_info->luma_log2_weight_denom;
+        inter_ctx->weighted_denom_c = wgh_info->luma_log2_weight_denom + wgh_info->delta_chroma_log2_weight_denom;
+    }
+}
+
 #define RPR_NO_SCALE (1 << RPR_SCALE_BITS)
 static void
 ctudec_compute_refs_scaling(OVCTUDec *const ctudec, OVPicture *pic)
@@ -1320,6 +1388,8 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     ctudec->drv_ctx.inter_ctx.nb_active_ref1 = sldec->pic->nb_active_refs1;
 
     ctudec_compute_refs_scaling(ctudec, sldec->pic);
+
+    derive_ref_weights(ctudec, &sldec->active_params);
 
     ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 1;
     for (int i = 0; i < ctudec->drv_ctx.inter_ctx.nb_active_ref0; ++i) {

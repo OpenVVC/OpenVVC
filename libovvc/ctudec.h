@@ -343,6 +343,18 @@ struct MVCTU {
     OVMV mvs[16*16];
 };
 
+struct WPInfo
+{
+   uint8_t flag;
+   uint8_t flag_c;
+   int16_t weight_y;
+   int16_t weight_cb;
+   int16_t weight_cr;
+   int16_t offset_y;
+   int16_t offset_cb;
+   int16_t offset_cr;
+};
+
 struct InterDRVCtx
 {
     /* References Pictures Lists */
@@ -352,6 +364,12 @@ struct InterDRVCtx
     uint16_t scale_fact_rpl1[16][2];
     uint16_t rpr_scale_msk0;
     uint16_t rpr_scale_msk1;
+
+    struct WPInfo wp_info0[16];
+    struct WPInfo wp_info1[16];
+    uint8_t weighted_denom;
+    uint8_t weighted_denom_c;
+    uint8_t weighted_pred_status;
 
     uint8_t rpl0_opp[16];
     uint8_t rpl1_opp[16];
