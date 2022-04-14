@@ -2010,7 +2010,7 @@ static inline uint8_t
 check_nz_mvd_b(const OVMV *const mvd0, const OVMV *const mvd1,
                uint8_t mvd1_zero_flag)
 {
-    int32_t mvd_not_zero = 0;
+    uint32_t mvd_not_zero = 0;
     mvd_not_zero |= (mvd0->x | mvd0->y);
     if (!mvd1_zero_flag) {
         mvd_not_zero |= (mvd1->x | mvd1->y);
