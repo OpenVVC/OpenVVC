@@ -1588,8 +1588,8 @@ put_weighted_epel_bi_h(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
     const OVSample* src = (OVSample*) _src;
     OVSample* dst = (OVSample*)_dst;
 
-    ptrdiff_t srcstride = _srcstride >> 1;
-    ptrdiff_t dststride = _dststride >> 1;
+    ptrdiff_t srcstride = _srcstride;
+    ptrdiff_t dststride = _dststride;
 
     const int8_t* filter = ov_mcp_filters_c[mx - 1];
     int shift = 14 + 1 - BITDEPTH;
@@ -1619,8 +1619,8 @@ put_weighted_epel_bi_v(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
 
     OVSample* dst = (OVSample*)_dst;
 
-    ptrdiff_t srcstride = _srcstride >> 1;
-    ptrdiff_t dststride = _dststride >> 1;
+    ptrdiff_t srcstride = _srcstride;
+    ptrdiff_t dststride = _dststride;
 
     const int8_t* filter = ov_mcp_filters_c[my - 1];
     int shift = 14 + 1 - BITDEPTH;
@@ -1650,8 +1650,8 @@ put_weighted_epel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
 
     OVSample* dst = (OVSample*)_dst;
 
-    ptrdiff_t srcstride = _srcstride >> 1;
-    ptrdiff_t dststride = _dststride >> 1;
+    ptrdiff_t srcstride = _srcstride;
+    ptrdiff_t dststride = _dststride;
 
     int16_t tmp_array[(MAX_PB_SIZE + EPEL_EXTRA) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
@@ -1694,7 +1694,7 @@ put_weighted_pel_bi_pixels(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, p
     int x, y;
     const OVSample* src = (OVSample*) _src;
 
-    ptrdiff_t srcstride = _srcstride >> 1;
+    ptrdiff_t srcstride = _srcstride;
     OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
     int shift = 14 + 1 - BITDEPTH;
@@ -1723,8 +1723,8 @@ put_weighted_qpel_bi_h(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
 
     OVSample* dst = (OVSample*)_dst;
 
-    ptrdiff_t srcstride = _srcstride >> 1;
-    ptrdiff_t dststride = _dststride >> 1;
+    ptrdiff_t srcstride = _srcstride;
+    ptrdiff_t dststride = _dststride;
 
     const int8_t* filter;
     filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
@@ -1755,8 +1755,8 @@ put_weighted_qpel_bi_v(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
 
     OVSample* dst = (OVSample*)_dst;
 
-    ptrdiff_t srcstride = _srcstride >> 1;
-    ptrdiff_t dststride = _dststride >> 1;
+    ptrdiff_t srcstride = _srcstride;
+    ptrdiff_t dststride = _dststride;
 
     const int8_t* filter;
     filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
@@ -1787,8 +1787,8 @@ put_weighted_qpel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
 
     OVSample* dst = (OVSample*)_dst;
 
-    ptrdiff_t srcstride = _srcstride >> 1;
-    ptrdiff_t dststride = _dststride >> 1;
+    ptrdiff_t srcstride = _srcstride;
+    ptrdiff_t dststride = _dststride;
 
     int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;

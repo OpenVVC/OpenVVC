@@ -590,7 +590,7 @@ motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     } else if (use_bcw) {
         wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
         wt0 = 8 - wt1;
-        mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.y, dst.stride << 1, (uint8_t*)ref1_b.y, ref1_b.stride << 1,
+        mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.y, dst.stride, (uint8_t*)ref1_b.y, ref1_b.stride,
                                                      tmp_buff,  MAX_PB_SIZE, pu_h, BCW_DENOM, wt0, wt1, 0, 0,
                                                      prec_x1, prec_y1, pu_w);
     } else {
@@ -598,7 +598,7 @@ motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         int16_t offset1 = inter_ctx->wp_info1[ref_idx1].offset_y;
         wt1 = inter_ctx->wp_info1[ref_idx1].weight_y;
         wt0 = inter_ctx->wp_info0[ref_idx0].weight_y;
-        mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.y, dst.stride << 1, (uint8_t*)ref1_b.y, ref1_b.stride << 1,
+        mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.y, dst.stride, (uint8_t*)ref1_b.y, ref1_b.stride,
                                                      tmp_buff,  MAX_PB_SIZE, pu_h, inter_ctx->weighted_denom, wt0, wt1, offset0, offset1,
                                                      prec_x1, prec_y1, pu_w);
     }
@@ -1386,7 +1386,7 @@ prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         } else if (use_bcw) {
             wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
             wt0 = 8 - wt1;
-            mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.y, dst.stride << 1, (uint8_t*)ref1_b.y, ref1_b.stride << 1,
+            mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.y, dst.stride, (uint8_t*)ref1_b.y, ref1_b.stride,
                                                          tmp_buff,  MAX_PB_SIZE, pu_h, BCW_DENOM, wt0, wt1, 0, 0,
                                                          prec_x1, prec_y1, pu_w);
         } else {
@@ -1394,7 +1394,7 @@ prof_motion_compensation_b_l(OVCTUDec *const ctudec, struct OVBuffInfo dst,
             int16_t offset1 = inter_ctx->wp_info1[ref_idx1].offset_y;
             wt1 = inter_ctx->wp_info1[ref_idx1].weight_y;
             wt0 = inter_ctx->wp_info0[ref_idx0].weight_y;
-            mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.y, dst.stride << 1, (uint8_t*)ref1_b.y, ref1_b.stride << 1,
+            mc_l->bidir_w[prec_1_mc_type][log2_pu_w - 1]((uint8_t*)dst.y, dst.stride, (uint8_t*)ref1_b.y, ref1_b.stride,
                                                          tmp_buff,  MAX_PB_SIZE, pu_h, inter_ctx->weighted_denom, wt0, wt1, offset0, offset1,
                                                          prec_x1, prec_y1, pu_w);
         }
@@ -1481,10 +1481,10 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
     } else if (use_bcw) {
         wt1 = bcw_weights[mv0.bcw_idx_plus1-1];
         wt0 = 8 - wt1;
-        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cb, dst.stride_c << 1, (uint8_t*)ref1_c.cb, ref1_c.stride_c<<1,
+        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cb, dst.stride_c, (uint8_t*)ref1_c.cb, ref1_c.stride_c,
                                                      ref_data0,  MAX_PB_SIZE, pu_h, BCW_DENOM, wt0, wt1, 0, 0,
                                                      prec_x1, prec_y1, pu_w);
-        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cr, dst.stride_c << 1, (uint8_t*)ref1_c.cr, ref1_c.stride_c<<1,
+        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cr, dst.stride_c, (uint8_t*)ref1_c.cr, ref1_c.stride_c,
                                                      ref_data1,  MAX_PB_SIZE, pu_h, BCW_DENOM, wt0, wt1, 0, 0,
                                                      prec_x1, prec_y1, pu_w);
     } else {
@@ -1493,14 +1493,14 @@ rcn_motion_compensation_b_c(OVCTUDec *const ctudec, struct OVBuffInfo dst,
         int16_t wt0 = inter_ctx->wp_info0[ref_idx0].weight_cb;
         int16_t o1 = inter_ctx->wp_info1[ref_idx1].offset_cb;
         int16_t o0 = inter_ctx->wp_info0[ref_idx0].offset_cb;
-        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cb, dst.stride_c << 1, (uint8_t*)ref1_c.cb, ref1_c.stride_c<<1,
+        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cb, dst.stride_c, (uint8_t*)ref1_c.cb, ref1_c.stride_c,
                                                      ref_data0,  MAX_PB_SIZE, pu_h, denom, wt0, wt1, o0, o1,
                                                      prec_x1, prec_y1, pu_w);
         wt1 = inter_ctx->wp_info1[ref_idx1].weight_cr;
         wt0 = inter_ctx->wp_info0[ref_idx0].weight_cr;
         o1 = inter_ctx->wp_info1[ref_idx1].offset_cr;
         o0 = inter_ctx->wp_info0[ref_idx0].offset_cr;
-        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cr, dst.stride_c << 1, (uint8_t*)ref1_c.cr, ref1_c.stride_c<<1,
+        mc_c->bidir_w[prec_1_mc_type][log2_pu_w - 2]((uint8_t*)dst.cr, dst.stride_c, (uint8_t*)ref1_c.cr, ref1_c.stride_c,
                                                      ref_data1,  MAX_PB_SIZE, pu_h, denom, wt0, wt1, o0, o1,
                                                      prec_x1, prec_y1, pu_w);
     }
