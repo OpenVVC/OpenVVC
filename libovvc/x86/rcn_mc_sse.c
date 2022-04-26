@@ -4835,7 +4835,7 @@ oh_hevc_put_hevc_uni_epel_hv64_10_sse(uint16_t* dst,
 static void
 put_vvc_qpel_h4_10_sse(int16_t* dst,
                        ptrdiff_t dststride,
-                       uint8_t* _src,
+                       OVSample* _src,
                        ptrdiff_t _srcstride,
                        int height,
                        intptr_t mx,
@@ -4894,7 +4894,7 @@ put_vvc_qpel_h4_10_sse(int16_t* dst,
 static void
 put_vvc_qpel_h8_10_sse(int16_t* dst,
                        ptrdiff_t dststride,
-                       uint8_t* _src,
+                       OVSample* _src,
                        ptrdiff_t _srcstride,
                        int height,
                        intptr_t mx,
@@ -4953,9 +4953,9 @@ put_vvc_qpel_h8_10_sse(int16_t* dst,
 }
 
 static void
-put_vvc_bi_w_qpel_v8_14_10_sse(uint8_t* _dst,
+put_vvc_bi_w_qpel_v8_14_10_sse(OVSample* _dst,
                                ptrdiff_t _dststride,
-                               uint8_t* _src,
+                               OVSample* _src,
                                ptrdiff_t _srcstride,
                                int16_t* src2,
                                ptrdiff_t src2stride,
@@ -5053,9 +5053,9 @@ put_vvc_bi_w_qpel_v8_14_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_bi_w_qpel_v4_14_10_sse(uint8_t* _dst,
+put_vvc_bi_w_qpel_v4_14_10_sse(OVSample* _dst,
                                ptrdiff_t _dststride,
-                               uint8_t* _src,
+                               OVSample* _src,
                                ptrdiff_t _srcstride,
                                int16_t* src2,
                                ptrdiff_t src2stride,
@@ -5150,9 +5150,9 @@ put_vvc_bi_w_qpel_v4_14_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_uni_w_qpel_v8_14_10_sse(uint8_t* _dst,
+put_vvc_uni_w_qpel_v8_14_10_sse(OVSample* _dst,
                                 ptrdiff_t _dststride,
-                                uint8_t* _src,
+                                OVSample* _src,
                                 ptrdiff_t _srcstride,
                                 int height,
                                 int denom,
@@ -5237,9 +5237,9 @@ put_vvc_uni_w_qpel_v8_14_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_uni_w_qpel_v4_14_10_sse(uint8_t* _dst,
+put_vvc_uni_w_qpel_v4_14_10_sse(OVSample* _dst,
                                 ptrdiff_t _dststride,
-                                uint8_t* _src,
+                                OVSample* _src,
                                 ptrdiff_t _srcstride,
                                 int height,
                                 int denom,
@@ -5322,9 +5322,9 @@ put_vvc_uni_w_qpel_v4_14_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_uni_w_pel_pixels4_10_sse(uint8_t* _dst,
+put_vvc_uni_w_pel_pixels4_10_sse(OVSample* _dst,
                                  ptrdiff_t _dststride,
-                                 uint8_t* _src,
+                                 OVSample* _src,
                                  ptrdiff_t _srcstride,
                                  int height,
                                  int denom,
@@ -5370,9 +5370,9 @@ put_vvc_uni_w_pel_pixels4_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_bi_w_pel_pixels4_10_sse(uint8_t* _dst,
+put_vvc_bi_w_pel_pixels4_10_sse(OVSample* _dst,
                                 ptrdiff_t _dststride,
-                                uint8_t* _src,
+                                OVSample* _src,
                                 ptrdiff_t _srcstride,
                                 int16_t* src2,
                                 ptrdiff_t src2stride,
@@ -5430,9 +5430,9 @@ put_vvc_bi_w_pel_pixels4_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_uni_w_pel_pixels8_10_sse(uint8_t* _dst,
+put_vvc_uni_w_pel_pixels8_10_sse(OVSample* _dst,
                                  ptrdiff_t _dststride,
-                                 uint8_t* _src,
+                                 OVSample* _src,
                                  ptrdiff_t _srcstride,
                                  int height,
                                  int denom,
@@ -5478,9 +5478,9 @@ put_vvc_uni_w_pel_pixels8_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_bi_w_pel_pixels8_10_sse(uint8_t* _dst,
+put_vvc_bi_w_pel_pixels8_10_sse(OVSample* _dst,
                                 ptrdiff_t _dststride,
-                                uint8_t* _src,
+                                OVSample* _src,
                                 ptrdiff_t _srcstride,
                                 int16_t* src2,
                                 ptrdiff_t src2stride,
@@ -5538,9 +5538,9 @@ put_vvc_bi_w_pel_pixels8_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_uni_w_epel_h4_10_sse(uint8_t* _dst,
+put_vvc_uni_w_epel_h4_10_sse(OVSample* _dst,
                              ptrdiff_t _dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int height,
                              int denom,
@@ -5597,9 +5597,9 @@ put_vvc_uni_w_epel_h4_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_bi_w_epel_h4_10_sse(uint8_t* _dst,
+put_vvc_bi_w_epel_h4_10_sse(OVSample* _dst,
                             ptrdiff_t _dststride,
-                            uint8_t* _src,
+                            OVSample* _src,
                             ptrdiff_t _srcstride,
                             int16_t* src2,
                             ptrdiff_t src2stride,
@@ -5669,9 +5669,9 @@ put_vvc_bi_w_epel_h4_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_uni_w_epel_h8_10_sse(uint8_t* _dst,
+put_vvc_uni_w_epel_h8_10_sse(OVSample* _dst,
                              ptrdiff_t _dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int height,
                              int denom,
@@ -5734,9 +5734,9 @@ put_vvc_uni_w_epel_h8_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_bi_w_epel_h8_10_sse(uint8_t* _dst,
+put_vvc_bi_w_epel_h8_10_sse(OVSample* _dst,
                             ptrdiff_t _dststride,
-                            uint8_t* _src,
+                            OVSample* _src,
                             ptrdiff_t _srcstride,
                             int16_t* src2,
                             ptrdiff_t src2stride,
@@ -5812,9 +5812,9 @@ put_vvc_bi_w_epel_h8_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_uni_w_epel_v4_10_sse(uint8_t* _dst,
+put_vvc_uni_w_epel_v4_10_sse(OVSample* _dst,
                              ptrdiff_t _dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int height,
                              int denom,
@@ -5871,9 +5871,9 @@ put_vvc_uni_w_epel_v4_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_bi_w_epel_v4_10_sse(uint8_t* _dst,
+put_vvc_bi_w_epel_v4_10_sse(OVSample* _dst,
                             ptrdiff_t _dststride,
-                            uint8_t* _src,
+                            OVSample* _src,
                             ptrdiff_t _srcstride,
                             int16_t* src2,
                             ptrdiff_t src2stride,
@@ -5943,9 +5943,9 @@ put_vvc_bi_w_epel_v4_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_uni_w_epel_v8_10_sse(uint8_t* _dst,
+put_vvc_uni_w_epel_v8_10_sse(OVSample* _dst,
                              ptrdiff_t _dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int height,
                              int denom,
@@ -6008,9 +6008,9 @@ put_vvc_uni_w_epel_v8_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_bi_w_epel_v8_10_sse(uint8_t* _dst,
+put_vvc_bi_w_epel_v8_10_sse(OVSample* _dst,
                             ptrdiff_t _dststride,
-                            uint8_t* _src,
+                            OVSample* _src,
                             ptrdiff_t _srcstride,
                             int16_t* src2,
                             ptrdiff_t src2stride,
@@ -6086,9 +6086,9 @@ put_vvc_bi_w_epel_v8_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_uni_w_epel_hv4_10_sse(uint8_t* _dst,
+put_vvc_uni_w_epel_hv4_10_sse(OVSample* _dst,
                               ptrdiff_t _dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int height,
                               int denom,
@@ -6198,9 +6198,9 @@ put_vvc_uni_w_epel_hv4_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_bi_w_epel_hv4_10_sse(uint8_t* _dst,
+put_vvc_bi_w_epel_hv4_10_sse(OVSample* _dst,
                              ptrdiff_t _dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int16_t* src2,
                              ptrdiff_t src2stride,
@@ -6326,9 +6326,9 @@ put_vvc_bi_w_epel_hv4_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_uni_w_epel_hv8_10_sse(uint8_t* _dst,
+put_vvc_uni_w_epel_hv8_10_sse(OVSample* _dst,
                               ptrdiff_t _dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int height,
                               int denom,
@@ -6468,9 +6468,9 @@ put_vvc_uni_w_epel_hv8_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_bi_w_epel_hv8_10_sse(uint8_t* _dst,
+put_vvc_bi_w_epel_hv8_10_sse(OVSample* _dst,
                              ptrdiff_t _dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int16_t* src2,
                              ptrdiff_t src2stride,
@@ -6626,9 +6626,9 @@ put_vvc_bi_w_epel_hv8_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_uni_w_qpel_h4_10_sse(uint8_t* _dst,
+put_vvc_uni_w_qpel_h4_10_sse(OVSample* _dst,
                              ptrdiff_t _dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int height,
                              int denom,
@@ -6708,9 +6708,9 @@ put_vvc_uni_w_qpel_h4_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_bi_w_qpel_h4_10_sse(uint8_t* _dst,
+put_vvc_bi_w_qpel_h4_10_sse(OVSample* _dst,
                             ptrdiff_t _dststride,
-                            uint8_t* _src,
+                            OVSample* _src,
                             ptrdiff_t _srcstride,
                             int16_t* src2,
                             ptrdiff_t src2stride,
@@ -6806,9 +6806,9 @@ put_vvc_bi_w_qpel_h4_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_uni_w_qpel_h8_10_sse(uint8_t* _dst,
+put_vvc_uni_w_qpel_h8_10_sse(OVSample* _dst,
                              ptrdiff_t _dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int height,
                              int denom,
@@ -6890,9 +6890,9 @@ put_vvc_uni_w_qpel_h8_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_bi_w_qpel_h8_10_sse(uint8_t* _dst,
+put_vvc_bi_w_qpel_h8_10_sse(OVSample* _dst,
                             ptrdiff_t _dststride,
-                            uint8_t* _src,
+                            OVSample* _src,
                             ptrdiff_t _srcstride,
                             int16_t* src2,
                             ptrdiff_t src2stride,
@@ -6987,9 +6987,9 @@ put_vvc_bi_w_qpel_h8_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_uni_w_qpel_v4_10_sse(uint8_t* _dst,
+put_vvc_uni_w_qpel_v4_10_sse(OVSample* _dst,
                              ptrdiff_t _dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int height,
                              int denom,
@@ -7068,9 +7068,9 @@ put_vvc_uni_w_qpel_v4_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_bi_w_qpel_v4_10_sse(uint8_t* _dst,
+put_vvc_bi_w_qpel_v4_10_sse(OVSample* _dst,
                             ptrdiff_t _dststride,
-                            uint8_t* _src,
+                            OVSample* _src,
                             ptrdiff_t _srcstride,
                             int16_t* src2,
                             ptrdiff_t src2stride,
@@ -7161,9 +7161,9 @@ put_vvc_bi_w_qpel_v4_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_uni_w_qpel_v8_10_sse(uint8_t* _dst,
+put_vvc_uni_w_qpel_v8_10_sse(OVSample* _dst,
                              ptrdiff_t _dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int height,
                              int denom,
@@ -7248,9 +7248,9 @@ put_vvc_uni_w_qpel_v8_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_bi_w_qpel_v8_10_sse(uint8_t* _dst,
+put_vvc_bi_w_qpel_v8_10_sse(OVSample* _dst,
                             ptrdiff_t _dststride,
-                            uint8_t* _src,
+                            OVSample* _src,
                             ptrdiff_t _srcstride,
                             int16_t* src2,
                             ptrdiff_t src2stride,
@@ -7347,9 +7347,9 @@ put_vvc_bi_w_qpel_v8_10_sse(uint8_t* _dst,
 }
 
 static void
-put_vvc_uni_w_qpel_hv4_10_sse(uint8_t* dst,
+put_vvc_uni_w_qpel_hv4_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int height,
                               int denom,
@@ -7366,7 +7366,7 @@ put_vvc_uni_w_qpel_hv4_10_sse(uint8_t* dst,
     src -= QPEL_EXTRA_BEFORE * srcstride;
     put_vvc_qpel_h4_10_sse(tmp,
                            MAX_PB_SIZE,
-                           (uint8_t*)src,
+                           src,
                            _srcstride,
                            height + QPEL_EXTRA,
                            mx,
@@ -7375,7 +7375,7 @@ put_vvc_uni_w_qpel_hv4_10_sse(uint8_t* dst,
     tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
     put_vvc_uni_w_qpel_v4_14_10_sse(dst,
                                     dststride,
-                                    (uint8_t*)tmp,
+                                    tmp,
                                     MAX_PB_SIZE,
                                     height,
                                     denom,
@@ -7387,9 +7387,9 @@ put_vvc_uni_w_qpel_hv4_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_qpel_hv4_10_sse(uint8_t* dst,
+put_vvc_bi_w_qpel_hv4_10_sse(OVSample* dst,
                              ptrdiff_t dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int16_t* src2,
                              ptrdiff_t src2stride,
@@ -7410,7 +7410,7 @@ put_vvc_bi_w_qpel_hv4_10_sse(uint8_t* dst,
     src -= QPEL_EXTRA_BEFORE * srcstride;
     put_vvc_qpel_h4_10_sse(tmp,
                            MAX_PB_SIZE,
-                           (uint8_t*)src,
+                           src,
                            _srcstride,
                            height + QPEL_EXTRA,
                            mx,
@@ -7419,7 +7419,7 @@ put_vvc_bi_w_qpel_hv4_10_sse(uint8_t* dst,
     tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
     put_vvc_bi_w_qpel_v4_14_10_sse(dst,
                                    dststride,
-                                   (uint8_t*)tmp,
+                                   tmp,
                                    MAX_PB_SIZE,
                                    src2,
                                    src2stride,
@@ -7435,9 +7435,9 @@ put_vvc_bi_w_qpel_hv4_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_qpel_hv8_10_sse(uint8_t* dst,
+put_vvc_uni_w_qpel_hv8_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int height,
                               int denom,
@@ -7454,7 +7454,7 @@ put_vvc_uni_w_qpel_hv8_10_sse(uint8_t* dst,
     src -= QPEL_EXTRA_BEFORE * srcstride;
     put_vvc_qpel_h8_10_sse(tmp,
                            MAX_PB_SIZE,
-                           (uint8_t*)src,
+                           src,
                            _srcstride,
                            height + QPEL_EXTRA,
                            mx,
@@ -7463,7 +7463,7 @@ put_vvc_uni_w_qpel_hv8_10_sse(uint8_t* dst,
     tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
     put_vvc_uni_w_qpel_v8_14_10_sse(dst,
                                     dststride,
-                                    (uint8_t*)tmp,
+                                    tmp,
                                     MAX_PB_SIZE,
                                     height,
                                     denom,
@@ -7475,9 +7475,9 @@ put_vvc_uni_w_qpel_hv8_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_qpel_hv8_10_sse(uint8_t* dst,
+put_vvc_bi_w_qpel_hv8_10_sse(OVSample* dst,
                              ptrdiff_t dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int16_t* src2,
                              ptrdiff_t src2stride,
@@ -7498,7 +7498,7 @@ put_vvc_bi_w_qpel_hv8_10_sse(uint8_t* dst,
     src -= QPEL_EXTRA_BEFORE * srcstride;
     put_vvc_qpel_h8_10_sse(tmp,
                            MAX_PB_SIZE,
-                           (uint8_t*)src,
+                           src,
                            _srcstride,
                            height + QPEL_EXTRA,
                            mx,
@@ -7507,7 +7507,7 @@ put_vvc_bi_w_qpel_hv8_10_sse(uint8_t* dst,
     tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
     put_vvc_bi_w_qpel_v8_14_10_sse(dst,
                                    dststride,
-                                   (uint8_t*)tmp,
+                                   tmp,
                                    MAX_PB_SIZE,
                                    src2,
                                    src2stride,
@@ -7523,9 +7523,9 @@ put_vvc_bi_w_qpel_hv8_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_pel_pixels16_10_sse(uint8_t* dst,
+put_vvc_uni_w_pel_pixels16_10_sse(OVSample* dst,
                                   ptrdiff_t dststride,
-                                  uint8_t* _src,
+                                  OVSample* _src,
                                   ptrdiff_t _srcstride,
                                   int height,
                                   int denom,
@@ -7539,9 +7539,9 @@ put_vvc_uni_w_pel_pixels16_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_pel_pixels16_10_sse(uint8_t* dst,
+put_vvc_bi_w_pel_pixels16_10_sse(OVSample* dst,
                                  ptrdiff_t dststride,
-                                 uint8_t* _src,
+                                 OVSample* _src,
                                  ptrdiff_t _srcstride,
                                  int16_t* src2,
                                  ptrdiff_t src2stride,
@@ -7573,9 +7573,9 @@ put_vvc_bi_w_pel_pixels16_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_pel_pixels32_10_sse(uint8_t* dst,
+put_vvc_uni_w_pel_pixels32_10_sse(OVSample* dst,
                                   ptrdiff_t dststride,
-                                  uint8_t* _src,
+                                  OVSample* _src,
                                   ptrdiff_t _srcstride,
                                   int height,
                                   int denom,
@@ -7589,9 +7589,9 @@ put_vvc_uni_w_pel_pixels32_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_pel_pixels32_10_sse(uint8_t* dst,
+put_vvc_bi_w_pel_pixels32_10_sse(OVSample* dst,
                                  ptrdiff_t dststride,
-                                 uint8_t* _src,
+                                 OVSample* _src,
                                  ptrdiff_t _srcstride,
                                  int16_t* src2,
                                  ptrdiff_t src2stride,
@@ -7623,9 +7623,9 @@ put_vvc_bi_w_pel_pixels32_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_pel_pixels64_10_sse(uint8_t* dst,
+put_vvc_uni_w_pel_pixels64_10_sse(OVSample* dst,
                                   ptrdiff_t dststride,
-                                  uint8_t* _src,
+                                  OVSample* _src,
                                   ptrdiff_t _srcstride,
                                   int height,
                                   int denom,
@@ -7639,9 +7639,9 @@ put_vvc_uni_w_pel_pixels64_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_pel_pixels64_10_sse(uint8_t* dst,
+put_vvc_bi_w_pel_pixels64_10_sse(OVSample* dst,
                                  ptrdiff_t dststride,
-                                 uint8_t* _src,
+                                 OVSample* _src,
                                  ptrdiff_t _srcstride,
                                  int16_t* src2,
                                  ptrdiff_t src2stride,
@@ -7673,9 +7673,9 @@ put_vvc_bi_w_pel_pixels64_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_qpel_h16_10_sse(uint8_t* dst,
+put_vvc_uni_w_qpel_h16_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int height,
                               int denom,
@@ -7689,9 +7689,9 @@ put_vvc_uni_w_qpel_h16_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_qpel_h16_10_sse(uint8_t* dst,
+put_vvc_bi_w_qpel_h16_10_sse(OVSample* dst,
                              ptrdiff_t dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int16_t* src2,
                              ptrdiff_t src2stride,
@@ -7723,9 +7723,9 @@ put_vvc_bi_w_qpel_h16_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_qpel_h32_10_sse(uint8_t* dst,
+put_vvc_uni_w_qpel_h32_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int height,
                               int denom,
@@ -7739,9 +7739,9 @@ put_vvc_uni_w_qpel_h32_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_qpel_h32_10_sse(uint8_t* dst,
+put_vvc_bi_w_qpel_h32_10_sse(OVSample* dst,
                              ptrdiff_t dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int16_t* src2,
                              ptrdiff_t src2stride,
@@ -7773,9 +7773,9 @@ put_vvc_bi_w_qpel_h32_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_qpel_h64_10_sse(uint8_t* dst,
+put_vvc_uni_w_qpel_h64_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int height,
                               int denom,
@@ -7789,9 +7789,9 @@ put_vvc_uni_w_qpel_h64_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_qpel_h64_10_sse(uint8_t* dst,
+put_vvc_bi_w_qpel_h64_10_sse(OVSample* dst,
                              ptrdiff_t dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int16_t* src2,
                              ptrdiff_t src2stride,
@@ -7823,9 +7823,9 @@ put_vvc_bi_w_qpel_h64_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_qpel_v16_10_sse(uint8_t* dst,
+put_vvc_uni_w_qpel_v16_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int height,
                               int denom,
@@ -7839,9 +7839,9 @@ put_vvc_uni_w_qpel_v16_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_qpel_v16_10_sse(uint8_t* dst,
+put_vvc_bi_w_qpel_v16_10_sse(OVSample* dst,
                              ptrdiff_t dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int16_t* src2,
                              ptrdiff_t src2stride,
@@ -7873,9 +7873,9 @@ put_vvc_bi_w_qpel_v16_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_qpel_v32_10_sse(uint8_t* dst,
+put_vvc_uni_w_qpel_v32_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int height,
                               int denom,
@@ -7889,9 +7889,9 @@ put_vvc_uni_w_qpel_v32_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_qpel_v32_10_sse(uint8_t* dst,
+put_vvc_bi_w_qpel_v32_10_sse(OVSample* dst,
                              ptrdiff_t dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int16_t* src2,
                              ptrdiff_t src2stride,
@@ -7923,9 +7923,9 @@ put_vvc_bi_w_qpel_v32_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_qpel_v64_10_sse(uint8_t* dst,
+put_vvc_uni_w_qpel_v64_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int height,
                               int denom,
@@ -7939,9 +7939,9 @@ put_vvc_uni_w_qpel_v64_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_qpel_v64_10_sse(uint8_t* dst,
+put_vvc_bi_w_qpel_v64_10_sse(OVSample* dst,
                              ptrdiff_t dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int16_t* src2,
                              ptrdiff_t src2stride,
@@ -7973,9 +7973,9 @@ put_vvc_bi_w_qpel_v64_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_qpel_hv16_10_sse(uint8_t* dst,
+put_vvc_uni_w_qpel_hv16_10_sse(OVSample* dst,
                                ptrdiff_t dststride,
-                               uint8_t* _src,
+                               OVSample* _src,
                                ptrdiff_t _srcstride,
                                int height,
                                int denom,
@@ -7989,9 +7989,9 @@ put_vvc_uni_w_qpel_hv16_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_qpel_hv16_10_sse(uint8_t* dst,
+put_vvc_bi_w_qpel_hv16_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int16_t* src2,
                               ptrdiff_t src2stride,
@@ -8023,9 +8023,9 @@ put_vvc_bi_w_qpel_hv16_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_qpel_hv32_10_sse(uint8_t* dst,
+put_vvc_uni_w_qpel_hv32_10_sse(OVSample* dst,
                                ptrdiff_t dststride,
-                               uint8_t* _src,
+                               OVSample* _src,
                                ptrdiff_t _srcstride,
                                int height,
                                int denom,
@@ -8039,9 +8039,9 @@ put_vvc_uni_w_qpel_hv32_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_qpel_hv32_10_sse(uint8_t* dst,
+put_vvc_bi_w_qpel_hv32_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int16_t* src2,
                               ptrdiff_t src2stride,
@@ -8073,9 +8073,9 @@ put_vvc_bi_w_qpel_hv32_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_qpel_hv64_10_sse(uint8_t* dst,
+put_vvc_uni_w_qpel_hv64_10_sse(OVSample* dst,
                                ptrdiff_t dststride,
-                               uint8_t* _src,
+                               OVSample* _src,
                                ptrdiff_t _srcstride,
                                int height,
                                int denom,
@@ -8089,9 +8089,9 @@ put_vvc_uni_w_qpel_hv64_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_qpel_hv64_10_sse(uint8_t* dst,
+put_vvc_bi_w_qpel_hv64_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int16_t* src2,
                               ptrdiff_t src2stride,
@@ -8123,9 +8123,9 @@ put_vvc_bi_w_qpel_hv64_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_epel_h16_10_sse(uint8_t* dst,
+put_vvc_uni_w_epel_h16_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int height,
                               int denom,
@@ -8139,9 +8139,9 @@ put_vvc_uni_w_epel_h16_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_epel_h16_10_sse(uint8_t* dst,
+put_vvc_bi_w_epel_h16_10_sse(OVSample* dst,
                              ptrdiff_t dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int16_t* src2,
                              ptrdiff_t src2stride,
@@ -8173,9 +8173,9 @@ put_vvc_bi_w_epel_h16_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_epel_h32_10_sse(uint8_t* dst,
+put_vvc_uni_w_epel_h32_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int height,
                               int denom,
@@ -8189,9 +8189,9 @@ put_vvc_uni_w_epel_h32_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_epel_h32_10_sse(uint8_t* dst,
+put_vvc_bi_w_epel_h32_10_sse(OVSample* dst,
                              ptrdiff_t dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int16_t* src2,
                              ptrdiff_t src2stride,
@@ -8223,9 +8223,9 @@ put_vvc_bi_w_epel_h32_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_epel_h64_10_sse(uint8_t* dst,
+put_vvc_uni_w_epel_h64_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int height,
                               int denom,
@@ -8239,9 +8239,9 @@ put_vvc_uni_w_epel_h64_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_epel_h64_10_sse(uint8_t* dst,
+put_vvc_bi_w_epel_h64_10_sse(OVSample* dst,
                              ptrdiff_t dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int16_t* src2,
                              ptrdiff_t src2stride,
@@ -8273,9 +8273,9 @@ put_vvc_bi_w_epel_h64_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_epel_v16_10_sse(uint8_t* dst,
+put_vvc_uni_w_epel_v16_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int height,
                               int denom,
@@ -8289,9 +8289,9 @@ put_vvc_uni_w_epel_v16_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_epel_v16_10_sse(uint8_t* dst,
+put_vvc_bi_w_epel_v16_10_sse(OVSample* dst,
                              ptrdiff_t dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int16_t* src2,
                              ptrdiff_t src2stride,
@@ -8323,9 +8323,9 @@ put_vvc_bi_w_epel_v16_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_epel_v32_10_sse(uint8_t* dst,
+put_vvc_uni_w_epel_v32_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int height,
                               int denom,
@@ -8339,9 +8339,9 @@ put_vvc_uni_w_epel_v32_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_epel_v32_10_sse(uint8_t* dst,
+put_vvc_bi_w_epel_v32_10_sse(OVSample* dst,
                              ptrdiff_t dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int16_t* src2,
                              ptrdiff_t src2stride,
@@ -8373,9 +8373,9 @@ put_vvc_bi_w_epel_v32_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_epel_v64_10_sse(uint8_t* dst,
+put_vvc_uni_w_epel_v64_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int height,
                               int denom,
@@ -8389,9 +8389,9 @@ put_vvc_uni_w_epel_v64_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_epel_v64_10_sse(uint8_t* dst,
+put_vvc_bi_w_epel_v64_10_sse(OVSample* dst,
                              ptrdiff_t dststride,
-                             uint8_t* _src,
+                             OVSample* _src,
                              ptrdiff_t _srcstride,
                              int16_t* src2,
                              ptrdiff_t src2stride,
@@ -8423,9 +8423,9 @@ put_vvc_bi_w_epel_v64_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_epel_hv16_10_sse(uint8_t* dst,
+put_vvc_uni_w_epel_hv16_10_sse(OVSample* dst,
                                ptrdiff_t dststride,
-                               uint8_t* _src,
+                               OVSample* _src,
                                ptrdiff_t _srcstride,
                                int height,
                                int denom,
@@ -8439,9 +8439,9 @@ put_vvc_uni_w_epel_hv16_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_epel_hv16_10_sse(uint8_t* dst,
+put_vvc_bi_w_epel_hv16_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int16_t* src2,
                               ptrdiff_t src2stride,
@@ -8473,9 +8473,9 @@ put_vvc_bi_w_epel_hv16_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_epel_hv32_10_sse(uint8_t* dst,
+put_vvc_uni_w_epel_hv32_10_sse(OVSample* dst,
                                ptrdiff_t dststride,
-                               uint8_t* _src,
+                               OVSample* _src,
                                ptrdiff_t _srcstride,
                                int height,
                                int denom,
@@ -8489,9 +8489,9 @@ put_vvc_uni_w_epel_hv32_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_epel_hv32_10_sse(uint8_t* dst,
+put_vvc_bi_w_epel_hv32_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int16_t* src2,
                               ptrdiff_t src2stride,
@@ -8523,9 +8523,9 @@ put_vvc_bi_w_epel_hv32_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_uni_w_epel_hv64_10_sse(uint8_t* dst,
+put_vvc_uni_w_epel_hv64_10_sse(OVSample* dst,
                                ptrdiff_t dststride,
-                               uint8_t* _src,
+                               OVSample* _src,
                                ptrdiff_t _srcstride,
                                int height,
                                int denom,
@@ -8539,9 +8539,9 @@ put_vvc_uni_w_epel_hv64_10_sse(uint8_t* dst,
 }
 
 static void
-put_vvc_bi_w_epel_hv64_10_sse(uint8_t* dst,
+put_vvc_bi_w_epel_hv64_10_sse(OVSample* dst,
                               ptrdiff_t dststride,
-                              uint8_t* _src,
+                              OVSample* _src,
                               ptrdiff_t _srcstride,
                               int16_t* src2,
                               ptrdiff_t src2stride,
