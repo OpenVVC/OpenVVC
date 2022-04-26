@@ -2158,16 +2158,16 @@ oh_hevc_put_hevc_bi0_qpel_hv16_10_avx2(int16_t* dst,
                                      intptr_t my,
                                      int width)
 {
-  int16_t tmp_array[(128 + 7) * 128];
+  int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
   int16_t* tmp = tmp_array;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  src -= 3 * srcstride;
+  src -= QPEL_EXTRA_BEFORE * srcstride;
   oh_hevc_put_hevc_bi0_qpel_h16_10_avx2(
-    tmp, src, _srcstride, height + 7, mx, my, width);
-  tmp = tmp_array + 3 * 128;
+    tmp, src, _srcstride, height + QPEL_EXTRA, mx, my, width);
+  tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
   oh_hevc_put_hevc_bi0_qpel_v16_14_avx2(
-    dst, (const uint16_t*)tmp, 128, height, mx, my, width);
+    dst, (const uint16_t*)tmp, MAX_PB_SIZE, height, mx, my, width);
 }
 
 static void
@@ -2181,16 +2181,16 @@ oh_hevc_put_hevc_bi1_qpel_hv16_10_avx2(uint16_t* dst,
                                      intptr_t my,
                                      int width)
 {
-  int16_t tmp_array[(128 + 7) * 128];
+  int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
   int16_t* tmp = tmp_array;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  src -= 3 * srcstride;
+  src -= QPEL_EXTRA_BEFORE * srcstride;
   oh_hevc_put_hevc_bi0_qpel_h16_10_avx2(
-    tmp, src, _srcstride, height + 7, mx, my, width);
-  tmp = tmp_array + 3 * 128;
+    tmp, src, _srcstride, height + QPEL_EXTRA, mx, my, width);
+  tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
   oh_hevc_put_hevc_bi1_qpel_v16_14_10_avx2(
-    dst, dststride, tmp, 128, src2, height, mx, my, width);
+    dst, dststride, tmp, MAX_PB_SIZE, src2, height, mx, my, width);
 }
 
 static void
@@ -2203,16 +2203,16 @@ oh_hevc_put_hevc_uni_qpel_hv16_10_avx2(uint16_t* dst,
                                      intptr_t my,
                                      int width)
 {
-  int16_t tmp_array[(128 + 7) * 128];
+  int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
   int16_t* tmp = tmp_array;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  src -= 3 * srcstride;
+  src -= QPEL_EXTRA_BEFORE * srcstride;
   oh_hevc_put_hevc_bi0_qpel_h16_10_avx2(
-    tmp, src, _srcstride, height + 7, mx, my, width);
-  tmp = tmp_array + 3 * 128;
+    tmp, src, _srcstride, height + QPEL_EXTRA, mx, my, width);
+  tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
   oh_hevc_put_hevc_uni_qpel_v16_14_10_avx2(
-    dst, dststride, tmp, 128, height, mx, my, width);
+    dst, dststride, tmp, MAX_PB_SIZE, height, mx, my, width);
 }
 
 static void

@@ -3902,13 +3902,13 @@ oh_hevc_put_hevc_bi0_qpel_hv4_10_sse(int16_t* dst,
                                      intptr_t my,
                                      int width)
 {
-    int16_t tmp_array[(MAX_PB_SIZE + 7) * MAX_PB_SIZE];
+    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
     const uint16_t* src = _src;
     const int srcstride = _srcstride;
-    src -= 3 * srcstride;
-    oh_hevc_put_hevc_bi0_qpel_h4_10_sse(tmp, src, _srcstride, height + 7, mx, my, width);
-    tmp = tmp_array + 3 * MAX_PB_SIZE;
+    src -= QPEL_EXTRA_BEFORE * srcstride;
+    oh_hevc_put_hevc_bi0_qpel_h4_10_sse(tmp, src, _srcstride, height + QPEL_EXTRA, mx, my, width);
+    tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
     oh_hevc_put_hevc_bi0_qpel_v4_14_sse(dst, (const uint16_t*)tmp, MAX_PB_SIZE, height, mx, my, width);
 }
 
@@ -3923,13 +3923,13 @@ oh_hevc_put_hevc_bi1_qpel_hv4_10_sse(uint16_t* dst,
                                      intptr_t my,
                                      int width)
 {
-    int16_t tmp_array[(MAX_PB_SIZE + 7) * MAX_PB_SIZE];
+    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
     const uint16_t* src = _src;
     const int srcstride = _srcstride;
-    src -= 3 * srcstride;
-    oh_hevc_put_hevc_bi0_qpel_h4_10_sse(tmp, src, _srcstride, height + 7, mx, my, width);
-    tmp = tmp_array + 3 * MAX_PB_SIZE;
+    src -= QPEL_EXTRA_BEFORE * srcstride;
+    oh_hevc_put_hevc_bi0_qpel_h4_10_sse(tmp, src, _srcstride, height + QPEL_EXTRA, mx, my, width);
+    tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
     oh_hevc_put_hevc_bi1_qpel_v4_14_10_sse(dst, dststride, tmp, MAX_PB_SIZE, src2, height, mx, my, width);
 }
 
@@ -3943,13 +3943,13 @@ oh_hevc_put_hevc_uni_qpel_hv4_10_sse(uint16_t* dst,
                                      intptr_t my,
                                      int width)
 {
-    int16_t tmp_array[(MAX_PB_SIZE + 7) * MAX_PB_SIZE];
+    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
     const uint16_t* src = _src;
     const int srcstride = _srcstride;
-    src -= 3 * srcstride;
-    oh_hevc_put_hevc_bi0_qpel_h4_10_sse(tmp, src, _srcstride, height + 7, mx, my, width);
-    tmp = tmp_array + 3 * MAX_PB_SIZE;
+    src -= QPEL_EXTRA_BEFORE * srcstride;
+    oh_hevc_put_hevc_bi0_qpel_h4_10_sse(tmp, src, _srcstride, height + QPEL_EXTRA, mx, my, width);
+    tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
     oh_hevc_put_hevc_uni_qpel_v4_14_10_sse(dst, dststride, tmp, MAX_PB_SIZE, height, mx, my, width);
 }
 
@@ -3962,13 +3962,13 @@ oh_hevc_put_hevc_bi0_qpel_hv8_10_sse(int16_t* dst,
                                      intptr_t my,
                                      int width)
 {
-    int16_t tmp_array[(MAX_PB_SIZE + 7) * MAX_PB_SIZE];
+    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
     const uint16_t* src = _src;
     const int srcstride = _srcstride;
-    src -= 3 * srcstride;
-    oh_hevc_put_hevc_bi0_qpel_h8_10_sse(tmp, src, _srcstride, height + 7, mx, my, width);
-    tmp = tmp_array + 3 * MAX_PB_SIZE;
+    src -= QPEL_EXTRA_BEFORE * srcstride;
+    oh_hevc_put_hevc_bi0_qpel_h8_10_sse(tmp, src, _srcstride, height + QPEL_EXTRA, mx, my, width);
+    tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
     oh_hevc_put_hevc_bi0_qpel_v8_14_sse(dst, (const uint16_t*)tmp, MAX_PB_SIZE, height, mx, my, width);
 }
 
@@ -3983,13 +3983,13 @@ oh_hevc_put_hevc_bi1_qpel_hv8_10_sse(uint16_t* dst,
                                      intptr_t my,
                                      int width)
 {
-    int16_t tmp_array[(MAX_PB_SIZE + 7) * MAX_PB_SIZE];
+    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
     const uint16_t* src = _src;
     const int srcstride = _srcstride;
-    src -= 3 * srcstride;
-    oh_hevc_put_hevc_bi0_qpel_h8_10_sse(tmp, src, _srcstride, height + 7, mx, my, width);
-    tmp = tmp_array + 3 * MAX_PB_SIZE;
+    src -= QPEL_EXTRA_BEFORE * srcstride;
+    oh_hevc_put_hevc_bi0_qpel_h8_10_sse(tmp, src, _srcstride, height + QPEL_EXTRA, mx, my, width);
+    tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
     oh_hevc_put_hevc_bi1_qpel_v8_14_10_sse(dst, dststride, tmp, MAX_PB_SIZE, src2, height, mx, my, width);
 }
 
@@ -4003,13 +4003,13 @@ oh_hevc_put_hevc_uni_qpel_hv8_10_sse(uint16_t* dst,
                                      intptr_t my,
                                      int width)
 {
-    int16_t tmp_array[(MAX_PB_SIZE + 7) * MAX_PB_SIZE];
+    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
     const uint16_t* src = _src;
     const int srcstride = _srcstride;
-    src -= 3 * srcstride;
-    oh_hevc_put_hevc_bi0_qpel_h8_10_sse(tmp, src, _srcstride, height + 7, mx, my, width);
-    tmp = tmp_array + 3 * MAX_PB_SIZE;
+    src -= QPEL_EXTRA_BEFORE * srcstride;
+    oh_hevc_put_hevc_bi0_qpel_h8_10_sse(tmp, src, _srcstride, height + QPEL_EXTRA, mx, my, width);
+    tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
     oh_hevc_put_hevc_uni_qpel_v8_14_10_sse(dst, dststride, tmp, MAX_PB_SIZE, height, mx, my, width);
 }
 
