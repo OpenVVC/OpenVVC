@@ -720,7 +720,7 @@ oh_hevc_put_hevc_bi0_pel_pixels16_10_avx2(int16_t* dst,
       _mm256_storeu_si256((__m256i*)&dst[x], x1);
     }
     src += srcstride;
-    dst += 128;
+    dst += MAX_PB_SIZE;
   }
 }
 
@@ -755,7 +755,7 @@ oh_hevc_put_hevc_bi1_pel_pixels16_10_avx2(uint16_t* _dst,
       _mm256_storeu_si256((__m256i*)&dst[x], x1);
     }
     src += srcstride;
-    src2 += 128;
+    src2 += MAX_PB_SIZE;
     dst += dststride;
   }
 }
@@ -797,7 +797,7 @@ oh_hevc_put_hevc_bi0_epel_h16_10_avx2(int16_t* dst,
       _mm256_storeu_si256((__m256i*)&dst[x], x1);
     }
     src += srcstride;
-    dst += 128;
+    dst += MAX_PB_SIZE;
   }
 }
 
@@ -849,7 +849,7 @@ oh_hevc_put_hevc_bi1_epel_h16_10_avx2(uint16_t* _dst,
       _mm256_storeu_si256((__m256i*)&dst[x], x1);
     }
     src += srcstride;
-    src2 += 128;
+    src2 += MAX_PB_SIZE;
     dst += dststride;
   }
 }
@@ -939,7 +939,7 @@ oh_hevc_put_hevc_bi0_epel_v16_10_avx2(int16_t* dst,
       _mm256_storeu_si256((__m256i*)&dst[x], x1);
     }
     src += srcstride;
-    dst += 128;
+    dst += MAX_PB_SIZE;
   }
 }
 
@@ -991,7 +991,7 @@ oh_hevc_put_hevc_bi1_epel_v16_10_avx2(uint16_t* _dst,
       _mm256_storeu_si256((__m256i*)&dst[x], x1);
     }
     src += srcstride;
-    src2 += 128;
+    src2 += MAX_PB_SIZE;
     dst += dststride;
   }
 }
@@ -1152,7 +1152,7 @@ oh_hevc_put_hevc_bi0_epel_hv16_10_avx2(int16_t* dst,
       x1 = _mm256_srai_epi32(x1, 6);
       x1 = _mm256_packs_epi32(x1, t1);
       _mm256_storeu_si256((__m256i*)&dst[x], x1);
-      dst += 128;
+      dst += MAX_PB_SIZE;
       r1 = r2;
       r2 = r3;
       r3 = r4;
@@ -1282,7 +1282,7 @@ oh_hevc_put_hevc_bi1_epel_hv16_10_avx2(uint16_t* _dst,
       x1 = _mm256_max_epi16(x1, _mm256_setzero_si256());
       x1 = _mm256_min_epi16(x1, _mm256_set1_epi16(0x03FF));
       _mm256_storeu_si256((__m256i*)&dst[x], x1);
-      src2 += 128;
+      src2 += MAX_PB_SIZE;
       dst += dststride;
       r1 = r2;
       r2 = r3;
@@ -1529,7 +1529,7 @@ oh_hevc_put_hevc_bi0_qpel_h16_10_avx2(int16_t* dst,
       _mm256_storeu_si256((__m256i*)&dst[x], x1);
     }
     src += srcstride;
-    dst += 128;
+    dst += MAX_PB_SIZE;
   }
 }
 
@@ -1608,7 +1608,7 @@ oh_hevc_put_hevc_bi1_qpel_h16_10_avx2(uint16_t* _dst,
       _mm256_storeu_si256((__m256i*)&dst[x], x1);
     }
     src += srcstride;
-    src2 += 128;
+    src2 += MAX_PB_SIZE;
     dst += dststride;
   }
 }
@@ -1755,7 +1755,7 @@ oh_hevc_put_hevc_bi0_qpel_v16_10_avx2(int16_t* dst,
       _mm256_storeu_si256((__m256i*)&dst[x], x1);
     }
     src += srcstride;
-    dst += 128;
+    dst += MAX_PB_SIZE;
   }
 }
 
@@ -1837,7 +1837,7 @@ oh_hevc_put_hevc_bi1_qpel_v16_10_avx2(uint16_t* _dst,
       _mm256_storeu_si256((__m256i*)&dst[x], x1);
     }
     src += srcstride;
-    src2 += 128;
+    src2 += MAX_PB_SIZE;
     dst += dststride;
   }
 }
@@ -1986,7 +1986,7 @@ oh_hevc_put_hevc_bi0_qpel_v16_14_avx2(int16_t* dst,
       _mm256_storeu_si256((__m256i*)&dst[x], x1);
     }
     src += srcstride;
-    dst += 128;
+    dst += MAX_PB_SIZE;
   }
 }
 
@@ -2067,7 +2067,7 @@ oh_hevc_put_hevc_bi1_qpel_v16_14_10_avx2(uint16_t* _dst,
       _mm256_storeu_si256((__m256i*)&dst[x], x1);
     }
     src += srcstride;
-    src2 += 128;
+    src2 += MAX_PB_SIZE;
     dst += dststride;
   }
 }
