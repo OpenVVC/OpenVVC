@@ -1351,7 +1351,7 @@ oh_hevc_put_hevc_bi0_pel_pixels4_10_sse(int16_t* dst,
             _mm_storel_epi64((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        dst += 128;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -1386,7 +1386,7 @@ oh_hevc_put_hevc_bi1_pel_pixels4_10_sse(uint16_t* _dst,
             _mm_storel_epi64((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        src2 += 128;
+        src2 += MAX_PB_SIZE;
         dst += dststride;
     }
 }
@@ -1433,7 +1433,7 @@ oh_hevc_put_hevc_bi0_pel_pixels8_10_sse(int16_t* dst,
             _mm_storeu_si128((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        dst += 128;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -1468,7 +1468,7 @@ oh_hevc_put_hevc_bi1_pel_pixels8_10_sse(uint16_t* _dst,
             _mm_storeu_si128((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        src2 += 128;
+        src2 += MAX_PB_SIZE;
         dst += dststride;
     }
 }
@@ -1526,7 +1526,7 @@ oh_hevc_put_hevc_bi0_epel_h4_10_sse(int16_t* dst,
             _mm_storel_epi64((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        dst += 128;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -1572,7 +1572,7 @@ oh_hevc_put_hevc_bi1_epel_h4_10_sse(uint16_t* _dst,
             _mm_storel_epi64((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        src2 += 128;
+        src2 += MAX_PB_SIZE;
         dst += dststride;
     }
 }
@@ -1662,7 +1662,7 @@ oh_hevc_put_hevc_bi0_epel_h8_10_sse(int16_t* dst,
             _mm_storeu_si128((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        dst += 128;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -1714,7 +1714,7 @@ oh_hevc_put_hevc_bi1_epel_h8_10_sse(uint16_t* _dst,
             _mm_storeu_si128((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        src2 += 128;
+        src2 += MAX_PB_SIZE;
         dst += dststride;
     }
 }
@@ -1804,7 +1804,7 @@ oh_hevc_put_hevc_bi0_epel_v4_10_sse(int16_t* dst,
             _mm_storel_epi64((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        dst += 128;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -1856,7 +1856,7 @@ oh_hevc_put_hevc_bi1_epel_v4_10_sse(uint16_t* _dst,
             _mm_storel_epi64((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        src2 += 128;
+        src2 += MAX_PB_SIZE;
         dst += dststride;
     }
 }
@@ -1940,7 +1940,7 @@ oh_hevc_put_hevc_bi0_epel_v8_10_sse(int16_t* dst,
             _mm_storeu_si128((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        dst += 128;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -1992,7 +1992,7 @@ oh_hevc_put_hevc_bi1_epel_v8_10_sse(uint16_t* _dst,
             _mm_storeu_si128((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        src2 += 128;
+        src2 += MAX_PB_SIZE;
         dst += dststride;
     }
 }
@@ -2123,7 +2123,7 @@ oh_hevc_put_hevc_bi0_epel_hv4_10_sse(int16_t* dst,
             x1 = _mm_srai_epi32(x1, 6);
             x1 = _mm_packs_epi32(x1, x2);
             _mm_storel_epi64((__m128i*)&dst[x], x1);
-            dst += 128;
+            dst += MAX_PB_SIZE;
             r1 = r2;
             r2 = r3;
             r3 = r4;
@@ -2223,7 +2223,7 @@ oh_hevc_put_hevc_bi1_epel_hv4_10_sse(uint16_t* _dst,
             x1 = _mm_max_epi16(x1, _mm_setzero_si128());
             x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03FF));
             _mm_storel_epi64((__m128i*)&dst[x], x1);
-            src2 += 128;
+            src2 += MAX_PB_SIZE;
             dst += dststride;
             r1 = r2;
             r2 = r3;
@@ -2438,7 +2438,7 @@ oh_hevc_put_hevc_bi0_epel_hv8_10_sse(int16_t* dst,
             x1 = _mm_srai_epi32(x1, 6);
             x1 = _mm_packs_epi32(x1, t1);
             _mm_storeu_si128((__m128i*)&dst[x], x1);
-            dst += 128;
+            dst += MAX_PB_SIZE;
             r1 = r2;
             r2 = r3;
             r3 = r4;
@@ -2568,7 +2568,7 @@ oh_hevc_put_hevc_bi1_epel_hv8_10_sse(uint16_t* _dst,
             x1 = _mm_max_epi16(x1, _mm_setzero_si128());
             x1 = _mm_min_epi16(x1, _mm_set1_epi16(0x03FF));
             _mm_storeu_si128((__m128i*)&dst[x], x1);
-            src2 += 128;
+            src2 += MAX_PB_SIZE;
             dst += dststride;
             r1 = r2;
             r2 = r3;
@@ -2759,7 +2759,7 @@ oh_hevc_put_hevc_bi0_qpel_h4_10_sse(int16_t* dst,
             _mm_storel_epi64((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        dst += 128;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -2828,7 +2828,7 @@ oh_hevc_put_hevc_bi1_qpel_h4_10_sse(uint16_t* _dst,
             _mm_storel_epi64((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        src2 += 128;
+        src2 += MAX_PB_SIZE;
         dst += dststride;
     }
 }
@@ -2954,7 +2954,7 @@ oh_hevc_put_hevc_bi0_qpel_h8_10_sse(int16_t* dst,
             _mm_storeu_si128((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        dst += 128;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -3025,7 +3025,7 @@ oh_hevc_put_hevc_bi1_qpel_h8_10_sse(uint16_t* _dst,
             _mm_storeu_si128((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        src2 += 128;
+        src2 += MAX_PB_SIZE;
         dst += dststride;
     }
 }
@@ -3150,7 +3150,7 @@ oh_hevc_put_hevc_bi0_qpel_v4_10_sse(int16_t* dst,
             _mm_storel_epi64((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        dst += 128;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -3218,7 +3218,7 @@ oh_hevc_put_hevc_bi1_qpel_v4_10_sse(uint16_t* _dst,
             _mm_storel_epi64((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        src2 += 128;
+        src2 += MAX_PB_SIZE;
         dst += dststride;
     }
 }
@@ -3346,7 +3346,7 @@ oh_hevc_put_hevc_bi0_qpel_v8_10_sse(int16_t* dst,
             _mm_storeu_si128((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        dst += 128;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -3420,7 +3420,7 @@ oh_hevc_put_hevc_bi1_qpel_v8_10_sse(uint16_t* _dst,
             _mm_storeu_si128((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        src2 += 128;
+        src2 += MAX_PB_SIZE;
         dst += dststride;
     }
 }
@@ -3548,7 +3548,7 @@ oh_hevc_put_hevc_bi0_qpel_v4_14_sse(int16_t* dst,
             _mm_storel_epi64((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        dst += 128;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -3616,7 +3616,7 @@ oh_hevc_put_hevc_bi1_qpel_v4_14_10_sse(uint16_t* _dst,
             _mm_storel_epi64((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        src2 += 128;
+        src2 += MAX_PB_SIZE;
         dst += dststride;
     }
 }
@@ -3744,7 +3744,7 @@ oh_hevc_put_hevc_bi0_qpel_v8_14_sse(int16_t* dst,
             _mm_storeu_si128((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        dst += 128;
+        dst += MAX_PB_SIZE;
     }
 }
 
@@ -3818,7 +3818,7 @@ oh_hevc_put_hevc_bi1_qpel_v8_14_10_sse(uint16_t* _dst,
             _mm_storeu_si128((__m128i*)&dst[x], x1);
         }
         src += srcstride;
-        src2 += 128;
+        src2 += MAX_PB_SIZE;
         dst += dststride;
     }
 }
@@ -3902,14 +3902,14 @@ oh_hevc_put_hevc_bi0_qpel_hv4_10_sse(int16_t* dst,
                                      intptr_t my,
                                      int width)
 {
-    int16_t tmp_array[(128 + 7) * 128];
+    int16_t tmp_array[(MAX_PB_SIZE + 7) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
     const uint16_t* src = _src;
     const int srcstride = _srcstride;
     src -= 3 * srcstride;
     oh_hevc_put_hevc_bi0_qpel_h4_10_sse(tmp, src, _srcstride, height + 7, mx, my, width);
-    tmp = tmp_array + 3 * 128;
-    oh_hevc_put_hevc_bi0_qpel_v4_14_sse(dst, (const uint16_t*)tmp, 128, height, mx, my, width);
+    tmp = tmp_array + 3 * MAX_PB_SIZE;
+    oh_hevc_put_hevc_bi0_qpel_v4_14_sse(dst, (const uint16_t*)tmp, MAX_PB_SIZE, height, mx, my, width);
 }
 
 static void
@@ -3923,14 +3923,14 @@ oh_hevc_put_hevc_bi1_qpel_hv4_10_sse(uint16_t* dst,
                                      intptr_t my,
                                      int width)
 {
-    int16_t tmp_array[(128 + 7) * 128];
+    int16_t tmp_array[(MAX_PB_SIZE + 7) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
     const uint16_t* src = _src;
     const int srcstride = _srcstride;
     src -= 3 * srcstride;
     oh_hevc_put_hevc_bi0_qpel_h4_10_sse(tmp, src, _srcstride, height + 7, mx, my, width);
-    tmp = tmp_array + 3 * 128;
-    oh_hevc_put_hevc_bi1_qpel_v4_14_10_sse(dst, dststride, tmp, 128, src2, height, mx, my, width);
+    tmp = tmp_array + 3 * MAX_PB_SIZE;
+    oh_hevc_put_hevc_bi1_qpel_v4_14_10_sse(dst, dststride, tmp, MAX_PB_SIZE, src2, height, mx, my, width);
 }
 
 static void
@@ -3943,14 +3943,14 @@ oh_hevc_put_hevc_uni_qpel_hv4_10_sse(uint16_t* dst,
                                      intptr_t my,
                                      int width)
 {
-    int16_t tmp_array[(128 + 7) * 128];
+    int16_t tmp_array[(MAX_PB_SIZE + 7) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
     const uint16_t* src = _src;
     const int srcstride = _srcstride;
     src -= 3 * srcstride;
     oh_hevc_put_hevc_bi0_qpel_h4_10_sse(tmp, src, _srcstride, height + 7, mx, my, width);
-    tmp = tmp_array + 3 * 128;
-    oh_hevc_put_hevc_uni_qpel_v4_14_10_sse(dst, dststride, tmp, 128, height, mx, my, width);
+    tmp = tmp_array + 3 * MAX_PB_SIZE;
+    oh_hevc_put_hevc_uni_qpel_v4_14_10_sse(dst, dststride, tmp, MAX_PB_SIZE, height, mx, my, width);
 }
 
 static void
@@ -3962,14 +3962,14 @@ oh_hevc_put_hevc_bi0_qpel_hv8_10_sse(int16_t* dst,
                                      intptr_t my,
                                      int width)
 {
-    int16_t tmp_array[(128 + 7) * 128];
+    int16_t tmp_array[(MAX_PB_SIZE + 7) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
     const uint16_t* src = _src;
     const int srcstride = _srcstride;
     src -= 3 * srcstride;
     oh_hevc_put_hevc_bi0_qpel_h8_10_sse(tmp, src, _srcstride, height + 7, mx, my, width);
-    tmp = tmp_array + 3 * 128;
-    oh_hevc_put_hevc_bi0_qpel_v8_14_sse(dst, (const uint16_t*)tmp, 128, height, mx, my, width);
+    tmp = tmp_array + 3 * MAX_PB_SIZE;
+    oh_hevc_put_hevc_bi0_qpel_v8_14_sse(dst, (const uint16_t*)tmp, MAX_PB_SIZE, height, mx, my, width);
 }
 
 static void
@@ -3983,14 +3983,14 @@ oh_hevc_put_hevc_bi1_qpel_hv8_10_sse(uint16_t* dst,
                                      intptr_t my,
                                      int width)
 {
-    int16_t tmp_array[(128 + 7) * 128];
+    int16_t tmp_array[(MAX_PB_SIZE + 7) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
     const uint16_t* src = _src;
     const int srcstride = _srcstride;
     src -= 3 * srcstride;
     oh_hevc_put_hevc_bi0_qpel_h8_10_sse(tmp, src, _srcstride, height + 7, mx, my, width);
-    tmp = tmp_array + 3 * 128;
-    oh_hevc_put_hevc_bi1_qpel_v8_14_10_sse(dst, dststride, tmp, 128, src2, height, mx, my, width);
+    tmp = tmp_array + 3 * MAX_PB_SIZE;
+    oh_hevc_put_hevc_bi1_qpel_v8_14_10_sse(dst, dststride, tmp, MAX_PB_SIZE, src2, height, mx, my, width);
 }
 
 static void
@@ -4003,14 +4003,14 @@ oh_hevc_put_hevc_uni_qpel_hv8_10_sse(uint16_t* dst,
                                      intptr_t my,
                                      int width)
 {
-    int16_t tmp_array[(128 + 7) * 128];
+    int16_t tmp_array[(MAX_PB_SIZE + 7) * MAX_PB_SIZE];
     int16_t* tmp = tmp_array;
     const uint16_t* src = _src;
     const int srcstride = _srcstride;
     src -= 3 * srcstride;
     oh_hevc_put_hevc_bi0_qpel_h8_10_sse(tmp, src, _srcstride, height + 7, mx, my, width);
-    tmp = tmp_array + 3 * 128;
-    oh_hevc_put_hevc_uni_qpel_v8_14_10_sse(dst, dststride, tmp, 128, height, mx, my, width);
+    tmp = tmp_array + 3 * MAX_PB_SIZE;
+    oh_hevc_put_hevc_uni_qpel_v8_14_10_sse(dst, dststride, tmp, MAX_PB_SIZE, height, mx, my, width);
 }
 
 static void
