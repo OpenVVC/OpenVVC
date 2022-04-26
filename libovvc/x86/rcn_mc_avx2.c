@@ -57,11 +57,6 @@
 
 #define BITDEPTH 10
 
-#define WEIGHTED 1
-#if WEIGHTED
-
-
-
 DECLARE_ALIGNED(16, static const int16_t, ov_mc_filters_rpr_avx2[6][16][8]) =
 {
     {{  0, 0,   0, 64,  0,  0,  0,  0 },
@@ -4986,7 +4981,6 @@ put_vvc_bi_w_epel_hv64_10_avx2(uint8_t* dst,
                                         my,
                                         width);
 }
-#endif
 
 static void
 put_vvc_qpel_bilinear_h_avx2(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
@@ -5184,265 +5178,201 @@ rcn_init_mc_functions_avx2(struct RCNFunctions* const rcn_funcs)
   /* Luma functions */
   mc_l->bidir0[0][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi0_pel_pixels16_10_avx2;
   mc_l->bidir1[0][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi1_pel_pixels16_10_avx2;
-  #if WEIGHTED
   mc_l->unidir_w[0][SIZE_BLOCK_16] = &put_vvc_uni_w_pel_pixels16_10_avx2;
   mc_l->bidir_w[0][SIZE_BLOCK_16] = &put_vvc_bi_w_pel_pixels16_10_avx2;
-  #endif
 
   mc_l->unidir[1][SIZE_BLOCK_16] = &oh_hevc_put_hevc_uni_qpel_h16_10_avx2;
   mc_l->bidir0[1][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi0_qpel_h16_10_avx2;
   mc_l->bidir1[1][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi1_qpel_h16_10_avx2;
   mc_l->bilinear[1][SIZE_BLOCK_16] = &put_vvc_qpel_bilinear_h_avx2;
-  #if WEIGHTED
   mc_l->unidir_w[1][SIZE_BLOCK_16] = &put_vvc_uni_w_qpel_h16_10_avx2;
   mc_l->bidir_w[1][SIZE_BLOCK_16] = &put_vvc_bi_w_qpel_h16_10_avx2;
-  #endif
 
   mc_l->unidir[2][SIZE_BLOCK_16] = &oh_hevc_put_hevc_uni_qpel_v16_10_avx2;
   mc_l->bidir0[2][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi0_qpel_v16_10_avx2;
   mc_l->bidir1[2][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi1_qpel_v16_10_avx2;
   mc_l->bilinear[2][SIZE_BLOCK_16] = &put_vvc_qpel_bilinear_v_avx2;
-  #if WEIGHTED
   mc_l->unidir_w[2][SIZE_BLOCK_16] = &put_vvc_uni_w_qpel_v16_10_avx2;
   mc_l->bidir_w[2][SIZE_BLOCK_16] = &put_vvc_bi_w_qpel_v16_10_avx2;
-  #endif
 
   mc_l->unidir[3][SIZE_BLOCK_16] = &oh_hevc_put_hevc_uni_qpel_hv16_10_avx2;
   mc_l->bidir0[3][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi0_qpel_hv16_10_avx2;
   mc_l->bidir1[3][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi1_qpel_hv16_10_avx2;
   mc_l->bilinear[3][SIZE_BLOCK_16] = &put_vvc_qpel_bilinear_hv_avx2;
-  #if WEIGHTED
   mc_l->unidir_w[3][SIZE_BLOCK_16] = &put_vvc_uni_w_qpel_hv16_10_avx2;
   mc_l->bidir_w[3][SIZE_BLOCK_16] = &put_vvc_bi_w_qpel_hv16_10_avx2;
-  #endif
 
   mc_l->bidir0[0][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi0_pel_pixels32_10_avx2;
   mc_l->bidir1[0][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi1_pel_pixels32_10_avx2;
-  #if WEIGHTED
   mc_l->unidir_w[0][SIZE_BLOCK_32] = &put_vvc_uni_w_pel_pixels32_10_avx2;
   mc_l->bidir_w[0][SIZE_BLOCK_32] = &put_vvc_bi_w_pel_pixels32_10_avx2;
-  #endif
 
   mc_l->unidir[1][SIZE_BLOCK_32] = &oh_hevc_put_hevc_uni_qpel_h32_10_avx2;
   mc_l->bidir0[1][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi0_qpel_h32_10_avx2;
   mc_l->bidir1[1][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi1_qpel_h32_10_avx2;
   mc_l->bilinear[1][SIZE_BLOCK_32] = &put_vvc_qpel_bilinear_h_avx2;
-  #if WEIGHTED
   mc_l->unidir_w[1][SIZE_BLOCK_32] = &put_vvc_uni_w_qpel_h32_10_avx2;
   mc_l->bidir_w[1][SIZE_BLOCK_32] = &put_vvc_bi_w_qpel_h32_10_avx2;
-  #endif
 
   mc_l->unidir[2][SIZE_BLOCK_32] = &oh_hevc_put_hevc_uni_qpel_v32_10_avx2;
   mc_l->bidir0[2][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi0_qpel_v32_10_avx2;
   mc_l->bidir1[2][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi1_qpel_v32_10_avx2;
   mc_l->bilinear[2][SIZE_BLOCK_32] = &put_vvc_qpel_bilinear_v_avx2;
-  #if WEIGHTED
   mc_l->unidir_w[2][SIZE_BLOCK_32] = &put_vvc_uni_w_qpel_v32_10_avx2;
   mc_l->bidir_w[2][SIZE_BLOCK_32] = &put_vvc_bi_w_qpel_v32_10_avx2;
-  #endif
 
   mc_l->unidir[3][SIZE_BLOCK_32] = &oh_hevc_put_hevc_uni_qpel_hv32_10_avx2;
   mc_l->bidir0[3][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi0_qpel_hv32_10_avx2;
   mc_l->bidir1[3][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi1_qpel_hv32_10_avx2;
   mc_l->bilinear[3][SIZE_BLOCK_32] = &put_vvc_qpel_bilinear_hv_avx2;
-  #if WEIGHTED
   mc_l->unidir_w[3][SIZE_BLOCK_32] = &put_vvc_uni_w_qpel_hv32_10_avx2;
   mc_l->bidir_w[3][SIZE_BLOCK_32] = &put_vvc_bi_w_qpel_hv32_10_avx2;
-  #endif
 
   mc_l->bidir0[0][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi0_pel_pixels64_10_avx2;
   mc_l->bidir1[0][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi1_pel_pixels64_10_avx2;
-  #if WEIGHTED
   mc_l->unidir_w[0][SIZE_BLOCK_64] = &put_vvc_uni_w_pel_pixels64_10_avx2;
   mc_l->bidir_w[0][SIZE_BLOCK_64] = &put_vvc_bi_w_pel_pixels64_10_avx2;
-  #endif
 
   mc_l->unidir[1][SIZE_BLOCK_64] = &oh_hevc_put_hevc_uni_qpel_h64_10_avx2;
   mc_l->bidir0[1][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi0_qpel_h64_10_avx2;
   mc_l->bidir1[1][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi1_qpel_h64_10_avx2;
   mc_l->bilinear[1][SIZE_BLOCK_64] = &put_vvc_qpel_bilinear_h_avx2;
-  #if WEIGHTED
   mc_l->unidir_w[1][SIZE_BLOCK_64] = &put_vvc_uni_w_qpel_h64_10_avx2;
   mc_l->bidir_w[1][SIZE_BLOCK_64] = &put_vvc_bi_w_qpel_h64_10_avx2;
-  #endif
 
   mc_l->unidir[2][SIZE_BLOCK_64] = &oh_hevc_put_hevc_uni_qpel_v64_10_avx2;
   mc_l->bidir0[2][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi0_qpel_v64_10_avx2;
   mc_l->bidir1[2][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi1_qpel_v64_10_avx2;
   mc_l->bilinear[2][SIZE_BLOCK_64] = &put_vvc_qpel_bilinear_v_avx2;
-  #if WEIGHTED
   mc_l->unidir_w[2][SIZE_BLOCK_64] = &put_vvc_uni_w_qpel_v64_10_avx2;
   mc_l->bidir_w[2][SIZE_BLOCK_64] = &put_vvc_bi_w_qpel_v64_10_avx2;
-  #endif
 
   mc_l->unidir[3][SIZE_BLOCK_64] = &oh_hevc_put_hevc_uni_qpel_hv64_10_avx2;
   mc_l->bidir0[3][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi0_qpel_hv64_10_avx2;
   mc_l->bidir1[3][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi1_qpel_hv64_10_avx2;
   mc_l->bilinear[3][SIZE_BLOCK_64] = &put_vvc_qpel_bilinear_hv_avx2;
-  #if WEIGHTED
   mc_l->unidir_w[3][SIZE_BLOCK_64] = &put_vvc_uni_w_qpel_hv64_10_avx2;
   mc_l->bidir_w[3][SIZE_BLOCK_64] = &put_vvc_bi_w_qpel_hv64_10_avx2;
-  #endif
 
   mc_l->bidir0[0][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_pel_pixels64_10_avx2;
   mc_l->bidir1[0][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_pel_pixels64_10_avx2;
-  #if WEIGHTED
   mc_l->unidir_w[0][SIZE_BLOCK_128] = &put_vvc_uni_w_pel_pixels64_10_avx2;
   mc_l->bidir_w[0][SIZE_BLOCK_128] = &put_vvc_bi_w_pel_pixels64_10_avx2;
-  #endif
 
   mc_l->unidir[1][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_qpel_h64_10_avx2;
   mc_l->bidir0[1][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_qpel_h64_10_avx2;
   mc_l->bidir1[1][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_qpel_h64_10_avx2;
   mc_l->bilinear[1][SIZE_BLOCK_128] = &put_vvc_qpel_bilinear_h_avx2;
-  #if WEIGHTED
   mc_l->unidir_w[1][SIZE_BLOCK_128] = &put_vvc_uni_w_qpel_h64_10_avx2;
   mc_l->bidir_w[1][SIZE_BLOCK_128] = &put_vvc_bi_w_qpel_h64_10_avx2;
-  #endif
 
   mc_l->unidir[2][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_qpel_v64_10_avx2;
   mc_l->bidir0[2][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_qpel_v64_10_avx2;
   mc_l->bidir1[2][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_qpel_v64_10_avx2;
   mc_l->bilinear[2][SIZE_BLOCK_128] = &put_vvc_qpel_bilinear_v_avx2;
-  #if WEIGHTED
   mc_l->unidir_w[2][SIZE_BLOCK_128] = &put_vvc_uni_w_qpel_v64_10_avx2;
   mc_l->bidir_w[2][SIZE_BLOCK_128] = &put_vvc_bi_w_qpel_v64_10_avx2;
-  #endif
 
   mc_l->unidir[3][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_qpel_hv64_10_avx2;
   mc_l->bidir0[3][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_qpel_hv64_10_avx2;
   mc_l->bidir1[3][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_qpel_hv64_10_avx2;
   mc_l->bilinear[3][SIZE_BLOCK_128] = &put_vvc_qpel_bilinear_hv_avx2;
-  #if WEIGHTED
   mc_l->unidir_w[3][SIZE_BLOCK_128] = &put_vvc_uni_w_qpel_hv64_10_avx2;
   mc_l->bidir_w[3][SIZE_BLOCK_128] = &put_vvc_bi_w_qpel_hv64_10_avx2;
-  #endif
 
 
   /* Chroma functions */
   mc_c->bidir0[0][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi0_pel_pixels16_10_avx2;
   mc_c->bidir1[0][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi1_pel_pixels16_10_avx2;
-  #if WEIGHTED
   mc_c->unidir_w[0][SIZE_BLOCK_16] = &put_vvc_uni_w_pel_pixels16_10_avx2;
   mc_c->bidir_w[0][SIZE_BLOCK_16] = &put_vvc_bi_w_pel_pixels16_10_avx2;
-  #endif
 
   mc_c->unidir[1][SIZE_BLOCK_16] = &oh_hevc_put_hevc_uni_epel_h16_10_avx2;
   mc_c->bidir0[1][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi0_epel_h16_10_avx2;
   mc_c->bidir1[1][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi1_epel_h16_10_avx2;
-  #if WEIGHTED
   mc_c->unidir_w[1][SIZE_BLOCK_16] = &put_vvc_uni_w_epel_h16_10_avx2;
   mc_c->bidir_w[1][SIZE_BLOCK_16] = &put_vvc_bi_w_epel_h16_10_avx2;
-  #endif
 
   mc_c->unidir[2][SIZE_BLOCK_16] = &oh_hevc_put_hevc_uni_epel_v16_10_avx2;
   mc_c->bidir0[2][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi0_epel_v16_10_avx2;
   mc_c->bidir1[2][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi1_epel_v16_10_avx2;
-  #if WEIGHTED
   mc_c->unidir_w[2][SIZE_BLOCK_16] = &put_vvc_uni_w_epel_v16_10_avx2;
   mc_c->bidir_w[2][SIZE_BLOCK_16] = &put_vvc_bi_w_epel_v16_10_avx2;
-  #endif
 
   mc_c->unidir[3][SIZE_BLOCK_16] = &oh_hevc_put_hevc_uni_epel_hv16_10_avx2;
   mc_c->bidir0[3][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi0_epel_hv16_10_avx2;
   mc_c->bidir1[3][SIZE_BLOCK_16] = &oh_hevc_put_hevc_bi1_epel_hv16_10_avx2;
-  #if WEIGHTED
   mc_c->unidir_w[3][SIZE_BLOCK_16] = &put_vvc_uni_w_epel_hv16_10_avx2;
   mc_c->bidir_w[3][SIZE_BLOCK_16] = &put_vvc_bi_w_epel_hv16_10_avx2;
-  #endif
 
   mc_c->bidir0[0][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi0_pel_pixels32_10_avx2;
   mc_c->bidir1[0][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi1_pel_pixels32_10_avx2;
-  #if WEIGHTED
   mc_c->unidir_w[0][SIZE_BLOCK_32] = &put_vvc_uni_w_pel_pixels32_10_avx2;
   mc_c->bidir_w[0][SIZE_BLOCK_32] = &put_vvc_bi_w_pel_pixels32_10_avx2;
-  #endif
 
   mc_c->unidir[1][SIZE_BLOCK_32] = &oh_hevc_put_hevc_uni_epel_h32_10_avx2;
   mc_c->bidir0[1][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi0_epel_h32_10_avx2;
   mc_c->bidir1[1][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi1_epel_h32_10_avx2;
-  #if WEIGHTED
   mc_c->unidir_w[1][SIZE_BLOCK_32] = &put_vvc_uni_w_epel_h32_10_avx2;
   mc_c->bidir_w[1][SIZE_BLOCK_32] = &put_vvc_bi_w_epel_h32_10_avx2;
-  #endif
 
   mc_c->unidir[2][SIZE_BLOCK_32] = &oh_hevc_put_hevc_uni_epel_v32_10_avx2;
   mc_c->bidir0[2][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi0_epel_v32_10_avx2;
   mc_c->bidir1[2][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi1_epel_v32_10_avx2;
-  #if WEIGHTED
   mc_c->unidir_w[2][SIZE_BLOCK_32] = &put_vvc_uni_w_epel_v32_10_avx2;
   mc_c->bidir_w[2][SIZE_BLOCK_32] = &put_vvc_bi_w_epel_v32_10_avx2;
-  #endif
 
   mc_c->unidir[3][SIZE_BLOCK_32] = &oh_hevc_put_hevc_uni_epel_hv32_10_avx2;
   mc_c->bidir0[3][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi0_epel_hv32_10_avx2;
   mc_c->bidir1[3][SIZE_BLOCK_32] = &oh_hevc_put_hevc_bi1_epel_hv32_10_avx2;
-  #if WEIGHTED
   mc_c->unidir_w[3][SIZE_BLOCK_32] = &put_vvc_uni_w_epel_hv32_10_avx2;
   mc_c->bidir_w[3][SIZE_BLOCK_32] = &put_vvc_bi_w_epel_hv32_10_avx2;
-  #endif
 
   mc_c->bidir0[0][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi0_pel_pixels64_10_avx2;
   mc_c->bidir1[0][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi1_pel_pixels64_10_avx2;
-  #if WEIGHTED
   mc_c->unidir_w[0][SIZE_BLOCK_64] = &put_vvc_uni_w_pel_pixels64_10_avx2;
   mc_c->bidir_w[0][SIZE_BLOCK_64] = &put_vvc_bi_w_pel_pixels64_10_avx2;
-  #endif
 
   mc_c->unidir[1][SIZE_BLOCK_64] = &oh_hevc_put_hevc_uni_epel_h64_10_avx2;
   mc_c->bidir0[1][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi0_epel_h64_10_avx2;
   mc_c->bidir1[1][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi1_epel_h64_10_avx2;
-  #if WEIGHTED
   mc_c->unidir_w[1][SIZE_BLOCK_64] = &put_vvc_uni_w_epel_h64_10_avx2;
   mc_c->bidir_w[1][SIZE_BLOCK_64] = &put_vvc_bi_w_epel_h64_10_avx2;
-  #endif
 
   mc_c->unidir[2][SIZE_BLOCK_64] = &oh_hevc_put_hevc_uni_epel_v64_10_avx2;
   mc_c->bidir0[2][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi0_epel_v64_10_avx2;
   mc_c->bidir1[2][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi1_epel_v64_10_avx2;
-  #if WEIGHTED
   mc_c->unidir_w[2][SIZE_BLOCK_64] = &put_vvc_uni_w_epel_v64_10_avx2;
   mc_c->bidir_w[2][SIZE_BLOCK_64] = &put_vvc_bi_w_epel_v64_10_avx2;
-  #endif
 
   mc_c->unidir[3][SIZE_BLOCK_64] = &oh_hevc_put_hevc_uni_epel_hv64_10_avx2;
   mc_c->bidir0[3][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi0_epel_hv64_10_avx2;
   mc_c->bidir1[3][SIZE_BLOCK_64] = &oh_hevc_put_hevc_bi1_epel_hv64_10_avx2;
-  #if WEIGHTED
   mc_c->unidir_w[3][SIZE_BLOCK_64] = &put_vvc_uni_w_epel_hv64_10_avx2;
   mc_c->bidir_w[3][SIZE_BLOCK_64] = &put_vvc_bi_w_epel_hv64_10_avx2;
-  #endif
 
   mc_c->bidir0[0][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_pel_pixels64_10_avx2;
   mc_c->bidir1[0][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_pel_pixels64_10_avx2;
-  #if WEIGHTED
   mc_c->unidir_w[0][SIZE_BLOCK_128] = &put_vvc_uni_w_pel_pixels64_10_avx2;
   mc_c->bidir_w[0][SIZE_BLOCK_128] = &put_vvc_bi_w_pel_pixels64_10_avx2;
-  #endif
 
   mc_c->unidir[1][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_epel_h64_10_avx2;
   mc_c->bidir0[1][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_epel_h64_10_avx2;
   mc_c->bidir1[1][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_epel_h64_10_avx2;
-  #if WEIGHTED
   mc_c->unidir_w[1][SIZE_BLOCK_128] = &put_vvc_uni_w_epel_h64_10_avx2;
   mc_c->bidir_w[1][SIZE_BLOCK_128] = &put_vvc_bi_w_epel_h64_10_avx2;
-  #endif
 
   mc_c->unidir[2][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_epel_v64_10_avx2;
   mc_c->bidir0[2][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_epel_v64_10_avx2;
   mc_c->bidir1[2][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_epel_v64_10_avx2;
-  #if WEIGHTED
   mc_c->unidir_w[2][SIZE_BLOCK_128] = &put_vvc_uni_w_epel_v64_10_avx2;
   mc_c->bidir_w[2][SIZE_BLOCK_128] = &put_vvc_bi_w_epel_v64_10_avx2;
-  #endif
 
   mc_c->unidir[3][SIZE_BLOCK_128] = &oh_hevc_put_hevc_uni_epel_hv64_10_avx2;
   mc_c->bidir0[3][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi0_epel_hv64_10_avx2;
   mc_c->bidir1[3][SIZE_BLOCK_128] = &oh_hevc_put_hevc_bi1_epel_hv64_10_avx2;
-  #if WEIGHTED
   mc_c->unidir_w[3][SIZE_BLOCK_128] = &put_vvc_uni_w_epel_hv64_10_avx2;
   mc_c->bidir_w[3][SIZE_BLOCK_128] = &put_vvc_bi_w_epel_hv64_10_avx2;
-  #endif
 }
 
 void rcn_init_ciip_functions_avx2(struct RCNFunctions *const rcn_funcs)
