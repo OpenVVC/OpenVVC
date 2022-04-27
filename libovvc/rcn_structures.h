@@ -119,7 +119,7 @@ typedef void (*MCUniDirWFunc)(uint8_t* dst, ptrdiff_t dststride, uint8_t* _src,
 typedef void (*MCBiDirWFunc)(uint8_t* dst, ptrdiff_t dststride, uint8_t* _src,
                              ptrdiff_t _srcstride, int16_t* src2,
                              ptrdiff_t src2stride, int height, int denom,
-                             int wx0, int wx1, intptr_t mx,
+                             int wx0, int wx1, int offset0, int offset1, intptr_t mx,
                              intptr_t my, int width);
 
 typedef void (*MCRPRHor)(uint16_t *_dst, ptrdiff_t _dststride,
@@ -372,7 +372,7 @@ struct PROFFunctions{
     void (*tmp_prof_mrg_w)(OVSample* _dst, ptrdiff_t _dststride,
                            const int16_t* _src0, ptrdiff_t _srcstride,
                            const int16_t* _src1, int height, intptr_t mx,
-                           intptr_t my, int width, int wt0, int wt1);
+                           intptr_t my, int width, int denom, int16_t wt0, int16_t wt1, int16_t offset0, int16_t offset1);
 
     void (*extend_prof_buff)(const OVSample *const src, uint16_t *dst_prof, int16_t ref_stride,
                              uint8_t ext_x, uint8_t ext_y);

@@ -419,7 +419,8 @@ static void
 tmp_prof_mrg_w_sse(OVSample* _dst, ptrdiff_t _dststride,
                const int16_t* _src0, ptrdiff_t _srcstride,
                const int16_t* _src1, int height, intptr_t mx,
-               intptr_t my, int width, int wt0, int wt1)
+               intptr_t my, int width, int denom, int16_t wt0,
+               int16_t wt1, int16_t offset0, int16_t offset1)
 {
     int x, y;
     const int16_t* src0 = (int16_t *)_src0;
@@ -427,10 +428,12 @@ tmp_prof_mrg_w_sse(OVSample* _dst, ptrdiff_t _dststride,
     ptrdiff_t srcstride = _srcstride;
     OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
-    int log_weights = floor_log2(wt0 + wt1);
-    int shift = 14 - BITDEPTH + log_weights;
+    int log_weights = denom;
+    int shift = 14 + 1 - BITDEPTH;
+    int log2Wd = log_weights + shift - 1;
+    shift = log2Wd + 1;
 
-    __m128i offset = _mm_set1_epi32(2*((1 << (13 - BITDEPTH))) << (log_weights - 1));
+    __m128i offset = _mm_set1_epi32((offset0 + offset1 + 1) << log2Wd);
     __m128i wt = _mm_set1_epi32(wt0&0xFFFF | ((uint32_t)wt1<<16));
 
     __m128i src00 = _mm_loadl_epi64((__m128i *)&src0[0*srcstride]);

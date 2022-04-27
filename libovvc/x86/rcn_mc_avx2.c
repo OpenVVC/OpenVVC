@@ -2795,7 +2795,7 @@ put_vvc_qpel_h16_10_avx2(int16_t* dst,
   int shift = BITDEPTH - 8;
   __m256i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   uint16_t* src = (uint16_t*)_src;
-  const int srcstride = _srcstride >> 1;
+  const int srcstride = _srcstride;
   #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][1]);
@@ -2860,6 +2860,8 @@ put_vvc_bi_w_qpel_v16_14_10_avx2(uint8_t* _dst,
                                         int denom,
                                         int _wx0,
                                         int _wx1,
+                                        int offset0,
+                                        int offset1,
 
                                         intptr_t mx,
                                         intptr_t my,
@@ -2875,7 +2877,7 @@ put_vvc_bi_w_qpel_v16_14_10_avx2(uint8_t* _dst,
 
   const __m256i wx0 = _mm256_set1_epi16(_wx0);
   const __m256i wx1 = _mm256_set1_epi16(_wx1);
-  const __m256i offset = _mm256_set1_epi32(1 << log2Wd);
+  const __m256i offset = _mm256_set1_epi32((offset0 + offset1 + 1) << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   #if 0
@@ -2972,13 +2974,13 @@ put_vvc_uni_w_qpel_v16_14_10_avx2(uint8_t* _dst,
   int x, y;
   __m256i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
-  const int srcstride = _srcstride >> 1;
+  const int srcstride = _srcstride;
   const int shift2 = denom + 14 - BITDEPTH;
-  const __m256i ox = _mm256_set1_epi32(_ox << (10 - 8));
+  const __m256i ox = _mm256_set1_epi32(_ox);
   const __m256i wx = _mm256_set1_epi16(_wx);
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
-  const int dststride = _dststride >> 1;
+  const int dststride = _dststride;
   #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][1]);
@@ -3066,13 +3068,13 @@ put_vvc_uni_w_pel_pixels8_10_avx2(uint8_t* _dst,
   int x, y;
   __m256i x1;
   uint16_t* src = (uint16_t*)_src;
-  const int srcstride = _srcstride >> 1;
+  const int srcstride = _srcstride;
   const int shift2 = denom + 14 - BITDEPTH;
-  const __m256i ox = _mm256_set1_epi32(_ox << (10 - 8));
+  const __m256i ox = _mm256_set1_epi32(_ox);
   const __m256i wx = _mm256_set1_epi16(_wx);
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
-  const int dststride = _dststride >> 1;
+  const int dststride = _dststride;
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       x1 = _mm256_loadu_si256((__m256i*)&src[x]);
@@ -3108,6 +3110,8 @@ put_vvc_bi_w_pel_pixels8_10_avx2(uint8_t* _dst,
                                          int denom,
                                          int _wx0,
                                          int _wx1,
+                                        int offset0,
+                                        int offset1,
                                          intptr_t mx,
                                          intptr_t my,
                                          int width)
@@ -3116,11 +3120,11 @@ put_vvc_bi_w_pel_pixels8_10_avx2(uint8_t* _dst,
   __m256i x1;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - BITDEPTH - 1;
+  const int log2Wd = denom + 14 - BITDEPTH;
   const int shift2 = log2Wd + 1;
   const __m256i wx0 = _mm256_set1_epi16(_wx0);
   const __m256i wx1 = _mm256_set1_epi16(_wx1);
-  const __m256i offset = _mm256_set1_epi32(1 << log2Wd);
+  const __m256i offset = _mm256_set1_epi32((offset0 + offset1 + 1) << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   for (y = 0; y < height; y++) {
@@ -3171,13 +3175,13 @@ put_vvc_uni_w_epel_h16_10_avx2(uint8_t* _dst,
   int x, y;
   __m256i x1, x2, x3, x4, t1, t2, f1, f2;
   uint16_t* src = ((uint16_t*)_src) - 1;
-  ptrdiff_t srcstride = _srcstride >> 1;
+  ptrdiff_t srcstride = _srcstride;
   const int shift2 = denom + 14 - BITDEPTH;
-  const __m256i ox = _mm256_set1_epi32(_ox << (10 - 8));
+  const __m256i ox = _mm256_set1_epi32(_ox);
   const __m256i wx = _mm256_set1_epi16(_wx);
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
-  const int dststride = _dststride >> 1;
+  const int dststride = _dststride;
   f1 = _mm256_load_si256((__m256i*)oh_hevc_epel_filters_avx2[mx - 1][0]);
   f2 = _mm256_load_si256((__m256i*)oh_hevc_epel_filters_avx2[mx - 1][1]);
   for (y = 0; y < height; y++) {
@@ -3230,6 +3234,8 @@ put_vvc_bi_w_epel_h16_10_avx2(uint8_t* _dst,
                                      int denom,
                                      int _wx0,
                                      int _wx1,
+                                        int offset0,
+                                        int offset1,
                                                                           intptr_t mx,
                                      intptr_t my,
                                      int width)
@@ -3238,13 +3244,13 @@ put_vvc_bi_w_epel_h16_10_avx2(uint8_t* _dst,
   __m256i x1, x2, x3, x4, t1, t2, f1, f2;
   uint16_t* src = ((uint16_t*)_src) - 1;
   ptrdiff_t srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - BITDEPTH - 1;
+  const int log2Wd = denom + 14 - BITDEPTH;
   const int shift2 = log2Wd + 1;
 
 
   const __m256i wx0 = _mm256_set1_epi16(_wx0);
   const __m256i wx1 = _mm256_set1_epi16(_wx1);
-  const __m256i offset = _mm256_set1_epi32(1 << log2Wd);
+  const __m256i offset = _mm256_set1_epi32((offset0 + offset1 + 1) << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   f1 = _mm256_load_si256((__m256i*)oh_hevc_epel_filters_avx2[mx - 1][0]);
@@ -3311,14 +3317,14 @@ put_vvc_uni_w_epel_v16_10_avx2(uint8_t* _dst,
 {
   int x, y;
   __m256i x1, x2, x3, x4, t1, t2, f1, f2;
-  ptrdiff_t srcstride = _srcstride >> 1;
+  ptrdiff_t srcstride = _srcstride;
   uint16_t* src = ((uint16_t*)_src) - srcstride;
   const int shift2 = denom + 14 - BITDEPTH;
-  const __m256i ox = _mm256_set1_epi32(_ox << (BITDEPTH - 8));
+  const __m256i ox = _mm256_set1_epi32(_ox);
   const __m256i wx = _mm256_set1_epi16(_wx);
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
-  const int dststride = _dststride >> 1;
+  const int dststride = _dststride;
   f1 = _mm256_load_si256((__m256i*)oh_hevc_epel_filters_avx2[my - 1][0]);
   f2 = _mm256_load_si256((__m256i*)oh_hevc_epel_filters_avx2[my - 1][1]);
   for (y = 0; y < height; y++) {
@@ -3339,7 +3345,7 @@ put_vvc_uni_w_epel_v16_10_avx2(uint8_t* _dst,
       t1 = _mm256_add_epi32(t1, t2);
       t1 = _mm256_srai_epi32(t1, 2);
       x1 = _mm256_srai_epi32(x1, 2);
-      x1 = _mm256_packs_epi32(x1, t2);
+      x1 = _mm256_packs_epi32(x1, t1);
       {
         __m256i x3, x4;
         x3 = _mm256_mulhi_epi16(x1, wx);
@@ -3371,6 +3377,8 @@ put_vvc_bi_w_epel_v16_10_avx2(uint8_t* _dst,
                                      int denom,
                                      int _wx0,
                                      int _wx1,
+                                        int offset0,
+                                        int offset1,
                                                                           intptr_t mx,
                                      intptr_t my,
                                      int width)
@@ -3379,13 +3387,13 @@ put_vvc_bi_w_epel_v16_10_avx2(uint8_t* _dst,
   __m256i x1, x2, x3, x4, t1, t2, f1, f2;
   ptrdiff_t srcstride = _srcstride >> 1;
   uint16_t* src = ((uint16_t*)_src) - srcstride;
-  const int log2Wd = denom + 14 - BITDEPTH - 1;
+  const int log2Wd = denom + 14 - BITDEPTH;
   const int shift2 = log2Wd + 1;
 
 
   const __m256i wx0 = _mm256_set1_epi16(_wx0);
   const __m256i wx1 = _mm256_set1_epi16(_wx1);
-  const __m256i offset = _mm256_set1_epi32(1 << log2Wd);
+  const __m256i offset = _mm256_set1_epi32((offset0 + offset1 + 1) << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   f1 = _mm256_load_si256((__m256i*)oh_hevc_epel_filters_avx2[my - 1][0]);
@@ -3453,14 +3461,14 @@ put_vvc_uni_w_epel_hv16_10_avx2(uint8_t* _dst,
   int x, y;
   __m256i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;
   const int shift2 = denom + 14 - BITDEPTH;
-  const __m256i ox = _mm256_set1_epi32(_ox << (BITDEPTH - 8));
+  const __m256i ox = _mm256_set1_epi32(_ox);
   const __m256i wx = _mm256_set1_epi16(_wx);
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
-  const int dststride = _dststride >> 1;
+  const int dststride = _dststride;
   uint16_t* dst_bis = dst;
   uint16_t *src_bis, *src = ((uint16_t*)_src) - 1;
-  ptrdiff_t srcstride = _srcstride >> 1;
+  ptrdiff_t srcstride = _srcstride;
   src -= EPEL_EXTRA_BEFORE * srcstride;
   src_bis = src;
   f1 = _mm256_load_si256((__m256i*)oh_hevc_epel_filters_avx2[mx - 1][0]);
@@ -3589,6 +3597,8 @@ put_vvc_bi_w_epel_hv16_10_avx2(uint8_t* _dst,
                                       int denom,
                                       int _wx0,
                                       int _wx1,
+                                        int offset0,
+                                        int offset1,
 
                                       intptr_t mx,
                                       intptr_t my,
@@ -3596,13 +3606,13 @@ put_vvc_bi_w_epel_hv16_10_avx2(uint8_t* _dst,
 {
   int x, y;
   __m256i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;
-  const int log2Wd = denom + 14 - BITDEPTH - 1;
+  const int log2Wd = denom + 14 - BITDEPTH;
   const int shift2 = log2Wd + 1;
 
 
   const __m256i wx0 = _mm256_set1_epi16(_wx0);
   const __m256i wx1 = _mm256_set1_epi16(_wx1);
-  const __m256i offset = _mm256_set1_epi32(1 << log2Wd);
+  const __m256i offset = _mm256_set1_epi32((offset0 + offset1 + 1) << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   int16_t* src2_bis = src2;
@@ -3752,13 +3762,13 @@ put_vvc_uni_w_qpel_h16_10_avx2(uint8_t* _dst,
   int shift = BITDEPTH - 8;
   __m256i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   uint16_t* src = (uint16_t*)_src;
-  const int srcstride = _srcstride >> 1;
+  const int srcstride = _srcstride;
   const int shift2 = denom + 14 - BITDEPTH;
-  const __m256i ox = _mm256_set1_epi32(_ox << (BITDEPTH - 8));
+  const __m256i ox = _mm256_set1_epi32(_ox);
   const __m256i wx = _mm256_set1_epi16(_wx);
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
-  const int dststride = _dststride >> 1;
+  const int dststride = _dststride;
   #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[mx - 1][1]);
@@ -3836,6 +3846,8 @@ put_vvc_bi_w_qpel_h16_10_avx2(uint8_t* _dst,
                                      int denom,
                                      int _wx0,
                                      int _wx1,
+                                        int offset0,
+                                        int offset1,
                                                                           intptr_t mx,
                                      intptr_t my,
                                      int width)
@@ -3845,13 +3857,13 @@ put_vvc_bi_w_qpel_h16_10_avx2(uint8_t* _dst,
   __m256i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - BITDEPTH - 1;
+  const int log2Wd = denom + 14 - BITDEPTH;
   const int shift2 = log2Wd + 1;
 
 
   const __m256i wx0 = _mm256_set1_epi16(_wx0);
   const __m256i wx1 = _mm256_set1_epi16(_wx1);
-  const __m256i offset = _mm256_set1_epi32(1 << log2Wd);
+  const __m256i offset = _mm256_set1_epi32((offset0 + offset1 + 1) << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   #if 0
@@ -3944,13 +3956,13 @@ put_vvc_uni_w_qpel_v16_10_avx2(uint8_t* _dst,
   int x, y;
   __m256i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
-  const int srcstride = _srcstride >> 1;
+  const int srcstride = _srcstride;
   const int shift2 = denom + 14 - BITDEPTH;
-  const __m256i ox = _mm256_set1_epi32(_ox << (BITDEPTH - 8));
+  const __m256i ox = _mm256_set1_epi32(_ox);
   const __m256i wx = _mm256_set1_epi16(_wx);
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
-  const int dststride = _dststride >> 1;
+  const int dststride = _dststride;
   #if 0
   c1 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][0]);
   c2 = _mm256_load_si256((__m256i*)oh_hevc_qpel_filters_avx2[my - 1][1]);
@@ -4032,6 +4044,8 @@ put_vvc_bi_w_qpel_v16_10_avx2(uint8_t* _dst,
                                      int denom,
                                      int _wx0,
                                      int _wx1,
+                                        int offset0,
+                                        int offset1,
                                      intptr_t mx,
                                      intptr_t my,
                                      int width)
@@ -4040,11 +4054,11 @@ put_vvc_bi_w_qpel_v16_10_avx2(uint8_t* _dst,
   __m256i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - BITDEPTH - 1;
+  const int log2Wd = denom + 14 - BITDEPTH;
   const int shift2 = log2Wd + 1;
   const __m256i wx0 = _mm256_set1_epi16(_wx0);
   const __m256i wx1 = _mm256_set1_epi16(_wx1);
-  const __m256i offset = _mm256_set1_epi32(1 << log2Wd);
+  const __m256i offset = _mm256_set1_epi32((offset0 + offset1 + 1) << log2Wd);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride >> 1;
   #if 0
@@ -4141,7 +4155,7 @@ put_vvc_uni_w_qpel_hv16_10_avx2(uint8_t* dst,
   int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
   int16_t* tmp = tmp_array;
   uint16_t* src = (uint16_t*)_src;
-  const int srcstride = _srcstride >> 1;
+  const int srcstride = _srcstride;
   src -= QPEL_EXTRA_BEFORE * srcstride;
   put_vvc_qpel_h16_10_avx2(tmp,
                                   MAX_PB_SIZE,
@@ -4155,7 +4169,7 @@ put_vvc_uni_w_qpel_hv16_10_avx2(uint8_t* dst,
   put_vvc_uni_w_qpel_v16_14_10_avx2(dst,
                                            dststride,
                                            (uint8_t*)tmp,
-                                           MAX_PB_SIZE << 1,
+                                           MAX_PB_SIZE,
                                            height,
                                            denom,
                                            wx,
@@ -4175,6 +4189,8 @@ put_vvc_bi_w_qpel_hv16_10_avx2(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
+                                        int offset0,
+                                        int offset1,
 
 
                                       intptr_t mx,
@@ -4189,7 +4205,7 @@ put_vvc_bi_w_qpel_hv16_10_avx2(uint8_t* dst,
   put_vvc_qpel_h16_10_avx2(tmp,
                                   MAX_PB_SIZE,
                                   (uint8_t*)src,
-                                  _srcstride,
+                                  _srcstride >> 1,
                                   height + QPEL_EXTRA,
                                   mx,
                                   my,
@@ -4205,6 +4221,8 @@ put_vvc_bi_w_qpel_hv16_10_avx2(uint8_t* dst,
                                           denom,
                                           wx0,
                                           wx1,
+                                          offset0,
+                                          offset1,
 
 
                                           mx,
@@ -4238,6 +4256,8 @@ put_vvc_bi_w_pel_pixels16_10_avx2(uint8_t* dst,
                                           int denom,
                                           int wx0,
                                           int wx1,
+                                        int offset0,
+                                        int offset1,
 
 
                                           intptr_t mx,
@@ -4254,6 +4274,8 @@ put_vvc_bi_w_pel_pixels16_10_avx2(uint8_t* dst,
                                            denom,
                                            wx0,
                                            wx1,
+                                           offset0,
+                                           offset1,
 
 
                                            mx,
@@ -4288,6 +4310,8 @@ put_vvc_bi_w_pel_pixels32_10_avx2(uint8_t* dst,
                                           int denom,
                                           int wx0,
                                           int wx1,
+                                        int offset0,
+                                        int offset1,
                                           intptr_t mx,
                                           intptr_t my,
                                           int width)
@@ -4302,6 +4326,8 @@ put_vvc_bi_w_pel_pixels32_10_avx2(uint8_t* dst,
                                            denom,
                                            wx0,
                                            wx1,
+                                           offset0,
+                                           offset1,
                                            mx,
                                            my,
                                            width);
@@ -4334,6 +4360,8 @@ put_vvc_bi_w_pel_pixels64_10_avx2(uint8_t* dst,
                                           int denom,
                                           int wx0,
                                           int wx1,
+                                        int offset0,
+                                        int offset1,
 
 
                                           intptr_t mx,
@@ -4350,6 +4378,8 @@ put_vvc_bi_w_pel_pixels64_10_avx2(uint8_t* dst,
                                            denom,
                                            wx0,
                                            wx1,
+                                           offset0,
+                                           offset1,
 
 
                                            mx,
@@ -4384,6 +4414,8 @@ put_vvc_bi_w_qpel_h32_10_avx2(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
+                                        int offset0,
+                                        int offset1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -4398,6 +4430,8 @@ put_vvc_bi_w_qpel_h32_10_avx2(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
+                                       offset0,
+                                       offset1,
                                        mx,
                                        my,
                                        width);
@@ -4430,6 +4464,8 @@ put_vvc_bi_w_qpel_h64_10_avx2(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
+                                        int offset0,
+                                        int offset1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -4444,6 +4480,8 @@ put_vvc_bi_w_qpel_h64_10_avx2(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
+                                       offset0,
+                                       offset1,
                                        mx,
                                        my,
                                        width);
@@ -4476,6 +4514,8 @@ put_vvc_bi_w_qpel_v32_10_avx2(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
+                                        int offset0,
+                                        int offset1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -4490,6 +4530,8 @@ put_vvc_bi_w_qpel_v32_10_avx2(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
+                                       offset0,
+                                       offset1,
                                        mx,
                                        my,
                                        width);
@@ -4522,6 +4564,8 @@ put_vvc_bi_w_qpel_v64_10_avx2(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
+                                        int offset0,
+                                        int offset1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -4536,6 +4580,8 @@ put_vvc_bi_w_qpel_v64_10_avx2(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
+                                       offset0,
+                                       offset1,
                                        mx,
                                        my,
                                        width);
@@ -4568,6 +4614,8 @@ put_vvc_bi_w_qpel_hv32_10_avx2(uint8_t* dst,
                                        int denom,
                                        int wx0,
                                        int wx1,
+                                        int offset0,
+                                        int offset1,
                                        intptr_t mx,
                                        intptr_t my,
                                        int width)
@@ -4582,6 +4630,8 @@ put_vvc_bi_w_qpel_hv32_10_avx2(uint8_t* dst,
                                         denom,
                                         wx0,
                                         wx1,
+                                        offset0,
+                                        offset1,
                                         mx,
                                         my,
                                         width);
@@ -4614,6 +4664,8 @@ put_vvc_bi_w_qpel_hv64_10_avx2(uint8_t* dst,
                                        int denom,
                                        int wx0,
                                        int wx1,
+                                        int offset0,
+                                        int offset1,
                                        intptr_t mx,
                                        intptr_t my,
                                        int width)
@@ -4628,6 +4680,8 @@ put_vvc_bi_w_qpel_hv64_10_avx2(uint8_t* dst,
                                         denom,
                                         wx0,
                                         wx1,
+                                        offset0,
+                                        offset1,
                                         mx,
                                         my,
                                         width);
@@ -4660,6 +4714,8 @@ put_vvc_bi_w_epel_h32_10_avx2(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
+                                        int offset0,
+                                        int offset1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -4674,6 +4730,8 @@ put_vvc_bi_w_epel_h32_10_avx2(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
+                                       offset0,
+                                       offset1,
                                        mx,
                                        my,
                                        width);
@@ -4706,6 +4764,8 @@ put_vvc_bi_w_epel_h64_10_avx2(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
+                                        int offset0,
+                                        int offset1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -4720,6 +4780,8 @@ put_vvc_bi_w_epel_h64_10_avx2(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
+                                       offset0,
+                                       offset1,
                                        mx,
                                        my,
                                        width);
@@ -4752,6 +4814,8 @@ put_vvc_bi_w_epel_v32_10_avx2(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
+                                        int offset0,
+                                        int offset1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -4766,6 +4830,8 @@ put_vvc_bi_w_epel_v32_10_avx2(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
+                                       offset0,
+                                       offset1,
                                        mx,
                                        my,
                                        width);
@@ -4798,6 +4864,8 @@ put_vvc_bi_w_epel_v64_10_avx2(uint8_t* dst,
                                       int denom,
                                       int wx0,
                                       int wx1,
+                                        int offset0,
+                                        int offset1,
                                       intptr_t mx,
                                       intptr_t my,
                                       int width)
@@ -4812,6 +4880,8 @@ put_vvc_bi_w_epel_v64_10_avx2(uint8_t* dst,
                                        denom,
                                        wx0,
                                        wx1,
+                                       offset0,
+                                       offset1,
                                        mx,
                                        my,
                                        width);
@@ -4844,6 +4914,8 @@ put_vvc_bi_w_epel_hv32_10_avx2(uint8_t* dst,
                                        int denom,
                                        int wx0,
                                        int wx1,
+                                        int offset0,
+                                        int offset1,
                                        intptr_t mx,
                                        intptr_t my,
                                        int width)
@@ -4858,6 +4930,8 @@ put_vvc_bi_w_epel_hv32_10_avx2(uint8_t* dst,
                                         denom,
                                         wx0,
                                         wx1,
+                                        offset0,
+                                        offset1,
                                         mx,
                                         my,
                                         width);
@@ -4890,6 +4964,8 @@ put_vvc_bi_w_epel_hv64_10_avx2(uint8_t* dst,
                                        int denom,
                                        int wx0,
                                        int wx1,
+                                        int offset0,
+                                        int offset1,
                                        intptr_t mx,
                                        intptr_t my,
                                        int width)
@@ -4904,6 +4980,8 @@ put_vvc_bi_w_epel_hv64_10_avx2(uint8_t* dst,
                                         denom,
                                         wx0,
                                         wx1,
+                                        offset0,
+                                        offset1,
                                         mx,
                                         my,
                                         width);

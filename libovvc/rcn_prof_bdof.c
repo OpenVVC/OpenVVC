@@ -124,24 +124,19 @@ tmp_prof_mrg(OVSample* _dst, ptrdiff_t _dststride,
 }
 
 static void
-tmp_prof_mrg_w(OVSample* _dst, ptrdiff_t _dststride,
-               const int16_t* _src0, ptrdiff_t _srcstride,
-               const int16_t* _src1, int height, intptr_t mx,
-               intptr_t my, int width, int wt0, int wt1)
+tmp_prof_mrg_w(OVSample* dst, ptrdiff_t dststride,
+               const int16_t* src0, ptrdiff_t srcstride,
+               const int16_t* src1, int height, intptr_t mx,
+               intptr_t my, int width, int log2_wd,
+               int16_t wt0, int16_t wt1, int16_t offset0, int16_t offset1)
 {
     int x, y;
-    const int16_t* src0 = (int16_t *)_src0;
-    const int16_t* src1 = (int16_t *)_src1;
-    ptrdiff_t srcstride = _srcstride;
-    OVSample* dst = (OVSample*)_dst;
-    ptrdiff_t dststride = _dststride;
-    int log_weights = floor_log2(wt0 + wt1);
-    int shift = 14 - BITDEPTH + log_weights;
-    int offset = 2*((1 << (13 - BITDEPTH))) << (log_weights - 1) ;
+    int shift = 14 - BITDEPTH + 1 + log2_wd;
+    int32_t offset = (offset0 + offset1 + 1) << (shift - 1);
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
-            dst[x] = ov_bdclip((src0[x] * wt0 + src1[x] * wt1 + offset) >> shift);
+            dst[x] = ov_bdclip(((int32_t)src0[x] * wt0 + (int32_t)src1[x] * wt1 + offset) >> shift);
         }
         src0 += srcstride;
         src1 += MAX_PB_SIZE;

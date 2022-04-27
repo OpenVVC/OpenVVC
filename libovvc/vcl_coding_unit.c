@@ -1104,6 +1104,7 @@ coding_unit_inter_st(OVCTUDec *const ctu_dec,
                                 prec_amvr = ovcabac_read_ae_ibc_amvr_precision(cabac_ctx);
                             }
                         }
+
                         mv = drv_ibc_mvp(&ctu_dec->drv_ctx.ibc_ctx, x0, y0, log2_cu_w, log2_cu_h, mvp_data.mvd, mvp_data.mvp_idx, prec_amvr);
 
                     }
@@ -1554,7 +1555,6 @@ inter_merge_data_p(OVCTUDec *const ctu_dec,
                    uint8_t x0, uint8_t y0,
                    uint8_t log2_cb_w, uint8_t log2_cb_h)
 {
-    const struct InterDRVCtx *const inter_ctx = &ctu_dec->drv_ctx.inter_ctx;
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
     struct MergeData mrg_data;
     enum MergeTypeP mrg_type = DEFAULT_MERGE;
@@ -1656,8 +1656,9 @@ inter_affine_mvp_data_p(OVCTUDec *const ctu_dec, uint8_t nb_active_ref_min1, uin
 
     mvp_idx = ovcabac_read_ae_mvp_flag(cabac_ctx);
 
-    mvp_data.ref_idx   = ref_idx;
     mvp_data.mvd       = cp_mvd;
+
+    mvp_data.ref_idx   = ref_idx;
     mvp_data.mvp_idx   = mvp_idx;
 
     return mvp_data;

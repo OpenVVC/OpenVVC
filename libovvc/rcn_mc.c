@@ -908,7 +908,7 @@ put_vvc_qpel_rpr_weighted(OVSample* _dst, ptrdiff_t _dststride,
     ptrdiff_t src1stride = _src1stride;
     OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
-    int shift = 14 - BITDEPTH + denom;
+    int shift = 14 - BITDEPTH + denom + 1;
     int offset = 1 << (shift - 1);
 
     for (y = 0; y < height; y++) {
@@ -1142,8 +1142,7 @@ put_vvc_qpel_v(int16_t* _dst, const OVSample* _src, ptrdiff_t _srcstride,
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            dst[x] = MCP_FILTER_L(src, srcstride, filter) >>
-                (BITDEPTH - 8);
+            dst[x] = MCP_FILTER_L(src, srcstride, filter) >> (BITDEPTH - 8);
         }
         src += srcstride;
         dst += MAX_PB_SIZE;
@@ -1583,7 +1582,7 @@ put_vvc_epel_bi_hv(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src0,
 static void
 put_weighted_epel_bi_h(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdiff_t _srcstride,
                   int16_t* src2, ptrdiff_t src2stride, int height, int denom,
-                  int wx0, int wx1, intptr_t mx, intptr_t my, int width)
+                  int wx0, int wx1, int offset0, int offset1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
     const OVSample* src = (OVSample*) _src;
@@ -1593,8 +1592,10 @@ put_weighted_epel_bi_h(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
     ptrdiff_t dststride = _dststride >> 1;
 
     const int8_t* filter = ov_mcp_filters_c[mx - 1];
-    int shift = 14 + denom -BITDEPTH;
-    int offset = 1 << (shift - 1);
+    int shift = 14 + 1 - BITDEPTH;
+    int log2Wd = denom + shift - 1;
+    int offset = (offset0 + offset1 + 1) << log2Wd;
+    shift = log2Wd + 1;
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
@@ -1610,7 +1611,7 @@ put_weighted_epel_bi_h(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
 static void
 put_weighted_epel_bi_v(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdiff_t _srcstride,
                   int16_t* src2, ptrdiff_t src2stride, int height, int denom,
-                  int wx0, int wx1, intptr_t mx, intptr_t my, int width)
+                  int wx0, int wx1, int offset0, int offset1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
     const OVSample* src = (OVSample*) _src;
@@ -1622,8 +1623,10 @@ put_weighted_epel_bi_v(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
     ptrdiff_t dststride = _dststride >> 1;
 
     const int8_t* filter = ov_mcp_filters_c[my - 1];
-    int shift = 14 + denom -BITDEPTH;
-    int offset = 1 << (shift - 1);
+    int shift = 14 + 1 - BITDEPTH;
+    int log2Wd = denom + shift - 1;
+    int offset = (offset0 + offset1 + 1) << log2Wd;
+    shift = log2Wd + 1;
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
@@ -1639,7 +1642,7 @@ put_weighted_epel_bi_v(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
 static void
 put_weighted_epel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdiff_t _srcstride,
                    int16_t* src2, ptrdiff_t src2stride, int height, int denom,
-                   int wx0, int wx1, intptr_t mx, intptr_t my, int width)
+                   int wx0, int wx1, int offset0, int offset1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
     const OVSample* src = (OVSample*) _src;
@@ -1654,8 +1657,10 @@ put_weighted_epel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
     int16_t* tmp = tmp_array;
 
     const int8_t* filter = ov_mcp_filters_c[mx - 1];
-    int shift = 14 + denom -BITDEPTH;
-    int offset = 1 << (shift - 1);
+    int shift = 14 + 1 - BITDEPTH;
+    int log2Wd = denom + shift - 1;
+    int offset = (offset0 + offset1 + 1) << log2Wd;
+    shift = log2Wd + 1;
 
     src -= EPEL_EXTRA_BEFORE * srcstride;
 
@@ -1684,16 +1689,18 @@ put_weighted_epel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
 static void
 put_weighted_pel_bi_pixels(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdiff_t _srcstride,
                   int16_t* src2, ptrdiff_t src2stride, int height, int denom,
-                  int wx0, int wx1, intptr_t mx, intptr_t my, int width)
+                  int wx0, int wx1, int offset0, int offset1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
     const OVSample* src = (OVSample*) _src;
 
     ptrdiff_t srcstride = _srcstride >> 1;
     OVSample* dst = (OVSample*)_dst;
-    ptrdiff_t dststride = _dststride >> 1;
-    int shift = 14 - BITDEPTH + denom ;
-    int offset = (1 << (shift - 1)) ;
+    ptrdiff_t dststride = _dststride;
+    int shift = 14 + 1 - BITDEPTH;
+    int log2Wd = denom + shift - 1;
+    int offset = (offset0 + offset1 + 1) << log2Wd;
+    shift = log2Wd + 1;
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; ++x) {
             dst[x] = ov_bdclip(((src2[x] * wx0 + (int32_t)((uint32_t)(src[x] * wx1) << (14 - BITDEPTH))
@@ -1708,7 +1715,7 @@ put_weighted_pel_bi_pixels(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, p
 static void
 put_weighted_qpel_bi_h(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdiff_t _srcstride,
                   int16_t* src2, ptrdiff_t src2stride, int height, int denom,
-                  int wx0, int wx1, intptr_t mx, intptr_t my, int width)
+                  int wx0, int wx1, int offset0, int offset1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
     const OVSample* src = (OVSample*) _src;
@@ -1721,8 +1728,10 @@ put_weighted_qpel_bi_h(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
 
     const int8_t* filter;
     filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
-    int shift = 14 + denom -BITDEPTH;
-    int offset = 1 << (shift - 1);
+    int shift = 14 + 1 - BITDEPTH;
+    int log2Wd = denom + shift - 1;
+    int offset = (offset0 + offset1 + 1) << log2Wd;
+    shift = log2Wd + 1;
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
@@ -1739,7 +1748,7 @@ put_weighted_qpel_bi_h(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
 static void
 put_weighted_qpel_bi_v(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdiff_t _srcstride,
                   int16_t* src2, ptrdiff_t src2stride, int height, int denom,
-                  int wx0, int wx1, intptr_t mx, intptr_t my, int width)
+                  int wx0, int wx1, int offset0, int offset1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
     const OVSample* src = (OVSample*) _src;
@@ -1751,8 +1760,10 @@ put_weighted_qpel_bi_v(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
 
     const int8_t* filter;
     filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
-    int shift = 14 + denom -BITDEPTH;
-    int offset = 1 << (shift - 1);
+    int shift = 14 + 1 - BITDEPTH;
+    int log2Wd = denom + shift - 1;
+    int offset = (offset0 + offset1 + 1) << log2Wd;
+    shift = log2Wd + 1;
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
@@ -1768,7 +1779,7 @@ put_weighted_qpel_bi_v(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
 static void
 put_weighted_qpel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdiff_t _srcstride,
                    int16_t* src2, ptrdiff_t src2stride, int height, int denom,
-                   int wx0, int wx1, intptr_t mx, intptr_t my, int width)
+                   int wx0, int wx1, int offset0, int offset1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
 
@@ -1784,8 +1795,10 @@ put_weighted_qpel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
 
     const int8_t* filter;
     filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
-    int shift = 14 + denom -BITDEPTH;
-    int offset = 1 << (shift - 1);
+    //int shift = 14 + denom -BITDEPTH;
+    int shift = 14 + 1 - BITDEPTH;
+    int log2Wd = denom + shift - 1;
+    int offset = (offset0 + offset1 + 1) << log2Wd;
 
     src -= QPEL_EXTRA_BEFORE * srcstride;
 
@@ -1803,7 +1816,7 @@ put_weighted_qpel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             dst[x] = ov_bdclip(((MCP_FILTER_L(tmp, MAX_PB_SIZE, filter) >> 6) * wx1
-                                + src2[x] * wx0 + offset) >> shift);
+                                + src2[x] * wx0 + offset) >> (log2Wd + 1));
         }
         tmp += MAX_PB_SIZE;
         src2 += MAX_PB_SIZE;
