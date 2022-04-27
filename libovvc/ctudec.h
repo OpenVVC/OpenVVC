@@ -358,8 +358,8 @@ struct WPInfo
 struct InterDRVCtx
 {
     /* References Pictures Lists */
-    OVPicture *rpl0[16];
-    OVPicture *rpl1[16];
+    struct OVPicture *rpl0[16];
+    struct OVPicture *rpl1[16];
     uint16_t scale_fact_rpl0[16][2];
     uint16_t scale_fact_rpl1[16][2];
     uint16_t rpr_scale_msk0;
@@ -436,7 +436,7 @@ struct InterDRVCtx
             int8_t ref_idx_rpl1;
         }col_info;
 
-        const OVPicture *col_ref;
+        const struct OVPicture *col_ref;
 
         /* MV plane storage for collocated reference picture */
         const struct MVPlane *col_plane0;
