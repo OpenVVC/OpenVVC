@@ -55,7 +55,7 @@
 #define QPEL_EXTRA_AFTER 4
 #define QPEL_EXTRA QPEL_EXTRA_BEFORE + QPEL_EXTRA_AFTER
 
-#define BIT_DEPTH 10
+#define BITDEPTH 10
 
 #define WEIGHTED 1
 #if WEIGHTED
@@ -721,7 +721,7 @@ oh_hevc_put_hevc_bi0_pel_pixels16_10_avx2(int16_t* dst,
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       x1 = _mm256_loadu_si256((__m256i*)&src[x]);
-      x1 = _mm256_slli_epi16(x1, 14 - 10);
+      x1 = _mm256_slli_epi16(x1, 14 - BITDEPTH);
       _mm256_storeu_si256((__m256i*)&dst[x], x1);
     }
     src += srcstride;
@@ -744,14 +744,14 @@ oh_hevc_put_hevc_bi1_pel_pixels16_10_avx2(uint16_t* _dst,
   __m256i x1;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m256i offset = _mm256_set1_epi16(1 << 10);
+  const __m256i offset = _mm256_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       __m256i r5;
       x1 = _mm256_loadu_si256((__m256i*)&src[x]);
-      x1 = _mm256_slli_epi16(x1, 14 - 10);
+      x1 = _mm256_slli_epi16(x1, 14 - BITDEPTH);
       r5 = _mm256_load_si256((__m256i*)&src2[x]);
       x1 = _mm256_adds_epi16(x1, r5);
       x1 = _mm256_mulhrs_epi16(x1, offset);
@@ -821,7 +821,7 @@ oh_hevc_put_hevc_bi1_epel_h16_10_avx2(uint16_t* _dst,
   __m256i x1, x2, x3, x4, t1, t2, f1, f2;
   uint16_t* src = ((uint16_t*)_src) - 1;
   ptrdiff_t srcstride = _srcstride;
-  const __m256i offset = _mm256_set1_epi16(1 << 10);
+  const __m256i offset = _mm256_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   f1 = _mm256_load_si256((__m256i*)oh_hevc_epel_filters_avx2[mx - 1][0]);
@@ -873,7 +873,7 @@ oh_hevc_put_hevc_uni_epel_h16_10_avx2(uint16_t* _dst,
   __m256i x1, x2, x3, x4, t1, t2, f1, f2;
   uint16_t* src = ((uint16_t*)_src) - 1;
   ptrdiff_t srcstride = _srcstride;
-  const __m256i offset = _mm256_set1_epi16(1 << (10 + 1));
+  const __m256i offset = _mm256_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   f1 = _mm256_load_si256((__m256i*)oh_hevc_epel_filters_avx2[mx - 1][0]);
@@ -963,7 +963,7 @@ oh_hevc_put_hevc_bi1_epel_v16_10_avx2(uint16_t* _dst,
   __m256i x1, x2, x3, x4, t1, t2, f1, f2;
   ptrdiff_t srcstride = _srcstride;
   uint16_t* src = ((uint16_t*)_src) - srcstride;
-  const __m256i offset = _mm256_set1_epi16(1 << 10);
+  const __m256i offset = _mm256_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   f1 = _mm256_load_si256((__m256i*)oh_hevc_epel_filters_avx2[my - 1][0]);
@@ -1015,7 +1015,7 @@ oh_hevc_put_hevc_uni_epel_v16_10_avx2(uint16_t* _dst,
   __m256i x1, x2, x3, x4, t1, t2, f1, f2;
   ptrdiff_t srcstride = _srcstride;
   uint16_t* src = ((uint16_t*)_src) - srcstride;
-  const __m256i offset = _mm256_set1_epi16(1 << (10 + 1));
+  const __m256i offset = _mm256_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   f1 = _mm256_load_si256((__m256i*)oh_hevc_epel_filters_avx2[my - 1][0]);
@@ -1180,7 +1180,7 @@ oh_hevc_put_hevc_bi1_epel_hv16_10_avx2(uint16_t* _dst,
 {
   int x, y;
   __m256i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;
-  const __m256i offset = _mm256_set1_epi16(1 << 10);
+  const __m256i offset = _mm256_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   const int16_t* src2_bis = src2;
@@ -1311,7 +1311,7 @@ oh_hevc_put_hevc_uni_epel_hv16_10_avx2(uint16_t* _dst,
 {
   int x, y;
   __m256i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;
-  const __m256i offset = _mm256_set1_epi16(1 << (10 + 1));
+  const __m256i offset = _mm256_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   uint16_t* dst_bis = dst;
@@ -1480,7 +1480,7 @@ oh_hevc_put_hevc_bi0_qpel_h16_10_avx2(int16_t* dst,
                                     int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   __m256i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
@@ -1550,11 +1550,11 @@ oh_hevc_put_hevc_bi1_qpel_h16_10_avx2(uint16_t* _dst,
                                     int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   __m256i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m256i offset = _mm256_set1_epi16(1 << 10);
+  const __m256i offset = _mm256_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   #if 0
@@ -1629,11 +1629,11 @@ oh_hevc_put_hevc_uni_qpel_h16_10_avx2(uint16_t* _dst,
                                     int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   __m256i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m256i offset = _mm256_set1_epi16(1 << (10 + 1));
+  const __m256i offset = _mm256_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   #if 0
@@ -1779,7 +1779,7 @@ oh_hevc_put_hevc_bi1_qpel_v16_10_avx2(uint16_t* _dst,
   __m256i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m256i offset = _mm256_set1_epi16(1 << 10);
+  const __m256i offset = _mm256_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   #if 0
@@ -1861,7 +1861,7 @@ oh_hevc_put_hevc_uni_qpel_v16_10_avx2(uint16_t* _dst,
   __m256i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m256i offset = _mm256_set1_epi16(1 << (10 + 1));
+  const __m256i offset = _mm256_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   #if 0
@@ -2010,7 +2010,7 @@ oh_hevc_put_hevc_bi1_qpel_v16_14_10_avx2(uint16_t* _dst,
   __m256i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   const int16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m256i offset = _mm256_set1_epi16(1 << 10);
+  const __m256i offset = _mm256_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   #if 0
@@ -2091,7 +2091,7 @@ oh_hevc_put_hevc_uni_qpel_v16_14_10_avx2(uint16_t* _dst,
   __m256i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   const int16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m256i offset = _mm256_set1_epi16(1 << (10 + 1));
+  const __m256i offset = _mm256_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   #if 0
@@ -2792,7 +2792,7 @@ put_vvc_qpel_h16_10_avx2(int16_t* dst,
                                 int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   __m256i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
@@ -2869,7 +2869,7 @@ put_vvc_bi_w_qpel_v16_14_10_avx2(uint8_t* _dst,
   __m256i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH;
   const int shift2 = log2Wd + 1;
 
 
@@ -2973,7 +2973,7 @@ put_vvc_uni_w_qpel_v16_14_10_avx2(uint8_t* _dst,
   __m256i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int shift2 = denom + 14 - 10;
+  const int shift2 = denom + 14 - BITDEPTH;
   const __m256i ox = _mm256_set1_epi32(_ox << (10 - 8));
   const __m256i wx = _mm256_set1_epi16(_wx);
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
@@ -3067,7 +3067,7 @@ put_vvc_uni_w_pel_pixels8_10_avx2(uint8_t* _dst,
   __m256i x1;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int shift2 = denom + 14 - 10;
+  const int shift2 = denom + 14 - BITDEPTH;
   const __m256i ox = _mm256_set1_epi32(_ox << (10 - 8));
   const __m256i wx = _mm256_set1_epi16(_wx);
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
@@ -3076,7 +3076,7 @@ put_vvc_uni_w_pel_pixels8_10_avx2(uint8_t* _dst,
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 16) {
       x1 = _mm256_loadu_si256((__m256i*)&src[x]);
-      x1 = _mm256_slli_epi16(x1, 14 - 10);
+      x1 = _mm256_slli_epi16(x1, 14 - BITDEPTH);
       {
         __m256i x3, x4;
         x3 = _mm256_mulhi_epi16(x1, wx);
@@ -3116,7 +3116,7 @@ put_vvc_bi_w_pel_pixels8_10_avx2(uint8_t* _dst,
   __m256i x1;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
   const __m256i wx0 = _mm256_set1_epi16(_wx0);
   const __m256i wx1 = _mm256_set1_epi16(_wx1);
@@ -3127,7 +3127,7 @@ put_vvc_bi_w_pel_pixels8_10_avx2(uint8_t* _dst,
     for (x = 0; x < width; x += 16) {
       __m256i r5;
       x1 = _mm256_loadu_si256((__m256i*)&src[x]);
-      x1 = _mm256_slli_epi16(x1, 14 - 10);
+      x1 = _mm256_slli_epi16(x1, 14 - BITDEPTH);
       r5 = _mm256_load_si256((__m256i*)&src2[x]);
       {
         __m256i x3, x4, r7, r8;
@@ -3172,7 +3172,7 @@ put_vvc_uni_w_epel_h16_10_avx2(uint8_t* _dst,
   __m256i x1, x2, x3, x4, t1, t2, f1, f2;
   uint16_t* src = ((uint16_t*)_src) - 1;
   ptrdiff_t srcstride = _srcstride >> 1;
-  const int shift2 = denom + 14 - 10;
+  const int shift2 = denom + 14 - BITDEPTH;
   const __m256i ox = _mm256_set1_epi32(_ox << (10 - 8));
   const __m256i wx = _mm256_set1_epi16(_wx);
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
@@ -3238,7 +3238,7 @@ put_vvc_bi_w_epel_h16_10_avx2(uint8_t* _dst,
   __m256i x1, x2, x3, x4, t1, t2, f1, f2;
   uint16_t* src = ((uint16_t*)_src) - 1;
   ptrdiff_t srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -3313,8 +3313,8 @@ put_vvc_uni_w_epel_v16_10_avx2(uint8_t* _dst,
   __m256i x1, x2, x3, x4, t1, t2, f1, f2;
   ptrdiff_t srcstride = _srcstride >> 1;
   uint16_t* src = ((uint16_t*)_src) - srcstride;
-  const int shift2 = denom + 14 - 10;
-  const __m256i ox = _mm256_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m256i ox = _mm256_set1_epi32(_ox << (BITDEPTH - 8));
   const __m256i wx = _mm256_set1_epi16(_wx);
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -3379,7 +3379,7 @@ put_vvc_bi_w_epel_v16_10_avx2(uint8_t* _dst,
   __m256i x1, x2, x3, x4, t1, t2, f1, f2;
   ptrdiff_t srcstride = _srcstride >> 1;
   uint16_t* src = ((uint16_t*)_src) - srcstride;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -3452,8 +3452,8 @@ put_vvc_uni_w_epel_hv16_10_avx2(uint8_t* _dst,
 {
   int x, y;
   __m256i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;
-  const int shift2 = denom + 14 - 10;
-  const __m256i ox = _mm256_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m256i ox = _mm256_set1_epi32(_ox << (BITDEPTH - 8));
   const __m256i wx = _mm256_set1_epi16(_wx);
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -3596,7 +3596,7 @@ put_vvc_bi_w_epel_hv16_10_avx2(uint8_t* _dst,
 {
   int x, y;
   __m256i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -3749,12 +3749,12 @@ put_vvc_uni_w_qpel_h16_10_avx2(uint8_t* _dst,
                                       int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   __m256i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int shift2 = denom + 14 - 10;
-  const __m256i ox = _mm256_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m256i ox = _mm256_set1_epi32(_ox << (BITDEPTH - 8));
   const __m256i wx = _mm256_set1_epi16(_wx);
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -3841,11 +3841,11 @@ put_vvc_bi_w_qpel_h16_10_avx2(uint8_t* _dst,
                                      int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   __m256i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -3945,8 +3945,8 @@ put_vvc_uni_w_qpel_v16_10_avx2(uint8_t* _dst,
   __m256i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int shift2 = denom + 14 - 10;
-  const __m256i ox = _mm256_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m256i ox = _mm256_set1_epi32(_ox << (BITDEPTH - 8));
   const __m256i wx = _mm256_set1_epi16(_wx);
   const __m256i offset = _mm256_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -4040,7 +4040,7 @@ put_vvc_bi_w_qpel_v16_10_avx2(uint8_t* _dst,
   __m256i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
   const __m256i wx0 = _mm256_set1_epi16(_wx0);
   const __m256i wx1 = _mm256_set1_epi16(_wx1);
@@ -4922,7 +4922,7 @@ put_vvc_qpel_bilinear_h_avx2(uint16_t* _dst, ptrdiff_t _dststride, const uint16_
     uint16_t* dst = (uint16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     const int16_t* filter = ov_bilinear_filters_4[mx - 1];
-    int shift = 14 - BIT_DEPTH;
+    int shift = 14 - BITDEPTH;
     __m256i c = _mm256_loadu_si256((__m256i*)filter);
     __m256i offset = _mm256_set1_epi32(1 << (shift - 1));
 
@@ -4971,7 +4971,7 @@ put_vvc_qpel_bilinear_v_avx2(uint16_t* _dst, ptrdiff_t _dststride, const uint16_
       uint16_t* dst = (uint16_t*)_dst;
       ptrdiff_t dststride = _dststride;
       const int16_t* filter = ov_bilinear_filters_4[my - 1];
-      int shift = 14 - BIT_DEPTH;
+      int shift = 14 - BITDEPTH;
       __m256i c = _mm256_loadu_si256((__m256i*)filter);
       __m256i offset = _mm256_set1_epi32(1 << (shift - 1));
 

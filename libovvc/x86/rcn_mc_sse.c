@@ -57,7 +57,7 @@
 #define QPEL_EXTRA_AFTER 4
 #define QPEL_EXTRA QPEL_EXTRA_BEFORE + QPEL_EXTRA_AFTER
 
-#define BIT_DEPTH 10
+#define BITDEPTH 10
 
 #define WEIGHTED 1
 #if WEIGHTED
@@ -728,7 +728,7 @@ put_vvc_pel_rpr_sse(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _src,
     ptrdiff_t srcstride = _srcstride;
     int16_t* dst = (int16_t*)_dst;
     ptrdiff_t dststride = _dststride;
-    int shift = (14 - BIT_DEPTH);
+    int shift = (14 - BITDEPTH);
 
   // __m128i x1;
   for (y = 0; y < height; y++) {
@@ -756,7 +756,7 @@ put_vvc_qpel_rpr_sse_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _sr
   ptrdiff_t srcstride = _srcstride;
   int16_t* dst = (int16_t*)_dst;
   ptrdiff_t dststride = _dststride;
-  int shift = BIT_DEPTH - 8;
+  int shift = BITDEPTH - 8;
   int32_t to_add[4];
   __m128i x1, c1;
   c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse[filter_idx][mx]);
@@ -781,7 +781,7 @@ put_vvc_epel_rpr_sse_h(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _sr
   ptrdiff_t srcstride = _srcstride;
   int16_t* dst = (int16_t*)_dst;
   ptrdiff_t dststride = _dststride;
-  int shift = BIT_DEPTH - 8;
+  int shift = BITDEPTH - 8;
   int32_t to_add[4];
   __m128i x1, c1;
   c1 = _mm_loadl_epi64((__m128i*)ov_mc_filters_rpr_sse_c[filter_idx][mx]);
@@ -805,7 +805,7 @@ put_vvc_qpel_rpr_sse_clip_v4(uint16_t* _dst, ptrdiff_t _dststride, const uint16_
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
   const int16_t* src = (int16_t*) _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v[filter_idx][my][0]);
@@ -854,7 +854,7 @@ put_vvc_qpel_rpr_sse_clip_v8(uint16_t* _dst, ptrdiff_t _dststride, const uint16_
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   const int16_t* src = (int16_t*) _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v[filter_idx][my][0]);
@@ -920,7 +920,7 @@ put_vvc_epel_rpr_sse_clip_v4(uint16_t* _dst, ptrdiff_t _dststride, const uint16_
   __m128i x1, x2, x3, x4, c1, c2;
   const int16_t* src = (int16_t*) _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v_c[filter_idx][my][0]);
@@ -960,7 +960,7 @@ put_vvc_epel_rpr_sse_clip_v8(uint16_t* _dst, ptrdiff_t _dststride, const uint16_
   const int srcstride = _srcstride;
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1));
   c1 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v_c[filter_idx][my][0]);
   c2 = _mm_load_si128((__m128i*)ov_mc_filters_rpr_sse_v_c[filter_idx][my][1]);
   for (y = 0; y < height; y++) {
@@ -1183,7 +1183,7 @@ put_vvc_pel_rpr_sse_clip(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _
   __m128i x1;
   const int16_t* src = (int16_t*)_src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1) );
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1) );
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   for (y = 0; y < height; y++) {
@@ -1235,7 +1235,7 @@ put_vvc_qpel_rpr_sse_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
     uint16_t* dst = (uint16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     __m128i x1, x2;
-    const __m128i offset = _mm_set1_epi16(1 << 10);
+    const __m128i offset = _mm_set1_epi16(1 << BITDEPTH);
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x+=8) {
@@ -1264,7 +1264,7 @@ put_vvc_qpel_rpr_sse_weighted_4(uint16_t* dst, ptrdiff_t dststride,
 {
   int x, y;
   __m128i x1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
@@ -1309,7 +1309,7 @@ put_vvc_qpel_rpr_sse_weighted_8(uint16_t* dst, ptrdiff_t dststride,
 {
   int x, y;
   __m128i x1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
@@ -1363,7 +1363,7 @@ oh_hevc_put_hevc_bi0_pel_pixels4_10_sse(int16_t* dst,
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadu_si128((__m128i*)&src[x]);
-      x1 = _mm_slli_epi16(x1, 14 - 10);
+      x1 = _mm_slli_epi16(x1, 14 - BITDEPTH);
       _mm_storel_epi64((__m128i*)&dst[x], x1);
     }
     src += srcstride;
@@ -1386,14 +1386,14 @@ oh_hevc_put_hevc_bi1_pel_pixels4_10_sse(uint16_t* _dst,
   __m128i x1;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << 10);
+  const __m128i offset = _mm_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       __m128i r5;
       x1 = _mm_loadu_si128((__m128i*)&src[x]);
-      x1 = _mm_slli_epi16(x1, 14 - 10);
+      x1 = _mm_slli_epi16(x1, 14 - BITDEPTH);
       r5 = _mm_loadl_epi64((__m128i*)&src2[x]);
       x1 = _mm_adds_epi16(x1, r5);
       x1 = _mm_mulhrs_epi16(x1, offset);
@@ -1423,7 +1423,7 @@ oh_hevc_put_hevc_uni_pel_pixels4_10_sse(uint16_t* _dst,
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   for (y = 0; y < height; y++) {
-    memcpy(dst, src, width * ((10 + 7) / 8));
+    memcpy(dst, src, width * ((BITDEPTH + 7) / 8));
     src += srcstride;
     dst += dststride;
   }
@@ -1445,7 +1445,7 @@ oh_hevc_put_hevc_bi0_pel_pixels8_10_sse(int16_t* dst,
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 8) {
       x1 = _mm_loadu_si128((__m128i*)&src[x]);
-      x1 = _mm_slli_epi16(x1, 14 - 10);
+      x1 = _mm_slli_epi16(x1, 14 - BITDEPTH);
       _mm_storeu_si128((__m128i*)&dst[x], x1);
     }
     src += srcstride;
@@ -1468,14 +1468,14 @@ oh_hevc_put_hevc_bi1_pel_pixels8_10_sse(uint16_t* _dst,
   __m128i x1;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << 10);
+  const __m128i offset = _mm_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 8) {
       __m128i r5;
       x1 = _mm_loadu_si128((__m128i*)&src[x]);
-      x1 = _mm_slli_epi16(x1, 14 - 10);
+      x1 = _mm_slli_epi16(x1, 14 - BITDEPTH);
       r5 = _mm_load_si128((__m128i*)&src2[x]);
       x1 = _mm_adds_epi16(x1, r5);
       x1 = _mm_mulhrs_epi16(x1, offset);
@@ -1505,7 +1505,7 @@ oh_hevc_put_hevc_uni_pel_pixels8_10_sse(uint16_t* _dst,
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   for (y = 0; y < height; y++) {
-    memcpy(dst, src, width * ((10 + 7) / 8));
+    memcpy(dst, src, width * ((BITDEPTH + 7) / 8));
     src += srcstride;
     dst += dststride;
   }
@@ -1561,7 +1561,7 @@ oh_hevc_put_hevc_bi1_epel_h4_10_sse(uint16_t* _dst,
   __m128i x1, x2, x3, x4, f1, f2;
   uint16_t* src = ((uint16_t*)_src) - 1;
   ptrdiff_t srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << 10);
+  const __m128i offset = _mm_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   f1 = _mm_load_si128((__m128i*)oh_hevc_epel_filters_sse[mx - 1][0]);
@@ -1607,7 +1607,7 @@ oh_hevc_put_hevc_uni_epel_h4_10_sse(uint16_t* _dst,
   __m128i x1, x2, x3, x4, f1, f2;
   uint16_t* src = ((uint16_t*)_src) - 1;
   ptrdiff_t srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   f1 = _mm_load_si128((__m128i*)oh_hevc_epel_filters_sse[mx - 1][0]);
@@ -1697,7 +1697,7 @@ oh_hevc_put_hevc_bi1_epel_h8_10_sse(uint16_t* _dst,
   __m128i x1, x2, x3, x4, t1, t2, f1, f2;
   uint16_t* src = ((uint16_t*)_src) - 1;
   ptrdiff_t srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << 10);
+  const __m128i offset = _mm_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   f1 = _mm_load_si128((__m128i*)oh_hevc_epel_filters_sse[mx - 1][0]);
@@ -1749,7 +1749,7 @@ oh_hevc_put_hevc_uni_epel_h8_10_sse(uint16_t* _dst,
   __m128i x1, x2, x3, x4, t1, t2, f1, f2;
   uint16_t* src = ((uint16_t*)_src) - 1;
   ptrdiff_t srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   f1 = _mm_load_si128((__m128i*)oh_hevc_epel_filters_sse[mx - 1][0]);
@@ -1839,7 +1839,7 @@ oh_hevc_put_hevc_bi1_epel_v4_10_sse(uint16_t* _dst,
   __m128i x1, x2, x3, x4, f1, f2;
   ptrdiff_t srcstride = _srcstride;
   uint16_t* src = ((uint16_t*)_src) - srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << 10);
+  const __m128i offset = _mm_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   f1 = _mm_load_si128((__m128i*)oh_hevc_epel_filters_sse[my - 1][0]);
@@ -1891,7 +1891,7 @@ oh_hevc_put_hevc_uni_epel_v4_10_sse(uint16_t* _dst,
   __m128i x1, x2, x3, x4, f1, f2;
   ptrdiff_t srcstride = _srcstride;
   uint16_t* src = ((uint16_t*)_src) - srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   f1 = _mm_load_si128((__m128i*)oh_hevc_epel_filters_sse[my - 1][0]);
@@ -1975,7 +1975,7 @@ oh_hevc_put_hevc_bi1_epel_v8_10_sse(uint16_t* _dst,
   __m128i x1, x2, x3, x4, t1, t2, f1, f2;
   ptrdiff_t srcstride = _srcstride;
   uint16_t* src = ((uint16_t*)_src) - srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << 10);
+  const __m128i offset = _mm_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   f1 = _mm_load_si128((__m128i*)oh_hevc_epel_filters_sse[my - 1][0]);
@@ -2027,7 +2027,7 @@ oh_hevc_put_hevc_uni_epel_v8_10_sse(uint16_t* _dst,
   __m128i x1, x2, x3, x4, t1, t2, f1, f2;
   ptrdiff_t srcstride = _srcstride;
   uint16_t* src = ((uint16_t*)_src) - srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   f1 = _mm_load_si128((__m128i*)oh_hevc_epel_filters_sse[my - 1][0]);
@@ -2162,7 +2162,7 @@ oh_hevc_put_hevc_bi1_epel_hv4_10_sse(uint16_t* _dst,
 {
   int x, y;
   __m128i x1, x2, x3, x4, f1, f2, f3, f4, r1, r2, r3, r4;
-  const __m128i offset = _mm_set1_epi16(1 << 10);
+  const __m128i offset = _mm_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   const int16_t* src2_bis = src2;
@@ -2263,7 +2263,7 @@ oh_hevc_put_hevc_uni_epel_hv4_10_sse(uint16_t* _dst,
 {
   int x, y;
   __m128i x1, x2, x3, x4, f1, f2, f3, f4, r1, r2, r3, r4;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   uint16_t* dst_bis = dst;
@@ -2477,7 +2477,7 @@ oh_hevc_put_hevc_bi1_epel_hv8_10_sse(uint16_t* _dst,
 {
   int x, y;
   __m128i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;
-  const __m128i offset = _mm_set1_epi16(1 << 10);
+  const __m128i offset = _mm_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   const int16_t* src2_bis = src2;
@@ -2608,7 +2608,7 @@ oh_hevc_put_hevc_uni_epel_hv8_10_sse(uint16_t* _dst,
 {
   int x, y;
   __m128i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   uint16_t* dst_bis = dst;
@@ -2731,7 +2731,7 @@ oh_hevc_put_hevc_bi0_qpel_h4_10_sse(int16_t* dst,
                                     int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   const __m128i c0 = _mm_setzero_si128();
   __m128i x1, x2, x3, x4, r1, r3, c1, c2, c3, c4;
   const uint16_t* src = _src;
@@ -2790,12 +2790,12 @@ oh_hevc_put_hevc_bi1_qpel_h4_10_sse(uint16_t* _dst,
                                     int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   const __m128i c0 = _mm_setzero_si128();
   __m128i x1, x2, x3, x4, r1, r3, c1, c2, c3, c4;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << 10);
+  const __m128i offset = _mm_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   if (width == 4 && height == 4) {
@@ -2858,12 +2858,12 @@ oh_hevc_put_hevc_uni_qpel_h4_10_sse(uint16_t* _dst,
                                     int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   const __m128i c0 = _mm_setzero_si128();
   __m128i x1, x2, x3, x4, r1, r3, c1, c2, c3, c4;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   if (width == 4 && height == 4) {
@@ -2921,7 +2921,7 @@ oh_hevc_put_hevc_bi0_qpel_h8_10_sse(int16_t* dst,
                                     int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   __m128i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
@@ -2983,11 +2983,11 @@ oh_hevc_put_hevc_bi1_qpel_h8_10_sse(uint16_t* _dst,
                                     int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   __m128i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << 10);
+  const __m128i offset = _mm_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
@@ -3054,11 +3054,11 @@ oh_hevc_put_hevc_uni_qpel_h8_10_sse(uint16_t* _dst,
                                     int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   __m128i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
@@ -3182,7 +3182,7 @@ oh_hevc_put_hevc_bi1_qpel_v4_10_sse(uint16_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << 10);
+  const __m128i offset = _mm_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   if (width == 4 && height == 4) {
@@ -3249,7 +3249,7 @@ oh_hevc_put_hevc_uni_qpel_v4_10_sse(uint16_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   if (width == 4 && height == 4) {
@@ -3375,7 +3375,7 @@ oh_hevc_put_hevc_bi1_qpel_v8_10_sse(uint16_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << 10);
+  const __m128i offset = _mm_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
@@ -3449,7 +3449,7 @@ oh_hevc_put_hevc_uni_qpel_v8_10_sse(uint16_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   const uint16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
@@ -3577,7 +3577,7 @@ oh_hevc_put_hevc_bi1_qpel_v4_14_10_sse(uint16_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
   const int16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << 10);
+  const __m128i offset = _mm_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   if (width == 4 && height == 4) {
@@ -3644,7 +3644,7 @@ oh_hevc_put_hevc_uni_qpel_v4_14_10_sse(uint16_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
   const int16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   if ((height==11 && width == 4)|| (height == 4 && width == 4)) {
@@ -3770,7 +3770,7 @@ oh_hevc_put_hevc_bi1_qpel_v8_14_10_sse(uint16_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   const int16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << 10);
+  const __m128i offset = _mm_set1_epi16(1 << BITDEPTH);
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
@@ -3844,7 +3844,7 @@ oh_hevc_put_hevc_uni_qpel_v8_14_10_sse(uint16_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   const int16_t* src = _src;
   const int srcstride = _srcstride;
-  const __m128i offset = _mm_set1_epi16(1 << (10 + 1));
+  const __m128i offset = _mm_set1_epi16(1 << (BITDEPTH + 1));
   uint16_t* dst = (uint16_t*)_dst;
   const int dststride = _dststride;
   c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
@@ -4925,7 +4925,7 @@ put_vvc_qpel_h4_10_sse(int16_t* dst,
                                 int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   const __m128i c0 = _mm_setzero_si128();
   __m128i x1, x2, x3, x4, r1, r3, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
@@ -4983,7 +4983,7 @@ put_vvc_qpel_h8_10_sse(int16_t* dst,
                                 int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   __m128i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
@@ -5053,7 +5053,7 @@ put_vvc_bi_w_qpel_v8_14_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -5153,7 +5153,7 @@ put_vvc_bi_w_qpel_v4_14_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
@@ -5244,8 +5244,8 @@ put_vvc_uni_w_qpel_v8_14_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int shift2 = denom + 14 - 10;
-  const __m128i ox = _mm_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m128i ox = _mm_set1_epi32(_ox << (BITDEPTH - 8));
   const __m128i wx = _mm_set1_epi16(_wx);
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -5332,8 +5332,8 @@ put_vvc_uni_w_qpel_v4_14_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int shift2 = denom + 14 - 10;
-  const __m128i ox = _mm_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m128i ox = _mm_set1_epi32(_ox << (BITDEPTH - 8));
   const __m128i wx = _mm_set1_epi16(_wx);
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -5415,8 +5415,8 @@ put_vvc_uni_w_pel_pixels4_10_sse(uint8_t* _dst,
   __m128i x1;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int shift2 = denom + 14 - 10;
-  const __m128i ox = _mm_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m128i ox = _mm_set1_epi32(_ox << (BITDEPTH - 8));
   const __m128i wx = _mm_set1_epi16(_wx);
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -5424,7 +5424,7 @@ put_vvc_uni_w_pel_pixels4_10_sse(uint8_t* _dst,
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 4) {
       x1 = _mm_loadu_si128((__m128i*)&src[x]);
-      x1 = _mm_slli_epi16(x1, 14 - 10);
+      x1 = _mm_slli_epi16(x1, 14 - BITDEPTH);
       {
         __m128i x3, x4;
         x3 = _mm_mulhi_epi16(x1, wx);
@@ -5464,7 +5464,7 @@ put_vvc_bi_w_pel_pixels4_10_sse(uint8_t* _dst,
   __m128i x1;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
@@ -5475,7 +5475,7 @@ put_vvc_bi_w_pel_pixels4_10_sse(uint8_t* _dst,
     for (x = 0; x < width; x += 4) {
       __m128i r5;
       x1 = _mm_loadu_si128((__m128i*)&src[x]);
-      x1 = _mm_slli_epi16(x1, 14 - 10);
+      x1 = _mm_slli_epi16(x1, 14 - BITDEPTH);
       r5 = _mm_loadl_epi64((__m128i*)&src2[x]);
       {
         __m128i x3, x4, r7, r8;
@@ -5520,8 +5520,8 @@ put_vvc_uni_w_pel_pixels8_10_sse(uint8_t* _dst,
   __m128i x1;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int shift2 = denom + 14 - 10;
-  const __m128i ox = _mm_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m128i ox = _mm_set1_epi32(_ox << (BITDEPTH - 8));
   const __m128i wx = _mm_set1_epi16(_wx);
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -5529,7 +5529,7 @@ put_vvc_uni_w_pel_pixels8_10_sse(uint8_t* _dst,
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 8) {
       x1 = _mm_loadu_si128((__m128i*)&src[x]);
-      x1 = _mm_slli_epi16(x1, 14 - 10);
+      x1 = _mm_slli_epi16(x1, 14 - BITDEPTH);
       {
         __m128i x3, x4;
         x3 = _mm_mulhi_epi16(x1, wx);
@@ -5569,7 +5569,7 @@ put_vvc_bi_w_pel_pixels8_10_sse(uint8_t* _dst,
   __m128i x1;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH + 1;
   const int shift2 = log2Wd + 1;
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
@@ -5580,7 +5580,7 @@ put_vvc_bi_w_pel_pixels8_10_sse(uint8_t* _dst,
     for (x = 0; x < width; x += 8) {
       __m128i r5;
       x1 = _mm_loadu_si128((__m128i*)&src[x]);
-      x1 = _mm_slli_epi16(x1, 14 - 10);
+      x1 = _mm_slli_epi16(x1, 14 - BITDEPTH);
       r5 = _mm_load_si128((__m128i*)&src2[x]);
       {
         __m128i x3, x4, r7, r8;
@@ -5624,8 +5624,8 @@ put_vvc_uni_w_epel_h4_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, f1, f2;
   uint16_t* src = ((uint16_t*)_src) - 1;
   ptrdiff_t srcstride = _srcstride >> 1;
-  const int shift2 = denom + 14 - 10;
-  const __m128i ox = _mm_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m128i ox = _mm_set1_epi32(_ox << (BITDEPTH - 8));
   const __m128i wx = _mm_set1_epi16(_wx);
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -5684,7 +5684,7 @@ put_vvc_bi_w_epel_h4_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, f1, f2;
   uint16_t* src = ((uint16_t*)_src) - 1;
   ptrdiff_t srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
 
   const __m128i wx0 = _mm_set1_epi16(_wx0);
@@ -5752,8 +5752,8 @@ put_vvc_uni_w_epel_h8_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, t1, t2, f1, f2;
   uint16_t* src = ((uint16_t*)_src) - 1;
   ptrdiff_t srcstride = _srcstride >> 1;
-  const int shift2 = denom + 14 - 10;
-  const __m128i ox = _mm_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m128i ox = _mm_set1_epi32(_ox << (BITDEPTH - 8));
   const __m128i wx = _mm_set1_epi16(_wx);
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -5818,7 +5818,7 @@ put_vvc_bi_w_epel_h8_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, t1, t2, f1, f2;
   uint16_t* src = ((uint16_t*)_src) - 1;
   ptrdiff_t srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -5892,8 +5892,8 @@ put_vvc_uni_w_epel_v4_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, f1, f2;
   ptrdiff_t srcstride = _srcstride >> 1;
   uint16_t* src = ((uint16_t*)_src) - srcstride;
-  const int shift2 = denom + 14 - 10;
-  const __m128i ox = _mm_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m128i ox = _mm_set1_epi32(_ox << (BITDEPTH - 8));
   const __m128i wx = _mm_set1_epi16(_wx);
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -5952,7 +5952,7 @@ put_vvc_bi_w_epel_v4_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, f1, f2;
   ptrdiff_t srcstride = _srcstride >> 1;
   uint16_t* src = ((uint16_t*)_src) - srcstride;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -6021,8 +6021,8 @@ put_vvc_uni_w_epel_v8_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, t1, t2, f1, f2;
   ptrdiff_t srcstride = _srcstride >> 1;
   uint16_t* src = ((uint16_t*)_src) - srcstride;
-  const int shift2 = denom + 14 - 10;
-  const __m128i ox = _mm_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m128i ox = _mm_set1_epi32(_ox << (BITDEPTH - 8));
   const __m128i wx = _mm_set1_epi16(_wx);
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -6087,7 +6087,7 @@ put_vvc_bi_w_epel_v8_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, t1, t2, f1, f2;
   ptrdiff_t srcstride = _srcstride >> 1;
   uint16_t* src = ((uint16_t*)_src) - srcstride;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -6159,8 +6159,8 @@ put_vvc_uni_w_epel_hv4_10_sse(uint8_t* _dst,
 {
   int x, y;
   __m128i x1, x2, x3, x4, f1, f2, f3, f4, r1, r2, r3, r4;
-  const int shift2 = denom + 14 - 10;
-  const __m128i ox = _mm_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m128i ox = _mm_set1_epi32(_ox << (BITDEPTH - 8));
   const __m128i wx = _mm_set1_epi16(_wx);
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -6273,7 +6273,7 @@ put_vvc_bi_w_epel_hv4_10_sse(uint8_t* _dst,
 {
   int x, y;
   __m128i x1, x2, x3, x4, f1, f2, f3, f4, r1, r2, r3, r4;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -6397,8 +6397,8 @@ put_vvc_uni_w_epel_hv8_10_sse(uint8_t* _dst,
 {
   int x, y;
   __m128i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;
-  const int shift2 = denom + 14 - 10;
-  const __m128i ox = _mm_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m128i ox = _mm_set1_epi32(_ox << (BITDEPTH - 8));
   const __m128i wx = _mm_set1_epi16(_wx);
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -6541,7 +6541,7 @@ put_vvc_bi_w_epel_hv8_10_sse(uint8_t* _dst,
 {
   int x, y;
   __m128i x1, x2, x3, x4, t1, t2, f1, f2, f3, f4, r1, r2, r3, r4;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -6693,13 +6693,13 @@ put_vvc_uni_w_qpel_h4_10_sse(uint8_t* _dst,
                                       int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   const __m128i c0 = _mm_setzero_si128();
   __m128i x1, x2, x3, x4, r1, r3, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int shift2 = denom + 14 - 10;
-  const __m128i ox = _mm_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m128i ox = _mm_set1_epi32(_ox << (BITDEPTH - 8));
   const __m128i wx = _mm_set1_epi16(_wx);
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -6775,12 +6775,12 @@ put_vvc_bi_w_qpel_h4_10_sse(uint8_t* _dst,
                                      int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   const __m128i c0 = _mm_setzero_si128();
   __m128i x1, x2, x3, x4, r1, r3, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
@@ -6867,12 +6867,12 @@ put_vvc_uni_w_qpel_h8_10_sse(uint8_t* _dst,
                                       int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   __m128i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int shift2 = denom + 14 - 10;
-  const __m128i ox = _mm_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m128i ox = _mm_set1_epi32(_ox << (BITDEPTH - 8));
   const __m128i wx = _mm_set1_epi16(_wx);
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -6952,11 +6952,11 @@ put_vvc_bi_w_qpel_h8_10_sse(uint8_t* _dst,
                                      int width)
 {
   int x, y;
-  int shift = 10 - 8;
+  int shift = BITDEPTH - 8;
   __m128i x1, x2, x3, x4, r1, r2, r3, r4, c1, c2, c3, c4, t1, t2;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
 
 
@@ -7049,8 +7049,8 @@ put_vvc_uni_w_qpel_v4_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int shift2 = denom + 14 - 10;
-  const __m128i ox = _mm_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m128i ox = _mm_set1_epi32(_ox << (BITDEPTH - 8));
   const __m128i wx = _mm_set1_epi16(_wx);
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -7130,7 +7130,7 @@ put_vvc_bi_w_qpel_v4_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
@@ -7216,8 +7216,8 @@ put_vvc_uni_w_qpel_v8_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int shift2 = denom + 14 - 10;
-  const __m128i ox = _mm_set1_epi32(_ox << (10 - 8));
+  const int shift2 = denom + 14 - BITDEPTH;
+  const __m128i ox = _mm_set1_epi32(_ox << (BITDEPTH - 8));
   const __m128i wx = _mm_set1_epi16(_wx);
   const __m128i offset = _mm_set1_epi32(1 << (shift2 - 1));
   uint16_t* dst = (uint16_t*)_dst;
@@ -7304,7 +7304,7 @@ put_vvc_bi_w_qpel_v8_10_sse(uint8_t* _dst,
   __m128i x1, x2, x3, x4, x5, x6, x7, x8, x9, c1, c2, c3, c4;
   uint16_t* src = (uint16_t*)_src;
   const int srcstride = _srcstride >> 1;
-  const int log2Wd = denom + 14 - 10 - 1;
+  const int log2Wd = denom + 14 - BITDEPTH - 1;
   const int shift2 = log2Wd + 1;
   const __m128i wx0 = _mm_set1_epi16(_wx0);
   const __m128i wx1 = _mm_set1_epi16(_wx1);
@@ -8536,7 +8536,7 @@ put_vvc_qpel_bilinear_h_sse(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t
     uint16_t* dst = (uint16_t*)_dst;
     ptrdiff_t dststride = _dststride;
     const int16_t* filter = ov_bilinear_filters_4[mx - 1];
-    int shift = 14 - BIT_DEPTH;
+    int shift = 14 - BITDEPTH;
     __m128i c = _mm_loadu_si128((__m128i*)filter);
     __m128i offset = _mm_set1_epi32(1 << (shift - 1));
 
@@ -8585,7 +8585,7 @@ put_vvc_qpel_bilinear_v_sse(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t
       uint16_t* dst = (uint16_t*)_dst;
       ptrdiff_t dststride = _dststride;
       const int16_t* filter = ov_bilinear_filters_4[my - 1];
-      int shift = 14 - BIT_DEPTH;
+      int shift = 14 - BITDEPTH;
       __m128i c = _mm_loadu_si128((__m128i*)filter);
       __m128i offset = _mm_set1_epi32(1 << (shift - 1));
 
