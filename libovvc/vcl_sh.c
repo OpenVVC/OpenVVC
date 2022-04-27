@@ -510,7 +510,7 @@ nvcl_sh_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
              (pps->pps_weighted_bipred_flag && sh->sh_slice_type == B))) {
 
             if (sps->sps_chroma_format_idc) {
-                pred_weight_table_sh(rdr, &ph->wgt_info, nb_ref_entries0, (nb_ref_entries1 & -pps->pps_weighted_bipred_flag));
+                pred_weight_table_sh(rdr, &sh->wgt_info, nb_ref_entries0, (nb_ref_entries1 & -pps->pps_weighted_bipred_flag));
             } else {
                 pred_weight_table_monochrome_sh(rdr, &ph->wgt_info, nb_ref_entries0, (nb_ref_entries1 & -pps->pps_weighted_bipred_flag));
             }
