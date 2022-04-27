@@ -1580,8 +1580,8 @@ put_vvc_epel_bi_hv(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src0,
 
 
 static void
-put_weighted_epel_bi_h(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdiff_t _srcstride,
-                  int16_t* src2, ptrdiff_t src2stride, int height, int denom,
+put_weighted_epel_bi_h(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src, ptrdiff_t _srcstride,
+                  const int16_t* src2, ptrdiff_t src2stride, int height, int denom,
                   int wx0, int wx1, int offset0, int offset1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
@@ -1609,8 +1609,8 @@ put_weighted_epel_bi_h(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
 }
 
 static void
-put_weighted_epel_bi_v(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdiff_t _srcstride,
-                  int16_t* src2, ptrdiff_t src2stride, int height, int denom,
+put_weighted_epel_bi_v(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src, ptrdiff_t _srcstride,
+                  const int16_t* src2, ptrdiff_t src2stride, int height, int denom,
                   int wx0, int wx1, int offset0, int offset1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
@@ -1640,8 +1640,8 @@ put_weighted_epel_bi_v(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdi
 }
 
 static void
-put_weighted_epel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrdiff_t _srcstride,
-                   int16_t* src2, ptrdiff_t src2stride, int height, int denom,
+put_weighted_epel_bi_hv(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src, ptrdiff_t _srcstride,
+                   const int16_t* src2, ptrdiff_t src2stride, int height, int denom,
                    int wx0, int wx1, int offset0, int offset1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
@@ -1687,8 +1687,8 @@ put_weighted_epel_bi_hv(uint8_t* _dst, ptrdiff_t _dststride, uint8_t* _src, ptrd
 }
 
 static void
-put_weighted_pel_bi_pixels(OVSample* _dst, ptrdiff_t _dststride, OVSample* _src, ptrdiff_t _srcstride,
-                  int16_t* src2, ptrdiff_t src2stride, int height, int denom,
+put_weighted_pel_bi_pixels(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src, ptrdiff_t _srcstride,
+                  const int16_t* src2, ptrdiff_t src2stride, int height, int denom,
                   int wx0, int wx1, int offset0, int offset1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
@@ -1713,8 +1713,8 @@ put_weighted_pel_bi_pixels(OVSample* _dst, ptrdiff_t _dststride, OVSample* _src,
 }
 
 static void
-put_weighted_qpel_bi_h(OVSample* _dst, ptrdiff_t _dststride, OVSample* _src, ptrdiff_t _srcstride,
-                  int16_t* src2, ptrdiff_t src2stride, int height, int denom,
+put_weighted_qpel_bi_h(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src, ptrdiff_t _srcstride,
+                  const int16_t* src2, ptrdiff_t src2stride, int height, int denom,
                   int wx0, int wx1, int offset0, int offset1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
@@ -1746,8 +1746,8 @@ put_weighted_qpel_bi_h(OVSample* _dst, ptrdiff_t _dststride, OVSample* _src, ptr
 
 
 static void
-put_weighted_qpel_bi_v(OVSample* _dst, ptrdiff_t _dststride, OVSample* _src, ptrdiff_t _srcstride,
-                  int16_t* src2, ptrdiff_t src2stride, int height, int denom,
+put_weighted_qpel_bi_v(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src, ptrdiff_t _srcstride,
+                  const int16_t* src2, ptrdiff_t src2stride, int height, int denom,
                   int wx0, int wx1, int offset0, int offset1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;
@@ -1777,8 +1777,8 @@ put_weighted_qpel_bi_v(OVSample* _dst, ptrdiff_t _dststride, OVSample* _src, ptr
 }
 
 static void
-put_weighted_qpel_bi_hv(OVSample* _dst, ptrdiff_t _dststride, OVSample* _src, ptrdiff_t _srcstride,
-                   int16_t* src2, ptrdiff_t src2stride, int height, int denom,
+put_weighted_qpel_bi_hv(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src, ptrdiff_t _srcstride,
+                   const int16_t* src2, ptrdiff_t src2stride, int height, int denom,
                    int wx0, int wx1, int offset0, int offset1, intptr_t mx, intptr_t my, int width)
 {
     int x, y;

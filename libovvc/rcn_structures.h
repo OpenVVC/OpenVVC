@@ -111,13 +111,13 @@ typedef void (*MCBiDir1Func)(OVSample *_dst, ptrdiff_t _dststride,
                              const int16_t *_src1,
                              int height, intptr_t mx, intptr_t my, int width);
 
-typedef void (*MCUniDirWFunc)(OVSample* dst, ptrdiff_t dststride, OVSample* _src,
+typedef void (*MCUniDirWFunc)(OVSample* dst, ptrdiff_t dststride, const OVSample* _src,
                               ptrdiff_t _srcstride, int height, int denom,
                               int wx, int ox, intptr_t mx, intptr_t my,
                               int width);
 
-typedef void (*MCBiDirWFunc)(OVSample* dst, ptrdiff_t dststride, OVSample* _src,
-                             ptrdiff_t _srcstride, int16_t* src2,
+typedef void (*MCBiDirWFunc)(OVSample* dst, ptrdiff_t dststride, const OVSample* _src,
+                             ptrdiff_t _srcstride, const int16_t* src2,
                              ptrdiff_t src2stride, int height, int denom,
                              int wx0, int wx1, int offset0, int offset1, intptr_t mx,
                              intptr_t my, int width);
