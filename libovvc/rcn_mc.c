@@ -532,6 +532,210 @@ put_vvc_qpel_uni_hv(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
 }
 
 static void
+put_weighted_uni_pixels(OVSample* _dst, ptrdiff_t _dststride,
+                        const OVSample* _src, ptrdiff_t _srcstride, int height,
+                        int denom, int wx, int offset2,
+                        intptr_t mx, intptr_t my, int width)
+{
+    int y;
+    const OVSample* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    OVSample* dst = (OVSample*)_dst;
+    ptrdiff_t dststride = _dststride;
+    int shift = denom + 14 - BITDEPTH;
+    int offset = 1 << (shift - 1);
+
+    for (y = 0; y < height; y++) {
+        int x;
+        for (x = 0; x < width; x++) {
+            dst[x] = ov_bdclip((((src[x] << (14 - BITDEPTH)) * wx + offset) >> shift) + offset2);
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
+static void
+put_weighted_uni_h(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
+                   ptrdiff_t _srcstride, int height,
+                   int denom, int wx, int offset2,
+                   intptr_t mx, intptr_t my,
+                   int width)
+{
+    int x, y;
+    const OVSample* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    OVSample* dst = (OVSample*)_dst;
+    ptrdiff_t dststride = _dststride;
+    const int8_t* filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
+    int shift = denom + 14 - BITDEPTH;
+    int offset = 1 << (shift - 1);
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            dst[x] = ov_bdclip((((MCP_FILTER_L(src, 1, filter) >> (BITDEPTH - 8)) * wx + offset) >> shift) + offset2);
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
+static void
+put_weighted_uni_v(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
+                   ptrdiff_t _srcstride, int height,
+                   int denom, int wx, int offset2,
+                   intptr_t mx, intptr_t my,
+                   int width)
+{
+    int x, y;
+    const OVSample* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    OVSample* dst = (OVSample*)_dst;
+    ptrdiff_t dststride = _dststride;
+    const int8_t* filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
+    int shift = denom + 14 - BITDEPTH;
+    int offset = 1 << (shift - 1);
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            dst[x] = ov_bdclip((((MCP_FILTER_L(src, srcstride, filter) >> (BITDEPTH - 8)) * wx + offset) >> shift) + offset2);
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
+static void
+put_weighted_uni_hv(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
+                    ptrdiff_t _srcstride, int height,
+                    int denom, int wx, int offset2,
+                    intptr_t mx, intptr_t my,
+                    int width)
+{
+    int x, y;
+    const int8_t* filter;
+    const OVSample* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    OVSample* dst = (OVSample*)_dst;
+    ptrdiff_t dststride = _dststride;
+    int16_t tmp_array[(MAX_PB_SIZE + QPEL_EXTRA) * MAX_PB_SIZE];
+    int16_t* tmp = tmp_array;
+    int shift = denom + 14 - BITDEPTH;
+    int offset = 1 << (shift - 1);
+
+    src -= QPEL_EXTRA_BEFORE * srcstride;
+    filter = width == 4 && height == 4 ? ov_mc_filters_4[mx - 1] : ov_mc_filters[mx - 1];
+    for (y = 0; y < height + QPEL_EXTRA; y++) {
+        for (x = 0; x < width; x++) {
+            tmp[x] = MCP_FILTER_L(src, 1, filter) >> (BITDEPTH - 8);
+        }
+        src += srcstride;
+        tmp += MAX_PB_SIZE;
+    }
+
+    tmp = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
+    filter = width == 4 && height == 4 ? ov_mc_filters_4[my - 1] : ov_mc_filters[my - 1];
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            dst[x] = ov_bdclip((((MCP_FILTER_L(tmp, MAX_PB_SIZE, filter) >> 6) * wx + offset) >> shift) + offset2);
+        }
+        tmp += MAX_PB_SIZE;
+        dst += dststride;
+    }
+}
+
+static void
+put_weighted_uni_h_c(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
+                   ptrdiff_t _srcstride, int height,
+                   int denom, int wx, int offset2,
+                   intptr_t mx, intptr_t my,
+                   int width)
+{
+    int x, y;
+    const OVSample* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    OVSample* dst = (OVSample*)_dst;
+    ptrdiff_t dststride = _dststride;
+    const int8_t* filter = ov_mcp_filters_c[mx - 1];
+    int shift = denom + 14 - BITDEPTH;
+    int offset = 1 << (shift - 1);
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            dst[x] = ov_bdclip((((MCP_FILTER_C(src, 1, filter) >> (BITDEPTH - 8)) * wx + offset) >> shift) + offset2);
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
+static void
+put_weighted_uni_v_c(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
+                   ptrdiff_t _srcstride, int height,
+                   int denom, int wx, int offset2,
+                   intptr_t mx, intptr_t my,
+                   int width)
+{
+    int x, y;
+    const OVSample* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    OVSample* dst = (OVSample*)_dst;
+    ptrdiff_t dststride = _dststride;
+    const int8_t* filter = ov_mcp_filters_c[my - 1];
+    int shift = denom + 14 - BITDEPTH;
+    int offset = 1 << (shift - 1);
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            dst[x] = ov_bdclip((((MCP_FILTER_C(src, srcstride, filter) >> (BITDEPTH - 8)) * wx + offset) >> shift) + offset2);
+        }
+        src += srcstride;
+        dst += dststride;
+    }
+}
+
+static void
+put_weighted_uni_hv_c(OVSample* _dst, ptrdiff_t _dststride, const OVSample* _src,
+                    ptrdiff_t _srcstride, int height,
+                    int denom, int wx, int offset2,
+                    intptr_t mx, intptr_t my,
+                    int width)
+{
+    int x, y;
+    const int8_t* filter;
+    const OVSample* src = _src;
+    ptrdiff_t srcstride = _srcstride;
+    OVSample* dst = (OVSample*)_dst;
+    ptrdiff_t dststride = _dststride;
+    int16_t tmp_array[(MAX_PB_SIZE + EPEL_EXTRA) * MAX_PB_SIZE];
+    int16_t* tmp = tmp_array;
+    int shift = denom + 14 - BITDEPTH;
+    int offset = 1 << (shift - 1);
+
+    src -= EPEL_EXTRA_BEFORE * srcstride;
+    filter =  ov_mcp_filters_c[mx - 1];
+    for (y = 0; y < height + EPEL_EXTRA; y++) {
+        for (x = 0; x < width; x++) {
+            tmp[x] = MCP_FILTER_C(src, 1, filter) >> (BITDEPTH - 8);
+        }
+        src += srcstride;
+        tmp += MAX_PB_SIZE;
+    }
+
+    tmp = tmp_array + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;
+    filter = ov_mcp_filters_c[my - 1];
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            dst[x] = ov_bdclip((((MCP_FILTER_C(tmp, MAX_PB_SIZE, filter) >> 6) * wx + offset) >> shift) + offset2);
+        }
+        tmp += MAX_PB_SIZE;
+        dst += dststride;
+    }
+}
+
+static void
 put_vvc_pel_rpr(uint16_t* _dst, ptrdiff_t _dststride, const OVSample* _src,
                    ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,
                    int width, uint8_t filter_idx)
@@ -1684,6 +1888,11 @@ BD_DECL(rcn_init_mc_functions)(struct RCNFunctions *const rcn_funcs)
         mc_l->bidir1[2][i] = &put_vvc_qpel_bi_v;
         mc_l->bidir1[3][i] = &put_vvc_qpel_bi_hv;
 
+        mc_l->unidir_w[0][i] = &put_weighted_uni_pixels;
+        mc_l->unidir_w[1][i] = &put_weighted_uni_h;
+        mc_l->unidir_w[2][i] = &put_weighted_uni_v;
+        mc_l->unidir_w[3][i] = &put_weighted_uni_hv;
+
         mc_l->bidir_w[0][i] = &put_weighted_pel_bi_pixels;
         mc_l->bidir_w[1][i] = &put_weighted_qpel_bi_h;
         mc_l->bidir_w[2][i] = &put_weighted_qpel_bi_v;
@@ -1716,6 +1925,11 @@ BD_DECL(rcn_init_mc_functions)(struct RCNFunctions *const rcn_funcs)
         mc_c->bidir1[1][i] = &put_vvc_epel_bi_h;
         mc_c->bidir1[2][i] = &put_vvc_epel_bi_v;
         mc_c->bidir1[3][i] = &put_vvc_epel_bi_hv;
+
+        mc_c->unidir_w[0][i] = &put_weighted_uni_pixels;
+        mc_c->unidir_w[1][i] = &put_weighted_uni_h_c;
+        mc_c->unidir_w[2][i] = &put_weighted_uni_v_c;
+        mc_c->unidir_w[3][i] = &put_weighted_uni_hv_c;
 
         mc_c->bidir_w[0][i] = &put_weighted_pel_bi_pixels;
         mc_c->bidir_w[1][i] = &put_weighted_epel_bi_h;
