@@ -4351,7 +4351,7 @@ put_weighted_ciip_pixels_avx2(uint16_t* dst, int dststride,
     __m256i cl = _mm256_unpacklo_epi16(c1l, c2l);
     __m256i offsetl = _mm256_set1_epi32(1 << (shift - 1));
     for (y = 0; y < height; y++) {
-        for (x = 0; x < width /*- width%16*/; x+=16) {
+        for (x = 0; x < width ; x+=16) {
             __m256i x1, x2, t1, t2;
             x1l = _mm256_loadu_si256((__m256i*)&src_intra[x]);
             x2l = _mm256_loadu_si256((__m256i*)&src_inter[x]);
@@ -4378,35 +4378,6 @@ put_weighted_ciip_pixels_avx2(uint16_t* dst, int dststride,
 
             _mm256_storeu_si256((__m256i*)&dst[x], x1l);
         }
-        #if 0
-        for (; x < width; x+=16) {
-            __m256i x1, x2, t1, t2;
-            x1 = _mm256_loadu_si256((__m256i*)&src_intra[x]);
-            x2 = _mm256_loadu_si256((__m256i*)&src_inter[x]);
-
-            t1 = _mm256_unpacklo_epi16(x1, x2);
-            t2 = _mm256_unpackhi_epi16(x1, x2);
-
-            t1 = _mm256_madd_epi16(t1, c);
-            t2 = _mm256_madd_epi16(t2, c);
-
-            x1 = _mm256_add_epi32(t1, offset);
-            x2 = _mm256_add_epi32(t2, offset);
-
-            x1 = _mm256_srai_epi32(x1, shift);
-            x2 = _mm256_srai_epi32(x2, shift);
-
-            x1 = _mm256_max_epi32(x1, _mm256_setzero_si256());
-            x2 = _mm256_max_epi32(x2, _mm256_setzero_si256());
-
-            x1 = _mm256_min_epi32(x1, _mm256_set1_epi32(1023));
-            x2 = _mm256_min_epi32(x2, _mm256_set1_epi32(1023));
-
-            x1 = _mm256_packs_epi32(x1,x2);
-
-            _mm256_storeu_si256((__m256i*)&dst[x], x1);
-        }
-        #endif
         src_intra += stride_intra;
         src_inter += stride_inter;
         dst += dststride;
