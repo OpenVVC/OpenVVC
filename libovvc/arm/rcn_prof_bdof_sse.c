@@ -63,22 +63,20 @@
 #define BDOF_WGT_LIMIT ((1 << 4) - 1)
 
 
-static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
+static void rcn_prof_sse0(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
          const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
-         const int16_t* dmv_scale_h, const int16_t* dmv_scale_v,
-         uint8_t bidir)
+         const int16_t* dmv_scale_h, const int16_t* dmv_scale_v)
 {
     //FIXME: Convert dmv_scale to int16_t to avoid _mm_packs_epi32
-    if (!bidir) {
         __m128i sh1 = _mm_loadu_si128((__m128i *)&dmv_scale_h[0]);
-        __m128i sh2 = _mm_loadu_si128((__m128i *)&dmv_scale_h[4]);
         __m128i sh3 = _mm_loadu_si128((__m128i *)&dmv_scale_h[8]);
-        __m128i sh4 = _mm_loadu_si128((__m128i *)&dmv_scale_h[12]);
-
         __m128i sv1 = _mm_loadu_si128((__m128i *)&dmv_scale_v[0]);
-        __m128i sv2 = _mm_loadu_si128((__m128i *)&dmv_scale_v[4]);
         __m128i sv3 = _mm_loadu_si128((__m128i *)&dmv_scale_v[8]);
-        __m128i sv4 = _mm_loadu_si128((__m128i *)&dmv_scale_v[12]);
+
+        __m128i sh2 = _mm_bsrli_si128(sh1, 8);
+        __m128i sh4 = _mm_bsrli_si128(sh3, 8);
+        __m128i sv2 = _mm_bsrli_si128(sv1, 8);
+        __m128i sv4 = _mm_bsrli_si128(sv3, 8);
 
         __m128i x1 = _mm_loadl_epi64((__m128i *)&grad_x[0*grad_stride]);
         __m128i x2 = _mm_loadl_epi64((__m128i *)&grad_x[1*grad_stride]);
@@ -154,19 +152,26 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
         _mm_storel_epi64((__m128i *)&dst[1*dst_stride], _mm_bsrli_si128(x1, 8));
         _mm_storel_epi64((__m128i *)&dst[2*dst_stride], x3);
         _mm_storel_epi64((__m128i *)&dst[3*dst_stride], _mm_bsrli_si128(x3, 8));
-    } else {
+}
+
+static void rcn_prof_sse1(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
+         const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
+         const int16_t* dmv_scale_h, const int16_t* dmv_scale_v)
+{
+    //FIXME: Convert dmv_scale to int16_t to avoid _mm_packs_epi32
       __m128i min_val = _mm_set1_epi16(-PROF_DELTA_LIMIT);
       __m128i max_val = _mm_set1_epi16(PROF_DELTA_LIMIT - 1);
 
       __m128i sh1 = _mm_loadu_si128((__m128i *)&dmv_scale_h[0]);
-      __m128i sh2 = _mm_loadu_si128((__m128i *)&dmv_scale_h[4]);
       __m128i sh3 = _mm_loadu_si128((__m128i *)&dmv_scale_h[8]);
-      __m128i sh4 = _mm_loadu_si128((__m128i *)&dmv_scale_h[12]);
 
       __m128i sv1 = _mm_loadu_si128((__m128i *)&dmv_scale_v[0]);
-      __m128i sv2 = _mm_loadu_si128((__m128i *)&dmv_scale_v[4]);
       __m128i sv3 = _mm_loadu_si128((__m128i *)&dmv_scale_v[8]);
-      __m128i sv4 = _mm_loadu_si128((__m128i *)&dmv_scale_v[12]);
+
+      __m128i sh2 = _mm_bsrli_si128(sh1, 8);
+      __m128i sh4 = _mm_bsrli_si128(sh3, 8);
+      __m128i sv2 = _mm_bsrli_si128(sv1, 8);
+      __m128i sv4 = _mm_bsrli_si128(sv3, 8);
 
       __m128i x1 = _mm_loadl_epi64((__m128i *)&grad_x[0*grad_stride]);
       __m128i x2 = _mm_loadl_epi64((__m128i *)&grad_x[1*grad_stride]);
@@ -219,7 +224,6 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
       _mm_storel_epi64((__m128i *)&dst[1*dst_stride], _mm_bsrli_si128(x1, 8));
       _mm_storel_epi64((__m128i *)&dst[2*dst_stride], x3);
       _mm_storel_epi64((__m128i *)&dst[3*dst_stride], _mm_bsrli_si128(x3, 8));
-    }
 }
 
 
@@ -336,7 +340,7 @@ compute_prof_grad_16_sse(const uint16_t* src, int src_stride, int sb_w, int sb_h
 }
 
 static void
-compute_prof_grad_sse(const int16_t* src, int src_stride, int sb_w, int sb_h,
+compute_prof_grad_sse(const uint16_t* src, int src_stride, int sb_w, int sb_h,
                   int grad_stride, int16_t* grad_x, int16_t* grad_y)
 {
     if (sb_w == 16) {
@@ -425,7 +429,8 @@ static void
 tmp_prof_mrg_w_sse(OVSample* _dst, ptrdiff_t _dststride,
                const int16_t* _src0, ptrdiff_t _srcstride,
                const int16_t* _src1, int height, intptr_t mx,
-               intptr_t my, int width, int wt0, int wt1)
+               intptr_t my, int width, int denom, int16_t wt0,
+               int16_t wt1, int16_t offset0, int16_t offset1)
 {
     int x, y;
     const int16_t* src0 = (int16_t *)_src0;
@@ -433,11 +438,13 @@ tmp_prof_mrg_w_sse(OVSample* _dst, ptrdiff_t _dststride,
     ptrdiff_t srcstride = _srcstride;
     OVSample* dst = (OVSample*)_dst;
     ptrdiff_t dststride = _dststride;
-    int log_weights = floor_log2(wt0 + wt1);
-    int shift = 14 - BITDEPTH + log_weights;
+    int log_weights = denom;
+    int shift = 14 + 1 - BITDEPTH;
+    int log2Wd = log_weights + shift - 1;
+    shift = log2Wd + 1;
 
-    __m128i offset = _mm_set1_epi32(2*((1 << (13 - BITDEPTH))) << (log_weights - 1));
-    __m128i wt = _mm_set1_epi32(wt0&0xFFFF | (wt1<<16));
+    __m128i offset = _mm_set1_epi32((offset0 + offset1 + 1) << log2Wd);
+    __m128i wt = _mm_set1_epi32(wt0&0xFFFF | ((uint32_t)wt1<<16));
 
     __m128i src00 = _mm_loadl_epi64((__m128i *)&src0[0*srcstride]);
     __m128i src01 = _mm_loadl_epi64((__m128i *)&src0[1*srcstride]);
@@ -603,7 +610,7 @@ derive_bdof_weights(const int16_t* ref0, const int16_t* ref1,
     if (sum_abs_x) {
         int log2_renorm_x = floor_log2(sum_abs_x);
 
-        wgt_x = (sum_delta_x << 2) >> log2_renorm_x;
+        wgt_x = (sum_delta_x * 4) >> log2_renorm_x;
         wgt_x = ov_clip(wgt_x, -BDOF_WGT_LIMIT, BDOF_WGT_LIMIT);
         *weight_x = wgt_x;
     }
@@ -615,10 +622,10 @@ derive_bdof_weights(const int16_t* ref0, const int16_t* ref1,
         if (wgt_x) {
             int high = sum_avg_x_y_signs >> 12;
             int low  = sum_avg_x_y_signs & ((1 << 12) - 1);
-            x_offset = (((wgt_x * high) << 12) + (wgt_x * low)) >> 1;
+            x_offset = ((int32_t)((uint32_t)(wgt_x * high) << 12) + (wgt_x * low)) >> 1;
         }
 
-        wgt_y = ((sum_delta_y << 2) - x_offset) >> log2_renorm_y;
+        wgt_y = ((sum_delta_y * 4) - x_offset) >> log2_renorm_y;
         wgt_y = ov_clip(wgt_y, -BDOF_WGT_LIMIT, BDOF_WGT_LIMIT);
         *weight_y = wgt_y;
     }
@@ -808,7 +815,8 @@ void
 rcn_init_prof_functions_sse(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->prof.grad = &compute_prof_grad_sse;
-    rcn_funcs->prof.rcn = &rcn_prof_sse;
+    rcn_funcs->prof.rcn0 = &rcn_prof_sse0;
+    rcn_funcs->prof.rcn1 = &rcn_prof_sse1;
     rcn_funcs->prof.tmp_prof_mrg = &tmp_prof_mrg_sse;
     rcn_funcs->prof.tmp_prof_mrg_w = &tmp_prof_mrg_w_sse;
 }
