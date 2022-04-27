@@ -1207,7 +1207,7 @@ put_vvc_pel_rpr_sse_bi(uint16_t* _dst, ptrdiff_t _dststride, const uint16_t* _sr
     }
 }
 
-    void
+static void
 put_vvc_qpel_rpr_sse_bi_sum(uint16_t* _dst, ptrdiff_t _dststride,
                             const uint16_t* _src0, ptrdiff_t _src0stride,
                             const uint16_t* _src1, ptrdiff_t _src1stride,
@@ -8715,7 +8715,7 @@ put_weighted_ciip_pixels_sse(uint16_t* dst, int dststride,
     }
 }
 
-    void
+void
 rcn_init_mc_functions_sse(struct RCNFunctions* const rcn_funcs)
 {
     struct MCFunctions* const mc_l = &rcn_funcs->mc_l;
