@@ -226,11 +226,11 @@ typedef uint64_t (*DMVRSADFunc)(const uint16_t *ref0, const uint16_t *ref1, int1
 
 typedef uint8_t (*DMVRComputeSADsFunc)(const uint16_t *ref0, const uint16_t *ref1, uint64_t *sad_array, int sb_w, int sb_h);
 
-typedef void (*PROFGradFunction)(const int16_t* src, int src_stride, int sb_w, int sb_h, int grad_stride, int16_t* grad_x, int16_t* grad_y);
+typedef void (*PROFGradFunction)(const uint16_t* src, int src_stride, int sb_w, int sb_h, int grad_stride, int16_t* grad_x, int16_t* grad_y);
 
 typedef void (*PROFFunction)(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
                              const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
-                             const int16_t* dmv_scale_h, const int16_t* dmv_scale_v, uint8_t bidir);
+                             const int16_t* dmv_scale_h, const int16_t* dmv_scale_v);
 
 typedef void (*BDOFSBFunction)(const int16_t* src0, int src0_stride,
                                const int16_t* src1, int src1_stride,
@@ -357,7 +357,13 @@ struct DMVRFunctions{
 
 struct PROFFunctions{
     PROFGradFunction grad;
-    PROFFunction rcn;
+    PROFFunction rcn0;
+    PROFFunction rcn1;
+    void (*rcn0_w)(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
+                   const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
+                   const int16_t* dmv_scale_h, const int16_t* dmv_scale_v,
+                   int16_t denom, int16_t w, int16_t offset);
+
     void (*tmp_prof_mrg)(OVSample* _dst, ptrdiff_t _dststride,
                          const int16_t* _src0, ptrdiff_t _srcstride,
                          const int16_t* _src1, int height, intptr_t mx,
@@ -368,7 +374,7 @@ struct PROFFunctions{
                            const int16_t* _src1, int height, intptr_t mx,
                            intptr_t my, int width, int wt0, int wt1);
 
-    void (*extend_prof_buff)(const OVSample *const src, int16_t *dst_prof, int16_t ref_stride,
+    void (*extend_prof_buff)(const OVSample *const src, uint16_t *dst_prof, int16_t ref_stride,
                              uint8_t ext_x, uint8_t ext_y);
 
 

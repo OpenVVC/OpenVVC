@@ -148,7 +148,7 @@ compute_prof_grad_16_avx2(const uint16_t* src, int src_stride, int sb_w, int sb_
 }
 
 static void
-compute_prof_grad_avx2(const int16_t* src, int src_stride, int sb_w, int sb_h,
+compute_prof_grad_avx2(const uint16_t* src, int src_stride, int sb_w, int sb_h,
                   int grad_stride, int16_t* grad_x, int16_t* grad_y)
 {
     if (sb_w == 16) {

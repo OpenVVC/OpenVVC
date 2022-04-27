@@ -53,13 +53,11 @@
 #define BDOF_WGT_LIMIT ((1 << 4) - 1)
 
 
-static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
+static void rcn_prof_sse0(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
          const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
-         const int16_t* dmv_scale_h, const int16_t* dmv_scale_v,
-         uint8_t bidir)
+         const int16_t* dmv_scale_h, const int16_t* dmv_scale_v)
 {
     //FIXME: Convert dmv_scale to int16_t to avoid _mm_packs_epi32
-    if (!bidir) {
         __m128i sh1 = _mm_loadu_si128((__m128i *)&dmv_scale_h[0]);
         __m128i sh3 = _mm_loadu_si128((__m128i *)&dmv_scale_h[8]);
         __m128i sv1 = _mm_loadu_si128((__m128i *)&dmv_scale_v[0]);
@@ -144,7 +142,13 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
         _mm_storel_epi64((__m128i *)&dst[1*dst_stride], _mm_bsrli_si128(x1, 8));
         _mm_storel_epi64((__m128i *)&dst[2*dst_stride], x3);
         _mm_storel_epi64((__m128i *)&dst[3*dst_stride], _mm_bsrli_si128(x3, 8));
-    } else {
+}
+
+static void rcn_prof_sse1(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
+         const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
+         const int16_t* dmv_scale_h, const int16_t* dmv_scale_v)
+{
+    //FIXME: Convert dmv_scale to int16_t to avoid _mm_packs_epi32
       __m128i min_val = _mm_set1_epi16(-PROF_DELTA_LIMIT);
       __m128i max_val = _mm_set1_epi16(PROF_DELTA_LIMIT - 1);
 
@@ -210,7 +214,6 @@ static void rcn_prof_sse(OVSample* dst, int dst_stride, const int16_t* src, int 
       _mm_storel_epi64((__m128i *)&dst[1*dst_stride], _mm_bsrli_si128(x1, 8));
       _mm_storel_epi64((__m128i *)&dst[2*dst_stride], x3);
       _mm_storel_epi64((__m128i *)&dst[3*dst_stride], _mm_bsrli_si128(x3, 8));
-    }
 }
 
 
@@ -327,7 +330,7 @@ compute_prof_grad_16_sse(const uint16_t* src, int src_stride, int sb_w, int sb_h
 }
 
 static void
-compute_prof_grad_sse(const int16_t* src, int src_stride, int sb_w, int sb_h,
+compute_prof_grad_sse(const uint16_t* src, int src_stride, int sb_w, int sb_h,
                   int grad_stride, int16_t* grad_x, int16_t* grad_y)
 {
     if (sb_w == 16) {
@@ -799,7 +802,8 @@ void
 rcn_init_prof_functions_sse(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->prof.grad = &compute_prof_grad_sse;
-    rcn_funcs->prof.rcn = &rcn_prof_sse;
+    rcn_funcs->prof.rcn0 = &rcn_prof_sse0;
+    rcn_funcs->prof.rcn1 = &rcn_prof_sse1;
     rcn_funcs->prof.tmp_prof_mrg = &tmp_prof_mrg_sse;
     rcn_funcs->prof.tmp_prof_mrg_w = &tmp_prof_mrg_w_sse;
 }

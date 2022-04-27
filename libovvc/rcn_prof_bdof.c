@@ -150,7 +150,7 @@ tmp_prof_mrg_w(OVSample* _dst, ptrdiff_t _dststride,
 }
 
 static void
-compute_prof_grad(const int16_t* src, int src_stride, int sb_w, int sb_h,
+compute_prof_grad(const uint16_t* src, int src_stride, int sb_w, int sb_h,
                   int grad_stride, int16_t* grad_x, int16_t* grad_y)
 {
     int y, x;
@@ -173,7 +173,7 @@ compute_prof_grad(const int16_t* src, int src_stride, int sb_w, int sb_h,
 }
 
 static void
-extend_prof_buff(const OVSample *const src, int16_t *dst_prof, int16_t ref_stride, uint8_t ext_x, uint8_t ext_y)
+extend_prof_buff(const OVSample *const src, uint16_t *dst_prof, int16_t ref_stride, uint8_t ext_x, uint8_t ext_y)
 {
     const OVSample *ref = src  - ref_stride  - 1;
     int16_t     *dst = dst_prof;
@@ -225,59 +225,102 @@ extend_prof_buff(const OVSample *const src, int16_t *dst_prof, int16_t ref_strid
 }
 
 static void
-rcn_prof(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
-         const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
-         const int16_t* dmv_scale_h, const int16_t* dmv_scale_v,
-         uint8_t bidir)
+rcn_prof0_w(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
+            const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
+            const int16_t* dmv_scale_h, const int16_t* dmv_scale_v,
+            int16_t denom, int16_t wx, int16_t offset2)
+{
+    int idx = 0;
+    int x, y;
+    int shift  = denom + PROF_SMP_SHIFT;
+    int offset = 1 << (shift - 1);
+
+    for (y = 0; y < SB_H; ++y) {
+        for (x = 0; x < SB_W; ++x) {
+            int16_t add = dmv_scale_h[idx] * grad_x[x] + dmv_scale_v[idx] * grad_y[x];
+            int16_t val;
+
+            add = ov_clip(add, -PROF_DELTA_LIMIT, PROF_DELTA_LIMIT - 1);
+
+            val = src[x] + add;
+
+            /* Clipping if not bi directional */
+            val = ((val * wx + offset) >> shift) + offset2;
+
+            dst[x] = ov_bdclip(val);
+
+            idx++;
+        }
+
+        grad_x += grad_stride;
+        grad_y += grad_stride;
+
+        dst += dst_stride;
+        src += src_stride;
+    }
+}
+
+static void
+rcn_prof0(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
+          const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
+          const int16_t* dmv_scale_h, const int16_t* dmv_scale_v)
 {
     int idx = 0;
     int x, y;
 
-    if (bidir) {
-        int16_t *_dst = (int16_t *)dst;
-        for (y = 0; y < SB_H; ++y) {
-            for (x = 0; x < SB_W; ++x) {
-                int32_t add = dmv_scale_h[idx] * grad_x[x] + dmv_scale_v[idx] * grad_y[x];
-                int16_t val;
+    for (y = 0; y < SB_H; ++y) {
+        for (x = 0; x < SB_W; ++x) {
+            int16_t add = dmv_scale_h[idx] * grad_x[x] + dmv_scale_v[idx] * grad_y[x];
+            int16_t val;
 
-                add = ov_clip(add, -PROF_DELTA_LIMIT, PROF_DELTA_LIMIT - 1);
+            add = ov_clip(add, -PROF_DELTA_LIMIT, PROF_DELTA_LIMIT - 1);
 
-                val = src[x] + add;
+            val = src[x] + add;
 
-                _dst[x] = val;
+            /* Clipping if not bi directional */
+            val = (val + (1 << (13 - BITDEPTH))) >> PROF_SMP_SHIFT;
 
-                idx++;
-            }
+            dst[x] = ov_bdclip(val);
 
-            grad_x += grad_stride;
-            grad_y += grad_stride;
-
-            _dst += dst_stride;
-            src += src_stride;
+            idx++;
         }
-    } else {
-        for (y = 0; y < SB_H; ++y) {
-            for (x = 0; x < SB_W; ++x) {
-                int32_t add = dmv_scale_h[idx] * grad_x[x] + dmv_scale_v[idx] * grad_y[x];
-                int16_t val;
 
-                add = ov_clip(add, -PROF_DELTA_LIMIT, PROF_DELTA_LIMIT - 1);
+        grad_x += grad_stride;
+        grad_y += grad_stride;
 
-                val = src[x] + add;
+        dst += dst_stride;
+        src += src_stride;
+    }
+}
 
-                /* Clipping if not bi directional */
-                val = (val + (1 << (13 - BITDEPTH))) >> PROF_SMP_SHIFT;
-                dst[x] = ov_bdclip(val);
+static void
+rcn_prof1(OVSample* dst, int dst_stride, const int16_t* src, int src_stride,
+          const int16_t* grad_x, const int16_t* grad_y, int grad_stride,
+          const int16_t* dmv_scale_h, const int16_t* dmv_scale_v)
+{
+    int idx = 0;
+    int x, y;
 
-                idx++;
-            }
+    int16_t *_dst = (int16_t *)dst;
+    for (y = 0; y < SB_H; ++y) {
+        for (x = 0; x < SB_W; ++x) {
+            int16_t add = dmv_scale_h[idx] * grad_x[x] + dmv_scale_v[idx] * grad_y[x];
+            int16_t val;
 
-            grad_x += grad_stride;
-            grad_y += grad_stride;
+            add = ov_clip(add, -PROF_DELTA_LIMIT, PROF_DELTA_LIMIT - 1);
 
-            dst += dst_stride;
-            src += src_stride;
+            val = src[x] + add;
+
+            _dst[x] = val;
+
+            idx++;
         }
+
+        grad_x += grad_stride;
+        grad_y += grad_stride;
+
+        _dst += dst_stride;
+        src += src_stride;
     }
 }
 
@@ -285,7 +328,9 @@ void
 BD_DECL(rcn_init_prof_functions)(struct RCNFunctions *const rcn_funcs)
 {
     rcn_funcs->prof.grad = &compute_prof_grad;
-    rcn_funcs->prof.rcn  = &rcn_prof;
+    rcn_funcs->prof.rcn0   = &rcn_prof0;
+    rcn_funcs->prof.rcn0_w = &rcn_prof0_w;
+    rcn_funcs->prof.rcn1   = &rcn_prof1;
     rcn_funcs->prof.tmp_prof_mrg = &tmp_prof_mrg;
     rcn_funcs->prof.tmp_prof_mrg_w = &tmp_prof_mrg_w;
     rcn_funcs->prof.extend_prof_buff = &extend_prof_buff;
