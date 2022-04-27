@@ -5094,10 +5094,6 @@ put_vvc_bi_w_qpel_v4_14_10_sse(OVSample* _dst,
         c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
     }
 
-    // c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
-    // c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
-    // c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
-    // c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x += 4) {
             __m128i r5;
@@ -5273,10 +5269,6 @@ put_vvc_uni_w_qpel_v4_14_10_sse(OVSample* _dst,
         c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
     }
 
-    // c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][0]);
-    // c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][1]);
-    // c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][2]);
-    // c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[my - 1][3]);
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x += 4) {
             x1 = _mm_loadu_si128((__m128i*)&src[x - 3 * srcstride]);
@@ -6750,10 +6742,6 @@ put_vvc_bi_w_qpel_h4_10_sse(OVSample* _dst,
         c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][3]);
     }
 
-    // c1 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][0]);
-    // c2 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][1]);
-    // c3 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][2]);
-    // c4 = _mm_load_si128((__m128i*)oh_hevc_qpel_filters_sse[mx - 1][3]);
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x += 4) {
             __m128i r5;
