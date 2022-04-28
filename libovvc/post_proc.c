@@ -110,7 +110,7 @@ pp_process_frame(const OVSEI* sei, OVFrame **frame_p)
 #if ENABLE_SLHDR
         if(sei->sei_slhdr){
             pp_funcs.pp_sdr_to_hdr(sei->sei_slhdr->slhdr_context, srcComp, dstComp, 
-                                   sei->sei_slhdr->payload_array, frame->width[0], frame->height[0]);
+                                   sei->sei_slhdr->payload_array, frame->width, frame->height);
         }
 #endif
         if (sei->upscale_flag){
