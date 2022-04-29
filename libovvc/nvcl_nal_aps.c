@@ -62,7 +62,7 @@ validate_aps(OVNVCLReader *rdr, OVAPS *const aps)
 }
 
 
-void 
+static void
 nvcl_read_alf_data(OVNVCLReader *const rdr, struct OVALFData* alf_data,
                    uint8_t aps_chroma_present_flag)
 {
