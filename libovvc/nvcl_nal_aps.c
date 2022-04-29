@@ -39,14 +39,14 @@
 #include "nvcl_utils.h"
 #include "nvcl_structures.h"
 
-// typedef struct OVScalingList
-// {
-//     uint8_t scaling_list_copy_mode_flag[id];
-//     uint8_t scaling_list_pred_mode_flag[id];
-//     uint8_t scaling_list_pred_id_delta[id];
-//     uint8_t scaling_list_dc_coef[id − 14];
-//     uint8_t scaling_list_delta_coef[id][i];
-// } OVScalingList;
+typedef struct OVScalingList
+{
+    uint8_t scaling_list_copy_mode_flag[28];
+    uint8_t scaling_list_pred_mode_flag[28];
+    int16_t scaling_list_pred_id_delta[28];
+    int16_t scaling_list_dc_coef[28 - 14];
+    int16_t scaling_list_delta_coef[28][64];
+} OVScalingList;
 
 enum APSType {
    APS_ALF          = 0,
@@ -187,6 +187,328 @@ nvcl_read_lmcs_data(OVNVCLReader *const rdr, struct OVLMCSData* lmcs,
     return 0;
 }
 
+static void
+nvcl_read_scaling_list_data(OVNVCLReader *const rdr, struct OVScalingList* sl,
+                             uint8_t aps_chroma_present_flag)
+{
+    int id;
+    if (aps_chroma_present_flag) {
+        for (id = 0; id < 2; id++) {
+            uint8_t is_pred_or_cpy;
+            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
+            }
+
+            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
+
+            if (is_pred_or_cpy && id != 0) {
+                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
+            }
+
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                int i;
+                for (i = 0; i < 4; i++) {
+                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
+                }
+            }
+        }
+
+        for (; id < 8; id++) {
+            uint8_t is_pred_or_cpy;
+            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
+            }
+
+            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
+
+            if (is_pred_or_cpy && id != 2) {
+                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
+            }
+
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                int i;
+                for (i = 0; i < 16; i++) {
+                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
+                }
+            }
+        }
+
+        for (; id < 9; id++) {
+            uint8_t is_pred_or_cpy;
+            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
+            }
+
+            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
+
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+
+                int i;
+                for (i = 0; i < 64; i++) {
+                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
+                }
+            }
+        }
+
+        for (; id < 14; id++) {
+            uint8_t is_pred_or_cpy;
+            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
+            }
+
+            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
+
+            if (is_pred_or_cpy) {
+                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
+            }
+
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+
+                int i;
+                for (i = 0; i < 64; i++) {
+                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
+                }
+            }
+        }
+
+        for (; id < 26; id++) {
+            uint8_t is_pred_or_cpy;
+            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
+            }
+
+            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
+
+            if (is_pred_or_cpy) {
+                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
+            }
+
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+
+                int i;
+                sl->scaling_list_dc_coef[id - 14] = nvcl_read_s_expgolomb(rdr);
+
+                for (i = 0; i < 64; i++) {
+                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
+                }
+            }
+        }
+
+        for (; id < 27; id++) {
+            uint8_t is_pred_or_cpy;
+            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
+            }
+
+            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
+
+            if (is_pred_or_cpy) {
+                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
+            }
+
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                int i;
+                sl->scaling_list_dc_coef[id - 14] = nvcl_read_s_expgolomb(rdr);
+
+                for (i = 0; i < 48; i++) {
+                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
+                }
+            }
+        }
+
+        for (; id < 28; id++) {
+            uint8_t is_pred_or_cpy;
+            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
+            }
+
+            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
+
+            if (is_pred_or_cpy) {
+                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
+            }
+
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+
+                int i;
+                sl->scaling_list_dc_coef[id - 14] = nvcl_read_s_expgolomb(rdr);
+
+                for (i = 0; i < 48; i++) {
+                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
+                }
+            }
+        }
+    } else {
+
+        for (id = 2; id < 5; id += 3) {
+
+            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
+            }
+
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                int i;
+                for (i = 0; i < 16; i++) {
+                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
+                }
+            }
+        }
+
+        for (id = 5; id < 8; id += 3) {
+            uint8_t is_pred_or_cpy;
+            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
+            }
+
+            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
+
+            if (is_pred_or_cpy) {
+                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
+            }
+
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                int i;
+                for (i = 0; i < 16; i++) {
+                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
+                }
+            }
+        }
+
+        for (id = 8; id < 14; id += 3) {
+            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
+            }
+
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+
+                int i;
+                for (i = 0; i < 64; i++) {
+                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
+                }
+            }
+        }
+
+        for (id = 11; id < 14; id += 3) {
+            uint8_t is_pred_or_cpy;
+            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
+            }
+
+            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
+
+            if (is_pred_or_cpy) {
+                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
+            }
+
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+
+                int i;
+                for (i = 0; i < 64; i++) {
+                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
+                }
+            }
+        }
+
+        for (id = 14; id < 26; id += 3) {
+            uint8_t is_pred_or_cpy;
+
+            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
+
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
+            }
+
+            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
+
+            if (is_pred_or_cpy) {
+                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
+            }
+
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                sl->scaling_list_dc_coef[id - 14] = nvcl_read_s_expgolomb(rdr);
+
+                int i;
+                for (i = 0; i < 64; i++) {
+                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
+                }
+            }
+        }
+
+        for (id = 26; id < 27; id += 3) {
+            uint8_t is_pred_or_cpy;
+
+            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
+
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
+            }
+
+            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
+
+            if (is_pred_or_cpy) {
+                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
+            }
+
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+
+                int i;
+                sl->scaling_list_dc_coef[id - 14] = nvcl_read_s_expgolomb(rdr);
+
+                for (i = 0; i < 48; i++) {
+                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
+                }
+            }
+        }
+
+        for (id = 27; id < 28; id++) {
+            uint8_t is_pred_or_cpy;
+            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
+            }
+
+            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
+
+            if (is_pred_or_cpy) {
+                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
+            }
+
+            if (!sl->scaling_list_copy_mode_flag[id]) {
+
+                int i;
+                sl->scaling_list_dc_coef[id - 14] = nvcl_read_s_expgolomb(rdr);
+
+                for (i = 0; i < 48; i++) {
+                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
+                }
+            }
+        }
+    }
+}
+
 int
 nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
               OVNVCLCtx *const nvcl_ctx)
@@ -201,6 +523,9 @@ nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
         nvcl_read_lmcs_data(rdr, &aps->aps_lmcs_data, aps->aps_chroma_present_flag);
     } else if (aps->aps_params_type == APS_SCALING_LIST) {
         ov_log(NULL, OVLOG_WARNING, "Ignored unsupported scaling list APS.\n");
+        OVScalingList sl = {0};
+        nvcl_read_scaling_list_data(rdr, &sl, aps->aps_chroma_present_flag);
+
     }
 
     aps->aps_extension_flag = nvcl_read_flag(rdr);
@@ -253,364 +578,3 @@ cleanup:
     return ret;
 }
 
-
-#if 0
-scaling_list_data()
-{
-    for (id = 0; id < 28; id ++) {
-        int matrixSize = id < 2 ? 2 : ( id < 8 ? 4 : 8);
-        if (aps_chroma_present_flag || id % 3 == 2 || id == 27) {
-            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
-            }
-
-            if ((scaling_list_copy_mode_flag[id] || scaling_list_pred_mode_flag[id]) && id != 0 && id != 2 && id != 8) {
-                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
-            }
-
-            if (!scaling_list_copy_mode_flag[id]) {
-                int nextCoef = 0;
-                if (id > 13) {
-                    sl->scaling_list_dc_coef[id − 14] = nvcl_read_s_expgolomb(rdr);
-                    nextCoef += sl->scaling_list_dc_coef[id − 14]
-                }
-
-                for (i = 0; i < matrixSize * matrixSize; i++) {
-                    int x = DiagScanOrder[3][3][i][0];
-                    int y = DiagScanOrder[3][3][i][1];
-                    if (!( id > 25 && x >= 4 && y >= 4)) {
-                        sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
-                        nextCoef += scaling_list_delta_coef[id][i];
-                           ScalingList[id][i] = nextCoef;
-                    }
-                }
-            }
-        }
-    }
-}
-#endif
-
-#if 0
-scaling_list_data2()
-{
-    int id;
-    if (aps_chroma_present_flag) {
-        for (id = 0; id < 2; id++) {
-            uint8_t is_pred_or_cpy;
-            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
-            }
-
-            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
-            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
-
-            if (is_pred_or_cpy && id != 0) {
-                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
-            }
-
-            if (!scaling_list_copy_mode_flag[id]) {
-                int nextCoef = 0;
-                for (i = 0; i < 4; i++) {
-                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
-                    nextCoef += sl->scaling_list_delta_coef[id][i];
-                    ScalingList[id][i] = nextCoef;
-                }
-            }
-        }
-
-        for (; id < 8; id++) {
-            uint8_t is_pred_or_cpy;
-            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
-            }
-
-            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
-            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
-
-            if (is_pred_or_cpy && id != 2) {
-                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
-            }
-
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                int nextCoef = 0;
-                for (i = 0; i < 16; i++) {
-                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
-                    nextCoef += scaling_list_delta_coef[id][i];
-                    ScalingList[id][i] = nextCoef;
-                }
-            }
-        }
-
-        for (; id < 14; id++) {
-            uint8_t is_pred_or_cpy;
-            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
-            }
-
-            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
-            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
-
-            if (is_pred_or_cpy && id != 8) {
-                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
-            }
-
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                int nextCoef = 0;
-
-                for (i = 0; i < 32; i++) {
-                    /* FIXME check position */
-                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
-                    nextCoef += sl->scaling_list_delta_coef[id][i];
-                    ScalingList[id][i] = nextCoef;
-                }
-            }
-        }
-
-        for (; id < 26; id++) {
-            uint8_t is_pred_or_cpy;
-            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
-            }
-
-            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
-            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
-
-            if (is_pred_or_cpy && id != 8) {
-                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
-            }
-
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                int nextCoef = 0;
-
-                sl->scaling_list_dc_coef[id − 14] = nvcl_read_s_expgolomb(rdr);
-                nextCoef += sl->scaling_list_dc_coef[id − 14]
-
-                for (i = 0; i < 32; i++) {
-                    /* FIXME check position */
-                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
-                    nextCoef += sl->scaling_list_delta_coef[id][i];
-                    ScalingList[id][i] = nextCoef;
-                }
-            }
-        }
-
-        for (; id < 27; id++) {
-            uint8_t is_pred_or_cpy;
-            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
-            }
-
-            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
-            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
-
-            if (is_pred_or_cpy && id != 8) {
-                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
-            }
-
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                int nextCoef = 0;
-                sl->scaling_list_dc_coef[id − 14] = nvcl_read_s_expgolomb(rdr);
-                nextCoef += sl->scaling_list_dc_coef[id − 14]
-
-                for (i = 0; i < 32; i++) {
-                    /* FIXME check position */
-                    int x = DiagScanOrder[3][3][i][0];
-                    int y = DiagScanOrder[3][3][i][1];
-                    if (!(x >= 4 && y >= 4)) {
-                        sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
-                        nextCoef += sl->scaling_list_delta_coef[id][i];
-                        ScalingList[id][i] = nextCoef;
-                    }
-                }
-            }
-        }
-
-        for (; id < 28; id++) {
-            uint8_t is_pred_or_cpy;
-            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
-            }
-
-            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
-            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
-
-            if (is_pred_or_cpy) {
-                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
-            }
-
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                int nextCoef = 0;
-
-                sl->scaling_list_dc_coef[id − 14] = nvcl_read_s_expgolomb(rdr);
-                nextCoef += sl->scaling_list_dc_coef[id − 14]
-
-                for (i = 0; i < 32; i++) {
-                    /* FIXME check position */
-                    int x = DiagScanOrder[3][3][i][0];
-                    int y = DiagScanOrder[3][3][i][1];
-                    if (!(x >= 4 && y >= 4)) {
-                        sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
-                        nextCoef += sl->scaling_list_delta_coef[id][i];
-                        ScalingList[id][i] = nextCoef;
-                    }
-                }
-            }
-        }
-    } else {
-
-        for (id = 2; id < 8; id += 3) {
-            uint8_t is_pred_or_cpy;
-            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
-            }
-
-            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
-            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
-
-            if (is_pred_or_cpy && id != 2) {
-                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
-            }
-
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                int nextCoef = 0;
-                for (i = 0; i < 16; i++) {
-                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
-                    nextCoef += scaling_list_delta_coef[id][i];
-                    ScalingList[id][i] = nextCoef;
-                }
-            }
-        }
-
-        for (id = 8; id < 14; id += 3) {
-            uint8_t is_pred_or_cpy;
-            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
-            }
-
-            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
-            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
-
-            if (is_pred_or_cpy && id != 8) {
-                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
-            }
-
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                int nextCoef = 0;
-
-                for (i = 0; i < 32; i++) {
-                    /* FIXME check position */
-                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
-                    nextCoef += sl->scaling_list_delta_coef[id][i];
-                    ScalingList[id][i] = nextCoef;
-                }
-            }
-        }
-
-        for (id = 14; id < 26; id += 3) {
-            uint8_t is_pred_or_cpy;
-
-            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
-
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
-            }
-
-            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
-            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
-
-            if (is_pred_or_cpy) {
-                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
-            }
-
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                int nextCoef = 0;
-                sl->scaling_list_dc_coef[id − 14] = nvcl_read_s_expgolomb(rdr);
-                nextCoef += sl->scaling_list_dc_coef[id − 14];
-
-                for (i = 0; i < 32; i++) {
-                    /* FIXME check position */
-                    sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
-                    nextCoef += sl->scaling_list_delta_coef[id][i];
-                    ScalingList[id][i] = nextCoef;
-                }
-            }
-        }
-
-        for (id = 26; id < 27; id += 3) {
-            uint8_t is_pred_or_cpy;
-
-            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
-
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
-            }
-
-            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
-            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
-
-            if (is_pred_or_cpy) {
-                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
-            }
-
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                int nextCoef = 0;
-                sl->scaling_list_dc_coef[id − 14] = nvcl_read_s_expgolomb(rdr);
-                nextCoef += sl->scaling_list_dc_coef[id − 14];
-
-                for (i = 0; i < 32; i++) {
-                    /* FIXME check position */
-                    int x = DiagScanOrder[3][3][i][0];
-                    int y = DiagScanOrder[3][3][i][1];
-                    if (!(x >= 4 && y >= 4)) {
-                        sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
-                        nextCoef += sl->scaling_list_delta_coef[id][i];
-                        ScalingList[id][i] = nextCoef;
-                    }
-                }
-            }
-        }
-
-        for (id = 27; id < 28; id++) {
-            uint8_t is_pred_or_cpy;
-            sl->scaling_list_copy_mode_flag[id] = nvcl_read_flag(rdr);
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                sl->scaling_list_pred_mode_flag[id] = nvcl_read_flag(rdr);
-            }
-
-            is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
-            is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id];
-
-            if (is_pred_or_cpy) {
-                sl->scaling_list_pred_id_delta[id] = nvcl_read_u_expgolomb(rdr);
-            }
-
-            if (!sl->scaling_list_copy_mode_flag[id]) {
-                int nextCoef = 0;
-
-                sl->scaling_list_dc_coef[id − 14] = nvcl_read_s_expgolomb(rdr);
-                nextCoef += sl->scaling_list_dc_coef[id − 14]
-
-                for (i = 0; i < 32; i++) {
-                    /* FIXME check position */
-                    int x = DiagScanOrder[3][3][i][0];
-                    int y = DiagScanOrder[3][3][i][1];
-                    if (!(x >= 4 && y >= 4)) {
-                        sl->scaling_list_delta_coef[id][i] = nvcl_read_s_expgolomb(rdr);
-                        nextCoef += sl->scaling_list_delta_coef[id][i];
-                        ScalingList[id][i] = nextCoef;
-                    }
-                }
-            }
-        }
-    }
-}
-#endif
