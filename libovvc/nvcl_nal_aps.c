@@ -43,7 +43,7 @@ typedef struct OVScalingList
 {
     uint8_t scaling_list_copy_mode_flag[28];
     uint8_t scaling_list_pred_mode_flag[28];
-    int16_t scaling_list_pred_id_delta[28];
+    uint8_t scaling_list_pred_id_delta[28];
     int16_t scaling_list_dc_coef[28 - 14];
     int16_t scaling_list_delta_coef[28][64];
 } OVScalingList;
