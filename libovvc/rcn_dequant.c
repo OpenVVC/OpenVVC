@@ -66,17 +66,9 @@ derive_dequant_ctx(OVCTUDec *const ctudec, const struct VVCQPCTX *const qp_ctx,
 
     ctudec->qp_ctx.current_qp = base_qp;
 }
+#endif
 
-void
-dequant_sb_neg(int16_t *const sb_coeffs, int scale, int shift)
-{
-    for( int i = 0; i < 16 ; i++ ){
-        sb_coeffs[i] = ov_clip_intp2((int32_t)sb_coeffs[i] * (scale << shift),
-                MAX_LOG2_TR_RANGE + 1);
-    }
-}
-
-void
+static void
 dequant_sb(int16_t *const sb_coeffs, int scale, int shift)
 {
     int add = (1 << shift) >> 1;
@@ -86,27 +78,20 @@ dequant_sb(int16_t *const sb_coeffs, int scale, int shift)
     }
 }
 
-#endif
 
 static struct IQScale
 derive_dequant_sdh(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
     const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
     struct IQScale dequant_params;
-    int shift = IQUANT_SHIFT - (MAX_LOG2_TR_RANGE - BITDEPTH)
-        - (qp / 6) + (log2_tb_s >> 1) + (log2_tb_s & 1);
 
-    int scale = inverse_quant_scale_lut[log2_tb_s & 1][qp % 6];
+    int shift = BITDEPTH - 5 + (log2_tb_s >> 1) + (log2_tb_s & 1);
 
-    if (shift >= 0){
-        dequant_params.shift = shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb;
-    } else {
-        dequant_params.shift = -shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb_neg;
-    }
+    int scale  = inverse_quant_scale_lut[log2_tb_s & 1][qp % 6];
+
+    dequant_params.shift = shift;
+    dequant_params.scale = 16 * scale << (qp / 6);
+    dequant_params.dequant_sb = &dequant_sb;
 
     return dequant_params;
 }
@@ -117,20 +102,13 @@ derive_dequant_dpq(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
     const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
     struct IQScale dequant_params;
 
-    int shift = IQUANT_SHIFT + 1 - (MAX_LOG2_TR_RANGE - BITDEPTH)
-        - ((qp + 1) / 6) + (log2_tb_s >> 1) + (log2_tb_s & 1);
+    int shift = BITDEPTH - 5 + 1 + (log2_tb_s >> 1) + (log2_tb_s & 1);
 
     int scale  = inverse_quant_scale_lut[log2_tb_s & 1][(qp + 1) % 6];
 
-    if (shift >= 0){
-        dequant_params.shift = shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb;
-    } else {
-        dequant_params.shift = -shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb_neg;
-    }
+    dequant_params.shift = shift;
+    dequant_params.scale = 16 * scale << ((qp + 1) / 6);
+    dequant_params.dequant_sb = &dequant_sb;
 
     return dequant_params;
 }
@@ -140,97 +118,14 @@ derive_dequant_ts(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
     struct IQScale dequant_params;
 
-    int shift = IQUANT_SHIFT - (qp / 6) ;
-    int scale  = inverse_quant_scale_lut[0][qp % 6];
+    int shift = IQUANT_SHIFT;
+    int scale = inverse_quant_scale_lut[0][qp % 6];
 
-    if (shift >= 0){
-        dequant_params.shift = shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb;
-    } else {
-        dequant_params.shift = -shift;
-        dequant_params.scale = scale;
-        dequant_params.dequant_sb = &dequant_sb_neg;
-    }
+    dequant_params.shift = shift;
+    dequant_params.scale = scale << (qp / 6);
+    dequant_params.dequant_sb = &dequant_sb;
 
     return dequant_params;
-}
-
-static void
-dequant_tb_4x4_neg(int16_t *dst, const int16_t *src, int scale, int shift,
-                   uint8_t log2_tb_w, uint8_t log2_tb_h, uint64_t sig_sb_map)
-{
-    int nb_rows = 1 << OVMIN(5, log2_tb_h);//derive_nb_cols(sig_sb_map);
-    int nb_cols = 1 << OVMIN(5, log2_tb_w);//derive_nb_rows(sig_sb_map);
-    uint8_t src_stride = 1 << (OVMIN(5, log2_tb_w));
-    uint8_t dst_stride = 1 << (OVMIN(5, log2_tb_w));
-
-    /* Force sig_sb_map to one in case of DC coefficient */
-    sig_sb_map |= !sig_sb_map;
-
-    for (int i = 0; i < nb_rows/4 ; i++) {
-        uint8_t sig_sb_row = sig_sb_map >> (i << 3);
-        for (int j = 0; j < nb_cols/4 ; j++) {
-            int16_t *_dst = dst + (j << 2);
-            const int16_t *_src = src + (j << 4);
-            if (sig_sb_row & 0x1) {
-                _dst[0] = ov_clip_intp2((int32_t)_src[ 0] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-                _dst[1] = ov_clip_intp2((int32_t)_src[ 1] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-                _dst[2] = ov_clip_intp2((int32_t)_src[ 2] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-                _dst[3] = ov_clip_intp2((int32_t)_src[ 3] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-
-                _dst += dst_stride;
-
-                _dst[0] = ov_clip_intp2((int32_t)_src[ 4] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-                _dst[1] = ov_clip_intp2((int32_t)_src[ 5] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-                _dst[2] = ov_clip_intp2((int32_t)_src[ 6] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-                _dst[3] = ov_clip_intp2((int32_t)_src[ 7] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-
-                _dst += dst_stride;
-
-                _dst[0] = ov_clip_intp2((int32_t)_src[ 8] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-                _dst[1] = ov_clip_intp2((int32_t)_src[ 9] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-                _dst[2] = ov_clip_intp2((int32_t)_src[10] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-                _dst[3] = ov_clip_intp2((int32_t)_src[11] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-
-                _dst += dst_stride;
-
-                _dst[0] = ov_clip_intp2((int32_t)_src[12] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-                _dst[1] = ov_clip_intp2((int32_t)_src[13] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-                _dst[2] = ov_clip_intp2((int32_t)_src[14] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-                _dst[3] = ov_clip_intp2((int32_t)_src[15] * (scale << shift), MAX_LOG2_TR_RANGE + 1);
-            } else {
-                _dst[0] = 0;
-                _dst[1] = 0;
-                _dst[2] = 0;
-                _dst[3] = 0;
-
-                _dst += dst_stride;
-
-                _dst[0] = 0;
-                _dst[1] = 0;
-                _dst[2] = 0;
-                _dst[3] = 0;
-
-                _dst += dst_stride;
-
-                _dst[0] = 0;
-                _dst[1] = 0;
-                _dst[2] = 0;
-                _dst[3] = 0;
-
-                _dst += dst_stride;
-
-                _dst[0] = 0;
-                _dst[1] = 0;
-                _dst[2] = 0;
-                _dst[3] = 0;
-            }
-            sig_sb_row >>= 1;
-        }
-        src += src_stride << 2;
-        dst += dst_stride << 2;
-    }
 }
 
 static void
@@ -318,5 +213,5 @@ BD_DECL(rcn_init_dequant)(struct RCNFunctions *rcn_funcs)
      rcn_funcs->tmp.derive_dequant_ts = &derive_dequant_ts;
      rcn_funcs->tmp.derive_dequant_dpq = &derive_dequant_dpq;
      rcn_funcs->tmp.dequant_tb_4x4 = &dequant_tb_4x4;
-     rcn_funcs->tmp.dequant_tb_4x4_neg = &dequant_tb_4x4_neg;
+     //rcn_funcs->tmp.dequant_tb_4x4_neg = &dequant_tb_4x4_neg;
 }
