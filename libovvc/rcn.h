@@ -41,7 +41,8 @@ struct RCNFunctions;
 void rcn_init_gpm_params();
 
 void rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled,
-                        uint8_t sps_chroma_vertical_collocated_flag, uint8_t lmcs_flag, uint8_t bitdepth);
+                        uint8_t sps_chroma_vertical_collocated_flag, uint8_t lmcs_flag, uint8_t bitdepth,
+                        uint8_t sh_dep_quant_used_flag);
 
 void rcn_init_tr_functions(struct RCNFunctions *const rcn_funcs);
 
@@ -88,7 +89,8 @@ void rcn_init_ibc_10(struct RCNFunctions *rcn_funcs);
 
 void rcn_init_fill_ref_10(struct RCNFunctions *const rcn_funcs);
 
-void rcn_init_dequant_10(struct RCNFunctions *rcn_funcs);
+void rcn_init_dequant_dpq_10(struct RCNFunctions *rcn_funcs);
+void rcn_init_dequant_sdh_10(struct RCNFunctions *rcn_funcs);
 
 void rcn_init_transform_trees_10(struct RCNFunctions *const rcn_funcs);
 
@@ -135,7 +137,8 @@ void rcn_init_fill_ref_8(struct RCNFunctions *const rcn_funcs);
 
 void rcn_init_transform_trees_8(struct RCNFunctions *const rcn_funcs);
 
-void rcn_init_dequant_8(struct RCNFunctions *rcn_funcs);
+void rcn_init_dequant_dpq_8(struct RCNFunctions *rcn_funcs);
+void rcn_init_dequant_sdh_8(struct RCNFunctions *rcn_funcs);
 
 void rcn_init_ibc_8(struct RCNFunctions *rcn_funcs);
 

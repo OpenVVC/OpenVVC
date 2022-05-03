@@ -1652,7 +1652,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
 
     rcn_init_functions(&ctudec->rcn_funcs, ict_type(ph), ctudec->lm_chroma_enabled,
                         sps->sps_chroma_vertical_collocated_flag, ph->ph_lmcs_enabled_flag,
-                        sps->sps_bitdepth_minus8 + 8);
+                        sps->sps_bitdepth_minus8 + 8, sh->sh_dep_quant_used_flag);
 
     //In loop filter information for CTU reconstruction
     ctudec_init_in_loop_filters(ctudec, prms);

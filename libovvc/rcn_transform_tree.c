@@ -206,11 +206,7 @@ dequant_4x4_ts(OVCTUDec *const ctudec, int16_t *dst, const int16_t *src, uint64_
 static inline struct IQScale
 derive_dequant(const OVCTUDec *const ctudec, uint8_t qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
-    if (ctudec->residual_coding_l == &residual_coding_dpq) {
-        return ctudec->rcn_funcs.tmp.derive_dequant_dpq(qp, log2_tb_w, log2_tb_h);
-    } else {
-        return ctudec->rcn_funcs.tmp.derive_dequant_sdh(qp, log2_tb_w, log2_tb_h);
-    }
+    return ctudec->rcn_funcs.tmp.derive_dequant(qp, log2_tb_w, log2_tb_h);
 }
 
 static void

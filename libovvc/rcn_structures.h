@@ -455,9 +455,7 @@ struct TMPBDCompat
                                   uint64_t intra_map_cols, int mref_idx, int8_t x0,
                                   int8_t y0, int log2_pb_w, int log2_pb_h);
 
-    struct IQScale (*derive_dequant_sdh)(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h);
-
-    struct IQScale (*derive_dequant_dpq)(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h);
+    struct IQScale (*derive_dequant)(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h);
 
     struct IQScale (*derive_dequant_ts)(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h);
 

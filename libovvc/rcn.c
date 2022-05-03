@@ -146,7 +146,8 @@ rcn_init_intra_angular_functions(struct RCNFunctions *rcn_func, uint8_t bitdepth
 
 void
 rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_chroma_enabled,
-                   uint8_t sps_chroma_vertical_collocated_flag, uint8_t lmcs_flag, uint8_t bitdepth)
+                   uint8_t sps_chroma_vertical_collocated_flag, uint8_t lmcs_flag, uint8_t bitdepth,
+                   uint8_t sh_dep_quant_used_flag)
 {
   rcn_init_ctu_buffs_10(rcn_func);
   rcn_init_mc_functions_10(rcn_func);
@@ -164,7 +165,11 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
   rcn_init_bdof_functions_10(rcn_func);
   rcn_init_ciip_functions_10(rcn_func);
   rcn_init_df_functions_10(rcn_func);
-  rcn_init_dequant_10(rcn_func);
+  if (sh_dep_quant_used_flag) {
+      rcn_init_dequant_dpq_10(rcn_func);
+  } else {
+      rcn_init_dequant_sdh_10(rcn_func);
+  }
   rcn_init_fill_ref_10(rcn_func);
   rcn_init_transform_trees_10(rcn_func);
   rcn_init_intra_functions_10(rcn_func);
@@ -195,7 +200,11 @@ rcn_init_functions(struct RCNFunctions *rcn_func, uint8_t ict_type, uint8_t lm_c
       rcn_init_bdof_functions_8(rcn_func);
       rcn_init_ciip_functions_8(rcn_func);
       rcn_init_df_functions_8(rcn_func);
-      rcn_init_dequant_8(rcn_func);
+      if (sh_dep_quant_used_flag) {
+          rcn_init_dequant_dpq_8(rcn_func);
+      } else {
+          rcn_init_dequant_sdh_8(rcn_func);
+      }
       rcn_init_fill_ref_8(rcn_func);
       rcn_init_transform_trees_8(rcn_func);
       rcn_init_intra_functions_8(rcn_func);

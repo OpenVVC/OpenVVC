@@ -239,11 +239,19 @@ dequant_tb_4x4(int16_t *dst, const int16_t *src, int scale, int shift,
 }
 
 void
-BD_DECL(rcn_init_dequant)(struct RCNFunctions *rcn_funcs)
+BD_DECL(rcn_init_dequant_sdh)(struct RCNFunctions *rcn_funcs)
 {
-     rcn_funcs->tmp.derive_dequant_sdh = &derive_dequant_sdh;
+     rcn_funcs->tmp.derive_dequant     = &derive_dequant_sdh;
+     rcn_funcs->tmp.derive_dequant_ts  = &derive_dequant_ts;
+     rcn_funcs->tmp.dequant_tb_4x4 = &dequant_tb_4x4;
+     //rcn_funcs->tmp.dequant_tb_4x4_neg = &dequant_tb_4x4_neg;
+}
+
+void
+BD_DECL(rcn_init_dequant_dpq)(struct RCNFunctions *rcn_funcs)
+{
+     rcn_funcs->tmp.derive_dequant    = &derive_dequant_dpq;
      rcn_funcs->tmp.derive_dequant_ts = &derive_dequant_ts;
-     rcn_funcs->tmp.derive_dequant_dpq = &derive_dequant_dpq;
      rcn_funcs->tmp.dequant_tb_4x4 = &dequant_tb_4x4;
      //rcn_funcs->tmp.dequant_tb_4x4_neg = &dequant_tb_4x4_neg;
 }
