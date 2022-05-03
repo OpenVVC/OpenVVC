@@ -511,17 +511,17 @@ nvcl_read_scaling_list_data(OVNVCLReader *const rdr, struct OVScalingList* sl,
 
 struct ScalingList2x2
 {
-    int8_t coeff[4];
+    int16_t coeff[4];
 };
 
 struct ScalingList4x4
 {
-    int8_t coeff[16];
+    int16_t coeff[16];
 };
 
 struct ScalingList8x8
 {
-    int8_t coeff[64];
+    int16_t coeff[64];
 };
 
 struct ScalingLists {
@@ -609,10 +609,66 @@ derive_scaling_matrix_8x8(struct ScalingLists *const sl_ctx, const OVScalingList
     }
 
     uint8_t coeff = init_val;
+
+    if (id > 13) {
+        coeff += sl->scaling_list_dc_coef[id - 14];
+    }
+
     for (i = 0; i < 64; i++) {
         coeff += sl->scaling_list_delta_coef[id][i];
         sl_dst->coeff[i] = sl_ref->coeff[i] + coeff;
     }
+
+}
+static uint8_t map[64] =
+{
+    1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 0,
+        1, 1, 1, 1, 1, 0, 0, 1,
+        1, 1, 0, 0, 0, 1, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+};
+
+static void
+derive_scaling_matrix_8x8_2(struct ScalingLists *const sl_ctx, const OVScalingList *sl, int id)
+{
+    struct ScalingList8x8 *sl_dst = &sl_ctx->ycbcbr_8x8[id - 8];
+    const struct ScalingList8x8 *sl_ref = sl_dst;
+    int i;
+    uint8_t init_val = 0;
+
+    uint8_t is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
+    is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id] << 1;
+
+
+    if (!is_pred_or_cpy) {
+        init_val = 8;
+    } else {
+        sl_ref -= sl->scaling_list_pred_id_delta[id];
+        if (sl_ref == sl_dst) {
+            init_val = 16;
+        }
+    }
+
+    int16_t coeff = init_val;
+
+    if (id > 13) {
+        coeff += sl->scaling_list_dc_coef[id - 14];
+    }
+
+    uint8_t skip = 0;
+    for (i = 0; i < 64; i++) {
+        if (map[i]) {
+            coeff += sl->scaling_list_delta_coef[id][i - skip];
+        } else {
+            skip++;
+        }
+        sl_dst->coeff[i] = sl_ref->coeff[i] + coeff;
+    }
+
 }
 
 int
@@ -638,8 +694,10 @@ nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
                 derive_scaling_matrix_2x2(&sls, &sl, i);
             } else if (i < 8) {
                 derive_scaling_matrix_4x4(&sls, &sl, i);
-            } else {
+            } else if (i < 26) {
                 derive_scaling_matrix_8x8(&sls, &sl, i);
+            } else {
+                derive_scaling_matrix_8x8_2(&sls, &sl, i);
             }
         }
     }
