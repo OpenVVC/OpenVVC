@@ -78,6 +78,41 @@ dequant_sb(int16_t *const sb_coeffs, int scale, int shift)
     }
 }
 
+#define DQ_SHIFT(log2_tb_s, sh_dpq_flag) BITDEPTH - 5 + sh_dpq_flag + (log2_tb_s >> 1) + (log2_tb_s & 1)
+static const uint8_t dequant_shift_lut_dpq[13] =
+{
+    DQ_SHIFT( 0, 1),
+    DQ_SHIFT( 1, 1),
+    DQ_SHIFT( 2, 1),
+    DQ_SHIFT( 3, 1),
+    DQ_SHIFT( 4, 1),
+    DQ_SHIFT( 5, 1),
+    DQ_SHIFT( 6, 1),
+    DQ_SHIFT( 7, 1),
+    DQ_SHIFT( 8, 1),
+    DQ_SHIFT( 9, 1),
+    DQ_SHIFT(10, 1),
+    DQ_SHIFT(11, 1),
+    DQ_SHIFT(12, 1)
+};
+
+
+static const uint8_t dequant_shift_lut_sdh[13] =
+{
+    DQ_SHIFT( 0, 0),
+    DQ_SHIFT( 1, 0),
+    DQ_SHIFT( 2, 0),
+    DQ_SHIFT( 3, 0),
+    DQ_SHIFT( 4, 0),
+    DQ_SHIFT( 5, 0),
+    DQ_SHIFT( 6, 0),
+    DQ_SHIFT( 7, 0),
+    DQ_SHIFT( 8, 0),
+    DQ_SHIFT( 9, 0),
+    DQ_SHIFT(10, 0),
+    DQ_SHIFT(11, 0),
+    DQ_SHIFT(12, 0)
+};
 
 static struct IQScale
 derive_dequant_sdh(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
@@ -85,11 +120,9 @@ derive_dequant_sdh(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
     const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
     struct IQScale dequant_params;
 
-    int shift = BITDEPTH - 5 + (log2_tb_s >> 1) + (log2_tb_s & 1);
+    int scale = inverse_quant_scale_lut[log2_tb_s & 1][qp % 6];
 
-    int scale  = inverse_quant_scale_lut[log2_tb_s & 1][qp % 6];
-
-    dequant_params.shift = shift;
+    dequant_params.shift = dequant_shift_lut_sdh[log2_tb_s];
     dequant_params.scale = 16 * scale << (qp / 6);
     dequant_params.dequant_sb = &dequant_sb;
 
@@ -99,14 +132,13 @@ derive_dequant_sdh(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
 static struct IQScale
 derive_dequant_dpq(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
-    const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
     struct IQScale dequant_params;
 
-    int shift = BITDEPTH - 5 + 1 + (log2_tb_s >> 1) + (log2_tb_s & 1);
+    const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
 
-    int scale  = inverse_quant_scale_lut[log2_tb_s & 1][(qp + 1) % 6];
+    uint32_t scale = inverse_quant_scale_lut[log2_tb_s & 1][(qp + 1) % 6];
 
-    dequant_params.shift = shift;
+    dequant_params.shift = dequant_shift_lut_dpq[log2_tb_s];
     dequant_params.scale = 16 * scale << ((qp + 1) / 6);
     dequant_params.dequant_sb = &dequant_sb;
 
