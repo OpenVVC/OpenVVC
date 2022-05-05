@@ -852,6 +852,53 @@ derive_scaling_tb(const int16_t *mat, int16_t *dst,  uint8_t log2_tb_h, uint8_t 
 
 
 static void
+derive_tbs_chroma(struct ScalingLists *sl_ctx, int16_t *intra_luts_cb, int16_t *inter_luts_cb,
+                  int16_t *intra_luts_cr, int16_t *inter_luts_cr)
+{
+    for (int log2_tb_w = 0; log2_tb_w < 7; ++log2_tb_w) {
+        for (int log2_tb_h = 0; log2_tb_h < 7; ++log2_tb_h) {
+            uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
+            if ((log2_tb_h >= 1 || log2_tb_w >= 1)) {
+                uint8_t log2_max_wh = OVMAX(log2_tb_w, log2_tb_h);
+
+                uint8_t intra_list_id = (log2_max_wh - 1) * 6 - 4;
+                uint8_t inter_list_id = OVMIN(27, intra_list_id + 3);
+                uint8_t lut_id = (log2_tb_w << 3) | log2_tb_h;
+
+                if (intra_list_id < 2) {
+                    struct ScalingList2x2 *sl_dst = &sl_ctx->chroma_2x2[intra_list_id];
+                    derive_scaling_tb(sl_dst->coeff, &inter_luts_cb[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+                    sl_dst = &sl_ctx->chroma_2x2[intra_list_id + 1];
+                    derive_scaling_tb(sl_dst->coeff, &inter_luts_cr[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+                } else if (intra_list_id < 8) {
+                    struct ScalingList4x4 *sl_dst = &sl_ctx->ycbcbr_4x4[intra_list_id - 2 + 1];
+                    derive_scaling_tb(sl_dst->coeff, &intra_luts_cb[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+
+                    sl_dst = &sl_ctx->ycbcbr_4x4[inter_list_id - 2 + 1];
+                    derive_scaling_tb(sl_dst->coeff, &inter_luts_cb[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+                    sl_dst = &sl_ctx->ycbcbr_4x4[intra_list_id - 2 + 2];
+                    derive_scaling_tb(sl_dst->coeff, &intra_luts_cr[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+
+                    sl_dst = &sl_ctx->ycbcbr_4x4[inter_list_id - 2 + 2];
+                    derive_scaling_tb(sl_dst->coeff, &inter_luts_cr[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+
+                } else if (intra_list_id < 26) {
+                    struct ScalingList8x8 *sl_dst = &sl_ctx->ycbcbr_8x8[intra_list_id - 8 + 1];
+                    derive_scaling_tb(sl_dst->coeff, &intra_luts_cb[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+                    sl_dst = &sl_ctx->ycbcbr_8x8[inter_list_id - 8 + 1];
+                    derive_scaling_tb(sl_dst->coeff, &inter_luts_cb[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+                    sl_dst = &sl_ctx->ycbcbr_8x8[intra_list_id - 8 + 2];
+                    derive_scaling_tb(sl_dst->coeff, &intra_luts_cr[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+                    sl_dst = &sl_ctx->ycbcbr_8x8[inter_list_id - 8 + 2];
+                    derive_scaling_tb(sl_dst->coeff, &inter_luts_cr[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+
+                }
+            }
+        }
+    }
+}
+
+static void
 derive_tbs_luma(struct ScalingLists *sl_ctx, int16_t *intra_luts, int16_t *inter_luts)
 {
     for (int log2_tb_w = 0; log2_tb_w < 7; ++log2_tb_w) {
@@ -901,6 +948,11 @@ nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
 
         int16_t intra_luts[9024];
         int16_t inter_luts[9024];
+        int16_t intra_luts_cb[9024];
+        int16_t inter_luts_cb[9024];
+        int16_t intra_luts_cr[9024];
+        int16_t inter_luts_cr[9024];
+
         struct ScalingLists sls = {0};
         for (int i = 0; i < 28; ++i) {
             if (i < 2) {
@@ -914,6 +966,7 @@ nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
             }
         }
         derive_tbs_luma(&sls, intra_luts, inter_luts);
+        derive_tbs_chroma(&sls, intra_luts_cb, inter_luts_cb, intra_luts_cr, inter_luts_cr);
     }
 
     aps->aps_extension_flag = nvcl_read_flag(rdr);
