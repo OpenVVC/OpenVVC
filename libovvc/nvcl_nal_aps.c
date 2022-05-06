@@ -794,7 +794,7 @@ derive_scaling_tb(const int16_t *mat, int16_t *dst,  uint8_t log2_tb_h, uint8_t 
         int y = (i << log2_matrix_s) >> log2_tb_h;
         for (int j = 0; j < mat_w; ++j) {
             int x = (j << log2_matrix_s) >> log2_tb_w;
-            int16_t val = mat[diag_scan_8x8[x + (y << log2_matrix_s)]];
+            int16_t val = mat[diag_scan[x + (y << log2_matrix_s)]];
             m[cnt++] = val;
         }
     }
