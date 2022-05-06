@@ -39,10 +39,10 @@
 #define IQUANT_SHIFT 6
 #define MAX_LOG2_TR_RANGE 15
 
-static const int inverse_quant_scale_lut[2][6] =
+static const int inverse_quant_scale_lut[12] =
 {
-    { 40, 45, 51, 57, 64,  72},
-    { 57, 64, 72, 80, 90, 102}
+    40, 45, 51, 57, 64,  72,
+    57, 64, 72, 80, 90, 102
 };
 
 #if BITDEPTH == 10
@@ -120,7 +120,7 @@ derive_dequant_sdh(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
     const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
     struct IQScale dequant_params;
 
-    int scale = inverse_quant_scale_lut[log2_tb_s & 1][qp % 6];
+    uint32_t scale = inverse_quant_scale_lut[(6 & -(log2_tb_s & 1)) + (qp % 6)];
 
     dequant_params.shift = dequant_shift_lut_sdh[log2_tb_s];
     dequant_params.scale = 16 * scale << (qp / 6);
@@ -136,7 +136,7 @@ derive_dequant_dpq(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
 
     const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
 
-    uint32_t scale = inverse_quant_scale_lut[log2_tb_s & 1][(qp + 1) % 6];
+    uint32_t scale = inverse_quant_scale_lut[(6 & -(log2_tb_s & 1)) + ((qp + 1) % 6)];
 
     dequant_params.shift = dequant_shift_lut_dpq[log2_tb_s];
     dequant_params.scale = 16 * scale << ((qp + 1) / 6);
@@ -151,7 +151,7 @@ derive_dequant_ts(int qp, uint8_t log2_tb_w, uint8_t log2_tb_h)
     struct IQScale dequant_params;
 
     int shift = IQUANT_SHIFT;
-    int scale = inverse_quant_scale_lut[0][qp % 6];
+    int scale = inverse_quant_scale_lut[qp % 6];
 
     dequant_params.shift = shift;
     dequant_params.scale = scale << (qp / 6);
