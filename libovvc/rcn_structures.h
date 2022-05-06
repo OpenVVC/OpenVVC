@@ -419,6 +419,7 @@ struct DFFunctions{
                                   uint8_t ctu_w, uint8_t ctu_h);
 };
 
+struct TBScalingLUTs;
 #include "rcn_dequant.h"
 struct TMPBDCompat
 {
@@ -461,6 +462,9 @@ struct TMPBDCompat
 
     void (*dequant_tb_4x4)(int16_t *dst, const int16_t *src, int scale, int shift,
                            uint8_t log2_tb_w, uint8_t log2_tb_h, uint64_t sig_sb_map);
+
+    void (*scale_dequant_tb_4x4)(const int16_t *const luts, int16_t *dst, const int16_t *src, int scale, int shift,
+                                 uint8_t log2_tb_w, uint8_t log2_tb_h, uint64_t sig_sb_map);
 
     void (*dequant_tb_4x4_neg)(int16_t *dst, const int16_t *src, int scale, int shift,
                                uint8_t log2_tb_w, uint8_t log2_tb_h, uint64_t sig_sb_map);

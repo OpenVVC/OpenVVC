@@ -101,6 +101,36 @@ derive_nb_cols(uint64_t sig_sb_map)
 }
 
 #define MAX_LOG2_TR_RANGE 15
+static const uint16_t tb_lut_offset[64] =
+{      0,    0,    2,    6,   14,   30,   62,   94,
+      94,   96,  100,  108,  124,  156,  220,  284,
+     284,  288,  296,  312,  344,  408,  536,  664,
+     664,  672,  688,  720,  784,  912, 1168, 1424,
+    1424, 1440, 1472, 1536, 1664, 1920, 2432, 2944,
+    2944, 2976, 3040, 3168, 3424, 3936, 4960, 5984,
+    5984, 6016, 6080, 6208, 6464, 6976, 8000, 9024,
+    9024, 9024, 9024, 9024, 9024, 9024, 9024, 9024
+};
+
+static void
+scale_dequant_tb(const int16_t *const luts, int16_t *dst, const int16_t *src, int scale, int shift, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t nb_rows, uint8_t nb_cols)
+{
+    uint8_t lut_id = (log2_tb_w << 3) | log2_tb_h;
+    const int16_t *sl = &luts[tb_lut_offset[lut_id]];
+
+    int add = (1 << shift) >> 1;
+    uint8_t stride = 1 << (OVMIN(5, log2_tb_w));
+    scale /= 16;
+    for (int i = 0; i < nb_rows ; i++) {
+        for (int j = 0; j < nb_cols ; j++) {
+            dst[j] = ov_clip_intp2((int32_t)(src[j] * sl[j + (i << log2_tb_w)] * scale + add) >> shift,
+                                   MAX_LOG2_TR_RANGE + 1);
+        }
+        src += stride;
+        dst += stride;
+    }
+}
+
 static void
 dequant_tb(int16_t *dst, const int16_t *src, int scale, int shift, uint8_t log2_tb_w, uint8_t nb_rows, uint8_t nb_cols)
 {
@@ -210,14 +240,36 @@ derive_dequant(const OVCTUDec *const ctudec, uint8_t qp, uint8_t log2_tb_w, uint
 }
 
 static void
-dequant_4x4_sb(OVCTUDec *const ctudec, int16_t *dst, const int16_t *src, uint64_t sig_sb_map, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp)
+dequant_4x4_sb(OVCTUDec *const ctudec, int16_t *dst, const int16_t *src, uint64_t sig_sb_map, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp, uint8_t is_intra, uint8_t comp_idx, uint8_t is_lfnst)
 {
     int nb_cols = derive_nb_cols(sig_sb_map);
     int nb_rows = derive_nb_rows(sig_sb_map);
 
     struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
 
-    ctudec->rcn_funcs.tmp.dequant_tb_4x4(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
+    if (!ctudec->scaling_list_enabled || is_lfnst) {
+        ctudec->rcn_funcs.tmp.dequant_tb_4x4(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
+    } else {
+        const uint16_t *lut;
+        if (is_intra) {
+          lut = ctudec->tb_scaling_luts.intra_luts;
+          if (comp_idx == 1) {
+              lut = ctudec->tb_scaling_luts.intra_luts_cb;
+          }
+          if (comp_idx == 2) {
+              lut = ctudec->tb_scaling_luts.intra_luts_cr;
+          }
+        } else {
+          lut = ctudec->tb_scaling_luts.inter_luts;
+          if (comp_idx == 1) {
+              lut = ctudec->tb_scaling_luts.inter_luts_cb;
+          }
+          if (comp_idx == 2) {
+              lut = ctudec->tb_scaling_luts.inter_luts_cr;
+          }
+        }
+        ctudec->rcn_funcs.tmp.scale_dequant_tb_4x4(lut, dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
+    }
 }
 
 static void
@@ -238,7 +290,7 @@ rcn_residual(OVCTUDec *const ctudec,
     int tb_h = 1 << log2_tb_h;
 
     int qp = ctudec->dequant_luma.qp;
-    dequant_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp);
+    dequant_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp, 1, 0, lfnst_flag);
 
 
     if (!is_mip && !cu_mts_flag && ctudec->mts_implicit && (log2_tb_w <= 4 || log2_tb_h <= 4) && !lfnst_flag) {
@@ -326,7 +378,13 @@ dequant_non_4x4_sb(const OVCTUDec *const ctudec, int16_t *dst, int16_t *src, uin
 
     struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
 
-    dequant_tb(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
+    if (!ctudec->scaling_list_enabled) {
+        dequant_tb(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
+    } else {
+        const uint16_t *lut;
+        lut = ctudec->tb_scaling_luts.intra_luts;
+        scale_dequant_tb(lut, dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_h, tb_w);
+    }
 }
 
 static void
@@ -346,7 +404,7 @@ rcn_residual_c(OVCTUDec *const ctudec,
     int tb_h = 1 << log2_tb_h;
 
     if (log2_tb_h > 1 && log2_tb_w > 1) {
-        dequant_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp);
+        dequant_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp, 1, 1, lfnst_flag);
     } else {
         int log2_sb_w = 2;
         int log2_sb_h = 2;
@@ -361,7 +419,11 @@ rcn_residual_c(OVCTUDec *const ctudec,
         int nb_col = (derive_nb_cols(sig_sb_map) >> 2) << log2_sb_h;
         int nb_row = (derive_nb_rows(sig_sb_map) >> 2) << log2_sb_w;
 
-        dequant_non_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp);
+        if (!ctudec->scaling_list_enabled) {
+            dequant_non_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp);
+        } else {
+            dequant_non_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp);
+        }
     }
 
     if (!last_pos && !lfnst_flag) {
@@ -665,7 +727,7 @@ rcn_isp_tu(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
 
     int qp = ctudec->dequant_luma.qp;
 
-    dequant_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
+    dequant_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp, 1, 0, tu_info->lfnst_flag);
 
     memset(tmp, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
 
