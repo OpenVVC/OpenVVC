@@ -772,7 +772,7 @@ const uint8_t diag_scan_8x8[64] = {
 };
 
 static void
-derive_scaling_tb(const int16_t *mat, int16_t *dst,  uint8_t log2_tb_h, uint8_t log2_tb_w)
+derive_scaling_tb(const int16_t *mat, int16_t *dst,  uint8_t log2_tb_w, uint8_t log2_tb_h)
 {
     const uint8_t log2_tb_s = log2_tb_w + log2_tb_h;
     uint8_t log2_max_wh = OVMAX(log2_tb_w, log2_tb_h);
