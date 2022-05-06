@@ -213,6 +213,12 @@ nvcl_free_ctx(OVNVCLCtx *const nvcl_ctx)
         }
     }
 
+    nb_elems = NB_ARRAY_ELEMS(nvcl_ctx->scaling_list_aps_list);
+    for (i = 0; i < nb_elems; ++i) {
+        if (nvcl_ctx->scaling_list_aps_list[i]) {
+            ov_freep(&nvcl_ctx->scaling_list_aps_list[i]);
+        }
+    }
     if (nvcl_ctx->ph) {
         hlsdata_unref(&nvcl_ctx->ph);
     }

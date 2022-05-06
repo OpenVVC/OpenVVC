@@ -511,6 +511,19 @@ retrieve_aps_lmcs(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
     return aps;
 }
 
+static OVAPS *
+retrieve_aps_scaling_list(const OVNVCLCtx *const nvcl_ctx, const OVPH *const ph)
+{
+    uint8_t aps_id = ph->ph_scaling_list_aps_id;
+    OVAPS *aps = NULL;
+    if (aps_id < 16) {
+        aps = nvcl_ctx->scaling_list_aps_list[aps_id];
+    } else {
+        ov_log(NULL, 3, "Invalid APS ID  %d\n", aps_id);
+    }
+    return aps;
+}
+
 static OVSPS *
 retrieve_sps(const OVNVCLCtx *const nvcl_ctx, const OVPPS *const pps)
 {
@@ -724,6 +737,12 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
     if (ps->aps_lmcs != aps_lmcs) {
         ps->aps_lmcs = aps_lmcs;
     }
+
+    OVAPS * aps_scaling_list = retrieve_aps_scaling_list(nvcl_ctx, ph);
+    if (ps->aps_scaling_list != aps_scaling_list) {
+        ps->aps_scaling_list = aps_scaling_list;
+    }
+
     set_pic_part_info(&ps->pic_info, ps->sps, ps->pps);
     set_max_pic_part_info(&ps->pic_info_max, ps->sps, ps->pps);
 

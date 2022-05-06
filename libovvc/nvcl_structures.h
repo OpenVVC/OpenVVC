@@ -746,6 +746,15 @@ typedef struct OVLMCSData
     uint8_t lmcs_delta_sign_crs_flag;
 } OVLMCSData;
 
+typedef struct OVScalingListData
+{
+    uint8_t scaling_list_copy_mode_flag[28];
+    uint8_t scaling_list_pred_mode_flag[28];
+    uint8_t scaling_list_pred_id_delta[28];
+    int16_t scaling_list_dc_coef[28 - 14];
+    int16_t scaling_list_delta_coef[28][64];
+} OVScalingListData;
+
 typedef struct OVAPS
 {
     uint8_t aps_params_type;
@@ -757,6 +766,7 @@ typedef struct OVAPS
 
     struct OVALFData  aps_alf_data;
     struct OVLMCSData aps_lmcs_data;
+    struct OVScalingListData aps_scaling_list_data;
 } OVAPS;
 
 

@@ -533,6 +533,7 @@ slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
         slice_params->aps_cc_alf_cb = ov_mallocz(sizeof(struct OVAPS));
         slice_params->aps_cc_alf_cr = ov_mallocz(sizeof(struct OVAPS));
         slice_params->aps_lmcs = ov_mallocz(sizeof(struct OVAPS));
+        slice_params->aps_scaling_list = ov_mallocz(sizeof(struct OVAPS));
     }
 
     #if 1
@@ -575,6 +576,10 @@ slicedec_copy_params(OVSliceDec *sldec, struct OVPS* dec_params)
         *(slice_params->aps_lmcs) = *(dec_params->aps_lmcs);
     }
 
+    if (dec_params->aps_scaling_list) {
+        *(slice_params->aps_scaling_list) = *(dec_params->aps_scaling_list);
+    }
+
     slice_params->sps_info = dec_params->sps_info;
     slice_params->pps_info = dec_params->pps_info;
     slice_params->ph_info = dec_params->ph_info;
@@ -607,6 +612,9 @@ slicedec_free_params(OVSliceDec *sldec)
         ov_freep(&slice_params->aps_lmcs);
     }
 
+    if (slice_params->aps_scaling_list) {
+        ov_freep(&slice_params->aps_scaling_list);
+    }
 }
 
 void
@@ -1657,6 +1665,15 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     //In loop filter information for CTU reconstruction
     ctudec_init_in_loop_filters(ctudec, prms);
     ctudec->tmp_slice_type = sh->sh_slice_type;
+    ctudec->scaling_list_enabled = ph->ph_explicit_scaling_list_enabled_flag || sh->sh_explicit_scaling_list_used_flag;
+
+    if (ctudec->scaling_list_enabled) {
+        uint8_t aps_id = ph->ph_scaling_list_aps_id;
+
+        const OVAPS *aps = prms->aps_scaling_list;
+        derive_scaling_tb_luts(&ctudec->tb_scaling_luts, aps);
+    }
+
     if (sps->sps_ladf_enabled_flag) {
         init_ladf(&ctudec->dbf_info.ladf_prms, sps);
     } else {

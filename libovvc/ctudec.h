@@ -729,6 +729,15 @@ struct OVCTUDec
 
     uint8_t ibc_enabled;
     uint8_t nb_ibc_cand_min1;
+    uint8_t scaling_list_enabled;
+    struct TBScalingLUTs {
+        int16_t intra_luts[9024];
+        int16_t inter_luts[9024];
+        int16_t intra_luts_cb[9024];
+        int16_t inter_luts_cb[9024];
+        int16_t intra_luts_cr[9024];
+        int16_t inter_luts_cr[9024];
+    } tb_scaling_luts;
 
     uint8_t dbf_disable;
 

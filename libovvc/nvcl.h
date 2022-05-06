@@ -53,6 +53,7 @@ struct OVNVCLCtx
     struct HLSDataRef *pps_list[OV_MAX_NUM_PPS];
     OVAPS *lmcs_aps_list[OV_MAX_NUM_APS];
     OVAPS *alf_aps_list[OV_MAX_NUM_APS];
+    OVAPS *scaling_list_aps_list[OV_MAX_NUM_APS];
     struct HLSDataRef *ph;
     struct HLSDataRef *sh;
     OVSEI *sei;

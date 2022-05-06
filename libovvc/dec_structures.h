@@ -325,6 +325,7 @@ struct OVVCDec
         OVAPS *aps_cc_alf_cb;
         OVAPS *aps_cc_alf_cr;
         OVAPS *aps_lmcs;
+        OVAPS *aps_scaling_list;
         OVPH *ph;
         OVSH *sh;
         OVSEI *sei;

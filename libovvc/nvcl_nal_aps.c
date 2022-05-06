@@ -39,15 +39,6 @@
 #include "nvcl_utils.h"
 #include "nvcl_structures.h"
 
-typedef struct OVScalingList
-{
-    uint8_t scaling_list_copy_mode_flag[28];
-    uint8_t scaling_list_pred_mode_flag[28];
-    uint8_t scaling_list_pred_id_delta[28];
-    int16_t scaling_list_dc_coef[28 - 14];
-    int16_t scaling_list_delta_coef[28][64];
-} OVScalingList;
-
 enum APSType {
    APS_ALF          = 0,
    APS_LMCS         = 1,
@@ -188,7 +179,7 @@ nvcl_read_lmcs_data(OVNVCLReader *const rdr, struct OVLMCSData* lmcs,
 }
 
 static void
-nvcl_read_scaling_list_data(OVNVCLReader *const rdr, struct OVScalingList* sl,
+nvcl_read_scaling_list_data(OVNVCLReader *const rdr, struct OVScalingListData* sl,
                              uint8_t aps_chroma_present_flag)
 {
     int id;
@@ -531,7 +522,7 @@ struct ScalingLists {
 };
 
 static void
-derive_scaling_matrix_2x2(struct ScalingLists *const sl_ctx, const OVScalingList *sl, int id)
+derive_scaling_matrix_2x2(struct ScalingLists *const sl_ctx, const OVScalingListData *sl, int id)
 {
     struct ScalingList2x2 *sl_dst = &sl_ctx->chroma_2x2[id];
     const struct ScalingList2x2 *sl_ref = sl_dst;
@@ -559,7 +550,7 @@ derive_scaling_matrix_2x2(struct ScalingLists *const sl_ctx, const OVScalingList
 }
 
 static void
-derive_scaling_matrix_4x4(struct ScalingLists *const sl_ctx, const OVScalingList *sl, int id)
+derive_scaling_matrix_4x4(struct ScalingLists *const sl_ctx, const OVScalingListData *sl, int id)
 {
     struct ScalingList4x4 *sl_dst = &sl_ctx->ycbcbr_4x4[id - 2];
     const struct ScalingList4x4 *sl_ref = sl_dst;
@@ -588,7 +579,7 @@ derive_scaling_matrix_4x4(struct ScalingLists *const sl_ctx, const OVScalingList
 }
 
 static void
-derive_scaling_matrix_8x8(struct ScalingLists *const sl_ctx, const OVScalingList *sl, int id)
+derive_scaling_matrix_8x8(struct ScalingLists *const sl_ctx, const OVScalingListData *sl, int id)
 {
     struct ScalingList8x8 *sl_dst = &sl_ctx->ycbcbr_8x8[id - 8];
     const struct ScalingList8x8 *sl_ref = sl_dst;
@@ -634,7 +625,7 @@ static uint8_t map[64] =
 };
 
 static void
-derive_scaling_matrix_8x8_2(struct ScalingLists *const sl_ctx, const OVScalingList *sl, int id)
+derive_scaling_matrix_8x8_2(struct ScalingLists *const sl_ctx, const OVScalingListData *sl, int id)
 {
     struct ScalingList8x8 *sl_dst = &sl_ctx->ycbcbr_8x8[id - 8];
     const struct ScalingList8x8 *sl_ref = sl_dst;
@@ -929,6 +920,35 @@ derive_tbs_luma(struct ScalingLists *sl_ctx, int16_t *intra_luts, int16_t *inter
     }
 }
 
+struct TBScalingLUTs {
+    int16_t intra_luts[9024];
+    int16_t inter_luts[9024];
+    int16_t intra_luts_cb[9024];
+    int16_t inter_luts_cb[9024];
+    int16_t intra_luts_cr[9024];
+    int16_t inter_luts_cr[9024];
+};
+
+void
+derive_scaling_tb_luts(struct TBScalingLUTs *const sl_luts, const OVAPS *const aps)
+{
+    struct ScalingLists sls = {0};
+    for (int i = 0; i < 28; ++i) {
+        if (i < 2) {
+            derive_scaling_matrix_2x2(&sls, &aps->aps_scaling_list_data, i);
+        } else if (i < 8) {
+            derive_scaling_matrix_4x4(&sls, &aps->aps_scaling_list_data, i);
+        } else if (i < 26) {
+            derive_scaling_matrix_8x8(&sls, &aps->aps_scaling_list_data, i);
+        } else {
+            derive_scaling_matrix_8x8_2(&sls, &aps->aps_scaling_list_data, i);
+        }
+    }
+    derive_tbs_luma(&sls, sl_luts->intra_luts, sl_luts->inter_luts);
+    derive_tbs_chroma(&sls, sl_luts->intra_luts_cb, sl_luts->inter_luts_cb,
+                      sl_luts->intra_luts_cr, sl_luts->inter_luts_cr);
+}
+
 int
 nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
               OVNVCLCtx *const nvcl_ctx)
@@ -943,30 +963,8 @@ nvcl_aps_read(OVNVCLReader *const rdr, OVAPS *const aps,
         nvcl_read_lmcs_data(rdr, &aps->aps_lmcs_data, aps->aps_chroma_present_flag);
     } else if (aps->aps_params_type == APS_SCALING_LIST) {
         ov_log(NULL, OVLOG_WARNING, "Ignored unsupported scaling list APS.\n");
-        OVScalingList sl = {0};
-        nvcl_read_scaling_list_data(rdr, &sl, aps->aps_chroma_present_flag);
+        nvcl_read_scaling_list_data(rdr, &aps->aps_scaling_list_data, aps->aps_chroma_present_flag);
 
-        int16_t intra_luts[9024];
-        int16_t inter_luts[9024];
-        int16_t intra_luts_cb[9024];
-        int16_t inter_luts_cb[9024];
-        int16_t intra_luts_cr[9024];
-        int16_t inter_luts_cr[9024];
-
-        struct ScalingLists sls = {0};
-        for (int i = 0; i < 28; ++i) {
-            if (i < 2) {
-                derive_scaling_matrix_2x2(&sls, &sl, i);
-            } else if (i < 8) {
-                derive_scaling_matrix_4x4(&sls, &sl, i);
-            } else if (i < 26) {
-                derive_scaling_matrix_8x8(&sls, &sl, i);
-            } else {
-                derive_scaling_matrix_8x8_2(&sls, &sl, i);
-            }
-        }
-        derive_tbs_luma(&sls, intra_luts, inter_luts);
-        derive_tbs_chroma(&sls, intra_luts_cb, inter_luts_cb, intra_luts_cr, inter_luts_cr);
     }
 
     aps->aps_extension_flag = nvcl_read_flag(rdr);
@@ -1009,9 +1007,13 @@ nvcl_decode_nalu_aps(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr, uint8_t
     } else if (aps->aps_params_type == 1) {
         ov_free(nvcl_ctx->lmcs_aps_list[aps_id]);
         nvcl_ctx->lmcs_aps_list[aps_id] = aps;
+    } else if (aps->aps_params_type == 2) {
+        ov_free(nvcl_ctx->scaling_list_aps_list[aps_id]);
+        nvcl_ctx->scaling_list_aps_list[aps_id] = aps;
     } else {
         ov_free(aps);
     }
+
     return aps_id;
 
 cleanup:
