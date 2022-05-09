@@ -283,9 +283,9 @@ slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
     VVCQPCTX *const qp_ctx = &ctudec->qp_ctx;
 
     /*FIXME check if not done in dec init */
-    const uint8_t qp_bd_offset = 6 * sps->sps_bitdepth_minus8;
-    uint8_t pic_base_qp = pps->pps_init_qp_minus26 + 26;
-    uint8_t pic_qp = pic_base_qp + ph->ph_qp_delta;
+    const int8_t qp_bd_offset = 6 * sps->sps_bitdepth_minus8;
+    int8_t pic_base_qp = pps->pps_init_qp_minus26 + 26;
+    int8_t pic_qp = pic_base_qp + ph->ph_qp_delta;
     int8_t slice_qp = pic_qp + sh->sh_qp_delta;
     int8_t cb_qp_offset = sh->sh_cb_qp_offset + pps->pps_cb_qp_offset;
     int8_t cr_qp_offset = sh->sh_cr_qp_offset + pps->pps_cr_qp_offset;
@@ -317,9 +317,10 @@ slice_init_qp_ctx(OVCTUDec *const ctudec, const struct OVPS *const prms)
     qp_ctx->min_qp_prime_ts = 4 + 6 * sps->sps_min_qp_prime_ts;
 
     ctudec->dequant_luma.qp = slice_qp + qp_bd_offset;
-    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[slice_qp + cb_qp_offset] + qp_bd_offset;
-    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[slice_qp + cr_qp_offset] + qp_bd_offset;
-    ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[slice_qp] + qp_bd_offset + jcbcr_qp_offset;
+    ctudec->dequant_cb.qp = qp_ctx->chroma_qp_map_cb[ov_clip(slice_qp, 0, 63)] + cb_qp_offset + qp_bd_offset;
+    ctudec->dequant_cr.qp = qp_ctx->chroma_qp_map_cr[ov_clip(slice_qp, 0, 63)] + cr_qp_offset + qp_bd_offset;
+    ctudec->dequant_joint_cb_cr.qp = qp_ctx->chroma_qp_map_jcbcr[ov_clip(slice_qp, 0, 63)] + qp_bd_offset + jcbcr_qp_offset;
+    derive_dequant_ctx(ctudec, qp_ctx, 0);
 }
 
 static void
@@ -1503,6 +1504,18 @@ init_affine_status(OVCTUDec *const ctudec, const OVSPS *const sps,
     ctudec->drv_ctx.inter_ctx.affine_6params_enabled = sps->sps_6param_affine_enabled_flag;
 }
 
+static void
+init_ladf(struct LADFParams *ladf, const OVSPS *sps)
+{
+    ladf->nb_intervals = sps->sps_num_ladf_intervals_minus2 + 2;
+    ladf->qp_offset[0] = sps->sps_ladf_lowest_interval_qp_offset;
+    ladf->threshold[0] = 0;
+    for (int i = 1; i < ladf->nb_intervals; ++i) {
+        ladf->qp_offset[i] = sps->sps_ladf_qp_offset[i - 1];
+        ladf->threshold[i] = ladf->threshold[i - 1] + sps->sps_ladf_delta_threshold_minus1[i - 1] + 1;
+    }
+}
+
 /* FIXME clean this init */
 static int
 slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
@@ -1548,8 +1561,49 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
                           #else
                           ctudec->dbf_disable = 1;
 #endif
-    ctudec->dbf_info.beta_offset = sh->sh_luma_beta_offset_div2 * 2;
-    ctudec->dbf_info.tc_offset   = sh->sh_luma_tc_offset_div2 * 2;
+    ctudec->dbf_info.beta_offset = pps->pps_luma_beta_offset_div2 * 2;
+    ctudec->dbf_info.tc_offset   = pps->pps_luma_tc_offset_div2 * 2;
+    if (pps->pps_chroma_tool_offsets_present_flag) {
+        ctudec->dbf_info.beta_offset_cb = pps->pps_cb_beta_offset_div2 * 2;
+        ctudec->dbf_info.tc_offset_cb   = pps->pps_cb_tc_offset_div2 * 2;
+        ctudec->dbf_info.beta_offset_cr = pps->pps_cr_beta_offset_div2 * 2;
+        ctudec->dbf_info.tc_offset_cr   = pps->pps_cr_tc_offset_div2 * 2;
+    } else {
+        ctudec->dbf_info.beta_offset_cb = ctudec->dbf_info.beta_offset;
+        ctudec->dbf_info.tc_offset_cb   = ctudec->dbf_info.tc_offset;
+        ctudec->dbf_info.beta_offset_cr = ctudec->dbf_info.beta_offset;
+        ctudec->dbf_info.tc_offset_cr   = ctudec->dbf_info.tc_offset;
+    }
+    if (ph->ph_deblocking_params_present_flag) {
+        ctudec->dbf_info.beta_offset = ph->ph_luma_beta_offset_div2 * 2;
+        ctudec->dbf_info.tc_offset   = ph->ph_luma_tc_offset_div2 * 2;
+        if (pps->pps_chroma_tool_offsets_present_flag) {
+            ctudec->dbf_info.beta_offset_cb = ph->ph_cb_beta_offset_div2 * 2;
+            ctudec->dbf_info.tc_offset_cb   = ph->ph_cb_tc_offset_div2 * 2;
+            ctudec->dbf_info.beta_offset_cr = ph->ph_cr_beta_offset_div2 * 2;
+            ctudec->dbf_info.tc_offset_cr   = ph->ph_cr_tc_offset_div2 * 2;
+        } else {
+            ctudec->dbf_info.beta_offset_cb = ctudec->dbf_info.beta_offset;
+            ctudec->dbf_info.tc_offset_cb   = ctudec->dbf_info.tc_offset;
+            ctudec->dbf_info.beta_offset_cr = ctudec->dbf_info.beta_offset;
+            ctudec->dbf_info.tc_offset_cr   = ctudec->dbf_info.tc_offset;
+        }
+    }
+    if (sh->sh_deblocking_params_present_flag) {
+        ctudec->dbf_info.beta_offset = sh->sh_luma_beta_offset_div2 * 2;
+        ctudec->dbf_info.tc_offset   = sh->sh_luma_tc_offset_div2 * 2;
+        if (pps->pps_chroma_tool_offsets_present_flag) {
+            ctudec->dbf_info.beta_offset_cb = sh->sh_cb_beta_offset_div2 * 2;
+            ctudec->dbf_info.tc_offset_cb   = sh->sh_cb_tc_offset_div2 * 2;
+            ctudec->dbf_info.beta_offset_cr = sh->sh_cr_beta_offset_div2 * 2;
+            ctudec->dbf_info.tc_offset_cr   = sh->sh_cr_tc_offset_div2 * 2;
+        } else {
+            ctudec->dbf_info.beta_offset_cb = ctudec->dbf_info.beta_offset;
+            ctudec->dbf_info.tc_offset_cb   = ctudec->dbf_info.tc_offset;
+            ctudec->dbf_info.beta_offset_cr = ctudec->dbf_info.beta_offset;
+            ctudec->dbf_info.tc_offset_cr   = ctudec->dbf_info.tc_offset;
+        }
+    }
 
     ctudec->lm_chroma_enabled = sps->sps_cclm_enabled_flag;
 
@@ -1602,6 +1656,11 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     //In loop filter information for CTU reconstruction
     ctudec_init_in_loop_filters(ctudec, prms);
     ctudec->tmp_slice_type = sh->sh_slice_type;
+    if (sps->sps_ladf_enabled_flag) {
+        init_ladf(&ctudec->dbf_info.ladf_prms, sps);
+    } else {
+        ctudec->dbf_info.ladf_prms.nb_intervals = 0; 
+    }
 
     return 0;
 }

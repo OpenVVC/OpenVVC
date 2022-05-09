@@ -428,8 +428,8 @@ struct OVSPS
     uint8_t sps_ladf_enabled_flag;
     uint8_t sps_num_ladf_intervals_minus2;
     int8_t sps_ladf_lowest_interval_qp_offset;
-    int8_t sps_ladf_qp_offset[64]; /* max_num_ladf_intervals */
-    uint8_t sps_ladf_delta_threshold_minus1[64];
+    int8_t sps_ladf_qp_offset[6]; /* max_num_ladf_intervals */
+    uint16_t sps_ladf_delta_threshold_minus1[6];
 
     uint8_t sps_explicit_scaling_list_enabled_flag;
     uint8_t sps_scaling_matrix_for_lfnst_disabled_flag;

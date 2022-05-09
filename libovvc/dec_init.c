@@ -273,7 +273,7 @@ sps_fill_qp_table(uint8_t dst_qp_tab[],
     }
 
     for (j = next_idx;  j < 64; ++j) {
-        dst_qp_tab[j] = dst_qp_tab[j - 1] + 1;
+        dst_qp_tab[j] = ov_clip(dst_qp_tab[j - 1] + 1, 0, 63);
     }
 }
 

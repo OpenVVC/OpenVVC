@@ -53,7 +53,7 @@ derive_dequant_ctx(OVCTUDec *const ctudec, const struct VVCQPCTX *const qp_ctx,
     int qp_bd_offset = qp_ctx->qp_bd_offset;
     int min_qp_prime_ts = qp_ctx->min_qp_prime_ts;
     int base_qp = ((qp_ctx->current_qp + cu_qp_delta + 64 + 2 * qp_bd_offset) % (64 + qp_bd_offset)) - qp_bd_offset;
-    int base_qp_c = ov_clip(base_qp, 0, 63);
+    int base_qp_c = ov_clip(base_qp, -qp_bd_offset, 63);
     ctudec->dequant_luma.qp = base_qp + qp_bd_offset;
 
     ctudec->dequant_cb.qp = ov_clip(qp_ctx->chroma_qp_map_cb[base_qp_c] + qp_ctx->cb_offset + qp_ctx->dqp_cb, -qp_bd_offset, 63) + qp_bd_offset;

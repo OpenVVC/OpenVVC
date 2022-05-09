@@ -157,6 +157,10 @@ struct DBFInfo
 
     int16_t beta_offset;
     int16_t tc_offset;
+    int16_t beta_offset_cb;
+    int16_t tc_offset_cb;
+    int16_t beta_offset_cr;
+    int16_t tc_offset_cr;
 
     /*FIXME reduce those maps deriving qp in dbf_function 
      * Those tables are not mandatory if delta qp is disabled
@@ -167,6 +171,13 @@ struct DBFInfo
     uint8_t disable_v;
     uint8_t disable_h;
     const struct IBCMVCtx *ibc_ctx;
+
+    struct LADFParams {
+        uint8_t nb_intervals;
+        int16_t threshold[6];
+        int8_t  qp_offset[6];
+
+    } ladf_prms;
 };
 
 struct SAOInfo
