@@ -519,6 +519,7 @@ struct ScalingLists {
     struct ScalingList2x2 chroma_2x2[2];
     struct ScalingList4x4 ycbcbr_4x4[8 - 2];
     struct ScalingList8x8 ycbcbr_8x8[28 - 8];
+    int16_t dc_val[28];
 };
 
 static void
@@ -542,11 +543,13 @@ derive_scaling_matrix_2x2(struct ScalingLists *const sl_ctx, const OVScalingList
         }
     }
 
-    uint8_t coeff = init_val;
+    int16_t coeff = init_val;
     for (i = 0; i < 4; i++) {
         coeff += sl->scaling_list_delta_coef[id][i];
         sl_dst->coeff[i] = sl_ref->coeff[i] + coeff;
     }
+
+    sl_ctx->dc_val[id] = sl_dst->coeff[0];
 }
 
 static void
@@ -570,12 +573,13 @@ derive_scaling_matrix_4x4(struct ScalingLists *const sl_ctx, const OVScalingList
         }
     }
 
-    uint8_t coeff = init_val;
+    int16_t coeff = init_val;
     for (i = 0; i < 16; i++) {
         coeff += sl->scaling_list_delta_coef[id][i];
         sl_dst->coeff[i] = sl_ref->coeff[i] + coeff;
     }
 
+    sl_ctx->dc_val[id] = sl_dst->coeff[0];
 }
 
 static void
@@ -585,6 +589,7 @@ derive_scaling_matrix_8x8(struct ScalingLists *const sl_ctx, const OVScalingList
     const struct ScalingList8x8 *sl_ref = sl_dst;
     int i;
     uint8_t init_val = 0;
+    uint8_t ref_id = id;
 
     uint8_t is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
     is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id] << 1;
@@ -594,12 +599,13 @@ derive_scaling_matrix_8x8(struct ScalingLists *const sl_ctx, const OVScalingList
         init_val = 8;
     } else {
         sl_ref -= sl->scaling_list_pred_id_delta[id];
+        ref_id -= sl->scaling_list_pred_id_delta[id];
         if (sl_ref == sl_dst) {
             init_val = 16;
         }
     }
 
-    uint8_t coeff = init_val;
+    int16_t coeff = init_val;
 
     if (id > 13) {
         coeff += sl->scaling_list_dc_coef[id - 14];
@@ -610,6 +616,12 @@ derive_scaling_matrix_8x8(struct ScalingLists *const sl_ctx, const OVScalingList
         sl_dst->coeff[i] = sl_ref->coeff[i] + coeff;
     }
 
+    if (id > 13) {
+        int16_t dc_pred =  ref_id > 13 ? sl_ctx->dc_val[ref_id] : sl_ref->coeff[0];
+        sl_ctx->dc_val[id] = dc_pred + sl->scaling_list_dc_coef[id - 14];
+    } else {
+        sl_ctx->dc_val[id] = sl_dst->coeff[0];
+    }
 }
 
 static uint8_t map[64] =
@@ -631,6 +643,7 @@ derive_scaling_matrix_8x8_2(struct ScalingLists *const sl_ctx, const OVScalingLi
     const struct ScalingList8x8 *sl_ref = sl_dst;
     int i;
     uint8_t init_val = 0;
+    uint8_t ref_id = id;
 
     uint8_t is_pred_or_cpy  = sl->scaling_list_pred_mode_flag[id];
     is_pred_or_cpy |= sl->scaling_list_copy_mode_flag[id] << 1;
@@ -640,6 +653,7 @@ derive_scaling_matrix_8x8_2(struct ScalingLists *const sl_ctx, const OVScalingLi
         init_val = 8;
     } else {
         sl_ref -= sl->scaling_list_pred_id_delta[id];
+        ref_id -= sl->scaling_list_pred_id_delta[id];
         if (sl_ref == sl_dst) {
             init_val = 16;
         }
@@ -661,6 +675,12 @@ derive_scaling_matrix_8x8_2(struct ScalingLists *const sl_ctx, const OVScalingLi
         sl_dst->coeff[i] = sl_ref->coeff[i] + coeff;
     }
 
+    if (id > 13) {
+        int16_t dc_pred =  ref_id > 13 ? sl_ctx->dc_val[ref_id] : sl_ref->coeff[0];
+        sl_ctx->dc_val[id] = dc_pred + sl->scaling_list_dc_coef[id - 14];
+    } else {
+        sl_ctx->dc_val[id] = sl_dst->coeff[0];
+    }
 }
 
 #define LOG2_TB_W(id) (((id) >> 3) & 7)
@@ -861,6 +881,8 @@ derive_tbs_chroma(struct ScalingLists *sl_ctx, int16_t *intra_luts_cb, int16_t *
                     derive_scaling_tb(sl_dst->coeff, &inter_luts_cb[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
                     sl_dst = &sl_ctx->chroma_2x2[intra_list_id + 1];
                     derive_scaling_tb(sl_dst->coeff, &inter_luts_cr[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
+                    inter_luts_cb[tb_lut_offset[lut_id]] = sl_ctx->dc_val[inter_list_id + 1];
+                    inter_luts_cr[tb_lut_offset[lut_id]] = sl_ctx->dc_val[inter_list_id + 2];
                 } else if (intra_list_id < 8) {
                     struct ScalingList4x4 *sl_dst = &sl_ctx->ycbcbr_4x4[intra_list_id - 2 + 1];
                     derive_scaling_tb(sl_dst->coeff, &intra_luts_cb[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
@@ -873,6 +895,12 @@ derive_tbs_chroma(struct ScalingLists *sl_ctx, int16_t *intra_luts_cb, int16_t *
                     sl_dst = &sl_ctx->ycbcbr_4x4[inter_list_id - 2 + 2];
                     derive_scaling_tb(sl_dst->coeff, &inter_luts_cr[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
 
+                    intra_luts_cb[tb_lut_offset[lut_id]] = sl_ctx->dc_val[intra_list_id + 1];
+                    inter_luts_cb[tb_lut_offset[lut_id]] = sl_ctx->dc_val[inter_list_id + 1];
+
+                    intra_luts_cr[tb_lut_offset[lut_id]] = sl_ctx->dc_val[intra_list_id + 2];
+                    inter_luts_cr[tb_lut_offset[lut_id]] = sl_ctx->dc_val[inter_list_id + 2];
+
                 } else if (intra_list_id < 26) {
                     struct ScalingList8x8 *sl_dst = &sl_ctx->ycbcbr_8x8[intra_list_id - 8 + 1];
                     derive_scaling_tb(sl_dst->coeff, &intra_luts_cb[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
@@ -883,6 +911,11 @@ derive_tbs_chroma(struct ScalingLists *sl_ctx, int16_t *intra_luts_cb, int16_t *
                     sl_dst = &sl_ctx->ycbcbr_8x8[inter_list_id - 8 + 2];
                     derive_scaling_tb(sl_dst->coeff, &inter_luts_cr[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
 
+                    intra_luts_cb[tb_lut_offset[lut_id]] = sl_ctx->dc_val[intra_list_id + 1];
+                    inter_luts_cb[tb_lut_offset[lut_id]] = sl_ctx->dc_val[inter_list_id + 1];
+
+                    intra_luts_cr[tb_lut_offset[lut_id]] = sl_ctx->dc_val[intra_list_id + 2];
+                    inter_luts_cr[tb_lut_offset[lut_id]] = sl_ctx->dc_val[inter_list_id + 2];
                 }
             }
         }
@@ -914,6 +947,9 @@ derive_tbs_luma(struct ScalingLists *sl_ctx, int16_t *intra_luts, int16_t *inter
                     derive_scaling_tb(sl_dst->coeff, &inter_luts[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
 
                 }
+
+                intra_luts[tb_lut_offset[lut_id]] = sl_ctx->dc_val[intra_list_id];
+                inter_luts[tb_lut_offset[lut_id]] = sl_ctx->dc_val[inter_list_id];
 
             }
         }
