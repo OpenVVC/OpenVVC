@@ -240,7 +240,7 @@ derive_dequant(const OVCTUDec *const ctudec, uint8_t qp, uint8_t log2_tb_w, uint
 }
 
 static void
-dequant_4x4_sb(OVCTUDec *const ctudec, int16_t *dst, const int16_t *src, uint64_t sig_sb_map, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp, uint8_t is_intra, uint8_t comp_idx, uint8_t is_lfnst)
+dequant_4x4_sb(OVCTUDec *const ctudec, int16_t *dst, const int16_t *src, uint64_t sig_sb_map, uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp, CUFlags cu_flags, uint8_t is_intra, uint8_t comp_idx, uint8_t is_lfnst)
 {
     int nb_cols = derive_nb_cols(sig_sb_map);
     int nb_rows = derive_nb_rows(sig_sb_map);
@@ -251,6 +251,7 @@ dequant_4x4_sb(OVCTUDec *const ctudec, int16_t *dst, const int16_t *src, uint64_
         ctudec->rcn_funcs.tmp.dequant_tb_4x4(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
     } else {
         const uint16_t *lut;
+        is_intra = !!(cu_flags & flg_pred_mode_flag);
         if (is_intra) {
           lut = ctudec->tb_scaling_luts.intra_luts;
           if (comp_idx == 1) {
@@ -277,6 +278,7 @@ rcn_residual(OVCTUDec *const ctudec,
              int16_t *const dst, int16_t *src,
              uint8_t x0, uint8_t y0,
              unsigned int log2_tb_w, unsigned int log2_tb_h,
+             CUFlags cu_flags,
              uint8_t cu_mts_flag, uint8_t cu_mts_idx,
              uint8_t is_dc, uint8_t lfnst_flag, uint8_t is_mip, uint8_t lfnst_idx, uint64_t sig_sb_map)
 {
@@ -290,7 +292,7 @@ rcn_residual(OVCTUDec *const ctudec,
     int tb_h = 1 << log2_tb_h;
 
     int qp = ctudec->dequant_luma.qp;
-    dequant_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp, 1, 0, lfnst_flag);
+    dequant_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp, cu_flags, 1, 0, lfnst_flag);
 
 
     if (!is_mip && !cu_mts_flag && ctudec->mts_implicit && (log2_tb_w <= 4 || log2_tb_h <= 4) && !lfnst_flag) {
@@ -368,7 +370,7 @@ rcn_residual(OVCTUDec *const ctudec,
 
 static void
 dequant_non_4x4_sb(const OVCTUDec *const ctudec, int16_t *dst, int16_t *src, uint64_t sig_sb_map,
-                   uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp)
+                   uint8_t log2_tb_w, uint8_t log2_tb_h, uint8_t qp, CUFlags cu_flags, uint8_t comp_idx)
 {
     /* Note in case of small blocks TBs are supposed to be small so processing the
      * whole block should not be an issue regarding performance
@@ -382,7 +384,24 @@ dequant_non_4x4_sb(const OVCTUDec *const ctudec, int16_t *dst, int16_t *src, uin
         dequant_tb(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, tb_h, tb_w);
     } else {
         const uint16_t *lut;
-        lut = ctudec->tb_scaling_luts.intra_luts;
+        uint8_t is_intra = !!(cu_flags & flg_pred_mode_flag);
+        if (is_intra) {
+          lut = ctudec->tb_scaling_luts.intra_luts;
+          if (comp_idx == 1) {
+              lut = ctudec->tb_scaling_luts.intra_luts_cb;
+          }
+          if (comp_idx == 2) {
+              lut = ctudec->tb_scaling_luts.intra_luts_cr;
+          }
+        } else {
+          lut = ctudec->tb_scaling_luts.inter_luts;
+          if (comp_idx == 1) {
+              lut = ctudec->tb_scaling_luts.inter_luts_cb;
+          }
+          if (comp_idx == 2) {
+              lut = ctudec->tb_scaling_luts.inter_luts_cr;
+          }
+        }
         scale_dequant_tb(lut, dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, tb_h, tb_w);
     }
 }
@@ -392,8 +411,9 @@ rcn_residual_c(OVCTUDec *const ctudec,
                int16_t *const dst, int16_t *src,
                uint8_t x0, uint8_t y0,
                uint8_t log2_tb_w, uint8_t log2_tb_h,
+               CUFlags cu_flags,
                uint16_t last_pos,
-               uint8_t lfnst_flag, uint8_t lfnst_idx, uint64_t sig_sb_map, uint8_t qp)
+               uint8_t lfnst_flag, uint8_t lfnst_idx, uint64_t sig_sb_map, uint8_t qp, uint8_t comp_id)
 {
     struct TRFunctions *TRFunc = &ctudec->rcn_funcs.tr;
 
@@ -404,7 +424,7 @@ rcn_residual_c(OVCTUDec *const ctudec,
     int tb_h = 1 << log2_tb_h;
 
     if (log2_tb_h > 1 && log2_tb_w > 1) {
-        dequant_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp, 1, 1, lfnst_flag);
+        dequant_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp, cu_flags, 1, comp_id, lfnst_flag);
     } else {
         int log2_sb_w = 2;
         int log2_sb_h = 2;
@@ -419,11 +439,7 @@ rcn_residual_c(OVCTUDec *const ctudec,
         int nb_col = (derive_nb_cols(sig_sb_map) >> 2) << log2_sb_h;
         int nb_row = (derive_nb_rows(sig_sb_map) >> 2) << log2_sb_w;
 
-        if (!ctudec->scaling_list_enabled) {
-            dequant_non_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp);
-        } else {
-            dequant_non_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp);
-        }
+        dequant_non_4x4_sb(ctudec, dequant_coeffs, src, sig_sb_map, log2_tb_w, log2_tb_h, qp, cu_flags, comp_id);
     }
 
     if (!last_pos && !lfnst_flag) {
@@ -577,8 +593,8 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
             uint8_t qp = ctu_dec->dequant_cb.qp;
 
             rcn_residual_c(ctu_dec, tr_buff, coeffs_cb,
-                           x0, y0, log2_tb_w, log2_tb_h,
-                           tb_info_cb->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info_cb->sig_sb_map, qp);
+                           x0, y0, log2_tb_w, log2_tb_h, cu_flags,
+                           tb_info_cb->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info_cb->sig_sb_map, qp, 1);
         } else {
             const struct TBInfo *const tb_info = &tu_info->tb_info[0];
             int qp = ctu_dec->dequant_cb_skip.qp;
@@ -610,8 +626,8 @@ rcn_res_c(OVCTUDec *const ctu_dec, const struct TUInfo *tu_info,
             const struct TBInfo *const tb_info_cr = &tu_info->tb_info[1];
             uint8_t qp = ctu_dec->dequant_cr.qp;
             rcn_residual_c(ctu_dec, tr_buff, coeffs_cr,
-                           x0, y0, log2_tb_w, log2_tb_h,
-                           tb_info_cr->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info_cr->sig_sb_map, qp);
+                           x0, y0, log2_tb_w, log2_tb_h, cu_flags,
+                           tb_info_cr->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info_cr->sig_sb_map, qp, 2);
         } else {
             const struct TBInfo *const tb_info = &tu_info->tb_info[1];
             int qp = ctu_dec->dequant_cr_skip.qp;
@@ -649,18 +665,22 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
         const struct TBInfo *const tb_info = &tu_info->tb_info[0];
         int16_t *const coeffs_jcbcr = ctu_dec->residual_cb + tu_info->pos_offset;
         uint8_t qp;
+        uint8_t comp_id;
 
         if ((cbf_mask&0x3) == 3) {
             qp = ctu_dec->dequant_joint_cb_cr.qp;
+            comp_id = 1;
         } else if (cbf_mask == 1) {
             qp = ctu_dec->dequant_cr.qp;
+            comp_id = 2;
         } else {
             qp = ctu_dec->dequant_cb.qp;
+            comp_id = 1;
         }
 
         rcn_residual_c(ctu_dec, tr_buff, coeffs_jcbcr,
-                       x0, y0, log2_tb_w, log2_tb_h,
-                       tb_info->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info->sig_sb_map, qp);
+                       x0, y0, log2_tb_w, log2_tb_h, cu_flags,
+                       tb_info->last_pos, lfnst_flag, tu_info->lfnst_idx, tb_info->sig_sb_map, qp, comp_id);
     } else {
         int16_t *const coeffs_jcbcr = ctu_dec->residual_cb + tu_info->pos_offset;
         int qp = (cbf_mask == 3) ? ctu_dec->dequant_jcbcr_skip.qp
@@ -709,7 +729,7 @@ rcn_jcbcr(OVCTUDec *const ctu_dec, const struct TUInfo *const tu_info,
 }
 
 static void
-rcn_isp_tu(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t log2_tb_w, uint8_t log2_tb_h, int16_t *coeffs_y, const struct ISPTUInfo *const tu_info, uint8_t type_v, uint8_t type_h, int8_t lfnst_intra_mode)
+rcn_isp_tu(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t log2_tb_w, uint8_t log2_tb_h, CUFlags cu_flags, int16_t *coeffs_y, const struct ISPTUInfo *const tu_info, uint8_t type_v, uint8_t type_h, int8_t lfnst_intra_mode)
 {
     DECLARE_ALIGNED(32, int16_t, tmp)[32*64];
     DECLARE_ALIGNED(32, int16_t, dequant_coeffs)[32*64];
@@ -727,7 +747,7 @@ rcn_isp_tu(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
 
     int qp = ctudec->dequant_luma.qp;
 
-    dequant_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp, 1, 0, tu_info->lfnst_flag);
+    dequant_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp, cu_flags, 1, 0, tu_info->lfnst_flag);
 
     memset(tmp, 0, sizeof(int16_t) << (log2_tb_w + log2_tb_h));
 
@@ -780,7 +800,7 @@ rcn_2xX_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
 
     int qp = ctudec->dequant_luma.qp;
 
-    dequant_non_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
+    dequant_non_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp, 0x2, 0);
 
     memset(tmp, 0, sizeof(int16_t) << (1 + log2_tb_h));
 
@@ -800,7 +820,7 @@ rcn_1xX_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
 
     int qp = ctudec->dequant_luma.qp;
 
-    dequant_non_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
+    dequant_non_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp, 0x2, 0);
 
     TRFunc->func[type_v][OVMIN(log2_tb_h,6)](dequant_coeffs, ctudec->transform_buff, tb_w, tb_w, tb_info->last_pos & 0x1F, TR_SHIFT_H + 1);
 
@@ -810,7 +830,7 @@ rcn_1xX_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
 static void
 rcn_tu_isp_v(OVCTUDec *const ctudec,
              unsigned int x0, unsigned int y0,
-             unsigned int log2_tb_w, unsigned int log2_tb_h,
+             unsigned int log2_tb_w, unsigned int log2_tb_h, CUFlags cu_flags,
              uint8_t lfnst_intra_mode,
              const struct ISPTUInfo *const tu_info, uint8_t i,
              uint8_t type_v, uint8_t type_h, uint8_t offset)
@@ -827,7 +847,7 @@ rcn_tu_isp_v(OVCTUDec *const ctudec,
         if (log2_tb_w == 1) {
             rcn_2xX_tb(ctudec, tb_info, log2_tb_h, coeffs_y, type_v, type_h);
         } else {
-            rcn_isp_tu(ctudec, tb_info, log2_tb_w, log2_tb_h, coeffs_y, tu_info,
+            rcn_isp_tu(ctudec, tb_info, log2_tb_w, log2_tb_h, cu_flags, coeffs_y, tu_info,
                        type_v, type_h, lfnst_intra_mode);
         }
 
@@ -863,7 +883,7 @@ rcn_Xx2_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
 
     int qp = ctudec->dequant_luma.qp;
 
-    dequant_non_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
+    dequant_non_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp, 0x2, 0);
 
     memset(tmp, 0, sizeof(int16_t) << (1 + log2_tb_w));
 
@@ -885,7 +905,7 @@ rcn_Xx1_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
 
     int qp = ctudec->dequant_luma.qp;
 
-    dequant_non_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp);
+    dequant_non_4x4_sb(ctudec, dequant_coeffs, src, tb_info->sig_sb_map, log2_tb_w, log2_tb_h, qp, 0x2, 0);
 
     TRFunc->func[type_h][OVMIN(log2_tb_w,6)](dequant_coeffs, ctudec->transform_buff, tb_h, tb_h, tb_info->last_pos & 0x1F, TR_SHIFT_H + 1);
 
@@ -894,7 +914,7 @@ rcn_Xx1_tb(OVCTUDec *const ctudec, const struct TBInfo *const tb_info, uint8_t l
 static void
 rcn_tu_isp_h(OVCTUDec *const ctudec,
              unsigned int x0, unsigned int y0,
-             unsigned int log2_tb_w, unsigned int log2_tb_h,
+             unsigned int log2_tb_w, unsigned int log2_tb_h, CUFlags cu_flags,
              uint8_t lfnst_intra_mode,
              const struct ISPTUInfo *const tu_info, uint8_t i,
              uint8_t type_v, uint8_t type_h, uint8_t offset)
@@ -911,7 +931,7 @@ rcn_tu_isp_h(OVCTUDec *const ctudec,
         if (log2_tb_h == 1) {
             rcn_Xx2_tb(ctudec, tb_info, log2_tb_w, coeffs_y, type_v, type_h);
         } else {
-            rcn_isp_tu(ctudec, tb_info, log2_tb_w, log2_tb_h, coeffs_y, tu_info,
+            rcn_isp_tu(ctudec, tb_info, log2_tb_w, log2_tb_h, cu_flags, coeffs_y, tu_info,
                        type_v, type_h, lfnst_intra_mode);
         }
 
@@ -930,6 +950,7 @@ static void
 recon_isp_subtree_v(OVCTUDec *const ctudec,
                     unsigned int x0, unsigned int y0,
                     unsigned int log2_cb_w, unsigned int log2_cb_h,
+                    CUFlags cu_flags,
                     uint8_t intra_mode,
                     const struct ISPTUInfo *const tu_info)
 {
@@ -980,7 +1001,7 @@ recon_isp_subtree_v(OVCTUDec *const ctudec,
         }
 
         if (cbf) {
-            rcn_tu_isp_v(ctudec, x0, y0, log2_pb_w, log2_cb_h,
+            rcn_tu_isp_v(ctudec, x0, y0, log2_pb_w, log2_cb_h, cu_flags,
                          lfnst_intra_mode, tu_info, i,
                          type_v, type_h, offset_x);
         }
@@ -994,6 +1015,7 @@ static void
 recon_isp_subtree_h(OVCTUDec *const ctudec,
                     unsigned int x0, unsigned int y0,
                     unsigned int log2_cb_w, unsigned int log2_cb_h,
+                    CUFlags cu_flags,
                     uint8_t intra_mode,
                     const struct ISPTUInfo *const tu_info)
 {
@@ -1037,7 +1059,7 @@ recon_isp_subtree_h(OVCTUDec *const ctudec,
                                          ctu_buff->stride, intra_mode, x0, y0,
                                          log2_cb_w, log2_pb_h, log2_cb_w, log2_cb_h, 0, offset_y);
         if (cbf) {
-            rcn_tu_isp_h(ctudec, x0, y0, log2_cb_w, log2_pb_h,
+            rcn_tu_isp_h(ctudec, x0, y0, log2_cb_w, log2_pb_h, cu_flags,
                          lfnst_intra_mode, tu_info, i,
                          type_v, type_h, offset_y);
         }
@@ -1089,7 +1111,7 @@ rcn_tu_st(OVCTUDec *const ctu_dec,
             uint8_t is_mip = !!(cu_flags & flg_mip_flag);
             uint8_t is_intra = !!(cu_flags & flg_pred_mode_flag);
             is_mip |= !is_intra;
-            rcn_residual(ctu_dec, tr_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
+            rcn_residual(ctu_dec, tr_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h, cu_flags,
                          tu_info->cu_mts_flag, tu_info->cu_mts_idx,
                          !tb_info->last_pos, tu_info->lfnst_flag, is_mip, tu_info->lfnst_idx, tb_info->sig_sb_map);
 
@@ -1162,7 +1184,7 @@ rcn_tu_l(OVCTUDec *const ctu_dec,
             uint8_t is_mip = !!(cu_flags & flg_mip_flag);
             uint8_t is_intra = !!(cu_flags & flg_pred_mode_flag);
             is_mip |= !is_intra;
-            rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h,
+            rcn_residual(ctu_dec, ctu_dec->transform_buff, coeffs_y, x0, y0, log2_tb_w, log2_tb_h, cu_flags,
                          tu_info->cu_mts_flag, tu_info->cu_mts_idx,
                          !tb_info->last_pos, tu_info->lfnst_flag, is_mip, tu_info->lfnst_idx, tb_info->sig_sb_map);
 

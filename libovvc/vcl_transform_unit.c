@@ -1344,6 +1344,7 @@ static uint8_t
 isp_subtree_v(OVCTUDec *const ctu_dec,
               unsigned int x0, unsigned int y0,
               unsigned int log2_cb_w, unsigned int log2_cb_h,
+              CUFlags cu_flags,
               uint8_t intra_mode)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -1531,7 +1532,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
     tu_info.cbf_mask = cbf_flags;
 
 #if 1
-    ctu_dec->rcn_funcs.tmp.recon_isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, &tu_info);
+    ctu_dec->rcn_funcs.tmp.recon_isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, cu_flags, intra_mode, &tu_info);
 #endif
 
     if (ctu_dec->transform_unit == &transform_unit_st) {
@@ -1547,7 +1548,7 @@ isp_subtree_v(OVCTUDec *const ctu_dec,
         dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_cb_w, log2_cb_h, qp_l);
         dbf_fill_qp_map(&dbf_info->qp_map_cb, x0, y0, log2_cb_w, log2_cb_h, qp_cb);
         dbf_fill_qp_map(&dbf_info->qp_map_cr, x0, y0, log2_cb_w, log2_cb_h, qp_cr);
-        ctu_dec->rcn_funcs.tmp.rcn_tu_c(ctu_dec, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1, 0, cbf_mask_c, &tu_info_c);
+        ctu_dec->rcn_funcs.tmp.rcn_tu_c(ctu_dec, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1, 2, cbf_mask_c, &tu_info_c);
 
     } else {
         struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
@@ -1562,6 +1563,7 @@ static uint8_t
 isp_subtree_h(OVCTUDec *const ctu_dec,
               unsigned int x0, unsigned int y0,
               unsigned int log2_cb_w, unsigned int log2_cb_h,
+              CUFlags cu_flags,
               uint8_t intra_mode)
 {
     OVCABACCtx *const cabac_ctx = ctu_dec->cabac_ctx;
@@ -1743,7 +1745,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
     tu_info.cbf_mask = cbf_flags;
 
 #if 1
-    ctu_dec->rcn_funcs.tmp.recon_isp_subtree_h(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode, &tu_info);
+    ctu_dec->rcn_funcs.tmp.recon_isp_subtree_h(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, cu_flags, intra_mode, &tu_info);
 #endif
     if (ctu_dec->transform_unit == &transform_unit_st) {
         int qp_bd_offset = ctu_dec->qp_ctx.qp_bd_offset;
@@ -1757,7 +1759,7 @@ isp_subtree_h(OVCTUDec *const ctu_dec,
         dbf_fill_qp_map(&dbf_info->qp_map_y, x0, y0, log2_cb_w, log2_cb_h, qp_l);
         dbf_fill_qp_map(&dbf_info->qp_map_cb, x0, y0, log2_cb_w, log2_cb_h, qp_cb);
         dbf_fill_qp_map(&dbf_info->qp_map_cr, x0, y0, log2_cb_w, log2_cb_h, qp_cr);
-        ctu_dec->rcn_funcs.tmp.rcn_tu_c(ctu_dec, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1, 0, cbf_mask_c, &tu_info_c);
+        ctu_dec->rcn_funcs.tmp.rcn_tu_c(ctu_dec, x0 >> 1, y0 >> 1, log2_cb_w - 1, log2_cb_h - 1, 2, cbf_mask_c, &tu_info_c);
 
     } else {
         struct DBFInfo *dbf_info = &ctu_dec->dbf_info;
@@ -1880,9 +1882,9 @@ transform_unit_wrap(OVCTUDec *const ctu_dec,
                                             nb_unit_w, nb_unit_h);
 
                 if (isp_mode == 2) {
-                    isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode);
+                    isp_subtree_v(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, cu.cu_flags, intra_mode);
                 } else if (isp_mode == 1) {
-                    isp_subtree_h(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, intra_mode);
+                    isp_subtree_h(ctu_dec, x0, y0, log2_cb_w, log2_cb_h, cu.cu_flags, intra_mode);
                 }
             }
         }

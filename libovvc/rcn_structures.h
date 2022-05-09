@@ -488,12 +488,14 @@ struct TMPBDCompat
     void (*recon_isp_subtree_h)(OVCTUDec *const ctudec,
                                 unsigned int x0, unsigned int y0,
                                 unsigned int log2_cb_w, unsigned int log2_cb_h,
+                                CUFlags cu_flags,
                                 uint8_t intra_mode,
                                 const struct ISPTUInfo *const tu_info);
 
     void (*recon_isp_subtree_v)(OVCTUDec *const ctudec,
                                 unsigned int x0, unsigned int y0,
                                 unsigned int log2_cb_w, unsigned int log2_cb_h,
+                                CUFlags cu_flags,
                                 uint8_t intra_mode,
                                 const struct ISPTUInfo *const tu_info);
 };
