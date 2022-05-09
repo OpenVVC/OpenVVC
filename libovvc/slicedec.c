@@ -1666,6 +1666,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec_init_in_loop_filters(ctudec, prms);
     ctudec->tmp_slice_type = sh->sh_slice_type;
     ctudec->scaling_list_enabled = ph->ph_explicit_scaling_list_enabled_flag || sh->sh_explicit_scaling_list_used_flag;
+    ctudec->lfnst_scaling_list_enabled = ctudec->scaling_list_enabled && !sps->sps_scaling_matrix_for_lfnst_disabled_flag;
 
     if (ctudec->scaling_list_enabled) {
         uint8_t aps_id = ph->ph_scaling_list_aps_id;

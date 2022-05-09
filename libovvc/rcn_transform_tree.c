@@ -247,7 +247,7 @@ dequant_4x4_sb(OVCTUDec *const ctudec, int16_t *dst, const int16_t *src, uint64_
 
     struct IQScale deq_prms = derive_dequant(ctudec, qp, log2_tb_w, log2_tb_h);
 
-    if (!ctudec->scaling_list_enabled || is_lfnst) {
+    if (!ctudec->scaling_list_enabled || (ctudec->scaling_list_enabled && is_lfnst && !ctudec->lfnst_scaling_list_enabled)) {
         ctudec->rcn_funcs.tmp.dequant_tb_4x4(dst, src, deq_prms.scale, deq_prms.shift, log2_tb_w, log2_tb_h, sig_sb_map);
     } else {
         const uint16_t *lut;
