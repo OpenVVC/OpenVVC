@@ -872,14 +872,14 @@ derive_tbs_chroma(struct ScalingLists *sl_ctx, int16_t *intra_luts_cb, int16_t *
             if ((log2_tb_h >= 1 || log2_tb_w >= 1)) {
                 uint8_t log2_max_wh = OVMAX(log2_tb_w, log2_tb_h);
 
-                uint8_t intra_list_id = (log2_max_wh - 1) * 6 - 4;
-                uint8_t inter_list_id = OVMIN(27, intra_list_id + 3);
+                int8_t intra_list_id = (log2_max_wh - 1) * 6 - 4;
+                int8_t inter_list_id = OVMIN(27, intra_list_id + 3);
                 uint8_t lut_id = (log2_tb_w << 3) | log2_tb_h;
 
                 if (intra_list_id < 2) {
-                    struct ScalingList2x2 *sl_dst = &sl_ctx->chroma_2x2[intra_list_id];
+                    struct ScalingList2x2 *sl_dst = &sl_ctx->chroma_2x2[inter_list_id + 1];
                     derive_scaling_tb(sl_dst->coeff, &inter_luts_cb[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
-                    sl_dst = &sl_ctx->chroma_2x2[intra_list_id + 1];
+                    sl_dst = &sl_ctx->chroma_2x2[inter_list_id + 2];
                     derive_scaling_tb(sl_dst->coeff, &inter_luts_cr[tb_lut_offset[lut_id]], log2_tb_w, log2_tb_h);
                     inter_luts_cb[tb_lut_offset[lut_id]] = sl_ctx->dc_val[inter_list_id + 1];
                     inter_luts_cr[tb_lut_offset[lut_id]] = sl_ctx->dc_val[inter_list_id + 2];
