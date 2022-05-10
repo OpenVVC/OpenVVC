@@ -1539,6 +1539,7 @@ slicedec_init_slice_tools(OVCTUDec *const ctudec, const OVPS *const prms)
     ctudec->transform_skip_enabled   = sps->sps_transform_skip_enabled_flag;
     ctudec->sh_ts_disabled   = sh->sh_ts_residual_coding_disabled_flag;
     ctudec->max_num_merge_candidates = 6 - sps->sps_six_minus_max_num_merge_cand;
+    ctudec->drv_ctx.inter_ctx.log2_parallel_merge_level = sps->sps_log2_parallel_merge_level_minus2 + 2;
 
     ctudec->delta_qp_enabled = pps->pps_cu_qp_delta_enabled_flag;
     ctudec->sbt_enabled      = sps->sps_sbt_enabled_flag;

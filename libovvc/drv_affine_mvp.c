@@ -266,7 +266,7 @@ is_above_cand(enum CandName cand_name)
 
 static inline uint8_t
 check_cand_available(uint64_t abv_row, uint64_t lft_col, uint8_t pb_x, uint8_t pb_y,
-                     uint8_t nb_pb_w, uint8_t nb_pb_h)
+                     uint8_t nb_pb_w, uint8_t nb_pb_h, uint8_t log2_pmerge_lvl)
 {
     /* Note A3 and B2 correspond to the same candidate */
     uint64_t a0_pos_msk = POS_MASK(pb_y, nb_pb_h);
@@ -290,16 +290,43 @@ check_cand_available(uint64_t abv_row, uint64_t lft_col, uint8_t pb_x, uint8_t p
     uint8_t cand_b2 = !!(abv_row & b2_pos_msk);
     uint8_t cand_b3 = !!(abv_row & b3_pos_msk);
 
-    uint8_t cand_list = cand_a0;
+    int16_t x0 = pb_x << LOG2_MIN_CU_S;
+    int16_t y0 = pb_y << LOG2_MIN_CU_S;
+    int16_t cb_w = nb_pb_w << LOG2_MIN_CU_S;
+    int16_t cb_h = nb_pb_h << LOG2_MIN_CU_S;
 
-    cand_list |= cand_a1 << 1;
-    cand_list |= cand_a2 << 2;
-    cand_list |= cand_a3 << 3;
+    uint8_t mrg_a0 = ((y0 + cb_h)     >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
+    uint8_t mrg_a1 = ((y0 + cb_h - 1) >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
+    uint8_t mrg_a2 = ((y0           ) >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
+    uint8_t mrg_a3 = ((y0 - 1       ) >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
 
-    cand_list |= cand_b0 << 4;
-    cand_list |= cand_b1 << 5;
-    cand_list |= cand_b2 << 6;
-    cand_list |= cand_b3 << 7;
+    uint8_t mrg_b0 = ((x0 + cb_w)     >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
+    uint8_t mrg_b1 = ((x0 + cb_w - 1) >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
+    uint8_t mrg_b2 = ((x0 - 1)        >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
+    uint8_t mrg_b3 = ((x0    )        >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
+
+    mrg_a0 |= ((x0 - 1) >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
+    mrg_a1 |= ((x0 - 1) >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
+    mrg_a2 |= ((x0 - 1) >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
+    mrg_a3 |= ((x0 - 1) >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
+
+    mrg_b0 |= ((y0 - 1) >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
+    mrg_b1 |= ((y0 - 1) >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
+    mrg_b2 |= ((y0 - 1) >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
+    mrg_b3 |= ((y0 - 1) >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
+
+    //mrg_a0 = mrg_a1 = mrg_a2 = mrg_a3 = mrg_b0 = mrg_b1 = mrg_b2 = mrg_b3 = 1;
+
+    uint8_t cand_list = cand_a0 & mrg_a0;
+
+    cand_list |= (cand_a1 & mrg_a1) << 1;
+    cand_list |= (cand_a2 & mrg_a2) << 2;
+    cand_list |= (cand_a3 & mrg_a3) << 3;
+
+    cand_list |= (cand_b0 & mrg_b0) << 4;
+    cand_list |= (cand_b1 & mrg_b1) << 5;
+    cand_list |= (cand_b2 & mrg_b2) << 6;
+    cand_list |= (cand_b3 & mrg_b3) << 7;
 
     return cand_list;
 }
@@ -1270,14 +1297,16 @@ drv_affine_mvp(struct InterDRVCtx *const inter_ctx,
     uint64_t rpl1_lft_col = mv_ctx1->map.vfield[x_pb];
     uint64_t rpl1_abv_row = mv_ctx1->map.hfield[y_pb];
 
+    uint8_t log2_pmerge_lvl = inter_ctx->log2_parallel_merge_level;
+
     const uint8_t aff_cand_list = check_cand_available(aff_abv_row, aff_lft_col, x_pb, y_pb,
-                                                       nb_pb_w, nb_pb_h);
+                                                       nb_pb_w, nb_pb_h, 2);
 
     const uint8_t rpl0_cand = check_cand_available(rpl0_abv_row, rpl0_lft_col, x_pb, y_pb,
-                                                   nb_pb_w, nb_pb_h);
+                                                   nb_pb_w, nb_pb_h, 2);
 
     const uint8_t rpl1_cand = check_cand_available(rpl1_abv_row, rpl1_lft_col, x_pb, y_pb,
-                                                   nb_pb_w, nb_pb_h);
+                                                   nb_pb_w, nb_pb_h, 2);
 
     /* Control points from affine neighbours */
     /* Affine left cand */
@@ -2587,6 +2616,7 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
     uint64_t rpl1_lft_col = mv_ctx1->map.vfield[x_pb];
     uint64_t rpl1_abv_row = mv_ctx1->map.hfield[y_pb];
 
+    uint8_t log2_pmerge_lvl = inter_ctx->log2_parallel_merge_level;
     struct PBInfo pb_info = { 
         .x_pb = x_pb, 
         .y_pb = y_pb, 
@@ -2597,13 +2627,13 @@ derive_affine_merge_mv(struct InterDRVCtx *const inter_ctx,
     };
 
     const uint8_t aff_cand_list = check_cand_available(aff_abv_row, aff_lft_col, x_pb, y_pb,
-                                                       nb_pb_w, nb_pb_h);
+                                                       nb_pb_w, nb_pb_h, log2_pmerge_lvl);
 
     const uint8_t rpl0_cand = check_cand_available(rpl0_abv_row, rpl0_lft_col, x_pb, y_pb,
-                                                   nb_pb_w, nb_pb_h);
+                                                   nb_pb_w, nb_pb_h, log2_pmerge_lvl);
 
     const uint8_t rpl1_cand = check_cand_available(rpl1_abv_row, rpl1_lft_col, x_pb, y_pb,
-                                                   nb_pb_w, nb_pb_h);
+                                                   nb_pb_w, nb_pb_h, log2_pmerge_lvl);
 
     /* derive affine control points from affine neighbours */
     uint8_t cand_lft = avaiable_merge_affine_a0_a1(aff_cand_list);
@@ -3804,6 +3834,7 @@ drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
     uint8_t nb_pb_h = (1 << log2_cu_h) >> 2;
     uint8_t sbtmvp_enabled = inter_ctx->sbtmvp_enabled;
     uint8_t is_sbtmvp = 0;
+    uint8_t log2_pmerge_lvl = inter_ctx->log2_parallel_merge_level;
 
     if (sbtmvp_enabled) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
@@ -3815,7 +3846,7 @@ drv_affine_merge_mvp_p(struct InterDRVCtx *const inter_ctx,
         uint64_t rpl0_abv_row = mv_ctx0->map.hfield[y_pb];
 
         const uint8_t rpl0_cand = check_cand_available(rpl0_abv_row, rpl0_lft_col, x_pb, y_pb,
-                                                       nb_pb_w, nb_pb_h);
+                                                       nb_pb_w, nb_pb_h, log2_pmerge_lvl);
 
 
         uint8_t sb_cand = derive_sub_pu_merge_cand(inter_ctx, x0, y0,
@@ -3938,6 +3969,7 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     uint8_t nb_pb_h = (1 << log2_cu_h) >> 2;
     uint8_t sbtmvp_enabled = inter_ctx->sbtmvp_enabled;
     uint8_t is_sbtmvp = 0;
+    uint8_t log2_pmerge_lvl = inter_ctx->log2_parallel_merge_level;
 
     if (sbtmvp_enabled) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
@@ -3952,10 +3984,10 @@ drv_affine_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
         uint64_t rpl1_abv_row = mv_ctx1->map.hfield[y_pb];
 
         const uint8_t rpl0_cand = check_cand_available(rpl0_abv_row, rpl0_lft_col, x_pb, y_pb,
-                                                       nb_pb_w, nb_pb_h);
+                                                       nb_pb_w, nb_pb_h, log2_pmerge_lvl);
 
         const uint8_t rpl1_cand = check_cand_available(rpl1_abv_row, rpl1_lft_col, x_pb, y_pb,
-                                                       nb_pb_w, nb_pb_h);
+                                                       nb_pb_w, nb_pb_h, log2_pmerge_lvl);
 
         uint8_t sb_cand = derive_sub_pu_merge_cand(inter_ctx, x0, y0,
                                                    log2_cu_w, log2_cu_h,

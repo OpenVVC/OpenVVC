@@ -431,6 +431,7 @@ struct InterDRVCtx
     uint8_t prof_enabled;
     uint8_t bdof_enabled;
     uint8_t dmvr_enabled;
+    uint8_t log2_parallel_merge_level;
 
     uint8_t tmvp_avail;
     struct VVCTMVP

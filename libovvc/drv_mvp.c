@@ -914,6 +914,42 @@ vvc_derive_merge_mvp(const struct InterDRVCtx *const inter_ctx,
     return cand[nb_cand - 1];
 }
 
+static uint8_t
+derive_merge_enable_cand_list(uint8_t x0_u, uint8_t y0_u, uint8_t nb_units_w, uint8_t nb_units_h,
+                              uint8_t log2_pmerge_lvl)
+{
+    uint8_t enable_msk = 0;
+    int16_t x0 = x0_u << LOG2_MIN_CU_S;
+    int16_t y0 = y0_u << LOG2_MIN_CU_S;
+    int16_t cb_w = nb_units_w << LOG2_MIN_CU_S;
+    int16_t cb_h = nb_units_h << LOG2_MIN_CU_S;
+
+    uint8_t cand_a0 = ((y0 + cb_h)     >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
+    uint8_t cand_a1 = ((y0 + cb_h - 1) >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
+
+    uint8_t cand_b0 = ((x0 + cb_w)     >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
+    uint8_t cand_b1 = ((x0 + cb_w - 1) >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
+    uint8_t cand_b2 = ((x0 - 1)        >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
+
+    cand_a0 |= ((x0 - 1) >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
+    cand_a1 |= ((x0 - 1) >> log2_pmerge_lvl) != (x0 >> log2_pmerge_lvl);
+
+    cand_b0 |= ((y0 - 1) >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
+    cand_b1 |= ((y0 - 1) >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
+    cand_b2 |= ((y0 - 1) >> log2_pmerge_lvl) != (y0 >> log2_pmerge_lvl);
+
+    enable_msk |= cand_b2;
+    enable_msk <<= 1;
+    enable_msk |= cand_b1;
+    enable_msk <<= 1;
+    enable_msk |= cand_b0;
+    enable_msk <<= 1;
+    enable_msk |= cand_a1;
+    enable_msk <<= 1;
+    enable_msk |= cand_a0;
+
+    return enable_msk;
+}
 
 static VVCMergeInfo
 vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
@@ -933,19 +969,21 @@ vvc_derive_merge_mvp_b(const struct InterDRVCtx *const inter_ctx,
 
     uint64_t lft_col1 = mv_ctx1->map.vfield[pb_x];
     uint64_t abv_row1 = mv_ctx1->map.hfield[pb_y];
+    uint8_t log2_pmerge_lvl = inter_ctx->log2_parallel_merge_level;
+    uint8_t enable_msk = derive_merge_enable_cand_list(pb_x, pb_y, nb_pb_w, nb_pb_h, log2_pmerge_lvl);
 
     /*FIXME use flags for inter_dir and availability*/
-    uint8_t cand_bl0 = !!(lft_col0 & POS_MASK(pb_y, nb_pb_h));     /*AO*/
-    uint8_t cand_bl1 = !!(lft_col1 & POS_MASK(pb_y, nb_pb_h));     /*AO*/
-    uint8_t cand_l0  = !!(lft_col0 & POS_MASK(pb_y, nb_pb_h - 1)); /*A1*/
-    uint8_t cand_l1  = !!(lft_col1 & POS_MASK(pb_y, nb_pb_h - 1)); /*A1*/
+    uint8_t cand_bl0 = !!(lft_col0 & POS_MASK(pb_y, nb_pb_h))      && (enable_msk & (1 << 0));     /*AO*/
+    uint8_t cand_bl1 = !!(lft_col1 & POS_MASK(pb_y, nb_pb_h))      && (enable_msk & (1 << 0));     /*AO*/
+    uint8_t cand_l0  = !!(lft_col0 & POS_MASK(pb_y, nb_pb_h - 1))      && (enable_msk & (1 << 1)); /*A1*/
+    uint8_t cand_l1  = !!(lft_col1 & POS_MASK(pb_y, nb_pb_h - 1))      && (enable_msk & (1 << 1)); /*A1*/
 
-    uint8_t cand_tr0 = !!(abv_row0 & POS_MASK(pb_x, nb_pb_w));     /*B0*/
-    uint8_t cand_tr1 = !!(abv_row1 & POS_MASK(pb_x, nb_pb_w));     /*B0*/
-    uint8_t cand_t0  = !!(abv_row0 & POS_MASK(pb_x, nb_pb_w - 1)); /*B1*/
-    uint8_t cand_t1  = !!(abv_row1 & POS_MASK(pb_x, nb_pb_w - 1)); /*B1*/
-    uint8_t cand_tl0 = !!(abv_row0 & POS_MASK(pb_x - 1, 0));      /*B2*/
-    uint8_t cand_tl1 = !!(abv_row1 & POS_MASK(pb_x - 1, 0));      /*B2*/
+    uint8_t cand_tr0 = !!(abv_row0 & POS_MASK(pb_x, nb_pb_w))      && (enable_msk & (1 << 2));     /*B0*/
+    uint8_t cand_tr1 = !!(abv_row1 & POS_MASK(pb_x, nb_pb_w))      && (enable_msk & (1 << 2));     /*B0*/
+    uint8_t cand_t0  = !!(abv_row0 & POS_MASK(pb_x, nb_pb_w - 1))      && (enable_msk & (1 << 3)); /*B1*/
+    uint8_t cand_t1  = !!(abv_row1 & POS_MASK(pb_x, nb_pb_w - 1))      && (enable_msk & (1 << 3)); /*B1*/
+    uint8_t cand_tl0 = !!(abv_row0 & POS_MASK(pb_x - 1, 0))      && (enable_msk & (1 << 4));      /*B2*/
+    uint8_t cand_tl1 = !!(abv_row1 & POS_MASK(pb_x - 1, 0))      && (enable_msk & (1 << 4));      /*B2*/
 
     VVCMergeInfo cand[6];
     VVCMergeInfo cand_amvp[5];
@@ -1470,6 +1508,20 @@ update_mv_ctx_b(struct InterDRVCtx *const inter_ctx,
     }
 }
 
+static uint8_t
+enable_hmvp_storage(uint8_t x0_u, uint8_t y0_u, uint8_t nb_unit_w, uint8_t nb_unit_h, uint8_t log2_pmerge_lvl)
+{
+    int16_t x0 = x0_u << LOG2_MIN_CU_S;
+    int16_t y0 = y0_u << LOG2_MIN_CU_S;
+    int16_t cb_w = nb_unit_w << LOG2_MIN_CU_S;
+    int16_t cb_h = nb_unit_h << LOG2_MIN_CU_S;
+    uint8_t enable_hmvp  = ((x0 + cb_w) >> log2_pmerge_lvl) > (x0 >> log2_pmerge_lvl);
+            enable_hmvp &= ((y0 + cb_h) >> log2_pmerge_lvl) > (y0 >> log2_pmerge_lvl);
+    
+    return enable_hmvp;
+    //return 1;
+}
+
 static void
 update_mv_ctx(struct InterDRVCtx *const inter_ctx,
               const OVMV mv,
@@ -1477,6 +1529,8 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
               uint8_t nb_pb_w, uint8_t nb_pb_h,
               uint8_t inter_dir)
 {
+    uint8_t log2_pmerge_lvl = inter_ctx->log2_parallel_merge_level;
+    uint8_t enable_hmvp = enable_hmvp_storage(pb_x, pb_y, nb_pb_w, nb_pb_h, log2_pmerge_lvl);
     if (inter_dir & 0x2) {
         struct OVMVCtx *const mv_ctx0 = &inter_ctx->mv_ctx0;
         struct OVMVCtx *const mv_ctx1 = &inter_ctx->mv_ctx1;
@@ -1494,7 +1548,8 @@ update_mv_ctx(struct InterDRVCtx *const inter_ctx,
         fill_mvp_map(mv_ctx0, mv, pb_x, pb_y, nb_pb_w, nb_pb_h);
     }
 
-    hmvp_update_lut_b(&inter_ctx->hmvp_lut, mv, mv, 0x1);
+    if (enable_hmvp)
+        hmvp_update_lut_b(&inter_ctx->hmvp_lut, mv, mv, 0x1);
 }
 
 static void
@@ -1594,6 +1649,8 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
     uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
     uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
 
+    uint8_t log2_pmerge_lvl = inter_ctx->log2_parallel_merge_level;
+    uint8_t enable_hmvp = enable_hmvp_storage(x0_unit, y0_unit, nb_unit_w, nb_unit_h, log2_pmerge_lvl);
     /* FIXME can we combine mvp derivation for bi pred */
     if (inter_dir & 0x1) {
         uint8_t opp_ref_idx0 = inter_ctx->rpl0_opp[ref_idx0];
@@ -1647,6 +1704,7 @@ drv_mvp_b(struct InterDRVCtx *const inter_ctx,
     update_mv_ctx_b(inter_ctx, mv0, mv1, x0_unit, y0_unit, nb_unit_w,
                     nb_unit_h, inter_dir);
 
+    if (enable_hmvp)
     hmvp_update_lut_b(&inter_ctx->hmvp_lut, mv0, mv1, inter_dir);
 
     return mv_info;
@@ -1795,6 +1853,9 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     uint8_t nb_pb_w = (1 << log2_pu_w) >> LOG2_MIN_CU_S;
     uint8_t nb_pb_h = (1 << log2_pu_h) >> LOG2_MIN_CU_S;
 
+    uint8_t log2_pmerge_lvl = inter_ctx->log2_parallel_merge_level;
+    uint8_t enable_hmvp = enable_hmvp_storage(pb_x, pb_y, nb_pb_w, nb_pb_h, log2_pmerge_lvl);
+
     VVCMergeInfo mv_info = vvc_derive_merge_mvp_b(inter_ctx, pb_x, pb_y,
                                                   nb_pb_w, nb_pb_h, smvd_mrg_idx,
                                                   max_nb_cand, is_small);
@@ -1923,6 +1984,7 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                     nb_pb_w, nb_pb_h, mv_info.inter_dir);
 
 
+    if (enable_hmvp)
     hmvp_update_lut_b(&inter_ctx->hmvp_lut, mv_info.mv0, mv_info.mv1, mv_info.inter_dir);
 
     return mv_info;
@@ -1999,6 +2061,8 @@ drv_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     uint8_t y0_unit = y0 >> LOG2_MIN_CU_S;
     uint8_t nb_unit_w = (1 << log2_cb_w) >> LOG2_MIN_CU_S;
     uint8_t nb_unit_h = (1 << log2_cb_h) >> LOG2_MIN_CU_S;
+    uint8_t log2_pmerge_lvl = inter_ctx->log2_parallel_merge_level;
+    uint8_t enable_hmvp = enable_hmvp_storage(x0_unit, y0_unit, nb_unit_w, nb_unit_h, log2_pmerge_lvl);
 
     mv_info = vvc_derive_merge_mvp_b(inter_ctx, x0_unit, y0_unit,
                                      nb_unit_w, nb_unit_h, merge_idx,
@@ -2011,6 +2075,7 @@ drv_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
     update_mv_ctx_b(inter_ctx, mv_info.mv0, mv_info.mv1, x0_unit, y0_unit,
                     nb_unit_w, nb_unit_h, mv_info.inter_dir);
 
+    if (enable_hmvp)
     hmvp_update_lut_b(&inter_ctx->hmvp_lut, mv_info.mv0, mv_info.mv1, mv_info.inter_dir);
 
     return mv_info;
