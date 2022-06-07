@@ -38,8 +38,16 @@
 
 #include "ovdmx.h"
 
+enum RBSPSegmentDelimiter
+{
+    /* NAL Unit Start Code 0x000001 */
+    ANNEXB_STC = 1,
+    /* NAL Unit Start Code 0x000003 */
+    ANNEXB_EPB = 2,
+    /* Reached end of cache or EOF */
+    END_OF_CACHE = 3
+};
+
 int ovannexb_check_stc_or_epb(const uint8_t *byte);
-
-
 
 #endif

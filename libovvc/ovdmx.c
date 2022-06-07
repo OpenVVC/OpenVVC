@@ -56,16 +56,6 @@
 
 static const char *const demux_name = "Open VVC Annex B demuxer";
 
-enum RBSPSegmentDelimiter
-{
-    /* NAL Unit Start Code 0x000001 */
-    ANNEXB_STC = 1,
-    /* NAL Unit Start Code 0x000003 */
-    ANNEXB_EPB = 2,
-    /* Reached end of cache or EOF */
-    END_OF_CACHE = 3
-};
-
 struct RBSPSegment
 {
     /* position of segment first byte in reader cache */
@@ -812,8 +802,9 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
          * TODO bin tricks for two fast zero bytes detection
          */
         if (*bytestream == 0) {
-            int ret;
-            ret = ovannexb_check_stc_or_epb(bytestream);
+
+            int ret = ovannexb_check_stc_or_epb(bytestream);
+
             if (ret < 0) {
                 ov_log(dmx, OVLOG_ERROR, "Invalid raw VVC data\n");
                 ret = OVVC_EINDATA;
@@ -848,9 +839,6 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
 
                     break;
                 default:
-                    /* FIXME we should not have something different from STC or
-                     * EPB here
-                     */
                     ov_log(dmx, OVLOG_ERROR, "Invalid raw VVC data\n");
                     ret = OVVC_EINDATA;
                     break;
@@ -859,9 +847,11 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
                 if (ret < 0) {
                     return ret;
                 }
+
                 byte_pos += 2;
             }
         }
+
         /* Note we actually mean >= here since the last bytes reside
          * into padded area sometimes we might read up to 6 bytes ahead
          * of cache end and the next segment start might be located

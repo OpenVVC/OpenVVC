@@ -34,7 +34,6 @@
 #include "ovannexb.h"
 #include "ovunits.h"
 
-
 /* Check for start_code or emulation prevention byte
  * returns:
  *    0 if no start code was found
@@ -63,8 +62,7 @@ ovannexb_check_stc_or_epb(const uint8_t *byte)
             return 1;
         }
 
-        /* Note this is only useful when removing rbsp
-           and for probing*/
+        /* Note this is only useful when removing rbsp and for probing*/
         if (byte2 == 0x03) {
             uint8_t invalid_emu = byte3 & (~0x3);
             if (invalid_emu) {
