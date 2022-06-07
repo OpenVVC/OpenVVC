@@ -40,24 +40,25 @@
 #include "ovio.h"
 #include "ovunits.h"
 
-typedef struct OVVCDmx OVVCDmx;
+typedef struct OVDemux OVVCDmx;
+typedef OVVCDmx OVDemux;
 typedef struct NALUnitsList NALUnitsList;
 
 /* Initialize demuxer
  */
-int ovdmx_init(OVVCDmx **ovdmx_p);
+int ovdmx_init(OVDemux **ovdmx_p);
 
 /* Close demuxer
  */
-int ovdmx_close(OVVCDmx *ovdmx);
+int ovdmx_close(OVDemux *ovdmx);
 
 /* Attach an input stream to the demuxer
  */
-int ovdmx_attach_stream(OVVCDmx *const ovdmx, OVIO *io);
+int ovdmx_attach_stream(OVDemux *const ovdmx, OVIO *io);
 
 /* Reinit the demuxer.
  */
-void ovdmx_detach_stream(OVVCDmx *const ovdmx);
+void ovdmx_detach_stream(OVDemux *const ovdmx);
 
 /* Create a OVPictureUnit from a NALUnitsList
  *
@@ -74,7 +75,7 @@ int ovdmx_init_pu_from_list(OVPictureUnit **ovpu_p, struct NALUnitsList *const s
  *     a complete Picture Unit. The OVPictureUnit only contains
  *     one OVNALUnit.
  */
-int ovdmx_extract_picture_unit(OVVCDmx *const ovdmx, OVPictureUnit **ovpu_p);
+int ovdmx_extract_picture_unit(OVDemux *const ovdmx, OVPictureUnit **ovpu_p);
 
 #endif
 

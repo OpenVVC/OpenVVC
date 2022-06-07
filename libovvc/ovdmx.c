@@ -159,7 +159,7 @@ struct ReaderCache
     uint64_t nb_chunk_read;
 };
 
-struct OVVCDmx
+struct OVDemux
 {
     const char *name;
 
@@ -195,7 +195,7 @@ struct OVVCDmx
     }options;
 };
 
-static int extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx);
+static int extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx);
 
 static int init_rbsp_cache(struct RBSPCacheData *const rbsp_ctx);
 
@@ -224,28 +224,32 @@ static void append_nalu_elem(struct NALUnitsList *const list, struct NALUnitList
 static void free_nalu_elem(struct NALUnitListElem *nalu_elem);
 
 int
-ovdmx_init(OVVCDmx **vvcdmx)
+ovdmx_init(OVDemux **dmx_p)
 {
     int ret = 0;
-    *vvcdmx = ov_mallocz(sizeof(**vvcdmx));
+    OVDemux *dmx;
 
-    if (*vvcdmx == NULL) return OV_ENOMEM;
+    dmx = ov_mallocz(sizeof(*dmx));
 
-    (*vvcdmx)->name = demux_name;
-    (*vvcdmx)->io_str = NULL;
+    if (!dmx) return OV_ENOMEM;
 
-    (*vvcdmx)->nalu_elem_pool = ovmempool_init(sizeof(struct NALUnitListElem));
+    *dmx_p = dmx;
 
-    if ((*vvcdmx)->nalu_elem_pool == NULL) {
+    dmx->name = demux_name;
+    dmx->io_str = NULL;
+
+    dmx->nalu_elem_pool = ovmempool_init(sizeof(struct NALUnitListElem));
+
+    if (dmx->nalu_elem_pool == NULL) {
         goto fail_pool_init;
     }
 
-    ret = init_rbsp_cache(&(*vvcdmx)->rbsp_ctx);
+    ret = init_rbsp_cache(&dmx->rbsp_ctx);
     if (ret < 0) {
         goto fail_rbsp_cache;
     }
 
-    ret = init_epb_cache(&(*vvcdmx)->epb_info);
+    ret = init_epb_cache(&dmx->epb_info);
     if (ret < 0) {
         goto fail_epb_cache;
     }
@@ -253,53 +257,53 @@ ovdmx_init(OVVCDmx **vvcdmx)
     return 0;
 
 fail_epb_cache:
-    free_rbsp_cache(&(*vvcdmx)->rbsp_ctx);
+    free_rbsp_cache(&dmx->rbsp_ctx);
 
 fail_rbsp_cache:
-    ovmempool_uninit(&(*vvcdmx)->nalu_elem_pool);
+    ovmempool_uninit(&dmx->nalu_elem_pool);
 
 fail_pool_init:
-    ov_freep(vvcdmx);
+    ov_freep(dmx_p);
 
     return ret;
 }
 
 int
-ovdmx_close(OVVCDmx *vvcdmx)
+ovdmx_close(OVDemux *dmx)
 {
     int not_dmx = 0;
-    if (vvcdmx != NULL) {
+    if (dmx != NULL) {
 
-        not_dmx = vvcdmx->name != demux_name;
+        not_dmx = dmx->name != demux_name;
 
         if (not_dmx) goto fail;
 
-        ovdmx_detach_stream(vvcdmx);
+        ovdmx_detach_stream(dmx);
 
-        ovmempool_uninit(&vvcdmx->nalu_elem_pool);
+        ovmempool_uninit(&dmx->nalu_elem_pool);
 
-        free_rbsp_cache(&vvcdmx->rbsp_ctx);
+        free_rbsp_cache(&dmx->rbsp_ctx);
 
-        free_epb_cache(&vvcdmx->epb_info);
+        free_epb_cache(&dmx->epb_info);
 
-        free_nalu_list(&vvcdmx->nalu_list);
+        free_nalu_list(&dmx->nalu_list);
 
-        if (vvcdmx->nalu_pending) {
-            free_nalu_elem(vvcdmx->nalu_pending);
+        if (dmx->nalu_pending) {
+            free_nalu_elem(dmx->nalu_pending);
         }
 
-        ov_free(vvcdmx);
+        ov_free(dmx);
 
         return 0;
     }
 
 fail:
-    ov_log(vvcdmx, OVLOG_ERROR, "Trying to close a something not a demuxer.\n");
+    ov_log(dmx, OVLOG_ERROR, "Trying to close a something not a demuxer.\n");
     return -1;
 }
 
 int
-ovdmx_attach_stream(OVVCDmx *const dmx, OVIO *io)
+ovdmx_attach_stream(OVDemux *const dmx, OVIO *io)
 {
     int ret = 0;
 
@@ -350,7 +354,7 @@ ovdmx_attach_stream(OVVCDmx *const dmx, OVIO *io)
 /*FIXME share bytestream mem with OVIOStream so we avoid copying from one to
   another*/
 void
-ovdmx_detach_stream(OVVCDmx *const dmx)
+ovdmx_detach_stream(OVDemux *const dmx)
 {
     /* FIXME decide if it should free OVIOStream cache buff */
     if (dmx->io_str != NULL) {
@@ -413,7 +417,7 @@ static struct NALUnitListElem *pop_nalu_elem(struct NALUnitsList *list)
 }
 
 static int
-extract_nal_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
+extract_nal_unit(OVDemux *const dmx, struct NALUnitsList *const dst_list)
 {
     struct NALUnitsList *nalu_list = &dmx->nalu_list;
     struct NALUnitListElem *current_nalu = pop_nalu_elem(nalu_list);
@@ -441,7 +445,7 @@ extract_nal_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
 
 #if 0
 static int
-extract_access_unit(OVVCDmx *const dmx, struct NALUnitsList *const dst_list)
+extract_access_unit(OVDemux *const dmx, struct NALUnitsList *const dst_list)
 {
     struct NALUnitsList *nalu_list = &dmx->nalu_list;
     struct NALUnitListElem *current_nalu = pop_nalu_elem(nalu_list);
@@ -567,7 +571,7 @@ fail_nalu_alloc:
 }
 
 int
-ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu_p)
+ovdmx_extract_picture_unit(OVDemux *const dmx, OVPictureUnit **dst_pu_p)
 {
     int ret;
     struct NALUnitsList pending_nalu_list = {0};
@@ -611,7 +615,7 @@ ovdmx_extract_picture_unit(OVVCDmx *const dmx, OVPictureUnit **dst_pu_p)
 }
 
 static struct NALUnitListElem *
-create_nalu_elem(OVVCDmx *const dmx)
+create_nalu_elem(OVDemux *const dmx)
 {
     MemPool *const mempool = dmx->nalu_elem_pool;
     MemPoolElem *elem = ovmempool_popelem(mempool);
@@ -699,7 +703,7 @@ empty_rbsp_cache(struct RBSPCacheData *rbsp_cache)
 }
 
 static int
-process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
+process_start_code(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
                    const struct RBSPSegment *sgmt_ctx)
 {
     const uint8_t *bytestream = sgmt_ctx->end_p;
@@ -765,7 +769,7 @@ process_start_code(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
 }
 
 static int
-process_emulation_prevention_byte(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx,
+process_emulation_prevention_byte(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
                                   const struct RBSPSegment *sgmt_ctx)
 {
     struct EPBCacheInfo *const epb_info = &dmx->epb_info;
@@ -795,7 +799,7 @@ process_emulation_prevention_byte(OVVCDmx *const dmx, struct ReaderCache *const 
 /* WARNING We need to be careful on endianness here if we plan
    to use bigger read sizes */
 static int
-extract_cache_segments(OVVCDmx *const dmx, struct ReaderCache *const cache_ctx)
+extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
 {
     const uint8_t *byte = cache_ctx->cache_start;
     const uint8_t *const cache_end = cache_ctx->cache_end;
