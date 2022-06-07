@@ -54,12 +54,6 @@
 
 #define OV_RBSP_PADDING 8
 
-enum DMXReturn
-{
-    OV_INVALID_DATA = -1,
-    OV_ENOMEM = -2,
-};
-
 static const char *const demux_name = "Open VVC Annex B demuxer";
 
 enum RBSPSegmentDelimiter
@@ -231,7 +225,7 @@ ovdmx_init(OVDemux **dmx_p)
 
     dmx = ov_mallocz(sizeof(*dmx));
 
-    if (!dmx) return OV_ENOMEM;
+    if (!dmx) return OVVC_ENOMEM;
 
     *dmx_p = dmx;
 
@@ -715,7 +709,7 @@ process_start_code(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
 
     if (!nalu_elem) {
         ov_log(dmx, OVLOG_ERROR, "Could not alloc NALU element\n");
-        return OV_ENOMEM;
+        return OVVC_ENOMEM;
     }
 
     /* New NAL Unit start code found we end so we can process previous
@@ -728,7 +722,7 @@ process_start_code(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
         uint8_t *rbsp_data = ov_mallocz(dmx->rbsp_ctx.rbsp_size + OV_RBSP_PADDING);
         if (!rbsp_data) {
             free_nalu_elem(nalu_elem);
-            return OV_ENOMEM;
+            return OVVC_ENOMEM;
         }
 
         if (dmx->epb_info.nb_epb) {
@@ -737,7 +731,7 @@ process_start_code(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
             if (!epb_pos) {
                 free_nalu_elem(nalu_elem);
                 ov_free(rbsp_data);
-                return OV_ENOMEM;
+                return OVVC_ENOMEM;
             }
 
             memcpy(epb_pos, dmx->epb_info.epb_pos, dmx->epb_info.nb_epb * sizeof(*epb_pos));
@@ -822,7 +816,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
             ret = ovannexb_check_stc_or_epb(bytestream);
             if (ret < 0) {
                 ov_log(dmx, OVLOG_ERROR, "Invalid raw VVC data\n");
-                ret = OV_INVALID_DATA;
+                ret = OVVC_EINDATA;
             }
 
             if (ret) {
@@ -858,7 +852,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
                      * EPB here
                      */
                     ov_log(dmx, OVLOG_ERROR, "Invalid raw VVC data\n");
-                    ret = OV_INVALID_DATA;
+                    ret = OVVC_EINDATA;
                     break;
                 }
 
@@ -901,7 +895,7 @@ init_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
 {
     rbsp_ctx->start = ov_mallocz(OVRBSP_CACHE_SIZE);
     if (rbsp_ctx->start == NULL) {
-        return OV_ENOMEM;
+        return OVVC_ENOMEM;
     }
 
     rbsp_ctx->end = rbsp_ctx->start;
@@ -925,7 +919,7 @@ extend_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
 
     new_cache = ov_malloc(new_size);
     if (!new_cache) {
-        return OV_ENOMEM;
+        return OVVC_ENOMEM;
     }
 
     memcpy(new_cache, old_cache, rbsp_ctx->rbsp_size);
@@ -943,7 +937,7 @@ init_epb_cache(struct EPBCacheInfo *const epb_info)
 {
     epb_info->epb_pos = ov_mallocz(OVEPB_CACHE_SIZE);
     if (epb_info->epb_pos == NULL) {
-        return OV_ENOMEM;
+        return OVVC_ENOMEM;
     }
 
     epb_info->cache_size = OVEPB_CACHE_SIZE;
@@ -963,7 +957,7 @@ extend_epb_cache(struct EPBCacheInfo *const epb_info)
 
     new_cache = ov_malloc(new_size);
     if (!new_cache) {
-        return OV_ENOMEM;
+        return OVVC_ENOMEM;
     }
 
     memcpy(new_cache, old_cache, epb_info->nb_epb * sizeof(*epb_info->epb_pos));
