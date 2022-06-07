@@ -813,15 +813,11 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
 {
     const uint8_t *start = cache_ctx->cache_start;
     const uint8_t *const cache_end = cache_ctx->cache_end;
-    uint32_t byte_pos = cache_ctx->first_pos;
+    const uint8_t *cursor = start + cache_ctx->first_pos;
+    struct RBSPSegment sgmt_ctx = {.start_p = cursor, .end_p = cursor};
     uint8_t end_of_cache;
-    struct RBSPSegment sgmt_ctx = {0};
-
-    sgmt_ctx.start_p = start + byte_pos;
-    sgmt_ctx.end_p   = start + byte_pos;
 
     do {
-        const uint8_t *cursor = &start[byte_pos];
 
         /* TODO bin tricks for two fast zero bytes detection */
         if (*cursor == 0) {
@@ -839,10 +835,10 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
                 /* Next segment start is located after delimiter */
                 sgmt_ctx.end_p = sgmt_ctx.start_p = cursor + 3;
 
-                /* Next segment starts at byte_pos + 3  however byte_pos is incremented
-                 * once again after this branch
+                /* Next segment starts 3 bytes after cursor position however position
+                 * is incremented once again after this branch
                  */
-                byte_pos += 2;
+                cursor += 2;
             }
         }
 
@@ -852,7 +848,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
          * at cache end + 2 in case an Emulation prevention three bytes
          * overlap cache end
          */
-        end_of_cache = &start[++byte_pos] >= cache_end;
+        end_of_cache = ++cursor >= cache_end;
 
     } while (!end_of_cache);
 
@@ -863,11 +859,11 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
     }
 
     /* Keep track of overlapping removed start code or EBP */
-    cache_ctx->first_pos = &start[byte_pos] - cache_end;
+    cache_ctx->first_pos = cursor - cache_end;
 
     /* Recopy cache to RBSP cache before refill */
-    if (sgmt_ctx.start_p < start + byte_pos) {
-        sgmt_ctx.end_p = start + byte_pos;
+    if (sgmt_ctx.start_p < cursor) {
+        sgmt_ctx.end_p = cursor;
         append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, &sgmt_ctx);
     }
 
