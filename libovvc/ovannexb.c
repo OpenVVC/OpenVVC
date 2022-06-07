@@ -85,23 +85,3 @@ invalid_data:
     return -1;
 }
 
-int
-dmx_process_elem(OVVCDmx *const dmx, const uint8_t *const bytestream,
-        uint64_t byte_pos, int stc_or_epb)
-{
-    /* TODO decide what to do with this this is supposed to become
-       an internal function this could be used as a callback to do
-       various things according to the demuxer context*/
-    if (stc_or_epb == 1) {
-        uint8_t byte4 = bytestream[4];
-        enum OVNALUType nalu_type = (byte4 >> 3) & 0x1F;
-        /* Start code */
-        printf("STC at pos : %ld, NAL :%d\n", byte_pos - 8, nalu_type);
-    } else {
-        /* Emulation zero byte prevention */
-        printf("EPB at pos : %ld\n", byte_pos - 8);
-    }
-
-    return 1;
-}
-
