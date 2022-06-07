@@ -126,11 +126,11 @@ struct ReaderCache
     /* Pointer to io_cached buffer */
     const uint8_t *data_start;
 
-    const uint8_t *cache_start;
-    const uint8_t *cache_end;
+    const uint8_t *start;
+    const uint8_t *end;
 
-    /* Cursor position in cache */
-    uint32_t first_pos;
+    /* Number of bytes to be skipped at start */
+    uint32_t nb_skip;
 
     /* FIXME the nb_chunk_read might overflow on really
      * long streams when the decoder is used for a long time
@@ -313,17 +313,18 @@ ovdmx_attach_stream(OVDemux *const dmx, OVIO *io)
         int read_in_buf;
 
         read_in_buf = ovio_stream_read(&cache_ctx->data_start, dmx->io_str);
-        cache_ctx->first_pos = 0;
-        cache_ctx->cache_start = cache_ctx->data_start;
 
-        cache_ctx->cache_end = cache_ctx->cache_start + read_in_buf;
+        cache_ctx->nb_skip = 0;
+        cache_ctx->start = cache_ctx->data_start;
+
+        cache_ctx->end = cache_ctx->start + read_in_buf;
 
         if (read_in_buf < io->size) {
             dmx->eof = 1;
         }
         else {
             /* Buffer end is set to size minus 8 so we do not overread first data chunk */
-            cache_ctx->cache_end -= 8;
+            cache_ctx->end -= 8;
         }
 
         /* FIXME Process first chunk of data ? */
@@ -356,13 +357,13 @@ refill_reader_cache(struct ReaderCache *const cache_ctx, OVIOStream *const io_st
     read_in_buf = ovio_stream_read(&cache_ctx->data_start, io_str);
     cache_ctx->data_start -= 8;
 
-    cache_ctx->cache_start = cache_ctx->data_start;
-    cache_ctx->cache_end   = cache_ctx->data_start + read_in_buf;
+    cache_ctx->start = cache_ctx->data_start;
+    cache_ctx->end   = cache_ctx->data_start + read_in_buf;
 
     cache_ctx->nb_chunk_read += read_in_buf;
 
     if (read_in_buf != ovio_stream_buff_size(io_str)) {
-        cache_ctx->cache_end += 8;
+        cache_ctx->end += 8;
         return 1;
     }
 
@@ -811,9 +812,9 @@ process_rbsp_delimiter(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
 static int
 extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
 {
-    const uint8_t *start = cache_ctx->cache_start;
-    const uint8_t *const cache_end = cache_ctx->cache_end;
-    const uint8_t *cursor = start + cache_ctx->first_pos;
+    const uint8_t *start = cache_ctx->start;
+    const uint8_t *const cache_end = cache_ctx->end;
+    const uint8_t *cursor = cache_ctx->start + cache_ctx->nb_skip;
     struct RBSPSegment sgmt_ctx = {.start_p = cursor, .end_p = cursor};
 
     do {
@@ -857,7 +858,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
     }
 
     /* Keep track of overlapping removed start code or EBP */
-    cache_ctx->first_pos = cursor - cache_end;
+    cache_ctx->nb_skip = cursor - cache_end;
 
     /* Recopy cache to RBSP cache before refill */
     if (sgmt_ctx.start_p < cursor) {
