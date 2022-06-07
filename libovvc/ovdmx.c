@@ -775,6 +775,32 @@ process_emulation_prevention_byte(OVDemux *const dmx, struct ReaderCache *const 
     return 0;
 }
 
+static int
+process_rbsp_delimiter(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
+                       struct RBSPSegment *const sgmt_ctx, const uint8_t *const cursor,
+                       enum RBSPSegmentDelimiter dlm)
+{
+    switch (dlm) {
+        case ANNEXB_STC:
+            sgmt_ctx->end_p = cursor;
+
+            return process_start_code(dmx, cache_ctx, sgmt_ctx);
+
+            break;
+        case ANNEXB_EPB:
+            /* Keep the two zero bytes of emulation prevention three bytes */
+            sgmt_ctx->end_p = cursor + 2;
+
+            return process_emulation_prevention_byte(dmx, cache_ctx, sgmt_ctx);
+
+            break;
+        default:
+            ov_log(dmx, OVLOG_ERROR, "Invalid raw VVC data\n");
+            return OVVC_EINDATA;
+    }
+}
+
+
 /**
  * returns: -1 Invalid data
  *          byte_pos in chunk if stc
@@ -785,69 +811,37 @@ process_emulation_prevention_byte(OVDemux *const dmx, struct ReaderCache *const 
 static int
 extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
 {
-    const uint8_t *byte = cache_ctx->cache_start;
+    const uint8_t *start = cache_ctx->cache_start;
     const uint8_t *const cache_end = cache_ctx->cache_end;
     uint32_t byte_pos = cache_ctx->first_pos;
     uint8_t end_of_cache;
     struct RBSPSegment sgmt_ctx = {0};
 
-    sgmt_ctx.start_p = byte + byte_pos;
-    sgmt_ctx.end_p   = byte + byte_pos;
+    sgmt_ctx.start_p = start + byte_pos;
+    sgmt_ctx.end_p   = start + byte_pos;
 
     do {
-        const uint8_t *bytestream = &byte[byte_pos];
+        const uint8_t *cursor = &start[byte_pos];
 
-        /* FIXME we will actually loop over this more than once even if a start
-         * code has been detected. This is a bit inefficient
-         * TODO bin tricks for two fast zero bytes detection
-         */
-        if (*bytestream == 0) {
+        /* TODO bin tricks for two fast zero bytes detection */
+        if (*cursor == 0) {
 
-            int ret = ovannexb_check_stc_or_epb(bytestream);
+            enum RBSPSegmentDelimiter dlm = ovannexb_check_stc_or_epb(cursor);
 
-            if (ret < 0) {
-                ov_log(dmx, OVLOG_ERROR, "Invalid raw VVC data\n");
-                ret = OVVC_EINDATA;
-            }
+            if (dlm) {
 
-            if (ret) {
-                enum RBSPSegmentDelimiter dlm = ret;
-
-                switch (dlm) {
-                case ANNEXB_STC:
-                    sgmt_ctx.end_p = bytestream;
-
-                    ret = process_start_code(dmx, cache_ctx, &sgmt_ctx);
-
-                    /* Next segment start is located after start code three bytes */
-                    sgmt_ctx.end_p = sgmt_ctx.start_p = bytestream + 3;
-                    if (sgmt_ctx.end_p > cache_end) {
-                        ov_log(dmx, OVLOG_DEBUG, "STC over cache end\n");
-                    }
-                    break;
-                case ANNEXB_EPB:
-                    /* Keep the two zero bytes of emulation prevention three bytes */
-                    sgmt_ctx.end_p = bytestream + 2;
-
-                    ret = process_emulation_prevention_byte(dmx, cache_ctx, &sgmt_ctx);
-
-                    /* Remove the emulation prevention 0x03 byte */
-                    sgmt_ctx.end_p = sgmt_ctx.start_p = bytestream + 3;
-                    if (sgmt_ctx.end_p > cache_end) {
-                        ov_log(dmx, OVLOG_DEBUG, "EBP over cache end\n");
-                    }
-
-                    break;
-                default:
-                    ov_log(dmx, OVLOG_ERROR, "Invalid raw VVC data\n");
-                    ret = OVVC_EINDATA;
-                    break;
-                }
+                int ret = process_rbsp_delimiter(dmx, cache_ctx, &sgmt_ctx, cursor, dlm);
 
                 if (ret < 0) {
                     return ret;
                 }
 
+                /* Next segment start is located after delimiter */
+                sgmt_ctx.end_p = sgmt_ctx.start_p = cursor + 3;
+
+                /* Next segment starts at byte_pos + 3  however byte_pos is incremented
+                 * once again after this branch
+                 */
                 byte_pos += 2;
             }
         }
@@ -858,7 +852,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
          * at cache end + 2 in case an Emulation prevention three bytes
          * overlap cache end
          */
-        end_of_cache = &byte[++byte_pos] >= cache_end;
+        end_of_cache = &start[++byte_pos] >= cache_end;
 
     } while (!end_of_cache);
 
@@ -868,12 +862,12 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
         return process_start_code(dmx, cache_ctx, &sgmt_ctx);
     }
 
-    /* Keep track of overlapping removed start code or EBP*/
-    cache_ctx->first_pos = &byte[byte_pos] - cache_end;
+    /* Keep track of overlapping removed start code or EBP */
+    cache_ctx->first_pos = &start[byte_pos] - cache_end;
 
     /* Recopy cache to RBSP cache before refill */
-    if (sgmt_ctx.start_p < byte + byte_pos) {
-        sgmt_ctx.end_p = byte + byte_pos;
+    if (sgmt_ctx.start_p < start + byte_pos) {
+        sgmt_ctx.end_p = start + byte_pos;
         append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, &sgmt_ctx);
     }
 
