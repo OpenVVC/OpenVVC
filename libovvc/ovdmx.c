@@ -815,7 +815,6 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
     const uint8_t *const cache_end = cache_ctx->cache_end;
     const uint8_t *cursor = start + cache_ctx->first_pos;
     struct RBSPSegment sgmt_ctx = {.start_p = cursor, .end_p = cursor};
-    uint8_t end_of_cache;
 
     do {
 
@@ -842,15 +841,14 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
             }
         }
 
-        /* Note we actually mean >= here since the last bytes reside
-         * into padded area sometimes we might read up to 6 bytes ahead
-         * of cache end and the next segment start might be located
-         * at cache end + 2 in case an Emulation prevention three bytes
-         * overlap cache end
-         */
-        end_of_cache = ++cursor >= cache_end;
+    /* Note we actually mean < here since the last bytes reside
+     * into padded area sometimes we might read up to 6 bytes ahead
+     * of cache end and the next segment start might be located
+     * at cache end + 2 in case an Emulation prevention three bytes
+     * overlap cache end
+     */
 
-    } while (!end_of_cache);
+    } while (++cursor < cache_end);
 
     if (dmx->eof) {
         ov_log(dmx, OVLOG_TRACE, "EOF reached\n");
