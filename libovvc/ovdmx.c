@@ -755,6 +755,8 @@ process_start_code(OVDemux *const dmx)
         int ret = allocate_nalu_data(nalu, &dmx->epb_info, &dmx->rbsp_cache);
 
         if (ret < 0) {
+            empty_rbsp_cache(&dmx->rbsp_cache);
+            empty_epb_cache(&dmx->epb_info);
             return OVVC_ENOMEM;
         }
 
@@ -820,9 +822,10 @@ process_rbsp_delimiter(OVDemux *const dmx, enum RBSPSegmentDelimiter dlm)
 
 
 /**
- * returns: -1 Invalid data
- *          byte_pos in chunk if stc
- *          0 if nothing found and needs a new read
+ * returns: OVVC_EINDATA on invalid data found
+ *          OVVC_ENOMEM on allocation error from either RBSP/EPB caches or data buffer
+ *          for NALU,
+ *          0 otherwise;
  */
 /* WARNING We need to be careful on endianness here if we plan
    to use bigger read sizes */
