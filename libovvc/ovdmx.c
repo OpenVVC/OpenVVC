@@ -281,17 +281,8 @@ ovdmx_attach_stream(OVDemux *const dmx, OVIO *io)
 {
     int ret = 0;
 
-    /* FiXME is this check necessary this function should not
-       be called if stream is not allocated.
-       Maybe we should open file ourselves / and use a wrapper around
-       I/Os */
-    if (io == NULL) {
-        ov_log(dmx, OVLOG_ERROR, "No stream to attach.\n");
-        return OVVC_EINDATA;
-    }
-
-    /* TODO distinguish init and open / attach */
     dmx->io_str = ovio_stream_open(io);
+
     if (dmx->io_str == NULL) {
         ov_log(dmx, OVLOG_ERROR, "Failed to open stream.\n");
         return OVVC_EINDATA;
