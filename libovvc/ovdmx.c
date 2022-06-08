@@ -693,13 +693,7 @@ process_start_code(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
 {
     const uint8_t *bytestream = sgmt_ctx->end_p;
     struct NALUnitsList *nalu_list = &dmx->nalu_list;
-    struct NALUnitListElem *nalu_elem = create_nalu_elem(dmx);
     struct NALUnitListElem *nalu_pending = dmx->nalu_pending;
-
-    if (!nalu_elem) {
-        ov_log(dmx, OVLOG_ERROR, "Could not alloc NALU element\n");
-        return OVVC_ENOMEM;
-    }
 
     /* New NAL Unit start code found we end so we can process previous
      * NAL Unit data
@@ -711,7 +705,6 @@ process_start_code(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
         /* FIXME Using of mallocz is to prevent padding to be not zero */
         uint8_t *rbsp_data = ov_mallocz(dmx->rbsp_ctx.rbsp_size + OV_RBSP_PADDING);
         if (!rbsp_data) {
-            free_nalu_elem(nalu_elem);
             return OVVC_ENOMEM;
         }
 
@@ -719,7 +712,6 @@ process_start_code(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
             uint32_t *epb_pos = NULL;
             epb_pos = ov_malloc(dmx->epb_info.nb_epb * sizeof(*epb_pos));
             if (!epb_pos) {
-                free_nalu_elem(nalu_elem);
                 ov_free(rbsp_data);
                 return OVVC_ENOMEM;
             }
@@ -746,6 +738,12 @@ process_start_code(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
         empty_rbsp_cache(&dmx->rbsp_ctx);
     }
 
+
+    struct NALUnitListElem *nalu_elem = create_nalu_elem(dmx);
+    if (!nalu_elem) {
+        ov_log(dmx, OVLOG_ERROR, "Could not alloc NALU element\n");
+        return OVVC_ENOMEM;
+    }
 
     dmx->nalu_pending = nalu_elem;
 
