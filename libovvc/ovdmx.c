@@ -691,20 +691,53 @@ empty_epb_cache(struct EPBCacheInfo *const epb_info)
     epb_info->nb_epb = 0;
 }
 
-static int
-fill_nalu_epb_info(struct OVNALUnit *const nalu,
-                   const struct EPBCacheInfo *const epb_info)
+static void
+free_nalu_data(struct OVNALUnit **nalu_p)
 {
-    uint32_t epb_buff_size = epb_info->nb_epb * sizeof(*nalu->epb_pos);
-    void *epb_pos = ov_malloc(epb_buff_size);
-    if (!epb_pos) {
+    OVNALUnit *nalu = *nalu_p;
+    ov_freep(&nalu->rbsp_data);
+    ov_freep(nalu_p);
+}
+
+static int
+allocate_nalu_data(struct OVNALUnit *const nalu,
+                   const struct EPBCacheInfo *const epb_info,
+                   const struct RBSPCacheData *const rbsp_cache)
+{
+    size_t nalu_data_size = rbsp_cache->rbsp_size + OV_RBSP_PADDING;
+    size_t epb_data_size  = epb_info->nb_epb * sizeof(*nalu->epb_pos);
+    size_t alloc_size = nalu_data_size + epb_data_size;
+
+    uint8_t *data = ov_malloc(alloc_size);
+    if (!data) {
         return OVVC_ENOMEM;
     }
 
-    memcpy(epb_pos, epb_info->epb_pos, epb_buff_size);
+    memcpy(data, rbsp_cache->start, rbsp_cache->rbsp_size);
 
-    nalu->epb_pos = epb_pos;
+    nalu->rbsp_data = data;
+    nalu->rbsp_size = rbsp_cache->rbsp_size;
+
+    /* FIXME temporary compat for NALU free */
+    nalu->release = &free_nalu_data;
+
+    /* Set padding area to zero */
+    memset(data + rbsp_cache->rbsp_size, 0, OV_RBSP_PADDING);
+
     nalu->nb_epb  = epb_info->nb_epb;
+
+    if (epb_data_size) {
+
+        data += nalu_data_size;
+
+        memcpy(data, epb_info->epb_pos, epb_data_size);
+
+        nalu->epb_pos = (uint32_t*) data;
+
+        return 0;
+    }
+
+    nalu->epb_pos = NULL;
 
     return 0;
 }
@@ -713,41 +746,26 @@ static int
 process_start_code(OVDemux *const dmx)
 {
     struct NALUnitListElem *nalu_pending = dmx->nalu_pending;
-    struct RBSPCacheData *rbsp_cache = &dmx->rbsp_cache;
 
     if (nalu_pending) {
-        enum OVNALUType nalu_type = (rbsp_cache->start[1] >> 3) & 0x1F;
+        enum OVNALUType nalu_type = (dmx->rbsp_cache.start[1] >> 3) & 0x1F;
+
         struct OVNALUnit *const nalu = &nalu_pending->nalu;
-        uint8_t *rbsp_data = ov_malloc(rbsp_cache->rbsp_size + OV_RBSP_PADDING);
-        if (!rbsp_data) {
+
+        int ret = allocate_nalu_data(nalu, &dmx->epb_info, &dmx->rbsp_cache);
+
+        if (ret < 0) {
             return OVVC_ENOMEM;
         }
 
-        if (dmx->epb_info.nb_epb) {
-            int ret = fill_nalu_epb_info(nalu, &dmx->epb_info);
-
-            if (ret < 0) {
-                ov_free(rbsp_data);
-                return ret;
-            }
-        }
-
-        nalu->rbsp_data = rbsp_data;
-        nalu->rbsp_size = rbsp_cache->rbsp_size;
-
         nalu->type = nalu_type;
-
-        memcpy(rbsp_data, rbsp_cache->start, rbsp_cache->rbsp_size);
-
-        /* Set padding area to zero */
-        memset(rbsp_data + nalu->rbsp_size, 0, OV_RBSP_PADDING);
 
         append_nalu_elem(&dmx->nalu_list, nalu_pending);
     } else {
         ov_log(dmx, OVLOG_TRACE, "No pending nalu when processing start_code, skipping.\n");
     }
 
-    empty_rbsp_cache(rbsp_cache);
+    empty_rbsp_cache(&dmx->rbsp_cache);
     empty_epb_cache(&dmx->epb_info);
 
     struct NALUnitListElem *nalu_elem = create_nalu_elem(dmx);
