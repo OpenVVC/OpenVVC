@@ -774,8 +774,8 @@ error:
 static int
 init_rbsp_cache(struct RBSPCacheData *const rbsp_cache)
 {
-    rbsp_cache->start = ov_mallocz(OVRBSP_CACHE_SIZE);
-    if (rbsp_cache->start == NULL) {
+    rbsp_cache->start = ov_malloc(OVRBSP_CACHE_SIZE);
+    if (!rbsp_cache->start) {
         return OVVC_ENOMEM;
     }
 
@@ -816,7 +816,7 @@ extend_rbsp_cache(struct RBSPCacheData *const rbsp_cache)
 static int
 init_epb_cache(struct EPBCacheInfo *const epb_info)
 {
-    epb_info->epb_pos = ov_mallocz(OVEPB_CACHE_SIZE);
+    epb_info->epb_pos = ov_malloc(OVEPB_CACHE_SIZE);
     if (epb_info->epb_pos == NULL) {
         return OVVC_ENOMEM;
     }
