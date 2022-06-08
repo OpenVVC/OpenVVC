@@ -696,8 +696,6 @@ process_start_code(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
     struct NALUnitListElem *nalu_elem = create_nalu_elem(dmx);
     struct NALUnitListElem *nalu_pending = dmx->nalu_pending;
 
-    enum OVNALUType nalu_type = (bytestream[4] >> 3) & 0x1F;
-
     if (!nalu_elem) {
         ov_log(dmx, OVLOG_ERROR, "Could not alloc NALU element\n");
         return OVVC_ENOMEM;
@@ -709,6 +707,7 @@ process_start_code(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
     append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
 
     if (nalu_pending) {
+        enum OVNALUType nalu_type = (dmx->rbsp_ctx.start[1] >> 3) & 0x1F;
         /* FIXME Using of mallocz is to prevent padding to be not zero */
         uint8_t *rbsp_data = ov_mallocz(dmx->rbsp_ctx.rbsp_size + OV_RBSP_PADDING);
         if (!rbsp_data) {
@@ -733,6 +732,7 @@ process_start_code(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
 
         dmx->epb_info.nb_epb = 0;
 
+        nalu_pending->nalu.type = nalu_type;
         nalu_pending->nalu.rbsp_data = rbsp_data;
         nalu_pending->nalu.rbsp_size = dmx->rbsp_ctx.rbsp_size;
 
@@ -746,7 +746,6 @@ process_start_code(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
         empty_rbsp_cache(&dmx->rbsp_ctx);
     }
 
-    nalu_elem->nalu.type = nalu_type;
 
     dmx->nalu_pending = nalu_elem;
 
