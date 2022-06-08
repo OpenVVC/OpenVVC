@@ -653,9 +653,8 @@ append_nalu_elem(struct NALUnitsList *const list, struct NALUnitListElem *elem)
 
 /* FIXME remove unused cache_ctx */
 static int
-append_rbsp_segment_to_cache(struct ReaderCache *const cache_ctx,
-                             struct RBSPCacheData *rbsp_cache,
-                             const struct RBSPSegment *sgmt_ctx)
+append_rbsp_segment_to_cache(struct RBSPCacheData *const rbsp_cache,
+                             const struct RBSPSegment *const sgmt_ctx)
 {
     ptrdiff_t sgmt_size = sgmt_ctx->end_p - sgmt_ctx->start_p;
     /* FIXME use an assert instead this is not supposed to happen */
@@ -813,7 +812,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
 
                 sgmt_ctx.end_p = cursor + 2;
 
-                append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, &sgmt_ctx);
+                append_rbsp_segment_to_cache(&dmx->rbsp_ctx, &sgmt_ctx);
 
                 int ret = process_rbsp_delimiter(dmx, cache_ctx, &sgmt_ctx, cursor, dlm);
 
@@ -836,6 +835,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
     if (dmx->eof) {
         ov_log(dmx, OVLOG_TRACE, "EOF reached\n");
         sgmt_ctx.end_p = cache_ctx->end;
+        append_rbsp_segment_to_cache(&dmx->rbsp_ctx, &sgmt_ctx);
         return process_start_code(dmx, cache_ctx, &sgmt_ctx);
     }
 
@@ -845,7 +845,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
     /* Recopy cache to RBSP cache before refill */
     if (sgmt_ctx.start_p < cursor) {
         sgmt_ctx.end_p = cursor;
-        append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, &sgmt_ctx);
+        append_rbsp_segment_to_cache(&dmx->rbsp_ctx, &sgmt_ctx);
     }
 
     return 0;
