@@ -810,7 +810,8 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
 
             if (dlm) {
 
-                sgmt_ctx.end_p = cursor + 2;
+                /* Keep the delimiter first two bytes inside the segment */
+                sgmt_ctx.end_p = cursor += 2;
 
                 append_rbsp_segment_to_cache(&dmx->rbsp_ctx, &sgmt_ctx);
 
@@ -821,12 +822,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
                 }
 
                 /* Next segment start is located after delimiter 3 bytes */
-                sgmt_ctx.end_p = sgmt_ctx.start_p = cursor + 3;
-
-                /* Next segment starts 3 bytes after cursor position however position
-                 * is incremented once again after this branch
-                 */
-                cursor += 2;
+                sgmt_ctx.start_p = sgmt_ctx.end_p += 1;
             }
         }
 
