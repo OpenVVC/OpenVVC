@@ -773,18 +773,11 @@ process_rbsp_delimiter(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
 {
     switch (dlm) {
         case ANNEXB_STC:
-            sgmt_ctx->end_p = cursor;
-
-            append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
 
             return process_start_code(dmx, cache_ctx, sgmt_ctx);
 
             break;
         case ANNEXB_EPB:
-            /* Keep the two zero bytes of emulation prevention three bytes */
-            sgmt_ctx->end_p = cursor + 2;
-
-            append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
 
             return process_emulation_prevention_byte(dmx, cache_ctx, sgmt_ctx);
 
@@ -817,6 +810,10 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
             enum RBSPSegmentDelimiter dlm = ovannexb_check_stc_or_epb(cursor);
 
             if (dlm) {
+
+                sgmt_ctx.end_p = cursor + 2;
+
+                append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, &sgmt_ctx);
 
                 int ret = process_rbsp_delimiter(dmx, cache_ctx, &sgmt_ctx, cursor, dlm);
 
