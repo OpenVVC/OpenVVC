@@ -131,16 +131,6 @@ struct ReaderCache
 
     /* Number of bytes to be skipped at start */
     uint32_t nb_skip;
-
-    /* FIXME the nb_chunk_read might overflow on really
-     * long streams when the decoder is used for a long time
-     * this will not affect decoding process but might result
-     * in wrong informations reporting about the demuxer status
-     */
-
-    /* Number of 64 kB chunks already processed by
-     * the demuxer */
-    uint64_t nb_chunk_read;
 };
 
 struct OVDemux
@@ -322,6 +312,7 @@ ovdmx_attach_stream(OVDemux *const dmx, OVIO *io)
         if (read_in_buf < io->size) {
             dmx->eof = 1;
         }
+
         else {
             /* Buffer end is set to size minus 8 so we do not overread first data chunk */
             rdr_cache->end -= 8;
@@ -329,8 +320,6 @@ ovdmx_attach_stream(OVDemux *const dmx, OVIO *io)
 
         /* FIXME Process first chunk of data ? */
         ret = extract_cache_segments(dmx, rdr_cache);
-
-        rdr_cache->nb_chunk_read = 1;
     }
 
     return ret;
@@ -359,8 +348,6 @@ refill_reader_cache(struct ReaderCache *const rdr_cache, OVIOStream *const io_st
 
     rdr_cache->start = rdr_cache->data_start;
     rdr_cache->end   = rdr_cache->data_start + read_in_buf;
-
-    rdr_cache->nb_chunk_read += read_in_buf;
 
     if (read_in_buf != ovio_stream_buff_size(io_str)) {
         rdr_cache->end += 8;
