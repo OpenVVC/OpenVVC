@@ -152,7 +152,7 @@ struct OVDemux
 
     /* Information on current Stream Of Data Bytes (SODB)
      */
-    struct ReaderCache cache_ctx;
+    struct ReaderCache rdr_cache;
 
     /* Cache used for RBSP extraction */
     struct RBSPCacheData rbsp_ctx;
@@ -179,7 +179,7 @@ struct OVDemux
     }options;
 };
 
-static int extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx);
+static int extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const rdr_cache);
 
 static int init_rbsp_cache(struct RBSPCacheData *const rbsp_ctx);
 
@@ -200,7 +200,7 @@ static void free_epb_cache(struct EPBCacheInfo *const epb_info);
 
 static void free_nalu_list(struct NALUnitsList *list);
 
-static int refill_reader_cache(struct ReaderCache *const cache_ctx,
+static int refill_reader_cache(struct ReaderCache *const rdr_cache,
                                OVIOStream *const io_str);
 
 static void append_nalu_elem(struct NALUnitsList *const list, struct NALUnitListElem *elem);
@@ -309,28 +309,28 @@ ovdmx_attach_stream(OVDemux *const dmx, OVIO *io)
 
     /* Initialise reader cache by first read */
     if (!ovio_stream_eof(dmx->io_str)) {
-        struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
+        struct ReaderCache *const rdr_cache = &dmx->rdr_cache;
         int read_in_buf;
 
-        read_in_buf = ovio_stream_read(&cache_ctx->data_start, dmx->io_str);
+        read_in_buf = ovio_stream_read(&rdr_cache->data_start, dmx->io_str);
 
-        cache_ctx->nb_skip = 0;
-        cache_ctx->start = cache_ctx->data_start;
+        rdr_cache->nb_skip = 0;
+        rdr_cache->start = rdr_cache->data_start;
 
-        cache_ctx->end = cache_ctx->start + read_in_buf;
+        rdr_cache->end = rdr_cache->start + read_in_buf;
 
         if (read_in_buf < io->size) {
             dmx->eof = 1;
         }
         else {
             /* Buffer end is set to size minus 8 so we do not overread first data chunk */
-            cache_ctx->end -= 8;
+            rdr_cache->end -= 8;
         }
 
         /* FIXME Process first chunk of data ? */
-        ret = extract_cache_segments(dmx, cache_ctx);
+        ret = extract_cache_segments(dmx, rdr_cache);
 
-        cache_ctx->nb_chunk_read = 1;
+        rdr_cache->nb_chunk_read = 1;
     }
 
     return ret;
@@ -351,19 +351,19 @@ ovdmx_detach_stream(OVDemux *const dmx)
 }
 
 static int
-refill_reader_cache(struct ReaderCache *const cache_ctx, OVIOStream *const io_str)
+refill_reader_cache(struct ReaderCache *const rdr_cache, OVIOStream *const io_str)
 {
     int read_in_buf;
-    read_in_buf = ovio_stream_read(&cache_ctx->data_start, io_str);
-    cache_ctx->data_start -= 8;
+    read_in_buf = ovio_stream_read(&rdr_cache->data_start, io_str);
+    rdr_cache->data_start -= 8;
 
-    cache_ctx->start = cache_ctx->data_start;
-    cache_ctx->end   = cache_ctx->data_start + read_in_buf;
+    rdr_cache->start = rdr_cache->data_start;
+    rdr_cache->end   = rdr_cache->data_start + read_in_buf;
 
-    cache_ctx->nb_chunk_read += read_in_buf;
+    rdr_cache->nb_chunk_read += read_in_buf;
 
     if (read_in_buf != ovio_stream_buff_size(io_str)) {
-        cache_ctx->end += 8;
+        rdr_cache->end += 8;
         return 1;
     }
 
@@ -409,12 +409,12 @@ extract_nal_unit(OVDemux *const dmx, struct NALUnitsList *const dst_list)
 
     do {
         if (!current_nalu && !dmx->eof) {
-            struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
+            struct ReaderCache *const rdr_cache = &dmx->rdr_cache;
 
             /* FIXME error handling from demux + use return values */
-            dmx->eof = refill_reader_cache(cache_ctx, dmx->io_str);
+            dmx->eof = refill_reader_cache(rdr_cache, dmx->io_str);
 
-            extract_cache_segments(dmx, cache_ctx);
+            extract_cache_segments(dmx, rdr_cache);
 
             current_nalu = pop_nalu_elem(nalu_list);
         }
@@ -439,11 +439,11 @@ extract_access_unit(OVDemux *const dmx, struct NALUnitsList *const dst_list)
         if (!current_nalu) {
             /* No NALU in dmx try to extract NALU units from next
                chunk */
-            struct ReaderCache *const cache_ctx = &dmx->cache_ctx;
+            struct ReaderCache *const rdr_cache = &dmx->rdr_cache;
             int ret = -1;
 
             if (!eof)
-            ret = refill_reader_cache(cache_ctx, dmx->io_str);
+            ret = refill_reader_cache(rdr_cache, dmx->io_str);
 
             if (ret < 0) {
                 eof = 1;
@@ -452,7 +452,7 @@ extract_access_unit(OVDemux *const dmx, struct NALUnitsList *const dst_list)
                 #endif
             }
 
-            ret = extract_cache_segments(dmx, cache_ctx);
+            ret = extract_cache_segments(dmx, rdr_cache);
 
             current_nalu = pop_nalu_elem(nalu_list);
         }
@@ -651,7 +651,6 @@ append_nalu_elem(struct NALUnitsList *const list, struct NALUnitListElem *elem)
     list->last_nalu = elem;
 }
 
-/* FIXME remove unused cache_ctx */
 static int
 append_rbsp_segment_to_cache(struct RBSPCacheData *const rbsp_cache,
                              const struct RBSPSegment *const sgmt_ctx)
@@ -793,9 +792,9 @@ process_rbsp_delimiter(OVDemux *const dmx, struct RBSPSegment *const sgmt_ctx,
 /* WARNING We need to be careful on endianness here if we plan
    to use bigger read sizes */
 static int
-extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
+extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const rdr_cache)
 {
-    const uint8_t *cursor = cache_ctx->start + cache_ctx->nb_skip;
+    const uint8_t *cursor = rdr_cache->start + rdr_cache->nb_skip;
     struct RBSPSegment sgmt_ctx = {.start_p = cursor, .end_p = cursor};
 
     do {
@@ -823,12 +822,12 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
             }
         }
 
-    } while (++cursor < cache_ctx->end);
+    } while (++cursor < rdr_cache->end);
 
     if (dmx->eof) {
         ov_log(dmx, OVLOG_TRACE, "EOF reached\n");
 
-        sgmt_ctx.end_p = cache_ctx->end;
+        sgmt_ctx.end_p = rdr_cache->end;
 
         append_rbsp_segment_to_cache(&dmx->rbsp_ctx, &sgmt_ctx);
 
@@ -836,7 +835,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
     }
 
     /* Keep track of overlapping removed start code or EBP */
-    cache_ctx->nb_skip = cursor - cache_ctx->end;
+    rdr_cache->nb_skip = cursor - rdr_cache->end;
 
     /* Recopy cache to RBSP cache before refill */
     if (sgmt_ctx.start_p < cursor) {
