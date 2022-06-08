@@ -821,23 +821,21 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const rdr_cache)
 
     } while (++cursor < rdr_cache->end);
 
-    if (dmx->eof) {
-        ov_log(dmx, OVLOG_TRACE, "EOF reached\n");
-
-        sgmt_ctx.end_p = rdr_cache->end;
-
-        append_rbsp_segment_to_cache(&dmx->rbsp_cache, &sgmt_ctx);
-
-        return process_start_code(dmx);
-    }
-
     /* Keep track of overlapping removed start code or EBP */
     rdr_cache->nb_skip = cursor - rdr_cache->end;
 
-    /* Recopy cache to RBSP cache before refill */
     if (sgmt_ctx.start_p < cursor) {
+
         sgmt_ctx.end_p = cursor;
+
+        /* Recopy cache to RBSP cache before refill */
         append_rbsp_segment_to_cache(&dmx->rbsp_cache, &sgmt_ctx);
+
+        if (dmx->eof) {
+            /* If EOF is reached end current NAL Unit */
+            ov_log(dmx, OVLOG_TRACE, "EOF reached\n");
+            return process_start_code(dmx);
+        }
     }
 
     return 0;
