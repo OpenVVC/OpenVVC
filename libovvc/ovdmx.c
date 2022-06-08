@@ -359,18 +359,6 @@ refill_reader_cache(struct ReaderCache *const rdr_cache, OVIOStream *const io_st
     return 0;
 }
 
-#if 0
-static uint8_t
-is_access_unit_delimiter(struct NALUnitListElem *elem)
-{
-    /* FIXME add other rules based on NAL Unit types ordering
-     * Since some AU delimitations rules involve POC computation
-     * this require reading until slice header
-     */
-    return elem->nalu.type == OVNALU_AUD || elem->nalu.type == OVNALU_PPS;
-}
-#endif
-
 static struct NALUnitListElem *pop_nalu_elem(struct NALUnitsList *list)
 {
     struct NALUnitListElem *elem = NULL;
@@ -490,32 +478,12 @@ ovdmx_extract_picture_unit(OVDemux *const dmx, OVPictureUnit **dst_pu_p)
     int ret;
     struct NALUnitsList pending_nalu_list = {0};
 
-    #if 0
-    if (/*!dmx->eof &&*/ dmx->nalu_list.first_nalu) {
-        ret = extract_access_unit(dmx, &pending_nalu_list);
-
-        /* FIXME return */
-
-
-        if (!dmx->eof && ret < 0) {
-            ov_log(dmx, OVLOG_ERROR, "No valid Access Unit found \n");
-            free_nalu_list(&pending_nalu_list);
-            ov_free(pu);
-            return ret;
-        }
-    } else {
-        ov_free(pu);
-        *dst_pu = NULL;
-        return -1;
-    }
-    #else
     ret = extract_nal_unit(dmx, &pending_nalu_list);
     if (!dmx->eof && ret < 0) {
         ov_log(dmx, OVLOG_ERROR, "No valid Access Unit found \n");
         free_nalu_list(&pending_nalu_list);
         return ret;
     }
-    #endif
 
     int ret2 = ovdmx_init_pu_from_list(dst_pu_p, &pending_nalu_list);
     if (ret2 < 0) {
