@@ -291,14 +291,12 @@ ovdmx_attach_stream(OVDemux *const dmx, OVIO *io)
     /* Initialise reader cache by first read */
     if (!ovio_stream_eof(dmx->io_str)) {
         struct ReaderCache *const rdr_cache = &dmx->rdr_cache;
-        int read_in_buf;
-
-        read_in_buf = ovio_stream_read(&rdr_cache->data_start, dmx->io_str);
+        int bytes_read = ovio_stream_read(&rdr_cache->data_start, dmx->io_str);
 
         rdr_cache->nb_skip = 0;
 
         rdr_cache->start = rdr_cache->data_start;
-        rdr_cache->end   = rdr_cache->start + read_in_buf;
+        rdr_cache->end   = rdr_cache->start + bytes_read;
 
         if (!ovio_stream_eof(dmx->io_str)) {
             /* Buffer end is set to size minus 8 so we do not overread first data chunk */
@@ -343,15 +341,14 @@ ovdmx_detach_stream(OVDemux *const dmx)
 static int
 refill_reader_cache(struct ReaderCache *const rdr_cache, OVIOStream *const io_str)
 {
-    int read_in_buf;
-    read_in_buf = ovio_stream_read(&rdr_cache->data_start, io_str);
+    int bytes_read = ovio_stream_read(&rdr_cache->data_start, io_str);
 
     rdr_cache->data_start -= 8;
 
     rdr_cache->start = rdr_cache->data_start;
-    rdr_cache->end   = rdr_cache->data_start + read_in_buf;
+    rdr_cache->end   = rdr_cache->data_start + bytes_read;
 
-    if (read_in_buf != ovio_stream_buff_size(io_str)) {
+    if (bytes_read != ovio_stream_buff_size(io_str)) {
         rdr_cache->end += 8;
         return 1;
     }
