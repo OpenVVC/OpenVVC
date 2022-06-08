@@ -767,7 +767,7 @@ process_emulation_prevention_byte(OVDemux *const dmx, struct ReaderCache *const 
 
 static int
 process_rbsp_delimiter(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
-                       struct RBSPSegment *const sgmt_ctx, const uint8_t *const cursor,
+                       struct RBSPSegment *const sgmt_ctx,
                        enum RBSPSegmentDelimiter dlm)
 {
     switch (dlm) {
@@ -814,7 +814,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
 
                 append_rbsp_segment_to_cache(&dmx->rbsp_ctx, &sgmt_ctx);
 
-                int ret = process_rbsp_delimiter(dmx, cache_ctx, &sgmt_ctx, cursor, dlm);
+                int ret = process_rbsp_delimiter(dmx, cache_ctx, &sgmt_ctx, dlm);
 
                 if (ret < 0) {
                     return ret;
