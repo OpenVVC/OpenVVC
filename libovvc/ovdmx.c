@@ -254,8 +254,6 @@ ovdmx_close(OVDemux *dmx)
 
         ovdmx_detach_stream(dmx);
 
-        ovmempool_uninit(&dmx->nalu_elem_pool);
-
         free_rbsp_cache(&dmx->rbsp_cache);
 
         free_epb_cache(&dmx->epb_info);
@@ -265,6 +263,8 @@ ovdmx_close(OVDemux *dmx)
         if (dmx->nalu_pending) {
             free_nalu_elem(dmx->nalu_pending);
         }
+
+        ovmempool_uninit(&dmx->nalu_elem_pool);
 
         ov_free(dmx);
 
