@@ -811,8 +811,6 @@ process_rbsp_delimiter(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
 static int
 extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
 {
-    const uint8_t *start = cache_ctx->start;
-    const uint8_t *const cache_end = cache_ctx->end;
     const uint8_t *cursor = cache_ctx->start + cache_ctx->nb_skip;
     struct RBSPSegment sgmt_ctx = {.start_p = cursor, .end_p = cursor};
 
@@ -831,7 +829,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
                     return ret;
                 }
 
-                /* Next segment start is located after delimiter */
+                /* Next segment start is located after delimiter 3 bytes */
                 sgmt_ctx.end_p = sgmt_ctx.start_p = cursor + 3;
 
                 /* Next segment starts 3 bytes after cursor position however position
@@ -841,23 +839,16 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
             }
         }
 
-    /* Note we actually mean < here since the last bytes reside
-     * into padded area sometimes we might read up to 6 bytes ahead
-     * of cache end and the next segment start might be located
-     * at cache end + 2 in case an Emulation prevention three bytes
-     * overlap cache end
-     */
-
-    } while (++cursor < cache_end);
+    } while (++cursor < cache_ctx->end);
 
     if (dmx->eof) {
         ov_log(dmx, OVLOG_TRACE, "EOF reached\n");
-        sgmt_ctx.end_p = cache_end;
+        sgmt_ctx.end_p = cache_ctx->end;
         return process_start_code(dmx, cache_ctx, &sgmt_ctx);
     }
 
     /* Keep track of overlapping removed start code or EBP */
-    cache_ctx->nb_skip = cursor - cache_end;
+    cache_ctx->nb_skip = cursor - cache_ctx->end;
 
     /* Recopy cache to RBSP cache before refill */
     if (sgmt_ctx.start_p < cursor) {
