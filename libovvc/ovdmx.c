@@ -314,18 +314,30 @@ ovdmx_attach_stream(OVDemux *const dmx, OVIO *io)
     return ret;
 }
 
-/*FIXME share bytestream mem with OVIOStream so we avoid copying from one to
-  another*/
+static void
+empty_rbsp_cache(struct RBSPCacheData *rbsp_cache)
+{
+    rbsp_cache->end       = rbsp_cache->start;
+    rbsp_cache->rbsp_size = 0;
+}
+
+static void
+empty_epb_cache(struct EPBCacheInfo *const epb_info)
+{
+    epb_info->nb_epb = 0;
+}
+
 void
 ovdmx_detach_stream(OVDemux *const dmx)
 {
-    /* FIXME decide if it should free OVIOStream cache buff */
     if (dmx->io_str != NULL) {
         ovio_stream_close(dmx->io_str);
     }
 
     dmx->io_str = NULL;
-    /* FIXME ReaderCache  should be reset */
+
+    empty_rbsp_cache(&dmx->rbsp_cache);
+    empty_epb_cache(&dmx->epb_info);
 }
 
 static int
@@ -333,6 +345,7 @@ refill_reader_cache(struct ReaderCache *const rdr_cache, OVIOStream *const io_st
 {
     int read_in_buf;
     read_in_buf = ovio_stream_read(&rdr_cache->data_start, io_str);
+
     rdr_cache->data_start -= 8;
 
     rdr_cache->start = rdr_cache->data_start;
@@ -652,19 +665,6 @@ append_rbsp_segment_to_cache(struct RBSPCacheData *const rbsp_cache,
     rbsp_cache->rbsp_size += sgmt_size;
 
     return 0;
-}
-
-static void
-empty_rbsp_cache(struct RBSPCacheData *rbsp_cache)
-{
-    rbsp_cache->end       = rbsp_cache->start;
-    rbsp_cache->rbsp_size = 0;
-}
-
-static void
-empty_epb_cache(struct EPBCacheInfo *const epb_info)
-{
-    epb_info->nb_epb = 0;
 }
 
 static void
