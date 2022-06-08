@@ -43,6 +43,7 @@
 /* Use Fixed size of demux read cache buffer to 64K */
 
 #define OVIO_FILEIO_BUFF_SIZE (1 << 16)
+#define OVIO_CACHE_PADDING 8
 
 typedef struct OVReadBuff{
     uint8_t *bytestream;
@@ -153,7 +154,7 @@ ovread_buff_init(struct OVReadBuff *const cache_buff, size_t buff_size)
      * want to use 64bit types in order to quickly probe for successive
      * zero bytes
      */
-    byte_stream = ov_mallocz(8 + buff_size + 8);
+    byte_stream = ov_mallocz(OVIO_CACHE_PADDING + buff_size + OVIO_CACHE_PADDING);
 
     if (byte_stream == NULL) {
         return -1;
@@ -165,7 +166,7 @@ ovread_buff_init(struct OVReadBuff *const cache_buff, size_t buff_size)
      * the padding byte will be used to keep a copy of the last 8 bytes
      * in order to check for start codes overlapping between two chunks
      */
-    cache_buff->bytestream = byte_stream + 8;
+    cache_buff->bytestream = byte_stream + OVIO_CACHE_PADDING;
 
     /* last 16 bytes are set to 0xFF so we do not detect any zero byte
      * past the actual available data when checking for a start or emulation
@@ -175,7 +176,7 @@ ovread_buff_init(struct OVReadBuff *const cache_buff, size_t buff_size)
      * bytes at the averlapping area reader will then ignore them since
      * it cannot be taken as start code.
      */
-    memset(byte_stream + 8 + buff_size, 0XFF, sizeof(*byte_stream) * 8);
+    memset(byte_stream + OVIO_CACHE_PADDING + buff_size, 0XFF, sizeof(*byte_stream) * OVIO_CACHE_PADDING);
 
     return 1;
 }
@@ -198,9 +199,7 @@ ovio_stream_read(const uint8_t **dst_buff, OVIOStream *const io_str)
     uint8_t *cache_end = cache_start + i_buff_size;
     size_t read_in_buf;
 
-    /* FIXME this might depend on the demux maybe this should
-       be done somewhere else this force cache buffer */
-    memcpy(cache_start - 8, cache_end - 8, sizeof(*cache_start) * 8);
+    memcpy(cache_start - OVIO_CACHE_PADDING, cache_end - OVIO_CACHE_PADDING, sizeof(*cache_start) * OVIO_CACHE_PADDING);
 
     read_in_buf = io->read(cache_start, io);
 
