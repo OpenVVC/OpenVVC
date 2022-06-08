@@ -742,17 +742,13 @@ process_start_code(OVDemux *const dmx)
         /* Set padding area to zero */
         memset(rbsp_data + nalu->rbsp_size, 0, OV_RBSP_PADDING);
 
-        empty_rbsp_cache(rbsp_cache);
-        empty_epb_cache(&dmx->epb_info);
-
-
         append_nalu_elem(&dmx->nalu_list, nalu_pending);
     } else {
         ov_log(dmx, OVLOG_TRACE, "No pending nalu when processing start_code, skipping.\n");
-        empty_rbsp_cache(rbsp_cache);
-        empty_epb_cache(&dmx->epb_info);
-
     }
+
+    empty_rbsp_cache(rbsp_cache);
+    empty_epb_cache(&dmx->epb_info);
 
     struct NALUnitListElem *nalu_elem = create_nalu_elem(dmx);
     if (!nalu_elem) {
