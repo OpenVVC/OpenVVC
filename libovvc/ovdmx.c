@@ -802,14 +802,17 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const rdr_cache)
             enum RBSPSegmentDelimiter dlm = ovannexb_check_stc_or_epb(cursor);
 
             if (dlm) {
+                int ret;
 
                 /* Keep the delimiter first two bytes inside the segment */
                 sgmt_ctx.end_p = cursor += 2;
 
-                append_rbsp_segment_to_cache(&dmx->rbsp_cache, &sgmt_ctx);
+                ret = append_rbsp_segment_to_cache(&dmx->rbsp_cache, &sgmt_ctx);
+                if (ret < 0) {
+                    return ret;
+                }
 
-                int ret = process_rbsp_delimiter(dmx, dlm);
-
+                ret = process_rbsp_delimiter(dmx, dlm);
                 if (ret < 0) {
                     return ret;
                 }
@@ -826,10 +829,15 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const rdr_cache)
 
     if (sgmt_ctx.start_p < cursor) {
 
+        int ret;
+
         sgmt_ctx.end_p = cursor;
 
         /* Recopy cache to RBSP cache before refill */
-        append_rbsp_segment_to_cache(&dmx->rbsp_cache, &sgmt_ctx);
+        ret = append_rbsp_segment_to_cache(&dmx->rbsp_cache, &sgmt_ctx);
+        if (ret < 0) {
+            return ret;
+        }
 
         if (dmx->eof) {
             /* If EOF is reached end current NAL Unit */
