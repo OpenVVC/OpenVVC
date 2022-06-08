@@ -155,7 +155,7 @@ struct OVDemux
     struct ReaderCache rdr_cache;
 
     /* Cache used for RBSP extraction */
-    struct RBSPCacheData rbsp_ctx;
+    struct RBSPCacheData rbsp_cache;
 
     /* Cache uses to store Emulation Prevention Bytes (EPB)
        when extracting RBSP Data from current NAL Unit */
@@ -181,13 +181,13 @@ struct OVDemux
 
 static int extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const rdr_cache);
 
-static int init_rbsp_cache(struct RBSPCacheData *const rbsp_ctx);
+static int init_rbsp_cache(struct RBSPCacheData *const rbsp_cache);
 
 /* Realloc rbsp_cache adding an extra 64KB to previously allocated size
    and copy previous content */
-static int extend_rbsp_cache(struct RBSPCacheData *const rbsp_ctx);
+static int extend_rbsp_cache(struct RBSPCacheData *const rbsp_cache);
 
-static void free_rbsp_cache(struct RBSPCacheData *const rbsp_ctx);
+static void free_rbsp_cache(struct RBSPCacheData *const rbsp_cache);
 
 static int init_epb_cache(struct EPBCacheInfo *const epb_info);
 
@@ -228,7 +228,7 @@ ovdmx_init(OVDemux **dmx_p)
         goto fail_pool_init;
     }
 
-    ret = init_rbsp_cache(&dmx->rbsp_ctx);
+    ret = init_rbsp_cache(&dmx->rbsp_cache);
     if (ret < 0) {
         goto fail_rbsp_cache;
     }
@@ -241,7 +241,7 @@ ovdmx_init(OVDemux **dmx_p)
     return 0;
 
 fail_epb_cache:
-    free_rbsp_cache(&dmx->rbsp_ctx);
+    free_rbsp_cache(&dmx->rbsp_cache);
 
 fail_rbsp_cache:
     ovmempool_uninit(&dmx->nalu_elem_pool);
@@ -266,7 +266,7 @@ ovdmx_close(OVDemux *dmx)
 
         ovmempool_uninit(&dmx->nalu_elem_pool);
 
-        free_rbsp_cache(&dmx->rbsp_ctx);
+        free_rbsp_cache(&dmx->rbsp_cache);
 
         free_epb_cache(&dmx->epb_info);
 
@@ -693,9 +693,9 @@ process_start_code(OVDemux *const dmx, const struct RBSPSegment *sgmt_ctx)
     struct NALUnitListElem *nalu_pending = dmx->nalu_pending;
 
     if (nalu_pending) {
-        enum OVNALUType nalu_type = (dmx->rbsp_ctx.start[1] >> 3) & 0x1F;
+        enum OVNALUType nalu_type = (dmx->rbsp_cache.start[1] >> 3) & 0x1F;
         /* FIXME Using of mallocz is to prevent padding to be not zero */
-        uint8_t *rbsp_data = ov_mallocz(dmx->rbsp_ctx.rbsp_size + OV_RBSP_PADDING);
+        uint8_t *rbsp_data = ov_mallocz(dmx->rbsp_cache.rbsp_size + OV_RBSP_PADDING);
         if (!rbsp_data) {
             return OVVC_ENOMEM;
         }
@@ -718,16 +718,16 @@ process_start_code(OVDemux *const dmx, const struct RBSPSegment *sgmt_ctx)
 
         nalu_pending->nalu.type = nalu_type;
         nalu_pending->nalu.rbsp_data = rbsp_data;
-        nalu_pending->nalu.rbsp_size = dmx->rbsp_ctx.rbsp_size;
+        nalu_pending->nalu.rbsp_size = dmx->rbsp_cache.rbsp_size;
 
-        memcpy(rbsp_data, dmx->rbsp_ctx.start, dmx->rbsp_ctx.rbsp_size);
+        memcpy(rbsp_data, dmx->rbsp_cache.start, dmx->rbsp_cache.rbsp_size);
 
-        empty_rbsp_cache(&dmx->rbsp_ctx);
+        empty_rbsp_cache(&dmx->rbsp_cache);
 
         append_nalu_elem(nalu_list, nalu_pending);
     } else {
         ov_log(dmx, OVLOG_TRACE, "No pending nalu when processing start_code, skipping.\n");
-        empty_rbsp_cache(&dmx->rbsp_ctx);
+        empty_rbsp_cache(&dmx->rbsp_cache);
     }
 
 
@@ -755,8 +755,7 @@ process_emulation_prevention_byte(OVDemux *const dmx, const struct RBSPSegment *
         }
     }
 
-    /* FIXME new computation of epb position */
-    epb_info->epb_pos[epb_info->nb_epb] = dmx->rbsp_ctx.rbsp_size - 1 /*+ epb_info->nb_epb*/;
+    epb_info->epb_pos[epb_info->nb_epb] = dmx->rbsp_cache.rbsp_size - 1;
     epb_info->nb_epb++;
 
     return 0;
@@ -809,7 +808,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const rdr_cache)
                 /* Keep the delimiter first two bytes inside the segment */
                 sgmt_ctx.end_p = cursor += 2;
 
-                append_rbsp_segment_to_cache(&dmx->rbsp_ctx, &sgmt_ctx);
+                append_rbsp_segment_to_cache(&dmx->rbsp_cache, &sgmt_ctx);
 
                 int ret = process_rbsp_delimiter(dmx, &sgmt_ctx, dlm);
 
@@ -829,7 +828,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const rdr_cache)
 
         sgmt_ctx.end_p = rdr_cache->end;
 
-        append_rbsp_segment_to_cache(&dmx->rbsp_ctx, &sgmt_ctx);
+        append_rbsp_segment_to_cache(&dmx->rbsp_cache, &sgmt_ctx);
 
         return process_start_code(dmx, &sgmt_ctx);
     }
@@ -840,51 +839,51 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const rdr_cache)
     /* Recopy cache to RBSP cache before refill */
     if (sgmt_ctx.start_p < cursor) {
         sgmt_ctx.end_p = cursor;
-        append_rbsp_segment_to_cache(&dmx->rbsp_ctx, &sgmt_ctx);
+        append_rbsp_segment_to_cache(&dmx->rbsp_cache, &sgmt_ctx);
     }
 
     return 0;
 }
 
 static int
-init_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
+init_rbsp_cache(struct RBSPCacheData *const rbsp_cache)
 {
-    rbsp_ctx->start = ov_mallocz(OVRBSP_CACHE_SIZE);
-    if (rbsp_ctx->start == NULL) {
+    rbsp_cache->start = ov_mallocz(OVRBSP_CACHE_SIZE);
+    if (rbsp_cache->start == NULL) {
         return OVVC_ENOMEM;
     }
 
-    rbsp_ctx->end = rbsp_ctx->start;
-    rbsp_ctx->cache_size = OVRBSP_CACHE_SIZE;
+    rbsp_cache->end = rbsp_cache->start;
+    rbsp_cache->cache_size = OVRBSP_CACHE_SIZE;
 
     return 0;
 }
 
 static void
-free_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
+free_rbsp_cache(struct RBSPCacheData *const rbsp_cache)
 {
-    ov_freep(&rbsp_ctx->start);
+    ov_freep(&rbsp_cache->start);
 }
 
 static int
-extend_rbsp_cache(struct RBSPCacheData *const rbsp_ctx)
+extend_rbsp_cache(struct RBSPCacheData *const rbsp_cache)
 {
-    uint8_t *old_cache = rbsp_ctx->start;
+    uint8_t *old_cache = rbsp_cache->start;
     uint8_t *new_cache;
-    size_t new_size = rbsp_ctx->cache_size + OVRBSP_CACHE_SIZE;
+    size_t new_size = rbsp_cache->cache_size + OVRBSP_CACHE_SIZE;
 
     new_cache = ov_malloc(new_size);
     if (!new_cache) {
         return OVVC_ENOMEM;
     }
 
-    memcpy(new_cache, old_cache, rbsp_ctx->rbsp_size);
+    memcpy(new_cache, old_cache, rbsp_cache->rbsp_size);
 
     ov_free(old_cache);
 
-    rbsp_ctx->start = new_cache;
-    rbsp_ctx->end = rbsp_ctx->start + rbsp_ctx->rbsp_size;
-    rbsp_ctx->cache_size = new_size;
+    rbsp_cache->start = new_cache;
+    rbsp_cache->end = rbsp_cache->start + rbsp_cache->rbsp_size;
+    rbsp_cache->cache_size = new_size;
     return 0;
 }
 
