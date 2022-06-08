@@ -686,9 +686,8 @@ empty_rbsp_cache(struct RBSPCacheData *rbsp_cache)
 }
 
 static int
-process_start_code(OVDemux *const dmx, const struct RBSPSegment *sgmt_ctx)
+process_start_code(OVDemux *const dmx)
 {
-    const uint8_t *bytestream = sgmt_ctx->end_p;
     struct NALUnitsList *nalu_list = &dmx->nalu_list;
     struct NALUnitListElem *nalu_pending = dmx->nalu_pending;
 
@@ -743,7 +742,7 @@ process_start_code(OVDemux *const dmx, const struct RBSPSegment *sgmt_ctx)
 }
 
 static int
-process_emulation_prevention_byte(OVDemux *const dmx, const struct RBSPSegment *sgmt_ctx)
+process_emulation_prevention_byte(OVDemux *const dmx)
 {
     struct EPBCacheInfo *const epb_info = &dmx->epb_info;
 
@@ -762,18 +761,17 @@ process_emulation_prevention_byte(OVDemux *const dmx, const struct RBSPSegment *
 }
 
 static int
-process_rbsp_delimiter(OVDemux *const dmx, struct RBSPSegment *const sgmt_ctx,
-                       enum RBSPSegmentDelimiter dlm)
+process_rbsp_delimiter(OVDemux *const dmx, enum RBSPSegmentDelimiter dlm)
 {
     switch (dlm) {
         case ANNEXB_STC:
 
-            return process_start_code(dmx, sgmt_ctx);
+            return process_start_code(dmx);
 
             break;
         case ANNEXB_EPB:
 
-            return process_emulation_prevention_byte(dmx, sgmt_ctx);
+            return process_emulation_prevention_byte(dmx);
 
             break;
         default:
@@ -810,7 +808,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const rdr_cache)
 
                 append_rbsp_segment_to_cache(&dmx->rbsp_cache, &sgmt_ctx);
 
-                int ret = process_rbsp_delimiter(dmx, &sgmt_ctx, dlm);
+                int ret = process_rbsp_delimiter(dmx, dlm);
 
                 if (ret < 0) {
                     return ret;
@@ -830,7 +828,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const rdr_cache)
 
         append_rbsp_segment_to_cache(&dmx->rbsp_cache, &sgmt_ctx);
 
-        return process_start_code(dmx, &sgmt_ctx);
+        return process_start_code(dmx);
     }
 
     /* Keep track of overlapping removed start code or EBP */
