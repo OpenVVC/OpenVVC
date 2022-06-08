@@ -834,8 +834,11 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const cache_ctx)
 
     if (dmx->eof) {
         ov_log(dmx, OVLOG_TRACE, "EOF reached\n");
+
         sgmt_ctx.end_p = cache_ctx->end;
+
         append_rbsp_segment_to_cache(&dmx->rbsp_ctx, &sgmt_ctx);
+
         return process_start_code(dmx, cache_ctx, &sgmt_ctx);
     }
 
