@@ -296,17 +296,15 @@ ovdmx_attach_stream(OVDemux *const dmx, OVIO *io)
         read_in_buf = ovio_stream_read(&rdr_cache->data_start, dmx->io_str);
 
         rdr_cache->nb_skip = 0;
+
         rdr_cache->start = rdr_cache->data_start;
+        rdr_cache->end   = rdr_cache->start + read_in_buf;
 
-        rdr_cache->end = rdr_cache->start + read_in_buf;
-
-        if (read_in_buf < io->size) {
-            dmx->eof = 1;
-        }
-
-        else {
+        if (!ovio_stream_eof(dmx->io_str)) {
             /* Buffer end is set to size minus 8 so we do not overread first data chunk */
             rdr_cache->end -= 8;
+        } else {
+            dmx->eof = 1;
         }
 
         /* FIXME Process first chunk of data ? */
