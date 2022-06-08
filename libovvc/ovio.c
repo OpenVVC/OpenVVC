@@ -58,26 +58,32 @@ struct OVIOStream {
 
 static int OVFileIOClose(OVIO* io)
 {
-    int ret = 0;
     OVFileIO* file_io = (OVFileIO*) io;
-    ret = fclose(file_io->file);
+
+    int ret = fclose(file_io->file);
+
     free(file_io);
+
     return ret;
 }
 
 static size_t OVFileIORead(void *ptr, OVIO* io)
 {
-    int read = 0;
     OVFileIO* file_io = (OVFileIO*) io;
-    read = fread(ptr, 1, io->size, file_io->file);
-    if(!read)
-        read = ftell(file_io->file);
-    return  read;
+
+    size_t nb_bytes_read = fread(ptr, 1, io->size, file_io->file);
+
+    if (!nb_bytes_read) {
+        nb_bytes_read = ftell(file_io->file);
+    }
+
+    return nb_bytes_read;
 }
 
 static int OVFileIOEOF(OVIO* io)
 {
     OVFileIO* file_io = (OVFileIO*) io;
+
     return feof(file_io->file);
 }
 
@@ -103,7 +109,6 @@ erropen:
   return NULL;
 
 }
-
 
 static int ovread_buff_init(struct OVReadBuff *const cache_buff,
                              size_t buff_size);
@@ -171,7 +176,7 @@ ovread_buff_init(struct OVReadBuff *const cache_buff, size_t buff_size)
     /* last 16 bytes are set to 0xFF so we do not detect any zero byte
      * past the actual available data when checking for a start or emulation
      * prevention code.
-     * Using. 0xFF shoul prevent patterns such as 0x000003 or 0x000001
+     * Using. 0xFF should prevent patterns such as 0x000003 or 0x000001
      * we used 16 bytes so first copy from read function will copy 0XFF
      * bytes at the averlapping area reader will then ignore them since
      * it cannot be taken as start code.
