@@ -417,66 +417,6 @@ extract_nal_unit(OVDemux *const dmx, struct NALUnitsList *const dst_list)
     return -(current_nalu == NULL && dmx->eof);
 }
 
-#if 0
-static int
-extract_access_unit(OVDemux *const dmx, struct NALUnitsList *const dst_list)
-{
-    struct NALUnitsList *nalu_list = &dmx->nalu_list;
-    struct NALUnitListElem *current_nalu = pop_nalu_elem(nalu_list);
-    uint8_t au_end_found = 0;
-    do {
-        if (!current_nalu) {
-            /* No NALU in dmx try to extract NALU units from next
-               chunk */
-            struct ReaderCache *const rdr_cache = &dmx->rdr_cache;
-            int ret = -1;
-
-            if (!eof)
-            ret = refill_reader_cache(rdr_cache, dmx->io_str);
-
-            if (ret < 0) {
-                eof = 1;
-                #if 0
-                goto last_chunk;
-                #endif
-            }
-
-            ret = extract_cache_segments(dmx, rdr_cache);
-
-            current_nalu = pop_nalu_elem(nalu_list);
-        }
-
-        if (current_nalu) {
-            do {
-                /* Move NALU from NALU list to pending list */
-                append_nalu_elem(dst_list, current_nalu);
-                printf("%d\n",current_nalu->nalu.type);
-
-                current_nalu = pop_nalu_elem(nalu_list);
-
-            } while (current_nalu && !is_access_unit_delimiter(current_nalu));
-
-            au_end_found = current_nalu != NULL || (current_nalu == NULL && eof);
-        }
-    } while (!au_end_found && !eof);
-
-    if (current_nalu)
-        append_nalu_elem(dst_list, current_nalu);
-
-    /* TODO NALUList to packet */
-
-    return 0;
-
-#if 0
-readfail:
-    /* free current NALU memory + return error
-    */
-    printf("FAILED NAL read!\n");
-    return -1;
-#endif
-}
-#endif
-
 static void
 free_nalu_list(struct NALUnitsList *list)
 {
