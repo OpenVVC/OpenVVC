@@ -695,11 +695,6 @@ process_start_code(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
     struct NALUnitsList *nalu_list = &dmx->nalu_list;
     struct NALUnitListElem *nalu_pending = dmx->nalu_pending;
 
-    /* New NAL Unit start code found we end so we can process previous
-     * NAL Unit data
-     */
-    append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
-
     if (nalu_pending) {
         enum OVNALUType nalu_type = (dmx->rbsp_ctx.start[1] >> 3) & 0x1F;
         /* FIXME Using of mallocz is to prevent padding to be not zero */
@@ -756,9 +751,7 @@ process_emulation_prevention_byte(OVDemux *const dmx, struct ReaderCache *const 
 {
     struct EPBCacheInfo *const epb_info = &dmx->epb_info;
 
-    append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
-
-    if (epb_info->nb_epb + 1 > (epb_info->cache_size)/sizeof(*epb_info->epb_pos)) {
+    if (epb_info->nb_epb + 1 > (epb_info->cache_size) / sizeof(*epb_info->epb_pos)) {
         int ret = extend_epb_cache(epb_info);
         if (ret < 0) {
             ov_log(dmx, OVLOG_ERROR, "ERROR extending cache\n");
@@ -782,12 +775,16 @@ process_rbsp_delimiter(OVDemux *const dmx, struct ReaderCache *const cache_ctx,
         case ANNEXB_STC:
             sgmt_ctx->end_p = cursor;
 
+            append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
+
             return process_start_code(dmx, cache_ctx, sgmt_ctx);
 
             break;
         case ANNEXB_EPB:
             /* Keep the two zero bytes of emulation prevention three bytes */
             sgmt_ctx->end_p = cursor + 2;
+
+            append_rbsp_segment_to_cache(cache_ctx, &dmx->rbsp_ctx, sgmt_ctx);
 
             return process_emulation_prevention_byte(dmx, cache_ctx, sgmt_ctx);
 
