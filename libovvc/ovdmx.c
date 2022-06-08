@@ -681,54 +681,78 @@ append_rbsp_segment_to_cache(struct RBSPCacheData *const rbsp_cache,
 static void
 empty_rbsp_cache(struct RBSPCacheData *rbsp_cache)
 {
-    rbsp_cache->end        = rbsp_cache->start;
+    rbsp_cache->end       = rbsp_cache->start;
     rbsp_cache->rbsp_size = 0;
+}
+
+static void
+empty_epb_cache(struct EPBCacheInfo *const epb_info)
+{
+    epb_info->nb_epb = 0;
+}
+
+static int
+fill_nalu_epb_info(struct OVNALUnit *const nalu,
+                   const struct EPBCacheInfo *const epb_info)
+{
+    uint32_t epb_buff_size = epb_info->nb_epb * sizeof(*nalu->epb_pos);
+    void *epb_pos = ov_malloc(epb_buff_size);
+    if (!epb_pos) {
+        return OVVC_ENOMEM;
+    }
+
+    memcpy(epb_pos, epb_info->epb_pos, epb_buff_size);
+
+    nalu->epb_pos = epb_pos;
+    nalu->nb_epb  = epb_info->nb_epb;
+
+    return 0;
 }
 
 static int
 process_start_code(OVDemux *const dmx)
 {
-    struct NALUnitsList *nalu_list = &dmx->nalu_list;
     struct NALUnitListElem *nalu_pending = dmx->nalu_pending;
+    struct RBSPCacheData *rbsp_cache = &dmx->rbsp_cache;
 
     if (nalu_pending) {
-        enum OVNALUType nalu_type = (dmx->rbsp_cache.start[1] >> 3) & 0x1F;
-        /* FIXME Using of mallocz is to prevent padding to be not zero */
-        uint8_t *rbsp_data = ov_mallocz(dmx->rbsp_cache.rbsp_size + OV_RBSP_PADDING);
+        enum OVNALUType nalu_type = (rbsp_cache->start[1] >> 3) & 0x1F;
+        struct OVNALUnit *const nalu = &nalu_pending->nalu;
+        uint8_t *rbsp_data = ov_malloc(rbsp_cache->rbsp_size + OV_RBSP_PADDING);
         if (!rbsp_data) {
             return OVVC_ENOMEM;
         }
 
         if (dmx->epb_info.nb_epb) {
-            uint32_t *epb_pos = NULL;
-            epb_pos = ov_malloc(dmx->epb_info.nb_epb * sizeof(*epb_pos));
-            if (!epb_pos) {
+            int ret = fill_nalu_epb_info(nalu, &dmx->epb_info);
+
+            if (ret < 0) {
                 ov_free(rbsp_data);
-                return OVVC_ENOMEM;
+                return ret;
             }
-
-            memcpy(epb_pos, dmx->epb_info.epb_pos, dmx->epb_info.nb_epb * sizeof(*epb_pos));
-
-            nalu_pending->nalu.epb_pos = epb_pos;
-            nalu_pending->nalu.nb_epb = dmx->epb_info.nb_epb;
         }
 
-        dmx->epb_info.nb_epb = 0;
+        nalu->rbsp_data = rbsp_data;
+        nalu->rbsp_size = rbsp_cache->rbsp_size;
 
-        nalu_pending->nalu.type = nalu_type;
-        nalu_pending->nalu.rbsp_data = rbsp_data;
-        nalu_pending->nalu.rbsp_size = dmx->rbsp_cache.rbsp_size;
+        nalu->type = nalu_type;
 
-        memcpy(rbsp_data, dmx->rbsp_cache.start, dmx->rbsp_cache.rbsp_size);
+        memcpy(rbsp_data, rbsp_cache->start, rbsp_cache->rbsp_size);
 
-        empty_rbsp_cache(&dmx->rbsp_cache);
+        /* Set padding area to zero */
+        memset(rbsp_data + nalu->rbsp_size, 0, OV_RBSP_PADDING);
 
-        append_nalu_elem(nalu_list, nalu_pending);
+        empty_rbsp_cache(rbsp_cache);
+        empty_epb_cache(&dmx->epb_info);
+
+
+        append_nalu_elem(&dmx->nalu_list, nalu_pending);
     } else {
         ov_log(dmx, OVLOG_TRACE, "No pending nalu when processing start_code, skipping.\n");
-        empty_rbsp_cache(&dmx->rbsp_cache);
-    }
+        empty_rbsp_cache(rbsp_cache);
+        empty_epb_cache(&dmx->epb_info);
 
+    }
 
     struct NALUnitListElem *nalu_elem = create_nalu_elem(dmx);
     if (!nalu_elem) {
