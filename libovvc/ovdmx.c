@@ -192,6 +192,7 @@ static int refill_reader_cache(struct ReaderCache *const rdr_cache,
                                OVIOStream *const io_str);
 
 static void append_nalu_elem(struct NALUnitsList *const list, struct NALUnitListElem *elem);
+static void prepend_nalu_elem(struct NALUnitsList *const list, struct NALUnitListElem *elem);
 
 static void free_nalu_elem(struct NALUnitListElem *nalu_elem);
 
@@ -460,10 +461,36 @@ fail_nalu_alloc:
     return OVVC_ENOMEM;
 }
 
+static inline uint8_t
+is_vcl(const struct NALUnitListElem *const e) {
+    const struct OVNALUnit *nalu = &e->nalu;
+    return (nalu->type < OVNALU_OPI);
+}
+
+static inline uint8_t
+is_nvcl_delimiter(const struct NALUnitListElem *const e) {
+    const struct OVNALUnit *nalu = &e->nalu;
+    uint8_t nalu_type = nalu->type;
+
+    uint8_t is_nvcl = (nalu->type >= OVNALU_OPI);
+
+    uint8_t is_nvcl_inside  = nalu_type == OVNALU_SUFFIX_SEI;
+    is_nvcl_inside |= nalu_type == OVNALU_SUFFIX_APS;
+    is_nvcl_inside |= nalu_type == OVNALU_AUD;
+    is_nvcl_inside |= nalu_type == OVNALU_EOS;
+    is_nvcl_inside |= nalu_type == OVNALU_EOB;
+    is_nvcl_inside |= nalu_type == OVNALU_FD;
+
+    return  is_nvcl && !is_nvcl_inside;
+}
+
 int
 ovdmx_extract_picture_unit(OVDemux *const dmx, OVPictureUnit **dst_pu_p)
 {
     struct NALUnitsList nalu_list = {0};
+    uint8_t got_vcl = 0;
+    uint8_t got_nvcl_suffix = 0;
+    uint8_t got_ph = 0;
 
     do {
         struct NALUnitListElem *nalu;
@@ -474,13 +501,32 @@ ovdmx_extract_picture_unit(OVDemux *const dmx, OVPictureUnit **dst_pu_p)
                 return ret;
             }
             ov_log(dmx, OVLOG_DEBUG, "No NALU available.\n");
-            *dst_pu_p = NULL;
             break;
         }
 
-        append_nalu_elem(&nalu_list, nalu);
+        got_ph |= nalu->nalu.type == OVNALU_PH;
 
-    } while (0);
+        if (!got_vcl) {
+
+            got_vcl |= is_vcl(nalu);
+
+            append_nalu_elem(&nalu_list, nalu);
+
+        } else if (!is_vcl(nalu) && !is_nvcl_delimiter(nalu)) {
+
+            got_nvcl_suffix = 1;
+            append_nalu_elem(&nalu_list, nalu);
+
+        } else {
+            if (is_vcl(nalu) && got_ph) {
+                append_nalu_elem(&nalu_list, nalu);
+            } else {
+                prepend_nalu_elem(&dmx->nalu_list, nalu);
+                break;
+            }
+        }
+
+    } while (1);
 
     int ret2 = ovdmx_init_pu_from_list(dst_pu_p, &nalu_list);
     if (ret2 < 0) {
@@ -541,6 +587,19 @@ append_nalu_elem(struct NALUnitsList *const list, struct NALUnitListElem *elem)
     }
     elem->next_nalu = NULL;
     list->last_nalu = elem;
+}
+
+static void
+prepend_nalu_elem(struct NALUnitsList *const list, struct NALUnitListElem *elem)
+{
+    elem->prev_nalu = NULL;
+    elem->next_nalu = list->first_nalu;
+    if (list->first_nalu) {
+        list->first_nalu->prev_nalu = elem;
+    } else {
+        list->last_nalu = elem;
+    }
+    list->first_nalu = elem;
 }
 
 static int
