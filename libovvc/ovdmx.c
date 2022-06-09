@@ -131,6 +131,14 @@ struct ReaderCache
     uint32_t nb_skip;
 };
 
+struct NALUListStatus
+{
+    uint8_t got_vcl;
+    uint8_t got_nvcl_suffix;
+    uint8_t got_ph;
+    int nb_nalus;
+};
+
 struct OVDemux
 {
     const char *name;
@@ -462,14 +470,12 @@ fail_nalu_alloc:
 }
 
 static inline uint8_t
-is_vcl(const struct NALUnitListElem *const e) {
-    const struct OVNALUnit *nalu = &e->nalu;
+is_vcl(const struct OVNALUnit *const nalu) {
     return (nalu->type < OVNALU_OPI);
 }
 
 static inline uint8_t
-is_nvcl_delimiter(const struct NALUnitListElem *const e) {
-    const struct OVNALUnit *nalu = &e->nalu;
+is_nvcl_delimiter(const struct OVNALUnit *const nalu) {
     uint8_t nalu_type = nalu->type;
 
     uint8_t is_nvcl = (nalu->type >= OVNALU_OPI);
@@ -484,59 +490,79 @@ is_nvcl_delimiter(const struct NALUnitListElem *const e) {
     return  is_nvcl && !is_nvcl_inside;
 }
 
+static uint8_t
+is_next_pu_start(struct NALUListStatus *const status,
+                 const struct OVNALUnit *const nalu)
+{
+    status->got_ph |= nalu->type == OVNALU_PH;
+
+    if (!status->got_vcl) {
+
+        status->got_vcl |= is_vcl(nalu);
+        goto no;
+
+    } else if (!is_vcl(nalu) && !is_nvcl_delimiter(nalu)) {
+
+        status->got_nvcl_suffix = 1;
+        goto no;
+
+    } else {
+        if (is_vcl(nalu) && status->got_ph) {
+            goto no;
+        } else {
+            goto yes;
+        }
+    }
+
+no:
+    return 0;
+yes:
+    return 1;
+
+}
+
 int
 ovdmx_extract_picture_unit(OVDemux *const dmx, OVPictureUnit **dst_pu_p)
 {
     struct NALUnitsList nalu_list = {0};
-    uint8_t got_vcl = 0;
-    uint8_t got_nvcl_suffix = 0;
-    uint8_t got_ph = 0;
+    struct NALUListStatus status = {0};
+    int ret;
 
     do {
         struct NALUnitListElem *nalu;
-        int ret = extract_nal_unit(dmx, &nalu);
+        ret = extract_nal_unit(dmx, &nalu);
+        if (ret < 0) {
+            ov_log(dmx, OVLOG_ERROR, "Error extracting NAL Unit.\n");
+            goto extraction_error;
+        }
+
         if (!nalu) {
-            if (ret < 0) {
-                ov_log(dmx, OVLOG_ERROR, "Error extracting NAL Unit.\n");
-                return ret;
-            }
             ov_log(dmx, OVLOG_DEBUG, "No NALU available.\n");
             break;
         }
 
-        got_ph |= nalu->nalu.type == OVNALU_PH;
-
-        if (!got_vcl) {
-
-            got_vcl |= is_vcl(nalu);
-
+        if (!is_next_pu_start(&status, &nalu->nalu)) {
+            status.nb_nalus++;
             append_nalu_elem(&nalu_list, nalu);
-
-        } else if (!is_vcl(nalu) && !is_nvcl_delimiter(nalu)) {
-
-            got_nvcl_suffix = 1;
-            append_nalu_elem(&nalu_list, nalu);
-
         } else {
-            if (is_vcl(nalu) && got_ph) {
-                append_nalu_elem(&nalu_list, nalu);
-            } else {
-                prepend_nalu_elem(&dmx->nalu_list, nalu);
-                break;
-            }
+            /* Move NALU element back into demux list */
+            prepend_nalu_elem(&dmx->nalu_list, nalu);
+            break;
         }
 
     } while (1);
 
-    int ret2 = ovdmx_init_pu_from_list(dst_pu_p, &nalu_list);
-    if (ret2 < 0) {
+    ret = ovdmx_init_pu_from_list(dst_pu_p, &nalu_list);
+    if (ret < 0) {
         free_nalu_list(&nalu_list);
-        return ret2;
+        return ret;
     }
 
+extraction_error:
+    /* We could also try to build a Picture Unit however this behaviour is safer*/
     free_nalu_list(&nalu_list);
 
-    return ret2;
+    return ret;
 }
 
 static struct NALUnitListElem *
