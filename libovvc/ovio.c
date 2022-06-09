@@ -56,7 +56,8 @@ struct OVIOStream {
     OVReadBuff opaque_cache;
 };
 
-static int OVFileIOClose(OVIO* io)
+static int
+OVFileIOClose(OVIO* io)
 {
     OVFileIO* file_io = (OVFileIO*) io;
 
@@ -67,7 +68,8 @@ static int OVFileIOClose(OVIO* io)
     return ret;
 }
 
-static size_t OVFileIORead(void *ptr, OVIO* io)
+static size_t
+OVFileIORead(void *ptr, OVIO* io)
 {
     OVFileIO* file_io = (OVFileIO*) io;
 
@@ -80,7 +82,8 @@ static size_t OVFileIORead(void *ptr, OVIO* io)
     return nb_bytes_read;
 }
 
-static int OVFileIOEOF(OVIO* io)
+static int
+OVFileIOEOF(OVIO* io)
 {
     OVFileIO* file_io = (OVFileIO*) io;
 
@@ -88,7 +91,12 @@ static int OVFileIOEOF(OVIO* io)
 }
 
 const OVFileIO defaultFileIO = {
-  .super = { .close = OVFileIOClose, .read = OVFileIORead, .eof = OVFileIOEOF, .size = OVIO_FILEIO_BUFF_SIZE },
+  .super = { .close = OVFileIOClose,
+             .read = OVFileIORead,
+             .eof = OVFileIOEOF,
+             .size = OVIO_FILEIO_BUFF_SIZE
+           },
+
   .file = NULL
 };
 

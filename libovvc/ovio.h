@@ -47,9 +47,9 @@
 typedef struct OVIOStream OVIOStream;
 
 typedef struct OVIO {
-    int (*const close)(struct OVIO*);
-    size_t (*const read)(void *, struct OVIO*);
-    int (*const eof)(struct OVIO*);
+    int    (*const close)(struct OVIO*);
+    size_t (*const read )(void *, struct OVIO*);
+    int    (*const eof  )(struct OVIO*);
     size_t size;
 } OVIO;
 
