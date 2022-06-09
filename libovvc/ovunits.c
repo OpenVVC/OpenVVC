@@ -125,11 +125,12 @@ int
 ovpu_init(OVPictureUnit **ovpu_p, uint8_t nb_nalus)
 {
     OVPictureUnit *pu = ov_mallocz(sizeof(*pu));
+
+    *ovpu_p = pu;
+
     if (!pu) {
         return OVVC_ENOMEM;
     }
-
-    *ovpu_p = pu;
 
     pu->nalus = ov_mallocz(sizeof(*pu->nalus) * nb_nalus);
 
