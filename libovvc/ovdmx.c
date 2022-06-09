@@ -346,6 +346,8 @@ static struct NALUnitListElem *pop_nalu_elem(struct NALUnitsList *list)
     return elem;
 }
 
+static int process_start_code(OVDemux *const dmx);
+
 static int
 extract_nal_unit(OVDemux *const dmx, struct NALUnitsList *const dst_list)
 {
@@ -365,11 +367,18 @@ extract_nal_unit(OVDemux *const dmx, struct NALUnitsList *const dst_list)
             int nb_bytes_read = refill_reader_cache(rdr_cache, dmx->io_str);
             int ret;
 
-            dmx->eof = ovio_stream_eof(dmx->io_str);
-
             ret = extract_cache_segments(dmx, rdr_cache);
             if (ret < 0) {
                 return ret;
+            }
+
+            dmx->eof = ovio_stream_eof(dmx->io_str);
+            if (dmx->eof) {
+                ov_log(dmx, OVLOG_TRACE, "EOF reached\n");
+                ret = process_start_code(dmx);
+                if (ret < 0) {
+                    return ret;
+                }
             }
 
         } else {
@@ -730,11 +739,6 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const rdr_cache)
         ret = append_rbsp_segment_to_cache(&dmx->rbsp_cache, &sgmt_ctx);
         if (ret < 0) goto error;
 
-        if (dmx->eof) {
-            /* If EOF is reached end current NAL Unit */
-            ov_log(dmx, OVLOG_TRACE, "EOF reached\n");
-            return process_start_code(dmx);
-        }
     }
 
     return 0;
