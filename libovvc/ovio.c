@@ -208,7 +208,10 @@ ovio_stream_read(const uint8_t **dst_buff, OVIOStream *const io_str)
 
     read_in_buf = io->read(cache_start, io);
 
-    *dst_buff = cache_start;
+    *dst_buff = cache_start - OVIO_CACHE_PADDING;
+    if (io->eof(io)) {
+        read_in_buf += OVIO_CACHE_PADDING;
+    }
 
     return read_in_buf;
 }

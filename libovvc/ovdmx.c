@@ -295,10 +295,7 @@ ovdmx_attach_stream(OVDemux *const dmx, OVIO *io)
 
         rdr_cache->end   = rdr_cache->start + bytes_read;
 
-        if (!ovio_stream_eof(dmx->io_str)) {
-            /* Buffer end is set to size minus 8 so we do not overread first data chunk */
-            rdr_cache->end -= 8;
-        } else {
+        if (ovio_stream_eof(dmx->io_str)) {
             dmx->eof = 1;
         }
 
@@ -340,12 +337,9 @@ refill_reader_cache(struct ReaderCache *const rdr_cache, OVIOStream *const io_st
 {
     int bytes_read = ovio_stream_read(&rdr_cache->start, io_str);
 
-    rdr_cache->start -= 8;
-
     rdr_cache->end   = rdr_cache->start + bytes_read;
 
-    if (bytes_read != ovio_stream_buff_size(io_str)) {
-        rdr_cache->end += 8;
+    if (ovio_stream_eof(io_str)) {
         return 1;
     }
 
