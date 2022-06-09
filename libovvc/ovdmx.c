@@ -740,7 +740,7 @@ extract_cache_segments(OVDemux *const dmx, struct ReaderCache *const rdr_cache)
 
     } while (++cursor < rdr_cache->end);
 
-    /* Keep track of overlapping removed start code or EBP */
+    /* Keep track of overlapping start code or EBP */
     rdr_cache->nb_skip = cursor - rdr_cache->end;
 
     if (sgmt_ctx.start_p < cursor) {
