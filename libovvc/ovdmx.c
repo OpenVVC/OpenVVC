@@ -463,32 +463,34 @@ fail_nalu_alloc:
 int
 ovdmx_extract_picture_unit(OVDemux *const dmx, OVPictureUnit **dst_pu_p)
 {
-    int ret;
-    struct NALUnitsList pending_nalu_list = {0};
-    struct NALUnitListElem *nalu;
+    struct NALUnitsList nalu_list = {0};
 
-    ret = extract_nal_unit(dmx, &nalu);
-    if (!nalu) {
-        if (ret < 0) {
-            ov_log(dmx, OVLOG_ERROR, "Error extracting NAL Unit.\n");
-            return ret;
+    do {
+        struct NALUnitListElem *nalu;
+        int ret = extract_nal_unit(dmx, &nalu);
+        if (!nalu) {
+            if (ret < 0) {
+                ov_log(dmx, OVLOG_ERROR, "Error extracting NAL Unit.\n");
+                return ret;
+            }
+            ov_log(dmx, OVLOG_DEBUG, "No NALU available.\n");
+            *dst_pu_p = NULL;
+            break;
         }
-        ov_log(dmx, OVLOG_DEBUG, "No NALU available.\n");
-        *dst_pu_p = NULL;
-        return 0;
-    }
 
-    append_nalu_elem(&pending_nalu_list, nalu);
+        append_nalu_elem(&nalu_list, nalu);
 
-    int ret2 = ovdmx_init_pu_from_list(dst_pu_p, &pending_nalu_list);
+    } while (0);
+
+    int ret2 = ovdmx_init_pu_from_list(dst_pu_p, &nalu_list);
     if (ret2 < 0) {
-        free_nalu_list(&pending_nalu_list);
+        free_nalu_list(&nalu_list);
         return ret2;
     }
 
-    free_nalu_list(&pending_nalu_list);
+    free_nalu_list(&nalu_list);
 
-    return ret;
+    return ret2;
 }
 
 static struct NALUnitListElem *
