@@ -324,11 +324,7 @@ refill_reader_cache(struct ReaderCache *const rdr_cache, OVIOStream *const io_st
 
     rdr_cache->end   = rdr_cache->start + bytes_read;
 
-    if (ovio_stream_eof(io_str)) {
-        return 1;
-    }
-
-    return 0;
+    return bytes_read;
 }
 
 static struct NALUnitListElem *pop_nalu_elem(struct NALUnitsList *list)
@@ -354,27 +350,33 @@ static int
 extract_nal_unit(OVDemux *const dmx, struct NALUnitsList *const dst_list)
 {
     struct NALUnitsList *nalu_list = &dmx->nalu_list;
-    struct NALUnitListElem *current_nalu = pop_nalu_elem(nalu_list);
 
     do {
-        if (!current_nalu && !dmx->eof) {
-            struct ReaderCache *const rdr_cache = &dmx->rdr_cache;
 
-            /* FIXME error handling from demux + use return values */
-            dmx->eof = refill_reader_cache(rdr_cache, dmx->io_str);
-
-            extract_cache_segments(dmx, rdr_cache);
-
-            current_nalu = pop_nalu_elem(nalu_list);
-        }
-
+        struct NALUnitListElem *current_nalu = pop_nalu_elem(nalu_list);
         if (current_nalu) {
             append_nalu_elem(dst_list, current_nalu);
+            return 1;
         }
 
-    } while (current_nalu == NULL && !dmx->eof);
+        if (!dmx->eof) {
+            struct ReaderCache *const rdr_cache = &dmx->rdr_cache;
 
-    return -(current_nalu == NULL && dmx->eof);
+            int nb_bytes_read = refill_reader_cache(rdr_cache, dmx->io_str);
+            int ret;
+
+            dmx->eof = ovio_stream_eof(dmx->io_str);
+
+            ret = extract_cache_segments(dmx, rdr_cache);
+            if (ret < 0) {
+                return ret;
+            }
+
+        } else {
+            return -1;
+        }
+
+    } while (1);
 }
 
 static void
