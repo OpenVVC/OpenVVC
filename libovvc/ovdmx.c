@@ -373,10 +373,10 @@ extract_nal_unit(OVDemux *const dmx, struct NALUnitListElem **dst_nalup)
                 return ret;
             }
 
-            dmx->eof = ovio_stream_eof(dmx->io_str);
 
-            if (dmx->eof) {
+            if (ovio_stream_eof(dmx->io_str)) {
                 ov_log(dmx, OVLOG_TRACE, "EOF reached\n");
+                dmx->eof = 1;
                 ret = process_start_code(dmx);
                 if (ret < 0) {
                     return ret;
