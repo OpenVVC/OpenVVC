@@ -520,13 +520,11 @@ free_nalu_elem(struct NALUnitListElem *nalu_elem)
         ov_freep(&nalu_elem->nalu.rbsp_data);
     }
 
-    if (nalu_elem->nalu.epb_pos){
-        ov_freep(&nalu_elem->nalu.epb_pos);
-    }
-
     /* clean up before returning to pool */
+    nalu_elem->nalu.epb_pos = NULL;
     nalu_elem->nalu.nb_epb    = 0;
     nalu_elem->nalu.rbsp_size = 0;
+
     ovmempool_pushelem(nalu_elem->private.pool_ref);
 }
 
