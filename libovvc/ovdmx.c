@@ -286,22 +286,7 @@ ovdmx_attach_stream(OVDemux *const dmx, OVIO *io)
         return OVVC_EINDATA;
     }
 
-    /* Initialise reader cache by first read */
-    if (!ovio_stream_eof(dmx->io_str)) {
-        struct ReaderCache *const rdr_cache = &dmx->rdr_cache;
-        int bytes_read = ovio_stream_read(&rdr_cache->start, dmx->io_str);
-
-        rdr_cache->nb_skip = 0;
-
-        rdr_cache->end   = rdr_cache->start + bytes_read;
-
-        if (ovio_stream_eof(dmx->io_str)) {
-            dmx->eof = 1;
-        }
-
-        /* FIXME Process first chunk of data ? */
-        ret = extract_cache_segments(dmx, rdr_cache);
-    }
+    dmx->rdr_cache.nb_skip = 0;
 
     return ret;
 }
