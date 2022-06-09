@@ -129,16 +129,16 @@ ovpu_init(OVPictureUnit **ovpu_p, uint8_t nb_nalus)
         return OVVC_ENOMEM;
     }
 
+    *ovpu_p = pu;
+
     pu->nalus = ov_mallocz(sizeof(*pu->nalus) * nb_nalus);
+
     if (!pu->nalus) {
-        ov_free(pu);
-        *ovpu_p = NULL;
+        ov_freep(ovpu_p);
         return OVVC_ENOMEM;
     }
 
     pu->nb_nalus = nb_nalus;
-
-    *ovpu_p = pu;
 
     return 0;
 }
