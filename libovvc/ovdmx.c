@@ -359,20 +359,21 @@ extract_nal_unit(OVDemux *const dmx, struct NALUnitsList *const dst_list)
         if (current_nalu) {
             append_nalu_elem(dst_list, current_nalu);
             return 1;
-        }
 
-        if (!dmx->eof) {
+        } else if (!ovio_stream_eof(dmx->io_str)) {
+
             struct ReaderCache *const rdr_cache = &dmx->rdr_cache;
 
             int nb_bytes_read = refill_reader_cache(rdr_cache, dmx->io_str);
-            int ret;
 
-            ret = extract_cache_segments(dmx, rdr_cache);
+            int ret = extract_cache_segments(dmx, rdr_cache);
+
             if (ret < 0) {
                 return ret;
             }
 
             dmx->eof = ovio_stream_eof(dmx->io_str);
+
             if (dmx->eof) {
                 ov_log(dmx, OVLOG_TRACE, "EOF reached\n");
                 ret = process_start_code(dmx);
@@ -382,7 +383,10 @@ extract_nal_unit(OVDemux *const dmx, struct NALUnitsList *const dst_list)
             }
 
         } else {
-            return -1;
+
+            ov_log(dmx, OVLOG_TRACE, "IO EOF reached and list empty\n");
+
+            return 0;
         }
 
     } while (1);
