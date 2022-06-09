@@ -349,15 +349,16 @@ static struct NALUnitListElem *pop_nalu_elem(struct NALUnitsList *list)
 static int process_start_code(OVDemux *const dmx);
 
 static int
-extract_nal_unit(OVDemux *const dmx, struct NALUnitsList *const dst_list)
+extract_nal_unit(OVDemux *const dmx, struct NALUnitListElem **dst_nalup)
 {
     struct NALUnitsList *nalu_list = &dmx->nalu_list;
 
     do {
 
-        struct NALUnitListElem *current_nalu = pop_nalu_elem(nalu_list);
-        if (current_nalu) {
-            append_nalu_elem(dst_list, current_nalu);
+        *dst_nalup = pop_nalu_elem(nalu_list);
+
+        if (*dst_nalup) {
+
             return 1;
 
         } else if (!ovio_stream_eof(dmx->io_str)) {
@@ -464,13 +465,20 @@ ovdmx_extract_picture_unit(OVDemux *const dmx, OVPictureUnit **dst_pu_p)
 {
     int ret;
     struct NALUnitsList pending_nalu_list = {0};
+    struct NALUnitListElem *nalu;
 
-    ret = extract_nal_unit(dmx, &pending_nalu_list);
-    if (!dmx->eof && ret < 0) {
-        ov_log(dmx, OVLOG_ERROR, "No valid Access Unit found \n");
-        free_nalu_list(&pending_nalu_list);
-        return ret;
+    ret = extract_nal_unit(dmx, &nalu);
+    if (!nalu) {
+        if (ret < 0) {
+            ov_log(dmx, OVLOG_ERROR, "Error extracting NAL Unit.\n");
+            return ret;
+        }
+        ov_log(dmx, OVLOG_DEBUG, "No NALU available.\n");
+        *dst_pu_p = NULL;
+        return 0;
     }
+
+    append_nalu_elem(&pending_nalu_list, nalu);
 
     int ret2 = ovdmx_init_pu_from_list(dst_pu_p, &pending_nalu_list);
     if (ret2 < 0) {
