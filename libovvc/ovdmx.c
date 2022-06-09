@@ -435,13 +435,15 @@ count_list_nal_units(struct NALUnitsList *const src)
     return nb_nalus;
 }
 
-int
+static int
 ovdmx_init_pu_from_list(OVPictureUnit **ovpu_p, struct NALUnitsList *const src)
 {
     OVPictureUnit *ovpu;
     struct NALUnitListElem *lelem = src->first_nalu;
     int nb_nalus = count_list_nal_units(src);
+
     int ret = ovpu_init(ovpu_p, nb_nalus);
+
     int i;
     if (ret < 0) {
         return ret;

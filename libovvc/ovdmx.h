@@ -60,14 +60,6 @@ int ovdmx_attach_stream(OVDemux *const ovdmx, OVIO *io);
  */
 void ovdmx_detach_stream(OVDemux *const ovdmx);
 
-/* Create a OVPictureUnit from a NALUnitsList
- *
- * Note
- *    - OVNALUnit from src list are cleared by this function.
- *    - The NALUnitsList is assumed non empty.
- */
-int ovdmx_init_pu_from_list(OVPictureUnit **ovpu_p, struct NALUnitsList *const src);
-
 /* Extract a Picture Unit
  *
  * Note :
