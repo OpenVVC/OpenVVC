@@ -133,10 +133,11 @@ struct ReaderCache
 
 struct NALUListStatus
 {
+    struct NALUnitsList nalu_list;
+    int nb_nalus;
     uint8_t got_vcl;
     uint8_t got_nvcl_suffix;
     uint8_t got_ph;
-    int nb_nalus;
 };
 
 struct OVDemux
@@ -436,22 +437,22 @@ count_list_nal_units(struct NALUnitsList *const src)
 }
 
 static int
-ovdmx_init_pu_from_list(OVPictureUnit **ovpu_p, struct NALUnitsList *const src)
+ovdmx_init_pu_from_list(OVPictureUnit **ovpu_p, struct NALUListStatus *const status)
 {
     OVPictureUnit *ovpu;
-    struct NALUnitListElem *lelem = src->first_nalu;
-    int nb_nalus = count_list_nal_units(src);
+    struct NALUnitsList *nalu_list = &status->nalu_list;
+    struct NALUnitListElem *lelem = nalu_list->first_nalu;
 
-    int ret = ovpu_init(ovpu_p, nb_nalus);
+    int ret = ovpu_init(ovpu_p, status->nb_nalus);
 
-    int i;
     if (ret < 0) {
         return ret;
     }
 
     ovpu = *ovpu_p;
 
-    for (i = 0; i < nb_nalus; i++) {
+    for (int i = 0; i < status->nb_nalus; i++) {
+
         ovpu->nalus[i] = ov_mallocz(sizeof(*ovpu->nalus[i]));
         if (!ovpu->nalus[i]) {
             goto fail_nalu_alloc;
@@ -459,8 +460,6 @@ ovdmx_init_pu_from_list(OVPictureUnit **ovpu_p, struct NALUnitsList *const src)
         move_nalu_elem_to_ovnalu(lelem, ovpu->nalus[i]);
         lelem = lelem->next_nalu;
     }
-
-    ovpu->nb_nalus = nb_nalus;
 
     *ovpu_p = ovpu;
 
@@ -526,7 +525,6 @@ yes:
 int
 ovdmx_extract_picture_unit(OVDemux *const dmx, OVPictureUnit **dst_pu_p)
 {
-    struct NALUnitsList nalu_list = {0};
     struct NALUListStatus status = {0};
     int ret;
 
@@ -545,7 +543,7 @@ ovdmx_extract_picture_unit(OVDemux *const dmx, OVPictureUnit **dst_pu_p)
 
         if (!is_next_pu_start(&status, &nalu->nalu)) {
             status.nb_nalus++;
-            append_nalu_elem(&nalu_list, nalu);
+            append_nalu_elem(&status.nalu_list, nalu);
         } else {
             /* Move NALU element back into demux list */
             prepend_nalu_elem(&dmx->nalu_list, nalu);
@@ -554,15 +552,15 @@ ovdmx_extract_picture_unit(OVDemux *const dmx, OVPictureUnit **dst_pu_p)
 
     } while (1);
 
-    ret = ovdmx_init_pu_from_list(dst_pu_p, &nalu_list);
+    ret = ovdmx_init_pu_from_list(dst_pu_p, &status);
     if (ret < 0) {
-        free_nalu_list(&nalu_list);
+        free_nalu_list(&status.nalu_list);
         return ret;
     }
 
 extraction_error:
     /* We could also try to build a Picture Unit however this behaviour is safer*/
-    free_nalu_list(&nalu_list);
+    free_nalu_list(&status.nalu_list);
 
     return ret;
 }
