@@ -195,7 +195,7 @@ static int extend_epb_cache(struct EPBCacheInfo *const epb_info);
 
 static void free_epb_cache(struct EPBCacheInfo *const epb_info);
 
-static void free_nalu_list(struct NALUnitsList *list);
+static void clear_nalu_list(struct NALUnitsList *list);
 
 static int refill_reader_cache(struct ReaderCache *const rdr_cache,
                                OVIOStream *const io_str);
@@ -266,7 +266,7 @@ ovdmx_close(OVDemux *dmx)
 
         free_epb_cache(&dmx->epb_info);
 
-        free_nalu_list(&dmx->nalu_list);
+        clear_nalu_list(&dmx->nalu_list);
 
         if (dmx->nalu_pending) {
             free_nalu_elem(dmx->nalu_pending);
@@ -404,7 +404,7 @@ extract_nal_unit(OVDemux *const dmx, struct NALUnitListElem **dst_nalup)
 }
 
 static void
-free_nalu_list(struct NALUnitsList *list)
+clear_nalu_list(struct NALUnitsList *list)
 {
     struct NALUnitListElem *elem = list->first_nalu;
     while (elem) {
@@ -545,7 +545,7 @@ ovdmx_extract_picture_unit(OVDemux *const dmx, OVPictureUnit **dst_pu_p)
 
 extraction_error:
     /* We could also try to build a Picture Unit however this behaviour is safer*/
-    free_nalu_list(&status.nalu_list);
+    clear_nalu_list(&status.nalu_list);
 
     return ret;
 }
