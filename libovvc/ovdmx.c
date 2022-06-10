@@ -722,7 +722,7 @@ process_start_code(OVDemux *const dmx)
         if (ret < 0) {
             empty_rbsp_cache(&dmx->rbsp_cache);
             empty_epb_cache(&dmx->epb_info);
-            return OVVC_ENOMEM;
+            return ret;
         }
 
         nalu->type = nalu_type;
