@@ -900,8 +900,7 @@ alf_filter_c(OVSample *const dst, const OVSample *const src,
     const OVSample *lm_src2 = lm_src0 - src_stride;
     const OVSample *lm_src3 = lm_src1 + src_stride;
     const OVSample *lm_src4 = lm_src2 - src_stride;
-    const OVSample *lm_src5 = lm_src3 + src_stride;
-    const OVSample *lm_src6 = lm_src4 - src_stride;
+
 
     for (i = 0; i < blk_dst.height; i += blk_h) {
         int j;
@@ -914,8 +913,7 @@ alf_filter_c(OVSample *const dst, const OVSample *const src,
                 const OVSample *src_2 = lm_src2 + j + k * src_stride;
                 const OVSample *src_3 = lm_src3 + j + k * src_stride;
                 const OVSample *src_4 = lm_src4 + j + k * src_stride;
-                const OVSample *src_5 = lm_src5 + j + k * src_stride;
-                const OVSample *src_6 = lm_src6 + j + k * src_stride;
+
 
                 dst1 = dst0 + j + k * dst_stride;
 
@@ -939,8 +937,7 @@ alf_filter_c(OVSample *const dst, const OVSample *const src,
                     src_2++;
                     src_3++;
                     src_4++;
-                    src_5++;
-                    src_6++;
+
                 }
             }
         }
@@ -953,8 +950,7 @@ alf_filter_c(OVSample *const dst, const OVSample *const src,
         lm_src2 += src_blk_stride;
         lm_src3 += src_blk_stride;
         lm_src4 += src_blk_stride;
-        lm_src5 += src_blk_stride;
-        lm_src6 += src_blk_stride;
+
     }
 }
 
