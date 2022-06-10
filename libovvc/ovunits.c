@@ -142,6 +142,7 @@ int
 ovpu_init(OVPictureUnit **ovpu_p, uint8_t nb_nalus)
 {
     OVPictureUnit *pu = ov_mallocz(sizeof(*pu));
+    int ret;
 
     *ovpu_p = pu;
 
@@ -149,16 +150,23 @@ ovpu_init(OVPictureUnit **ovpu_p, uint8_t nb_nalus)
         return OVVC_ENOMEM;
     }
 
-    pu->nalus = ov_mallocz(sizeof(*pu->nalus) * nb_nalus);
+    if (nb_nalus) {
+        pu->nalus = ov_mallocz(sizeof(*pu->nalus) * nb_nalus);
 
-    if (!pu->nalus) {
-        ov_freep(ovpu_p);
-        return OVVC_ENOMEM;
+        if (!pu->nalus) {
+            ret = OVVC_ENOMEM;
+        }
+
+        pu->nb_nalus = nb_nalus;
+
+        return 0;
     }
 
-    pu->nb_nalus = nb_nalus;
+    ov_log(NULL, OVLOG_ERROR, "Cannot create an empty Picture Unit\n");
 
-    return 0;
+fail:
+    ov_freep(ovpu_p);
+    return ret;
 }
 
 /*FIXME Add and reference counting */

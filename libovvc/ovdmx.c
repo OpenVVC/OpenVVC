@@ -542,10 +542,6 @@ ovdmx_extract_picture_unit(OVDemux *const dmx, OVPictureUnit **dst_pu_p)
     } while (1);
 
     ret = ovdmx_init_pu_from_list(dst_pu_p, &status);
-    if (ret < 0) {
-        free_nalu_list(&status.nalu_list);
-        return ret;
-    }
 
 extraction_error:
     /* We could also try to build a Picture Unit however this behaviour is safer*/
