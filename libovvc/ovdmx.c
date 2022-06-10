@@ -444,7 +444,6 @@ ovdmx_init_pu_from_list(OVPictureUnit **ovpu_p, struct NALUListStatus *const sta
 
     ovpu = *ovpu_p;
 
-    ov_log(NULL, OVLOG_ERROR, "Picture Unit containing %d NAL Units\n", status->nb_nalus);
 
     for (int i = 0; i < status->nb_nalus; i++) {
         ov_log(NULL, OVLOG_ERROR, "/t %s\n", nalu_name[lelem->nalu->type]);
@@ -691,6 +690,22 @@ allocate_nalu_data(struct OVNALUnit *const nalu,
 }
 
 static int
+adjust_rbsp_size(struct RBSPCacheData *const rbsp_cache)
+{
+    const uint8_t *const start = rbsp_cache->start;
+    const uint8_t *cursor = start + rbsp_cache->rbsp_size - 2;
+    do {
+        if (*cursor) {
+            break;
+        }
+    } while (cursor-- != start);
+
+    rbsp_cache->rbsp_size = cursor - start + 1;
+
+    return 0;
+}
+
+static int
 process_start_code(OVDemux *const dmx)
 {
     struct NALUnitListElem *nalu_pending = dmx->nalu_pending;
@@ -699,6 +714,8 @@ process_start_code(OVDemux *const dmx)
         enum OVNALUType nalu_type = (dmx->rbsp_cache.start[1] >> 3) & 0x1F;
 
         struct OVNALUnit *const nalu = nalu_pending->nalu;
+
+        int rbsp_stop = adjust_rbsp_size(&dmx->rbsp_cache);
 
         int ret = allocate_nalu_data(nalu, &dmx->epb_info, &dmx->rbsp_cache);
 
