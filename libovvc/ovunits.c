@@ -100,9 +100,6 @@ ovnalu_free(OVNALUnit **nalu_p)
 void
 ov_nalu_unref(OVNALUnit **nalu_p)
 {
-    if (!nalu_p)
-        return;
-
     OVNALUnit *nalu = *nalu_p;
 
     if (!nalu){
