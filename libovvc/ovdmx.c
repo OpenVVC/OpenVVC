@@ -555,6 +555,7 @@ create_nalu_elem(OVDemux *const dmx)
 {
     MemPool *const mempool = dmx->nalu_elem_pool;
     MemPoolElem *elem = ovmempool_popelem(mempool);
+    int ret;
 
     struct NALUnitListElem *nalu_elem = NULL;
     if (!elem) {
@@ -564,7 +565,11 @@ create_nalu_elem(OVDemux *const dmx)
     nalu_elem = elem->data;
     nalu_elem->private.pool_ref = elem;
 
-    ovnalu_init2(&nalu_elem->nalu);
+    ret = ovnalu_init2(&nalu_elem->nalu);
+    if (ret < 0) {
+        ovmempool_pushelem(nalu_elem->private.pool_ref);
+        return NULL;
+    }
 
     return nalu_elem;
 }
