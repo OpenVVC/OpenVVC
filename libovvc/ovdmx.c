@@ -107,7 +107,7 @@ struct NALUnitListElem
 {
     struct NALUnitListElem *prev_nalu;
     struct NALUnitListElem *next_nalu;
-    OVNALUnit nalu;
+    OVNALUnit *nalu;
     struct {
         MemPoolElem *pool_ref;
     } private;
@@ -416,13 +416,6 @@ free_nalu_list(struct NALUnitsList *list)
     list->last_nalu = NULL;
 }
 
-static void
-move_nalu_elem_to_ovnalu(struct NALUnitListElem *lelem, OVNALUnit *nalu)
-{
-    memcpy(nalu, &lelem->nalu, sizeof(lelem->nalu)) ;
-    memset(&lelem->nalu, 0, sizeof(lelem->nalu));
-}
-
 static int
 count_list_nal_units(struct NALUnitsList *const src)
 {
@@ -451,23 +444,19 @@ ovdmx_init_pu_from_list(OVPictureUnit **ovpu_p, struct NALUListStatus *const sta
 
     ovpu = *ovpu_p;
 
-    for (int i = 0; i < status->nb_nalus; i++) {
+    ov_log(NULL, OVLOG_ERROR, "Picture Unit containing %d NAL Units\n", status->nb_nalus);
 
-        ovpu->nalus[i] = ov_mallocz(sizeof(*ovpu->nalus[i]));
-        if (!ovpu->nalus[i]) {
-            goto fail_nalu_alloc;
-        }
-        move_nalu_elem_to_ovnalu(lelem, ovpu->nalus[i]);
+    for (int i = 0; i < status->nb_nalus; i++) {
+        ov_log(NULL, OVLOG_ERROR, "/t %s\n", nalu_name[lelem->nalu->type]);
+
+        ov_nalu_new_ref(&ovpu->nalus[i], lelem->nalu);
+
         lelem = lelem->next_nalu;
     }
 
     *ovpu_p = ovpu;
 
     return 0;
-
-fail_nalu_alloc:
-    ovpu_unref(ovpu_p);
-    return OVVC_ENOMEM;
 }
 
 static inline uint8_t
@@ -541,7 +530,7 @@ ovdmx_extract_picture_unit(OVDemux *const dmx, OVPictureUnit **dst_pu_p)
             break;
         }
 
-        if (!is_next_pu_start(&status, &nalu->nalu)) {
+        if (!is_next_pu_start(&status, nalu->nalu)) {
             status.nb_nalus++;
             append_nalu_elem(&status.nalu_list, nalu);
         } else {
@@ -579,7 +568,7 @@ create_nalu_elem(OVDemux *const dmx)
     nalu_elem = elem->data;
     nalu_elem->private.pool_ref = elem;
 
-    ov_nalu_init(&nalu_elem->nalu);
+    ovnalu_init2(&nalu_elem->nalu);
 
     return nalu_elem;
 }
@@ -587,16 +576,9 @@ create_nalu_elem(OVDemux *const dmx)
 static void
 free_nalu_elem(struct NALUnitListElem *nalu_elem)
 {
-    /* TODO unref NALU instead of free */
-    if (nalu_elem->nalu.rbsp_data) {
-        ov_freep(&nalu_elem->nalu.rbsp_data);
+    if (nalu_elem->nalu) {
+        ov_nalu_unref(&nalu_elem->nalu);
     }
-
-    /* clean up before returning to pool */
-    nalu_elem->nalu.epb_pos = NULL;
-    nalu_elem->nalu.nb_epb    = 0;
-    nalu_elem->nalu.rbsp_size = 0;
-
     ovmempool_pushelem(nalu_elem->private.pool_ref);
 }
 
@@ -714,7 +696,7 @@ process_start_code(OVDemux *const dmx)
     if (nalu_pending) {
         enum OVNALUType nalu_type = (dmx->rbsp_cache.start[1] >> 3) & 0x1F;
 
-        struct OVNALUnit *const nalu = &nalu_pending->nalu;
+        struct OVNALUnit *const nalu = nalu_pending->nalu;
 
         int ret = allocate_nalu_data(nalu, &dmx->epb_info, &dmx->rbsp_cache);
 

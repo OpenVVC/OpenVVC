@@ -201,6 +201,9 @@ void ov_nalu_unref(OVNALUnit **nalu_p);
 
 int ov_nalu_init(OVNALUnit *nalu);
 
+
+int ovnalu_init2(OVNALUnit **nalu);
+
 /* Reference an OVPictureUnit pointer
  *
  * Add a new reference to an OVPictureUnit pointed by src and increase its

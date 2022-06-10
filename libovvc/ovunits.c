@@ -53,6 +53,26 @@ ov_nalu_init(OVNALUnit *nalu)
 }
 
 int
+ovnalu_init2(OVNALUnit **nalu_p)
+{
+    OVNALUnit *nalu = ov_mallocz(sizeof(*nalu));
+    *nalu_p = nalu;
+
+    if (!nalu) {
+        return OVVC_ENOMEM;
+    }
+
+    nalu->rbsp_data = NULL;
+    nalu->rbsp_size = 0;
+
+    nalu->epb_pos = NULL;
+    nalu->nb_epb = 0;
+    nalu->release = ovnalu_free;
+
+    atomic_init(&nalu->ref_count, 0);
+}
+
+int
 ov_nalu_new_ref(OVNALUnit **nalu_p, OVNALUnit *nalu)
 {
     if (!nalu) {
