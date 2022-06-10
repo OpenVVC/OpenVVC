@@ -515,18 +515,19 @@ int
 ovdmx_extract_picture_unit(OVDemux *const dmx, OVPictureUnit **dst_pu_p)
 {
     struct NALUListStatus status = {0};
-    int ret;
+    int ret = 0;
 
     do {
         struct NALUnitListElem *nalu;
         ret = extract_nal_unit(dmx, &nalu);
         if (ret < 0) {
             ov_log(dmx, OVLOG_ERROR, "Error extracting NAL Unit.\n");
-            goto extraction_error;
+            goto end;
         }
 
         if (!nalu) {
             ov_log(dmx, OVLOG_DEBUG, "No NALU available.\n");
+            if (!status.nb_nalus) goto end;
             break;
         }
 
@@ -543,7 +544,7 @@ ovdmx_extract_picture_unit(OVDemux *const dmx, OVPictureUnit **dst_pu_p)
 
     ret = ovdmx_init_pu_from_list(dst_pu_p, &status);
 
-extraction_error:
+end:
     /* We could also try to build a Picture Unit however this behaviour is safer*/
     clear_nalu_list(&status.nalu_list);
 
