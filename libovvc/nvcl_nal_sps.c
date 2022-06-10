@@ -310,9 +310,10 @@ general_timing_hrd_parameters(OVNVCLReader *const rdr, struct HRDTiming *hrd)
         hrd->general_du_hrd_params_present_flag = nvcl_read_flag(rdr);
         if (hrd->general_du_hrd_params_present_flag) {
             hrd->tick_divisor_minus2 = nvcl_read_bits(rdr, 8);
-            hrd->bit_rate_scale = nvcl_read_bits(rdr, 4);
-            hrd->cpb_size_scale = nvcl_read_bits(rdr, 4);
         }
+
+        hrd->bit_rate_scale = nvcl_read_bits(rdr, 4);
+        hrd->cpb_size_scale = nvcl_read_bits(rdr, 4);
 
         if (hrd->general_du_hrd_params_present_flag) {
             hrd->cpb_size_du_scale  = nvcl_read_bits(rdr,4);
