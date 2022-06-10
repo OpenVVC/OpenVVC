@@ -316,8 +316,8 @@ general_timing_hrd_parameters(OVNVCLReader *const rdr, struct HRDTiming *hrd)
 
         if (hrd->general_du_hrd_params_present_flag) {
             hrd->cpb_size_du_scale  = nvcl_read_bits(rdr,4);
-            hrd->hrd_cpb_cnt_minus1 = nvcl_read_u_expgolomb(rdr);
         }
+        hrd->hrd_cpb_cnt_minus1 = nvcl_read_u_expgolomb(rdr);
     }
 }
 
@@ -342,8 +342,8 @@ ols_timing_hrd_parameters(OVNVCLReader *const rdr, const struct HRDTiming *const
     for (i = first_sublayer; i <= max_sublayer; ++i) {
         uint8_t fixed_pic_rate_general_flag = nvcl_read_flag(rdr);
 
-        uint8_t fixed_pic_rate_within_cvs_flag = 0;;
-        if (fixed_pic_rate_general_flag) {
+        uint8_t fixed_pic_rate_within_cvs_flag = fixed_pic_rate_general_flag;
+        if (!fixed_pic_rate_general_flag) {
             fixed_pic_rate_within_cvs_flag = nvcl_read_flag(rdr);
         }
 
