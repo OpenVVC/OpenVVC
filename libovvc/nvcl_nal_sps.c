@@ -702,15 +702,16 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
     sps->sps_vui_parameters_present_flag = nvcl_read_flag(rdr);
     if (sps->sps_vui_parameters_present_flag) {
+        struct OVNVCLReader vui_rdr;
         sps->sps_vui_payload_size_minus1 = nvcl_read_u_expgolomb(rdr);
 
         nvcl_align(rdr);
 
-        #if 1
-        vui_payload(rdr, &sps->vui);
-        #else
-        nvcl_skip_bits(rdr, sps->sps_vui_payload_size_minus1 + 1);
-        #endif
+        vui_rdr = *rdr;
+
+        vui_payload(&vui_rdr, &sps->vui);
+
+        nvcl_skip_bits(rdr, (sps->sps_vui_payload_size_minus1 + 1) << 3);
     }
 
     sps->sps_extension_flag = nvcl_read_flag(rdr);
