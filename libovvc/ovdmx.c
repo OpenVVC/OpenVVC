@@ -203,7 +203,7 @@ static int refill_reader_cache(struct ReaderCache *const rdr_cache,
 static void append_nalu_elem(struct NALUnitsList *const list, struct NALUnitListElem *elem);
 static void prepend_nalu_elem(struct NALUnitsList *const list, struct NALUnitListElem *elem);
 
-static void free_nalu_elem(struct NALUnitListElem *nalu_elem);
+static void release_nalu_elem(struct NALUnitListElem *nalu_elem);
 
 int
 ovdmx_init(OVDemux **dmx_p)
@@ -269,7 +269,7 @@ ovdmx_close(OVDemux *dmx)
         clear_nalu_list(&dmx->nalu_list);
 
         if (dmx->nalu_pending) {
-            free_nalu_elem(dmx->nalu_pending);
+            release_nalu_elem(dmx->nalu_pending);
         }
 
         ovmempool_uninit(&dmx->nalu_elem_pool);
@@ -408,9 +408,9 @@ clear_nalu_list(struct NALUnitsList *list)
 {
     struct NALUnitListElem *elem = list->first_nalu;
     while (elem) {
-        struct NALUnitListElem *to_free = elem;
+        struct NALUnitListElem *to_release = elem;
         elem = elem->next_nalu;
-        free_nalu_elem(to_free);
+        release_nalu_elem(to_release);
     }
     list->first_nalu = NULL;
     list->last_nalu = NULL;
@@ -570,7 +570,7 @@ create_nalu_elem(OVDemux *const dmx)
 }
 
 static void
-free_nalu_elem(struct NALUnitListElem *nalu_elem)
+release_nalu_elem(struct NALUnitListElem *nalu_elem)
 {
     if (nalu_elem->nalu) {
         ov_nalu_unref(&nalu_elem->nalu);
