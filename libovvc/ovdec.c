@@ -286,7 +286,7 @@ ovdec_uninit_entry_jobs(OVVCDec *vvcdec)
     ov_freep(&main_thread->entries_fifo);
 }
 
-static int
+static void
 ovdec_wait_entries(OVDec *ovdec)
 {
     struct MainThread *th_main = &ovdec->main_thread;
