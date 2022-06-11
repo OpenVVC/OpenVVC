@@ -262,18 +262,19 @@ void
 ovdec_init_entry_jobs(OVVCDec *vvcdec, int nb_entry_th)
 {
     struct MainThread* main_thread = &vvcdec->main_thread;
+    struct EntriesFIFO *fifo = &main_thread->entries_fifo;
     // main_thread->size_fifo       = nb_entry_th*nb_entry_th;
-    main_thread->size_fifo       = 512;
-    main_thread->entry_jobs_fifo = ov_mallocz(main_thread->size_fifo * sizeof(struct EntryJob));
-    main_thread->first_idx_fifo  =  0;
-    main_thread->last_idx_fifo   = -1;
+    fifo->size_fifo       = 512;
+    fifo->entries = ov_mallocz(fifo->size_fifo * sizeof(struct EntryJob));
+    fifo->first_idx_fifo  =  0;
+    fifo->last_idx_fifo   = -1;
 }
 
 void
 ovdec_uninit_entry_jobs(OVVCDec *vvcdec)
 {
     struct MainThread* main_thread = &vvcdec->main_thread;
-    ov_freep(&main_thread->entry_jobs_fifo);
+    ov_freep(&main_thread->entries_fifo);
 }
 
 void
@@ -287,12 +288,13 @@ ovdec_uninit_entry_threads(OVVCDec *vvcdec)
     /* Wait for the job fifo to be empty before joining entry thread.
     */
     pthread_mutex_lock(&th_main->io_mtx);
-    int64_t first_idx = th_main->first_idx_fifo;
-    int64_t last_idx  = th_main->last_idx_fifo;
+    struct EntriesFIFO *fifo = &th_main->entries_fifo;
+    int64_t first_idx = fifo->first_idx_fifo;
+    int64_t last_idx  = fifo->last_idx_fifo;
     while (first_idx <= last_idx) {
         pthread_cond_wait(&th_main->io_cnd, &th_main->io_mtx);
-        first_idx = th_main->first_idx_fifo;
-        last_idx  = th_main->last_idx_fifo;
+        first_idx = fifo->first_idx_fifo;
+        last_idx  = fifo->last_idx_fifo;
     }
     pthread_mutex_unlock(&th_main->io_mtx);
 

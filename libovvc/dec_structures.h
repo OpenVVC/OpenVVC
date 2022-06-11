@@ -296,10 +296,12 @@ struct MainThread
     pthread_cond_t entry_threads_cnd;
 
     /*FIFO of entry jobs*/
-    struct EntryJob *entry_jobs_fifo;
-    int64_t first_idx_fifo;
-    int64_t last_idx_fifo;
-    uint16_t size_fifo;
+    struct EntriesFIFO {
+        struct EntryJob *entries;
+        int64_t first_idx_fifo;
+        int64_t last_idx_fifo;
+        uint16_t size_fifo;
+    } entries_fifo;
     
     pthread_mutex_t io_mtx;
     pthread_cond_t io_cnd;

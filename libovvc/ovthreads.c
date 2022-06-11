@@ -64,17 +64,17 @@ ovthread_decode_entry(struct EntryJob *entry_job, struct EntryThread *entry_th)
 }
 
 static struct EntryJob *
-fifo_pop_entry(struct MainThread *main_th, struct EntryJob *fifo)
+fifo_pop_entry(struct EntriesFIFO *fifo)
 {
     struct EntryJob *entry_job = NULL;
 
-    int64_t first_idx = main_th->first_idx_fifo;
-    int64_t last_idx  = main_th->last_idx_fifo;
+    int64_t first_idx = fifo->first_idx_fifo;
+    int64_t last_idx  = fifo->last_idx_fifo;
     if (first_idx <= last_idx) {
-        uint16_t size_fifo = main_th->size_fifo;
+        uint16_t size_fifo = fifo->size_fifo;
         int idx = first_idx % size_fifo;
-        entry_job = &fifo[idx];
-        main_th->first_idx_fifo ++;
+        entry_job = &fifo->entries[idx];
+        fifo->first_idx_fifo ++;
     }
     return entry_job;
 }
@@ -90,11 +90,11 @@ entry_thread_main_function(void *opaque)
     pthread_mutex_unlock(&entry_th->entry_mtx);
 
     while (!entry_th->kill){
+        struct EntriesFIFO *fifo = &main_thread->entries_fifo;
 
-        struct EntryJob *fifo = main_thread->entry_jobs_fifo;
         pthread_mutex_lock(&main_thread->io_mtx);
 
-        struct EntryJob *entry_job = fifo_pop_entry(main_thread, fifo);
+        struct EntryJob *entry_job = fifo_pop_entry(fifo);
 
         pthread_mutex_unlock(&main_thread->io_mtx);
 
@@ -166,12 +166,12 @@ ovthread_uninit_entry_thread(struct EntryThread *entry_th)
 }
 
 static int
-fifo_push_entry(struct MainThread *main_th, struct EntryJob *fifo,
+fifo_push_entry(struct EntriesFIFO *fifo,
                 struct SliceSynchro *slice_sync, int entry_idx)
 {
-    int size_fifo = main_th->size_fifo;
-    int idx = (++main_th->last_idx_fifo) % size_fifo;
-    struct EntryJob *entry_job = &fifo[idx];
+    int size_fifo = fifo->size_fifo;
+    int idx = (++fifo->last_idx_fifo) % size_fifo;
+    struct EntryJob *entry_job = &fifo->entries[idx];
     entry_job->entry_idx = entry_idx;
     entry_job->slice_sync = slice_sync;
 }
@@ -183,7 +183,7 @@ int
 ovthread_slice_add_entry_jobs(struct SliceSynchro *slice_sync, DecodeFunc decode_entry, int nb_entries)
 {
     struct MainThread* main_thread = slice_sync->main_thread;
-    struct EntryJob *entry_fifo = main_thread->entry_jobs_fifo;
+    struct EntriesFIFO *entry_fifo = &main_thread->entries_fifo;
 
     slice_sync->nb_entries = nb_entries;
     slice_sync->decode_entry = decode_entry;
@@ -192,7 +192,7 @@ ovthread_slice_add_entry_jobs(struct SliceSynchro *slice_sync, DecodeFunc decode
 
     pthread_mutex_lock(&main_thread->io_mtx);
     for (int i = 0; i < nb_entries; ++i) {
-        fifo_push_entry(main_thread, entry_fifo, slice_sync, i);
+        fifo_push_entry(entry_fifo, slice_sync, i);
         ov_log(NULL, OVLOG_DEBUG, "Main adds POC %d entry %d\n", slice_sync->owner->pic->poc, i);
     }
     pthread_mutex_unlock(&main_thread->io_mtx);
