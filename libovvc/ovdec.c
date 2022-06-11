@@ -272,8 +272,9 @@ ovdec_init_entry_fifo(OVVCDec *vvcdec, int nb_entry_th)
 
     fifo->size       = 512;
     fifo->entries    = ov_mallocz(fifo->size * sizeof(struct EntryJob));
-    fifo->first_idx  =  0;
-    fifo->last_idx   = -1;
+
+    fifo->first = fifo->entries;
+    fifo->last  = fifo->entries;
 
     pthread_mutex_unlock(&main_thread->io_mtx);
 }
@@ -291,12 +292,8 @@ ovdec_wait_entries(OVDec *ovdec)
     struct MainThread *th_main = &ovdec->main_thread;
     pthread_mutex_lock(&th_main->io_mtx);
     struct EntriesFIFO *fifo = &th_main->entries_fifo;
-    int64_t first_idx = fifo->first_idx;
-    int64_t last_idx  = fifo->last_idx;
-    while (first_idx <= last_idx) {
+    while (fifo->first != fifo->last) {
         pthread_cond_wait(&th_main->io_cnd, &th_main->io_mtx);
-        first_idx = fifo->first_idx;
-        last_idx  = fifo->last_idx;
     }
     pthread_mutex_unlock(&th_main->io_mtx);
 }

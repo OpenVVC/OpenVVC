@@ -68,13 +68,14 @@ fifo_pop_entry(struct EntriesFIFO *fifo)
 {
     struct EntryJob *entry_job = NULL;
 
-    int64_t first_idx = fifo->first_idx;
-    int64_t last_idx  = fifo->last_idx;
-    if (first_idx <= last_idx) {
-        uint16_t size= fifo->size;
-        int idx = first_idx % size;
-        entry_job = &fifo->entries[idx];
-        fifo->first_idx++;
+    if (fifo->first != fifo->last) {
+        ptrdiff_t position = fifo->first - fifo->entries;
+        uint16_t size = fifo->size;
+
+        entry_job = fifo->first;
+
+        fifo->first = &fifo->entries[(position + 1) % size];
+
     }
     return entry_job;
 }
@@ -169,11 +170,17 @@ static int
 fifo_push_entry(struct EntriesFIFO *fifo,
                 struct SliceSynchro *slice_sync, int entry_idx)
 {
-    int size = fifo->size;
-    int idx = (++fifo->last_idx) % size;
-    struct EntryJob *entry_job = &fifo->entries[idx];
-    entry_job->entry_idx = entry_idx;
-    entry_job->slice_sync = slice_sync;
+    ptrdiff_t position = fifo->last - fifo->entries;
+    ptrdiff_t next_pos = (position + 1) % fifo->size;
+    if (&fifo->entries[next_pos] != fifo->first) {
+        struct EntryJob *entry_job = &fifo->entries[position];
+
+        entry_job->entry_idx  = entry_idx;
+        entry_job->slice_sync = slice_sync;
+
+        fifo->last = &fifo->entries[next_pos];
+    }
+    return 0;
 }
 
 /*

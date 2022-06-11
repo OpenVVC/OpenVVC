@@ -298,8 +298,8 @@ struct MainThread
     /*FIFO of entry jobs*/
     struct EntriesFIFO {
         struct EntryJob *entries;
-        int64_t first_idx;
-        int64_t last_idx;
+        struct EntryJob *first;
+        struct EntryJob *last;
         uint16_t size;
     } entries_fifo;
     
