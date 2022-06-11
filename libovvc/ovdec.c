@@ -258,16 +258,20 @@ ovdec_select_subdec(OVVCDec *const dec)
     return NULL;
 }
 
-void
-ovdec_init_entry_jobs(OVVCDec *vvcdec, int nb_entry_th)
+static void
+ovdec_init_entry_fifo(OVVCDec *vvcdec, int nb_entry_th)
 {
     struct MainThread* main_thread = &vvcdec->main_thread;
     struct EntriesFIFO *fifo = &main_thread->entries_fifo;
+
+    pthread_mutex_lock(&main_thread->io_mtx);
 
     fifo->size       = 512;
     fifo->entries    = ov_mallocz(fifo->size * sizeof(struct EntryJob));
     fifo->first_idx  =  0;
     fifo->last_idx   = -1;
+
+    pthread_mutex_unlock(&main_thread->io_mtx);
 }
 
 void
@@ -352,7 +356,7 @@ ovdec_init_main_thread(OVVCDec *vvcdec)
     pthread_mutex_init(&main_thread->io_mtx, NULL);
     pthread_cond_init(&main_thread->io_cnd,  NULL);
 
-    ovdec_init_entry_jobs(vvcdec, nb_entry_th);
+    ovdec_init_entry_fifo(vvcdec, nb_entry_th);
     ovdec_init_entry_threads(vvcdec, nb_entry_th);
     return 0;
 
