@@ -281,16 +281,10 @@ ovdec_uninit_entry_jobs(OVVCDec *vvcdec)
     ov_freep(&main_thread->entries_fifo);
 }
 
-void
-ovdec_uninit_entry_threads(OVVCDec *vvcdec)
+static int
+ovdec_wait_entries(OVDec *ovdec)
 {
-    int i;
-    void *ret;
-    ov_log(NULL, OVLOG_TRACE, "Deleting %d entry threads\n", vvcdec->nb_entry_th);
-    struct MainThread *th_main = &vvcdec->main_thread;
-
-    /* Wait for the job fifo to be empty before joining entry thread.
-    */
+    struct MainThread *th_main = &ovdec->main_thread;
     pthread_mutex_lock(&th_main->io_mtx);
     struct EntriesFIFO *fifo = &th_main->entries_fifo;
     int64_t first_idx = fifo->first_idx;
@@ -301,6 +295,19 @@ ovdec_uninit_entry_threads(OVVCDec *vvcdec)
         last_idx  = fifo->last_idx;
     }
     pthread_mutex_unlock(&th_main->io_mtx);
+}
+
+void
+ovdec_uninit_entry_threads(OVVCDec *vvcdec)
+{
+    int i;
+    void *ret;
+    ov_log(NULL, OVLOG_TRACE, "Deleting %d entry threads\n", vvcdec->nb_entry_th);
+    struct MainThread *th_main = &vvcdec->main_thread;
+
+    /* Wait for the job fifo to be empty before joining entry thread.
+    */
+    ovdec_wait_entries(vvcdec);
 
     struct EntryThread *entry_threads_list = th_main->entry_threads_list;
     for (i = 0; i < vvcdec->nb_entry_th; ++i){
