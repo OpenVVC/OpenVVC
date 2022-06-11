@@ -301,8 +301,8 @@ struct MainThread
     int64_t last_idx_fifo;
     uint16_t size_fifo;
     
-    pthread_mutex_t main_mtx;
-    pthread_cond_t main_cnd;
+    pthread_mutex_t io_mtx;
+    pthread_cond_t io_cnd;
 };
 
 struct OVVCDec

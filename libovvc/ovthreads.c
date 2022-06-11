@@ -72,7 +72,7 @@ entry_thread_select_job(struct EntryThread *entry_th)
     struct EntryJob *entry_jobs_fifo = main_thread->entry_jobs_fifo;
     struct EntryJob *entry_job = NULL;
 
-    pthread_mutex_lock(&main_thread->main_mtx); 
+    pthread_mutex_lock(&main_thread->io_mtx);
     int64_t first_idx = main_thread->first_idx_fifo;
     int64_t last_idx  = main_thread->last_idx_fifo;
     if (first_idx <= last_idx) {
@@ -81,7 +81,7 @@ entry_thread_select_job(struct EntryThread *entry_th)
         entry_job = &entry_jobs_fifo[idx];
         main_thread->first_idx_fifo ++;
     }
-    pthread_mutex_unlock(&main_thread->main_mtx);
+    pthread_mutex_unlock(&main_thread->io_mtx);
 
     return entry_job;
 }
@@ -182,7 +182,7 @@ ovthread_slice_add_entry_jobs(struct SliceSynchro *slice_sync, DecodeFunc decode
 
     /* Add entry jobs to the job FIFO of the main thread. 
      */
-    pthread_mutex_lock(&main_thread->main_mtx);
+    pthread_mutex_lock(&main_thread->io_mtx);
     for (int i = 0; i < nb_entries; ++i) {
         int size_fifo = main_thread->size_fifo;
         int idx = (++main_thread->last_idx_fifo) % size_fifo;
@@ -191,7 +191,7 @@ ovthread_slice_add_entry_jobs(struct SliceSynchro *slice_sync, DecodeFunc decode
         entry_job->slice_sync = slice_sync;
         ov_log(NULL, OVLOG_DEBUG, "Main adds POC %d entry %d\n", slice_sync->owner->pic->poc, i);
     }
-    pthread_mutex_unlock(&main_thread->main_mtx);
+    pthread_mutex_unlock(&main_thread->io_mtx);
 
     /*Signal all entry threads that new jobs are available
     */

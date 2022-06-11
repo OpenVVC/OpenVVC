@@ -207,7 +207,7 @@ ovdec_select_subdec(OVVCDec *const dec)
     struct SliceSynchro* slice_sync;
     do {
         int min_idx_available = nb_threads;
-        pthread_mutex_lock(&th_main->main_mtx);
+        pthread_mutex_lock(&th_main->io_mtx);
 
         for(int i = nb_threads - 1; i >= 0 ; i--) {
             slicedec = sldec_list[i];
@@ -246,12 +246,12 @@ ovdec_select_subdec(OVVCDec *const dec)
 
             ov_log(NULL, OVLOG_TRACE, "Subdec %d selected\n", min_idx_available);
 
-            pthread_mutex_unlock(&th_main->main_mtx);
+            pthread_mutex_unlock(&th_main->io_mtx);
             return slicedec;
         }
         // ov_log(NULL, OVLOG_DEBUG,"main wait slice\n");
-        pthread_cond_wait(&th_main->main_cnd, &th_main->main_mtx);
-        pthread_mutex_unlock(&th_main->main_mtx);
+        pthread_cond_wait(&th_main->io_cnd, &th_main->io_mtx);
+        pthread_mutex_unlock(&th_main->io_mtx);
 
     } while (!th_main->kill);
 
@@ -286,15 +286,15 @@ ovdec_uninit_entry_threads(OVVCDec *vvcdec)
 
     /* Wait for the job fifo to be empty before joining entry thread.
     */
-    pthread_mutex_lock(&th_main->main_mtx);
+    pthread_mutex_lock(&th_main->io_mtx);
     int64_t first_idx = th_main->first_idx_fifo;
     int64_t last_idx  = th_main->last_idx_fifo;
     while (first_idx <= last_idx) {
-        pthread_cond_wait(&th_main->main_cnd, &th_main->main_mtx);
+        pthread_cond_wait(&th_main->io_cnd, &th_main->io_mtx);
         first_idx = th_main->first_idx_fifo;
         last_idx  = th_main->last_idx_fifo;
     }
-    pthread_mutex_unlock(&th_main->main_mtx);
+    pthread_mutex_unlock(&th_main->io_mtx);
 
     struct EntryThread *entry_threads_list = th_main->entry_threads_list;
     for (i = 0; i < vvcdec->nb_entry_th; ++i){
@@ -347,8 +347,8 @@ ovdec_init_main_thread(OVVCDec *vvcdec)
 
     pthread_mutex_init(&main_thread->entry_threads_mtx, NULL);
     pthread_cond_init(&main_thread->entry_threads_cnd,  NULL);
-    pthread_mutex_init(&main_thread->main_mtx, NULL);
-    pthread_cond_init(&main_thread->main_cnd,  NULL);
+    pthread_mutex_init(&main_thread->io_mtx, NULL);
+    pthread_cond_init(&main_thread->io_cnd,  NULL);
 
     ovdec_init_entry_jobs(vvcdec, nb_entry_th);
     ovdec_init_entry_threads(vvcdec, nb_entry_th);
