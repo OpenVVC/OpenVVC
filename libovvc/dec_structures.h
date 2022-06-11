@@ -298,9 +298,9 @@ struct MainThread
     /*FIFO of entry jobs*/
     struct EntriesFIFO {
         struct EntryJob *entries;
-        int64_t first_idx_fifo;
-        int64_t last_idx_fifo;
-        uint16_t size_fifo;
+        int64_t first_idx;
+        int64_t last_idx;
+        uint16_t size;
     } entries_fifo;
     
     pthread_mutex_t io_mtx;
