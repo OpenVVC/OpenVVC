@@ -63,26 +63,19 @@ ovthread_decode_entry(struct EntryJob *entry_job, struct EntryThread *entry_th)
     return nb_entries_decoded == nb_entries - 1 ;
 }
 
-struct EntryJob *
-entry_thread_select_job(struct EntryThread *entry_th)
+static struct EntryJob *
+fifo_pop_entry(struct MainThread *main_th, struct EntryJob *fifo)
 {
-    /* Get the first available job in the job fifo. 
-     */
-    struct MainThread* main_thread = entry_th->main_thread;
-    struct EntryJob *entry_jobs_fifo = main_thread->entry_jobs_fifo;
     struct EntryJob *entry_job = NULL;
 
-    pthread_mutex_lock(&main_thread->io_mtx);
-    int64_t first_idx = main_thread->first_idx_fifo;
-    int64_t last_idx  = main_thread->last_idx_fifo;
+    int64_t first_idx = main_th->first_idx_fifo;
+    int64_t last_idx  = main_th->last_idx_fifo;
     if (first_idx <= last_idx) {
-        uint16_t size_fifo = main_thread->size_fifo;
+        uint16_t size_fifo = main_th->size_fifo;
         int idx = first_idx % size_fifo;
-        entry_job = &entry_jobs_fifo[idx];
-        main_thread->first_idx_fifo ++;
+        entry_job = &fifo[idx];
+        main_th->first_idx_fifo ++;
     }
-    pthread_mutex_unlock(&main_thread->io_mtx);
-
     return entry_job;
 }
 
@@ -98,7 +91,12 @@ entry_thread_main_function(void *opaque)
 
     while (!entry_th->kill){
 
-        struct EntryJob *entry_job = entry_thread_select_job(entry_th);
+        struct EntryJob *fifo = main_thread->entry_jobs_fifo;
+        pthread_mutex_lock(&main_thread->io_mtx);
+
+        struct EntryJob *entry_job = fifo_pop_entry(main_thread, fifo);
+
+        pthread_mutex_unlock(&main_thread->io_mtx);
 
         if (entry_job) {
             slicedec_update_entry_decoder(entry_job->slice_sync->owner, entry_th->ctudec);
@@ -124,7 +122,7 @@ entry_thread_main_function(void *opaque)
             // ov_log(NULL, OVLOG_DEBUG,"entry wait main\n");
             pthread_cond_wait(&entry_th->entry_cnd, &entry_th->entry_mtx);
             pthread_mutex_unlock(&entry_th->entry_mtx);
-            
+
         }
     }
     return NULL;
@@ -167,34 +165,38 @@ ovthread_uninit_entry_thread(struct EntryThread *entry_th)
     ctudec_uninit(entry_th->ctudec);
 }
 
+static int
+fifo_push_entry(struct MainThread *main_th, struct EntryJob *fifo,
+                struct SliceSynchro *slice_sync, int entry_idx)
+{
+    int size_fifo = main_th->size_fifo;
+    int idx = (++main_th->last_idx_fifo) % size_fifo;
+    struct EntryJob *entry_job = &fifo[idx];
+    entry_job->entry_idx = entry_idx;
+    entry_job->slice_sync = slice_sync;
+}
+
 /*
 Functions needed for the synchro of threads decoding the slice
 */
 int
 ovthread_slice_add_entry_jobs(struct SliceSynchro *slice_sync, DecodeFunc decode_entry, int nb_entries)
 {
+    struct MainThread* main_thread = slice_sync->main_thread;
+    struct EntryJob *entry_fifo = main_thread->entry_jobs_fifo;
+
     slice_sync->nb_entries = nb_entries;
     slice_sync->decode_entry = decode_entry;
+
     atomic_store_explicit(&slice_sync->nb_entries_decoded, 0, memory_order_relaxed);
 
-    struct MainThread* main_thread = slice_sync->main_thread;
-    struct EntryJob *entry_jobs_fifo = main_thread->entry_jobs_fifo;
-
-    /* Add entry jobs to the job FIFO of the main thread. 
-     */
     pthread_mutex_lock(&main_thread->io_mtx);
     for (int i = 0; i < nb_entries; ++i) {
-        int size_fifo = main_thread->size_fifo;
-        int idx = (++main_thread->last_idx_fifo) % size_fifo;
-        struct EntryJob *entry_job = &entry_jobs_fifo[idx];
-        entry_job->entry_idx = i;
-        entry_job->slice_sync = slice_sync;
+        fifo_push_entry(main_thread, entry_fifo, slice_sync, i);
         ov_log(NULL, OVLOG_DEBUG, "Main adds POC %d entry %d\n", slice_sync->owner->pic->poc, i);
     }
     pthread_mutex_unlock(&main_thread->io_mtx);
 
-    /*Signal all entry threads that new jobs are available
-    */
     struct EntryThread *entry_threads_list = main_thread->entry_threads_list;
     for (int i = 0; i < main_thread->nb_entry_th; ++i){
         struct EntryThread *th_entry = &entry_threads_list[i];
