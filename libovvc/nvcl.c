@@ -270,6 +270,16 @@ decode_nalu_hls_data(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr,
     ret = hls_hdl->read(rdr, &data, nvcl_ctx, nalu_type);
     if (ret < 0)  goto failread;
 
+    if (nalu_type >= OVNALU_OPI) {
+        uint32_t nb_bits_read = nvcl_nb_bits_read(rdr) + 1;
+        uint32_t stop_bit_pos = nvcl_find_rbsp_stop_bit(rdr);
+        if (stop_bit_pos != nb_bits_read) {
+
+            ov_log(NULL, OVLOG_ERROR, "rbsp_stop_bit mismatch: cursor at %d,  expected %d\n", nb_bits_read, stop_bit_pos);
+            return OVVC_EINDATA;
+        }
+    }
+
     ov_log(NULL, OVLOG_TRACE, "Checking %s\n", hls_hdl->name);
     ret = hls_hdl->validate(rdr, &data);
     if (ret < 0)  goto invalid;
