@@ -95,7 +95,14 @@ entry_thread_main_function(void *opaque)
 
         pthread_mutex_lock(&main_thread->io_mtx);
 
-        struct EntryJob *entry_job = fifo_pop_entry(fifo);
+        struct EntryJob entry_jobtmp;
+
+        struct EntryJob *entry_job = NULL;
+        struct EntryJob *entry_job2 = fifo_pop_entry(fifo);
+        if (entry_job2) {
+           entry_jobtmp = *entry_job2;
+           entry_job = &entry_jobtmp;
+        }
 
         pthread_mutex_unlock(&main_thread->io_mtx);
 
