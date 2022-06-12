@@ -162,6 +162,13 @@ typedef struct OVSliceDec
 
    /* Reference to current pic being decoded */
    OVPicture *pic;
+   struct OVPicture *rpl0[16];
+   struct OVPicture *rpl1[16];
+
+   uint8_t nb_refs0;
+   uint8_t nb_refs1;
+   uint8_t nb_active_refs0;
+   uint8_t nb_active_refs1;
 
    struct SliceSynchro slice_sync;
 

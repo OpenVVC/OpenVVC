@@ -132,11 +132,6 @@ dpbpriv_release_pic(OVPicture *pic)
             tmvp_release_mv_planes(pic);
         }
 
-        pic->nb_refs0 = 0;
-        pic->nb_refs1 = 0;
-        pic->nb_active_refs0 = 0;
-        pic->nb_active_refs1 = 0;
-
         pic->frame = NULL;
 
         if (pic->sei) {
@@ -735,12 +730,12 @@ ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVSEI **sei_p)
 }
 
 void
-ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVPicture *current_pic)
+ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVSliceDec *sldec)
 {
-    vvc_unmark_refs(current_pic, current_pic->rpl0, current_pic->nb_active_refs0, current_pic->nb_refs0);
+    vvc_unmark_refs(sldec->pic, sldec->rpl0, sldec->nb_active_refs0, sldec->nb_refs0);
 
     if (slice_type == SLICE_B){
-        vvc_unmark_refs(current_pic, current_pic->rpl1, current_pic->nb_active_refs1, current_pic->nb_refs1);
+        vvc_unmark_refs(sldec->pic, sldec->rpl1, sldec->nb_active_refs1, sldec->nb_refs1);
     }
 }
 
@@ -768,20 +763,20 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
     }
     uint8_t weighted_pred = sldec->active_params.sps->sps_weighted_pred_flag || sldec->active_params.sps->sps_weighted_bipred_flag;
 
-    ret = vvc_mark_refs(dpb, rpl0, poc, current_pic->rpl0, weighted_pred);
+    ret = vvc_mark_refs(dpb, rpl0, poc, sldec->rpl0, weighted_pred);
 
-    current_pic->nb_refs0 = rpl0->num_ref_entries;
-    current_pic->nb_active_refs0 = rpl0->num_ref_active_entries;
+    sldec->nb_refs0 = rpl0->num_ref_entries;
+    sldec->nb_active_refs0 = rpl0->num_ref_active_entries;
 
     if (slice_type == SLICE_B){
-        ret |= vvc_mark_refs(dpb, rpl1, poc, current_pic->rpl1, weighted_pred);
-        current_pic->nb_refs1 = rpl1->num_ref_entries;
-        current_pic->nb_active_refs1 = rpl1->num_ref_active_entries;
+        ret |= vvc_mark_refs(dpb, rpl1, poc, sldec->rpl1, weighted_pred);
+        sldec->nb_refs1 = rpl1->num_ref_entries;
+        sldec->nb_active_refs1 = rpl1->num_ref_active_entries;
     } else {
-        current_pic->nb_active_refs1 = 0;
+        sldec->nb_active_refs1 = 0;
     }
 
-    if ((slice_type != SLICE_I && !current_pic->nb_active_refs0) || (!current_pic->nb_active_refs1 && slice_type == SLICE_B)) {
+    if ((slice_type != SLICE_I && !sldec->nb_active_refs0) || (!sldec->nb_active_refs1 && slice_type == SLICE_B)) {
          ret = OVVC_EINDATA;
     }
 
@@ -792,7 +787,7 @@ mark_ref_pic_lists(OVDPB *const dpb, uint8_t slice_type, const struct OVRPL *con
     return 0;
 
 fail:
-    ovdpb_unmark_ref_pic_lists(slice_type, current_pic);
+    ovdpb_unmark_ref_pic_lists(slice_type, sldec);
     return ret;
 }
 

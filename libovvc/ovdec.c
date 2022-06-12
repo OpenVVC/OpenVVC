@@ -222,7 +222,11 @@ ovdec_select_subdec(OVVCDec *const dec)
                 if (slice_pic && (slice_pic->flags & OV_IN_DECODING_PIC_FLAG)) {
                     ov_log(NULL, OVLOG_TRACE, "Subdec %d Remove DECODING_PIC_FLAG POC: %d\n", min_idx_available, slice_pic->poc);
                     ovdpb_unref_pic(slice_pic, OV_IN_DECODING_PIC_FLAG);
-                    ovdpb_unmark_ref_pic_lists(slicedec->slice_type, slice_pic);
+                    ovdpb_unmark_ref_pic_lists(slicedec->slice_type, slicedec);
+                    slicedec->nb_refs0 = 0;
+                    slicedec->nb_refs1 = 0;
+                    slicedec->nb_active_refs0 = 0;
+                    slicedec->nb_active_refs1 = 0;
 
                     pthread_mutex_lock(&slice_sync->gnrl_mtx);
                     slice_sync->active_state = IDLE;

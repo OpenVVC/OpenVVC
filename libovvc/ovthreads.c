@@ -236,7 +236,7 @@ ovthread_slice_sync_uninit(struct SliceSynchro *slice_sync)
             ov_log(NULL, OVLOG_TRACE, "Remove DECODING_PIC_FLAG POC: %d\n", slice_pic->poc);
 
             ovdpb_unref_pic(slice_pic, OV_IN_DECODING_PIC_FLAG);
-            ovdpb_unmark_ref_pic_lists(slicedec->slice_type, slice_pic);
+            ovdpb_unmark_ref_pic_lists(slicedec->slice_type, slicedec);
 
             pthread_mutex_lock(&slice_sync->gnrl_mtx);
             slice_sync->active_state = IDLE;

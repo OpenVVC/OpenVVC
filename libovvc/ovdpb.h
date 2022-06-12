@@ -120,13 +120,6 @@ struct OVPicture
     /* Pointers to ref_pic_list */
     /* FIXME use frame directly ? */
     /* FIXME should be const */
-    struct OVPicture *rpl0[16];
-    struct OVPicture *rpl1[16];
-
-    uint8_t nb_refs0;
-    uint8_t nb_refs1;
-    uint8_t nb_active_refs0;
-    uint8_t nb_active_refs1;
 
     struct MVPlane mv_plane0;
     struct MVPlane mv_plane1;
@@ -206,7 +199,7 @@ int ovdpb_drain_frame(OVDPB *dpb, OVFrame **out, OVSEI **sei_p);
 
 int ovdpb_output_pic(OVDPB *dpb, OVFrame **out, OVSEI **sei_p);
 
-void ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVPicture * current_pic);
+void ovdpb_unmark_ref_pic_lists(uint8_t slice_type, OVSliceDec *const sldec);
 
 void ovdpb_report_decoded_ctu_line(OVPicture *const pic, int y_ctu, int xmin_ctu, int xmax_ctu);
 
