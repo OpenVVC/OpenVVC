@@ -137,14 +137,6 @@ struct OVPicture
        int16_t dist_ref_0[16];
        int16_t dist_ref_1[16];
 
-       int16_t dist_col_0[16];
-       int16_t dist_col_1[16];
-
-        struct ColInfoPic {
-            int8_t ref_idx_rpl0;
-            int8_t ref_idx_rpl1;
-        } col_info;
-
     } tmvp;
 
     OVSEI *sei;

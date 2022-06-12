@@ -1117,9 +1117,6 @@ tmvp_entry_init(OVCTUDec *ctudec, OVPicture *active_pic)
     tmvp_ctx->plane0 = &active_pic->mv_plane0;
     tmvp_ctx->plane1 = &active_pic->mv_plane1;
 
-    tmvp_ctx->col_info.ref_idx_rpl0 = active_pic->tmvp.col_info.ref_idx_rpl0;
-    tmvp_ctx->col_info.ref_idx_rpl1 = active_pic->tmvp.col_info.ref_idx_rpl1;
-
     tmvp_ctx->col_plane0 = collocated_ref ? &collocated_ref->mv_plane0 : NULL;
     tmvp_ctx->col_plane1 = collocated_ref ? &collocated_ref->mv_plane1 : NULL;
 
@@ -1127,8 +1124,10 @@ tmvp_entry_init(OVCTUDec *ctudec, OVPicture *active_pic)
     memcpy(inter_ctx->dist_ref_0, active_pic->tmvp.dist_ref_0, sizeof(inter_ctx->dist_ref_0));
     memcpy(inter_ctx->dist_ref_1, active_pic->tmvp.dist_ref_1, sizeof(inter_ctx->dist_ref_1));
 
-    memcpy(tmvp_ctx->dist_col_0, active_pic->tmvp.dist_col_0, sizeof(tmvp_ctx->dist_col_0));
-    memcpy(tmvp_ctx->dist_col_1, active_pic->tmvp.dist_col_1, sizeof(tmvp_ctx->dist_col_1));
+    if (collocated_ref) {
+        memcpy(tmvp_ctx->dist_col_0, collocated_ref->tmvp.dist_ref_0, sizeof(tmvp_ctx->dist_col_0));
+        memcpy(tmvp_ctx->dist_col_1, collocated_ref->tmvp.dist_ref_1, sizeof(tmvp_ctx->dist_col_1));
+    }
 
     memset(tmvp_ctx->dir_map_v0, 0, 34 * sizeof(uint64_t));
     memset(tmvp_ctx->dir_map_v1, 0, 34 * sizeof(uint64_t));

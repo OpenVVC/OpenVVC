@@ -1562,11 +1562,10 @@ derive_sbtmvp_mv_offset(const struct InterDRVCtx *inter_ctx,
         const struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
         const uint16_t a1_pos = derive_cand_position(*pb_info, A1);
         /* FIXME derive this */
-        const struct ColInfo *const col_info = &tmvp->col_info;
 
         if (avail_rpl0) {
             a1_mv = inter_ctx->mv_ctx0.mvs[a1_pos];
-            uint8_t a1_ref0_is_col_pic = a1_mv.ref_idx == col_info->ref_idx_rpl0;
+            uint8_t a1_ref0_is_col_pic = inter_ctx->rpl0[a1_mv.ref_idx] == tmvp->col_ref;
             if (a1_ref0_is_col_pic) {
                 goto found;
             }
@@ -1574,7 +1573,7 @@ derive_sbtmvp_mv_offset(const struct InterDRVCtx *inter_ctx,
 
         if (avail_rpl1) {
             a1_mv = inter_ctx->mv_ctx1.mvs[a1_pos];
-            uint8_t a1_ref1_is_col_pic = a1_mv.ref_idx == col_info->ref_idx_rpl1;
+            uint8_t a1_ref1_is_col_pic = inter_ctx->rpl1[a1_mv.ref_idx] == tmvp->col_ref;
             if (a1_ref1_is_col_pic) {
                 goto found;
             }

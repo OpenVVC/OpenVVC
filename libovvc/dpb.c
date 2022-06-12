@@ -834,21 +834,6 @@ tmvp_request_mv_plane(OVPicture *const pic, const OVVCDec *ovdec, uint8_t slice_
     return 0;
 }
 
-static void
-tmvp_set_mv_scales(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic,
-                   const OVPicture *const col_pic)
-{
-    if (col_pic) {
-        for (int i = 0; i < col_pic->nb_refs0; ++i) {
-            tmvp_ctx->dist_col_0[i] = col_pic->tmvp.dist_ref_0[i];
-        }
-
-        for (int i = 0; i < col_pic->nb_refs1; ++i) {
-            tmvp_ctx->dist_col_1[i] = col_pic->tmvp.dist_ref_1[i];
-        }
-    }
-}
-
 static int
 init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS *const ps, const OVVCDec *ovdec)
 {
@@ -857,14 +842,6 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
     const OVSH *sh = ps->sh;
 
     uint8_t slice_type = sh->sh_slice_type;
-
-    /* Init / update MV Pool */
-
-    /* FIXME use sps_log2_parallel_merge_level_minus2 ?*/
-
-    /* Do not asssocite MV map if the picture will not use
-     * inter slices
-     */
 
     /* The picture can contain inter slice thus Motions Vector */
     if (ph->ph_inter_slice_allowed_flag) {
@@ -883,35 +860,14 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
             /* FIXME idx can be ph */
             int ref_idx = pps->pps_rpl_info_in_ph_flag ? ph->ph_collocated_ref_idx : sh->sh_collocated_ref_idx;
             const OVPicture *col_pic = pic->rpl0[ref_idx];
-            tmvp_ctx->col_info.ref_idx_rpl0 = ref_idx;
-            tmvp_ctx->col_info.ref_idx_rpl1 = -1;
-            for (int i = 0; i < 16; ++i){
-                if (pic->rpl1[i] == col_pic){
-                    tmvp_ctx->col_info.ref_idx_rpl1 = i;
-                    break;
-                }
-            }
+
             tmvp_ctx->collocated_ref = col_pic;
-
-            tmvp_set_mv_scales(tmvp_ctx, pic, col_pic);
-
 
         } else if (sh->sh_slice_type != SLICE_I) {
             int ref_idx = pps->pps_rpl_info_in_ph_flag ? ph->ph_collocated_ref_idx : sh->sh_collocated_ref_idx;
             const OVPicture *col_pic = pic->rpl1[ref_idx];
 
             tmvp_ctx->collocated_ref = col_pic;
-            tmvp_ctx->col_info.ref_idx_rpl1 = ref_idx;
-            tmvp_ctx->col_info.ref_idx_rpl0 = -1;
-
-            for (int i = 0; i < 16; ++i){
-                if (pic->rpl0[i] == col_pic){
-                    tmvp_ctx->col_info.ref_idx_rpl0 = i;
-                    break;
-                }
-            }
-
-            tmvp_set_mv_scales(tmvp_ctx, pic, col_pic);
 
         } else {
             tmvp_ctx->collocated_ref = NULL;
