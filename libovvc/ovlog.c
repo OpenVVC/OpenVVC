@@ -32,6 +32,7 @@
  **/
 
 #include <stdio.h>
+#include <pthread.h>
 #include "ovlog.h"
 
 static OVLogLevel ov_log_level = OVLOG_INFO;
@@ -48,6 +49,7 @@ static const char* vvctype = "VVCDec";
 #define RST "\x1B[0m"
 
 static const char *OVLOG_COLORIFY[6] = { RED, YEL, BLU, CYN, GRN, MAG};
+static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 
 void
 ovlog_set_log_level(OVLogLevel log_level)
@@ -63,10 +65,12 @@ ov_log_default(void* ctx, int log_level, const char* log_content, va_list vl)
         if (ctx != NULL) {
             type = vvctype;
         }
+        pthread_mutex_lock(&mtx);
         fprintf(stderr, "%s", OVLOG_COLORIFY[log_level]);
         fprintf(stderr, "[%s @ %p] : ", type, ctx);
         vfprintf(stderr, log_content, vl);
         fprintf(stderr, "%s", RST);
+        pthread_mutex_unlock(&mtx);
     }
 }
 
