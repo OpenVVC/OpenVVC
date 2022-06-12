@@ -137,8 +137,6 @@ dpbpriv_release_pic(OVPicture *pic)
         pic->nb_active_refs0 = 0;
         pic->nb_active_refs1 = 0;
 
-        pic->tmvp.collocated_ref = NULL;
-
         pic->frame = NULL;
 
         if (pic->sei) {
@@ -848,30 +846,6 @@ init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS
 
         /* Request MV buffer to MV Pool */
         tmvp_request_mv_plane(pic, ovdec, slice_type);
-    }
-
-    /* The current picture might use TMVP */
-    if(ph->ph_temporal_mvp_enabled_flag) {
-
-        /* Compute TMVP scales */
-
-        /* Find collocated ref and associate MV fields info */
-        if (ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag || sh->sh_slice_type == SLICE_P) {
-            /* FIXME idx can be ph */
-            int ref_idx = pps->pps_rpl_info_in_ph_flag ? ph->ph_collocated_ref_idx : sh->sh_collocated_ref_idx;
-            const OVPicture *col_pic = pic->rpl0[ref_idx];
-
-            tmvp_ctx->collocated_ref = col_pic;
-
-        } else if (sh->sh_slice_type != SLICE_I) {
-            int ref_idx = pps->pps_rpl_info_in_ph_flag ? ph->ph_collocated_ref_idx : sh->sh_collocated_ref_idx;
-            const OVPicture *col_pic = pic->rpl1[ref_idx];
-
-            tmvp_ctx->collocated_ref = col_pic;
-
-        } else {
-            tmvp_ctx->collocated_ref = NULL;
-        }
     }
 
     return 0;

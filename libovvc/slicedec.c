@@ -1101,14 +1101,36 @@ decode_ctu_last_line(OVCTUDec *const ctudec, const OVSliceDec *const sldec,
     return ret;
 }
 
+static OVPicture *const
+find_tmvp_collocated_ref(const OVPicture *const pic, const OVPS *const ps)
+{
+    OVPicture *col_pic = NULL;
+    const OVPPS *pps = ps->pps;
+    const OVPH *ph = ps->ph;
+    const OVSH *sh = ps->sh;
+
+    uint8_t slice_type = sh->sh_slice_type;
+    if(ph->ph_temporal_mvp_enabled_flag) {
+        if (ph->ph_collocated_from_l0_flag || sh->sh_collocated_from_l0_flag || sh->sh_slice_type == SLICE_P) {
+            int ref_idx = pps->pps_rpl_info_in_ph_flag ? ph->ph_collocated_ref_idx : sh->sh_collocated_ref_idx;
+            col_pic = pic->rpl0[ref_idx];
+        } else if (sh->sh_slice_type != SLICE_I) {
+            int ref_idx = pps->pps_rpl_info_in_ph_flag ? ph->ph_collocated_ref_idx : sh->sh_collocated_ref_idx;
+            col_pic = pic->rpl1[ref_idx];
+        }
+    }
+    return col_pic;
+
+}
+
 static void
-tmvp_entry_init(OVCTUDec *ctudec, OVPicture *active_pic)
+tmvp_entry_init(OVCTUDec *ctudec, OVPicture *active_pic, const OVPS *const ps)
 {
     /* FIXME try to remove ctu decoder reference from inter context */
     struct VVCTMVP *tmvp_ctx = &ctudec->drv_ctx.inter_ctx.tmvp_ctx;
     struct InterDRVCtx *inter_ctx = &ctudec->drv_ctx.inter_ctx;
 
-    const OVPicture *collocated_ref = active_pic->tmvp.collocated_ref;
+    const OVPicture *const collocated_ref = find_tmvp_collocated_ref(active_pic, ps);
     tmvp_ctx->col_ref = collocated_ref;
 
     ctudec->rcn_ctx.ctudec = ctudec;
@@ -1386,7 +1408,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     /*FIXME quick tmvp import */
     ctudec->nb_ctb_pic_w = einfo.nb_ctb_pic_w;
 
-    tmvp_entry_init(ctudec, sldec->pic);
+    tmvp_entry_init(ctudec, sldec->pic, prms);
 
     /* FIXME tmp Reset DBF */
     memcpy(ctudec->drv_ctx.inter_ctx.rpl0, sldec->pic->rpl0, sizeof(sldec->pic->rpl0));

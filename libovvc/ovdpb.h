@@ -132,7 +132,6 @@ struct OVPicture
     struct MVPlane mv_plane1;
 
     struct TMVPInfo {
-       const struct OVPicture *collocated_ref;
 
        int16_t dist_ref_0[16];
        int16_t dist_ref_1[16];
