@@ -927,35 +927,38 @@ derive_tmvp_merge(const struct InterDRVCtx *const inter_ctx,
 
         OVMV *dst_cur = !tmvp->col_ref_l0 ? &cand->mv0 : &cand->mv1;
         OVMV *dst_opp = !tmvp->col_ref_l0 ? &cand->mv1 : &cand->mv0;
+        int16_t scale_cur;
+        int16_t scale_opp;
+
+        OVMV tmp_cur;
+        OVMV tmp_opp;
+        OVMV col_mv_opp;
+        OVMV col_mv;
 
         if (cand_cur) {
-            OVMV col_mv  = mv_cur[pos_in_buff];
-            int16_t scale00 = derive_tmvp_scale(dist_ref_cur, tmvp_z_cur[col_mv.ref_idx]);
-            col_mv.x = tmvp_round_mv(col_mv.x);
-            col_mv.y = tmvp_round_mv(col_mv.y);
-            *dst_cur = tmvp_scale_mv(scale00, col_mv);
+            col_mv  = mv_cur[pos_in_buff];
             if (cand_opp && tmvp->ldc) {
-                OVMV col_mv_opp  = mv_opp[pos_in_buff];
-                int16_t scale11 = derive_tmvp_scale(dist_ref_opp, tmvp_z_opp[col_mv_opp.ref_idx]);
-                col_mv_opp.x = tmvp_round_mv(col_mv_opp.x);
-                col_mv_opp.y = tmvp_round_mv(col_mv_opp.y);
-                *dst_opp = tmvp_scale_mv(scale11, col_mv_opp);
+                col_mv_opp  = mv_opp[pos_in_buff];
             } else {
-                int16_t scale10 = derive_tmvp_scale(dist_ref_opp, tmvp_z_cur[col_mv.ref_idx]);
-                *dst_opp = tmvp_scale_mv(scale10, col_mv);
+                col_mv_opp  = col_mv;
             }
             goto found;
         } else if (cand_opp) {
-            OVMV col_mv_opp  = mv_opp[pos_in_buff];
-            int16_t scale01 = derive_tmvp_scale(dist_ref_cur, tmvp_z_opp[col_mv_opp.ref_idx]);
-            int16_t scale11 = derive_tmvp_scale(dist_ref_opp, tmvp_z_opp[col_mv_opp.ref_idx]);
-            col_mv_opp.x = tmvp_round_mv(col_mv_opp.x);
-            col_mv_opp.y = tmvp_round_mv(col_mv_opp.y);
-            *dst_cur = tmvp_scale_mv(scale01, col_mv_opp);
-            *dst_opp = tmvp_scale_mv(scale11, col_mv_opp);
+            col_mv_opp  = mv_opp[pos_in_buff];
+            col_mv = col_mv_opp;
             goto found;
         }
 found:
+        scale_cur = derive_tmvp_scale(dist_ref_cur, tmvp_z_opp[col_mv.ref_idx]);
+        scale_opp = derive_tmvp_scale(dist_ref_opp, tmvp_z_opp[col_mv_opp.ref_idx]);
+
+        tmp_cur.x = tmvp_round_mv(col_mv.x);
+        tmp_cur.y = tmvp_round_mv(col_mv.y);
+        tmp_opp.x = tmvp_round_mv(col_mv_opp.x);
+        tmp_opp.y = tmvp_round_mv(col_mv_opp.y);
+
+        *dst_cur = tmvp_scale_mv(scale_cur, tmp_cur);
+        *dst_opp = tmvp_scale_mv(scale_opp, tmp_opp);
 
         cand->inter_dir = 3;
 
@@ -966,8 +969,8 @@ found:
         cand->mv1.ref_idx = 0;
         cand->mv1.bcw_idx_plus1 = 0;
         cand->mv1.prec_amvr = 0;
-        return 1;
 
+        return 1;
     }
 
     return 0;
