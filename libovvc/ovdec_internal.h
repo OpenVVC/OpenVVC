@@ -44,7 +44,7 @@
 struct MVPlane
 {
 
-    OVMV *mvs;
+    struct TMVPMV *mvs;
     uint64_t *dirs;
 
     /* Pool elems */

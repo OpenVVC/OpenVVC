@@ -2518,31 +2518,33 @@ prediction_unit_inter_b(OVCTUDec *const ctu_dec,
                 for (i = 0; i < nb_sb_h; ++i) {
                     for (j = 0; j < nb_sb_w; ++j) {
                         if (dmvr_enable) {
-                            OVMV *tmvp_mv0 = inter_ctx->tmvp_mv[0].mvs;
-                            OVMV *tmvp_mv1 = inter_ctx->tmvp_mv[1].mvs;
+                            struct TMVPMV *tmvp_mv0 = inter_ctx->tmvp_mv[0].mvs;
+                            struct TMVPMV *tmvp_mv1 = inter_ctx->tmvp_mv[1].mvs;
                             ctu_dec->rcn_funcs.rcn_dmvr_mv_refine(ctu_dec, ctu_dec->rcn_ctx.ctu_buff,
                                                x0 + j * 16, y0 + i * 16,
                                                log2_w, log2_h,
                                                &mv0, &mv1,
                                                ref_idx0, ref_idx1, bdof_enable);
 
+                            struct TMVPMV tmvpmv0 = {.mv.x=mv0.x, .mv.y=mv0.y, .z=inter_ctx->dist_ref_0[ref_idx0]};
+                            struct TMVPMV tmvpmv1 = {.mv.x=mv1.x, .mv.y=mv1.y, .z=inter_ctx->dist_ref_1[ref_idx1]};
                             /* FIXME temporary hack to override MVs on 8x8 grid for TMVP */
                             /* FIXME find an alternative in case x0 % 8  is != 0 */
-                            tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16] = mv0;
-                            tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16] = mv1;
+                            tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16] = tmvpmv0;
+                            tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16] = tmvpmv1;
 
                             if (log2_w > 3) {
-                                tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 1] = mv0;
-                                tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 1] = mv1;
+                                tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 1] = tmvpmv0;
+                                tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 1] = tmvpmv1;
                             }
 
                             if (log2_h > 3) {
-                                tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16] = mv0;
-                                tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16] = mv1;
+                                tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16] = tmvpmv0;
+                                tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16] = tmvpmv1;
 
                                 if (log2_w > 3) {
-                                    tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16+ 1] = mv0;
-                                    tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16+ 1] = mv1;
+                                    tmvp_mv0[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16+ 1] = tmvpmv0;
+                                    tmvp_mv1[((x0 + 7 + j * 16) >> 3) + ((y0 + 7 + i * 16) >> 3) * 16 + 16+ 1] = tmvpmv1;
                                 }
                             }
                         }

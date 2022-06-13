@@ -288,6 +288,18 @@ struct VVCCU
 
 };
 
+struct MV
+{
+    int32_t x;
+    int32_t y;
+};
+
+struct TMVPMV
+{
+    struct MV mv;
+    int8_t z;
+};
+
 /* FIXME move inter struct definitions somewhere else */
 struct OVMV
 {
@@ -351,7 +363,7 @@ struct HMVPLUT
 struct MVPlane;
 
 struct MVCTU {
-    OVMV mvs[16*16];
+    struct TMVPMV mvs[16*16];
 };
 
 struct WPInfo
@@ -455,8 +467,8 @@ struct InterDRVCtx
         const struct MVPlane *col_plane1;
         uint16_t pln0_stride;
         uint16_t pln1_stride;
-        const OVMV *ctb_mv0;
-        const OVMV *ctb_mv1;
+        const struct TMVPMV *ctb_mv0;
+        const struct TMVPMV *ctb_mv1;
 
         uint8_t col_ref_l0;
         uint8_t ldc;
@@ -478,8 +490,8 @@ struct InterDRVCtx
         uint64_t dir_map_v0[34];
         uint64_t dir_map_v1[34];
 
-        OVMV mvs0[16*17];
-        OVMV mvs1[16*17];
+        struct TMVPMV mvs0[16*17];
+        struct TMVPMV mvs1[16*17];
 
         uint8_t ctu_w;
         uint8_t ctu_h;

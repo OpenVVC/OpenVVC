@@ -297,8 +297,8 @@ tmvp_store_mv(OVCTUDec *ctudec)
             uint64_t *src_map = mv_ctx->map.vfield + 1;
             uint64_t *dst_map = plane0->dirs + ctb_addr_rs * nb_unit_ctb;
 
-            const OVMV *src_mv = inter_ctx->tmvp_mv[0].mvs;
-                  OVMV *dst_mv = plane0->mvs + ctb_offset;
+            const struct TMVPMV *src_mv = inter_ctx->tmvp_mv[0].mvs;
+                  struct TMVPMV *dst_mv = plane0->mvs + ctb_offset;
             int i;
 
             memcpy(dst_map, src_map, sizeof(uint64_t) * nb_unit_ctb);
@@ -316,8 +316,8 @@ tmvp_store_mv(OVCTUDec *ctudec)
             uint64_t *src_map = mv_ctx->map.vfield + 1;
             uint64_t *dst_map = plane1->dirs + ctb_addr_rs * nb_unit_ctb;
 
-            const OVMV *src_mv = inter_ctx->tmvp_mv[1].mvs;
-                  OVMV *dst_mv = plane1->mvs + ctb_offset;
+            const struct TMVPMV *src_mv = inter_ctx->tmvp_mv[1].mvs;
+                  struct TMVPMV *dst_mv = plane1->mvs + ctb_offset;
             int i;
 
             memcpy(dst_map, src_map, sizeof(uint64_t) * nb_unit_ctb);
