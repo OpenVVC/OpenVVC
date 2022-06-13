@@ -420,91 +420,102 @@ derive_tmvp_scale(int32_t dist_ref, int32_t dist_col)
 }
 
 static uint8_t
+derive_tmvp_status(const uint64_t *rpl0_vmap, const uint64_t *rpl1_vmap,
+                   uint8_t c0_x, uint8_t c0_y,
+                   uint8_t c1_x, uint8_t c1_y)
+{
+    uint64_t c0_vmsk = TMVP_POS_MASK(c0_y);
+    uint64_t c1_vmsk = TMVP_POS_MASK(c1_y);
+
+    uint8_t c0_col_idx = c0_x + 1;
+    uint8_t c1_col_idx = c1_x + 1;
+
+    uint64_t c0_rpl0 = rpl0_vmap[c0_col_idx] & c0_vmsk;
+    uint64_t c0_rpl1 = rpl1_vmap[c0_col_idx] & c0_vmsk;
+    uint64_t c1_rpl0 = rpl0_vmap[c1_col_idx] & c1_vmsk;
+    uint64_t c1_rpl1 = rpl1_vmap[c1_col_idx] & c1_vmsk;
+
+    uint8_t status = 0;
+
+    status |= !!c0_rpl0;
+    status |= !!c0_rpl1 << 1;
+    status |= !!c1_rpl0 << 2;
+    status |= !!c1_rpl1 << 3;
+
+    return status;
+}
+
+static uint8_t
 derive_tmvp_cand(const struct InterDRVCtx *const inter_ctx, const struct OVMVCtx *const mv_ctx,
                  OVMV *const cand, uint8_t pb_x, uint8_t pb_y, uint8_t nb_pb_w, uint8_t nb_pb_h,
                  int8_t ref_idx, int8_t opp_ref_idx, uint8_t prec_amvr)
 {
+    uint32_t msk_8x8 = ~1;
+
     const struct VVCTMVP *const tmvp = &inter_ctx->tmvp_ctx;
-    int c1_x = pb_x + (nb_pb_w >> 1);
-    int c1_y = pb_y + (nb_pb_h >> 1);
-    int c0_x = pb_x + nb_pb_w;
-    int c0_y = pb_y + nb_pb_h;
-    uint8_t pos_8x8 = 1;
 
-    c0_x &= ~(pos_8x8);
-    c1_x &= ~(pos_8x8);
-    c0_y &= ~(pos_8x8);
-    c1_y &= ~(pos_8x8);
+    int c1_x = msk_8x8 & (pb_x + (nb_pb_w >> 1));
+    int c1_y = msk_8x8 & (pb_y + (nb_pb_h >> 1));
+    int c0_x = msk_8x8 & (pb_x + nb_pb_w);
+    int c0_y = msk_8x8 & (pb_y + nb_pb_h);
 
-    /* Derive availability based on CTB inter fields */
-    uint64_t c0_col  = tmvp->dir_map_v0[c0_x + 1];
-    uint64_t c0_col1 = tmvp->dir_map_v1[c0_x + 1];
-    uint64_t c1_col  = tmvp->dir_map_v0[c1_x + 1];
-    uint64_t c1_col1 = tmvp->dir_map_v1[c1_x + 1];
+    uint8_t status = derive_tmvp_status(tmvp->dir_map_v0, tmvp->dir_map_v1,
+                                        c0_x, c0_y, c1_x, c1_y);
 
-    uint8_t cand_c0  = !!(c0_col  & TMVP_POS_MASK(c0_y));
-    uint8_t cand_c01 = !!(c0_col1 & TMVP_POS_MASK(c0_y));
-    uint8_t cand_c1  = !!(c1_col  & TMVP_POS_MASK(c1_y));
-    uint8_t cand_c11 = !!(c1_col1 & TMVP_POS_MASK(c1_y));
+    if (status) {
+        uint8_t is_c0 = status & 0x3;
 
-    uint8_t is_c0 = cand_c0 | cand_c01;
-    int pos_in_buff = is_c0 ? TMVP_POS_IN_BUF2(c0_x, c0_y) : TMVP_POS_IN_BUF2(c1_x, c1_y);
+        int pos_in_buff = is_c0 ? TMVP_POS_IN_BUF2(c0_x, c0_y) : TMVP_POS_IN_BUF2(c1_x, c1_y);
 
-    uint8_t is_rpl0 = (mv_ctx == &inter_ctx->mv_ctx0);
-    int16_t dist_ref = is_rpl0 ? inter_ctx->dist_ref_0[ref_idx] : inter_ctx->dist_ref_1[ref_idx];
+        uint8_t is_rpl0 = (mv_ctx == &inter_ctx->mv_ctx0);
+        int16_t dist_ref = is_rpl0 ? inter_ctx->dist_ref_0[ref_idx] : inter_ctx->dist_ref_1[ref_idx];
 
-    OVMV col_mv;
-    int16_t scale;
+        OVMV col_mv;
+        int16_t scale;
 
-    if (!(tmvp->col_ref_l0 || tmvp->ldc) || (tmvp->ldc && is_rpl0)) {
+        if (!(tmvp->col_ref_l0 || tmvp->ldc) || (tmvp->ldc && is_rpl0)) {
 
-        if (cand_c0) {
-            col_mv = tmvp->ctb_mv0[pos_in_buff];
-            scale = derive_tmvp_scale(dist_ref, tmvp->dist_col_0[col_mv.ref_idx]);
-            goto found;
-        } else if (cand_c01) {
-            col_mv = tmvp->ctb_mv1[pos_in_buff];
-            scale = derive_tmvp_scale(dist_ref, tmvp->dist_col_1[col_mv.ref_idx]);
-            goto found;
-        } else if (cand_c1) {
-            col_mv = tmvp->ctb_mv0[pos_in_buff];
-            scale = derive_tmvp_scale(dist_ref, tmvp->dist_col_0[col_mv.ref_idx]);
-            goto found;
-        } else if (cand_c11) {
-            col_mv = tmvp->ctb_mv1[pos_in_buff];
-            scale = derive_tmvp_scale(dist_ref, tmvp->dist_col_1[col_mv.ref_idx]);
-            goto found;
+            if (status & 0x1) {
+                col_mv = tmvp->ctb_mv0[pos_in_buff];
+                scale = derive_tmvp_scale(dist_ref, tmvp->dist_col_0[col_mv.ref_idx]);
+            } else if (status & 0x2) {
+                col_mv = tmvp->ctb_mv1[pos_in_buff];
+                scale = derive_tmvp_scale(dist_ref, tmvp->dist_col_1[col_mv.ref_idx]);
+            } else if (status & 0x4) {
+                col_mv = tmvp->ctb_mv0[pos_in_buff];
+                scale = derive_tmvp_scale(dist_ref, tmvp->dist_col_0[col_mv.ref_idx]);
+            } else if (status & 0x8) {
+                col_mv = tmvp->ctb_mv1[pos_in_buff];
+                scale = derive_tmvp_scale(dist_ref, tmvp->dist_col_1[col_mv.ref_idx]);
+            }
+        } else {
+            if (status & 0x2) {
+                col_mv = tmvp->ctb_mv1[pos_in_buff];
+                scale = derive_tmvp_scale(dist_ref, tmvp->dist_col_1[col_mv.ref_idx]);
+            } else if (status & 0x1) {
+                col_mv = tmvp->ctb_mv0[pos_in_buff];
+                scale = derive_tmvp_scale(dist_ref, tmvp->dist_col_0[col_mv.ref_idx]);
+            } else if (status & 0x8) {
+                col_mv = tmvp->ctb_mv1[pos_in_buff];
+                scale = derive_tmvp_scale(dist_ref, tmvp->dist_col_1[col_mv.ref_idx]);
+            } else if (status & 0x4) {
+                col_mv = tmvp->ctb_mv0[pos_in_buff];
+                scale = derive_tmvp_scale(dist_ref, tmvp->dist_col_0[col_mv.ref_idx]);
+            }
         }
-    } else {
-        if (cand_c01) {
-            col_mv = tmvp->ctb_mv1[pos_in_buff];
-            scale = derive_tmvp_scale(dist_ref, tmvp->dist_col_1[col_mv.ref_idx]);
-            goto found;
-        } else if (cand_c0) {
-            col_mv = tmvp->ctb_mv0[pos_in_buff];
-            scale = derive_tmvp_scale(dist_ref, tmvp->dist_col_0[col_mv.ref_idx]);
-            goto found;
-        } else if (cand_c11) {
-            col_mv = tmvp->ctb_mv1[pos_in_buff];
-            scale = derive_tmvp_scale(dist_ref, tmvp->dist_col_1[col_mv.ref_idx]);
-            goto found;
-        } else if (cand_c1) {
-            col_mv = tmvp->ctb_mv0[pos_in_buff];
-            scale = derive_tmvp_scale(dist_ref, tmvp->dist_col_0[col_mv.ref_idx]);
-            goto found;
-        }
+
+        col_mv.x = tmvp_round_mv(col_mv.x);
+        col_mv.y = tmvp_round_mv(col_mv.y);
+        col_mv = tmvp_scale_mv(scale, col_mv);
+        col_mv = drv_round_to_precision_mv(col_mv, MV_PRECISION_INTERNAL, prec_amvr);
+
+        col_mv.ref_idx = ref_idx;
+        cand[0] = col_mv;
+
+        return 1;
     }
     return 0;
 
-found :
-    col_mv.x = tmvp_round_mv(col_mv.x);
-    col_mv.y = tmvp_round_mv(col_mv.y);
-    col_mv = tmvp_scale_mv(scale, col_mv);
-    col_mv = drv_round_to_precision_mv(col_mv, MV_PRECISION_INTERNAL, prec_amvr);
-
-    col_mv.ref_idx = ref_idx;
-    cand[0] = col_mv;
-return 1;
 }
 
 static OVMV
@@ -650,56 +661,45 @@ derive_tmvp_merge_cand(const struct InterDRVCtx *const inter_ctx,
     int c0_x = msk_8x8 & (pb_x + nb_pb_w);
     int c0_y = msk_8x8 & (pb_y + nb_pb_h);
 
-    uint64_t c0_col  = tmvp->dir_map_v0[c0_x + 1];
-    uint64_t c1_col  = tmvp->dir_map_v0[c1_x + 1];
-    uint64_t c0_col1 = tmvp->dir_map_v1[c0_x + 1];
-    uint64_t c1_col1 = tmvp->dir_map_v1[c1_x + 1];
+    uint8_t status = derive_tmvp_status(tmvp->dir_map_v0, tmvp->dir_map_v1,
+                                        c0_x, c0_y, c1_x, c1_y);
 
-    uint8_t cand_c0  = !!(c0_col  & TMVP_POS_MASK(c0_y));
-    uint8_t cand_c01 = !!(c0_col1 & TMVP_POS_MASK(c0_y));
-    uint8_t cand_c1  = !!(c1_col  & TMVP_POS_MASK(c1_y));
-    uint8_t cand_c11 = !!(c1_col1 & TMVP_POS_MASK(c1_y));
+    if (status) {
+        int8_t dist_ref0 = inter_ctx->dist_ref_0[0];
+        OVMV col_mv;
+        int16_t scale;
 
-    int8_t dist_ref0 = inter_ctx->dist_ref_0[0];
-    OVMV col_mv;
-    int16_t scale;
-
-    if (cand_c0) {
-        int pos_in_buff = TMVP_POS_IN_BUF2(c0_x, c0_y);
-        col_mv = tmvp->ctb_mv0[pos_in_buff];
-        scale = derive_tmvp_scale(dist_ref0, tmvp->dist_col_0[col_mv.ref_idx]);
-        goto found;
-    } else if (cand_c01) {
-        int pos_in_buff = TMVP_POS_IN_BUF2(c0_x, c0_y);
-        col_mv = tmvp->ctb_mv1[pos_in_buff];
-        scale = derive_tmvp_scale(dist_ref0, tmvp->dist_col_1[col_mv.ref_idx]);
-        goto found;
-    } else if (cand_c1) {
-        int pos_in_buff = TMVP_POS_IN_BUF2(c1_x, c1_y);
-        col_mv = tmvp->ctb_mv0[pos_in_buff];
-        scale = derive_tmvp_scale(dist_ref0, tmvp->dist_col_0[col_mv.ref_idx]);
-        goto found;
-    } else if (cand_c11) {
-        int pos_in_buff = TMVP_POS_IN_BUF2(c1_x, c1_y);
-        col_mv = tmvp->ctb_mv1[pos_in_buff];
-        scale = derive_tmvp_scale(dist_ref0, tmvp->dist_col_1[col_mv.ref_idx]);
-        goto found;
-    }
-
-    return 0;
-
+        if (status & 0x1) {
+            int pos_in_buff = TMVP_POS_IN_BUF2(c0_x, c0_y);
+            col_mv = tmvp->ctb_mv0[pos_in_buff];
+            scale = derive_tmvp_scale(dist_ref0, tmvp->dist_col_0[col_mv.ref_idx]);
+        } else if (status & 0x2) {
+            int pos_in_buff = TMVP_POS_IN_BUF2(c0_x, c0_y);
+            col_mv = tmvp->ctb_mv1[pos_in_buff];
+            scale = derive_tmvp_scale(dist_ref0, tmvp->dist_col_1[col_mv.ref_idx]);
+        } else if (status & 0x4) {
+            int pos_in_buff = TMVP_POS_IN_BUF2(c1_x, c1_y);
+            col_mv = tmvp->ctb_mv0[pos_in_buff];
+            scale = derive_tmvp_scale(dist_ref0, tmvp->dist_col_0[col_mv.ref_idx]);
+        } else if (status & 0x8) {
+            int pos_in_buff = TMVP_POS_IN_BUF2(c1_x, c1_y);
+            col_mv = tmvp->ctb_mv1[pos_in_buff];
+            scale = derive_tmvp_scale(dist_ref0, tmvp->dist_col_1[col_mv.ref_idx]);
+        }
 found:
-    col_mv.x = tmvp_round_mv(col_mv.x);
-    col_mv.y = tmvp_round_mv(col_mv.y);
-    col_mv = tmvp_scale_mv(scale , col_mv);
+        col_mv.x = tmvp_round_mv(col_mv.x);
+        col_mv.y = tmvp_round_mv(col_mv.y);
+        col_mv = tmvp_scale_mv(scale , col_mv);
 
-    col_mv.bcw_idx_plus1 = 0;
-    col_mv.prec_amvr     = 0;
-    col_mv.ref_idx       = 0;
+        col_mv.bcw_idx_plus1 = 0;
+        col_mv.prec_amvr     = 0;
+        col_mv.ref_idx       = 0;
 
-    *cand = col_mv;
+        *cand = col_mv;
 
-    return 1;
+        return 1;
+    }
+    return 0;
 }
 
 static OVMV
@@ -900,28 +900,20 @@ derive_tmvp_merge(const struct InterDRVCtx *const inter_ctx,
     int c0_x = msk_8x8 & (pb_x + nb_pb_w);
     int c0_y = msk_8x8 & (pb_y + nb_pb_h);
 
-    uint64_t c0_col  = tmvp->dir_map_v0[c0_x + 1];
-    uint64_t c0_col1 = tmvp->dir_map_v1[c0_x + 1];
+    uint8_t status = derive_tmvp_status(tmvp->dir_map_v0, tmvp->dir_map_v1,
+                                        c0_x, c0_y, c1_x, c1_y);
 
-    uint64_t c1_col  = tmvp->dir_map_v0[c1_x + 1];
-    uint64_t c1_col1 = tmvp->dir_map_v1[c1_x + 1];
+    if (status) {
+        uint8_t is_c0 = status & 0x3;
+        int pos_in_buff = is_c0 ? TMVP_POS_IN_BUF2(c0_x, c0_y) : TMVP_POS_IN_BUF2(c1_x, c1_y);
 
-    uint8_t cand_c0  = !!(c0_col  & TMVP_POS_MASK(c0_y));
-    uint8_t cand_c01 = !!(c0_col1 & TMVP_POS_MASK(c0_y));
-    uint8_t cand_c1  = !!(c1_col  & TMVP_POS_MASK(c1_y));
-    uint8_t cand_c11 = !!(c1_col1 & TMVP_POS_MASK(c1_y));
+        uint8_t cand_c0_cur = !tmvp->col_ref_l0 ? status & 0x1 : status & 0x2;
+        uint8_t cand_c0_opp = !tmvp->col_ref_l0 ? status & 0x2 : status & 0x1 ;
+        uint8_t cand_c1_cur = !tmvp->col_ref_l0 ? status & 0x4 : status & 0x8;
+        uint8_t cand_c1_opp = !tmvp->col_ref_l0 ? status & 0x8 : status & 0x4 ;
 
-    uint8_t cand_c0_cur= !tmvp->col_ref_l0 ? cand_c0  : cand_c01;
-    uint8_t cand_c0_opp= !tmvp->col_ref_l0 ? cand_c01 : cand_c0 ;
-    uint8_t cand_c1_cur= !tmvp->col_ref_l0 ? cand_c1  : cand_c11;
-    uint8_t cand_c1_opp= !tmvp->col_ref_l0 ? cand_c11 : cand_c1 ;
-
-    uint8_t is_c0 = (cand_c0_cur | cand_c0_opp);
-
-    uint8_t cand_cur = is_c0 ? cand_c0_cur : cand_c1_cur;
-    uint8_t cand_opp = is_c0 ? cand_c0_opp : cand_c1_opp;
-
-    if (cand_cur | cand_opp) {
+        uint8_t cand_cur = is_c0 ? cand_c0_cur : cand_c1_cur;
+        uint8_t cand_opp = is_c0 ? cand_c0_opp : cand_c1_opp;
 
         /* FIXME most of those could be swapped at slice init */
         const OVMV *mv_cur = !tmvp->col_ref_l0 ? tmvp->ctb_mv0 : tmvp->ctb_mv1;
@@ -935,8 +927,6 @@ derive_tmvp_merge(const struct InterDRVCtx *const inter_ctx,
 
         OVMV *dst_cur = !tmvp->col_ref_l0 ? &cand->mv0 : &cand->mv1;
         OVMV *dst_opp = !tmvp->col_ref_l0 ? &cand->mv1 : &cand->mv0;
-
-        int pos_in_buff = is_c0 ? TMVP_POS_IN_BUF2(c0_x, c0_y) : TMVP_POS_IN_BUF2(c1_x, c1_y);
 
         if (cand_cur) {
             OVMV col_mv  = mv_cur[pos_in_buff];
@@ -965,22 +955,22 @@ derive_tmvp_merge(const struct InterDRVCtx *const inter_ctx,
             *dst_opp = tmvp_scale_mv(scale11, col_mv_opp);
             goto found;
         }
+found:
+
+        cand->inter_dir = 3;
+
+        cand->mv0.ref_idx = 0;
+        cand->mv0.bcw_idx_plus1 = 0;
+        cand->mv0.prec_amvr = 0;
+
+        cand->mv1.ref_idx = 0;
+        cand->mv1.bcw_idx_plus1 = 0;
+        cand->mv1.prec_amvr = 0;
+        return 1;
+
     }
 
     return 0;
-
-found:
-
-    cand->inter_dir = 3;
-
-    cand->mv0.ref_idx = 0;
-    cand->mv0.bcw_idx_plus1 = 0;
-    cand->mv0.prec_amvr = 0;
-
-    cand->mv1.ref_idx = 0;
-    cand->mv1.bcw_idx_plus1 = 0;
-    cand->mv1.prec_amvr = 0;
-    return 1;
 }
 
 static VVCMergeInfo
