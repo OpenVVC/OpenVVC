@@ -482,9 +482,6 @@ struct InterDRVCtx
         int16_t scale10;
         int16_t scale11;
 
-        int16_t dist_col_0[16];
-        int16_t dist_col_1[16];
-
         /* FIXME do not start from 1 */
         /* Vertical bit map of motions available in collocated MV CTU */
         uint64_t dir_map_v0[34];

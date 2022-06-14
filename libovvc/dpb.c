@@ -828,11 +828,10 @@ tmvp_request_mv_plane(OVPicture *const pic, const OVVCDec *ovdec, uint8_t slice_
 }
 
 static int
-init_tmvp_info(struct TMVPInfo *const tmvp_ctx, OVPicture *const pic, const OVPS *const ps, const OVVCDec *ovdec)
+init_tmvp_info(OVPicture *const pic, const OVPS *const ps, const OVVCDec *ovdec)
 {
-    const OVPPS *pps = ps->pps;
-    const OVPH *ph = ps->ph;
     const OVSH *sh = ps->sh;
+    const OVPH *ph = ps->ph;
 
     uint8_t slice_type = sh->sh_slice_type;
 
@@ -1017,18 +1016,22 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         if (!idr_flag) {
             for (int i = 0; i < rpl0.num_ref_entries; ++i) {
                 const struct RefPic *const rp = &rpl0.rp_list[i];
-                (*pic_p)->tmvp.dist_ref_0[i] = rp->strp_entry_sign_flag ?  (rp->abs_delta_poc_st + (!weighted_pred | !i))
-                                                                        : -(rp->abs_delta_poc_st + (!weighted_pred | !i));
+                sldec->dist_ref_0[i] = rp->strp_entry_sign_flag ?  (rp->abs_delta_poc_st + (!weighted_pred | !i))
+                                                                : -(rp->abs_delta_poc_st + (!weighted_pred | !i));
                 if (i)
-                    (*pic_p)->tmvp.dist_ref_0[i] += (*pic_p)->tmvp.dist_ref_0[i - 1];
+                    sldec->dist_ref_0[i] += sldec->dist_ref_0[i - 1];
+
+                sldec->dist_ref_0[i] = ov_clip_intp2(sldec->dist_ref_0[i], 8);
             }
 
             for (int i = 0; i < rpl1.num_ref_entries; ++i) {
                 const struct RefPic *const rp = &rpl1.rp_list[i];
-                (*pic_p)->tmvp.dist_ref_1[i] = rp->strp_entry_sign_flag ?  (rp->abs_delta_poc_st + (!weighted_pred | !i))
-                                                                        : -(rp->abs_delta_poc_st + (!weighted_pred | !i));
+                sldec->dist_ref_1[i] = rp->strp_entry_sign_flag ?  (rp->abs_delta_poc_st + (!weighted_pred | !i))
+                                                                : -(rp->abs_delta_poc_st + (!weighted_pred | !i));
                 if (i)
-                    (*pic_p)->tmvp.dist_ref_1[i] += (*pic_p)->tmvp.dist_ref_1[i - 1];
+                    sldec->dist_ref_1[i] += sldec->dist_ref_1[i - 1];
+
+                sldec->dist_ref_1[i] = ov_clip_intp2(sldec->dist_ref_1[i], 8);
             }
         }
     }
@@ -1037,7 +1040,7 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
 
     /* Init picture TMVP info */
     if (ps->sps->sps_temporal_mvp_enabled_flag) {
-        ret = init_tmvp_info(&(*pic_p)->tmvp, *pic_p, ps, ovdec);
+        ret = init_tmvp_info(*pic_p, ps, ovdec);
     }
 
     return ret;

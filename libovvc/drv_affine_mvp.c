@@ -589,9 +589,6 @@ tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *co
         const struct TMVPMV *mvs    = cand_c0 ? tmvp->ctb_mv0
                                      : tmvp->ctb_mv1;
 
-        const int16_t *dist_cols = cand_c0 ? tmvp->dist_col_0
-                                           : tmvp->dist_col_1;
-
         mv       = mvs[c0_pos];
         dist_col = mv.z;
 
@@ -602,9 +599,6 @@ tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *co
 
         const struct TMVPMV *mvs     = cand_c1 ? tmvp->ctb_mv0
                                                : tmvp->ctb_mv1;
-
-        const int16_t *dist_cols = cand_c1 ? tmvp->dist_col_0
-                                           : tmvp->dist_col_1;
 
 
         mv       = mvs[c1_pos];
@@ -659,9 +653,6 @@ tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *co
         const struct TMVPMV *mvs    = cand_c01 ? tmvp->ctb_mv1
                                       : tmvp->ctb_mv0;
 
-        const int16_t *dist_cols = cand_c01 ? tmvp->dist_col_1
-                                            : tmvp->dist_col_0;
-
         mv       = mvs[c0_pos];
         dist_col = mv.z;
 
@@ -672,9 +663,6 @@ tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTMVP *co
 
         const struct TMVPMV *mvs    = cand_c11 ? tmvp->ctb_mv1
                                       : tmvp->ctb_mv0;
-
-        const int16_t *dist_cols = cand_c11 ? tmvp->dist_col_1
-                                            : tmvp->dist_col_0;
 
         mv       = mvs[c1_pos];
         dist_col = mv.z;
@@ -728,7 +716,6 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
         if (cand_c0 && cand_c01 && !tmvp->col_ref_l0) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv0;
-            const int16_t *dist_cols = tmvp->dist_col_0;
             mv       = mvs[c0_pos];
             dist_col = mv.z;
             dir |= 0x1;
@@ -759,7 +746,6 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
             dst[1].y = mv.mv.y;
         } else if (cand_c0 && cand_c01) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv1;
-            const int16_t *dist_cols = tmvp->dist_col_1;
             mv       = mvs[c0_pos];
             dist_col = mv.z;
             dir |= 0x1;
@@ -790,7 +776,6 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
             dst[1].y = mv.mv.y;
         } else if (cand_c0) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv0;
-            const int16_t *dist_cols = tmvp->dist_col_0;
             mv       = mvs[c0_pos];
             dist_col = mv.z;
             dir |= 0x1;
@@ -821,7 +806,6 @@ merge_tmvp_from_ldc(const struct InterDRVCtx *const inter_ctx, const struct VVCT
 
         } else if (cand_c01) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv1;
-            const int16_t *dist_cols = tmvp->dist_col_1;
             mv       = mvs[c0_pos];
             dist_col = mv.z;
 
@@ -882,7 +866,6 @@ merge_tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
 
         if (cand_c0) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv0;
-            const int16_t *dist_cols = tmvp->dist_col_0;
             mv       = mvs[c0_pos];
             dist_col = mv.z;
             dir |= 0x1;
@@ -911,7 +894,6 @@ merge_tmvp_from_l0(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
 
         } else if (cand_c01) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv1;
-            const int16_t *dist_cols = tmvp->dist_col_1;
             mv       = mvs[c0_pos];
             dist_col = mv.z;
 
@@ -971,7 +953,6 @@ merge_tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
 
         if (cand_c01) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv1;
-            const int16_t *dist_cols = tmvp->dist_col_1;
             mv       = mvs[c0_pos];
             dist_col = mv.z;
             dir |= 0x1;
@@ -999,7 +980,6 @@ merge_tmvp_from_l1(const struct InterDRVCtx *const inter_ctx, const struct VVCTM
             dst[1].y = mv.mv.y;
         } else if (cand_c0) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv0;
-            const int16_t *dist_cols = tmvp->dist_col_0;
             mv       = mvs[c0_pos];
             dist_col = mv.z;
 
@@ -1642,7 +1622,6 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
         if (cand_c0 && cand_c01 && !tmvp->col_ref_l0) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv0;
-            const int16_t *dist_cols = tmvp->dist_col_0;
             mv       = mvs[c0_pos];
             dist_col = mv.z;
             dir |= 0x1;
@@ -1675,7 +1654,6 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
             dst[1].y = mv.mv.y;
         } else if (cand_c0 && cand_c01) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv1;
-            const int16_t *dist_cols = tmvp->dist_col_1;
             mv       = mvs[c0_pos];
             dist_col = mv.z;
             dir |= 0x1;
@@ -1708,7 +1686,6 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
             dst[1].y = mv.mv.y;
         } else if (cand_c0) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv0;
-            const int16_t *dist_cols = tmvp->dist_col_0;
             mv       = mvs[c0_pos];
             dist_col = mv.z;
             dir |= 0x1;
@@ -1741,7 +1718,6 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
 
         } else if (cand_c01) {
             const struct TMVPMV *mvs    = tmvp->ctb_mv1;
-            const int16_t *dist_cols = tmvp->dist_col_1;
             mv       = mvs[c0_pos];
             dist_col = mv.z;
 
@@ -1789,7 +1765,6 @@ sbtmvp_from_same_rpl(const struct InterDRVCtx *const inter_ctx, const struct VVC
 
     int32_t dist_ref;
     const struct TMVPMV *mvs;
-    const int16_t *dist_cols;
     uint8_t avail;
     struct TMVPMV mv;
 
@@ -1799,13 +1774,11 @@ sbtmvp_from_same_rpl(const struct InterDRVCtx *const inter_ctx, const struct VVC
 
     if (rpl_idx == RPL_0) {
         dist_ref  = inter_ctx->dist_ref_0[ref_idx];
-        dist_cols = tmvp->dist_col_0;
         mvs       = tmvp->ctb_mv0;
 
         avail  = cand_msk & 0x1;
     } else {
         dist_ref  = inter_ctx->dist_ref_1[ref_idx];
-        dist_cols = tmvp->dist_col_1;
         mvs       = tmvp->ctb_mv1;
 
         avail = cand_msk & 0x2;

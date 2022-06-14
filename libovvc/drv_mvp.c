@@ -953,9 +953,6 @@ derive_tmvp_merge(const struct InterDRVCtx *const inter_ctx,
         const struct TMVPMV *mv_cur = !tmvp->col_ref_l0 ? tmvp->ctb_mv0 : tmvp->ctb_mv1;
         const struct TMVPMV *mv_opp = !tmvp->col_ref_l0 ? tmvp->ctb_mv1 : tmvp->ctb_mv0;
 
-        const int16_t *tmvp_z_cur = !tmvp->col_ref_l0 ? tmvp->dist_col_0 : tmvp->dist_col_1;
-        const int16_t *tmvp_z_opp = !tmvp->col_ref_l0 ? tmvp->dist_col_1 : tmvp->dist_col_0;
-
         int8_t dist_ref_cur = !tmvp->col_ref_l0 ? inter_ctx->dist_ref_0[0] : inter_ctx->dist_ref_1[0];
         int8_t dist_ref_opp = !tmvp->col_ref_l0 ? inter_ctx->dist_ref_1[0] : inter_ctx->dist_ref_0[0];
 

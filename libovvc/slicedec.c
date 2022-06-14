@@ -1144,13 +1144,8 @@ tmvp_entry_init(OVCTUDec *ctudec, const OVSliceDec *const sldec, const OVPS *con
     tmvp_ctx->col_plane1 = collocated_ref ? &collocated_ref->mv_plane1 : NULL;
 
     /* FIXME used by other tools */
-    memcpy(inter_ctx->dist_ref_0, active_pic->tmvp.dist_ref_0, sizeof(inter_ctx->dist_ref_0));
-    memcpy(inter_ctx->dist_ref_1, active_pic->tmvp.dist_ref_1, sizeof(inter_ctx->dist_ref_1));
-
-    if (collocated_ref) {
-        memcpy(tmvp_ctx->dist_col_0, collocated_ref->tmvp.dist_ref_0, sizeof(tmvp_ctx->dist_col_0));
-        memcpy(tmvp_ctx->dist_col_1, collocated_ref->tmvp.dist_ref_1, sizeof(tmvp_ctx->dist_col_1));
-    }
+    memcpy(inter_ctx->dist_ref_0, sldec->dist_ref_0, sizeof(inter_ctx->dist_ref_0));
+    memcpy(inter_ctx->dist_ref_1, sldec->dist_ref_1, sizeof(inter_ctx->dist_ref_1));
 
     memset(tmvp_ctx->dir_map_v0, 0, 34 * sizeof(uint64_t));
     memset(tmvp_ctx->dir_map_v1, 0, 34 * sizeof(uint64_t));
@@ -1426,7 +1421,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     for (int i = 0; i < ctudec->drv_ctx.inter_ctx.nb_active_ref0; ++i) {
         uint8_t opp_ref_idx0 = 0xFF;
 
-        if (sldec->pic->tmvp.dist_ref_0[i] < 0) {
+        if (sldec->dist_ref_0[i] < 0) {
             ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 0;
         }
 
@@ -1442,7 +1437,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     for (int i = 0; i < ctudec->drv_ctx.inter_ctx.nb_active_ref1; ++i) {
         uint8_t opp_ref_idx1 = 0xFF;
 
-        if (sldec->pic->tmvp.dist_ref_1[i] < 0) {
+        if (sldec->dist_ref_1[i] < 0) {
             ctudec->drv_ctx.inter_ctx.tmvp_ctx.ldc = 0;
         }
 

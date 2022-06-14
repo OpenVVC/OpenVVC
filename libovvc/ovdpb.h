@@ -117,19 +117,8 @@ struct OVPicture
     atomic_uint *idx_function;
     FrameSynchroFunction ovdpb_frame_synchro[2];
 
-    /* Pointers to ref_pic_list */
-    /* FIXME use frame directly ? */
-    /* FIXME should be const */
-
     struct MVPlane mv_plane0;
     struct MVPlane mv_plane1;
-
-    struct TMVPInfo {
-
-       int16_t dist_ref_0[16];
-       int16_t dist_ref_1[16];
-
-    } tmvp;
 
     OVSEI *sei;
 
