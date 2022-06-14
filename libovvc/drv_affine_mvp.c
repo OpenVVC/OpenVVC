@@ -490,22 +490,18 @@ tmvp_scale_mv(int scale, struct MV mv)
 }
 
 static int16_t
-derive_tmvp_scale(int32_t dist_ref, int32_t dist_col)
+derive_tmvp_scale(int16_t dist_ref, int16_t dist_col)
 {
     int32_t scale = 0;
 
     if (dist_ref == dist_col || !dist_col)
         return 256;
 
-    /*FIXME POW2 clip */
-    dist_ref = ov_clip(dist_ref, -128, 127);
-    dist_col = ov_clip(dist_col, -128, 127);
-
     scale = dist_ref * ((0x4000 + OVABS(dist_col >> 1)) / dist_col);
     scale += 32;
     scale >>= 6;
-    /* FIXME pow2_clip */
-    scale = ov_clip(scale, -4096, 4095);
+
+    scale = ov_clip_intp2(scale, 13);
 
     return (int16_t)scale;
 }
