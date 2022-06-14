@@ -462,7 +462,7 @@ derive_tmvp_status(const uint64_t *rpl0_vmap, const uint64_t *rpl1_vmap,
 static uint8_t
 derive_tmvp_cand(const struct InterDRVCtx *const inter_ctx, const struct OVMVCtx *const mv_ctx,
                  OVMV *const cand, uint8_t pb_x, uint8_t pb_y, uint8_t nb_pb_w, uint8_t nb_pb_h,
-                 int8_t ref_idx, uint8_t prec_amvr)
+                 int8_t ref_idx, int8_t opp_ref_idx, uint8_t prec_amvr)
 {
     uint32_t msk_8x8 = ~1;
 
@@ -491,25 +491,56 @@ derive_tmvp_cand(const struct InterDRVCtx *const inter_ctx, const struct OVMVCtx
 
             if (status & 0x1) {
                 col_mv = tmvp->ctb_mv0[pos_in_buff];
-            } else if (status & 0x2) {
-                col_mv = tmvp->ctb_mv1[pos_in_buff];
-            } else if (status & 0x4) {
-                col_mv = tmvp->ctb_mv0[pos_in_buff];
-            } else if (status & 0x8) {
-                col_mv = tmvp->ctb_mv1[pos_in_buff];
+                if (!((dist_ref == 0) ^ (col_mv.z == 0)))
+                    goto found;
             }
-        } else {
+
             if (status & 0x2) {
                 col_mv = tmvp->ctb_mv1[pos_in_buff];
-            } else if (status & 0x1) {
+                if (!((dist_ref == 0) ^ (col_mv.z == 0)))
+                    goto found;
+            }
+
+            if (status & 0x4) {
                 col_mv = tmvp->ctb_mv0[pos_in_buff];
-            } else if (status & 0x8) {
+                if (!((dist_ref == 0) ^ (col_mv.z == 0)))
+                    goto found;
+            }
+
+            if (status & 0x8) {
                 col_mv = tmvp->ctb_mv1[pos_in_buff];
-            } else if (status & 0x4) {
+                if (!((dist_ref == 0) ^ (col_mv.z == 0)))
+                    goto found;
+            }
+        } else {
+
+            if (status & 0x2) {
+                col_mv = tmvp->ctb_mv1[pos_in_buff];
+                if (!((dist_ref == 0) ^ (col_mv.z == 0)))
+                    goto found;
+            }
+
+            if (status & 0x1) {
                 col_mv = tmvp->ctb_mv0[pos_in_buff];
+                if (!((dist_ref == 0) ^ (col_mv.z == 0)))
+                    goto found;
+            }
+
+            if (status & 0x8) {
+                col_mv = tmvp->ctb_mv1[pos_in_buff];
+                if (!((dist_ref == 0) ^ (col_mv.z == 0)))
+                    goto found;
+            }
+
+            if (status & 0x4) {
+                col_mv = tmvp->ctb_mv0[pos_in_buff];
+                if (!((dist_ref == 0) ^ (col_mv.z == 0)))
+                    goto found;
             }
         }
+        return 0;
 
+found:
         scale = derive_tmvp_scale(dist_ref, col_mv.z);
 
         col_mv.mv = tmvp_round_mv(col_mv.mv);
@@ -639,7 +670,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
         }
 
         nb_cand += derive_tmvp_cand(inter_ctx, mv_ctx, &cand[nb_cand], pb_x, pb_y, nb_pb_w, nb_pb_h,
-                                    ref_idx, prec_amvr);
+                                    ref_idx, opp_ref_idx, prec_amvr);
     }
 
     if (nb_cand < 2) {
@@ -687,13 +718,29 @@ derive_tmvp_merge_cand(const struct InterDRVCtx *const inter_ctx,
 
         if (status & 0x1) {
             col_mv = tmvp->ctb_mv0[pos_in_buff];
-        } else if (status & 0x2) {
-            col_mv = tmvp->ctb_mv1[pos_in_buff];
-        } else if (status & 0x4) {
-            col_mv = tmvp->ctb_mv0[pos_in_buff];
-        } else if (status & 0x8) {
-            col_mv = tmvp->ctb_mv1[pos_in_buff];
+            if (!((dist_ref0 == 0) ^ (col_mv.z == 0)))
+                goto found;
         }
+
+        if (status & 0x2) {
+            col_mv = tmvp->ctb_mv1[pos_in_buff];
+            if (!((dist_ref0 == 0) ^ (col_mv.z == 0)))
+                goto found;
+        }
+
+        if (status & 0x4) {
+            col_mv = tmvp->ctb_mv0[pos_in_buff];
+            if (!((dist_ref0 == 0) ^ (col_mv.z == 0)))
+                goto found;
+        }
+
+        if (status & 0x8) {
+            col_mv = tmvp->ctb_mv1[pos_in_buff];
+            if (!((dist_ref0 == 0) ^ (col_mv.z == 0)))
+                goto found;
+        }
+
+        return 0;
 found:
         /* Discard candidate when only one is from long term ref */
         if ((dist_ref0 == 0) ^ (col_mv.z == 0)) return 0;
@@ -916,16 +963,16 @@ derive_tmvp_merge(const struct InterDRVCtx *const inter_ctx,
                                         c0_x, c0_y, c1_x, c1_y);
 
     if (status) {
-        uint8_t is_c0 = status & 0x3;
-        int pos_in_buff = is_c0 ? TMVP_POS_IN_BUF2(c0_x, c0_y) : TMVP_POS_IN_BUF2(c1_x, c1_y);
+        //uint8_t is_c0 = status & 0x3;
+        //int pos_in_buff = is_c0 ? TMVP_POS_IN_BUF2(c0_x, c0_y) : TMVP_POS_IN_BUF2(c1_x, c1_y);
 
         uint8_t cand_c0_cur = !tmvp->col_ref_l0 ? status & 0x1 : status & 0x2;
         uint8_t cand_c0_opp = !tmvp->col_ref_l0 ? status & 0x2 : status & 0x1 ;
         uint8_t cand_c1_cur = !tmvp->col_ref_l0 ? status & 0x4 : status & 0x8;
         uint8_t cand_c1_opp = !tmvp->col_ref_l0 ? status & 0x8 : status & 0x4 ;
 
-        uint8_t cand_cur = is_c0 ? cand_c0_cur : cand_c1_cur;
-        uint8_t cand_opp = is_c0 ? cand_c0_opp : cand_c1_opp;
+        //uint8_t cand_cur = is_c0 ? cand_c0_cur : cand_c1_cur;
+        //uint8_t cand_opp = is_c0 ? cand_c0_opp : cand_c1_opp;
 
         /* FIXME most of those could be swapped at slice init */
         const struct TMVPMV *mv_cur = !tmvp->col_ref_l0 ? tmvp->ctb_mv0 : tmvp->ctb_mv1;
@@ -944,33 +991,104 @@ derive_tmvp_merge(const struct InterDRVCtx *const inter_ctx,
         struct TMVPMV col_mv_opp;
         struct TMVPMV col_mv;
 
-        if (cand_cur) {
-            col_mv  = mv_cur[pos_in_buff];
-            if (cand_opp && tmvp->ldc) {
-                col_mv_opp  = mv_opp[pos_in_buff];
-            } else {
+        if (tmvp->ldc) {
+            int pos_in_buff =  TMVP_POS_IN_BUF2(c0_x, c0_y);
+            uint8_t cand_cur = 1 ? cand_c0_cur : cand_c1_cur;
+            uint8_t cand_opp = 1 ? cand_c0_opp : cand_c1_opp;
+            if (cand_cur) {
+                col_mv  = mv_cur[pos_in_buff];
+                if (cand_opp) {
+                    col_mv_opp  = mv_opp[pos_in_buff];
+                    if (!((dist_ref_opp == 0) ^ (col_mv.z == 0))) {
+                        goto found;
+                    }
+                }
+
                 col_mv_opp  = col_mv;
+                if (!((dist_ref_cur == 0) ^ (col_mv.z == 0))) {
+                    goto found;
+                }
             }
-            goto found;
-        } else if (cand_opp) {
-            col_mv_opp  = mv_opp[pos_in_buff];
-            col_mv = col_mv_opp;
-            goto found;
+
+            if (cand_opp) {
+                col_mv_opp  = mv_opp[pos_in_buff];
+                col_mv = col_mv_opp;
+                if (!((dist_ref_opp == 0) ^ (col_mv.z == 0))) {
+                    goto found;
+                }
+            }
+
+            pos_in_buff =  TMVP_POS_IN_BUF2(c1_x, c1_y);
+            cand_cur = 0 ? cand_c0_cur : cand_c1_cur;
+            cand_opp = 0 ? cand_c0_opp : cand_c1_opp;
+
+            if (cand_cur) {
+                col_mv  = mv_cur[pos_in_buff];
+                if (cand_opp) {
+                    col_mv_opp  = mv_opp[pos_in_buff];
+                    if (!((dist_ref_opp == 0) ^ (col_mv.z == 0))) {
+                        goto found;
+                    }
+                }
+
+                col_mv_opp  = col_mv;
+                if (!((dist_ref_cur == 0) ^ (col_mv.z == 0))) {
+                    goto found;
+                }
+            }
+
+            if (cand_opp) {
+                col_mv_opp  = mv_opp[pos_in_buff];
+                col_mv = col_mv_opp;
+                if (!((dist_ref_opp == 0) ^ (col_mv.z == 0))) {
+                    goto found;
+                }
+            }
+
+        } else {
+            int pos_in_buff =  TMVP_POS_IN_BUF2(c0_x, c0_y);
+            uint8_t cand_cur = 1 ? cand_c0_cur : cand_c1_cur;
+            uint8_t cand_opp = 1 ? cand_c0_opp : cand_c1_opp;
+            if (cand_cur) {
+                col_mv      = mv_cur[pos_in_buff];
+                col_mv_opp  = col_mv;
+                if (!((dist_ref_cur == 0) ^ (col_mv.z == 0))) {
+                    goto found;
+                }
+            }
+
+            if (cand_opp) {
+                col_mv_opp  = mv_opp[pos_in_buff];
+                col_mv = col_mv_opp;
+                if (!((dist_ref_opp == 0) ^ (col_mv.z == 0))) {
+                    goto found;
+                }
+            }
+            pos_in_buff =  TMVP_POS_IN_BUF2(c1_x, c1_y);
+            cand_cur = 0 ? cand_c0_cur : cand_c1_cur;
+            cand_opp = 0 ? cand_c0_opp : cand_c1_opp;
+
+            if (cand_cur) {
+                col_mv      = mv_cur[pos_in_buff];
+                col_mv_opp  = col_mv;
+                if (!((dist_ref_cur == 0) ^ (col_mv.z == 0))) {
+                    goto found;
+                }
+            }
+
+            if (cand_opp) {
+                col_mv_opp  = mv_opp[pos_in_buff];
+                col_mv = col_mv_opp;
+                if (!((dist_ref_opp == 0) ^ (col_mv.z == 0))) {
+                    goto found;
+                }
+            }
+
         }
+        return 0;
 found:
         scale_cur = derive_tmvp_scale(dist_ref_cur, col_mv.z);
         scale_opp = derive_tmvp_scale(dist_ref_opp, col_mv_opp.z);
-
-        /* Discard candidate when only one is from long term ref */
-        if ((dist_ref_cur == 0) ^ (col_mv.z == 0)) {
-            if ((dist_ref_opp == 0) ^ (col_mv_opp.z == 0))
-                return 0;
-            col_mv = col_mv_opp;
-            scale_cur = scale_opp;
-        } else if ((dist_ref_opp == 0) ^ (col_mv_opp.z == 0)) {
-            col_mv_opp = col_mv;
-            scale_opp = scale_cur;
-        }
 
         tmp_cur.mv = tmvp_round_mv(col_mv.mv);
         tmp_opp.mv = tmvp_round_mv(col_mv_opp.mv);
