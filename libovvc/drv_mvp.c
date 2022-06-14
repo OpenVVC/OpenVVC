@@ -507,32 +507,26 @@ derive_tmvp_cand(const struct InterDRVCtx *const inter_ctx, const struct OVMVCtx
 
             if (status & 0x1) {
                 col_mv = tmvp->ctb_mv0[pos_in_buff];
-                scale = derive_tmvp_scale(dist_ref, col_mv.z);
             } else if (status & 0x2) {
                 col_mv = tmvp->ctb_mv1[pos_in_buff];
-                scale = derive_tmvp_scale(dist_ref, col_mv.z);
             } else if (status & 0x4) {
                 col_mv = tmvp->ctb_mv0[pos_in_buff];
-                scale = derive_tmvp_scale(dist_ref, col_mv.z);
             } else if (status & 0x8) {
                 col_mv = tmvp->ctb_mv1[pos_in_buff];
-                scale = derive_tmvp_scale(dist_ref, col_mv.z);
             }
         } else {
             if (status & 0x2) {
                 col_mv = tmvp->ctb_mv1[pos_in_buff];
-                scale = derive_tmvp_scale(dist_ref, col_mv.z);
             } else if (status & 0x1) {
                 col_mv = tmvp->ctb_mv0[pos_in_buff];
-                scale = derive_tmvp_scale(dist_ref, col_mv.z);
             } else if (status & 0x8) {
                 col_mv = tmvp->ctb_mv1[pos_in_buff];
-                scale = derive_tmvp_scale(dist_ref, col_mv.z);
             } else if (status & 0x4) {
                 col_mv = tmvp->ctb_mv0[pos_in_buff];
-                scale = derive_tmvp_scale(dist_ref, col_mv.z);
             }
         }
+
+        scale = derive_tmvp_scale(dist_ref, col_mv.z);
 
         col_mv.mv = tmvp_round_mv(col_mv.mv);
         /* Discard candidate when only one is from long term ref */
@@ -701,29 +695,27 @@ derive_tmvp_merge_cand(const struct InterDRVCtx *const inter_ctx,
 
     if (status) {
         int8_t dist_ref0 = inter_ctx->dist_ref_0[0];
+        int is_c0 = status & 0x3;
+        int pos_in_buff = is_c0 ? TMVP_POS_IN_BUF2(c0_x, c0_y) : TMVP_POS_IN_BUF2(c1_x, c1_y);
+
         struct TMVPMV col_mv;
         int16_t scale;
 
         if (status & 0x1) {
-            int pos_in_buff = TMVP_POS_IN_BUF2(c0_x, c0_y);
             col_mv = tmvp->ctb_mv0[pos_in_buff];
-            scale = derive_tmvp_scale(dist_ref0, col_mv.z);
         } else if (status & 0x2) {
-            int pos_in_buff = TMVP_POS_IN_BUF2(c0_x, c0_y);
             col_mv = tmvp->ctb_mv1[pos_in_buff];
-            scale = derive_tmvp_scale(dist_ref0, col_mv.z);
         } else if (status & 0x4) {
-            int pos_in_buff = TMVP_POS_IN_BUF2(c1_x, c1_y);
             col_mv = tmvp->ctb_mv0[pos_in_buff];
-            scale = derive_tmvp_scale(dist_ref0, col_mv.z);
         } else if (status & 0x8) {
-            int pos_in_buff = TMVP_POS_IN_BUF2(c1_x, c1_y);
             col_mv = tmvp->ctb_mv1[pos_in_buff];
-            scale = derive_tmvp_scale(dist_ref0, col_mv.z);
         }
 found:
         /* Discard candidate when only one is from long term ref */
         if ((dist_ref0 == 0) ^ (col_mv.z == 0)) return 0;
+
+        scale = derive_tmvp_scale(dist_ref0, col_mv.z);
+
         col_mv.mv = tmvp_round_mv(col_mv.mv);
         col_mv.mv = tmvp_scale_mv(scale , col_mv.mv);
 
