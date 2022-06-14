@@ -462,7 +462,7 @@ derive_tmvp_status(const uint64_t *rpl0_vmap, const uint64_t *rpl1_vmap,
 static uint8_t
 derive_tmvp_cand(const struct InterDRVCtx *const inter_ctx, const struct OVMVCtx *const mv_ctx,
                  OVMV *const cand, uint8_t pb_x, uint8_t pb_y, uint8_t nb_pb_w, uint8_t nb_pb_h,
-                 int8_t ref_idx, int8_t opp_ref_idx, uint8_t prec_amvr)
+                 int8_t ref_idx, uint8_t prec_amvr)
 {
     uint32_t msk_8x8 = ~1;
 
@@ -639,7 +639,7 @@ derive_mvp_candidates_1(struct InterDRVCtx *const inter_ctx,
         }
 
         nb_cand += derive_tmvp_cand(inter_ctx, mv_ctx, &cand[nb_cand], pb_x, pb_y, nb_pb_w, nb_pb_h,
-                                    ref_idx, opp_ref_idx, prec_amvr);
+                                    ref_idx, prec_amvr);
     }
 
     if (nb_cand < 2) {
