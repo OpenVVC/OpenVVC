@@ -1746,6 +1746,13 @@ sbtmvp_from_ldc(const struct InterDRVCtx *inter_ctx, const struct VVCTMVP *const
             dst[1].x = mv.mv.x;
             dst[1].y = mv.mv.y;
         }
+        dst[0].ref_idx = ref_idx;
+        dst[0].bcw_idx_plus1 = 0;
+        dst[0].prec_amvr = 0;
+
+        dst[1].ref_idx = ref_idx;
+        dst[1].bcw_idx_plus1 = 0;
+        dst[1].prec_amvr = 0;
 
         return dir;
     }
