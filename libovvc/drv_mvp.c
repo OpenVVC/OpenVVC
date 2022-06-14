@@ -53,8 +53,6 @@
 #define MV_CMP2(mv0,mv1) ((mv0.x == mv1.x) && (mv0.y == mv1.y) && (mv0.ref_idx == mv1.ref_idx))
 
 #define PB_POS_IN_BUF(x,y) (35 + (x) + ((y) * 34))
-#define TMVP_BUFF_STRIDE 17
-#define TMVP_POS_IN_BUF(x,y) ((x >> 1) + (((y >> 1)) * TMVP_BUFF_STRIDE))
 
 #define TMVP_POS_IN_BUF2(x,y) ((x >> 1) + (((y >> 1)) * tmvp->pln0_stride))
 
@@ -386,13 +384,6 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
             tmvp_ctx->ctb_mv0 = src_mvs;
             tmvp_ctx->pln0_stride = pln_stride;
             memcpy(dst_map, src_map, sizeof(uint64_t) * (nb_unit_ctb + !is_border_pic));
-            #if 0
-            for (i = 0; i < nb_tmvp_unit; ++i) {
-                memcpy(dst_mvs, src_mvs, sizeof(*dst_mvs) * (nb_tmvp_unit + !is_border_pic));
-                dst_mvs += TMVP_BUFF_STRIDE;
-                src_mvs += pln_stride;
-            }
-            #endif
         }
 
         if (plane1 && plane1->dirs) {
@@ -407,13 +398,6 @@ load_ctb_tmvp(OVCTUDec *const ctudec, int ctb_x, int ctb_y)
             tmvp_ctx->ctb_mv1 = src_mvs;
             tmvp_ctx->pln1_stride = pln_stride;
             tmvp_ctx->pln0_stride = pln_stride;
-            #if 0
-            for (i = 0; i < nb_tmvp_unit; ++i) {
-                memcpy(dst_mvs, src_mvs, sizeof(*dst_mvs) * (nb_tmvp_unit + !is_border_pic));
-                dst_mvs += TMVP_BUFF_STRIDE;
-                src_mvs += pln_stride;
-            }
-            #endif
         }
     }
 
