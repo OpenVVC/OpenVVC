@@ -133,20 +133,23 @@ gpm_weights_and_steps(int split_dir, int log2_pb_w_l, int log2_pb_h_l, int* step
 static void
 rcn_inter_synchronization(const OVPicture *ref_pic, int ref_pos_x, int ref_pos_y, int pu_w, int pu_h, int log2_ctu_s)
 {
-    const int pic_w = ref_pic->frame->width;
-    const int pic_h = ref_pic->frame->height;
-
-    /*Frame thread synchronization to ensure data is available
-    */
-    int nb_ctb_pic_w = (pic_w + ((1 << log2_ctu_s) - 1)) >> log2_ctu_s;
-    int nb_ctb_pic_h = (pic_h + ((1 << log2_ctu_s) - 1)) >> log2_ctu_s;
-    int tl_ctu_y = ov_clip((ref_pos_y - QPEL_EXTRA_BEFORE) >> log2_ctu_s, 0, nb_ctb_pic_h - 1);
-    int tl_ctu_x = ov_clip((ref_pos_x - QPEL_EXTRA_BEFORE) >> log2_ctu_s, 0, nb_ctb_pic_w - 1);
-    int br_ctu_y = ov_clip((ref_pos_y + QPEL_EXTRA_AFTER + pu_h) >> log2_ctu_s, 0, nb_ctb_pic_h - 1);
-    int br_ctu_x = ov_clip((ref_pos_x + QPEL_EXTRA_AFTER + pu_w) >> log2_ctu_s, 0, nb_ctb_pic_w - 1);
     FrameSynchroFunction sync_func = (FrameSynchroFunction)atomic_load(ref_pic->sync.func);
 
-    sync_func(ref_pic, tl_ctu_x, tl_ctu_y, br_ctu_x, br_ctu_y);
+    if (sync_func) {
+        const int pic_w = ref_pic->frame->width;
+        const int pic_h = ref_pic->frame->height;
+
+        /*Frame thread synchronization to ensure data is available
+        */
+        int nb_ctb_pic_w = (pic_w + ((1 << log2_ctu_s) - 1)) >> log2_ctu_s;
+        int nb_ctb_pic_h = (pic_h + ((1 << log2_ctu_s) - 1)) >> log2_ctu_s;
+        int tl_ctu_y = ov_clip((ref_pos_y - QPEL_EXTRA_BEFORE) >> log2_ctu_s, 0, nb_ctb_pic_h - 1);
+        int tl_ctu_x = ov_clip((ref_pos_x - QPEL_EXTRA_BEFORE) >> log2_ctu_s, 0, nb_ctb_pic_w - 1);
+        int br_ctu_y = ov_clip((ref_pos_y + QPEL_EXTRA_AFTER + pu_h) >> log2_ctu_s, 0, nb_ctb_pic_h - 1);
+        int br_ctu_x = ov_clip((ref_pos_x + QPEL_EXTRA_AFTER + pu_w) >> log2_ctu_s, 0, nb_ctb_pic_w - 1);
+
+        sync_func(ref_pic, tl_ctu_x, tl_ctu_y, br_ctu_x, br_ctu_y);
+    }
 }
 
 static void

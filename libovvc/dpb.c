@@ -1074,12 +1074,6 @@ xctu_to_mask(uint64_t* mask, int mask_w, int xmin_ctu, int xmax_ctu)
 }
 
 static void
-ovdpb_no_synchro(const OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y, int br_ctu_x, int br_ctu_y)
-{
-    return;
-}
-
-static void
 ovdpb_synchro_ref_decoded_ctus(const OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y, int br_ctu_x, int br_ctu_y)
 {
     const struct PictureSynchro* sync = &ref_pic->sync;
@@ -1151,7 +1145,7 @@ ovdpb_report_decoded_frame(OVPicture *const pic)
 {
     struct PictureSynchro* sync = &pic->sync;
 
-    atomic_store(sync->func, (uintptr_t) &ovdpb_no_synchro);
+    atomic_store(sync->func, (uintptr_t) NULL);
 
     pthread_mutex_lock(sync->ref_mtx);
     for(int i = 0; i < sync->nb_ctu_h; i++){
