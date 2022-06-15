@@ -1063,13 +1063,13 @@ static void
 xctu_to_mask(uint64_t* mask, int mask_w, int xmin_ctu, int xmax_ctu)
 {
     int sub_xmin_ctu, sub_xmax_ctu;
-    for(int i = (xmin_ctu >> SIZE_INT64); i <= (xmax_ctu >> SIZE_INT64); i++)
-    {
+    for(int i = (xmin_ctu >> SIZE_INT64); i <= (xmax_ctu >> SIZE_INT64); i++) {
         mask[i] = 0;
         sub_xmin_ctu = xmin_ctu > (i<<SIZE_INT64)     ? xmin_ctu % (1<<SIZE_INT64) : 0;
         sub_xmax_ctu = xmax_ctu < ((i+1)<<SIZE_INT64) ? xmax_ctu % (1<<SIZE_INT64) : (1<<SIZE_INT64)-1;
-        for(int ii = sub_xmin_ctu; ii <= sub_xmax_ctu; ii++)
+        for(int ii = sub_xmin_ctu; ii <= sub_xmax_ctu; ii++) {
             mask[i] |= (uint64_t)1 << ii;
+        }
     }
 }
 
@@ -1082,30 +1082,26 @@ ovdpb_no_synchro(const OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y, int
 static void
 ovdpb_synchro_ref_decoded_ctus(const OVPicture *const ref_pic, int tl_ctu_x, int tl_ctu_y, int br_ctu_x, int br_ctu_y)
 {
-    const struct PicDecodedCtusInfo* decoded_ctus = &ref_pic->decoded_ctus;
+    const struct PictureSynchro* sync = &ref_pic->sync;
 
-    //TODOpar: store previous decoded_ctus of ref_pic in local memory.
-    //Avoid to fetch decoded_ctus variable when not needed.
-    int mask_w = decoded_ctus->mask_w;
+    int mask_w = sync->map_w;
     uint64_t wanted_mask[5];
     xctu_to_mask(wanted_mask, mask_w, tl_ctu_x, br_ctu_x);
 
-    //TODOpar: create a mutex + ref_cnd by ctu line ?
     uint8_t all_ctus_available;
     do {
-        pthread_mutex_lock(decoded_ctus->ref_mtx);
+        pthread_mutex_lock(sync->ref_mtx);
 
         all_ctus_available = 1;
         for (int ctu_y = tl_ctu_y; ctu_y <= br_ctu_y; ctu_y++ ) {
-            const uint64_t *ctu_col = decoded_ctus->mask[ctu_y];
+            const uint64_t *ctu_col = sync->decoded_ctus_map[ctu_y];
             for (int i = 0; i < mask_w; i++)
                 all_ctus_available = all_ctus_available && ((ctu_col[i] & wanted_mask[i]) == wanted_mask[i]);
         }
         if (!all_ctus_available) {
-            // ov_log(NULL, OVLOG_DEBUG, "Wait ref POC %d lines %d,%d \n", ref_pic->poc, tl_ctu_x, tl_ctu_y);
-            pthread_cond_wait(decoded_ctus->ref_cnd, decoded_ctus->ref_mtx);
+            pthread_cond_wait(sync->ref_cnd, sync->ref_mtx);
         }
-        pthread_mutex_unlock(decoded_ctus->ref_mtx);
+        pthread_mutex_unlock(sync->ref_mtx);
 
     } while (!all_ctus_available);
 }
@@ -1119,16 +1115,16 @@ ovdpb_init_decoded_ctus(OVPicture *const pic, const OVPS *const ps)
     uint16_t nb_ctb_pic_w = (pic_w + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
     uint16_t nb_ctb_pic_h = (pic_h + ((1 << log2_ctb_s) - 1)) >> log2_ctb_s;
 
-    struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
-    decoded_ctus->mask_h = nb_ctb_pic_h;
-    decoded_ctus->mask_w = (nb_ctb_pic_w >> SIZE_INT64) + 1;
+    struct PictureSynchro* sync = &pic->sync;
+    sync->nb_ctu_h = nb_ctb_pic_h;
+    sync->map_w = (nb_ctb_pic_w >> SIZE_INT64) + 1;
 
     pic->ovdpb_frame_synchro[0] = ovdpb_no_synchro;
     pic->ovdpb_frame_synchro[1] = ovdpb_synchro_ref_decoded_ctus;
 
-    pic->idx_function = &pic->decoded_ctus.internal.idx_function;
-    decoded_ctus->ref_mtx = &pic->decoded_ctus.internal.ref_mtx;
-    decoded_ctus->ref_cnd = &pic->decoded_ctus.internal.ref_cnd;
+    pic->idx_function = &sync->internal.idx_function;
+    sync->ref_mtx = &sync->internal.ref_mtx;
+    sync->ref_cnd = &sync->internal.ref_cnd;
 
     atomic_init(pic->idx_function, 1);
 }
@@ -1136,48 +1132,47 @@ ovdpb_init_decoded_ctus(OVPicture *const pic, const OVPS *const ps)
 void
 ovdpb_report_decoded_ctu_line(OVPicture *const pic, int y_ctu, int xmin_ctu, int xmax_ctu)
 {
-    struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
-    int mask_w = decoded_ctus->mask_w;
+    struct PictureSynchro* sync = &pic->sync;
+    int mask_w = sync->map_w;
     uint64_t mask[5];
 
     xctu_to_mask(mask, mask_w, xmin_ctu, xmax_ctu);
 
-    pthread_mutex_lock(decoded_ctus->ref_mtx);
+    pthread_mutex_lock(sync->ref_mtx);
 
     for (int i = 0; i < mask_w; i++) {
-        decoded_ctus->mask[y_ctu][i] |= mask[i];
+        sync->decoded_ctus_map[y_ctu][i] |= mask[i];
     }
 
-    pthread_cond_broadcast(decoded_ctus->ref_cnd);
+    pthread_cond_broadcast(sync->ref_cnd);
 
-    pthread_mutex_unlock(decoded_ctus->ref_mtx);
-    // ov_log(NULL, OVLOG_TRACE, "update_decoded_ctus POC %d line %d\n", pic->poc, y_ctu);
+    pthread_mutex_unlock(sync->ref_mtx);
 }
 
 void
 ovdpb_report_decoded_frame(OVPicture *const pic)
 {
-    struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
+    struct PictureSynchro* sync = &pic->sync;
 
     atomic_store(pic->idx_function, 0);
 
-    pthread_mutex_lock(decoded_ctus->ref_mtx);
-    for(int i = 0; i < decoded_ctus->mask_h; i++){
-        memset(decoded_ctus->mask[i], 0xFF, decoded_ctus->mask_w * sizeof(int64_t));
+    pthread_mutex_lock(sync->ref_mtx);
+    for(int i = 0; i < sync->nb_ctu_h; i++){
+        memset(sync->decoded_ctus_map[i], 0xFF, sync->map_w * sizeof(int64_t));
     }
-    pthread_cond_broadcast(decoded_ctus->ref_cnd);
-    pthread_mutex_unlock(decoded_ctus->ref_mtx);
+    pthread_cond_broadcast(sync->ref_cnd);
+    pthread_mutex_unlock(sync->ref_mtx);
 }
 
 static void
 ovdpb_reset_decoded_ctus(OVPicture *const pic)
 {
-    struct PicDecodedCtusInfo* decoded_ctus = &pic->decoded_ctus;
-    pthread_mutex_lock(decoded_ctus->ref_mtx);
-    for(int i = 0; i < decoded_ctus->mask_h; i++){
-        memset(decoded_ctus->mask[i], 0, decoded_ctus->mask_w * sizeof(int64_t));
+    struct PictureSynchro* sync = &pic->sync;
+    pthread_mutex_lock(sync->ref_mtx);
+    for(int i = 0; i < sync->nb_ctu_h; i++){
+        memset(sync->decoded_ctus_map[i], 0, sync->map_w * sizeof(int64_t));
     }
-    pthread_mutex_unlock(decoded_ctus->ref_mtx);
+    pthread_mutex_unlock(sync->ref_mtx);
 
     atomic_store(pic->idx_function, 1);
 }

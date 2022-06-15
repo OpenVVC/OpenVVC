@@ -105,10 +105,10 @@ struct OVPicture
     atomic_uint ref_count;
     pthread_mutex_t pic_mtx;
 
-    struct PicDecodedCtusInfo {
-        uint64_t mask[256][5];
-        uint16_t mask_h;
-        uint16_t mask_w;
+    struct PictureSynchro {
+        uint64_t decoded_ctus_map[256][5];
+        uint16_t nb_ctu_h;
+        uint16_t map_w;
         pthread_mutex_t *ref_mtx;
         pthread_cond_t  *ref_cnd;
         struct {
@@ -116,8 +116,7 @@ struct OVPicture
             pthread_mutex_t ref_mtx;
             pthread_cond_t  ref_cnd;
         } internal;
-
-    } decoded_ctus;
+    } sync;
 
     atomic_uint *idx_function;
     FrameSynchroFunction ovdpb_frame_synchro[2];
