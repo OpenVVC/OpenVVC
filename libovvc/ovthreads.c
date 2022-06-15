@@ -239,27 +239,6 @@ ovthread_slice_sync_uninit(struct SliceSynchro *slice_sync)
 {   
     OVSliceDec * slicedec = slice_sync->owner;
 
-    pthread_mutex_lock(&slice_sync->gnrl_mtx);
-    if (slice_sync->active_state == DECODING_FINISHED) {
-        pthread_mutex_unlock(&slice_sync->gnrl_mtx);
-
-        OVPicture *slice_pic = slicedec->pic;
-
-        if (slice_pic && (slice_pic->flags & OV_IN_DECODING_PIC_FLAG)) {
-
-            ov_log(NULL, OVLOG_TRACE, "Remove DECODING_PIC_FLAG POC: %d\n", slice_pic->poc);
-
-            ovdpb_unref_pic(slice_pic, OV_IN_DECODING_PIC_FLAG);
-            ovdpb_unmark_ref_pic_lists(slicedec->slice_type, slicedec);
-
-            pthread_mutex_lock(&slice_sync->gnrl_mtx);
-            slice_sync->active_state = IDLE;
-            pthread_mutex_unlock(&slice_sync->gnrl_mtx);
-        }
-    } else {
-        pthread_mutex_unlock(&slice_sync->gnrl_mtx);
-    }
-
     pthread_mutex_destroy(&slice_sync->gnrl_mtx);
     pthread_cond_destroy(&slice_sync->gnrl_cnd);
 
