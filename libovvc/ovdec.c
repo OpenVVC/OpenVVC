@@ -206,41 +206,31 @@ ovdec_select_subdec(OVVCDec *const dec)
     OVSliceDec * slicedec;
     struct SliceSynchro* slice_sync;
     do {
-        int min_idx_available = nb_threads;
         pthread_mutex_lock(&th_main->io_mtx);
 
         for(int i = nb_threads - 1; i >= 0 ; i--) {
-            slicedec   = sldec_list[i];
-            slice_sync = &slicedec->slice_sync;
+            OVSliceDec *slicedec            = sldec_list[i];
+            struct SliceSynchro* slice_sync = &slicedec->slice_sync;
 
-            //Unmark ref pict lists of decoded pics
             pthread_mutex_lock(&slice_sync->gnrl_mtx);
             if (slice_sync->active_state != ACTIVE) {
                 if (slice_sync->active_state == DECODING_FINISHED) {
                     ov_log(NULL, OVLOG_ERROR, "Slice state is in decoding finished state at start. This should"
                            "not happen. Please report it.\n");
                 }
+
+                slice_sync->active_state = ACTIVE;
+
                 pthread_mutex_unlock(&slice_sync->gnrl_mtx);
-                min_idx_available = i;
-            } else {
-                pthread_mutex_unlock(&slice_sync->gnrl_mtx);
+                pthread_mutex_unlock(&th_main->io_mtx);
+
+                ov_log(NULL, OVLOG_TRACE, "Subdec %d selected\n", i);
+
+                return slicedec;
             }
-        }
-
-        if (min_idx_available < nb_threads) {
-            slicedec = sldec_list[min_idx_available];
-            slice_sync = &slicedec->slice_sync;
-
-            pthread_mutex_lock(&slice_sync->gnrl_mtx);
-            slice_sync->active_state = ACTIVE;
             pthread_mutex_unlock(&slice_sync->gnrl_mtx);
-
-            ov_log(NULL, OVLOG_TRACE, "Subdec %d selected\n", min_idx_available);
-
-            pthread_mutex_unlock(&th_main->io_mtx);
-            return slicedec;
         }
-        // ov_log(NULL, OVLOG_DEBUG,"main wait slice\n");
+
         pthread_cond_wait(&th_main->io_cnd, &th_main->io_mtx);
         pthread_mutex_unlock(&th_main->io_mtx);
 
