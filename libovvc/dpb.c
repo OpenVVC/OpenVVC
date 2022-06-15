@@ -1123,14 +1123,14 @@ ovdpb_init_decoded_ctus(OVPicture *const pic, const OVPS *const ps)
     decoded_ctus->mask_h = nb_ctb_pic_h;
     decoded_ctus->mask_w = (nb_ctb_pic_w >> SIZE_INT64) + 1;
 
-    pic->idx_function = &pic->internal.idx_function;
-    atomic_init(pic->idx_function, 1);
-
     pic->ovdpb_frame_synchro[0] = ovdpb_no_synchro;
     pic->ovdpb_frame_synchro[1] = ovdpb_synchro_ref_decoded_ctus;
 
-    decoded_ctus->ref_mtx = &pic->internal.ref_mtx;
-    decoded_ctus->ref_cnd = &pic->internal.ref_cnd;
+    pic->idx_function = &pic->decoded_ctus.internal.idx_function;
+    decoded_ctus->ref_mtx = &pic->decoded_ctus.internal.ref_mtx;
+    decoded_ctus->ref_cnd = &pic->decoded_ctus.internal.ref_cnd;
+
+    atomic_init(pic->idx_function, 1);
 }
 
 void

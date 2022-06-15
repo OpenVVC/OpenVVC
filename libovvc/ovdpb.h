@@ -105,13 +105,18 @@ struct OVPicture
     atomic_uint ref_count;
     pthread_mutex_t pic_mtx;
 
-    //Map of decoded CTUs
     struct PicDecodedCtusInfo {
         uint64_t mask[256][5];
         uint16_t mask_h;
         uint16_t mask_w;
         pthread_mutex_t *ref_mtx;
         pthread_cond_t  *ref_cnd;
+        struct {
+            atomic_uint idx_function;
+            pthread_mutex_t ref_mtx;
+            pthread_cond_t  ref_cnd;
+        } internal;
+
     } decoded_ctus;
 
     atomic_uint *idx_function;
@@ -123,13 +128,6 @@ struct OVPicture
     OVSEI *sei;
 
     struct ScalingInfo scale_info;
-    struct PictureInternal
-    {
-        atomic_uint idx_function;
-        pthread_mutex_t ref_mtx;
-        pthread_cond_t  ref_cnd;
-    } internal;
-
     int32_t poc;
 
     /* Coded Video Sequence Id to which this Picture is
