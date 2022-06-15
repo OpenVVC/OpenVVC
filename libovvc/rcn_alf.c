@@ -895,11 +895,11 @@ alf_filter_c(OVSample *const dst, const OVSample *const src,
     OVSample* dst1 = dst + dst_stride;
     int i;
 
-    const OVSample *lm_src0 = src;
-    const OVSample *lm_src1 = lm_src0 + src_stride;
-    const OVSample *lm_src2 = lm_src0 - src_stride;
-    const OVSample *lm_src3 = lm_src1 + src_stride;
-    const OVSample *lm_src4 = lm_src2 - src_stride;
+    const OVSample *ch_src0 = src;
+    const OVSample *ch_src1 = ch_src0 + src_stride;
+    const OVSample *ch_src2 = ch_src0 - src_stride;
+    const OVSample *ch_src3 = ch_src1 + src_stride;
+    const OVSample *ch_src4 = ch_src2 - src_stride;
 
 
     for (i = 0; i < blk_dst.height; i += blk_h) {
@@ -908,11 +908,11 @@ alf_filter_c(OVSample *const dst, const OVSample *const src,
             int k;
             for (k = 0; k < blk_h; k++) {
                 int l;
-                const OVSample *src_0 = lm_src0 + j + k * src_stride;
-                const OVSample *src_1 = lm_src1 + j + k * src_stride;
-                const OVSample *src_2 = lm_src2 + j + k * src_stride;
-                const OVSample *src_3 = lm_src3 + j + k * src_stride;
-                const OVSample *src_4 = lm_src4 + j + k * src_stride;
+                const OVSample *src_0 = ch_src0 + j + k * src_stride;
+                const OVSample *src_1 = ch_src1 + j + k * src_stride;
+                const OVSample *src_2 = ch_src2 + j + k * src_stride;
+                const OVSample *src_3 = ch_src3 + j + k * src_stride;
+                const OVSample *src_4 = ch_src4 + j + k * src_stride;
 
 
                 dst1 = dst0 + j + k * dst_stride;
@@ -945,11 +945,11 @@ alf_filter_c(OVSample *const dst, const OVSample *const src,
         dst0 += dst_blk_stride;
         dst1 += dst_blk_stride;
 
-        lm_src0 += src_blk_stride;
-        lm_src1 += src_blk_stride;
-        lm_src2 += src_blk_stride;
-        lm_src3 += src_blk_stride;
-        lm_src4 += src_blk_stride;
+        ch_src0 += src_blk_stride;
+        ch_src1 += src_blk_stride;
+        ch_src2 += src_blk_stride;
+        ch_src3 += src_blk_stride;
+        ch_src4 += src_blk_stride;
 
     }
 }
@@ -974,13 +974,11 @@ alf_filter_cVB(OVSample *const dst, const OVSample *const src,
     OVSample* dst1 = dst + dst_stride;
     int i;
 
-    const OVSample *lm_src0 = src;
-    const OVSample *lm_src1 = lm_src0 + src_stride;
-    const OVSample *lm_src2 = lm_src0 - src_stride;
-    const OVSample *lm_src3 = lm_src1 + src_stride;
-    const OVSample *lm_src4 = lm_src2 - src_stride;
-    const OVSample *lm_src5 = lm_src3 + src_stride;
-    const OVSample *lm_src6 = lm_src4 - src_stride;
+    const OVSample *ch_src0 = src;
+    const OVSample *ch_src1 = ch_src0 + src_stride;
+    const OVSample *ch_src2 = ch_src0 - src_stride;
+    const OVSample *ch_src3 = ch_src1 + src_stride;
+    const OVSample *ch_src4 = ch_src2 - src_stride;
 
     for (i = 0; i < blk_dst.height; i += blk_h) {
         int j;
@@ -988,13 +986,11 @@ alf_filter_cVB(OVSample *const dst, const OVSample *const src,
             int k;
             for (k = 0; k < blk_h; k++) {
                 int l;
-                const OVSample *src_0 = lm_src0 + j + k * src_stride;
-                const OVSample *src_1 = lm_src1 + j + k * src_stride;
-                const OVSample *src_2 = lm_src2 + j + k * src_stride;
-                const OVSample *src_3 = lm_src3 + j + k * src_stride;
-                const OVSample *src_4 = lm_src4 + j + k * src_stride;
-                const OVSample *src_5 = lm_src5 + j + k * src_stride;
-                const OVSample *src_6 = lm_src6 + j + k * src_stride;
+                const OVSample *src_0 = ch_src0 + j + k * src_stride;
+                const OVSample *src_1 = ch_src1 + j + k * src_stride;
+                const OVSample *src_2 = ch_src2 + j + k * src_stride;
+                const OVSample *src_3 = ch_src3 + j + k * src_stride;
+                const OVSample *src_4 = ch_src4 + j + k * src_stride;
 
                 dst1 = dst0 + j + k * dst_stride;
 
@@ -1002,19 +998,15 @@ alf_filter_cVB(OVSample *const dst, const OVSample *const src,
                 if (yVb < virbnd_pos && (yVb >= virbnd_pos - 2)) {
                     src_1 = (yVb == virbnd_pos - 1) ? src_0 : src_1;
                     src_3 = (yVb >= virbnd_pos - 2) ? src_1 : src_3;
-                    src_5 = (yVb >= virbnd_pos - 3) ? src_3 : src_5;
 
                     src_2 = (yVb == virbnd_pos - 1) ? src_0 : src_2;
                     src_4 = (yVb >= virbnd_pos - 2) ? src_2 : src_4;
-                    src_6 = (yVb >= virbnd_pos - 3) ? src_4 : src_6;
                 } else if (yVb >= virbnd_pos && (yVb <= virbnd_pos + 1)) {
                     src_2 = (yVb == virbnd_pos    ) ? src_0 : src_2;
                     src_4 = (yVb <= virbnd_pos + 1) ? src_2 : src_4;
-                    src_6 = (yVb <= virbnd_pos + 2) ? src_4 : src_6;
 
                     src_1 = (yVb == virbnd_pos    ) ? src_0 : src_1;
                     src_3 = (yVb <= virbnd_pos + 1) ? src_1 : src_3;
-                    src_5 = (yVb <= virbnd_pos + 2) ? src_3 : src_5;
                 }
 
                 uint8_t isNearVBabove = yVb < virbnd_pos && (yVb >= virbnd_pos - 1);
@@ -1044,8 +1036,6 @@ alf_filter_cVB(OVSample *const dst, const OVSample *const src,
                     src_2++;
                     src_3++;
                     src_4++;
-                    src_5++;
-                    src_6++;
                 }
             }
         }
@@ -1053,13 +1043,11 @@ alf_filter_cVB(OVSample *const dst, const OVSample *const src,
         dst0 += dst_blk_stride;
         dst1 += dst_blk_stride;
 
-        lm_src0 += src_blk_stride;
-        lm_src1 += src_blk_stride;
-        lm_src2 += src_blk_stride;
-        lm_src3 += src_blk_stride;
-        lm_src4 += src_blk_stride;
-        lm_src5 += src_blk_stride;
-        lm_src6 += src_blk_stride;
+        ch_src0 += src_blk_stride;
+        ch_src1 += src_blk_stride;
+        ch_src2 += src_blk_stride;
+        ch_src3 += src_blk_stride;
+        ch_src4 += src_blk_stride;
     }
 }
 
