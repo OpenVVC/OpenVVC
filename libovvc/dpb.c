@@ -1119,14 +1119,11 @@ ovdpb_init_decoded_ctus(OVPicture *const pic, const OVPS *const ps)
     sync->nb_ctu_h = nb_ctb_pic_h;
     sync->map_w = (nb_ctb_pic_w >> SIZE_INT64) + 1;
 
-    pic->ovdpb_frame_synchro[0] = ovdpb_no_synchro;
-    pic->ovdpb_frame_synchro[1] = ovdpb_synchro_ref_decoded_ctus;
-
-    pic->idx_function = &sync->internal.idx_function;
+    sync->func = &sync->internal.sync_function;
     sync->ref_mtx = &sync->internal.ref_mtx;
     sync->ref_cnd = &sync->internal.ref_cnd;
 
-    atomic_init(pic->idx_function, 1);
+    atomic_init(sync->func, (uintptr_t)&ovdpb_synchro_ref_decoded_ctus);
 }
 
 void
@@ -1154,7 +1151,7 @@ ovdpb_report_decoded_frame(OVPicture *const pic)
 {
     struct PictureSynchro* sync = &pic->sync;
 
-    atomic_store(pic->idx_function, 0);
+    atomic_store(sync->func, (uintptr_t) &ovdpb_no_synchro);
 
     pthread_mutex_lock(sync->ref_mtx);
     for(int i = 0; i < sync->nb_ctu_h; i++){
@@ -1174,6 +1171,6 @@ ovdpb_reset_decoded_ctus(OVPicture *const pic)
     }
     pthread_mutex_unlock(sync->ref_mtx);
 
-    atomic_store(pic->idx_function, 1);
+    atomic_store(sync->func, (uintptr_t)&ovdpb_synchro_ref_decoded_ctus);
 }
 

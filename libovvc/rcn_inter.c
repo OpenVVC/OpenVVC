@@ -144,8 +144,9 @@ rcn_inter_synchronization(const OVPicture *ref_pic, int ref_pos_x, int ref_pos_y
     int tl_ctu_x = ov_clip((ref_pos_x - QPEL_EXTRA_BEFORE) >> log2_ctu_s, 0, nb_ctb_pic_w - 1);
     int br_ctu_y = ov_clip((ref_pos_y + QPEL_EXTRA_AFTER + pu_h) >> log2_ctu_s, 0, nb_ctb_pic_h - 1);
     int br_ctu_x = ov_clip((ref_pos_x + QPEL_EXTRA_AFTER + pu_w) >> log2_ctu_s, 0, nb_ctb_pic_w - 1);
-    uint16_t idx = atomic_load(ref_pic->idx_function);
-    ref_pic->ovdpb_frame_synchro[idx](ref_pic, tl_ctu_x, tl_ctu_y, br_ctu_x, br_ctu_y);
+    FrameSynchroFunction sync_func = (FrameSynchroFunction)atomic_load(ref_pic->sync.func);
+
+    sync_func(ref_pic, tl_ctu_x, tl_ctu_y, br_ctu_x, br_ctu_y);
 }
 
 static void

@@ -111,15 +111,13 @@ struct OVPicture
         uint16_t map_w;
         pthread_mutex_t *ref_mtx;
         pthread_cond_t  *ref_cnd;
+        atomic_uintptr_t *func;
         struct {
-            atomic_uint idx_function;
+            atomic_uintptr_t sync_function;
             pthread_mutex_t ref_mtx;
             pthread_cond_t  ref_cnd;
         } internal;
     } sync;
-
-    atomic_uint *idx_function;
-    FrameSynchroFunction ovdpb_frame_synchro[2];
 
     struct MVPlane mv_plane0;
     struct MVPlane mv_plane1;
