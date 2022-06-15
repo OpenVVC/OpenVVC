@@ -210,29 +210,16 @@ ovdec_select_subdec(OVVCDec *const dec)
         pthread_mutex_lock(&th_main->io_mtx);
 
         for(int i = nb_threads - 1; i >= 0 ; i--) {
-            slicedec = sldec_list[i];
+            slicedec   = sldec_list[i];
             slice_sync = &slicedec->slice_sync;
 
             //Unmark ref pict lists of decoded pics
             pthread_mutex_lock(&slice_sync->gnrl_mtx);
-            if (slice_sync->active_state == DECODING_FINISHED) {
-                pthread_mutex_unlock(&slice_sync->gnrl_mtx);
-                min_idx_available = i;
-                OVPicture *slice_pic = slicedec->pic;
-                if (slice_pic && (slice_pic->flags & OV_IN_DECODING_PIC_FLAG)) {
-                    ov_log(NULL, OVLOG_TRACE, "Subdec %d Remove DECODING_PIC_FLAG POC: %d\n", min_idx_available, slice_pic->poc);
-                    ovdpb_unref_pic(slice_pic, OV_IN_DECODING_PIC_FLAG);
-                    ovdpb_unmark_ref_pic_lists(slicedec->slice_type, slicedec);
-                    slicedec->nb_refs0 = 0;
-                    slicedec->nb_refs1 = 0;
-                    slicedec->nb_active_refs0 = 0;
-                    slicedec->nb_active_refs1 = 0;
-
-                    pthread_mutex_lock(&slice_sync->gnrl_mtx);
-                    slice_sync->active_state = IDLE;
-                    pthread_mutex_unlock(&slice_sync->gnrl_mtx);
+            if (slice_sync->active_state != ACTIVE) {
+                if (slice_sync->active_state == DECODING_FINISHED) {
+                    ov_log(NULL, OVLOG_ERROR, "Slice state is in decoding finished state at start. This should"
+                           "not happen. Please report it.\n");
                 }
-            } else if (slice_sync->active_state == IDLE) {
                 pthread_mutex_unlock(&slice_sync->gnrl_mtx);
                 min_idx_available = i;
             } else {
