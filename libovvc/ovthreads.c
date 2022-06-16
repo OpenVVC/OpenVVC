@@ -87,7 +87,7 @@ entry_thread_main_function(void *opaque)
     struct MainThread* main_thread = entry_th->main_thread;
 
     pthread_mutex_lock(&entry_th->entry_mtx);
-    entry_th->state = IDLE;
+    entry_th->state = ACTIVE;
     pthread_mutex_unlock(&entry_th->entry_mtx);
 
     while (!entry_th->kill){
@@ -109,7 +109,6 @@ entry_thread_main_function(void *opaque)
         if (entry_job) {
             slicedec_update_entry_decoder(entry_job->slice_sync->owner, entry_th->ctudec);
             pthread_mutex_lock(&entry_th->entry_mtx);
-            entry_th->state = ACTIVE;
             pthread_mutex_unlock(&entry_th->entry_mtx);
 
             uint8_t is_last = ovthread_decode_entry(entry_job, entry_th);
@@ -123,14 +122,12 @@ entry_thread_main_function(void *opaque)
             pthread_mutex_lock(&entry_th->entry_mtx);
             entry_th->state = IDLE;
 
-            // ov_log(NULL, OVLOG_DEBUG,"entry sign main\n");
             pthread_cond_signal(&main_thread->entry_threads_cnd);
             pthread_mutex_unlock(&main_thread->entry_threads_mtx);
 
-            // ov_log(NULL, OVLOG_DEBUG,"entry wait main\n");
             pthread_cond_wait(&entry_th->entry_cnd, &entry_th->entry_mtx);
+            entry_th->state = ACTIVE;
             pthread_mutex_unlock(&entry_th->entry_mtx);
-
         }
     }
     return NULL;
