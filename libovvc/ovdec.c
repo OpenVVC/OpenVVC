@@ -161,39 +161,6 @@ init_vcl_decoder(OVVCDec *const dec, OVSliceDec *sldec, const OVNVCLCtx *const n
 }
 
 static void
-ovdec_wait_available_entry_thread(OVVCDec *const dec)
-{
-    #if USE_THREADS
-    struct MainThread* th_main = &dec->main_thread;
-    struct EntryThread *entry_th_list = th_main->entry_threads_list;
-    struct EntryThread *entry_th;
-    int nb_threads = dec->nb_frame_th;
-    /* The main thread checks if at least an entry thread
-    *  is available.
-    */
-    pthread_mutex_lock(&th_main->entry_threads_mtx);
-    do {
-        for(int i = 0; i < nb_threads ; i++) {
-            entry_th = &entry_th_list[i];
-            pthread_mutex_lock(&entry_th->entry_mtx);
-            if (entry_th->state == IDLE) {
-                pthread_mutex_unlock(&entry_th->entry_mtx);
-                pthread_mutex_unlock(&th_main->entry_threads_mtx);
-                return;
-            }
-            pthread_mutex_unlock(&entry_th->entry_mtx);
-        }
-
-        pthread_cond_wait(&th_main->entry_threads_cnd, &th_main->entry_threads_mtx);
-
-    } while (!th_main->kill);
-    pthread_mutex_unlock(&th_main->entry_threads_mtx);
-
-    #endif
-    return;
-}
-
-static void
 ovdec_wait_entry_thread(OVVCDec *const dec, int i)
 {
     #if USE_THREADS
@@ -413,9 +380,6 @@ decode_nal_unit(OVVCDec *const vvcdec, OVNALUnit * nalu)
         } else {
             /* Select the first available subdecoder, or wait until one is available */
             OVSliceDec *sldec = ovdec_select_subdec(vvcdec);
-
-            /* Wait until at least one entry thread is available */
-            ovdec_wait_available_entry_thread(vvcdec);
 
             uint32_t nb_sh_bytes = nvcl_nb_bytes_read(&rdr);
 
@@ -701,7 +665,6 @@ ovdec_uninit_subdec_list(OVVCDec *vvcdec)
             for (int i = 0; i < vvcdec->nb_frame_th; ++i){
                 sldec = vvcdec->subdec_list[i];
                 slicedec_uninit(&sldec);
-                ov_log(NULL, OVLOG_INFO, "Main joined thread: %d\n", i);
             }
             ov_freep(&vvcdec->subdec_list);
 
