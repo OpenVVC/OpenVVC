@@ -99,6 +99,7 @@ entry_thread_main_function(void *opaque)
 
         struct EntryJob *entry_job = NULL;
         struct EntryJob *entry_job2 = fifo_pop_entry(fifo);
+        pthread_cond_signal(&main_thread->entry_threads_cnd);
         if (entry_job2) {
            entry_jobtmp = *entry_job2;
            entry_job = &entry_jobtmp;
@@ -176,15 +177,26 @@ fifo_push_entry(struct EntriesFIFO *fifo,
 {
     ptrdiff_t position = fifo->last - fifo->entries;
     ptrdiff_t next_pos = (position + 1) % fifo->size;
-    if (&fifo->entries[next_pos] != fifo->first) {
-        struct EntryJob *entry_job = &fifo->entries[position];
+    do {
+        if (&fifo->entries[next_pos] != fifo->first) {
+            struct EntryJob *entry_job = &fifo->entries[position];
 
-        entry_job->entry_idx  = entry_idx;
-        entry_job->slice_sync = slice_sync;
+            entry_job->entry_idx  = entry_idx;
+            entry_job->slice_sync = slice_sync;
 
-        fifo->last = &fifo->entries[next_pos];
-    }
-    return 0;
+            fifo->last = &fifo->entries[next_pos];
+            return 0;
+        } else {
+            struct EntryThread *entry_threads_list = slice_sync->main_thread->entry_threads_list;
+            for (int i = 0; i < slice_sync->main_thread->nb_entry_th; ++i){
+                struct EntryThread *th_entry = &entry_threads_list[i];
+                pthread_mutex_lock(&th_entry->entry_mtx);
+                pthread_cond_signal(&th_entry->entry_cnd);
+                pthread_mutex_unlock(&th_entry->entry_mtx);
+            }
+            pthread_cond_wait(&slice_sync->main_thread->entry_threads_cnd, &slice_sync->main_thread->io_mtx);
+        }
+    }while (1);
 }
 
 /*
