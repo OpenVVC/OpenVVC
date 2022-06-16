@@ -193,6 +193,36 @@ ovdec_wait_available_entry_thread(OVVCDec *const dec)
     return;
 }
 
+static void
+ovdec_wait_entry_thread(OVVCDec *const dec, int i)
+{
+    #if USE_THREADS
+    struct MainThread* th_main = &dec->main_thread;
+    struct EntryThread *entry_th_list = th_main->entry_threads_list;
+    struct EntryThread *entry_th;
+    int nb_threads = dec->nb_frame_th;
+    /* The main thread checks if at least an entry thread
+    *  is available.
+    */
+    do {
+
+        entry_th = &entry_th_list[i];
+        pthread_mutex_lock(&entry_th->entry_mtx);
+        if (entry_th->state == IDLE) {
+            pthread_mutex_unlock(&entry_th->entry_mtx);
+            pthread_mutex_unlock(&th_main->entry_threads_mtx);
+            return;
+        }
+        pthread_mutex_unlock(&entry_th->entry_mtx);
+
+        pthread_cond_wait(&th_main->entry_threads_cnd, &th_main->entry_threads_mtx);
+
+    } while (!th_main->kill);
+
+    #endif
+    return;
+}
+
 OVSliceDec *
 ovdec_select_subdec(OVVCDec *const dec)
 {
@@ -290,6 +320,8 @@ ovdec_uninit_entry_threads(OVVCDec *vvcdec)
 
         /* Signal and join entry thread.
         */
+        ovdec_wait_entry_thread(vvcdec, i);
+
         pthread_mutex_lock(&th_entry->entry_mtx);
         th_entry->kill = 1;
         pthread_cond_signal(&th_entry->entry_cnd);
