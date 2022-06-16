@@ -99,12 +99,12 @@ entry_thread_main_function(void *opaque)
 
         struct EntryJob *entry_job = NULL;
         struct EntryJob *entry_job2 = fifo_pop_entry(fifo);
-        pthread_cond_signal(&main_thread->entry_threads_cnd);
         if (entry_job2) {
            entry_jobtmp = *entry_job2;
            entry_job = &entry_jobtmp;
         }
 
+        pthread_cond_signal(&main_thread->entry_threads_cnd);
         pthread_mutex_unlock(&main_thread->io_mtx);
 
         if (entry_job) {
