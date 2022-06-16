@@ -214,7 +214,7 @@ ovdec_wait_entry_thread(OVVCDec *const dec, int i)
 
         pthread_cond_wait(&th_main->entry_threads_cnd, &th_main->entry_threads_mtx);
 
-    } while (!th_main->kill);
+    } while (1);
 
     #endif
     return;
