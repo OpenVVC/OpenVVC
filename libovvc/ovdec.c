@@ -528,6 +528,18 @@ ovdec_receive_picture(OVVCDec *dec, OVFrame **frame_p)
     return ret;
 }
 
+void
+ovdec_wait_entry_threads(OVVCDec *vvcdec)
+{
+    struct MainThread *th_main = &vvcdec->main_thread;
+    int i;
+
+    ovdec_wait_entries(vvcdec);
+
+    for (i = 0; i < vvcdec->nb_entry_th; ++i){
+        ovdec_wait_entry_thread(vvcdec, i);
+    }
+}
 int
 ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
 {
@@ -535,11 +547,7 @@ ovdec_drain_picture(OVVCDec *dec, OVFrame **frame_p)
     OVDPB *dpb = dec->dpb;
     int ret;
 
-    /* FIXME this is to ensure at least one subdecoder has finished
-     * decoding its frame so we do not return no frame when some
-     * subdecoders are still running
-     */
-    ovdec_uninit_subdec_list(dec);
+    ovdec_wait_entry_threads(dec);
 
     if (!dpb) {
         ov_log(dec, OVLOG_TRACE, "No DPB on output request.\n");
