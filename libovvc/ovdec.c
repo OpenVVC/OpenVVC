@@ -201,9 +201,6 @@ ovdec_wait_entry_thread(OVVCDec *const dec, int i)
     struct EntryThread *entry_th_list = th_main->entry_threads_list;
     struct EntryThread *entry_th;
     int nb_threads = dec->nb_frame_th;
-    /* The main thread checks if at least an entry thread
-    *  is available.
-    */
     do {
 
         entry_th = &entry_th_list[i];
