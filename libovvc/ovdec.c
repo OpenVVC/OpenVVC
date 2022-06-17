@@ -282,8 +282,7 @@ ovdec_uninit_entry_threads(OVVCDec *vvcdec)
     for (i = 0; i < vvcdec->nb_entry_th; ++i){
         struct EntryThread *th_entry = &entry_threads_list[i];
 
-        /* Signal and join entry thread.
-        */
+        /* Signal and join entry thread.  */
         ovdec_wait_entry_thread(vvcdec, i);
 
         pthread_mutex_lock(&th_entry->entry_mtx);
@@ -305,6 +304,7 @@ ovdec_init_entry_threads(OVVCDec *vvcdec, int nb_entry_th)
     vvcdec->main_thread.entry_threads_list = ov_mallocz(nb_entry_th*sizeof(struct EntryThread));
     for (i = 0; i < nb_entry_th; ++i){
         struct EntryThread *entry_th = &vvcdec->main_thread.entry_threads_list[i];
+
         entry_th->main_thread = &vvcdec->main_thread;
 
         ret = ovthread_init_entry_thread(entry_th);

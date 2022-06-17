@@ -217,7 +217,12 @@ ovdpb_release_pic(OVDPB *dpb, OVPicture *pic)
     pthread_mutex_lock(&pic->pic_mtx);
     if (!pic->flags && !ref_count) {
         /* Release TMVP  MV maps */
+        ptrdiff_t idx = pic - dpb->pictures;
+
         dpbpriv_release_pic(pic);
+
+        dpb->status &= ~((uint64_t)1 << idx);
+
     }
     pthread_mutex_unlock(&pic->pic_mtx);
 }
@@ -273,6 +278,30 @@ find_min_cvs_id(const OVDPB *const dpb)
     return min_cvs_id;
 }
 
+static inline uint8_t
+nb_used_slots(uint64_t v)
+{
+    uint8_t c;
+    v = v - ((v >> 1) & (uint64_t)0x5555555555555555);
+    v = (v & (uint64_t)0x3333333333333333) + ((v >> 2) & (uint64_t)0x3333333333333333);
+    v = (v + (v >> 4)) & (uint64_t)0xF0F0F0F0F0F0F0F;
+    c = (uint64_t)(v * ((uint64_t)0x101010101010101) >> 56);
+    return c;
+}
+
+static inline uint8_t
+next_empty_slot(uint64_t status)
+{
+    return ov_ctz64(status + 1);
+}
+
+static inline uint8_t
+next_used_slot(uint64_t status)
+{
+    return ov_ctz64((~status) + 1);
+}
+
+
 /* Remove reference flags on all picture */
 static void
 ovdpb_clear_refs(OVDPB *dpb)
@@ -280,33 +309,27 @@ ovdpb_clear_refs(OVDPB *dpb)
     //TODO: loop untill min_idx == nb_dpb_pic or nb_used_pic > dpb->max_nb_dpb_pic
     ov_log(NULL, OVLOG_DEBUG, "Release reference pictures\n");
     int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
-    int nb_used_pic = 0;
+    int nb_used_pic = nb_used_slots(dpb->status);
     int min_cvs_id = find_min_cvs_id(dpb);
     int i;
-
-    /* Count pictures in current output target Coded Video Sequence
-     */
-    for (i = 0; i < nb_dpb_pic; i++) {
-        OVPicture *pic = &dpb->pictures[i];
-        if (pic->frame && pic->frame->data[0]) {
-            nb_used_pic++;
-        }
-    }
 
     while (nb_used_pic >= dpb->max_nb_dpb_pic) {
         int min_poc = INT_MAX;
         int min_idx = nb_dpb_pic;
-        /* Determine the min POC among those pic
-         */
-        for (i = 0; i < nb_dpb_pic; i++) {
-            OVPicture *pic = &dpb->pictures[i];
+        /* Determine the min POC among those pic */
+        uint64_t status = dpb->status;
+        #if 0
+        for (i = 0; i < nb_used_pic; i++) {
+        #endif
+        while (status) {
+            uint8_t idx = next_used_slot(status);
+            status &= ~((uint64_t)1 << idx);
+            OVPicture *pic = &dpb->pictures[idx];
             uint16_t ref_count = atomic_load(&pic->ref_count);
-            // is_output_cvs = pic->cvs_id == output_cvs_id;
-            // if (is_output_cvs && pic->frame && pic->frame->data[0] && !ref_count) {
             if (pic->frame && pic->frame->data[0] && !ref_count && !pic->flags) {
                 if (pic->poc < min_poc && pic->cvs_id == min_cvs_id) {
                     min_poc = pic->poc;
-                    min_idx = i;
+                    min_idx = idx;
                 }
             }
         }
@@ -332,7 +355,6 @@ ovdpb_flush_dpb(OVDPB *dpb)
 {
     int i;
     const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
-    // const uint8_t flags = ~0;
 
     for (i = 0; i < nb_dpb_pic; i++) {
         dpb->pictures[i].flags = 0; 
@@ -345,26 +367,23 @@ ovdpb_flush_dpb(OVDPB *dpb)
 static OVPicture *
 alloc_frame(OVDPB *dpb, int poc)
 {
-    int i, ret;
-    const int nb_dpb_pic = sizeof(dpb->pictures) / sizeof(*dpb->pictures);
-    for (i = 0; i < nb_dpb_pic; i++) {
-        OVPicture *pic = &dpb->pictures[i];
 
-        /* FIXME we could avoid checking for data in picture
-         * if we are sure every unreference frame is set to NULL
-         */
-        if (pic->frame && pic->frame->data[0]) {
-            continue;
-        }
+    if (dpb->status != -1) {
+        uint8_t idx = next_empty_slot(dpb->status);
 
-        ret = dpbpriv_request_frame(&dpb->internal, &pic->frame);
-        
+        OVPicture *pic = &dpb->pictures[idx];
+
+        int ret = dpbpriv_request_frame(&dpb->internal, &pic->frame);
+
         if (ret < 0) {
             ov_log(NULL, OVLOG_ERROR, "Error while requesting picture from DPB\n");
             return NULL;
         }
 
+        dpb->status |= (uint64_t)1 << idx;
+
         pic->flags = 0;
+
         atomic_init(&pic->ref_count, 0);
 
         ov_log(NULL, OVLOG_DEBUG, "Attached frame %p to Picture with POC %d\n", pic->frame, poc);
@@ -372,6 +391,7 @@ alloc_frame(OVDPB *dpb, int poc)
         return pic;
     }
 
+full:
     ov_log(NULL, OVLOG_ERROR, "DPB full\n");
 
     return NULL;

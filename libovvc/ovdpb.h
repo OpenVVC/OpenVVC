@@ -161,6 +161,9 @@ struct DPB
     */
    uint8_t state;
 
+   /* Map of available/taken DPB slots */
+   int64_t status;
+
    struct DPBInternal internal;
    uint64_t nb_units_in_ticks;
    uint64_t pts;
