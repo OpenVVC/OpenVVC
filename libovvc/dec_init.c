@@ -642,15 +642,15 @@ decinit_update_params(struct OVPS *const ps, const OVNVCLCtx *const nvcl_ctx)
 {
     /* FIXME assert nvcl_ctx params sets are not NULL*/
     int ret;
-    OVSH * sh = (OVSH *)nvcl_ctx->sh->data;
-    OVPH * ph = (OVPH *)nvcl_ctx->ph->data;
-    OVPPS * pps = retrieve_pps(nvcl_ctx, ph);
-    OVSPS * sps = retrieve_sps(nvcl_ctx, pps);
+    OVSH *sh = (OVSH *)nvcl_ctx->sh->data;
+    OVPH *ph = (OVPH *)nvcl_ctx->ph->data;
+    OVPPS *pps = retrieve_pps(nvcl_ctx, ph);
+    OVSPS *sps = retrieve_sps(nvcl_ctx, pps);
 
     ps->sei = nvcl_ctx->sei;
 
     if (!sh || !ph || !pps || !sps) {
-        ov_log(NULL, 3, "Missing Parameter sets for dec initialisation\n");
+        ov_log(NULL, OVLOG_ERROR, "Missing Parameter sets for dec initialisation\n");
         return OVVC_EINDATA;
     }
 
