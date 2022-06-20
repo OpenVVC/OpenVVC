@@ -68,15 +68,15 @@
 
 
 void
-vvc_add_residual_8_4_10_neon(uint16_t *dst, ptrdiff_t dst_stride,
-                             const int16_t *src, ptrdiff_t src_stride);
+vvc_add_residual_8_4_10_neon(const int16_t *const src, uint16_t *const dst, int16_t dst_stride,
+                             int log2_tb_w, int log2_tb_h, int scale);
 
 
 
 void
-rcn_init_ict_functions_neon(struct RCNFunctions *rcn_func, uint8_t type)
+rcn_init_ict_functions_neon(struct RCNFunctions *rcn_func)
 {
- rcn_func->ict.add[3] = &vvc_add_residual_8_4_10_neon;
+ //rcn_func->ict.add[3] = &vvc_add_residual_8_4_10_neon;
  /*rcn_func->ict.add[4] = &vvc_add_residual_16_2_10_sse;
  rcn_func->ict.add[5] = &vvc_add_residual_32_1_10_sse;
  rcn_func->ict.add[6] = &vvc_add_residual_64_1_10_sse;

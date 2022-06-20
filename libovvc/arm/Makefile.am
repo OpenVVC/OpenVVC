@@ -17,8 +17,7 @@ libarmoptim_la_SOURCES +=	rcn_transform_sse.c                   \
 							rcn_sao_sse.c                         \
 							rcn_dmvr_sse.c                        \
 							rcn_prof_bdof_sse.c                   \
-							rcn_intra_angular_sse.c               \
-							rcn_df_sse.c                
+							rcn_intra_angular_sse.c
 if !HAVE_EXCLUDE_CLANG
 libarmoptim_la_SOURCES +=	rcn_dequant_sse.c
 endif
