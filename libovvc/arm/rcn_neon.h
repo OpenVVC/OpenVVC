@@ -58,7 +58,7 @@ void rcn_init_dmvr_functions_sse(struct RCNFunctions *const rcn_funcs);
 void rcn_init_prof_functions_sse(struct RCNFunctions *const rcn_funcs);
 void rcn_init_bdof_functions_sse(struct RCNFunctions *const rcn_funcs);
 void rcn_init_ciip_functions_sse(struct RCNFunctions *const rcn_funcs);
-void rcn_init_df_functions_sse(struct RCNFunctions *const rcn_funcs);
+//void rcn_init_df_functions_sse(struct RCNFunctions *const rcn_funcs);
 void rcn_init_intra_angular_functions_10_sse(struct RCNFunctions *rcn_func);
 void rcn_init_dequant_sse(struct RCNFunctions *rcn_funcs);
 
