@@ -8,6 +8,7 @@ Description: Open Source VVC Decoder Library
 Version: @VERSION@
 Requires:
 Conflicts:
-Libs: -L${libdir} -lovvc
-Libs.private: @LIBS@
+Libs: @SLHDR_LIBS@ -L${libdir} -lovvc
+Libs.private:
 Cflags: -I${includedir}
+
