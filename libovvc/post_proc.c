@@ -42,7 +42,7 @@
 #include "slicedec.h"
 #include "post_proc.h"
 
-#if ENABLE_SLHDR
+#if HAVE_SLHDR
 #include "pp_wrapper_slhdr.h"
 #endif
 
@@ -58,7 +58,7 @@ pp_init_functions(const OVSEI* sei, struct PostProcFunctions *const pp_funcs)
             pp_funcs->pp_film_grain = fg_grain_no_filter;
         }
 
-#if ENABLE_SLHDR
+#if HAVE_SLHDR
         if (sei->sei_slhdr) {
             pp_funcs->pp_sdr_to_hdr = pp_sdr_to_hdr;
             pp_funcs->pp_apply_flag = 1;
@@ -107,7 +107,7 @@ pp_process_frame(const OVSEI* sei, OVFrame **frame_p)
         pp_funcs.pp_film_grain(dstComp, srcComp, sei->sei_fg, 
                                frame->width, frame->height, frame->poc, 0, enable_deblock);
 
-#if ENABLE_SLHDR
+#if HAVE_SLHDR
         if(sei->sei_slhdr){
             pp_funcs.pp_sdr_to_hdr(sei->sei_slhdr->slhdr_context, srcComp, dstComp, 
                                    sei->sei_slhdr->payload_array, frame->width, frame->height);

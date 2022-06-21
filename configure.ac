@@ -34,20 +34,10 @@ LIBS="$PTHREAD_LIBS $LIBS"
 CC="$PTHREAD_CC"
 
 # --disable-slhdr
-AC_ARG_ENABLE([slhdr], [AS_HELP_STRING([--disable-slhdr], [disable slhdr [no]])], [], [enable_slhdr="yes"])
 
 #Check for SLHDR lib
-if test "x$enable_slhdr" = "xyes"
-then
-PKG_CHECK_MODULES([SLHDR], [slhdr_cwrap],[
-        AC_DEFINE([ENABLE_SLHDR],[1], [Define the use of SLHDR])
-        CFLAGS="$SLHDR_CFLAGS $CFLAGS"
-        LIBS="$SLHDR_LIBS $LIBS"
-],
-[
-        AC_MSG_WARN([SLHDR library not found. SLHDR will be deactivated.])
-])
-fi
+
+PKG_HAVE_DEFINE_WITH_MODULES([SLHDR], [slhdr_cwrap], [ Use SL HDR ], [yes])
 
 # --enable-werror
 AC_ARG_ENABLE([werror], [AS_HELP_STRING([--enable-werror], [treat warnings as errors [no]])],

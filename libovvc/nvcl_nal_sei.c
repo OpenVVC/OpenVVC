@@ -40,6 +40,9 @@
 #include "nvcl.h"
 #include "nvcl_utils.h"
 #include "nvcl_structures.h"
+#if HAVE_SLHDR
+#include "pp_wrapper_slhdr.h"
+#endif
 
 enum SEIPayloadtype
 {
@@ -92,7 +95,7 @@ copy_sei_params(OVSEI **dst_p, OVSEI *src)
             *(dst->sei_fg) =  *(src->sei_fg);
         }
 
-#if ENABLE_SLHDR
+#if HAVE_SLHDR
         if(src->sei_slhdr){
             if(!dst->sei_slhdr){
                 dst->sei_slhdr = ov_mallocz(sizeof(struct OVSEISLHDR));
@@ -115,7 +118,7 @@ nvcl_free_sei_params(OVSEI *sei)
         if(sei->sei_fg)
             ov_freep(&sei->sei_fg);
 
-#if ENABLE_SLHDR
+#if HAVE_SLHDR
         if(sei->sei_slhdr){
             pp_uninit_slhdr_lib(sei->sei_slhdr->slhdr_context);
             ov_freep(&sei->sei_slhdr);
@@ -197,7 +200,7 @@ nvcl_film_grain_read(OVNVCLReader *const rdr, struct OVSEIFGrain *const fg, OVNV
     }
 }
 
-#if ENABLE_SLHDR
+#if HAVE_SLHDR
 void
 nvcl_slhdr_read(OVNVCLReader *const rdr, struct OVSEISLHDR* sei_slhdr, uint32_t payloadSize)
 {
@@ -229,7 +232,7 @@ nvcl_decode_nalu_sei(OVNVCLCtx *const nvcl_ctx, OVNVCLReader *const rdr, uint8_t
             break;
         case USER_DATA_REGISTERED_ITU_T_T35:
             ov_log(NULL, OVLOG_DEBUG, "SEI: USER_DATA_REGISTERED_ITU_T_T35 (type = %d) with size %d.\n", payload.type, payload.size);
-#if ENABLE_SLHDR
+#if HAVE_SLHDR
             if(!sei->sei_slhdr){
                 sei->sei_slhdr = ov_mallocz(sizeof(struct OVSEISLHDR));
                 pp_init_slhdr_lib(&sei->sei_slhdr->slhdr_context);
