@@ -34,16 +34,6 @@
 
 #include "rcn_neon.h"
 
-#include "simde/x86/sse4.2.h"
-#include "simde/x86/mmx.h"
-#include "simde/x86/sse.h"
-#include "simde/x86/sse2.h"
-#include "simde/x86/sse3.h"
-#include "simde/x86/ssse3.h"
-#include "simde/x86/sse4.2.h"
-#include "simde/x86/avx.h"
-#include "simde/x86/avx2.h"
-#include "simde/x86/avx512.h"
 #include <stdint.h>
 #include <stddef.h>
 
@@ -52,31 +42,37 @@
 #include "rcn.h"
 #include "ovutils.h"
 
-#define CLIP_10 ((1 << 10) - 1)
-#define SIGN_16 (int16_t)(1 << 15)
-
-#define bd_clip_10_4x128_epi16(a,b,c,d)\
-  a = _mm_max_epi16(a, _mm_setzero_si128());\
-  b = _mm_max_epi16(b, _mm_setzero_si128());\
-  c = _mm_max_epi16(c, _mm_setzero_si128());\
-  d = _mm_max_epi16(d, _mm_setzero_si128());\
-\
-  a = _mm_min_epi16(a, _mm_set1_epi16(CLIP_10));\
-  b = _mm_min_epi16(b, _mm_set1_epi16(CLIP_10));\
-  c = _mm_min_epi16(c, _mm_set1_epi16(CLIP_10));\
-  d = _mm_min_epi16(d, _mm_set1_epi16(CLIP_10));
+void ov_transform_add_8_4_10_neon(uint16_t *dst, ptrdiff_t dst_stride,const int16_t *src, ptrdiff_t src_stride);
 
 
-void
-vvc_add_residual_8_4_10_neon(const int16_t *const src, uint16_t *const dst, int16_t dst_stride,
-                             int log2_tb_w, int log2_tb_h, int scale);
+
+void ov_vvc_add_residual_8_4_10_neon(const int16_t *const src, uint16_t *const dst, int16_t dst_stride,
+                                int log2_tb_w, int log2_tb_h, int scale){
+  int i;
+  int tb_w = 1 << log2_tb_w;
+  int tb_h = 1 << log2_tb_h;
+  const int16_t *_src = (const int16_t *)src;
+  uint16_t *_dst = dst;
+  if (log2_tb_h > 1) {
+    for (i = 0; i < tb_h >> 2; ++i){
+      ov_transform_add_8_4_10_neon(_dst, dst_stride<<1,_src, tb_w<<1);
+      _dst += dst_stride << 2;
+      _src += tb_w << 2;
+    }
+  }else {
+    vvc_add_residual(src, dst, dst_stride, log2_tb_w, log2_tb_h, 0);
+  }
+
+}
+
+
 
 
 
 void
 rcn_init_ict_functions_neon(struct RCNFunctions *rcn_func)
 {
- //rcn_func->ict.add[3] = &vvc_add_residual_8_4_10_neon;
+ rcn_func->ict.add[3] = &ov_vvc_add_residual_8_4_10_neon;
  /*rcn_func->ict.add[4] = &vvc_add_residual_16_2_10_sse;
  rcn_func->ict.add[5] = &vvc_add_residual_32_1_10_sse;
  rcn_func->ict.add[6] = &vvc_add_residual_64_1_10_sse;

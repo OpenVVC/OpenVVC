@@ -33,3 +33,43 @@
  **/
 
 #include "arm/asm.S"
+
+.macro CLIP, val, min_val, max_val
+   SMAX  \val, \val, \min_val
+   SMIN  \val, \val, \max_val
+.endm
+
+function transform_add_8_4_10_neon, export=1
+
+  mov x15, x0
+  mov w10, #0x03FF
+  dup v30.8h, w10
+  dup v31.8h, wzr   // store all '0'
+
+  ld1 {v13.8h}, [x15], x1
+  ld1 {v14.8h}, [x15], x1
+  ld1 {v15.8h}, [x15], x1
+  ld1 {v16.8h}, [x15]
+
+  ld1 {v17.8h}, [x2], x3
+  ld1 {v18.8h}, [x2], x3
+  ld1 {v19.8h}, [x2], x3
+  ld1 {v20.8h}, [x2]
+
+  add v13.8h, v13.8h, v17.8h
+  add v14.8h, v14.8h, v18.8h
+  add v15.8h, v15.8h, v19.8h
+  add v16.8h, v16.8h, v20.8h    // adding L and R vectors
+
+  CLIP v13.8h, v31.8h, v30.8h
+  CLIP v14.8h, v31.8h, v30.8h
+  CLIP v15.8h, v31.8h, v30.8h
+  CLIP v16.8h, v31.8h, v30.8h
+
+  st1 {v13.8h}, [x0], x1
+  st1 {v14.8h}, [x0], x1
+  st1 {v15.8h}, [x0], x1
+  st1 {v16.8h}, [x0] // store result to the dst ptr
+
+  ret lr
+endfunc
