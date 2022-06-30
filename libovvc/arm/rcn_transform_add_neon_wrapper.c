@@ -315,7 +315,7 @@ ov_vvc_sub_half_residual_32_1_10_neon(const int16_t *const src, uint16_t *const 
 }
 
 void
-rcn_init_ict_functions_neon(struct RCNFunctions *rcn_func, uint8_t type))
+rcn_init_ict_functions_neon(struct RCNFunctions *rcn_func, uint8_t type)
 {
  rcn_func->ict.add[3] = &ov_vvc_add_residual_8_4_10_neon;
  rcn_func->ict.add[4] = &ov_vvc_add_residual_16_2_10_neon;
