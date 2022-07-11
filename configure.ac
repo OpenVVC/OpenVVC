@@ -35,7 +35,7 @@ LIBS="$PTHREAD_LIBS $LIBS"
 CC="$PTHREAD_CC"
 
 # Check for SLHDR lib
-PKG_HAVE_DEFINE_WITH_MODULES([SLHDR], [slhdr_cwrap], [ Use SL HDR ], [xyes])
+PKG_HAVE_DEFINE_WITH_MODULES([SLHDR], [slhdr_cwrap], [Use SL_HDR], [auto])
 
 # --enable-werror
 AC_ARG_ENABLE([werror], [AS_HELP_STRING([--enable-werror], [treat warnings as errors [no]])],
