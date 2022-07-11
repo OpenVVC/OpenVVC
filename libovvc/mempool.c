@@ -56,6 +56,7 @@ ovmempool_init(size_t elem_size)
        have returned to it and ovmem_pool_uninit() has been called*/
     mpool->nb_ref = 1;
 
+    pthread_mutex_init(&mpool->pool_mtx, NULL);
 failalloc:
     return mpool;
 }
@@ -137,6 +138,8 @@ ovmempool_uninit(MemPool **mpool_p)
     MemPool *mpool = *mpool_p;
 
     mpool->nb_ref--;
+
+    pthread_mutex_destroy(&mpool->pool_mtx);
 
     if (!mpool->nb_ref) {
         ovmempool_free(mpool);
