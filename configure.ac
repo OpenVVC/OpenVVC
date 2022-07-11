@@ -15,6 +15,7 @@ AM_PROG_AR
 LT_INIT
 
 AC_CONFIG_HEADERS([ovconfig.h])
+
 AC_CONFIG_FILES([Makefile libovvc/Makefile libovvc/x86/Makefile libovvc/arm/Makefile examples/Makefile libovvc/libopenvvc.pc])
 
 AC_SUBST([LIB_VERSION], m4_esyscmd([printf $(cat VERSION | sed  's/\./:/g' )]))
@@ -33,10 +34,7 @@ CFLAGS="$PTHREAD_CFLAGS $CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
 CC="$PTHREAD_CC"
 
-# --disable-slhdr
-
-#Check for SLHDR lib
-
+# Check for SLHDR lib
 PKG_HAVE_DEFINE_WITH_MODULES([SLHDR], [slhdr_cwrap], [ Use SL HDR ], [xyes])
 
 # --enable-werror
