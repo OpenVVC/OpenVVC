@@ -1,5 +1,5 @@
 lib_LTLIBRARIES = libovvc.la
-libovvc_la_LDFLAGS = -version-info $(LIB_VERSION)
+libovvc_la_LDFLAGS = -version-info $(LIB_VERSION) -no-undefined
 libovvc_la_LDFLAGS += @SLHDR_LIBS@
 libovvc_la_LIBADD=
 libovvc_la_CFLAGS= @SLHDR_CFLAGS@
