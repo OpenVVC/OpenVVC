@@ -9,7 +9,8 @@ nodist_pkgconfig_DATA = libopenvvc.pc
 
 if HAVE_SSE4_1
 SUBDIRS = x86/
-libovvc_la_LIBADD += ./x86/libx86optim.la
+libovvc_la_LIBADD += ./x86/libx86optimsse.la
+libovvc_la_LIBADD += ./x86/libx86optimavx.la
 endif
 
 if HAVE_NEON

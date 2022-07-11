@@ -45,29 +45,22 @@ AC_ARG_ENABLE([werror], [AS_HELP_STRING([--enable-werror], [treat warnings as er
 )
 
 # --disable-simd
-AC_ARG_ENABLE([simd], [AS_HELP_STRING([--disable-simd], [disable all simd optimisations [no]])],
-                [
-                AS_IF([test $enable_simd = "no"], [
-                                AC_DEFINE([NO_SIMD],[1], [If define, it will remove SIMD compilation])
-                        ]
-                )
-                ], 
-                [enable_simd="yes"]
+AC_ARG_ENABLE([simd], [ AS_HELP_STRING([--disable-simd], [disable all simd optimisations [no]]) ],
+              [ AS_IF([test $enable_simd = "no"],
+		      [AC_DEFINE([NO_SIMD], [1], [If define, it will remove SIMD compilation])])
+	      ],[enable_simd="yes"]
 )
 
 
 # --disable-arm-asm
 AC_ARG_ENABLE([arm-asm], [AS_HELP_STRING([--disable-arm-asm], [disables arm assembly optimisation [no]])],
                 [
-                AS_IF([test $enable_arm_asm = "yes"], [
-                                AC_DEFINE([ARCH_AARCH64_ASSEMBLY],[1], [Define the use of AARCH64 ASSEMBLY optimisation])
-                        ]
-                )
-                ],
-                [
+                AS_IF([test $enable_arm_asm = "yes"],
+		      [ AC_DEFINE([ARCH_AARCH64_ASSEMBLY],[1], [Define the use of AARCH64 ASSEMBLY optimisation]) ]) ],
+                      [
                         enable_arm_asm="yes"
                         AC_DEFINE([ARCH_AARCH64_ASSEMBLY],[1], [Define the use of AARCH64 ASSEMBLY optimisation])
-                ]
+                      ]
 )
 
 # --enable-arm-simde
@@ -118,7 +111,7 @@ AS_CASE([$host_os],
 # Check compiler build capability
 AS_IF([test x"$X86" = x"true"], [
                 AX_CHECK_COMPILE_FLAG([-msse4.1], [
-                        flag_sse4_1="true" CFLAGS="-msse4.1 $CFLAGS"
+                        flag_sse4_1="true"
                         AC_DEFINE([HAVE_SSE4_1],[1], [Define the use of SSE4_1 optimisation])
                 ])
         ])
@@ -126,15 +119,17 @@ AM_CONDITIONAL([HAVE_SSE4_1], [test x"$enable_simd" = x"yes" -a x"$flag_sse4_1" 
 
 AS_IF([test x"$X86" = x"true"], [
                 AX_CHECK_COMPILE_FLAG([-mavx2], [
-                        flag_avx2="true" CFLAGS="-mavx2 $CFLAGS"
+                        flag_avx2="true"
                         AC_DEFINE([HAVE_AVX2],[1], [Define the use of AVX2 optimisation])
                 ])
         ])
+
 AM_CONDITIONAL([HAVE_AVX2], [test x"$enable_simd" = x"yes" -a x"$flag_avx2" = x"true"])
 
 AS_IF([test x"$flag_sse4_1" = x"true" -o x"$flag_avx2" = x"true"], [
                 AC_DEFINE([HAVE_X86_OPTIM],[1], [Define the use of X86 optimisation])
         ])
+
 AM_CONDITIONAL([HAVE_X86_OPTIM], [test x"$X86" = x"true" -a x"$enable_simd" = x"yes"])
 
 
