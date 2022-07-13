@@ -176,12 +176,12 @@ ovdec_wait_available_entry_thread(OVVCDec *const dec)
         for(int i = 0; i < nb_threads ; i++) {
             entry_th = &entry_th_list[i];
             pthread_mutex_lock(&entry_th->entry_mtx);
-            int state = entry_th->state;
-            pthread_mutex_unlock(&entry_th->entry_mtx);
-            if (state == IDLE){
+            if (entry_th->state == IDLE) {
+                pthread_mutex_unlock(&entry_th->entry_mtx);
                 pthread_mutex_unlock(&th_main->entry_threads_mtx);
                 return;
             }
+            pthread_mutex_unlock(&entry_th->entry_mtx);
         }
         // ov_log(NULL, OVLOG_DEBUG,"main wait entry\n");
         pthread_cond_wait(&th_main->entry_threads_cnd, &th_main->entry_threads_mtx);
