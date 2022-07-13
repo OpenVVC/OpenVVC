@@ -665,7 +665,6 @@ slicedec_finish_decoding(OVSliceDec *sldec)
     struct MainThread* t_main = slice_sync->main_thread;
     if (t_main) {
         pthread_mutex_lock(&t_main->io_mtx);
-        // ov_log(NULL, OVLOG_DEBUG,"Slice sign main\n");
         pthread_cond_signal(&t_main->io_cnd);
         pthread_mutex_unlock(&t_main->io_mtx);
     }
