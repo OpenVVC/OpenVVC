@@ -337,10 +337,10 @@ sublayer_hrd_parameters(OVNVCLReader *const rdr, const struct HRDTiming *const h
 }
 
 static void
-ols_timing_hrd_parameters(OVNVCLReader *const rdr, const struct HRDTiming *const hrd, uint8_t first_sublayer, uint8_t max_sublayer)
+ols_timing_hrd_parameters(OVNVCLReader *const rdr, const struct HRDTiming *const hrd, uint8_t first_sublayer, uint8_t max_sublayer_min1)
 {
     int i;
-    for (i = first_sublayer; i <= max_sublayer; ++i) {
+    for (i = first_sublayer; i <= max_sublayer_min1; ++i) {
         uint8_t fixed_pic_rate_general_flag = nvcl_read_flag(rdr);
 
         uint8_t fixed_pic_rate_within_cvs_flag = fixed_pic_rate_general_flag;
@@ -693,8 +693,8 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
                 sps->sps_sublayer_cpb_params_present_flag = nvcl_read_flag(rdr);
             }
 
-            int first_sublayer = sps->sps_sublayer_cpb_params_present_flag ? 0 : sps->sps_max_sublayers_minus1 + 1;
-            ols_timing_hrd_parameters(rdr, &hrd_timing, first_sublayer, sps->sps_max_sublayers_minus1 + 1);
+            int first_sublayer = sps->sps_sublayer_cpb_params_present_flag ? 0 : sps->sps_max_sublayers_minus1;
+            ols_timing_hrd_parameters(rdr, &hrd_timing, first_sublayer, sps->sps_max_sublayers_minus1);
         }
     }
 
@@ -716,20 +716,18 @@ nvcl_sps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
 
     sps->sps_extension_flag = nvcl_read_flag(rdr);
     if (sps->sps_extension_flag) {
-        #if 0
-        fprintf(stderr, "Ignored sps extensions");
-        while (more_rbsp_data()) {
-            sps->sps_extension_data_flag = nvcl_read_flag(rdr);
+        int32_t nb_bits_read = nvcl_nb_bits_read(rdr) + 1;
+        int32_t stop_bit_pos = nvcl_find_rbsp_stop_bit(rdr);
+        int32_t nb_bits_remaining = stop_bit_pos - nb_bits_read;
+
+        if (nb_bits_remaining < 0) {
+            ov_log(NULL, OVLOG_ERROR, "Overread SPS %d", nb_bits_read, stop_bit_pos);
+            return OVVC_EINDATA;
         }
-        #endif
+
+        /* Ignore extension */
+        nvcl_skip_bits(rdr, nb_bits_remaining);
     }
-
-    /*FIXME decide whether or not we should keep the rbsp trailing
-      bits as a test here */
-
-    #if 0
-    rbsp_trailing_bits()
-    #endif
 
     return 0;
 }

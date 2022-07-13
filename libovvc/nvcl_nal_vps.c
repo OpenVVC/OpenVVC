@@ -76,6 +76,13 @@ validate_vps(OVNVCLReader *rdr, const union HLSData *const data)
 {
     /* TODO various check on limitation and max sizes */
     const OVVPS *const vps =  (const OVVPS *)data;
+    uint32_t nb_bits_read = nvcl_nb_bits_read(rdr) + 1;
+    uint32_t stop_bit_pos = nvcl_find_rbsp_stop_bit(rdr);
+    if (stop_bit_pos != nb_bits_read) {
+
+        ov_log(NULL, OVLOG_ERROR, "rbsp_stop_bit mismatch: cursor at %d,  expected %d\n", nb_bits_read, stop_bit_pos);
+        return OVVC_EINDATA;
+    }
 
 
     return 1;
@@ -479,16 +486,21 @@ nvcl_vps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     }
 
     vps->vps_extension_flag = nvcl_read_flag(rdr);
+
     if (vps->vps_extension_flag) {
-       /* Ignore extension */
-#if 0
-        while(more_rbsp_data()) {
-            vps->vps_extension_data_flag = nvcl_read_flag(rdr);
+        int32_t nb_bits_read = nvcl_nb_bits_read(rdr) + 1;
+        int32_t stop_bit_pos = nvcl_find_rbsp_stop_bit(rdr);
+        int32_t nb_bits_remaining = stop_bit_pos - nb_bits_read;
+
+        if (nb_bits_remaining < 0) {
+            ov_log(NULL, OVLOG_ERROR, "Overread PPS %d", nb_bits_read, stop_bit_pos);
+            return OVVC_EINDATA;
         }
-#endif
+
+        /* Ignore extension */
+        nvcl_skip_bits(rdr, nb_bits_remaining);
     }
 
-    //rbsp_trailing_bits()
     return 0;
 }
 

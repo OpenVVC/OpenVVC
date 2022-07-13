@@ -472,16 +472,18 @@ nvcl_pps_read(OVNVCLReader *const rdr, OVHLSData *const hls_data,
     pps->pps_extension_flag = nvcl_read_flag(rdr);
 
     if (pps->pps_extension_flag) {
-        #if 0
-        while (more_rbsp_data()) {
-            pps->pps_extension_data_flag = nvcl_read_flag(rdr);
+        int32_t nb_bits_read = nvcl_nb_bits_read(rdr) + 1;
+        int32_t stop_bit_pos = nvcl_find_rbsp_stop_bit(rdr);
+        int32_t nb_bits_remaining = stop_bit_pos - nb_bits_read;
+
+        if (nb_bits_remaining < 0) {
+            ov_log(NULL, OVLOG_ERROR, "Overread PPS %d", nb_bits_read, stop_bit_pos);
+            return OVVC_EINDATA;
         }
-        #endif
+
+        nvcl_skip_bits(rdr, nb_bits_remaining);
     }
 
-    #if 0
-    rbsp_trailing_bits()
-    #endif
     return 0;
 }
 
