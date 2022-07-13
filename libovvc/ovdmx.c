@@ -429,12 +429,52 @@ count_list_nal_units(struct NALUnitsList *const src)
     return nb_nalus;
 }
 
+static const char *nalu_name[32] =
+{
+    "TRAIL",
+    "STSA",
+    "RADL",
+    "RASL",
+    "RSVD_VCL",
+    "RSVD_VCL",
+    "RSVD_VCL",
+    "IDR_W_RADL",
+    "IDR_N_LP",
+    "CRA",
+    "GDR",
+    "RSVD_IRAP_VCL",
+    "OPI",
+    "DCI",
+    "VPS",
+    "SPS",
+    "PPS",
+    "PREFIX_APS",
+    "SUFFIX_APS",
+    "PH",
+    "AUD",
+    "EOS",
+    "EOB",
+    "PREFIX_SEI",
+    "SUFFIX_SEI",
+    "FD",
+    "RSVD_NVCL",
+    "RSVD_NVCL",
+    "UNSPEC",
+    "UNSPEC",
+    "UNSPEC",
+    "UNSPEC"
+};
+
 static int
 ovdmx_init_pu_from_list(OVPictureUnit **ovpu_p, struct NALUListStatus *const status)
 {
     OVPictureUnit *ovpu;
     struct NALUnitsList *nalu_list = &status->nalu_list;
     struct NALUnitListElem *lelem = nalu_list->first_nalu;
+    if (status->nb_nalus > 255) {
+        ov_log(NULL, OVLOG_ERROR, "Too many NALUs %d\n", status->nb_nalus);
+        return OVVC_ENOMEM;
+    }
 
     int ret = ovpu_init(ovpu_p, status->nb_nalus);
 
@@ -488,17 +528,22 @@ is_next_pu_start(struct NALUListStatus *const status,
     if (!status->got_vcl) {
 
         status->got_vcl |= is_vcl(nalu);
+
+        ov_log(NULL, OVLOG_TRACE, "%s WAIT FOR VCL \n", nalu_name[nalu->type]);
         goto no;
 
     } else if (!is_vcl(nalu) && !is_nvcl_delimiter(nalu)) {
 
         status->got_nvcl_suffix = 1;
+        ov_log(NULL, OVLOG_TRACE, "%s NOT NVCL_DELIMITER\n", nalu_name[nalu->type]);
         goto no;
 
     } else {
         if (is_vcl(nalu) && status->got_ph) {
+            ov_log(NULL, OVLOG_TRACE, "%s ASSUMED MULTI_SLICE\n", nalu_name[nalu->type]);
             goto no;
         } else {
+            ov_log(NULL, OVLOG_TRACE, "%s IS NEW PIC START\n", nalu_name[nalu->type]);
             goto yes;
         }
     }
