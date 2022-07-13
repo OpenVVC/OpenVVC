@@ -189,11 +189,8 @@ ovdec_wait_available_entry_thread(OVVCDec *const dec)
     } while (!th_main->kill);
     pthread_mutex_unlock(&th_main->entry_threads_mtx);
 
-    return ;
-
-    #else
-    return ;
     #endif
+    return;
 }
 
 OVSliceDec *
