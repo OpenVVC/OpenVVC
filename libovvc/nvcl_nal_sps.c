@@ -94,8 +94,7 @@ validate_sps(OVNVCLReader *rdr, const union HLSData *const data)
     }
 
     if (sps->sps_long_term_ref_pics_flag) {
-        ov_log(NULL, OVLOG_ERROR, "Unsupported long term references\n");
-        return OVVC_EINDATA;
+        ov_log(NULL, OVLOG_WARNING, "Unsupported long term references\n");
     }
 
     if (sps->sps_pic_width_max_in_luma_samples & 0xE003 || sps->sps_pic_height_max_in_luma_samples & 0xE003) {
