@@ -171,8 +171,8 @@ ovdec_wait_available_entry_thread(OVVCDec *const dec)
     /* The main thread checks if at least an entry thread
     *  is available.
     */
+    pthread_mutex_lock(&th_main->entry_threads_mtx);
     do {
-        pthread_mutex_lock(&th_main->entry_threads_mtx);
         for(int i = 0; i < nb_threads ; i++) {
             entry_th = &entry_th_list[i];
             pthread_mutex_lock(&entry_th->entry_mtx);
@@ -185,9 +185,9 @@ ovdec_wait_available_entry_thread(OVVCDec *const dec)
         }
         // ov_log(NULL, OVLOG_DEBUG,"main wait entry\n");
         pthread_cond_wait(&th_main->entry_threads_cnd, &th_main->entry_threads_mtx);
-        pthread_mutex_unlock(&th_main->entry_threads_mtx);
 
     } while (!th_main->kill);
+    pthread_mutex_unlock(&th_main->entry_threads_mtx);
 
     return ;
 
