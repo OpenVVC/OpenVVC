@@ -368,6 +368,10 @@ nvcl_read_header_ref_pic_lists(OVNVCLReader *const rdr, OVHRPL *const rpl_h,
         /*FIXME check nb_rpl1  + long term poc complement */
         const struct OVRPL *rpl1 = &sps->rpl_s1[rpl_h0->rpl_idx & 0x3F];
 
+        if (sps->sps_long_term_ref_pics_flag) {
+            /* Call long term post function with lt_header*/
+            header_read_long_term_info(rdr, rpl1, rpl_h1, sps);
+        }
         memcpy(&rpl_h1->rpl_data, rpl1, sizeof(*rpl1));
     } else if (rpl_h0->rpl_sps_flag && sps->sps_rpl1_same_as_rpl0_flag) {
         memcpy(&rpl_h1->rpl_data, rpl_h->rpl0, sizeof(*rpl_h->rpl0));

@@ -446,12 +446,14 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t 
         int ref_poc = 0;
         rinfo->type = ref_type;
 
+
         switch (ref_type) {
         case ST_REF:
            ref_poc = !rp->strp_entry_sign_flag ? last_poc +  rp->abs_delta_poc_st + (!weighted_pred | !i)
                                                : last_poc - (rp->abs_delta_poc_st + (!weighted_pred | !i));
            rinfo->poc = ref_poc;
 
+           last_poc = ref_poc;
         break;
         case LT_REF:
            /* FIXME
@@ -469,8 +471,6 @@ compute_ref_poc(const OVRPL *const rpl, struct RPLInfo *const rpl_info, int32_t 
            rinfo->poc = ref_poc;
         break;
         }
-
-        last_poc = ref_poc;
 
         if (poc == ref_poc) {
             goto self_ref;
@@ -1014,24 +1014,31 @@ ovdpb_init_picture(OVDPB *dpb, OVPicture **pic_p, const OVPS *const ps, uint8_t 
         }
 
         if (!idr_flag) {
+            int last_dist = 0;
             for (int i = 0; i < rpl0.num_ref_entries; ++i) {
                 const struct RefPic *const rp = &rpl0.rp_list[i];
-                sldec->dist_ref_0[i] = rp->strp_entry_sign_flag ?  (rp->abs_delta_poc_st + (!weighted_pred | !i))
-                                                                : -(rp->abs_delta_poc_st + (!weighted_pred | !i));
-                if (i)
-                    sldec->dist_ref_0[i] += sldec->dist_ref_0[i - 1];
 
-                sldec->dist_ref_0[i] = ov_clip_intp2(sldec->dist_ref_0[i], 8);
+                if (rp->st_ref_pic_flag) {
+                    last_dist += rp->strp_entry_sign_flag ?  (rp->abs_delta_poc_st + (!weighted_pred | !i))
+                                                          : -(rp->abs_delta_poc_st + (!weighted_pred | !i));
+
+                    sldec->dist_ref_0[i] = ov_clip_intp2(last_dist, 8);
+                } else {
+                    sldec->dist_ref_0[i] = 0;
+                }
             }
 
+            last_dist = 0;
             for (int i = 0; i < rpl1.num_ref_entries; ++i) {
                 const struct RefPic *const rp = &rpl1.rp_list[i];
-                sldec->dist_ref_1[i] = rp->strp_entry_sign_flag ?  (rp->abs_delta_poc_st + (!weighted_pred | !i))
-                                                                : -(rp->abs_delta_poc_st + (!weighted_pred | !i));
-                if (i)
-                    sldec->dist_ref_1[i] += sldec->dist_ref_1[i - 1];
+                if (rp->st_ref_pic_flag) {
+                    last_dist += rp->strp_entry_sign_flag ?  (rp->abs_delta_poc_st + (!weighted_pred | !i))
+                                                          : -(rp->abs_delta_poc_st + (!weighted_pred | !i));
 
-                sldec->dist_ref_1[i] = ov_clip_intp2(sldec->dist_ref_1[i], 8);
+                    sldec->dist_ref_1[i] = ov_clip_intp2(last_dist, 8);
+                } else {
+                    sldec->dist_ref_1[i] = 0;
+                }
             }
         }
     }
