@@ -387,6 +387,7 @@ struct InterDRVCtx
     uint16_t scale_fact_rpl1[16][2];
     uint16_t rpr_scale_msk0;
     uint16_t rpr_scale_msk1;
+    int32_t poc;
 
     struct WPInfo wp_info0[16];
     struct WPInfo wp_info1[16];

@@ -535,6 +535,9 @@ derive_tmvp_cand(const struct InterDRVCtx *const inter_ctx, const struct OVMVCtx
         }
 
         col_mv.mv = tmvp_round_mv(col_mv.mv);
+        /* Discard candidate when only one is from long term ref */
+        if ((dist_ref == 0) ^ (col_mv.z == 0)) return 0;
+
         col_mv.mv = tmvp_scale_mv(scale, col_mv.mv);
         col_mv.mv = drv_round_to_precision_mv2(col_mv.mv, MV_PRECISION_INTERNAL, prec_amvr);
 
@@ -719,6 +722,8 @@ derive_tmvp_merge_cand(const struct InterDRVCtx *const inter_ctx,
             scale = derive_tmvp_scale(dist_ref0, col_mv.z);
         }
 found:
+        /* Discard candidate when only one is from long term ref */
+        if ((dist_ref0 == 0) ^ (col_mv.z == 0)) return 0;
         col_mv.mv = tmvp_round_mv(col_mv.mv);
         col_mv.mv = tmvp_scale_mv(scale , col_mv.mv);
 
@@ -979,6 +984,17 @@ derive_tmvp_merge(const struct InterDRVCtx *const inter_ctx,
 found:
         scale_cur = derive_tmvp_scale(dist_ref_cur, col_mv.z);
         scale_opp = derive_tmvp_scale(dist_ref_opp, col_mv_opp.z);
+
+        /* Discard candidate when only one is from long term ref */
+        if ((dist_ref_cur == 0) ^ (col_mv.z == 0)) {
+            if ((dist_ref_opp == 0) ^ (col_mv_opp.z == 0))
+                return 0;
+            col_mv = col_mv_opp;
+            scale_cur = scale_opp;
+        } else if ((dist_ref_opp == 0) ^ (col_mv_opp.z == 0)) {
+            col_mv_opp = col_mv;
+            scale_opp = scale_cur;
+        }
 
         tmp_cur.mv = tmvp_round_mv(col_mv.mv);
         tmp_opp.mv = tmvp_round_mv(col_mv_opp.mv);
@@ -1730,17 +1746,18 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
             mvd0.y = -offset;
         }
 
-        uint8_t is_lterm0 = 0;
-        uint8_t is_lterm1 = 0;
         int32_t dist_ref0 = inter_ctx->dist_ref_0[ref0];
         int32_t dist_ref1 = inter_ctx->dist_ref_1[ref1];
+        uint8_t is_lterm0 = !dist_ref0;
+        uint8_t is_lterm1 = !dist_ref1;
 
+        dist_ref0 = inter_ctx->poc - inter_ctx->rpl0[ref0]->poc;
+        dist_ref1 = inter_ctx->poc - inter_ctx->rpl1[ref1]->poc;
         /* Same ref */
         if (dist_ref0 == dist_ref1){
             mvd1.x = mvd0.x;
             mvd1.y = mvd0.y;
         } else if (abs(dist_ref0) < abs(dist_ref1)){
-            int scale = tmvp_compute_scale(dist_ref0, dist_ref1);
             mvd1.x = mvd0.x;
             mvd1.y = mvd0.y;
             if (is_lterm0 || is_lterm1){
@@ -1749,31 +1766,28 @@ drv_mmvd_merge_mvp_b(struct InterDRVCtx *const inter_ctx,
                     tmp = tmvp_scale_mv(-1, tmp);
                     mvd0.x = tmp.x;
                     mvd0.y = tmp.y;
-                    //mvd0 = tmvp_scale_mv(-1, mvd0);
                 }
             } else {
+                int scale = tmvp_compute_scale(dist_ref0, dist_ref1);
                 struct MV tmp = {.x = mvd1.x, .y = mvd1.y};
                 tmp = tmvp_scale_mv(scale, tmp);
                 mvd0.x = tmp.x;
                 mvd0.y = tmp.y;
-                //mvd0 = tmvp_scale_mv(scale, mvd1);
             }
         } else {
-            int scale = tmvp_compute_scale(dist_ref1, dist_ref0);
 
             mvd1.x = mvd0.x;
             mvd1.y = mvd0.y;
 
             if (is_lterm0 || is_lterm1){
                 if ((dist_ref1) * (dist_ref0) <= 0) {
-                    //mvd1 = tmvp_scale_mv(-1, mvd0);
                     struct MV tmp = {.x = mvd0.x, .y = mvd0.y};
                     tmp = tmvp_scale_mv(-1, tmp);
                     mvd1.x = tmp.x;
                     mvd1.y = tmp.y;
                 }
             } else {
-                //mvd1 = tmvp_scale_mv(scale, mvd0);
+                int scale = tmvp_compute_scale(dist_ref1, dist_ref0);
                 struct MV tmp = {.x = mvd0.x, .y = mvd0.y};
                 tmp = tmvp_scale_mv(scale, tmp);
                 mvd1.x = tmp.x;

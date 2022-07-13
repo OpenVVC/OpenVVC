@@ -1405,7 +1405,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     ctudec->nb_ctb_pic_w = einfo.nb_ctb_pic_w;
 
     tmvp_entry_init(ctudec, sldec, prms);
-
+    ctudec->drv_ctx.inter_ctx.poc = sldec->pic->poc;
     /* FIXME tmp Reset DBF */
     memcpy(ctudec->drv_ctx.inter_ctx.rpl0, sldec->rpl0, sizeof(sldec->rpl0));
     memcpy(ctudec->drv_ctx.inter_ctx.rpl1, sldec->rpl1, sizeof(sldec->rpl1));
