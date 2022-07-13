@@ -33,13 +33,10 @@
 **/
 #include "arm/asm.S"
 
+.macro idct_x_4, w
 
-function idct_ii_4_neon, export=1
+  function idct_x_4_\w\()_neon, export=1
 
-
-    mov w10, #0x03FF
-    dup v31.8h, wzr
-    dup v30.8h, w10
     dup v29.4s, w4
     dup v28.4s, w3
 
@@ -50,43 +47,85 @@ function idct_ii_4_neon, export=1
 
     ld1 {v5.8h-v6.8h}, [x5]
 
-
-    //dct_4x4_neon v15.8h, v1, v2, v3, v4, v5, v6, v7, v8, #16
-    //multiply and transpose
     SMULL  V10.4S, v5.4h, v1.H[0]
     SMLAL2 V10.4S, v5.8h, v2.H[0]
     SMLAL  V10.4S, v6.4h, V3.H[0]
     SMLAL2 V10.4S, v6.8h, v4.H[0]
+    .if \w == 2 || \w == 4 || \w == 8
+        SMULL  V11.4S, v5.4h, v1.H[1]
+        SMLAL2 V11.4S, v5.8h, v2.H[1]
+        SMLAL  V11.4S, v6.4h, V3.H[1]
+        SMLAL2 V11.4S, v6.8h, v4.H[1]
+    .endif
+    .if \w == 4 || \w == 8
+        SMULL  V12.4S, v5.4h, v1.H[2]
+        SMLAL2 v12.4S, v5.8h, v2.H[2]
+        SMLAL  V12.4S, v6.4h, V3.H[2]
+        SMLAL2 V12.4S, v6.8h, v4.H[2]
 
-    SMULL  V11.4S, v5.4h, v1.H[1]
-    SMLAL2 V11.4S, v5.8h, v2.H[1]
-    SMLAL  V11.4S, v6.4h, V3.H[1]
-    SMLAL2 V11.4S, v6.8h, v4.H[1]
+        SMULL  V13.4S, v5.4h, v1.H[3]
+        SMLAL2 v13.4S, v5.8h, v2.H[3]
+        SMLAL  V13.4S, v6.4h, V3.H[3]
+        SMLAL2 V13.4S, v6.8h, V4.H[3]
+    .endif
+    .if \w == 8
+        SMULL  V14.4S, v5.4h, v1.H[4]
+        SMLAL2 V14.4S, v5.8h, v2.H[4]
+        SMLAL  V14.4S, v6.4h, V3.H[4]
+        SMLAL2 V14.4S, v6.8h, v4.H[4]
 
-    SMULL  V12.4S, v5.4h, v1.H[2]
-    SMLAL2 v12.4S, v5.8h, v2.H[2]
-    SMLAL  V12.4S, v6.4h, V3.H[2]
-    SMLAL2 V12.4S, v6.8h, v4.H[2]
+        SMULL  V15.4S, v5.4h, v1.H[5]
+        SMLAL2 V15.4S, v5.8h, v2.H[5]
+        SMLAL  V15.4S, v6.4h, V3.H[5]
+        SMLAL2 V15.4S, v6.8h, v4.H[5]
 
-    SMULL  V13.4S, v5.4h, v1.H[3]
-    SMLAL2 v13.4S, v5.8h, v2.H[3]
-    SMLAL  V13.4S, v6.4h, V3.H[3]
-    SMLAL2 V13.4S, v6.8h, V4.H[3]
+        SMULL  V16.4S, v5.4h, v1.H[6]
+        SMLAL2 v16.4S, v5.8h, v2.H[6]
+        SMLAL  V16.4S, v6.4h, V3.H[6]
+        SMLAL2 V16.4S, v6.8h, v4.H[6]
 
+        SMULL  V17.4S, v5.4h, v1.H[7]
+        SMLAL2 v17.4S, v5.8h, v2.H[7]
+        SMLAL  V17.4S, v6.4h, V3.H[7]
+        SMLAL2 V17.4S, v6.8h, V4.H[7]
+    .endif
     ADD   V10.4S, V10.4S, V29.4S
     ADD   V11.4S, V11.4S, V29.4S
     ADD   V12.4S, V12.4S, V29.4S
     ADD   V13.4S, V13.4S, V29.4S
+    ADD   V14.4S, V14.4S, V29.4S
+    ADD   V15.4S, V15.4S, V29.4S
+    ADD   V16.4S, V16.4S, V29.4S
+    ADD   V17.4S, V17.4S, V29.4S
 
     SSHL  V10.4S, V10.4S, V28.4S // varialble shift right => negative shift left
     SSHL  V11.4S, V11.4S, V28.4S
     SSHL  V12.4S, V12.4S, V28.4S
     SSHL  v13.4S, V13.4S, V28.4S
+    SSHL  V14.4S, V14.4S, V28.4S
+    SSHL  V15.4S, V15.4S, V28.4S
+    SSHL  V16.4S, V16.4S, V28.4S
+    SSHL  v17.4S, V17.4S, V28.4S
 
-    UZP1  v15.8h, V10.8H, V11.8H
-    UZP1  v16.8h, V12.8H, V13.8H
+    UZP1  v18.8h, V10.8H, V11.8H
+    UZP1  v19.8h, V12.8H, V13.8H
+    UZP1  v20.8h, V14.8H, V15.8H
+    UZP1  v21.8h, V16.8H, V17.8H
 
-    st1 {v15.8h-v16.8h}, [x1]
-
+    .if \w == 1 || \w == 2
+        st1 {v18.8h}, [x1]
+    .endif
+    .if \w == 4
+        st1 {v18.8h-v19.8h}, [x1]
+    .endif
+    .if \w == 8
+        st1 {v18.8h-v21.8h}, [x1]
+    .endif
     ret lr
-endfunc
+  endfunc
+.endm
+
+idct_x_4 2
+idct_x_4 4
+idct_x_4 8
+
