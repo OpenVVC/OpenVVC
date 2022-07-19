@@ -35,15 +35,15 @@
 
 .macro inverse_neon, out, s1=.S
 
-    mov v9.s[0], \out\s1[3]
-    mov v9.s[1], \out\s1[2]
-    mov v9.s[2], \out\s1[1]
-    mov v9.s[3], \out\s1[0]
+    mov v31.s[0], \out\s1[3]
+    mov v31.s[1], \out\s1[2]
+    mov v31.s[2], \out\s1[1]
+    mov v31.s[3], \out\s1[0]
 
-    mov \out\s1[0], v9.s[0]
-    mov \out\s1[1], v9.s[1]
-    mov \out\s1[2], v9.s[2]
-    mov \out\s1[3], v9.s[3]
+    mov \out\s1[0], v31.s[0]
+    mov \out\s1[1], v31.s[1]
+    mov \out\s1[2], v31.s[2]
+    mov \out\s1[3], v31.s[3]
 
 .endm
 
@@ -149,7 +149,7 @@
   endfunc
 .endm
 
-.macro idct_ii_8, w
+.macro idct_ii_8_butterfly, w
     function idct_ii_8_\w\()_neon, export=1
 
         dup v29.4s, w4
@@ -269,11 +269,256 @@
         ret lr
     endfunc
 .endm
+
+.macro idct_x_8, w, red
+    function idct_x_8_\w\()_\red\()_neon, export=1
+        dup v29.4s, w4
+        dup v28.4s, w3
+
+        ld1 {v1.8h}, [x0], x2
+        ld1 {v2.8h}, [x0], x2
+        ld1 {v3.8h}, [x0], x2
+        ld1 {v4.8h}, [x0], x2
+        ld1 {v5.8h}, [x0], x2
+        ld1 {v6.8h}, [x0], x2
+        ld1 {v7.8h}, [x0], x2
+        ld1 {v8.8h}, [x0]
+
+        ld1 {v20.8h-v23.8h}, [x5]
+        ld1 {v24.8h-v27.8h}, [x6]
+        // without butterfly
+        // top section of the first vector
+        SMULL V10.4S, v20.4h, v1.H[0]
+        SMLAL V10.4S, v21.4h, V2.H[0]
+        SMLAL V10.4S, v22.4h, V3.H[0]
+        SMLAL V10.4S, v23.4h, V4.H[0]
+        //.if \red == 8
+            SMLAL V10.4S, v24.4h, V5.H[0]
+            SMLAL V10.4S, v25.4h, V6.H[0]
+            SMLAL V10.4S, v26.4h, V7.H[0]
+            SMLAL V10.4S, v27.4h, V8.H[0]
+        //.endif
+        // bootom section of the first vector
+        SMULL2 V11.4S, v20.8h, v1.H[0]
+        SMLAL2 V11.4S, v21.8h, v2.H[0]
+        SMLAL2 V11.4S, v22.8h, v3.H[0]
+        SMLAL2 V11.4S, v23.8h, v4.H[0]
+        //.if \red == 8
+            SMLAL2 V11.4S, v24.8h, v5.H[0]
+            SMLAL2 V11.4S, v25.8h, v6.H[0]
+            SMLAL2 V11.4S, v26.8h, v7.H[0]
+            SMLAL2 V11.4S, v27.8h, v8.H[0]
+        //.endif
+        // top section of the second vector
+        SMULL V12.4S, v20.4h, v1.H[1]
+        SMLAL V12.4S, v21.4h, V2.H[1]
+        SMLAL V12.4S, v22.4h, V3.H[1]
+        SMLAL V12.4S, v23.4h, V4.H[1]
+        //.if \red == 8
+            SMLAL V12.4S, v24.4h, V5.H[1]
+            SMLAL V12.4S, v25.4h, V6.H[1]
+            SMLAL V12.4S, v26.4h, V7.H[1]
+            SMLAL V12.4S, v27.4h, V8.H[1]
+        //.endif
+        // bootom section of the second vector
+        SMULL2 V13.4S, v20.8h, v1.H[1]
+        SMLAL2 V13.4S, v21.8h, v2.H[1]
+        SMLAL2 V13.4S, v22.8h, v3.H[1]
+        SMLAL2 V13.4S, v23.8h, v4.H[1]
+        //.if \red == 8
+            SMLAL2 V13.4S, v24.8h, v5.H[1]
+            SMLAL2 V13.4S, v25.8h, v6.H[1]
+            SMLAL2 V13.4S, v26.8h, v7.H[1]
+            SMLAL2 V13.4S, v27.8h, v8.H[1]
+        //.endif
+        // top section of the third ODD vector
+        .if \w == 4 || \w == 8
+            SMULL V14.4S, v20.4h, v1.H[2]
+            SMLAL V14.4S, v21.4h, V2.H[2]
+            SMLAL V14.4S, v22.4h, V3.H[2]
+            SMLAL V14.4S, v23.4h, V4.H[2]
+            SMLAL V14.4S, v24.4h, V5.H[2]
+            SMLAL V14.4S, v25.4h, V6.H[2]
+            SMLAL V14.4S, v26.4h, V7.H[2]
+            SMLAL V14.4S, v27.4h, V8.H[2]
+            // bootom section of the third vector
+            SMULL2 V15.4S, v20.8h, v1.H[2]
+            SMLAL2 V15.4S, v21.8h, v2.H[2]
+            SMLAL2 V15.4S, v22.8h, v3.H[2]
+            SMLAL2 V15.4S, v23.8h, v4.H[2]
+            SMLAL2 V15.4S, v24.8h, v5.H[2]
+            SMLAL2 V15.4S, v25.8h, v6.H[2]
+            SMLAL2 V15.4S, v26.8h, v7.H[2]
+            SMLAL2 V15.4S, v27.8h, v8.H[2]
+            // top section of the fourth  vector
+            SMULL V16.4S, v20.4h, v1.H[3]
+            SMLAL V16.4S, v21.4h, V2.H[3]
+            SMLAL V16.4S, v22.4h, V3.H[3]
+            SMLAL V16.4S, v23.4h, V4.H[3]
+            SMLAL v16.4S, v24.4h, V5.H[3]
+            SMLAL v16.4S, v25.4h, V6.H[3]
+            SMLAL v16.4S, v26.4h, V7.H[3]
+            SMLAL v16.4S, v27.4h, V8.H[3]
+            // bootom section of the fourth vector
+            SMULL2 V17.4S, v20.8h, v1.H[3]
+            SMLAL2 V17.4S, v21.8h, v2.H[3]
+            SMLAL2 V17.4S, v22.8h, v3.H[3]
+            SMLAL2 V17.4S, v23.8h, v4.H[3]
+            SMLAL2 V17.4S, v24.8h, v5.H[3]
+            SMLAL2 V17.4S, v25.8h, v6.H[3]
+            SMLAL2 V17.4S, v26.8h, v7.H[3]
+            SMLAL2 V17.4S, v27.8h, v8.H[3]
+        .endif
+        // shift and round
+        ADD   V10.4S, v10.4S, V29.4S
+        ADD   V11.4S, V11.4S, V29.4S
+        ADD   V12.4S, V12.4S, V29.4S
+        ADD   V13.4S, V13.4S, V29.4S
+        SSHL  V10.4S, V10.4S, V28.4S
+        SSHL  V11.4S, V11.4S, V28.4S
+        SSHL  V12.4S, V12.4S, V28.4S
+        SSHL  V13.4S, V13.4S, V28.4S
+        .if \w == 4 || \w == 8
+            ADD   V14.4S, V14.4S, V29.4S
+            ADD   V15.4S, v15.4S, V29.4S
+            ADD   V16.4S, V16.4S, V29.4S
+            ADD   V17.4S, V17.4S, V29.4S
+            SSHL  V14.4S, V14.4S, V28.4S
+            SSHL  V15.4S, V15.4S, V28.4S
+            SSHL  V16.4S, V16.4S, V28.4S
+            SSHL  V17.4S, V17.4S, V28.4S
+        .endif
+
+        UZP1  v18.8h , V10.8H, V11.8H
+        UZP1  v19.8h, V12.8H, V13.8H
+        .if \w == 4 || \w == 8
+            UZP1  v30.8h, V14.8H, V15.8H
+            UZP1  v31.8h, V16.8H, V17.8H
+        .endif
+        .if \w == 8
+            // top section of the first vector
+            SMULL V10.4S, v20.4h, v1.H[4]
+            SMLAL V10.4S, v21.4h, V2.H[4]
+            SMLAL V10.4S, v22.4h, V3.H[4]
+            SMLAL V10.4S, v23.4h, V4.H[4]
+            SMLAL V10.4S, v24.4h, V5.H[4]
+            SMLAL V10.4S, v25.4h, V6.H[4]
+            SMLAL V10.4S, v26.4h, V7.H[4]
+            SMLAL V10.4S, v27.4h, V8.H[4]
+            // bootom section of the first vector
+            SMULL2 V11.4S, v20.8h, v1.H[4]
+            SMLAL2 V11.4S, v21.8h, v2.H[4]
+            SMLAL2 V11.4S, v22.8h, v3.H[4]
+            SMLAL2 V11.4S, v23.8h, v4.H[4]
+            SMLAL2 V11.4S, v24.8h, v5.H[4]
+            SMLAL2 V11.4S, v25.8h, v6.H[4]
+            SMLAL2 V11.4S, v26.8h, v7.H[4]
+            SMLAL2 V11.4S, v27.8h, v8.H[4]
+            // top section of the second vector
+            SMULL V12.4S, v20.4h, v1.H[5]
+            SMLAL V12.4S, v21.4h, V2.H[5]
+            SMLAL V12.4S, v22.4h, V3.H[5]
+            SMLAL V12.4S, v23.4h, V4.H[5]
+            SMLAL V12.4S, v24.4h, V5.H[5]
+            SMLAL V12.4S, v25.4h, V6.H[5]
+            SMLAL V12.4S, v26.4h, V7.H[5]
+            SMLAL V12.4S, v27.4h, V8.H[5]
+            // bootom section of the second vector
+            SMULL2 V13.4S, v20.8h, v1.H[5]
+            SMLAL2 V13.4S, v21.8h, v2.H[5]
+            SMLAL2 V13.4S, v22.8h, v3.H[5]
+            SMLAL2 V13.4S, v23.8h, v4.H[5]
+            SMLAL2 V13.4S, v24.8h, v5.H[5]
+            SMLAL2 V13.4S, v25.8h, v6.H[5]
+            SMLAL2 V13.4S, v26.8h, v7.H[5]
+            SMLAL2 V13.4S, v27.8h, v8.H[5]
+            // top section of the third ODD vector
+            SMULL V14.4S, v20.4h, v1.H[6]
+            SMLAL V14.4S, v21.4h, V2.H[6]
+            SMLAL V14.4S, v22.4h, V3.H[6]
+            SMLAL V14.4S, v23.4h, V4.H[6]
+            SMLAL V14.4S, v24.4h, V5.H[6]
+            SMLAL V14.4S, v25.4h, V6.H[6]
+            SMLAL V14.4S, v26.4h, V7.H[6]
+            SMLAL V14.4S, v27.4h, V8.H[6]
+            // bootom section of the third vector
+            SMULL2 V15.4S, v20.8h, v1.H[6]
+            SMLAL2 V15.4S, v21.8h, v2.H[6]
+            SMLAL2 V15.4S, v22.8h, v3.H[6]
+            SMLAL2 V15.4S, v23.8h, v4.H[6]
+            SMLAL2 V15.4S, v24.8h, v5.H[6]
+            SMLAL2 V15.4S, v25.8h, v6.H[6]
+            SMLAL2 V15.4S, v26.8h, v7.H[6]
+            SMLAL2 V15.4S, v27.8h, v8.H[6]
+            // top section of the fourth  vector
+            SMULL V16.4S, v20.4h, v1.H[7]
+            SMLAL V16.4S, v21.4h, V2.H[7]
+            SMLAL V16.4S, v22.4h, V3.H[7]
+            SMLAL V16.4S, v23.4h, V4.H[7]
+            SMLAL v16.4S, v24.4h, V5.H[7]
+            SMLAL v16.4S, v25.4h, V6.H[7]
+            SMLAL v16.4S, v26.4h, V7.H[7]
+            SMLAL v16.4S, v27.4h, V8.H[7]
+            // bootom section of the fourth vector
+            SMULL2 V17.4S, v20.8h, v1.H[7]
+            SMLAL2 V17.4S, v21.8h, v2.H[7]
+            SMLAL2 V17.4S, v22.8h, v3.H[7]
+            SMLAL2 V17.4S, v23.8h, v4.H[7]
+            SMLAL2 V17.4S, v24.8h, v5.H[7]
+            SMLAL2 V17.4S, v25.8h, v6.H[7]
+            SMLAL2 V17.4S, v26.8h, v7.H[7]
+            SMLAL2 V17.4S, v27.8h, v8.H[7]
+
+            ADD   V10.4S, v10.4S, V29.4S
+            ADD   V11.4S, V11.4S, V29.4S
+            ADD   V12.4S, V12.4S, V29.4S
+            ADD   V13.4S, V13.4S, V29.4S
+            ADD   V14.4S, V14.4S, V29.4S
+            ADD   V15.4S, v15.4S, V29.4S
+            ADD   V16.4S, V16.4S, V29.4S
+            ADD   V17.4S, V17.4S, V29.4S
+
+            SSHL  V10.4S, V10.4S, V28.4S
+            SSHL  V11.4S, V11.4S, V28.4S
+            SSHL  V12.4S, V12.4S, V28.4S
+            SSHL  V13.4S, V13.4S, V28.4S
+            SSHL  V14.4S, V14.4S, V28.4S
+            SSHL  V15.4S, V15.4S, V28.4S
+            SSHL  V16.4S, V16.4S, V28.4S
+            SSHL  V17.4S, V17.4S, V28.4S
+
+            UZP1  v9.8h , V10.8H, V11.8H
+            UZP1  v10.8h, V12.8H, V13.8H
+            UZP1  v11.8h, V14.8H, V15.8H
+            UZP1  v12.8h, V16.8H, V17.8H
+
+        .endif
+        .if \w == 2
+            st1 {v18.8h-v19.8h}, [x1]
+        .endif
+        .if \w == 4
+            st1 {v18.8h-v19.8h}, [x1], #32
+            st1 {v30.8h-v31.8h}, [x1]
+        .endif
+        .if \w == 8
+            st1 {v18.8h-v19.8h}, [x1], #32
+            st1 {v30.8h-v31.8h}, [x1], #32
+            st1 {v9.8h-v12.8h} , [x1]
+        .endif
+        ret lr
+    endfunc
+.endm
+
+
 // 4-pt dct-2/8 and dst-7
 idct_x_4 2
 idct_x_4 4
 idct_x_4 8
-// 8-pt dct-2
-idct_ii_8 4
-idct_ii_8 2
+// 8-pt dxt-2
+idct_x_8 2 4
+idct_x_8 2 8
+idct_x_8 4 4
+idct_x_8 4 8
+idct_x_8 8 4
+idct_x_8 8 8
 
