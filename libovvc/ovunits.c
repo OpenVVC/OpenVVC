@@ -70,6 +70,7 @@ ovnalu_init2(OVNALUnit **nalu_p)
     nalu->release = ovnalu_free;
 
     atomic_init(&nalu->ref_count, 0);
+    return 0;
 }
 
 int
