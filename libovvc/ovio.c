@@ -63,7 +63,7 @@ OVFileIOClose(OVIO* io)
 
     int ret = fclose(file_io->file);
 
-    free(file_io);
+    ov_free(file_io);
 
     return ret;
 }
