@@ -545,7 +545,179 @@
     endfunc
 .endm
 
+.macro idct_ii_16_2, w
+    function idct_ii_16_2_\w\()_neon, export=1
 
+        dup v29.4s, w4
+        dup v28.4s, w3
+
+        ld1 {v0.8h}, [x0], x2
+        ld1 {v1.8h}, [x0], x2
+        ld1 {v2.8h}, [x0], x2
+        ld1 {v3.8h}, [x0], x2
+        ld1 {v4.8h}, [x0], x2
+        ld1 {v5.8h}, [x0], x2
+        ld1 {v6.8h}, [x0], x2
+        ld1 {v7.8h}, [x0], x2
+        ld1 {v8.8h}, [x0], x2
+        ld1 {v9.8h}, [x0], x2
+        ld1 {v10.8h}, [x0], x2
+        ld1 {v11.8h}, [x0], x2
+        ld1 {v12.8h}, [x0], x2
+        ld1 {v13.8h}, [x0], x2
+        ld1 {v14.8h}, [x0], x2
+        ld1 {v15.8h}, [x0]
+
+        ld1 {v20.8h-v23.8h}, [x5]
+        // even 8x8
+        SMULL  V16.4S, v20.4h, v0.H[0]
+        .if \w == 8 || \w == 16
+            SMLAL2 V16.4S, v20.8h, v4.H[0]
+        .endif
+        .if \w == 16
+            SMLAL  V16.4S, v21.4h, V8.H[0]
+            SMLAL2 V16.4S, v21.8h, v12.H[0]
+        .endif
+
+        SMULL  V17.4S, v20.4h, v0.H[1]
+        .if \w == 8 || \w == 16
+            SMLAL2 V17.4S, v20.8h, v4.H[1]
+        .endif
+        .if \w == 16
+            SMLAL  V17.4S, v21.4h, V8.H[1]
+            SMLAL2 V17.4S, v21.8h, v12.H[1]
+        .endif
+        // odd 8x8
+        SMULL  V18.4S, v22.4h, v2.H[0]
+        .if \w == 8 || \w == 16
+            SMLAL2 V18.4S, v22.8h, v6.H[0]
+        .endif
+        .if \w == 16
+            SMLAL  V18.4S, v23.4h, V10.H[0]
+            SMLAL2 V18.4S, v23.8h, v14.H[0]
+        .endif
+        SMULL  V19.4S, v22.4h , v2.H[1]
+        .if \w == 8 || \w == 16
+            SMLAL2 V19.4S, v22.8h , v6.H[1]
+        .endif
+        .if \w == 16
+            SMLAL  V19.4S, v23.4h, V10.H[1]
+            SMLAL2 V19.4S, v23.8h, v14.H[1]
+        .endif
+
+        // first out butterfly (add sub)
+        ADD v2.4s, v16.4s, v18.4s // top section of the first even vector
+        ADD v4.4s, v17.4s, v19.4s // top section of the second even vector
+
+        sub v6.4s, v16.4s, v18.4s // bottom section of the first even vector
+        sub v8.4s, v17.4s, v19.4s // bottom section of the second even vector
+
+        inverse_neon v6
+        inverse_neon v8
+
+        ld1 {v20.8h-v23.8h}, [x6]
+        ld1 {v24.8h-v27.8h}, [x7]
+        // top section of the first ODD vector
+        SMULL V0.4S, v20.4h, v1.H[0]
+        SMLAL V0.4S, v21.4h, V3.H[0]
+        .if \w == 8 || \w == 16
+            SMLAL V0.4S, v22.4h, V5.H[0]
+            SMLAL V0.4S, v23.4h, V7.H[0]
+        .endif
+        .if \w == 16
+            SMLAL V0.4S, v24.4h, V9.H[0]
+            SMLAL V0.4S, v25.4h, V11.H[0]
+            SMLAL V0.4S, v26.4h, V13.H[0]
+            SMLAL V0.4S, v27.4h, V15.H[0]
+        .endif
+        // bootom section of the first ODD vector
+
+        SMULL2 V10.4S, v20.8h, v1.H[0]
+        SMLAL2 V10.4S, v21.8h, v3.H[0]
+        .if \w == 8 || \w == 16
+            SMLAL2 V10.4S, v22.8h, v5.H[0]
+            SMLAL2 V10.4S, v23.8h, v7.H[0]
+        .endif
+        .if \w == 16
+            SMLAL2 V10.4S, v24.8h, v9.H[0]
+            SMLAL2 V10.4S, v25.8h, v11.H[0]
+            SMLAL2 V10.4S, v26.8h, v13.H[0]
+            SMLAL2 V10.4S, v27.8h, v15.H[0]
+        .endif
+        // top section of the second ODD vector
+        SMULL V12.4S, v20.4h, v1.H[1]
+        SMLAL V12.4S, v21.4h, V3.H[1]
+        .if \w == 8 || \w == 16
+            SMLAL V12.4S, v22.4h, V5.H[1]
+            SMLAL V12.4S, v23.4h, V7.H[1]
+        .endif
+        .if \w == 16
+            SMLAL V12.4S, v24.4h, V9.H[1]
+            SMLAL V12.4S, v25.4h, V11.H[1]
+            SMLAL V12.4S, v26.4h, V13.H[1]
+            SMLAL V12.4S, v27.4h, V15.H[1]
+        .endif
+        // bootom section of the second ODD vector
+        SMULL2 V14.4S, v20.8h, v1.H[1]
+        SMLAL2 V14.4S, v21.8h, v3.H[1]
+        .if \w == 8 || \w == 16
+            SMLAL2 V14.4S, v22.8h, v5.H[1]
+            SMLAL2 V14.4S, v23.8h, v7.H[1]
+        .endif
+        .if \w == 16
+            SMLAL2 V14.4S, v24.8h, v9.H[1]
+            SMLAL2 V14.4S, v25.8h, v11.H[1]
+            SMLAL2 V14.4S, v26.8h, v13.H[1]
+            SMLAL2 V14.4S, v27.8h, v15.H[1]
+        .endif
+
+        // second out butterfly (add sub): first vector
+        ADD v1.4s, v2.4s, v0.4s
+        ADD v3.4s, v6.4s, v10.4s
+        SUB v5.4s, v2.4s, v0.4s
+        SUB v7.4s, v6.4s, v10.4s
+        // second out butterfly (add sub): second vector
+        ADD v9.4s , v4.4s, v12.4s
+        ADD v11.4s, v8.4s, v14.4s
+        SUB v13.4s, v4.4s, v12.4s
+        SUB v15.4s, v8.4s, v14.4s
+
+        // shift and round
+        ADD   V1.4S , v1.4S , V29.4S
+        ADD   V3.4S , V3.4S , V29.4S
+        ADD   V5.4S , V5.4S , V29.4S
+        ADD   V7.4S , V7.4S , V29.4S
+
+        ADD   V9.4S , V9.4S , V29.4S
+        ADD   V11.4S, V11.4S, V29.4S
+        ADD   V13.4S, V13.4S , V29.4S
+        ADD   V15.4S, V15.4S, V29.4S
+
+        SSHL  V1.4S , V1.4S , V28.4S
+        SSHL  V3.4S , V3.4S , V28.4S
+        SSHL  V5.4S , V5.4S , V28.4S
+        SSHL  V7.4S , V7.4S , V28.4S
+
+        SSHL  V9.4S , V9.4S , V28.4S
+        SSHL  V11.4S, V11.4S, V28.4S
+        SSHL  V13.4S, V13.4S, V28.4S
+        SSHL  V15.4S, V15.4S, V28.4S
+
+        // inverse the order of the second vector before merge : complete
+        inverse_neon v5
+        inverse_neon v7
+        inverse_neon v13
+        inverse_neon v15
+        //
+        UZP1  v21.8h, V1.8H , V3.8H
+        UZP1  v22.8h, V7.8H , V5.8H
+        UZP1  v23.8h, V9.8H , V11.8H
+        UZP1  v24.8h, V15.8H, V13.8H
+
+        st1 {v21.8h-v24.8h}, [x1]
+        ret lr
+    endfunc
+.endm
 // 4-pt dct-2/8 and dst-7
 idct_x_4 2
 idct_x_4 4
@@ -562,4 +734,9 @@ idct_x_8 4 4
 idct_x_8 4 8
 idct_x_8 8 4
 idct_x_8 8 8
+// 16-pt dct-2
+idct_ii_16_2 4
+idct_ii_16_2 8
+idct_ii_16_2 16
+// 16x2
 
