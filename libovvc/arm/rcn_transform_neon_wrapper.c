@@ -40,7 +40,6 @@
 #include "data_rcn_transform.h"
 #include "rcn_transform.h"
 
-//void ov_idct_x_4_1_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *Mat);
 // 4-pt DxT-II/VIII/VII
 void ov_idct_x_4_2_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *Mat);
 void ov_idct_x_4_4_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *Mat);
@@ -61,12 +60,12 @@ void ov_idct_ii_8_4_4_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_strid
 void ov_idct_ii_16_2_4_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *MatEO, const int16_t *MatO16s1, const int16_t *MatO16s2);
 void ov_idct_ii_16_2_8_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *MatEO, const int16_t *MatO16s1, const int16_t *MatO16s2);
 void ov_idct_ii_16_2_16_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *MatEO, const int16_t *MatO16s1, const int16_t *MatO16s2);
+// 32-pt DCT-II depth two butterfly
+void ov_idct_ii_32_4_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, const int16_t *MatEO, const int16_t *MatO16s1, const int16_t *MatO16s2, const int16_t *MatO32);
+void ov_idct_ii_32_8_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, const int16_t *MatEO, const int16_t *MatO16s1, const int16_t *MatO16s2, const int16_t *MatO32);
+void ov_idct_ii_32_16_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, const int16_t *MatEO, const int16_t *MatO16s1, const int16_t *MatO16s2, const int16_t *MatO32);
+void ov_idct_ii_32_32_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, const int16_t *MatEO, const int16_t *MatO16s1, const int16_t *MatO16s2, const int16_t *MatO32);
 
-void vvc_inverse_dct_ii_2_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                          int num_lines, int line_brk, int shift)
-{
-  //ov_idct_x_4_2_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_II_4);
-}
 
 void vvc_inverse_dct_ii_4_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                           int num_lines, int line_brk, int shift)
@@ -283,6 +282,7 @@ void vvc_inverse_dct_viii_8_neon(const int16_t *src, int16_t *dst, ptrdiff_t src
   }
 }
 
+
 void vvc_inverse_dct_ii_16_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                            int nb_lines, int line_brk, int shift)
 {
@@ -328,6 +328,73 @@ void vvc_inverse_dct_ii_16_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_
   }
 }
 
+void vvc_inverse_dct_ii_32_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
+                           int num_lines, int line_brk, int shift)
+{
+
+  const int16_t DCT_II_8_eo[4*8] = {
+    64, 64,  64,  64,
+    83, 36,  -36, -83,
+    64, -64, -64, 64,
+    36, -83, 83,  -36,
+    89,  75,  50,  18,
+    75, -18, -89, -50,
+    50, -89,  18,  75,
+    18, -50,  75, -89
+  };
+  const int16_t DCT_II_16_odd1[8*4] = {
+    90,  87,  80,  70,  57,  43,  25,   9,
+    87,  57,   9, -43, -80, -90, -70, -25,
+    80,   9, -70, -87, -25,  57,  90,  43,
+    70, -43, -87,   9,  90,  25, -80, -57
+  };
+  const int16_t DCT_II_16_odd2[8*4] = {
+    57, -80, -25,  90,  -9, -87,  43,  70,
+    43, -90,  57,  25, -87,  70,   9, -80,
+    25, -70,  90, -80,  43,   9, -57,  87,
+    9 , -25,  43, -57,  70, -80,  87, -90
+  };
+  const int16_t DCT_II_32_odd[16*16] = {
+    90,  90,  88,  85,   82,  78,  73,  67,  61,  54,  46,  38,  31,  22,  13,   4,
+    90,  82,  67,  46,   22,  -4, -31, -54, -73, -85, -90, -88, -78, -61, -38, -13,
+    88,  67,  31,  -13, -54, -82, -90, -78, -46,  -4,  38,  73,  90,  85,  61,  22,
+    85,  46, -13,  -67, -90, -73, -22,  38,  82,  88,  54,  -4, -61, -90, -78, -31,
+    82,  22, -54,  -90, -61,  13,  78,  85,  31, -46, -90, -67,   4,  73,  88,  38,
+    78,  -4, -82,  -73,  13,  85,  67, -22, -88, -61,  31,  90,  54, -38, -90, -46,
+    73, -31, -90,  -22,  78,  67, -38, -90, -13,  82,  61, -46, -88,  -4,  85,  54,
+    67, -54, -78,   38,  85, -22, -90,   4,  90,  13, -88, -31,  82,  46, -73, -61,
+    61, -73, -46,   82,  31, -88, -13,  90,  -4, -90,  22,  85, -38, -78,  54,  67,
+    54, -85,  -4,   88, -46, -61,  82,  13, -90,  38,  67, -78, -22,  90, -31, -73,
+    46, -90,  38,   54, -90,  31,  61, -88,  22,  67, -85,  13,  73, -82,   4,  78,
+    38, -88,  73,   -4, -67,  90, -46, -31,  85, -78,  13,  61, -90,  54,  22, -82,
+    31, -78,  90,  -61,   4,  54, -88,  82, -38, -22,  73, -90,  67, -13, -46,  85,
+    22, -61,  85,  -90,  73, -38,  -4,  46, -78,  90, -82,  54, -13, -31,  67, -88,
+    13, -38,  61,  -78,  88, -90,  85, -73,  54, -31,   4,  22, -46,  67, -82,  90,
+    4,  -13,  22,  -31,  38, -46,  54, -61,  67, -73,  78, -82,  85, -88,  90, -90
+  };
+  if(num_lines > 1){
+
+    for (int j = 0; j < num_lines ; j++) {
+
+      if (line_brk > 16)
+        ov_idct_ii_32_32_neon(src, dst, src_stride<<1, shift, DCT_II_8_eo, DCT_II_16_odd1, DCT_II_16_odd2, DCT_II_32_odd);
+      else if (line_brk > 8)
+        ov_idct_ii_32_16_neon(src, dst, src_stride<<1, shift, DCT_II_8_eo, DCT_II_16_odd1, DCT_II_16_odd2, DCT_II_32_odd);
+      else if (line_brk > 4)
+        ov_idct_ii_32_8_neon(src, dst, src_stride<<1, shift, DCT_II_8_eo, DCT_II_16_odd1, DCT_II_16_odd2, DCT_II_32_odd);
+      else
+        ov_idct_ii_32_4_neon(src, dst, src_stride<<1, shift, DCT_II_8_eo, DCT_II_16_odd1, DCT_II_16_odd2, DCT_II_32_odd);
+
+      src += 1;
+      dst += 32;
+    }
+  }
+
+  if (num_lines & 0x1){
+    vvc_inverse_dct_ii_32(src, dst, src_stride, num_lines & 0x1, line_brk, shift);
+  }
+}
+
 
 void rcn_init_tr_functions_neon(struct RCNFunctions *const rcn_funcs){
   rcn_funcs->tr.func[DST_VII][2] = &vvc_inverse_dst_vii_4_neon;
@@ -344,8 +411,8 @@ void rcn_init_tr_functions_neon(struct RCNFunctions *const rcn_funcs){
   rcn_funcs->tr.func[DCT_II][2] = &vvc_inverse_dct_ii_4_neon;
   rcn_funcs->tr.func[DCT_II][3] = &vvc_inverse_dct_ii_8_neon;
   rcn_funcs->tr.func[DCT_II][4] = &vvc_inverse_dct_ii_16_neon;
-  /*rcn_funcs->tr.func[DCT_II][5] = &vvc_inverse_dct_ii_32_sse;
-  rcn_funcs->tr.func[DCT_II][6] = &vvc_inverse_dct_ii_64_sse;
+  rcn_funcs->tr.func[DCT_II][5] = &vvc_inverse_dct_ii_32_neon;
+  /*rcn_funcs->tr.func[DCT_II][6] = &vvc_inverse_dct_ii_64_sse;
 
   rcn_funcs->tr.dc = &vvc_inverse_dct_ii_dc_sse;*/
 }
