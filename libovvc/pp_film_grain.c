@@ -33,6 +33,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <immintrin.h>
 
 #include "ovutils.h"
 #include "ovmem.h"
@@ -662,6 +663,38 @@ void fg_simulate_grain_blk8x8(int32_t *grainStripe, uint32_t grainStripeOffsetBl
   return;
 }
 
+int16_t fg_compute_block_avg_sse4(int16_t *dstSampleBlk8, uint32_t widthComp, uint16_t *pNumSamples,
+                      uint8_t ySize, uint8_t xSize, uint8_t bitDepth)
+{
+  uint16_t blockAvg   = 0;
+  uint16_t numSamples = 0;
+
+  __m128i acc = _mm_setzero_si128();
+
+  for (int i = 0; i < ySize; i+=1, numSamples+=8)
+  {
+      __m128i x = _mm_loadu_si128(&dstSampleBlk8[i*widthComp]);
+      acc = _mm_adds_epi16(acc, x);
+  }
+
+  if (numSamples > 0)
+  {
+    acc = _mm_hadd_epi16(acc, acc);
+    acc = _mm_hadd_epi16(acc, acc);
+    acc = _mm_hadd_epi16(acc, acc);
+    blockAvg = _mm_cvtsi128_si32(acc);
+    blockAvg /= numSamples;
+    blockAvg >>= (bitDepth - 8); /* to handle high bit depths */
+  }
+
+  // assert(blockAvg < (1 << 8));
+  *pNumSamples = numSamples;
+
+  // blockAvg = (int16_t) OVMIN(OVMAX(0, blockAvg), (1 << 8) - 1 );
+  blockAvg = (int16_t) ov_clip_uintp2((uint32_t)blockAvg, 8);
+  return blockAvg;
+}
+
 // void fg_data_base_generation(int8_t****  dataBase, uint8_t enableDeblocking)
 void fg_data_base_generation( uint8_t enableDeblocking)
 {
@@ -906,11 +939,17 @@ void fg_grain_apply_pic(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain
                             grainStripeOffsetBlk8 = grainStripeOffset + offsetBlk8x8;
 
                             srcSampleBlk8 = srcSampleBlk16 + offsetBlk8x8;
+                            #if __SSE4_1__ || __SSE4_2__
+                            blockAvg      = fg_compute_block_avg_sse4(srcSampleBlk8, strideComp[compCtr], &numSamples,
+                                 OVMIN(8, (heightComp[compCtr] - y - yOffset8x8)),
+                                 OVMIN(8, (widthComp[compCtr] - x - xOffset8x8)),
+                                 bitDepth);
+                            #else
                             blockAvg      = fg_compute_block_avg(srcSampleBlk8, strideComp[compCtr], &numSamples,
                                  OVMIN(8, (heightComp[compCtr] - y - yOffset8x8)),
                                  OVMIN(8, (widthComp[compCtr] - x - xOffset8x8)),
                                  bitDepth);
-
+                            #endif
                             /* Handling of non 8x8 blocks along with 8x8 blocks */
                             if (numSamples > 0)
                             {
