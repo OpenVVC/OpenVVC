@@ -33,11 +33,11 @@
 
 #include <stdint.h>
 #include <string.h>
+#include "immintrin.h"
 
 #include "ovutils.h"
 #include "ovmem.h"
 #include "nvcl_structures.h"
-
 
 #define MAX_NUM_INTENSITIES                             256 // Maximum nuber of intensity intervals supported in FGC SEI
 #define MAX_NUM_MODEL_VALUES                              6 // Maximum nuber of model values supported in FGC SEI
@@ -662,6 +662,55 @@ void fg_simulate_grain_blk8x8(int32_t *grainStripe, uint32_t grainStripeOffsetBl
   return;
 }
 
+void fg_simulate_grain_blk8x8_sse4(int32_t *grainStripe, uint32_t grainStripeOffsetBlk8,
+  uint32_t width, uint8_t log2ScaleFactor, int16_t scaleFactor, uint32_t kOffset, uint32_t lOffset, uint8_t h, uint8_t v, uint32_t xSize)
+{
+    uint32_t idx_offset_l1, idx_offset_l2, idx_offset_l3, idx_offset_l4;
+    uint32_t grainStripeOffsetBlk8_l1, grainStripeOffsetBlk8_l2, grainStripeOffsetBlk8_l3, grainStripeOffsetBlk8_l4;
+    
+    uint32_t idx_offset = ( h*NUM_CUT_OFF_FREQ +  v ) * DATA_BASE_SIZE  * DATA_BASE_SIZE;
+    
+    __m128i scale = _mm_set_epi32(scaleFactor, scaleFactor, scaleFactor, scaleFactor);
+
+    for (uint32_t l = 0; l < 8; l+=4) {
+
+      idx_offset_l1            = idx_offset + (l + lOffset) * DATA_BASE_SIZE;
+      idx_offset_l2            = idx_offset + (l + 1 + lOffset) * DATA_BASE_SIZE;
+      idx_offset_l3            = idx_offset + (l + 2 + lOffset) * DATA_BASE_SIZE;
+      idx_offset_l4            = idx_offset + (l + 3 + lOffset) * DATA_BASE_SIZE;
+      
+      grainStripeOffsetBlk8_l1 = grainStripeOffsetBlk8 + (l*width);
+      grainStripeOffsetBlk8_l2 = grainStripeOffsetBlk8 + ((l + 1)*width);
+      grainStripeOffsetBlk8_l3 = grainStripeOffsetBlk8 + ((l + 2)*width);
+      grainStripeOffsetBlk8_l4 = grainStripeOffsetBlk8 + ((l + 3)*width);
+      
+      for (uint32_t k = 0; k < xSize; k+=4) 
+      {
+        __m128i fg_data_1 = _mm_loadu_si64(fg_data_base + idx_offset_l1 + (k + kOffset));
+        __m128i fg_data_1_lo = _mm_cvtepi8_epi32(fg_data_1);
+        __m128i chunk_1 = _mm_srai_epi32(_mm_mullo_epi32(fg_data_1_lo, scale), log2ScaleFactor + GRAIN_SCALE);
+        _mm_store_si128((__m128i*)&grainStripe[grainStripeOffsetBlk8_l1 + k], chunk_1);
+
+        __m128i fg_data_2 = _mm_loadu_si64(fg_data_base + idx_offset_l2 + (k + kOffset));
+        __m128i fg_data_2_lo = _mm_cvtepi8_epi32(fg_data_2);
+        __m128i chunk_2 = _mm_srai_epi32(_mm_mullo_epi32(fg_data_2_lo, scale), log2ScaleFactor + GRAIN_SCALE);
+        _mm_store_si128((__m128i*)&grainStripe[grainStripeOffsetBlk8_l2 + k], chunk_2);
+
+        __m128i fg_data_3 = _mm_loadu_si64(fg_data_base + idx_offset_l3 + (k + kOffset));
+        __m128i fg_data_3_lo = _mm_cvtepi8_epi32(fg_data_3);
+        __m128i chunk_3 = _mm_srai_epi32(_mm_mullo_epi32(fg_data_3_lo, scale), log2ScaleFactor + GRAIN_SCALE);
+        _mm_store_si128((__m128i*)&grainStripe[grainStripeOffsetBlk8_l3 + k], chunk_3);
+
+        __m128i fg_data_4 = _mm_loadu_si64(fg_data_base + idx_offset_l4 + (k + kOffset));
+        __m128i fg_data_4_lo = _mm_cvtepi8_epi32(fg_data_4);
+        __m128i chunk_4 = _mm_srai_epi32(_mm_mullo_epi32(fg_data_4_lo, scale), log2ScaleFactor + GRAIN_SCALE);
+        _mm_store_si128((__m128i*)&grainStripe[grainStripeOffsetBlk8_l4 + k], chunk_4);
+      }
+    }
+
+    return;
+ }
+
 // void fg_data_base_generation(int8_t****  dataBase, uint8_t enableDeblocking)
 void fg_data_base_generation( uint8_t enableDeblocking)
 {
@@ -932,9 +981,14 @@ void fg_grain_apply_pic(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain
                                     v           =  fgrain->fg_comp_model_value[compCtr][intensityInt][2] - 2;
 
                                     /* 8x8 block grain simulation */
+                                    #if __SSE4_1__ || __SSE4_2__
+                                    fg_simulate_grain_blk8x8_sse4(grainStripe, grainStripeOffsetBlk8, strideComp[compCtr],
+                                    log2ScaleFactor, scaleFactor, kOffset, lOffset, h, v, OVMIN(8, (widthComp[compCtr] - x - xOffset8x8)));
+                                    #else
                                     // fg_simulate_grain_blk8x8(grainStripe, grainStripeOffsetBlk8, m_pGrainSynt, strideComp[compCtr],
                                     fg_simulate_grain_blk8x8(grainStripe, grainStripeOffsetBlk8, strideComp[compCtr],
                                     log2ScaleFactor, scaleFactor, kOffset, lOffset, h, v, OVMIN(8, (widthComp[compCtr] - x - xOffset8x8)));
+                                    #endif
                                 }/* only if average falls in any interval */
                             } /* includes corner case handling */
                         } /* 8x8 level block processing */
