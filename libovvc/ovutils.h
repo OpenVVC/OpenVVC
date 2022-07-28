@@ -47,8 +47,8 @@
 #define ov_clz(x) __builtin_clz(x)
 #define ov_ctz(x) __builtin_ctz(x)
 
-#define ov_clz64(x) __builtin_clzl(x)
-#define ov_ctz64(x) __builtin_ctzl(x)
+#define ov_clz64(x) __builtin_clzll(x)
+#define ov_ctz64(x) __builtin_ctzll(x)
 
 #define ov_ceil_log2(x) 32 - __builtin_clz((x - !!x) + !(x - !!x))
 
