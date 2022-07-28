@@ -1990,8 +1990,8 @@ vvc_dbf_ctu_hor(const struct DFFunctions * df, OVSample *src, int stride, const 
         if (edg_msk) {
             uint64_t pos_msk = 1;
             uint8_t once = 1;
-            struct EdgeCtx edg_ctx;
-            const uint8_t *qp_col = &dbf_info->qp_map_y.hor[36 + i];
+            struct EdgeCtx edg_ctx={{0}};
+            const int8_t *qp_col = &dbf_info->qp_map_y.hor[36 + i];
 
             do {
                 int8_t qp, bs;
