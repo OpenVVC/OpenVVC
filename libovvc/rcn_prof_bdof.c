@@ -438,7 +438,7 @@ derive_bdof_weights(const int16_t* ref0, const int16_t* ref1,
     if (sum_avg_x) {
         int log2_renorm_x = floor_log2(sum_avg_x);
 
-        wgt_x = (sum_delta_x << 2) >> log2_renorm_x;
+        wgt_x = (sum_delta_x * 4) >> log2_renorm_x;
         wgt_x = ov_clip(wgt_x, -BDOF_WGT_LIMIT, BDOF_WGT_LIMIT);
         *weight_x = wgt_x;
     }
@@ -451,10 +451,10 @@ derive_bdof_weights(const int16_t* ref0, const int16_t* ref1,
             /* FIXME understand this part */
             int high = sum_avg_x_y_signs >> 12;
             int low  = sum_avg_x_y_signs & ((1 << 12) - 1);
-            x_offset = (((wgt_x * high) << 12) + (wgt_x * low)) >> 1;
+            x_offset = ((int32_t)((uint32_t)(wgt_x * high) << 12) + (wgt_x * low)) >> 1;
         }
 
-        wgt_y = ((sum_delta_y << 2) - x_offset) >> log2_renorm_y;
+        wgt_y = ((sum_delta_y * 4) - x_offset) >> log2_renorm_y;
         wgt_y = ov_clip(wgt_y, -BDOF_WGT_LIMIT, BDOF_WGT_LIMIT);
         *weight_y = wgt_y;
     }
