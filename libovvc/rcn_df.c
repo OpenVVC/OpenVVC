@@ -1856,7 +1856,7 @@ static void
 dbf_ctu_preproc_v(const struct InterDRVCtx *const inter_ctx, struct DBFInfo *const dbf_info,
                   uint8_t nb_unit_h, uint8_t nb_unit_w)
 {
-    const uint64_t vedge_mask = ((uint64_t)1 << nb_unit_h) - 1;
+    const uint64_t vedge_mask = ((uint64_t)1 << nb_unit_h) - (uint64_t)1;
 
     const uint64_t *cu_edg_map = &dbf_info->cu_edge.ver[0];
     const uint64_t *sb_edg_map = &dbf_info->aff_edg_ver[8];
@@ -2120,7 +2120,7 @@ vvc_dbf_ctu_ver(const struct DFFunctions *df, OVSample *src, int stride, const s
                 uint8_t nb_unit_w, int is_last_w, uint8_t nb_unit_h, uint8_t ctu_abv)
 {
     const int blk_stride = 1 << 2;
-    const uint64_t hedge_mask = ((uint64_t)1 << (nb_unit_w + (!!is_last_w << 1))) - 1;
+    const uint64_t hedge_mask = ((uint64_t)1 << (nb_unit_w + (!!is_last_w << 1))) - 1llu;
     int i;
 
     const uint64_t *edg_map = &dbf_info->ctb_bound_hor[8];
