@@ -1202,7 +1202,7 @@ vvc_dbf_chroma_hor(const struct DFFunctions *df, OVSample *src_cb, OVSample *src
             uint64_t large_map_q = derive_large_map_from_ngh(&edg_map_tab[edge_idx]);
 
             /* FIXME use absolute QP maps */
-            const uint8_t *qp_col = &dbf_info->qp_map_cb.hor[36 + edge_idx];
+            const int8_t *qp_col = &dbf_info->qp_map_cb.hor[36 + edge_idx];
             OVSample *src = src_cb;
 
             /* Discard non filtered edges from edge_map */
@@ -1250,7 +1250,7 @@ vvc_dbf_chroma_hor(const struct DFFunctions *df, OVSample *src_cb, OVSample *src
         if (edge_map) {
             uint64_t large_map_q = derive_large_map_from_ngh(&edg_map_tab[edge_idx]);
 
-            const uint8_t *qp_col = &dbf_info->qp_map_cr.hor[36 + edge_idx];
+            const int8_t *qp_col = &dbf_info->qp_map_cr.hor[36 + edge_idx];
 
             OVSample *src = src_cr;
 
@@ -1357,7 +1357,7 @@ vvc_dbf_chroma_ver(const struct DFFunctions *df, OVSample *src_cb, OVSample *src
         edge_map &= bs2_map | bs1_map;
 
         if (edge_map) {
-            const uint8_t *qp_row = &dbf_info->qp_map_cb.hor[edge_idx * 34];
+            const int8_t *qp_row = &dbf_info->qp_map_cb.hor[edge_idx * 34];
 
             uint64_t large_map_q = derive_large_map_from_ngh(&edg_map_tab[edge_idx]);
 
@@ -1405,7 +1405,7 @@ vvc_dbf_chroma_ver(const struct DFFunctions *df, OVSample *src_cb, OVSample *src
 
         if (edge_map) {
             uint64_t large_map_q = derive_large_map_from_ngh(&edg_map_tab[edge_idx]);
-            const uint8_t *qp_row = &dbf_info->qp_map_cr.hor[edge_idx * 34];
+            const int8_t *qp_row = &dbf_info->qp_map_cr.hor[edge_idx * 34];
             OVSample *src = src_cr;
             uint8_t is_ctb_b = i == 0;
 
@@ -2149,8 +2149,8 @@ vvc_dbf_ctu_ver(const struct DFFunctions *df, OVSample *src, int stride, const s
         if (edg_msk) {
             uint64_t pos_msk = 1;
             uint8_t once = 1;
-            struct EdgeCtx edg_ctx;
-            const uint8_t *qp_row = &dbf_info->qp_map_y.hor[34 * i];
+            struct EdgeCtx edg_ctx ={{0}};
+            const int8_t *qp_row = &dbf_info->qp_map_y.hor[34 * i];
 
             do {
                 int8_t qp, bs;
