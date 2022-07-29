@@ -108,9 +108,8 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
 
                 sao_ctu->offset_val[0][0] =  offset_abs[0];
                 sao_ctu->offset_val[0][1] =  offset_abs[1];
-                sao_ctu->offset_val[0][2] =  0;
-                sao_ctu->offset_val[0][3] = -offset_abs[2];
-                sao_ctu->offset_val[0][4] = -offset_abs[3];
+                sao_ctu->offset_val[0][2] = -offset_abs[2];
+                sao_ctu->offset_val[0][3] = -offset_abs[3];
             }
         }
     }
@@ -153,9 +152,8 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
 
                 sao_ctu->offset_val[1][0] =  offset_abs[0];
                 sao_ctu->offset_val[1][1] =  offset_abs[1];
-                sao_ctu->offset_val[1][2] =  0;
-                sao_ctu->offset_val[1][3] = -offset_abs[2];
-                sao_ctu->offset_val[1][4] = -offset_abs[3];
+                sao_ctu->offset_val[1][2] = -offset_abs[2];
+                sao_ctu->offset_val[1][3] = -offset_abs[3];
             }
 
             for (i = 0; i < 4; i++) {
@@ -187,9 +185,8 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
                 sao_ctu->eo_class[2] = sao_ctu->eo_class[1];
                 sao_ctu->offset_val[2][0] =  offset_abs[0];
                 sao_ctu->offset_val[2][1] =  offset_abs[1];
-                sao_ctu->offset_val[2][2] =  0;
-                sao_ctu->offset_val[2][3] = -offset_abs[2];
-                sao_ctu->offset_val[2][4] = -offset_abs[3];
+                sao_ctu->offset_val[2][2] = -offset_abs[2];
+                sao_ctu->offset_val[2][3] = -offset_abs[3];
             }
         }
     }

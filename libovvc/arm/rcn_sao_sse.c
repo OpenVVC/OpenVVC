@@ -63,7 +63,7 @@ sao_band_filter_0_10_sse(OVSample* _dst,
 {
   int y, x;
   int shift = 10 - 5;
-  int16_t* sao_offset_val = sao->offset_val[c_idx];
+  int8_t* sao_offset_val = sao->offset_val[c_idx];
   uint8_t sao_left_class = sao->band_position[c_idx];
   __m128i r0, r1, r2, r3, x0, x1, x2, x3, sao1, sao2, sao3, sao4;
   __m128i src0, src2;
@@ -115,7 +115,7 @@ sao_edge_filter_10_sse(OVSample* _dst,
                        int c_idx)
 {
   int x, y;
-  int16_t* sao_offset_val = sao->offset_val[c_idx];
+  int8_t* sao_offset_val = sao->offset_val[c_idx];
   int eo = sao->eo_class[c_idx];
   const int8_t pos[4][2][2] = {
     { { -1, 0 }, { 1, 0 } },
@@ -134,9 +134,9 @@ sao_edge_filter_10_sse(OVSample* _dst,
     int b_stride = pos[eo][1][0] + pos[eo][1][1] * stride_src;
     offset0 = _mm_set1_epi16(sao_offset_val[0]);
     offset1 = _mm_set1_epi16(sao_offset_val[1]);
-    offset2 = _mm_set1_epi16(sao_offset_val[2]);
-    offset3 = _mm_set1_epi16(sao_offset_val[3]);
-    offset4 = _mm_set1_epi16(sao_offset_val[4]);
+    offset2 = _mm_set1_epi16(0);
+    offset3 = _mm_set1_epi16(sao_offset_val[2]);
+    offset4 = _mm_set1_epi16(sao_offset_val[3]);
     for (y = 0; y < height; y++) {
       for (x = 0; x < width; x += 8) {
         x0 = _mm_loadu_si128((__m128i*)(src + x));
@@ -188,7 +188,7 @@ sao_edge_filter_7_10_sse(OVSample* _dst,
                          int c_idx)
 {
   int x, y;
-  int16_t* sao_offset_val = sao->offset_val[c_idx];
+  int8_t* sao_offset_val = sao->offset_val[c_idx];
   int eo = sao->eo_class[c_idx];
   const int8_t pos[4][2][2] = {
     { { -1, 0 }, { 1, 0 } },
@@ -207,9 +207,9 @@ sao_edge_filter_7_10_sse(OVSample* _dst,
     int b_stride = pos[eo][1][0] + pos[eo][1][1] * stride_src;
     offset0 = _mm_set1_epi16(sao_offset_val[0]);
     offset1 = _mm_set1_epi16(sao_offset_val[1]);
-    offset2 = _mm_set1_epi16(sao_offset_val[2]);
-    offset3 = _mm_set1_epi16(sao_offset_val[3]);
-    offset4 = _mm_set1_epi16(sao_offset_val[4]);
+    offset2 = _mm_set1_epi16(0);
+    offset3 = _mm_set1_epi16(sao_offset_val[2]);
+    offset4 = _mm_set1_epi16(sao_offset_val[3]);
     for (y = 0; y < height; y++) {
       for (x = 0; x < width - width%8; x += 8) {
         x0 = _mm_loadu_si128((__m128i*)(src + x));
