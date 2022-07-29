@@ -289,14 +289,10 @@ rcn_save_last_rows(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_
         const int x = x_l/ratio;
 
         int stride_rows = fb->saved_rows_stride[comp];
-        //save pixels in top left corner of ctu filter
+
         for(int ii=0; ii < margin; ii++) {
             for(int jj=0; jj < margin; jj++) {
-                // if ( is_border_rect & VVC_BOUNDARY_RIGHT_TILE)
-                if ( 0 )
-                    filter_region[ii*stride_filter + jj] = saved_rows_comp[ii*stride_rows];
-                else
-                    filter_region[ii*stride_filter + jj] = saved_rows_comp[ii*stride_rows + x + width - margin + jj];
+                filter_region[ii*stride_filter + jj] = saved_rows_comp[ii*stride_rows + x + width - margin + jj];
             }
         }
 
