@@ -629,7 +629,6 @@ struct OVCTUDec
 
             OVSample* saved_rows_sao[3];
             OVSample* saved_rows_alf[3];
-            OVSample* saved_cols[3];
             int16_t  saved_rows_stride[3];
 
             uint8_t  margin;
