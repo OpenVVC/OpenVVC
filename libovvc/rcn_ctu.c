@@ -208,7 +208,6 @@ free_filter_buffers(struct OVRCNCtx *const rcn_ctx)
 {
     OVSample** saved_rows_sao    = rcn_ctx->filter_buffers.saved_rows_sao;
     OVSample** saved_rows_alf    = rcn_ctx->filter_buffers.saved_rows_alf;
-    OVSample** saved_cols        = rcn_ctx->filter_buffers.saved_cols;
     OVSample** filter_region     = rcn_ctx->filter_buffers.filter_region;
 
     for(int comp = 0; comp < 3; comp++)
@@ -216,7 +215,6 @@ free_filter_buffers(struct OVRCNCtx *const rcn_ctx)
         if(filter_region[comp])     ov_freep(&filter_region[comp]);
         if(saved_rows_sao[comp])    ov_freep(&saved_rows_sao[comp]);
         if(saved_rows_alf[comp])    ov_freep(&saved_rows_alf[comp]);
-        if(saved_cols[comp])        ov_freep(&saved_cols[comp]);
     }
 }
 
@@ -255,7 +253,6 @@ rcn_save_last_cols(struct OVRCNCtx *const rcn_ctx, int x_pic_l, int y_pic_l, uin
     const int margin = fb->margin;
 
     for(int comp = 0; comp < 3; comp++) {
-        OVSample* saved_cols = fb->saved_cols[comp];
         OVSample* filter_region = fb->filter_region[comp];
         int stride_filter = fb->filter_region_stride[comp];
 
@@ -266,7 +263,7 @@ rcn_save_last_cols(struct OVRCNCtx *const rcn_ctx, int x_pic_l, int y_pic_l, uin
 
         for(int ii=0; ii < height; ii++) {
             for(int jj=0; jj < margin; jj++) {
-                saved_cols[ii*margin + jj] = filter_region[(ii+margin)*stride_filter + width + jj];
+                filter_region[(ii+margin)*stride_filter + jj] = filter_region[(ii+margin)*stride_filter + width + jj];
             }
         }
     }
@@ -336,7 +333,6 @@ rcn_extend_filter_region(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, 
         const int y_pic = y_pic_l/ratio;
 
         OVSample* saved_rows_comp = saved_rows[comp];
-        OVSample* saved_cols = fb->saved_cols[comp];
         OVSample* filter_region = fb->filter_region[comp];
         int stride_filter = fb->filter_region_stride[comp];
 
@@ -367,17 +363,6 @@ rcn_extend_filter_region(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, 
                 for (int jj=0; jj < margin; jj++) {
                     dst[jj] = pad;
                 }
-                dst += stride_filter;
-            }
-        } else {
-            int cpy_s = sizeof(OVSample) * margin;
-            OVSample *dst = &filter_region[margin * stride_filter];
-            const OVSample *src = saved_cols;
-            for (int ii=0; ii < height; ii++) {
-                for (int jj=0; jj < margin; jj++) {
-                    memcpy(dst, src, cpy_s);
-                }
-                src += margin;
                 dst += stride_filter;
             }
         }
@@ -517,7 +502,6 @@ rcn_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int margi
     struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
     OVSample** saved_rows_sao = fb->saved_rows_sao;
     OVSample** saved_rows_alf = fb->saved_rows_alf;
-    OVSample** saved_cols    = fb->saved_cols;
     OVSample** filter_region = fb->filter_region;
     fb->margin = margin;
 
@@ -533,7 +517,6 @@ rcn_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int margi
         if (!filter_region[comp]) {
             int ext_size = fb->filter_region_stride[comp] * (fb->filter_region_h[comp] + 2 * margin + 1);
             filter_region[comp] = ov_malloc(ext_size * sizeof(OVSample));
-            saved_cols[comp]    = ov_malloc(fb->filter_region_h[comp] * margin * sizeof(OVSample));
         }
 
         fb->saved_rows_stride[comp] = nb_ctu_w * ctu_s / ratio; ;
