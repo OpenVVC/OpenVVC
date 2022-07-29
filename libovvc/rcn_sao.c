@@ -56,7 +56,7 @@ sao_band_filter(OVSample *_dst, OVSample *_src,
     int k, y, x;
     int shift  = BITDEPTH - 5;
 
-    int16_t *sao_offset_val = sao->offset_val[c_idx];
+    int8_t *sao_offset_val = sao->offset_val[c_idx];
     uint8_t sao_left_class  = sao->band_position[c_idx];
 
     //stride_src /= sizeof(OVSample);
@@ -90,13 +90,18 @@ sao_edge_filter(OVSample *_dst, OVSample *_src,
         { {  1, -1 }, { -1, 1 } }, // 135 degree
     };
 
-    int16_t *sao_offset_val = sao->offset_val[c_idx];
+    const int16_t sao_offset_val[5] = {
+        sao->offset_val[c_idx][0],
+        sao->offset_val[c_idx][1],
+        0,
+        sao->offset_val[c_idx][2],
+        sao->offset_val[c_idx][3]
+    };
+
     uint8_t eo = sao->eo_class[c_idx];
     OVSample *dst = _dst;
     OVSample *src = _src;
 
-    //stride_src /= sizeof(OVSample);
-    //stride_dst /= sizeof(OVSample);
     int a_stride, b_stride;
     int src_offset = 0;
     int dst_offset = 0;
