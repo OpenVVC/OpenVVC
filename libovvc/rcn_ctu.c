@@ -300,7 +300,7 @@ rcn_save_last_rows(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_
             continue;
 
         for(int ii=0 ; ii < margin; ii++) {
-            memcpy(&saved_rows_comp[ii*stride_rows + x], &filter_region[(height+ii)*stride_filter + margin], width * sizeof(OVSample));
+            memcpy(&saved_rows_comp[ii * stride_rows + x], &filter_region[(height + ii) * stride_filter + margin], width * sizeof(OVSample));
         }
     }
 }
