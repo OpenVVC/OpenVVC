@@ -264,9 +264,6 @@ enum SAOModeMergeTypes
 
 typedef struct SAOParamsCtu
 {
-    int offset_abs[3][4];   ///< sao_offset_abs
-    int offset_sign[3][4];  ///< sao_offset_sign
-
     int16_t offset_val[3][5];   ///<SaoOffsetVal
 
     uint8_t band_position[3];   ///< sao_band_position
