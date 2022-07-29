@@ -1290,6 +1290,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
         int ctb_y_pic = ctb_y + einfo->ctb_y;
         int x_pos_pic = ctu_s * ctb_x_pic;
         int y_pos_pic = ctu_s * ctb_y_pic;
+
         int ctu_w = (x_pos_pic + ctu_s > ctudec->pic_w) ? (ctudec->pic_w - x_pos_pic) : ctu_s;
         int ctu_h = (y_pos_pic + ctu_s > ctudec->pic_h) ? (ctudec->pic_h - y_pos_pic) : ctu_s;
 
@@ -1349,23 +1350,23 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
             const int chr_scale = frame->linesize[0] / frame->linesize[c_idx];
 
             if ((c_idx==1 && (alf_params_ctu->ctb_alf_flag & 2)) || (c_idx==2 && (alf_params_ctu->ctb_alf_flag & 1))) {
-                Area blk_dst;
                 int stride_src = fb.filter_region_stride[c_idx];
                 OVSample*  src_chroma = &src[c_idx][fb.filter_region_offset[c_idx]];
-                //Destination block in the final image
-                blk_dst.x = x_pos_pic/chr_scale;
-                blk_dst.y = y_pos_pic/chr_scale;
+                Area blk_dst = {
+                    .x = x_pos_pic / chr_scale,
+                    .y = y_pos_pic / chr_scale,
+                    .width  = ctu_w / chr_scale,
+                    .height = ctu_h / chr_scale,
+                };
 
-                blk_dst.width  = ctu_w /chr_scale;
-                blk_dst.height = ctu_h/chr_scale;
+                int stride_dst = frame->linesize[c_idx] / sizeof(OVSample);
 
-                int stride_dst = frame->linesize[c_idx]/sizeof(OVSample);
-                OVSample*  dst_chroma = (OVSample*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
+                OVSample*  dst_chroma = (OVSample*) frame->data[c_idx] + blk_dst.y * stride_dst + blk_dst.x;
 
                 uint8_t alt_num = (c_idx == 1) ? alf_params_ctu->cb_alternative : alf_params_ctu->cr_alternative;
 
                 int virbnd_pos = ((y_pos_pic + ctu_s > ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA)/chr_scale);
-                int yVb = (blk_dst.y + blk_dst.height - 1);// & (ctu_s - 1);
+                int yVb = (blk_dst.y + blk_dst.height - 1);
                 yVb = yVb & (ctu_s/chr_scale - 1);
 
                 uint8_t isVB = (yVb < virbnd_pos && (yVb >= virbnd_pos - 2)) || (yVb >= virbnd_pos && (yVb <= virbnd_pos + 1)) || ctu_h != ctu_s || ctu_w != ctu_s;
@@ -1383,10 +1384,16 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                 const int filt_idx = alf_info->ctb_cc_alf_filter_idx[c_idx - 1][ctu_rs_addr];
                 if (filt_idx != 0) {
                     //TODO: maybe reverse buffer use, the alf reconstructed pixels are in the pic frame.
-                    Area blk_dst;
                     //Source block in the filter buffers image
                     int stride_src = fb.filter_region_stride[0];
                     OVSample*  src_chroma = &src[0][fb.filter_region_offset[0]];
+
+                    Area blk_dst = {
+                        .x = x_pos_pic / chr_scale,
+                        .y = y_pos_pic / chr_scale,
+                        .width  = ctu_w / chr_scale,
+                        .height = ctu_h / chr_scale,
+                    };
 
                     //Destination block in the final image
                     blk_dst.x=x_pos_pic/chr_scale; blk_dst.y=y_pos_pic/chr_scale;
@@ -1400,9 +1407,9 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                     // FIXME: CC ALF seems to be applied only on border block
                     int virbnd_pos = ((y_pos_pic + ctu_s > ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA));
 
-                int yVb = (blk_dst.y + blk_dst.height - 1);// & (ctu_s - 1);
-                yVb = yVb & (ctu_s/chr_scale - 1);
-                uint8_t isVB = (yVb < virbnd_pos && (yVb >= virbnd_pos - 2)) || (yVb >= virbnd_pos && (yVb <= virbnd_pos + 1)) || ctu_h != ctu_s || ctu_w != ctu_s;
+                    int yVb = (blk_dst.y + blk_dst.height - 1);
+                    yVb = yVb & (ctu_s/chr_scale - 1);
+                    uint8_t isVB = (yVb < virbnd_pos && (yVb >= virbnd_pos - 2)) || (yVb >= virbnd_pos && (yVb <= virbnd_pos + 1)) || ctu_h != ctu_s || ctu_w != ctu_s;
 
                     ctudec->rcn_funcs.alf.ccalf[isVB](dst_chroma, src_chroma, stride_dst, stride_src, blk_dst, c_idx, filt_coeff,
                                                               ctu_s, virbnd_pos);
