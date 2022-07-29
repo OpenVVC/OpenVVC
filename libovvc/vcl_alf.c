@@ -41,26 +41,26 @@
 
 static uint8_t
 ovcabac_read_ae_alf_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state,
-                   unsigned int tile_group_num_aps)
+                        unsigned int tile_group_num_aps)
 {
     uint8_t filter_idx = 0;
+
     if (tile_group_num_aps) {
-        // uint8_t use_latest_filter = vvc_get_cabac_inline(cabac_ctx, &cabac_state[ALF_USE_TEMPORAL_FILT_CTX_OFFSET]);
         uint8_t use_latest_filter = ovcabac_ae_read(cabac_ctx, &cabac_state[ALF_USE_TEMPORAL_FILT_CTX_OFFSET]);
 
-        if (use_latest_filter){
+        if (use_latest_filter) {
             if (tile_group_num_aps > 1) {
-                filter_idx = vvc_get_cabac_truncated(cabac_ctx, tile_group_num_aps );
+                filter_idx = vvc_get_cabac_truncated(cabac_ctx, tile_group_num_aps);
             }
             filter_idx += NUM_FIXED_FILTER_SETS;
-        } 
-        else {
-            filter_idx = vvc_get_cabac_truncated(cabac_ctx, NUM_FIXED_FILTER_SETS );
+        } else {
+            filter_idx = vvc_get_cabac_truncated(cabac_ctx, NUM_FIXED_FILTER_SETS);
         }
+
+    } else {
+        filter_idx = vvc_get_cabac_truncated(cabac_ctx, NUM_FIXED_FILTER_SETS);
     }
-    else{
-        filter_idx = vvc_get_cabac_truncated(cabac_ctx, NUM_FIXED_FILTER_SETS );
-    }
+
     return filter_idx;
 }
 
@@ -150,7 +150,7 @@ ovcabac_read_ae_cc_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
     const uint8_t ctu_neighbour_flags = ctudec->ctu_ngh_flags;
 
-    for ( int comp_id = 0; comp_id < 2; comp_id++){
+    for (int comp_id = 0; comp_id < 2; comp_id++){
 
         if ((comp_id==0 && cc_alf_cb_flag) || (comp_id==1 && cc_alf_cr_flag)){
             const OVALFData* alf_data = (comp_id==0) ? alf_info->aps_cc_alf_data_cb : alf_info->aps_cc_alf_data_cr;
@@ -160,24 +160,27 @@ ovcabac_read_ae_cc_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_
             const uint8_t up_ctb_cc_alf_flag   = (ctb_rs - nb_ctu_w) >= 0 ? alf_info->ctb_cc_alf_flag_line[comp_id][ctb_col] : 0;
 
             const int filters_signalled = (comp_id == 0) ? alf_data->alf_cc_cb_filters_signalled_minus1 + 1
-                                                            : alf_data->alf_cc_cr_filters_signalled_minus1 + 1;
+                                                         : alf_data->alf_cc_cr_filters_signalled_minus1 + 1;
             uint8_t  ctx = 0;
+
             if (ctu_neighbour_flags & CTU_LFT_FLG){
                 ctx += left_ctb_cc_alf_flag ? 1 : 0;
             }
+
             if (ctu_neighbour_flags & CTU_UP_FLG){
                 ctx += up_ctb_cc_alf_flag ? 1 : 0;
             }
-            ctx += ( comp_id == 1 ) ? 3 : 0;
+
+            ctx += (comp_id == 1) ? 3 : 0;
 
             int ret_cc_alf = ovcabac_ae_read(cabac_ctx,&cabac_state[CC_ALF_FILTER_CONTROL_FLAG_CTX_OFFSET + ctx]);
-            if ( ret_cc_alf ){
-                while ( ( ret_cc_alf != filters_signalled ) && ovcabac_bypass_read(cabac_ctx)){
+            if (ret_cc_alf) {
+                while ((ret_cc_alf != filters_signalled) && ovcabac_bypass_read(cabac_ctx)) {
                   ret_cc_alf++;
                 }
             }
-            alf_info->left_ctb_cc_alf_flag[comp_id]              = ret_cc_alf;
-            alf_info->ctb_cc_alf_flag_line[comp_id][ctb_col]     = ret_cc_alf;
+            alf_info->left_ctb_cc_alf_flag[comp_id]           = ret_cc_alf;
+            alf_info->ctb_cc_alf_flag_line[comp_id][ctb_col]  = ret_cc_alf;
             alf_info->ctb_cc_alf_filter_idx[comp_id][ctb_rs]  = ret_cc_alf;
         }
     }
