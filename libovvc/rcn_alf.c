@@ -1346,78 +1346,106 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                                                          ctu_s, virbnd_pos);
         }
 
-        for (uint8_t c_idx = 1; c_idx < 3; c_idx++) {
-            const int chr_scale = frame->linesize[0] / frame->linesize[c_idx];
+        {
 
-            if ((c_idx==1 && (alf_params_ctu->ctb_alf_flag & 2)) || (c_idx==2 && (alf_params_ctu->ctb_alf_flag & 1))) {
-                int stride_src = fb.filter_region_stride[c_idx];
-                OVSample*  src_chroma = &src[c_idx][fb.filter_region_offset[c_idx]];
-                Area blk_dst = {
-                    .x = x_pos_pic / chr_scale,
-                    .y = y_pos_pic / chr_scale,
-                    .width  = ctu_w / chr_scale,
-                    .height = ctu_h / chr_scale,
-                };
+            Area blk_dst = {
+                .x = x_pos_pic >> 1,
+                .y = y_pos_pic >> 1,
+                .width  = ctu_w >> 1,
+                .height = ctu_h >> 1
+            };
 
-                int stride_dst = frame->linesize[c_idx] / sizeof(OVSample);
+            int stride_dst = frame->linesize[1] / sizeof(OVSample);
+            int virbnd_pos = (y_pos_pic + ctu_s > ctudec->pic_h) ? ctudec->pic_h >> 1
+                                                                 : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA) >> 1;
+            int yVb = (blk_dst.y + blk_dst.height - 1);
+            yVb = yVb & ((ctu_s >> 1) - 1);
 
-                OVSample*  dst_chroma = (OVSample*) frame->data[c_idx] + blk_dst.y * stride_dst + blk_dst.x;
+            uint8_t isVB = (yVb < virbnd_pos && (yVb >= virbnd_pos - 2)) ||
+            ((yVb >= virbnd_pos) &&
+                                                                             (yVb <= virbnd_pos + 1))
+                                                                         || ctu_h != ctu_s
+                                                                         || ctu_w != ctu_s;
 
-                uint8_t alt_num = (c_idx == 1) ? alf_params_ctu->cb_alternative : alf_params_ctu->cr_alternative;
+            int pos_offset = blk_dst.y * stride_dst + blk_dst.x;
 
-                int virbnd_pos = ((y_pos_pic + ctu_s > ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA)/chr_scale);
-                int yVb = (blk_dst.y + blk_dst.height - 1);
-                yVb = yVb & (ctu_s/chr_scale - 1);
+            if (alf_params_ctu->ctb_alf_flag & 2) {
 
-                uint8_t isVB = (yVb < virbnd_pos && (yVb >= virbnd_pos - 2)) || (yVb >= virbnd_pos && (yVb <= virbnd_pos + 1)) || ctu_h != ctu_s || ctu_w != ctu_s;
+                int stride_src = fb.filter_region_stride[1];
+
+                OVSample* src_chroma = &src[1][fb.filter_region_offset[1]];
+                OVSample* dst_chroma = (OVSample*) frame->data[1] + pos_offset;
+
+                uint8_t alt_num = alf_params_ctu->cb_alternative;
+
                 ctudec->rcn_funcs.alf.chroma[isVB](dst_chroma, src_chroma,
-                                                           stride_dst, stride_src, blk_dst,
-                                                           alf->chroma_coeff_final[alt_num],
-                                                           alf->chroma_clip_final[alt_num],
-                                                           ctu_s/chr_scale,
-                                                           virbnd_pos);
+                                                   stride_dst, stride_src, blk_dst,
+                                                   alf->chroma_coeff_final[alt_num],
+                                                   alf->chroma_clip_final[alt_num],
+                                                   ctu_s >> 1,
+                                                   virbnd_pos);
             }
 
-            if ((c_idx==1 && alf_info->cc_alf_cb_enabled_flag) || (c_idx==2 && alf_info->cc_alf_cr_enabled_flag)) {
-                const OVALFData* alf_data = (c_idx==1) ? alf_info->aps_cc_alf_data_cb : alf_info->aps_cc_alf_data_cr;
+            if (alf_info->cc_alf_cb_enabled_flag) {
+                const OVALFData* alf_data = alf_info->aps_cc_alf_data_cb;
 
-                const int filt_idx = alf_info->ctb_cc_alf_filter_idx[c_idx - 1][ctu_rs_addr];
+                const int filt_idx = alf_info->ctb_cc_alf_filter_idx[0][ctu_rs_addr];
+
                 if (filt_idx != 0) {
-                    //TODO: maybe reverse buffer use, the alf reconstructed pixels are in the pic frame.
-                    //Source block in the filter buffers image
                     int stride_src = fb.filter_region_stride[0];
                     OVSample*  src_chroma = &src[0][fb.filter_region_offset[0]];
+                    OVSample*  dst_chroma = (OVSample*) frame->data[1] + pos_offset;
 
-                    Area blk_dst = {
-                        .x = x_pos_pic / chr_scale,
-                        .y = y_pos_pic / chr_scale,
-                        .width  = ctu_w / chr_scale,
-                        .height = ctu_h / chr_scale,
-                    };
+                    const int16_t *filt_coeff = alf_data->alf_cc_mapped_coeff[0][filt_idx - 1];
 
-                    //Destination block in the final image
-                    blk_dst.x=x_pos_pic/chr_scale; blk_dst.y=y_pos_pic/chr_scale;
-                    blk_dst.width=ctu_w/chr_scale; blk_dst.height=ctu_h/chr_scale;
-
-                    int stride_dst = frame->linesize[c_idx]/sizeof(OVSample);
-                    OVSample*  dst_chroma = (OVSample*) frame->data[c_idx] + blk_dst.y*stride_dst + blk_dst.x;
-
-                    const int16_t *filt_coeff = alf_data->alf_cc_mapped_coeff[c_idx - 1][filt_idx - 1];
-
-                    // FIXME: CC ALF seems to be applied only on border block
-                    int virbnd_pos = ((y_pos_pic + ctu_s > ctudec->pic_h) ? ctudec->pic_h/chr_scale : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA));
-
-                    int yVb = (blk_dst.y + blk_dst.height - 1);
-                    yVb = yVb & (ctu_s/chr_scale - 1);
-                    uint8_t isVB = (yVb < virbnd_pos && (yVb >= virbnd_pos - 2)) || (yVb >= virbnd_pos && (yVb <= virbnd_pos + 1)) || ctu_h != ctu_s || ctu_w != ctu_s;
-
-                    ctudec->rcn_funcs.alf.ccalf[isVB](dst_chroma, src_chroma, stride_dst, stride_src, blk_dst, c_idx, filt_coeff,
-                                                              ctu_s, virbnd_pos);
+                    int virbnd_pos = (y_pos_pic + ctu_s > ctudec->pic_h) ? ctudec->pic_h >> 1
+                                                                         : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA);
+                    ctudec->rcn_funcs.alf.ccalf[isVB](dst_chroma, src_chroma, stride_dst, stride_src, blk_dst, 1, filt_coeff,
+                                                      ctu_s, virbnd_pos);
 
                 }
             }
 
+            if (alf_params_ctu->ctb_alf_flag & 1) {
+                int stride_src = fb.filter_region_stride[2];
+
+                OVSample*  src_chroma = &src[2][fb.filter_region_offset[2]];
+                OVSample*  dst_chroma = (OVSample*) frame->data[2] + pos_offset;
+
+                uint8_t alt_num = alf_params_ctu->cr_alternative;
+
+                ctudec->rcn_funcs.alf.chroma[isVB](dst_chroma, src_chroma,
+                                                   stride_dst, stride_src, blk_dst,
+                                                   alf->chroma_coeff_final[alt_num],
+                                                   alf->chroma_clip_final[alt_num],
+                                                   ctu_s >> 1,
+                                                   virbnd_pos);
+            }
+
+
+            if (alf_info->cc_alf_cr_enabled_flag) {
+                const OVALFData* alf_data = alf_info->aps_cc_alf_data_cr;
+
+                const int filt_idx = alf_info->ctb_cc_alf_filter_idx[1][ctu_rs_addr];
+
+                if (filt_idx != 0) {
+
+                    int stride_src = fb.filter_region_stride[0];
+
+                    OVSample*  src_chroma = &src[0][fb.filter_region_offset[0]];
+                    OVSample*  dst_chroma = (OVSample*) frame->data[2] + pos_offset;
+
+                    const int16_t *filt_coeff = alf_data->alf_cc_mapped_coeff[1][filt_idx - 1];
+
+                    int virbnd_pos = (y_pos_pic + ctu_s > ctudec->pic_h) ? ctudec->pic_h >> 1
+                                                                         : (ctu_s - ALF_VB_POS_ABOVE_CTUROW_LUMA);
+                    ctudec->rcn_funcs.alf.ccalf[isVB](dst_chroma, src_chroma, stride_dst, stride_src, blk_dst, 2, filt_coeff,
+                                                      ctu_s, virbnd_pos);
+
+                }
+            }
         }
+
         ctudec->rcn_funcs.rcn_save_last_rows(&ctudec->rcn_ctx, saved_rows, x_pos, x_pos_pic, y_pos_pic, is_border);
         ctudec->rcn_funcs.rcn_save_last_cols(&ctudec->rcn_ctx, x_pos_pic, y_pos_pic, is_border);
     }
