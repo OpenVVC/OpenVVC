@@ -65,78 +65,96 @@ ovcabac_read_ae_alf_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_state
 }
 
 
-void 
+void
 ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu_w)
 {
-    uint8_t ret_luma = 0;
-    uint8_t ret_cb = 0;
-    uint8_t ret_cr = 0;
-    uint8_t ret;
+    uint8_t alf_flags = 0;
 
-    uint8_t ctx;
-    uint8_t alf_idx = 0;
-
-    struct ALFInfo* alf_info  = &ctudec->alf_info;
     OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
-    const uint8_t ctu_neighbour_flags = ctudec->ctu_ngh_flags;
-    uint8_t alf_luma_flag   =  alf_info->alf_luma_enabled_flag;
-    uint8_t alf_cb_flag     =  alf_info->alf_cb_enabled_flag;
-    uint8_t alf_cr_flag     =  alf_info->alf_cr_enabled_flag;
 
-    if(!(alf_luma_flag || alf_cb_flag || alf_cr_flag))
+    struct ALFInfo* alf_info  = &ctudec->alf_info;
+    ALFParamsCtu* alf_params_ctu = &alf_info->ctb_alf_params[ctb_rs];
+
+    const uint8_t ctu_ngh_ctx = ctudec->ctu_ngh_flags;
+
+    uint8_t alf_luma_enabled = alf_info->alf_luma_enabled_flag;
+    uint8_t alf_cb_enabled   = alf_info->alf_cb_enabled_flag;
+    uint8_t alf_cr_enabled   = alf_info->alf_cr_enabled_flag;
+
+    if(!(alf_luma_enabled || alf_cb_enabled || alf_cr_enabled))
         return;
 
-    const uint8_t left_ctb_alf_flag = alf_info->left_ctb_alf_flag;
-    int           ctb_col           = ctb_rs % nb_ctu_w;
-    const uint8_t up_ctb_alf_flag   = (ctb_rs - nb_ctu_w) >= 0 ? alf_info->ctb_alf_flag_line[ctb_col] : 0;
-   
+    int ctb_col = ctb_rs % nb_ctu_w;
+
+    const uint8_t ctb_alf_abv = (ctb_rs - nb_ctu_w) >= 0 ? alf_info->ctb_alf_flag_line[ctb_col] : 0;
+    const uint8_t ctb_alf_lft = alf_info->left_ctb_alf_flag;
+
     uint8_t tile_group_num_aps  = alf_info->num_alf_aps_ids_luma;
-    if(alf_luma_flag){
-        ctx  = ctu_neighbour_flags & CTU_LFT_FLG  ? ((left_ctb_alf_flag & 4) >> 2) : 0;
-        ctx += ctu_neighbour_flags & CTU_UP_FLG   ? ((up_ctb_alf_flag   & 4) >> 2) : 0;
-        ret_luma = ovcabac_ae_read(cabac_ctx,&cabac_state[CTB_ALF_FLAG_CTX_OFFSET + ctx]);
-        if(ret_luma){
-            alf_idx = ovcabac_read_ae_alf_idx(cabac_ctx, cabac_state, tile_group_num_aps);
+
+    if (alf_luma_enabled) {
+        uint8_t ctx  = ctu_ngh_ctx & CTU_LFT_FLG && (ctb_alf_lft & 4);
+                ctx += ctu_ngh_ctx & CTU_UP_FLG  && (ctb_alf_abv & 4);
+
+        uint8_t alf_luma_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[CTB_ALF_FLAG_CTX_OFFSET + ctx]);
+
+        if (alf_luma_flag) {
+            alf_flags |= alf_luma_flag << 2;
+            uint8_t alf_idx = ovcabac_read_ae_alf_idx(cabac_ctx, cabac_state, tile_group_num_aps);
+
+            alf_params_ctu->ctb_alf_idx = alf_idx;
         }
     }
 
-    uint8_t cb_alternative = 0;
-    uint8_t cr_alternative = 0;
-    uint8_t num_alf_chroma_alternative;
-    if(alf_cb_flag){
-        num_alf_chroma_alternative = alf_info->aps_alf_data_c->alf_chroma_num_alt_filters_minus1 + 1;
-        int decoded = 0;
-        ctx  = ctu_neighbour_flags & CTU_LFT_FLG ? ((left_ctb_alf_flag & 2) >> 1) : 0;
-        ctx += ctu_neighbour_flags & CTU_UP_FLG   ? ((up_ctb_alf_flag   & 2) >> 1) : 0;
-        ret_cb = ovcabac_ae_read(cabac_ctx,&cabac_state[CTB_ALF_FLAG_CTX_OFFSET + 3 + ctx]);
-        while (ret_cb && decoded < num_alf_chroma_alternative - 1 && ovcabac_ae_read(cabac_ctx,
-                                                                         &cabac_state[CTB_ALF_ALTERNATIVE_CTX_OFFSET])){
-            ++decoded;
-        }
-        cb_alternative = decoded;
-    }
-    if(alf_cr_flag){
-        num_alf_chroma_alternative = alf_info->aps_alf_data_c->alf_chroma_num_alt_filters_minus1 + 1;
-        int decoded = 0;
-        ctx  = ctu_neighbour_flags & CTU_LFT_FLG ? (left_ctb_alf_flag & 1) : 0;
-        ctx += ctu_neighbour_flags & CTU_UP_FLG   ? (up_ctb_alf_flag   & 1) : 0;
-        ret_cr = ovcabac_ae_read(cabac_ctx,&cabac_state[CTB_ALF_FLAG_CTX_OFFSET + 6 + ctx]);
-        while (ret_cr && decoded < num_alf_chroma_alternative - 1 && ovcabac_ae_read(cabac_ctx,
-                                                                         &cabac_state[CTB_ALF_ALTERNATIVE_CTX_OFFSET + 1])){
-            ++decoded;
-        }
-        cr_alternative = decoded;
-    }
-    ret = (ret_luma << 2) | (ret_cb << 1) | ret_cr;
-    alf_info->left_ctb_alf_flag           = ret;
-    alf_info->ctb_alf_flag_line[ctb_col]  = ret; 
 
-    ALFParamsCtu* alf_params_ctu = &alf_info->ctb_alf_params[ctb_rs];
-    alf_params_ctu->ctb_alf_flag = ret;
-    alf_params_ctu->ctb_alf_idx = alf_idx;
-    alf_params_ctu->cb_alternative = cb_alternative;
-    alf_params_ctu->cr_alternative = cr_alternative;
+    if (alf_cb_enabled) {
+        uint8_t nb_alt_c = alf_info->aps_alf_data_c->alf_chroma_num_alt_filters_minus1;
+        uint8_t ctx  = ctu_ngh_ctx & CTU_LFT_FLG && (ctb_alf_lft & 2);
+                ctx += ctu_ngh_ctx & CTU_UP_FLG  && (ctb_alf_abv & 2);
+
+        uint8_t alf_cb_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[CTB_ALF_FLAG_CTX_OFFSET + 3 + ctx]);
+
+        if (alf_cb_flag) {
+
+            uint8_t cb_alt_idx = 0;
+            alf_flags |= alf_cb_flag << 1;
+
+            while (cb_alt_idx < nb_alt_c &&
+                   ovcabac_ae_read(cabac_ctx, &cabac_state[CTB_ALF_ALTERNATIVE_CTX_OFFSET])) {
+                ++cb_alt_idx;
+            }
+
+            alf_params_ctu->cb_alternative = cb_alt_idx;
+
+        }
+    }
+
+    if (alf_cr_enabled) {
+        uint8_t nb_alt_c = alf_info->aps_alf_data_c->alf_chroma_num_alt_filters_minus1;
+        uint8_t ctx  = ctu_ngh_ctx & CTU_LFT_FLG && (ctb_alf_lft & 1);
+                ctx += ctu_ngh_ctx & CTU_UP_FLG  && (ctb_alf_abv & 1);
+
+        uint8_t alf_cr_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[CTB_ALF_FLAG_CTX_OFFSET + 6 + ctx]);
+
+        if (alf_cr_flag) {
+
+            uint8_t cr_alt_idx = 0;
+            alf_flags |= alf_cr_flag;
+
+            while (cr_alt_idx < nb_alt_c &&
+                   ovcabac_ae_read(cabac_ctx, &cabac_state[CTB_ALF_ALTERNATIVE_CTX_OFFSET + 1])) {
+                ++cr_alt_idx;
+            }
+
+            alf_params_ctu->cr_alternative = cr_alt_idx;
+
+        }
+    }
+
+    alf_info->left_ctb_alf_flag          = alf_flags;
+    alf_info->ctb_alf_flag_line[ctb_col] = alf_flags;
+
+    alf_params_ctu->ctb_alf_flag = alf_flags;
 }
 
 void
