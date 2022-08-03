@@ -1,5 +1,13 @@
+X86ASM = nasm
+X86ASMFLAGS = -g -f elf64 -prefer-non-pic -I$(srcdir)/../
+SUFFIXES = .asm
+
+.asm.lo:
+	$(LIBTOOL) --mode=compile --tag=CC $(X86ASM) \
+	$(X86ASMFLAGS) $(X86ASMDEFS) $< -o $@
+
 lib_LTLIBRARIES = libovvc.la
-libovvc_la_LDFLAGS = -version-info $(LIB_VERSION)
+libovvc_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(LIB_VERSION)
 libovvc_la_LIBADD=
 
 pkgconfigdir = $(libdir)/pkgconfig
@@ -101,7 +109,8 @@ libovvc_la_SOURCES = 	ctudec.c                     \
 						vcl_coding_tree.c            \
 						vcl_transform_unit.c         \
 						vcl_residual_coding.c        \
-						vcl_cabac.c
+						vcl_cabac.c					 \
+						fg_compute_block_avg.asm
 
 
 include_HEADERS = 	ovdefs.h               \
@@ -154,7 +163,8 @@ noinst_HEADERS = 	bitdepth.h            \
 									rcn_transform_scale.h \
 									slicedec.h            \
 									vcl_cabac.h           \
-									vcl.h
+									vcl.h				  \
+									fg_compute_block_avg.h
 
 ovversion.h:
 	$(AM_V_GEN)$(srcdir)/../version.sh $(srcdir)/../VERSION ovversion.h ./
