@@ -33,6 +33,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include "immintrin.h"
 
 #include "ovutils.h"
 #include "ovmem.h"
@@ -632,6 +633,60 @@ void fg_blend_stripe(int16_t *dstSampleOffsetY, int16_t *srcSampleOffsetY, int32
   return;
 }
 
+void fg_blend_stripe_sse4(int16_t *dstSampleOffsetY, int16_t *srcSampleOffsetY, int32_t *grainStripe, uint32_t widthComp, uint32_t blockHeight, uint8_t bitDepth)
+{
+  uint32_t  k, l;
+
+  // Prepare SIMD SSE4 ov_clip_uintp2
+  __m128i mask = _mm_set1_epi32((1 << bitDepth));
+  __m128i not_mask = _mm_xor_si128(mask, mask);
+  not_mask  = _mm_sub_epi32(not_mask, mask);
+  mask = _mm_sub_epi32(mask, _mm_set1_epi32(1));
+
+  for (l = 0; l < blockHeight; l+=1) /* y direction */
+  {
+    for (k = 0; k < widthComp; k+=4) /* x direction */
+    {
+      __m128i grainSample = _mm_loadu_si128((__m128i*)&grainStripe[((l + 0) * widthComp) + k]);
+
+      grainSample = _mm_slli_epi32(grainSample, (bitDepth - 8));
+
+      // Can't use load as srcSampleOffsetY is of type int16_t (thus loading 8 value instead of 4)
+      __m128i offset = _mm_set_epi32((int32_t)srcSampleOffsetY[k + 3 + ((l + 0) * widthComp)],
+                                      (int32_t)srcSampleOffsetY[k + 2 + ((l + 0) * widthComp)],
+                                      (int32_t)srcSampleOffsetY[k + 1 + ((l + 0) * widthComp)],
+                                      (int32_t)srcSampleOffsetY[k + 0 + ((l + 0) * widthComp)]
+                                     );
+
+      grainSample = _mm_add_epi32(grainSample, offset);
+
+      // SIMD SSE4 ov_clip_uintp2
+
+      // Set to 0 all negative values.
+      grainSample = _mm_max_epi32(grainSample, _mm_setzero_si128());
+     
+      //int32_t overflow = !!(val & (~mask));
+      __m128i overflow = _mm_and_si128(grainSample, not_mask);
+      overflow = _mm_min_epi32(overflow, _mm_set1_epi32(1));
+      overflow = _mm_sub_epi32(_mm_set1_epi32(0), overflow);
+
+      // ((-overflow) & mask) | (val & mask);
+      __m128i lhs = _mm_and_si128(overflow, mask);
+      __m128i rhs = _mm_and_si128(grainSample, mask);
+
+      __m128i clipped_val = _mm_or_si128(lhs, rhs);
+
+      int32_t *val = (int32_t *)&clipped_val;
+
+      dstSampleOffsetY[((l + 0) * widthComp) + (k + 0)] = (int16_t)val[0];
+      dstSampleOffsetY[((l + 0) * widthComp) + (k + 1)] = (int16_t)val[1];
+      dstSampleOffsetY[((l + 0) * widthComp) + (k + 2)] = (int16_t)val[2];
+      dstSampleOffsetY[((l + 0) * widthComp) + (k + 3)] = (int16_t)val[3];
+    }
+  }
+  return;
+}
+
 uint32_t prng(uint32_t x_r)
 {
   uint32_t addVal;
@@ -949,8 +1004,13 @@ void fg_grain_apply_pic(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain
                     {
                         fg_deblock_grain_stripe(grainStripe, widthComp[compCtr], strideComp[compCtr]);
                     }
+
                     /* Blending of size 16xwidth*/
+                    #if __SSE4_1__ || __SSE4_2__              
+                    fg_blend_stripe_sse4(dstSampleOffsetY, srcSampleOffsetY, grainStripe, strideComp[compCtr], OVMIN(16, (heightComp[compCtr] - y)), bitDepth);
+                    #else
                     fg_blend_stripe(dstSampleOffsetY, srcSampleOffsetY, grainStripe, strideComp[compCtr], OVMIN(16, (heightComp[compCtr] - y)), bitDepth);
+                    #endif
                     dstSampleOffsetY += OVMIN(16, heightComp[compCtr] - y) * strideComp[compCtr];
                     srcSampleOffsetY += OVMIN(16, heightComp[compCtr] - y) * strideComp[compCtr];
                 } 
