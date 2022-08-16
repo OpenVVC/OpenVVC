@@ -72,6 +72,7 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
         memset(sao_ctu, 0 ,sizeof(SAOParamsCtu));
         uint8_t ctu_sao_luma_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[SAO_TYPE_IDX_CTX_OFFSET]);
 
+        sao_ctu->sao_ctu_flag = ctu_sao_luma_flag;
         if (ctu_sao_luma_flag) {
             uint8_t offset_abs[4];
             sao_ctu->type_idx[0] = ovcabac_bypass_read(cabac_ctx) ? SAO_EDGE : SAO_BAND;
@@ -116,6 +117,7 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
 
     if (sao_enabled_c) {
         uint8_t ctu_sao_c_flag = ovcabac_ae_read(cabac_ctx, &cabac_state[SAO_TYPE_IDX_CTX_OFFSET]);
+        sao_ctu->sao_ctu_flag |= ctu_sao_c_flag << 1;
         if (ctu_sao_c_flag) {
             uint8_t offset_abs[5];
             sao_ctu->type_idx[2] = sao_ctu->type_idx[1] = ovcabac_bypass_read(cabac_ctx) ? SAO_EDGE : SAO_BAND;

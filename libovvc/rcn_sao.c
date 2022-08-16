@@ -219,22 +219,25 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
         is_border = (ctb_y == einfo->nb_ctu_h - 1) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
 
         int y_start_pic = y_pos_pic + margin;
-
-        ctudec->rcn_funcs.rcn_extend_filter_region(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pos, x_pos_pic, y_start_pic, is_border);
-
-        int fb_offset = 0;
         int ctb_addr_rs = ctb_y * einfo->nb_ctu_w + ctb_x;
         SAOParamsCtu *sao  = &ctudec->sao_info.sao_params[ctb_addr_rs];
 
-        rcn_sao_ctu(ctudec, sao, x_pos_pic, y_start_pic, y_pos_pic + ctu_w, 0, is_border);
+        ctudec->rcn_funcs.rcn_extend_filter_region(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pos, x_pos_pic, y_start_pic, is_border);
+
+
+        if (sao->sao_ctu_flag) {
+            rcn_sao_ctu(ctudec, sao, x_pos_pic, y_start_pic, y_pos_pic + ctu_w, 0, is_border);
+        }
 
         if (!(is_border & OV_BOUNDARY_BOTTOM_RECT)) {
-            /* Apply filter on next CTU line for ALF */
+            /* Apply partial SAO filter on next CTU line for ALF */
             int fb_offset = ctu_w - margin;
             y_pos_pic += ctu_w;
             ctb_addr_rs += einfo->nb_ctu_w;
             sao         =  &ctudec->sao_info.sao_params[ctb_addr_rs];
-            rcn_sao_ctu(ctudec, sao, x_pos_pic, y_pos_pic, y_pos_pic + margin, fb_offset, is_border);
+            if (sao->sao_ctu_flag) {
+                rcn_sao_ctu(ctudec, sao, x_pos_pic, y_pos_pic, y_pos_pic + margin, fb_offset, is_border);
+            }
         }
 
         ctudec->rcn_funcs.rcn_save_last_rows(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pos, x_pos_pic, y_start_pic, is_border);
@@ -275,7 +278,9 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
         int fb_offset = 0;
         int ctb_addr_rs    = ctb_y * einfo->nb_ctu_w + ctb_x;
         SAOParamsCtu *sao  = &ctudec->sao_info.sao_params[ctb_addr_rs];
-        rcn_sao_ctu(ctudec, sao, x_pos_pic, y_start_pic, y_start_pic + margin, fb_offset, is_border);
+        if (sao->sao_ctu_flag) {
+            rcn_sao_ctu(ctudec, sao, x_pos_pic, y_start_pic, y_start_pic + margin, fb_offset, is_border);
+        }
 
         const int width_l = fb->filter_region_w[0];
         for (int comp = 0; comp < 3; comp++) {
