@@ -201,17 +201,17 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 
     const OVPartInfo *const pinfo = ctudec->part_ctx;
     uint8_t log2_ctb_s = pinfo->log2_ctu_s;
-    int ctu_width  = 1 << log2_ctb_s;
+    int ctu_w  = 1 << log2_ctb_s;
 
     struct OVFilterBuffers* fb = &ctudec->rcn_ctx.filter_buffers;
-    int margin = 2*fb->margin;
+    int margin = 2 * fb->margin;
 
     for (int ctb_x = 0; ctb_x < einfo->nb_ctu_w; ctb_x++) {
         int ctb_x_pic = ctb_x + einfo->ctb_x;
         int ctb_y_pic = ctb_y + einfo->ctb_y;
-        int x_pos = ctu_width * ctb_x;
-        int x_pos_pic = ctu_width * ctb_x_pic;
-        int y_pos_pic = ctu_width * ctb_y_pic;
+        int x_pos = ctb_x << log2_ctb_s;
+        int x_pos_pic = ctb_x_pic << log2_ctb_s;
+        int y_pos_pic = ctb_y_pic << log2_ctb_s;
         
         uint8_t is_border = 0;
         is_border = (ctb_x == 0)                   ? is_border | OV_BOUNDARY_LEFT_RECT: is_border;
@@ -225,11 +225,13 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
         int fb_offset = 0;
         int ctb_addr_rs = ctb_y * einfo->nb_ctu_w + ctb_x;
         SAOParamsCtu *sao  = &ctudec->sao_info.sao_params[ctb_addr_rs];
-        rcn_sao_ctu(ctudec, sao, x_pos_pic, y_start_pic, y_pos_pic + ctu_width, fb_offset, is_border);
+
+        rcn_sao_ctu(ctudec, sao, x_pos_pic, y_start_pic, y_pos_pic + ctu_w, 0, is_border);
 
         if (!(is_border & OV_BOUNDARY_BOTTOM_RECT)) {
-            fb_offset = ctu_width - margin;
-            y_pos_pic += ctu_width;
+            /* Apply filter on next CTU line for ALF */
+            int fb_offset = ctu_w - margin;
+            y_pos_pic += ctu_w;
             ctb_addr_rs += einfo->nb_ctu_w;
             sao         =  &ctudec->sao_info.sao_params[ctb_addr_rs];
             rcn_sao_ctu(ctudec, sao, x_pos_pic, y_pos_pic, y_pos_pic + margin, fb_offset, is_border);
@@ -249,7 +251,6 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
 
     const OVPartInfo *const pinfo = ctudec->part_ctx;
     uint8_t log2_ctb_s = pinfo->log2_ctu_s;
-    int ctu_width  = 1 << log2_ctb_s;
     int ctb_y_pic = ctb_y + einfo->ctb_y;
 
     struct OVFilterBuffers* fb = &ctudec->rcn_ctx.filter_buffers;
@@ -257,18 +258,18 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
 
     for (int ctb_x = 0; ctb_x < einfo->nb_ctu_w; ctb_x++) {
         int ctb_x_pic = ctb_x + einfo->ctb_x;
-        int x_pos = ctu_width * ctb_x;
-        int x_pos_pic = ctu_width * ctb_x_pic;
+        int x_pos = ctb_x << log2_ctb_s;
+        int x_pos_pic = ctb_x_pic << log2_ctb_s;
         
         //left | right | up | down
         uint8_t is_border = 0; 
-        is_border = (ctb_y==0)          ? is_border | OV_BOUNDARY_UPPER_RECT: is_border;
+        is_border = (ctb_y == 0)                   ? is_border | OV_BOUNDARY_UPPER_RECT: is_border;
         is_border = (ctb_x == 0)                   ? is_border | OV_BOUNDARY_LEFT_RECT: is_border;
         is_border = (ctb_x == einfo->nb_ctu_w - 1) ? is_border | OV_BOUNDARY_RIGHT_RECT: is_border;
         is_border = (ctb_y == einfo->nb_ctu_h - 1) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
 
         //Apply SAO of previous ctu line
-        int y_start_pic = ctu_width * ctb_y_pic;
+        int y_start_pic = ctb_y_pic << log2_ctb_s;
         ctudec->rcn_funcs.rcn_extend_filter_region(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pos, x_pos_pic, y_start_pic, is_border);
 
         int fb_offset = 0;
