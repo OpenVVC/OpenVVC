@@ -248,23 +248,26 @@ rcn_save_last_cols(struct OVRCNCtx *const rcn_ctx, int x_pic_l, int y_pic_l, uin
         return;
 
     struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
-    const int width_l = ( x_pic_l + fb->filter_region_w[0] > rcn_ctx->frame_start->width ) ? ( rcn_ctx->frame_start->width - x_pic_l ) : fb->filter_region_w[0];
-    const int height_l = ( y_pic_l + fb->filter_region_h[0] > rcn_ctx->frame_start->height ) ? ( rcn_ctx->frame_start->height - y_pic_l ) : fb->filter_region_h[0];
+
+    int16_t pic_w = rcn_ctx->frame_start->width;
+    int16_t pic_h = rcn_ctx->frame_start->height;
+
+    const int luma_w = (x_pic_l + fb->filter_region_w[0] > pic_w) ? pic_w - x_pic_l : fb->filter_region_w[0];
+    const int luma_h = (y_pic_l + fb->filter_region_h[0] > pic_h) ? pic_h - y_pic_l : fb->filter_region_h[0];
+
     const int margin = fb->margin;
 
-    for(int comp = 0; comp < 3; comp++) {
+    for (int comp = 0; comp < 3; comp++) {
         OVSample* filter_region = fb->filter_region[comp];
-        int stride_filter = fb->filter_region_stride[comp];
+        int stride = fb->filter_region_stride[comp];
 
-        int ratio_luma_chroma = 2;
-        int ratio = comp==0 ? 1 : ratio_luma_chroma;
-        const int width = width_l/ratio;
-        const int height = height_l/ratio;
+        const int width  = luma_w >> (comp != 0);
+        const int height = luma_h >> (comp != 0);
 
-        for(int ii=0; ii < height; ii++) {
-            for(int jj=0; jj < margin; jj++) {
-                filter_region[(ii+margin)*stride_filter + jj] = filter_region[(ii+margin)*stride_filter + width + jj];
-            }
+        OVSample *dst = &filter_region[margin * stride];
+        for(int i = 0; i < height; ++i) {
+            memcpy(dst, dst + width, sizeof(OVSample) * margin);
+            dst += stride;
         }
     }
 }
@@ -273,34 +276,44 @@ static void
 rcn_save_last_rows(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
 {
     struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
-    const int width_l = ( x_pic_l + fb->filter_region_w[0] > rcn_ctx->frame_start->width ) ? ( rcn_ctx->frame_start->width - x_pic_l ) : fb->filter_region_w[0];
-    const int height_l = ( y_pic_l + fb->filter_region_h[0] > rcn_ctx->frame_start->height ) ? ( rcn_ctx->frame_start->height - y_pic_l ) : fb->filter_region_h[0];
+
+    int16_t pic_w = rcn_ctx->frame_start->width;
+    int16_t pic_h = rcn_ctx->frame_start->height;
+
+    const int luma_w = (x_pic_l + fb->filter_region_w[0] > pic_w) ? pic_w - x_pic_l : fb->filter_region_w[0];
+    const int luma_h = (y_pic_l + fb->filter_region_h[0] > pic_h) ? pic_h - y_pic_l : fb->filter_region_h[0];
+
     const int margin = fb->margin;
 
     for(int comp = 0; comp < 3; comp++) {
         OVSample* saved_rows_comp = saved_rows[comp];
         OVSample* filter_region = fb->filter_region[comp];
-        int stride_filter = fb->filter_region_stride[comp];
+        int stride = fb->filter_region_stride[comp];
 
-        int ratio_luma_chroma = 2;
-        int ratio = comp==0 ? 1 : ratio_luma_chroma;
-        const int width = width_l/ratio;
-        const int height = height_l/ratio;
-        const int x = x_l/ratio;
+        const int width  = luma_w >> (comp != 0);
+        const int height = luma_h >> (comp != 0);
+
+        const int x = x_l >> (comp != 0);
 
         int stride_rows = fb->saved_rows_stride[comp];
 
-        for(int ii=0; ii < margin; ii++) {
-            for(int jj=0; jj < margin; jj++) {
-                filter_region[ii*stride_filter + jj] = saved_rows_comp[ii*stride_rows + x + width - margin + jj];
-            }
+        OVSample *dst = filter_region;
+        OVSample *src = &saved_rows_comp[x + width - margin];
+        for (int i = 0; i < margin; ++i) {
+            memcpy(dst, src, sizeof(OVSample) * margin);
+            dst += stride;
+            src += stride_rows;
         }
 
-        if ( is_border_rect & OV_BOUNDARY_BOTTOM_RECT)
+        if (is_border_rect & OV_BOUNDARY_BOTTOM_RECT)
             continue;
 
-        for(int ii=0 ; ii < margin; ii++) {
-            memcpy(&saved_rows_comp[ii * stride_rows + x], &filter_region[(height + ii) * stride_filter + margin], width * sizeof(OVSample));
+        dst = &saved_rows_comp[x];
+        src = &filter_region[height * stride + margin];
+        for (int i = 0 ; i < margin; ++i) {
+            memcpy(dst, src, width * sizeof(OVSample));
+            src += stride;
+            dst += stride_rows;
         }
     }
 }
