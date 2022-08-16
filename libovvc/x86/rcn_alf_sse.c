@@ -563,8 +563,8 @@ simdFilter7x7BlkVB_sse(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVS
 }
 
 static void cc_alf_filterBlkVB_sse(OVSample * chroma_dst, OVSample * luma_src, const int chr_stride, const int luma_stride,
-                            const Area blk_dst, const uint8_t c_id, const int16_t *filt_coeff,
-                            const int ctu_s, int virbnd_pos)
+                                   const Area blk_dst, const int16_t *filt_coeff,
+                                   const int ctu_s, int virbnd_pos)
 {
   const size_t STEP_X = 8;
   const size_t STEP_Y = 4;

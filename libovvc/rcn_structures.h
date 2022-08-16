@@ -207,8 +207,8 @@ typedef void (*ALFChromaFilterBlkFunc)(OVSample *const dst, const OVSample *cons
                                        const int ctu_height, int virbnd_pos);
 
 typedef void (*CCALFFilterBlkFunc)(OVSample * chroma_dst, OVSample * luma_src, const int chr_stride, const int luma_stride,
-                        const struct Area blk_dst, const uint8_t c_id, const int16_t *filt_coeff,
-                        const int vbCTUHeight, int vbPos);
+                                   const struct Area blk_dst, const int16_t *filt_coeff,
+                                   const int vbCTUHeight, int vbPos);
 
 typedef void (*SAOBandFilterFunc)(OVSample* _dst, OVSample* _src,
                                   ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
