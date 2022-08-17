@@ -1143,8 +1143,6 @@ alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSamp
                     Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                     const int ctu_height, int virbnd_pos)
 {
-    const OVSample *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
-
     const int shift = NUM_BITS - 1;
     const int offset = 1 << (shift - 1);
 
@@ -1162,7 +1160,7 @@ alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSamp
     OVSample* pRec0 = dst ;
     OVSample* pRec1 = pRec0 + dstStride;
 
-    for (int i = 0; i < blk_dst.height; i += clsSizeY) {
+    for (int i = 0; i < blk_dst.height - 8; i += clsSizeY) {
         for (int j = 0; j < blk_dst.width; j += clsSizeX) {
             transpose_idx = transpose_idx_arr[(i>>2) * CLASSIFICATION_BLK_SIZE + (j>>2)];
             class_idx = class_idx_arr[(i>>2) * CLASSIFICATION_BLK_SIZE + (j>>2)];
@@ -1171,78 +1169,269 @@ alf_filterBlkLumaVB(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSamp
             const int16_t *filt_clip = clip_set + transpose_idx * MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF + class_idx * MAX_NUM_ALF_LUMA_COEFF;
 
             for (int ii = 0; ii < clsSizeY; ii++) {
-                pImg0 = _src + j + ii * srcStride;
-                pImg1 = pImg0 + srcStride;
-                pImg2 = pImg0 - srcStride;
-                pImg3 = pImg1 + srcStride;
-                pImg4 = pImg2 - srcStride;
-                pImg5 = pImg3 + srcStride;
-                pImg6 = pImg4 - srcStride;
+                const OVSample *src_l0 = _src + j + ii * srcStride;
+                const OVSample *src_l1 = src_l0 + srcStride;
+                const OVSample *src_l2 = src_l1 + srcStride;
+                const OVSample *src_l3 = src_l2 + srcStride;
+
+                const OVSample *src_lb1 = src_l0 - srcStride;
+                const OVSample *src_lb2 = src_lb1 - srcStride;
+                const OVSample *src_lb3 = src_lb2 - srcStride;
 
                 pRec1 = pRec0 + j + ii * dstStride;
 
-                int yVb = (blk_dst.y + i + ii) & (ctu_height - 1);
-                if (yVb < virbnd_pos && (yVb >= virbnd_pos - 4)) {
-                    pImg1 = (yVb == virbnd_pos - 1) ? pImg0 : pImg1;
-                    pImg3 = (yVb >= virbnd_pos - 2) ? pImg1 : pImg3;
-                    pImg5 = (yVb >= virbnd_pos - 3) ? pImg3 : pImg5;
-
-                    pImg2 = (yVb == virbnd_pos - 1) ? pImg0 : pImg2;
-                    pImg4 = (yVb >= virbnd_pos - 2) ? pImg2 : pImg4;
-                    pImg6 = (yVb >= virbnd_pos - 3) ? pImg4 : pImg6;
-                } else if (yVb >= virbnd_pos && (yVb <= virbnd_pos + 3)) {
-                    pImg2 = (yVb == virbnd_pos) ? pImg0 : pImg2;
-                    pImg4 = (yVb <= virbnd_pos + 1) ? pImg2 : pImg4;
-                    pImg6 = (yVb <= virbnd_pos + 2) ? pImg4 : pImg6;
-
-                    pImg1 = (yVb == virbnd_pos) ? pImg0 : pImg1;
-                    pImg3 = (yVb <= virbnd_pos + 1) ? pImg1 : pImg3;
-                    pImg5 = (yVb <= virbnd_pos + 2) ? pImg3 : pImg5;
-                }
-
-
-                uint8_t isNearVBabove = yVb < virbnd_pos && (yVb >= virbnd_pos - 1);
-                uint8_t isNearVBbelow = yVb >= virbnd_pos && (yVb <= virbnd_pos);
-
                 for (int jj = 0; jj < clsSizeX; jj++) {
-                    const int16_t curr = pImg0[+0];
+                    const int16_t curr = src_l0[+0];
 
                     int sum = 0;
 
-                    sum += filt_coeff[0] * alf_clip(filt_clip[0], curr, pImg5[+0], pImg6[+0]);
-                    sum += filt_coeff[1] * alf_clip(filt_clip[1], curr, pImg3[+1], pImg4[-1]);
+                    sum += filt_coeff[0] * alf_clip(filt_clip[0], curr, src_l3[+0], src_lb3[+0]);
+                    sum += filt_coeff[1] * alf_clip(filt_clip[1], curr, src_l2[+1], src_lb2[-1]);
 
-                    sum += filt_coeff[2] * alf_clip(filt_clip[2], curr, pImg3[+0], pImg4[+0]);
-                    sum += filt_coeff[3] * alf_clip(filt_clip[3], curr, pImg3[-1], pImg4[+1]);
+                    sum += filt_coeff[2] * alf_clip(filt_clip[2], curr, src_l2[+0], src_lb2[+0]);
+                    sum += filt_coeff[3] * alf_clip(filt_clip[3], curr, src_l2[-1], src_lb2[+1]);
 
-                    sum += filt_coeff[4] * alf_clip(filt_clip[4], curr, pImg1[+2], pImg2[-2]);
-                    sum += filt_coeff[5] * alf_clip(filt_clip[5], curr, pImg1[+1], pImg2[-1]);
+                    sum += filt_coeff[4] * alf_clip(filt_clip[4], curr, src_l1[+2], src_lb1[-2]);
+                    sum += filt_coeff[5] * alf_clip(filt_clip[5], curr, src_l1[+1], src_lb1[-1]);
 
-                    sum += filt_coeff[6] * alf_clip(filt_clip[6], curr, pImg1[+0], pImg2[+0]);
-                    sum += filt_coeff[7] * alf_clip(filt_clip[7], curr, pImg1[-1], pImg2[+1]);
+                    sum += filt_coeff[6] * alf_clip(filt_clip[6], curr, src_l1[+0], src_lb1[+0]);
+                    sum += filt_coeff[7] * alf_clip(filt_clip[7], curr, src_l1[-1], src_lb1[+1]);
 
-                    sum += filt_coeff[8] * alf_clip(filt_clip[8], curr, pImg1[-2], pImg2[+2]);
-                    sum += filt_coeff[9] * alf_clip(filt_clip[9], curr, pImg0[+3], pImg0[-3]);
+                    sum += filt_coeff[8] * alf_clip(filt_clip[8], curr, src_l1[-2], src_lb1[+2]);
+                    sum += filt_coeff[9] * alf_clip(filt_clip[9], curr, src_l0[+3], src_l0[-3]);
 
-                    sum += filt_coeff[10] * alf_clip(filt_clip[10], curr, pImg0[+2], pImg0[-2]);
-                    sum += filt_coeff[11] * alf_clip(filt_clip[11], curr, pImg0[+1], pImg0[-1]);
+                    sum += filt_coeff[10] * alf_clip(filt_clip[10], curr, src_l0[+2], src_l0[-2]);
+                    sum += filt_coeff[11] * alf_clip(filt_clip[11], curr, src_l0[+1], src_l0[-1]);
 
-                    if (!(isNearVBabove || isNearVBbelow)) {
+                    sum = (sum + offset) >> shift;
+
+                    sum += curr;
+                    pRec1[jj] = ov_bdclip(sum);
+
+                    src_l0++;
+                    src_l1++;
+                    src_lb1++;
+                    src_l2++;
+                    src_lb2++;
+                    src_l3++;
+                    src_lb3++;
+                }
+            }
+        }
+
+        pRec0 += dstStride2;
+        pRec1 += dstStride2;
+
+        _src += srcStride2;
+        _dst += dstStride2;
+    }
+
+    for (int i = blk_dst.height - 8; i < blk_dst.height - 4; i += clsSizeY) {
+        for (int j = 0; j < blk_dst.width; j += clsSizeX) {
+            transpose_idx = transpose_idx_arr[(i>>2) * CLASSIFICATION_BLK_SIZE + (j>>2)];
+            class_idx = class_idx_arr[(i>>2) * CLASSIFICATION_BLK_SIZE + (j>>2)];
+
+            const int16_t *filt_coeff = filter_set + transpose_idx * MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF + class_idx * MAX_NUM_ALF_LUMA_COEFF;
+            const int16_t *filt_clip = clip_set + transpose_idx * MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF + class_idx * MAX_NUM_ALF_LUMA_COEFF;
+
+            const OVSample *src_vb = _src + j + 4 * srcStride;
+            for (int ii = 0; ii < clsSizeY; ii++) {
+                const OVSample *src_l0 = _src + j + ii * srcStride;
+                const OVSample *src_l1 = src_l0 + srcStride;
+                const OVSample *src_l2 = src_l1 + srcStride;
+                const OVSample *src_l3 = src_l2 + srcStride;
+
+                const OVSample *src_lb1 = src_l0 - srcStride;
+                const OVSample *src_lb2 = src_lb1 - srcStride;
+                const OVSample *src_lb3 = src_lb2 - srcStride;
+
+                pRec1 = pRec0 + j + ii * dstStride;
+
+                int y_pos = (blk_dst.y + i + ii) & (ctu_height - 1);
+                if (y_pos == virbnd_pos - 3) {
+                    src_lb3 = src_vb - 5 * srcStride;
+                    src_lb2 = src_vb - 5 * srcStride;
+                    src_lb1 = src_vb - 4 * srcStride;
+
+                    src_l0 = src_vb - 3 * srcStride;
+
+                    src_l1 = src_vb - 2 * srcStride;
+                    src_l2 = src_vb - srcStride;
+                    src_l3 = src_vb - srcStride;
+
+                } else if (y_pos == virbnd_pos - 2) {
+                    src_lb3 = src_vb - 3 * srcStride;
+                    src_lb2 = src_vb - 3 * srcStride;
+                    src_lb1 = src_vb - 3 * srcStride;
+
+                    src_l0 = src_vb - 2 * srcStride;
+
+                    src_l1 = src_vb - srcStride;
+                    src_l2 = src_vb - srcStride;
+                    src_l3 = src_vb - srcStride;
+
+                } else if (y_pos == virbnd_pos - 1) {
+                    src_lb1 = src_vb - srcStride;
+                    src_lb2 = src_vb - srcStride;
+                    src_lb3 = src_vb - srcStride;
+
+                    src_l0 = src_vb - srcStride;
+
+                    src_l1 = src_vb - srcStride;
+                    src_l2 = src_vb - srcStride;
+                    src_l3 = src_vb - srcStride;
+                }
+
+                for (int jj = 0; jj < clsSizeX; jj++) {
+                    const int16_t curr = src_l0[+0];
+
+                    int sum = 0;
+
+                    sum += filt_coeff[0] * alf_clip(filt_clip[0], curr, src_l3[+0], src_lb3[+0]);
+                    sum += filt_coeff[1] * alf_clip(filt_clip[1], curr, src_l2[+1], src_lb2[-1]);
+
+                    sum += filt_coeff[2] * alf_clip(filt_clip[2], curr, src_l2[+0], src_lb2[+0]);
+                    sum += filt_coeff[3] * alf_clip(filt_clip[3], curr, src_l2[-1], src_lb2[+1]);
+
+                    sum += filt_coeff[4] * alf_clip(filt_clip[4], curr, src_l1[+2], src_lb1[-2]);
+                    sum += filt_coeff[5] * alf_clip(filt_clip[5], curr, src_l1[+1], src_lb1[-1]);
+
+                    sum += filt_coeff[6] * alf_clip(filt_clip[6], curr, src_l1[+0], src_lb1[+0]);
+                    sum += filt_coeff[7] * alf_clip(filt_clip[7], curr, src_l1[-1], src_lb1[+1]);
+
+                    sum += filt_coeff[8] * alf_clip(filt_clip[8], curr, src_l1[-2], src_lb1[+2]);
+                    sum += filt_coeff[9] * alf_clip(filt_clip[9], curr, src_l0[+3], src_l0[-3]);
+
+                    sum += filt_coeff[10] * alf_clip(filt_clip[10], curr, src_l0[+2], src_l0[-2]);
+                    sum += filt_coeff[11] * alf_clip(filt_clip[11], curr, src_l0[+1], src_l0[-1]);
+
+                    if (!(y_pos == virbnd_pos - 1)) {
                         sum = (sum + offset) >> shift;
                     } else {
-                        sum = (sum + (1 << ((shift + 3) - 1))) >> (shift + 3);
+                        int shift2 = shift + 3;
+                        int offset2 = 1 << (shift2 - 1);
+                        sum = (sum + offset2) >> shift2;
                     }
 
                     sum += curr;
                     pRec1[jj] = ov_bdclip(sum);
 
-                    pImg0++;
-                    pImg1++;
-                    pImg2++;
-                    pImg3++;
-                    pImg4++;
-                    pImg5++;
-                    pImg6++;
+                    src_l0++;
+                    src_l1++;
+                    src_lb1++;
+                    src_l2++;
+                    src_lb2++;
+                    src_l3++;
+                    src_lb3++;
+                }
+            }
+        }
+
+        pRec0 += dstStride2;
+        pRec1 += dstStride2;
+
+        _src += srcStride2;
+        _dst += dstStride2;
+    }
+
+    for (int i = blk_dst.height - 4; i < blk_dst.height; i += clsSizeY) {
+        for (int j = 0; j < blk_dst.width; j += clsSizeX) {
+            transpose_idx = transpose_idx_arr[(i>>2) * CLASSIFICATION_BLK_SIZE + (j>>2)];
+            class_idx = class_idx_arr[(i>>2) * CLASSIFICATION_BLK_SIZE + (j>>2)];
+
+            const int16_t *filt_coeff = filter_set + transpose_idx * MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF + class_idx * MAX_NUM_ALF_LUMA_COEFF;
+            const int16_t *filt_clip = clip_set + transpose_idx * MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF + class_idx * MAX_NUM_ALF_LUMA_COEFF;
+
+
+            const OVSample *src_vb = _src + j;
+            for (int ii = 0; ii < clsSizeY; ii++) {
+                const OVSample *src_l0 = _src + j + ii * srcStride;
+                const OVSample *src_l1 = src_l0 + srcStride;
+                const OVSample *src_l2 = src_l1 + srcStride;
+                const OVSample *src_l3 = src_l2 + srcStride;
+
+                const OVSample *src_lb1 = src_l0 - srcStride;
+                const OVSample *src_lb2 = src_lb1 - srcStride;
+                const OVSample *src_lb3 = src_lb2 - srcStride;
+
+                pRec1 = pRec0 + j + ii * dstStride;
+
+                int y_pos = (blk_dst.y + i + ii) & (ctu_height - 1);
+                if (y_pos == virbnd_pos) {
+                    src_lb3 = src_vb;
+                    src_lb2 = src_vb;
+                    src_lb1 = src_vb;
+
+                    src_l0 = src_vb;
+
+                    src_l1 = src_vb;
+                    src_l2 = src_vb;
+                    src_l3 = src_vb;
+
+                } else if (y_pos == virbnd_pos + 1) {
+                    src_lb3 = src_vb;
+                    src_lb2 = src_vb;
+                    src_lb1 = src_vb;
+
+                    src_l0 = src_vb + srcStride;
+
+                    src_l1 = src_vb + 2 * srcStride;
+                    src_l2 = src_vb + 2 * srcStride;
+                    src_l3 = src_vb + 2 * srcStride;
+
+                } else if (y_pos == virbnd_pos + 2) {
+                    src_lb3 = src_vb;
+                    src_lb2 = src_vb;
+                    src_lb1 = src_vb + srcStride;
+
+                    src_l0 = src_vb +  2 * srcStride;
+
+                    src_l1 = src_vb + 3 * srcStride;
+                    src_l2 = src_vb + 4 * srcStride;
+                    src_l3 = src_vb + 4 * srcStride;
+                }
+
+                for (int jj = 0; jj < clsSizeX; jj++) {
+                    const int16_t curr = src_l0[+0];
+
+                    int sum = 0;
+
+                    sum += filt_coeff[0] * alf_clip(filt_clip[0], curr, src_l3[+0], src_lb3[+0]);
+                    sum += filt_coeff[1] * alf_clip(filt_clip[1], curr, src_l2[+1], src_lb2[-1]);
+
+                    sum += filt_coeff[2] * alf_clip(filt_clip[2], curr, src_l2[+0], src_lb2[+0]);
+                    sum += filt_coeff[3] * alf_clip(filt_clip[3], curr, src_l2[-1], src_lb2[+1]);
+
+                    sum += filt_coeff[4] * alf_clip(filt_clip[4], curr, src_l1[+2], src_lb1[-2]);
+                    sum += filt_coeff[5] * alf_clip(filt_clip[5], curr, src_l1[+1], src_lb1[-1]);
+
+                    sum += filt_coeff[6] * alf_clip(filt_clip[6], curr, src_l1[+0], src_lb1[+0]);
+                    sum += filt_coeff[7] * alf_clip(filt_clip[7], curr, src_l1[-1], src_lb1[+1]);
+
+                    sum += filt_coeff[8] * alf_clip(filt_clip[8], curr, src_l1[-2], src_lb1[+2]);
+                    sum += filt_coeff[9] * alf_clip(filt_clip[9], curr, src_l0[+3], src_l0[-3]);
+
+                    sum += filt_coeff[10] * alf_clip(filt_clip[10], curr, src_l0[+2], src_l0[-2]);
+                    sum += filt_coeff[11] * alf_clip(filt_clip[11], curr, src_l0[+1], src_l0[-1]);
+
+                    if (!(y_pos == virbnd_pos)) {
+                        sum = (sum + offset) >> shift;
+                    } else {
+                        int shift2 = shift + 3;
+                        int offset2 = 1 << (shift2 - 1);
+                        sum = (sum + offset2) >> shift2;
+                    }
+
+                    sum += curr;
+                    pRec1[jj] = ov_bdclip(sum);
+
+                    src_l0++;
+                    src_l1++;
+                    src_lb1++;
+                    src_l2++;
+                    src_lb2++;
+                    src_l3++;
+                    src_lb3++;
                 }
             }
         }
