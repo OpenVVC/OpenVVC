@@ -111,7 +111,7 @@ sao_edge_filter_10_sse(OVSample* _dst,
   int x, y;
   int8_t* sao_offset_val = sao->offset_val[c_idx];
   int eo = sao->eo_class[c_idx];
-  const int8_t pos[4][2][2] = {
+  static const int8_t pos[4][2][2] = {
     { { -1, 0 }, { 1, 0 } },
     { { 0, -1 }, { 0, 1 } },
     { { -1, -1 }, { 1, 1 } },
@@ -184,7 +184,7 @@ sao_edge_filter_7_10_sse(OVSample* _dst,
   int x, y;
   int8_t* sao_offset_val = sao->offset_val[c_idx];
   int eo = sao->eo_class[c_idx];
-  const int8_t pos[4][2][2] = {
+  static const int8_t pos[4][2][2] = {
     { { -1, 0 }, { 1, 0 } },
     { { 0, -1 }, { 0, 1 } },
     { { -1, -1 }, { 1, 1 } },
@@ -366,7 +366,7 @@ sao_edge_filter_10_avx2(OVSample* _dst,
   int x, y;
   int8_t* sao_offset_val = sao->offset_val[c_idx];
   int eo = sao->eo_class[c_idx];
-  const int8_t pos[4][2][2] = {
+  static const int8_t pos[4][2][2] = {
     { { -1, 0 }, { 1, 0 } },
     { { 0, -1 }, { 0, 1 } },
     { { -1, -1 }, { 1, 1 } },
