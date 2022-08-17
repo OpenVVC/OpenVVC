@@ -504,7 +504,7 @@ rcn_extend_filter_region(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, 
 }
 
 static void
-rcn_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int margin, uint8_t log2_ctb_s)
+rcn_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uint8_t log2_ctb_s)
 {
     int ctu_s = 1 << log2_ctb_s;
 
@@ -512,6 +512,7 @@ rcn_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int margi
     OVSample** saved_rows_sao = fb->saved_rows_sao;
     OVSample** saved_rows_alf = fb->saved_rows_alf;
     OVSample** filter_region = fb->filter_region;
+    int margin = 3;
     fb->margin = margin;
 
     for(int comp = 0; comp < 3; comp++) {

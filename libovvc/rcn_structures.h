@@ -622,7 +622,7 @@ struct RCNFunctions
     void (*rcn_extend_filter_region)(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_l,
                                      int x_pic_l, int y_pic_l, uint8_t bnd_msk);
 
-    void (*rcn_alloc_filter_buffers)(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, int margin, uint8_t log2_ctb_s);
+    void (*rcn_alloc_filter_buffers)(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uint8_t log2_ctb_s);
 
     void (*rcn_attach_ctu_buff)(struct OVRCNCtx *const rcn_ctx, uint8_t log2_ctb_s, uint8_t ctb_x);
 

@@ -1451,8 +1451,7 @@ slicedec_decode_rect_entry(OVSliceDec *sldec, OVCTUDec *const ctudec, const OVPS
     ctudec->rcn_funcs.rcn_attach_frame_buff(rcn_ctx, sldec->pic->frame, &einfo, log2_ctb_s);
 
     if (nb_ctu_w > ctudec->prev_nb_ctu_w_rect_entry) {
-        int margin = 3;
-        ctudec->rcn_funcs.rcn_alloc_filter_buffers(rcn_ctx, einfo.nb_ctu_w, margin, log2_ctb_s);
+        ctudec->rcn_funcs.rcn_alloc_filter_buffers(rcn_ctx, einfo.nb_ctu_w, log2_ctb_s);
         ctudec->rcn_funcs.rcn_alloc_intra_line_buff(rcn_ctx, einfo.nb_ctu_w + 2, log2_ctb_s);
         ctudec->prev_nb_ctu_w_rect_entry = nb_ctu_w;
     }
