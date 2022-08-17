@@ -738,7 +738,6 @@ decode_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo,
 
     ovcabac_read_ae_sao_ctu(ctudec, ctb_addr_rs, nb_ctu_w);
     ovcabac_read_ae_alf_ctu(ctudec, ctb_addr_rs, nb_ctu_w);
-    ovcabac_read_ae_cc_alf_ctu(ctudec, ctb_addr_rs, nb_ctu_w);
 
     init_ctu_bitfield(rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s);
 
@@ -789,7 +788,6 @@ decode_truncated_ctu(OVCTUDec *const ctudec, const struct RectEntryInfo *const e
 
     ovcabac_read_ae_sao_ctu(ctudec, ctb_addr_rs, nb_ctu_w);
     ovcabac_read_ae_alf_ctu(ctudec, ctb_addr_rs, nb_ctu_w);
-    ovcabac_read_ae_cc_alf_ctu(ctudec, ctb_addr_rs, nb_ctu_w);
 
     /* FIXME pic border detection in neighbour flags ?*/
     init_ctu_bitfield_border(rcn_ctx, ctudec->ctu_ngh_flags, log2_ctb_s,

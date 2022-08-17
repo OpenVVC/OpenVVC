@@ -280,6 +280,8 @@ typedef struct ALFParamsCtu
     uint8_t ctb_alf_idx;
     uint8_t cb_alternative;
     uint8_t cr_alternative;
+    uint8_t cb_ccalf;
+    uint8_t cr_ccalf;
 } ALFParamsCtu;
 
 

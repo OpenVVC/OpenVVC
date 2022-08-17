@@ -1575,23 +1575,21 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                                                      virbnd_pos >> 1);
             }
 
-            if (alf_info->cc_alf_cb_enabled_flag) {
+            if (alf_params_ctu->ctb_alf_flag & 0x8) {
                 const OVALFData* alf_data = alf_info->aps_cc_alf_data_cb;
 
-                const int filt_idx = alf_info->ctb_cc_alf_filter_idx[0][ctu_rs_addr];
+                const uint8_t filt_idx = alf_params_ctu->cb_ccalf;
 
-                if (filt_idx != 0) {
-                    int stride_src = fb.filter_region_stride[0];
-                    OVSample*  src_chroma = &src[0][fb.filter_region_offset[0]];
-                    OVSample*  dst_chroma = (OVSample*) frame->data[1] + pos_offset;
+                int stride_src = fb.filter_region_stride[0];
+                OVSample*  src_luma = &src[0][fb.filter_region_offset[0]];
+                OVSample*  dst_chroma = (OVSample*) frame->data[1] + pos_offset;
 
-                    const int16_t *filt_coeff = alf_data->alf_cc_mapped_coeff[0][filt_idx - 1];
+                const int16_t *filt_coeff = alf_data->alf_cc_mapped_coeff[0][filt_idx];
 
-                    ctudec->rcn_funcs.alf.ccalf[req_vb](dst_chroma, src_chroma, stride_dst,
-                                                        stride_src, blk_dst, filt_coeff,
-                                                        ctu_s, virbnd_pos);
+                ctudec->rcn_funcs.alf.ccalf[req_vb](dst_chroma, src_luma, stride_dst,
+                                                    stride_src, blk_dst, filt_coeff,
+                                                    ctu_s, virbnd_pos);
 
-                }
             }
 
             if (alf_params_ctu->ctb_alf_flag & 1) {
@@ -1611,25 +1609,22 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
             }
 
 
-            if (alf_info->cc_alf_cr_enabled_flag) {
+            if (alf_params_ctu->ctb_alf_flag & 0x10) {
                 const OVALFData* alf_data = alf_info->aps_cc_alf_data_cr;
 
-                const int filt_idx = alf_info->ctb_cc_alf_filter_idx[1][ctu_rs_addr];
+                const uint8_t filt_idx = alf_params_ctu->cr_ccalf;
 
-                if (filt_idx != 0) {
+                int stride_src = fb.filter_region_stride[0];
 
-                    int stride_src = fb.filter_region_stride[0];
+                OVSample*  src_luma = &src[0][fb.filter_region_offset[0]];
+                OVSample*  dst_chroma = (OVSample*) frame->data[2] + pos_offset;
 
-                    OVSample*  src_chroma = &src[0][fb.filter_region_offset[0]];
-                    OVSample*  dst_chroma = (OVSample*) frame->data[2] + pos_offset;
+                const int16_t *filt_coeff = alf_data->alf_cc_mapped_coeff[1][filt_idx];
 
-                    const int16_t *filt_coeff = alf_data->alf_cc_mapped_coeff[1][filt_idx - 1];
+                ctudec->rcn_funcs.alf.ccalf[req_vb](dst_chroma, src_luma, stride_dst,
+                                                    stride_src, blk_dst, filt_coeff,
+                                                    ctu_s, virbnd_pos);
 
-                    ctudec->rcn_funcs.alf.ccalf[req_vb](dst_chroma, src_chroma, stride_dst,
-                                                        stride_src, blk_dst, filt_coeff,
-                                                        ctu_s, virbnd_pos);
-
-                }
             }
         }
 

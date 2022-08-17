@@ -98,13 +98,6 @@ ctudec_init_in_loop_filters(OVCTUDec *const ctudec, const OVPS *const prms)
     if(alf_info->cc_alf_cb_enabled_flag || alf_info->cc_alf_cr_enabled_flag){
         alf_info->aps_cc_alf_data_cb   = &prms->aps_cc_alf_cb->aps_alf_data;
         alf_info->aps_cc_alf_data_cr = &prms->aps_cc_alf_cr->aps_alf_data;
-        if(!alf_info->ctb_cc_alf_filter_idx[0]){
-            alf_info->ctb_cc_alf_filter_idx[0] = ov_malloc(sizeof(uint8_t) * nb_ctb_pic_w * nb_ctb_pic_h);
-            alf_info->ctb_cc_alf_filter_idx[1] = ov_malloc(sizeof(uint8_t) * nb_ctb_pic_w * nb_ctb_pic_h);
-        } else {
-            memset(alf_info->ctb_cc_alf_filter_idx[0], 0, sizeof(uint8_t) * nb_ctb_pic_w * nb_ctb_pic_h);
-            memset(alf_info->ctb_cc_alf_filter_idx[1], 0, sizeof(uint8_t) * nb_ctb_pic_w * nb_ctb_pic_h);
-        }
     }
 
     //Init LMCS info and output pivots
@@ -132,11 +125,6 @@ ctudec_uninit_in_loop_filters(OVCTUDec *const ctudec)
 
     if (alf_info->ctb_alf_params) {
         ov_free(alf_info->ctb_alf_params);
-    }
-
-    if (alf_info->ctb_cc_alf_filter_idx[0]) {
-        ov_free(alf_info->ctb_cc_alf_filter_idx[0]);
-        ov_free(alf_info->ctb_cc_alf_filter_idx[1]);
     }
 
     if (lmcs_info->luts) {

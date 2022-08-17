@@ -37,6 +37,7 @@
 #include "nvcl_structures.h"
 #include "nvcl.h"
 #include "rcn_alf.h"
+#include "vcl.h"
 
 
 static uint8_t
@@ -151,10 +152,12 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu
         }
     }
 
-    alf_info->left_ctb_alf_flag          = alf_flags;
-    alf_info->ctb_alf_flag_line[ctb_col] = alf_flags;
-
     alf_params_ctu->ctb_alf_flag = alf_flags;
+
+    ovcabac_read_ae_cc_alf_ctu(ctudec, ctb_rs, nb_ctu_w);
+
+    alf_info->left_ctb_alf_flag          = alf_params_ctu->ctb_alf_flag;
+    alf_info->ctb_alf_flag_line[ctb_col] = alf_params_ctu->ctb_alf_flag;
 }
 
 #define CCALF_CB 0
@@ -169,19 +172,19 @@ ovcabac_read_ae_cc_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_
     OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
     uint64_t *const cabac_state = cabac_ctx->ctx_table;
     const uint8_t ctu_ngh_ctx = ctudec->ctu_ngh_flags;
+    ALFParamsCtu* alf_params_ctu = &alf_info->ctb_alf_params[ctb_rs];
 
     if (ccalf_enabled_cb) {
         const OVALFData* alf_data = alf_info->aps_cc_alf_data_cb;
 
         int ctb_col = ctb_rs % nb_ctu_w;
-        const uint8_t ccalf_ctb_lft = alf_info->left_ctb_cc_alf_flag[CCALF_CB];
-        const uint8_t ccalf_ctb_abv = ctb_rs >= nb_ctu_w && alf_info->ctb_cc_alf_flag_line[CCALF_CB][ctb_col];
+        const uint8_t ctb_alf_abv = (ctb_rs - nb_ctu_w) >= 0 ? alf_info->ctb_alf_flag_line[ctb_col] : 0;
+        const uint8_t ctb_alf_lft = alf_info->left_ctb_alf_flag;
 
         const int nb_ccalf_alt = alf_data->alf_cc_cb_filters_signalled_minus1 + 1;
-        uint8_t ctx = 0;
 
-        ctx += (ctu_ngh_ctx & CTU_LFT_FLG) && ccalf_ctb_lft;
-        ctx += (ctu_ngh_ctx & CTU_UP_FLG ) && ccalf_ctb_abv;
+        uint8_t ctx  = (ctu_ngh_ctx & CTU_LFT_FLG) && (ctb_alf_lft & 0x8);
+                ctx += (ctu_ngh_ctx & CTU_UP_FLG ) && (ctb_alf_abv & 0x8);
 
         uint8_t ccalf_idx = ovcabac_ae_read(cabac_ctx, &cabac_state[CC_ALF_FILTER_CONTROL_FLAG_CTX_OFFSET + ctx]);
 
@@ -189,11 +192,9 @@ ovcabac_read_ae_cc_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_
             while ((ccalf_idx != nb_ccalf_alt) && ovcabac_bypass_read(cabac_ctx)) {
                 ccalf_idx++;
             }
+            alf_params_ctu->ctb_alf_flag |= 1 << 3;
+            alf_params_ctu->cb_ccalf = ccalf_idx - 1;
         }
-
-        alf_info->left_ctb_cc_alf_flag[CCALF_CB]          = ccalf_idx;
-        alf_info->ctb_cc_alf_flag_line[CCALF_CB][ctb_col] = ccalf_idx;
-        alf_info->ctb_cc_alf_filter_idx[CCALF_CB][ctb_rs] = ccalf_idx;
 
     }
 
@@ -201,24 +202,23 @@ ovcabac_read_ae_cc_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_
         const OVALFData* alf_data = alf_info->aps_cc_alf_data_cr;
 
         int ctb_col = ctb_rs % nb_ctu_w;
-        const uint8_t ccalf_ctb_abv = ctb_rs >= nb_ctu_w && alf_info->ctb_cc_alf_flag_line[CCALF_CR][ctb_col];
-        const uint8_t ccalf_ctb_lft = alf_info->left_ctb_cc_alf_flag[CCALF_CR];
+        const uint8_t ctb_alf_abv = (ctb_rs - nb_ctu_w) >= 0 ? alf_info->ctb_alf_flag_line[ctb_col] : 0;
+        const uint8_t ctb_alf_lft = alf_info->left_ctb_alf_flag;
 
         const int nb_ccalf_alt = alf_data->alf_cc_cr_filters_signalled_minus1 + 1;
-        uint8_t  ctx = 3;
-        ctx += (ctu_ngh_ctx & CTU_LFT_FLG) && ccalf_ctb_lft;
-        ctx += (ctu_ngh_ctx & CTU_UP_FLG ) && ccalf_ctb_abv;
+
+        uint8_t ctx  = (ctu_ngh_ctx & CTU_LFT_FLG) && (ctb_alf_lft & 0x10);
+                ctx += (ctu_ngh_ctx & CTU_UP_FLG ) && (ctb_alf_abv & 0x10);
+                ctx += 3;
 
         uint8_t ccalf_idx = ovcabac_ae_read(cabac_ctx, &cabac_state[CC_ALF_FILTER_CONTROL_FLAG_CTX_OFFSET + ctx]);
         if (ccalf_idx) {
             while ((ccalf_idx != nb_ccalf_alt) && ovcabac_bypass_read(cabac_ctx)) {
                 ccalf_idx++;
             }
+            alf_params_ctu->ctb_alf_flag |= 1 << 4;
+            alf_params_ctu->cr_ccalf = ccalf_idx - 1;
         }
-
-        alf_info->left_ctb_cc_alf_flag[CCALF_CR]          = ccalf_idx;
-        alf_info->ctb_cc_alf_flag_line[CCALF_CR][ctb_col] = ccalf_idx;
-        alf_info->ctb_cc_alf_filter_idx[CCALF_CR][ctb_rs] = ccalf_idx;
     }
-
 }
+
