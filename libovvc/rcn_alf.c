@@ -1056,7 +1056,7 @@ alf_filterBlkLuma(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample
                   Area blk_dst, const int16_t *filter_set, const int16_t *clip_set,
                   const int ctu_height, int virbnd_pos)
 {
-    const OVSample *pImg0, *pImg1, *pImg2, *pImg3, *pImg4, *pImg5, *pImg6;
+    const OVSample *src_l0, *src_l1, *src_l2, *src_l3, *src_l4, *src_l5, *src_l6;
 
     const int shift = NUM_BITS - 1;
     const int offset = 1 << (shift - 1);
@@ -1083,49 +1083,49 @@ alf_filterBlkLuma(uint8_t * class_idx_arr, uint8_t * transpose_idx_arr, OVSample
             const int16_t *filt_clip = clip_set + transpose_idx * MAX_NUM_ALF_CLASSES * MAX_NUM_ALF_LUMA_COEFF + class_idx * MAX_NUM_ALF_LUMA_COEFF;
 
             for (int ii = 0; ii < clsSizeY; ii++) {
-                pImg0 = _src + j + ii * srcStride;
-                pImg1 = pImg0 + srcStride;
-                pImg2 = pImg0 - srcStride;
-                pImg3 = pImg1 + srcStride;
-                pImg4 = pImg2 - srcStride;
-                pImg5 = pImg3 + srcStride;
-                pImg6 = pImg4 - srcStride;
+                src_l0 = _src + j + ii * srcStride;
+                src_l1 = src_l0 + srcStride;
+                src_l2 = src_l0 - srcStride;
+                src_l3 = src_l1 + srcStride;
+                src_l4 = src_l2 - srcStride;
+                src_l5 = src_l3 + srcStride;
+                src_l6 = src_l4 - srcStride;
 
                 pRec1 = pRec0 + j + ii * dstStride;
 
                 for (int jj = 0; jj < clsSizeX; jj++) {
                     int sum = 0;
-                    const int16_t curr = pImg0[+0];
-                    sum += filt_coeff[0] * alf_clip(filt_clip[0], curr, pImg5[+0], pImg6[+0]);
-                    sum += filt_coeff[1] * alf_clip(filt_clip[1], curr, pImg3[+1], pImg4[-1]);
+                    const int16_t curr = src_l0[+0];
+                    sum += filt_coeff[0] * alf_clip(filt_clip[0], curr, src_l5[+0], src_l6[+0]);
+                    sum += filt_coeff[1] * alf_clip(filt_clip[1], curr, src_l3[+1], src_l4[-1]);
 
-                    sum += filt_coeff[2] * alf_clip(filt_clip[2], curr, pImg3[+0], pImg4[+0]);
-                    sum += filt_coeff[3] * alf_clip(filt_clip[3], curr, pImg3[-1], pImg4[+1]);
+                    sum += filt_coeff[2] * alf_clip(filt_clip[2], curr, src_l3[+0], src_l4[+0]);
+                    sum += filt_coeff[3] * alf_clip(filt_clip[3], curr, src_l3[-1], src_l4[+1]);
 
-                    sum += filt_coeff[4] * alf_clip(filt_clip[4], curr, pImg1[+2], pImg2[-2]);
-                    sum += filt_coeff[5] * alf_clip(filt_clip[5], curr, pImg1[+1], pImg2[-1]);
+                    sum += filt_coeff[4] * alf_clip(filt_clip[4], curr, src_l1[+2], src_l2[-2]);
+                    sum += filt_coeff[5] * alf_clip(filt_clip[5], curr, src_l1[+1], src_l2[-1]);
 
-                    sum += filt_coeff[6] * alf_clip(filt_clip[6], curr, pImg1[+0], pImg2[+0]);
-                    sum += filt_coeff[7] * alf_clip(filt_clip[7], curr, pImg1[-1], pImg2[+1]);
+                    sum += filt_coeff[6] * alf_clip(filt_clip[6], curr, src_l1[+0], src_l2[+0]);
+                    sum += filt_coeff[7] * alf_clip(filt_clip[7], curr, src_l1[-1], src_l2[+1]);
 
-                    sum += filt_coeff[8] * alf_clip(filt_clip[8], curr, pImg1[-2], pImg2[+2]);
-                    sum += filt_coeff[9] * alf_clip(filt_clip[9], curr, pImg0[+3], pImg0[-3]);
+                    sum += filt_coeff[8] * alf_clip(filt_clip[8], curr, src_l1[-2], src_l2[+2]);
+                    sum += filt_coeff[9] * alf_clip(filt_clip[9], curr, src_l0[+3], src_l0[-3]);
 
-                    sum += filt_coeff[10] * alf_clip(filt_clip[10], curr, pImg0[+2], pImg0[-2]);
-                    sum += filt_coeff[11] * alf_clip(filt_clip[11], curr, pImg0[+1], pImg0[-1]);
+                    sum += filt_coeff[10] * alf_clip(filt_clip[10], curr, src_l0[+2], src_l0[-2]);
+                    sum += filt_coeff[11] * alf_clip(filt_clip[11], curr, src_l0[+1], src_l0[-1]);
 
                     sum = (sum + offset) >> shift;
 
                     sum += curr;
                     pRec1[jj] = ov_bdclip(sum);
 
-                    pImg0++;
-                    pImg1++;
-                    pImg2++;
-                    pImg3++;
-                    pImg4++;
-                    pImg5++;
-                    pImg6++;
+                    src_l0++;
+                    src_l1++;
+                    src_l2++;
+                    src_l3++;
+                    src_l4++;
+                    src_l5++;
+                    src_l6++;
                 }
             }
         }
