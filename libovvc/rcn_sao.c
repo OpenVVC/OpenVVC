@@ -146,7 +146,7 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_start_pic, int y_st
 
         OVSample *filtered =  (OVSample *) fb->filter_region[c_idx];
         int stride_filtered = fb->filter_region_stride[c_idx];
-        filtered = &filtered[(fb->filter_region_offset[c_idx]) + stride_filtered*(fb_offset>> shift_chr)];  
+        filtered = &filtered[fb->filter_region_offset[c_idx] + stride_filtered * (fb_offset >> shift_chr)];
         int8_t *offsets = sao->offset_val[c_idx];
 
         switch (sao->type_idx[c_idx]) {
