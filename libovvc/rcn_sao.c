@@ -116,76 +116,104 @@ sao_edge_filter(OVSample *_dst, OVSample *_src,
 }
 
 static void
+sao_call(const struct SAOFunctions *saofunc, OVSample *dst, OVSample *src, int16_t dst_stride, int16_t src_stride,
+         int width, int height, SAOParamsCtu *sao, int c_idx, uint8_t is_border)
+{
+    int8_t *offsets = sao->offset_val[c_idx];
+
+    if (!offsets[0] && !offsets[1] && !offsets[2] && !offsets[3]) return;
+
+    switch (sao->type_idx[c_idx]) {
+        case SAO_BAND:
+
+            saofunc->band(dst, src, dst_stride, src_stride,
+                          width, height, offsets, sao->band_position[c_idx]);
+
+            break;
+
+        case SAO_EDGE:
+        {
+            uint8_t eo_dir = sao->eo_class[c_idx];
+
+            int x_start = (is_border & OV_BOUNDARY_LEFT_RECT)  && eo_dir != 1;
+            int y_start = (is_border & OV_BOUNDARY_UPPER_RECT) && eo_dir != 0;
+
+            int dst_offset = y_start * dst_stride + x_start;
+            int src_offset = y_start * src_stride + x_start;
+
+            /* Not vertical */
+            width -= (is_border & OV_BOUNDARY_LEFT_RECT)  && eo_dir != 1;
+            width -= (is_border & OV_BOUNDARY_RIGHT_RECT) && eo_dir != 1;
+
+            /* Not horizontal */
+            height -= (is_border & OV_BOUNDARY_UPPER_RECT)  && eo_dir != 0;
+            height -= (is_border & OV_BOUNDARY_BOTTOM_RECT) && eo_dir != 0;
+
+            saofunc->edge[!(width % 8)](dst + dst_offset, src + src_offset, dst_stride,
+                                        src_stride, width, height, offsets, eo_dir);
+
+            break;
+        }
+    }
+}
+
+static void
 rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_pic, int y_pic, int y_end_pic, int fb_offset, uint8_t is_border)
-{   
-    struct OVFilterBuffers* fb   = &ctudec->rcn_ctx.filter_buffers;
-    const OVPartInfo *const pinfo = ctudec->part_ctx;
-    uint8_t log2_ctb_s = pinfo->log2_ctu_s;
+{
 
-    const struct SAOFunctions *saofunc = &ctudec->rcn_funcs.sao;
+    uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
+
+    int ctb_w = (OVMIN(  (1 << log2_ctb_s), ctudec->pic_w - x_pic));
+    int ctb_h = (OVMIN((y_end_pic - y_pic), ctudec->pic_h - y_pic));
+
     const OVFrame *frame = ctudec->rcn_ctx.frame_start;
+    struct OVFilterBuffers* fb = &ctudec->rcn_ctx.filter_buffers;
 
-    for (int c_idx = 0; c_idx < (ctudec->sao_info.chroma_format_idc ? 3 : 1); c_idx++) {
-        int shift_chr = c_idx == 0 ? 0 : 1;
+    const struct SAOFunctions *sao_func = &ctudec->rcn_funcs.sao;
 
-        int x0 = x_pic >> shift_chr;
-        int y0 = y_pic >> shift_chr;
+    int sao_l  = 1;
+    int sao_cb = 1;
+    int sao_cr = 1;
 
-        int pic_w = (ctudec->pic_w) >> shift_chr;
-        int pic_h = (ctudec->pic_h) >> shift_chr;
+    if (sao_l) {
+        ptrdiff_t dst_stride = frame->linesize[0] / sizeof(OVSample);
+        ptrdiff_t src_stride = fb->filter_region_stride[0];
 
-        int ctb_w = (1 << log2_ctb_s)   >> shift_chr;
-        int ctb_h = (y_end_pic - y_pic) >> shift_chr;
+        int dst_offset = y_pic * dst_stride + x_pic;
+        int src_offset = fb->filter_region_offset[0] + src_stride * fb_offset;
 
-        int width  = OVMIN(ctb_w, pic_w - x0);
-        int height = OVMIN(ctb_h, pic_h - y0);
+        int c_idx = 0;
+        OVSample *dst = (OVSample *)frame->data[c_idx] + dst_offset;
+        OVSample *src = (OVSample *)fb->filter_region[c_idx] + src_offset;
 
-        ptrdiff_t dst_stride = frame->linesize[c_idx] / sizeof(OVSample);
-        int src_stride = fb->filter_region_stride[c_idx];
+        sao_call(sao_func, dst, src, dst_stride, src_stride, ctb_w, ctb_h, sao, c_idx, is_border);
 
-        OVSample *dst = (OVSample *)frame->data[c_idx];
-        OVSample *src = (OVSample *)fb->filter_region[c_idx];
+    }
 
-        int8_t *offsets = sao->offset_val[c_idx];
+    if (sao_cb || sao_cr) {
+        ptrdiff_t dst_stride = frame->linesize[1] / sizeof(OVSample);
+        ptrdiff_t src_stride = fb->filter_region_stride[1];
 
-        if (!offsets[0] && !offsets[1] && !offsets[2] && !offsets[3]) continue;
+        int dst_offset = (y_pic >> 1) * dst_stride + (x_pic >> 1);;
+        int src_offset = fb->filter_region_offset[1] + src_stride * (fb_offset >> 1);
 
-        dst += y0 * dst_stride + x0;
+        ctb_w >>= 1;
+        ctb_h >>= 1;
 
-        src += fb->filter_region_offset[c_idx] + src_stride * (fb_offset >> shift_chr);
+        if (sao_cb) {
+            int c_idx = 1;
+            OVSample *dst = (OVSample *)frame->data[c_idx]       + dst_offset;
+            OVSample *src = (OVSample *)fb->filter_region[c_idx] + src_offset;
 
+            sao_call(sao_func, dst, src, dst_stride, src_stride, ctb_w, ctb_h, sao, c_idx, is_border);
+        }
 
-        switch (sao->type_idx[c_idx]) {
-            case SAO_BAND:
+        if (sao_cr) {
+            int c_idx = 2;
+            OVSample *dst = (OVSample *)frame->data[c_idx] + dst_offset;
+            OVSample *src = (OVSample *)fb->filter_region[c_idx] + src_offset;
 
-                saofunc->band(dst, src, dst_stride, src_stride,
-                              width, height, offsets, sao->band_position[c_idx]);
-
-                break;
-
-            case SAO_EDGE:
-            {
-                uint8_t eo_dir = sao->eo_class[c_idx];
-
-                int x_start = (is_border & OV_BOUNDARY_LEFT_RECT)  && eo_dir != 1;
-                int y_start = (is_border & OV_BOUNDARY_UPPER_RECT) && eo_dir != 0;
-
-                int dst_offset = y_start * dst_stride + x_start;
-                int src_offset = y_start * src_stride + x_start;
-
-                /* Not vertical */
-                width -= (is_border & OV_BOUNDARY_LEFT_RECT)  && eo_dir != 1;
-                width -= (is_border & OV_BOUNDARY_RIGHT_RECT) && eo_dir != 1;
-
-                /* Not horizontal */
-                height -= (is_border & OV_BOUNDARY_UPPER_RECT)  && eo_dir != 0;
-                height -= (is_border & OV_BOUNDARY_BOTTOM_RECT) && eo_dir != 0;
-
-                saofunc->edge[!(width % 8)](dst + dst_offset, src + src_offset, dst_stride,
-                                            src_stride, width, height, offsets, eo_dir);
-
-                break;
-            }
+            sao_call(sao_func, dst, src, dst_stride, src_stride, ctb_w, ctb_h, sao, c_idx, is_border);
         }
     }
 }
