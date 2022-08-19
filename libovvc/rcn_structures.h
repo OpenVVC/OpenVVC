@@ -212,13 +212,15 @@ typedef void (*CCALFFilterBlkFunc)(OVSample * chroma_dst, OVSample * luma_src, c
 
 typedef void (*SAOBandFilterFunc)(OVSample* _dst, OVSample* _src,
                                   ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
-                                  struct SAOParamsCtu* sao, int width,
-                                  int height, int c_idx);
+                                  int width, int height,
+                                  int8_t offset_val[],
+                                  uint8_t band_pos);
 
 typedef void (*SAOEdgeFilterFunc)(OVSample* _dst, OVSample* _src,
                                   ptrdiff_t _stride_dst, ptrdiff_t _stride_src,
-                                  struct SAOParamsCtu* sao, int width,
-                                  int height, int c_idx);
+                                  int width, int height,
+                                  int8_t offset_val[],
+                                  uint8_t eo_dir);
 
 typedef void (*LMCSReshapeFunc)(OVSample *_dst, ptrdiff_t stride_dst, const struct LMCSLUTs *const luts, int width, int height);
 

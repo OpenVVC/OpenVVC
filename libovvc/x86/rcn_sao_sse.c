@@ -50,29 +50,27 @@ sao_band_filter_0_10_sse(OVSample* _dst,
                          OVSample* _src,
                          ptrdiff_t _stride_dst,
                          ptrdiff_t _stride_src,
-                         struct SAOParamsCtu* sao,
                          int width,
                          int height,
-                         int c_idx)
+                         int8_t offset_val[],
+                         uint8_t band_pos)
 {
   int y, x;
   int shift = 10 - 5;
-  int8_t* sao_offset_val = sao->offset_val[c_idx];
-  uint8_t sao_left_class = sao->band_position[c_idx];
   __m128i r0, r1, r2, r3, x0, x1, x2, x3, sao1, sao2, sao3, sao4;
   __m128i src0, src2;
   uint16_t* dst = (uint16_t*)_dst;
   uint16_t* src = (uint16_t*)_src;
   ptrdiff_t stride_dst = _stride_dst;
   ptrdiff_t stride_src = _stride_src;
-  r0 = _mm_set1_epi16((sao_left_class)&31);
-  r1 = _mm_set1_epi16((sao_left_class + 1) & 31);
-  r2 = _mm_set1_epi16((sao_left_class + 2) & 31);
-  r3 = _mm_set1_epi16((sao_left_class + 3) & 31);
-  sao1 = _mm_set1_epi16(sao_offset_val[0]);
-  sao2 = _mm_set1_epi16(sao_offset_val[1]);
-  sao3 = _mm_set1_epi16(sao_offset_val[2]);
-  sao4 = _mm_set1_epi16(sao_offset_val[3]);
+  r0 = _mm_set1_epi16((band_pos    ) & 31);
+  r1 = _mm_set1_epi16((band_pos + 1) & 31);
+  r2 = _mm_set1_epi16((band_pos + 2) & 31);
+  r3 = _mm_set1_epi16((band_pos + 3) & 31);
+  sao1 = _mm_set1_epi16(offset_val[0]);
+  sao2 = _mm_set1_epi16(offset_val[1]);
+  sao3 = _mm_set1_epi16(offset_val[2]);
+  sao4 = _mm_set1_epi16(offset_val[3]);
   for (y = 0; y < height; y++) {
     for (x = 0; x < width; x += 8) {
       src0 = _mm_loadu_si128((__m128i*)&src[x]);
@@ -103,14 +101,12 @@ sao_edge_filter_10_sse(OVSample* _dst,
                        OVSample* _src,
                        ptrdiff_t _stride_dst,
                        ptrdiff_t _stride_src,
-                       SAOParamsCtu* sao,
                        int width,
                        int height,
-                       int c_idx)
+                       int8_t offset_val[],
+                       uint8_t eo_dir)
 {
   int x, y;
-  int8_t* sao_offset_val = sao->offset_val[c_idx];
-  int eo = sao->eo_class[c_idx];
   static const int8_t pos[4][2][2] = {
     { { -1, 0 }, { 1, 0 } },
     { { 0, -1 }, { 0, 1 } },
@@ -124,13 +120,12 @@ sao_edge_filter_10_sse(OVSample* _dst,
   ptrdiff_t stride_dst = _stride_dst;
   ptrdiff_t stride_src = _stride_src;
   {
-    int a_stride = pos[eo][0][0] + pos[eo][0][1] * stride_src;
-    int b_stride = pos[eo][1][0] + pos[eo][1][1] * stride_src;
-    offset0 = _mm_set1_epi16(sao_offset_val[0]);
-    offset1 = _mm_set1_epi16(sao_offset_val[1]);
-    offset2 = _mm_set1_epi16(0);
-    offset3 = _mm_set1_epi16(sao_offset_val[2]);
-    offset4 = _mm_set1_epi16(sao_offset_val[3]);
+    int a_stride = pos[eo_dir][0][0] + pos[eo_dir][0][1] * stride_src;
+    int b_stride = pos[eo_dir][1][0] + pos[eo_dir][1][1] * stride_src;
+    offset0 = _mm_set1_epi16(offset_val[0]);
+    offset1 = _mm_set1_epi16(offset_val[1]);
+    offset3 = _mm_set1_epi16(offset_val[2]);
+    offset4 = _mm_set1_epi16(offset_val[3]);
     for (y = 0; y < height; y++) {
       for (x = 0; x < width; x += 8) {
         x0 = _mm_loadu_si128((__m128i*)(src + x));
@@ -173,14 +168,12 @@ sao_edge_filter_7_10_sse(OVSample* _dst,
                          OVSample* _src,
                          ptrdiff_t _stride_dst,
                          ptrdiff_t _stride_src,
-                         SAOParamsCtu* sao,
                          int width,
                          int height,
-                         int c_idx)
+                         int8_t offset_val[],
+                         uint8_t eo_dir)
 {
   int x, y;
-  int8_t* sao_offset_val = sao->offset_val[c_idx];
-  int eo = sao->eo_class[c_idx];
   static const int8_t pos[4][2][2] = {
     { { -1, 0 }, { 1, 0 } },
     { { 0, -1 }, { 0, 1 } },
@@ -194,13 +187,12 @@ sao_edge_filter_7_10_sse(OVSample* _dst,
   ptrdiff_t stride_dst = _stride_dst;
   ptrdiff_t stride_src = _stride_src;
   {
-    int a_stride = pos[eo][0][0] + pos[eo][0][1] * stride_src;
-    int b_stride = pos[eo][1][0] + pos[eo][1][1] * stride_src;
-    offset0 = _mm_set1_epi16(sao_offset_val[0]);
-    offset1 = _mm_set1_epi16(sao_offset_val[1]);
-    offset2 = _mm_set1_epi16(0);
-    offset3 = _mm_set1_epi16(sao_offset_val[2]);
-    offset4 = _mm_set1_epi16(sao_offset_val[3]);
+    int a_stride = pos[eo_dir][0][0] + pos[eo_dir][0][1] * stride_src;
+    int b_stride = pos[eo_dir][1][0] + pos[eo_dir][1][1] * stride_src;
+    offset0 = _mm_set1_epi16(offset_val[0]);
+    offset1 = _mm_set1_epi16(offset_val[1]);
+    offset3 = _mm_set1_epi16(offset_val[2]);
+    offset4 = _mm_set1_epi16(offset_val[3]);
     for (y = 0; y < height; y++) {
       for (x = 0; x < width - width%8; x += 8) {
         x0 = _mm_loadu_si128((__m128i*)(src + x));
@@ -278,28 +270,26 @@ sao_band_filter_0_10_avx2(OVSample* _dst,
                          OVSample* _src,
                          ptrdiff_t _stride_dst,
                          ptrdiff_t _stride_src,
-                         struct SAOParamsCtu* sao,
                          int width,
                          int height,
-                         int c_idx)
+                         int8_t offset_val[],
+                         uint8_t band_pos)
 {
   int y, x;
   int shift = 10 - 5;
-  int8_t* sao_offset_val = sao->offset_val[c_idx];
-  uint8_t sao_left_class = sao->band_position[c_idx];
   __m256i r0, r1, r2, r3, sao1, sao2, sao3, sao4;
   uint16_t* dst = (uint16_t*)_dst;
   uint16_t* src = (uint16_t*)_src;
   ptrdiff_t stride_dst = _stride_dst;
   ptrdiff_t stride_src = _stride_src;
-  r0 = _mm256_set1_epi16((sao_left_class)&31);
-  r1 = _mm256_set1_epi16((sao_left_class + 1) & 31);
-  r2 = _mm256_set1_epi16((sao_left_class + 2) & 31);
-  r3 = _mm256_set1_epi16((sao_left_class + 3) & 31);
-  sao1 = _mm256_set1_epi16(sao_offset_val[0]);
-  sao2 = _mm256_set1_epi16(sao_offset_val[1]);
-  sao3 = _mm256_set1_epi16(sao_offset_val[2]);
-  sao4 = _mm256_set1_epi16(sao_offset_val[3]);
+  r0 = _mm256_set1_epi16((band_pos)&31);
+  r1 = _mm256_set1_epi16((band_pos + 1) & 31);
+  r2 = _mm256_set1_epi16((band_pos + 2) & 31);
+  r3 = _mm256_set1_epi16((band_pos + 3) & 31);
+  sao1 = _mm256_set1_epi16(offset_val[0]);
+  sao2 = _mm256_set1_epi16(offset_val[1]);
+  sao3 = _mm256_set1_epi16(offset_val[2]);
+  sao4 = _mm256_set1_epi16(offset_val[3]);
   for (y = 0; y < height; y++) {
     for (x = 0; x < width-width%16; x += 16) {
       __m256i src0 = _mm256_loadu_si256((__m256i*)&src[x]);
@@ -349,14 +339,12 @@ sao_edge_filter_10_avx2(OVSample* _dst,
                        OVSample* _src,
                        ptrdiff_t _stride_dst,
                        ptrdiff_t _stride_src,
-                       SAOParamsCtu* sao,
                        int width,
                        int height,
-                       int c_idx)
+                       int8_t offset_val[],
+                       uint8_t eo_dir)
 {
   int x, y;
-  int8_t* sao_offset_val = sao->offset_val[c_idx];
-  int eo = sao->eo_class[c_idx];
   static const int8_t pos[4][2][2] = {
     { { -1, 0 }, { 1, 0 } },
     { { 0, -1 }, { 0, 1 } },
@@ -369,13 +357,12 @@ sao_edge_filter_10_avx2(OVSample* _dst,
   ptrdiff_t stride_dst = _stride_dst;
   ptrdiff_t stride_src = _stride_src;
   {
-    int a_stride = pos[eo][0][0] + pos[eo][0][1] * stride_src;
-    int b_stride = pos[eo][1][0] + pos[eo][1][1] * stride_src;
-    offset0 = _mm256_set1_epi16(sao_offset_val[0]);
-    offset1 = _mm256_set1_epi16(sao_offset_val[1]);
-    offset2 = _mm256_set1_epi16(0);
-    offset3 = _mm256_set1_epi16(sao_offset_val[2]);
-    offset4 = _mm256_set1_epi16(sao_offset_val[3]);
+    int a_stride = pos[eo_dir][0][0] + pos[eo_dir][0][1] * stride_src;
+    int b_stride = pos[eo_dir][1][0] + pos[eo_dir][1][1] * stride_src;
+    offset0 = _mm256_set1_epi16(offset_val[0]);
+    offset1 = _mm256_set1_epi16(offset_val[1]);
+    offset3 = _mm256_set1_epi16(offset_val[2]);
+    offset4 = _mm256_set1_epi16(offset_val[3]);
     for (y = 0; y < height; y++) {
       for (x = 0; x < width-width%16; x += 16) {
         __m256i x0, x1, x2, x3;
@@ -452,14 +439,12 @@ sao_edge_filter_7_10_avx2(OVSample* _dst,
                          OVSample* _src,
                          ptrdiff_t _stride_dst,
                          ptrdiff_t _stride_src,
-                         SAOParamsCtu* sao,
                          int width,
                          int height,
-                         int c_idx)
+                         int8_t offset_val[],
+                         uint8_t eo_dir)
 {
   int x, y;
-  int8_t* sao_offset_val = sao->offset_val[c_idx];
-  int eo = sao->eo_class[c_idx];
   const int8_t pos[4][2][2] = {
     { { -1, 0 }, { 1, 0 } },
     { { 0, -1 }, { 0, 1 } },
@@ -472,13 +457,12 @@ sao_edge_filter_7_10_avx2(OVSample* _dst,
   ptrdiff_t stride_dst = _stride_dst;
   ptrdiff_t stride_src = _stride_src;
   {
-    int a_stride = pos[eo][0][0] + pos[eo][0][1] * stride_src;
-    int b_stride = pos[eo][1][0] + pos[eo][1][1] * stride_src;
-    offset0 = _mm256_set1_epi16(sao_offset_val[0]);
-    offset1 = _mm256_set1_epi16(sao_offset_val[1]);
-    offset2 = _mm256_set1_epi16(0);
-    offset3 = _mm256_set1_epi16(sao_offset_val[2]);
-    offset4 = _mm256_set1_epi16(sao_offset_val[3]);
+    int a_stride = pos[eo_dir][0][0] + pos[eo_dir][0][1] * stride_src;
+    int b_stride = pos[eo_dir][1][0] + pos[eo_dir][1][1] * stride_src;
+    offset0 = _mm256_set1_epi16(offset_val[0]);
+    offset1 = _mm256_set1_epi16(offset_val[1]);
+    offset3 = _mm256_set1_epi16(offset_val[2]);
+    offset4 = _mm256_set1_epi16(offset_val[3]);
     for (y = 0; y < height; y++) {
       for (x = 0; x < width-width%16; x += 16) {
         __m256i x0, x1, x2, x3;
