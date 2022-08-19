@@ -208,38 +208,38 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
         int ctb_x_pic = ctb_x + einfo->ctb_x;
         int ctb_y_pic = ctb_y + einfo->ctb_y;
         int x_pos = ctb_x << log2_ctb_s;
-        int x_pos_pic = ctb_x_pic << log2_ctb_s;
-        int y_pos_pic = ctb_y_pic << log2_ctb_s;
+        int x_pic = ctb_x_pic << log2_ctb_s;
+        int y_pic = ctb_y_pic << log2_ctb_s;
         
         uint8_t is_border = 0;
-        is_border = (ctb_x == 0)                   ? is_border | OV_BOUNDARY_LEFT_RECT: is_border;
-        is_border = (ctb_x == einfo->nb_ctu_w - 1) ? is_border | OV_BOUNDARY_RIGHT_RECT: is_border;
-        is_border = (ctb_y == einfo->nb_ctu_h - 1) ? is_border | OV_BOUNDARY_BOTTOM_RECT: is_border;
+        is_border |= -(ctb_x == 0)                   & OV_BOUNDARY_LEFT_RECT;
+        is_border |= -(ctb_x == einfo->nb_ctu_w - 1) & OV_BOUNDARY_RIGHT_RECT;
+        is_border |= -(ctb_y == einfo->nb_ctu_h - 1) & OV_BOUNDARY_BOTTOM_RECT;
 
-        int y_start_pic = y_pos_pic + margin;
+        int y_start_pic = y_pic + margin;
         int ctb_addr_rs = ctb_y * einfo->nb_ctu_w + ctb_x;
         SAOParamsCtu *sao  = &ctudec->sao_info.sao_params[ctb_addr_rs];
 
-        ctudec->rcn_funcs.rcn_extend_filter_region(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pos, x_pos_pic, y_start_pic, is_border);
+        ctudec->rcn_funcs.rcn_extend_filter_region(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pos, x_pic, y_start_pic, is_border);
 
 
         if (sao->sao_ctu_flag) {
-            rcn_sao_ctu(ctudec, sao, x_pos_pic, y_start_pic, y_pos_pic + ctu_w, 0, is_border);
+            rcn_sao_ctu(ctudec, sao, x_pic, y_start_pic, y_pic + ctu_w, 0, is_border);
         }
 
         if (!(is_border & OV_BOUNDARY_BOTTOM_RECT)) {
             /* Apply partial SAO filter on next CTU line for ALF */
             int fb_offset = ctu_w - margin;
-            y_pos_pic += ctu_w;
+            y_pic += ctu_w;
             ctb_addr_rs += einfo->nb_ctu_w;
             sao         =  &ctudec->sao_info.sao_params[ctb_addr_rs];
             if (sao->sao_ctu_flag) {
-                rcn_sao_ctu(ctudec, sao, x_pos_pic, y_pos_pic, y_pos_pic + margin, fb_offset, is_border);
+                rcn_sao_ctu(ctudec, sao, x_pic, y_pic, y_pic + margin, fb_offset, is_border);
             }
         }
 
-        ctudec->rcn_funcs.rcn_save_last_rows(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pos, x_pos_pic, y_start_pic, is_border);
-        ctudec->rcn_funcs.rcn_save_last_cols(&ctudec->rcn_ctx, x_pos_pic, y_start_pic, is_border);
+        ctudec->rcn_funcs.rcn_save_last_rows(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pos, x_pic, y_start_pic, is_border);
+        ctudec->rcn_funcs.rcn_save_last_cols(&ctudec->rcn_ctx, x_pic, y_start_pic, is_border);
     }
 }
 
