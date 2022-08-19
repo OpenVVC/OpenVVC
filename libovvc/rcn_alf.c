@@ -363,7 +363,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
     const OVSample *_src = src - 3 * stride - 3;
     int i;
 
-    for (i = 0; i + blk.y < virbnd_pos; i += 2) {
+    for (i = 0; i < ((virbnd_pos - blk.y) >> 1); ++i) {
         const OVSample *src0 = &_src[0         ];
         const OVSample *src1 = &_src[stride    ];
         const OVSample *src2 = &_src[stride * 2];
@@ -400,10 +400,10 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
             l3 += 4;
         }
 
-        int* lpl_v = laplacian[VER]  [i >> 1];
-        int* lpl_h = laplacian[HOR]  [i >> 1];
-        int* lpl_d = laplacian[DIAG0][i >> 1];
-        int* lpl_b = laplacian[DIAG1][i >> 1];
+        int* lpl_v = laplacian[VER]  [i];
+        int* lpl_h = laplacian[HOR]  [i];
+        int* lpl_d = laplacian[DIAG0][i];
+        int* lpl_b = laplacian[DIAG1][i];
         for (j = 0; j < (blk_w >> 2); ++j) {
             lpl_v[j] = tmp_v[j] + tmp_v[j + 1];
             lpl_h[j] = tmp_h[j] + tmp_h[j + 1];
