@@ -1554,7 +1554,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                                                ctu_s, virbnd_pos);
         }
 
-        {
+        if (alf_params_ctu->ctb_alf_flag & (0x3 | 0x18)) {
 
             Area blk_dst = {
                 .x = x_pos_pic >> 1,
@@ -1571,7 +1571,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                                                                                            || ctu_w != ctu_s;
             int pos_offset = blk_dst.y * stride_dst + blk_dst.x;
 
-            if (alf_params_ctu->ctb_alf_flag & 2) {
+            if (alf_params_ctu->ctb_alf_flag & 0x2) {
 
                 int stride_src = fb.filter_region_stride[1];
 
@@ -1605,7 +1605,7 @@ rcn_alf_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 
             }
 
-            if (alf_params_ctu->ctb_alf_flag & 1) {
+            if (alf_params_ctu->ctb_alf_flag & 0x1) {
                 int stride_src = fb.filter_region_stride[2];
 
                 OVSample*  src_chroma = &src[2][fb.filter_region_offset[2]];
