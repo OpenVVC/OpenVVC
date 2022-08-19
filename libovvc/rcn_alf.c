@@ -356,9 +356,10 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
     int tmp_d[(32 + 4) >> 1];
     int tmp_b[(32 + 4) >> 1];
 
-
     int blk_h = blk.height;
     int blk_w = blk.width;
+    int nb_sb_w = blk_w >> 2;
+    int nb_sb_h = blk_h >> 1;
 
     const OVSample *_src = src - 3 * stride - 3;
     int i;
@@ -376,7 +377,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
 
         int j;
 
-        for (j = 0; j < (blk_w >> 2) + 1; ++j) {
+        for (j = 0; j < nb_sb_w + 1; ++j) {
             int16_t y10 = l1[0] << 1;
             int16_t y21 = l2[1] << 1;
             int16_t y12 = l1[2] << 1;
@@ -404,7 +405,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
         int* lpl_h = laplacian[HOR]  [i];
         int* lpl_d = laplacian[DIAG0][i];
         int* lpl_b = laplacian[DIAG1][i];
-        for (j = 0; j < (blk_w >> 2); ++j) {
+        for (j = 0; j < nb_sb_w; ++j) {
             lpl_v[j] = tmp_v[j] + tmp_v[j + 1];
             lpl_h[j] = tmp_h[j] + tmp_h[j + 1];
             lpl_d[j] = tmp_d[j] + tmp_d[j + 1];
@@ -436,7 +437,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
         const int* lpl_b3 = laplacian[DIAG1][i + 3];
         int j;
 
-        for (j = 0; j < (blk_w >> 2); ++j) {
+        for (j = 0; j < nb_sb_w; ++j) {
             int sum_v = lpl_v0[j] + lpl_v1[j] + lpl_v2[j] + lpl_v3[j];
             int sum_h = lpl_h0[j] + lpl_h1[j] + lpl_h2[j] + lpl_h3[j];
             int sum_d = lpl_d0[j] + lpl_d1[j] + lpl_d2[j] + lpl_d3[j];
@@ -474,7 +475,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
         const OVSample *l2 = &src2[1];
         const OVSample *l3 = &src3[1];
 
-        for (j = 0; j < (blk_w >> 2) + 1; ++j) {
+        for (j = 0; j < nb_sb_w + 1; ++j) {
             int16_t y10 = l1[0] << 1;
             int16_t y21 = l2[1] << 1;
             int16_t y12 = l1[2] << 1;
@@ -502,7 +503,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
         int* lpl_h = laplacian[HOR]  [i >> 1];
         int* lpl_d = laplacian[DIAG0][i >> 1];
         int* lpl_b = laplacian[DIAG1][i >> 1];
-        for (j = 0; j < (blk_w >> 2); ++j) {
+        for (j = 0; j < nb_sb_w; ++j) {
             lpl_v[j] = tmp_v[j] + tmp_v[j + 1];
             lpl_h[j] = tmp_h[j] + tmp_h[j + 1];
             lpl_d[j] = tmp_d[j] + tmp_d[j + 1];
@@ -536,7 +537,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
             const int* lpl_b1 = laplacian[DIAG1][i + 1];
             const int* lpl_b2 = laplacian[DIAG1][i + 2];
             int sb_y = (i >> 1) + (blk.y >> 2);
-            for (j = 0; j < (blk_w >> 2); ++j) {
+            for (j = 0; j < nb_sb_w; ++j) {
                 int sum_v = lpl_v0[j] + lpl_v1[j] + lpl_v2[j];
                 int sum_h = lpl_h0[j] + lpl_h1[j] + lpl_h2[j];
                 int sum_d = lpl_d0[j] + lpl_d1[j] + lpl_d2[j];
@@ -568,7 +569,7 @@ rcn_alf_classif_vbnd(uint8_t *const class_idx_arr, uint8_t *const transpose_idx_
             const int* lpl_b3 = laplacian[DIAG1][i + 3];
 
             int sb_y = (i >> 1) + (blk.y >> 2);
-            for (j = 0; j < (blk_w >> 2); ++j) {
+            for (j = 0; j < nb_sb_w; ++j) {
                 int sb_x = j + (blk.x >> 2);
 
                 int sum_v =             lpl_v1[j] + lpl_v2[j] + lpl_v3[j];
