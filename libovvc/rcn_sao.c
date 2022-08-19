@@ -117,23 +117,22 @@ sao_edge_filter(OVSample *_dst, OVSample *_src,
 
 static void
 sao_call(const struct SAOFunctions *saofunc, OVSample *dst, OVSample *src, int16_t dst_stride, int16_t src_stride,
-         int width, int height, SAOParamsCtu *sao, int c_idx, uint8_t is_border)
+         int width, int height, uint8_t is_border, int8_t *offsets, uint8_t mode_info, uint8_t type_idx)
 {
-    int8_t *offsets = sao->offset_val[c_idx];
 
     if (!offsets[0] && !offsets[1] && !offsets[2] && !offsets[3]) return;
 
-    switch (sao->type_idx[c_idx]) {
+    switch (type_idx) {
         case SAO_BAND:
 
             saofunc->band(dst, src, dst_stride, src_stride,
-                          width, height, offsets, sao->band_position[c_idx]);
+                          width, height, offsets, mode_info);
 
             break;
 
         case SAO_EDGE:
         {
-            uint8_t eo_dir = sao->eo_class[c_idx];
+            uint8_t eo_dir = mode_info;
 
             int x_start = (is_border & OV_BOUNDARY_LEFT_RECT)  && eo_dir != 1;
             int y_start = (is_border & OV_BOUNDARY_UPPER_RECT) && eo_dir != 0;
@@ -171,9 +170,9 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_pic, int y_pic, int
 
     const struct SAOFunctions *sao_func = &ctudec->rcn_funcs.sao;
 
-    int sao_l  = 1;
-    int sao_cb = 1;
-    int sao_cr = 1;
+    int sao_l  = sao->sao_ctu_flag        & 0x3;
+    int sao_cb = (sao->sao_ctu_flag >> 2) & 0x3;
+    int sao_cr = sao_cb;
 
     if (sao_l) {
         ptrdiff_t dst_stride = frame->linesize[0] / sizeof(OVSample);
@@ -186,7 +185,11 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_pic, int y_pic, int
         OVSample *dst = (OVSample *)frame->data[c_idx] + dst_offset;
         OVSample *src = (OVSample *)fb->filter_region[c_idx] + src_offset;
 
-        sao_call(sao_func, dst, src, dst_stride, src_stride, ctb_w, ctb_h, sao, c_idx, is_border);
+        uint8_t mode_info = sao->mode_info[c_idx];
+        int8_t *offsets = sao->offset[c_idx];
+
+        sao_call(sao_func, dst, src, dst_stride, src_stride, ctb_w, ctb_h, is_border,
+                 offsets, mode_info, sao_l);
 
     }
 
@@ -204,16 +207,22 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_pic, int y_pic, int
             int c_idx = 1;
             OVSample *dst = (OVSample *)frame->data[c_idx]       + dst_offset;
             OVSample *src = (OVSample *)fb->filter_region[c_idx] + src_offset;
+            int8_t *offsets = sao->offset[c_idx];
+            uint8_t mode_info = sao->mode_info[c_idx];
 
-            sao_call(sao_func, dst, src, dst_stride, src_stride, ctb_w, ctb_h, sao, c_idx, is_border);
+            sao_call(sao_func, dst, src, dst_stride, src_stride, ctb_w, ctb_h, is_border,
+                     offsets, mode_info, sao_cb);
         }
 
         if (sao_cr) {
             int c_idx = 2;
             OVSample *dst = (OVSample *)frame->data[c_idx] + dst_offset;
             OVSample *src = (OVSample *)fb->filter_region[c_idx] + src_offset;
+            int8_t *offsets = sao->offset[c_idx];
+            uint8_t mode_info = sao->mode_info[c_idx];
 
-            sao_call(sao_func, dst, src, dst_stride, src_stride, ctb_w, ctb_h, sao, c_idx, is_border);
+            sao_call(sao_func, dst, src, dst_stride, src_stride, ctb_w, ctb_h, is_border,
+                     offsets, mode_info, sao_cb);
         }
     }
 }

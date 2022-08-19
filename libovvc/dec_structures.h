@@ -249,10 +249,8 @@ struct SHInfo
 };
 
 enum SAOType {
-    SAO_NOT_APPLIED = 0,
-    SAO_BAND,
-    SAO_EDGE,
-    SAO_APPLIED
+    SAO_BAND = 1,
+    SAO_EDGE = 2,
 };
 
 enum SAOModeMergeTypes
@@ -264,13 +262,13 @@ enum SAOModeMergeTypes
 
 typedef struct SAOParamsCtu
 {
+    /* SAO types 2 first bits for luma third and fourth bits for chroma */
     uint8_t sao_ctu_flag;
-    int8_t offset_val[3][4];   ///<SaoOffsetVal
+    /* Edge direction or band position according to SAO type */
+    uint8_t mode_info[3];
 
-    uint8_t band_position[3];   ///< sao_band_position
-    uint8_t eo_class[3];        ///< sao_eo_class
+    int8_t  offset[3][4];
 
-    uint8_t type_idx[3];    ///< sao_type_idx
 } SAOParamsCtu;
 
 
