@@ -99,12 +99,12 @@ ovcabac_read_ae_sao_type_idx(OVCABACCtx *const cabac_ctx, uint64_t *const cabac_
 
                 sao_ctu->band_position[0] = 0;
 
-                for (i = 1; i < 6; i++) {
-                    sao_ctu->band_position[0] |= ovcabac_bypass_read(cabac_ctx) << (5 - i);
+                for (i = 4; i >= 0; --i) {
+                    sao_ctu->band_position[0] |= ovcabac_bypass_read(cabac_ctx) << i;
                 }
 
             } else {
-                sao_ctu->eo_class[0] = ovcabac_bypass_read(cabac_ctx)<<1;
+                sao_ctu->eo_class[0]  = ovcabac_bypass_read(cabac_ctx) << 1;
                 sao_ctu->eo_class[0] |= ovcabac_bypass_read(cabac_ctx);
 
                 sao_ctu->offset_val[0][0] =  offset_abs[0];
