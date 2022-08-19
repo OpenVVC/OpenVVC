@@ -134,11 +134,11 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_start_pic, int y_st
         int f_width  = (ctudec->pic_w) >> shift_chr;
         int f_height = (ctudec->pic_h) >> shift_chr;
 
-        int ctb_size_h = (1 << log2_ctb_s) >> shift_chr;
-        int ctb_size_v = (y_end_pic - y_start_pic) >> shift_chr;
+        int ctb_w = (1 << log2_ctb_s) >> shift_chr;
+        int ctb_h = (y_end_pic - y_start_pic) >> shift_chr;
 
-        int width    = OVMIN(ctb_size_h, f_width - x0);
-        int height   = OVMIN(ctb_size_v, f_height - y0);
+        int width    = OVMIN(ctb_w, f_width - x0);
+        int height   = OVMIN(ctb_h, f_height - y0);
 
         ptrdiff_t stride_out_pic = frame->linesize[c_idx] / sizeof(OVSample);
         OVSample *out_pic = (OVSample *)frame->data[c_idx];
