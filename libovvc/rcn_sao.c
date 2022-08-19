@@ -149,6 +149,8 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_start_pic, int y_st
         filtered = &filtered[fb->filter_region_offset[c_idx] + stride_filtered * (fb_offset >> shift_chr)];
         int8_t *offsets = sao->offset_val[c_idx];
 
+        if (!offsets[0] && !offsets[1] && !offsets[2] && !offsets[3]) continue;
+
         switch (sao->type_idx[c_idx]) {
             case SAO_BAND:
 
