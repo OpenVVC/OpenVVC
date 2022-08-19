@@ -51,15 +51,15 @@ void ov_idct_x_8_4_4_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride
 void ov_idct_x_8_4_8_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *MatE, const int16_t *MatO);
 void ov_idct_x_8_8_4_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *MatE, const int16_t *MatO);
 void ov_idct_x_8_8_8_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *MatE, const int16_t *MatO);
-// 16-pt dct-8/dst-7
-void ov_idct_x_16_4_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *Mat);
-void ov_idct_x_16_8_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *Mat);
-void ov_idct_x_16_16_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *Mat);
 // 8-pt DCT-II butterfly
 void ov_idct_ii_8_2_8_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *MatE, const int16_t *MatO);
 void ov_idct_ii_8_2_4_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *MatE, const int16_t *MatO);
 void ov_idct_ii_8_4_8_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *MatE, const int16_t *MatO);
 void ov_idct_ii_8_4_4_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *MatE, const int16_t *MatO);
+// 16-pt dct-8/dst-7
+void ov_idct_x_16_4_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *Mat);
+void ov_idct_x_16_8_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *Mat);
+void ov_idct_x_16_16_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *Mat);
 // 16-pt DCT-II depth two butterfly
 void ov_idct_ii_16_2_4_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *MatEO, const int16_t *MatO16s1, const int16_t *MatO16s2);
 void ov_idct_ii_16_2_8_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *MatEO, const int16_t *MatO16s1, const int16_t *MatO16s2);
@@ -69,6 +69,11 @@ void ov_idct_ii_32_4_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride
 void ov_idct_ii_32_8_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, const int16_t *MatEO, const int16_t *MatO16s1, const int16_t *MatO16s2, const int16_t *MatO32);
 void ov_idct_ii_32_16_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, const int16_t *MatEO, const int16_t *MatO16s1, const int16_t *MatO16s2, const int16_t *MatO32);
 void ov_idct_ii_32_32_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, const int16_t *MatEO, const int16_t *MatO16s1, const int16_t *MatO16s2, const int16_t *MatO32);
+// 32-pt dct-8/dst-7
+void ov_idct_x_32_4_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *Mat);
+void ov_idct_x_32_8_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *Mat);
+void ov_idct_x_32_16_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *Mat);
+void ov_idct_x_32_32_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *Mat);
 
 
 void vvc_inverse_dct_ii_4_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
@@ -287,36 +292,6 @@ void vvc_inverse_dct_viii_8_neon(const int16_t *src, int16_t *dst, ptrdiff_t src
 }
 
 
-void vvc_inverse_dst_vii_16_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                            int num_lines, int line_brk, int shift){
-
-  for (int j = 0; j < num_lines; j++) {
-    if(line_brk > 8 ) {
-      ov_idct_x_16_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_16);
-    }else if(line_brk > 4 ) {
-      ov_idct_x_16_8_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_16);
-    }else{
-      ov_idct_x_16_4_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_16);
-    }
-    src += 1;
-    dst += 16;
-  }
-}
-void vvc_inverse_dct_viii_16_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
-                             int num_lines, int line_brk, int shift){
-
-  for (int j = 0; j < num_lines; j++) {
-    if(line_brk > 8 ) {
-      ov_idct_x_16_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_16);
-    }else if(line_brk > 4 ) {
-      ov_idct_x_16_8_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_16);
-    }else{
-      ov_idct_x_16_4_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_16);
-    }
-    src += 1;
-    dst += 16;
-  }
-}
 void vvc_inverse_dct_ii_16_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                            int nb_lines, int line_brk, int shift)
 {
@@ -362,6 +337,37 @@ void vvc_inverse_dct_ii_16_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_
   }
 }
 
+
+void vvc_inverse_dst_vii_16_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
+                            int num_lines, int line_brk, int shift){
+
+  for (int j = 0; j < num_lines; j++) {
+    if(line_brk > 8 ) {
+      ov_idct_x_16_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_16);
+    }else if(line_brk > 4 ) {
+      ov_idct_x_16_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_16);
+    }else{
+      ov_idct_x_16_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_16);
+    }
+    src += 1;
+    dst += 16;
+  }
+}
+void vvc_inverse_dct_viii_16_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
+                             int num_lines, int line_brk, int shift){
+
+  for (int j = 0; j < num_lines; j++) {
+    if(line_brk > 8 ) {
+      ov_idct_x_16_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_16);
+    }else if(line_brk > 4 ) {
+      ov_idct_x_16_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_16);
+    }else{
+      ov_idct_x_16_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_16);
+    }
+    src += 1;
+    dst += 16;
+  }
+}
 void vvc_inverse_dct_ii_32_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
                            int num_lines, int line_brk, int shift)
 {
@@ -429,17 +435,57 @@ void vvc_inverse_dct_ii_32_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_
   }
 }
 
+void vvc_inverse_dst_vii_32_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
+                            int num_lines, int line_brk, int shift){
+
+  for (int j = 0; j < num_lines; j++) {
+    if(line_brk > 16 ) {
+      ov_idct_x_32_32_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_32);
+    }else if(line_brk > 8 ) {
+      ov_idct_x_32_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_32);
+    }else if(line_brk > 4)  {
+      ov_idct_x_32_8_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_32);
+    }else{
+      ov_idct_x_32_4_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_32);
+
+    }
+    src += 1;
+    dst += 32;
+  }
+
+
+
+}
+void vvc_inverse_dct_viii_32_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride,
+                             int num_lines, int line_brk, int shift){
+
+  for (int j = 0; j < num_lines; j++) {
+    if(line_brk > 16 ) {
+      ov_idct_x_32_32_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_32);
+    }else if(line_brk > 8 ) {
+      ov_idct_x_32_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_32);
+    }else if(line_brk > 4)  {
+      ov_idct_x_32_8_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_32);
+    }else{
+      ov_idct_x_32_4_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_32);
+
+    }
+    src += 1;
+    dst += 32;
+  }
+
+}
 
 void rcn_init_tr_functions_neon(struct RCNFunctions *const rcn_funcs){
   rcn_funcs->tr.func[DST_VII][2] = &vvc_inverse_dst_vii_4_neon;
   rcn_funcs->tr.func[DST_VII][3] = &vvc_inverse_dst_vii_8_neon;
   rcn_funcs->tr.func[DST_VII][4] = &vvc_inverse_dst_vii_16_neon;
-  //rcn_funcs->tr.func[DST_VII][5] = &vvc_inverse_dst_vii_32_neon;
+  rcn_funcs->tr.func[DST_VII][5] = &vvc_inverse_dst_vii_32_neon;
 
   rcn_funcs->tr.func[DCT_VIII][2] = &vvc_inverse_dct_viii_4_neon;
   rcn_funcs->tr.func[DCT_VIII][3] = &vvc_inverse_dct_viii_8_neon;
   rcn_funcs->tr.func[DCT_VIII][4] = &vvc_inverse_dct_viii_16_neon;
-  //rcn_funcs->tr.func[DCT_VIII][5] = &vvc_inverse_dct_viii_32_neon;
+  rcn_funcs->tr.func[DCT_VIII][5] = &vvc_inverse_dct_viii_32_neon;
 
   //rcn_funcs->tr.func[DCT_II][1] = &vvc_inverse_dct_ii_2_neon;
   rcn_funcs->tr.func[DCT_II][2] = &vvc_inverse_dct_ii_4_neon;

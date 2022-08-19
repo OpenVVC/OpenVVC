@@ -1171,6 +1171,244 @@
     endfunc
 .endm
 
+.macro idct_x_32, red
+    function idct_x_32_\red\()_neon, export=1
+
+        dup v28.4s, w3
+        dup v29.4s, w4 
+
+
+        ld1 {v0.8h}, [x0], x2
+        ld1 {v1.8h}, [x0], x2
+        ld1 {v2.8h}, [x0], x2
+        ld1 {v3.8h}, [x0], x2
+        .if \red == 8 || \red == 16
+            ld1 {v4.8h}, [x0], x2
+            ld1 {v5.8h}, [x0], x2
+            ld1 {v6.8h}, [x0], x2
+            ld1 {v7.8h}, [x0], x2
+        .endif
+        .if \red == 16
+            ld1 {v8.8h}, [x0], x2
+            ld1 {v9.8h}, [x0], x2
+            ld1 {v10.8h}, [x0], x2
+            ld1 {v11.8h}, [x0], x2
+            ld1 {v12.8h}, [x0], x2
+            ld1 {v13.8h}, [x0], x2
+            ld1 {v14.8h}, [x0], x2
+            ld1 {v15.8h}, [x0]
+        .endif
+
+        ld1 {v21.8h-v24.8h}, [x5], #64
+
+        SMULL  V17.4S, v21.4h, v0.H[0]
+        SMULL2 V18.4S, v21.8h, v0.H[0]
+        SMULL  V19.4S, v22.4h, v0.H[0]
+        SMULL2 V20.4S, v22.8h, v0.H[0]
+        SMLAL  V25.4S, v23.4h, V0.H[0]
+        SMLAL2 V26.4S, v23.8h, V0.H[0]
+        SMLAL  V27.4S, v24.4h, V0.H[0]
+        SMLAL2 V28.4S, v24.8h, V0.H[0]
+
+        ld1 {v21.8h-v24.8h}, [x5], #64
+
+        SMLAL  V17.4S, v21.4h, V1.H[0]
+        SMLAL2 V18.4S, v21.8h, V1.H[0]
+        SMLAL  V19.4S, v22.4h, V1.H[0]
+        SMLAL2 V20.4S, v22.8h, V1.H[0]
+        SMLAL  V25.4S, v23.4h, V1.H[0]
+        SMLAL2 V26.4S, v23.8h, V1.H[0]
+        SMLAL  V27.4S, v24.4h, V1.H[0]
+        SMLAL2 V28.4S, v24.8h, V1.H[0]
+
+        ld1 {v21.8h-v24.8h}, [x5], #64
+
+        SMLAL  V17.4S, v21.4h, V2.H[0]
+        SMLAL2 V18.4S, v21.8h, V2.H[0]
+        SMLAL  V19.4S, v22.4h, V2.H[0]
+        SMLAL2 V20.4S, v22.8h, V2.H[0]
+        SMLAL  V25.4S, v23.4h, V2.H[0]
+        SMLAL2 V26.4S, v23.8h, V2.H[0]
+        SMLAL  V27.4S, v24.4h, V2.H[0]
+        SMLAL2 V28.4S, v24.8h, V2.H[0]
+
+        ld1 {v21.8h-v24.8h}, [x5], #64
+
+        SMLAL  V17.4S, v21.4h, V3.H[0]
+        SMLAL2 V18.4S, v21.8h, V3.H[0]
+        SMLAL  V19.4S, v22.4h, V3.H[0]
+        SMLAL2 V20.4S, v22.8h, V3.H[0]
+        SMLAL  V25.4S, v23.4h, V3.H[0]
+        SMLAL2 V26.4S, v23.8h, V3.H[0]
+        SMLAL  V27.4S, v24.4h, V3.H[0]
+        SMLAL2 V28.4S, v24.8h, V3.H[0]
+
+        .if \red == 8 || \red == 16
+            ld1 {v21.8h-v24.8h}, [x5], #64
+
+            SMLAL  V17.4S, v21.4h, V4.H[0]
+            SMLAL2 V18.4S, v21.8h, V4.H[0]
+            SMLAL  V19.4S, v22.4h, V4.H[0]
+            SMLAL2 V20.4S, v22.8h, V4.H[0]
+            SMLAL  V25.4S, v23.4h, V4.H[0]
+            SMLAL2 V26.4S, v23.8h, V4.H[0]
+            SMLAL  V27.4S, v24.4h, V4.H[0]
+            SMLAL2 V28.4S, v24.8h, V4.H[0]
+
+            ld1 {v21.8h-v24.8h}, [x5], #64
+
+            SMLAL  V17.4S, v21.4h, V5.H[0]
+            SMLAL2 V18.4S, v21.8h, V5.H[0]
+            SMLAL  V19.4S, v22.4h, V5.H[0]
+            SMLAL2 V20.4S, v22.8h, V5.H[0]
+            SMLAL  V25.4S, v23.4h, V5.H[0]
+            SMLAL2 V26.4S, v23.8h, V5.H[0]
+            SMLAL  V27.4S, v24.4h, V5.H[0]
+            SMLAL2 V28.4S, v24.8h, V5.H[0]
+
+            ld1 {v21.8h-v24.8h}, [x5], #64
+
+            SMLAL  V17.4S, v21.4h, V6.H[0]
+            SMLAL2 V18.4S, v21.8h, V6.H[0]
+            SMLAL  V19.4S, v22.4h, V6.H[0]
+            SMLAL2 V20.4S, v22.8h, V6.H[0]
+            SMLAL  V25.4S, v23.4h, V6.H[0]
+            SMLAL2 V26.4S, v23.8h, V6.H[0]
+            SMLAL  V27.4S, v24.4h, V6.H[0]
+            SMLAL2 V28.4S, v24.8h, V6.H[0]
+
+            ld1 {v21.8h-v24.8h}, [x5], #64
+
+            SMLAL  V17.4S, v21.4h, V7.H[0]
+            SMLAL2 V18.4S, v21.8h, V7.H[0]
+            SMLAL  V19.4S, v22.4h, V7.H[0]
+            SMLAL2 V20.4S, v22.8h, V7.H[0]
+            SMLAL  V25.4S, v23.4h, V7.H[0]
+            SMLAL2 V26.4S, v23.8h, V7.H[0]
+            SMLAL  V27.4S, v24.4h, V7.H[0]
+            SMLAL2 V28.4S, v24.8h, V7.H[0]
+        .endif
+        .if \red == 16
+            ld1 {v21.8h-v24.8h}, [x5], #64
+
+            SMLAL  V17.4S, v21.4h, V8.H[0]
+            SMLAL2 V18.4S, v21.8h, V8.H[0]
+            SMLAL  V19.4S, v22.4h, V8.H[0]
+            SMLAL2 V20.4S, v22.8h, V8.H[0]
+            SMLAL  V25.4S, v23.4h, V8.H[0]
+            SMLAL2 V26.4S, v23.8h, V8.H[0]
+            SMLAL  V27.4S, v24.4h, V8.H[0]
+            SMLAL2 V28.4S, v24.8h, V8.H[0]
+
+            ld1 {v21.8h-v24.8h}, [x5], #64
+
+            SMLAL  V17.4S, v21.4h, V9.H[0]
+            SMLAL2 V18.4S, v21.8h, V9.H[0]
+            SMLAL  V19.4S, v22.4h, V9.H[0]
+            SMLAL2 V20.4S, v22.8h, V9.H[0]
+            SMLAL  V25.4S, v23.4h, V9.H[0]
+            SMLAL2 V26.4S, v23.8h, V9.H[0]
+            SMLAL  V27.4S, v24.4h, V9.H[0]
+            SMLAL2 V28.4S, v24.8h, V9.H[0]
+
+            ld1 {v21.8h-v24.8h}, [x5], #64
+
+            SMLAL  V17.4S, v21.4h, V10.H[0]
+            SMLAL2 V18.4S, v21.8h, V10.H[0]
+            SMLAL  V19.4S, v22.4h, V10.H[0]
+            SMLAL2 V20.4S, v22.8h, V10.H[0]
+            SMLAL  V25.4S, v23.4h, V10.H[0]
+            SMLAL2 V26.4S, v23.8h, V10.H[0]
+            SMLAL  V27.4S, v24.4h, V10.H[0]
+            SMLAL2 V28.4S, v24.8h, V10.H[0]
+
+            ld1 {v21.8h-v24.8h}, [x5], #64
+
+            SMLAL  V17.4S, v21.4h, V11.H[0]
+            SMLAL2 V18.4S, v21.8h, V11.H[0]
+            SMLAL  V19.4S, v22.4h, V11.H[0]
+            SMLAL2 V20.4S, v22.8h, V11.H[0]
+            SMLAL  V25.4S, v23.4h, V11.H[0]
+            SMLAL2 V26.4S, v23.8h, V11.H[0]
+            SMLAL  V27.4S, v24.4h, V11.H[0]
+            SMLAL2 V28.4S, v24.8h, V11.H[0]
+
+            ld1 {v21.8h-v24.8h}, [x5], #64
+
+            SMLAL  V17.4S, v21.4h, V12.H[0]
+            SMLAL2 V18.4S, v21.8h, V12.H[0]
+            SMLAL  V19.4S, v22.4h, V12.H[0]
+            SMLAL2 V20.4S, v22.8h, V12.H[0]
+            SMLAL  V25.4S, v23.4h, V12.H[0]
+            SMLAL2 V26.4S, v23.8h, V12.H[0]
+            SMLAL  V27.4S, v24.4h, V12.H[0]
+            SMLAL2 V28.4S, v24.8h, V12.H[0]
+
+            ld1 {v21.8h-v24.8h}, [x5], #64
+
+            SMLAL  V17.4S, v21.4h, V13.H[0]
+            SMLAL2 V18.4S, v21.8h, V13.H[0]
+            SMLAL  V19.4S, v22.4h, V13.H[0]
+            SMLAL2 V20.4S, v22.8h, V13.H[0]
+            SMLAL  V25.4S, v23.4h, V13.H[0]
+            SMLAL2 V26.4S, v23.8h, V13.H[0]
+            SMLAL  V27.4S, v24.4h, V13.H[0]
+            SMLAL2 V28.4S, v24.8h, V13.H[0]
+
+            ld1 {v21.8h-v24.8h}, [x5], #64
+
+            SMLAL  V17.4S, v21.4h, V14.H[0]
+            SMLAL2 V18.4S, v21.8h, V14.H[0]
+            SMLAL  V19.4S, v22.4h, V14.H[0]
+            SMLAL2 V20.4S, v22.8h, V14.H[0]
+            SMLAL  V25.4S, v23.4h, V14.H[0]
+            SMLAL2 V26.4S, v23.8h, V14.H[0]
+            SMLAL  V27.4S, v24.4h, V14.H[0]
+            SMLAL2 V28.4S, v24.8h, V14.H[0]
+
+            ld1 {v21.8h-v24.8h}, [x5], #64
+
+            SMLAL  V17.4S, v21.4h, V15.H[0]
+            SMLAL2 V18.4S, v21.8h, V15.H[0]
+            SMLAL  V19.4S, v22.4h, V15.H[0]
+            SMLAL2 V20.4S, v22.8h, V15.H[0]
+            SMLAL  V25.4S, v23.4h, V15.H[0]
+            SMLAL2 V26.4S, v23.8h, V15.H[0]
+            SMLAL  V27.4S, v24.4h, V15.H[0]
+            SMLAL2 V28.4S, v24.8h, V15.H[0]
+        .endif
+        // shift and round 
+
+        ADD   V17.4S, v17.4S, V29.4S
+        ADD   V18.4S, V18.4S, V29.4S
+        ADD   V19.4S, V19.4S, V29.4S
+        ADD   V20.4S, V20.4S, V29.4S
+        ADD   V25.4S, v25.4S, V29.4S
+        ADD   V26.4S, V26.4S, V29.4S
+        ADD   V27.4S, V27.4S, V29.4S
+        ADD   V28.4S, V28.4S, V29.4S
+
+
+        SSHL  V17.4S, V17.4S, V28.4S 
+        SSHL  V18.4S, V18.4S, V28.4S
+        SSHL  V19.4S, V19.4S, V28.4S 
+        SSHL  V20.4S, V20.4S, V28.4S
+        SSHL  V25.4S, V25.4S, V28.4S 
+        SSHL  V26.4S, V26.4S, V28.4S
+        SSHL  V27.4S, V27.4S, V28.4S 
+        SSHL  V28.4S, V28.4S, V28.4S
+
+
+        UZP1  v9.8h , V17.8H, V18.8H
+        UZP1  v10.8h, V19.8H, V20.8H
+        UZP1  v11.8h, V25.8H, V26.8H
+        UZP1  v12.8h, V27.8H, V28.8H
+
+        st1 {v9.8h-v10.8h}, [x1]
+
+        ret lr
+    endfunc
+.endm
 // 4-pt dct-2/8 and dst-7
 idct_x_4 2
 idct_x_4 4
@@ -1200,5 +1438,9 @@ idct_ii_32 4
 idct_ii_32 8
 idct_ii_32 16
 idct_ii_32 32
-
+// 32-pt dxt 7/8 
+idct_x_32 4 
+idct_x_32 8 
+idct_x_32 16
+idct_x_32 32
 
