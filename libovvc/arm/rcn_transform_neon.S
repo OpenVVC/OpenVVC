@@ -33,6 +33,12 @@
 **/
 #include "arm/asm.S"
 
+
+.macro CLIP, val, min_val, max_val
+       SMAX  \val, \val, \min_val
+       SMIN  \val, \val, \max_val
+.endm 
+
 .macro inverse_neon, out, s1=.S
 
     mov v31.s[0], \out\s1[3]
@@ -45,6 +51,26 @@
     mov \out\s1[2], v31.s[2]
     mov \out\s1[3], v31.s[3]
     
+.endm
+
+.macro store_fun, size
+    function store_\size\()_neon, export=1
+        dup v1.8h, x1
+        dup v2.8h, x1
+        dup v3.8h, x1
+        dup v4.8h, x1
+
+        .if \size == 8
+            st1 {v1.8h}, [x0]
+        .endif
+        .if \size == 16
+            st1 {v1.8h-v2.8h}, [x0]
+        .endif 
+        .if \size == 32
+            st1 {v1.8h-v4.8h}, [x0]
+        .endif
+        ret lr
+    endfunc
 .endm
 
 .macro idct_x_4, w 
@@ -1409,15 +1435,23 @@
         ret lr
     endfunc
 .endm
+
+// store data for DC
+store_fun 8
+store_fun 16 
+store_fun 32
+
 // 4-pt dct-2/8 and dst-7
 idct_x_4 2
 idct_x_4 4
 idct_x_4 8
+
 // idct-ii butterfly 
 idct_ii_8 2 8
 idct_ii_8 2 4
 idct_ii_8 4 8
 idct_ii_8 4 4
+
 // 8-pt dxt-2
 idct_x_8 2 4
 idct_x_8 2 8
@@ -1425,19 +1459,23 @@ idct_x_8 4 4
 idct_x_8 4 8
 idct_x_8 8 4
 idct_x_8 8 8
+
 // 16-pt dct-2
 idct_ii_16_2 4
 idct_ii_16_2 8
 idct_ii_16_2 16
+
 // 16-pt dxt 7/8 
 idct_x_16 4 
 idct_x_16 8 
 idct_x_16 16
+
 // 32-pt DCT2
 idct_ii_32 4
 idct_ii_32 8
 idct_ii_32 16
 idct_ii_32 32
+
 // 32-pt dxt 7/8 
 idct_x_32 4 
 idct_x_32 8 

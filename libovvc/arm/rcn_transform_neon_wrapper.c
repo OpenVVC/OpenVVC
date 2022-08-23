@@ -39,7 +39,10 @@
 #include "ovutils.h"
 #include "data_rcn_transform.h"
 #include "rcn_transform.h"
-
+// store functions for DC
+void ov_store_8_neon(int16_t *dst, int value);
+void ov_store_16_neon(int16_t *dst, int value);
+void ov_store_32_neon(int16_t *dst, int value);
 // 4-pt DxT-II/VIII/VII
 void ov_idct_x_4_2_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *Mat);
 void ov_idct_x_4_4_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_stride, int shift, int shift_add, const int16_t *Mat);
@@ -476,6 +479,50 @@ void vvc_inverse_dct_viii_32_neon(const int16_t *src, int16_t *dst, ptrdiff_t sr
 
 }
 
+void vvc_inverse_dct_ii_dc_neon(int16_t *const dst, int log2_tb_w, int log2_tb_h,
+                           int dc_val)
+{
+
+  int i, j;
+  int tb_w = 1 << log2_tb_w;
+  int tb_h = 1 << log2_tb_h;
+  int clip_min = -(1 << 15);
+  int clip_max = (1 << 15)-1;
+  int16_t * _dst = (int16_t *)dst;
+  int value = (((dc_val + 1) >> 1) + 8) >> 4;
+  value = ov_clip(value, clip_min, clip_max);
+
+  switch (log2_tb_w){
+    case 3:{
+      for (i = 0; i < tb_h; ++i){
+        // assembly function to store 8 values
+        ov_store_8_neon(_dst, value);
+        _dst += tb_w;
+      }
+      break;
+    }
+#if 1
+    case 4:{
+      for (i = 0; i < tb_h; ++i){
+        // assembly function to store data 16 values (two 128-bit reg)
+        ov_store_16_neon(_dst, value);
+        _dst += tb_w;
+      }
+      break;
+    }
+    case 5:{
+      for (i = 0; i < tb_h; ++i){
+        // assembly function to store data 32 values (four 128-bit reg)
+        ov_store_32_neon(_dst, value);
+        _dst += tb_w;
+      }
+      break;
+    }
+#endif
+    default:
+      vvc_inverse_dct_ii_dc(dst, log2_tb_w, log2_tb_h, dc_val);
+  }
+}
 void rcn_init_tr_functions_neon(struct RCNFunctions *const rcn_funcs){
   rcn_funcs->tr.func[DST_VII][2] = &vvc_inverse_dst_vii_4_neon;
   rcn_funcs->tr.func[DST_VII][3] = &vvc_inverse_dst_vii_8_neon;
@@ -487,12 +534,11 @@ void rcn_init_tr_functions_neon(struct RCNFunctions *const rcn_funcs){
   rcn_funcs->tr.func[DCT_VIII][4] = &vvc_inverse_dct_viii_16_neon;
   rcn_funcs->tr.func[DCT_VIII][5] = &vvc_inverse_dct_viii_32_neon;
 
-  //rcn_funcs->tr.func[DCT_II][1] = &vvc_inverse_dct_ii_2_neon;
   rcn_funcs->tr.func[DCT_II][2] = &vvc_inverse_dct_ii_4_neon;
   rcn_funcs->tr.func[DCT_II][3] = &vvc_inverse_dct_ii_8_neon;
   rcn_funcs->tr.func[DCT_II][4] = &vvc_inverse_dct_ii_16_neon;
   rcn_funcs->tr.func[DCT_II][5] = &vvc_inverse_dct_ii_32_neon;
-  /*rcn_funcs->tr.func[DCT_II][6] = &vvc_inverse_dct_ii_64_sse;
+  //rcn_funcs->tr.func[DCT_II][6] = &vvc_inverse_dct_ii_64_neon;
 
-  rcn_funcs->tr.dc = &vvc_inverse_dct_ii_dc_sse;*/
+  rcn_funcs->tr.dc = &vvc_inverse_dct_ii_dc_neon;
 }
