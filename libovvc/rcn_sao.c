@@ -228,6 +228,86 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_pic, int y_pic, int
 }
 
 static void
+rcn_extend_filter_region2(struct OVRCNCtx *const rcn_ctx, int x_l,
+                            int x_pic, int y_pic, uint8_t bnd_msk)
+{
+    struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
+    const OVFrame *f = rcn_ctx->frame_start;
+    const int width_l  = (x_pic + fb->filter_region_w[0] > f->width) ? (f->width - x_pic)
+                                                                     : fb->filter_region_w[0];
+    const int height_l = (y_pic + fb->filter_region_h[0] > f->height) ? (f->height - y_pic)
+                                                                      : fb->filter_region_h[0];
+    for (int comp = 0; comp < 3; comp++) {
+        const int width  = width_l >> (comp != 0);
+        const int height = height_l >> (comp != 0);
+        int stride_pic = f->linesize[comp] / sizeof(OVSample);
+        const int pic_offset = (y_pic >> (comp != 0)) * stride_pic + (x_pic >> (comp != 0));
+
+        OVSample* frame = (OVSample*)f->data[comp] + pic_offset;
+
+        int stride_filter = fb->filter_region_stride[comp];
+
+        OVSample *const dst_0 = fb->filter_region[comp] + fb->filter_region_offset[comp];
+
+        if (1) {
+            uint8_t not_bnd_rgt = !(bnd_msk & OV_BOUNDARY_RIGHT_RECT);
+            OVSample *dst = dst_0;
+            const OVSample *src = frame;
+            int cpy_s = sizeof(OVSample) * (width + not_bnd_rgt);
+            for (int i = 0; i < height; ++i) {
+                memcpy(dst, src, cpy_s);
+                dst += stride_filter;
+                src += stride_pic;
+            }
+        }
+
+        if (bnd_msk & OV_BOUNDARY_LEFT_RECT) {
+            OVSample *dst = dst_0 - 1;
+            for (int i = 0; i < height; ++i) {
+                dst[0] = dst[1];
+                dst += stride_filter;
+            }
+        }
+
+        if (bnd_msk & OV_BOUNDARY_RIGHT_RECT) {
+            OVSample *dst = dst_0 + width;
+            for (int i = 0; i < height; ++i) {
+                dst[0] = dst[-1];
+                dst += stride_filter;
+            }
+        }
+
+        if (bnd_msk & OV_BOUNDARY_UPPER_RECT) {
+            uint8_t not_bnd_rgt = !(bnd_msk & OV_BOUNDARY_RIGHT_RECT);
+            int cpy_s = sizeof(OVSample) * (width + not_bnd_rgt);
+            OVSample *dst = dst_0 - stride_filter;
+            const OVSample *src = dst_0;
+            memcpy(dst, src, cpy_s);
+        } else {
+            uint8_t not_bnd_rgt = !(bnd_msk & OV_BOUNDARY_RIGHT_RECT);
+            int cpy_s = sizeof(OVSample) * (width + not_bnd_rgt);
+            int stride_rows = fb->saved_rows_stride[comp];
+            const int x = x_l >> (comp != 0);
+            const OVSample *src = fb->saved_rows_sao[comp] + x + 2 * stride_rows;
+            OVSample *dst = dst_0 - stride_filter;
+            memcpy(dst, src, cpy_s);
+        }
+
+        if (bnd_msk & OV_BOUNDARY_BOTTOM_RECT) {
+            int cpy_s = sizeof(OVSample) * (width + 2);
+                  OVSample *dst = dst_0 + height * stride_filter - 1;
+            const OVSample *src = dst - stride_filter;
+            memcpy(dst, src, cpy_s);
+        } else {
+            int cpy_s = sizeof(OVSample) * (width + 2);
+                  OVSample *dst = dst_0 + height * stride_filter - 1;
+            const OVSample *src = frame + height * stride_pic - 1;
+            memcpy(dst, src, cpy_s);
+        }
+    }
+}
+
+static void
 line_alloc(OVSample **dst, const OVFrame *f)
 {
     dst[0] = ov_malloc(f->linesize[0] + 256);
@@ -342,8 +422,8 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 
         SAOParamsCtu *sao  = &ctudec->sao_info.sao_params[ctb_addr_rs];
 
-        ctudec->rcn_funcs.rcn_extend_filter_region(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pos, x_pic,
-                                                   y_pic + margin, is_border);
+        rcn_extend_filter_region2(&ctudec->rcn_ctx, x_pos, x_pic,
+                                  y_pic + margin, is_border);
 
         if (sao->sao_ctu_flag) {
             rcn_sao_ctu(ctudec, sao, x_pic, y_pic + margin, y_pic + ctu_w, 0, is_border);
@@ -406,7 +486,7 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
         is_border = (ctb_x == einfo->nb_ctu_w - 1) ? is_border | OV_BOUNDARY_RIGHT_RECT: is_border;
 
         //Apply SAO of previous ctu line
-        ctudec->rcn_funcs.rcn_extend_filter_region(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pos, x_pic, y_pic, is_border);
+        rcn_extend_filter_region2(&ctudec->rcn_ctx, x_pos, x_pic, y_pic, is_border);
 
         int fb_offset = 0;
         int ctb_addr_rs    = ctb_y * einfo->nb_ctu_w + ctb_x;
