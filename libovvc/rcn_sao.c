@@ -77,7 +77,6 @@ sao_edge_filter(OVSample *_dst, OVSample *_src,
                 int8_t offset_val[],
                 uint8_t eo_dir)
 {
-    // static const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
     static const int8_t pos[4][2][2] = {
         { { -1,  0 }, {  1, 0 } }, // horizontal
         { {  0, -1 }, {  0, 1 } }, // vertical
@@ -116,6 +115,125 @@ sao_edge_filter(OVSample *_dst, OVSample *_src,
 }
 
 static void
+sao_edge_filter2(OVSample *dst, OVSample *src_row, OVSample *src_col,
+                ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                int width, int height,
+                int8_t offset_val[],
+                uint8_t eo_dir)
+{
+    static const int8_t pos[4][2][2] = {
+        { { -1,  0 }, {  1, 0 } }, // horizontal
+        { {  0, -1 }, {  0, 1 } }, // vertical
+        { { -1, -1 }, {  1, 1 } }, // 45 degree
+        { {  1, -1 }, { -1, 1 } }, // 135 degree
+    };
+
+    const int16_t sao_offset_val[5] = {
+        offset_val[0],
+        offset_val[1],
+        0,
+        offset_val[2],
+        offset_val[3]
+    };
+
+    int x, y;
+
+    OVSample tmp_a[256];
+    OVSample tmp_b[256];
+    OVSample tmp_c[256];
+
+    if (eo_dir == 0) {
+        for (y = 0; y < height; y++) {
+            memcpy(tmp_c    , dst      , sizeof(OVSample) * (width + 1));
+            memcpy(tmp_a + 1, tmp_c    , sizeof(OVSample) * (width - 1));
+            memcpy(tmp_b    , tmp_c + 1, sizeof(OVSample) * width);
+            tmp_a[0] = src_col[0];
+            for (x = 0; x < width; x++) {
+                int diff0 = CMP(tmp_c[x], tmp_a[x]);
+                int diff1 = CMP(tmp_c[x], tmp_b[x]);
+                int val   = 2 + diff0 + diff1;
+                dst[x] = ov_bdclip(tmp_c[x] + sao_offset_val[val]);
+            }
+            ++src_col;
+            dst += stride_dst;
+        }
+    } else if (eo_dir == 1) {
+        memcpy(tmp_a, src_row, sizeof(OVSample) * width);
+        memcpy(tmp_c, dst    , sizeof(OVSample) * width);
+        for (y = 0; y < height; y++) {
+            memcpy(tmp_b, dst + stride_dst, sizeof(OVSample) * width);
+            for (x = 0; x < width; x++) {
+                int diff0 = CMP(tmp_c[x], tmp_a[x]);
+                int diff1 = CMP(tmp_c[x], tmp_b[x]);
+                int val   = 2 + diff0 + diff1;
+                dst[x] = ov_bdclip(tmp_c[x] + sao_offset_val[val]);
+            }
+            memcpy(tmp_a, tmp_c, sizeof(OVSample) * width);
+            memcpy(tmp_c, tmp_b, sizeof(OVSample) * width);
+            dst += stride_dst;
+        }
+    } else if (eo_dir == 2) {
+        OVSample tmp;
+        memcpy(tmp_a + 1, src_row, sizeof(OVSample) * (width - 1));
+        memcpy(tmp_c, dst        , sizeof(OVSample) * width);
+        tmp_a[0] = src_col[-1];
+        for (y = 0; y < height; y++) {
+            memcpy(tmp_b, dst + stride_dst + 1, sizeof(OVSample) * width);
+            tmp = dst[stride_dst];
+            for (x = 0; x < width; x++) {
+                int diff0 = CMP(tmp_c[x], tmp_a[x]);
+                int diff1 = CMP(tmp_c[x], tmp_b[x]);
+                int val   = 2 + diff0 + diff1;
+                dst[x] = ov_bdclip(tmp_c[x] + sao_offset_val[val]);
+            }
+            memcpy(tmp_a + 1, tmp_c, sizeof(OVSample) * (width - 1));
+            memcpy(tmp_c + 1, tmp_b, sizeof(OVSample) * (width - 1));
+            tmp_a[0] = src_col[0];
+            tmp_c[0] = tmp;
+            ++src_col;
+            dst += stride_dst;
+        }
+    } else {
+        memcpy(tmp_a, src_row + 1, sizeof(OVSample) * width);
+        memcpy(tmp_c, dst        , sizeof(OVSample) * (width + 1));
+        for (y = 0; y < height; y++) {
+            memcpy(tmp_b + 1, dst + stride_dst, sizeof(OVSample) * (width + 1));
+            tmp_b[0] = src_col[1];
+            for (x = 0; x < width; x++) {
+                int diff0 = CMP(tmp_c[x], tmp_a[x]);
+                int diff1 = CMP(tmp_c[x], tmp_b[x]);
+                int val   = 2 + diff0 + diff1;
+                dst[x] = ov_bdclip(tmp_c[x] + sao_offset_val[val]);
+            }
+            memcpy(tmp_a, tmp_c + 1, sizeof(OVSample) * width);
+            memcpy(tmp_c, tmp_b + 1, sizeof(OVSample) * (width + 1));
+            ++src_col;
+            dst += stride_dst;
+        }
+    }
+}
+
+struct SAOBuff
+{
+    OVSample col[256];
+    OVSample row[256];
+};
+
+static void
+fill_sao_buff(struct SAOBuff *dst, const OVSample *src, int src_stride, int width, int height)
+{
+    const OVSample *src_row = src - src_stride;
+    const OVSample *src_col = src - src_stride - 1;
+
+    for (int y = 0; y < height + 2; y++) {
+        dst->col[y] = src_col[0];
+        src_col += src_stride;
+    }
+
+    memcpy(dst->row, src_row, sizeof(OVSample) * (width + 1));
+}
+
+static void
 sao_call(const struct SAOFunctions *saofunc, OVSample *dst, OVSample *src, int16_t dst_stride, int16_t src_stride,
          int width, int height, uint8_t is_border, int8_t *offsets, uint8_t mode_info, uint8_t type_idx)
 {
@@ -148,8 +266,19 @@ sao_call(const struct SAOFunctions *saofunc, OVSample *dst, OVSample *src, int16
             height -= (is_border & OV_BOUNDARY_UPPER_RECT)  && eo_dir != 0;
             height -= (is_border & OV_BOUNDARY_BOTTOM_RECT) && eo_dir != 0;
 
+#if 0
             saofunc->edge[!(width % 8)](dst + dst_offset, src + src_offset, dst_stride,
                                         src_stride, width, height, offsets, eo_dir);
+#else
+            struct SAOBuff tmp;
+            fill_sao_buff(&tmp, src + src_offset, src_stride, width, height);
+
+            OVSample *src_col = &tmp.col[1];
+            OVSample *src_row = &tmp.row[0];
+
+            sao_edge_filter2(dst + dst_offset, src_row, src_col, dst_stride,
+                             src_stride, width, height, offsets, eo_dir);
+#endif
 
             break;
         }
