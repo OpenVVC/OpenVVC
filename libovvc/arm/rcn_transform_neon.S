@@ -1200,7 +1200,7 @@
 .macro idct_x_32, red
     function idct_x_32_\red\()_neon, export=1
 
-        dup v28.4s, w3
+        dup v30.4s, w3
         dup v29.4s, w4 
 
 
@@ -1414,15 +1414,14 @@
         ADD   V27.4S, V27.4S, V29.4S
         ADD   V28.4S, V28.4S, V29.4S
 
-
-        SSHL  V17.4S, V17.4S, V28.4S 
-        SSHL  V18.4S, V18.4S, V28.4S
-        SSHL  V19.4S, V19.4S, V28.4S 
-        SSHL  V20.4S, V20.4S, V28.4S
-        SSHL  V25.4S, V25.4S, V28.4S 
-        SSHL  V26.4S, V26.4S, V28.4S
-        SSHL  V27.4S, V27.4S, V28.4S 
-        SSHL  V28.4S, V28.4S, V28.4S
+        SSHL  V17.4S, V17.4S, v30.4S
+        SSHL  V18.4S, V18.4S, v30.4S
+        SSHL  V19.4S, V19.4S, v30.4S
+        SSHL  V20.4S, V20.4S, v30.4S
+        SSHL  V25.4S, V25.4S, v30.4S
+        SSHL  V26.4S, V26.4S, v30.4S
+        SSHL  V27.4S, V27.4S, v30.4S
+        SSHL  V28.4S, V28.4S, v30.4S
 
 
         UZP1  v9.8h , V17.8H, V18.8H
@@ -1480,5 +1479,4 @@ idct_ii_32 32
 idct_x_32 4 
 idct_x_32 8 
 idct_x_32 16
-idct_x_32 32
 
