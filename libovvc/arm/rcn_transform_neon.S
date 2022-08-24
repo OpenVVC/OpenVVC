@@ -53,12 +53,12 @@
     
 .endm
 
-.macro store_fun, size
+/*.macro store_fun, size
     function store_\size\()_neon, export=1
-        dup v1.8h, x1
-        dup v2.8h, x1
-        dup v3.8h, x1
-        dup v4.8h, x1
+        dup v1.8h, w1
+        dup v2.8h, w1
+        dup v3.8h, w1
+        dup v4.8h, w1
 
         .if \size == 8
             st1 {v1.8h}, [x0]
@@ -71,7 +71,7 @@
         .endif
         ret lr
     endfunc
-.endm
+.endm*/
 
 .macro idct_x_4, w 
   
@@ -1437,9 +1437,9 @@
 .endm
 
 // store data for DC
-store_fun 8
+/*store_fun 8
 store_fun 16 
-store_fun 32
+store_fun 32*/
 
 // 4-pt dct-2/8 and dst-7
 idct_x_4 2
