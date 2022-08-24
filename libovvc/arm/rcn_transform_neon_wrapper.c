@@ -528,12 +528,12 @@ void rcn_init_tr_functions_neon(struct RCNFunctions *const rcn_funcs){
   rcn_funcs->tr.func[DST_VII][2] = &vvc_inverse_dst_vii_4_neon;
   rcn_funcs->tr.func[DST_VII][3] = &vvc_inverse_dst_vii_8_neon;
   rcn_funcs->tr.func[DST_VII][4] = &vvc_inverse_dst_vii_16_neon;
-  rcn_funcs->tr.func[DST_VII][5] = &vvc_inverse_dst_vii_32_neon;
+  //rcn_funcs->tr.func[DST_VII][5] = &vvc_inverse_dst_vii_32_neon;
 
   rcn_funcs->tr.func[DCT_VIII][2] = &vvc_inverse_dct_viii_4_neon;
   rcn_funcs->tr.func[DCT_VIII][3] = &vvc_inverse_dct_viii_8_neon;
   rcn_funcs->tr.func[DCT_VIII][4] = &vvc_inverse_dct_viii_16_neon;
-  rcn_funcs->tr.func[DCT_VIII][5] = &vvc_inverse_dct_viii_32_neon;
+  //rcn_funcs->tr.func[DCT_VIII][5] = &vvc_inverse_dct_viii_32_neon;
 
   rcn_funcs->tr.func[DCT_II][2] = &vvc_inverse_dct_ii_4_neon;
   rcn_funcs->tr.func[DCT_II][3] = &vvc_inverse_dct_ii_8_neon;
@@ -541,5 +541,5 @@ void rcn_init_tr_functions_neon(struct RCNFunctions *const rcn_funcs){
   rcn_funcs->tr.func[DCT_II][5] = &vvc_inverse_dct_ii_32_neon;
   //rcn_funcs->tr.func[DCT_II][6] = &vvc_inverse_dct_ii_64_neon;
 
-  //rcn_funcs->tr.dc = &vvc_inverse_dct_ii_dc_neon;
+  rcn_funcs->tr.dc = &vvc_inverse_dct_ii_dc_neon;
 }
