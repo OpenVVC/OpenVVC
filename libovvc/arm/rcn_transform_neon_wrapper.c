@@ -445,11 +445,11 @@ void vvc_inverse_dst_vii_32_neon(const int16_t *src, int16_t *dst, ptrdiff_t src
     if(line_brk > 16 ) {
       ov_idct_x_32_32_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_32);
     }else if(line_brk > 8 ) {
-      ov_idct_x_32_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_32);
+      ov_idct_x_32_32_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_32);
     }else if(line_brk > 4)  {
-      ov_idct_x_32_8_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_32);
+      ov_idct_x_32_32_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_32);
     }else{
-      ov_idct_x_32_4_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_32);
+      ov_idct_x_32_32_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_32);
 
     }
     src += 1;
@@ -466,11 +466,11 @@ void vvc_inverse_dct_viii_32_neon(const int16_t *src, int16_t *dst, ptrdiff_t sr
     if(line_brk > 16 ) {
       ov_idct_x_32_32_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_32);
     }else if(line_brk > 8 ) {
-      ov_idct_x_32_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_32);
+      ov_idct_x_32_32_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_32);
     }else if(line_brk > 4)  {
-      ov_idct_x_32_8_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_32);
+      ov_idct_x_32_32_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_32);
     }else{
-      ov_idct_x_32_4_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_32);
+      ov_idct_x_32_32_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_32);
 
     }
     src += 1;
@@ -528,12 +528,12 @@ void rcn_init_tr_functions_neon(struct RCNFunctions *const rcn_funcs){
   rcn_funcs->tr.func[DST_VII][2] = &vvc_inverse_dst_vii_4_neon;
   rcn_funcs->tr.func[DST_VII][3] = &vvc_inverse_dst_vii_8_neon;
   rcn_funcs->tr.func[DST_VII][4] = &vvc_inverse_dst_vii_16_neon;
-  //rcn_funcs->tr.func[DST_VII][5] = &vvc_inverse_dst_vii_32_neon;
+  rcn_funcs->tr.func[DST_VII][5] = &vvc_inverse_dst_vii_32_neon;
 
   rcn_funcs->tr.func[DCT_VIII][2] = &vvc_inverse_dct_viii_4_neon;
   rcn_funcs->tr.func[DCT_VIII][3] = &vvc_inverse_dct_viii_8_neon;
   rcn_funcs->tr.func[DCT_VIII][4] = &vvc_inverse_dct_viii_16_neon;
-  //rcn_funcs->tr.func[DCT_VIII][5] = &vvc_inverse_dct_viii_32_neon;
+  rcn_funcs->tr.func[DCT_VIII][5] = &vvc_inverse_dct_viii_32_neon;
 
   rcn_funcs->tr.func[DCT_II][2] = &vvc_inverse_dct_ii_4_neon;
   rcn_funcs->tr.func[DCT_II][3] = &vvc_inverse_dct_ii_8_neon;
