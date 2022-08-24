@@ -249,6 +249,20 @@ rcn_extend_filter_region2(struct OVRCNCtx *const rcn_ctx, int x_l,
 
         OVSample *const dst_0 = fb->filter_region[comp] + fb->filter_region_offset[comp];
 
+        if (!(bnd_msk & OV_BOUNDARY_LEFT_RECT)) {
+            OVSample* filter_region = fb->filter_region[comp];
+            int stride = fb->filter_region_stride[comp];
+
+            const int width  = fb->filter_region_w[comp];
+            const int height = height_l >> (comp != 0);
+
+            OVSample *dst = &filter_region[2 * stride + 2];
+            for(int i = 0; i < height + 1; ++i) {
+                dst[0] = dst[width];
+                dst += stride;
+            }
+        }
+
         if (1) {
             uint8_t not_bnd_rgt = !(bnd_msk & OV_BOUNDARY_RIGHT_RECT);
             OVSample *dst = dst_0;
@@ -360,32 +374,6 @@ backup_line(OVSample **dst, const OVFrame *f, int16_t y)
 }
 
 static void
-rcn_save_last_rows2(struct OVRCNCtx *const rcn_ctx, OVSample** saved_rows, int x_pic_l, int y_pic_l, uint8_t is_border_rect)
-{
-    struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
-
-    int16_t pic_w = rcn_ctx->frame_start->width;
-    int16_t pic_h = rcn_ctx->frame_start->height;
-
-    const int luma_w = (x_pic_l + fb->filter_region_w[0] > pic_w) ? pic_w - x_pic_l : fb->filter_region_w[0];
-    const int luma_h = (y_pic_l + fb->filter_region_h[0] > pic_h) ? pic_h - y_pic_l : fb->filter_region_h[0];
-
-    for (int comp = 0; comp < 3; comp++) {
-        OVSample* filter_region = fb->filter_region[comp];
-        int stride = fb->filter_region_stride[comp];
-
-        const int width  = luma_w >> (comp != 0);
-        const int height = luma_h >> (comp != 0);
-
-        OVSample *dst = &filter_region[2 * stride + 2];
-        for(int i = 0; i < height + 1; ++i) {
-            dst[0] = dst[width];
-            dst += stride;
-        }
-    }
-}
-
-static void
 rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y)
 {
     if (!ctudec->sao_info.sao_luma_flag && !ctudec->sao_info.sao_chroma_flag){
@@ -437,9 +425,6 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                             ctu_w - margin, is_border);
             }
         }
-
-        rcn_save_last_rows2(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pic,
-                            y_pic + margin, is_border);
 
         x_pos += ctu_w;
         ++ctb_addr_rs;
@@ -494,9 +479,6 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
         if (sao->sao_ctu_flag) {
             rcn_sao_ctu(ctudec, sao, x_pos_pic, y_start_pic, y_start_pic + margin, fb_offset, is_border);
         }
-
-        rcn_save_last_rows2(&ctudec->rcn_ctx, fb->saved_rows_sao, x_pic,
-                            y_pic + margin, is_border);
 
     }
 
