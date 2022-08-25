@@ -1231,10 +1231,10 @@
         SMULL2 V18.4S, v21.8h, v0.H[0]
         SMULL  V19.4S, v22.4h, v0.H[0]
         SMULL2 V20.4S, v22.8h, v0.H[0]
-        SMLAL  V25.4S, v23.4h, V0.H[0]
-        SMLAL2 V26.4S, v23.8h, V0.H[0]
-        SMLAL  V27.4S, v24.4h, V0.H[0]
-        SMLAL2 V28.4S, v24.8h, V0.H[0]
+        SMULL  V25.4S, v23.4h, V0.H[0]
+        SMULL2 V26.4S, v23.8h, V0.H[0]
+        SMULL  V27.4S, v24.4h, V0.H[0]
+        SMULL2 V28.4S, v24.8h, V0.H[0]
 
         ld1 {v21.8h-v24.8h}, [x5], #64
 
