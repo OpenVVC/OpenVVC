@@ -391,8 +391,8 @@ rcn_extend_filter_region2(struct OVRCNCtx *const rcn_ctx, int x_l,
         const int line_offset = (x_l >> (comp != 0)) + 2 * fb->saved_rows_stride[comp];
 
         OVSample *const dst_0 = fb->filter_region[comp] + fb->filter_region_offset[comp];
-        const OVSample* src_pic = (OVSample*)f->data[comp] + pic_offset;
-        const OVSample *src_line = fb->saved_rows_sao[comp] + line_offset;
+        const OVSample *src_pic = (OVSample*)f->data[comp] + pic_offset;
+              OVSample *src_line = fb->saved_rows_sao[comp] + line_offset;
 
         int cpy_s = sizeof(OVSample) * (width + not_bnd_rgt);
 
@@ -519,9 +519,10 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                                       y_pic, margin, is_border);
 
             if (sao->sao_ctu_flag) {
+                /* Remove bnd_left and right flags leading to wrong offset */
                 is_border = 0;
-            is_border |= -(ctb_x == 0)                   & OV_BOUNDARY_LEFT_RECT;
-            is_border |= -(ctb_x == einfo->nb_ctu_w - 1) & OV_BOUNDARY_RIGHT_RECT;
+                is_border |= -(ctb_x == 0)                   & OV_BOUNDARY_LEFT_RECT;
+                is_border |= -(ctb_x == einfo->nb_ctu_w - 1) & OV_BOUNDARY_RIGHT_RECT;
                 rcn_sao_ctu(ctudec, sao, x_pic, y_pic, y_pic + margin, is_border);
             }
 
