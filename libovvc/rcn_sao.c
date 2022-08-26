@@ -371,66 +371,62 @@ rcn_extend_filter_region2(struct OVRCNCtx *const rcn_ctx, int x_l,
 {
     struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
     const OVFrame *f = rcn_ctx->frame_start;
+
     const int width_l  = (x_pic + fb->filter_region_w[0] > f->width) ? (f->width - x_pic)
                                                                      : fb->filter_region_w[0];
     height_l = (y_pic + height_l + 2 > f->height) ? (f->height - y_pic) : height_l + 2;
 
+    uint8_t not_bnd_rgt = !(bnd_msk & OV_BOUNDARY_RIGHT_RECT);
+    uint8_t not_bnd_btm = !(bnd_msk & OV_BOUNDARY_BOTTOM_RECT);
+    uint8_t not_bnd_lft = !(bnd_msk & OV_BOUNDARY_LEFT_RECT);
+
     for (int comp = 0; comp < 3; comp++) {
         const int width  = width_l >> (comp != 0);
         const int height = height_l >> (comp != 0);
+
         int stride_pic = f->linesize[comp] / sizeof(OVSample);
-        const int pic_offset = (y_pic >> (comp != 0)) * stride_pic + (x_pic >> (comp != 0));
-
-        const OVSample* src_pic = (OVSample*)f->data[comp] + pic_offset;
-
         int stride_filter = fb->filter_region_stride[comp];
 
+        const int pic_offset = (y_pic >> (comp != 0)) * stride_pic + (x_pic >> (comp != 0));
+        const int line_offset = (x_l >> (comp != 0)) + 2 * fb->saved_rows_stride[comp];
+
         OVSample *const dst_0 = fb->filter_region[comp] + fb->filter_region_offset[comp];
+        const OVSample* src_pic = (OVSample*)f->data[comp] + pic_offset;
+        const OVSample *src_line = fb->saved_rows_sao[comp] + line_offset;
 
-        const OVSample *src_line = fb->saved_rows_sao[comp] + (x_l >> (comp != 0)) + 2 * fb->saved_rows_stride[comp];
-
-        uint8_t not_bnd_rgt = !(bnd_msk & OV_BOUNDARY_RIGHT_RECT);
-        uint8_t not_bnd_btm = !(bnd_msk & OV_BOUNDARY_BOTTOM_RECT);
         int cpy_s = sizeof(OVSample) * (width + not_bnd_rgt);
 
-        if (!(bnd_msk & OV_BOUNDARY_LEFT_RECT)) {
-            OVSample* filter_region = fb->filter_region[comp];
-            int stride = fb->filter_region_stride[comp];
-
-            const int width  = fb->filter_region_w[comp];
-            const int height = height_l >> (comp != 0);
-
-            OVSample *dst = dst_0 - stride - 1;
-            for(int i = 0; i < height + 1; ++i) {
-                dst[0] = dst[width];
-                dst += stride;
-            }
-        }
-        if (1) {
-            OVSample *dst = dst_0;
+        if (not_bnd_lft) {
+            OVSample *dst = dst_0 - stride_filter - 1;
             const OVSample *src = src_pic;
+            const int width  = fb->filter_region_w[comp];
 
-            memcpy(dst_0 - stride_filter, src_line, cpy_s);
-            memcpy(dst_0                , src,      cpy_s);
-            memcpy(dst_0 + (height - 1) * stride_filter, src + (height - 1)            * stride_pic, cpy_s);
-            memcpy(dst_0 +  height      * stride_filter, src + (height - !not_bnd_btm) * stride_pic, cpy_s);
-
+            dst[0] = dst[width];
+            dst += stride_filter;
             for(int i = 0; i < height; ++i) {
-                dst[width - 1] = src[width - 1];
+                dst[0] = dst[1];
+                dst[1] = src_pic[width - 1];
                 dst += stride_filter;
-                src += stride_pic;
+                src_pic += stride_pic;
             }
-        }
-
-        if (bnd_msk & OV_BOUNDARY_LEFT_RECT) {
+            src_pic -= -(!not_bnd_btm) & stride_pic;
+            dst[0] = dst[1];
+            dst[1] = src_pic[width - 1];
+        } else {
             OVSample *dst = dst_0 - 1;
             const OVSample *src = src_pic;
             for (int i = 0; i < height; ++i) {
-                dst[0] = src[0];
+                dst[0] = src_pic[0];
+                dst[1] = src_pic[width - 1];
                 dst += stride_filter;
-                src += stride_pic;
+                src_pic += stride_pic;
             }
+            src_pic -= -(!not_bnd_btm) & stride_pic;
+            dst[0] = src_pic[0];
+            dst[1] = src_pic[width - 1];
         }
+
+        memcpy(dst_0 - stride_filter, src_line, cpy_s);
     }
 }
 
