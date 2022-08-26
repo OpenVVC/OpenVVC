@@ -343,6 +343,12 @@ struct SAOFunctions{
     SAOBandFilterFunc band;
     SAOEdgeFilterFunc edge[2];
 
+    void (*edge2[4])(OVSample *dst, OVSample *src_row, OVSample *src_col,
+                     ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                     int width, int height,
+                     int8_t offset_val[],
+                     uint8_t eo_dir);
+
     void (*rcn_sao_filter_line)(struct OVCTUDec *const ctudec,
                                 const struct RectEntryInfo *const einfo,
                                 uint16_t ctb_y);

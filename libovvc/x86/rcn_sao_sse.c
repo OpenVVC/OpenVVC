@@ -257,11 +257,293 @@ sao_edge_filter_7_10_sse(OVSample* _dst,
       r1 = _mm_set1_epi16(0x03FF);
       r0 = _mm_max_epi16(r0, _mm_setzero_si128());
       r0 = _mm_min_epi16(r0, r1);
-      _mm_storeu_si128((__m128i*)(dst + x), r0);
+      _mm_store_si128((__m128i*)(dst + x), r0);
       src += stride_src;
       dst += stride_dst;
     }
   }
+}
+
+static void
+sao_edge_filter_v_sse(OVSample *dst, OVSample *src_row, OVSample *src_col,
+                      ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                      int width, int height,
+                      int8_t offset_val[],
+                      uint8_t eo_dir)
+{
+    int x, y;
+    __m128i x0, x1, x2, x3;
+    __m128i r0, r1, r2, r3, r4;
+
+    const __m128i offset0 = _mm_set1_epi16(offset_val[0]);
+    const __m128i offset1 = _mm_set1_epi16(offset_val[1]);
+    const __m128i offset3 = _mm_set1_epi16(offset_val[2]);
+    const __m128i offset4 = _mm_set1_epi16(offset_val[3]);
+
+    for (x = 0; x < width; x += 8) {
+        OVSample *src = dst;
+        __m128i a = _mm_loadu_si128((__m128i*)(src_row + x));
+        __m128i c = _mm_load_si128((__m128i*)(src));
+
+        for (y = 0; y < height; y++) {
+
+            __m128i b = _mm_load_si128((__m128i*)(src + stride_dst));
+
+            r2 = _mm_min_epu16(c, a);
+            x1 = _mm_cmpeq_epi16(a, r2);
+            x2 = _mm_cmpeq_epi16(c, r2);
+            x1 = _mm_sub_epi16(x2, x1);
+
+            r2 = _mm_min_epu16(c, b);
+            x3 = _mm_cmpeq_epi16(b, r2);
+            x2 = _mm_cmpeq_epi16(c, r2);
+            x3 = _mm_sub_epi16(x2, x3);
+
+            x1 = _mm_add_epi16(x1, x3);
+
+            r0 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(-2));
+            r1 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(-1));
+            r3 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(1));
+            r4 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(2));
+
+            r0 = _mm_and_si128(r0, offset0);
+            r1 = _mm_and_si128(r1, offset1);
+            r3 = _mm_and_si128(r3, offset3);
+            r4 = _mm_and_si128(r4, offset4);
+
+            r0 = _mm_add_epi16(r0, r1);
+            r0 = _mm_add_epi16(r0, r4);
+            r0 = _mm_add_epi16(r0, r3);
+            r0 = _mm_add_epi16(r0, c);
+
+            r1 = _mm_set1_epi16(0x03FF);
+
+            r0 = _mm_max_epi16(r0, _mm_setzero_si128());
+            r0 = _mm_min_epi16(r0, r1);
+
+            _mm_store_si128((__m128i*)src, r0);
+
+            a = c;
+            c = b;
+
+            src += stride_dst;
+        }
+        dst += 8;
+    }
+}
+
+static void
+sao_edge_filter_d_sse(OVSample *dst, OVSample *src_row, OVSample *src_col,
+                      ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                      int width, int height,
+                      int8_t offset_val[],
+                      uint8_t eo_dir)
+{
+    int x, y;
+    __m128i x0, x1, x2, x3;
+    __m128i cmp0, cmp1, r0, r1, r2, r3, r4;
+
+    const __m128i offset0 = _mm_set1_epi16(offset_val[0]);
+    const __m128i offset1 = _mm_set1_epi16(offset_val[1]);
+    const __m128i offset3 = _mm_set1_epi16(offset_val[2]);
+    const __m128i offset4 = _mm_set1_epi16(offset_val[3]);
+
+    for (x = 0; x < width; x += 8) {
+        OVSample *src = dst;
+        __m128i _a = _mm_loadu_si128((__m128i*)(src_row + x));
+        __m128i c = _mm_load_si128((__m128i*)(src + x));
+        for (y = 0; y < height; y++) {
+            __m128i _b = _mm_load_si128((__m128i*)(src + stride_dst + x));
+            __m128i b_ = _mm_load_si128((__m128i*)(src + stride_dst + x + 8));
+            __m128i a0 = _mm_set1_epi16(src_col[y - 1]);
+            src_col[y - 1] = _mm_extract_epi16(_a, 7);
+            //__m128i c0 = _mm_set1_epi16(src_col[y]);
+
+            __m128i a = _mm_alignr_epi8(_a, a0, 14);
+            __m128i b = _mm_alignr_epi8(b_, _b, 2);
+
+            r2 = _mm_min_epu16(c, a);
+            x1 = _mm_cmpeq_epi16(a, r2);
+            x2 = _mm_cmpeq_epi16(c, r2);
+            x1 = _mm_sub_epi16(x2, x1);
+
+            r2 = _mm_min_epu16(c, b);
+            x3 = _mm_cmpeq_epi16(b, r2);
+            x2 = _mm_cmpeq_epi16(c, r2);
+            x3 = _mm_sub_epi16(x2, x3);
+
+            x1 = _mm_add_epi16(x1, x3);
+
+            r0 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(-2));
+            r1 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(-1));
+            r3 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(1));
+            r4 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(2));
+
+            r0 = _mm_and_si128(r0, offset0);
+            r1 = _mm_and_si128(r1, offset1);
+            r3 = _mm_and_si128(r3, offset3);
+            r4 = _mm_and_si128(r4, offset4);
+
+            r0 = _mm_add_epi16(r0, r1);
+            r0 = _mm_add_epi16(r0, r4);
+            r0 = _mm_add_epi16(r0, r3);
+            r0 = _mm_add_epi16(r0, c);
+
+            r1 = _mm_set1_epi16(0x03FF);
+
+            r0 = _mm_max_epi16(r0, _mm_setzero_si128());
+            r0 = _mm_min_epi16(r0, r1);
+
+            _mm_store_si128((__m128i*)(src + x), r0);
+
+            _a = c;
+            c = _b;
+            src += stride_dst;
+        }
+    }
+}
+
+static void
+sao_edge_filter_b_sse(OVSample *dst, OVSample *src_row, OVSample *src_col,
+                      ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                      int width, int height,
+                      int8_t offset_val[],
+                      uint8_t eo_dir)
+{
+    int x, y;
+    __m128i x0, x1, x2, x3;
+    __m128i cmp0, cmp1, r0, r1, r2, r3, r4;
+
+    const __m128i offset0 = _mm_set1_epi16(offset_val[0]);
+    const __m128i offset1 = _mm_set1_epi16(offset_val[1]);
+    const __m128i offset3 = _mm_set1_epi16(offset_val[2]);
+    const __m128i offset4 = _mm_set1_epi16(offset_val[3]);
+
+    for (x = 0; x < width; x += 8) {
+        OVSample *src = dst;
+        __m128i _a = _mm_loadu_si128((__m128i*)(src_row + x));
+        __m128i a_ = _mm_loadu_si128((__m128i*)(src_row + x + 8));
+        __m128i c = _mm_load_si128((__m128i*)(src + x));
+        for (y = 0; y < height; y++) {
+            __m128i c_ = _mm_load_si128((__m128i*)(src + x + 8));
+            __m128i _b = _mm_load_si128((__m128i*)(src + stride_dst + x));
+            __m128i b0 = _mm_set1_epi16(src_col[y + 1]);
+
+            __m128i b = _mm_alignr_epi8(_b, b0, 14);
+            __m128i a = _mm_alignr_epi8(a_, _a, 2);
+
+            src_col[y + 1] = _mm_extract_epi16(_b, 7);
+
+            r2 = _mm_min_epu16(c, a);
+            x1 = _mm_cmpeq_epi16(a, r2);
+            x2 = _mm_cmpeq_epi16(c, r2);
+            x1 = _mm_sub_epi16(x2, x1);
+
+            r2 = _mm_min_epu16(c, b);
+            x3 = _mm_cmpeq_epi16(b, r2);
+            x2 = _mm_cmpeq_epi16(c, r2);
+            x3 = _mm_sub_epi16(x2, x3);
+
+            x1 = _mm_add_epi16(x1, x3);
+
+            r0 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(-2));
+            r1 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(-1));
+            r3 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(1));
+            r4 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(2));
+
+            r0 = _mm_and_si128(r0, offset0);
+            r1 = _mm_and_si128(r1, offset1);
+            r3 = _mm_and_si128(r3, offset3);
+            r4 = _mm_and_si128(r4, offset4);
+
+            r0 = _mm_add_epi16(r0, r1);
+            r0 = _mm_add_epi16(r0, r4);
+            r0 = _mm_add_epi16(r0, r3);
+            r0 = _mm_add_epi16(r0, c);
+
+            r1 = _mm_set1_epi16(0x03FF);
+
+            r0 = _mm_max_epi16(r0, _mm_setzero_si128());
+            r0 = _mm_min_epi16(r0, r1);
+
+            _mm_store_si128((__m128i*)(src + x), r0);
+
+            _a = c;
+            a_ = c_;
+            c = _b;
+            src += stride_dst;
+        }
+    }
+}
+
+
+static void
+sao_edge_filter_h_sse(OVSample *dst, OVSample *src_row, OVSample *src_col,
+                      ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                      int width, int height,
+                      int8_t offset_val[],
+                      uint8_t eo_dir)
+{
+    int x, y;
+    __m128i x0, x1, x2, x3;
+    __m128i cmp0, cmp1, r0, r1, r2, r3, r4;
+    OVSample *src = dst;
+
+    const __m128i offset0 = _mm_set1_epi16(offset_val[0]);
+    const __m128i offset1 = _mm_set1_epi16(offset_val[1]);
+    const __m128i offset3 = _mm_set1_epi16(offset_val[2]);
+    const __m128i offset4 = _mm_set1_epi16(offset_val[3]);
+
+    for (y = 0; y < height; y++) {
+        __m128i prev = _mm_set1_epi16(src_col[y]);
+        __m128i c = _mm_load_si128((__m128i*)(src));
+        for (x = 0; x < width; x += 8) {
+
+            __m128i next = _mm_load_si128((__m128i*)(src + x + 8));
+
+            __m128i a = _mm_alignr_epi8(c, prev, 14);
+            __m128i b = _mm_alignr_epi8(next, c, 2);
+
+            r2 = _mm_min_epu16(c, a);
+            x1 = _mm_cmpeq_epi16(a, r2);
+            x2 = _mm_cmpeq_epi16(c, r2);
+            x1 = _mm_sub_epi16(x2, x1);
+
+            r2 = _mm_min_epu16(c, b);
+            x3 = _mm_cmpeq_epi16(b, r2);
+            x2 = _mm_cmpeq_epi16(c, r2);
+            x3 = _mm_sub_epi16(x2, x3);
+
+            x1 = _mm_add_epi16(x1, x3);
+
+            r0 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(-2));
+            r1 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(-1));
+            r3 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(1));
+            r4 = _mm_cmpeq_epi16(x1, _mm_set1_epi16(2));
+
+            r0 = _mm_and_si128(r0, offset0);
+            r1 = _mm_and_si128(r1, offset1);
+            r3 = _mm_and_si128(r3, offset3);
+            r4 = _mm_and_si128(r4, offset4);
+
+            r0 = _mm_add_epi16(r0, r1);
+            r0 = _mm_add_epi16(r0, r4);
+            r0 = _mm_add_epi16(r0, r3);
+            r0 = _mm_add_epi16(r0, c);
+
+            r1 = _mm_set1_epi16(0x03FF);
+
+            r0 = _mm_max_epi16(r0, _mm_setzero_si128());
+            r0 = _mm_min_epi16(r0, r1);
+
+            _mm_store_si128((__m128i*)(dst + x), r0);
+
+            prev = c;
+            c = next;
+        }
+        src += stride_dst;
+        dst += stride_dst;
+    }
 }
 
 #if USE_AVX2
@@ -577,6 +859,10 @@ void rcn_init_sao_functions_sse(struct RCNFunctions *const rcn_funcs){
     rcn_funcs->sao.band= &sao_band_filter_0_10_sse;
     rcn_funcs->sao.edge[0]= &sao_edge_filter_7_10_sse;
     rcn_funcs->sao.edge[1]= &sao_edge_filter_10_sse;
+    rcn_funcs->sao.edge2[0]= &sao_edge_filter_h_sse;
+    rcn_funcs->sao.edge2[1]= &sao_edge_filter_v_sse;
+    rcn_funcs->sao.edge2[2]= &sao_edge_filter_d_sse;
+    rcn_funcs->sao.edge2[3]= &sao_edge_filter_b_sse;
 }
 
 #if USE_AVX2

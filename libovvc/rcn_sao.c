@@ -278,8 +278,13 @@ sao_call(const struct SAOFunctions *saofunc, struct SAOBuff *tmp, OVSample *dst,
                 src_col[-1] = tmp->row[0];
             }
 
-            sao_edge_filter2(dst + dst_offset, src_row, src_col, dst_stride,
-                             src_stride, width, height, offsets, eo_dir);
+            if (!is_border) {
+                saofunc->edge2[eo_dir](dst + dst_offset, src_row, src_col, dst_stride,
+                                       src_stride, width, height, offsets, eo_dir);
+            } else {
+                sao_edge_filter2(dst + dst_offset, src_row, src_col, dst_stride,
+                                 src_stride, width, height, offsets, eo_dir);
+            }
 #endif
 
             break;
@@ -581,4 +586,8 @@ BD_DECL(rcn_init_sao_functions)(struct RCNFunctions *const rcn_funcs)
     rcn_funcs->sao.edge[1]= &sao_edge_filter;
     rcn_funcs->sao.rcn_sao_filter_line    = &rcn_sao_filter_line;
     rcn_funcs->sao.rcn_sao_first_pix_rows = &rcn_sao_first_pix_rows;
+    rcn_funcs->sao.edge2[0]= &sao_edge_filter2;
+    rcn_funcs->sao.edge2[1]= &sao_edge_filter2;
+    rcn_funcs->sao.edge2[2]= &sao_edge_filter2;
+    rcn_funcs->sao.edge2[3]= &sao_edge_filter2;
 }
