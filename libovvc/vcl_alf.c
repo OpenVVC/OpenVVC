@@ -71,20 +71,20 @@ ovcabac_read_ae_alf_ctu(OVCTUDec *const ctudec, uint16_t ctb_rs, uint16_t nb_ctu
 {
     uint8_t alf_flags = 0;
 
-    OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
-    uint64_t *const cabac_state = cabac_ctx->ctx_table;
-
     struct ALFInfo* alf_info  = &ctudec->alf_info;
-    ALFParamsCtu* alf_params_ctu = &alf_info->ctb_alf_params[ctb_rs];
-
-    const uint8_t ctu_ngh_ctx = ctudec->ctu_ngh_flags;
-
     uint8_t alf_luma_enabled = alf_info->alf_luma_enabled_flag;
     uint8_t alf_cb_enabled   = alf_info->alf_cb_enabled_flag;
     uint8_t alf_cr_enabled   = alf_info->alf_cr_enabled_flag;
 
     if(!(alf_luma_enabled || alf_cb_enabled || alf_cr_enabled))
         return;
+    OVCABACCtx *const cabac_ctx = ctudec->cabac_ctx;
+    uint64_t *const cabac_state = cabac_ctx->ctx_table;
+
+    ALFParamsCtu* alf_params_ctu = &alf_info->ctb_alf_params[ctb_rs];
+
+    const uint8_t ctu_ngh_ctx = ctudec->ctu_ngh_flags;
+
 
     int ctb_col = ctb_rs % nb_ctu_w;
 
