@@ -372,7 +372,7 @@ rcn_sao_ctu(OVCTUDec *const ctudec, SAOParamsCtu *sao, int x_pic, int y_pic, int
 
 static void
 rcn_extend_filter_region2(struct OVRCNCtx *const rcn_ctx, int x_l,
-                          int x_pic, int y_pic, int height_l, uint8_t bnd_msk)
+                          int x_pic, int y_pic, int height_l, uint8_t bnd_msk, uint8_t sao_enabled)
 {
     struct OVFilterBuffers* fb = &rcn_ctx->filter_buffers;
     const OVFrame *f = rcn_ctx->frame_start;
@@ -384,8 +384,10 @@ rcn_extend_filter_region2(struct OVRCNCtx *const rcn_ctx, int x_l,
     uint8_t not_bnd_rgt = !(bnd_msk & OV_BOUNDARY_RIGHT_RECT);
     uint8_t not_bnd_btm = !((bnd_msk & OV_BOUNDARY_BOTTOM_RECT) && y_pic + height_l >= f->height);
     uint8_t not_bnd_lft = !(bnd_msk & OV_BOUNDARY_LEFT_RECT);
+    uint8_t enabled_l = !!(sao_enabled & 2);
+    uint8_t enabled_c = !!(sao_enabled & 1);
 
-    for (int comp = 0; comp < 3; comp++) {
+    for (int comp = !enabled_l; comp < 3 - (!enabled_c << 1); comp++) {
         const int width  = width_l >> (comp != 0);
         const int height = height_l >> (comp != 0);
 
@@ -463,7 +465,8 @@ init_row_line(struct OVFilterBuffers* fb, const OVFrame *f, int32_t y, int32_t x
 static void
 rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y)
 {
-    if (!ctudec->sao_info.sao_luma_flag && !ctudec->sao_info.sao_chroma_flag){
+    uint8_t sao_enabled = (!!ctudec->sao_info.sao_luma_flag) << 1 | (!!ctudec->sao_info.sao_chroma_flag);
+    if (!sao_enabled){
         return;
     }
 
@@ -492,7 +495,7 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
         SAOParamsCtu *sao  = &ctudec->sao_info.sao_params[ctb_addr_rs];
 
         rcn_extend_filter_region2(&ctudec->rcn_ctx, x_pos, x_pic,
-                                  y_pic + margin, ctu_w - margin, is_border);
+                                  y_pic + margin, ctu_w - margin, is_border, sao_enabled);
 
         if (sao->sao_ctu_flag) {
             rcn_sao_ctu(ctudec, sao, x_pic, y_pic + margin, y_pic + ctu_w, is_border);
@@ -521,7 +524,7 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
             SAOParamsCtu *sao  = &ctudec->sao_info.sao_params[ctb_addr_rs];
 
             rcn_extend_filter_region2(&ctudec->rcn_ctx, x_pos, x_pic,
-                                      y_pic, margin, is_border);
+                                      y_pic, margin, is_border, sao_enabled);
 
             if (sao->sao_ctu_flag) {
                 /* Remove bnd_left and right flags leading to wrong offset */
@@ -540,7 +543,8 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 static void
 rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y)
 {
-    if (!ctudec->sao_info.sao_luma_flag && !ctudec->sao_info.sao_chroma_flag){
+    uint8_t sao_enabled = (!!ctudec->sao_info.sao_luma_flag) << 1 | (!!ctudec->sao_info.sao_chroma_flag);
+    if (!sao_enabled){
         return;
     }
 
@@ -568,7 +572,7 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
         is_border |= -(ctb_x == einfo->nb_ctu_w - 1) & OV_BOUNDARY_RIGHT_RECT;
 
         //Apply SAO of previous ctu line
-        rcn_extend_filter_region2(&ctudec->rcn_ctx, x_pos, x_pic, y_pic, margin, is_border);
+        rcn_extend_filter_region2(&ctudec->rcn_ctx, x_pos, x_pic, y_pic, margin, is_border, sao_enabled);
 
         int ctb_addr_rs    = ctb_y * einfo->nb_ctu_w + ctb_x;
         SAOParamsCtu *sao  = &ctudec->sao_info.sao_params[ctb_addr_rs];
