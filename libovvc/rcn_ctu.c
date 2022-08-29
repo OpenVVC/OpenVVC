@@ -533,12 +533,12 @@ rcn_alloc_filter_buffers(struct OVRCNCtx *const rcn_ctx, int nb_ctu_w, uint8_t l
         if (saved_rows_sao[comp]) {
             ov_freep(&saved_rows_sao[comp]);
         }
-        saved_rows_sao[comp] = ov_mallocz(margin * fb->saved_rows_stride[comp] * sizeof(OVSample));
+        saved_rows_sao[comp] = ov_malloc(margin * fb->saved_rows_stride[comp] * sizeof(OVSample));
 
         if(saved_rows_alf[comp]){
             ov_freep(&saved_rows_alf[comp]);
         }
-        saved_rows_alf[comp] = ov_mallocz(margin * fb->saved_rows_stride[comp] * sizeof(OVSample));
+        saved_rows_alf[comp] = ov_malloc(margin * fb->saved_rows_stride[comp] * sizeof(OVSample));
     }
 
 }
