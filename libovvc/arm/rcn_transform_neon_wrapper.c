@@ -606,7 +606,7 @@ void rcn_init_tr_functions_neon(struct RCNFunctions *const rcn_funcs){
   rcn_funcs->tr.func[DCT_II][3] = &vvc_inverse_dct_ii_8_neon;
   rcn_funcs->tr.func[DCT_II][4] = &vvc_inverse_dct_ii_16_neon;
   rcn_funcs->tr.func[DCT_II][5] = &vvc_inverse_dct_ii_32_neon;
-  rcn_funcs->tr.func[DCT_II][6] = &vvc_inverse_dct_ii_64_neon;
+  //rcn_funcs->tr.func[DCT_II][6] = &vvc_inverse_dct_ii_64_neon;
 
   rcn_funcs->tr.dc = &vvc_inverse_dct_ii_dc_neon;
 }
