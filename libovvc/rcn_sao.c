@@ -121,13 +121,6 @@ sao_edge_filter2(OVSample *dst, OVSample *src_row, OVSample *src_col,
                 int8_t offset_val[],
                 uint8_t eo_dir)
 {
-    static const int8_t pos[4][2][2] = {
-        { { -1,  0 }, {  1, 0 } }, // horizontal
-        { {  0, -1 }, {  0, 1 } }, // vertical
-        { { -1, -1 }, {  1, 1 } }, // 45 degree
-        { {  1, -1 }, { -1, 1 } }, // 135 degree
-    };
-
     const int16_t sao_offset_val[5] = {
         offset_val[0],
         offset_val[1],
