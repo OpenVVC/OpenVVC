@@ -236,7 +236,7 @@ sao_call(const struct SAOFunctions *saofunc, struct SAOBuff *tmp, OVSample *dst,
     switch (type_idx) {
         case SAO_BAND:
 
-            saofunc->band(dst, src, dst_stride, src_stride,
+            saofunc->band(dst, dst, dst_stride, dst_stride,
                           width, height, offsets, mode_info);
 
             break;
