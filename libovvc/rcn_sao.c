@@ -689,6 +689,6 @@ BD_DECL(rcn_init_sao_functions)(struct RCNFunctions *const rcn_funcs)
     rcn_funcs->sao.band= &sao_band_filter;
     rcn_funcs->sao.edge[0]= &sao_edge_filter;
     rcn_funcs->sao.edge[1]= &sao_edge_filter;
-    rcn_funcs->sao.rcn_sao_filter_line = &rcn_sao_filter_line;
+    rcn_funcs->sao.rcn_sao_filter_line    = &rcn_sao_filter_line;
     rcn_funcs->sao.rcn_sao_first_pix_rows = &rcn_sao_first_pix_rows;
 }
