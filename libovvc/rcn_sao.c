@@ -484,7 +484,7 @@ line_to_saved(OVSample **lbck, struct OVFilterBuffers* fb)
 }
 
 static void
-backup_line(OVSample **dst, const OVFrame *f, int16_t y)
+backup_line(OVSample **dst, const OVFrame *f, int32_t y)
 {
 
     if (y + 5 < f->height) {
@@ -504,14 +504,50 @@ backup_line(OVSample **dst, const OVFrame *f, int16_t y)
 }
 
 static void
+backup_line2(OVSample **dst, const OVFrame *f, int32_t y)
+{
+
+    uint8_t *src_y = f->data[0];
+    ptrdiff_t offset_y = y * f->linesize[0];
+
+    memcpy(dst[0], src_y  + offset_y, f->linesize[0]);
+
+    uint8_t *src_cb = f->data[1];
+    uint8_t *src_cr = f->data[2];
+    ptrdiff_t offset_c = (y >> 1) * f->linesize[1];
+    memcpy(dst[1], src_cb + offset_c, f->linesize[1]);
+    memcpy(dst[2], src_cr + offset_c, f->linesize[2]);
+}
+
+static void
+backup_line3(OVSample **dst, const OVFrame *f, int32_t y)
+{
+
+    if (y > f->height) return;
+
+    uint8_t *src_y = f->data[0];
+    ptrdiff_t offset_y = (y - 1) * f->linesize[0];
+
+    memcpy(dst[0], src_y  + offset_y, f->linesize[0]);
+
+    uint8_t *src_cb = f->data[1];
+    uint8_t *src_cr = f->data[2];
+    ptrdiff_t offset_c = ((y >> 1) - 1) * f->linesize[1];
+    memcpy(dst[1], src_cb + offset_c, f->linesize[1]);
+    memcpy(dst[2], src_cr + offset_c, f->linesize[2]);
+}
+
+static void
 rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const einfo, uint16_t ctb_y)
 {
     if (!ctudec->sao_info.sao_luma_flag && !ctudec->sao_info.sao_chroma_flag){
         return;
     }
     OVSample *lbck[3];
+    OVSample *lbck2[3];
 
     line_alloc(lbck, ctudec->rcn_ctx.frame_start);
+    line_alloc(lbck2, ctudec->rcn_ctx.frame_start);
 
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int ctu_w  = 1 << log2_ctb_s;
@@ -530,6 +566,12 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
 
     if (!border_init)
         backup_line(lbck, ctudec->rcn_ctx.frame_start, y_pic + ctu_w);
+    else if (!ctb_y) {
+        backup_line2(lbck, ctudec->rcn_ctx.frame_start, y_pic);
+        line_to_saved(lbck, &ctudec->rcn_ctx.filter_buffers);
+    }
+
+    backup_line3(lbck2, ctudec->rcn_ctx.frame_start, y_pic + ctu_w);
 
     for (int ctb_x = 0; ctb_x < einfo->nb_ctu_w; ++ctb_x) {
         uint8_t is_border = border_init;
@@ -547,6 +589,7 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
             rcn_sao_ctu(ctudec, sao, x_pic, y_pic + margin, y_pic + ctu_w, 0, is_border);
         }
 
+#if 0
         /* Apply partial SAO filter on next CTU line for ALF */
         if (!(is_border & OV_BOUNDARY_BOTTOM_RECT)) {
             sao = &ctudec->sao_info.sao_params[ctb_addr_rs + einfo->nb_ctu_w];
@@ -555,15 +598,55 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
                             ctu_w - margin, is_border);
             }
         }
+#endif
 
         x_pos += ctu_w;
         ++ctb_addr_rs;
+    }
+
+    if (!(border_init & OV_BOUNDARY_BOTTOM_RECT)) {
+        int x_pos = 0;
+
+        ctb_y++;
+        y_pic += ctu_w;
+
+        line_to_saved(lbck2, &ctudec->rcn_ctx.filter_buffers);
+
+        uint8_t border_init2 = -(ctb_y == einfo->nb_ctu_h - 1) & OV_BOUNDARY_BOTTOM_RECT;
+        int ctb_addr_rs = ctb_y * einfo->nb_ctu_w;
+
+        for (int ctb_x = 0; ctb_x < einfo->nb_ctu_w; ++ctb_x) {
+            uint8_t is_border = border_init2;
+            is_border |= -(ctb_x == 0)                   & OV_BOUNDARY_LEFT_RECT;
+            is_border |= -(ctb_x == einfo->nb_ctu_w - 1) & OV_BOUNDARY_RIGHT_RECT;
+
+            int x_pic = x_pos + x_offset;
+
+            SAOParamsCtu *sao  = &ctudec->sao_info.sao_params[ctb_addr_rs];
+
+            rcn_extend_filter_region2(&ctudec->rcn_ctx, x_pos, x_pic,
+                                      y_pic, is_border);
+
+            if (sao->sao_ctu_flag) {
+                is_border = 0;
+            is_border |= -(ctb_x == 0)                   & OV_BOUNDARY_LEFT_RECT;
+            is_border |= -(ctb_x == einfo->nb_ctu_w - 1) & OV_BOUNDARY_RIGHT_RECT;
+                rcn_sao_ctu(ctudec, sao, x_pic, y_pic, y_pic + margin,
+                            0, is_border);
+            }
+
+            x_pos += ctu_w;
+            ++ctb_addr_rs;
+        }
+
+        line_to_saved(lbck, &ctudec->rcn_ctx.filter_buffers);
     }
 
     if (!border_init)
         line_to_saved(lbck, &ctudec->rcn_ctx.filter_buffers);
 
     line_free(lbck);
+    line_free(lbck2);
 }
 
 static void
@@ -587,6 +670,10 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
 
     if (!border_init)
         backup_line(lbck, ctudec->rcn_ctx.frame_start, y_pic);
+    else {
+        backup_line2(lbck, ctudec->rcn_ctx.frame_start, y_pic);
+        line_to_saved(lbck, &ctudec->rcn_ctx.filter_buffers);
+    }
 
     for (int ctb_x = 0; ctb_x < einfo->nb_ctu_w; ctb_x++) {
         int ctb_x_pic = ctb_x + einfo->ctb_x;
