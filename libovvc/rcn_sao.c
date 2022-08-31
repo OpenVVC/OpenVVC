@@ -367,17 +367,24 @@ rcn_extend_filter_region2(struct OVRCNCtx *const rcn_ctx, int x_l,
                                                                      : fb->filter_region_w[0];
     const int height_l = (y_pic + fb->filter_region_h[0] > f->height) ? (f->height - y_pic)
                                                                       : fb->filter_region_h[0];
+
     for (int comp = 0; comp < 3; comp++) {
         const int width  = width_l >> (comp != 0);
         const int height = height_l >> (comp != 0);
         int stride_pic = f->linesize[comp] / sizeof(OVSample);
         const int pic_offset = (y_pic >> (comp != 0)) * stride_pic + (x_pic >> (comp != 0));
 
-        OVSample* frame = (OVSample*)f->data[comp] + pic_offset;
+        const OVSample* src_pic = (OVSample*)f->data[comp] + pic_offset;
 
         int stride_filter = fb->filter_region_stride[comp];
 
         OVSample *const dst_0 = fb->filter_region[comp] + fb->filter_region_offset[comp];
+
+        const OVSample *src_line = fb->saved_rows_sao[comp] + (x_l >> (comp != 0)) + 2 * fb->saved_rows_stride[comp];
+
+        uint8_t not_bnd_rgt = !(bnd_msk & OV_BOUNDARY_RIGHT_RECT);
+        uint8_t not_bnd_btm = !(bnd_msk & OV_BOUNDARY_BOTTOM_RECT);
+        int cpy_s = sizeof(OVSample) * (width + not_bnd_rgt);
 
         if (!(bnd_msk & OV_BOUNDARY_LEFT_RECT)) {
             OVSample* filter_region = fb->filter_region[comp];
@@ -386,20 +393,25 @@ rcn_extend_filter_region2(struct OVRCNCtx *const rcn_ctx, int x_l,
             const int width  = fb->filter_region_w[comp];
             const int height = height_l >> (comp != 0);
 
-            OVSample *dst = &filter_region[2 * stride + 2];
+            OVSample *dst = dst_0 - stride - 1;
             for(int i = 0; i < height + 1; ++i) {
                 dst[0] = dst[width];
+                dst[1] = dst[width + 1];
                 dst += stride;
             }
         }
-
         if (1) {
-            uint8_t not_bnd_rgt = !(bnd_msk & OV_BOUNDARY_RIGHT_RECT);
             OVSample *dst = dst_0;
-            const OVSample *src = frame;
-            int cpy_s = sizeof(OVSample) * (width + not_bnd_rgt);
-            for (int i = 0; i < height; ++i) {
-                memcpy(dst, src, cpy_s);
+            const OVSample *src = src_pic;
+
+            memcpy(dst_0 - stride_filter, src_line, cpy_s);
+            memcpy(dst_0                , src,      cpy_s);
+            memcpy(dst_0 + (height - 1) * stride_filter, src + (height - 1)            * stride_pic, cpy_s);
+            memcpy(dst_0 +  height      * stride_filter, src + (height - !not_bnd_btm) * stride_pic, cpy_s);
+
+            for(int i = 0; i < height; ++i) {
+                dst[width - 1] = src[width - 1];
+                dst[width]     = src[width - !not_bnd_rgt];
                 dst += stride_filter;
                 src += stride_pic;
             }
@@ -407,46 +419,12 @@ rcn_extend_filter_region2(struct OVRCNCtx *const rcn_ctx, int x_l,
 
         if (bnd_msk & OV_BOUNDARY_LEFT_RECT) {
             OVSample *dst = dst_0 - 1;
+            const OVSample *src = src_pic;
             for (int i = 0; i < height; ++i) {
-                dst[0] = dst[1];
+                dst[0] = dst[1] = src[0];
                 dst += stride_filter;
+                src += stride_pic;
             }
-        }
-
-        if (bnd_msk & OV_BOUNDARY_RIGHT_RECT) {
-            OVSample *dst = dst_0 + width;
-            for (int i = 0; i < height; ++i) {
-                dst[0] = dst[-1];
-                dst += stride_filter;
-            }
-        }
-
-        if (bnd_msk & OV_BOUNDARY_UPPER_RECT) {
-            uint8_t not_bnd_rgt = !(bnd_msk & OV_BOUNDARY_RIGHT_RECT);
-            int cpy_s = sizeof(OVSample) * (width + not_bnd_rgt);
-            OVSample *dst = dst_0 - stride_filter;
-            const OVSample *src = dst_0;
-            memcpy(dst, src, cpy_s);
-        } else {
-            uint8_t not_bnd_rgt = !(bnd_msk & OV_BOUNDARY_RIGHT_RECT);
-            int cpy_s = sizeof(OVSample) * (width + not_bnd_rgt);
-            int stride_rows = fb->saved_rows_stride[comp];
-            const int x = x_l >> (comp != 0);
-            const OVSample *src = fb->saved_rows_sao[comp] + x + 2 * stride_rows;
-            OVSample *dst = dst_0 - stride_filter;
-            memcpy(dst, src, cpy_s);
-        }
-
-        if (bnd_msk & OV_BOUNDARY_BOTTOM_RECT) {
-            int cpy_s = sizeof(OVSample) * (width + 2);
-                  OVSample *dst = dst_0 + height * stride_filter - 1;
-            const OVSample *src = dst - stride_filter;
-            memcpy(dst, src, cpy_s);
-        } else {
-            int cpy_s = sizeof(OVSample) * (width + 2);
-                  OVSample *dst = dst_0 + height * stride_filter - 1;
-            const OVSample *src = frame + height * stride_pic - 1;
-            memcpy(dst, src, cpy_s);
         }
     }
 }
