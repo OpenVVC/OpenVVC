@@ -445,14 +445,14 @@ void vvc_inverse_dst_vii_32_neon(const int16_t *src, int16_t *dst, ptrdiff_t src
                             int num_lines, int line_brk, int shift){
 
   for (int j = 0; j < num_lines; j++) {
-    if(line_brk > 8 ) {
+    /*if(line_brk > 8 ) {
       ov_idct_x_32_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_32);
     }else if(line_brk > 4)  {
       ov_idct_x_32_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_32);
-    }else{
-      ov_idct_x_32_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_32);
+    }else{ */
+    ov_idct_x_32_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DST_VII_32);
 
-    }
+    //}
     src += 1;
     dst += 32;
   }
@@ -465,14 +465,14 @@ void vvc_inverse_dct_viii_32_neon(const int16_t *src, int16_t *dst, ptrdiff_t sr
                              int num_lines, int line_brk, int shift){
 
   for (int j = 0; j < num_lines; j++) {
-    if(line_brk > 8 ) {
+    /*if(line_brk > 8 ) {
       ov_idct_x_32_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_32);
     }else if(line_brk > 4)  {
       ov_idct_x_32_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_32);
-    }else{
-      ov_idct_x_32_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_32);
+    }else{ */
+    ov_idct_x_32_16_neon(src, dst, src_stride<<1, -shift,(1<<shift-1), DCT_VIII_32);
 
-    }
+    //}
     src += 1;
     dst += 32;
   }
@@ -492,18 +492,14 @@ void vvc_inverse_dct_ii_64_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_
     50, -89,  18,  75, // zeroed
     18, -50,  75, -89 //
   };
-  const int16_t DCT_II_16_odd[8*8] = {
+  const int16_t DCT_II_16_odd[8*4] = {
     90,  87,  80,  70,  57,  43,  25,   9,
     87,  57,   9, -43, -80, -90, -70, -25,
     80,   9, -70, -87, -25,  57,  90,  43,
-    70, -43, -87,   9,  90,  25, -80, -57,
-    57, -80, -25,  90,  -9, -87,  43,  70, //zeroed
-    43, -90,  57,  25, -87,  70,   9, -80, //
-    25, -70,  90, -80,  43,   9, -57,  87, //
-    9 , -25,  43, -57,  70, -80,  87, -90  //
+    70, -43, -87,   9,  90,  25, -80, -57
   };
 
-  const int16_t DCT_II_32_odd[16*16] = {
+  const int16_t DCT_II_32_odd[16*8] = {
     90,  90,  88,  85,   82,  78,  73,  67,  61,  54,  46,  38,  31,  22,  13,   4,
     90,  82,  67,  46,   22,  -4, -31, -54, -73, -85, -90, -88, -78, -61, -38, -13,
     88,  67,  31,  -13, -54, -82, -90, -78, -46,  -4,  38,  73,  90,  85,  61,  22,
@@ -511,38 +507,48 @@ void vvc_inverse_dct_ii_64_neon(const int16_t *src, int16_t *dst, ptrdiff_t src_
     82,  22, -54,  -90, -61,  13,  78,  85,  31, -46, -90, -67,   4,  73,  88,  38,
     78,  -4, -82,  -73,  13,  85,  67, -22, -88, -61,  31,  90,  54, -38, -90, -46,
     73, -31, -90,  -22,  78,  67, -38, -90, -13,  82,  61, -46, -88,  -4,  85,  54,
-    67, -54, -78,   38,  85, -22, -90,   4,  90,  13, -88, -31,  82,  46, -73, -61,
-    61, -73, -46,   82,  31, -88, -13,  90,  -4, -90,  22,  85, -38, -78,  54,  67,
-    54, -85,  -4,   88, -46, -61,  82,  13, -90,  38,  67, -78, -22,  90, -31, -73,
-    46, -90,  38,   54, -90,  31,  61, -88,  22,  67, -85,  13,  73, -82,   4,  78,
-    38, -88,  73,   -4, -67,  90, -46, -31,  85, -78,  13,  61, -90,  54,  22, -82,
-    31, -78,  90,  -61,   4,  54, -88,  82, -38, -22,  73, -90,  67, -13, -46,  85,
-    22, -61,  85,  -90,  73, -38,  -4,  46, -78,  90, -82,  54, -13, -31,  67, -88,
-    13, -38,  61,  -78,  88, -90,  85, -73,  54, -31,   4,  22, -46,  67, -82,  90,
-    4,  -13,  22,  -31,  38, -46,  54, -61,  67, -73,  78, -82,  85, -88,  90, -90
+    67, -54, -78,   38,  85, -22, -90,   4,  90,  13, -88, -31,  82,  46, -73, -61
   };
 
+  const int16_t DCT_II_64_OT_t[16 * 32] =  {
+    91, 90, 90, 90, 88, 87, 86, 84, 83, 81, 79, 77, 73, 71, 69, 65, 62, 59, 56, 52, 48, 44, 41, 37, 33, 28, 24, 20, 15, 11, 7, 2,
+    90, 88, 84, 79, 71, 62, 52, 41, 28, 15, 2, -11, -24, -37, -48, -59, -69, -77, -83, -87, -90, -91, -90, -86, -81, -73, -65, -56, -44, -33, -20, -7,
+    90, 84, 73, 59, 41, 20, -2, -24, -44, -62, -77, -86, -90, -90, -83, -71, -56, -37, -15, 7, 28, 48, 65, 79, 87, 91, 88, 81, 69, 52, 33, 11,
+    90, 79, 59, 33, 2, -28, -56, -77, -88, -90, -81, -62, -37, -7, 24, 52, 73, 87, 90, 83, 65, 41, 11, -20, -48, -71, -86, -91, -84, -69, -44, -15,
+    88, 71, 41, 2, -37, -69, -87, -90, -73, -44, -7, 33, 65, 86, 90, 77, 48, 11, -28, -62, -84, -90, -79, -52, -15, 24, 59, 83, 91, 81, 56, 20,
+    87, 62, 20, -28, -69, -90, -84, -56, -11, 37, 73, 90, 81, 48, 2, -44, -79, -91, -77, -41, 7, 52, 83, 90, 71, 33, -15, -59, -86, -88, -65, -24,
+    86, 52, -2, -56, -87, -84, -48, 7, 59, 88, 83, 44, -11, -62, -90, -81, -41, 15, 65, 90, 79, 37, -20, -69, -90, -77, -33, 24, 71, 91, 73, 28,
+    84, 41, -24, -77, -90, -56, 7, 65, 91, 69, 11, -52, -88, -79, -28, 37, 83, 86, 44, -20, -73, -90, -59, 2, 62, 90, 71, 15, -48, -87, -81, -33,
+    83, 28, -44, -88, -73, -11, 59, 91, 62, -7, -71, -90, -48, 24, 81, 84, 33, -41, -87, -77, -15, 56, 90, 65, -2, -69, -90, -52, 20, 79, 86, 37,
+    81, 15, -62, -90, -44, 37, 88, 69, -7, -77, -84, -24, 56, 91, 52, -28, -86, -73, -2, 71, 87, 33, -48, -90, -59, 20, 83, 79, 11, -65, -90, -41,
+    79, 2, -77, -81, -7, 73, 83, 11, -71, -84, -15, 69, 86, 20, -65, -87, -24, 62, 88, 28, -59, -90, -33, 56, 90, 37, -52, -90, -41, 48, 91, 44,
+    77, -11, -86, -62, 33, 90, 44, -52, -90, -24, 69, 83, 2, -81, -71, 20, 88, 56, -41, -91, -37, 59, 87, 15, -73, -79, 7, 84, 65, -28, -90, -48,
+    73, -24, -90, -37, 65, 81, -11, -88, -48, 56, 86, 2, -84, -59, 44, 90, 15, -79, -69, 33, 91, 28, -71, -77, 20, 90, 41, -62, -83, 7, 87, 52,
+    71, -37, -90, -7, 86, 48, -62, -79, 24, 91, 20, -81, -59, 52, 84, -11, -90, -33, 73, 69, -41, -88, -2, 87, 44, -65, -77, 28, 90, 15, -83, -56,
+    69, -48, -83, 24, 90, 2, -90, -28, 81, 52, -65, -71, 44, 84, -20, -90, -7, 88, 33, -79, -56, 62, 73, -41, -86, 15, 91, 11, -87, -37, 77, 59,
+    65, -59, -71, 52, 77, -44, -81, 37, 84, -28, -87, 20, 90, -11, -90, 2, 91, 7, -90, -15, 88, 24, -86, -33, 83, 41, -79, -48, 73, 56, -69, -62
+  };
 
   if(num_lines > 3){
 
     for (int j = 0; j < num_lines ; j++) {
 
       if (line_brk > 16)
-        ov_idct_ii_64_32_neon(src, dst, src_stride<<1, shift, DCT_II_8_eo, DCT_II_16_odd, DCT_II_32_odd, DCT_II_64_OT);
+        ov_idct_ii_64_32_neon(src, dst, src_stride<<1, shift, DCT_II_8_eo, DCT_II_16_odd, DCT_II_32_odd, DCT_II_64_OT_t);
       else if (line_brk > 8)
-        ov_idct_ii_64_32_neon(src, dst, src_stride<<1, shift, DCT_II_8_eo, DCT_II_16_odd, DCT_II_32_odd, DCT_II_64_OT);
+        ov_idct_ii_64_16_neon(src, dst, src_stride<<1, shift, DCT_II_8_eo, DCT_II_16_odd, DCT_II_32_odd, DCT_II_64_OT_t);
       else if (line_brk > 4)
-        ov_idct_ii_64_32_neon(src, dst, src_stride<<1, shift, DCT_II_8_eo, DCT_II_16_odd, DCT_II_32_odd, DCT_II_64_OT);
+        ov_idct_ii_64_8_neon(src, dst, src_stride<<1, shift, DCT_II_8_eo, DCT_II_16_odd, DCT_II_32_odd, DCT_II_64_OT_t);
       else
-        ov_idct_ii_64_32_neon(src, dst, src_stride<<1, shift, DCT_II_8_eo, DCT_II_16_odd, DCT_II_32_odd, DCT_II_64_OT);
+        ov_idct_ii_64_4_neon(src, dst, src_stride<<1, shift, DCT_II_8_eo, DCT_II_16_odd, DCT_II_32_odd, DCT_II_64_OT_t);
 
       src += 1;
-      dst += 32;
+      dst += 64;
     }
   }
 
-  if (!(num_lines & 0x3)) return;
-  vvc_inverse_dct_ii_64(src, dst, src_stride, num_lines & 0x3, line_brk, shift);
+  if (num_lines & 0x3)
+    vvc_inverse_dct_ii_64(src, dst, src_stride, num_lines & 0x3, line_brk, shift);
 
 }
 
@@ -606,7 +612,7 @@ void rcn_init_tr_functions_neon(struct RCNFunctions *const rcn_funcs){
   rcn_funcs->tr.func[DCT_II][3] = &vvc_inverse_dct_ii_8_neon;
   rcn_funcs->tr.func[DCT_II][4] = &vvc_inverse_dct_ii_16_neon;
   rcn_funcs->tr.func[DCT_II][5] = &vvc_inverse_dct_ii_32_neon;
-  //rcn_funcs->tr.func[DCT_II][6] = &vvc_inverse_dct_ii_64_neon;
+  rcn_funcs->tr.func[DCT_II][6] = &vvc_inverse_dct_ii_64_neon;
 
   rcn_funcs->tr.dc = &vvc_inverse_dct_ii_dc_neon;
 }

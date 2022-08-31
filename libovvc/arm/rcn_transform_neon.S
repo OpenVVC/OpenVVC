@@ -1435,6 +1435,487 @@
     endfunc
 .endm
 
+.macro idct_ii_64, w
+    function idct_ii_64_\w\()_neon, export=1
+        ld1 {v0.8h}, [x0], x2
+        ld1 {v1.8h}, [x0], x2
+        ld1 {v2.8h}, [x0], x2
+        ld1 {v3.8h}, [x0], x2
+        .if \w == 8 || \w == 16 || \w == 32
+            ld1 {v4.8h}, [x0], x2
+            ld1 {v5.8h}, [x0], x2
+            ld1 {v6.8h}, [x0], x2
+            ld1 {v7.8h}, [x0], x2
+        .endif
+        .if \w == 16 || \w == 32
+            ld1 {v8.8h}, [x0], x2
+            ld1 {v9.8h}, [x0], x2
+            ld1 {v10.8h}, [x0], x2
+            ld1 {v11.8h}, [x0], x2
+            ld1 {v12.8h}, [x0], x2
+            ld1 {v13.8h}, [x0], x2
+            ld1 {v14.8h}, [x0], x2
+            ld1 {v15.8h}, [x0], x2
+        .endif
+        .if \w == 32
+            ld1 {v16.8h}, [x0], x2
+            ld1 {v17.8h}, [x0], x2
+            ld1 {v18.8h}, [x0], x2
+            ld1 {v19.8h}, [x0], x2
+            ld1 {v20.8h}, [x0], x2
+            ld1 {v21.8h}, [x0], x2
+            ld1 {v22.8h}, [x0], x2
+            ld1 {v23.8h}, [x0], x2
+            ld1 {v24.8h}, [x0], x2
+            ld1 {v25.8h}, [x0], x2
+            ld1 {v26.8h}, [x0], x2
+            ld1 {v27.8h}, [x0], x2
+            ld1 {v28.8h}, [x0], x2
+            ld1 {v29.8h}, [x0], x2
+            ld1 {v30.8h}, [x0], x2
+            ld1 {v31.8h}, [x0]
+        .endif
+
+        mov v0.H[1], v1.H[0]
+        mov v0.H[2], v2.H[0]
+        mov v0.H[3], v3.H[0]
+        .if \w == 8 || \w == 16 || \w == 32
+            mov v0.H[4], v4.H[0]
+            mov v0.H[5], v5.H[0]
+            mov v0.H[6], v6.H[0]
+            mov v0.H[7], v7.H[0]
+        .endif
+        .if \w == 16 || \w == 32
+            mov v1.H[0], v8.H[0]
+            mov v1.H[1], v9.H[0]
+            mov v1.H[2], v10.H[0]
+            mov v1.H[3], v11.H[0]
+            mov v1.H[4], v12.H[0]
+            mov v1.H[5], v13.H[0]
+            mov v1.H[6], v14.H[0]
+            mov v1.H[7], v15.H[0]
+        .endif 
+        .if \w == 32
+            mov v2.H[0], v16.H[0]
+            mov v2.H[1], v17.H[0]
+            mov v2.H[2], v18.H[0]
+            mov v2.H[3], v19.H[0]
+            mov v2.H[4], v20.H[0]
+            mov v2.H[5], v21.H[0]
+            mov v2.H[6], v22.H[0]
+            mov v2.H[7], v23.H[0]
+            //
+            mov v3.H[0], v24.H[0]
+            mov v3.H[1], v25.H[0]
+            mov v3.H[2], v26.H[0]
+            mov v3.H[3], v27.H[0]
+            mov v3.H[4], v28.H[0]
+            mov v3.H[5], v29.H[0]
+            mov v3.H[6], v30.H[0]
+            mov v3.H[7], v31.H[0]
+        .endif
+
+        sub  w10, wzr , w3 // -shift
+        sub  w11, w3  , #1 // shift - 1 
+        mov  w9, #1
+        lsl  w9, w9 , w11   // 1<< (shift-1)
+        
+        
+        ld1 {v20.8h-v23.8h}, [x4]
+        // even 8x8  
+        SMULL  V16.4S, v20.4h, v0.H[0]
+        .if \w == 32
+            SMLAL2 V16.4S, v20.8h, v2.H[0] 
+        .endif
+        // zeoring for remaining even
+        // odd 8x8
+        .if \w == 4 || \w == 8 
+            dup v17.4S, wzr
+        .endif
+        .if \w == 16 || \w == 32
+            SMULL  V17.4S, v22.4h, v1.H[0]
+        .endif
+        .if \w == 32
+            SMLAL2 V17.4S, v22.8h, v3.H[0]
+        .endif
+        
+        // first out butterfly (add sub)
+        ADD v5.4s, v16.4s, v17.4s // top section of the first even vector
+        SUB v6.4s, v16.4s, v17.4s // bottom section of the first even vector
+
+        inverse_neon v6
+
+        ld1 {v20.8h-v23.8h}, [x5], #64
+        // O16
+        // top and bottom section of the ODD vector
+        .if \w == 4
+            dup V16.4S, wzr
+            dup V17.4S, wzr
+        .endif
+        .if \w == 8 || \w == 16 || \w == 32
+            SMULL  V16.4S, v20.4h, v0.H[4]
+            SMULL2 V17.4S, v20.8h, v0.H[4]
+        .endif
+        .if \w == 16 || \w == 32
+            SMLAL  V16.4S, v21.4h, V1.H[4]
+            SMLAL2 V17.4S, v21.8h, v1.H[4]
+        .endif
+        .if \w == 32
+            SMLAL  V16.4S, v22.4h, V2.H[4]
+            SMLAL  V16.4S, v23.4h, V3.H[4]
+            SMLAL2 V17.4S, v22.8h, v2.H[4]
+            SMLAL2 V17.4S, v23.8h, v3.H[4]
+        .endif
+
+        // second out butterfly (add sub): first vector
+        ADD v7.4s , v5.4s, v16.4s
+        ADD v8.4s , v6.4s, v17.4s
+        SUB v9.4s , v5.4s, v16.4s
+        SUB v10.4s, v6.4s, v17.4s
+        
+        inverse_neon v9 
+        inverse_neon v10 
+
+        // odd 32 (16x16 matrix)
+        ld1 {v20.8h-v23.8h}, [x6], #64
+
+        SMULL  V11.4S, v20.4h, v0.H[2]
+        SMULL2 V12.4S, v20.8h, v0.H[2]
+        SMULL  V13.4S, v21.4h, v0.H[2]
+        SMULL2 V14.4S, v21.8h, v0.H[2]
+        .if \w == 8 || \w == 16 || \w == 32
+            SMLAL  V11.4S, v22.4h, V0.H[6]
+            SMLAL2 V12.4S, v22.8h, V0.H[6]
+            SMLAL  V13.4S, v23.4h, V0.H[6]
+            SMLAL2 V14.4S, v23.8h, V0.H[6]
+        .endif
+        .if \w == 16 || \w == 32   
+            ld1 {v20.8h-v23.8h}, [x6], #64
+            
+            SMLAL  V11.4S, v20.4h, V1.H[2]
+            SMLAL2 V12.4S, v20.8h, V1.H[2]
+            SMLAL  V13.4S, v21.4h, V1.H[2]
+            SMLAL2 V14.4S, v21.8h, V1.H[2]
+
+            SMLAL  V11.4S, v22.4h, V1.H[6]
+            SMLAL2 V12.4S, v22.8h, V1.H[6]
+            SMLAL  V13.4S, v23.4h, V1.H[6]
+            SMLAL2 V14.4S, v23.8h, V1.H[6]
+        .endif
+        .if \w == 32
+            ld1 {v20.8h-v23.8h}, [x6], #64 
+
+            SMLAL  V11.4S, v20.4h, V2.H[2]
+            SMLAL2 V12.4S, v20.8h, V2.H[2]
+            SMLAL  V13.4S, v21.4h, V2.H[2]
+            SMLAL2 V14.4S, v21.8h, V2.H[2]
+
+            SMLAL  V11.4S, v22.4h, V2.H[6]
+            SMLAL2 V12.4S, v22.8h, V2.H[6]
+            SMLAL  V13.4S, v23.4h, V2.H[6]
+            SMLAL2 V14.4S, v23.8h, V2.H[6]
+
+            ld1 {v20.8h-v23.8h}, [x6], #64
+            
+            SMLAL  V11.4S, v20.4h, V3.H[2]
+            SMLAL2 V12.4S, v20.8h, V3.H[2]
+            SMLAL  V13.4S, v21.4h, V3.H[2]
+            SMLAL2 V14.4S, v21.8h, V3.H[2]
+
+            SMLAL  V11.4S, v22.4h, V3.H[6]
+            SMLAL2 V12.4S, v22.8h, V3.H[6]
+            SMLAL  V13.4S, v23.4h, V3.H[6]
+            SMLAL2 V14.4S, v23.8h, V3.H[6]
+        .endif
+        // third butterfly (add sub)
+        ADD v28.4s , v7.4s , v11.4s
+        ADD v29.4s , v8.4s , v12.4s
+        ADD v30.4s , v10.4s, v13.4s
+        ADD v31.4s , v9.4s , v14.4s
+
+        SUB v27.4s , v7.4s , v11.4s
+        SUB v26.4s , v8.4s , v12.4s
+        SUB v25.4s , v10.4s, v13.4s
+        SUB v24.4s , v9.4s , v14.4s
+
+        mov v7.s[0], v31.s[0]
+        mov v7.s[1], v31.s[1]
+        mov v7.s[2], v31.s[2]
+        mov v7.s[3], v31.s[3]
+
+        inverse_neon v27 
+        inverse_neon v26 
+        inverse_neon v25 
+        inverse_neon v24 
+        
+        mov v31.s[0], v7.s[0]
+        mov v31.s[1], v7.s[1]
+        mov v31.s[2], v7.s[2]
+        mov v31.s[3], v7.s[3]
+        
+        // odd 64 (32x16 matrix)
+        // first point 
+        ld1 {v20.8h-v23.8h}, [x7], #64
+
+        SMULL  V11.4S, v20.4h, v0.H[1]
+        SMULL2 V12.4S, v20.8h, v0.H[1]
+        SMULL  V13.4S, v21.4h, v0.H[1]
+        SMULL2 V14.4S, v21.8h, v0.H[1]
+        SMULL  V15.4S, v22.4h, v0.H[1]
+        SMULL2 V16.4S, v22.8h, v0.H[1]
+        SMULL  V17.4S, v23.4h, v0.H[1]
+        SMULL2 V18.4S, v23.8h, v0.H[1]
+        
+        ld1 {v20.8h-v23.8h}, [x7], #64
+
+        SMLAL  V11.4S, v20.4h, v0.H[3]
+        SMLAL2 V12.4S, v20.8h, v0.H[3]
+        SMLAL  V13.4S, v21.4h, v0.H[3]
+        SMLAL2 V14.4S, v21.8h, v0.H[3]
+        SMLAL  V15.4S, v22.4h, v0.H[3]
+        SMLAL2 V16.4S, v22.8h, v0.H[3]
+        SMLAL  V17.4S, v23.4h, v0.H[3]
+        SMLAL2 V18.4S, v23.8h, v0.H[3]
+        .if \w == 8 || \w == 16 || \w == 32
+            ld1 {v20.8h-v23.8h}, [x7], #64
+
+            SMLAL  V11.4S, v20.4h, v0.H[5]
+            SMLAL2 V12.4S, v20.8h, v0.H[5]
+            SMLAL  V13.4S, v21.4h, v0.H[5]
+            SMLAL2 V14.4S, v21.8h, v0.H[5]
+            SMLAL  V15.4S, v22.4h, v0.H[5]
+            SMLAL2 V16.4S, v22.8h, v0.H[5]
+            SMLAL  V17.4S, v23.4h, v0.H[5]
+            SMLAL2 V18.4S, v23.8h, v0.H[5]
+
+            ld1 {v20.8h-v23.8h}, [x7], #64
+
+            SMLAL  V11.4S, v20.4h, v0.H[7]
+            SMLAL2 V12.4S, v20.8h, v0.H[7]
+            SMLAL  V13.4S, v21.4h, v0.H[7]
+            SMLAL2 V14.4S, v21.8h, v0.H[7]
+            SMLAL  V15.4S, v22.4h, v0.H[7]
+            SMLAL2 V16.4S, v22.8h, v0.H[7]
+            SMLAL  V17.4S, v23.4h, v0.H[7]
+            SMLAL2 V18.4S, v23.8h, v0.H[7]
+        .endif
+        .if \w == 16 || \w == 32
+            // second point
+            ld1 {v20.8h-v23.8h}, [x7], #64
+
+            SMLAL  V11.4S, v20.4h, v1.H[1]
+            SMLAL2 V12.4S, v20.8h, v1.H[1]
+            SMLAL  V13.4S, v21.4h, v1.H[1]
+            SMLAL2 V14.4S, v21.8h, v1.H[1]
+            SMLAL  V15.4S, v22.4h, v1.H[1]
+            SMLAL2 V16.4S, v22.8h, v1.H[1]
+            SMLAL  V17.4S, v23.4h, v1.H[1]
+            SMLAL2 V18.4S, v23.8h, v1.H[1]
+
+            ld1 {v20.8h-v23.8h}, [x7], #64
+
+            SMLAL  V11.4S, v20.4h, v1.H[3]
+            SMLAL2 V12.4S, v20.8h, v1.H[3]
+            SMLAL  V13.4S, v21.4h, v1.H[3]
+            SMLAL2 V14.4S, v21.8h, v1.H[3]
+            SMLAL  V15.4S, v22.4h, v1.H[3]
+            SMLAL2 V16.4S, v22.8h, v1.H[3]
+            SMLAL  V17.4S, v23.4h, v1.H[3]
+            SMLAL2 V18.4S, v23.8h, v1.H[3]
+
+            ld1 {v20.8h-v23.8h}, [x7], #64
+
+            SMLAL  V11.4S, v20.4h, v1.H[5]
+            SMLAL2 V12.4S, v20.8h, v1.H[5]
+            SMLAL  V13.4S, v21.4h, v1.H[5]
+            SMLAL2 V14.4S, v21.8h, v1.H[5]
+            SMLAL  V15.4S, v22.4h, v1.H[5]
+            SMLAL2 V16.4S, v22.8h, v1.H[5]
+            SMLAL  V17.4S, v23.4h, v1.H[5]
+            SMLAL2 V18.4S, v23.8h, v1.H[5]
+
+            ld1 {v20.8h-v23.8h}, [x7], #64
+
+            SMLAL  V11.4S, v20.4h, v1.H[7]
+            SMLAL2 V12.4S, v20.8h, v1.H[7]
+            SMLAL  V13.4S, v21.4h, v1.H[7]
+            SMLAL2 V14.4S, v21.8h, v1.H[7]
+            SMLAL  V15.4S, v22.4h, v1.H[7]
+            SMLAL2 V16.4S, v22.8h, v1.H[7]
+            SMLAL  V17.4S, v23.4h, v1.H[7]
+            SMLAL2 V18.4S, v23.8h, v1.H[7]
+        .endif
+        .if \w == 32
+            // third point
+            ld1 {v20.8h-v23.8h}, [x7], #64
+
+            SMLAL  V11.4S, v20.4h, v2.H[1]
+            SMLAL2 V12.4S, v20.8h, v2.H[1]
+            SMLAL  V13.4S, v21.4h, v2.H[1]
+            SMLAL2 V14.4S, v21.8h, v2.H[1]
+            SMLAL  V15.4S, v22.4h, v2.H[1]
+            SMLAL2 V16.4S, v22.8h, v2.H[1]
+            SMLAL  V17.4S, v23.4h, v2.H[1]
+            SMLAL2 V18.4S, v23.8h, v2.H[1]
+
+            ld1 {v20.8h-v23.8h}, [x7], #64
+
+            SMLAL  V11.4S, v20.4h, v2.H[3]
+            SMLAL2 V12.4S, v20.8h, v2.H[3]
+            SMLAL  V13.4S, v21.4h, v2.H[3]
+            SMLAL2 V14.4S, v21.8h, v2.H[3]
+            SMLAL  V15.4S, v22.4h, v2.H[3]
+            SMLAL2 V16.4S, v22.8h, v2.H[3]
+            SMLAL  V17.4S, v23.4h, v2.H[3]
+            SMLAL2 V18.4S, v23.8h, v2.H[3]
+
+            ld1 {v20.8h-v23.8h}, [x7], #64
+
+            SMLAL  V11.4S, v20.4h, v2.H[5]
+            SMLAL2 V12.4S, v20.8h, v2.H[5]
+            SMLAL  V13.4S, v21.4h, v2.H[5]
+            SMLAL2 V14.4S, v21.8h, v2.H[5]
+            SMLAL  V15.4S, v22.4h, v2.H[5]
+            SMLAL2 V16.4S, v22.8h, v2.H[5]
+            SMLAL  V17.4S, v23.4h, v2.H[5]
+            SMLAL2 V18.4S, v23.8h, v2.H[5]
+
+            ld1 {v20.8h-v23.8h}, [x7], #64
+
+            SMLAL  V11.4S, v20.4h, v2.H[7]
+            SMLAL2 V12.4S, v20.8h, v2.H[7]
+            SMLAL  V13.4S, v21.4h, v2.H[7]
+            SMLAL2 V14.4S, v21.8h, v2.H[7]
+            SMLAL  V15.4S, v22.4h, v2.H[7]
+            SMLAL2 V16.4S, v22.8h, v2.H[7]
+            SMLAL  V17.4S, v23.4h, v2.H[7]
+            SMLAL2 V18.4S, v23.8h, v2.H[7]
+            // fourth point 
+            ld1 {v20.8h-v23.8h}, [x7], #64
+
+            SMLAL  V11.4S, v20.4h, v3.H[1]
+            SMLAL2 V12.4S, v20.8h, v3.H[1]
+            SMLAL  V13.4S, v21.4h, v3.H[1]
+            SMLAL2 V14.4S, v21.8h, v3.H[1]
+            SMLAL  V15.4S, v22.4h, v3.H[1]
+            SMLAL2 V16.4S, v22.8h, v3.H[1]
+            SMLAL  V17.4S, v23.4h, v3.H[1]
+            SMLAL2 V18.4S, v23.8h, v3.H[1]
+
+            ld1 {v20.8h-v23.8h}, [x7], #64
+
+            SMLAL  V11.4S, v20.4h, v3.H[3]
+            SMLAL2 V12.4S, v20.8h, v3.H[3]
+            SMLAL  V13.4S, v21.4h, v3.H[3]
+            SMLAL2 V14.4S, v21.8h, v3.H[3]
+            SMLAL  V15.4S, v22.4h, v3.H[3]
+            SMLAL2 V16.4S, v22.8h, v3.H[3]
+            SMLAL  V17.4S, v23.4h, v3.H[3]
+            SMLAL2 V18.4S, v23.8h, v3.H[3]
+
+            ld1 {v20.8h-v23.8h}, [x7], #64
+
+            SMLAL  V11.4S, v20.4h, v3.H[5]
+            SMLAL2 V12.4S, v20.8h, v3.H[5]
+            SMLAL  V13.4S, v21.4h, v3.H[5]
+            SMLAL2 V14.4S, v21.8h, v3.H[5]
+            SMLAL  V15.4S, v22.4h, v3.H[5]
+            SMLAL2 V16.4S, v22.8h, v3.H[5]
+            SMLAL  V17.4S, v23.4h, v3.H[5]
+            SMLAL2 V18.4S, v23.8h, v3.H[5]
+
+            ld1 {v20.8h-v23.8h}, [x7], #64
+
+            SMLAL  V11.4S, v20.4h, v3.H[7]
+            SMLAL2 V12.4S, v20.8h, v3.H[7]
+            SMLAL  V13.4S, v21.4h, v3.H[7]
+            SMLAL2 V14.4S, v21.8h, v3.H[7]
+            SMLAL  V15.4S, v22.4h, v3.H[7]
+            SMLAL2 V16.4S, v22.8h, v3.H[7]
+            SMLAL  V17.4S, v23.4h, v3.H[7]
+            SMLAL2 V18.4S, v23.8h, v3.H[7]
+        .endif
+        // final buuterfly stage
+        ADD v0.4s , v11.4s , v28.4s
+        ADD v1.4s , v12.4s , v29.4s
+        ADD v2.4s , v13.4s , v30.4s
+        ADD v3.4s , v14.4s , v31.4s
+        ADD v4.4s , v15.4s , v24.4s
+        ADD v5.4s , v16.4s , v25.4s
+        ADD v6.4s , v17.4s , v26.4s
+        ADD v7.4s , v18.4s , v27.4s
+
+        SUB v8.4s  , v28.4s , v11.4s 
+        SUB v9.4s  , v29.4s , v12.4s  
+        SUB v10.4s , v30.4s , v13.4s 
+        SUB v11.4s , v31.4s , v14.4s 
+        SUB v12.4s , v24.4s , v15.4s 
+        SUB v13.4s , v25.4s , v16.4s 
+        SUB v14.4s , v26.4s , v17.4s 
+        SUB v15.4s , v27.4s , v18.4s  
+
+        // shift and round 
+        dup v28.4s, w10
+        dup v29.4s, w9
+
+        ADD   V0.4S  , v0.4S , V29.4S
+        ADD   V1.4S  , V1.4S , V29.4S
+        ADD   V2.4S  , V2.4S , V29.4S
+        ADD   V3.4S  , V3.4S , V29.4S
+        ADD   V4.4S  , v4.4S , V29.4S
+        ADD   V5.4S  , V5.4S , V29.4S
+        ADD   V6.4S  , V6.4S , V29.4S
+        ADD   V7.4S  , V7.4S , V29.4S
+        ADD   V8.4S  , v8.4S , V29.4S
+        ADD   V9.4S  , V9.4S , V29.4S
+        ADD   V10.4S , V10.4S , V29.4S
+        ADD   V11.4S , V11.4S , V29.4S
+        ADD   V12.4S , V12.4S , V29.4S
+        ADD   V13.4S , V13.4S , V29.4S
+        ADD   V14.4S , V14.4S , V29.4S
+        ADD   V15.4S , V15.4S , V29.4S
+
+        SSHL   V0.4S  , v0.4S , V28.4S
+        SSHL   V1.4S  , V1.4S , V28.4S
+        SSHL   V2.4S  , V2.4S , V28.4S
+        SSHL   V3.4S  , V3.4S , V28.4S
+        SSHL   V4.4S  , v4.4S , V28.4S
+        SSHL   V5.4S  , V5.4S , V28.4S
+        SSHL   V6.4S  , V6.4S , V28.4S
+        SSHL   V7.4S  , V7.4S , V28.4S
+        SSHL   V8.4S  , v8.4S , V28.4S
+        SSHL   V9.4S  , V9.4S , V28.4S
+        SSHL   V10.4S , V10.4S , V28.4S
+        SSHL   V11.4S , V11.4S , V28.4S
+        SSHL   V12.4S , V12.4S , V28.4S
+        SSHL   V13.4S , V13.4S , V28.4S
+        SSHL   V14.4S , V14.4S , V28.4S
+        SSHL   V15.4S , V15.4S , V28.4S
+        
+        inverse_neon V8
+        inverse_neon V9
+        inverse_neon V10
+        inverse_neon V11
+        inverse_neon V12
+        inverse_neon V13
+        inverse_neon V14
+        inverse_neon V15
+
+        UZP1  v20.8h, V0.8H , V1.8H
+        UZP1  v21.8h, V2.8H , V3.8H
+        UZP1  v22.8h, V4.8H , V5.8H
+        UZP1  v23.8h, V6.8H , V7.8H
+        UZP1  v24.8h, V15.8H, V14.8H
+        UZP1  v25.8h, V13.8H, V12.8H
+        UZP1  v26.8h, V11.8H, V10.8H
+        UZP1  v27.8h, V9.8H , V8.8H
+
+        st1 {v20.8h-v23.8h}, [x1], #64
+        st1 {v24.8h-v27.8h}, [x1]
+
+        ret lr
+    endfunc
+.endm
 // store data for DC
 store_fun 8
 store_fun 16 
@@ -1476,446 +1957,13 @@ idct_ii_32 16
 idct_ii_32 32
 
 // 32-pt dxt 7/8 
-idct_x_32 4
+idct_x_32 4 
 idct_x_32 8 
 idct_x_32 16
 
-function idct_ii_64_32_neon, export=1
+// 64-pt dct-ii
+idct_ii_64 4
+idct_ii_64 8
+idct_ii_64 16
+idct_ii_64 32
 
-    ld1 {v0.8h}, [x0], x2
-    ld1 {v1.8h}, [x0], x2
-    ld1 {v2.8h}, [x0], x2
-    ld1 {v3.8h}, [x0], x2
-
-    ld1 {v4.8h}, [x0], x2
-    ld1 {v5.8h}, [x0], x2
-    ld1 {v6.8h}, [x0], x2
-    ld1 {v7.8h}, [x0], x2
-
-    ld1 {v8.8h}, [x0], x2
-    ld1 {v9.8h}, [x0], x2
-    ld1 {v10.8h}, [x0], x2
-    ld1 {v11.8h}, [x0], x2
-    ld1 {v12.8h}, [x0], x2
-    ld1 {v13.8h}, [x0], x2
-    ld1 {v14.8h}, [x0], x2
-    ld1 {v15.8h}, [x0], x2
-
-    ld1 {v16.8h}, [x0], x2
-    ld1 {v17.8h}, [x0], x2
-    ld1 {v18.8h}, [x0], x2
-    ld1 {v19.8h}, [x0], x2
-    ld1 {v20.8h}, [x0], x2
-    ld1 {v21.8h}, [x0], x2
-    ld1 {v22.8h}, [x0], x2
-    ld1 {v23.8h}, [x0], x2
-    ld1 {v24.8h}, [x0], x2
-    ld1 {v25.8h}, [x0], x2
-    ld1 {v26.8h}, [x0], x2
-    ld1 {v27.8h}, [x0], x2
-    ld1 {v28.8h}, [x0], x2
-    ld1 {v29.8h}, [x0], x2
-    ld1 {v30.8h}, [x0], x2
-    ld1 {v31.8h}, [x0]
-
-    mov v0.H[1], v1.H[0]
-    mov v0.H[2], v2.H[0]
-    mov v0.H[3], v3.H[0]
-
-    mov v0.H[4], v4.H[0]
-    mov v0.H[5], v5.H[0]
-    mov v0.H[6], v6.H[0]
-    mov v0.H[7], v7.H[0]
-
-    mov v1.H[0], v8.H[0]
-    mov v1.H[1], v9.H[0]
-    mov v1.H[2], v10.H[0]
-    mov v1.H[3], v11.H[0]
-    mov v1.H[4], v12.H[0]
-    mov v1.H[5], v13.H[0]
-    mov v1.H[6], v14.H[0]
-    mov v1.H[7], v15.H[0]
-
-    mov v2.H[0], v16.H[0]
-    mov v2.H[1], v17.H[0]
-    mov v2.H[2], v18.H[0]
-    mov v2.H[3], v19.H[0]
-    mov v2.H[4], v20.H[0]
-    mov v2.H[5], v21.H[0]
-    mov v2.H[6], v22.H[0]
-    mov v2.H[7], v23.H[0]
-    //
-    mov v3.H[0], v24.H[0]
-    mov v3.H[1], v25.H[0]
-    mov v3.H[2], v26.H[0]
-    mov v3.H[3], v27.H[0]
-    mov v3.H[4], v28.H[0]
-    mov v3.H[5], v29.H[0]
-    mov v3.H[6], v30.H[0]
-    mov v3.H[7], v31.H[0]
-
-    sub  w10, wzr , w3 // -shift
-    sub  w11, w3  , #1 // shift - 1 
-    mov  w9, #1
-    lsl  w9, w9 , w11   // 1<< (shift-1)
-    dup v28.4s, w10
-    dup v29.4s, w9
-    
-    ld1 {v20.8h-v23.8h}, [x4]
-    // even 8x8  
-    SMULL  V16.4S, v20.4h, v0.H[0]
-    SMLAL2 V16.4S, v20.8h, v2.H[0] 
-    // zeoring for remaining even
-    // odd 8x8
-    SMULL  V17.4S, v22.4h, v1.H[0]
-    SMLAL2 V17.4S, v22.8h, v3.H[0]
-    
-    // first out butterfly (add sub)
-    ADD v5.4s, v16.4s, v17.4s // top section of the first even vector
-    sub v6.4s, v16.4s, v17.4s // bottom section of the first even vector
-
-    inverse_neon v6
-
-    ld1 {v20.8h-v23.8h}, [x5], #64
-    
-    // top section of the ODD vector
-    SMULL V16.4S, v20.4h, v0.H[4]
-    SMLAL V16.4S, v21.4h, V1.H[4]
-    SMLAL V16.4S, v22.4h, V2.H[4]
-    SMLAL V16.4S, v23.4h, V3.H[4]
-
-    // bootom section of the ODD vector
-    SMULL2 V17.4S, v20.8h, v0.H[4]
-    SMLAL2 V17.4S, v21.8h, v1.H[4]
-    SMLAL2 V17.4S, v22.8h, v2.H[4]
-    SMLAL2 V17.4S, v23.8h, v3.H[4]
-  
-    // second out butterfly (add sub): first vector
-    ADD v7.4s , v5.4s, v16.4s
-    ADD v8.4s , v6.4s, v17.4s
-    SUB v9.4s , v5.4s, v16.4s
-    SUB v10.4s, v6.4s, v17.4s
-    
-    inverse_neon v9 
-    inverse_neon v10 
-
-    // odd 32 (16x16 matrix)
-    ld1 {v20.8h-v23.8h}, [x6], #64
-
-    SMULL  V11.4S, v20.4h, v0.H[2]
-    SMULL2 V12.4S, v20.8h, v0.H[2]
-    SMULL  V13.4S, v21.4h, v0.H[2]
-    SMULL2 V14.4S, v21.8h, v0.H[2]
-    
-    SMLAL  V11.4S, v22.4h, V0.H[6]
-    SMLAL2 V12.4S, v22.8h, V0.H[6]
-    SMLAL  V13.4S, v23.4h, V0.H[6]
-    SMLAL2 V14.4S, v23.8h, V0.H[6]
-        
-    ld1 {v20.8h-v23.8h}, [x6], #64
-    
-    SMLAL  V11.4S, v20.4h, V1.H[2]
-    SMLAL2 V12.4S, v20.8h, V1.H[2]
-    SMLAL  V13.4S, v21.4h, V1.H[2]
-    SMLAL2 V14.4S, v21.8h, V1.H[2]
-
-    SMLAL  V11.4S, v22.4h, V1.H[6]
-    SMLAL2 V12.4S, v22.8h, V1.H[6]
-    SMLAL  V13.4S, v23.4h, V1.H[6]
-    SMLAL2 V14.4S, v23.8h, V1.H[6]
-
-    ld1 {v20.8h-v23.8h}, [x6], #64 
-
-    SMLAL  V11.4S, v20.4h, V2.H[2]
-    SMLAL2 V12.4S, v20.8h, V2.H[2]
-    SMLAL  V13.4S, v21.4h, V2.H[2]
-    SMLAL2 V14.4S, v21.8h, V2.H[2]
-
-    SMLAL  V11.4S, v22.4h, V2.H[6]
-    SMLAL2 V12.4S, v22.8h, V2.H[6]
-    SMLAL  V13.4S, v23.4h, V2.H[6]
-    SMLAL2 V14.4S, v23.8h, V2.H[6]
-
-    ld1 {v20.8h-v23.8h}, [x6], #64
-    
-    SMLAL  V11.4S, v20.4h, V3.H[2]
-    SMLAL2 V12.4S, v20.8h, V3.H[2]
-    SMLAL  V13.4S, v21.4h, V3.H[2]
-    SMLAL2 V14.4S, v21.8h, V3.H[2]
-
-    SMLAL  V11.4S, v22.4h, V3.H[6]
-    SMLAL2 V12.4S, v22.8h, V3.H[6]
-    SMLAL  V13.4S, v23.4h, V3.H[6]
-    SMLAL2 V14.4S, v23.8h, V3.H[6]
-
-    // third butterfly (add sub)
-    ADD v20.4s , v7.4s , v11.4s
-    ADD v21.4s , v8.4s , v12.4s
-    ADD v22.4s , v10.4s, v13.4s
-    ADD v23.4s , v9.4s , v14.4s
-
-    SUB v27.4s , v7.4s , v11.4s
-    SUB v26.4s , v8.4s , v12.4s
-    SUB v25.4s , v10.4s, v13.4s
-    SUB v24.4s , v9.4s , v14.4s
-
-    inverse_neon v27 
-    inverse_neon v26 
-    inverse_neon v25 
-    inverse_neon v24 
-    
-    // odd 64 (32x16 matrix)
-    // first point 
-    ld1 {v20.8h-v23.8h}, [x7], #64
-
-    SMULL  V11.4S, v20.4h, v0.H[1]
-    SMULL2 V12.4S, v20.8h, v0.H[1]
-    SMULL  V13.4S, v21.4h, v0.H[1]
-    SMULL2 V14.4S, v21.8h, v0.H[1]
-    SMULL  V15.4S, v22.4h, v0.H[1]
-    SMULL2 V16.4S, v22.8h, v0.H[1]
-    SMULL  V17.4S, v23.4h, v0.H[1]
-    SMULL2 V18.4S, v23.8h, v0.H[1]
-    
-    ld1 {v20.8h-v23.8h}, [x7], #64
-
-    SMLAL  V11.4S, v20.4h, v0.H[3]
-    SMLAL2 V12.4S, v20.8h, v0.H[3]
-    SMLAL  V13.4S, v21.4h, v0.H[3]
-    SMLAL2 V14.4S, v21.8h, v0.H[3]
-    SMLAL  V15.4S, v22.4h, v0.H[3]
-    SMLAL2 V16.4S, v22.8h, v0.H[3]
-    SMLAL  V17.4S, v23.4h, v0.H[3]
-    SMLAL2 V18.4S, v23.8h, v0.H[3]
-
-    ld1 {v20.8h-v23.8h}, [x7], #64
-
-    SMLAL  V11.4S, v20.4h, v0.H[5]
-    SMLAL2 V12.4S, v20.8h, v0.H[5]
-    SMLAL  V13.4S, v21.4h, v0.H[5]
-    SMLAL2 V14.4S, v21.8h, v0.H[5]
-    SMLAL  V15.4S, v22.4h, v0.H[5]
-    SMLAL2 V16.4S, v22.8h, v0.H[5]
-    SMLAL  V17.4S, v23.4h, v0.H[5]
-    SMLAL2 V18.4S, v23.8h, v0.H[5]
-
-    ld1 {v20.8h-v23.8h}, [x7], #64
-
-    SMLAL  V11.4S, v20.4h, v0.H[7]
-    SMLAL2 V12.4S, v20.8h, v0.H[7]
-    SMLAL  V13.4S, v21.4h, v0.H[7]
-    SMLAL2 V14.4S, v21.8h, v0.H[7]
-    SMLAL  V15.4S, v22.4h, v0.H[7]
-    SMLAL2 V16.4S, v22.8h, v0.H[7]
-    SMLAL  V17.4S, v23.4h, v0.H[7]
-    SMLAL2 V18.4S, v23.8h, v0.H[7]
-    // second point
-    ld1 {v20.8h-v23.8h}, [x7], #64
-
-    SMLAL  V11.4S, v20.4h, v1.H[1]
-    SMLAL2 V12.4S, v20.8h, v1.H[1]
-    SMLAL  V13.4S, v21.4h, v1.H[1]
-    SMLAL2 V14.4S, v21.8h, v1.H[1]
-    SMLAL  V15.4S, v22.4h, v1.H[1]
-    SMLAL2 V16.4S, v22.8h, v1.H[1]
-    SMLAL  V17.4S, v23.4h, v1.H[1]
-    SMLAL2 V18.4S, v23.8h, v1.H[1]
-
-    ld1 {v20.8h-v23.8h}, [x7], #64
-
-    SMLAL  V11.4S, v20.4h, v1.H[3]
-    SMLAL2 V12.4S, v20.8h, v1.H[3]
-    SMLAL  V13.4S, v21.4h, v1.H[3]
-    SMLAL2 V14.4S, v21.8h, v1.H[3]
-    SMLAL  V15.4S, v22.4h, v1.H[3]
-    SMLAL2 V16.4S, v22.8h, v1.H[3]
-    SMLAL  V17.4S, v23.4h, v1.H[3]
-    SMLAL2 V18.4S, v23.8h, v1.H[3]
-
-    ld1 {v20.8h-v23.8h}, [x7], #64
-
-    SMLAL  V11.4S, v20.4h, v1.H[5]
-    SMLAL2 V12.4S, v20.8h, v1.H[5]
-    SMLAL  V13.4S, v21.4h, v1.H[5]
-    SMLAL2 V14.4S, v21.8h, v1.H[5]
-    SMLAL  V15.4S, v22.4h, v1.H[5]
-    SMLAL2 V16.4S, v22.8h, v1.H[5]
-    SMLAL  V17.4S, v23.4h, v1.H[5]
-    SMLAL2 V18.4S, v23.8h, v1.H[5]
-
-    ld1 {v20.8h-v23.8h}, [x7], #64
-
-    SMLAL  V11.4S, v20.4h, v1.H[7]
-    SMLAL2 V12.4S, v20.8h, v1.H[7]
-    SMLAL  V13.4S, v21.4h, v1.H[7]
-    SMLAL2 V14.4S, v21.8h, v1.H[7]
-    SMLAL  V15.4S, v22.4h, v1.H[7]
-    SMLAL2 V16.4S, v22.8h, v1.H[7]
-    SMLAL  V17.4S, v23.4h, v1.H[7]
-    SMLAL2 V18.4S, v23.8h, v1.H[7]
-    // third point
-    ld1 {v20.8h-v23.8h}, [x7], #64
-
-    SMLAL  V11.4S, v20.4h, v2.H[1]
-    SMLAL2 V12.4S, v20.8h, v2.H[1]
-    SMLAL  V13.4S, v21.4h, v2.H[1]
-    SMLAL2 V14.4S, v21.8h, v2.H[1]
-    SMLAL  V15.4S, v22.4h, v2.H[1]
-    SMLAL2 V16.4S, v22.8h, v2.H[1]
-    SMLAL  V17.4S, v23.4h, v2.H[1]
-    SMLAL2 V18.4S, v23.8h, v2.H[1]
-
-    ld1 {v20.8h-v23.8h}, [x7], #64
-
-    SMLAL  V11.4S, v20.4h, v2.H[3]
-    SMLAL2 V12.4S, v20.8h, v2.H[3]
-    SMLAL  V13.4S, v21.4h, v2.H[3]
-    SMLAL2 V14.4S, v21.8h, v2.H[3]
-    SMLAL  V15.4S, v22.4h, v2.H[3]
-    SMLAL2 V16.4S, v22.8h, v2.H[3]
-    SMLAL  V17.4S, v23.4h, v2.H[3]
-    SMLAL2 V18.4S, v23.8h, v2.H[3]
-
-    ld1 {v20.8h-v23.8h}, [x7], #64
-
-    SMLAL  V11.4S, v20.4h, v2.H[5]
-    SMLAL2 V12.4S, v20.8h, v2.H[5]
-    SMLAL  V13.4S, v21.4h, v2.H[5]
-    SMLAL2 V14.4S, v21.8h, v2.H[5]
-    SMLAL  V15.4S, v22.4h, v2.H[5]
-    SMLAL2 V16.4S, v22.8h, v2.H[5]
-    SMLAL  V17.4S, v23.4h, v2.H[5]
-    SMLAL2 V18.4S, v23.8h, v2.H[5]
-
-    ld1 {v20.8h-v23.8h}, [x7], #64
-
-    SMLAL  V11.4S, v20.4h, v2.H[7]
-    SMLAL2 V12.4S, v20.8h, v2.H[7]
-    SMLAL  V13.4S, v21.4h, v2.H[7]
-    SMLAL2 V14.4S, v21.8h, v2.H[7]
-    SMLAL  V15.4S, v22.4h, v2.H[7]
-    SMLAL2 V16.4S, v22.8h, v2.H[7]
-    SMLAL  V17.4S, v23.4h, v2.H[7]
-    SMLAL2 V18.4S, v23.8h, v2.H[7]
-    // fourth point 
-    ld1 {v20.8h-v23.8h}, [x7], #64
-
-    SMLAL  V11.4S, v20.4h, v3.H[1]
-    SMLAL2 V12.4S, v20.8h, v3.H[1]
-    SMLAL  V13.4S, v21.4h, v3.H[1]
-    SMLAL2 V14.4S, v21.8h, v3.H[1]
-    SMLAL  V15.4S, v22.4h, v3.H[1]
-    SMLAL2 V16.4S, v22.8h, v3.H[1]
-    SMLAL  V17.4S, v23.4h, v3.H[1]
-    SMLAL2 V18.4S, v23.8h, v3.H[1]
-
-    ld1 {v20.8h-v23.8h}, [x7], #64
-
-    SMLAL  V11.4S, v20.4h, v3.H[3]
-    SMLAL2 V12.4S, v20.8h, v3.H[3]
-    SMLAL  V13.4S, v21.4h, v3.H[3]
-    SMLAL2 V14.4S, v21.8h, v3.H[3]
-    SMLAL  V15.4S, v22.4h, v3.H[3]
-    SMLAL2 V16.4S, v22.8h, v3.H[3]
-    SMLAL  V17.4S, v23.4h, v3.H[3]
-    SMLAL2 V18.4S, v23.8h, v3.H[3]
-
-    ld1 {v20.8h-v23.8h}, [x7], #64
-
-    SMLAL  V11.4S, v20.4h, v3.H[5]
-    SMLAL2 V12.4S, v20.8h, v3.H[5]
-    SMLAL  V13.4S, v21.4h, v3.H[5]
-    SMLAL2 V14.4S, v21.8h, v3.H[5]
-    SMLAL  V15.4S, v22.4h, v3.H[5]
-    SMLAL2 V16.4S, v22.8h, v3.H[5]
-    SMLAL  V17.4S, v23.4h, v3.H[5]
-    SMLAL2 V18.4S, v23.8h, v3.H[5]
-
-    ld1 {v20.8h-v23.8h}, [x7], #64
-
-    SMLAL  V11.4S, v20.4h, v3.H[7]
-    SMLAL2 V12.4S, v20.8h, v3.H[7]
-    SMLAL  V13.4S, v21.4h, v3.H[7]
-    SMLAL2 V14.4S, v21.8h, v3.H[7]
-    SMLAL  V15.4S, v22.4h, v3.H[7]
-    SMLAL2 V16.4S, v22.8h, v3.H[7]
-    SMLAL  V17.4S, v23.4h, v3.H[7]
-    SMLAL2 V18.4S, v23.8h, v3.H[7]
-
-    // final buuterfly stage
-    ADD v0.4s , v11.4s , v20.4s
-    ADD v1.4s , v12.4s , v21.4s
-    ADD v2.4s , v13.4s , v22.4s
-    ADD v3.4s , v14.4s , v23.4s
-    ADD v4.4s , v15.4s , v24.4s
-    ADD v5.4s , v16.4s , v25.4s
-    ADD v6.4s , v17.4s , v26.4s
-    ADD v7.4s , v18.4s , v27.4s
-
-    SUB v8.4s  , v11.4s , v20.4s
-    SUB v9.4s  , v12.4s , v21.4s
-    SUB v10.4s , v13.4s , v22.4s
-    SUB v11.4s , v14.4s , v23.4s
-    SUB v12.4s , v15.4s , v24.4s
-    SUB v13.4s , v16.4s , v25.4s
-    SUB v14.4s , v17.4s , v26.4s
-    SUB v15.4s , v18.4s , v27.4s
-
-    // shift and round 
-    ADD   V0.4S  , v0.4S , V29.4S
-    ADD   V1.4S  , V1.4S , V29.4S
-    ADD   V2.4S  , V2.4S , V29.4S
-    ADD   V3.4S  , V3.4S , V29.4S
-    ADD   V4.4S  , v4.4S , V29.4S
-    ADD   V5.4S  , V5.4S , V29.4S
-    ADD   V6.4S  , V6.4S , V29.4S
-    ADD   V7.4S  , V7.4S , V29.4S
-    ADD   V8.4S  , v8.4S , V29.4S
-    ADD   V9.4S  , V9.4S , V29.4S
-    ADD   V10.4S , V10.4S , V29.4S
-    ADD   V11.4S , V11.4S , V29.4S
-    ADD   V12.4S , V12.4S , V29.4S
-    ADD   V13.4S , V13.4S , V29.4S
-    ADD   V14.4S , V14.4S , V29.4S
-    ADD   V15.4S , V15.4S , V29.4S
-
-    SSHL   V0.4S  , v0.4S , V28.4S
-    SSHL   V1.4S  , V1.4S , V28.4S
-    SSHL   V2.4S  , V2.4S , V28.4S
-    SSHL   V3.4S  , V3.4S , V28.4S
-    SSHL   V4.4S  , v4.4S , V28.4S
-    SSHL   V5.4S  , V5.4S , V28.4S
-    SSHL   V6.4S  , V6.4S , V28.4S
-    SSHL   V7.4S  , V7.4S , V28.4S
-    SSHL   V8.4S  , v8.4S , V28.4S
-    SSHL   V9.4S  , V9.4S , V28.4S
-    SSHL   V10.4S , V10.4S , V28.4S
-    SSHL   V11.4S , V11.4S , V28.4S
-    SSHL   V12.4S , V12.4S , V28.4S
-    SSHL   V13.4S , V13.4S , V28.4S
-    SSHL   V14.4S , V14.4S , V28.4S
-    SSHL   V15.4S , V15.4S , V28.4S
-    
-    inverse_neon V8
-    inverse_neon V9
-    inverse_neon V10
-    inverse_neon V11
-    inverse_neon V12
-    inverse_neon V13
-    inverse_neon V14
-    inverse_neon V15
-
-    UZP1  v20.8h, V0.8H , V1.8H
-    UZP1  v21.8h, V2.8H , V3.8H
-    UZP1  v22.8h, V4.8H , V5.8H
-    UZP1  v23.8h, V6.8H , V7.8H
-    UZP1  v24.8h, V8.8H , V9.8H
-    UZP1  v25.8h, V10.8H, V11.8H
-    UZP1  v26.8h, V12.8H, V13.8H
-    UZP1  v27.8h, V14.8H, V15.8H
-
-    st1 {v20.8h-v23.8h}, [x1], #64
-    st1 {v24.8h-v27.8h}, [x1]
-
-    ret lr
-endfunc
