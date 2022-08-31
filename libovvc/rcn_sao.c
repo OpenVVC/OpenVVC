@@ -429,94 +429,30 @@ rcn_extend_filter_region2(struct OVRCNCtx *const rcn_ctx, int x_l,
         }
 
         memcpy(dst_0 - stride_filter, src_line, cpy_s);
-        memcpy(src_line, src_pic, width * sizeof(OVSample));
+        memcpy(src_line, src_pic - stride_pic, width * sizeof(OVSample));
     }
 }
 
 static void
-line_alloc(OVSample **dst, const OVFrame *f)
-{
-    dst[0] = ov_malloc(f->linesize[0] + 256);
-    dst[1] = ov_malloc(f->linesize[1] + 256);
-    dst[2] = ov_malloc(f->linesize[2] + 256);
-}
-
-static void
-line_free(OVSample **dst)
-{
-    ov_free(dst[0]);
-    ov_free(dst[1]);
-    ov_free(dst[2]);
-}
-
-static void
-line_to_saved(OVSample **lbck, struct OVFilterBuffers* fb)
-{
-    for (int comp = 0; comp < 3; comp++) {
-        OVSample* saved_rows = fb->saved_rows_sao[comp];
-        OVSample* src = lbck[comp];
-
-        int stride_filter = fb->filter_region_stride[comp];
-
-        const int width = fb->saved_rows_stride[comp];
-        int stride_rows = fb->saved_rows_stride[comp];
-
-        memcpy(&saved_rows[2 * stride_rows], src, width * sizeof(OVSample));
-    }
-}
-
-static void
-backup_line(OVSample **dst, const OVFrame *f, int32_t y)
-{
-
-    if (y + 5 < f->height) {
-        uint8_t *src_y = f->data[0];
-        ptrdiff_t offset_y = (y + 5) * f->linesize[0];
-
-        memcpy(dst[0], src_y  + offset_y, f->linesize[0]);
-    }
-
-    if ((y >> 1) + 2 < (f->height >> 1)) {
-        uint8_t *src_cb = f->data[1];
-        uint8_t *src_cr = f->data[2];
-        ptrdiff_t offset_c = ((y >> 1) + 2) * f->linesize[1];
-        memcpy(dst[1], src_cb + offset_c, f->linesize[1]);
-        memcpy(dst[2], src_cr + offset_c, f->linesize[2]);
-    }
-}
-
-static void
-backup_line2(OVSample **dst, const OVFrame *f, int32_t y)
+init_row_line(struct OVFilterBuffers* fb, const OVFrame *f, int32_t y, int32_t x)
 {
 
     uint8_t *src_y = f->data[0];
-    ptrdiff_t offset_y = y * f->linesize[0];
-
-    memcpy(dst[0], src_y  + offset_y, f->linesize[0]);
-
     uint8_t *src_cb = f->data[1];
     uint8_t *src_cr = f->data[2];
-    ptrdiff_t offset_c = (y >> 1) * f->linesize[1];
-    memcpy(dst[1], src_cb + offset_c, f->linesize[1]);
-    memcpy(dst[2], src_cr + offset_c, f->linesize[2]);
-}
 
-static void
-backup_line3(OVSample **dst, const OVFrame *f, int32_t y)
-{
+    OVSample *dst_y = fb->saved_rows_sao[0];
+    OVSample *dst_cb = fb->saved_rows_sao[1];
+    OVSample *dst_cr = fb->saved_rows_sao[2];
 
-    if (y > f->height) return;
+    ptrdiff_t offset_y  = y * f->linesize[0] + x * sizeof(OVSample);
+    ptrdiff_t offset_by = 2 * fb->saved_rows_stride[0];
+    ptrdiff_t offset_c  = (y >> 1) * f->linesize[1] + (x  >> 1) * sizeof(OVSample);
+    ptrdiff_t offset_bc = 2 * fb->saved_rows_stride[1];
 
-    uint8_t *src_y = f->data[0];
-    ptrdiff_t offset_y = (y - 1) * f->linesize[0];
-
-    memcpy(dst[0], src_y  + offset_y, f->linesize[0]);
-
-    uint8_t *src_cb = f->data[1];
-    uint8_t *src_cr = f->data[2];
-    ptrdiff_t offset_c = ((y >> 1) - 1) * f->linesize[1];
-    memcpy(dst[1], src_cb + offset_c, f->linesize[1]);
-    memcpy(dst[2], src_cr + offset_c, f->linesize[2]);
+    memcpy(dst_y + offset_by, src_y  + offset_y, fb->saved_rows_stride[0] * sizeof(OVSample));
+    memcpy(dst_cb + offset_bc, src_cb + offset_c, fb->saved_rows_stride[1] * sizeof(OVSample));
+    memcpy(dst_cr + offset_bc, src_cr + offset_c, fb->saved_rows_stride[1] * sizeof(OVSample));
 }
 
 static void
@@ -525,11 +461,6 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
     if (!ctudec->sao_info.sao_luma_flag && !ctudec->sao_info.sao_chroma_flag){
         return;
     }
-    OVSample *lbck[3];
-    OVSample *lbck2[3];
-
-    line_alloc(lbck, ctudec->rcn_ctx.frame_start);
-    line_alloc(lbck2, ctudec->rcn_ctx.frame_start);
 
     uint8_t log2_ctb_s = ctudec->part_ctx->log2_ctu_s;
     int ctu_w  = 1 << log2_ctb_s;
@@ -545,15 +476,6 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
     int x_pos = 0;
 
     int ctb_addr_rs = ctb_y * einfo->nb_ctu_w;
-
-    if (!border_init)
-        backup_line(lbck, ctudec->rcn_ctx.frame_start, y_pic + ctu_w);
-    else if (!ctb_y) {
-        backup_line2(lbck, ctudec->rcn_ctx.frame_start, y_pic);
-        line_to_saved(lbck, &ctudec->rcn_ctx.filter_buffers);
-    }
-
-    backup_line3(lbck2, ctudec->rcn_ctx.frame_start, y_pic + ctu_w);
 
     for (int ctb_x = 0; ctb_x < einfo->nb_ctu_w; ++ctb_x) {
         uint8_t is_border = border_init;
@@ -581,8 +503,6 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
         ctb_y++;
         y_pic += ctu_w;
 
-        line_to_saved(lbck2, &ctudec->rcn_ctx.filter_buffers);
-
         uint8_t border_init2 = -(ctb_y == einfo->nb_ctu_h - 1) & OV_BOUNDARY_BOTTOM_RECT;
         int ctb_addr_rs = ctb_y * einfo->nb_ctu_w;
 
@@ -608,15 +528,7 @@ rcn_sao_filter_line(OVCTUDec *const ctudec, const struct RectEntryInfo *const ei
             x_pos += ctu_w;
             ++ctb_addr_rs;
         }
-
-        line_to_saved(lbck, &ctudec->rcn_ctx.filter_buffers);
     }
-
-    if (!border_init)
-        line_to_saved(lbck, &ctudec->rcn_ctx.filter_buffers);
-
-    line_free(lbck);
-    line_free(lbck2);
 }
 
 static void
@@ -635,16 +547,9 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
     struct OVFilterBuffers* fb = &ctudec->rcn_ctx.filter_buffers;
     int margin = 2 * fb->margin;
 
-    OVSample *lbck[3];
-
-    line_alloc(lbck, ctudec->rcn_ctx.frame_start);
-
     if (!ctb_y) {
-        backup_line2(lbck, ctudec->rcn_ctx.frame_start, y_pic);
-        line_to_saved(lbck, &ctudec->rcn_ctx.filter_buffers);
+        init_row_line(&ctudec->rcn_ctx.filter_buffers, ctudec->rcn_ctx.frame_start, 0, einfo->ctb_x << log2_ctb_s);
     }
-
-    backup_line(lbck, ctudec->rcn_ctx.frame_start, y_pic);
 
     for (int ctb_x = 0; ctb_x < einfo->nb_ctu_w; ctb_x++) {
         int ctb_x_pic = ctb_x + einfo->ctb_x;
@@ -665,10 +570,6 @@ rcn_sao_first_pix_rows(OVCTUDec *const ctudec, const struct RectEntryInfo *const
             rcn_sao_ctu(ctudec, sao, x_pic, y_pic, y_pic + margin, is_border);
         }
     }
-
-    line_to_saved(lbck, &ctudec->rcn_ctx.filter_buffers);
-
-    line_free(lbck);
 }
 
 void
