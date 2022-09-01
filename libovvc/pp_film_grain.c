@@ -878,84 +878,7 @@ void fg_grain_apply_pic(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain
     {
         for (compCtr = 0; compCtr < 3; compCtr++)
         {
-            if (1 == fgrain->fg_comp_model_present_flag[compCtr])
-            {
-                picOffset = poc + (picOrderCntOffset << 5);
-                /* Seed initialization for current picture*/
-                pseudoRandValEc = seedLUT[((picOffset + color_offset[compCtr]) % 256)];
-
-                dstSampleOffsetY = dstComp[compCtr];
-                srcSampleOffsetY = srcComp[compCtr];
-
-                /* Loop of 16x16 blocks */
-                for (y = 0; y < heightComp[compCtr]; y += 16)
-                {
-                    /* Initialization of grain stripe of 16xwidth size */
-                    memset(grainStripe, 0, (strideComp[0] * 16 * sizeof(int32_t)));
-                    for (x = 0; x < widthComp[compCtr]; x += 16)
-                    {
-                        /* start position offset of decoded sample in x direction */
-                        grainStripeOffset = x;
-                        srcSampleBlk16 = srcSampleOffsetY + x;
-
-                        for (blkId = 0; blkId < 4; blkId++)
-                        {
-                            yOffset8x8 = (blkId >> 1) * 8;
-                            xOffset8x8 = (blkId & 0x1)* 8;
-                            offsetBlk8x8 = xOffset8x8 + (yOffset8x8 * strideComp[compCtr]);
-                            grainStripeOffsetBlk8 = grainStripeOffset + offsetBlk8x8;
-
-                            srcSampleBlk8 = srcSampleBlk16 + offsetBlk8x8;
-                            blockAvg      = fg_compute_block_avg(srcSampleBlk8, strideComp[compCtr], &numSamples,
-                                 OVMIN(8, (heightComp[compCtr] - y - yOffset8x8)),
-                                 OVMIN(8, (widthComp[compCtr] - x - xOffset8x8)),
-                                 bitDepth);
-
-                            /* Handling of non 8x8 blocks along with 8x8 blocks */
-                            if (numSamples > 0)
-                            {
-                                /* Selection of the component model */
-                                intensityInt = intensityInterval[compCtr][blockAvg];
-
-                                if (-1 != intensityInt)
-                                {
-                                    /* 8x8 grain block offset using co-ordinates of decoded 8x8 block in the frame */
-                                    kOffset     =  (MSB16(pseudoRandValEc) % 52);
-                                    kOffset     &= 0xFFFC;
-                                    kOffset     += (x + xOffset8x8) & 0x0008;
-                                    lOffset     =  (LSB16(pseudoRandValEc) % 56);
-                                    lOffset     &= 0xFFF8;
-                                    lOffset     += (y + yOffset8x8) & 0x0008;
-                                    scaleFactor =  BIT0(pseudoRandValEc) ? -1 : 1;
-                                    scaleFactor *= fgrain->fg_comp_model_value[compCtr][intensityInt][0];
-                                    h           =  fgrain->fg_comp_model_value[compCtr][intensityInt][1] - 2;
-                                    v           =  fgrain->fg_comp_model_value[compCtr][intensityInt][2] - 2;
-
-                                    /* 8x8 block grain simulation */
-                                    // fg_simulate_grain_blk8x8(grainStripe, grainStripeOffsetBlk8, m_pGrainSynt, strideComp[compCtr],
-                                    fg_simulate_grain_blk8x8(grainStripe, grainStripeOffsetBlk8, strideComp[compCtr],
-                                    log2ScaleFactor, scaleFactor, kOffset, lOffset, h, v, OVMIN(8, (widthComp[compCtr] - x - xOffset8x8)));
-                                }/* only if average falls in any interval */
-                            } /* includes corner case handling */
-                        } /* 8x8 level block processing */
-
-                        /* uppdate the PRNG once per 16x16 block of samples */
-                        pseudoRandValEc = prng(pseudoRandValEc);
-
-                    } /* End of 16xwidth grain simulation */
-
-                    /* deblocking at the vertical edges of 8x8 at 16xwidth*/
-                    if (enableDeblocking)
-                    {
-                        fg_deblock_grain_stripe(grainStripe, widthComp[compCtr], strideComp[compCtr]);
-                    }
-                    /* Blending of size 16xwidth*/
-                    fg_blend_stripe(dstSampleOffsetY, srcSampleOffsetY, grainStripe, strideComp[compCtr], OVMIN(16, (heightComp[compCtr] - y)), bitDepth);
-                    dstSampleOffsetY += OVMIN(16, heightComp[compCtr] - y) * strideComp[compCtr];
-                    srcSampleOffsetY += OVMIN(16, heightComp[compCtr] - y) * strideComp[compCtr];
-                } 
-            }
-            else
+            if (1 != fgrain->fg_comp_model_present_flag[compCtr])
             {
                 dstSampleOffsetY = dstComp[compCtr];
                 srcSampleOffsetY = srcComp[compCtr];
@@ -966,6 +889,82 @@ void fg_grain_apply_pic(int16_t** dstComp, int16_t** srcComp, struct OVSEIFGrain
                     dstSampleOffsetY += strideComp[compCtr];
                     srcSampleOffsetY += strideComp[compCtr];
                 }
+
+                continue;
+            }
+            picOffset = poc + (picOrderCntOffset << 5);
+            /* Seed initialization for current picture*/
+            pseudoRandValEc = seedLUT[((picOffset + color_offset[compCtr]) % 256)];
+
+            dstSampleOffsetY = dstComp[compCtr];
+            srcSampleOffsetY = srcComp[compCtr];
+
+            /* Loop of 16x16 blocks */
+            for (y = 0; y < heightComp[compCtr]; y += 16)
+            {
+                /* Initialization of grain stripe of 16xwidth size */
+                memset(grainStripe, 0, (strideComp[0] * 16 * sizeof(int32_t)));
+                for (x = 0; x < widthComp[compCtr]; x += 16)
+                {
+                    /* start position offset of decoded sample in x direction */
+                    grainStripeOffset = x;
+                    srcSampleBlk16 = srcSampleOffsetY + x;
+
+                    for (blkId = 0; blkId < 4; blkId++)
+                    {
+                        yOffset8x8 = (blkId >> 1) * 8;
+                        xOffset8x8 = (blkId & 0x1)* 8;
+                        offsetBlk8x8 = xOffset8x8 + (yOffset8x8 * strideComp[compCtr]);
+                        grainStripeOffsetBlk8 = grainStripeOffset + offsetBlk8x8;
+
+                        srcSampleBlk8 = srcSampleBlk16 + offsetBlk8x8;
+                        blockAvg      = fg_compute_block_avg(srcSampleBlk8, strideComp[compCtr], &numSamples,
+                              OVMIN(8, (heightComp[compCtr] - y - yOffset8x8)),
+                              OVMIN(8, (widthComp[compCtr] - x - xOffset8x8)),
+                              bitDepth);
+
+                        /* Handling of non 8x8 blocks along with 8x8 blocks */
+                        if (numSamples > 0)
+                        {
+                            /* Selection of the component model */
+                            intensityInt = intensityInterval[compCtr][blockAvg];
+
+                            if (-1 != intensityInt)
+                            {
+                                /* 8x8 grain block offset using co-ordinates of decoded 8x8 block in the frame */
+                                kOffset     =  (MSB16(pseudoRandValEc) % 52);
+                                kOffset     &= 0xFFFC;
+                                kOffset     += (x + xOffset8x8) & 0x0008;
+                                lOffset     =  (LSB16(pseudoRandValEc) % 56);
+                                lOffset     &= 0xFFF8;
+                                lOffset     += (y + yOffset8x8) & 0x0008;
+                                scaleFactor =  BIT0(pseudoRandValEc) ? -1 : 1;
+                                scaleFactor *= fgrain->fg_comp_model_value[compCtr][intensityInt][0];
+                                h           =  fgrain->fg_comp_model_value[compCtr][intensityInt][1] - 2;
+                                v           =  fgrain->fg_comp_model_value[compCtr][intensityInt][2] - 2;
+
+                                /* 8x8 block grain simulation */
+                                // fg_simulate_grain_blk8x8(grainStripe, grainStripeOffsetBlk8, m_pGrainSynt, strideComp[compCtr],
+                                fg_simulate_grain_blk8x8(grainStripe, grainStripeOffsetBlk8, strideComp[compCtr],
+                                log2ScaleFactor, scaleFactor, kOffset, lOffset, h, v, OVMIN(8, (widthComp[compCtr] - x - xOffset8x8)));
+                            }/* only if average falls in any interval */
+                        } /* includes corner case handling */
+                    } /* 8x8 level block processing */
+
+                    /* uppdate the PRNG once per 16x16 block of samples */
+                    pseudoRandValEc = prng(pseudoRandValEc);
+
+                } /* End of 16xwidth grain simulation */
+
+                /* deblocking at the vertical edges of 8x8 at 16xwidth*/
+                if (enableDeblocking)
+                {
+                    fg_deblock_grain_stripe(grainStripe, widthComp[compCtr], strideComp[compCtr]);
+                }
+                /* Blending of size 16xwidth*/
+                fg_blend_stripe(dstSampleOffsetY, srcSampleOffsetY, grainStripe, strideComp[compCtr], OVMIN(16, (heightComp[compCtr] - y)), bitDepth);
+                dstSampleOffsetY += OVMIN(16, heightComp[compCtr] - y) * strideComp[compCtr];
+                srcSampleOffsetY += OVMIN(16, heightComp[compCtr] - y) * strideComp[compCtr];
             }
         }/* end of component loop */
     }
